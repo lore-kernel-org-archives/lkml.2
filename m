@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab0FIPwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 11:52:33 -0400
-Received: from mail.perches.com ([173.55.12.10]:2891 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932274Ab0FIPwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 11:52:31 -0400
-Subject: Re: [PATCH 00/17] MAINTAINERS: Add drivers/staging entries
-From: Joe Perches <joe@perches.com>
-To: Greg KH <greg@kroah.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
-       Andrew Lunn <andrew@lunn.ch>, Jarod Wilson <jarod@wilsonet.com>,
-       Jakub Schmidtke <sjakub@gmail.com>, Henk de Groot <pe1dnn@amsat.org>,
-       Naren Sankar <nsankar@broadcom.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-       Pavel Machek <pavel@ucw.cz>,
-       Luis Rodriguez <Luis.Rodriguez@atheros.com>, devel@driverdev.osuosl.org,
-       Mori Hess <fmhess@users.sourceforge.net>,
-       Steve Underwood <steveu@coppice.org>,
-       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-       Arnaud Patard <apatard@mandriva.com>,
-       Marek Lindner <lindner_marek@yahoo.de>,
-       Teddy Wang <teddy.wang@siliconmotion.com.cn>,
-       Ossama Othman <ossama.othman@intel.com>,
-       Haiyang Zhang <haiyangz@microsoft.com>, Ian Abbott <abbotti@mev.co.uk>,
-       Willy Tarreau <willy@meta-x.org>, Scott Davilla <davilla@4pi.com>,
-       Scott Smedley <ss@aao.gov.au>, linux-kernel@vger.kernel.org,
-       Forest Bond <forest@alittletooquiet.net>,
-       David Rowe <david@rowetel.com>
-In-Reply-To: <20100609150833.GD20705@kroah.com>
-References: <cover.1275935090.git.joe@perches.com>
-	 <1276032382.24044.23.camel@Joe-Laptop.home>
-	 <20100609000713.GB16160@kroah.com> <201006091524.51998.arnd@arndb.de>
-	 <20100609150833.GD20705@kroah.com>
+	id S932332Ab0FIPw6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 11:52:58 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:62658 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932237Ab0FIPwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 11:52:55 -0400
+Subject: Re: [PATCHv4 01/17] VFS: introduce helpers for the s_dirty flag
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: tytso@mit.edu
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org,
+       Roman Zippel <zippel@linux-m68k.org>,
+       "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+       Chris Mason <chris.mason@oracle.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-ext4@vger.kernel.org,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       David Woodhouse <dwmw2@infradead.org>, reiserfs-devel@vger.kernel.org,
+       Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>
+In-Reply-To: <20100609154448.GC6162@thunk.org>
+References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+	 <1274795352-3551-2-git-send-email-dedekind1@gmail.com>
+	 <20100528132318.0783675a.akpm@linux-foundation.org>
+	 <20100528211432.GM31073@ZenIV.linux.org.uk>
+	 <20100528141755.42958d81.akpm@linux-foundation.org>
+	 <20100609154448.GC6162@thunk.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Jun 2010 08:52:24 -0700
-Message-ID: <1276098744.1556.50.camel@Joe-Laptop.home>
+Date: Wed, 09 Jun 2010 18:49:15 +0300
+Message-ID: <1276098555.5677.131.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-8.fc13) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 09 Jun 2010 15:51:31.0224 (UTC) FILETIME=[A121B180:01CB07EB]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 08:08 -0700, Greg KH wrote:
-> On Wed, Jun 09, 2010 at 03:24:51PM +0200, Arnd Bergmann wrote:
-> > On Wednesday 09 June 2010, Greg KH wrote:
-> > > > > I also found it a bit odd you didn't send these to the stable subsystem
-> > > > > maintainer, why?
-> > > > The MAINTAINERS patches are forward going, not historical.
-> > > What does that mean?
-> > I guess you meant to write '... to the /staging/ subsystem maintainer'.
-> Doh, yes, you are right.
-> Joe, why didn't you send these to the "STAGING" subsystem maintainer?
+On Wed, 2010-06-09 at 11:44 -0400, tytso@mit.edu wrote:
+> On Fri, May 28, 2010 at 02:17:55PM -0700, Andrew Morton wrote:
+> > > 
+> > > The real issue is that it's almost certainly an overdesign.  Let's
+> > > get rid of the bogus uses first and figure out what's happening in
+> > > what remains, OK?
+> > 
+> > That would be good.
+> 
+> Can we figure out what the new names will be for these accessor
+> functions, and then pursuade Linus to be willing to add patch #1 in
+> this series to add these accessor functions (without any users for
+> these functions, that would wait until the next merge window) to
+> 2.6.35-rc3 or -rc4, please?
+> 
+> It will make life much easier for fs maintainers to merge the patches,
+> especially if they've done some cleanup to reduce the bogus places
+> where s_dirt was getting set in the first place.  That way I can apply
+> my patch to reduce the use of s_dirt[1], then apply a patch I carry in
+> my own tree to convert to the new accessor functions without worrying
+> about patch conflicts.
 
-Gee, who would that be?  Why be so indirect?
-(Even though you are both the stable and the staging maintainer)
+Yes, that would be nice, Al?
 
-Why don't you just write "How come I didn't get cc'd?"
-
-I'm the closest thing there is to a MAINTAINERS maintainer.
-Andrew has taken all the patches I've posted to it except for
-the patchset that added file patterns and you're rarely a
-path to get things into MAINTAINERS.
-
-$ ./scripts/get_maintainer.pl -f --rolestats MAINTAINERS 
-Andrew Morton <akpm@linux-foundation.org> (commit_signer:97/515=19%)
-Joe Perches <joe@perches.com> (commit_signer:83/515=16%)
-"David S. Miller" <davem@davemloft.net> (commit_signer:35/515=7%)
-
-And you already had written that you wouldn't take a
-similar individual patch.
-
-http://lkml.org/lkml/2010/6/2/428
-
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
