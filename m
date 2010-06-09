@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757885Ab0FIOeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 10:34:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36340 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757800Ab0FIOeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 10:34:13 -0400
-Date: Wed, 9 Jun 2010 14:33:40 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, michael@ellerman.id.au, tglx@linutronix.de,
-       mikey@neuling.org, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, michael@ellerman.id.au, tglx@linutronix.de,
-       mikey@neuling.org, mingo@elte.hu
-In-Reply-To: <tip-76cbd8a8f8b0dddbff89a6708bd5bd13c0d21a00@git.kernel.org>
-References: <tip-76cbd8a8f8b0dddbff89a6708bd5bd13c0d21a00@git.kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] powerpc: Exclude arch_sd_sibiling_asym_packing() on UP
-Message-ID: <tip-89275d59b572b92b1e2f6ddb63c49deecb801ff9@git.kernel.org>
-Git-Commit-ID: 89275d59b572b92b1e2f6ddb63c49deecb801ff9
-X-Mailer: tip-git-log-daemon
+	id S1757911Ab0FIOoY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 10:44:24 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44053 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757871Ab0FIOoW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 10:44:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=L4FXggea4B8rWPCj9jD0mviqPIUq7lb7k+imiIeYA3Nj6S7p1jwMamtEY9hFA5/ZPK
+         ftxov+ZnRjwGut9zv8KI9+BI90r25J+CngZa66EqvHkVQ4pNWjNWGlEt3fcSezBj3jiw
+         g9eKG8/AogfMEjUuI6UZeH65WGmFeO+0eiYjI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 14:33:41 +0000 (UTC)
+In-Reply-To: <AANLkTilrYYHjcMEhhrP7zjcLoo-TNczozxJSNRkDvSZy@mail.gmail.com>
+References: <4c0f4326.0a41df0a.7bde.ffffeef2@mx.google.com> 
+	<AANLkTilrYYHjcMEhhrP7zjcLoo-TNczozxJSNRkDvSZy@mail.gmail.com>
+From: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Date: Wed, 9 Jun 2010 17:43:48 +0300
+X-Google-Sender-Auth: IGMLI5Dh01wQqjeDG_w90YXB6Q4
+Message-ID: <AANLkTimXqdkQxv_Y1JaleTTWNsDIQHQaPn8HR7efOupb@mail.gmail.com>
+Subject: Re: [ath5k-devel] [PATCH] [ath5k][leds] Ability to disable leds 
+	support. If leds support enabled do not force mac802.11 leds layer selection.
+To: Bob Copeland <me@bobcopeland.com>
+Cc: ath5k-devel@venema.h4ckr.net, Kalle Valo <kalle.valo@iki.fi>,
+       linux-wireless@vger.kernel.org, GeunSik Lim <geunsik.lim@samsung.com>,
+       Jiri Slaby <jirislaby@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Keng-Yu Lin <keng-yu.lin@canonical.com>, netdev@vger.kernel.org,
+       Jiri Kosina <jkosina@suse.cz>, Shahar Or <shahar@shahar-or.co.il>,
+       linux-kernel@vger.kernel.org, Luca Verdesca <magooz@salug.it>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  89275d59b572b92b1e2f6ddb63c49deecb801ff9
-Gitweb:     http://git.kernel.org/tip/89275d59b572b92b1e2f6ddb63c49deecb801ff9
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Wed, 9 Jun 2010 16:20:55 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 9 Jun 2010 16:31:39 +0200
+Hi, Bob.
 
-powerpc: Exclude arch_sd_sibiling_asym_packing() on UP
+For instance I don't use 802.11 leds layer and trigger leds from
+userspace according to my purposes.
 
-Only SMP systems care about load-balance features, plus this
-saves some .text space on UP and also fixes the build.
+-- Dima
 
-Reported-by: Michael Ellerman <michael@ellerman.id.au>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michael Neuling <mikey@neuling.org>
-LKML-Reference: <tip-76cbd8a8f8b0dddbff89a6708bd5bd13c0d21a00@git.kernel.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/powerpc/kernel/process.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index a3f347c..9b41ece 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -1269,6 +1269,7 @@ unsigned long randomize_et_dyn(unsigned long base)
- 	return ret;
- }
- 
-+#ifdef CONFIG_SMP
- int arch_sd_sibiling_asym_packing(void)
- {
- 	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
-@@ -1277,3 +1278,4 @@ int arch_sd_sibiling_asym_packing(void)
- 	}
- 	return 0;
- }
-+#endif
+On Wed, Jun 9, 2010 at 4:58 PM, Bob Copeland <me@bobcopeland.com> wrote:
+> On Wed, Jun 9, 2010 at 3:31 AM, Dmytro Milinevskyy
+> <milinevskyy@gmail.com> wrote:
+>> However if the leds support was enabled do not force selection of 802.11 leds layer.
+>
+> I don't understand this part.  What's the point of enabling software LEDs
+> if nothing triggers them?
+>
+> Also, we can probably build hardware LEDs (hw_set_ledstate) in regardless.
+> It's a pure register write and doesn't require the rest of the LED machinery.
+>
+> I assume you are doing this to reduce the size of the module.  If so, can
+> you include size(1) output in the commit message?
+>
+> --
+> Bob Copeland %% www.bobcopeland.com
+>
