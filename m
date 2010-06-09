@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab0FIRed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 13:34:33 -0400
-Received: from THUNK.ORG ([69.25.196.29]:48551 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752734Ab0FIRec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 13:34:32 -0400
-Date: Wed, 9 Jun 2010 13:34:24 -0400
-From: tytso@mit.edu
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Salman <sqazi@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>, peterz@infradead.org,
-       akpm@inux-foundation.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       tytso@google.com, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
- reused immediately.
-Message-ID: <20100609173424.GF6162@thunk.org>
-Mail-Followup-To: tytso@mit.edu,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ingo Molnar <mingo@elte.hu>, Salman <sqazi@google.com>,
-	Andrew Morton <akpm@linux-foundation.org>, peterz@infradead.org,
-	akpm@inux-foundation.org,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	tytso@google.com, Thomas Gleixner <tglx@linutronix.de>
-References: <20100609062438.29081.91635.stgit@bumblebee1.mtv.corp.google.com>
- <20100609094850.GA23292@elte.hu>
- <alpine.LFD.2.00.1006090830560.4506@i5.linux-foundation.org>
- <20100609155041.GD6162@thunk.org>
- <alpine.LFD.2.00.1006090857530.4506@i5.linux-foundation.org>
- <20100609171015.GE6162@thunk.org>
- <alpine.LFD.2.00.1006091013340.4506@i5.linux-foundation.org>
- <alpine.LFD.2.00.1006091023341.4506@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1006091023341.4506@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1757998Ab0FIRiG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 13:38:06 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18195 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab0FIRiD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 13:38:03 -0400
+Date: Wed, 9 Jun 2010 10:36:57 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       davem@davemloft.net
+Subject: Re: linux-next: Tree for June 9 (niu)
+Message-Id: <20100609103657.66252a27.randy.dunlap@oracle.com>
+In-Reply-To: <20100609133443.38f1f957.sfr@canb.auug.org.au>
+References: <20100609133443.38f1f957.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090204.4C0FD171.01E1:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 09, 2010 at 10:25:50AM -0700, Linus Torvalds wrote:
+On Wed, 9 Jun 2010 13:34:43 +1000 Stephen Rothwell wrote:
+
+> Hi all,
 > 
+> Changes since 20100608:
 > 
-> On Wed, 9 Jun 2010, Linus Torvalds wrote:
-> >
-> > Otherwise you have three threads, two of which pick the same pid (because 
-> > the test-and-set isn't atomic), and a third of which picks a new one.
-> 
-> In fact, I don't think you need three threads at all. It's perfectly ok to 
-> just have two threads, and they'd both end up picking the same 'pid' 
-> without the atomicity guarantees of that 'test_and_set()' bitmap access.
-> 
-> And they'd both be perfectly fine setting last_pid to that (shared) pid if 
-> I read that cmpxchg loop right. No?
+> My fixes tree contains:
+>       v4l-dvb: update gfp/slab.h includes
+>       arm: update gfp/slab.h includes
+>       davinci: update gfp/slab.h includes
+>       ocfs2: update gfp/slab.h includes
+>       acpi: update gfp/slab.h includes
 
-Well, I was thinking about something like this:
 
-	while (1) {
-		last = pid_ns->last_pid;
-		pid = last + 1;
-		if (pid >= pid_max)
-			pid = RESERVED_PIDS;
-		if (cmpxchg(&pid_ns->last_pid, last, pid) == last)
-			return pid;
-	}
 
-Which I don't think is racy, unless I'm missing something.  Both might
-end up picking the same pid, but only one will successfully set
-last_pid, and the other will just loop and try again.
+on x86_64 or i386, CONFIG_OF_DEVICE is not enabled:
 
-There appears to be some interesting uses of the bitmap by
-find_ge_pid() and next_pidmap() that I haven't completely grokked yet,
-especially as to why they're needed, though.  Assuming they are
-needed, we might end up needing the bitmap after all, though.
+drivers/net/niu.c:9700: warning: 'struct of_device' declared inside parameter list
+drivers/net/niu.c:9700: warning: its scope is only this definition or declaration, which is probably not what you want
+drivers/net/niu.c:9716: warning: assignment from incompatible pointer type
 
-					- Ted
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
