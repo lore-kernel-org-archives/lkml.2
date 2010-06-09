@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab0FIMRH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 08:17:07 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:36726 "EHLO mx01.d-labs.de"
+	id S1756993Ab0FIMRU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 08:17:20 -0400
+Received: from thunk.org ([69.25.196.29]:36795 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752687Ab0FIMRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 08:17:05 -0400
-Date: Wed, 9 Jun 2010 14:16:43 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: pm list <linux-pm@lists.linux-foundation.org>, james.bottomley@suse.de,
-       markgross@thegnar.org, mgross@linux.intel.com,
-       "John W. Linville" <linville@tuxdriver.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Javier Cardona <javier@cozybit.com>, Jouni Malinen <j@w1.fi>,
-       Rui Paulo <rpaulo@gmail.com>, Kalle Valo <kalle.valo@nokia.com>,
-       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 1/2] mac80211: make max_network_latency notifier
- atomic safe
-Message-ID: <20100609141643.14e9aedc@schatten.dmk.lab>
-In-Reply-To: <1276080128.14580.5.camel@jlt3.sipsolutions.net>
-References: <1276074915-26879-1-git-send-email-florian@mickler.org>
-	<1276076287.3727.15.camel@jlt3.sipsolutions.net>
-	<20100609122050.1dd18132@schatten.dmk.lab>
-	<1276080128.14580.5.camel@jlt3.sipsolutions.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756187Ab0FIMRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 08:17:17 -0400
+Date: Wed, 9 Jun 2010 08:17:06 -0400
+From: tytso@mit.edu
+To: Salman <sqazi@google.com>
+Cc: peterz@infradead.org, mingo@elte.hu, akpm@inux-foundation.org,
+       linux-kernel@vger.kernel.org, tytso@google.com
+Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
+ reused immediately.
+Message-ID: <20100609121706.GD6529@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Salman <sqazi@google.com>,
+	peterz@infradead.org, mingo@elte.hu, akpm@inux-foundation.org,
+	linux-kernel@vger.kernel.org, tytso@google.com
+References: <20100609062438.29081.91635.stgit@bumblebee1.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100609062438.29081.91635.stgit@bumblebee1.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Jun 2010 12:42:08 +0200
-Johannes Berg <johannes@sipsolutions.net> wrote:
+On Tue, Jun 08, 2010 at 11:24:38PM -0700, Salman wrote:
 
-> On Wed, 2010-06-09 at 12:20 +0200, Florian Mickler wrote:
+> A program that repeatedly forks and waits is susceptible to having
+> the same pid repeated, especially when it competes with another
+> instance of the same program.  This is really bad for bash
+> implementation.  Furthermore, many shell scripts assume that pid
+> numbers will not be used for some length of time.
 > 
-> > A third possibility would be to make it dependent on the
-> > type of the constraint, if blocking notifiers are allowed or not. 
-> > But that would sacrifice API consistency (update_request for one
-> > constraint is allowed to be called in interrupt context and
-> > update_request for another would be not).
+> Thanks to Ted Tso for the key ideas of this implementation.
 > 
-> I don't see what's wrong with the fourth possibility: Allow calling
-> pm_qos_update_request() from atomic context, but change _it_ to schedule
-> off a work that calls the blocking notifier chain. That avoids the
-> complexity in notify-API users since they have process context, and also
-> in request-API users since they can call it from any context.
-> 
-> johannes
+> Signed-off-by: Salman Qazi <sqazi@google.com>
 
-That was also my first idea, but then I thought about qos and thought
-atomic notification are necessary.
-Do you see any value in having atomic
-notification? 
+Here's a slightly more succint way of expressing it.  Others will have
+decide if it's easier to understand.  (It is for me, but I wrote it.  :-P)
 
-I have the following situation before my eyes:
+       	       	      	 	      	  - Ted
 
-	Driver A gets an interrupt and needs (to service that
-	interrupt) the cpu to guarantee a latency of X because the
-	device is a bit icky.
-
-Now, in that situation, if we don't immediately (without scheduling in
-between) notify the system to be in that latency-mode the driver won't
-function properly. Is this a realistic scene?
-
-At the moment we only have process context notification and only 2
-listeners.
-
-I think providing for atomic as well as "relaxed" notification could be
-useful. 
-
-If atomic notification is deemed unnecessary, I have no
-problems to just use schedule_work() in update request.
-Anyway, it is probably best to split this. I.e. first make
-update_request callable from atomic contexts with doing the
-schedule_work in update_request and then
-as an add on provide for constraints_objects with atomic notifications.
-
-Flo
-
-
-
+ kernel/pid.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+diff --git a/kernel/pid.c b/kernel/pid.c
+index e9fd8c1..c51f413 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -154,8 +154,13 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ 			do {
+ 				if (!test_and_set_bit(offset, map->page)) {
+ 					atomic_dec(&map->nr_free);
+-					pid_ns->last_pid = pid;
+-					return pid;
++					while (1) {
++						i = cmpxchg(&pid_ns->last_pid,
++							    last, pid);
++						if (i == last || i >= pid)
++							return pid;
++						last = i;
++					}
+ 				}
+ 				offset = find_next_offset(map, offset);
+ 				pid = mk_pid(pid_ns, map, offset);
 
 
