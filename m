@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327Ab0FIVV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 17:21:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43082 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab0FIVVZ convert rfc822-to-8bit (ORCPT
+	id S1758368Ab0FIVWJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 17:22:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57394 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754237Ab0FIVWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 17:21:25 -0400
-Subject: Re: 2.6.35-rc2-git1 - include/linux/cgroup.h:534 invoked 
- rcu_dereference_check() without protection!
-From: Peter Zijlstra <peterz@infradead.org>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: paulmck@linux.vnet.ibm.com, Vivek Goyal <vgoyal@redhat.com>,
-       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       nauman@google.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-In-Reply-To: <AANLkTilG5bjN5QaOChmuVN6vT7kMK4eGaV-DvPynBn_t@mail.gmail.com>
-References: <AANLkTin2pPqOUx--9fIX3BH3e-cU6oCRufijcx_4ozx5@mail.gmail.com>
-	 <20100608001929.GF2387@linux.vnet.ibm.com>
-	 <AANLkTikl13cJNuU32JzRarrUnoh5DYHr-Tbnv9B-UjsG@mail.gmail.com>
-	 <1275986441.5408.111.camel@twins>
-	 <AANLkTimXVlgzHivCQberLdrFP8BH_nJzt8_ozUNHG_aI@mail.gmail.com>
-	 <1276004075.2987.208.camel@twins>
-	 <AANLkTil6ucLZ0A6tWx-OQt_2EeKnx8nSx6rIg2t1L2t5@mail.gmail.com>
-	 <1276097068.1745.13.camel@laptop>
-	 <AANLkTinl2JKUX6859Ioa1y0DqHWXH5TrkissQ8BAF4cP@mail.gmail.com>
-	 <AANLkTilpM9O373rA0cw_wTYVfTiDPbjaKHScAGlt7IAr@mail.gmail.com>
-	 <1276106229.1745.65.camel@laptop> <1276107311.1745.66.camel@laptop>
-	 <AANLkTilG5bjN5QaOChmuVN6vT7kMK4eGaV-DvPynBn_t@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 09 Jun 2010 23:20:58 +0200
-Message-ID: <1276118458.1745.144.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 9 Jun 2010 17:22:07 -0400
+Date: Wed, 9 Jun 2010 14:21:13 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Salman <sqazi@google.com>
+cc: peterz@infradead.org, akpm@linux-foundation.org, mingo@elte.hu,
+       linux-kernel@vger.kernel.org, tytso@google.com
+Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
+ reused immediately.
+In-Reply-To: <20100609210014.7464.92234.stgit@bumblebee1.mtv.corp.google.com>
+Message-ID: <alpine.LFD.2.00.1006091408430.4506@i5.linux-foundation.org>
+References: <20100609210014.7464.92234.stgit@bumblebee1.mtv.corp.google.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 17:15 -0400, Miles Lane wrote:
-> On Wed, Jun 9, 2010 at 2:15 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Wed, 2010-06-09 at 19:57 +0200, Peter Zijlstra wrote:
-> >> +       /*
-> >> +        * We're not in the pid-hash yet so no cgroup attach races, and the
-> >> +        * cgroup is pinned by the parent running this.
-> >> +        *
-> >> +        * Silence PROVE_RCU.
-> >> +        */
-> >
-> > Hum,.. not sure that's actually true though, the parent itself is still
-> > susceptible to races afaict..
-> 
-> Do you want what you sent earlier tested, or should I wait for another patch?
 
-please wait, I need to sit down and sort out that code.
+
+On Wed, 9 Jun 2010, Salman wrote:
+> +/*
+> + * If we started walking pids at 'base', is 'a' seen before 'b'?
+> + *
+> + */
+> +static int pid_before(int base, int a, int b)
+> +{
+> +	int a_lt_b = (a < b);
+> +	int min_a_b = min(a, b);
+> +	int max_a_b = max(a, b);
+> +
+> +	if ((base <= min_a_b) || (base >= max_a_b))
+> +		return a_lt_b;
+> +
+> +	return !a_lt_b;
+> +}
+
+Ok, so that's a very confusing expression. I'm sure it gets the right 
+value, but it's not exactly straightforward, is it?
+
+Wouldn't it be nicer to write it out in a more straightforward way? 
+Something like
+
+	/* a and b in order? base must not be between them */
+	if (a <= b)
+		return (base <= a || base >= b);
+	/* b < a? We reach 'a' first iff base is between them */
+	return base >= b && base <= a;
+
+would seem to be equivalent and easier to explain, no?
+
+And when you write it that way, it looks like the compiler should be able 
+to trivially CSE the five comparisons down to just three (notice how the 
+"base <= a" and "base >= b" comparisons are repeated. Which I'm sure some 
+super-optimizing compiler can do from your version too, but mine seems 
+more straightforward.
+
+But maybe I did that thing wrong, and I just confused myself. I have _not_ 
+checked the logic deeply, somebody else should definitely double-check me.
+
+		Linus
