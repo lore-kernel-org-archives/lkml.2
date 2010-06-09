@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758372Ab0FIVeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 17:34:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58340 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754736Ab0FIVeH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 17:34:07 -0400
-Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
- reused immediately.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Salman <sqazi@google.com>, akpm@linux-foundation.org, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, tytso@google.com
-In-Reply-To: <alpine.LFD.2.00.1006091408430.4506@i5.linux-foundation.org>
-References: <20100609210014.7464.92234.stgit@bumblebee1.mtv.corp.google.com>
-	 <alpine.LFD.2.00.1006091408430.4506@i5.linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 09 Jun 2010 23:33:27 +0200
-Message-ID: <1276119207.1745.154.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757977Ab0FIVjE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 17:39:04 -0400
+Received: from mail.perches.com ([173.55.12.10]:2972 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750981Ab0FIVjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 17:39:00 -0400
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Yoshinori Sato <ysato@users.sourceforge.jp>
+Subject: [PATCH] MAINTAINERS: Add file patterns to UCLINUX FOR RENESAS H8/300
+Date: Wed,  9 Jun 2010 14:38:59 -0700
+Message-Id: <d3d1f4903e9c525e3fd97cee7e3b0633a2dcacbd.1276118492.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.1.244.gbdc4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 14:21 -0700, Linus Torvalds wrote:
-> 
-> On Wed, 9 Jun 2010, Salman wrote:
-> > +/*
-> > + * If we started walking pids at 'base', is 'a' seen before 'b'?
-> > + *
-> > + */
-> > +static int pid_before(int base, int a, int b)
-> > +{
-> > +	int a_lt_b = (a < b);
-> > +	int min_a_b = min(a, b);
-> > +	int max_a_b = max(a, b);
-> > +
-> > +	if ((base <= min_a_b) || (base >= max_a_b))
-> > +		return a_lt_b;
-> > +
-> > +	return !a_lt_b;
-> > +}
-> 
-> Ok, so that's a very confusing expression. I'm sure it gets the right 
-> value, but it's not exactly straightforward, is it?
-> 
-> Wouldn't it be nicer to write it out in a more straightforward way? 
-> Something like
-> 
-> 	/* a and b in order? base must not be between them */
-> 	if (a <= b)
-> 		return (base <= a || base >= b);
-> 	/* b < a? We reach 'a' first iff base is between them */
-> 	return base >= b && base <= a;
-> 
-> would seem to be equivalent and easier to explain, no?
-> 
-> And when you write it that way, it looks like the compiler should be able 
-> to trivially CSE the five comparisons down to just three (notice how the 
-> "base <= a" and "base >= b" comparisons are repeated. Which I'm sure some 
-> super-optimizing compiler can do from your version too, but mine seems 
-> more straightforward.
-> 
-> But maybe I did that thing wrong, and I just confused myself. I have _not_ 
-> checked the logic deeply, somebody else should definitely double-check me.
+Signed-off-by: Joe Perches <joe@perches.com>
+Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+---
+ MAINTAINERS |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Isn't: return a - base < b - base, the natural way to express this?
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index fb3a7d6..d462530 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5698,6 +5698,9 @@ UCLINUX FOR RENESAS H8/300 (H8300)
+ M:	Yoshinori Sato <ysato@users.sourceforge.jp>
+ W:	http://uclinux-h8.sourceforge.jp/
+ S:	Supported
++F:	arch/h8300/
++F:	drivers/ide/ide-h8300.c
++F:	drivers/net/ne-h8300.c
+ 
+ UDF FILESYSTEM
+ M:	Jan Kara <jack@suse.cz>
+-- 
+1.7.1.244.gbdc4
 
