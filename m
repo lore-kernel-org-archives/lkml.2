@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab0FILFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 07:05:23 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:48958 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752966Ab0FILFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 07:05:20 -0400
-Date: Wed, 9 Jun 2010 12:05:01 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Nick Piggin <npiggin@suse.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 09/28] mm: Move anon_vma ref out from under CONFIG_KSM
-Message-ID: <20100609110501.GE5650@csn.ul.ie>
-References: <20100607110654.606530953@chello.nl> <20100607111407.216849162@chello.nl>
+	id S1757518Ab0FILGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 07:06:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43359 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752966Ab0FILGQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 07:06:16 -0400
+Message-ID: <4C0F7533.4070502@monstr.eu>
+Date: Wed, 09 Jun 2010 13:04:19 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100607111407.216849162@chello.nl>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] arch/microblaze fixes for 2.6.35-rc3 v2
+References: <4C0D3853.60000@petalogix.com> <alpine.LFD.2.00.1006081313080.4506@i5.linux-foundation.org> <AANLkTikeD21EtwtASzj8RksDqZyEof_kmUTnNr2HwwU2@mail.gmail.com> <alpine.LFD.2.00.1006081720060.4506@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1006081720060.4506@i5.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 01:07:03PM +0200, Peter Zijlstra wrote:
-> We need an anon_vma refcount for preemptible anon_vma->lock.
+Linus Torvalds wrote:
 > 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> On Tue, 8 Jun 2010, Geert Uytterhoeven wrote:
+>> Seems like you will have written more angry emails than there will be
+>> new commits in 2.6.35-rc3 ;-)
+> 
+> Well, partly in order to be fair. I did consider letting architectures 
+> like microblaze just off the hook entirely - it's not like it will affect 
+> a lot of people. But at the same time, I don't want to be in the situation 
+> that some people get to send me patches just because I don't happen to 
+> think that their changes will matter to most others.
+> 
+> And at this stage, I'd rather be too strict than too lenient. If -rc3 has 
+> no new regressions, and fixes the ones that hit people worst, I'll be very 
+> happy. I can be more open to patches after I get back, if it turns out 
+> that I was _too_ strict for -rc3.
+> 
+> As to the number of "no, I won't take it" emails, I suspect a large part 
+> of that is simply because most developers (understandably) do not read 
+> lkml, stauing mostly on the development lists that are more specific to 
+> their particular area. As a result, there's no real way to reliably reach 
+> people, and I end up sending basically the same message several times.
+> 
+> Which obviously tends to also then make the messages more cross ;)
 
-Can't see any problems
+First of all let me apologize for this situation. There is no excuse
+that I sent new features in requests after rc.
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+I've changed my workflow and I will send new pull request with the 
+strict regression fixes only. There will be only two patches which I 
+would like to add to your tree.
 
-> <SNIP>
+Thanks and sorry for hassle,
+Michal
+
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
