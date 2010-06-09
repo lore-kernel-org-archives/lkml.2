@@ -1,689 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab0FIKOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:14:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41313 "EHLO hera.kernel.org"
+	id S1757468Ab0FIKPB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:15:01 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41331 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757108Ab0FIKOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:14:46 -0400
-Date: Wed, 9 Jun 2010 10:13:57 GMT
-From: tip-bot for Venkatesh Pallipadi <venki@google.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
-       venki@google.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
-       venki@google.com, mingo@elte.hu
-In-Reply-To: <1274486981.2840.46.camel@sbs-t61.sc.intel.com>
-References: <1274486981.2840.46.camel@sbs-t61.sc.intel.com>
+	id S1757449Ab0FIKOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 06:14:54 -0400
+Date: Wed, 9 Jun 2010 10:14:15 GMT
+From: tip-bot for Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
+       mingo@redhat.com, arjan@linux.intel.com, a.p.zijlstra@chello.nl,
+       tglx@linutronix.de, mingo@elte.hu, mikey@neuling.org
+Reply-To: mingo@redhat.com, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
+       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+       arjan@linux.intel.com, tglx@linutronix.de, mingo@elte.hu,
+       mikey@neuling.org
+In-Reply-To: <20100608045702.21D03CC895@localhost.localdomain>
+References: <20100608045702.21D03CC895@localhost.localdomain>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Change nohz idle load balancing logic to push model
-Message-ID: <tip-83cd4fe27ad8446619b2e030b171b858501de87d@git.kernel.org>
-Git-Commit-ID: 83cd4fe27ad8446619b2e030b171b858501de87d
+Subject: [tip:sched/core] sched: Fix capacity calculations for SMT4
+Message-ID: <tip-9d5efe05eb0c904545a28b19c18b949f23334de0@git.kernel.org>
+Git-Commit-ID: 9d5efe05eb0c904545a28b19c18b949f23334de0
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:13:58 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:14:17 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  83cd4fe27ad8446619b2e030b171b858501de87d
-Gitweb:     http://git.kernel.org/tip/83cd4fe27ad8446619b2e030b171b858501de87d
-Author:     Venkatesh Pallipadi <venki@google.com>
-AuthorDate: Fri, 21 May 2010 17:09:41 -0700
+Commit-ID:  9d5efe05eb0c904545a28b19c18b949f23334de0
+Gitweb:     http://git.kernel.org/tip/9d5efe05eb0c904545a28b19c18b949f23334de0
+Author:     Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+AuthorDate: Tue, 8 Jun 2010 14:57:02 +1000
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 9 Jun 2010 10:34:52 +0200
+CommitDate: Wed, 9 Jun 2010 10:34:54 +0200
 
-sched: Change nohz idle load balancing logic to push model
+sched: Fix capacity calculations for SMT4
 
-In the new push model, all idle CPUs indeed go into nohz mode. There is
-still the concept of idle load balancer (performing the load balancing
-on behalf of all the idle cpu's in the system). Busy CPU kicks the nohz
-balancer when any of the nohz CPUs need idle load balancing.
-The kickee CPU does the idle load balancing on behalf of all idle CPUs
-instead of the normal idle balance.
+Handle cpu capacity being reported as 0 on cores with more number of
+hardware threads. For example on a Power7 core with 4 hardware
+threads, core power is 1177 and thus power of each hardware thread is
+1177/4 = 294. This low power can lead to capacity for each hardware
+thread being calculated as 0, which leads to tasks bouncing within the
+core madly!
 
-This addresses the below two problems with the current nohz ilb logic:
-* the idle load balancer continued to have periodic ticks during idle and
-  wokeup frequently, even though it did not have any rebalancing to do on
-  behalf of any of the idle CPUs.
-* On x86 and CPUs that have APIC timer stoppage on idle CPUs, this
-  periodic wakeup can result in a periodic additional interrupt on a CPU
-  doing the timer broadcast.
+Fix this by reporting capacity for hardware threads as 1, provided
+their power is not scaled down significantly because of frequency
+scaling or real-time tasks usage of cpu.
 
-Also currently we are migrating the unpinned timers from an idle to the cpu
-doing idle load balancing (when all the cpus in the system are idle,
-there is no idle load balancing cpu and timers get added to the same idle cpu
-where the request was made. So the existing optimization works only on semi idle
-system).
-
-And In semi idle system, we no longer have periodic ticks on the idle load
-balancer CPU. Using that cpu will add more delays to the timers than intended
-(as that cpu's timer base may not be uptodate wrt jiffies etc). This was
-causing mysterious slowdowns during boot etc.
-
-For now, in the semi idle case, use the nearest busy cpu for migrating timers
-from an idle cpu.  This is good for power-savings anyway.
-
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <1274486981.2840.46.camel@sbs-t61.sc.intel.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+LKML-Reference: <20100608045702.21D03CC895@localhost.localdomain>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/sched.h    |    9 +-
- kernel/hrtimer.c         |    8 +-
- kernel/sched.c           |   34 +++++-
- kernel/sched_fair.c      |  329 ++++++++++++++++++++++++++++------------------
- kernel/time/tick-sched.c |    8 +-
- kernel/timer.c           |    8 +-
- 6 files changed, 237 insertions(+), 159 deletions(-)
+ include/linux/sched.h |    2 +-
+ kernel/sched_fair.c   |   53 +++++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 44 insertions(+), 11 deletions(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index c2d4316..a3e5b1c 100644
+index a3e5b1c..c731296 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -271,14 +271,11 @@ extern int runqueue_is_locked(int cpu);
+@@ -857,7 +857,7 @@ struct sched_group {
+ 	 * CPU power of this group, SCHED_LOAD_SCALE being max power for a
+ 	 * single CPU.
+ 	 */
+-	unsigned int cpu_power;
++	unsigned int cpu_power, cpu_power_orig;
  
- extern cpumask_var_t nohz_cpu_mask;
- #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
--extern int select_nohz_load_balancer(int cpu);
--extern int get_nohz_load_balancer(void);
-+extern void select_nohz_load_balancer(int stop_tick);
-+extern int get_nohz_timer_target(void);
- extern int nohz_ratelimit(int cpu);
- #else
--static inline int select_nohz_load_balancer(int cpu)
--{
--	return 0;
--}
-+static inline void select_nohz_load_balancer(int stop_tick) { }
- 
- static inline int nohz_ratelimit(int cpu)
- {
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 5c69e99..e934339 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -144,12 +144,8 @@ struct hrtimer_clock_base *lock_hrtimer_base(const struct hrtimer *timer,
- static int hrtimer_get_target(int this_cpu, int pinned)
- {
- #ifdef CONFIG_NO_HZ
--	if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu)) {
--		int preferred_cpu = get_nohz_load_balancer();
--
--		if (preferred_cpu >= 0)
--			return preferred_cpu;
--	}
-+	if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu))
-+		return get_nohz_timer_target();
- #endif
- 	return this_cpu;
- }
-diff --git a/kernel/sched.c b/kernel/sched.c
-index a757f6b..132950b 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -460,7 +460,7 @@ struct rq {
- 	unsigned long last_load_update_tick;
- #ifdef CONFIG_NO_HZ
- 	u64 nohz_stamp;
--	unsigned char in_nohz_recently;
-+	unsigned char nohz_balance_kick;
- #endif
- 	unsigned int skip_clock_update;
- 
-@@ -1195,6 +1195,27 @@ static void resched_cpu(int cpu)
- 
- #ifdef CONFIG_NO_HZ
- /*
-+ * In the semi idle case, use the nearest busy cpu for migrating timers
-+ * from an idle cpu.  This is good for power-savings.
-+ *
-+ * We don't do similar optimization for completely idle system, as
-+ * selecting an idle cpu will add more delays to the timers than intended
-+ * (as that cpu's timer base may not be uptodate wrt jiffies etc).
-+ */
-+int get_nohz_timer_target(void)
-+{
-+	int cpu = smp_processor_id();
-+	int i;
-+	struct sched_domain *sd;
-+
-+	for_each_domain(cpu, sd) {
-+		for_each_cpu(i, sched_domain_span(sd))
-+			if (!idle_cpu(i))
-+				return i;
-+	}
-+	return cpu;
-+}
-+/*
-  * When add_timer_on() enqueues a timer into the timer wheel of an
-  * idle CPU then this timer might expire before the next timer event
-  * which is scheduled to wake up that CPU. In case of a completely
-@@ -7791,6 +7812,10 @@ void __init sched_init(void)
- 		rq->idle_stamp = 0;
- 		rq->avg_idle = 2*sysctl_sched_migration_cost;
- 		rq_attach_root(rq, &def_root_domain);
-+#ifdef CONFIG_NO_HZ
-+		rq->nohz_balance_kick = 0;
-+		init_sched_softirq_csd(&per_cpu(remote_sched_softirq_cb, i));
-+#endif
- #endif
- 		init_rq_hrtick(rq);
- 		atomic_set(&rq->nr_iowait, 0);
-@@ -7835,8 +7860,11 @@ void __init sched_init(void)
- 	zalloc_cpumask_var(&nohz_cpu_mask, GFP_NOWAIT);
- #ifdef CONFIG_SMP
- #ifdef CONFIG_NO_HZ
--	zalloc_cpumask_var(&nohz.cpu_mask, GFP_NOWAIT);
--	alloc_cpumask_var(&nohz.ilb_grp_nohz_mask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
-+	alloc_cpumask_var(&nohz.grp_idle_mask, GFP_NOWAIT);
-+	atomic_set(&nohz.load_balancer, nr_cpu_ids);
-+	atomic_set(&nohz.first_pick_cpu, nr_cpu_ids);
-+	atomic_set(&nohz.second_pick_cpu, nr_cpu_ids);
- #endif
- 	/* May be allocated at isolcpus cmdline parse time */
- 	if (cpu_isolated_map == NULL)
+ 	/*
+ 	 * The CPUs this group covers.
 diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 22b8b4f..6ee2e0a 100644
+index 6ee2e0a..b9b3462 100644
 --- a/kernel/sched_fair.c
 +++ b/kernel/sched_fair.c
-@@ -3091,13 +3091,40 @@ out_unlock:
- }
+@@ -2285,13 +2285,6 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+ 	unsigned long power = SCHED_LOAD_SCALE;
+ 	struct sched_group *sdg = sd->groups;
  
- #ifdef CONFIG_NO_HZ
-+
-+static DEFINE_PER_CPU(struct call_single_data, remote_sched_softirq_cb);
-+
-+static void trigger_sched_softirq(void *data)
-+{
-+	raise_softirq_irqoff(SCHED_SOFTIRQ);
-+}
-+
-+static inline void init_sched_softirq_csd(struct call_single_data *csd)
-+{
-+	csd->func = trigger_sched_softirq;
-+	csd->info = NULL;
-+	csd->flags = 0;
-+	csd->priv = 0;
-+}
-+
-+/*
-+ * idle load balancing details
-+ * - One of the idle CPUs nominates itself as idle load_balancer, while
-+ *   entering idle.
-+ * - This idle load balancer CPU will also go into tickless mode when
-+ *   it is idle, just like all other idle CPUs
-+ * - When one of the busy CPUs notice that there may be an idle rebalancing
-+ *   needed, they will kick the idle load balancer, which then does idle
-+ *   load balancing for all the idle CPUs.
-+ */
- static struct {
- 	atomic_t load_balancer;
--	cpumask_var_t cpu_mask;
--	cpumask_var_t ilb_grp_nohz_mask;
--} nohz ____cacheline_aligned = {
--	.load_balancer = ATOMIC_INIT(-1),
--};
-+	atomic_t first_pick_cpu;
-+	atomic_t second_pick_cpu;
-+	cpumask_var_t idle_cpus_mask;
-+	cpumask_var_t grp_idle_mask;
-+	unsigned long next_balance;     /* in jiffy units */
-+} nohz ____cacheline_aligned;
- 
- int get_nohz_load_balancer(void)
- {
-@@ -3151,17 +3178,17 @@ static inline struct sched_domain *lowest_flag_domain(int cpu, int flag)
-  */
- static inline int is_semi_idle_group(struct sched_group *ilb_group)
- {
--	cpumask_and(nohz.ilb_grp_nohz_mask, nohz.cpu_mask,
-+	cpumask_and(nohz.grp_idle_mask, nohz.idle_cpus_mask,
- 					sched_group_cpus(ilb_group));
- 
- 	/*
- 	 * A sched_group is semi-idle when it has atleast one busy cpu
- 	 * and atleast one idle cpu.
- 	 */
--	if (cpumask_empty(nohz.ilb_grp_nohz_mask))
-+	if (cpumask_empty(nohz.grp_idle_mask))
- 		return 0;
- 
--	if (cpumask_equal(nohz.ilb_grp_nohz_mask, sched_group_cpus(ilb_group)))
-+	if (cpumask_equal(nohz.grp_idle_mask, sched_group_cpus(ilb_group)))
- 		return 0;
- 
- 	return 1;
-@@ -3194,7 +3221,7 @@ static int find_new_ilb(int cpu)
- 	 * Optimize for the case when we have no idle CPUs or only one
- 	 * idle CPU. Don't walk the sched_domain hierarchy in such cases
- 	 */
--	if (cpumask_weight(nohz.cpu_mask) < 2)
-+	if (cpumask_weight(nohz.idle_cpus_mask) < 2)
- 		goto out_done;
- 
- 	for_each_flag_domain(cpu, sd, SD_POWERSAVINGS_BALANCE) {
-@@ -3202,7 +3229,7 @@ static int find_new_ilb(int cpu)
- 
- 		do {
- 			if (is_semi_idle_group(ilb_group))
--				return cpumask_first(nohz.ilb_grp_nohz_mask);
-+				return cpumask_first(nohz.grp_idle_mask);
- 
- 			ilb_group = ilb_group->next;
- 
-@@ -3210,98 +3237,116 @@ static int find_new_ilb(int cpu)
- 	}
- 
- out_done:
--	return cpumask_first(nohz.cpu_mask);
-+	return nr_cpu_ids;
- }
- #else /*  (CONFIG_SCHED_MC || CONFIG_SCHED_SMT) */
- static inline int find_new_ilb(int call_cpu)
- {
--	return cpumask_first(nohz.cpu_mask);
-+	return nr_cpu_ids;
- }
- #endif
- 
- /*
-+ * Kick a CPU to do the nohz balancing, if it is time for it. We pick the
-+ * nohz_load_balancer CPU (if there is one) otherwise fallback to any idle
-+ * CPU (if there is one).
-+ */
-+static void nohz_balancer_kick(int cpu)
-+{
-+	int ilb_cpu;
-+
-+	nohz.next_balance++;
-+
-+	ilb_cpu = get_nohz_load_balancer();
-+
-+	if (ilb_cpu >= nr_cpu_ids) {
-+		ilb_cpu = cpumask_first(nohz.idle_cpus_mask);
-+		if (ilb_cpu >= nr_cpu_ids)
-+			return;
-+	}
-+
-+	if (!cpu_rq(ilb_cpu)->nohz_balance_kick) {
-+		struct call_single_data *cp;
-+
-+		cpu_rq(ilb_cpu)->nohz_balance_kick = 1;
-+		cp = &per_cpu(remote_sched_softirq_cb, cpu);
-+		__smp_call_function_single(ilb_cpu, cp, 0);
-+	}
-+	return;
-+}
-+
-+/*
-  * This routine will try to nominate the ilb (idle load balancing)
-  * owner among the cpus whose ticks are stopped. ilb owner will do the idle
-- * load balancing on behalf of all those cpus. If all the cpus in the system
-- * go into this tickless mode, then there will be no ilb owner (as there is
-- * no need for one) and all the cpus will sleep till the next wakeup event
-- * arrives...
-- *
-- * For the ilb owner, tick is not stopped. And this tick will be used
-- * for idle load balancing. ilb owner will still be part of
-- * nohz.cpu_mask..
-+ * load balancing on behalf of all those cpus.
-  *
-- * While stopping the tick, this cpu will become the ilb owner if there
-- * is no other owner. And will be the owner till that cpu becomes busy
-- * or if all cpus in the system stop their ticks at which point
-- * there is no need for ilb owner.
-+ * When the ilb owner becomes busy, we will not have new ilb owner until some
-+ * idle CPU wakes up and goes back to idle or some busy CPU tries to kick
-+ * idle load balancing by kicking one of the idle CPUs.
-  *
-- * When the ilb owner becomes busy, it nominates another owner, during the
-- * next busy scheduler_tick()
-+ * Ticks are stopped for the ilb owner as well, with busy CPU kicking this
-+ * ilb owner CPU in future (when there is a need for idle load balancing on
-+ * behalf of all idle CPUs).
-  */
--int select_nohz_load_balancer(int stop_tick)
-+void select_nohz_load_balancer(int stop_tick)
- {
- 	int cpu = smp_processor_id();
- 
- 	if (stop_tick) {
--		cpu_rq(cpu)->in_nohz_recently = 1;
+-	if (sched_feat(ARCH_POWER))
+-		power *= arch_scale_freq_power(sd, cpu);
+-	else
+-		power *= default_scale_freq_power(sd, cpu);
 -
- 		if (!cpu_active(cpu)) {
- 			if (atomic_read(&nohz.load_balancer) != cpu)
--				return 0;
-+				return;
- 
- 			/*
- 			 * If we are going offline and still the leader,
- 			 * give up!
- 			 */
--			if (atomic_cmpxchg(&nohz.load_balancer, cpu, -1) != cpu)
-+			if (atomic_cmpxchg(&nohz.load_balancer, cpu,
-+					   nr_cpu_ids) != cpu)
- 				BUG();
- 
--			return 0;
-+			return;
- 		}
- 
--		cpumask_set_cpu(cpu, nohz.cpu_mask);
-+		cpumask_set_cpu(cpu, nohz.idle_cpus_mask);
- 
--		/* time for ilb owner also to sleep */
--		if (cpumask_weight(nohz.cpu_mask) == num_active_cpus()) {
--			if (atomic_read(&nohz.load_balancer) == cpu)
--				atomic_set(&nohz.load_balancer, -1);
--			return 0;
--		}
-+		if (atomic_read(&nohz.first_pick_cpu) == cpu)
-+			atomic_cmpxchg(&nohz.first_pick_cpu, cpu, nr_cpu_ids);
-+		if (atomic_read(&nohz.second_pick_cpu) == cpu)
-+			atomic_cmpxchg(&nohz.second_pick_cpu, cpu, nr_cpu_ids);
- 
--		if (atomic_read(&nohz.load_balancer) == -1) {
--			/* make me the ilb owner */
--			if (atomic_cmpxchg(&nohz.load_balancer, -1, cpu) == -1)
--				return 1;
--		} else if (atomic_read(&nohz.load_balancer) == cpu) {
-+		if (atomic_read(&nohz.load_balancer) >= nr_cpu_ids) {
- 			int new_ilb;
- 
--			if (!(sched_smt_power_savings ||
--						sched_mc_power_savings))
--				return 1;
-+			/* make me the ilb owner */
-+			if (atomic_cmpxchg(&nohz.load_balancer, nr_cpu_ids,
-+					   cpu) != nr_cpu_ids)
-+				return;
-+
- 			/*
- 			 * Check to see if there is a more power-efficient
- 			 * ilb.
- 			 */
- 			new_ilb = find_new_ilb(cpu);
- 			if (new_ilb < nr_cpu_ids && new_ilb != cpu) {
--				atomic_set(&nohz.load_balancer, -1);
-+				atomic_set(&nohz.load_balancer, nr_cpu_ids);
- 				resched_cpu(new_ilb);
--				return 0;
-+				return;
- 			}
--			return 1;
-+			return;
- 		}
- 	} else {
--		if (!cpumask_test_cpu(cpu, nohz.cpu_mask))
--			return 0;
-+		if (!cpumask_test_cpu(cpu, nohz.idle_cpus_mask))
-+			return;
- 
--		cpumask_clear_cpu(cpu, nohz.cpu_mask);
-+		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
- 
- 		if (atomic_read(&nohz.load_balancer) == cpu)
--			if (atomic_cmpxchg(&nohz.load_balancer, cpu, -1) != cpu)
-+			if (atomic_cmpxchg(&nohz.load_balancer, cpu,
-+					   nr_cpu_ids) != cpu)
- 				BUG();
+-	power >>= SCHED_LOAD_SHIFT;
+-
+ 	if ((sd->flags & SD_SHARE_CPUPOWER) && weight > 1) {
+ 		if (sched_feat(ARCH_POWER))
+ 			power *= arch_scale_smt_power(sd, cpu);
+@@ -2301,6 +2294,15 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+ 		power >>= SCHED_LOAD_SHIFT;
  	}
--	return 0;
-+	return;
- }
- #endif
  
-@@ -3383,11 +3428,101 @@ out:
- 		rq->next_balance = next_balance;
++	sdg->cpu_power_orig = power;
++
++	if (sched_feat(ARCH_POWER))
++		power *= arch_scale_freq_power(sd, cpu);
++	else
++		power *= default_scale_freq_power(sd, cpu);
++
++	power >>= SCHED_LOAD_SHIFT;
++
+ 	power *= scale_rt_power(cpu);
+ 	power >>= SCHED_LOAD_SHIFT;
+ 
+@@ -2333,6 +2335,31 @@ static void update_group_power(struct sched_domain *sd, int cpu)
+ 	sdg->cpu_power = power;
  }
  
-+#ifdef CONFIG_NO_HZ
- /*
-- * run_rebalance_domains is triggered when needed from the scheduler tick.
-- * In CONFIG_NO_HZ case, the idle load balance owner will do the
-+ * In CONFIG_NO_HZ case, the idle balance kickee will do the
-  * rebalancing for all the cpus for whom scheduler ticks are stopped.
-  */
-+static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
-+{
-+	struct rq *this_rq = cpu_rq(this_cpu);
-+	struct rq *rq;
-+	int balance_cpu;
-+
-+	if (idle != CPU_IDLE || !this_rq->nohz_balance_kick)
-+		return;
-+
-+	for_each_cpu(balance_cpu, nohz.idle_cpus_mask) {
-+		if (balance_cpu == this_cpu)
-+			continue;
-+
-+		/*
-+		 * If this cpu gets work to do, stop the load balancing
-+		 * work being done for other cpus. Next load
-+		 * balancing owner will pick it up.
-+		 */
-+		if (need_resched()) {
-+			this_rq->nohz_balance_kick = 0;
-+			break;
-+		}
-+
-+		raw_spin_lock_irq(&this_rq->lock);
-+		update_cpu_load(this_rq);
-+		raw_spin_unlock_irq(&this_rq->lock);
-+
-+		rebalance_domains(balance_cpu, CPU_IDLE);
-+
-+		rq = cpu_rq(balance_cpu);
-+		if (time_after(this_rq->next_balance, rq->next_balance))
-+			this_rq->next_balance = rq->next_balance;
-+	}
-+	nohz.next_balance = this_rq->next_balance;
-+	this_rq->nohz_balance_kick = 0;
-+}
-+
 +/*
-+ * Current heuristic for kicking the idle load balancer
-+ * - first_pick_cpu is the one of the busy CPUs. It will kick
-+ *   idle load balancer when it has more than one process active. This
-+ *   eliminates the need for idle load balancing altogether when we have
-+ *   only one running process in the system (common case).
-+ * - If there are more than one busy CPU, idle load balancer may have
-+ *   to run for active_load_balance to happen (i.e., two busy CPUs are
-+ *   SMT or core siblings and can run better if they move to different
-+ *   physical CPUs). So, second_pick_cpu is the second of the busy CPUs
-+ *   which will kick idle load balancer as soon as it has any load.
++ * Try and fix up capacity for tiny siblings, this is needed when
++ * things like SD_ASYM_PACKING need f_b_g to select another sibling
++ * which on its own isn't powerful enough.
++ *
++ * See update_sd_pick_busiest() and check_asym_packing().
 + */
-+static inline int nohz_kick_needed(struct rq *rq, int cpu)
++static inline int
++fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
 +{
-+	unsigned long now = jiffies;
-+	int ret;
-+	int first_pick_cpu, second_pick_cpu;
-+
-+	if (time_before(now, nohz.next_balance))
++	/*
++	 * Only siblings can have significantly less than SCHED_LOAD_SCALE
++	 */
++	if (sd->level != SD_LV_SIBLING)
 +		return 0;
 +
-+	if (!rq->nr_running)
-+		return 0;
++	/*
++	 * If ~90% of the cpu_power is still there, we're good.
++	 */
++	if (group->cpu_power * 32 < group->cpu_power_orig * 29)
++		return 1;
 +
-+	first_pick_cpu = atomic_read(&nohz.first_pick_cpu);
-+	second_pick_cpu = atomic_read(&nohz.second_pick_cpu);
-+
-+	if (first_pick_cpu < nr_cpu_ids && first_pick_cpu != cpu &&
-+	    second_pick_cpu < nr_cpu_ids && second_pick_cpu != cpu)
-+		return 0;
-+
-+	ret = atomic_cmpxchg(&nohz.first_pick_cpu, nr_cpu_ids, cpu);
-+	if (ret == nr_cpu_ids || ret == cpu) {
-+		atomic_cmpxchg(&nohz.second_pick_cpu, cpu, nr_cpu_ids);
-+		if (rq->nr_running > 1)
-+			return 1;
-+	} else {
-+		ret = atomic_cmpxchg(&nohz.second_pick_cpu, nr_cpu_ids, cpu);
-+		if (ret == nr_cpu_ids || ret == cpu) {
-+			if (rq->nr_running)
-+				return 1;
-+		}
-+	}
 +	return 0;
 +}
-+#else
-+static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle) { }
-+#endif
 +
-+/*
-+ * run_rebalance_domains is triggered when needed from the scheduler tick.
-+ * Also triggered for nohz idle balancing (with nohz_balancing_kick set).
-+ */
- static void run_rebalance_domains(struct softirq_action *h)
- {
- 	int this_cpu = smp_processor_id();
-@@ -3397,40 +3532,12 @@ static void run_rebalance_domains(struct softirq_action *h)
+ /**
+  * update_sg_lb_stats - Update sched_group's statistics for load balancing.
+  * @sd: The sched_domain whose statistics are to be updated.
+@@ -2426,6 +2453,8 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
  
- 	rebalance_domains(this_cpu, idle);
- 
--#ifdef CONFIG_NO_HZ
- 	/*
--	 * If this cpu is the owner for idle load balancing, then do the
-+	 * If this cpu has a pending nohz_balance_kick, then do the
- 	 * balancing on behalf of the other idle cpus whose ticks are
- 	 * stopped.
- 	 */
--	if (this_rq->idle_at_tick &&
--	    atomic_read(&nohz.load_balancer) == this_cpu) {
--		struct rq *rq;
--		int balance_cpu;
--
--		for_each_cpu(balance_cpu, nohz.cpu_mask) {
--			if (balance_cpu == this_cpu)
--				continue;
--
--			/*
--			 * If this cpu gets work to do, stop the load balancing
--			 * work being done for other cpus. Next load
--			 * balancing owner will pick it up.
--			 */
--			if (need_resched())
--				break;
--
--			rq = cpu_rq(balance_cpu);
--			raw_spin_lock_irq(&rq->lock);
--			update_cpu_load(rq);
--			raw_spin_unlock_irq(&rq->lock);
--			rebalance_domains(balance_cpu, CPU_IDLE);
--
--			if (time_after(this_rq->next_balance, rq->next_balance))
--				this_rq->next_balance = rq->next_balance;
--		}
--	}
--#endif
-+	nohz_idle_balance(this_cpu, idle);
+ 	sgs->group_capacity =
+ 		DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
++	if (!sgs->group_capacity)
++		sgs->group_capacity = fix_small_capacity(sd, group);
  }
  
- static inline int on_null_domain(int cpu)
-@@ -3440,57 +3547,17 @@ static inline int on_null_domain(int cpu)
- 
- /*
-  * Trigger the SCHED_SOFTIRQ if it is time to do periodic load balancing.
-- *
-- * In case of CONFIG_NO_HZ, this is the place where we nominate a new
-- * idle load balancing owner or decide to stop the periodic load balancing,
-- * if the whole system is idle.
+ /**
+@@ -2724,8 +2753,9 @@ ret:
+  * find_busiest_queue - find the busiest runqueue among the cpus in group.
   */
- static inline void trigger_load_balance(struct rq *rq, int cpu)
+ static struct rq *
+-find_busiest_queue(struct sched_group *group, enum cpu_idle_type idle,
+-		   unsigned long imbalance, const struct cpumask *cpus)
++find_busiest_queue(struct sched_domain *sd, struct sched_group *group,
++		   enum cpu_idle_type idle, unsigned long imbalance,
++		   const struct cpumask *cpus)
  {
--#ifdef CONFIG_NO_HZ
--	/*
--	 * If we were in the nohz mode recently and busy at the current
--	 * scheduler tick, then check if we need to nominate new idle
--	 * load balancer.
--	 */
--	if (rq->in_nohz_recently && !rq->idle_at_tick) {
--		rq->in_nohz_recently = 0;
--
--		if (atomic_read(&nohz.load_balancer) == cpu) {
--			cpumask_clear_cpu(cpu, nohz.cpu_mask);
--			atomic_set(&nohz.load_balancer, -1);
--		}
--
--		if (atomic_read(&nohz.load_balancer) == -1) {
--			int ilb = find_new_ilb(cpu);
--
--			if (ilb < nr_cpu_ids)
--				resched_cpu(ilb);
--		}
--	}
--
--	/*
--	 * If this cpu is idle and doing idle load balancing for all the
--	 * cpus with ticks stopped, is it time for that to stop?
--	 */
--	if (rq->idle_at_tick && atomic_read(&nohz.load_balancer) == cpu &&
--	    cpumask_weight(nohz.cpu_mask) == num_online_cpus()) {
--		resched_cpu(cpu);
--		return;
--	}
--
--	/*
--	 * If this cpu is idle and the idle load balancing is done by
--	 * someone else, then no need raise the SCHED_SOFTIRQ
--	 */
--	if (rq->idle_at_tick && atomic_read(&nohz.load_balancer) != cpu &&
--	    cpumask_test_cpu(cpu, nohz.cpu_mask))
--		return;
--#endif
- 	/* Don't need to rebalance while attached to NULL domain */
- 	if (time_after_eq(jiffies, rq->next_balance) &&
- 	    likely(!on_null_domain(cpu)))
- 		raise_softirq(SCHED_SOFTIRQ);
-+#ifdef CONFIG_NO_HZ
-+	else if (nohz_kick_needed(rq, cpu) && likely(!on_null_domain(cpu)))
-+		nohz_balancer_kick(cpu);
-+#endif
- }
+ 	struct rq *busiest = NULL, *rq;
+ 	unsigned long max_load = 0;
+@@ -2736,6 +2766,9 @@ find_busiest_queue(struct sched_group *group, enum cpu_idle_type idle,
+ 		unsigned long capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
+ 		unsigned long wl;
  
- static void rq_online_fair(struct rq *rq)
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 1d7b9bc..5f171f0 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -408,13 +408,7 @@ void tick_nohz_stop_sched_tick(int inidle)
- 		 * the scheduler tick in nohz_restart_sched_tick.
- 		 */
- 		if (!ts->tick_stopped) {
--			if (select_nohz_load_balancer(1)) {
--				/*
--				 * sched tick not stopped!
--				 */
--				cpumask_clear_cpu(cpu, nohz_cpu_mask);
--				goto out;
--			}
-+			select_nohz_load_balancer(1);
++		if (!capacity)
++			capacity = fix_small_capacity(sd, group);
++
+ 		if (!cpumask_test_cpu(i, cpus))
+ 			continue;
  
- 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
- 			ts->tick_stopped = 1;
-diff --git a/kernel/timer.c b/kernel/timer.c
-index ee305c8..48d6aec 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -679,12 +679,8 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
- 	cpu = smp_processor_id();
+@@ -2852,7 +2885,7 @@ redo:
+ 		goto out_balanced;
+ 	}
  
- #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
--	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu)) {
--		int preferred_cpu = get_nohz_load_balancer();
--
--		if (preferred_cpu >= 0)
--			cpu = preferred_cpu;
--	}
-+	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu))
-+		cpu = get_nohz_timer_target();
- #endif
- 	new_base = per_cpu(tvec_bases, cpu);
- 
+-	busiest = find_busiest_queue(group, idle, imbalance, cpus);
++	busiest = find_busiest_queue(sd, group, idle, imbalance, cpus);
+ 	if (!busiest) {
+ 		schedstat_inc(sd, lb_nobusyq[idle]);
+ 		goto out_balanced;
