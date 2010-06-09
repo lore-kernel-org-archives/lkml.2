@@ -1,311 +1,385 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab0FIKOT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:14:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41286 "EHLO hera.kernel.org"
+	id S932231Ab0FIKOX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:14:23 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41296 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932144Ab0FIKON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:14:13 -0400
-Date: Wed, 9 Jun 2010 10:13:39 GMT
-From: tip-bot for Venkatesh Pallipadi <venki@google.com>
+	id S932212Ab0FIKOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 06:14:19 -0400
+Date: Wed, 9 Jun 2010 10:12:41 GMT
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu,
+       torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+       peterz@infradead.org, akpm@linux-foundation.org, fabio@gandalf.sssup.it,
+       suresh.b.siddha@intel.com, tglx@linutronix.de, mingo@elte.hu,
        venki@google.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com,
+       a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+       peterz@infradead.org, akpm@linux-foundation.org, fabio@gandalf.sssup.it,
+       suresh.b.siddha@intel.com, tglx@linutronix.de, venki@google.com,
        mingo@elte.hu
-In-Reply-To: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
-References: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
+In-Reply-To: <1275414172.27810.27961.camel@twins>
+References: <1275414172.27810.27961.camel@twins>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Avoid side-effect of tickless idle on update_cpu_load
-Message-ID: <tip-fdf3e95d3916f18bf8703fb065499fdbc4dfe34c@git.kernel.org>
-Git-Commit-ID: fdf3e95d3916f18bf8703fb065499fdbc4dfe34c
+Subject: [tip:x86/pat] rbtree: Undo augmented trees performance damage
+Message-ID: <tip-2463eb8b3093995e09a0d41b3d78ee0cf5fb4249@git.kernel.org>
+Git-Commit-ID: 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:13:39 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:12:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fdf3e95d3916f18bf8703fb065499fdbc4dfe34c
-Gitweb:     http://git.kernel.org/tip/fdf3e95d3916f18bf8703fb065499fdbc4dfe34c
-Author:     Venkatesh Pallipadi <venki@google.com>
-AuthorDate: Mon, 17 May 2010 18:14:43 -0700
+Commit-ID:  2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+Gitweb:     http://git.kernel.org/tip/2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Sat, 29 May 2010 15:31:43 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 9 Jun 2010 10:34:51 +0200
+CommitDate: Wed, 9 Jun 2010 10:32:49 +0200
 
-sched: Avoid side-effect of tickless idle on update_cpu_load
+rbtree: Undo augmented trees performance damage
 
-tickless idle has a negative side effect on update_cpu_load(), which
-in turn can affect load balancing behavior.
+Reimplement augmented RB-trees without sprinkling extra branches
+all over the RB-tree code (which lives in the scheduler hot path).
 
-update_cpu_load() is supposed to be called every tick, to keep track
-of various load indicies. With tickless idle, there are no scheduler
-ticks called on the idle CPUs. Idle CPUs may still do load balancing
-(with idle_load_balance CPU) using the stale cpu_load. It will also
-cause problems when all CPUs go idle for a while and become active
-again. In this case loads would not degrade as expected.
+This approach is 'borrowed' from Fabio's BFQ implementation and
+relies on traversing the rebalance path after the RB-tree-op to
+correct the heap property for insertion/removal and make up for
+the damage done by the tree rotations.
 
-This is how rq->nr_load_updates change looks like under different
-conditions:
+For insertion the rebalance path is trivially that from the new
+node upwards to the root, for removal it is that from the deepest
+node in the path from the to be removed node that will still
+be around after the removal.
 
-<cpu_num> <nr_load_updates change>
-All CPUS idle for 10 seconds (HZ=1000)
-0 1621
-10 496
-11 139
-12 875
-13 1672
-14 12
-15 21
-1 1472
-2 2426
-3 1161
-4 2108
-5 1525
-6 701
-7 249
-8 766
-9 1967
-
-One CPU busy rest idle for 10 seconds
-0 10003
-10 601
-11 95
-12 966
-13 1597
-14 114
-15 98
-1 3457
-2 93
-3 6679
-4 1425
-5 1479
-6 595
-7 193
-8 633
-9 1687
-
-All CPUs busy for 10 seconds
-0 10026
-10 10026
-11 10026
-12 10026
-13 10025
-14 10025
-15 10025
-1 10026
-2 10026
-3 10026
-4 10026
-5 10026
-6 10026
-7 10026
-8 10026
-9 10026
-
-That is update_cpu_load works properly only when all CPUs are busy.
-If all are idle, all the CPUs get way lower updates.  And when few
-CPUs are busy and rest are idle, only busy and ilb CPU does proper
-updates and rest of the idle CPUs will do lower updates.
-
-The patch keeps track of when a last update was done and fixes up
-the load avg based on current time.
-
-On one of my test system SPECjbb with warehouse 1..numcpus, patch
-improves throughput numbers by ~1% (average of 6 runs).  On another
-test system (with different domain hierarchy) there is no noticable
-change in perf.
-
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Venkatesh Pallipadi <venki@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
+Cc: Fabio Checconi <fabio@gandalf.sssup.it>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <1275414172.27810.27961.camel@twins>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched.c      |  100 ++++++++++++++++++++++++++++++++++++++++++++++++---
- kernel/sched_fair.c |    5 ++-
- 2 files changed, 99 insertions(+), 6 deletions(-)
+ arch/x86/mm/pat_rbtree.c |   34 ++-----------
+ include/linux/rbtree.h   |   13 ++++--
+ lib/rbtree.c             |  116 ++++++++++++++++++++++++++++-----------------
+ 3 files changed, 87 insertions(+), 76 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index f37a961..a757f6b 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -457,6 +457,7 @@ struct rq {
- 	unsigned long nr_running;
- 	#define CPU_LOAD_IDX_MAX 5
- 	unsigned long cpu_load[CPU_LOAD_IDX_MAX];
-+	unsigned long last_load_update_tick;
- #ifdef CONFIG_NO_HZ
- 	u64 nohz_stamp;
- 	unsigned char in_nohz_recently;
-@@ -1803,6 +1804,7 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
- static void calc_load_account_idle(struct rq *this_rq);
- static void update_sysctl(void);
- static int get_update_sysctl_factor(void);
-+static void update_cpu_load(struct rq *this_rq);
+diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
+index f537087..a2903e6 100644
+--- a/arch/x86/mm/pat_rbtree.c
++++ b/arch/x86/mm/pat_rbtree.c
+@@ -34,8 +34,7 @@
+  * memtype_lock protects the rbtree.
+  */
  
- static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
+-static void memtype_rb_augment_cb(struct rb_node *node);
+-static struct rb_root memtype_rbroot = RB_AUGMENT_ROOT(&memtype_rb_augment_cb);
++static struct rb_root memtype_rbroot = RB_ROOT;
+ 
+ static int is_node_overlap(struct memtype *node, u64 start, u64 end)
  {
-@@ -3050,23 +3052,102 @@ static void calc_load_account_active(struct rq *this_rq)
+@@ -56,7 +55,7 @@ static u64 get_subtree_max_end(struct rb_node *node)
  }
  
- /*
-+ * The exact cpuload at various idx values, calculated at every tick would be
-+ * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
-+ *
-+ * If a cpu misses updates for n-1 ticks (as it was idle) and update gets called
-+ * on nth tick when cpu may be busy, then we have:
-+ * load = ((2^idx - 1) / 2^idx)^(n-1) * load
-+ * load = (2^idx - 1) / 2^idx) * load + 1 / 2^idx * cur_load
-+ *
-+ * decay_load_missed() below does efficient calculation of
-+ * load = ((2^idx - 1) / 2^idx)^(n-1) * load
-+ * avoiding 0..n-1 loop doing load = ((2^idx - 1) / 2^idx) * load
-+ *
-+ * The calculation is approximated on a 128 point scale.
-+ * degrade_zero_ticks is the number of ticks after which load at any
-+ * particular idx is approximated to be zero.
-+ * degrade_factor is a precomputed table, a row for each load idx.
-+ * Each column corresponds to degradation factor for a power of two ticks,
-+ * based on 128 point scale.
-+ * Example:
-+ * row 2, col 3 (=12) says that the degradation at load idx 2 after
-+ * 8 ticks is 12/128 (which is an approximation of exact factor 3^8/4^8).
-+ *
-+ * With this power of 2 load factors, we can degrade the load n times
-+ * by looking at 1 bits in n and doing as many mult/shift instead of
-+ * n mult/shifts needed by the exact degradation.
-+ */
-+#define DEGRADE_SHIFT		7
-+static const unsigned char
-+		degrade_zero_ticks[CPU_LOAD_IDX_MAX] = {0, 8, 32, 64, 128};
-+static const unsigned char
-+		degrade_factor[CPU_LOAD_IDX_MAX][DEGRADE_SHIFT + 1] = {
-+					{0, 0, 0, 0, 0, 0, 0, 0},
-+					{64, 32, 8, 0, 0, 0, 0, 0},
-+					{96, 72, 40, 12, 1, 0, 0},
-+					{112, 98, 75, 43, 15, 1, 0},
-+					{120, 112, 98, 76, 45, 16, 2} };
-+
-+/*
-+ * Update cpu_load for any missed ticks, due to tickless idle. The backlog
-+ * would be when CPU is idle and so we just decay the old load without
-+ * adding any new load.
-+ */
-+static unsigned long
-+decay_load_missed(unsigned long load, unsigned long missed_updates, int idx)
-+{
-+	int j = 0;
-+
-+	if (!missed_updates)
-+		return load;
-+
-+	if (missed_updates >= degrade_zero_ticks[idx])
-+		return 0;
-+
-+	if (idx == 1)
-+		return load >> missed_updates;
-+
-+	while (missed_updates) {
-+		if (missed_updates % 2)
-+			load = (load * degrade_factor[idx][j]) >> DEGRADE_SHIFT;
-+
-+		missed_updates >>= 1;
-+		j++;
-+	}
-+	return load;
-+}
-+
-+/*
-  * Update rq->cpu_load[] statistics. This function is usually called every
-- * scheduler tick (TICK_NSEC).
-+ * scheduler tick (TICK_NSEC). With tickless idle this will not be called
-+ * every tick. We fix it up based on jiffies.
-  */
- static void update_cpu_load(struct rq *this_rq)
+ /* Update 'subtree_max_end' for a node, based on node and its children */
+-static void update_node_max_end(struct rb_node *node)
++static void memtype_rb_augment_cb(struct rb_node *node, void *__unused)
  {
- 	unsigned long this_load = this_rq->load.weight;
-+	unsigned long curr_jiffies = jiffies;
-+	unsigned long pending_updates;
- 	int i, scale;
+ 	struct memtype *data;
+ 	u64 max_end, child_max_end;
+@@ -78,25 +77,6 @@ static void update_node_max_end(struct rb_node *node)
+ 	data->subtree_max_end = max_end;
+ }
  
- 	this_rq->nr_load_updates++;
+-/* Update 'subtree_max_end' for a node and all its ancestors */
+-static void update_path_max_end(struct rb_node *node)
+-{
+-	u64 old_max_end, new_max_end;
+-
+-	while (node) {
+-		struct memtype *data = container_of(node, struct memtype, rb);
+-
+-		old_max_end = data->subtree_max_end;
+-		update_node_max_end(node);
+-		new_max_end = data->subtree_max_end;
+-
+-		if (new_max_end == old_max_end)
+-			break;
+-
+-		node = rb_parent(node);
+-	}
+-}
+-
+ /* Find the first (lowest start addr) overlapping range from rb tree */
+ static struct memtype *memtype_rb_lowest_match(struct rb_root *root,
+ 				u64 start, u64 end)
+@@ -190,12 +170,6 @@ failure:
+ 	return -EBUSY;
+ }
  
-+	/* Avoid repeated calls on same jiffy, when moving in and out of idle */
-+	if (curr_jiffies == this_rq->last_load_update_tick)
+-static void memtype_rb_augment_cb(struct rb_node *node)
+-{
+-	if (node)
+-		update_path_max_end(node);
+-}
+-
+ static void memtype_rb_insert(struct rb_root *root, struct memtype *newdata)
+ {
+ 	struct rb_node **node = &(root->rb_node);
+@@ -213,6 +187,7 @@ static void memtype_rb_insert(struct rb_root *root, struct memtype *newdata)
+ 
+ 	rb_link_node(&newdata->rb, parent, node);
+ 	rb_insert_color(&newdata->rb, root);
++	rb_augment_insert(&newdata->rb, memtype_rb_augment_cb, NULL);
+ }
+ 
+ int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
+@@ -233,13 +208,16 @@ int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
+ 
+ struct memtype *rbt_memtype_erase(u64 start, u64 end)
+ {
++	struct rb_node *deepest;
+ 	struct memtype *data;
+ 
+ 	data = memtype_rb_exact_match(&memtype_rbroot, start, end);
+ 	if (!data)
+ 		goto out;
+ 
++	deepest = rb_augment_erase_begin(&data->rb);
+ 	rb_erase(&data->rb, &memtype_rbroot);
++	rb_augment_erase_end(deepest, memtype_rb_augment_cb, NULL);
+ out:
+ 	return data;
+ }
+diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+index fe1872e..7066acb 100644
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -110,7 +110,6 @@ struct rb_node
+ struct rb_root
+ {
+ 	struct rb_node *rb_node;
+-	void (*augment_cb)(struct rb_node *node);
+ };
+ 
+ 
+@@ -130,9 +129,7 @@ static inline void rb_set_color(struct rb_node *rb, int color)
+ 	rb->rb_parent_color = (rb->rb_parent_color & ~1) | color;
+ }
+ 
+-#define RB_ROOT	(struct rb_root) { NULL, NULL, }
+-#define RB_AUGMENT_ROOT(x)	(struct rb_root) { NULL, x}
+-
++#define RB_ROOT	(struct rb_root) { NULL, }
+ #define	rb_entry(ptr, type, member) container_of(ptr, type, member)
+ 
+ #define RB_EMPTY_ROOT(root)	((root)->rb_node == NULL)
+@@ -142,6 +139,14 @@ static inline void rb_set_color(struct rb_node *rb, int color)
+ extern void rb_insert_color(struct rb_node *, struct rb_root *);
+ extern void rb_erase(struct rb_node *, struct rb_root *);
+ 
++typedef void (*rb_augment_f)(struct rb_node *node, void *data);
++
++extern void rb_augment_insert(struct rb_node *node,
++			      rb_augment_f func, void *data);
++extern struct rb_node *rb_augment_erase_begin(struct rb_node *node);
++extern void rb_augment_erase_end(struct rb_node *node,
++				 rb_augment_f func, void *data);
++
+ /* Find logical next and previous nodes in a tree */
+ extern struct rb_node *rb_next(const struct rb_node *);
+ extern struct rb_node *rb_prev(const struct rb_node *);
+diff --git a/lib/rbtree.c b/lib/rbtree.c
+index 15e10b1..4693f79 100644
+--- a/lib/rbtree.c
++++ b/lib/rbtree.c
+@@ -44,11 +44,6 @@ static void __rb_rotate_left(struct rb_node *node, struct rb_root *root)
+ 	else
+ 		root->rb_node = right;
+ 	rb_set_parent(node, right);
+-
+-	if (root->augment_cb) {
+-		root->augment_cb(node);
+-		root->augment_cb(right);
+-	}
+ }
+ 
+ static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
+@@ -72,20 +67,12 @@ static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
+ 	else
+ 		root->rb_node = left;
+ 	rb_set_parent(node, left);
+-
+-	if (root->augment_cb) {
+-		root->augment_cb(node);
+-		root->augment_cb(left);
+-	}
+ }
+ 
+ void rb_insert_color(struct rb_node *node, struct rb_root *root)
+ {
+ 	struct rb_node *parent, *gparent;
+ 
+-	if (root->augment_cb)
+-		root->augment_cb(node);
+-
+ 	while ((parent = rb_parent(node)) && rb_is_red(parent))
+ 	{
+ 		gparent = rb_parent(parent);
+@@ -240,15 +227,12 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 	else
+ 	{
+ 		struct rb_node *old = node, *left;
+-		int old_parent_cb = 0;
+-		int successor_parent_cb = 0;
+ 
+ 		node = node->rb_right;
+ 		while ((left = node->rb_left) != NULL)
+ 			node = left;
+ 
+ 		if (rb_parent(old)) {
+-			old_parent_cb = 1;
+ 			if (rb_parent(old)->rb_left == old)
+ 				rb_parent(old)->rb_left = node;
+ 			else
+@@ -263,10 +247,8 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 		if (parent == old) {
+ 			parent = node;
+ 		} else {
+-			successor_parent_cb = 1;
+ 			if (child)
+ 				rb_set_parent(child, parent);
+-
+ 			parent->rb_left = child;
+ 
+ 			node->rb_right = old->rb_right;
+@@ -277,24 +259,6 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 		node->rb_left = old->rb_left;
+ 		rb_set_parent(old->rb_left, node);
+ 
+-		if (root->augment_cb) {
+-			/*
+-			 * Here, three different nodes can have new children.
+-			 * The parent of the successor node that was selected
+-			 * to replace the node to be erased.
+-			 * The node that is getting erased and is now replaced
+-			 * by its successor.
+-			 * The parent of the node getting erased-replaced.
+-			 */
+-			if (successor_parent_cb)
+-				root->augment_cb(parent);
+-
+-			root->augment_cb(node);
+-
+-			if (old_parent_cb)
+-				root->augment_cb(rb_parent(old));
+-		}
+-
+ 		goto color;
+ 	}
+ 
+@@ -303,19 +267,15 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ 
+ 	if (child)
+ 		rb_set_parent(child, parent);
+-
+-	if (parent) {
++	if (parent)
++	{
+ 		if (parent->rb_left == node)
+ 			parent->rb_left = child;
+ 		else
+ 			parent->rb_right = child;
+-
+-		if (root->augment_cb)
+-			root->augment_cb(parent);
+-
+-	} else {
+-		root->rb_node = child;
+ 	}
++	else
++		root->rb_node = child;
+ 
+  color:
+ 	if (color == RB_BLACK)
+@@ -323,6 +283,74 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+ }
+ EXPORT_SYMBOL(rb_erase);
+ 
++static void rb_augment_path(struct rb_node *node, rb_augment_f func, void *data)
++{
++	struct rb_node *parent;
++
++up:
++	func(node, data);
++	parent = rb_parent(node);
++	if (!parent)
 +		return;
 +
-+	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
-+	this_rq->last_load_update_tick = curr_jiffies;
++	if (node == parent->rb_left && parent->rb_right)
++		func(parent->rb_right, data);
++	else if (parent->rb_left)
++		func(parent->rb_left, data);
 +
- 	/* Update our load: */
--	for (i = 0, scale = 1; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
-+	this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
-+	for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
- 		unsigned long old_load, new_load;
- 
- 		/* scale is effectively 1 << i now, and >> i divides by scale */
- 
- 		old_load = this_rq->cpu_load[i];
-+		old_load = decay_load_missed(old_load, pending_updates - 1, i);
- 		new_load = this_load;
- 		/*
- 		 * Round up the averaging division if load is increasing. This
-@@ -3074,9 +3155,15 @@ static void update_cpu_load(struct rq *this_rq)
- 		 * example.
- 		 */
- 		if (new_load > old_load)
--			new_load += scale-1;
--		this_rq->cpu_load[i] = (old_load*(scale-1) + new_load) >> i;
-+			new_load += scale - 1;
-+
-+		this_rq->cpu_load[i] = (old_load * (scale - 1) + new_load) >> i;
- 	}
++	node = parent;
++	goto up;
 +}
 +
-+static void update_cpu_load_active(struct rq *this_rq)
++/*
++ * after inserting @node into the tree, update the tree to account for
++ * both the new entry and any damage done by rebalance
++ */
++void rb_augment_insert(struct rb_node *node, rb_augment_f func, void *data)
 +{
-+	update_cpu_load(this_rq);
- 
- 	calc_load_account_active(this_rq);
- }
-@@ -3464,7 +3551,7 @@ void scheduler_tick(void)
- 
- 	raw_spin_lock(&rq->lock);
- 	update_rq_clock(rq);
--	update_cpu_load(rq);
-+	update_cpu_load_active(rq);
- 	curr->sched_class->task_tick(rq, curr, 0);
- 	raw_spin_unlock(&rq->lock);
- 
-@@ -7688,6 +7775,9 @@ void __init sched_init(void)
- 
- 		for (j = 0; j < CPU_LOAD_IDX_MAX; j++)
- 			rq->cpu_load[j] = 0;
++	if (node->rb_left)
++		node = node->rb_left;
++	else if (node->rb_right)
++		node = node->rb_right;
 +
-+		rq->last_load_update_tick = jiffies;
++	rb_augment_path(node, func, data);
++}
 +
- #ifdef CONFIG_SMP
- 		rq->sd = NULL;
- 		rq->rd = NULL;
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index eed35ed..22b8b4f 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3420,9 +3420,12 @@ static void run_rebalance_domains(struct softirq_action *h)
- 			if (need_resched())
- 				break;
- 
-+			rq = cpu_rq(balance_cpu);
-+			raw_spin_lock_irq(&rq->lock);
-+			update_cpu_load(rq);
-+			raw_spin_unlock_irq(&rq->lock);
- 			rebalance_domains(balance_cpu, CPU_IDLE);
- 
--			rq = cpu_rq(balance_cpu);
- 			if (time_after(this_rq->next_balance, rq->next_balance))
- 				this_rq->next_balance = rq->next_balance;
- 		}
++/*
++ * before removing the node, find the deepest node on the rebalance path
++ * that will still be there after @node gets removed
++ */
++struct rb_node *rb_augment_erase_begin(struct rb_node *node)
++{
++	struct rb_node *deepest;
++
++	if (!node->rb_right && !node->rb_left)
++		deepest = rb_parent(node);
++	else if (!node->rb_right)
++		deepest = node->rb_left;
++	else if (!node->rb_left)
++		deepest = node->rb_right;
++	else {
++		deepest = rb_next(node);
++		if (deepest->rb_right)
++			deepest = deepest->rb_right;
++		else if (rb_parent(deepest) != node)
++			deepest = rb_parent(deepest);
++	}
++
++	return deepest;
++}
++
++/*
++ * after removal, update the tree to account for the removed entry
++ * and any rebalance damage.
++ */
++void rb_augment_erase_end(struct rb_node *node, rb_augment_f func, void *data)
++{
++	if (node)
++		rb_augment_path(node, func, data);
++}
++
+ /*
+  * This function returns the first node (in sort order) of the tree.
+  */
