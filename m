@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758036Ab0FISMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 14:12:55 -0400
-Received: from gromit.mixdown.ca ([208.68.91.47]:54696 "EHLO gromit.mixdown.ca"
+	id S1758098Ab0FISNI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 14:13:08 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57578 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754991Ab0FISMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 14:12:53 -0400
-X-Greylist: delayed 2040 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Jun 2010 14:12:53 EDT
-To: vojtech@suse.cz, linux-kernel@vger.kernel.org
-Subject: [patch] add quirk to fix volume wheel on Toshiba U300 laptops
-From: Andrew Kohlsmith <akohlsmith@mixdown.ca>
-Date: Wed, 9 Jun 2010 13:38:50 -0400
+	id S1758075Ab0FISNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 14:13:06 -0400
+Date: Wed, 9 Jun 2010 20:12:46 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Robert Sch??ne <robert.schoene@tu-dresden.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] power_end event (Resend)
+Message-ID: <20100609181246.GA6021@elte.hu>
+References: <1276091847.1763.18.camel@localhost>
+ <4C0FC9CE.30705@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_rG9DMP8f6+qa2xA"
-Message-Id: <201006091338.51495.akohlsmith@mixdown.ca>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C0FC9CE.30705@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.5
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
+	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
+	[score: 0.3941]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_rG9DMP8f6+qa2xA
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
 
-Good afternoon,
+* Arjan van de Ven <arjan@linux.intel.com> wrote:
 
-Here is a small patch which adds a quirk match for these laptops; the volume 
-wheel on them does not stop when you move it (the wheel does not send 'up' 
-keycodes).
+> the patch makes sense; Acked-by: Arjan van de Ven <arjan@linux.intel.com>
 
-Patch applies cleanly to linus' tree as of about...10 minutes ago. :-)
+Great!
 
-Regards,
-Andrew
+Robert, mind resending the patch with Arjan's ack included and with a 
+meaningful changelog added as well, describing the problem and the solution.
 
---Boundary-00=_rG9DMP8f6+qa2xA
-Content-Type: text/x-patch;
-  charset="utf-8";
-  name="toshiba-u300-volume-sw-fix.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="toshiba-u300-volume-sw-fix.diff"
+Thanks,
 
-diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
-index d358ef8..f1e1801 100644
---- a/drivers/input/keyboard/atkbd.c
-+++ b/drivers/input/keyboard/atkbd.c
-@@ -1715,6 +1715,22 @@ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
- 		.callback = atkbd_setup_scancode_fixup,
- 		.driver_data = atkbd_oqo_01plus_scancode_fixup,
- 	},
-+	{
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite U300"),
-+		},
-+		.callback = atkbd_setup_forced_release,
-+		.driver_data = atkbd_volume_forced_release_keys,
-+	},
-+	{
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite Pro U300"),
-+		},
-+		.callback = atkbd_setup_forced_release,
-+		.driver_data = atkbd_volume_forced_release_keys,
-+	},
- 	{ }
- };
- 
-
---Boundary-00=_rG9DMP8f6+qa2xA--
+	Ingo
