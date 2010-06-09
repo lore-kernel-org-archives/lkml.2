@@ -1,82 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab0FIJNM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:13:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41369 "EHLO ogre.sisk.pl"
+	id S1756680Ab0FIJPm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:15:42 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:49374 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754795Ab0FIJNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:13:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
-Subject: Re: Regression: BUG when battery is removed before resuming from hibernation
-Date: Wed, 9 Jun 2010 11:14:43 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       linux acpi <linux-acpi@vger.kernel.org>,
-       "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <4C0E40E1.2080108@tuffmail.co.uk> <201006082252.49452.rjw@sisk.pl> <4C0F59C8.8020704@tuffmail.co.uk>
-In-Reply-To: <4C0F59C8.8020704@tuffmail.co.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006091114.43373.rjw@sisk.pl>
+	id S1755058Ab0FIJPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 05:15:40 -0400
+From: florian@mickler.org
+To: pm list <linux-pm@lists.linux-foundation.org>
+Cc: james.bottomley@suse.de, markgross@thegnar.org, mgross@linux.intel.com,
+       Florian Mickler <florian@mickler.org>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       "David S. Miller" <davem@davemloft.net>,
+       Javier Cardona <javier@cozybit.com>, Jouni Malinen <j@w1.fi>,
+       Rui Paulo <rpaulo@gmail.com>, Kalle Valo <kalle.valo@nokia.com>,
+       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org
+Subject: [RFC PATCH 1/2] mac80211: make max_network_latency notifier atomic safe
+Date: Wed,  9 Jun 2010 11:15:13 +0200
+Message-Id: <1276074915-26879-1-git-send-email-florian@mickler.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 June 2010, Alan Jenkins wrote:
-> Rafael J. Wysocki wrote:
-> > On Tuesday 08 June 2010, Alan Jenkins wrote:
-> >   
-> >> I found this bug 2.6.34 on my Asus EeePC 701 (x86_32 arch).  It didn't 
-> >> happen to me before, when I was running nearly-2.6.33 or 2.6.32-release.
-> >>
-> >> I used git-bisect, but unfortunately the result isn't very helpful.  My 
-> >> next step will be to try to narrowing down the culprits by disabling 
-> >> individual CONFIG options.  Here are my results so far, in case anyone 
-> >> is interested.
-> >>
-> >>
-> >> == Steps to reproduce ==
-> >>
-> >> I) Boot off mains power, with battery removed.  Login to KDE4 session, 
-> >> with Konsole as the only running application.
-> >> II) Run "sudo pm-hibernate"
-> >>
-> >> 1. When the system switches to text mode (a.k.a the console), 
-> >> immediately insert the battery.
-> >> 2. Once the system has fully hibernated, remove the battery.
-> >> 3. Press the power button to resume.  The backtrace below is generated 
-> >> during resume.
-> >>     
-> >
-> > You're not supposed to be doing that.
-> >
-> > Rafael
-> >   
-> 
-> I take it you mean "don't plug devices in during hibernation; you'll run 
-> out of memory, Bad Things will happen, and you can expect resume to 
-> fail".  Pity.  It wasn't an artificial test case, just an unusual usage 
-> pattern of mine[1].
-> 
-> I guess it wouldn't be guaranteed safe even if I was plugging the device 
-> in first.  The battery connection could take a few seconds to stabilize, 
-> and there's software equivalents in things like the usb-storage delay.
-> 
-> I can't complain about safety margins; other people might want to do 
-> similar things with an entire docking station...
-> 
-> Any chance of a big screaming warning?
+In order to have the pm_qos framework be callable from interrupt
+context, all listeners have to also be callable in that context.
 
-It is possible, but certainly not a priority.  
+This patch schedules the update of the latency value via
+ieee80211_max_network_latency() for execution on
+the global workqueue (using schedule_work()).
 
-> IIRC there's one global flag to 
-> fail userspace call-outs while userspace is frozen.  Would it be 
-> acceptable to document this in code & behaviour by aborting the 
-> hibernation on hot-plug?  (hot-*un*plug would presumably be allowed).
+As there was no synchronization/locking between the listener and the
+caller of pm_qos_update_request before, there should be no new races
+uncovered by this. Although the timing probably changes.
 
-Ditto.
+Signed-off-by: Florian Mickler <florian@mickler.org>
+---
 
-Rafael
+This needs some networking expertise to check the reasoning above and
+judge the implementation.
+
+ net/mac80211/ieee80211_i.h |    4 +++-
+ net/mac80211/main.c        |    5 +++--
+ net/mac80211/mlme.c        |   20 +++++++++++++++-----
+ 3 files changed, 21 insertions(+), 8 deletions(-)
+
+diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
+index 1a9e2da..3d2155a 100644
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -851,6 +851,7 @@ struct ieee80211_local {
+ 	struct work_struct dynamic_ps_disable_work;
+ 	struct timer_list dynamic_ps_timer;
+ 	struct notifier_block network_latency_notifier;
++	struct work_struct network_latency_notifier_work;
+ 
+ 	int user_power_level; /* in dBm */
+ 	int power_constr_level; /* in dBm */
+@@ -994,8 +995,9 @@ ieee80211_rx_result ieee80211_sta_rx_mgmt(struct ieee80211_sub_if_data *sdata,
+ void ieee80211_send_pspoll(struct ieee80211_local *local,
+ 			   struct ieee80211_sub_if_data *sdata);
+ void ieee80211_recalc_ps(struct ieee80211_local *local, s32 latency);
+-int ieee80211_max_network_latency(struct notifier_block *nb,
++int ieee80211_max_network_latency_notification(struct notifier_block *nb,
+ 				  unsigned long data, void *dummy);
++void ieee80211_max_network_latency(struct work_struct *w);
+ void ieee80211_sta_process_chanswitch(struct ieee80211_sub_if_data *sdata,
+ 				      struct ieee80211_channel_sw_ie *sw_elem,
+ 				      struct ieee80211_bss *bss,
+diff --git a/net/mac80211/main.c b/net/mac80211/main.c
+index 22a384d..5cded3a 100644
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -607,9 +607,10 @@ int ieee80211_register_hw(struct ieee80211_hw *hw)
+ 	rtnl_unlock();
+ 
+ 	ieee80211_led_init(local);
+-
++	INIT_WORK(&local->network_latency_notifier_work,
++			ieee80211_max_network_latency);
+ 	local->network_latency_notifier.notifier_call =
+-		ieee80211_max_network_latency;
++		ieee80211_max_network_latency_notification;
+ 	result = pm_qos_add_notifier(PM_QOS_NETWORK_LATENCY,
+ 				     &local->network_latency_notifier);
+ 
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index 0839c4e..feb6134 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -1953,17 +1953,27 @@ void ieee80211_mlme_notify_scan_completed(struct ieee80211_local *local)
+ 	rcu_read_unlock();
+ }
+ 
+-int ieee80211_max_network_latency(struct notifier_block *nb,
+-				  unsigned long data, void *dummy)
++void ieee80211_max_network_latency(struct work_struct *w)
+ {
+-	s32 latency_usec = (s32) data;
++	s32 latency_usec = (s32) atomic_long_read(&w->data);
+ 	struct ieee80211_local *local =
+-		container_of(nb, struct ieee80211_local,
+-			     network_latency_notifier);
++		container_of(w, struct ieee80211_local,
++			     network_latency_notifier_work);
+ 
+ 	mutex_lock(&local->iflist_mtx);
+ 	ieee80211_recalc_ps(local, latency_usec);
+ 	mutex_unlock(&local->iflist_mtx);
++}
++
++/* the notifier might be called from interrupt context */
++int ieee80211_max_network_latency_notification(struct notifier_block *nb,
++				  unsigned long data, void *dummy)
++{
++	struct ieee80211_local *local =
++		container_of(nb, struct ieee80211_local,
++				network_latency_notifier);
++	atomic_long_set(&local->network_latency_notifier_work.data, data);
++	schedule_work(&local->network_latency_notifier_work);
+ 
+ 	return 0;
+ }
+-- 
+1.7.1
+
