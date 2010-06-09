@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757760Ab0FIOeK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 10:34:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48272 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755318Ab0FIOeG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 10:34:06 -0400
-Message-ID: <4C0FA5E9.1050001@monstr.eu>
-Date: Wed, 09 Jun 2010 16:32:09 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1757885Ab0FIOeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 10:34:18 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36340 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757800Ab0FIOeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 10:34:13 -0400
+Date: Wed, 9 Jun 2010 14:33:40 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       a.p.zijlstra@chello.nl, michael@ellerman.id.au, tglx@linutronix.de,
+       mikey@neuling.org, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       a.p.zijlstra@chello.nl, michael@ellerman.id.au, tglx@linutronix.de,
+       mikey@neuling.org, mingo@elte.hu
+In-Reply-To: <tip-76cbd8a8f8b0dddbff89a6708bd5bd13c0d21a00@git.kernel.org>
+References: <tip-76cbd8a8f8b0dddbff89a6708bd5bd13c0d21a00@git.kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] powerpc: Exclude arch_sd_sibiling_asym_packing() on UP
+Message-ID: <tip-89275d59b572b92b1e2f6ddb63c49deecb801ff9@git.kernel.org>
+Git-Commit-ID: 89275d59b572b92b1e2f6ddb63c49deecb801ff9
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [GIT PULL v3] arch/microblaze fixes for 2.6.35-rc3
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 14:33:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Commit-ID:  89275d59b572b92b1e2f6ddb63c49deecb801ff9
+Gitweb:     http://git.kernel.org/tip/89275d59b572b92b1e2f6ddb63c49deecb801ff9
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Wed, 9 Jun 2010 16:20:55 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 9 Jun 2010 16:31:39 +0200
 
-please pull the following regression fixes.
+powerpc: Exclude arch_sd_sibiling_asym_packing() on UP
 
-Thanks,
-Michal
+Only SMP systems care about load-balance features, plus this
+saves some .text space on UP and also fixes the build.
 
+Reported-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Michael Neuling <mikey@neuling.org>
+LKML-Reference: <tip-76cbd8a8f8b0dddbff89a6708bd5bd13c0d21a00@git.kernel.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/powerpc/kernel/process.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-The following changes since commit 84f7586edab93052bbe7eb72e1e9bce5f7b6ae45:
-   Linus Torvalds (1):
-         Merge branch 'for-linus' of 
-git://git.kernel.org/.../ieee1394/linux1394-2.6
-
-are available in the git repository at:
-
-   git://git.monstr.eu/linux-2.6-microblaze.git for-linus
-
-FUJITA Tomonori (1):
-       microblaze: Fix sg_dma_len() regression
-
-Michal Simek (1):
-       microblaze: Define ARCH_SLAB_MINALIGN to fix slab crash
-
-  arch/microblaze/include/asm/page.h |    2 ++
-  arch/microblaze/kernel/dma.c       |    1 -
-  2 files changed, 2 insertions(+), 1 deletions(-)
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index a3f347c..9b41ece 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -1269,6 +1269,7 @@ unsigned long randomize_et_dyn(unsigned long base)
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_SMP
+ int arch_sd_sibiling_asym_packing(void)
+ {
+ 	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
+@@ -1277,3 +1278,4 @@ int arch_sd_sibiling_asym_packing(void)
+ 	}
+ 	return 0;
+ }
++#endif
