@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab0FIHUN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 03:20:13 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:2247 "EHLO
+	id S1755516Ab0FIHUl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 03:20:41 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:32697 "EHLO
 	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753556Ab0FIHUL (ORCPT
+	with ESMTP id S1753677Ab0FIHUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 03:20:11 -0400
+	Wed, 9 Jun 2010 03:20:40 -0400
 X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.20.111.250;
 From: Milton Miller <miltonm@bga.com>
-To: Joe Perches <joe@perches.com>
-Subject: Re: [PATCH 00/12] treewide: Remove unnecessary kmalloc casts
-In-Reply-To: <cover.1275968594.git.joe@perches.com>
-References: <cover.1275968594.git.joe@perches.com>
-	<96933b66aa5f995746a34410ca63e5e8b84593cb.1275968594.git.joe@perches.com>
-Cc: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
-Date: Wed, 09 Jun 2010 02:20:01 -0500
+To: Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH 1/2] vmlinux.lds.h: allow people to set a smaller rootfs
+	alignment
+In-Reply-To: <1275761686-4996-1-git-send-email-vapier@gentoo.org>
+References: <1275761686-4996-1-git-send-email-vapier@gentoo.org>
+Cc: <linux-kernel@vger.kernel.org>, Tim Abbott <tabbott@ksplice.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+X-To-Not-Matched: true
+Date: Wed, 09 Jun 2010 02:20:30 -0500
 X-Originating-IP: 71.20.111.250
-Message-ID: <1276068001_13533@mail4.comsite.net>
+Message-ID: <1276068030_13535@mail4.comsite.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Mon Jun 07 2010 at around 23:53:18 EST, Joe Perches wrote:
-> Trivial cleanups
+On Sat,  5 Jun 2010 at around 14:14:45 -0400, Mike Frysinger wrote:
+> Add a new INIT_RAMFS() define to compliment the existing INIT_RAM_FS, but
+> this one lets people control the alignment.
 > 
-> arch/cris: Remove unnecessary kmalloc casts
-> arch/powerpc: Remove unnecessary kmalloc casts
-> arch/x86/kernel/tlb_uv.c: Remove unnecessary kmalloc casts
-> drivers/gpu/drm: Remove unnecessary kmalloc casts
-> drivers/isdn/capi/capidrv.c: Remove unnecessary kmalloc casts
-> drivers/media: Remove unnecesary kmalloc casts
-> drivers/message/i2o/i20_config.c: Remove unnecessary kmalloc casts
-> drivers/parisc/iosapic.c: Remove unnecessary kzalloc cast
-> drivers/s390: Remove unnecessary kmalloc casts
-> drivers/serial/icom.c: Remove unnecessary kmalloc casts
-> drivers/usb/storage/isd200.c: Remove unnecessary kmalloc casts
-> fs/ufs/util.c: Remove unnecessary kmalloc casts
-> 
+> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+> index 48c5299..9ca268f 100644
+> --- a/include/asm-generic/vmlinux.lds.h
+> +++ b/include/asm-generic/vmlinux.lds.h
+> @@ -619,14 +619,15 @@ 
+>  		VMLINUX_SYMBOL(__security_initcall_end) = .;
+>  
+>  #ifdef CONFIG_BLK_DEV_INITRD
+> -#define INIT_RAM_FS							\
+> -	. = ALIGN(PAGE_SIZE);						\
+> +#define INIT_RAMFS(align)						\
+> +	. = ALIGN(align);						\
+>  	VMLINUX_SYMBOL(__initramfs_start) = .;				\
+>  	*(.init.ramfs)							\
+>  	VMLINUX_SYMBOL(__initramfs_end) = .;
+>  #else
+> -#define INIT_RAM_FS
+> +#define INIT_RAMFS(align)
+>  #endif
+> +#define INIT_RAM_FS INIT_RAMFS(PAGE_SIZE)
+>  
 
-Joe,
+[ and patch 2/2 calls the new macro with align 4, for only blackfin ].
 
-Thanks for doing cleanups.
+Mike,
+As you identified, the alignment for the __initramfs is too large.
 
-However, in this case you are removing casts that, while not necessary
-for C, are indeed there for a reason.
+As can be seen by the grammer of the INIT_RAM_FS in [1], the section
+itself always requires alignment of exactly 4 [2].
 
-Specifically, they are of the form
-   type *p;
-   <code>
-   p = (type *)kmalloc(sizeof(type), ...);
+I realize it requires a bit more auditing and cordination, but we
+should really just change the macro to align to 4.
 
-For example, from the powerpc patch:
-> goto out;
-> }
-> - tmp_part = (struct nvram_partition *)
-> - kmalloc(sizeof(struct nvram_partition), GFP_KERNEL);
-> + tmp_part = kmalloc(sizeof(struct nvram_partition), GFP_KERNEL);
-> err = -ENOMEM;
+[1] Documentation/early-userspace/buffer-format.txt,
+[2] for the general case; as compressed fragments are aligin(1)
 
-The reason they casts are present is to guard against someone changing
-the type of p at the top of the function and not changing the type at
-the kmalloc.
-
-This was discussed some years ago, possibly around the time kcalloc
-got its underflow detection.
-
-Should we create a kmalloc wrapper that enforces this type saftey?
-While we have added static analysis tools that can check these things,
-and we have slab redzoning options, they tend to be run in batch by
-"someone else" or in response to debugging a problem.
-
-
-There may have been discussion of doing the above vs
-   p = kmalloc(sizeof(*p), ...);
-
-I don't remember if it was programmer preference or issues when p is
-an array type.
-
-
-I am not subscribed so I don't have the full list that you sent
-these to, and I know some maintainers have already taken some of
-the series the last time you posted; could you please augment the
-CC list.
-
-thanks,
 milton
