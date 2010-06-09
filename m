@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab0FIPwZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 11:52:25 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:33990 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594Ab0FIPwX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 11:52:23 -0400
-Date: Wed, 09 Jun 2010 17:53:09 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv4 08/13] USB: gadget: g_serial: INF file updated
-In-reply-to: <20100609153351.GB21431@kroah.com>
+	id S932293Ab0FIPwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 11:52:33 -0400
+Received: from mail.perches.com ([173.55.12.10]:2891 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932274Ab0FIPwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 11:52:31 -0400
+Subject: Re: [PATCH 00/17] MAINTAINERS: Add drivers/staging entries
+From: Joe Perches <joe@perches.com>
 To: Greg KH <greg@kroah.com>
-Cc: Xiaofan Chen <xiaofanc@gmail.com>, linux-usb@vger.kernel.org,
-       David Brownell <david-b@pacbell.net>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <op.vd1ievcz7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.53 (Linux)
-References: <996015.66352.qm@web180311.mail.gq1.yahoo.com>
- <op.vd0y3ds37p4s8u@pikus>
- <AANLkTim6GHWVNvZ1XOJBZiu7ltl7TVpVJwVltLoKpYRi@mail.gmail.com>
- <op.vd014urd7p4s8u@pikus> <20100609145946.GB20543@kroah.com>
- <op.vd1g0kcc7p4s8u@pikus> <20100609153351.GB21431@kroah.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
+       Andrew Lunn <andrew@lunn.ch>, Jarod Wilson <jarod@wilsonet.com>,
+       Jakub Schmidtke <sjakub@gmail.com>, Henk de Groot <pe1dnn@amsat.org>,
+       Naren Sankar <nsankar@broadcom.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+       Pavel Machek <pavel@ucw.cz>,
+       Luis Rodriguez <Luis.Rodriguez@atheros.com>, devel@driverdev.osuosl.org,
+       Mori Hess <fmhess@users.sourceforge.net>,
+       Steve Underwood <steveu@coppice.org>,
+       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+       Arnaud Patard <apatard@mandriva.com>,
+       Marek Lindner <lindner_marek@yahoo.de>,
+       Teddy Wang <teddy.wang@siliconmotion.com.cn>,
+       Ossama Othman <ossama.othman@intel.com>,
+       Haiyang Zhang <haiyangz@microsoft.com>, Ian Abbott <abbotti@mev.co.uk>,
+       Willy Tarreau <willy@meta-x.org>, Scott Davilla <davilla@4pi.com>,
+       Scott Smedley <ss@aao.gov.au>, linux-kernel@vger.kernel.org,
+       Forest Bond <forest@alittletooquiet.net>,
+       David Rowe <david@rowetel.com>
+In-Reply-To: <20100609150833.GD20705@kroah.com>
+References: <cover.1275935090.git.joe@perches.com>
+	 <1276032382.24044.23.camel@Joe-Laptop.home>
+	 <20100609000713.GB16160@kroah.com> <201006091524.51998.arnd@arndb.de>
+	 <20100609150833.GD20705@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Jun 2010 08:52:24 -0700
+Message-ID: <1276098744.1556.50.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Jun 2010 17:33:51 +0200, Greg KH <greg@kroah.com> wrote:
->> The RNDIS template was taken from:
->> http://msdn.microsoft.com/en-us/library/ff570620.aspx
->>
->> The CDC ACM was sent by Xiaofan Chen who said that it is probably
->> taken indirectly form MSDN as well.
->
-> Ok, and not from the Windows DDK, right?  That has a different license
-> than MSDN.
+On Wed, 2010-06-09 at 08:08 -0700, Greg KH wrote:
+> On Wed, Jun 09, 2010 at 03:24:51PM +0200, Arnd Bergmann wrote:
+> > On Wednesday 09 June 2010, Greg KH wrote:
+> > > > > I also found it a bit odd you didn't send these to the stable subsystem
+> > > > > maintainer, why?
+> > > > The MAINTAINERS patches are forward going, not historical.
+> > > What does that mean?
+> > I guess you meant to write '... to the /staging/ subsystem maintainer'.
+> Doh, yes, you are right.
+> Joe, why didn't you send these to the "STAGING" subsystem maintainer?
 
-RNDIS is from MSDN for sure.  As of serial, I couldn't find it there.
+Gee, who would that be?  Why be so indirect?
+(Even though you are both the stable and the staging maintainer)
 
->> The MSDN TOS reads:
->> >If Microsoft makes any code marked as “sample” available on this
->> >Web Site without a License Agreement, then that code is licensed
->> >to you under the terms of the Microsoft Limited Public License.
->>
->> Where the MLPL can be found at:
->> <http://msdn.microsoft.com/en-us/cc300389.aspx#MLPL>.  It seems like
->> a perfectly legal free software license except point 3(F):
->>
->> >(F) Platform Limitation- The licenses granted in sections 2(A) & 2(B)
->> >extend only to the software or derivative works that you create that
->> >run on a Microsoft Windows operating system product.
->>
->> Also, 3(D) requires that the whole license is included:
->> >(D) If you distribute any portion of the software in source code form,
->> >you may do so only under this license by including a complete copy of
->> >this license with your distribution. If you distribute any portion of
->> >the software in compiled or object code form, you may only do so under
->> >a license that complies with this license.
->>
->> Therefore, shall we include the license along with the INFs and ignore
->> the fact it's not fully free software?
+Why don't you just write "How come I didn't get cc'd?"
 
-> No, it's not "software" here, and it is abiding by the license of the
-> MLPL as you don't run that file on any non-Windows machine.
+I'm the closest thing there is to a MAINTAINERS maintainer.
+Andrew has taken all the patches I've posted to it except for
+the patchset that added file patterns and you're rarely a
+path to get things into MAINTAINERS.
 
-Well...  According to the license (if we assume the license apply to the
-INF template) it is "software":
-> This license governs use of code marked as “sample” available on this
-> Web Site without a License Agreement , as provided under the Section
-> above titled “NOTICE SPECIFIC TO SOFTWARE AVAILABLE ON THIS WEB SITE”.
-> If you use such code (the “software”), you accept this license.
+$ ./scripts/get_maintainer.pl -f --rolestats MAINTAINERS 
+Andrew Morton <akpm@linux-foundation.org> (commit_signer:97/515=19%)
+Joe Perches <joe@perches.com> (commit_signer:83/515=16%)
+"David S. Miller" <davem@davemloft.net> (commit_signer:35/515=7%)
 
-On Wed, 09 Jun 2010 17:33:51 +0200, Greg KH <greg@kroah.com> wrote:
-> How about putting the following on the file:
-> 	; based on a example .inf file that was:
-> 	;	Copyright (c) Microsoft Corporation
-> 	; and released under the MLPL as found at
-> 	; http://msdn.microsoft.com/en-us/cc300389.aspx#MLPL
-> 	; For use only on Windows operating systems.
-> 	;
->
-> Interesting that they don't put a date on the copyright.
->
-> With that wording, I'd be glad to take it.
+And you already had written that you wouldn't take a
+similar individual patch.
 
-If no one sees any legal issues here I can change the patch accordingly.
-I'm more and more confused by the whole issue. ;)
+http://lkml.org/lkml/2010/6/2/428
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+
