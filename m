@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757072Ab0FIJWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:22:11 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33549 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756939Ab0FIJWK convert rfc822-to-8bit (ORCPT
+	id S1757113Ab0FIJWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:22:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54361 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756924Ab0FIJWl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:22:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=N3qgdEgkUNvaxN1yHKtCNCN2YIOrhORA7qmoKIU1rM4ftD1Kn7Rjv90o7+wquhPiem
-         YqwJKJKm1zHFTKZIFaMSbHriil/Plt1j68meMeBuH8DMnFtnnQ068HXC+wIKsFulL3Bn
-         A6l6URZLA477+ttI/S4B4G0acPg+s3fBFUPME=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTik97svBnM-54zaFwKr9E0SFyq5fXeg2Y2aNO56H@mail.gmail.com>
-References: <AANLkTik0UvRGmGeZOMaJVaoHk-lv2V8umAF3EIckh9CT@mail.gmail.com>
-	<1276051329.13426.48.camel@localhost.localdomain>
-	<AANLkTikSaMcKPh5GI3Tq2SZkVXsNKwE8pfR8me5IHDDv@mail.gmail.com>
-	<AANLkTik4kdjh1Wmo704_3-jzxmMUd8vGce9Mdojveml1@mail.gmail.com>
-	<AANLkTimkJjZ32kIl4rjikZqBrFCFPw0zCS7b9uh6gO2V@mail.gmail.com>
-	<AANLkTik97svBnM-54zaFwKr9E0SFyq5fXeg2Y2aNO56H@mail.gmail.com>
-Date: Wed, 9 Jun 2010 17:22:07 +0800
-Message-ID: <AANLkTil3Fiv5G0nVgy64rwV2SNbNALrVgeGBPeB1kedw@mail.gmail.com>
-Subject: Re: When and how to use ftrace?
-From: Ryan Wang <openspace.wang@gmail.com>
-To: wu zhangjin <wuzhangjin@gmail.com>
-Cc: Neependra Khare <neependra.khare@gmail.com>,
-       Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
-       kernelnewbies@nl.linux.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Jun 2010 05:22:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,390,1272870000"; 
+   d="scan'208";a="525275526"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: Mitchell Erblich <erblichs@earthlink.net>,
+       Andi Kleen <andi@firstfloor.org>
+CC: Stephen Hemminger <shemminger@vyatta.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>
+Date: Wed, 9 Jun 2010 17:22:12 +0800
+Subject: RE: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+ external.
+Thread-Topic: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+ external.
+Thread-Index: AcsGGdPTLppi3qF+TVu/wWCRm2nUgQBlzHLg
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D791100848F73@shsmsx502.ccr.corp.intel.com>
+References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
+ <20100606161348.427822fb@nehalam> <87pr03gu1c.fsf@basil.nowhere.org>
+ <40119F5E-A745-4C50-8053-D5A701266AD5@earthlink.net>
+In-Reply-To: <40119F5E-A745-4C50-8053-D5A701266AD5@earthlink.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/9 wu zhangjin <wuzhangjin@gmail.com>:
-> Hi,
+>-----Original Message-----
+>From: Mitchell Erblich [mailto:erblichs@earthlink.net]
+>Sent: Monday, June 07, 2010 4:17 PM
+>To: Andi Kleen
+>Cc: Stephen Hemminger; Xin, Xiaohui; netdev@vger.kernel.org; kvm@vger.kernel.org;
+>linux-kernel@vger.kernel.org; mst@redhat.com; mingo@elte.hu; davem@davemloft.net;
+>herbert@gondor.apana.org.au; jdike@linux.intel.com
+>Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from external.
 >
-> On Wed, Jun 9, 2010 at 4:14 PM, Ryan Wang <openspace.wang@gmail.com> wrote:
-> [...]
->>>>
->>>> --
->>>> To unsubscribe from this list: send an email with
->>>> "unsubscribe kernelnewbies" to ecartis@nl.linux.org
->>>> Please read the FAQ at http://kernelnewbies.org/FAQ
->>>>
->>>
->>>
+>
+>On Jun 7, 2010, at 12:51 AM, Andi Kleen wrote:
+>
+>> Stephen Hemminger <shemminger@vyatta.com> writes:
 >>
->> Seems ftrace is helpful to study the activities inside the kernel to me.
->> I wonder whether it can be useful to debug kernel bugs. And if so, will
->> you please give me some examples?
+>>> Still not sure this is a good idea for a couple of reasons:
+>>>
+>>> 1. We already have lots of special cases with skb's (frags and fraglist),
+>>>   and skb's travel through a lot of different parts of the kernel.  So any
+>>>   new change like this creates lots of exposed points for new bugs. Look
+>>>   at cases like MD5 TCP and netfilter, and forwarding these SKB's to ipsec
+>>>   and ppp and ...
+>>>
+>>> 2. SKB's can have infinite lifetime in the kernel. If these buffers come from
+>>>   a fixed size pool in an external device, they can easily all get tied up
+>>>   if you have a slow listener. What happens then?
+>>
+>> 3. If they come from an internal pool what happens when the kernel runs
+>> low on memory? How is that pool balanced against other kernel
+>> memory users?
+>>
+>> -Andi
+>>
+>> --
+>> ak@linux.intel.com -- Speaking for myself only.
 >
-> Yeah, did you read this paper written by Steven: "Finding Origins of
-> Latencies Using Ftrace" (please google to download it).
-> If not, please read it. that paper will tell you what Ftrace really is
-> and will show the demos how to play with it.
+>In general,
 >
->> Or so far it's mainly used for
->> observing the running status of kernel?
+>When an internal pool is created/used, their SHOULD be a reason.
+>Maybe, to keep allocation latency to a min, OR ...
 >
-> Ftrace is originally created for debugging and optimizing the
-> preempt-rt, but of course, it becomes a tracing framework currently.
->
-> It not only show you what the kernel space does when you do something
-> in user space,
-> but will show you the calling tree of kernel functions, time consuming
-> of  every function and
-> even allow you to filter the parts you care about.
->
-> If you need more info about it, please refer to:
->
-> [1] Debugging the kernel using Ftrace
-> http://lwn.net/Articles/365835/
-> http://lwn.net/Articles/366796/
-> [2] Ftrace usage ....
-> Documentation/trace/ftrace.txt
-> Documentation/trace/ftrace-desgin.txt
-> [3] Tools for Ftrace
-> trace-cmd from readhat...
->
-> Regards,
->
-> --
-> Studying engineer. Wu Zhangjin
-> Lanzhou University      http://www.lzu.edu.cn
-> Distributed & Embedded System Lab      http://dslab.lzu.edu.cn
-> School of Information Science and Engeneering         http://xxxy.lzu.edu.cn
-> wuzhangjin@gmail.com         http://falcon.oss.lzu.edu.cn
-> Address:Tianshui South Road 222,Lanzhou,P.R.China    Zip Code:730000
-> Tel:+86-931-8912025
->
+The internal pool here is a collection of user buffers submitted
+by guest virtio-net driver. Guest put buffers here and driver get
+buffers from it. If guest submit more buffers then driver needs,
+we need somewhere to put the buffers, it's the internal pool here
+to deal with. 
 
-Thanks all!
+>Now IMO,
+>
+>internal pool objects should have a ref count and
+>if that count is 0, then under memory pressure and/or num
+>of objects are above a high water mark, then they are freed,
+>
+>OR if there is a last reference age field, then the object is to be
+>cleaned if dirty, then freed,
+>
+>Else, the pool is allowed to grow if the number of objects in the
+>pool is below a set max (max COULD equal Infinity).
+
+Thanks for the thoughts.
+
+Basically, the size of the internal pool is not decided by the pool itself,
+To add/delete the objects in the pool is not a task of the pool itself too. 
+It's decided by guest virtio-net driver and vhost-net driver both, and 
+decided by the guest receive speed and submit speed.
+The max size of the pool is limited by the virtqueue buffer numbers.
+
+Thanks
+Xiaohui
+
+>
+>
+>
+>Mitchell Erblich
