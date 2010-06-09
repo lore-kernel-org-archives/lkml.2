@@ -1,106 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757809Ab0FINzH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 09:55:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34753 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757108Ab0FINzF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 09:55:05 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-       Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Staticise ab3550 register access functions
-Date: Wed,  9 Jun 2010 14:54:54 +0100
-Message-Id: <1276091694-31331-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.1
+	id S1757805Ab0FIN5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 09:57:38 -0400
+Received: from mailout2.zih.tu-dresden.de ([141.30.67.73]:36488 "EHLO
+	mailout2.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752589Ab0FIN5g convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 09:57:36 -0400
+Subject: [PATCH] power_end event (Resend)
+From: Robert =?ISO-8859-1?Q?Sch=F6ne?= <robert.schoene@tu-dresden.de>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Jun 2010 15:57:27 +0200
+Message-ID: <1276091847.1763.18.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8BIT
+X-TUD-Virus-Scanned: mailout2.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are now exported via an ops table rather than referenced
-directly and so should be staticised.
+Original Mail was sent at 2010/05/14 10:38:43 CEST
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/ab3550-core.c |   23 ++++++++++++-----------
- 1 files changed, 12 insertions(+), 11 deletions(-)
+Hi,
+I reported the power_end tracing problem earlier this year
+(http://lkml.org/lkml/2010/2/24/79) and sent a patch which worked for my
+system. However this patch would have not worked on other systems (as
+for example Arjans). It would had lead to a double posting of these
+events.
 
-diff --git a/drivers/mfd/ab3550-core.c b/drivers/mfd/ab3550-core.c
-index f54ab62..8a98739 100644
---- a/drivers/mfd/ab3550-core.c
-+++ b/drivers/mfd/ab3550-core.c
-@@ -589,16 +589,16 @@ static bool reg_read_allowed(const struct ab3550_reg_ranges *ranges, u8 reg)
- }
+However. Here's a diff that should fix the problem on the correct spot.
+
+The reason that it worked for Arjan and not for me is that his system
+uses drivers/acpi/processor_idle.c when idling, mine uses the cpu_idle
+thread from arch/x86/kernel/process_64.c.
+A comparable idle thread also exists for 32 bit x86, so I added it in
+process_32.c too.
+
+However, is there any standard about where to report the start and end
+events? Currently it's the idle routine, which creates the power_start
+event, the routine which calls the idle_routine on the other hand
+creates the power_end event.
+
+For these patches, I'm not sure whether the power_end event should even
+be reported. On kernels, which use the repnop loop when idling, there
+won't be a switch to another c-state and therefore no power_start event,
+the power_end event could belong to. Would that be a problem? If it
+would, the only way to fix this would be to move the power_end events
+into the idle routines, since cpu_idle is dumb and does not know whats
+behind pm_idle.
+
+Robert
+
+PS: I hand over the smp_processor_id() to power_end since i hope that
+the changed interface defined in http://lkml.org/lkml/2010/4/27/271 will
+be part of the standard tree one day. As long as this new interface is
+not included in the standard tree, this patch won't make no harm. When
+it will be included, this code does not have to be touched anymore.
+
+Signed-off-by: Robert Schöne <robert.schoene@tu-dresden.de>
+
+ arch/x86/kernel/process_32.c |    4 ++++
+ arch/x86/kernel/process_64.c |    5 +++++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index f6c6266..134f5f9 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -58,6 +58,8 @@
+ #include <asm/ds.h>
+ #include <asm/debugreg.h>
+ 
++#include <trace/events/power.h> 
++
+ asmlinkage void ret_from_fork(void) __asm__("ret_from_fork");
  
  /*
-- * The exported register access functionality.
-+ * The register access functionality.
-  */
--int ab3550_get_chip_id(struct device *dev)
-+static int ab3550_get_chip_id(struct device *dev)
- {
- 	struct ab3550 *ab = dev_get_drvdata(dev->parent);
- 	return (int)ab->chip_id;
- }
+@@ -112,6 +114,8 @@ void cpu_idle(void)
+ 			stop_critical_timings();
+ 			pm_idle();
+ 			start_critical_timings();
++
++			trace_power_end(smp_processor_id());
+ 		}
+ 		tick_nohz_restart_sched_tick();
+ 		preempt_enable_no_resched();
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 17cb329..01c55ed 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -52,6 +52,8 @@
+ #include <asm/ds.h>
+ #include <asm/debugreg.h>
  
--int ab3550_mask_and_set_register_interruptible(struct device *dev, u8 bank,
--	u8 reg, u8 bitmask, u8 bitvalues)
-+static int ab3550_mask_and_set_register_interruptible(struct device *dev,
-+	u8 bank, u8 reg, u8 bitmask, u8 bitvalues)
- {
- 	struct ab3550 *ab;
- 	struct platform_device *pdev = to_platform_device(dev);
-@@ -612,15 +612,15 @@ int ab3550_mask_and_set_register_interruptible(struct device *dev, u8 bank,
- 		bitmask, bitvalues);
- }
++#include <trace/events/power.h> 
++
+ asmlinkage extern void ret_from_fork(void);
  
--int ab3550_set_register_interruptible(struct device *dev, u8 bank, u8 reg,
--	u8 value)
-+static int ab3550_set_register_interruptible(struct device *dev, u8 bank,
-+	u8 reg, u8 value)
- {
- 	return ab3550_mask_and_set_register_interruptible(dev, bank, reg, 0xFF,
- 		value);
- }
- 
--int ab3550_get_register_interruptible(struct device *dev, u8 bank, u8 reg,
--	u8 *value)
-+static int ab3550_get_register_interruptible(struct device *dev, u8 bank,
-+	u8 reg, u8 *value)
- {
- 	struct ab3550 *ab;
- 	struct platform_device *pdev = to_platform_device(dev);
-@@ -633,7 +633,7 @@ int ab3550_get_register_interruptible(struct device *dev, u8 bank, u8 reg,
- 	return get_register_interruptible(ab, bank, reg, value);
- }
- 
--int ab3550_get_register_page_interruptible(struct device *dev, u8 bank,
-+static int ab3550_get_register_page_interruptible(struct device *dev, u8 bank,
- 	u8 first_reg, u8 *regvals, u8 numregs)
- {
- 	struct ab3550 *ab;
-@@ -649,7 +649,8 @@ int ab3550_get_register_page_interruptible(struct device *dev, u8 bank,
- 		numregs);
- }
- 
--int ab3550_event_registers_startup_state_get(struct device *dev, u8 *event)
-+static int ab3550_event_registers_startup_state_get(struct device *dev,
-+	u8 *event)
- {
- 	struct ab3550 *ab;
- 
-@@ -661,7 +662,7 @@ int ab3550_event_registers_startup_state_get(struct device *dev, u8 *event)
- 	return 0;
- }
- 
--int ab3550_startup_irq_enabled(struct device *dev, unsigned int irq)
-+static int ab3550_startup_irq_enabled(struct device *dev, unsigned int irq)
- {
- 	struct ab3550 *ab;
- 	struct ab3550_platform_data *plf_data;
--- 
-1.7.1
+ DEFINE_PER_CPU(unsigned long, old_rsp);
+@@ -139,6 +141,9 @@ void cpu_idle(void)
+ 			stop_critical_timings();
+ 			pm_idle();
+ 			start_critical_timings();
++
++			trace_power_end(smp_processor_id());
++
+ 			/* In many cases the interrupt that ended idle
+ 			   has already called exit_idle. But some idle
+ 			   loops can be woken up without interrupt. */
+
+
+
 
