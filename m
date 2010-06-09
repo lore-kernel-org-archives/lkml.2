@@ -1,90 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab0FIJHf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:07:35 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:47297 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753458Ab0FIJHd (ORCPT
+	id S1756740Ab0FIJJF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:09:05 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:43536 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755995Ab0FIJJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:07:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=pqYNBzLZd5YH8wLAimaN295f9BX8oJpExaSn8GUR1wBVZUInDYwdSUchbr9D1v2GPC
-         heEKyuRWLa0SXz4rAnt803ZSh4qdSNXf5+q/WqZOWk03n26zloNswWcJNgyr0DvxZQn2
-         lRmYDLF9pNE078kNniXz1k4zgHdB2XIjP/ZhM=
-Message-ID: <4C0F59C8.8020704@tuffmail.co.uk>
-Date: Wed, 09 Jun 2010 10:07:20 +0100
-From: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	Wed, 9 Jun 2010 05:09:03 -0400
+Message-ID: <4C0F5A2A.5080806@panasas.com>
+Date: Wed, 09 Jun 2010 12:08:58 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       linux acpi <linux-acpi@vger.kernel.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Regression: BUG when battery is removed before resuming from
- hibernation
-References: <4C0E40E1.2080108@tuffmail.co.uk> <201006082252.49452.rjw@sisk.pl>
-In-Reply-To: <201006082252.49452.rjw@sisk.pl>
-Content-Type: text/plain; charset=iso-8859-1; format=flowed
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
+       uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Jeff Dike <jdike@addtoit.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [uml-devel] [PATCH resend] um, hweight: Fix UML boot crash
+References: <4C0F4B00.4090307@panasas.com>	<4C0F4C40.5020207@panasas.com> <AANLkTinwQmWP-rFu9e-ns5twsZwZjuSLi5vcll55ZZhx@mail.gmail.com>
+In-Reply-To: <AANLkTinwQmWP-rFu9e-ns5twsZwZjuSLi5vcll55ZZhx@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Jun 2010 09:09:01.0524 (UTC) FILETIME=[66C9E940:01CB07B3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki wrote:
-> On Tuesday 08 June 2010, Alan Jenkins wrote:
->   
->> I found this bug 2.6.34 on my Asus EeePC 701 (x86_32 arch).  It didn't 
->> happen to me before, when I was running nearly-2.6.33 or 2.6.32-release.
+On 06/09/2010 11:46 AM, Geert Uytterhoeven wrote:
+> On Wed, Jun 9, 2010 at 10:09, Boaz Harrosh <bharrosh@panasas.com> wrote:
+>> On 06/09/2010 11:04 AM, Boaz Harrosh wrote:
+>>> From: Borislav Petkov <bp@alien8.de>
+>>>
+>>> Obviously UML cannot stomach callee reg-saving trickery
+>>> introduced with d61931d89be506372d01a90d1755f6d0a9fafe2d
+>>> (x86: Add optimized popcnt variants) and oopses during boot:
+>>> http://marc.info/?l=linux-kernel&m=127522065202435&w=2
+>>>
+>>> Redirect arch_hweight.h include from the x86 portion to the generic
+>>> arch_hweight.h which is a fallback to the software hweight routines.
+>>>
+>>> LKML-Reference: <201005271944.09541.toralf.foerster@gmx.de>
+>>> Signed-off-by: Borislav Petkov <bp@alien8.de>
+> 
+> Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+Tested-by: Boaz Harrosh <bharrosh@panasas.com>
+
+> 
+>> who's going to push this ASAP. I was just (again) 3/4 through a bisect
+>> on 2.6.35-rc2. When I finally realized "Hey that patch, I forgot".
+>> (My concentration is not what it used to be)
 >>
->> I used git-bisect, but unfortunately the result isn't very helpful.  My 
->> next step will be to try to narrowing down the culprits by disabling 
->> individual CONFIG options.  Here are my results so far, in case anyone 
->> is interested.
->>
->>
->> == Steps to reproduce ==
->>
->> I) Boot off mains power, with battery removed.  Login to KDE4 session, 
->> with Konsole as the only running application.
->> II) Run "sudo pm-hibernate"
->>
->> 1. When the system switches to text mode (a.k.a the console), 
->> immediately insert the battery.
->> 2. Once the system has fully hibernated, remove the battery.
->> 3. Press the power button to resume.  The backtrace below is generated 
->> during resume.
->>     
->
-> You're not supposed to be doing that.
->
-> Rafael
->   
+>> Please push this, someone
+> 
+> Peter, are you happy with this?
+> Although we still don't know why UML cannot grok it, it does fix a
+> regression in post-2.6.34.
+> 
 
-I take it you mean "don't plug devices in during hibernation; you'll run 
-out of memory, Bad Things will happen, and you can expect resume to 
-fail".  Pity.  It wasn't an artificial test case, just an unusual usage 
-pattern of mine[1].
+I have x86_64 setup (host and guest). Without this I'm unable to boot any
+UML image (2.6.35-rc2). With it all is well as before.
 
-I guess it wouldn't be guaranteed safe even if I was plugging the device 
-in first.  The battery connection could take a few seconds to stabilize, 
-and there's software equivalents in things like the usb-storage delay.
+Boaz
+>>> ---
+>>>  arch/um/include/asm/arch_hweight.h |    6 ++++++
+>>>  1 files changed, 6 insertions(+), 0 deletions(-)
+>>>  create mode 100644 arch/um/include/asm/arch_hweight.h
+>>>
+>>> diff --git a/arch/um/include/asm/arch_hweight.h b/arch/um/include/asm/arch_hweight.h
+>>> new file mode 100644
+>>> index 0000000..c656cf4
+>>> --- /dev/null
+>>> +++ b/arch/um/include/asm/arch_hweight.h
+>>> @@ -0,0 +1,6 @@
+>>> +#ifndef _ASM_UM_HWEIGHT_H
+>>> +#define _ASM_UM_HWEIGHT_H
+>>> +
+>>> +#include <asm-generic/bitops/arch_hweight.h>
+>>> +
+>>> +#endif
+> 
+> Gr{oetje,eeting}s,
+> 
+> 						Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+> 							    -- Linus Torvalds
 
-I can't complain about safety margins; other people might want to do 
-similar things with an entire docking station...
-
-Any chance of a big screaming warning?  IIRC there's one global flag to 
-fail userspace call-outs while userspace is frozen.  Would it be 
-acceptable to document this in code & behaviour by aborting the 
-hibernation on hot-plug?  (hot-*un*plug would presumably be allowed).
-
-Alan
-
-
-[1] I do this for conservation.  I'm told batteries last longer if I 
-don't use them & let them get warm.  I put the battery in for 
-hibernation so I can remove mains power without waiting.  I start 
-hibernation first, because in practice you have to have the screen 
-closed in order to plug or unplug the battery.
