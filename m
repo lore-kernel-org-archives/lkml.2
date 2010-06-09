@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab0FIUGP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 16:06:15 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:52551 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757220Ab0FIUGN (ORCPT
+	id S1758261Ab0FIUGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 16:06:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59915 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757220Ab0FIUGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 16:06:13 -0400
-Date: Wed, 9 Jun 2010 21:06:10 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Ortwin =?iso-8859-1?Q?Gl=FCck?= <odi@odi.ch>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: freeze when strace X
-Message-ID: <20100609200610.GA27536@srcf.ucam.org>
-References: <4C0FDF9F.9070000@odi.ch> <20100609195228.GA27088@srcf.ucam.org> <4C0FF34D.6090800@odi.ch>
+	Wed, 9 Jun 2010 16:06:34 -0400
+Message-ID: <4C0FF3F0.2080601@oracle.com>
+Date: Wed, 09 Jun 2010 13:05:04 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C0FF34D.6090800@odi.ch>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+       platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       Daniel Oliveira Nascimento <don@syst.com.br>
+Subject: Re: [PATCH -next] classmate-laptop: fix for RFKILL=m, CMPC=y
+References: <20100603134753.710a64b3.sfr@canb.auug.org.au> <20100603093903.d9378c9a.randy.dunlap@oracle.com> <20100609200218.GD2551@barata.holoscopio.com>
+In-Reply-To: <20100609200218.GD2551@barata.holoscopio.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4C0FF43C.010C:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 09, 2010 at 10:02:21PM +0200, Ortwin Glück wrote:
-> On 09.06.2010 21:52, Matthew Garrett wrote:
-> > Just to make sure, you're not trying to strace X from within X, are you?
+On 06/09/10 13:02, Thadeu Lima de Souza Cascardo wrote:
+> On Thu, Jun 03, 2010 at 09:39:03AM -0700, Randy Dunlap wrote:
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> Fix build error when CONFIG_RFKILL=m and CONFIG_ACPI_CMPC=y:
+>> classmate-laptop should depend on RFKILL or RFKILL=n.
+>>
+>> classmate-laptop.c:(.text+0x1351fc): undefined reference to `rfkill_unregister'
+>> classmate-laptop.c:(.text+0x135204): undefined reference to `rfkill_destroy'
+>> classmate-laptop.c:(.text+0x135237): undefined reference to `rfkill_set_sw_state'
+>> classmate-laptop.c:(.text+0x1352b9): undefined reference to `rfkill_alloc'
+>> classmate-laptop.c:(.text+0x1352ca): undefined reference to `rfkill_register'
+>> classmate-laptop.c:(.text+0x1352d6): undefined reference to `rfkill_destroy'
+>>
+>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+>> ---
 > 
-> Oh... now that you mention it... Is that a silly thing to do?
-> strace X from a different terminal works fine :-)
 > 
-> But freezing the system because of that? I mean an error message, log, anything
-> would be "nice".
+> Randy,
+> 
+> Since this implies a build failure, shouldn't it be sent for rc too?
 
-strace needs to output text via X, which generates output which needs to 
-be output via X... and you'll tend to deadlock. If X is holding any 
-interesting kernel locks at that point then it wouldn't surprise me if 
-the machine ends up dead.
+Yes, it should.
+I hit the problem during a linux-next build, but it does apply to mainline as well.
+Thanks.
+
+
+>>  drivers/platform/x86/Kconfig |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> --- linux-next-20100603.orig/drivers/platform/x86/Kconfig
+>> +++ linux-next-20100603/drivers/platform/x86/Kconfig
+>> @@ -520,6 +520,7 @@ config TOSHIBA_BT_RFKILL
+>>  config ACPI_CMPC
+>>  	tristate "CMPC Laptop Extras"
+>>  	depends on X86 && ACPI
+>> +	depends on RFKILL || RFKILL=n
+>>  	select INPUT
+>>  	select BACKLIGHT_CLASS_DEVICE
+>>  	default n
+
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
