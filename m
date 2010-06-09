@@ -1,307 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757591Ab0FINXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 09:23:10 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45819 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab0FINXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 09:23:06 -0400
-Date: Wed, 9 Jun 2010 14:22:46 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Nick Piggin <npiggin@suse.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 10/28] mm: Make use of the anon_vma ref count
-Message-ID: <20100609132245.GF5650@csn.ul.ie>
-References: <20100607110654.606530953@chello.nl> <20100607111407.309924253@chello.nl>
+	id S1757668Ab0FINXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 09:23:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60850 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757613Ab0FINXU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 09:23:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=QkrvJ77d4Ubh65pZLz/vD3u1yT2ERe4MqXdN7bS89kX33wRPargp7iyf4D1xzqLlGx
+         T5G/u6k9jUdJmhKM5nFaOoWMmhClleIxgA+UZfsFZht+Zo01a0ORjxd6ip2kRAP0ZP6U
+         WKATvgjGn08qUgJQ9l4ZChk6Hmzz1WozBQyVU=
+From: Eric Lacombe <goretux@gmail.com>
+To: Zhenyu Wang <zhenyuw@linux.intel.com>, Len Brown <lenb@kernel.org>,
+       Dave Airlie <airlied@linux.ie>
+Subject: Re: [BUG] ACPI/dynamic-hybrid-graphics (?) on Vaio VPCZ11 - screen does not light up on resume [was: Re: Intel Arrandale IGP - screen does not light up on resume]
+Date: Wed, 9 Jun 2010 15:23:12 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-custom; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201005310142.40209.goretux@gmail.com> <201006050013.17653.goretux@gmail.com> <201006071431.33789.goretux@gmail.com>
+In-Reply-To: <201006071431.33789.goretux@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100607111407.309924253@chello.nl>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006091523.13546.goretux@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 01:07:04PM +0200, Peter Zijlstra wrote:
-> This patch changes the anon_vma refcount to be 0 when the object is
-> free. It does this by adding 1 ref to being in use in the anon_vma
-> structure (iow. the anon_vma->head list is not empty).
+For now I've got a workaround:
+adding these 2 lines to my resume script makes the laptop monitor light up:
+
+xrandr --output DP3 --off
+xrandr --output DP3 --auto
+
+	Eric
+
+
+Le lundi 7 juin 2010 14:31:33, Eric Lacombe a écrit :
+> I find a way to light up the screen of my laptop after resume (but the
+> solution is not really satisfactory) :
+> When the resume step seems complete, I plug an auxiliary monitor through
+> the VGA connector, and the laptop screen light up immediately.
 > 
-> This allows a simpler release scheme without having to check both the
-> refcount and the list as well as avoids taking a ref for each entry
-> on the list.
+> Any idea on the source of this problem ? and how to resolve it ?
 > 
-
-Nice touch. It makes it closer to page reference counting as well so
-should be familiar.
-
-> We then convert page_lock_anon_vma() over to use refcounts. This is
-> done for each of convertion of anon_vma from spinlock to mutex.
+> Thanks in advance for your response.
 > 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  include/linux/rmap.h |   11 ++++-
->  mm/ksm.c             |    4 --
->  mm/rmap.c            |   94 ++++++++++++++++++++++-----------------------------
->  3 files changed, 52 insertions(+), 57 deletions(-)
+> 	Eric
 > 
-> Index: linux-2.6/include/linux/rmap.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/rmap.h
-> +++ linux-2.6/include/linux/rmap.h
-> @@ -73,7 +73,13 @@ static inline void get_anon_vma(struct a
->  	atomic_inc(&anon_vma->refcount);
->  }
->  
-> -void put_anon_vma(struct anon_vma *);
-> +void __put_anon_vma(struct anon_vma *anon_vma);
-> +
-> +static inline void put_anon_vma(struct anon_vma *anon_vma)
-> +{
-> +	if (atomic_dec_and_test(&anon_vma->refcount))
-> +		__put_anon_vma(anon_vma);
-> +}
->  
->  static inline struct anon_vma *page_anon_vma(struct page *page)
->  {
-> @@ -116,7 +122,6 @@ void unlink_anon_vmas(struct vm_area_str
->  int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
->  int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
->  void __anon_vma_link(struct vm_area_struct *);
-> -void anon_vma_free(struct anon_vma *);
->  
->  static inline void anon_vma_merge(struct vm_area_struct *vma,
->  				  struct vm_area_struct *next)
-> @@ -125,6 +130,8 @@ static inline void anon_vma_merge(struct
->  	unlink_anon_vmas(next);
->  }
->  
-> +struct anon_vma *page_get_anon_vma(struct page *page);
-> +
->  /*
->   * rmap interfaces called when adding or removing pte of page
->   */
-> Index: linux-2.6/mm/ksm.c
-> ===================================================================
-> --- linux-2.6.orig/mm/ksm.c
-> +++ linux-2.6/mm/ksm.c
-> @@ -323,9 +323,7 @@ static void hold_anon_vma(struct rmap_it
->  
->  static void ksm_put_anon_vma(struct rmap_item *rmap_item)
->  {
-> -	struct anon_vma *anon_vma = rmap_item->anon_vma;
-> -
-> -	put_anon_vma(anon_vma);
-> +	put_anon_vma(rmap_item->anon_vma);
->  }
->  
->  /*
-> Index: linux-2.6/mm/rmap.c
-> ===================================================================
-> --- linux-2.6.orig/mm/rmap.c
-> +++ linux-2.6/mm/rmap.c
-> @@ -66,11 +66,24 @@ static struct kmem_cache *anon_vma_chain
->  
->  static inline struct anon_vma *anon_vma_alloc(void)
->  {
-> -	return kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
-> +	struct anon_vma *anon_vma;
-> +
-> +	anon_vma = kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
-> +	if (anon_vma) {
-> +		atomic_set(&anon_vma->refcount, 1);
-> +		/*
-> +		 * This VMA had no anon_vma yet.  This anon_vma is
-> +		 * the root of any anon_vma tree that might form.
-> +		 */
-> +		anon_vma->root = anon_vma;
-> +	}
-
-This comment is no longer strictly correct. anon_vma_alloc() can also be
-called from anon_vma_fork where the root of the newly allocated anon_vma
-will be set to the same as the parents anon_vma. Maybe something like
-
-/*
- * Initialise the anon_vma root to point to itself. If called from
- * fork, the root will be reset to the parents anon_vma 
- */
-
-Else, just leave the initialisation of the root where it was but only
-init the refcount here.
-
-> +
-> +	return anon_vma;
->  }
->  
-> -void anon_vma_free(struct anon_vma *anon_vma)
-> +static inline void anon_vma_free(struct anon_vma *anon_vma)
->  {
-> +	VM_BUG_ON(atomic_read(&anon_vma->refcount));
->  	kmem_cache_free(anon_vma_cachep, anon_vma);
->  }
->  
-> @@ -132,11 +145,6 @@ int anon_vma_prepare(struct vm_area_stru
->  			if (unlikely(!anon_vma))
->  				goto out_enomem_free_avc;
->  			allocated = anon_vma;
-> -			/*
-> -			 * This VMA had no anon_vma yet.  This anon_vma is
-> -			 * the root of any anon_vma tree that might form.
-> -			 */
-> -			anon_vma->root = anon_vma;
->  		}
->  
->  		anon_vma_lock(anon_vma);
-> @@ -155,7 +163,7 @@ int anon_vma_prepare(struct vm_area_stru
->  		anon_vma_unlock(anon_vma);
->  
->  		if (unlikely(allocated))
-> -			anon_vma_free(allocated);
-> +			put_anon_vma(allocated);
->  		if (unlikely(avc))
->  			anon_vma_chain_free(avc);
->  	}
-> @@ -248,7 +256,7 @@ int anon_vma_fork(struct vm_area_struct 
->  	return 0;
->  
->   out_error_free_anon_vma:
-> -	anon_vma_free(anon_vma);
-> +	put_anon_vma(anon_vma);
->   out_error:
->  	unlink_anon_vmas(vma);
->  	return -ENOMEM;
-> @@ -265,16 +273,12 @@ static void anon_vma_unlink(struct anon_
->  
->  	anon_vma_lock(anon_vma);
->  	list_del(&anon_vma_chain->same_anon_vma);
-> -
->  	/* We must garbage collect the anon_vma if it's empty */
-
-Unnecessary whitespace change there.
-
-> -	empty = list_empty(&anon_vma->head) && !atomic_read(&anon_vma->refcount);
-> +	empty = list_empty(&anon_vma->head);
->  	anon_vma_unlock(anon_vma);
->  
-> -	if (empty) {
-> -		/* We no longer need the root anon_vma */
-> -		put_anon_vma(anon_vma->root);
-> -		anon_vma_free(anon_vma);
-> -	}
-> +	if (empty)
-> +		put_anon_vma(anon_vma);
->  }
->  
->  void unlink_anon_vmas(struct vm_area_struct *vma)
-> @@ -326,9 +330,9 @@ void __init anon_vma_init(void)
->   * that the anon_vma pointer from page->mapping is valid if there is a
->   * mapcount, we can dereference the anon_vma after observing those.
->   */
-> -struct anon_vma *page_lock_anon_vma(struct page *page)
-> +struct anon_vma *page_get_anon_vma(struct page *page)
->  {
-> -	struct anon_vma *anon_vma;
-> +	struct anon_vma *anon_vma = NULL;
->  	unsigned long anon_mapping;
->  
-
-It's not clear why you split page_get_anon_vma and page_lock_anon_vma at
-this point. Maybe you use it later in the series?
-
->  	rcu_read_lock();
-> @@ -339,17 +343,28 @@ struct anon_vma *page_lock_anon_vma(stru
->  		goto out;
->  
->  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
-> -	anon_vma_lock(anon_vma);
-> -	return anon_vma;
-> +	if (!atomic_inc_not_zero(&anon_vma->refcount))
-> +		anon_vma = NULL;
->  out:
->  	rcu_read_unlock();
-> -	return NULL;
-> +
-> +	return anon_vma;
-> +}
-> +
-> +struct anon_vma *page_lock_anon_vma(struct page *page)
-> +{
-> +	struct anon_vma *anon_vma = page_get_anon_vma(page);
-> +
-> +	if (anon_vma)
-> +		anon_vma_lock(anon_vma);
-> +
-> +	return anon_vma;
->  }
->  
->  void page_unlock_anon_vma(struct anon_vma *anon_vma)
->  {
->  	anon_vma_unlock(anon_vma);
-> -	rcu_read_unlock();
-> +	put_anon_vma(anon_vma);
->  }
->  
->  /*
-> @@ -1405,36 +1420,11 @@ int try_to_munlock(struct page *page)
->  		return try_to_unmap_file(page, TTU_MUNLOCK);
->  }
->  
-> -/*
-> - * Drop an anon_vma refcount, freeing the anon_vma and anon_vma->root
-> - * if necessary.  Be careful to do all the tests under the lock.  Once
-> - * we know we are the last user, nobody else can get a reference and we
-> - * can do the freeing without the lock.
-> - */
-> -void put_anon_vma(struct anon_vma *anon_vma)
-> -{
-> -	if (atomic_dec_and_lock(&anon_vma->refcount, &anon_vma->root->lock)) {
-> -		struct anon_vma *root = anon_vma->root;
-> -		int empty = list_empty(&anon_vma->head);
-> -		int last_root_user = 0;
-> -		int root_empty = 0;
-> -
-> -		/*
-> -		 * The refcount on a non-root anon_vma got dropped.  Drop
-> -		 * the refcount on the root and check if we need to free it.
-> -		 */
-> -		if (empty && anon_vma != root) {
-> -			last_root_user = atomic_dec_and_test(&root->refcount);
-> -			root_empty = list_empty(&root->head);
-> -		}
-> -		anon_vma_unlock(anon_vma);
-> -
-> -		if (empty) {
-> -			anon_vma_free(anon_vma);
-> -			if (root_empty && last_root_user)
-> -				anon_vma_free(root);
-> -		}
-> -	}
-> +void __put_anon_vma(struct anon_vma *anon_vma)
-> +{
-> +	if (anon_vma->root != anon_vma)
-> +		put_anon_vma(anon_vma->root);
-> +	anon_vma_free(anon_vma);
->  }
->  
->  #ifdef CONFIG_MIGRATION
-> 
-
-In the first reading, nothing horrible jumped out at this point. I'm going
-to run a few tests on just the first 10 patches in this series and see what
-that looks like. For this patch in particular, I  want to be sure we are
-not leaking anon_vma's.
-
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+> Le samedi 5 juin 2010 00:13:17 Eric Lacombe, vous avez écrit :
+> > Hi, (the introduction is at the end of this one, it comes from a previous
+> > mail sent to Zhenyu Wang)
+> > 
+> > I was thinking that it could come from bogus ACPI tables.
+> > 
+> > Someone said to me (from sony-vaio-z-series@lists.launchpad.net) that
+> > with a patched BIOS (that someone does and that I don't really want to
+> > test) that allows to access a more advanced menu from my laptop, it will
+> > allows to have the switch button (that switches between nvidia chipset
+> > and Intel IGP) behave statically and not dynamically as it does now.
+> > And it seems that with its laptop he was able to resume correctly from
+> > the nvidia chipset.
+> > 
+> > I added Dave Airlie, as I know he played with hybrid-graphics (by the way
+> > switcheroo make crashed my laptop)
+> > 
+> > I could send to you my DSDT if it could give you some clues on what
+> > screwed things up. Just ask to me.
+> > 
+> > If someone has any idea, I could do some tests, try some patchs ?
+> > And as always feel free to ask me more information if you need.
+> > 
+> > Best regards,
+> > 
+> > 	Eric
+> > 
+> > Le lundi 31 mai 2010 01:42:39, Eric Lacombe a écrit :
+> > > Hi,
+> > > 
+> > > I've got a problem with my laptop (powered by i7 Arrandale, it's a Sony
+> > > Vaio Z11Z9E), when I resume from "suspend to ram" my screen does not
+> > > light up. X uses the Intel IGP.
+> > > Maybe it is an issue with the driver of the IGP of the Core i7
+> > > Arrandale?
+> > > 
+> > > I currently use Linux 2.6.34, and have tested 2.6.33 and 2.6.32 (I see
+> > > on google that there were some problems about Intel IGP and
+> > > blackscreen. I was hit by them too at that time)
+> > > 
+> > > If you have any suggestions or if you want me to test any patch, I
+> > > would be glad to do so.
+> > > Feel free to ask me any information I could provide to you about this
+> > > problem.
+> > > 
+> > > Best regards,
+> > > 
+> > > 	Eric
