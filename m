@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab0FIQYn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 12:24:43 -0400
-Received: from mail.perches.com ([173.55.12.10]:2919 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757677Ab0FIQYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 12:24:42 -0400
-Subject: Re: [PATCH 00/17] MAINTAINERS: Add drivers/staging entries
-From: Joe Perches <joe@perches.com>
-To: Greg KH <greg@kroah.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Jarod Wilson <jarod@wilsonet.com>,
-       linux-kernel@vger.kernel.org, Henk de Groot <pe1dnn@amsat.org>,
-       Naren Sankar <nsankar@broadcom.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-       Pavel Machek <pavel@ucw.cz>,
-       Luis Rodriguez <Luis.Rodriguez@atheros.com>, devel@driverdev.osuosl.org,
-       Mori Hess <fmhess@users.sourceforge.net>,
-       Steve Underwood <steveu@coppice.org>,
-       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-       Arnaud Patard <apatard@mandriva.com>,
-       Marek Lindner <lindner_marek@yahoo.de>,
-       Forest Bond <forest@alittletooquiet.net>,
-       Ossama Othman <ossama.othman@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-       Haiyang Zhang <haiyangz@microsoft.com>, Ian Abbott <abbotti@mev.co.uk>,
-       Willy Tarreau <willy@meta-x.org>, Scott Davilla <davilla@4pi.com>,
-       Scott Smedley <ss@aao.gov.au>, Jakub Schmidtke <sjakub@gmail.com>,
-       Teddy Wang <teddy.wang@siliconmotion.com.cn>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rowe <david@rowetel.com>
-In-Reply-To: <20100609160119.GA23100@kroah.com>
-References: <cover.1275935090.git.joe@perches.com>
-	 <1276032382.24044.23.camel@Joe-Laptop.home>
-	 <20100609000713.GB16160@kroah.com> <201006091524.51998.arnd@arndb.de>
-	 <20100609150833.GD20705@kroah.com>
-	 <1276098744.1556.50.camel@Joe-Laptop.home>
-	 <20100609160119.GA23100@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Jun 2010 09:24:36 -0700
-Message-ID: <1276100676.1556.98.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757943Ab0FIQ2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 12:28:19 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43655 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762Ab0FIQ2R convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 12:28:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nR7HKUioOHMOI1E1ESzkK3kioDMYiYULwmURnkiicjkqu34lGPfz+NpDKJo4ECqooH
+         RdsB/xHFZbq7Ngt3kb5rmguA4ATuWWzSTzp9TjUCbfsH0tjkfyzIh7+lKUoogwHiX2+m
+         DUqbiWZ6GbIci/D0NPc1Q54++64sD8sfFG8sM=
+MIME-Version: 1.0
+In-Reply-To: <1276097068.1745.13.camel@laptop>
+References: <AANLkTin2pPqOUx--9fIX3BH3e-cU6oCRufijcx_4ozx5@mail.gmail.com>
+	<20100608001929.GF2387@linux.vnet.ibm.com>
+	<AANLkTikl13cJNuU32JzRarrUnoh5DYHr-Tbnv9B-UjsG@mail.gmail.com>
+	<1275986441.5408.111.camel@twins>
+	<AANLkTimXVlgzHivCQberLdrFP8BH_nJzt8_ozUNHG_aI@mail.gmail.com>
+	<1276004075.2987.208.camel@twins>
+	<AANLkTil6ucLZ0A6tWx-OQt_2EeKnx8nSx6rIg2t1L2t5@mail.gmail.com>
+	<1276097068.1745.13.camel@laptop>
+Date: Wed, 9 Jun 2010 11:29:14 -0400
+Message-ID: <AANLkTinl2JKUX6859Ioa1y0DqHWXH5TrkissQ8BAF4cP@mail.gmail.com>
+Subject: Re: 2.6.35-rc2-git1 - include/linux/cgroup.h:534 invoked 
+	rcu_dereference_check() without protection!
+From: Miles Lane <miles.lane@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: paulmck@linux.vnet.ibm.com, Vivek Goyal <vgoyal@redhat.com>,
+       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       nauman@google.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       Johannes Berg <johannes@sipsolutions.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 09:01 -0700, Greg KH wrote:
-> I was trying to point out that you are ignoring the maintainer
-> of the subsystem for which you are adding entries for.  In fact, going
-> against the wishes of that maintainer (i.e. me) at the same time.
-> > I'm the closest thing there is to a MAINTAINERS maintainer.
-> > Andrew has taken all the patches I've posted to it except for
-> > the patchset that added file patterns and you're rarely a
-> > path to get things into MAINTAINERS.
-[]
-> But that has little to do with this.
+On Wed, Jun 9, 2010 at 11:24 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-06-09 at 11:11 -0400, Miles Lane wrote:
+>>
+>> Sorry.  I misunderstood this message when I first read it.  I didn't
+>> realize this message include a new version of the patch.
+>> Anyhow, I just tried to apply the patch to 2.6.35-rc2-git3 and got this:
+>>
+>> # patch -p1 -l -F 20 --dry-run < ../5.patch
+>> patching file include/linux/cgroup.h
+>> patching file kernel/sched.c
+>> Hunk #1 succeeded at 306 with fuzz 1.
+>> Hunk #3 FAILED at 4462.
+>> Hunk #4 succeeded at 4487 with fuzz 3.
+>> 1 out of 4 hunks FAILED -- saving rejects to file kernel/sched.c.rej
+>
+> Weird.. it seems to apply without trouble to Linus' git tree.
+>
+> root@twins:/usr/src/linux-2.6# git checkout -f origin/master
+> HEAD is now at 84f7586... Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6
+> root@twins:/usr/src/linux-2.6# quilt push
+> Applying patch patches/sched-rcu-validation.patch
+> patching file include/linux/cgroup.h
+> patching file kernel/sched.c
+>
+> Now at patch patches/sched-rcu-validation.patch
+> root@twins:/usr/src/linux-2.6# git describe
+> v2.6.35-rc2-54-g84f7586
 
-Of course it does.
-
-Without these patches, people have to look in multiple places
-to determine where best to send patches and get_maintainers.pl
-produces poorer results.
-
-The centralization is good, the redundancy is low, and I like
-it when tools produce good results.
-
-It seems you produce fewer satisfaction endorphins from that
-than I. ;)
-
-> If you are going to be responsible for keeping these up to date,
-> especially when the drivers go away or move, then fine, make these
-> changes.
-
-Yup, I do that and will likely continue to do so.
-
-I occasionally run scripts that sieve MAINTAINERS file patterns
-against the current tree and highlight what's renamed or removed.
-
-Then I post patches.
-
-> But if not, then don't accept them, as I'm not going to.
-
-Who are you writing that to?  Me?
-Linus doesn't pull from me.
-
-Anyway no worries Greg.  Life's good.
-
-Hope your enjoyment endorphin receptors are always active...
-
+Oh.  Duh. I know what is going on.  I had received another patch to
+sched.c.  They must conflict.  I will test with just your patch now.
