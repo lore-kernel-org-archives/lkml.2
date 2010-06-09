@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179Ab0FIMgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 08:36:13 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:38598 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755565Ab0FIMgL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 08:36:11 -0400
-Date: Wed, 9 Jun 2010 08:35:57 -0400
-From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>, linuxppc-dev@ozlabs.org,
-       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 3/5] Removing dead CONFIG_SMP_750
-Message-ID: <20100609123557.GJ7801@zod.rchland.ibm.com>
-References: <cover.1275925219.git.siccegge@cs.fau.de> <8bf8cfaf47590e1a85f9510bb546ca35e3458bf8.1275925219.git.siccegge@cs.fau.de>
+	id S1757480Ab0FIMhL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 08:37:11 -0400
+Received: from thunk.org ([69.25.196.29]:45020 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755585Ab0FIMhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 08:37:08 -0400
+Date: Wed, 9 Jun 2010 08:37:04 -0400
+From: tytso@mit.edu
+To: Michel Lespinasse <walken@google.com>
+Cc: Salman <sqazi@google.com>, peterz@infradead.org, mingo@elte.hu,
+       akpm@inux-foundation.org, linux-kernel@vger.kernel.org,
+       tytso@google.com
+Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
+ reused immediately.
+Message-ID: <20100609123704.GE6529@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Michel Lespinasse <walken@google.com>,
+	Salman <sqazi@google.com>, peterz@infradead.org, mingo@elte.hu,
+	akpm@inux-foundation.org, linux-kernel@vger.kernel.org,
+	tytso@google.com
+References: <20100609062438.29081.91635.stgit@bumblebee1.mtv.corp.google.com>
+ <20100609114903.GA9223@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8bf8cfaf47590e1a85f9510bb546ca35e3458bf8.1275925219.git.siccegge@cs.fau.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100609114903.GA9223@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 09, 2010 at 12:00:21PM +0200, Christoph Egger wrote:
->CONFIG_SMP_750 doesn't exist in Kconfig, therefore removing all
->references for it from the source code.
+On Wed, Jun 09, 2010 at 04:49:03AM -0700, Michel Lespinasse wrote:
+> You should make sure to handle pid wrap-around for this last/pid comparison.
+> I think proper way to do that would be:
 
-Yeah, we don't support SMP on 750 at the moment.  This code was carried over
-from the arch/ppc days, and that code was present pre-git.  I think we can
-drop it, but I'll leave that up to Ben.  Maybe he has crazy plans for a 750 SMP
-board.
+Good point!  I forgot about checking for pid wrap-around.
 
-josh
+> The last_read == pid case is also interesting - it means another
+> thread found the same pid, forked a child with that pid, and the
+> child exited already (since the bitmap was cleared).  However we
+> don't need to handle that case - first, that race is much less
+> likely to happen, and second, the duplicate pid would be returned in
+> two separate tasks - so this would not cause problems in bash as in
+> your example.
 
->
->Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
->---
-> arch/powerpc/mm/tlb_hash32.c |    4 ----
-> 1 files changed, 0 insertions(+), 4 deletions(-)
->
->diff --git a/arch/powerpc/mm/tlb_hash32.c b/arch/powerpc/mm/tlb_hash32.c
->index 8aaa8b7..925fecb 100644
->--- a/arch/powerpc/mm/tlb_hash32.c
->+++ b/arch/powerpc/mm/tlb_hash32.c
->@@ -94,11 +94,7 @@ void tlb_flush(struct mmu_gather *tlb)
->  * the cache operations on the bus.  Hence we need to use an IPI
->  * to get the other CPU(s) to invalidate their TLBs.
->  */
->-#ifdef CONFIG_SMP_750
->-#define FINISH_FLUSH	smp_send_tlb_invalidate(0)
->-#else
-> #define FINISH_FLUSH	do { } while (0)
->-#endif
->
-> static void flush_range(struct mm_struct *mm, unsigned long start,
-> 			unsigned long end)
->-- 
->1.6.3.3
->
->_______________________________________________
->Linuxppc-dev mailing list
->Linuxppc-dev@lists.ozlabs.org
->https://lists.ozlabs.org/listinfo/linuxppc-dev
+In order for that to happen, all of this would have to happen between
+the time that last_pid was initially sampled at the very beginning of
+alloc_pidmap().  Could that happen?  I think it could, if kzalloc()
+took a very long time to run, and the scheduler was _very_ unfair.  We
+could try to guard against that by checking to see if last_pid has
+changed after allocating map->page (in the unlikely case of !map->page
+being NULL in the first place) and if so, restarting alloc_pidmap() by
+jumping back to the beginning of the function.
+
+Could that happen with bash?  I'm not as confident as you that it
+could never happen.  The fact that we saw the race in the first place
+in bash means that it could still happen in this case, I think.  In
+any case, if we have two processes getting the same pid in the absence
+of a fork, that would be a bad thing and could lead to all sorts of
+confusion, so it's probably a good thing to guard against even if it
+is a rare case.
+
+BTW, Salman, I haven't seen it, but I vaguely remember in the mail
+exchange with the person who reported this that we have a C/C++
+reproduction case?  If it's small enough, it might be a good idea to
+include it in the patch description.
+
+						- Ted
