@@ -1,209 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab0FIQT4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 12:19:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62112 "EHLO mx1.redhat.com"
+	id S1757921Ab0FIQYn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 12:24:43 -0400
+Received: from mail.perches.com ([173.55.12.10]:2919 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756899Ab0FIQTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 12:19:54 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] FRV: Implement the GDB remote protocol 'p' command to
-	retrieve a register
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
-Date: Wed, 09 Jun 2010 17:19:09 +0100
-Message-ID: <20100609161909.18222.78028.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1757677Ab0FIQYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 12:24:42 -0400
+Subject: Re: [PATCH 00/17] MAINTAINERS: Add drivers/staging entries
+From: Joe Perches <joe@perches.com>
+To: Greg KH <greg@kroah.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Jarod Wilson <jarod@wilsonet.com>,
+       linux-kernel@vger.kernel.org, Henk de Groot <pe1dnn@amsat.org>,
+       Naren Sankar <nsankar@broadcom.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+       Pavel Machek <pavel@ucw.cz>,
+       Luis Rodriguez <Luis.Rodriguez@atheros.com>, devel@driverdev.osuosl.org,
+       Mori Hess <fmhess@users.sourceforge.net>,
+       Steve Underwood <steveu@coppice.org>,
+       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+       Arnaud Patard <apatard@mandriva.com>,
+       Marek Lindner <lindner_marek@yahoo.de>,
+       Forest Bond <forest@alittletooquiet.net>,
+       Ossama Othman <ossama.othman@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+       Haiyang Zhang <haiyangz@microsoft.com>, Ian Abbott <abbotti@mev.co.uk>,
+       Willy Tarreau <willy@meta-x.org>, Scott Davilla <davilla@4pi.com>,
+       Scott Smedley <ss@aao.gov.au>, Jakub Schmidtke <sjakub@gmail.com>,
+       Teddy Wang <teddy.wang@siliconmotion.com.cn>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Rowe <david@rowetel.com>
+In-Reply-To: <20100609160119.GA23100@kroah.com>
+References: <cover.1275935090.git.joe@perches.com>
+	 <1276032382.24044.23.camel@Joe-Laptop.home>
+	 <20100609000713.GB16160@kroah.com> <201006091524.51998.arnd@arndb.de>
+	 <20100609150833.GD20705@kroah.com>
+	 <1276098744.1556.50.camel@Joe-Laptop.home>
+	 <20100609160119.GA23100@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Jun 2010 09:24:36 -0700
+Message-ID: <1276100676.1556.98.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the GDB remote protocol 'p' command to retrieve a single register
-value.
+On Wed, 2010-06-09 at 09:01 -0700, Greg KH wrote:
+> I was trying to point out that you are ignoring the maintainer
+> of the subsystem for which you are adding entries for.  In fact, going
+> against the wishes of that maintainer (i.e. me) at the same time.
+> > I'm the closest thing there is to a MAINTAINERS maintainer.
+> > Andrew has taken all the patches I've posted to it except for
+> > the patchset that added file patterns and you're rarely a
+> > path to get things into MAINTAINERS.
+[]
+> But that has little to do with this.
 
-The 'p' command is tried by some gdb versions before they consider using the
-'g' command (to batch-retrieve all the registers).  Before the following
-commit:
+Of course it does.
 
-	commit 7ca8b9c0dafd1cb36289aa4c92c7beae7adcd34f
-	Author: David Howells <dhowells@redhat.com>
-	Date:   Mon May 24 14:32:54 2010 -0700
-	Subject: frv: extend gdbstub to support more features of gdb
+Without these patches, people have to look in multiple places
+to determine where best to send patches and get_maintainers.pl
+produces poorer results.
 
-the 'p' command just returned an empty reply, which causes gdb to then go and
-use the 'g' command.  However, since that commit, the 'p' command returns an
-error string, which causes gdb to abort its connection to the target.
+The centralization is good, the redundancy is low, and I like
+it when tools produce good results.
 
-Not all gdb versions are affected, some use try 'g' first, and if that works,
-don't bother with 'p', and so don't see the error.
+It seems you produce fewer satisfaction endorphins from that
+than I. ;)
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+> If you are going to be responsible for keeping these up to date,
+> especially when the drivers go away or move, then fine, make these
+> changes.
 
- arch/frv/include/asm/gdb-stub.h |    2 +
- arch/frv/kernel/gdb-stub.c      |  116 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 118 insertions(+), 0 deletions(-)
+Yup, I do that and will likely continue to do so.
 
+I occasionally run scripts that sieve MAINTAINERS file patterns
+against the current tree and highlight what's renamed or removed.
 
-diff --git a/arch/frv/include/asm/gdb-stub.h b/arch/frv/include/asm/gdb-stub.h
-index e6bedd0..8bb0288 100644
---- a/arch/frv/include/asm/gdb-stub.h
-+++ b/arch/frv/include/asm/gdb-stub.h
-@@ -60,6 +60,8 @@
- #define GDB_REG_SCR(N)	(141+(N))
- #define GDB_REG_LR	145
- #define GDB_REG_LCR	146
-+#define GDB_REG_IACC0H	147
-+#define GDB_REG_IACC0L	148
- #define GDB_REG_FSR0	149
- #define GDB_REG_ACC(N)	(150+(N))
- #define GDB_REG_ACCG(N)	(158+(N)/4)
-diff --git a/arch/frv/kernel/gdb-stub.c b/arch/frv/kernel/gdb-stub.c
-index 84d103c..1a65d7b 100644
---- a/arch/frv/kernel/gdb-stub.c
-+++ b/arch/frv/kernel/gdb-stub.c
-@@ -1789,6 +1789,104 @@ void gdbstub(int sigval)
- 			flush_cache = 1;
- 			break;
- 
-+			/* pNN: Read value of reg N and return it */
-+		case 'p':
-+			ptr = &input_buffer[1];
-+
-+			if (!hexToInt(&ptr, &addr)) {
-+				gdbstub_strcpy(output_buffer, "E01");
-+				break;
-+			}
-+
-+			temp2 = 1;
-+			switch (addr) {
-+			case GDB_REG_GR(0):
-+				temp = 0;
-+				break;
-+			case GDB_REG_GR(1) ... GDB_REG_GR(63):
-+				temp = __debug_user_context->i.gr[addr - GDB_REG_GR(0)];
-+				break;
-+			case GDB_REG_FR(0) ... GDB_REG_FR(63):
-+				temp = __debug_user_context->f.fr[addr - GDB_REG_FR(0)];
-+				break;
-+			case GDB_REG_PC:
-+				temp = __debug_user_context->i.pc;
-+				break;
-+			case GDB_REG_PSR:
-+				temp = __debug_user_context->i.psr;
-+				break;
-+			case GDB_REG_CCR:
-+				temp = __debug_user_context->i.ccr;
-+				break;
-+			case GDB_REG_CCCR:
-+				temp = __debug_user_context->i.cccr;
-+				break;
-+			case GDB_REG_BRR:
-+				temp = __debug_status.brr;
-+				break;
-+			case GDB_REG_LR:
-+				temp = __debug_user_context->i.lr;
-+				break;
-+			case GDB_REG_LCR:
-+				temp = __debug_user_context->i.lcr;
-+				break;
-+			case GDB_REG_TBR:
-+				temp = __debug_user_context->i.tbr;
-+				break;
-+			case GDB_REG_FSR0:
-+				temp = __debug_user_context->f.fsr[0];
-+				break;
-+			case GDB_REG_ACC(0) ... GDB_REG_ACC(7):
-+				temp = __debug_user_context->f.acc[addr - GDB_REG_ACC(0)];
-+				break;
-+			case GDB_REG_ACCG(0):
-+				temp = *(uint32_t *) &__debug_user_context->f.accg[0];
-+				break;
-+			case GDB_REG_ACCG(4):
-+				temp = *(uint32_t *) &__debug_user_context->f.accg[4];
-+				break;
-+			case GDB_REG_IACC0H:
-+				temp = ((u32*)&__debug_frame->iacc0)[0];
-+				break;
-+			case GDB_REG_IACC0L:
-+				temp = ((u32*)&__debug_frame->iacc0)[1];
-+				break;
-+			case GDB_REG_MSR(0) ... GDB_REG_MSR(1):
-+				temp = __debug_user_context->f.msr[addr - GDB_REG_MSR(0)];
-+				break;
-+			case GDB_REG_GNER(0) ... GDB_REG_GNER(1):
-+				temp = __debug_user_context->i.gner[addr - GDB_REG_GNER(0)];
-+				break;
-+			case GDB_REG_FNER(0) ... GDB_REG_FNER(1):
-+				temp = __debug_user_context->f.fner[addr - GDB_REG_FNER(0)];
-+				break;
-+			case GDB_REG_DBAR(0):
-+				asm volatile("movsg dbar0,%0" : "=r"(temp));
-+				break;
-+			case GDB_REG_DBAR(1):
-+				asm volatile("movsg dbar1,%0" : "=r"(temp));
-+				break;
-+			case GDB_REG_DBAR(2):
-+				asm volatile("movsg dbar2,%0" : "=r"(temp));
-+				break;
-+			case GDB_REG_DBAR(3):
-+				asm volatile("movsg dbar3,%0" : "=r"(temp));
-+				break;
-+			default:
-+				temp = 0;
-+				temp2 = 0;
-+				break;
-+			}
-+
-+			if (temp2) {
-+				ptr = output_buffer;
-+				ptr = mem2hex(&temp, ptr, 4, 0);
-+			}
-+			else {
-+				gdbstub_strcpy(output_buffer, "E02");
-+			}
-+			break;
-+
- 			/* PNN,=RRRRRRRR: Write value R to reg N return OK */
- 		case 'P':
- 			ptr = &input_buffer[1];
-@@ -1844,6 +1942,12 @@ void gdbstub(int sigval)
- 			case GDB_REG_ACCG(4):
- 				*(uint32_t *) &__debug_user_context->f.accg[4] = temp;
- 				break;
-+			case GDB_REG_IACC0H:
-+				((u32*)&__debug_frame->iacc0)[0] = temp;
-+				break;
-+			case GDB_REG_IACC0L:
-+				((u32*)&__debug_frame->iacc0)[1] = temp;
-+				break;
- 			case GDB_REG_MSR(0) ... GDB_REG_MSR(1):
- 				__debug_user_context->f.msr[addr - GDB_REG_MSR(0)] = temp;
- 				break;
-@@ -1853,6 +1957,18 @@ void gdbstub(int sigval)
- 			case GDB_REG_FNER(0) ... GDB_REG_FNER(1):
- 				__debug_user_context->f.fner[addr - GDB_REG_FNER(0)] = temp;
- 				break;
-+			case GDB_REG_DBAR(0):
-+				asm volatile("movgs %0,dbar0" :: "r"(temp));
-+				break;
-+			case GDB_REG_DBAR(1):
-+				asm volatile("movgs %0,dbar1" :: "r"(temp));
-+				break;
-+			case GDB_REG_DBAR(2):
-+				asm volatile("movgs %0,dbar2" :: "r"(temp));
-+				break;
-+			case GDB_REG_DBAR(3):
-+				asm volatile("movgs %0,dbar3" :: "r"(temp));
-+				break;
- 			default:
- 				temp2 = 0;
- 				break;
+Then I post patches.
+
+> But if not, then don't accept them, as I'm not going to.
+
+Who are you writing that to?  Me?
+Linus doesn't pull from me.
+
+Anyway no worries Greg.  Life's good.
+
+Hope your enjoyment endorphin receptors are always active...
 
