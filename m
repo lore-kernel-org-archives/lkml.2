@@ -1,182 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758271Ab0FIVAl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 17:00:41 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:7878 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754510Ab0FIVAj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 17:00:39 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding;
-	b=fLuPwOGfPvOESiJ1OxLV0fPZuELs6mcmNDunfyNYy7rxDYY2aYlM790oxP+98z+9D
-	on0sCwRsb7nfMMOgN+nSQ==
-Subject: [PATCH] Fix a race in pid generation that causes pids to be reused
-	immediately.
-To: peterz@infradead.org, akpm@linux-foundation.org,
-       torvalds@linux-foundation.org, mingo@elte.hu,
-       linux-kernel@vger.kernel.org
-From: Salman <sqazi@google.com>
-Cc: tytso@google.com
-Date: Wed, 09 Jun 2010 14:00:15 -0700
-Message-ID: <20100609210014.7464.92234.stgit@bumblebee1.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	id S1758256Ab0FIVGO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 17:06:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6579 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752965Ab0FIVGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 17:06:13 -0400
+Date: Wed, 9 Jun 2010 23:03:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Roland McGrath <roland@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH] oom: Make coredump interruptible
+Message-ID: <20100609210358.GA16545@redhat.com>
+References: <20100602185812.4B5894A549@magilla.sf.frob.com> <20100602203827.GA29244@redhat.com> <20100604194635.72D3.A69D9226@jp.fujitsu.com> <20100604112721.GA12582@redhat.com> <20100609195309.GA6899@redhat.com> <alpine.DEB.2.00.1006091341040.3490@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1006091341040.3490@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A program that repeatedly forks and waits is susceptible to having the
-same pid repeated, especially when it competes with another instance of the
-same program.  This is really bad for bash implementation.  Furthermore, many shell
-scripts assume that pid numbers will not be used for some length of time.
+On 06/09, David Rientjes wrote:
+>
+> On Wed, 9 Jun 2010, Oleg Nesterov wrote:
+>
+> > --- x/mm/oom_kill.c
+> > +++ x/mm/oom_kill.c
+> > @@ -414,6 +414,7 @@ static void __oom_kill_task(struct task_
+> >  	p->rt.time_slice = HZ;
+> >  	set_tsk_thread_flag(p, TIF_MEMDIE);
+> >
+> > +	clear_bit(MMF_COREDUMP, &p->mm->flags);
+> >  	force_sig(SIGKILL, p);
+> >  }
+> >
+>
+> This requires task_lock(p).
 
-Race Description:
+Yes, yes, sure. This is only template. I'll wait for the next mmotm
+to send the actual patch on top of recent changes. Unless Kosaki/Roland
+have other ideas.
 
-A                                    B
+Imho, we really need to fix the coredump/oom problem.
 
-// pid == offset == n                // pid == offset == n + 1
-test_and_set_bit(offset, map->page)
-                                     test_and_set_bit(offset, map->page);
-                                     pid_ns->last_pid = pid;
-pid_ns->last_pid = pid;
-                                     // pid == n + 1 is freed (wait())
-
-                                     // Next fork()...
-                                     last = pid_ns->last_pid; // == n
-                                     pid = last + 1;
-
-Code to reproduce it (Running multiple instances is more effective):
-
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-// The distance mod 32768 between two pids, where the first pid is expected
-// to be smaller than the second.
-int PidDistance(pid_t first, pid_t second) {
-  return (second + 32768 - first) % 32768;
-}
-
-int main(int argc, char* argv[]) {
-  int failed = 0;
-  pid_t last_pid = 0;
-  int i;
-  printf("%d\n", sizeof(pid_t));
-  for (i = 0; i < 10000000; ++i) {
-    if (i % 32786 == 0)
-      printf("Iter: %d\n", i/32768);
-    int child_exit_code = i % 256;
-    pid_t pid = fork();
-    if (pid == -1) {
-      fprintf(stderr, "fork failed, iteration %d, errno=%d", i, errno);
-      exit(1);
-    }
-    if (pid == 0) {
-      // Child
-      exit(child_exit_code);
-    } else {
-      // Parent
-      if (i > 0) {
-        int distance = PidDistance(last_pid, pid);
-        if (distance == 0 || distance > 30000) {
-          fprintf(stderr,
-                  "Unexpected pid sequence: previous fork: pid=%d, "
-                  "current fork: pid=%d for iteration=%d.\n",
-                  last_pid, pid, i);
-          failed = 1;
-        }
-      }
-      last_pid = pid;
-      int status;
-      int reaped = wait(&status);
-      if (reaped != pid) {
-        fprintf(stderr,
-                "Wait return value: expected pid=%d, "
-                "got %d, iteration %d\n",
-                pid, reaped, i);
-        failed = 1;
-      } else if (WEXITSTATUS(status) != child_exit_code) {
-        fprintf(stderr,
-                "Unexpected exit status %x, iteration %d\n",
-                WEXITSTATUS(status), i);
-        failed = 1;
-      }
-    }
-  }
-  exit(failed);
-}
-
-
-Thanks to Ted Tso for the key ideas of this implementation.
-
-Signed-off-by: Salman Qazi <sqazi@google.com>
----
- kernel/pid.c |   39 ++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 38 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/pid.c b/kernel/pid.c
-index e9fd8c1..865a482 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -122,6 +122,22 @@ static void free_pidmap(struct upid *upid)
- 	atomic_inc(&map->nr_free);
- }
- 
-+/*
-+ * If we started walking pids at 'base', is 'a' seen before 'b'?
-+ *
-+ */
-+static int pid_before(int base, int a, int b)
-+{
-+	int a_lt_b = (a < b);
-+	int min_a_b = min(a, b);
-+	int max_a_b = max(a, b);
-+
-+	if ((base <= min_a_b) || (base >= max_a_b))
-+		return a_lt_b;
-+
-+	return !a_lt_b;
-+}
-+
- static int alloc_pidmap(struct pid_namespace *pid_ns)
- {
- 	int i, offset, max_scan, pid, last = pid_ns->last_pid;
-@@ -153,8 +169,29 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
- 		if (likely(atomic_read(&map->nr_free))) {
- 			do {
- 				if (!test_and_set_bit(offset, map->page)) {
-+					int prev;
-+					int last_write = last;
- 					atomic_dec(&map->nr_free);
--					pid_ns->last_pid = pid;
-+
-+					/*
-+					 * We might be racing with someone else trying
-+					 * to set pid_ns->last_pid.  We want the
-+					 * the winner to have the "later" value,
-+					 * because if the "earlier" value prevails, then
-+					 * a pid may get reused immediately.
-+					 *
-+					 * Since pids rollover, it is not sufficent
-+					 * to just pick the bigger value.  We
-+					 * have to consider where we started counting
-+					 * from.
-+					 */
-+					do {
-+						prev = last_write;
-+						last_write = cmpxchg(&pid_ns->last_pid,
-+							       prev, pid);
-+					} while ((prev != last_write) &&
-+						 (pid_before(last, last_write, pid)));
-+
- 					return pid;
- 				}
- 				offset = find_next_offset(map, offset);
+Oleg.
 
