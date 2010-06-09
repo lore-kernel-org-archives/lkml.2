@@ -1,41 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab0FIWdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 18:33:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756437Ab0FIWdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 18:33:08 -0400
+	id S1757798Ab0FIWdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 18:33:36 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53678 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756316Ab0FIWde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 18:33:34 -0400
+Date: Wed, 9 Jun 2010 23:33:26 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: tytso@mit.edu, Artem Bityutskiy <dedekind1@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
+       linux-fsdevel@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
+       "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+       Chris Mason <chris.mason@oracle.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-ext4@vger.kernel.org,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       David Woodhouse <dwmw2@infradead.org>, reiserfs-devel@vger.kernel.org,
+       Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>
+Subject: Re: [PATCHv4 01/17] VFS: introduce helpers for the s_dirty flag
+Message-ID: <20100609223326.GC31073@ZenIV.linux.org.uk>
+References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+ <1274795352-3551-2-git-send-email-dedekind1@gmail.com>
+ <20100528132318.0783675a.akpm@linux-foundation.org>
+ <20100528211432.GM31073@ZenIV.linux.org.uk>
+ <20100528141755.42958d81.akpm@linux-foundation.org>
+ <20100609154448.GC6162@thunk.org>
+ <20100609093157.cd040633.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-X-Fcc: ~/Mail/linus
-Cc: Albert Cahalan <acahalan@gmail.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>, randy.dunlap@oracle.com,
-       linuxppc-dev@lists.ozlabs.org, hpa@zytor.com, arnd@arndb.de
-Subject: Re: [PATCH v21 011/100] eclone (11/11): Document sys_eclone
-In-Reply-To: Sukadev Bhattiprolu's message of  Wednesday, 9 June 2010 11:14:31 -0700 <20100609181431.GB1211@us.ibm.com>
-References: <AANLkTimDfbJkAuoK1-asvk8Ub9C9QBkK5RkzLR3ilJUY@mail.gmail.com>
-	<20100601193230.GA17579@us.ibm.com>
-	<AANLkTinxCKl7RVe62UhIpNe5EriCufkgaih2D2mLLmC4@mail.gmail.com>
-	<20100602013839.GB17579@us.ibm.com>
-	<AANLkTinFGblE4fW35O0LchJZ22tz_5-qervpGC_lpUj_@mail.gmail.com>
-	<20100609181431.GB1211@us.ibm.com>
-X-Zippy-Says: My LESLIE GORE record is BROKEN..
-Message-Id: <20100609223249.AC8204B2CC@magilla.sf.frob.com>
-Date: Wed,  9 Jun 2010 15:32:49 -0700 (PDT)
+Content-Disposition: inline
+In-Reply-To: <20100609093157.cd040633.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Peter, Arnd, Roland - do you have any concerns with requiring all
-> architectures to specify the stack to eclone() as [base, offset]
+On Wed, Jun 09, 2010 at 09:31:57AM -0700, Andrew Morton wrote:
+> > Can we figure out what the new names will be for these accessor
+> > functions,
+> 
+> sb_mark_dirty(), sb_mark_clean(), sb_is_dirty().
 
-I can't see why that would be a problem.  
-It's consistent with the sigaltstack interface we already have.
-
-
-Thanks,
-Roland
+Fine by me.  If Linus doesn't take such a patch, I certainly will and put
+it into for-next ASAP.
