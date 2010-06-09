@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab0FIAti (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 20:49:38 -0400
-Received: from mail.lang.hm ([64.81.33.126]:52159 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756303Ab0FIAth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 20:49:37 -0400
-Date: Tue, 8 Jun 2010 17:49:32 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: =?ISO-8859-15?Q?T=F6r=F6k_Edwin?= <edwintorok@gmail.com>
-cc: Theodore Tso <tytso@MIT.EDU>, Jeffrey Merkey <jeffmerkey@gmail.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: EXT3 File System Corruption 2.6.34
-In-Reply-To: <4C0E469E.7030808@gmail.com>
-Message-ID: <alpine.DEB.2.01.1006081747430.17462@asgard.lang.hm>
-References: <AANLkTinQatQEYahpkN3bT-S5C41HqRoH--gTrvIbGs_c@mail.gmail.com> <4C0D5DCD.5010201@sandeen.net> <AANLkTik1T2nJxsoK9UGIVy6q6pfSxniFfJXJY0InmuUh@mail.gmail.com> <AANLkTil4FMnGl7llR4N0PkXuNyEClQmTspNK6PT62PAi@mail.gmail.com> <889B6B31-A1F0-438D-B782-DBB855912
- <7707881C-9879-4531-8DE9-EEED2F4534E5@mit.edu> <4C0E469E.7030808@gmail.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1756828Ab0FIAi0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 20:38:26 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:36294 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756736Ab0FIAiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 20:38:24 -0400
+From: Dave Chinner <david@fromorbit.com>
+To: torvalds@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       xfs@oss.sgi.com, akpm@linux-foundation.org
+Subject: [PATCH 3/3] writeback: limit write_cache_pages integrity scanning to current EOF
+Date: Wed,  9 Jun 2010 10:37:20 +1000
+Message-Id: <1276043840-1946-4-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1276043840-1946-1-git-send-email-david@fromorbit.com>
+References: <1276043840-1946-1-git-send-email-david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Jun 2010, T?r?k Edwin wrote:
+From: Dave Chinner <dchinner@redhat.com>
 
-> On 06/08/2010 02:14 PM, Theodore Tso wrote:
->>
->> If you pull the plug without fsyncing the file, you will end up with a zero-length file -- or possibly no file at all, even with data=ordered.  If you really want to preserve data after pulling the power cord immediately after a write were the application hasn't done an fsync() or a sync() call, you can mount the file system with the mount option -o sync --- but then the performance will be horrible.
->>
->> It's all a tradeoff of what you think is important....
->>
->
-> I think you should either get the old file, or the new file (if you
-> don't fsync), and not some random data from another file.
+sync can currently take a really long time if a concurrent writer is
+extending a file. The problem is that the dirty pages on the address
+space grow in the same direction as write_cache_pages scans, so if
+the writer keeps ahead of writeback, the writeback will not
+terminate until the writer stops adding dirty pages.
 
-my understanding of the way to get what you want is to
+For a data integrity sync, we only need to write the pages dirty at
+the time we start the writeback, so we can stop scanning once we get
+to the page that was at the end of the file at the time the scan
+started.
 
-write tempfile
-sync
-mv temptfile realfile
+This will prevent operations like copying a large file preventing
+sync from completing as it will not write back pages that were
+dirtied after the sync was started. This does not impact the
+existing integrity guarantees, as any dirty page (old or new)
+within the EOF range at the start of the scan will still be
+captured.
 
-this also has the advantage that it will work on all filesystems.
+This patch will not prevent sync from blocking on large writes into
+holes. That requires more complex intervention while this patch only
+addresses the common append-case of this sync holdoff.
 
-David Lang
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+---
+ mm/page-writeback.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
+
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index b3dbb80..bbd396a 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -851,7 +851,22 @@ int write_cache_pages(struct address_space *mapping,
+ 		if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
+ 			range_whole = 1;
+ 		cycled = 1; /* ignore range_cyclic tests */
++
++		/*
++		 * If this is a data integrity sync, cap the writeback to the
++		 * current end of file. Any extension to the file that occurs
++		 * after this is a new write and we don't need to write those
++		 * pages out to fulfil our data integrity requirements. If we
++		 * try to write them out, we can get stuck in this scan until
++		 * the concurrent writer stops adding dirty pages and extending
++		 * EOF.
++		 */
++		if (wbc->sync_mode == WB_SYNC_ALL &&
++		    wbc->range_end == LLONG_MAX) {
++			end = i_size_read(mapping->host) >> PAGE_CACHE_SHIFT;
++		}
+ 	}
++
+ retry:
+ 	done_index = index;
+ 	while (!done && (index <= end)) {
+-- 
+1.7.1
+
