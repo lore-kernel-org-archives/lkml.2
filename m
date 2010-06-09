@@ -1,204 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab0FIJCp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:02:45 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:33712 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab0FIJCl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:02:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=fAisWGLS3E/WhKxsTScTu8n5ajwHzT0p6cFB5pORIxumsQOoFeuM4zIs0WUSwJhY5D
-         AhBLnJMrb0mtuSNa2qrcl2psg93E3kUZN3iuSCbYJk4Ix6ozk7tG1oYc5S7rCzhIYj+7
-         a5AhYLATBAZ1nweesyEQZY8BSdGf+5nWHEaGE=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
-References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
-Date: Wed, 9 Jun 2010 11:02:34 +0200
-Message-ID: <AANLkTiksbL1qHg7Q0A-6TbX0uUrxra4jctUoIGVk5vnE@mail.gmail.com>
+	id S1756583Ab0FIJFN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:05:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41313 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753458Ab0FIJFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 05:05:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
 Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+Date: Wed, 9 Jun 2010 11:06:11 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Carl Worth <cworth@cworth.org>, Eric Anholt <eric@anholt.net>,
+       Venkatesh Pallipadi <venki@google.com>,
+       Jens Axboe <jaxboe@fusionio.com>, Dave Airlie <airlied@gmail.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, Ingo Molnar <mingo@elte.hu>,
+       David =?iso-8859-15?q?H=E4rdeman?= <david@hardeman.nu>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
        Kernel Testers List <kernel-testers@vger.kernel.org>,
        Network Development <netdev@vger.kernel.org>,
        Linux ACPI <linux-acpi@vger.kernel.org>,
        Linux PM List <linux-pm@lists.linux-foundation.org>,
        Linux SCSI List <linux-scsi@vger.kernel.org>,
        Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>, dmonakhov@openvz.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+       DRI <dri-devel@lists.sourceforge.net>
+References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera> <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006091106.11232.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch from [1] is still missing.
+On Wednesday 09 June 2010, Linus Torvalds wrote:
+> 
+> [ Added lots of cc's to direct specific people to look at the regressions 
+>   that may or may not be theirs... ]
+> 
+> On Wed, 9 Jun 2010, Rafael J. Wysocki wrote:
+> >
+> >  * Quite a few of the already reported regressions may be related to the bug
+> >    fixed by 386f40c86d6c8d5b717ef20620af1a750d0dacb4 (Revert "tty: fix a little
+> >    bug in scrup, vt.c"), so reporters please retest with this commit applied.]
+> 
+> From a quick look, most of them look unrelated to that unfortunate bug. 
+> It's hard to tell for sure, of course (memory corruption can do pretty 
+> much anything), but I'm not seeing the 07200720.. pattern at least.
+> 
+> And some of them do seem to be bisected to likely culprits and/or have 
+> patches that are claimed to have fixed them.
+> 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16163
+> > Subject	: [2.6.35-rc1 Regression] i915: Commit cfecde causes VGA to stay off
+> > Submitter	: David John <davidjon@xenontk.org>
+> > Date		: 2010-06-02 12:52 (7 days old)
+> > Message-ID	: <4C065423.3000202@xenontk.org>
+> > References	: http://marc.info/?l=linux-kernel&m=127548313828613&w=2
+> 
+> That has a "reverting the commit fixes it", and a confirmation from Nick 
+> Bowler.
+> 
+> Eric, Carl: should I just revert that commit? Or do you have a fix?
 
-   "cpufreq-call-nr_iowait_cpu-with-disabled-preemption.patch" from
-Dmitry Monakhoc
+This one is reported to have been fixed already.  Closed now.
 
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-Tested-by Maciej Rutecki <maciej.rutecki@gmail.com>
+...
+> 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16104
+> > Subject	: Radeon KMS does not start after merge of the new PM-Code
+> > Submitter	: Jan Kreuzer <kontrollator@gmx.de>
+> > Date		: 2010-06-02 07:47 (7 days old)
+> 
+> This one also has a patch in Bugzilla, I think Airlie is just waiting to 
+> calm down his queue and already removed the dependency on the temperature 
+> code. DaveA?
 
-I have already reported this issue on LKML [2] and cpufreq ML [3].
+This should be fixed by commit f8ed8b4c5d30b5214f185997131b06e35f6f7113, so
+closing now.
 
-- Sedat -
-
-[1] http://www.spinics.net/lists/cpufreq/msg01631.html
-[2] http://lkml.org/lkml/2010/5/31/77
-[3] http://www.spinics.net/lists/cpufreq/msg01637.html
-
-On Wed, Jun 9, 2010 at 12:06 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> [NOTES:
->  * This by no means is a complete list, but we only put e-mail reports that
->   are at least 1 week old into the Bugzilla.
->  * Quite a few of the already reported regressions may be related to the bug
->   fixed by 386f40c86d6c8d5b717ef20620af1a750d0dacb4 (Revert "tty: fix a little
->   bug in scrup, vt.c"), so reporters please retest with this commit applied.]
->
-> This message contains a list of some regressions from 2.6.34,
-> for which there are no fixes in the mainline known to the tracking team.
-> If any of them have been fixed already, please let us know.
->
-> If you know of any other unresolved regressions from 2.6.34, please let us
-> know either and we'll add them to the list.  Also, please let us know
-> if any of the entries below are invalid.
->
-> Each entry from the list will be sent additionally in an automatic reply
-> to this message with CCs to the people involved in reporting and handling
-> the issue.
->
->
-> Listed regressions statistics:
->
->  Date          Total  Pending  Unresolved
->  ----------------------------------------
->  2010-06-09       15       13          10
->
->
-> Unresolved regressions
-> ----------------------
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16163
-> Subject         : [2.6.35-rc1 Regression] i915: Commit cfecde causes VGA to stay off
-> Submitter       : David John <davidjon@xenontk.org>
-> Date            : 2010-06-02 12:52 (7 days old)
-> Message-ID      : <4C065423.3000202@xenontk.org>
-> References      : http://marc.info/?l=linux-kernel&m=127548313828613&w=2
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16161
-> Subject         : [2.6.35-rc1 regression] sysfs: cannot create duplicate filename ... XVR-600 related?
-> Submitter       : Mikael Pettersson <mikpe@it.uu.se>
-> Date            : 2010-06-01 19:57 (8 days old)
-> Message-ID      : <19461.26166.427857.612983@pilspetsen.it.uu.se>
-> References      : http://marc.info/?l=linux-kernel&m=127542227511925&w=2
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16160
-> Subject         : 2.6.35 Radeon KMS power management regression?
-> Submitter       : Nigel Cunningham <ncunningham@crca.org.au>
-> Date            : 2010-06-01 6:23 (8 days old)
-> Message-ID      : <4C04A767.8000209@crca.org.au>
-> References      : http://marc.info/?l=linux-kernel&m=127537343722290&w=2
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16145
-> Subject         : Unable to boot after "ACPI: Don't let acpi_pad needlessly mark TSC unstable"
-> Submitter       : Tom Gundersen <teg@jklm.no>
-> Date            : 2010-06-07 13:11 (2 days old)
-> Handled-By      : Venkatesh Pallipadi <venki@google.com>
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16129
-> Subject         : BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2
-> Submitter       : Jan Kreuzer <kontrollator@gmx.de>
-> Date            : 2010-06-05 06:15 (4 days old)
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16122
-> Subject         : 2.6.35-rc1: WARNING at fs/fs-writeback.c:1142 __mark_inode_dirty+0x103/0x170
-> Submitter       : Larry Finger <Larry.Finger@lwfinger.net>
-> Date            : 2010-06-04 13:18 (5 days old)
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16120
-> Subject         : Oops: 0000 [#1] SMP, unable to handle kernel NULL pointer dereference at (null)
-> Submitter       : Alex Zhavnerchik <alex.vizor@gmail.com>
-> Date            : 2010-06-04 09:25 (5 days old)
-> Handled-By      : Eric Dumazet <eric.dumazet@gmail.com>
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16104
-> Subject         : Radeon KMS does not start after merge of the new PM-Code
-> Submitter       : Jan Kreuzer <kontrollator@gmx.de>
-> Date            : 2010-06-02 07:47 (7 days old)
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16090
-> Subject         : sysfs: cannot create duplicate filename
-> Submitter       : Tobias <devnull@plzk.org>
-> Date            : 2010-06-01 15:59 (8 days old)
-> Handled-By      : Jesse Barnes <jbarnes@virtuousgeek.org>
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16037
-> Subject         : NULL Pointer dereference in __ir_input_register/budget_ci_attach
-> Submitter       : Sean Finney <seanius@debian.org>
-> Date            : 2010-05-23 19:52 (17 days old)
->
->
-> Regressions with patches
-> ------------------------
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16131
-> Subject         : kernel BUG at fs/btrfs/extent-tree.c:4363 (btrfs_free_tree_block)
-> Submitter       : Chow Loong Jin <hyperair@ubuntu.com>
-> Date            : 2010-06-05 18:53 (4 days old)
-> Handled-By      : Yan Zheng <zheng.yan@oracle.com>
-> Patch           : https://patchwork.kernel.org/patch/103235/
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16127
-> Subject         : Boot freeze on HP Compaq nx6325 (RS482) with Radeon KMS
-> Submitter       : Jure Repinc <jlp.bugs@gmail.com>
-> Date            : 2010-06-04 21:14 (5 days old)
-> Handled-By      : Dave Airlie <airlied@linux.ie>
-> Patch           : https://bugzilla.kernel.org/attachment.cgi?id=26677
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16092
-> Subject         : Caught 64-bit read from uninitialized memory in memtype_rb_augment_cb
-> Submitter       : Christian Casteyde <casteyde.christian@free.fr>
-> Date            : 2010-06-01 18:08 (8 days old)
-> Handled-By      : Venki <venki@google.com>
-> Patch           : https://bugzilla.kernel.org/show_bug.cgi?id=16092#c2
->
->
-> For details, please visit the bug entries and follow the links given in
-> references.
->
-> As you can see, there is a Bugzilla entry for each of the listed regressions.
-> There also is a Bugzilla entry used for tracking the regressions from 2.6.34,
-> unresolved as well as resolved, at:
->
-> http://bugzilla.kernel.org/show_bug.cgi?id=16055
->
-> Please let the tracking team know if there are any Bugzilla entries that
-> should be added to the list in there.
->
-> Thanks!
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Rafael
