@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab0FIIqQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 04:46:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50088 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756187Ab0FIIqO convert rfc822-to-8bit (ORCPT
+	id S1754054Ab0FIIs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 04:48:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41294 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751761Ab0FIIs5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 04:46:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=LyoGTQY+0zeM5qetY9ewAx2B12G5yh0UASdyTFquSweYro4vvvfujx84P1xk9Wjtoj
-         6XraZYODg5hN1iGQIlzNzBDoFeHE3VsxvQKdk8lgj0eIwu39V/a/3eT90I3BnM/vI/Q9
-         ihbqJEPxap9Nx5GflJTpf4lkCS0VL6bYawmac=
-MIME-Version: 1.0
-In-Reply-To: <4C0F4C40.5020207@panasas.com>
-References: <4C0F4B00.4090307@panasas.com>
-	<4C0F4C40.5020207@panasas.com>
-Date: Wed, 9 Jun 2010 10:46:01 +0200
-X-Google-Sender-Auth: aEkMROO1ZLjR5embKQYovFwySmc
-Message-ID: <AANLkTinwQmWP-rFu9e-ns5twsZwZjuSLi5vcll55ZZhx@mail.gmail.com>
-Subject: Re: [uml-devel] [PATCH resend] um, hweight: Fix UML boot crash
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
-       uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Jeff Dike <jdike@addtoit.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 9 Jun 2010 04:48:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,390,1272870000"; 
+   d="scan'208";a="574664112"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: Andi Kleen <andi@firstfloor.org>,
+       Stephen Hemminger <shemminger@vyatta.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>
+Date: Wed, 9 Jun 2010 16:48:48 +0800
+Subject: RE: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+ external.
+Thread-Topic: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+ external.
+Thread-Index: AcsGFjuymVLa6ZyAReqD0rijjRWq4wBl9yGA
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D791100848F37@shsmsx502.ccr.corp.intel.com>
+References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
+	<20100606161348.427822fb@nehalam> <87pr03gu1c.fsf@basil.nowhere.org>
+In-Reply-To: <87pr03gu1c.fsf@basil.nowhere.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 9, 2010 at 10:09, Boaz Harrosh <bharrosh@panasas.com> wrote:
-> On 06/09/2010 11:04 AM, Boaz Harrosh wrote:
->> From: Borislav Petkov <bp@alien8.de>
->>
->> Obviously UML cannot stomach callee reg-saving trickery
->> introduced with d61931d89be506372d01a90d1755f6d0a9fafe2d
->> (x86: Add optimized popcnt variants) and oopses during boot:
->> http://marc.info/?l=linux-kernel&m=127522065202435&w=2
->>
->> Redirect arch_hweight.h include from the x86 portion to the generic
->> arch_hweight.h which is a fallback to the software hweight routines.
->>
->> LKML-Reference: <201005271944.09541.toralf.foerster@gmx.de>
->> Signed-off-by: Borislav Petkov <bp@alien8.de>
-
-Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-> who's going to push this ASAP. I was just (again) 3/4 through a bisect
-> on 2.6.35-rc2. When I finally realized "Hey that patch, I forgot".
-> (My concentration is not what it used to be)
+>-----Original Message-----
+>From: kvm-owner@vger.kernel.org [mailto:kvm-owner@vger.kernel.org] On Behalf Of Andi
+>Kleen
+>Sent: Monday, June 07, 2010 3:51 PM
+>To: Stephen Hemminger
+>Cc: Xin, Xiaohui; netdev@vger.kernel.org; kvm@vger.kernel.org;
+>linux-kernel@vger.kernel.org; mst@redhat.com; mingo@elte.hu; davem@davemloft.net;
+>herbert@gondor.apana.org.au; jdike@linux.intel.com
+>Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from external.
 >
-> Please push this, someone
-
-Peter, are you happy with this?
-Although we still don't know why UML cannot grok it, it does fix a
-regression in post-2.6.34.
-
->> ---
->>  arch/um/include/asm/arch_hweight.h |    6 ++++++
->>  1 files changed, 6 insertions(+), 0 deletions(-)
->>  create mode 100644 arch/um/include/asm/arch_hweight.h
+>Stephen Hemminger <shemminger@vyatta.com> writes:
+>
+>> Still not sure this is a good idea for a couple of reasons:
 >>
->> diff --git a/arch/um/include/asm/arch_hweight.h b/arch/um/include/asm/arch_hweight.h
->> new file mode 100644
->> index 0000000..c656cf4
->> --- /dev/null
->> +++ b/arch/um/include/asm/arch_hweight.h
->> @@ -0,0 +1,6 @@
->> +#ifndef _ASM_UM_HWEIGHT_H
->> +#define _ASM_UM_HWEIGHT_H
->> +
->> +#include <asm-generic/bitops/arch_hweight.h>
->> +
->> +#endif
+>> 1. We already have lots of special cases with skb's (frags and fraglist),
+>>    and skb's travel through a lot of different parts of the kernel.  So any
+>>    new change like this creates lots of exposed points for new bugs. Look
+>>    at cases like MD5 TCP and netfilter, and forwarding these SKB's to ipsec
+>>    and ppp and ...
+>>
+>> 2. SKB's can have infinite lifetime in the kernel. If these buffers come from
+>>    a fixed size pool in an external device, they can easily all get tied up
+>>    if you have a slow listener. What happens then?
+>
+>3. If they come from an internal pool what happens when the kernel runs
+>low on memory? How is that pool balanced against other kernel
+>memory users?
+>
+The size of the pool is limited by the virtqueue capacity now.
+If the virtqueue is really huge, then how to balance on memory is a problem.
+I did not consider it clearly how to tune it dynamically currently...
 
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+>-Andi
+>
+>--
+>ak@linux.intel.com -- Speaking for myself only.
+>--
+>To unsubscribe from this list: send the line "unsubscribe kvm" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
