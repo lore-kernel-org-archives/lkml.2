@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757949Ab0FIQjq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 12:39:46 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:65521 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484Ab0FIQjo (ORCPT
+	id S1757980Ab0FIQkD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 12:40:03 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:16475 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757955Ab0FIQkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 12:39:44 -0400
-Subject: Re: [PATCHv5 04/16] VFS: add memory barrier to sb_mark_clean and
- sb_mark_dirty
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reply-To: Artem.Bityutskiy@nokia.com
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-In-Reply-To: <1275835829-1478-5-git-send-email-dedekind1@gmail.com>
-References: <1275835829-1478-1-git-send-email-dedekind1@gmail.com>
-	 <1275835829-1478-5-git-send-email-dedekind1@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Wed, 09 Jun 2010 19:36:50 +0300
-Message-ID: <1276101410.5677.158.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-8.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 09 Jun 2010 16:39:09.0003 (UTC) FILETIME=[488029B0:01CB07F2]
-X-Nokia-AV: Clean
+	Wed, 9 Jun 2010 12:40:00 -0400
+Message-ID: <4C0FC3DC.9040401@panasas.com>
+Date: Wed, 09 Jun 2010 19:39:56 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Geert Uytterhoeven <geert@linux-m68k.org>,
+       =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
+       uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [uml-devel] [PATCH resend] um, hweight: Fix UML boot crash
+References: <4C0F4B00.4090307@panasas.com>
+In-Reply-To: <4C0F4B00.4090307@panasas.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Jun 2010 16:39:58.0830 (UTC) FILETIME=[663328E0:01CB07F2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-06-06 at 17:50 +0300, Artem Bityutskiy wrote:
-> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+On 06/09/2010 11:04 AM, Boaz Harrosh wrote:
+> From: Borislav Petkov <bp@alien8.de>
 > 
-> The proper way for file-systems to synchronize the superblock
-> should be as follows:
+> Obviously UML cannot stomach callee reg-saving trickery
+> introduced with d61931d89be506372d01a90d1755f6d0a9fafe2d
+> (x86: Add optimized popcnt variants) and oopses during boot:
+> http://marc.info/?l=linux-kernel&m=127522065202435&w=2
 > 
-> 1. when modifying the SB, first modify it, then mark it as dirty;
-> 2. when synchronizing the SB, first mark as clean, then start
->    synchronizing.
+> Redirect arch_hweight.h include from the x86 portion to the generic
+> arch_hweight.h which is a fallback to the software hweight routines.
 > 
-> And to make ensure the order, we need memory barriers in 'sb_mark_clean()'
-> and 'sb_mark_dirty()'.
 
-I believe this stuff is a separate story, and should be handled
-separately. I'll keep this separately from the 'sync_supers()' wakes up
-optimization.
+CC: Andrew Morton <akpm@linux-foundation.org>
+> LKML-Reference: <201005271944.09541.toralf.foerster@gmx.de>
+> Signed-off-by: Borislav Petkov <bp@alien8.de>
 
-I actually now cannot prove myself whether these smp_mb()'s I added in
-this patch make sense or not, and whether the races in FSes I was trying
-to address can be addressed without spinlocks. Really dunno - but I will
-keep trying to get better understanding. Reading
-Documentation/memory-barriers.txt and some McKenny's docs only did not
-help so far :-)
+Andrew would you please push this patch for 2.6.35-rc3
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Thanks
+Boaz
 
+> ---
+>  arch/um/include/asm/arch_hweight.h |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/um/include/asm/arch_hweight.h
+> 
+> diff --git a/arch/um/include/asm/arch_hweight.h b/arch/um/include/asm/arch_hweight.h
+> new file mode 100644
+> index 0000000..c656cf4
+> --- /dev/null
+> +++ b/arch/um/include/asm/arch_hweight.h
+> @@ -0,0 +1,6 @@
+> +#ifndef _ASM_UM_HWEIGHT_H
+> +#define _ASM_UM_HWEIGHT_H
+> +
+> +#include <asm-generic/bitops/arch_hweight.h>
+> +
+> +#endif
+> -- 1.7.1 
