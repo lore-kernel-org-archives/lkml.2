@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848Ab0FIIS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 04:18:27 -0400
-Received: from mail.gmx.net ([213.165.64.20]:44690 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755584Ab0FIIS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 04:18:26 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19ta0IrBc1t5xClTEyImZ5apDr0nE3uhFhjaRqe2t
-	u/4vaZHs70fshd
-Subject: Re: kbuild: Fix the breakage caused by "improve version string
- logic"
-From: Mike Galbraith <efault@gmx.de>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: David Rientjes <rientjes@google.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Frans Pop <elendil@planet.nl>,
-       Dirk Hohndel <hohndel@infradead.org>, Len Brown <lenb@kernel.org>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <4C0F489F.4020204@panasas.com>
-References: <alpine.LFD.2.01.0910041727310.3432@localhost.localdomain>
-	 <alpine.LFD.2.00.0910052140100.309@localhost.localdomain>
-	 <1254797502.14122.146.camel@dhohndel-mobl.amr.corp.intel.com>
-	 <alpine.LFD.2.01.0910060705240.3432@localhost.localdomain>
-	 <20091006144449.GA23078@elte.hu>
-	 <alpine.LFD.2.01.0910060815320.3432@localhost.localdomain>
-	 <20091006153632.GA29795@elte.hu>
-	 <alpine.LFD.2.01.0910060843560.3432@localhost.localdomain>
-	 <alpine.LFD.2.01.0910060925490.3432@localhost.localdomain>
-	 <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu>
-	 <4C0D29DE.6050602@panasas.com>
-	 <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com>
-	 <4C0DFFFF.1010704@panasas.com>
-	 <alpine.DEB.2.00.1006080200190.18052@chino.kir.corp.google.com>
-	 <4C0E17F0.5010902@panasas.com>
-	 <alpine.DEB.2.00.1006082352120.30606@chino.kir.corp.google.com>
-	 <4C0F489F.4020204@panasas.com>
-Content-Type: text/plain
-Date: Wed, 09 Jun 2010 10:18:20 +0200
-Message-Id: <1276071500.9435.14.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1756877Ab0FIIUg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 04:20:36 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:47140 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab0FIIUe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 04:20:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=dTml5o5GPEKzuIC+xzasMs/JrL/SX3ipRpEdha8Hi5fvuknpw3UccUNd6w2KH7o1oz
+         cKoTUk0X+frYUqmrWjIr+eDYXmLyWBLTBq8Vt+Y85BS6A9gro7lQiEX2JKi0MDpmfoee
+         QYYblgc0B3XH77U/quBCqqiPmHsFzsxSFZXz8=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTin_MR82jafZkkzfv33dO6DqyFnHUiU4g6luXB_0@mail.gmail.com>
+References: <1275761686-4996-1-git-send-email-vapier@gentoo.org>
+	<1276068030_13535@mail4.comsite.net>
+	<AANLkTin_MR82jafZkkzfv33dO6DqyFnHUiU4g6luXB_0@mail.gmail.com>
+Date: Wed, 9 Jun 2010 09:51:36 +0200
+X-Google-Sender-Auth: RifdWySYsEXlW8t-sA6pCyP1978
+Message-ID: <AANLkTimzODUP6tYXiagW7Kv3RVL6o8L_7dhF0DTf925x@mail.gmail.com>
+Subject: Re: [PATCH 1/2] vmlinux.lds.h: allow people to set a smaller rootfs 
+	alignment
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+       Tim Abbott <tabbott@ksplice.com>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 10:54 +0300, Boaz Harrosh wrote:
+On Wed, Jun 9, 2010 at 09:42, Mike Frysinger <vapier.adi@gmail.com> wrote:
+> if we look at the alignments before the unification, we can easily see
+> why Tim was a bit cautious and started the common value at PAGE_SIZE:
 
-> But it seems I will not be granted my wish. I'll go damage my
-> scripts/setlocalversion and be done with this.
+> m68k: 8192 (== 2x PAGE_SIZE?)
 
-I dislike that annoying little <expletive deleted> '+' too, but I have
-to edit Makefile constantly to whack -rc and set version to the _right_
-number as defined by me anyway, so it doesn't matter much.
+For Sun 3, PAGE_SIZE is 8192, not 4096. So it's the maximum page size on m68k.
 
-Thank goodness we have _something_ to gripe about :)
+Gr{oetje,eeting}s,
 
-	-Mike
+						Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
