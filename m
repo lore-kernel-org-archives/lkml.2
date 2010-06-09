@@ -1,119 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805Ab0FIN5i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 09:57:38 -0400
-Received: from mailout2.zih.tu-dresden.de ([141.30.67.73]:36488 "EHLO
-	mailout2.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752589Ab0FIN5g convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 09:57:36 -0400
-Subject: [PATCH] power_end event (Resend)
-From: Robert =?ISO-8859-1?Q?Sch=F6ne?= <robert.schoene@tu-dresden.de>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Jun 2010 15:57:27 +0200
-Message-ID: <1276091847.1763.18.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8BIT
-X-TUD-Virus-Scanned: mailout2.zih.tu-dresden.de
+	id S1757738Ab0FIN6m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 09:58:42 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57946 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752296Ab0FIN6k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 09:58:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=jQAX8p46FcrAaV9lD0H3DW5o6BPanIvaxi5mj4iOfU+u4OvaAQkytb5X5Y9FrKVO3O
+         WUNKAB2W2fAEmU4TA9o4Er+CYh31aD8mz7uB7ebPPcUEGypU7IhdXoHrqGh9wjjd5kTv
+         5ShnYVKQmU/yJSmlXq5/HyPFTZV+gt7EzgVCM=
+MIME-Version: 1.0
+In-Reply-To: <4c0f4326.0a41df0a.7bde.ffffeef2@mx.google.com>
+References: <4c0f4326.0a41df0a.7bde.ffffeef2@mx.google.com>
+Date: Wed, 9 Jun 2010 09:58:37 -0400
+X-Google-Sender-Auth: keVnpr2VNPoNhoEFyUYyMYAqers
+Message-ID: <AANLkTilrYYHjcMEhhrP7zjcLoo-TNczozxJSNRkDvSZy@mail.gmail.com>
+Subject: Re: [ath5k-devel] [PATCH] [ath5k][leds] Ability to disable leds 
+	support. If leds support enabled do not force mac802.11 leds layer selection.
+From: Bob Copeland <me@bobcopeland.com>
+To: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Cc: ath5k-devel@venema.h4ckr.net, Kalle Valo <kalle.valo@iki.fi>,
+       linux-wireless@vger.kernel.org, GeunSik Lim <geunsik.lim@samsung.com>,
+       Jiri Slaby <jirislaby@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Keng-Yu Lin <keng-yu.lin@canonical.com>, netdev@vger.kernel.org,
+       Jiri Kosina <jkosina@suse.cz>, Shahar Or <shahar@shahar-or.co.il>,
+       linux-kernel@vger.kernel.org, Luca Verdesca <magooz@salug.it>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Original Mail was sent at 2010/05/14 10:38:43 CEST
+On Wed, Jun 9, 2010 at 3:31 AM, Dmytro Milinevskyy
+<milinevskyy@gmail.com> wrote:
+> However if the leds support was enabled do not force selection of 802.11 leds layer.
 
-Hi,
-I reported the power_end tracing problem earlier this year
-(http://lkml.org/lkml/2010/2/24/79) and sent a patch which worked for my
-system. However this patch would have not worked on other systems (as
-for example Arjans). It would had lead to a double posting of these
-events.
+I don't understand this part.  What's the point of enabling software LEDs
+if nothing triggers them?
 
-However. Here's a diff that should fix the problem on the correct spot.
+Also, we can probably build hardware LEDs (hw_set_ledstate) in regardless.
+It's a pure register write and doesn't require the rest of the LED machinery.
 
-The reason that it worked for Arjan and not for me is that his system
-uses drivers/acpi/processor_idle.c when idling, mine uses the cpu_idle
-thread from arch/x86/kernel/process_64.c.
-A comparable idle thread also exists for 32 bit x86, so I added it in
-process_32.c too.
+I assume you are doing this to reduce the size of the module.  If so, can
+you include size(1) output in the commit message?
 
-However, is there any standard about where to report the start and end
-events? Currently it's the idle routine, which creates the power_start
-event, the routine which calls the idle_routine on the other hand
-creates the power_end event.
-
-For these patches, I'm not sure whether the power_end event should even
-be reported. On kernels, which use the repnop loop when idling, there
-won't be a switch to another c-state and therefore no power_start event,
-the power_end event could belong to. Would that be a problem? If it
-would, the only way to fix this would be to move the power_end events
-into the idle routines, since cpu_idle is dumb and does not know whats
-behind pm_idle.
-
-Robert
-
-PS: I hand over the smp_processor_id() to power_end since i hope that
-the changed interface defined in http://lkml.org/lkml/2010/4/27/271 will
-be part of the standard tree one day. As long as this new interface is
-not included in the standard tree, this patch won't make no harm. When
-it will be included, this code does not have to be touched anymore.
-
-Signed-off-by: Robert Schöne <robert.schoene@tu-dresden.de>
-
- arch/x86/kernel/process_32.c |    4 ++++
- arch/x86/kernel/process_64.c |    5 +++++
- 2 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index f6c6266..134f5f9 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -58,6 +58,8 @@
- #include <asm/ds.h>
- #include <asm/debugreg.h>
- 
-+#include <trace/events/power.h> 
-+
- asmlinkage void ret_from_fork(void) __asm__("ret_from_fork");
- 
- /*
-@@ -112,6 +114,8 @@ void cpu_idle(void)
- 			stop_critical_timings();
- 			pm_idle();
- 			start_critical_timings();
-+
-+			trace_power_end(smp_processor_id());
- 		}
- 		tick_nohz_restart_sched_tick();
- 		preempt_enable_no_resched();
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 17cb329..01c55ed 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -52,6 +52,8 @@
- #include <asm/ds.h>
- #include <asm/debugreg.h>
- 
-+#include <trace/events/power.h> 
-+
- asmlinkage extern void ret_from_fork(void);
- 
- DEFINE_PER_CPU(unsigned long, old_rsp);
-@@ -139,6 +141,9 @@ void cpu_idle(void)
- 			stop_critical_timings();
- 			pm_idle();
- 			start_critical_timings();
-+
-+			trace_power_end(smp_processor_id());
-+
- 			/* In many cases the interrupt that ended idle
- 			   has already called exit_idle. But some idle
- 			   loops can be woken up without interrupt. */
-
-
-
-
+-- 
+Bob Copeland %% www.bobcopeland.com
