@@ -1,186 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab0FIVkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 17:40:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20833 "EHLO mx1.redhat.com"
+	id S932592Ab0FIVkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 17:40:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59905 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758492Ab0FIVkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 17:40:00 -0400
-Date: Wed, 9 Jun 2010 17:39:26 -0400
+	id S932564Ab0FIVkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 17:40:07 -0400
+Date: Wed, 9 Jun 2010 17:39:37 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
        tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-       vgoyal@redhat.com, sam@ravnborg.org
-Message-Id: <f2ff95c1afea5823cc96e9793f8aea80b782ea87.1276116186.git.jbaron@redhat.com>
+       vgoyal@redhat.com, sam@ravnborg.org, gregkh@suse.de
+Message-Id: <7c1f8dcda04e30558223c203bde41c8bbce14631.1276116186.git.jbaron@redhat.com>
 In-Reply-To: <cover.1276116186.git.jbaron@redhat.com>
 References: <cover.1276116186.git.jbaron@redhat.com>
-Subject: [PATCH 09/13] jump label v9: jump_label_text_reserved() to reserve our jump points
+Subject: [PATCH 11/13] jump label v9: convert dynamic debug to use jump labels.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a jump_label_text_reserved(void *start, void *end), so that other
-pieces of code that want to modify kernel text, can first verify that
-jump label has not reserved the instruction.
+Convert the 'dynamic debug' infrastructure to use jump labels.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
-Acked-by: Masami Hiramatsu <mhiramat@redhat.com>
 ---
- arch/x86/kernel/kprobes.c  |    3 +-
- include/linux/jump_label.h |    6 +++
- kernel/jump_label.c        |   83 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/kprobes.c           |    3 +-
- 4 files changed, 93 insertions(+), 2 deletions(-)
+ include/linux/dynamic_debug.h |   42 ++++++++++++++-------------
+ lib/dynamic_debug.c           |   42 ++-------------------------
+ scripts/Makefile.lib          |   11 +------
+ scripts/basic/Makefile        |    2 +-
+ scripts/basic/hash.c          |   64 -----------------------------------------
+ 5 files changed, 27 insertions(+), 134 deletions(-)
+ delete mode 100644 scripts/basic/hash.c
 
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index 345a4b1..87ca919 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -1201,7 +1201,8 @@ static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
- 	}
- 	/* Check whether the address range is reserved */
- 	if (ftrace_text_reserved(src, src + len - 1) ||
--	    alternatives_text_reserved(src, src + len - 1))
-+	    alternatives_text_reserved(src, src + len - 1) ||
-+	    jump_label_text_reserved(src, src + len - 1))
- 		return -EBUSY;
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index b3cd4de..f11ce2c 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -1,6 +1,8 @@
+ #ifndef _DYNAMIC_DEBUG_H
+ #define _DYNAMIC_DEBUG_H
  
- 	return len;
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index dc81a45..3250793 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -28,6 +28,7 @@ extern void arch_jump_label_transform(struct jump_entry *entry,
- extern const u8 *arch_get_jump_label_nop(void);
++#include <linux/jump_label.h>
++
+ /* dynamic_printk_enabled, and dynamic_printk_enabled2 are bitmasks in which
+  * bit n is set to 1 if any modname hashes into the bucket n, 0 otherwise. They
+  * use independent hash functions, to reduce the chance of false positives.
+@@ -22,9 +24,7 @@ struct _ddebug {
+ 	const char *function;
+ 	const char *filename;
+ 	const char *format;
+-	char primary_hash;
+-	char secondary_hash;
+-	unsigned int lineno:24;
++	unsigned int lineno;
+ 	/*
+  	 * The flags field controls the behaviour at the callsite.
+  	 * The bits here are changed dynamically when the user
+@@ -32,7 +32,7 @@ struct _ddebug {
+ 	 */
+ #define _DPRINTK_FLAGS_PRINT   (1<<0)  /* printk() a message using the format */
+ #define _DPRINTK_FLAGS_DEFAULT 0
+-	unsigned int flags:8;
++	char flags;
+ } __attribute__((aligned(8)));
  
- extern void jump_label_update(const char *name, enum jump_label_type type);
-+extern int jump_label_text_reserved(void *start, void *end);
  
- extern void apply_jump_label_nops(struct module *mod);
+@@ -42,33 +42,35 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
+ #if defined(CONFIG_DYNAMIC_DEBUG)
+ extern int ddebug_remove_module(char *mod_name);
  
-@@ -62,6 +63,11 @@ static inline int apply_jump_label_nops(struct module *mod)
- 	return 0;
+-#define __dynamic_dbg_enabled(dd)  ({	     \
+-	int __ret = 0;							     \
+-	if (unlikely((dynamic_debug_enabled & (1LL << DEBUG_HASH)) &&	     \
+-			(dynamic_debug_enabled2 & (1LL << DEBUG_HASH2))))   \
+-				if (unlikely(dd.flags))			     \
+-					__ret = 1;			     \
+-	__ret; })
+-
+ #define dynamic_pr_debug(fmt, ...) do {					\
++	__label__ do_printk;						\
++	__label__ out;							\
+ 	static struct _ddebug descriptor				\
+ 	__used								\
+ 	__attribute__((section("__verbose"), aligned(8))) =		\
+-	{ KBUILD_MODNAME, __func__, __FILE__, fmt, DEBUG_HASH,	\
+-		DEBUG_HASH2, __LINE__, _DPRINTK_FLAGS_DEFAULT };	\
+-	if (__dynamic_dbg_enabled(descriptor))				\
+-		printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);		\
++	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
++		_DPRINTK_FLAGS_DEFAULT };				\
++	JUMP_LABEL(&descriptor.flags, do_printk);			\
++	goto out;							\
++do_printk:								\
++	printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);			\
++out:	;								\
+ 	} while (0)
+ 
+ 
+ #define dynamic_dev_dbg(dev, fmt, ...) do {				\
++	__label__ do_printk;						\
++	__label__ out;							\
+ 	static struct _ddebug descriptor				\
+ 	__used								\
+ 	__attribute__((section("__verbose"), aligned(8))) =		\
+-	{ KBUILD_MODNAME, __func__, __FILE__, fmt, DEBUG_HASH,	\
+-		DEBUG_HASH2, __LINE__, _DPRINTK_FLAGS_DEFAULT };	\
+-	if (__dynamic_dbg_enabled(descriptor))				\
+-		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
++	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
++		_DPRINTK_FLAGS_DEFAULT };				\
++	JUMP_LABEL(&descriptor.flags, do_printk);			\
++	goto out;							\
++do_printk:								\
++	dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);		\
++out:	;								\
+ 	} while (0)
+ 
+ #else
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 3df8eb1..2ef4fbc 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -26,19 +26,11 @@
+ #include <linux/dynamic_debug.h>
+ #include <linux/debugfs.h>
+ #include <linux/slab.h>
++#include <linux/jump_label.h>
+ 
+ extern struct _ddebug __start___verbose[];
+ extern struct _ddebug __stop___verbose[];
+ 
+-/* dynamic_debug_enabled, and dynamic_debug_enabled2 are bitmasks in which
+- * bit n is set to 1 if any modname hashes into the bucket n, 0 otherwise. They
+- * use independent hash functions, to reduce the chance of false positives.
+- */
+-long long dynamic_debug_enabled;
+-EXPORT_SYMBOL_GPL(dynamic_debug_enabled);
+-long long dynamic_debug_enabled2;
+-EXPORT_SYMBOL_GPL(dynamic_debug_enabled2);
+-
+ struct ddebug_table {
+ 	struct list_head link;
+ 	char *mod_name;
+@@ -88,26 +80,6 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
  }
  
-+static inline int jump_label_text_reserved(void *start, void *end)
-+{
-+	return 0;
-+}
-+
- #endif
+ /*
+- * must be called with ddebug_lock held
+- */
+-
+-static int disabled_hash(char hash, bool first_table)
+-{
+-	struct ddebug_table *dt;
+-	char table_hash_value;
+-
+-	list_for_each_entry(dt, &ddebug_tables, link) {
+-		if (first_table)
+-			table_hash_value = dt->ddebugs->primary_hash;
+-		else
+-			table_hash_value = dt->ddebugs->secondary_hash;
+-		if (dt->num_enabled && (hash == table_hash_value))
+-			return 0;
+-	}
+-	return 1;
+-}
+-
+-/*
+  * Search the tables for _ddebug's which match the given
+  * `query' and apply the `flags' and `mask' to them.  Tells
+  * the user which ddebug's were changed, or whether none
+@@ -170,17 +142,9 @@ static void ddebug_change(const struct ddebug_query *query,
+ 				dt->num_enabled++;
+ 			dp->flags = newflags;
+ 			if (newflags) {
+-				dynamic_debug_enabled |=
+-						(1LL << dp->primary_hash);
+-				dynamic_debug_enabled2 |=
+-						(1LL << dp->secondary_hash);
++				enable_jump_label((jump_label_t)&dp->flags);
+ 			} else {
+-				if (disabled_hash(dp->primary_hash, true))
+-					dynamic_debug_enabled &=
+-						~(1LL << dp->primary_hash);
+-				if (disabled_hash(dp->secondary_hash, false))
+-					dynamic_debug_enabled2 &=
+-						~(1LL << dp->secondary_hash);
++				disable_jump_label((jump_label_t)&dp->flags);
+ 			}
+ 			if (verbose)
+ 				printk(KERN_INFO
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 54fd1b7..7bfcf1a 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -101,14 +101,6 @@ basename_flags = -D"KBUILD_BASENAME=KBUILD_STR($(call name-fix,$(basetarget)))"
+ modname_flags  = $(if $(filter 1,$(words $(modname))),\
+                  -D"KBUILD_MODNAME=KBUILD_STR($(call name-fix,$(modname)))")
  
- #endif
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index 3ebe2bf..ac39662 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -181,6 +181,89 @@ void jump_label_update(const char *name, enum jump_label_type type)
- 	mutex_unlock(&jump_label_mutex);
- }
+-#hash values
+-ifdef CONFIG_DYNAMIC_DEBUG
+-debug_flags = -D"DEBUG_HASH=$(shell ./scripts/basic/hash djb2 $(@D)$(modname))"\
+-              -D"DEBUG_HASH2=$(shell ./scripts/basic/hash r5 $(@D)$(modname))"
+-else
+-debug_flags =
+-endif
+-
+ orig_c_flags   = $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(KBUILD_SUBDIR_CCFLAGS) \
+                  $(ccflags-y) $(CFLAGS_$(basetarget).o)
+ _c_flags       = $(filter-out $(CFLAGS_REMOVE_$(basetarget).o), $(orig_c_flags))
+@@ -152,8 +144,7 @@ endif
  
-+static int addr_conflict(struct jump_entry *entry, void *start, void *end)
-+{
-+	if (entry->code <= (unsigned long)end &&
-+		entry->code + JUMP_LABEL_NOP_SIZE > (unsigned long)start)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_MODULES
-+
-+static int module_conflict(void *start, void *end)
-+{
-+	struct hlist_head *head;
-+	struct hlist_node *node, *node_next, *module_node, *module_node_next;
-+	struct jump_label_entry *e;
-+	struct jump_label_module_entry *e_module;
-+	struct jump_entry *iter;
-+	int i, count;
-+	int conflict = 0;
-+
-+	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
-+		head = &jump_label_table[i];
-+		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
-+			hlist_for_each_entry_safe(e_module, module_node,
-+							module_node_next,
-+							&(e->modules), hlist) {
-+				count = e_module->nr_entries;
-+				iter = e_module->table;
-+				while (count--) {
-+					if (addr_conflict(iter, start, end)) {
-+						conflict = 1;
-+						goto out;
-+					}
-+					iter++;
-+				}
-+			}
-+		}
-+	}
-+out:
-+	return conflict;
-+}
-+
-+#endif
-+
-+/***
-+ * jump_label_text_reserved - check if addr range is reserved
-+ * @start: start text addr
-+ * @end: end text addr
-+ *
-+ * checks if the text addr located between @start and @end
-+ * overlaps with any of the jump label patch addresses. Code
-+ * that wants to modify kernel text should first verify that
-+ * it does not overlap with any of the jump label addresses.
-+ *
-+ * returns 1 if there is an overlap, 0 otherwise
-+ */
-+int jump_label_text_reserved(void *start, void *end)
-+{
-+	struct jump_entry *iter;
-+	struct jump_entry *iter_start = __start___jump_table;
-+	struct jump_entry *iter_stop = __start___jump_table;
-+	int conflict = 0;
-+
-+	mutex_lock(&jump_label_mutex);
-+	iter = iter_start;
-+	while (iter < iter_stop) {
-+		if (addr_conflict(iter, start, end)) {
-+			conflict = 1;
-+			goto out;
-+		}
-+		iter++;
-+	}
-+
-+	/* now check modules */
-+#ifdef CONFIG_MODULES
-+	conflict = module_conflict(start, end);
-+#endif
-+out:
-+	mutex_unlock(&jump_label_mutex);
-+	return conflict;
-+}
-+
- static int init_jump_label(void)
- {
- 	int ret;
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 282035f..2f9bea6 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1141,7 +1141,8 @@ int __kprobes register_kprobe(struct kprobe *p)
- 	preempt_disable();
- 	if (!kernel_text_address((unsigned long) p->addr) ||
- 	    in_kprobes_functions((unsigned long) p->addr) ||
--	    ftrace_text_reserved(p->addr, p->addr)) {
-+	    ftrace_text_reserved(p->addr, p->addr) ||
-+	    jump_label_text_reserved(p->addr, p->addr)) {
- 		preempt_enable();
- 		return -EINVAL;
- 	}
+ c_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
+ 		 $(__c_flags) $(modkern_cflags)                           \
+-		 -D"KBUILD_STR(s)=\#s" $(basename_flags) $(modname_flags) \
+-		  $(debug_flags)
++		 -D"KBUILD_STR(s)=\#s" $(basename_flags) $(modname_flags)
+ 
+ a_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
+ 		 $(__a_flags) $(modkern_aflags)
+diff --git a/scripts/basic/Makefile b/scripts/basic/Makefile
+index 0955995..4c324a1 100644
+--- a/scripts/basic/Makefile
++++ b/scripts/basic/Makefile
+@@ -9,7 +9,7 @@
+ # fixdep: 	 Used to generate dependency information during build process
+ # docproc:	 Used in Documentation/DocBook
+ 
+-hostprogs-y	:= fixdep docproc hash
++hostprogs-y	:= fixdep docproc
+ always		:= $(hostprogs-y)
+ 
+ # fixdep is needed to compile other host programs
+diff --git a/scripts/basic/hash.c b/scripts/basic/hash.c
+deleted file mode 100644
+index 2ef5d3f..0000000
+--- a/scripts/basic/hash.c
++++ /dev/null
+@@ -1,64 +0,0 @@
+-/*
+- * Copyright (C) 2008 Red Hat, Inc., Jason Baron <jbaron@redhat.com>
+- *
+- */
+-
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <string.h>
+-
+-#define DYNAMIC_DEBUG_HASH_BITS 6
+-
+-static const char *program;
+-
+-static void usage(void)
+-{
+-	printf("Usage: %s <djb2|r5> <modname>\n", program);
+-	exit(1);
+-}
+-
+-/* djb2 hashing algorithm by Dan Bernstein. From:
+- * http://www.cse.yorku.ca/~oz/hash.html
+- */
+-
+-static unsigned int djb2_hash(char *str)
+-{
+-	unsigned long hash = 5381;
+-	int c;
+-
+-	c = *str;
+-	while (c) {
+-		hash = ((hash << 5) + hash) + c;
+-		c = *++str;
+-	}
+-	return (unsigned int)(hash & ((1 << DYNAMIC_DEBUG_HASH_BITS) - 1));
+-}
+-
+-static unsigned int r5_hash(char *str)
+-{
+-	unsigned long hash = 0;
+-	int c;
+-
+-	c = *str;
+-	while (c) {
+-		hash = (hash + (c << 4) + (c >> 4)) * 11;
+-		c = *++str;
+-	}
+-	return (unsigned int)(hash & ((1 << DYNAMIC_DEBUG_HASH_BITS) - 1));
+-}
+-
+-int main(int argc, char *argv[])
+-{
+-	program = argv[0];
+-
+-	if (argc != 3)
+-		usage();
+-	if (!strcmp(argv[1], "djb2"))
+-		printf("%d\n", djb2_hash(argv[2]));
+-	else if (!strcmp(argv[1], "r5"))
+-		printf("%d\n", r5_hash(argv[2]));
+-	else
+-		usage();
+-	exit(0);
+-}
+-
 -- 
 1.7.1
 
