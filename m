@@ -1,103 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab0FIIyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 04:54:50 -0400
-Received: from gate.crashing.org ([63.228.1.57]:33487 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755553Ab0FIIys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 04:54:48 -0400
-Subject: Re: [PATCH 3/3] powerpc: enabled asymmetric SMT scheduling on
- POWER7
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-In-Reply-To: <20100608045702.31FB5CC8C7@localhost.localdomain>
-References: <20100608045702.31FB5CC8C7@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Jun 2010 18:54:13 +1000
-Message-ID: <1276073653.1242.0.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756241Ab0FIIzR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 04:55:17 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:58025 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab0FIIzP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 04:55:15 -0400
+Date: Wed, 09 Jun 2010 10:55:51 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv4 08/13] USB: gadget: g_serial: INF file updated
+In-reply-to: <996015.66352.qm@web180311.mail.gq1.yahoo.com>
+To: linux-usb@vger.kernel.org, David Brownell <david-b@pacbell.net>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+       Xiaofan Chen <xiaofanc@gmail.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <op.vd0y3ds37p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.53 (Linux)
+References: <996015.66352.qm@web180311.mail.gq1.yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-08 at 14:57 +1000, Michael Neuling wrote:
-> The POWER7 core has dynamic SMT mode switching which is controlled by
-> the hypervisor.  There are 3 SMT modes:
-> 	SMT1 uses thread  0
-> 	SMT2 uses threads 0 & 1
-> 	SMT4 uses threads 0, 1, 2 & 3
-> When in any particular SMT mode, all threads have the same performance
-> as each other (ie. at any moment in time, all threads perform the same).  
-> 
-> The SMT mode switching works such that when linux has threads 2 & 3 idle
-> and 0 & 1 active, it will cede (H_CEDE hypercall) threads 2 and 3 in the
-> idle loop and the hypervisor will automatically switch to SMT2 for that
-> core (independent of other cores).  The opposite is not true, so if
-> threads 0 & 1 are idle and 2 & 3 are active, we will stay in SMT4 mode.
-> 
-> Similarly if thread 0 is active and threads 1, 2 & 3 are idle, we'll go
-> into SMT1 mode.  
-> 
-> If we can get the core into a lower SMT mode (SMT1 is best), the threads
-> will perform better (since they share less core resources).  Hence when
-> we have idle threads, we want them to be the higher ones.
-> 
-> This adds a feature bit for asymmetric packing to powerpc and then
-> enables it on POWER7. 
-> 
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
+On Tue, 08 Jun 2010 15:13:30 +0200, David Brownell <david-b@pacbell.net> wrote:
+>> +; Copyright (c) 2000 Microsoft Corporation
+>
+> Same comment as with the INF file for g_ether:
+>
+> If you're giving Microsoft credit for this,
+> you should make sure we have the right to
+> redistribute the changes ...
+>
+> To the extent that your patches reduce our
+> ability to redistribute these INF files and
+> thus use these drivers with MS-Windows ... NAK.
+>
+> It's my understanding that pulling fragments
+> from INF files comes under "fair use" and
+> thus copyright does not need to be assigned.
+> Microsoft publishes these things with the
+> expectation they'll be copied/pasted all over...
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+So you're saying that removing the copyright will be the way to go?
+I kept it since it was not really pulling fragments the INF is the
+whole template provided by Microsoft with some minor changes.
 
-> 
-> ---
-> 
->  arch/powerpc/include/asm/cputable.h |    3 ++-
->  arch/powerpc/kernel/process.c       |    9 +++++++++
->  2 files changed, 11 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6-ozlabs/arch/powerpc/include/asm/cputable.h
-> ===================================================================
-> --- linux-2.6-ozlabs.orig/arch/powerpc/include/asm/cputable.h
-> +++ linux-2.6-ozlabs/arch/powerpc/include/asm/cputable.h
-> @@ -195,6 +195,7 @@ extern const char *powerpc_base_platform
->  #define CPU_FTR_SAO			LONG_ASM_CONST(0x0020000000000000)
->  #define CPU_FTR_CP_USE_DCBTZ		LONG_ASM_CONST(0x0040000000000000)
->  #define CPU_FTR_UNALIGNED_LD_STD	LONG_ASM_CONST(0x0080000000000000)
-> +#define CPU_FTR_ASYM_SMT		LONG_ASM_CONST(0x0100000000000000)
->  
->  #ifndef __ASSEMBLY__
->  
-> @@ -409,7 +410,7 @@ extern const char *powerpc_base_platform
->  	    CPU_FTR_MMCRA | CPU_FTR_SMT | \
->  	    CPU_FTR_COHERENT_ICACHE | CPU_FTR_LOCKLESS_TLBIE | \
->  	    CPU_FTR_PURR | CPU_FTR_SPURR | CPU_FTR_REAL_LE | \
-> -	    CPU_FTR_DSCR | CPU_FTR_SAO)
-> +	    CPU_FTR_DSCR | CPU_FTR_SAO  | CPU_FTR_ASYM_SMT)
->  #define CPU_FTRS_CELL	(CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
->  	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | \
->  	    CPU_FTR_ALTIVEC_COMP | CPU_FTR_MMCRA | CPU_FTR_SMT | \
-> Index: linux-2.6-ozlabs/arch/powerpc/kernel/process.c
-> ===================================================================
-> --- linux-2.6-ozlabs.orig/arch/powerpc/kernel/process.c
-> +++ linux-2.6-ozlabs/arch/powerpc/kernel/process.c
-> @@ -1265,3 +1265,12 @@ unsigned long randomize_et_dyn(unsigned 
->  
->  	return ret;
->  }
-> +
-> +int arch_sd_sibiling_asym_packing(void)
-> +{
-> +	if (cpu_has_feature(CPU_FTR_ASYM_SMT)){
-> +		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
-> +		return SD_ASYM_PACKING;
-> +	}
-> +	return 0;
-> +}
+As for RNDIS INF file, my understanding is that since Microsoft provides
+the template in a publicly available documentation we can assume that we
+have the right to redistribute code based on it.
 
+As for CDC ACM INF file, my understanding is similar except the template
+is provided by Microchip rather then Microsoft itself.
 
+I thought it's safer to leave the copyright notice and assume we have the
+right to modify and redistribute rather then remove it and then be accused
+of claiming other's copyright.
+
+All lawyers in the room please rise hands? ;)
+
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
