@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab0FIW22 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 18:28:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51770 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755717Ab0FIW20 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 18:28:26 -0400
-Date: Wed, 9 Jun 2010 15:27:37 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Salman <sqazi@google.com>, akpm@linux-foundation.org, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, tytso@google.com
-Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
- reused immediately.
-In-Reply-To: <alpine.LFD.2.00.1006091517450.4506@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1006091525250.4506@i5.linux-foundation.org>
-References: <20100609210014.7464.92234.stgit@bumblebee1.mtv.corp.google.com>  <alpine.LFD.2.00.1006091408430.4506@i5.linux-foundation.org> <1276119207.1745.154.camel@laptop> <alpine.LFD.2.00.1006091517450.4506@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756341Ab0FIW2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 18:28:35 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44535 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756246Ab0FIW2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 18:28:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+Organization: SiSK
+To: Mikael Pettersson <mikpe@it.uu.se>
+Subject: Re: [Bug #16161] [2.6.35-rc1 regression] sysfs: cannot create duplicate filename ... XVR-600 related?
+Date: Thu, 10 Jun 2010 00:26:44 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc2-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera> <C9Q3XEnHPeG.A.fIG.P8rDMB@chimera> <19471.35731.889910.990185@pilspetsen.it.uu.se>
+In-Reply-To: <19471.35731.889910.990185@pilspetsen.it.uu.se>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006100026.44762.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 9 Jun 2010, Linus Torvalds wrote:
+On Wednesday, June 09, 2010, Mikael Pettersson wrote:
+> Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.34.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D16161
+> > Subject		: [2.6.35-rc1 regression] sysfs: cannot create duplicate filename =
+> > ... XVR-600 related?
+> > Submitter	: Mikael Pettersson <mikpe@it.uu.se>
+> > Date		: 2010-06-01 19:57 (8 days old)
+> > Message-ID	: <19461.26166.427857.612983@pilspetsen.it.uu.se>
+> > References	: http://marc.info/?l=3Dlinux-kernel&m=3D127542227511925&w=3D2
 > 
-> Quite possibly. I'd worry about the overflow case a bit, but it's 
-> certainly going to get the right value when base << MAX_INT.
+> The bug is still there in 2.6.35-rc2. I haven't checked post-rc2 git snapshots.
 
-Having given it a couple of seconds more thought, I don't think there is 
-an overflow case either. All of a/b/base are guaranteed to be non-negative 
-(or our pid code is in worse trouble anyway), so there is no overflow 
-possible. So yes. Just comparing a-base < b-base should always be safe.
+Please test post-rc2 too.
 
-			Linus
-
-
+Rafael
