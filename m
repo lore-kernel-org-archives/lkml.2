@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab0FIMYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 08:24:05 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57393 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753906Ab0FIMYC (ORCPT
+	id S1755649Ab0FIMYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 08:24:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41979 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755020Ab0FIMYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 08:24:02 -0400
-Date: Wed, 9 Jun 2010 09:23:38 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [PATCH][RFC] tracing: Use class->reg() for all registering of
- events
-Message-ID: <20100609122338.GA9471@ghostprotocols.net>
-References: <1276011215.15884.96.camel@gandalf.stny.rr.com>
- <1276012661.2046.120.camel@twins>
- <20100608173559.GE2800@linux.vnet.ibm.com>
- <1276024211.15884.107.camel@gandalf.stny.rr.com>
- <20100609050534.GA5878@linux.vnet.ibm.com>
- <1276065150.2046.1004.camel@twins>
- <20100609114753.GB5878@linux.vnet.ibm.com>
- <1276084414.2046.1335.camel@twins>
- <20100609120224.GA8359@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100609120224.GA8359@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 9 Jun 2010 08:24:23 -0400
+Subject: Re: [tip:perf/core] perf: Add non-exec mmap() tracking
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: mingo@redhat.com, hpa@zytor.com, anton@samba.org, acme@redhat.com,
+       paulus@samba.org, linux-kernel@vger.kernel.org, efault@gmx.de,
+       fweisbec@gmail.com, ebmunson@us.ibm.com, rostedt@goodmis.org,
+       tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+In-Reply-To: <AANLkTimsd32TL44V-aXvEoa3SE63X6qaOmMny9Q8uNRi@mail.gmail.com>
+References: <1274193049-25997-1-git-send-email-ebmunson@us.ibm.com>
+	 <tip-3af9e859281bda7eb7c20b51879cf43aa788ac2e@git.kernel.org>
+	 <AANLkTimsd32TL44V-aXvEoa3SE63X6qaOmMny9Q8uNRi@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Jun 2010 14:22:13 +0200
+Message-ID: <1276086133.1645.575.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jun 09, 2010 at 09:02:24AM -0300, Arnaldo Carvalho de Melo escreveu:
-> > On Wed, 2010-06-09 at 17:17 +0530, Srikar Dronamraju wrote:
-> > > When ran gdb on the core, it showed me that it was dumping in
-> > > /usr/lib64/libnewt.so.0.52. in newtScaleSet function.
-> > > My newt lib was of version : newt-0.52.2-15
+On Wed, 2010-06-09 at 13:44 +0300, Pekka Enberg wrote:
+> > @@ -3830,6 +3834,14 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+> >                if (!vma->vm_mm) {
+> >                        name = strncpy(tmp, "[vdso]", sizeof(tmp));
+> >                        goto got_name;
+> > +               } else if (vma->vm_start <= vma->vm_mm->start_brk &&
+> > +                               vma->vm_end >= vma->vm_mm->brk) {
+> > +                       name = strncpy(tmp, "[heap]", sizeof(tmp));
+> > +                       goto got_name;
+> > +               } else if (vma->vm_start <= vma->vm_mm->start_stack &&
+> > +                               vma->vm_end >= vma->vm_mm->start_stack) {
+> > +                       name = strncpy(tmp, "[stack]", sizeof(tmp));
+> > +                       goto got_name;
+> >                }
+> >
+> >                name = strncpy(tmp, "//anon", sizeof(tmp));
+> 
+> Doesn't this change here break the JIT generated code region detection
+> in map__new() of tools/perf/util/map.c? We generate a new
+> "/tmp/perf-<pid>.map" filename for anonymous memory regions and check
+> for that in dso__load() of tools/perf/util/symbol.c. 
 
-Can you please provide a backtrace? I think I know what the problem is,
-but I'm not managing to reproduce it here.
+Not unless you stick your executable code in the heap or on the stack.
 
-> > > I am now able to workaround the problem by uninstalling newt-devel.
+If you use something like mmap(NULL, size, PROT_READ|PROT_WRITE|
+PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0); to allocate your memory
+everything should be fine.
 
-- Arnaldo
+
+
