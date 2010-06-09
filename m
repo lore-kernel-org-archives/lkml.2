@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599Ab0FII7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 04:59:13 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:46636 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756423Ab0FII7G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 04:59:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=uRg6Fymn5yBx/Z3cpXIKRVYs0XcehjpUMeH1IccQ6/vsAjlRvk08fB4MPDG+79r6Rh
-         R/KQL9Qh+pzgIVJns3W3Gt1pAbM8Pr5zZ536lOrEaW7fVm5ZL0ArqSe2TUhSjFXwo1zR
-         AVkRwXrZSFsIZYErNTLhZWRq6qsqTyM//eLIo=
+	id S1756508Ab0FIJAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:00:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46272 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752994Ab0FIJAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 05:00:07 -0400
+Message-ID: <4C0F5804.9080406@redhat.com>
+Date: Wed, 09 Jun 2010 11:59:48 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimkJjZ32kIl4rjikZqBrFCFPw0zCS7b9uh6gO2V@mail.gmail.com>
-References: <AANLkTik0UvRGmGeZOMaJVaoHk-lv2V8umAF3EIckh9CT@mail.gmail.com>
-	<1276051329.13426.48.camel@localhost.localdomain>
-	<AANLkTikSaMcKPh5GI3Tq2SZkVXsNKwE8pfR8me5IHDDv@mail.gmail.com>
-	<AANLkTik4kdjh1Wmo704_3-jzxmMUd8vGce9Mdojveml1@mail.gmail.com>
-	<AANLkTimkJjZ32kIl4rjikZqBrFCFPw0zCS7b9uh6gO2V@mail.gmail.com>
-Date: Wed, 9 Jun 2010 16:59:03 +0800
-Message-ID: <AANLkTik97svBnM-54zaFwKr9E0SFyq5fXeg2Y2aNO56H@mail.gmail.com>
-Subject: Re: When and how to use ftrace?
-From: wu zhangjin <wuzhangjin@gmail.com>
-To: Ryan Wang <openspace.wang@gmail.com>
-Cc: Neependra Khare <neependra.khare@gmail.com>,
-       Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org,
-       kernelnewbies@nl.linux.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com
+Subject: Re: [RFC] para virt interface of perf to support kvm guest os statistics
+ collection in guest os
+References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1276054214.2096.383.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Jun 9, 2010 at 4:14 PM, Ryan Wang <openspace.wang@gmail.com> wrote:
-[...]
->>>
->>> --
->>> To unsubscribe from this list: send an email with
->>> "unsubscribe kernelnewbies" to ecartis@nl.linux.org
->>> Please read the FAQ at http://kernelnewbies.org/FAQ
->>>
->>
->>
+On 06/09/2010 06:30 AM, Zhang, Yanmin wrote:
+> From: Zhang, Yanmin<yanmin_zhang@linux.intel.com>
 >
-> Seems ftrace is helpful to study the activities inside the kernel to me.
-> I wonder whether it can be useful to debug kernel bugs. And if so, will
-> you please give me some examples?
+> Based on Ingo's idea, I implement a para virt interface for perf to support
+> statistics collection in guest os. That means we could run tool perf in guest
+> os directly.
+>
+> Great thanks to Peter Zijlstra. He is really the architect and gave me architecture
+> design suggestions. I also want to thank Yangsheng and LinMing for their generous
+> help.
+>
+> The design is:
+>
+> 1) Add a kvm_pmu whose callbacks mostly just calls hypercall to vmexit to host kernel;
+> 2) Create a host perf_event per guest perf_event;
+> 3) Host kernel syncs perf_event count/overflows data changes to guest perf_event
+> when processing perf_event overflows after NMI arrives. Host kernel inject NMI to guest
+> kernel if a guest event overflows.
+> 4) Guest kernel goes through all enabled event on current cpu and output data when they
+> overflows.
+> 5) No change in user space.
+>    
 
-Yeah, did you read this paper written by Steven: "Finding Origins of
-Latencies Using Ftrace" (please google to download it).
-If not, please read it. that paper will tell you what Ftrace really is
-and will show the demos how to play with it.
+Other issues:
 
-> Or so far it's mainly used for
-> observing the running status of kernel?
-
-Ftrace is originally created for debugging and optimizing the
-preempt-rt, but of course, it becomes a tracing framework currently.
-
-It not only show you what the kernel space does when you do something
-in user space,
-but will show you the calling tree of kernel functions, time consuming
-of  every function and
-even allow you to filter the parts you care about.
-
-If you need more info about it, please refer to:
-
-[1] Debugging the kernel using Ftrace
-http://lwn.net/Articles/365835/
-http://lwn.net/Articles/366796/
-[2] Ftrace usage ....
-Documentation/trace/ftrace.txt
-Documentation/trace/ftrace-desgin.txt
-[3] Tools for Ftrace
-trace-cmd from readhat...
-
-Regards,
+- save/restore support for live migration
+- some way to limit the number of open handles (comes automatically with 
+the table approach I suggested earlier)
 
 -- 
-Studying engineer. Wu Zhangjin
-Lanzhou University      http://www.lzu.edu.cn
-Distributed & Embedded System Lab      http://dslab.lzu.edu.cn
-School of Information Science and Engeneering         http://xxxy.lzu.edu.cn
-wuzhangjin@gmail.com         http://falcon.oss.lzu.edu.cn
-Address:Tianshui South Road 222,Lanzhou,P.R.China    Zip Code:730000
-Tel:+86-931-8912025
+error compiling committee.c: too many arguments to function
+
