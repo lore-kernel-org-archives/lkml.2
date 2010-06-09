@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757730Ab0FIMxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 08:53:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46534 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab0FIMxP convert rfc822-to-8bit (ORCPT
+	id S1757742Ab0FIMzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 08:55:23 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50096 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757675Ab0FIMzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 08:53:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=GE5Y+ORrtF8A/GLaLu+IjFTBu5Gw13Jq4QVZI6clsYjNZym+NKsHoN2mrEefkEUttl
-         m0622dTQXQusiW0wWWFHQ6Ea0VGwWHtt3gBSa9Cot0fx4m5+uVrspQOthnUrtL7srj09
-         aPqOuUYaSCgxkOs9T+lG+dT0H9X10XRQPLlTg=
+	Wed, 9 Jun 2010 08:55:22 -0400
+Date: Wed, 9 Jun 2010 13:55:19 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Vijay R. Iyengar" <Vijay.Iyengar@kpitcummins.com>
+Cc: "jic23@hermes.cam.ac.uk" <jic23@hermes.cam.ac.uk>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "sameo@linux.intel.com" <sameo@linux.intel.com>,
+       David Dajun Chen <Dajun.Chen@diasemi.com>,
+       "Ashish P. Chavan" <Ashish.Chavan@kpitcummins.com>,
+       Nitin Shah <Nitin.Shah@kpitcummins.com>
+Subject: Re: [PATCH] MFD of DA9052 Linux device drivers (1/9)
+Message-ID: <20100609125518.GC7340@sirena.org.uk>
+References: <F56EA673D3E56E48804FE2B0D23EFD2D217420461E@KCINPUNHJCMS01.kpit.com> <371569CBCFB2E745B891DBB88B2DFDDD19CAEABB32@KCINPUNHJCMS01.kpit.com>
 MIME-Version: 1.0
-In-Reply-To: <1276086133.1645.575.camel@laptop>
-References: <1274193049-25997-1-git-send-email-ebmunson@us.ibm.com>
-	<tip-3af9e859281bda7eb7c20b51879cf43aa788ac2e@git.kernel.org>
-	<AANLkTimsd32TL44V-aXvEoa3SE63X6qaOmMny9Q8uNRi@mail.gmail.com>
-	<1276086133.1645.575.camel@laptop>
-Date: Wed, 9 Jun 2010 15:53:13 +0300
-X-Google-Sender-Auth: DTtmGdJZbE_oTmJHdBjTkqNB2_U
-Message-ID: <AANLkTimcvVyLRBQbCmePLrrNyC01KBHIpZ873hXQcYf4@mail.gmail.com>
-Subject: Re: [tip:perf/core] perf: Add non-exec mmap() tracking
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, hpa@zytor.com, anton@samba.org, acme@redhat.com,
-       paulus@samba.org, linux-kernel@vger.kernel.org, efault@gmx.de,
-       fweisbec@gmail.com, ebmunson@us.ibm.com, rostedt@goodmis.org,
-       tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <371569CBCFB2E745B891DBB88B2DFDDD19CAEABB32@KCINPUNHJCMS01.kpit.com>
+X-Cookie: Absinthe makes the tart grow fonder.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 9, 2010 at 3:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2010-06-09 at 13:44 +0300, Pekka Enberg wrote:
->> > @@ -3830,6 +3834,14 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
->> >                if (!vma->vm_mm) {
->> >                        name = strncpy(tmp, "[vdso]", sizeof(tmp));
->> >                        goto got_name;
->> > +               } else if (vma->vm_start <= vma->vm_mm->start_brk &&
->> > +                               vma->vm_end >= vma->vm_mm->brk) {
->> > +                       name = strncpy(tmp, "[heap]", sizeof(tmp));
->> > +                       goto got_name;
->> > +               } else if (vma->vm_start <= vma->vm_mm->start_stack &&
->> > +                               vma->vm_end >= vma->vm_mm->start_stack) {
->> > +                       name = strncpy(tmp, "[stack]", sizeof(tmp));
->> > +                       goto got_name;
->> >                }
->> >
->> >                name = strncpy(tmp, "//anon", sizeof(tmp));
->>
->> Doesn't this change here break the JIT generated code region detection
->> in map__new() of tools/perf/util/map.c? We generate a new
->> "/tmp/perf-<pid>.map" filename for anonymous memory regions and check
->> for that in dso__load() of tools/perf/util/symbol.c.
->
-> Not unless you stick your executable code in the heap or on the stack.
+On Wed, Jun 09, 2010 at 05:04:09PM +0530, Vijay R. Iyengar wrote:
 
-Right, I misread the patch. Thanks for the clarification, Peter!
+[Please fix your MUA to word wrap lines at ~80 columns.  I've reflowed
+the text here]
 
-> If you use something like mmap(NULL, size, PROT_READ|PROT_WRITE|
-> PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0); to allocate your memory
-> everything should be fine.
+> > These are looking pretyt touch screen specific.  What are 
+> > they doing in
+> > this patch?
 
-Sure, that's what I do.
+> We have designed the EH (interrupt handler driver) and the TSI (touch
+> screen driver) in a manner that the EH reads raw co-ordinates from the
+> touch control registers of the DA9052 hardware in response to sampling
+> ready interrupt requests and stores them in a FIFO for TSI further
+> processing.
+
+> We are implementing a common Event handler module for processing all
+> the interrupt events from the DA9052 devices like battery, regulator,
+> RTC etc. Fetching the TSI samples on touch events by EH rather than
+> notifying the TSI driver through a call-back routine helps us to get a
+> good amount of filtered touch samples from the TSI driver. 
+
+> Hence we intend to keep the TSI raw co-ordinate reading in the event
+> handling module, which is a part of the MFD driver.
+
+The additional effort involved in pushing the interrupt notification to
+the touchscreen driver is so small that it's not going to make a
+meaningful difference to the performance of your driver.  I'd guess
+you're already doing an equivalent amount of work managing the data
+queues so I'd anticipate that the performance would be at worst
+equivalent and likely better using something idiomatic (given that you
+could inject the touchscreen data into the input subsystem immediately
+from within interrupt context rather than having threads sitting around
+in the background which need to at least be scheduled before the data is
+delivered).
+
+Obviously, if you've got benchmarking that demonstrates different
+performance then I'm sure people would be interested in improving the
+standard Linux stack for this.
