@@ -1,268 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757548Ab0FIKQG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:16:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36255 "EHLO hera.kernel.org"
+	id S932199Ab0FIKQY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:16:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36276 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757507Ab0FIKQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:16:01 -0400
-Date: Wed, 9 Jun 2010 10:15:31 GMT
-From: tip-bot for Eric B Munson <ebmunson@us.ibm.com>
+	id S1757491Ab0FIKQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 06:16:20 -0400
+Date: Wed, 9 Jun 2010 10:15:50 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
-       anton@samba.org, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, efault@gmx.de, fweisbec@gmail.com,
-       rostedt@goodmis.org, ebmunson@us.ibm.com, tglx@linutronix.de,
+       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
+       fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, anton@samba.org, acme@redhat.com,
-       paulus@samba.org, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-       efault@gmx.de, fweisbec@gmail.com, ebmunson@us.ibm.com,
-       rostedt@goodmis.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1274193049-25997-1-git-send-email-ebmunson@us.ibm.com>
-References: <1274193049-25997-1-git-send-email-ebmunson@us.ibm.com>
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, efault@gmx.de,
+       fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <1274803086.5882.1752.camel@twins>
+References: <1274803086.5882.1752.camel@twins>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Add non-exec mmap() tracking
-Message-ID: <tip-3af9e859281bda7eb7c20b51879cf43aa788ac2e@git.kernel.org>
-Git-Commit-ID: 3af9e859281bda7eb7c20b51879cf43aa788ac2e
+Subject: [tip:perf/core] perf: Cleanup {start,commit,cancel}_txn details
+Message-ID: <tip-8d2cacbbb8deadfae78aa16e4e1ee619bdd7019e@git.kernel.org>
+Git-Commit-ID: 8d2cacbbb8deadfae78aa16e4e1ee619bdd7019e
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:15:32 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:15:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3af9e859281bda7eb7c20b51879cf43aa788ac2e
-Gitweb:     http://git.kernel.org/tip/3af9e859281bda7eb7c20b51879cf43aa788ac2e
-Author:     Eric B Munson <ebmunson@us.ibm.com>
-AuthorDate: Tue, 18 May 2010 15:30:49 +0100
+Commit-ID:  8d2cacbbb8deadfae78aa16e4e1ee619bdd7019e
+Gitweb:     http://git.kernel.org/tip/8d2cacbbb8deadfae78aa16e4e1ee619bdd7019e
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Tue, 25 May 2010 17:49:05 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Wed, 9 Jun 2010 11:12:34 +0200
 
-perf: Add non-exec mmap() tracking
+perf: Cleanup {start,commit,cancel}_txn details
 
-Add the capacility to track data mmap()s. This can be used together
-with PERF_SAMPLE_ADDR for data profiling.
+Clarify some of the transactional group scheduling API details
+and change it so that a successfull ->commit_txn also closes
+the transaction.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-[Updated code for stable perf ABI]
-Signed-off-by: Eric B Munson <ebmunson@us.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-LKML-Reference: <1274193049-25997-1-git-send-email-ebmunson@us.ibm.com>
+LKML-Reference: <1274803086.5882.1752.camel@twins>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- fs/exec.c                   |    1 +
- include/linux/perf_event.h  |   12 +++---------
- kernel/perf_event.c         |   34 +++++++++++++++++++++++-----------
- mm/mmap.c                   |    6 +++++-
- tools/perf/builtin-record.c |    4 +++-
- 5 files changed, 35 insertions(+), 22 deletions(-)
+ arch/powerpc/kernel/perf_event.c |    7 ++++---
+ arch/sparc/kernel/perf_event.c   |    7 ++++---
+ arch/x86/kernel/cpu/perf_event.c |   14 +++++---------
+ include/linux/perf_event.h       |   27 ++++++++++++++++++++++-----
+ kernel/perf_event.c              |    9 +--------
+ 5 files changed, 36 insertions(+), 28 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index e19de6a..97d91a0 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -653,6 +653,7 @@ int setup_arg_pages(struct linux_binprm *bprm,
- 	else
- 		stack_base = vma->vm_start - stack_expand;
- #endif
-+	current->mm->start_stack = bprm->p;
- 	ret = expand_stack(vma, stack_base);
- 	if (ret)
- 		ret = -EFAULT;
+diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+index 43b83c3..ac2a8c2 100644
+--- a/arch/powerpc/kernel/perf_event.c
++++ b/arch/powerpc/kernel/perf_event.c
+@@ -754,7 +754,7 @@ static int power_pmu_enable(struct perf_event *event)
+ 	 * skip the schedulability test here, it will be peformed
+ 	 * at commit time(->commit_txn) as a whole
+ 	 */
+-	if (cpuhw->group_flag & PERF_EVENT_TXN_STARTED)
++	if (cpuhw->group_flag & PERF_EVENT_TXN)
+ 		goto nocheck;
+ 
+ 	if (check_excludes(cpuhw->event, cpuhw->flags, n0, 1))
+@@ -858,7 +858,7 @@ void power_pmu_start_txn(const struct pmu *pmu)
+ {
+ 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
+ 
+-	cpuhw->group_flag |= PERF_EVENT_TXN_STARTED;
++	cpuhw->group_flag |= PERF_EVENT_TXN;
+ 	cpuhw->n_txn_start = cpuhw->n_events;
+ }
+ 
+@@ -871,7 +871,7 @@ void power_pmu_cancel_txn(const struct pmu *pmu)
+ {
+ 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
+ 
+-	cpuhw->group_flag &= ~PERF_EVENT_TXN_STARTED;
++	cpuhw->group_flag &= ~PERF_EVENT_TXN;
+ }
+ 
+ /*
+@@ -897,6 +897,7 @@ int power_pmu_commit_txn(const struct pmu *pmu)
+ 	for (i = cpuhw->n_txn_start; i < n; ++i)
+ 		cpuhw->event[i]->hw.config = cpuhw->events[i];
+ 
++	cpuhw->group_flag &= ~PERF_EVENT_TXN;
+ 	return 0;
+ }
+ 
+diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
+index 0ec92c8..beeb92f 100644
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1005,7 +1005,7 @@ static int sparc_pmu_enable(struct perf_event *event)
+ 	 * skip the schedulability test here, it will be peformed
+ 	 * at commit time(->commit_txn) as a whole
+ 	 */
+-	if (cpuc->group_flag & PERF_EVENT_TXN_STARTED)
++	if (cpuc->group_flag & PERF_EVENT_TXN)
+ 		goto nocheck;
+ 
+ 	if (check_excludes(cpuc->event, n0, 1))
+@@ -1102,7 +1102,7 @@ static void sparc_pmu_start_txn(const struct pmu *pmu)
+ {
+ 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
+ 
+-	cpuhw->group_flag |= PERF_EVENT_TXN_STARTED;
++	cpuhw->group_flag |= PERF_EVENT_TXN;
+ }
+ 
+ /*
+@@ -1114,7 +1114,7 @@ static void sparc_pmu_cancel_txn(const struct pmu *pmu)
+ {
+ 	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
+ 
+-	cpuhw->group_flag &= ~PERF_EVENT_TXN_STARTED;
++	cpuhw->group_flag &= ~PERF_EVENT_TXN;
+ }
+ 
+ /*
+@@ -1137,6 +1137,7 @@ static int sparc_pmu_commit_txn(const struct pmu *pmu)
+ 	if (sparc_check_constraints(cpuc->event, cpuc->events, n))
+ 		return -EAGAIN;
+ 
++	cpuc->group_flag &= ~PERF_EVENT_TXN;
+ 	return 0;
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 5db5b7d..af04c6f 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -969,7 +969,7 @@ static int x86_pmu_enable(struct perf_event *event)
+ 	 * skip the schedulability test here, it will be peformed
+ 	 * at commit time(->commit_txn) as a whole
+ 	 */
+-	if (cpuc->group_flag & PERF_EVENT_TXN_STARTED)
++	if (cpuc->group_flag & PERF_EVENT_TXN)
+ 		goto out;
+ 
+ 	ret = x86_pmu.schedule_events(cpuc, n, assign);
+@@ -1096,7 +1096,7 @@ static void x86_pmu_disable(struct perf_event *event)
+ 	 * The events never got scheduled and ->cancel_txn will truncate
+ 	 * the event_list.
+ 	 */
+-	if (cpuc->group_flag & PERF_EVENT_TXN_STARTED)
++	if (cpuc->group_flag & PERF_EVENT_TXN)
+ 		return;
+ 
+ 	x86_pmu_stop(event);
+@@ -1388,7 +1388,7 @@ static void x86_pmu_start_txn(const struct pmu *pmu)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	cpuc->group_flag |= PERF_EVENT_TXN_STARTED;
++	cpuc->group_flag |= PERF_EVENT_TXN;
+ 	cpuc->n_txn = 0;
+ }
+ 
+@@ -1401,7 +1401,7 @@ static void x86_pmu_cancel_txn(const struct pmu *pmu)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	cpuc->group_flag &= ~PERF_EVENT_TXN_STARTED;
++	cpuc->group_flag &= ~PERF_EVENT_TXN;
+ 	/*
+ 	 * Truncate the collected events.
+ 	 */
+@@ -1435,11 +1435,7 @@ static int x86_pmu_commit_txn(const struct pmu *pmu)
+ 	 */
+ 	memcpy(cpuc->assign, assign, n*sizeof(int));
+ 
+-	/*
+-	 * Clear out the txn count so that ->cancel_txn() which gets
+-	 * run after ->commit_txn() doesn't undo things.
+-	 */
+-	cpuc->n_txn = 0;
++	cpuc->group_flag &= ~PERF_EVENT_TXN;
+ 
+ 	return 0;
+ }
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index c691a0b..36efad9 100644
+index 36efad9..f1b6ba0 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -214,8 +214,9 @@ struct perf_event_attr {
- 				 *  See also PERF_RECORD_MISC_EXACT_IP
- 				 */
- 				precise_ip     :  2, /* skid constraint       */
-+				mmap_data      :  1, /* non-exec mmap data    */
+@@ -549,7 +549,10 @@ struct hw_perf_event {
  
--				__reserved_1   : 47;
-+				__reserved_1   : 46;
+ struct perf_event;
  
- 	union {
- 		__u32		wakeup_events;	  /* wakeup every n events */
-@@ -962,14 +963,7 @@ perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
- 	}
- }
+-#define PERF_EVENT_TXN_STARTED 1
++/*
++ * Common implementation detail of pmu::{start,commit,cancel}_txn
++ */
++#define PERF_EVENT_TXN 0x1
  
--extern void __perf_event_mmap(struct vm_area_struct *vma);
--
--static inline void perf_event_mmap(struct vm_area_struct *vma)
--{
--	if (vma->vm_flags & VM_EXEC)
--		__perf_event_mmap(vma);
--}
--
-+extern void perf_event_mmap(struct vm_area_struct *vma);
- extern struct perf_guest_info_callbacks *perf_guest_cbs;
- extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
- extern int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
+ /**
+  * struct pmu - generic performance monitoring unit
+@@ -563,14 +566,28 @@ struct pmu {
+ 	void (*unthrottle)		(struct perf_event *event);
+ 
+ 	/*
+-	 * group events scheduling is treated as a transaction,
+-	 * add group events as a whole and perform one schedulability test.
+-	 * If test fails, roll back the whole group
++	 * Group events scheduling is treated as a transaction, add group
++	 * events as a whole and perform one schedulability test. If the test
++	 * fails, roll back the whole group
+ 	 */
+ 
++	/*
++	 * Start the transaction, after this ->enable() doesn't need
++	 * to do schedulability tests.
++	 */
+ 	void (*start_txn)	(const struct pmu *pmu);
+-	void (*cancel_txn)	(const struct pmu *pmu);
++	/*
++	 * If ->start_txn() disabled the ->enable() schedulability test
++	 * then ->commit_txn() is required to perform one. On success
++	 * the transaction is closed. On error the transaction is kept
++	 * open until ->cancel_txn() is called.
++	 */
+ 	int  (*commit_txn)	(const struct pmu *pmu);
++	/*
++	 * Will cancel the transaction, assumes ->disable() is called for
++	 * each successfull ->enable() during the transaction.
++	 */
++	void (*cancel_txn)	(const struct pmu *pmu);
+ };
+ 
+ /**
 diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index b39bec3..227ed9c 100644
+index 227ed9c..6f60920 100644
 --- a/kernel/perf_event.c
 +++ b/kernel/perf_event.c
-@@ -1891,7 +1891,7 @@ static void free_event(struct perf_event *event)
+@@ -675,7 +675,6 @@ group_sched_in(struct perf_event *group_event,
+ 	struct perf_event *event, *partial_group = NULL;
+ 	const struct pmu *pmu = group_event->pmu;
+ 	bool txn = false;
+-	int ret;
  
- 	if (!event->parent) {
- 		atomic_dec(&nr_events);
--		if (event->attr.mmap)
-+		if (event->attr.mmap || event->attr.mmap_data)
- 			atomic_dec(&nr_mmap_events);
- 		if (event->attr.comm)
- 			atomic_dec(&nr_comm_events);
-@@ -3491,7 +3491,7 @@ perf_event_read_event(struct perf_event *event,
- /*
-  * task tracking -- fork/exit
-  *
-- * enabled by: attr.comm | attr.mmap | attr.task
-+ * enabled by: attr.comm | attr.mmap | attr.mmap_data | attr.task
-  */
- 
- struct perf_task_event {
-@@ -3541,7 +3541,8 @@ static int perf_event_task_match(struct perf_event *event)
- 	if (event->cpu != -1 && event->cpu != smp_processor_id())
+ 	if (group_event->state == PERF_EVENT_STATE_OFF)
  		return 0;
- 
--	if (event->attr.comm || event->attr.mmap || event->attr.task)
-+	if (event->attr.comm || event->attr.mmap ||
-+	    event->attr.mmap_data || event->attr.task)
- 		return 1;
- 
- 	return 0;
-@@ -3766,7 +3767,8 @@ static void perf_event_mmap_output(struct perf_event *event,
- }
- 
- static int perf_event_mmap_match(struct perf_event *event,
--				   struct perf_mmap_event *mmap_event)
-+				   struct perf_mmap_event *mmap_event,
-+				   int executable)
- {
- 	if (event->state < PERF_EVENT_STATE_INACTIVE)
- 		return 0;
-@@ -3774,19 +3776,21 @@ static int perf_event_mmap_match(struct perf_event *event,
- 	if (event->cpu != -1 && event->cpu != smp_processor_id())
- 		return 0;
- 
--	if (event->attr.mmap)
-+	if ((!executable && event->attr.mmap_data) ||
-+	    (executable && event->attr.mmap))
- 		return 1;
- 
- 	return 0;
- }
- 
- static void perf_event_mmap_ctx(struct perf_event_context *ctx,
--				  struct perf_mmap_event *mmap_event)
-+				  struct perf_mmap_event *mmap_event,
-+				  int executable)
- {
- 	struct perf_event *event;
- 
- 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
--		if (perf_event_mmap_match(event, mmap_event))
-+		if (perf_event_mmap_match(event, mmap_event, executable))
- 			perf_event_mmap_output(event, mmap_event);
- 	}
- }
-@@ -3830,6 +3834,14 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 		if (!vma->vm_mm) {
- 			name = strncpy(tmp, "[vdso]", sizeof(tmp));
- 			goto got_name;
-+		} else if (vma->vm_start <= vma->vm_mm->start_brk &&
-+				vma->vm_end >= vma->vm_mm->brk) {
-+			name = strncpy(tmp, "[heap]", sizeof(tmp));
-+			goto got_name;
-+		} else if (vma->vm_start <= vma->vm_mm->start_stack &&
-+				vma->vm_end >= vma->vm_mm->start_stack) {
-+			name = strncpy(tmp, "[stack]", sizeof(tmp));
-+			goto got_name;
- 		}
- 
- 		name = strncpy(tmp, "//anon", sizeof(tmp));
-@@ -3846,17 +3858,17 @@ got_name:
- 
- 	rcu_read_lock();
- 	cpuctx = &get_cpu_var(perf_cpu_context);
--	perf_event_mmap_ctx(&cpuctx->ctx, mmap_event);
-+	perf_event_mmap_ctx(&cpuctx->ctx, mmap_event, vma->vm_flags & VM_EXEC);
- 	ctx = rcu_dereference(current->perf_event_ctxp);
- 	if (ctx)
--		perf_event_mmap_ctx(ctx, mmap_event);
-+		perf_event_mmap_ctx(ctx, mmap_event, vma->vm_flags & VM_EXEC);
- 	put_cpu_var(perf_cpu_context);
- 	rcu_read_unlock();
- 
- 	kfree(buf);
- }
- 
--void __perf_event_mmap(struct vm_area_struct *vma)
-+void perf_event_mmap(struct vm_area_struct *vma)
- {
- 	struct perf_mmap_event mmap_event;
- 
-@@ -4911,7 +4923,7 @@ done:
- 
- 	if (!event->parent) {
- 		atomic_inc(&nr_events);
--		if (event->attr.mmap)
-+		if (event->attr.mmap || event->attr.mmap_data)
- 			atomic_inc(&nr_mmap_events);
- 		if (event->attr.comm)
- 			atomic_inc(&nr_comm_events);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 456ec6f..e38e910 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1734,8 +1734,10 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 		grow = (address - vma->vm_end) >> PAGE_SHIFT;
- 
- 		error = acct_stack_growth(vma, size, grow);
--		if (!error)
-+		if (!error) {
- 			vma->vm_end = address;
-+			perf_event_mmap(vma);
-+		}
- 	}
- 	anon_vma_unlock(vma);
- 	return error;
-@@ -1781,6 +1783,7 @@ static int expand_downwards(struct vm_area_struct *vma,
- 		if (!error) {
- 			vma->vm_start = address;
- 			vma->vm_pgoff -= grow;
-+			perf_event_mmap(vma);
+@@ -703,15 +702,9 @@ group_sched_in(struct perf_event *group_event,
  		}
  	}
- 	anon_vma_unlock(vma);
-@@ -2208,6 +2211,7 @@ unsigned long do_brk(unsigned long addr, unsigned long len)
- 	vma->vm_page_prot = vm_get_page_prot(flags);
- 	vma_link(mm, vma, prev, rb_link, rb_parent);
- out:
-+	perf_event_mmap(vma);
- 	mm->total_vm += len >> PAGE_SHIFT;
- 	if (flags & VM_LOCKED) {
- 		if (!mlock_vma_pages_range(vma, addr, addr + len))
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 5e5c640..39c7247 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -268,8 +268,10 @@ static void create_counter(int counter, int cpu)
- 	if (inherit_stat)
- 		attr->inherit_stat = 1;
  
--	if (sample_address)
-+	if (sample_address) {
- 		attr->sample_type	|= PERF_SAMPLE_ADDR;
-+		attr->mmap_data = track;
-+	}
+-	if (!txn)
++	if (!txn || !pmu->commit_txn(pmu))
+ 		return 0;
  
- 	if (call_graph)
- 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
+-	ret = pmu->commit_txn(pmu);
+-	if (!ret) {
+-		pmu->cancel_txn(pmu);
+-		return 0;
+-	}
+-
+ group_error:
+ 	/*
+ 	 * Groups can be scheduled in as one unit only, so undo any
