@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab0FIUmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 16:42:03 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:40798 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220Ab0FIUmA (ORCPT
+	id S1758153Ab0FIUnE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 16:43:04 -0400
+Received: from fw.wantstofly.org ([80.101.37.227]:57851 "EHLO
+	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757371Ab0FIUnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 16:42:00 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type;
-	b=A6Ec3L//iWvAEEalwzVpQyNKFFqOYL3aX218fV06nWGoXZijpVjrgtWLq9A0BV99d
-	/cMdUPhxB9Hcd1ntqCDBQ==
-Date: Wed, 9 Jun 2010 13:41:53 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Roland McGrath <roland@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH] oom: Make coredump interruptible
-In-Reply-To: <20100609195309.GA6899@redhat.com>
-Message-ID: <alpine.DEB.2.00.1006091341040.3490@chino.kir.corp.google.com>
-References: <20100602185812.4B5894A549@magilla.sf.frob.com> <20100602203827.GA29244@redhat.com> <20100604194635.72D3.A69D9226@jp.fujitsu.com> <20100604112721.GA12582@redhat.com> <20100609195309.GA6899@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 9 Jun 2010 16:43:01 -0400
+Date: Wed, 9 Jun 2010 22:42:57 +0200
+From: Lennert Buytenhek <buytenh@wantstofly.org>
+To: Alexander Clouter <alex@digriz.org.uk>
+Cc: Dmytro Milinevskyy <milinevskyy@gmail.com>,
+       linux-arm-kernel@lists.infradead.org,
+       Russell King <linux@arm.linux.org.uk>,
+       Dhaval Vasa <dhaval.vasa@einfochips.com>,
+       Lennert Buytenhek <kernel@wantstofly.org>,
+       Nicolas Pitre <nico@fluxnic.net>, Simon Guinot <sguinot@lacie.com>,
+       Martin Michlmayr <tbm@cyrius.com>,
+       Simon Kagstrom <simon.kagstrom@netinsight.net>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Marvell OpenRD-Ultimate machine support
+Message-ID: <20100609204257.GJ1743@mail.wantstofly.org>
+References: <4c0ff6b2.0c3ddf0a.2185.2e09@mx.google.com> <20100609203720.GK7660@chipmunk> <20100609203929.GL7660@chipmunk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100609203929.GL7660@chipmunk>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jun 2010, Oleg Nesterov wrote:
+On Wed, Jun 09, 2010 at 09:39:29PM +0100, Alexander Clouter wrote:
 
-> --- x/mm/oom_kill.c
-> +++ x/mm/oom_kill.c
-> @@ -414,6 +414,7 @@ static void __oom_kill_task(struct task_
->  	p->rt.time_slice = HZ;
->  	set_tsk_thread_flag(p, TIF_MEMDIE);
->  
-> +	clear_bit(MMF_COREDUMP, &p->mm->flags);
->  	force_sig(SIGKILL, p);
->  }
->  
+> > >  	kirkwood_ge00_init(&openrd_ge00_data);
+> > > -	if (machine_is_openrd_client())
+> > > +	if (machine_is_openrd_client() ||      \__same line
+> > > +		machine_is_openrd_ultimate())  /
+> > >  		kirkwood_ge01_init(&openrd_ge01_data);
+> > > +  <------- REMOVE
+> > >  	kirkwood_sata_init(&openrd_sata_data);
+> > >  	kirkwood_sdio_init(&openrd_mvsdio_data);
+> > >  
+> > As that 'if()' clause is still less than 77 chars wide:
+> > ----
+> > kirkwood_ge00_init(&openrd_ge00_data);
+> > if (machine_is_openrd_client() || machine_is_openrd_ultimate())
+> > 	kirkwood_ge01_init(&openrd_ge01_data);
+> > kirkwood_sata_init(&openrd_sata_data);
+> > kirkwood_sdio_init(&openrd_mvsdio_data);
+> > ----
+> 
+> Better still, just make this 'if(!machine_is_openrd_base())'.
 
-This requires task_lock(p).
+That form is more error prone when someone adds the OpenRD-SuperDuper,
+though.
