@@ -1,80 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab0FIGzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 02:55:42 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:33212 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab0FIGzk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 02:55:40 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type;
-	b=ZYgCpb/vs3TWcRQwA5BUudyHjVftxuPXlYR3vnIOr1jAVgjSJtVm1cmtPyEHQH6Pp
-	1eDFj6Yi1uI50F5yXSXSA==
-Date: Tue, 8 Jun 2010 23:55:32 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Boaz Harrosh <bharrosh@panasas.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Frans Pop <elendil@planet.nl>,
-       Dirk Hohndel <hohndel@infradead.org>, Len Brown <lenb@kernel.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: kbuild: Fix the breakage caused by "improve version string
- logic"
-In-Reply-To: <4C0E17F0.5010902@panasas.com>
-Message-ID: <alpine.DEB.2.00.1006082352120.30606@chino.kir.corp.google.com>
-References: <alpine.LFD.2.01.0910041727310.3432@localhost.localdomain> <alpine.LFD.2.00.0910052140100.309@localhost.localdomain> <1254797502.14122.146.camel@dhohndel-mobl.amr.corp.intel.com> <alpine.LFD.2.01.0910060705240.3432@localhost.localdomain>
- <20091006144449.GA23078@elte.hu> <alpine.LFD.2.01.0910060815320.3432@localhost.localdomain> <20091006153632.GA29795@elte.hu> <alpine.LFD.2.01.0910060843560.3432@localhost.localdomain> <alpine.LFD.2.01.0910060925490.3432@localhost.localdomain>
- <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu> <4C0D29DE.6050602@panasas.com> <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com> <4C0DFFFF.1010704@panasas.com> <alpine.DEB.2.00.1006080200190.18052@chino.kir.corp.google.com>
- <4C0E17F0.5010902@panasas.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754795Ab0FIHCt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 03:02:49 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35685 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751630Ab0FIHCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 03:02:48 -0400
+Message-ID: <4C0F3C66.1020601@kernel.org>
+Date: Wed, 09 Jun 2010 09:01:58 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jari Ruusu <jariruusu@users.sourceforge.net>,
+       Nick Piggin <npiggin@suse.de>, Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: 2.6.35-rc2 module reference counting broken
+References: <4C0C819E.EA5D6A18@users.sourceforge.net> <20100607064412.GK31073@ZenIV.linux.org.uk> <20100608234814.GA19826@ZenIV.linux.org.uk>
+In-Reply-To: <20100608234814.GA19826@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 07:02:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Jun 2010, Boaz Harrosh wrote:
+Hello,
 
-> What is a tagged commit:
+On 06/09/2010 01:48 AM, Al Viro wrote:
+>>     block: implement bd_claiming and claiming block
+>>
+>> I'm far too sleepy right now, but I'd start with reviewing what that
+>> thing is doing to module refcounting...
 > 
-> [my_tree] $ git branch
-> *master
-> [my_tree] $ git tag v2.6.35-rc2-my-tree
-> [my_tree] $ cat localversion-my-tree
-> -my-tree
-> 
-> I still get: DEPMOD 2.6.35-rc2-my-tree+
-> 
-> How to solve? please specify.
-> 
+> Yeah...  bd_start_claiming() grabs a reference to gendisk and we never
+> let it go.  There's your leak...
 
-You need to use git tag -a.
+Eh, I thought you were cc'd.  Sorry.  This was fixed sometime back by
+Nick and queued in block tree (delayed due to mail misdelivery).
 
-> In my tree there is 2.6.35-rc2-my-tree so it cannot be mistaken with
-> Linus tree.
-> 
+  http://thread.gmane.org/gmane.linux.file-systems/40655
 
-Just because you have appended "-my-tree" to the version string does not 
-mean it is not vanilla 2.6.35-rc2.  You could append information such as 
-that just for a different config, for instance.  The `+' modifies the base 
-kernel version (2.6.35-rc2), not the string itself or whatever you choose 
-to add to it.
+Thanks.
 
-> > As mentioned previously, you can easily suppress that from being added by 
-> > using "make LOCALVERSION=-foo" to create a 2.6.35-rc2-foo kernel when you 
-> > do not have CONFIG_LOCALVERSION_AUTO enabled.  You already found that you 
-> > cannot pass an empty LOCALVERSION string, so it must be something to 
-> > identify itself as unique from vanilla 2.6.35-rc2.
-> > 
-> 
-> As mentioned previously this is not an option I do not have git control
-> over how this gets compiled.
-> 
-
-If your git repository is publically accessible, it is very simple to tag 
-commits that you want your users to pull from to indicate it's a 
-"release".  That allows you to determine whether other users have extra 
-commits on top of your release when they send you bug reports, for 
-example, which is quite helpful.
+-- 
+tejun
