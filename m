@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758479Ab0FIVjv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 17:39:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5342 "EHLO mx1.redhat.com"
+	id S932557Ab0FIVkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 17:40:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20833 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758444Ab0FIVjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 17:39:45 -0400
-Date: Wed, 9 Jun 2010 17:39:16 -0400
+	id S1758492Ab0FIVkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 17:40:00 -0400
+Date: Wed, 9 Jun 2010 17:39:26 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
@@ -14,287 +14,173 @@ Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
        vgoyal@redhat.com, sam@ravnborg.org
-Message-Id: <1d5ebadd771a004d9d12de0faaa7c668428cd4de.1276116186.git.jbaron@redhat.com>
+Message-Id: <f2ff95c1afea5823cc96e9793f8aea80b782ea87.1276116186.git.jbaron@redhat.com>
 In-Reply-To: <cover.1276116186.git.jbaron@redhat.com>
 References: <cover.1276116186.git.jbaron@redhat.com>
-Subject: [PATCH 07/13] jump label v9: sort jump table at build-time
+Subject: [PATCH 09/13] jump label v9: jump_label_text_reserved() to reserve our jump points
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The jump label table is more optimal accessed if the entries are continguous.
-Sorting the table accomplishes this. Do the sort at build-time. Adds a '-j'
-option to 'modpost' which replaces the vmlinux, with a sorted jump label
-section vmlinux. I've tested this on x86 with relocatable and it works fine
-there as well. Note that I have not sorted the jump label table in modules.
-The module tables tend to be smaller, and thus their is less value to this.
-The kernel continues to do the sort, just in case, but at least for the vmlinux,
-this is just a verfication that the jump label table has already been sorted.
+Add a jump_label_text_reserved(void *start, void *end), so that other
+pieces of code that want to modify kernel text, can first verify that
+jump label has not reserved the instruction.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
+Acked-by: Masami Hiramatsu <mhiramat@redhat.com>
 ---
- Makefile                          |    6 ++-
- include/asm-generic/vmlinux.lds.h |   18 +++++++-
- scripts/mod/Makefile              |    1 +
- scripts/mod/modpost.c             |   83 +++++++++++++++++++++++++++++++++++-
- scripts/mod/modpost.h             |    2 +
- 5 files changed, 103 insertions(+), 7 deletions(-)
+ arch/x86/kernel/kprobes.c  |    3 +-
+ include/linux/jump_label.h |    6 +++
+ kernel/jump_label.c        |   83 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/kprobes.c           |    3 +-
+ 4 files changed, 93 insertions(+), 2 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index bf9955d..6c6e608 100644
---- a/Makefile
-+++ b/Makefile
-@@ -152,7 +152,7 @@ obj		:= $(objtree)
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index 345a4b1..87ca919 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -1201,7 +1201,8 @@ static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
+ 	}
+ 	/* Check whether the address range is reserved */
+ 	if (ftrace_text_reserved(src, src + len - 1) ||
+-	    alternatives_text_reserved(src, src + len - 1))
++	    alternatives_text_reserved(src, src + len - 1) ||
++	    jump_label_text_reserved(src, src + len - 1))
+ 		return -EBUSY;
  
- VPATH		:= $(srctree)$(if $(KBUILD_EXTMOD),:$(KBUILD_EXTMOD))
+ 	return len;
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index dc81a45..3250793 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -28,6 +28,7 @@ extern void arch_jump_label_transform(struct jump_entry *entry,
+ extern const u8 *arch_get_jump_label_nop(void);
  
--export srctree objtree VPATH
-+export srctree objtree VPATH hdr-arch
+ extern void jump_label_update(const char *name, enum jump_label_type type);
++extern int jump_label_text_reserved(void *start, void *end);
  
+ extern void apply_jump_label_nops(struct module *mod);
  
- # SUBARCH tells the usermode build what the underlying arch is.  That is set
-@@ -850,6 +850,9 @@ define rule_vmlinux-modpost
- 	$(Q)echo 'cmd_$@ := $(cmd_vmlinux-modpost)' > $(dot-target).cmd
- endef
- 
-+quiet_cmd_sort-jump-label = SORT    $@
-+      cmd_sort-jump-label = $(srctree)/scripts/mod/modpost -j -s $@
-+
- # vmlinux image - including updated kernel symbols
- vmlinux: $(vmlinux-lds) $(vmlinux-init) $(vmlinux-main) vmlinux.o $(kallsyms.o) FORCE
- ifdef CONFIG_HEADERS_CHECK
-@@ -863,6 +866,7 @@ ifdef CONFIG_BUILD_DOCSRC
- endif
- 	$(call vmlinux-modpost)
- 	$(call if_changed_rule,vmlinux__)
-+	$(call cmd,sort-jump-label)
- 	$(Q)rm -f .old_version
- 
- # build vmlinux.o first to catch section mismatch errors early
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index f6137ba..457c11d 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -168,7 +168,6 @@
- 	TRACE_PRINTKS()							\
- 	FTRACE_EVENTS()							\
- 	TRACE_SYSCALLS()						\
--	JUMP_TABLE()							\
- 
- /*
-  * Data section helpers
-@@ -207,7 +206,6 @@
- 		*(__vermagic)		/* Kernel version magic */	\
- 		*(__markers_strings)	/* Markers: strings */		\
- 		*(__tracepoints_strings)/* Tracepoints: strings */	\
--		*(__jump_strings)/* Jump: strings */	\
- 	}								\
- 									\
- 	.rodata1          : AT(ADDR(.rodata1) - LOAD_OFFSET) {		\
-@@ -216,6 +214,10 @@
- 									\
- 	BUG_TABLE							\
- 									\
-+	JUMP_TABLE							\
-+									\
-+	JUMP_STRINGS							\
-+									\
- 	/* PCI quirks */						\
- 	.pci_fixup        : AT(ADDR(.pci_fixup) - LOAD_OFFSET) {	\
- 		VMLINUX_SYMBOL(__start_pci_fixups_early) = .;		\
-@@ -559,11 +561,21 @@
- #define BUG_TABLE
- #endif
- 
--#define JUMP_TABLE()							\
-+#define JUMP_TABLE							\
- 	. = ALIGN(64);							\
-+	__jump_table : AT(ADDR(__jump_table) - LOAD_OFFSET) {		\
- 		VMLINUX_SYMBOL(__start___jump_table) = .;		\
- 		*(__jump_table)						\
- 		VMLINUX_SYMBOL(__stop___jump_table) = .;		\
-+	}
-+
-+#define JUMP_STRINGS							\
-+	. = ALIGN(64);							\
-+	__jump_strings : AT(ADDR(__jump_strings) - LOAD_OFFSET) {	\
-+		VMLINUX_SYMBOL(__start___jump_strings) = .;		\
-+		*(__jump_strings)					\
-+		VMLINUX_SYMBOL(__stop___jump_strings) = .;		\
-+	}
- 
- #ifdef CONFIG_PM_TRACE
- #define TRACEDATA							\
-diff --git a/scripts/mod/Makefile b/scripts/mod/Makefile
-index ff954f8..a6dbbe6 100644
---- a/scripts/mod/Makefile
-+++ b/scripts/mod/Makefile
-@@ -1,4 +1,5 @@
- hostprogs-y	:= modpost mk_elfconfig
-+HOST_EXTRACFLAGS += -iquote "$(srctree)/arch/$(hdr-arch)/include/asm"
- always		:= $(hostprogs-y) empty.o
- 
- modpost-objs	:= modpost.o file2alias.o sumversion.o
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index 3318692..1ed8380 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -17,6 +17,7 @@
- #include "modpost.h"
- #include "../../include/generated/autoconf.h"
- #include "../../include/linux/license.h"
-+#include <linux/types.h>
- 
- /* Some toolchains use a `_' prefix for all user symbols. */
- #ifdef CONFIG_SYMBOL_PREFIX
-@@ -41,6 +42,8 @@ static int warn_unresolved = 0;
- /* How a symbol is exported */
- static int sec_mismatch_count = 0;
- static int sec_mismatch_verbose = 1;
-+/* jump label */
-+static int enable_jump_label = 0;
- 
- enum export {
- 	export_plain,      export_unused,     export_gpl,
-@@ -315,12 +318,18 @@ void *grab_file(const char *filename, unsigned long *size)
- 	void *map;
- 	int fd;
- 
--	fd = open(filename, O_RDONLY);
-+	if (!enable_jump_label)
-+		fd = open(filename, O_RDONLY);
-+	else
-+		fd = open(filename, O_RDWR);
- 	if (fd < 0 || fstat(fd, &st) != 0)
- 		return NULL;
- 
- 	*size = st.st_size;
--	map = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
-+	if (!enable_jump_label)
-+		map = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
-+	else
-+		map = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
- 	close(fd);
- 
- 	if (map == MAP_FAILED)
-@@ -367,6 +376,63 @@ void release_file(void *file, unsigned long size)
- 	munmap(file, size);
+@@ -62,6 +63,11 @@ static inline int apply_jump_label_nops(struct module *mod)
+ 	return 0;
  }
  
-+#ifdef CONFIG_HAVE_ARCH_JUMP_LABEL
-+
-+#include "jump_label.h"
-+
-+static void swap_jump_label_entries(struct jump_entry *previous, struct jump_entry *next)
++static inline int jump_label_text_reserved(void *start, void *end)
 +{
-+	struct jump_entry tmp;
-+
-+	tmp = *next;
-+	*next = *previous;
-+	*previous = tmp;
++	return 0;
 +}
 +
-+static void sort_jump_label_table(struct elf_info *info, Elf_Ehdr *hdr)
+ #endif
+ 
+ #endif
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 3ebe2bf..ac39662 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -181,6 +181,89 @@ void jump_label_update(const char *name, enum jump_label_type type)
+ 	mutex_unlock(&jump_label_mutex);
+ }
+ 
++static int addr_conflict(struct jump_entry *entry, void *start, void *end)
 +{
-+	int swapped = 0;
-+	struct jump_entry *iter, *iter_next;
-+	char *name, *next_name;
-+	Elf_Shdr *sechdrs = info->sechdrs;
-+	unsigned long jump_table, jump_table_end;
-+	unsigned long jump_strings, jump_strings_addr;
++	if (entry->code <= (unsigned long)end &&
++		entry->code + JUMP_LABEL_NOP_SIZE > (unsigned long)start)
++		return 1;
 +
-+	if ((info->jump_sec == 0) && (info->jump_strings_sec == 0))
-+		return;
++	return 0;
++}
 +
-+	jump_table = (unsigned long)hdr + sechdrs[info->jump_sec].sh_offset;
-+	jump_table_end = jump_table + sechdrs[info->jump_sec].sh_size;
-+	jump_strings = (unsigned long)hdr +
-+				sechdrs[info->jump_strings_sec].sh_offset;
-+	jump_strings_addr = sechdrs[info->jump_strings_sec].sh_addr;
++#ifdef CONFIG_MODULES
 +
-+	do {
-+		swapped = 0;
-+		iter = iter_next = (struct jump_entry *)jump_table;
-+		iter_next++;
-+		for (; iter_next < (struct jump_entry *)jump_table_end;
-+							iter++, iter_next++) {
-+			name = (char *)(jump_strings + (iter->name - jump_strings_addr));
-+			next_name = (char *)(jump_strings +
-+					(iter_next->name - jump_strings_addr));
-+			if (strcmp(name, next_name) > 0) {
-+				swap_jump_label_entries(iter, iter_next);
-+				swapped = 1;
++static int module_conflict(void *start, void *end)
++{
++	struct hlist_head *head;
++	struct hlist_node *node, *node_next, *module_node, *module_node_next;
++	struct jump_label_entry *e;
++	struct jump_label_module_entry *e_module;
++	struct jump_entry *iter;
++	int i, count;
++	int conflict = 0;
++
++	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
++		head = &jump_label_table[i];
++		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
++			hlist_for_each_entry_safe(e_module, module_node,
++							module_node_next,
++							&(e->modules), hlist) {
++				count = e_module->nr_entries;
++				iter = e_module->table;
++				while (count--) {
++					if (addr_conflict(iter, start, end)) {
++						conflict = 1;
++						goto out;
++					}
++					iter++;
++				}
 +			}
 +		}
-+	} while (swapped == 1);
-+}
-+
-+#else
-+
-+static inline void sort_jump_label_table(struct elf_info *info, Elf_Ehdr *hdr)
-+{
-+	return;
++	}
++out:
++	return conflict;
 +}
 +
 +#endif
 +
- static int parse_elf(struct elf_info *info, const char *filename)
++/***
++ * jump_label_text_reserved - check if addr range is reserved
++ * @start: start text addr
++ * @end: end text addr
++ *
++ * checks if the text addr located between @start and @end
++ * overlaps with any of the jump label patch addresses. Code
++ * that wants to modify kernel text should first verify that
++ * it does not overlap with any of the jump label addresses.
++ *
++ * returns 1 if there is an overlap, 0 otherwise
++ */
++int jump_label_text_reserved(void *start, void *end)
++{
++	struct jump_entry *iter;
++	struct jump_entry *iter_start = __start___jump_table;
++	struct jump_entry *iter_stop = __start___jump_table;
++	int conflict = 0;
++
++	mutex_lock(&jump_label_mutex);
++	iter = iter_start;
++	while (iter < iter_stop) {
++		if (addr_conflict(iter, start, end)) {
++			conflict = 1;
++			goto out;
++		}
++		iter++;
++	}
++
++	/* now check modules */
++#ifdef CONFIG_MODULES
++	conflict = module_conflict(start, end);
++#endif
++out:
++	mutex_unlock(&jump_label_mutex);
++	return conflict;
++}
++
+ static int init_jump_label(void)
  {
- 	unsigned int i;
-@@ -460,6 +526,10 @@ static int parse_elf(struct elf_info *info, const char *filename)
- 			info->export_unused_gpl_sec = i;
- 		else if (strcmp(secname, "__ksymtab_gpl_future") == 0)
- 			info->export_gpl_future_sec = i;
-+		else if (strcmp(secname, "__jump_table") == 0)
-+			info->jump_sec = i;
-+		else if (strcmp(secname, "__jump_strings") == 0)
-+			info->jump_strings_sec = i;
- 
- 		if (sechdrs[i].sh_type != SHT_SYMTAB)
- 			continue;
-@@ -480,6 +550,10 @@ static int parse_elf(struct elf_info *info, const char *filename)
- 		sym->st_value = TO_NATIVE(sym->st_value);
- 		sym->st_size  = TO_NATIVE(sym->st_size);
+ 	int ret;
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 282035f..2f9bea6 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1141,7 +1141,8 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 	preempt_disable();
+ 	if (!kernel_text_address((unsigned long) p->addr) ||
+ 	    in_kprobes_functions((unsigned long) p->addr) ||
+-	    ftrace_text_reserved(p->addr, p->addr)) {
++	    ftrace_text_reserved(p->addr, p->addr) ||
++	    jump_label_text_reserved(p->addr, p->addr)) {
+ 		preempt_enable();
+ 		return -EINVAL;
  	}
-+
-+	if (enable_jump_label)
-+		sort_jump_label_table(info, hdr);
-+
- 	return 1;
- }
- 
-@@ -1965,7 +2039,7 @@ int main(int argc, char **argv)
- 	struct ext_sym_list *extsym_iter;
- 	struct ext_sym_list *extsym_start = NULL;
- 
--	while ((opt = getopt(argc, argv, "i:I:e:cmsSo:awM:K:")) != -1) {
-+	while ((opt = getopt(argc, argv, "i:I:e:cmsSo:awM:K:j")) != -1) {
- 		switch (opt) {
- 		case 'i':
- 			kernel_read = optarg;
-@@ -2003,6 +2077,9 @@ int main(int argc, char **argv)
- 		case 'w':
- 			warn_unresolved = 1;
- 			break;
-+		case 'j':
-+			enable_jump_label = 1;
-+			break;
- 		default:
- 			exit(1);
- 		}
-diff --git a/scripts/mod/modpost.h b/scripts/mod/modpost.h
-index be987a4..0875d4b 100644
---- a/scripts/mod/modpost.h
-+++ b/scripts/mod/modpost.h
-@@ -126,6 +126,8 @@ struct elf_info {
- 	Elf_Section  export_gpl_sec;
- 	Elf_Section  export_unused_gpl_sec;
- 	Elf_Section  export_gpl_future_sec;
-+	Elf_Section  jump_sec;
-+	Elf_Section  jump_strings_sec;
- 	const char   *strtab;
- 	char	     *modinfo;
- 	unsigned int modinfo_len;
 -- 
 1.7.1
 
