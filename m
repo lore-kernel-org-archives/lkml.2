@@ -1,119 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757113Ab0FIJWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:22:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54361 "EHLO mga02.intel.com"
+	id S1757005Ab0FIJ2U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:28:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:1808 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756924Ab0FIJWl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:22:41 -0400
+	id S1756360Ab0FIJ2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 05:28:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,390,1272870000"; 
-   d="scan'208";a="525275526"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: Mitchell Erblich <erblichs@earthlink.net>,
-       Andi Kleen <andi@firstfloor.org>
-CC: Stephen Hemminger <shemminger@vyatta.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
-       "davem@davemloft.net" <davem@davemloft.net>,
-       "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>
-Date: Wed, 9 Jun 2010 17:22:12 +0800
-Subject: RE: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
- external.
-Thread-Topic: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
- external.
-Thread-Index: AcsGGdPTLppi3qF+TVu/wWCRm2nUgQBlzHLg
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D791100848F73@shsmsx502.ccr.corp.intel.com>
-References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
- <20100606161348.427822fb@nehalam> <87pr03gu1c.fsf@basil.nowhere.org>
- <40119F5E-A745-4C50-8053-D5A701266AD5@earthlink.net>
-In-Reply-To: <40119F5E-A745-4C50-8053-D5A701266AD5@earthlink.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+   d="scan'208";a="806169794"
+Subject: Re: [RFC] para virt interface of perf to support kvm guest os
+ statistics collection in guest os
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <4C0F5804.9080406@redhat.com>
+References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>
+	 <4C0F5804.9080406@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 09 Jun 2010 17:30:23 +0800
+Message-Id: <1276075823.2096.436.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Mitchell Erblich [mailto:erblichs@earthlink.net]
->Sent: Monday, June 07, 2010 4:17 PM
->To: Andi Kleen
->Cc: Stephen Hemminger; Xin, Xiaohui; netdev@vger.kernel.org; kvm@vger.kernel.org;
->linux-kernel@vger.kernel.org; mst@redhat.com; mingo@elte.hu; davem@davemloft.net;
->herbert@gondor.apana.org.au; jdike@linux.intel.com
->Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from external.
->
->
->On Jun 7, 2010, at 12:51 AM, Andi Kleen wrote:
->
->> Stephen Hemminger <shemminger@vyatta.com> writes:
->>
->>> Still not sure this is a good idea for a couple of reasons:
->>>
->>> 1. We already have lots of special cases with skb's (frags and fraglist),
->>>   and skb's travel through a lot of different parts of the kernel.  So any
->>>   new change like this creates lots of exposed points for new bugs. Look
->>>   at cases like MD5 TCP and netfilter, and forwarding these SKB's to ipsec
->>>   and ppp and ...
->>>
->>> 2. SKB's can have infinite lifetime in the kernel. If these buffers come from
->>>   a fixed size pool in an external device, they can easily all get tied up
->>>   if you have a slow listener. What happens then?
->>
->> 3. If they come from an internal pool what happens when the kernel runs
->> low on memory? How is that pool balanced against other kernel
->> memory users?
->>
->> -Andi
->>
->> --
->> ak@linux.intel.com -- Speaking for myself only.
->
->In general,
->
->When an internal pool is created/used, their SHOULD be a reason.
->Maybe, to keep allocation latency to a min, OR ...
->
-The internal pool here is a collection of user buffers submitted
-by guest virtio-net driver. Guest put buffers here and driver get
-buffers from it. If guest submit more buffers then driver needs,
-we need somewhere to put the buffers, it's the internal pool here
-to deal with. 
+On Wed, 2010-06-09 at 11:59 +0300, Avi Kivity wrote:
+> On 06/09/2010 06:30 AM, Zhang, Yanmin wrote:
+> > From: Zhang, Yanmin<yanmin_zhang@linux.intel.com>
+> >
+> > Based on Ingo's idea, I implement a para virt interface for perf to support
+> > statistics collection in guest os. That means we could run tool perf in guest
+> > os directly.
+> >
+> > Great thanks to Peter Zijlstra. He is really the architect and gave me architecture
+> > design suggestions. I also want to thank Yangsheng and LinMing for their generous
+> > help.
+> >
+> > The design is:
+> >
+> > 1) Add a kvm_pmu whose callbacks mostly just calls hypercall to vmexit to host kernel;
+> > 2) Create a host perf_event per guest perf_event;
+> > 3) Host kernel syncs perf_event count/overflows data changes to guest perf_event
+> > when processing perf_event overflows after NMI arrives. Host kernel inject NMI to guest
+> > kernel if a guest event overflows.
+> > 4) Guest kernel goes through all enabled event on current cpu and output data when they
+> > overflows.
+> > 5) No change in user space.
+> >    
+> 
+> Other issues:
+> 
+> - save/restore support for live migration
+Well, it's a little hard to process perf_event under live migration case.
+I will check it.
 
->Now IMO,
->
->internal pool objects should have a ref count and
->if that count is 0, then under memory pressure and/or num
->of objects are above a high water mark, then they are freed,
->
->OR if there is a last reference age field, then the object is to be
->cleaned if dirty, then freed,
->
->Else, the pool is allowed to grow if the number of objects in the
->pool is below a set max (max COULD equal Infinity).
+> - some way to limit the number of open handles (comes automatically with 
+> the table approach I suggested earlier)
+Current perf doesn't restrict perf_event number. Kernel does a rotation to collect
+statistics of all perf_events. My patch just follows this style. 
+The table method might be not good, because below scenario:
+guest perf_event might be a per-task event at guest side. When the guest application task is
+migrated to another cpu, the perf_event peer at host side should also be migrated to the new vcpu
+thread. With table method, we need do some rearrangement on the table when event migration happens.
+Here migration I mention is not guest live migration. 
 
-Thanks for the thoughts.
+I will double-check it.
 
-Basically, the size of the internal pool is not decided by the pool itself,
-To add/delete the objects in the pool is not a task of the pool itself too. 
-It's decided by guest virtio-net driver and vhost-net driver both, and 
-decided by the guest receive speed and submit speed.
-The max size of the pool is limited by the virtqueue buffer numbers.
+Thanks,
+Yanmin
 
-Thanks
-Xiaohui
 
->
->
->
->Mitchell Erblich
