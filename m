@@ -1,78 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276Ab0FIJtQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:49:16 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53641 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756127Ab0FIJtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:49:15 -0400
-Date: Wed, 9 Jun 2010 11:48:50 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Salman <sqazi@google.com>, Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: peterz@infradead.org, akpm@inux-foundation.org,
-       linux-kernel@vger.kernel.org, tytso@google.com,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
- reused immediately.
-Message-ID: <20100609094850.GA23292@elte.hu>
-References: <20100609062438.29081.91635.stgit@bumblebee1.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100609062438.29081.91635.stgit@bumblebee1.mtv.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.2631]
+	id S1757348Ab0FIJtZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:49:25 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53841 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757299Ab0FIJtX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 05:49:23 -0400
+Date: Wed, 9 Jun 2010 10:58:02 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Yedire, Sandeep" <syedire@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Ext2/3 Filesystem Analysis
+Message-ID: <20100609105802.62d2ddce@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTinfPl-JAP_4ZzdzJf2uyWcZ_0qfRQiT16_D8Pdd@mail.gmail.com>
+References: <AANLkTinfPl-JAP_4ZzdzJf2uyWcZ_0qfRQiT16_D8Pdd@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Salman <sqazi@google.com> wrote:
-
-> A program that repeatedly forks and waits is susceptible to having the
-> same pid repeated, especially when it competes with another instance of the
-> same program.  This is really bad for bash implementation.  Furthermore, many shell
-> scripts assume that pid numbers will not be used for some length of time.
+> With Ext3:
+> Filesystem block at Sector 0 is being updated more frequently at ratio
+> of 5.5 to 6 times that of data block.
+> Filesystem block(super block copies) are being updated at around
+> 1.5times the frequency compared to data block.
 > 
-> Thanks to Ted Tso for the key ideas of this implementation.
-> 
-> Signed-off-by: Salman Qazi <sqazi@google.com>
-> ---
->  kernel/pid.c |   11 ++++++++++-
->  1 files changed, 10 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/pid.c b/kernel/pid.c
-> index e9fd8c1..8cedeab 100644
-> --- a/kernel/pid.c
-> +++ b/kernel/pid.c
-> @@ -153,8 +153,17 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
->  		if (likely(atomic_read(&map->nr_free))) {
->  			do {
->  				if (!test_and_set_bit(offset, map->page)) {
-> +					int prev;
->  					atomic_dec(&map->nr_free);
-> -					pid_ns->last_pid = pid;
-> +
-> +					do {
-> +						prev = last;
-> +						last = cmpxchg(&pid_ns->last_pid,
-> +							       prev, pid);
-> +						if (last >= pid)
-> +							break;
-> +					} while (prev != last);
-> +
->  					return pid;
->  				}
->  				offset = find_next_offset(map, offset);
+> Has anyone come across this kind of behaviour with these filesystems
+> on NAND Flash?
 
-Looks rather interesting. (Cleanliness-wise i'd suggest to split out the while 
-loop into a helper function.)
+ext2/3 are not intended to be used with flash - they do not wear level,
+in fact the journal and some other blocks will get very heavily used
+compared to other blocks.
 
-	Ingo
+See the MTD drivers and related file systems/mapping layers (UBIFS etc)
