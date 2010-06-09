@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758600Ab0FIWya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 18:54:30 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:37123 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758277Ab0FIWy2 (ORCPT
+	id S932212Ab0FIW6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 18:58:18 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:40685 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756915Ab0FIW6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 18:54:28 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=AhcrceelJRtw+hCrxpqI8KwWfy3/pCer7e4zMxkaA6fLZfukspCRuS1fV2XhrMjrOQBq/lAp0RSf2SPizhjZXXhHS/WgUYn6s/4IvYNyKOuxpyYpmExDbX2J0L29uTHB;
-Date: Wed, 9 Jun 2010 15:53:21 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [git pull] PCI fixes
-Message-ID: <20100609155321.299cadd9@virtuousgeek.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Wed, 9 Jun 2010 18:58:17 -0400
+Date: Thu, 10 Jun 2010 08:58:04 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, xfs@oss.sgi.com, stable@kernel.org
+Subject: Re: [PATCH 1/3] writeback: pay attention to wbc->nr_to_write in
+ write_cache_pages
+Message-ID: <20100609225804.GK7869@dastard>
+References: <1276043840-1946-1-git-send-email-david@fromorbit.com>
+ <1276043840-1946-2-git-send-email-david@fromorbit.com>
+ <20100609140942.6799c84a.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100609140942.6799c84a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit
-9dda696f0de87a2e5cfabb147e28c76b7d3c6846: Linus Torvalds (1):
-        Merge branch 'release' of
-git://git.kernel.org/.../aegl/linux-2.6
+On Wed, Jun 09, 2010 at 02:09:42PM -0700, Andrew Morton wrote:
+> On Wed,  9 Jun 2010 10:37:18 +1000
+> Dave Chinner <david@fromorbit.com> wrote:
+> 
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > If a filesystem writes more than one page in ->writepage, write_cache_pages
+> > fails to notice this and continues to attempt writeback when wbc->nr_to_write
+> > has gone negative - this trace was captured from XFS:
+> > 
+> > 
+> >     wbc_writeback_start: towrt=1024
+> >     wbc_writepage: towrt=1024
+> >     wbc_writepage: towrt=0
+> >     wbc_writepage: towrt=-1
+> >     wbc_writepage: towrt=-5
+> >     wbc_writepage: towrt=-21
+> >     wbc_writepage: towrt=-85
+> > 
+> > This has adverse effects on filesystem writeback behaviour. write_cache_pages()
+> > needs to terminate after a certain number of pages are written, not after a
+> > certain number of calls to ->writepage are made.  This is a regression
+> > introduced by 17bc6c30cf6bfffd816bdc53682dd46fc34a2cf4 ("vfs: Add
+> > no_nrwrite_index_update writeback control flag"), but cannot be reverted
+> > directly due to subsequent bug fixes that have gone in on top of it.
+> 
+> Might be needed in -stable.  Unfortunately the most important piece of
+> information which is needed to make that decision was cunningly hidden
+> from us behind the vague-to-the-point-of-uselessness term "adverse
+> effects".
+> 
+> _what_ "adverse effects"??
 
-are available in the git repository at:
+Depends on how the specific filesystem handles a negative
+nr_to_write, doesn't it? I can't speak for the exact effect on
+anything other than XFS except to say that most ->write_page
+implemetnations don't handle the wbc->nr_to_write < 0 specifically...
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 for-linus
+For XFS, it results in increased CPU usage because it triggers
+page-at-a-time allocation (i.e no clustering), which increases
+overhead in the elveator due to merging requirements of single page
+bios and increased fragmentation due to small interleaved
+allocations on concurrent writeback workloads. Effectively it causes
+accelerated aging of XFS filesystems...
 
-Nothing too big here; I do have a couple of fixes in the queue that
-aren't included here though.  I'll be pulling them together over the
-next couple of days.
+Cheers,
 
-Bjorn Helgaas (1):
-      PCI: change resource collision messages from KERN_ERR to KERN_INFO
-
-Clemens Ladisch (1):
-      PCI quirk: AMD 780: work around wrong vendor ID on APC bridge
-
-Dan Carpenter (1):
-      PCI: hotplug/shpchp_hpc: add parenthesis in SLOT_REG_RSVDZ_MASK
-
-Linus Torvalds (1):
-      PCI aerdrv: fix annoying warnings
-
-Stephen Hemminger (1):
-      PCI: sparse warning (trivial)
-
-Tejun Heo (1):
-      PCI: disable MSI on VIA K8M800
-
- drivers/pci/bus.c                  |    2 +-
- drivers/pci/hotplug/shpchp_hpc.c   |    2 +-
- drivers/pci/pcie/aer/aerdrv_core.c |   17 +++++++++--------
- drivers/pci/quirks.c               |   24 +++++++++++++++++++++---
- drivers/pci/setup-res.c            |   10 +++++-----
- 5 files changed, 37 insertions(+), 18 deletions(-)
-
-
+Dave.
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Dave Chinner
+david@fromorbit.com
