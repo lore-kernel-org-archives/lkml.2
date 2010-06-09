@@ -1,184 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab0FIByl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 21:54:41 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37810 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751810Ab0FIByi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 21:54:38 -0400
-Date: Tue, 8 Jun 2010 18:53:55 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Carl Worth <cworth@cworth.org>,
-       Eric Anholt <eric@anholt.net>, Venkatesh Pallipadi <venki@google.com>,
-       Jens Axboe <jaxboe@fusionio.com>, Dave Airlie <airlied@gmail.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Ingo Molnar <mingo@elte.hu>,
-       =?ISO-8859-15?Q?David_H=E4rdeman?= <david@hardeman.nu>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
-Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
-In-Reply-To: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
-Message-ID: <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
-References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756707Ab0FIAnl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 20:43:41 -0400
+Received: from mx.tele-kom.ru ([91.102.104.6]:1747 "HELO mx.tele-kom.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756423Ab0FIAni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 20:43:38 -0400
+Cc: recipient list not shown:;
+Message-ID: <29420.41.220.68.1.1276044419.squirrel@mail.t-k.ru>
+Date: Wed, 9 Jun 2010 04:46:59 +0400 (MSD)
+Subject: Business Personal
+From: "Bank Of China" <info@w.cn>
+Reply-To: chen_guan777@w.cn
+User-Agent: SquirrelMail/1.4.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-[ Added lots of cc's to direct specific people to look at the regressions 
-  that may or may not be theirs... ]
-
-On Wed, 9 Jun 2010, Rafael J. Wysocki wrote:
->
->  * Quite a few of the already reported regressions may be related to the bug
->    fixed by 386f40c86d6c8d5b717ef20620af1a750d0dacb4 (Revert "tty: fix a little
->    bug in scrup, vt.c"), so reporters please retest with this commit applied.]
-
->From a quick look, most of them look unrelated to that unfortunate bug. 
-It's hard to tell for sure, of course (memory corruption can do pretty 
-much anything), but I'm not seeing the 07200720.. pattern at least.
-
-And some of them do seem to be bisected to likely culprits and/or have 
-patches that are claimed to have fixed them.
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16163
-> Subject	: [2.6.35-rc1 Regression] i915: Commit cfecde causes VGA to stay off
-> Submitter	: David John <davidjon@xenontk.org>
-> Date		: 2010-06-02 12:52 (7 days old)
-> Message-ID	: <4C065423.3000202@xenontk.org>
-> References	: http://marc.info/?l=linux-kernel&m=127548313828613&w=2
-
-That has a "reverting the commit fixes it", and a confirmation from Nick 
-Bowler.
-
-Eric, Carl: should I just revert that commit? Or do you have a fix?
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16145
-> Subject	: Unable to boot after "ACPI: Don't let acpi_pad needlessly mark TSC unstable"
-> Submitter	: Tom Gundersen <teg@jklm.no>
-> Date		: 2010-06-07 13:11 (2 days old)
-> Handled-By	: Venkatesh Pallipadi <venki@google.com>
-
-Hmm. This does seem to be a properly bisected commit, but at the same time 
-it looks from the bugzilla like it's just pure luck on that machine that 
-the acpi_pad driver happened to mark TSC unstable - so while the commit 
-bisected is the real one, it's not the "deeper reason" for the problem.
-
-Venki, any updates?
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16129
-> Subject	: BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2
-> Submitter	: Jan Kreuzer <kontrollator@gmx.de>
-> Date		: 2010-06-05 06:15 (4 days old)
-
-This seems to have been introduced by
-
-	commit 7cbaef9c83e58bbd4bdd534b09052b6c5ec457d5
-	Author: Ingo Molnar <mingo@elte.hu>
-	Date:   Sat Nov 8 17:05:38 2008 +0100
-
-	    sched: optimize sched_clock() a bit
-    
-	    sched_clock() uses cycles_2_ns() needlessly - which is an irq-disabling
-	    variant of __cycles_2_ns().
-    
-	    Most of the time sched_clock() is called with irqs disabled already.
-	    The few places that call it with irqs enabled need to be updated.
-    
-	    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-and this seems to be one of those calling cases that need to be updated.
-
-Ingo? The call trace is:
-
-	BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2-8/337
-	caller is native_sched_clock+0x3c/0x68
-	Pid: 337, comm: jbd2/sda2-8 Not tainted 2.6.35-rc1jan+ #4
-	Call Trace:
-	[<ffffffff812362c5>] debug_smp_processor_id+0xc9/0xe4
-	[<ffffffff8101059d>] native_sched_clock+0x3c/0x68
-	[<ffffffff8101043d>] sched_clock+0x9/0xd
-	[<ffffffff81212d7a>] blk_rq_init+0x97/0xa3
-	[<ffffffff81214d71>] get_request+0x1c4/0x2d0
-	[<ffffffff81214ea6>] get_request_wait+0x29/0x1a6
-	[<ffffffff81215537>] __make_request+0x338/0x45b
-	[<ffffffff812147c2>] generic_make_request+0x2bb/0x330
-	[<ffffffff81214909>] submit_bio+0xd2/0xef
-	[<ffffffff811413cb>] submit_bh+0xf4/0x116
-	[<ffffffff81144853>] block_write_full_page_endio+0x89/0x96
-	[<ffffffff81144875>] block_write_full_page+0x15/0x17
-	[<ffffffff8119b00a>] ext4_writepage+0x356/0x36b
-	[<ffffffff810e1f91>] __writepage+0x1a/0x39
-	[<ffffffff810e32a6>] write_cache_pages+0x20d/0x346
-	[<ffffffff810e3406>] generic_writepages+0x27/0x29
-	[<ffffffff811ca279>] journal_submit_data_buffers+0x110/0x17d
-	[<ffffffff811ca986>] jbd2_journal_commit_transaction+0x4cb/0x156d
-	[<ffffffff811d0cba>] kjournald2+0x147/0x37a
-
-(from the bugzilla thing)
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16122
-> Subject	: 2.6.35-rc1: WARNING at fs/fs-writeback.c:1142 __mark_inode_dirty+0x103/0x170
-> Submitter	: Larry Finger <Larry.Finger@lwfinger.net>
-> Date		: 2010-06-04 13:18 (5 days old)
-
-Jens?
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16120
-> Subject	: Oops: 0000 [#1] SMP, unable to handle kernel NULL pointer dereference at (null)
-> Submitter	: Alex Zhavnerchik <alex.vizor@gmail.com>
-> Date		: 2010-06-04 09:25 (5 days old)
-> Handled-By	: Eric Dumazet <eric.dumazet@gmail.com>
-
-This one seems to have a patch in bugzilla.
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16104
-> Subject	: Radeon KMS does not start after merge of the new PM-Code
-> Submitter	: Jan Kreuzer <kontrollator@gmx.de>
-> Date		: 2010-06-02 07:47 (7 days old)
-
-This one also has a patch in Bugzilla, I think Airlie is just waiting to 
-calm down his queue and already removed the dependency on the temperature 
-code. DaveA?
-
-> Bug-Entry     : http://bugzilla.kernel.org/show_bug.cgi?id=16161
-> Subject       : [2.6.35-rc1 regression] sysfs: cannot create duplicate filename ... XVR-600 related?
-> Submitter     : Mikael Pettersson <mikpe@it.uu.se>
-> Date          : 2010-06-01 19:57 (8 days old)
-> Message-ID    : <19461.26166.427857.612983@pilspetsen.it.uu.se>
-> References    : http://marc.info/?l=linux-kernel&m=127542227511925&w=2
->
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16090
-> Subject	: sysfs: cannot create duplicate filename
-> Submitter	: Tobias <devnull@plzk.org>
-> Date		: 2010-06-01 15:59 (8 days old)
-> Handled-By	: Jesse Barnes <jbarnes@virtuousgeek.org>
-
-These two look related. Both are related to that "slot" thing in sysfs 
-PCI, but only one of them is marked as Jesse's. Jesse?
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16037
-> Subject	: NULL Pointer dereference in __ir_input_register/budget_ci_attach
-> Submitter	: Sean Finney <seanius@debian.org>
-> Date		: 2010-05-23 19:52 (17 days old)
-
-Perhaps related to commit 13c24497086418010bf4f76378bcae241d7f59cd?
-
-David Härdeman, Mauro Carvalho Chehab added to cc.
-
-				Linus
+I have a Business for you worth some huge amount of money please are you
+interested in my business get back to me with my personal Email
+chen_guan777@w.cn
