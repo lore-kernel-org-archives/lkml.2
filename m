@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498Ab0FHWTx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 18:19:53 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39685 "EHLO ogre.sisk.pl"
+	id S1755392Ab0FIAHV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 20:07:21 -0400
+Received: from kroah.org ([198.145.64.141]:51501 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932256Ab0FHWQb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 18:16:31 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Larry Finger" <Larry.Finger@lwfinger.net>
-References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
-In-Reply-To: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1751385Ab0FIAHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 20:07:19 -0400
+Date: Tue, 8 Jun 2010 17:07:13 -0700
+From: Greg KH <greg@kroah.com>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Andrew Lunn <andrew@lunn.ch>,
+       Jarod Wilson <jarod@wilsonet.com>, Jakub Schmidtke <sjakub@gmail.com>,
+       Henk de Groot <pe1dnn@amsat.org>, Naren Sankar <nsankar@broadcom.com>,
+       Jonathan Cameron <jic23@cam.ac.uk>, Pavel Machek <pavel@ucw.cz>,
+       Luis Rodriguez <Luis.Rodriguez@Atheros.com>, devel@driverdev.osuosl.org,
+       Mori Hess <fmhess@users.sourceforge.net>,
+       Steve Underwood <steveu@coppice.org>,
+       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+       Arnaud Patard <apatard@mandriva.com>,
+       Marek Lindner <lindner_marek@yahoo.de>,
+       Teddy Wang <teddy.wang@siliconmotion.com.cn>,
+       Ossama Othman <ossama.othman@intel.com>,
+       Haiyang Zhang <haiyangz@microsoft.com>, Ian Abbott <abbotti@mev.co.uk>,
+       Willy Tarreau <willy@meta-x.org>, Scott Davilla <davilla@4pi.com>,
+       Scott Smedley <ss@aao.gov.au>, linux-kernel@vger.kernel.org,
+       Forest Bond <forest@alittletooquiet.net>,
+       David Rowe <david@rowetel.com>
+Subject: Re: [PATCH 00/17] MAINTAINERS: Add drivers/staging entries
+Message-ID: <20100609000713.GB16160@kroah.com>
+References: <cover.1275935090.git.joe@perches.com>
+ <20100608211246.GC10657@kroah.com>
+ <1276032382.24044.23.camel@Joe-Laptop.home>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <C9Q3XEnHPeG.A.gdG.f8rDMB@chimera>
-Subject: [Bug #16122] 2.6.35-rc1: WARNING at fs/fs-writeback.c:1142 __mark_inode_dirty+0x103/0x170
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed,  9 Jun 2010 00:10:18 +0200 (CEST)
+In-Reply-To: <1276032382.24044.23.camel@Joe-Laptop.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+On Tue, Jun 08, 2010 at 02:26:22PM -0700, Joe Perches wrote:
+> On Tue, 2010-06-08 at 14:12 -0700, Greg KH wrote:
+> > On Mon, Jun 07, 2010 at 11:49:34AM -0700, Joe Perches wrote:
+> > > Some drivers/staging directories use a TODO file with email entries.
+> > > Make the same entries in the normal MAINTAINERS file.
+> > 
+> > No, please don't do this.  I don't want to clutter up the MAINTAINERS
+> > file with staging stuff.
+> 
+> It's not clutter when it helps get patches to the right reviewers
+> or responsible parties.
 
-The following bug entry is on the current list of known regressions
-from 2.6.34.  Please verify if it still should be listed and let the tracking team
-know (either way).
+That's my job as staging maintainer, right?  Am I somehow not doing this
+properly?
 
+> > The get_maintainer.pl script handles staging
+> > patches just fine today without this being needed at all.
+> 
+> Dubious.
+> 
+> Many of these nominal maintainer email entries are not
+> found in git logs.
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16122
-Subject		: 2.6.35-rc1: WARNING at fs/fs-writeback.c:1142 __mark_inode_dirty+0x103/0x170
-Submitter	: Larry Finger <Larry.Finger@lwfinger.net>
-Date		: 2010-06-04 13:18 (5 days old)
+Many, but not all, as you pointed out.
 
+> > I also found it a bit odd you didn't send these to the stable subsystem
+> > maintainer, why?
+> 
+> The MAINTAINERS patches are forward going, not historical.
 
+What does that mean?
