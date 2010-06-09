@@ -1,105 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab0FIHyN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 03:54:13 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:32671 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755801Ab0FIHyM (ORCPT
+	id S1755875Ab0FIH4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 03:56:45 -0400
+Received: from mail-ew0-f223.google.com ([209.85.219.223]:62199 "EHLO
+	mail-ew0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab0FIH4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 03:54:12 -0400
-Message-ID: <4C0F489F.4020204@panasas.com>
-Date: Wed, 09 Jun 2010 10:54:07 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Frans Pop <elendil@planet.nl>,
-       Dirk Hohndel <hohndel@infradead.org>, Len Brown <lenb@kernel.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: kbuild: Fix the breakage caused by "improve version string logic"
-References: <alpine.LFD.2.01.0910041727310.3432@localhost.localdomain> <alpine.LFD.2.00.0910052140100.309@localhost.localdomain> <1254797502.14122.146.camel@dhohndel-mobl.amr.corp.intel.com> <alpine.LFD.2.01.0910060705240.3432@localhost.localdomain> <20091006144449.GA23078@elte.hu> <alpine.LFD.2.01.0910060815320.3432@localhost.localdomain> <20091006153632.GA29795@elte.hu> <alpine.LFD.2.01.0910060843560.3432@localhost.localdomain> <alpine.LFD.2.01.0910060925490.3432@localhost.localdomain> <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu> <4C0D29DE.6050602@panasas.com> <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com> <4C0DFFFF.1010704@panasas.com> <alpine.DEB.2.00.1006080200190.18052@chino.kir.corp.google.com> <4C0E17F0.5010902@panasas.com> <alpine.DEB.2.00.1006082352120.30606@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1006082352120.30606@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Jun 2010 07:54:10.0042 (UTC) FILETIME=[F1A825A0:01CB07A8]
+	Wed, 9 Jun 2010 03:56:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Fjti+YcnPqnE0iiMOWpgcMzvMaJaoFWl7dLqJZMqzzQC1LkvfBN/W3TGcp/qXOcbVM
+         3a7ny6nNVY9howHtqVAzN4fQR119lY4dFXH7DqDiwC6WgEoVbfXRmrnUppBaCo5RDYPm
+         Nt42gug2kbaC8Z5V84pfZWzMDvFFO5yFuY+Zk=
+From: ygeorgie@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: Yury Georgievskiy <ygeorgie@gmail.com>
+Subject: [PATCH 1/1] serial: mcf: Don't take spinlocks in already protected functions
+Date: Wed,  9 Jun 2010 09:56:26 +0200
+Message-Id: <1276070186-11393-1-git-send-email-ygeorgie@gmail.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2010 09:55 AM, David Rientjes wrote:
-> On Tue, 8 Jun 2010, Boaz Harrosh wrote:
-> 
->> What is a tagged commit:
->>
->> [my_tree] $ git branch
->> *master
->> [my_tree] $ git tag v2.6.35-rc2-my-tree
->> [my_tree] $ cat localversion-my-tree
->> -my-tree
->>
->> I still get: DEPMOD 2.6.35-rc2-my-tree+
->>
->> How to solve? please specify.
->>
-> 
-> You need to use git tag -a.
-> 
+From: Yury Georgievskiy <ygeorgie@gmail.com>
 
-Right, I got that
+Don't take the port spinlock in uart functions where the serial core
+already takes care of locking/unlocking them.
 
->> In my tree there is 2.6.35-rc2-my-tree so it cannot be mistaken with
->> Linus tree.
->>
-> 
-> Just because you have appended "-my-tree" to the version string does not 
-> mean it is not vanilla 2.6.35-rc2.  You could append information such as 
-> that just for a different config, for instance.  
+The code would actually lock up on architectures where spinlocks are
+implemented.
 
-No, this is all naming convention. Just like the '+' is. If it was a config
-thing then it would be added via CONFIG_LOCALVERSION and *appended* to any
-compilation using that config. From a git tree you get added the localversion*
-file that gets pulled by a checkout. and so on. So at a glance I know that
-the presence of my_tree was added because it is from my tree. They are all
-chained and ordered so we know exactly what contributed what.
+Also protect calling mcf_rx_chars/mcf_tx_chars in the
+interrupt handler by the port spinlock and use IRQ_RETVAL
+to return from isr.
 
-> The `+' modifies the base 
-> kernel version (2.6.35-rc2), not the string itself or whatever you choose 
-> to add to it.
-> 
+Signed-off-by: Yury Georgievskiy <ygeorgie@gmail.com>
+---
+ drivers/serial/mcf.c |   22 ++++++----------------
+ 1 files changed, 6 insertions(+), 16 deletions(-)
 
-Not, correct. As you yourself explained. The `+' modifies any Kernel that
-is not a "tag -a" and/or modified from the tree it derives from.
-Base kernel version has nothing to do with it.
+diff --git a/drivers/serial/mcf.c b/drivers/serial/mcf.c
+index b5aaef9..6235444 100644
+--- a/drivers/serial/mcf.c
++++ b/drivers/serial/mcf.c
+@@ -70,16 +70,14 @@ static unsigned int mcf_tx_empty(struct uart_port *port)
+ static unsigned int mcf_get_mctrl(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 	unsigned int sigs;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	sigs = (readb(port->membase + MCFUART_UIPR) & MCFUART_UIPR_CTS) ?
+ 		0 : TIOCM_CTS;
+ 	sigs |= (pp->sigs & TIOCM_RTS);
+ 	sigs |= (mcf_getppdcd(port->line) ? TIOCM_CD : 0);
+ 	sigs |= (mcf_getppdtr(port->line) ? TIOCM_DTR : 0);
+-	spin_unlock_irqrestore(&port->lock, flags);
++
+ 	return sigs;
+ }
+ 
+@@ -88,16 +86,13 @@ static unsigned int mcf_get_mctrl(struct uart_port *port)
+ static void mcf_set_mctrl(struct uart_port *port, unsigned int sigs)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->sigs = sigs;
+ 	mcf_setppdtr(port->line, (sigs & TIOCM_DTR));
+ 	if (sigs & TIOCM_RTS)
+ 		writeb(MCFUART_UOP_RTS, port->membase + MCFUART_UOP1);
+ 	else
+ 		writeb(MCFUART_UOP_RTS, port->membase + MCFUART_UOP0);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ /****************************************************************************/
+@@ -105,12 +100,9 @@ static void mcf_set_mctrl(struct uart_port *port, unsigned int sigs)
+ static void mcf_start_tx(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->imr |= MCFUART_UIR_TXREADY;
+ 	writeb(pp->imr, port->membase + MCFUART_UIMR);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ /****************************************************************************/
+@@ -118,12 +110,9 @@ static void mcf_start_tx(struct uart_port *port)
+ static void mcf_stop_tx(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->imr &= ~MCFUART_UIR_TXREADY;
+ 	writeb(pp->imr, port->membase + MCFUART_UIMR);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ /****************************************************************************/
+@@ -131,12 +120,9 @@ static void mcf_stop_tx(struct uart_port *port)
+ static void mcf_stop_rx(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->imr &= ~MCFUART_UIR_RXREADY;
+ 	writeb(pp->imr, port->membase + MCFUART_UIMR);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ /****************************************************************************/
+@@ -368,11 +354,15 @@ static irqreturn_t mcf_interrupt(int irq, void *data)
+ 	unsigned int isr;
+ 
+ 	isr = readb(port->membase + MCFUART_UISR) & pp->imr;
++
++	spin_lock(&port->lock);
+ 	if (isr & MCFUART_UIR_RXREADY)
+ 		mcf_rx_chars(pp);
+ 	if (isr & MCFUART_UIR_TXREADY)
+ 		mcf_tx_chars(pp);
+-	return IRQ_HANDLED;
++	spin_unlock(&port->lock);
++
++	return IRQ_RETVAL(isr);
+ }
+ 
+ /****************************************************************************/
+-- 
+1.7.0
 
->>> As mentioned previously, you can easily suppress that from being added by 
->>> using "make LOCALVERSION=-foo" to create a 2.6.35-rc2-foo kernel when you 
->>> do not have CONFIG_LOCALVERSION_AUTO enabled.  You already found that you 
->>> cannot pass an empty LOCALVERSION string, so it must be something to 
->>> identify itself as unique from vanilla 2.6.35-rc2.
->>>
->>
->> As mentioned previously this is not an option I do not have git control
->> over how this gets compiled.
->>
-> 
-> If your git repository is publically accessible, it is very simple to tag 
-> commits that you want your users to pull from to indicate it's a 
-> "release".  That allows you to determine whether other users have extra 
-> commits on top of your release when they send you bug reports, for 
-> example, which is quite helpful.
-
-Sigh, I give up. Let me spell it out for you once more and I'll not mention
-this again:
-  "For multitude of reasons, there are times that even when running from
-   a git tree, I wish to compile a Kernel as if it's from a tar-ball. .i.e
-   Don't poke in my git tree for this compilation."
-
-Because I'm cross compiling, because I'm bisecting, because my scripts and
-environment demand specific names, because i need to save space and time...
-
-But it seems I will not be granted my wish. I'll go damage my
-scripts/setlocalversion and be done with this.
-
-Thanks
-Boaz
