@@ -1,174 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab0FIOFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 10:05:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15071 "EHLO mx1.redhat.com"
+	id S1757468Ab0FIOKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 10:10:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56841 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab0FIOFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 10:05:43 -0400
-Date: Wed, 9 Jun 2010 10:05:08 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Pavan Naregundi <pavan@linux.vnet.ibm.com>
-Cc: Simon Horman <horms@verge.net.au>,
-       =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-       linux-kernel@vger.kernel.org, hbabu@us.ibm.com,
-       kexec@lists.infradead.org
-Subject: Re: [PATCH] Fix Oops in crash_shrink_memory
-Message-ID: <20100609140507.GA31154@redhat.com>
-References: <1275895711.4365.18.camel@pavan.naregundi> <1275980857.2583.15.camel@pavan.naregundi> <20100608075959.GB7110@cr0.nay.redhat.com> <1275986405.5015.13.camel@pavan.naregundi> <20100608085440.GC7110@cr0.nay.redhat.com> <1275990107.5015.55.camel@pavan.naregundi> <20100609034452.GA28948@verge.net.au> <1276064834.2622.7.camel@pavan.naregundi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1276064834.2622.7.camel@pavan.naregundi>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1755810Ab0FIOKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 10:10:36 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: linux-pci@vger.kernel.org
+Cc: jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
+       Matthew Garrett <mjg@redhat.com>
+Subject: [RFC] pci: Don't enable aspm before drivers have had a chance to veto it
+Date: Wed,  9 Jun 2010 10:10:18 -0400
+Message-Id: <1276092618-18591-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.34.250
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 09, 2010 at 11:57:14AM +0530, Pavan Naregundi wrote:
-> On Wed, 2010-06-09 at 12:44 +0900, Simon Horman wrote:
-> > On Tue, Jun 08, 2010 at 03:11:47PM +0530, Pavan Naregundi wrote:
-> > > On Tue, 2010-06-08 at 16:54 +0800, Américo Wang wrote:
-> > > > On Tue, Jun 08, 2010 at 02:10:05PM +0530, Pavan Naregundi wrote:
-> > > > >On Tue, 2010-06-08 at 15:59 +0800, Américo Wang wrote:
-> > > > >> On Tue, Jun 08, 2010 at 12:37:37PM +0530, Pavan Naregundi wrote:
-> > > > >> >Adding CC's..
-> > > > >> >
-> > > > >> >
-> > > > >> >On Mon, 2010-06-07 at 12:58 +0530, Pavan Naregundi wrote:
-> > > > >> >> Hi Everyone,
-> > > > >> >> 
-> > > > >> >> Please add me to CC in your reply..
-> > > > >> >> 
-> > > > >> >> When crashkernel is not enabled, "echo 0 > /sys/kernel/kexec_crash_size"
-> > > > >> >> will generate OOPS message in the kernel. Below is the OOPS message and
-> > > > >> >> other details,
-> > > > >> >> 
-> > > > >> >> # cat /proc/cmdline 
-> > > > >> >> ro  LANG=en_US.UTF-8 SYSFONT=latarcyrheb-sun16 KEYTABLE=us console=hvc0
-> > > > >> >> rhgb root=UUID=eafd9874-010c-46f9-a0c6-ea8db7c61ac3
-> > > > >> >> # uname -a
-> > > > >> >> Linux XXXXXXXX 2.6.35-rc1 #1 SMP Mon Jun 7 18:04:53 IST 2010 ppc64 ppc64
-> > > > >> >> ppc64 GNU/Linux
-> > > > >> >> # cd /sys/kernel/
-> > > > >> >> # ls
-> > > > >> >> debug               kexec_loaded  profiling      uevent_seqnum
-> > > > >> >> kexec_crash_loaded  mm            security       vmcoreinfo
-> > > > >> >> kexec_crash_size    notes         uevent_helper
-> > > > >> >> # cat kexec_crash_loaded
-> > > > >> >> 0
-> > > > >> >> # cat kexec_loaded
-> > > > >> >> 0
-> > > > >> >> # cat kexec_crash_size
-> > > > >> >> 1
-> > > > >> >> # echo 0 > kexec_crash_size
-> > > > >> >> Unable to handle kernel paging request for data at address 0x00000030
-> > > > >> >> Faulting instruction address: 0xc0000000000930b4
-> > > > >> >> Oops: Kernel access of bad area, sig: 11 [#1]
-> > > > >> >> SMP NR_CPUS=1024 NUMA pSeries
-> > > > >> >> last sysfs file: /sys/kernel/kexec_crash_size
-> > > > >> >> Modules linked in: sunrpc ipv6 ext3 jbd dm_mirror dm_region_hash dm_log
-> > > > >> >> dm_multipath dm_mod uinput sg ehea sr_mod ibmveth cdrom ext4 jbd2
-> > > > >> >> mbcache sd_mod crc_t10dif ibmvscsic scsi_transport_srp scsi_tgt [last
-> > > > >> >> unloaded: scsi_wait_scan]
-> > > > >> >> NIP: c0000000000930b4 LR: c0000000000930ac CTR: c0000000000b7ce0
-> > > > >> >> REGS: c0000000b7803750 TRAP: 0300   Not tainted  (2.6.35-rc1)
-> > > > >> >> MSR: 8000000000009032 <EE,ME,IR,DR>  CR: 28242482  XER: 20000000
-> > > > >> >> DAR: 0000000000000030, DSISR: 0000000040000000
-> > > > >> >> TASK = c0000000b9cc3dc0[1381] 'bash' THREAD: c0000000b7800000 CPU: 12
-> > > > >> >> GPR00: c0000000000930ac c0000000b78039d0 c000000000e885a8
-> > > > >> >> c000000000f42950 
-> > > > >> >> GPR04: c0000000b7803af0 0000000000000008 0000000000000002
-> > > > >> >> c0000000005c6438 
-> > > > >> >> GPR08: 0000000000000000 000000008000000c 0000000000000000
-> > > > >> >> 0000000000000000 
-> > > > >> >> GPR12: 0000000040242448 c000000007441e00 00000000100f6210
-> > > > >> >> 0000000000000000 
-> > > > >> >> GPR16: 00000000100f4a38 00000000100cfb98 00000000100f4bdc
-> > > > >> >> 00000000100f4b4c 
-> > > > >> >> GPR20: 00000000103f4de8 0000000000000000 0000000000000000
-> > > > >> >> 00000000100f0000 
-> > > > >> >> GPR24: c0000000005c65c0 0000000000000000 c000000000da83e0
-> > > > >> >> c0000000bc67f780 
-> > > > >> >> GPR28: c0000000bc684ae0 c000000000f42950 c000000000e1e3f8
-> > > > >> >> c000000000da8408 
-> > > > >> >> NIP [c0000000000930b4] .release_resource+0x34/0xe0
-> > > > >> >> LR [c0000000000930ac] .release_resource+0x2c/0xe0
-> > > > >> >> Call Trace:
-> > > > >> >> [c0000000b78039d0] [c0000000000930ac] .release_resource+0x2c/0xe0
-> > > > >> >> (unreliable)
-> > > > >> >> [c0000000b7803a60] [c0000000000d4fc8] .crash_shrink_memory+0x1c8/0x1f0
-> > > > >> >> [c0000000b7803b30] [c0000000000b7d38] .kexec_crash_size_store+0x58/0x90
-> > > > >> >> [c0000000b7803bc0] [c0000000002b0bb4] .kobj_attr_store+0x34/0x50
-> > > > >> >> [c0000000b7803c30] [c000000000226d5c] .sysfs_write_file+0xec/0x1f0
-> > > > >> >> [c0000000b7803ce0] [c00000000019e0bc] .vfs_write+0xec/0x1f0
-> > > > >> >> [c0000000b7803d80] [c00000000019e2e8] .SyS_write+0x58/0xb0
-> > > > >> >> [c0000000b7803e30] [c00000000000852c] syscall_exit+0x0/0x40
-> > > > >> >> Instruction dump:
-> > > > >> >> fba1ffe8 fbc1fff0 fbe1fff8 ebc2b228 7c7f1b78 f8010010 f821ff71 ebbe8000 
-> > > > >> >> 7fa3eb78 484e35d9 60000000 e97f0020 <e92b0030> 2fa90000 419e002c
-> > > > >> >> 7fbf4800 
-> > > > >> >> ---[ end trace afbc780462c9bf4e ]---
-> > > > >> >> 
-> > > > >> >> When crashkernel is not enabled, crashk_res resource have not been
-> > > > >> >> reserved. Hence crashk_res.parent will be NULL.
-> > > > >> >> 
-> > > > >> >> Attaching a simple patch to this problem. Patch is tested and resolves this bug.
-> > > > >> 
-> > > > >> 
-> > > > >> Ouch...
-> > > > >> 
-> > > > >> The patch indeed addresses the problem, looks good to me.
-> > > > >> Please add your Signed-off-by and my:
-> > > > >> 
-> > > > >> Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-> > > > >> 
-> > > > >> Another problem is that you should get 0 instead of 1 when you don't
-> > > > >> reserve any memory.
-> > > > >
-> > > > >We get 1 here because, crash_get_memory_size() adds 1 as below, 
-> > > > >
-> > > > >size = crashk_res.end - crashk_res.start + 1;
-> > > > >
-> > > > >We cant remove this addition, as it is required to display correct size
-> > > > >in case if we reserve the crash memory.
-> > > > 
-> > > > Yeah, but 0 is a special case, isn't it?
-> > > 
-> > > Yes, it is a special case.
-> > > 
-> > > Prepared a new patch which solves both of this issues.
-> > > 
-> > > 1. OOPs in crash_shrink_memory
-> > > 2. make crash_get_memory_size to return correct size, in case of crash
-> > > memory not reserved.
-> > > 
-> > > Patch is tested.
-> > > 
-> 
-> > > +	if(crashk_res.end != crashk_res.start)
-> > > +		size = crashk_res.end - crashk_res.start + 1;
-> > 
-> > Minor style-issue: there should be a space between if and (.
-> > 
-> 
-> Sorry for that.
-> 
-> Resending the patch with fixed style issues.
-> 
+The aspm code will currently set the configured aspm policy before drivers
+have had an opportunity to indicate that their hardware doesn't support it.
+Unfortunately, putting some hardware in L0 or L1 can result in the hardware
+no longer responding to any requests, even after aspm is disabled. It makes
+more sense to leave aspm policy at the BIOS defaults at initial setup time,
+reconfiguring it after pci_enable_device() is called. This allows the
+driver to blacklist individual devices beforehand.
 
-Looks good to me.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/pci/pcie/aspm.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-
-Thanks
-Vivek
-
-> Signed-off-by: Pavan Naregundi <pavan@linux.vnet.ibm.com>
-> Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-> --
-> 
-> 
-
+diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+index be53d98..223b39e 100644
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -562,6 +562,7 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
+ {
+ 	struct pcie_link_state *link;
+ 	int blacklist = !!pcie_aspm_sanity_check(pdev);
++	int orig_policy = aspm_policy;
+ 
+ 	if (aspm_disabled || !pci_is_pcie(pdev) || pdev->link_state)
+ 		return;
+@@ -588,11 +589,23 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
+ 	 * update through pcie_aspm_cap_init().
+ 	 */
+ 	pcie_aspm_cap_init(link, blacklist);
++
++	/*
++	 * At this stage drivers haven't had an opportunity to change the
++	 * link policy setting. Enabling ASPM on broken hardware can cripple
++	 * it even before the driver has had a chance to disable ASPM, so
++	 * default to a safe level right now. The real policy will be enabled
++	 * once pci_enable_device is called.
++	 */
++	if (aspm_policy == POLICY_POWERSAVE)
++		aspm_policy = POLICY_DEFAULT;
+ 	pcie_config_aspm_path(link);
+ 
+ 	/* Setup initial Clock PM state */
+ 	pcie_clkpm_cap_init(link, blacklist);
+ 	pcie_set_clkpm(link, policy_to_clkpm_state(link));
++	aspm_policy = orig_policy;
++
+ unlock:
+ 	mutex_unlock(&aspm_lock);
+ out:
+-- 
+1.7.0.1
 
