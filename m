@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758061Ab0FIS3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 14:29:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55420 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751470Ab0FIS3c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 14:29:32 -0400
-Date: Wed, 9 Jun 2010 11:29:19 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-cc: David Howells <dhowells@redhat.com>, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] FRV: Implement the GDB remote protocol 'p' command to
- retrieve a register
-In-Reply-To: <y0mfx0wysiq.fsf@fche.csb>
-Message-ID: <alpine.LFD.2.00.1006091126590.4506@i5.linux-foundation.org>
-References: <20100609161909.18222.78028.stgit@warthog.procyon.org.uk> <alpine.LFD.2.00.1006090945531.4506@i5.linux-foundation.org> <y0mfx0wysiq.fsf@fche.csb>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758109Ab0FISbj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 14:31:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51401 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753530Ab0FISbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 14:31:38 -0400
+Message-ID: <4C0FDD8C.2020704@zytor.com>
+Date: Wed, 09 Jun 2010 11:29:32 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Boaz Harrosh <bharrosh@panasas.com>, Borislav Petkov <bp@alien8.de>,
+       =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
+       uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Jeff Dike <jdike@addtoit.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [uml-devel] [PATCH resend] um, hweight: Fix UML boot crash
+References: <4C0F4B00.4090307@panasas.com>	<4C0F4C40.5020207@panasas.com> <AANLkTinwQmWP-rFu9e-ns5twsZwZjuSLi5vcll55ZZhx@mail.gmail.com>
+In-Reply-To: <AANLkTinwQmWP-rFu9e-ns5twsZwZjuSLi5vcll55ZZhx@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 9 Jun 2010, Frank Ch. Eigler wrote:
+On 06/09/2010 01:46 AM, Geert Uytterhoeven wrote:
 > 
-> Sure, much less data to transfer across a slowish serial link.
+> Peter, are you happy with this?
+> Although we still don't know why UML cannot grok it, it does fix a
+> regression in post-2.6.34.
+> 
 
-Umm. Or more? If you look at one register, you tend to look at several. 
-And we're not exactly talking kilobytes here.
+Yes, I'll push it.
 
-Anyway, the existing patch is certainly easy to make a judgment on: it's 
-not a regression fix but a new feature, so I'm not applying it. I was 
-suggesting _making_ it a regression fix, but I really don't care.
-
-		Linus
+	-hpa
