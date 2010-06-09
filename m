@@ -1,72 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab0FIXgL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 19:36:11 -0400
-Received: from mail.avellaneda-ba.gov.ar ([200.71.230.2]:53234 "EHLO
-	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752222Ab0FIXgJ (ORCPT
+	id S1756033Ab0FIXm5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 19:42:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60096 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755337Ab0FIXmz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 19:36:09 -0400
-Message-ID: <20453.41.220.68.4.1276124778.squirrel@41.220.68.4>
-Date: Wed, 9 Jun 2010 21:06:18 -0200 (FNT)
-Subject: Official Prize Notification
-From: "Microsoft E-mail Promo Department" <info.winner@microsoft.com>
-Reply-To: ivannickerson001@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
+	Wed, 9 Jun 2010 19:42:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+In-Reply-To: <Pine.LNX.4.44L0.1006091031030.1728-100000@iolanthe.rowland.org>
+References: <AANLkTilALyvthzh8rMiDFFP_QTz_o5hxdE8tArMUonpP@mail.gmail.com>
+	<Pine.LNX.4.44L0.1006091031030.1728-100000@iolanthe.rowland.org>
+Date: Wed, 9 Jun 2010 16:42:54 -0700
+Message-ID: <AANLkTil2JhBgJ27qcTARVj2wVgEltxZKPOc9Ddu4c8yY@mail.gmail.com>
+Subject: Re: [linux-pm] suspend blockers & Android integration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: tytso@mit.edu, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Florian Mickler <florian@mickler.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Brian Swetland <swetland@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Felipe Balbi <felipe.balbi@nokia.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Official Prize Notification
+2010/6/9 Alan Stern <stern@rowland.harvard.edu>:
+> On Tue, 8 Jun 2010, Arve Hjønnevåg wrote:
+>
+>> >> Wakeup event occurs, and the driver:
+>> >> - report wakeup event type A
+>> >> - queue event for delivery to user-space
+>> >
+>> > That's not really two distinct steps.  Queuing the event for delivery
+>> > to userspace involves waking up any tasks that are waiting to read the
+>> > device file; that action (calling wake_up_all() or whatever the driver
+>> > does) is how the event gets reported.
+>> >
+>>
+>> If you want to ensure that more than one process see the event it has
+>> to be two steps, but it does not affect the race I was trying to
+>> describe.
+>
+> Are you sure about that?  If two processes call poll() for the same
+> file descriptor, don't both calls return when data becomes available?
 
-The MICROSOFT EMAIL PROMO TEAM is glad to announce that
-after a successful completion of the PROMO DRAWS held on the
-8th June 2010, your e-mail address,attached to winning
-numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
-lottery category.
+Yes if they are both already in the poll call they both return, but if
+one process reads the data while the second process is not in the poll
+call the second process will not see anything.
 
-You have therefore been approved to claim a total sum of
-£250,000,00 GBP(Two Hundred and Fifty Thousand Great British
-Pounds Sterling) in cash credited to file REF NO:MICRO-L/2009-END10,
-BATCH NO:2009MJL-05, this is from a total prize money of
-£3,750,000 (Three Million,Seven hundred and Fifty Thousand
-British Pounds Sterling),shared among the Twenty five (25)
-international winners in this category.
+> But agreed, it doesn't matter -- especially since I only need one
+> process (the power manager) to see the event.
 
-All participants were selected through our Microsoft computer
-ballot system drawn from 167,000 Names,as part of our
-International  \"E-MAIL"\ Promotion Program for our prominent
-MS-WORD users all over the world and for the continuous use
-of the internet. You are advised to contact the claims
-processor with the details below via his e-mail address :
+The power may not see the event, the process that reads the event will
+always see it. If the power manager is not in the poll call when the
+event happens, the process that reads the event can read the event
+before the power manager calls poll.
 
-NAME:  Ivan Nickerson
-EMAIL: ivan.nickerson@yahoo.com.hk
+>
+>> >> User space wakes up:
+>> >> - Calls api to block task freezing for event type A
+>> >
+>> > Again, that's a confusing way of putting it.  The API you're referring
+>> > to is simply the function that activates a suspend blocker.  It does
+>> > prevent task freezing, but you shouldn't say it prevents freezing for
+>> > event type A.  More like the other way around: In addition to
+>> > preventing freezing, the function tells the power manager that event
+>> > type A should no longer be considered active.  Thus, in a sense it
+>> > _stops_ event type A from preventing freezing.
+>> >
+>> >> Another wakeup event occurs, and the driver:
+>> >> - report wakeup event type A
+>
+> I think this is where you misunderstood.  There is no "report wakeup
+> event" as such.  All that happens is that data becomes available to be
+> read from the input device file.  However the power manager process
+> isn't polling the device file at this point (because a suspend blocker
+> is active), so it doesn't realize that the source has become active
+> again.
+>
 
-PLEASE NOTE THAT YOU ARE TO SEND THE FOLLOWING INFORMATION TO
-CLAIM YOUR WINNINGS:
+Yes this is not what I though you were suggesting. I thought you were
+trying to make sure the power manager sees all wakeup events. If you
+are only listening for wakeup events while no suspend blockers are
+active, why latch them?
 
-1.Full Name....................................
-2.Address:....................................
-3.Phone:...............Fax:...................
-4.Country:....................................
-5.Sex/Gender...................................
+>> >> - queue event for delivery to user-space
+>> >
+>> > Same as above.
+>> >
+>> >> User space continues:
+>> >> - Read events
+>>
+>> Sorry, I missed the unblock task freezing step here.
+>>
+>> >> - Wait for more events
+>> >>
+>> >> Result: Task are not frozen again.
+>> >
+>> > Because the suspend blocker was never deactivated.  The same thing
+>> > happens with wakelocks: If a task activates a wakelock and never
+>> > deactivates it, the system won't go into opportunistic suspend again.
+>>
+>> Yes, but with the sequence of events above task will not be frozen
+>> again even if the wake-lock/suspend-blocker/task-freezing-preventer is
+>> released.
+>
+> Yes they will.  When the suspend blocker is deactivated, the power
+> manager process will realize that there are no active suspend blockers
+> and it will think there are no active sources.  Thus it will freeze
+> processes as usual.
+>
+>> > Here's how my scheme is meant to work:
+>> >
+>> >        Wakeup event for input device A occurs.
+>> >
+>> >        A's driver adds an entry to the input device queue and
+>> >        (if the queue was empty) does wake_up_all() on the device
+>> >        file's wait_queue.
+>> >
+>> >        The PM process returns from poll() and sees that device
+>> >        file A is now readable, so it adds A to its list of active
+>> >        sources and unfreezes userspace.
+>> >
+>> >        Some other process sees that device file A is now readable,
+>> >        so it activates a suspend blocker and reads events from A.
+>> >
+>> >        When the PM process receives the request to activate the
+>> >        suspend blocker, it removes A from its list of active
+>> >        sources.  But it doesn't freeze userspace yet, because now
+>> >        a suspend blocker is active.
+>>
+>> If another event happens at this point don't you put A back on the
+>> list? If so, it never gets removed.
+>
+> No, you don't put A back on the list.  Sources get put on the list only
+> when the information returned by poll() indicates they have data
+> available.  The power manager doesn't poll while suspend blockers are
+> active.
+>
+>> >        The other process consumes events from A and does other
+>> >        stuff.  Maybe more input data arrives while this is happening
+>> >        and the process reads it.  Eventually the process decides to
+>> >        deactivate the suspend blocker, perhaps when no more data
+>> >        is available from the device file, perhaps not.
+>> >
+>> >        When the PM process receives the request to deactivate the
+>> >        suspend blocker, it sees that now there are no active
+>> >        sources and no active suspend blockers.  Therefore it
+>> >        freezes userspace and does a big poll() on all possible
+>> >        sources.  (If there are still events on the input device
+>> >        queue, the poll() returns immediately.)
+>> >
+>> >        Rinse and repeat.
+>> >
+>> > I don't see any dangerous races there.  The scheme can be made a little
+>> > more efficient by having the PM process do another poll() (with 0
+>> > timeout) just before freezing userspace; if the result indicates that a
+>> > source is active then the freezing and unfreezing can be skipped.
+>
+>> > There is no race.  The driver reports an event has occurred by making
+>> > the data available to be read from the device file, and the event is
+>> > processed by reading it from the device file (or at least, that's the
+>> > first step in processing the event).
+>> >
+>>
+>> If the driver making data available to be read triggers a wakeup event
+>> in the power manager process
+>
+> It doesn't.  Only return from a poll() causes the power manager process
+> to think a wakeup event has occurred.
+>
+>> that has to be cleared by the process
+>> reading the events, then you have a race. Since the power manager is
+>> selecting/polling on the same file descriptor, I don't see what you
+>> gain from linking the wakeup events to suspend blockers.
+>
+> What I gain is the ability to know when an in-kernel wakelock _could_
+> have been released, without actually implementing in-kernel wakelocks.
+>
+> With real in-kernel wakelocks, the wakelock is released when the input
+> queue becomes empty.  There's no way for the power manager process to
+> know exactly when that happens without modifying the kernel.  However
+> we can use the activation of the corresponding userspace suspend
+> blocker as a proxy.  It's nearly as good, and it gets the job done.
+>
 
-In order to avoid unnecessary delay and complications,please
-remember to quote your reference and winning ticket number in
-all correspondence with your claims officer.Your secret pin
-code is ML0757985.Be warned that cases of double claims and
-unwarranted abuse of this program will be legally pursued.
+If you only poll the fd after the last user-space suspend blocker is
+released, why do you care when the kernel wakelock could have been
+released? It seem the only thing it saves you is an extra poll call
+when two wakeup events happen at the same time and one of them is
+fully processed and unblocks suspend before the other event handler
+blocks suspend. It seems strange to remove your wakeup event from the
+list when a specific suspend blocker is acquired when any suspend
+blocker will prevent that wakeup event from being added to the list in
+the first place.
 
+> If you prefer, an interface could be added whereby a user process tells
+> the power manager explicitly that it's going to read data from an
+> input device, instead of relying on implicit notification through
+> suspend blocker activation.  I don't know whether this would be simpler
+> or more complex; it depends on the design of your userspace.
+>
 
+I don't think there is a need to tie the fds to anything else. If you
+poll the fds on the last suspend unblock call, you should get the same
+behaviour.
 
-YOURS SINCERELY,
-DOROTHY CAMPBELL.
+>> If you break
+>> this link it think can work, but it does require us to modify all code
+>> that reads wakeup events from the kernel to register the file
+>> descriptors they get events from.
+>
+> Yes.  I don't know how your user code is structured; if there is a
+> fixed correspondence between file descriptors and suspend blockers (the
+> same wakeup events are always handled by the same suspend blockers)
+> then this will be a simple change -- the file descriptor can be
+> registered when the suspend blocker is created.
+>
+> If the correspondence is more dynamic (different suspend blockers used
+> for the same wakeup device at different times, or multiple wakeup
+> devices handled by one suspend blocker) then the required changes will
+> be more complicated.  Not tremendously more.
 
+All input events that can wake the system are handled by one
+user-space suspend blocker. Input devices come and go so we would need
+to add and remove the fds dynamically.
+
+>
+>> It would also require adding
+>> poll/select support to android alarm driver,
+>
+> Yes.  Is this a platform-specific driver?  (I assume so, since you
+> called it the "android alarm driver".)  Then poll/select support can be
+> added without provoking a lot of objections from legions of kernel
+> developers.
+>
+
+It is not platform specific, but it is not currently in the mainline
+kernel so I would not expect any objections to a change that adding
+poll/select support.
+
+>> and any driver that
+>> currently uses a wakelock with a timeout would need to notify the user
+>> space power manager instead.
+>
+> Hmm.  This is symptomatic of a deficiency in the original wakelock
+> implementation -- those timeouts always were arbitrary.
+>
+> The power manager would indeed have to know about wakeup devices that
+> don't need to _keep_ the system awake.  Here's one way to cope: During
+> those times when no suspend blockers are active but the PM process
+> thinks a wakeup source is active, the PM process could poll every few
+> seconds to update its list of active sources.  At those points it could
+> remove wakeup sources that have timed out.
+>
+
+For that to work the wakeup events would have to be reported to the
+power manager in a reliable way in the first place. Passing the file
+descriptor that the app uses to the power manager does not work for
+this, since the app could read the event while the power manager was
+not in the poll call and the power manager would never see it. Also,
+existing apps don't pass their file descriptors to the power manager,
+so it has the get the event from somewhere else.
+
+>
+> Obviously this proposal would complicate your userspace.  Not
+> enormously, since most of the work is confined to the power manager,
+
+No, the main problem it that it is not confined to the power manager.
+The power manager does not have a list of file descriptors to monitor,
+so we have to modify all code that handles wakeup events. This
+includes vendor supplied code that we don't have the source for, but,
+on some platforms at least, this code relies on kernel wakelocks with
+a timeout and could at first be handled the same way we would have to
+handle existing apps reading from a socket.
+
+> but somewhat.  That's the price to be paid for leaving the kernel
+> essentially untouched.  Consider the amount of resistance your
+> wakelock/suspend-blocker patches have already received; you'll have to
+> decide which approach will work out better in the end.
+>
+
+The suspend blocker approach is more generally useful since it
+supports hardware where suspend is needed. Why this argument is being
+ignored is very puzzling.
+
+Your solution is not immediately useful since depends on removing all
+periodic kernel timers and adding support to stopping the monotonic
+clock for set of processes that are frozen.
+
+Your solution forces the user space interface to be more complicated,
+and it creates a new user space power manager that has to start before
+any process that handle wakeup events.
+
+-- 
+Arve Hjønnevåg
