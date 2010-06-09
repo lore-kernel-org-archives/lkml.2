@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649Ab0FIMYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 08:24:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41979 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755020Ab0FIMYX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 08:24:23 -0400
-Subject: Re: [tip:perf/core] perf: Add non-exec mmap() tracking
-From: Peter Zijlstra <peterz@infradead.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: mingo@redhat.com, hpa@zytor.com, anton@samba.org, acme@redhat.com,
-       paulus@samba.org, linux-kernel@vger.kernel.org, efault@gmx.de,
-       fweisbec@gmail.com, ebmunson@us.ibm.com, rostedt@goodmis.org,
-       tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-In-Reply-To: <AANLkTimsd32TL44V-aXvEoa3SE63X6qaOmMny9Q8uNRi@mail.gmail.com>
-References: <1274193049-25997-1-git-send-email-ebmunson@us.ibm.com>
-	 <tip-3af9e859281bda7eb7c20b51879cf43aa788ac2e@git.kernel.org>
-	 <AANLkTimsd32TL44V-aXvEoa3SE63X6qaOmMny9Q8uNRi@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Jun 2010 14:22:13 +0200
-Message-ID: <1276086133.1645.575.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755576Ab0FIMZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 08:25:58 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52380 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751761Ab0FIMZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 08:25:56 -0400
+Message-ID: <4C0F87E8.8020405@kernel.org>
+Date: Wed, 09 Jun 2010 14:24:08 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Dan Carpenter <error27@gmail.com>, Jeff Garzik <jgarzik@pobox.com>,
+       Robert Hancock <hancockrwd@gmail.com>,
+       Vivek Mahajan <vivek.mahajan@freescale.com>, linux-ide@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] sata_sil24: memset() overflow
+References: <20100609120153.GF5483@bicker>
+In-Reply-To: <20100609120153.GF5483@bicker>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 12:24:10 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 13:44 +0300, Pekka Enberg wrote:
-> > @@ -3830,6 +3834,14 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
-> >                if (!vma->vm_mm) {
-> >                        name = strncpy(tmp, "[vdso]", sizeof(tmp));
-> >                        goto got_name;
-> > +               } else if (vma->vm_start <= vma->vm_mm->start_brk &&
-> > +                               vma->vm_end >= vma->vm_mm->brk) {
-> > +                       name = strncpy(tmp, "[heap]", sizeof(tmp));
-> > +                       goto got_name;
-> > +               } else if (vma->vm_start <= vma->vm_mm->start_stack &&
-> > +                               vma->vm_end >= vma->vm_mm->start_stack) {
-> > +                       name = strncpy(tmp, "[stack]", sizeof(tmp));
-> > +                       goto got_name;
-> >                }
-> >
-> >                name = strncpy(tmp, "//anon", sizeof(tmp));
+On 06/09/2010 02:01 PM, Dan Carpenter wrote:
+> cb->atapi.cdb is an array of 16 u8 elements.  The call too memset() 
+> would set the first part of the sge array to zero as well.  It's not
+> a packed struct. 
 > 
-> Doesn't this change here break the JIT generated code region detection
-> in map__new() of tools/perf/util/map.c? We generate a new
-> "/tmp/perf-<pid>.map" filename for anonymous memory regions and check
-> for that in dso__load() of tools/perf/util/symbol.c. 
+> This one has been around for five years.  I found it with Smatch.  I
+> think the reason no one has seen it before is because we normally call
+> sil24_fill_sg() and that overwrites sge with proper information?
 
-Not unless you stick your executable code in the heap or on the stack.
+Yeah, the table is built after the memset so it doesn't really break
+anything but still where did that 32 come from?  :-)
 
-If you use something like mmap(NULL, size, PROT_READ|PROT_WRITE|
-PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0); to allocate your memory
-everything should be fine.
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 
+Acked-by: Tejun Heo <tj@kernel.org>
 
+Thanks.
 
+-- 
+tejun
