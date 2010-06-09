@@ -1,81 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab0FIKPR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:15:17 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:56854 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757483Ab0FIKPM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:15:12 -0400
-Date: Wed, 09 Jun 2010 12:15:57 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv4 10/13] USB: gadget: g_multi: more configurable
-In-reply-to: <778712.18431.qm@web180308.mail.gq1.yahoo.com>
-To: linux-usb@vger.kernel.org, David Brownell <david-b@pacbell.net>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <op.vd02svmj7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.53 (Linux)
-References: <778712.18431.qm@web180308.mail.gq1.yahoo.com>
+	id S1757511Ab0FIKPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:15:39 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41388 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757439Ab0FIKPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 06:15:36 -0400
+Date: Wed, 9 Jun 2010 10:14:52 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf, trace: Inline perf_swevent_put_recursion_context()
+Message-ID: <tip-ecc55f84b2e9741f29daa787ded93986df6cbe17@git.kernel.org>
+Git-Commit-ID: ecc55f84b2e9741f29daa787ded93986df6cbe17
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:14:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 6/7/10, Michal Nazarewicz <m.nazarewicz@samsung.com> wrote:
->> Added Kconfig options for each function used by g_multi so that
->> one can customize the gadget to a greater extend.
+Commit-ID:  ecc55f84b2e9741f29daa787ded93986df6cbe17
+Gitweb:     http://git.kernel.org/tip/ecc55f84b2e9741f29daa787ded93986df6cbe17
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Fri, 21 May 2010 15:11:34 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 9 Jun 2010 11:12:33 +0200
 
-On Tue, 08 Jun 2010 15:37:24 +0200, David Brownell <david-b@pacbell.net> wrote:
-> For what it's worth ... I still NAK all
-> these complications to what's been intended
-> to be a simple driver.
+perf, trace: Inline perf_swevent_put_recursion_context()
 
-First of, let me assure you that I didn't want to “go behind your back” or
-anything.
+Inline perf_swevent_put_recursion_context into perf_tp_event(), this
+shrinks the per trace template code footprint and saves a function
+call.
 
-After your initial NAK I wouldn't bother resending this patch but I wanted
-to show the install mode feature and stimulate some, I don't know, discussion
-on how you see things go from here.  Sorry if I haven't been clear about
-my intend.
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ include/linux/ftrace_event.h |    3 +--
+ include/linux/perf_event.h   |    2 +-
+ kernel/perf_event.c          |    8 ++++----
+ 3 files changed, 6 insertions(+), 7 deletions(-)
 
-Also note, that in my opinion all the previous patches in the patchset
-should be considered all right in this regard since they don't add
-complexity to the g_multi.
-
-> If you want to create some complex monstrosity,
-> that should have been a different driver.
-
-So, what would you like to see happen?
-
-As I'm working on various features for USB gadgets at the moment I wanted
-to release them as quickly as possible.  Also, new ideas arise long after
-the original gadget had been created.
-
-Would you prefer I forked g_multi to a g_monstrosity gadget where new
-features could be developed and tested?
-
-Or do you think that such an experimental, dynamically changed gadget
-has no place in kernel at all?  I don't like that idea as I'd like to
-share the install mode and maybe other new features with the rest of
-the word rather then keeping it on my hard drive.
-
-Also, I think that having a configurable gadget may help others test their
-platform and came up with a gadget they'd like to use by simply changing
-Kconfig options and testing rather then hacking the file by themselves.
-
-I wanted to reuse g_multi as to not create too many gadgets hence adding
-features to g_multi in backward compatible fashion.
-
-I'd like to hear you elaborate an that a little so I'd know what's the
-best course of action here and what I should do from here.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 3167f2d..0af31cd 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -257,8 +257,7 @@ static inline void
+ perf_trace_buf_submit(void *raw_data, int size, int rctx, u64 addr,
+ 		       u64 count, struct pt_regs *regs, void *head)
+ {
+-	perf_tp_event(addr, count, raw_data, size, regs, head);
+-	perf_swevent_put_recursion_context(rctx);
++	perf_tp_event(addr, count, raw_data, size, regs, head, rctx);
+ }
+ #endif
+ 
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 5d0266d..c691a0b 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1001,7 +1001,7 @@ static inline bool perf_paranoid_kernel(void)
+ extern void perf_event_init(void);
+ extern void perf_tp_event(u64 addr, u64 count, void *record,
+ 			  int entry_size, struct pt_regs *regs,
+-			  struct hlist_head *head);
++			  struct hlist_head *head, int rctx);
+ extern void perf_bp_event(struct perf_event *event, void *data);
+ 
+ #ifndef perf_misc_flags
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index ff86c55..4bd3b59 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4213,14 +4213,12 @@ int perf_swevent_get_recursion_context(void)
+ }
+ EXPORT_SYMBOL_GPL(perf_swevent_get_recursion_context);
+ 
+-void perf_swevent_put_recursion_context(int rctx)
++void inline perf_swevent_put_recursion_context(int rctx)
+ {
+ 	struct perf_cpu_context *cpuctx = &__get_cpu_var(perf_cpu_context);
+ 	barrier();
+ 	cpuctx->recursion[rctx]--;
+ }
+-EXPORT_SYMBOL_GPL(perf_swevent_put_recursion_context);
+-
+ 
+ void __perf_sw_event(u32 event_id, u64 nr, int nmi,
+ 			    struct pt_regs *regs, u64 addr)
+@@ -4601,7 +4599,7 @@ static int perf_tp_event_match(struct perf_event *event,
+ }
+ 
+ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
+-		   struct pt_regs *regs, struct hlist_head *head)
++		   struct pt_regs *regs, struct hlist_head *head, int rctx)
+ {
+ 	struct perf_sample_data data;
+ 	struct perf_event *event;
+@@ -4621,6 +4619,8 @@ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
+ 			perf_swevent_add(event, count, 1, &data, regs);
+ 	}
+ 	rcu_read_unlock();
++
++	perf_swevent_put_recursion_context(rctx);
+ }
+ EXPORT_SYMBOL_GPL(perf_tp_event);
+ 
