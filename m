@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab0FIKA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:00:56 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:63717 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757299Ab0FIKAt convert rfc822-to-8bit (ORCPT
+	id S1757425Ab0FIKBS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:01:18 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:64839 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757058Ab0FIKBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:00:49 -0400
-Date: Wed, 09 Jun 2010 12:01:32 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv4 08/13] USB: gadget: g_serial: INF file updated
-In-reply-to: <AANLkTim6GHWVNvZ1XOJBZiu7ltl7TVpVJwVltLoKpYRi@mail.gmail.com>
-To: Xiaofan Chen <xiaofanc@gmail.com>
-Cc: linux-usb@vger.kernel.org, David Brownell <david-b@pacbell.net>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
+	Wed, 9 Jun 2010 06:01:15 -0400
+Date: Wed, 9 Jun 2010 12:01:12 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       Torez Smith <lnxtorez@linux.vnet.ibm.com>,
+       Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+       Josh Boyer <jwboyer@linux.vnet.ibm.com>, linuxppc-dev@ozlabs.org,
        linux-kernel@vger.kernel.org
-Message-id: <op.vd014urd7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.53 (Linux)
-References: <996015.66352.qm@web180311.mail.gq1.yahoo.com>
- <op.vd0y3ds37p4s8u@pikus>
- <AANLkTim6GHWVNvZ1XOJBZiu7ltl7TVpVJwVltLoKpYRi@mail.gmail.com>
+Cc: vamos@i4.informatik.uni-erlangen.de
+Subject: [PATCH 5/5] Removing dead CONFIG_PPC47x
+Message-ID: <b7f3a0f1bbcd39544df81c12719a820ba5906bd5.1275925219.git.siccegge@cs.fau.de>
+References: <cover.1275925219.git.siccegge@cs.fau.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1275925219.git.siccegge@cs.fau.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 2010/6/9 Michał Nazarewicz <m.nazarewicz@samsung.com>:
->> As for CDC ACM INF file, my understanding is similar except the template
->> is provided by Microchip rather then Microsoft itself.
+CONFIG_PPC47x doesn't exist in Kconfig, therefore removing all
+references for it from the source code.
 
-On Wed, 09 Jun 2010 11:29:22 +0200, Xiaofan Chen <xiaofanc@gmail.com> wrote:
-> So it is probably okay to drop the copyright line. On the
-> other hand, even if there is the copyright line from Microsoft,
-> I think you can still redistribute it.
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ arch/powerpc/mm/44x_mmu.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-> But I am not a lawyer but a hardware engineer. ;-)
-
-I think we all have the same problem here. ;)
-
-I dunno, obviously I want to make everything according to law to avoid
-any problems.  Maybe we should contact someone at The Software Freedom
-Law Center or some similar entity?
-
+diff --git a/arch/powerpc/mm/44x_mmu.c b/arch/powerpc/mm/44x_mmu.c
+index d8c6efb..f70da7e 100644
+--- a/arch/powerpc/mm/44x_mmu.c
++++ b/arch/powerpc/mm/44x_mmu.c
+@@ -76,11 +76,7 @@ static void __init ppc44x_pin_tlb(unsigned int virt, unsigned int phys)
+ 		"tlbwe	%1,%3,%5\n"
+ 		"tlbwe	%0,%3,%6\n"
+ 	:
+-#ifdef CONFIG_PPC47x
+-	: "r" (PPC47x_TLB2_S_RWX),
+-#else
+ 	: "r" (PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_G),
+-#endif
+ 	  "r" (phys),
+ 	  "r" (virt | PPC44x_TLB_VALID | PPC44x_TLB_256M),
+ 	  "r" (entry),
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+1.6.3.3
+
