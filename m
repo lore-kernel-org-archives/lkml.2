@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757623Ab0FIMM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 08:12:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62191 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757228Ab0FIMMY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 08:12:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
-Date: Wed, 9 Jun 2010 14:11:38 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Tom Lyon" <pugs@cisco.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, chrisw@sous-sol.org, joro@8bytes.org,
-       hjk@linutronix.de, mst@redhat.com, avi@redhat.com, gregkh@suse.de,
-       aafabbri@cisco.com, scofeldm@cisco.com
-References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com> <20100608144153.28d2abff.randy.dunlap@oracle.com>
-In-Reply-To: <20100608144153.28d2abff.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1755568Ab0FIMRH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 08:17:07 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:36726 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752687Ab0FIMRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 08:17:05 -0400
+Date: Wed, 9 Jun 2010 14:16:43 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: pm list <linux-pm@lists.linux-foundation.org>, james.bottomley@suse.de,
+       markgross@thegnar.org, mgross@linux.intel.com,
+       "John W. Linville" <linville@tuxdriver.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Javier Cardona <javier@cozybit.com>, Jouni Malinen <j@w1.fi>,
+       Rui Paulo <rpaulo@gmail.com>, Kalle Valo <kalle.valo@nokia.com>,
+       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 1/2] mac80211: make max_network_latency notifier
+ atomic safe
+Message-ID: <20100609141643.14e9aedc@schatten.dmk.lab>
+In-Reply-To: <1276080128.14580.5.camel@jlt3.sipsolutions.net>
+References: <1276074915-26879-1-git-send-email-florian@mickler.org>
+	<1276076287.3727.15.camel@jlt3.sipsolutions.net>
+	<20100609122050.1dd18132@schatten.dmk.lab>
+	<1276080128.14580.5.camel@jlt3.sipsolutions.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006091411.38858.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1++8anvXWsR74ZQh6bGuActCeSsjEXBB5C3JgQ
- pBpSda08z11w2URRjuF6w6LLbNyUtBNFe6nbE/Q6R6AU4K+rLE
- sudVBEWF3rryF1WPH13wQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 08 June 2010, Randy Dunlap wrote:
->  Documentation/ioctl/ioctl-number.txt |    1 
->  Documentation/vfio.txt               |  177 +++++++
->  MAINTAINERS                          |    7 
->  drivers/Kconfig                      |    2 
->  drivers/Makefile                     |    1 
->  drivers/vfio/Kconfig                 |   18 
->  drivers/vfio/Makefile                |    6 
->  drivers/vfio/uiommu.c                |  126 +++++
->  drivers/vfio/vfio_dma.c              |  324 ++++++++++++
->  drivers/vfio/vfio_intrs.c            |  191 +++++++
->  drivers/vfio/vfio_main.c             |  624 +++++++++++++++++++++++++
->  drivers/vfio/vfio_pci_config.c       |  554 ++++++++++++++++++++++
->  drivers/vfio/vfio_rdwr.c             |  147 +++++
->  drivers/vfio/vfio_sysfs.c            |  153 ++++++
->  include/linux/uiommu.h               |   62 ++
->  include/linux/vfio.h                 |  200 ++++++++
->  16 files changed, 2593 insertions(+)
+On Wed, 09 Jun 2010 12:42:08 +0200
+Johannes Berg <johannes@sipsolutions.net> wrote:
 
-This seems to be missing a change to include/linux/Kbuild that
-adds vfio.h to the exported files. Without the export, you cannot
-use the definitions from user space programs unless they come with
-their own copy of the header.
+> On Wed, 2010-06-09 at 12:20 +0200, Florian Mickler wrote:
+> 
+> > A third possibility would be to make it dependent on the
+> > type of the constraint, if blocking notifiers are allowed or not. 
+> > But that would sacrifice API consistency (update_request for one
+> > constraint is allowed to be called in interrupt context and
+> > update_request for another would be not).
+> 
+> I don't see what's wrong with the fourth possibility: Allow calling
+> pm_qos_update_request() from atomic context, but change _it_ to schedule
+> off a work that calls the blocking notifier chain. That avoids the
+> complexity in notify-API users since they have process context, and also
+> in request-API users since they can call it from any context.
+> 
+> johannes
 
-	Arnd
+That was also my first idea, but then I thought about qos and thought
+atomic notification are necessary.
+Do you see any value in having atomic
+notification? 
+
+I have the following situation before my eyes:
+
+	Driver A gets an interrupt and needs (to service that
+	interrupt) the cpu to guarantee a latency of X because the
+	device is a bit icky.
+
+Now, in that situation, if we don't immediately (without scheduling in
+between) notify the system to be in that latency-mode the driver won't
+function properly. Is this a realistic scene?
+
+At the moment we only have process context notification and only 2
+listeners.
+
+I think providing for atomic as well as "relaxed" notification could be
+useful. 
+
+If atomic notification is deemed unnecessary, I have no
+problems to just use schedule_work() in update request.
+Anyway, it is probably best to split this. I.e. first make
+update_request callable from atomic contexts with doing the
+schedule_work in update_request and then
+as an add on provide for constraints_objects with atomic notifications.
+
+Flo
+
+
+
+
+
