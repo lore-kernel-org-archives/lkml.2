@@ -1,97 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab0FHXSy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 19:18:54 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:55543 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755024Ab0FHXSx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 19:18:53 -0400
-Date: Wed, 9 Jun 2010 09:18:45 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Linux-kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs, 2.6.27=>.32 sync write 10 times slowdown [was: xfs,
- aacraid 2.6.27 => 2.6.32 results in 6 times slowdown]
-Message-ID: <20100608231845.GG7869@dastard>
-References: <4C0E13A7.20402@msgid.tls.msk.ru>
- <20100608122919.GC7869@dastard>
- <4C0EA938.9000104@msgid.tls.msk.ru>
+	id S1756506Ab0FIAgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 20:36:33 -0400
+Received: from [211.233.36.121] ([211.233.36.121]:32928 "EHLO mail.nstek.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755538Ab0FIAg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 20:36:27 -0400
+X-Greylist: delayed 1621 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jun 2010 20:36:26 EDT
+Message-Id: <201006082346.o58NkhSQ008272@mail.nstek.com>
+Reply-To: <atmpayout_dept2010@yahoo.com.hk>
+From: "ATM PAYOUT ALERT 2010" <info@atm.com>
+Subject: *****IMMEDIATE PAYMENT NOTIFICATION
+Date: Wed, 9 Jun 2010 00:48:30 -0700
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C0EA938.9000104@msgid.tls.msk.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: <linux-wireless@vger.kernel.org>
+To: <linux-sh@vger.kernel.org>
+To: <linux-rdma@vger.kernel.org>
+To: <linux-pci@vger.kernel.org>
+To: <linux-parisc@vger.kernel.org>
+To: <linux-omap@vger.kernel.org>
+To: <linux-media@vger.kernel.org>
+To: <linux-kernel-owner@vger.kernel.org>
+To: <linux-kernel@vger.kernel.org>
+To: <linux-kbuild@vger.kernel.org>
+To: <linux-input@vger.kernel.org>
+To: <linux-ide@vger.kernel.org>
+To: <linux-fsdevel@vger.kernel.org>
+To: <linux-ext4@vger.kernel.org>
+To: <linux-btrfs@vger.kernel.org>
+To: <linux-acpi@vger.kernel.org>
+To: <lily@unitedenvirotech.com>
+To: <linville@tuxdriver.com>
+To: <linda.vieira@so.mnscu.edu>
+To: <linux-driver@qlogic.com>
+To: <linuxppc-dev@ozlabs.org>
+To: <linda_alick@nps.gov>
+To: <lisa.battles@mirant.com>
+To: <linda.turner@microchip.com>
+To: <linux-cifs-client@lists.samba.org>
+To: <linux-mtd@lists.infradead.org>
+To: <linux-geode@lists.infradead.org>
+To: <linux-arm-kernel@lists.infradead.org>
+To: <lilalola@laposte.net>
+To: <lisa.f.vidonic1@jsc.nasa.gov>
+To: <linell.l.rush@intel.com>
+To: <lilymunster@hotmail.com>
+To: <lindap@harmsco.com>
+To: <lilian.aceves@gmail.com>
+To: <limburg@globalxs.nl>
+To: <linckens@geo.unibe.ch>
+To: <lindsay.bulso@genzyme.com>
+To: <linda.yenni@equivine.com>
+To: <linnrandom@earthllink.net>
+To: <lightrw@dow.com>
+To: <linda.yung@compaq.com20larry.lo>
+To: <linda.kupstis@cityofboston.gov>
+To: <linda_zitzner@chemtrace.com>
+To: <likelsey@charter.net>
+To: <lindstadtgl@cdm.com>
+To: <lindemande@cdm.com>
+To: <lillsk9@ccrtc.com>
+To: <linda.papenfus.b@bayer.com>
+To: <lightng62@att.net>
+To: <lindalewis9@aol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 09, 2010 at 12:34:00AM +0400, Michael Tokarev wrote:
-> 08.06.2010 16:29, Dave Chinner wrote:
-> >On Tue, Jun 08, 2010 at 01:55:51PM +0400, Michael Tokarev wrote:
-> >>Hello.
-> >>
-> >>I've got a.. difficult issue here, and am asking if anyone else
-> >>has some expirence or information about it.
-> >>
-> >>Production environment (database).  Machine with an Adaptec
-> >>RAID SCSI controller, 6 drives in raid10 array, XFS filesystem
-> >>and Oracle database on top of it (with - hopefully - proper
-> >>sunit/swidth).
-> >>
-> >>Upgrading kernel from 2.6.27 to 2.6.32, and users starts screaming
-> >>about very bad performance.  Iostat reports increased I/O latencies,
-> >>I/O time increases from ~5ms to ~30ms.  Switching back to 2.6.27,
-> >>and everything is back to normal (or, rather, usual).
-....
-> >>The most problematic issue here is that this is only one machine that
-> >>behaves like this, and it is a production server, so I've very little
-> >>chances to experiment with it.
-> >>
-> >>So before the next try, I'd love to have some suggestions about what
-> >>to look for.   In particular, I think it's worth the effort to look
-> >>at write barriers, but again, I don't know how to check if they're
-> >>actually being used.
-> >>
-> >>Anyone have suggestions for me to collect and to look at?
-> >
-> >http://xfs.org/index.php/XFS_FAQ#Q._Should_barriers_be_enabled_with_storage_which_has_a_persistent_write_cache.3F
-> 
-> Yes, I've seen this.  We use xfs for quite long time.  The on-board
-> controller does not have battery unit, so it should be no different
-> than a software raid array or single drive.
-> 
-> But I traced the issue to a particular workload -- see $subject.
-> 
-> Simple test doing random reads or writes of 4k blocks in a 1Gb
-> file located on an xfs filesystem, Mb/sec:
-> 
->                      sync  direct
->              read   write   write
-> 2.6.27 xfs   1.17    3.69    3.80
-> 2.6.32 xfs   1.26    0.52    5.10
->                      ^^^^
-> 2.6.32 ext3  1.19    4.91    5.02
-> 
-> Note the 10 times difference between O_SYNC and O_DIRECT writes
-> in 2.6.32.  This is, well, huge difference, and this is where
-> the original slowdown comes from, apparently. 
+OUR REF:FRN/ATM/882
+YOUR REF:CLAIMS/ATM/882
 
-Are you running on the raw block device, or on top of LVM/DM/MD to
-split up the space on the RAID drive? DM+MD have grown barrier
-support since 2.6.27, so it may be that barriers are now being
-passed down to the raid hardware on 2.6.32 and they never were on
-2.6.27. Can you paste the output of dmesg when the XFS filesystem in
-question is mounted on both 2.6.27 and 2.6.32 so we can see if
-there is a difference in the use of barriers?
 
-Also, remember that O_DIRECT does not imply O_SYNC. O_DIRECT writes
-only write data, while O_SYNC will also write metadata and/or the
-log.
+This is to officially inform you that(ATM Card Number;(5179123456789120) has
+been accredited in your favor.Your Personal Identification  Number is 882.
+The ATM Card Value is $6.8 MILLION USD.You are advice to contact
+Mr. Jeffery Simpson via Email(atmpayout_dept2010@yahoo.com.hk) with the following
+information's; you can call on this cell# +2348060770530
 
-Cheers,
+Full Name:
+Delivery Address:
+Phone Number:
+Country:
+OCCUPATION:
+SEX:
+Age:
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Please Note that you are to pay the sum of $205 USD for the delivery of your
+ATM Card by Firstflight Courier Express.
+
+Best Regards,
+Senator David Mark.
