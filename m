@@ -1,99 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab0FIIyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 04:54:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41160 "EHLO ogre.sisk.pl"
+	id S1756404Ab0FIIyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 04:54:50 -0400
+Received: from gate.crashing.org ([63.228.1.57]:33487 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753197Ab0FIIyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 04:54:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
-Date: Wed, 9 Jun 2010 10:55:38 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Carl Worth <cworth@cworth.org>, Eric Anholt <eric@anholt.net>,
-       Venkatesh Pallipadi <venki@google.com>, Dave Airlie <airlied@gmail.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Ingo Molnar <mingo@elte.hu>,
-       David =?iso-8859-15?q?H=E4rdeman?= <david@hardeman.nu>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
-References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera> <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org> <4C0F4872.7090909@fusionio.com>
-In-Reply-To: <4C0F4872.7090909@fusionio.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	id S1755553Ab0FIIys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 04:54:48 -0400
+Subject: Re: [PATCH 3/3] powerpc: enabled asymmetric SMT scheduling on
+ POWER7
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Michael Neuling <mikey@neuling.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+In-Reply-To: <20100608045702.31FB5CC8C7@localhost.localdomain>
+References: <20100608045702.31FB5CC8C7@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Jun 2010 18:54:13 +1000
+Message-ID: <1276073653.1242.0.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006091055.38462.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 June 2010, Jens Axboe wrote:
-> On 2010-06-09 03:53, Linus Torvalds wrote:
-> >> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16129
-> >> Subject	: BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2
-> >> Submitter	: Jan Kreuzer <kontrollator@gmx.de>
-> >> Date		: 2010-06-05 06:15 (4 days old)
-> > 
-> > This seems to have been introduced by
-> > 
-> > 	commit 7cbaef9c83e58bbd4bdd534b09052b6c5ec457d5
-> > 	Author: Ingo Molnar <mingo@elte.hu>
-> > 	Date:   Sat Nov 8 17:05:38 2008 +0100
-> > 
-> > 	    sched: optimize sched_clock() a bit
-> >     
-> > 	    sched_clock() uses cycles_2_ns() needlessly - which is an irq-disabling
-> > 	    variant of __cycles_2_ns().
-> >     
-> > 	    Most of the time sched_clock() is called with irqs disabled already.
-> > 	    The few places that call it with irqs enabled need to be updated.
-> >     
-> > 	    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> > 
-> > and this seems to be one of those calling cases that need to be updated.
-> > 
-> > Ingo? The call trace is:
-> > 
-> > 	BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2-8/337
-> > 	caller is native_sched_clock+0x3c/0x68
-> > 	Pid: 337, comm: jbd2/sda2-8 Not tainted 2.6.35-rc1jan+ #4
-> > 	Call Trace:
-> > 	[<ffffffff812362c5>] debug_smp_processor_id+0xc9/0xe4
-> > 	[<ffffffff8101059d>] native_sched_clock+0x3c/0x68
-> > 	[<ffffffff8101043d>] sched_clock+0x9/0xd
-> > 	[<ffffffff81212d7a>] blk_rq_init+0x97/0xa3
-> > 	[<ffffffff81214d71>] get_request+0x1c4/0x2d0
-> > 	[<ffffffff81214ea6>] get_request_wait+0x29/0x1a6
-> > 	[<ffffffff81215537>] __make_request+0x338/0x45b
-> > 	[<ffffffff812147c2>] generic_make_request+0x2bb/0x330
-> > 	[<ffffffff81214909>] submit_bio+0xd2/0xef
-> > 	[<ffffffff811413cb>] submit_bh+0xf4/0x116
-> > 	[<ffffffff81144853>] block_write_full_page_endio+0x89/0x96
-> > 	[<ffffffff81144875>] block_write_full_page+0x15/0x17
-> > 	[<ffffffff8119b00a>] ext4_writepage+0x356/0x36b
-> > 	[<ffffffff810e1f91>] __writepage+0x1a/0x39
-> > 	[<ffffffff810e32a6>] write_cache_pages+0x20d/0x346
-> > 	[<ffffffff810e3406>] generic_writepages+0x27/0x29
-> > 	[<ffffffff811ca279>] journal_submit_data_buffers+0x110/0x17d
-> > 	[<ffffffff811ca986>] jbd2_journal_commit_transaction+0x4cb/0x156d
-> > 	[<ffffffff811d0cba>] kjournald2+0x147/0x37a
-> > 
-> > (from the bugzilla thing)
+On Tue, 2010-06-08 at 14:57 +1000, Michael Neuling wrote:
+> The POWER7 core has dynamic SMT mode switching which is controlled by
+> the hypervisor.  There are 3 SMT modes:
+> 	SMT1 uses thread  0
+> 	SMT2 uses threads 0 & 1
+> 	SMT4 uses threads 0, 1, 2 & 3
+> When in any particular SMT mode, all threads have the same performance
+> as each other (ie. at any moment in time, all threads perform the same).  
 > 
-> This should be fixed by commit 28f4197e which was merged on friday.
+> The SMT mode switching works such that when linux has threads 2 & 3 idle
+> and 0 & 1 active, it will cede (H_CEDE hypercall) threads 2 and 3 in the
+> idle loop and the hypervisor will automatically switch to SMT2 for that
+> core (independent of other cores).  The opposite is not true, so if
+> threads 0 & 1 are idle and 2 & 3 are active, we will stay in SMT4 mode.
+> 
+> Similarly if thread 0 is active and threads 1, 2 & 3 are idle, we'll go
+> into SMT1 mode.  
+> 
+> If we can get the core into a lower SMT mode (SMT1 is best), the threads
+> will perform better (since they share less core resources).  Hence when
+> we have idle threads, we want them to be the higher ones.
+> 
+> This adds a feature bit for asymmetric packing to powerpc and then
+> enables it on POWER7. 
+> 
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
 
-Thanks, closed.
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-Rafael
+> 
+> ---
+> 
+>  arch/powerpc/include/asm/cputable.h |    3 ++-
+>  arch/powerpc/kernel/process.c       |    9 +++++++++
+>  2 files changed, 11 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6-ozlabs/arch/powerpc/include/asm/cputable.h
+> ===================================================================
+> --- linux-2.6-ozlabs.orig/arch/powerpc/include/asm/cputable.h
+> +++ linux-2.6-ozlabs/arch/powerpc/include/asm/cputable.h
+> @@ -195,6 +195,7 @@ extern const char *powerpc_base_platform
+>  #define CPU_FTR_SAO			LONG_ASM_CONST(0x0020000000000000)
+>  #define CPU_FTR_CP_USE_DCBTZ		LONG_ASM_CONST(0x0040000000000000)
+>  #define CPU_FTR_UNALIGNED_LD_STD	LONG_ASM_CONST(0x0080000000000000)
+> +#define CPU_FTR_ASYM_SMT		LONG_ASM_CONST(0x0100000000000000)
+>  
+>  #ifndef __ASSEMBLY__
+>  
+> @@ -409,7 +410,7 @@ extern const char *powerpc_base_platform
+>  	    CPU_FTR_MMCRA | CPU_FTR_SMT | \
+>  	    CPU_FTR_COHERENT_ICACHE | CPU_FTR_LOCKLESS_TLBIE | \
+>  	    CPU_FTR_PURR | CPU_FTR_SPURR | CPU_FTR_REAL_LE | \
+> -	    CPU_FTR_DSCR | CPU_FTR_SAO)
+> +	    CPU_FTR_DSCR | CPU_FTR_SAO  | CPU_FTR_ASYM_SMT)
+>  #define CPU_FTRS_CELL	(CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
+>  	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | \
+>  	    CPU_FTR_ALTIVEC_COMP | CPU_FTR_MMCRA | CPU_FTR_SMT | \
+> Index: linux-2.6-ozlabs/arch/powerpc/kernel/process.c
+> ===================================================================
+> --- linux-2.6-ozlabs.orig/arch/powerpc/kernel/process.c
+> +++ linux-2.6-ozlabs/arch/powerpc/kernel/process.c
+> @@ -1265,3 +1265,12 @@ unsigned long randomize_et_dyn(unsigned 
+>  
+>  	return ret;
+>  }
+> +
+> +int arch_sd_sibiling_asym_packing(void)
+> +{
+> +	if (cpu_has_feature(CPU_FTR_ASYM_SMT)){
+> +		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
+> +		return SD_ASYM_PACKING;
+> +	}
+> +	return 0;
+> +}
+
+
