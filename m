@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757980Ab0FIQkD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 12:40:03 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:16475 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757955Ab0FIQkA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 12:40:00 -0400
-Message-ID: <4C0FC3DC.9040401@panasas.com>
-Date: Wed, 09 Jun 2010 19:39:56 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1757957Ab0FIQoL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 12:44:11 -0400
+Received: from www.tglx.de ([62.245.132.106]:34122 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753016Ab0FIQoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 12:44:09 -0400
+Date: Wed, 9 Jun 2010 18:44:01 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: rt-users <linux-rt-users@vger.kernel.org>,
+       John Stultz <johnstul@us.ibm.com>, Nick Piggin <npiggin@suse.de>
+Subject: [ANNOUNCE] 2.6.33.5-rt23
+In-Reply-To: <alpine.LFD.2.00.1005022109150.25342@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1006091837410.2933@localhost.localdomain>
+References: <alpine.LFD.2.00.1002241740410.4245@localhost.localdomain> <alpine.LFD.2.00.1002262041020.4245@localhost.localdomain> <alpine.LFD.2.00.1003121124120.22855@localhost.localdomain> <alpine.LFD.2.00.1003211158130.3147@localhost.localdomain>
+ <alpine.LFD.2.00.1004071619490.32352@localhost.localdomain> <alpine.LFD.2.00.1004271744280.2951@localhost.localdomain> <alpine.LFD.2.00.1004301156590.2951@localhost.localdomain> <alpine.LFD.2.00.1005022109150.25342@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
-       uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [uml-devel] [PATCH resend] um, hweight: Fix UML boot crash
-References: <4C0F4B00.4090307@panasas.com>
-In-Reply-To: <4C0F4B00.4090307@panasas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Jun 2010 16:39:58.0830 (UTC) FILETIME=[663328E0:01CB07F2]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2010 11:04 AM, Boaz Harrosh wrote:
-> From: Borislav Petkov <bp@alien8.de>
-> 
-> Obviously UML cannot stomach callee reg-saving trickery
-> introduced with d61931d89be506372d01a90d1755f6d0a9fafe2d
-> (x86: Add optimized popcnt variants) and oopses during boot:
-> http://marc.info/?l=linux-kernel&m=127522065202435&w=2
-> 
-> Redirect arch_hweight.h include from the x86 portion to the generic
-> arch_hweight.h which is a fallback to the software hweight routines.
-> 
+We are pleased to announce the next update to our new preempt-rt
+series.
+ 
+Changes from 2.6.33.3-rt19 to 2.6.33.4-rt20:
 
-CC: Andrew Morton <akpm@linux-foundation.org>
-> LKML-Reference: <201005271944.09541.toralf.foerster@gmx.de>
-> Signed-off-by: Borislav Petkov <bp@alien8.de>
+  5b6c7b0: net: Make [dis/en]able_irq_*_lockdep() RT safe
+  d6434af: fs: Resolve mntput_no_expire issues.
+  56e4c7f: fs: Fix mnt_count typo
+  1540c84: Merge branch '2.6.33.4' into rt/2.6.33
+  1a3a403: autofs4: Remove another autofs4_lock deadlock
+  6b568a0: autofs: Remove deadlock
+  c54c071: fs: Add missing parantheses
 
-Andrew would you please push this patch for 2.6.35-rc3
+Changes from 2.6.33.4-rt20 to 2.6.33.4-rt21:
 
-Thanks
-Boaz
+  cc4a826: sched: Fix wake_affine() vs RT tasks
+  ea17fed: printk: Fix missing klogd wakeup
+  9846da2: fix undefined references to kernel_sem
+  e868252: fs: namespace: Fix fuse mount fallout
+  44b341a: net: ehea: make rx irq handler non-threaded (IRQF_NODELAY)
 
-> ---
->  arch/um/include/asm/arch_hweight.h |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
->  create mode 100644 arch/um/include/asm/arch_hweight.h
-> 
-> diff --git a/arch/um/include/asm/arch_hweight.h b/arch/um/include/asm/arch_hweight.h
-> new file mode 100644
-> index 0000000..c656cf4
-> --- /dev/null
-> +++ b/arch/um/include/asm/arch_hweight.h
-> @@ -0,0 +1,6 @@
-> +#ifndef _ASM_UM_HWEIGHT_H
-> +#define _ASM_UM_HWEIGHT_H
-> +
-> +#include <asm-generic/bitops/arch_hweight.h>
-> +
-> +#endif
-> -- 1.7.1 
+Changes from 2.6.33.4-rt21 to 2.6.33.5-rt22:
+
+  ef4afcc: Merge stable/linux-2.6.33.y into rt/2.6.33
+
+Changes from 2.6.33.5-rt22 to 2.6.33.5-rt23:
+
+  ab774e8: drivers/hwmon/coretemp.c: get TjMax value from MSR
+  e8bfcca: drivers/hwmon/coretemp.c: detect the thermal sensors by CPUID
+  a06a867: dcache: Prevent d_genocide() from decrementing d_count more than once
+  bdeadaf: nfs: Avoid igrab deadlock.
+  6976846: dcache: Fix select_parent dentry traversal locking
+  1f0f6ec: powerpc: chrp/time.c fix preprocessor conditional
+
+Bulk of changes comes from stable tree. The -rt related changes are
+mostly fixes for the vfs fallout the rest are fixlets all over the
+place and hardware enablement.
+
+Download locations:
+   
+   http://www.kernel.org/pub/linux/kernel/projects/rt/
+
+Git release branch:
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git rt/2.6.33
+
+Gitweb:
+   http://git.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=shortlog;h=rt/2.6.33
+
+Information on the RT patch can be found at:
+
+   http://rt.wiki.kernel.org/index.php/Main_Page
+
+To build the 2.6.33.5-rt23 tree, the following patches should be
+applied:
+
+   http://www.kernel.org/pub/linux/kernel/v2.6/linux-2.6.33.5.tar.bz2
+   http://www.kernel.org/pub/linux/kernel/projects/rt/patch-2.6.33.5-rt23.bz2
+
+Enjoy !
+
+      tglx
+
