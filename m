@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab0FIQBp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 12:01:45 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55631 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757923Ab0FIQBm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 12:01:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=POlzxeHEHJhHpynsOEXTX8ACA12V8aGsFeAWjX2LESSuHXE3ANoz9RvRwEtHrwhAui
-         xw6wPZoRxAfB3D7Qj6LBwQTTSbePSjzRQKexfEBHQzsR7ASYeJ5HW4gIgAwZvUB9/Y8I
-         LgljzfbpQ+powsovmzuAPaIVrR7nQOqV/OXMo=
-From: John Kacur <jkacur@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Darren Hart <dvhltc@us.ibm.com>, lkml <linux-kernel@vger.kernel.org>,
-       John Kacur <jkacur@redhat.com>
-Subject: [PATCH 1/2] trace-cmd: Makefile - EXTRAVERSION should be set without a leading period
-Date: Wed,  9 Jun 2010 18:01:27 +0200
-Message-Id: <1276099288-3029-2-git-send-email-jkacur@redhat.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1276099288-3029-1-git-send-email-jkacur@redhat.com>
-References: <1276099288-3029-1-git-send-email-jkacur@redhat.com>
+	id S1757190Ab0FIQHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 12:07:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42444 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000Ab0FIQHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 12:07:34 -0400
+Subject: Re: [PATCH v4] pm_qos: make update_request non blocking
+From: James Bottomley <James.Bottomley@suse.de>
+To: Florian Mickler <florian@mickler.org>
+Cc: pm list <linux-pm@lists.linux-foundation.org>, markgross@thegnar.org,
+       mgross@linux.intel.com, linville@tuxdriver.com,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100609180033.39d5b499@schatten.dmk.lab>
+References: <1276097381-3982-1-git-send-email-florian@mickler.org>
+	 <1276097832.4343.223.camel@mulgrave.site>
+	 <20100609180033.39d5b499@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Jun 2010 12:07:25 -0400
+Message-ID: <1276099645.4343.257.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EXTRAVERSION should be set without a leading period, and then add
-the period where necessary in the Makefile
+On Wed, 2010-06-09 at 18:00 +0200, Florian Mickler wrote:
+> On Wed, 09 Jun 2010 11:37:12 -0400
+> James Bottomley <James.Bottomley@suse.de> wrote:
+> 
+> 
+> > This still isn't resilient against two successive calls to update.  If
+> > the second one gets to schedule_work() before the work of the first one
+> > has finished, you'll corrupt the workqueue.
+> 
+> Sorry, I don't see it. Can you elaborate?
+> 
+> In "run_workqueue(" we do a list_del_init() which resets the
+> list-pointers of the workitem and only after that reset the
+> WORK_STRUCT_PENDING member of said structure. 
+> 
+> 
+> schedule_work does a queue_work_on which does a test_and_set_bit on
+> the WORK_STRUCT_PENDING member of the work and only queues the work
+> via list_add_tail in insert_work afterwards.
+> 
+> Where is my think'o? Or was this fixed while you didn't look?
+> 
+> So what _can_ happen, is that we miss a new notfication while the old
+> notification is still in the queue. But I don't think this is a problem.
 
-Signed-off-by: John Kacur <jkacur@redhat.com>
----
- Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+OK, so the expression of the race is that the latest notification gets
+lost.  If something is tracking values, you'd really like to lose the
+previous one (which is now irrelevant) not the latest one.  The point is
+there's still a race.
 
-diff --git a/Makefile b/Makefile
-index 1f5d855..0ed5685 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- # trace-cmd version
- TC_VERSION = 1
- TC_PATCHLEVEL = 0
--TC_EXTRAVERSION = .1
-+TC_EXTRAVERSION = 1
- 
- # Kernel Shark version
- KS_VERSION = 0
-@@ -307,7 +307,7 @@ define make_version.h
- 	echo \#define VERSION_CODE $(shell						\
- 	expr $(VERSION) \* 256 + $(PATCHLEVEL));					\
- 	echo '#define EXTRAVERSION ' $(EXTRAVERSION);					\
--	echo '#define VERSION_STRING "'$(VERSION).$(PATCHLEVEL)$(EXTRAVERSION)'"';	\
-+	echo '#define VERSION_STRING "'$(VERSION).$(PATCHLEVEL).$(EXTRAVERSION)'"';	\
- 	echo '#define FILE_VERSION '$(FILE_VERSION);					\
- 	) > $1
- endef
--- 
-1.6.6.1
+James
+
 
