@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757322Ab0FIK7j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:59:39 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45164 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752463Ab0FIK7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:59:36 -0400
-Date: Wed, 9 Jun 2010 11:59:18 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Nick Piggin <npiggin@suse.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 03/28] rename anon_vma_lock to vma_lock_anon_vma
-Message-ID: <20100609105917.GD5650@csn.ul.ie>
-References: <20100607110654.606530953@chello.nl> <20100607111406.662536918@chello.nl>
+	id S1757452Ab0FILCn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 07:02:43 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:35677 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752966Ab0FILCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 07:02:42 -0400
+Date: Wed, 9 Jun 2010 13:02:39 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       Torez Smith <lnxtorez@linux.vnet.ibm.com>,
+       Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+       Josh Boyer <jwboyer@linux.vnet.ibm.com>, linuxppc-dev@ozlabs.org,
+       linux-kernel@vger.kernel.org
+Cc: vamos@i4.informatik.uni-erlangen.de
+Subject: [PATCH 5b/5] Removing dead CONFIG_PPC47x
+Message-ID: <20100609110239.GA28290@faui48a.informatik.uni-erlangen.de>
+References: <cover.1275925219.git.siccegge@cs.fau.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100607111406.662536918@chello.nl>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <cover.1275925219.git.siccegge@cs.fau.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 01:06:57PM +0200, Peter Zijlstra wrote:
-> From: Rik van Riel <riel@redhat.com>
-> 
-> Rename anon_vma_lock to vma_lock_anon_vma.  This matches the
-> naming style used in page_lock_anon_vma and will come in really
-> handy further down in this patch series.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> LKML-Reference: <20100526153853.55b72183@annuminas.surriel.com>
+CONFIG_PPC47x should actually be spelled CONFIG_PPC_47x as reported by
+Andreas Schwab.
 
-One rename was missed I think. With this patch applied, I get
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ arch/powerpc/mm/44x_mmu.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-mm/mmap.c: In function ‘expand_downwards’:
-mm/mmap.c:1786: error: implicit declaration of function ‘anon_vma_unlock’
-make[1]: *** [mm/mmap.o] Error 1
-make[1]: *** Waiting for unfinished jobs....
-make: *** [mm] Error 2
-
-
+diff --git a/arch/powerpc/mm/44x_mmu.c b/arch/powerpc/mm/44x_mmu.c
+index d8c6efb..f70da7e 100644
+--- a/arch/powerpc/mm/44x_mmu.c
++++ b/arch/powerpc/mm/44x_mmu.c
+@@ -76,11 +76,11 @@ static void __init ppc44x_pin_tlb(unsigned int virt, unsigned int phys)
+ 		"tlbwe	%1,%3,%5\n"
+ 		"tlbwe	%0,%3,%6\n"
+ 	:
+-#ifdef CONFIG_PPC47x
++#ifdef CONFIG_PPC_47x
+ 	: "r" (PPC47x_TLB2_S_RWX),
+ #else
+ 	: "r" (PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_G),
+ #endif
+ 	  "r" (phys),
+ 	  "r" (virt | PPC44x_TLB_VALID | PPC44x_TLB_256M),
+ 	  "r" (entry),
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.6.3.3
+
