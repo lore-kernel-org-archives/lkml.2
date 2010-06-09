@@ -1,141 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab0FIH4p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 03:56:45 -0400
-Received: from mail-ew0-f223.google.com ([209.85.219.223]:62199 "EHLO
-	mail-ew0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab0FIH4o (ORCPT
+	id S1755974Ab0FIIDB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 04:03:01 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63507 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755440Ab0FIIC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 03:56:44 -0400
+	Wed, 9 Jun 2010 04:02:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Fjti+YcnPqnE0iiMOWpgcMzvMaJaoFWl7dLqJZMqzzQC1LkvfBN/W3TGcp/qXOcbVM
-         3a7ny6nNVY9howHtqVAzN4fQR119lY4dFXH7DqDiwC6WgEoVbfXRmrnUppBaCo5RDYPm
-         Nt42gug2kbaC8Z5V84pfZWzMDvFFO5yFuY+Zk=
-From: ygeorgie@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: Yury Georgievskiy <ygeorgie@gmail.com>
-Subject: [PATCH 1/1] serial: mcf: Don't take spinlocks in already protected functions
-Date: Wed,  9 Jun 2010 09:56:26 +0200
-Message-Id: <1276070186-11393-1-git-send-email-ygeorgie@gmail.com>
-X-Mailer: git-send-email 1.7.0
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=u/XF2SsGJaftTffpLqHLPMmO7rnB8upZMpNDa8J+HKOAjpbcnSl7gOajStBxYaQCUL
+         V/HMXQmrSjwxQyUPChwtysunX+bbL+pUXsqDsytkmaduNEfZY3Dc78sbcgj5BRNB98TX
+         3HdcQ3SXU5FqC9sgmIJsf/jtQ/XL1dUyCzSxs=
+MIME-Version: 1.0
+In-Reply-To: <20100609071623.GC20057@colossus>
+References: <20100609071623.GC20057@colossus>
+Date: Wed, 9 Jun 2010 11:02:55 +0300
+X-Google-Sender-Auth: _34H4vMkwJNWUKRpO5BgVk37MoA
+Message-ID: <AANLkTin_EvlveCvbCZ0vH54UEP479ufQ-irFqXSOnT0R@mail.gmail.com>
+Subject: Re: [stable] Please apply ucc_geth patches to 2.6.32-stable
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Petri Lehtinen <petri.lehtinen@inoi.fi>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, avorontsov@ru.mvista.com,
+       Linux Netdev List <netdev@vger.kernel.org>,
+       David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yury Georgievskiy <ygeorgie@gmail.com>
+On Wed, Jun 9, 2010 at 10:16 AM, Petri Lehtinen <petri.lehtinen@inoi.fi> wrote:
+> The following three patches fix some serious flaws in the ucc_geth
+> network driver in 2.6.32. From oldest to newest:
+>
+> 7583605b6d29f1f7f6fc505b883328089f3485ad ucc_geth: Fix empty TX queue processing
+> 08b5e1c91ce95793c59a59529a362a1bcc81faae ucc_geth: Fix netdev watchdog triggering on link changes
+> 34692421bc7d6145ef383b014860f4fde10b7505 ucc_geth: Fix full TX queue processing
+>
+> They apply cleanly on top of 2.6.32-stable master. They were also
+> originally Cc'd to be included in 2.6.32-stable.
 
-Don't take the port spinlock in uart functions where the serial core
-already takes care of locking/unlocking them.
-
-The code would actually lock up on architectures where spinlocks are
-implemented.
-
-Also protect calling mcf_rx_chars/mcf_tx_chars in the
-interrupt handler by the port spinlock and use IRQ_RETVAL
-to return from isr.
-
-Signed-off-by: Yury Georgievskiy <ygeorgie@gmail.com>
----
- drivers/serial/mcf.c |   22 ++++++----------------
- 1 files changed, 6 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/serial/mcf.c b/drivers/serial/mcf.c
-index b5aaef9..6235444 100644
---- a/drivers/serial/mcf.c
-+++ b/drivers/serial/mcf.c
-@@ -70,16 +70,14 @@ static unsigned int mcf_tx_empty(struct uart_port *port)
- static unsigned int mcf_get_mctrl(struct uart_port *port)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
--	unsigned long flags;
- 	unsigned int sigs;
- 
--	spin_lock_irqsave(&port->lock, flags);
- 	sigs = (readb(port->membase + MCFUART_UIPR) & MCFUART_UIPR_CTS) ?
- 		0 : TIOCM_CTS;
- 	sigs |= (pp->sigs & TIOCM_RTS);
- 	sigs |= (mcf_getppdcd(port->line) ? TIOCM_CD : 0);
- 	sigs |= (mcf_getppdtr(port->line) ? TIOCM_DTR : 0);
--	spin_unlock_irqrestore(&port->lock, flags);
-+
- 	return sigs;
- }
- 
-@@ -88,16 +86,13 @@ static unsigned int mcf_get_mctrl(struct uart_port *port)
- static void mcf_set_mctrl(struct uart_port *port, unsigned int sigs)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&port->lock, flags);
- 	pp->sigs = sigs;
- 	mcf_setppdtr(port->line, (sigs & TIOCM_DTR));
- 	if (sigs & TIOCM_RTS)
- 		writeb(MCFUART_UOP_RTS, port->membase + MCFUART_UOP1);
- 	else
- 		writeb(MCFUART_UOP_RTS, port->membase + MCFUART_UOP0);
--	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
- /****************************************************************************/
-@@ -105,12 +100,9 @@ static void mcf_set_mctrl(struct uart_port *port, unsigned int sigs)
- static void mcf_start_tx(struct uart_port *port)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&port->lock, flags);
- 	pp->imr |= MCFUART_UIR_TXREADY;
- 	writeb(pp->imr, port->membase + MCFUART_UIMR);
--	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
- /****************************************************************************/
-@@ -118,12 +110,9 @@ static void mcf_start_tx(struct uart_port *port)
- static void mcf_stop_tx(struct uart_port *port)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&port->lock, flags);
- 	pp->imr &= ~MCFUART_UIR_TXREADY;
- 	writeb(pp->imr, port->membase + MCFUART_UIMR);
--	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
- /****************************************************************************/
-@@ -131,12 +120,9 @@ static void mcf_stop_tx(struct uart_port *port)
- static void mcf_stop_rx(struct uart_port *port)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&port->lock, flags);
- 	pp->imr &= ~MCFUART_UIR_RXREADY;
- 	writeb(pp->imr, port->membase + MCFUART_UIMR);
--	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
- /****************************************************************************/
-@@ -368,11 +354,15 @@ static irqreturn_t mcf_interrupt(int irq, void *data)
- 	unsigned int isr;
- 
- 	isr = readb(port->membase + MCFUART_UISR) & pp->imr;
-+
-+	spin_lock(&port->lock);
- 	if (isr & MCFUART_UIR_RXREADY)
- 		mcf_rx_chars(pp);
- 	if (isr & MCFUART_UIR_TXREADY)
- 		mcf_tx_chars(pp);
--	return IRQ_HANDLED;
-+	spin_unlock(&port->lock);
-+
-+	return IRQ_RETVAL(isr);
- }
- 
- /****************************************************************************/
--- 
-1.7.0
-
+You forgot to CC stable@kernel.org, netdev, and the original author of
+those patches.
