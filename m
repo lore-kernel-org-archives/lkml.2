@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab0FIIDB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 04:03:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63507 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab0FIIC5 (ORCPT
+	id S1756699Ab0FIID2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 04:03:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34119 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756523Ab0FIIDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 04:02:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=u/XF2SsGJaftTffpLqHLPMmO7rnB8upZMpNDa8J+HKOAjpbcnSl7gOajStBxYaQCUL
-         V/HMXQmrSjwxQyUPChwtysunX+bbL+pUXsqDsytkmaduNEfZY3Dc78sbcgj5BRNB98TX
-         3HdcQ3SXU5FqC9sgmIJsf/jtQ/XL1dUyCzSxs=
+	Wed, 9 Jun 2010 04:03:22 -0400
+Date: Wed, 9 Jun 2010 09:35:25 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: unable to fetch i.MX tree
+Message-ID: <20100609073525.GE20799@pengutronix.de>
+References: <20100609100526.913a49bb.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20100609071623.GC20057@colossus>
-References: <20100609071623.GC20057@colossus>
-Date: Wed, 9 Jun 2010 11:02:55 +0300
-X-Google-Sender-Auth: _34H4vMkwJNWUKRpO5BgVk37MoA
-Message-ID: <AANLkTin_EvlveCvbCZ0vH54UEP479ufQ-irFqXSOnT0R@mail.gmail.com>
-Subject: Re: [stable] Please apply ucc_geth patches to 2.6.32-stable
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Petri Lehtinen <petri.lehtinen@inoi.fi>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, avorontsov@ru.mvista.com,
-       Linux Netdev List <netdev@vger.kernel.org>,
-       David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100609100526.913a49bb.sfr@canb.auug.org.au>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:33:17 up 2 days, 1 min, 33 users,  load average: 0.35, 0.33,
+	0.35
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 9, 2010 at 10:16 AM, Petri Lehtinen <petri.lehtinen@inoi.fi> wrote:
-> The following three patches fix some serious flaws in the ucc_geth
-> network driver in 2.6.32. From oldest to newest:
->
-> 7583605b6d29f1f7f6fc505b883328089f3485ad ucc_geth: Fix empty TX queue processing
-> 08b5e1c91ce95793c59a59529a362a1bcc81faae ucc_geth: Fix netdev watchdog triggering on link changes
-> 34692421bc7d6145ef383b014860f4fde10b7505 ucc_geth: Fix full TX queue processing
->
-> They apply cleanly on top of 2.6.32-stable master. They were also
-> originally Cc'd to be included in 2.6.32-stable.
+Hi Stephen,
 
-You forgot to CC stable@kernel.org, netdev, and the original author of
-those patches.
+On Wed, Jun 09, 2010 at 10:05:26AM +1000, Stephen Rothwell wrote:
+> Hi Sascha,
+> 
+> When I try to fetch the i.MX tree, I get these errors:
+> 
+> git.pengutronix.de[0: 92.198.50.42]: errno=Connection timed out
+> git.pengutronix.de[0: 2001:6f8:1178:4:230:48ff:fe91:5e78]: errno=Network is unreachable
+> fatal: unable to connect a socket (Network is unreachable)
+> 
+> I will use the i.MX tree from next-20100608 for today.
+
+No problem, we were offline for a day. Should now work again.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
