@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425Ab0FIKBS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:01:18 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:64839 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757058Ab0FIKBP (ORCPT
+	id S1757335Ab0FIKHE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:07:04 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43652 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756183Ab0FIKHB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:01:15 -0400
-Date: Wed, 9 Jun 2010 12:01:12 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Torez Smith <lnxtorez@linux.vnet.ibm.com>,
-       Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-       Josh Boyer <jwboyer@linux.vnet.ibm.com>, linuxppc-dev@ozlabs.org,
-       linux-kernel@vger.kernel.org
-Cc: vamos@i4.informatik.uni-erlangen.de
-Subject: [PATCH 5/5] Removing dead CONFIG_PPC47x
-Message-ID: <b7f3a0f1bbcd39544df81c12719a820ba5906bd5.1275925219.git.siccegge@cs.fau.de>
-References: <cover.1275925219.git.siccegge@cs.fau.de>
+	Wed, 9 Jun 2010 06:07:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=kVH8AxtLyTA9HMcJIkSu02L30QbjsKFV0VStC98NL1XQe0t6al+IqGjv/RLaZ2v3Oe
+         PrVchIyyJsihOBxHPshZqgcqEQhKEtH1tZot/ZmZoHZPiNDJeUwCsBJPG/0TVzSiFO/J
+         L4FdHq0W82LK1Ezz/M5+FyW3gGxQv1c2eX6j0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1275925219.git.siccegge@cs.fau.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1276068001_13533@mail4.comsite.net>
+References: <96933b66aa5f995746a34410ca63e5e8b84593cb.1275968594.git.joe@perches.com>
+	<cover.1275968594.git.joe@perches.com>
+	<1276068001_13533@mail4.comsite.net>
+Date: Wed, 9 Jun 2010 13:06:59 +0300
+X-Google-Sender-Auth: jPg6AMbOgln-KKI5RdlJmvVEEOA
+Message-ID: <AANLkTimSgiMP8EZ57Eba00vGsVTA3QKRZbh1bNYavISv@mail.gmail.com>
+Subject: Re: [PATCH 00/12] treewide: Remove unnecessary kmalloc casts
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Milton Miller <miltonm@bga.com>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@lists.ozlabs.org,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_PPC47x doesn't exist in Kconfig, therefore removing all
-references for it from the source code.
+Hi Milton,
 
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
----
- arch/powerpc/mm/44x_mmu.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+On Wed, Jun 9, 2010 at 10:20 AM, Milton Miller <miltonm@bga.com> wrote:
+> However, in this case you are removing casts that, while not necessary
+> for C, are indeed there for a reason.
+>
+> Specifically, they are of the form
+>   type *p;
+>   <code>
+>   p = (type *)kmalloc(sizeof(type), ...);
+>
+> For example, from the powerpc patch:
+>> goto out;
+>> }
+>> - tmp_part = (struct nvram_partition *)
+>> - kmalloc(sizeof(struct nvram_partition), GFP_KERNEL);
+>> + tmp_part = kmalloc(sizeof(struct nvram_partition), GFP_KERNEL);
+>> err = -ENOMEM;
+>
+> The reason they casts are present is to guard against someone changing
+> the type of p at the top of the function and not changing the type at
+> the kmalloc.
 
-diff --git a/arch/powerpc/mm/44x_mmu.c b/arch/powerpc/mm/44x_mmu.c
-index d8c6efb..f70da7e 100644
---- a/arch/powerpc/mm/44x_mmu.c
-+++ b/arch/powerpc/mm/44x_mmu.c
-@@ -76,11 +76,7 @@ static void __init ppc44x_pin_tlb(unsigned int virt, unsigned int phys)
- 		"tlbwe	%1,%3,%5\n"
- 		"tlbwe	%0,%3,%6\n"
- 	:
--#ifdef CONFIG_PPC47x
--	: "r" (PPC47x_TLB2_S_RWX),
--#else
- 	: "r" (PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_G),
--#endif
- 	  "r" (phys),
- 	  "r" (virt | PPC44x_TLB_VALID | PPC44x_TLB_256M),
- 	  "r" (entry),
--- 
-1.6.3.3
+If you're worried about that...
 
+[snip]
+
+> There may have been discussion of doing the above vs
+>   p = kmalloc(sizeof(*p), ...);
+
+...it's better to use this form. There's actually a mention of this in
+"Chapter 14: Allocating memory" of Documentation/CodingStyle. The
+guard is not really a guard as someone can still change the "sizeof"
+part to something else and the cast from "void *" will silently ignore
+it.
+
+                        Pekka
