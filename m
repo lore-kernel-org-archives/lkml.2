@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab0FILNJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 07:13:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50147 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757594Ab0FILNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 07:13:04 -0400
-Message-ID: <4C0F772F.6090206@redhat.com>
-Date: Wed, 09 Jun 2010 14:12:47 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1757579Ab0FILU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 07:20:26 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:37108 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753764Ab0FILUZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 07:20:25 -0400
+Date: Wed, 9 Jun 2010 13:20:23 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org
+Cc: vamos@i4.informatik.uni-erlangen.de
+Subject: [PATCH 1/9] Removing dead CONFIG_SOC_AU1000_FREQUENCY
+Message-ID: <2bd4314b3380c3c4aedd686f14187a80d00522e7.1275925108.git.siccegge@cs.fau.de>
+References: <cover.1275925108.git.siccegge@cs.fau.de>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com
-Subject: Re: [RFC] para virt interface of perf to support kvm guest os statistics
- collection in guest os
-References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>	 <4C0F51DD.3080200@redhat.com>	 <1276075280.2096.427.camel@ymzhang.sh.intel.com>	 <4C0F61D3.9000402@redhat.com> <1276078122.2046.1227.camel@twins>
-In-Reply-To: <1276078122.2046.1227.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1275925108.git.siccegge@cs.fau.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2010 01:08 PM, Peter Zijlstra wrote:
-> On Wed, 2010-06-09 at 12:41 +0300, Avi Kivity wrote:
->    
->>      
->>>> Disabling the watchdog is unfortunate.  Why is it necessary?
->>>>
->>>>          
->>> perf always uses NMI, so we disable the nmi_watchdog when a perf_event is
->>> set up in case they might have impact.
->>>
->>>        
->> Ok.  Is that the case for the hardware pmus as well?  If so it might be
->> done in common code.
->>      
-> The x86 hardware pmu implementation disables the lapic watchdog too, but
-> recent kernels come with a watchdog implementation on top of perf, the
-> old lapic one will be depricated.
->    
+CONFIG_SOC_AU1000_FREQUENCY doesn't exist in Kconfig, therefore
+removing all references for it from the source code.
 
-So this should indeed be in common code, and removed (for all pmus) when 
-the new watchdog is merged in 2.6.36.
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ arch/mips/alchemy/common/clocks.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
+diff --git a/arch/mips/alchemy/common/clocks.c b/arch/mips/alchemy/common/clocks.c
+index 460c628..af0fe41 100644
+--- a/arch/mips/alchemy/common/clocks.c
++++ b/arch/mips/alchemy/common/clocks.c
+@@ -89,11 +89,7 @@ unsigned long au1xxx_calc_clock(void)
+ 	 * over backwards trying to determine the frequency.
+ 	 */
+ 	if (au1xxx_cpu_has_pll_wo())
+-#ifdef CONFIG_SOC_AU1000_FREQUENCY
+-		cpu_speed = CONFIG_SOC_AU1000_FREQUENCY;
+-#else
+ 		cpu_speed = 396000000;
+-#endif
+ 	else
+ 		cpu_speed = (au_readl(SYS_CPUPLL) & 0x0000003f) * AU1000_SRC_CLK;
+ 
 -- 
-error compiling committee.c: too many arguments to function
+1.6.3.3
 
