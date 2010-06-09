@@ -1,46 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab0FIDww (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 23:52:52 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58103 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab0FIDwv (ORCPT
+	id S1751586Ab0FIFEc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 01:04:32 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47357 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab0FIFEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 23:52:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=h40SVtKOdICdQcDqzCvb1ItSbB2VIrrFLo0QUueARrtIAU5KZQoaDL70XQsH5FNoZh
-         rDPHFmMGNL8TPY6FOZgEzMYmygLAznCitNX4x4R44GI1MZPvzhv8rNSoy+84sYijhtfu
-         SbhLfsoiNeurgaWQNOsPebjFCoGGKf9pArNzY=
-MIME-Version: 1.0
-Date: Tue, 8 Jun 2010 21:52:49 -0600
-Message-ID: <AANLkTin5kMu_ScK8qYcm2r3TrwgnQM9EGiOU3vNboQXu@mail.gmail.com>
-Subject: Submitting through GIT
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Jun 2010 01:04:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 9 Jun 2010 14:00:00 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: lm-sensors@lm-sensors.org, khali@linux-fr.org, mingo@redhat.com,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: [PATCH] fix hwmon/i5k_amb.c sysfs attribute for lockdep
+Message-Id: <20100609140000.60975b2f.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If I wanted to submit MDB through GIT for testing or inclusion, how
-would I do that, or am I even allowed to?  MDB is small and modular
-and I am almost finished with X86_64.  It's also an assembler debugger
-for us old dos heads.  I guess the real question is if it ended up
-there I'd have to be around to support it forever.  No problem.
+I'm not familiar with this area but I need this patch for lockdep in mmotm.
+please check.
+-Kame
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I don't want to hear "We have X number of debuggers" because Linux has
-about 30 file systems, most of them useless and not used anymore, so
-that old excuse doesn't fly.  I use it all the time and I know a lot
-of folks would like having a module they could just load and track
-down field problems and unload when not needed without having to
-rumage around for a NULL modem cable in some data center buried deep
-underground.
+i5k_amb.ko uses dynamically allocated memory (by kmalloc) for
+attributes passed to sysfs. So, sysfs_attr_init() should be called
+for working happy with lockdep.
 
-Please Advise.
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ drivers/hwmon/i5k_amb.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Jeff
+Index: mmotm-2.6.34-Jun6/drivers/hwmon/i5k_amb.c
+===================================================================
+--- mmotm-2.6.34-Jun6.orig/drivers/hwmon/i5k_amb.c
++++ mmotm-2.6.34-Jun6/drivers/hwmon/i5k_amb.c
+@@ -289,6 +289,7 @@ static int __devinit i5k_amb_hwmon_init(
+ 			iattr->s_attr.dev_attr.attr.mode = S_IRUGO;
+ 			iattr->s_attr.dev_attr.show = show_label;
+ 			iattr->s_attr.index = k;
++			sysfs_attr_init(&iattr->s_attr.dev_attr.attr);
+ 			res = device_create_file(&pdev->dev,
+ 						 &iattr->s_attr.dev_attr);
+ 			if (res)
+@@ -303,6 +304,7 @@ static int __devinit i5k_amb_hwmon_init(
+ 			iattr->s_attr.dev_attr.attr.mode = S_IRUGO;
+ 			iattr->s_attr.dev_attr.show = show_amb_temp;
+ 			iattr->s_attr.index = k;
++			sysfs_attr_init(&iattr->s_attr.dev_attr.attr);
+ 			res = device_create_file(&pdev->dev,
+ 						 &iattr->s_attr.dev_attr);
+ 			if (res)
+@@ -318,6 +320,7 @@ static int __devinit i5k_amb_hwmon_init(
+ 			iattr->s_attr.dev_attr.show = show_amb_min;
+ 			iattr->s_attr.dev_attr.store = store_amb_min;
+ 			iattr->s_attr.index = k;
++			sysfs_attr_init(&iattr->s_attr.dev_attr.attr);
+ 			res = device_create_file(&pdev->dev,
+ 						 &iattr->s_attr.dev_attr);
+ 			if (res)
+@@ -333,6 +336,7 @@ static int __devinit i5k_amb_hwmon_init(
+ 			iattr->s_attr.dev_attr.show = show_amb_mid;
+ 			iattr->s_attr.dev_attr.store = store_amb_mid;
+ 			iattr->s_attr.index = k;
++			sysfs_attr_init(&iattr->s_attr.dev_attr.attr);
+ 			res = device_create_file(&pdev->dev,
+ 						 &iattr->s_attr.dev_attr);
+ 			if (res)
+@@ -348,6 +352,7 @@ static int __devinit i5k_amb_hwmon_init(
+ 			iattr->s_attr.dev_attr.show = show_amb_max;
+ 			iattr->s_attr.dev_attr.store = store_amb_max;
+ 			iattr->s_attr.index = k;
++			sysfs_attr_init(&iattr->s_attr.dev_attr.attr);
+ 			res = device_create_file(&pdev->dev,
+ 						 &iattr->s_attr.dev_attr);
+ 			if (res)
+@@ -362,6 +367,7 @@ static int __devinit i5k_amb_hwmon_init(
+ 			iattr->s_attr.dev_attr.attr.mode = S_IRUGO;
+ 			iattr->s_attr.dev_attr.show = show_amb_alarm;
+ 			iattr->s_attr.index = k;
++			sysfs_attr_init(&iattr->s_attr.dev_attr.attr);
+ 			res = device_create_file(&pdev->dev,
+ 						 &iattr->s_attr.dev_attr);
+ 			if (res)
 
-OH LINUS KEEPER OF THE CODE SHOW MERCY ON THIS POOR SINNER WHO HAS
-LEARNED FROM HIS ARROGANCE AND MISTAKES.
