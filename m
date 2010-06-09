@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab0FISxF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 14:53:05 -0400
-Received: from 15.db.79ae.static.theplanet.com ([174.121.219.21]:37840 "EHLO
-	web.webtapells.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1758136Ab0FISw6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 14:52:58 -0400
-Message-ID: <20100609131437.6wrbfbvp4wg8sosc@174.121.227.54>
-Date: Wed, 09 Jun 2010 13:14:37 -0500
-From: Alexander Schell <alexschell000@yahoo.cn>
-Reply-to: alexschell0012@yahoo.cn
-To: undisclosed-recipients:;
-Subject: Business Offer, Call Me
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
+	id S932226Ab0FISyK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 14:54:10 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:35685 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752424Ab0FISyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 14:54:08 -0400
+Date: Wed, 9 Jun 2010 11:54:03 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] floppy: cleanup patches
+Message-ID: <20100609115403.75ebb6cb@nehalam>
+In-Reply-To: <alpine.LFD.2.00.1006091144120.4506@i5.linux-foundation.org>
+References: <20100609183449.110905403@vyatta.com>
+	<alpine.LFD.2.00.1006091144120.4506@i5.linux-foundation.org>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - web.webtapells.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - yahoo.cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 9 Jun 2010 11:46:13 -0700 (PDT)
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
+> 
+> 
+> On Wed, 9 Jun 2010, Stephen Hemminger wrote:
+> >
+> > When going through floppy driver addressing some of the timing
+> > bugs, I also saw these leftover things that ought to be cleaned up.
+> 
+> Ack on them all as far as I'm concerned. I suspect the _real_ bugs in 
+> floppy.c are about various paths not holding the floppy_lock spinlock, but 
+> the patches all look fine and certainly don't make anything worse.
+> 
+> Mind re-sending them after 2.6.35, though? (Or maybe somebody like Greg 
+> wants to queue them up in their drievr trees)
+> 
+> 			Linus
 
-Dear,
+Current plan is to convert all the timers and old BH code to go through
+a single workqueue. This avoids all the races and cleans up the cancellation
+logic as well without having lots of other changes.
 
-
-I know it will be of much interest to you, this is the reason I contacted you.
-
-
-I want to transfer a certain amount of money from my bank here in England to
-any country you may suggest and I would required your full co-operation to
-transfer the money.
-
-
-Call me on +44 701 11 64380, or contact via e-mail alexschell0011@yahoo.cn to
-discuss about this proposal with you.
-
-
-If you are interesting, I will discuss with you about the details and
-procedures of the transaction.
-
-
-Look forward to discussing this opportunity further with you in more detail
-shortly.
-
-
-Sincerely,
-
-Alexander Schell.
-Tel: +44 701 11 64380
-
-
-
-
-
+-- 
