@@ -1,85 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758444Ab0FIWlL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 18:41:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39252 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757605Ab0FIWlJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 18:41:09 -0400
-Date: Wed, 9 Jun 2010 15:41:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-       Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH v2 1/2] tmpfs: Quick token library to allow scalable
- retrieval of tokens from token jar
-Message-Id: <20100609154102.9795ff07.akpm@linux-foundation.org>
-In-Reply-To: <1275499969.2385.16.camel@mudge.jf.intel.com>
-References: <1274902371.31973.9392.camel@mudge.jf.intel.com>
-	<20100601145126.f46572d1.akpm@linux-foundation.org>
-	<1275499969.2385.16.camel@mudge.jf.intel.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758492Ab0FIWnM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 18:43:12 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47840 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753905Ab0FIWnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 18:43:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,394,1272870000"; 
+   d="scan'208";a="287078596"
+Message-ID: <4C1018FD.8090109@linux.intel.com>
+Date: Wed, 09 Jun 2010 15:43:09 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       jdike@addtoit.com, bharrosh@panasas.com, bp@alien8.de,
+       geert@linux-m68k.org, akpm@linux-foundation.org, toralf.foerster@gmx.de,
+       tglx@linutronix.de, hpa@linux.intel.com
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, hweight: Fix UML boot crash
+References: <201005271944.09541.toralf.foerster@gmx.de>	<20100530170346.GC1565@liondog.tnic> <tip-cc7f0a7b3004a4ca0bfef0e1ca79f2e0da6ca1b0@git.kernel.org>
+In-Reply-To: <tip-cc7f0a7b3004a4ca0bfef0e1ca79f2e0da6ca1b0@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 02 Jun 2010 10:32:49 -0700
-Tim Chen <tim.c.chen@linux.intel.com> wrote:
+Note: I have applied this  because it fixes a regression, but it bugs
+the living bejeezus out of me that the saner patch:
 
-> On Tue, 2010-06-01 at 14:51 -0700, Andrew Morton wrote:
-> 
-> > >
-> > > +static void qtoken_reap_cache(struct qtoken *token_jar)
-> > > +{
-> > > +	long cnt;
-> > > +	int i;
-> > > +
-> > > +	for_each_possible_cpu(i) {
-> > > +		atomic_long_t	*cache;
-> > > +
-> > > +		cache = per_cpu_ptr(token_jar->cache, i);
-> > > +		cnt = atomic_long_xchg(cache, -1);
-> > > +		if (cnt > 0)
-> > > +			token_jar->pool += cnt;
-> > > +	}
-> > > +}
-> > 
-> > Not cpu-hotplug aware.  Also, inefficient if num_online_cpus is much
-> > less than num_possible_cpus.
-> > 
-> > It's really not hard to do!  lib/percpu_counter.c is per-cpu aware and
-> > it does this by sneakily connecting all counters together system-wide.
-> > 
-> 
-> I've thought about using "for_each_online_cpu" in the above loop.
-> However, it someone takes a cpu offline, then we will lose the tokens
-> in that cpu's cache when we do reap cache.
+diff --git a/arch/um/include/asm/arch_hweight.h
+b/arch/um/include/asm/arch_hweight.h
+new file mode 100644
+index 0000000..c656cf4
+--- /dev/null
++++ b/arch/um/include/asm/arch_hweight.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_UM_HWEIGHT_H
++#define _ASM_UM_HWEIGHT_H
++
++#include <asm-generic/bitops/arch_hweight.h>
++
++#endif
 
-No, that's what cpu hotplug notifiers are for.  pecpu_counters does all
-this.
+... supposedly didn't work.  As such, I consider this a temporary kluge
+until a proper solution is found.  From a code-cleanliness perspective,
+this patch is awful.
 
-> > > +	/* We should have acquired lock of token pool before coming here */
-> > > +	if (token_jar->pool < (reserve + tokens))
-> > > +		qtoken_reap_cache(token_jar);
-> > > +	if (token_jar->pool >= (reserve + tokens)) {
-> > > +		token_jar->pool -= tokens;
-> > > +		allocated = 0;
-> > > +	}
-> > > +	return allocated;
-> > > +}
-> > 
-> > ENOSPC means "your disk is full".  But my disk isn't full.  If this
-> > inappropriate (indeed, incorrect) error code is ever propagated back to
-> > userspace then users will be justifiably confused.
-> > 
-> 
-> Originally, I was using -ENOSPC to mean tmpfs being full and out of
-> space.  Will -EBUSY to denote all resources are used be more
-> appropriate?  
-> 
+	-hpa
 
-Return the number of tokens which were allocated?
+
+On 06/09/2010 03:07 PM, tip-bot for Borislav Petkov wrote:
+> Commit-ID:  cc7f0a7b3004a4ca0bfef0e1ca79f2e0da6ca1b0
+> Gitweb:     http://git.kernel.org/tip/cc7f0a7b3004a4ca0bfef0e1ca79f2e0da6ca1b0
+> Author:     Borislav Petkov <bp@alien8.de>
+> AuthorDate: Sun, 30 May 2010 19:03:46 +0200
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Wed, 9 Jun 2010 14:23:29 -0700
+> 
+> x86, hweight: Fix UML boot crash
+> 
+> UML apparently cannot stomach callee reg-saving trickery introduced
+> with d61931d89be506372d01a90d1755f6d0a9fafe2d (x86: Add optimized
+> popcnt variants) for reasons currently unknown, and oopses during
+> boot: http://marc.info/?l=linux-kernel&m=127522065202435&w=2
+> 
+> Go ahead and fall back to the software hweight* routines on UML.
+> 
+> LKML-Reference: <201005271944.09541.toralf.foerster@gmx.de>
+> Tested-by: Toralf Förster <toralf.foerster@gmx.de>
+> Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> LKML-Reference: <20100530170346.GC1565@liondog.tnic>
+> Signed-off-by: Borislav Petkov <bp@alien8.de>
+> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: Boaz Harrosh <bharrosh@panasas.com>
+> Cc: Jeff Dike <jdike@addtoit.com>
+> Cc: Andrew Morgon <akpm@linux-foundation.org>
+> ---
+>  arch/x86/include/asm/bitops.h |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+> index 545776e..c9dad12 100644
+> --- a/arch/x86/include/asm/bitops.h
+> +++ b/arch/x86/include/asm/bitops.h
+> @@ -444,7 +444,11 @@ static inline int fls(int x)
+>  
+>  #define ARCH_HAS_FAST_MULTIPLIER 1
+>  
+> +#ifdef CONFIG_UML
+> +#include <asm-generic/bitops/arch_hweight.h>
+> +#else
+>  #include <asm/arch_hweight.h>
+> +#endif
+>  
+>  #include <asm-generic/bitops/const_hweight.h>
+>  
+
