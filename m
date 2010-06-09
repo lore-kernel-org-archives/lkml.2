@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab0FIVMo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 17:12:44 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59629 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753293Ab0FIVMn (ORCPT
+	id S1758309Ab0FIVPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 17:15:31 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47141 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758024Ab0FIVP3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 17:12:43 -0400
-Date: Wed, 9 Jun 2010 14:12:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, xfs@oss.sgi.com, stable@kernel.org
-Subject: Re: [PATCH 3/3] writeback: limit write_cache_pages integrity
- scanning to current EOF
-Message-Id: <20100609141208.a1babcf4.akpm@linux-foundation.org>
-In-Reply-To: <1276043840-1946-4-git-send-email-david@fromorbit.com>
-References: <1276043840-1946-1-git-send-email-david@fromorbit.com>
-	<1276043840-1946-4-git-send-email-david@fromorbit.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Jun 2010 17:15:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UXFUSx3PW5yya8rgaNsIxzTlkFnzsbwIGsq74dmEwaO5QwQcMkb2zeMotdGEloYLXi
+         6Jzd1mbXOAd9RSzsBo3NT4AQfGPHG6fFU02TZLgNDjkGE10q1VQk0ZAeUcXr0Qx7bz4B
+         0cN5hfMo4Y0m6P822pIrCt2yNd7YVjc+mbjQA=
+MIME-Version: 1.0
+In-Reply-To: <1276107311.1745.66.camel@laptop>
+References: <AANLkTin2pPqOUx--9fIX3BH3e-cU6oCRufijcx_4ozx5@mail.gmail.com>
+	<20100608001929.GF2387@linux.vnet.ibm.com>
+	<AANLkTikl13cJNuU32JzRarrUnoh5DYHr-Tbnv9B-UjsG@mail.gmail.com>
+	<1275986441.5408.111.camel@twins>
+	<AANLkTimXVlgzHivCQberLdrFP8BH_nJzt8_ozUNHG_aI@mail.gmail.com>
+	<1276004075.2987.208.camel@twins>
+	<AANLkTil6ucLZ0A6tWx-OQt_2EeKnx8nSx6rIg2t1L2t5@mail.gmail.com>
+	<1276097068.1745.13.camel@laptop>
+	<AANLkTinl2JKUX6859Ioa1y0DqHWXH5TrkissQ8BAF4cP@mail.gmail.com>
+	<AANLkTilpM9O373rA0cw_wTYVfTiDPbjaKHScAGlt7IAr@mail.gmail.com>
+	<1276106229.1745.65.camel@laptop>
+	<1276107311.1745.66.camel@laptop>
+Date: Wed, 9 Jun 2010 17:15:27 -0400
+Message-ID: <AANLkTilG5bjN5QaOChmuVN6vT7kMK4eGaV-DvPynBn_t@mail.gmail.com>
+Subject: Re: 2.6.35-rc2-git1 - include/linux/cgroup.h:534 invoked 
+	rcu_dereference_check() without protection!
+From: Miles Lane <miles.lane@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: paulmck@linux.vnet.ibm.com, Vivek Goyal <vgoyal@redhat.com>,
+       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       nauman@google.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       Johannes Berg <johannes@sipsolutions.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  9 Jun 2010 10:37:20 +1000
-Dave Chinner <david@fromorbit.com> wrote:
+On Wed, Jun 9, 2010 at 2:15 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-06-09 at 19:57 +0200, Peter Zijlstra wrote:
+>> +       /*
+>> +        * We're not in the pid-hash yet so no cgroup attach races, and the
+>> +        * cgroup is pinned by the parent running this.
+>> +        *
+>> +        * Silence PROVE_RCU.
+>> +        */
+>
+> Hum,.. not sure that's actually true though, the parent itself is still
+> susceptible to races afaict..
 
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> sync can currently take a really long time if a concurrent writer is
-> extending a file. The problem is that the dirty pages on the address
-> space grow in the same direction as write_cache_pages scans, so if
-> the writer keeps ahead of writeback, the writeback will not
-> terminate until the writer stops adding dirty pages.
-> 
-> For a data integrity sync, we only need to write the pages dirty at
-> the time we start the writeback, so we can stop scanning once we get
-> to the page that was at the end of the file at the time the scan
-> started.
-> 
-> This will prevent operations like copying a large file preventing
-> sync from completing as it will not write back pages that were
-> dirtied after the sync was started. This does not impact the
-> existing integrity guarantees, as any dirty page (old or new)
-> within the EOF range at the start of the scan will still be
-> captured.
-> 
-> This patch will not prevent sync from blocking on large writes into
-> holes. That requires more complex intervention while this patch only
-> addresses the common append-case of this sync holdoff.
-> 
-
-I don't know if this regression sucks enough to warrant backporting,
-but the fix is simple and is independent of [1/3] and [2/3].
+Do you want what you sent earlier tested, or should I wait for another patch?
