@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005Ab0FIJ2U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:28:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:1808 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756360Ab0FIJ2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:28:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,390,1272870000"; 
-   d="scan'208";a="806169794"
-Subject: Re: [RFC] para virt interface of perf to support kvm guest os
- statistics collection in guest os
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <4C0F5804.9080406@redhat.com>
-References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>
-	 <4C0F5804.9080406@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 09 Jun 2010 17:30:23 +0800
-Message-Id: <1276075823.2096.436.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1757073Ab0FIJ3K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:29:10 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53026 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756781Ab0FIJ3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 05:29:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=cyiDCWyK1er9WsvrYzlpQ2D8tlmqmwEKsLYXW17fJSh5fTUXPyIYhaPUUAXkcoyC6h
+         KGG1Vgo1m0CfZcRzPD4j14f01NxPbz3SbwDbTR5/fu0pWnZwDc+BVzCwXEIKY2qhYqOG
+         G9VOJbqfFSwQz0dOuScgBCZIsJwmyMyOJaWD0=
+Date: Wed, 9 Jun 2010 17:32:57 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Borislav Petkov <bp@alien8.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+       uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Jeff Dike <jdike@addtoit.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [uml-devel] [PATCH resend] um, hweight: Fix UML boot crash
+Message-ID: <20100609093257.GA6292@cr0.nay.redhat.com>
+References: <4C0F4B00.4090307@panasas.com>
+ <4C0F4C40.5020207@panasas.com>
+ <AANLkTinwQmWP-rFu9e-ns5twsZwZjuSLi5vcll55ZZhx@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinwQmWP-rFu9e-ns5twsZwZjuSLi5vcll55ZZhx@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 11:59 +0300, Avi Kivity wrote:
-> On 06/09/2010 06:30 AM, Zhang, Yanmin wrote:
-> > From: Zhang, Yanmin<yanmin_zhang@linux.intel.com>
-> >
-> > Based on Ingo's idea, I implement a para virt interface for perf to support
-> > statistics collection in guest os. That means we could run tool perf in guest
-> > os directly.
-> >
-> > Great thanks to Peter Zijlstra. He is really the architect and gave me architecture
-> > design suggestions. I also want to thank Yangsheng and LinMing for their generous
-> > help.
-> >
-> > The design is:
-> >
-> > 1) Add a kvm_pmu whose callbacks mostly just calls hypercall to vmexit to host kernel;
-> > 2) Create a host perf_event per guest perf_event;
-> > 3) Host kernel syncs perf_event count/overflows data changes to guest perf_event
-> > when processing perf_event overflows after NMI arrives. Host kernel inject NMI to guest
-> > kernel if a guest event overflows.
-> > 4) Guest kernel goes through all enabled event on current cpu and output data when they
-> > overflows.
-> > 5) No change in user space.
-> >    
-> 
-> Other issues:
-> 
-> - save/restore support for live migration
-Well, it's a little hard to process perf_event under live migration case.
-I will check it.
+On Wed, Jun 09, 2010 at 10:46:01AM +0200, Geert Uytterhoeven wrote:
+>On Wed, Jun 9, 2010 at 10:09, Boaz Harrosh <bharrosh@panasas.com> wrote:
+>> On 06/09/2010 11:04 AM, Boaz Harrosh wrote:
+>>> From: Borislav Petkov <bp@alien8.de>
+>>>
+>>> Obviously UML cannot stomach callee reg-saving trickery
+>>> introduced with d61931d89be506372d01a90d1755f6d0a9fafe2d
+>>> (x86: Add optimized popcnt variants) and oopses during boot:
+>>> http://marc.info/?l=linux-kernel&m=127522065202435&w=2
+>>>
+>>> Redirect arch_hweight.h include from the x86 portion to the generic
+>>> arch_hweight.h which is a fallback to the software hweight routines.
+>>>
+>>> LKML-Reference: <201005271944.09541.toralf.foerster@gmx.de>
+>>> Signed-off-by: Borislav Petkov <bp@alien8.de>
+>
+>Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>
+>> who's going to push this ASAP. I was just (again) 3/4 through a bisect
+>> on 2.6.35-rc2. When I finally realized "Hey that patch, I forgot".
+>> (My concentration is not what it used to be)
+>>
+>> Please push this, someone
+>
+>Peter, are you happy with this?
+>Although we still don't know why UML cannot grok it, it does fix a
+>regression in post-2.6.34.
+>
 
-> - some way to limit the number of open handles (comes automatically with 
-> the table approach I suggested earlier)
-Current perf doesn't restrict perf_event number. Kernel does a rotation to collect
-statistics of all perf_events. My patch just follows this style. 
-The table method might be not good, because below scenario:
-guest perf_event might be a per-task event at guest side. When the guest application task is
-migrated to another cpu, the perf_event peer at host side should also be migrated to the new vcpu
-thread. With table method, we need do some rearrangement on the table when event migration happens.
-Here migration I mention is not guest live migration. 
-
-I will double-check it.
-
-Thanks,
-Yanmin
-
-
+Usually Andrew should take UML patches.
