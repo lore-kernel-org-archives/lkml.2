@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab0FIS4B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 14:56:01 -0400
-Received: from suva.vyatta.com ([76.74.103.44]:59654 "EHLO suva.vyatta.com"
+	id S932446Ab0FIS47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 14:56:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42380 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758204Ab0FISyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 14:54:18 -0400
-X-Greylist: delayed 867 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Jun 2010 14:54:17 EDT
-Message-Id: <20100609183624.667690959@vyatta.com>
-User-Agent: quilt/0.48-1
-Date: Wed, 09 Jun 2010 11:34:50 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8] floppy: initialize debug jiffies offset
-References: <20100609183449.110905403@vyatta.com>
-Content-Disposition: inline; filename=floppy-debugt.patch
+	id S932308Ab0FIS45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 14:56:57 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <E1OMQ88-0002a1-Gb@closure.thunk.org>
+References: <E1OMQ88-0002a1-Gb@closure.thunk.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: dhowells@redhat.com, Dave Airlie <airlied@redhat.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: Why is kslowd accumulating so much CPU time?
+Date: Wed, 09 Jun 2010 19:56:52 +0100
+Message-ID: <21934.1276109812@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set debug jiffies offset at initialization. Avoids wierd values
-showing up if debugging enabled.
+Theodore Ts'o <tytso@mit.edu> wrote:
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+> Is there any way to easily see what is scheduling themselves to use the
+> slow workqueue?
 
+Slow work has debugging.  Turn on:
 
---- a/drivers/block/floppy.c	2010-06-08 23:06:35.142657727 -0700
-+++ b/drivers/block/floppy.c	2010-06-08 23:07:59.205810459 -0700
-@@ -4175,6 +4175,9 @@ static int __init floppy_init(void)
- 	int i, unit, drive;
- 	int err, dr;
- 
-+	set_debugt();
-+	interruptjiffies = resultjiffies = jiffies;
-+
- #if defined(CONFIG_PPC)
- 	if (check_legacy_ioport(FDC1))
- 		return -ENODEV;
+	CONFIG_SLOW_WORK_DEBUG=y
 
+then do:
 
+	watch -n0 cat /sys/kernel/debug/slow_work/runqueue
+
+David
