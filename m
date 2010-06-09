@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab0FIUrf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 16:47:35 -0400
-Received: from www.tglx.de ([62.245.132.106]:50890 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756739Ab0FIUre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 16:47:34 -0400
-Date: Wed, 9 Jun 2010 22:47:23 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-cc: =?ISO-8859-15?Q?Ortwin_Gl=FCck?= <odi@odi.ch>,
+	id S1758267Ab0FIUs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 16:48:57 -0400
+Received: from chipmunk.wormnet.eu ([195.195.131.226]:60568 "EHLO
+	chipmunk.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242Ab0FIUs4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 16:48:56 -0400
+X-Greylist: delayed 693 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Jun 2010 16:48:56 EDT
+Date: Wed, 9 Jun 2010 21:37:20 +0100
+From: Alexander Clouter <alex@digriz.org.uk>
+To: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+       Russell King <linux@arm.linux.org.uk>,
+       Dhaval Vasa <dhaval.vasa@einfochips.com>,
+       Lennert Buytenhek <kernel@wantstofly.org>,
+       Nicolas Pitre <nico@fluxnic.net>, Simon Guinot <sguinot@lacie.com>,
+       Martin Michlmayr <tbm@cyrius.com>,
+       Simon Kagstrom <simon.kagstrom@netinsight.net>,
        linux-kernel@vger.kernel.org
-Subject: Re: freeze when strace X
-In-Reply-To: <20100609200610.GA27536@srcf.ucam.org>
-Message-ID: <alpine.LFD.2.00.1006092232180.2933@localhost.localdomain>
-References: <4C0FDF9F.9070000@odi.ch> <20100609195228.GA27088@srcf.ucam.org> <4C0FF34D.6090800@odi.ch> <20100609200610.GA27536@srcf.ucam.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+Subject: Re: [PATCH] Marvell OpenRD-Ultimate machine support
+Message-ID: <20100609203720.GK7660@chipmunk>
+References: <4c0ff6b2.0c3ddf0a.2185.2e09@mx.google.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-846436559-1276116444=:2933"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4c0ff6b2.0c3ddf0a.2185.2e09@mx.google.com>
+Organization: diGriz
+X-URL: http://www.digriz.org.uk/
+X-JabberID: alex@digriz.org.uk
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
 
---8323328-846436559-1276116444=:2933
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 9 Jun 2010, Matthew Garrett wrote:
-
-> On Wed, Jun 09, 2010 at 10:02:21PM +0200, Ortwin Glück wrote:
-> > On 09.06.2010 21:52, Matthew Garrett wrote:
-> > > Just to make sure, you're not trying to strace X from within X, are you?
-> > 
-> > Oh... now that you mention it... Is that a silly thing to do?
-> > strace X from a different terminal works fine :-)
-> > 
-> > But freezing the system because of that? I mean an error message, log, anything
-> > would be "nice".
+* Dmytro Milinevskyy <milinevskyy@gmail.com> [2010-06-09 23:14:39+0300]:
+>
+> This patch adds support for the OpenRD Ultimate machine(could be found 
+> at http://www.arm.linux.org.uk/developer/machines/list.php?id=2884)
 > 
-> strace needs to output text via X, which generates output which needs to 
-> be output via X... and you'll tend to deadlock. If X is holding any 
-> interesting kernel locks at that point then it wouldn't surprise me if 
-> the machine ends up dead.
+> Besides adding machine description this patch adds correction for PHY 
+> address for Ultimate version.
+> 
+> Differences from the previous attempt:
+>  - Applied suggestion from Lennert Buytenhek to change PHY addresses 
+>  in instances of mv643xx_eth_platform_data in case of ultimate 
+>  version.
+> 
+> Signed-off-by: Dmytro Milinevskyy <milinevskyy@gmail.com>
+> ---
+>  
+> +	if (machine_is_openrd_ultimate()) {
+> +		openrd_ge00_data.phy = 0;
+> +		openrd_ge01_data.phy = 1;
+> +	}
+> +
+>
+Does this even work?  Surely you mean the following instead:
+----
+if (machine_is_openrd_ultimate()) {
+	openrd_ge00_data.phy_addr = MV643XX_ETH_PHY_ADDR(0);
+	openrd_ge00_data.phy_addr = MV643XX_ETH_PHY_ADDR(1);
+}
+----
 
-Nothing to do with kernel locks. strace hooks into the syscall and
-intercepts the data, so X is stopped at that point. Now try to send
-output to a program which you stopped yourself :)
+>  	kirkwood_ge00_init(&openrd_ge00_data);
+> -	if (machine_is_openrd_client())
+> +	if (machine_is_openrd_client() ||      \__same line
+> +		machine_is_openrd_ultimate())  /
+>  		kirkwood_ge01_init(&openrd_ge01_data);
+> +  <------- REMOVE
+>  	kirkwood_sata_init(&openrd_sata_data);
+>  	kirkwood_sdio_init(&openrd_mvsdio_data);
+>  
+As that 'if()' clause is still less than 77 chars wide:
+----
+kirkwood_ge00_init(&openrd_ge00_data);
+if (machine_is_openrd_client() || machine_is_openrd_ultimate())
+	kirkwood_ge01_init(&openrd_ge01_data);
+kirkwood_sata_init(&openrd_sata_data);
+kirkwood_sdio_init(&openrd_mvsdio_data);
+----
 
-Thanks,
+Cheers
 
-	tglx
---8323328-846436559-1276116444=:2933--
+-- 
+Alexander Clouter
+.sigmonster says: People respond to people who respond.
