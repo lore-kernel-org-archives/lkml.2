@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757702Ab0FIMCy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 08:02:54 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33377 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757138Ab0FIMCw (ORCPT
+	id S1755077Ab0FIMFn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 08:05:43 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33979 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab0FIMFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 08:02:52 -0400
-Date: Wed, 9 Jun 2010 09:02:24 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [PATCH][RFC] tracing: Use class->reg() for all registering of
- events
-Message-ID: <20100609120224.GA8359@ghostprotocols.net>
-References: <1276011215.15884.96.camel@gandalf.stny.rr.com>
- <1276012661.2046.120.camel@twins>
- <20100608173559.GE2800@linux.vnet.ibm.com>
- <1276024211.15884.107.camel@gandalf.stny.rr.com>
- <20100609050534.GA5878@linux.vnet.ibm.com>
- <1276065150.2046.1004.camel@twins>
- <20100609114753.GB5878@linux.vnet.ibm.com>
- <1276084414.2046.1335.camel@twins>
+	Wed, 9 Jun 2010 08:05:42 -0400
+Date: Wed, 9 Jun 2010 08:05:22 -0400
+From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+To: Christoph Egger <siccegge@cs.fau.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       Torez Smith <lnxtorez@linux.vnet.ibm.com>,
+       Dave Kleikamp <shaggy@linux.vnet.ibm.com>, linuxppc-dev@ozlabs.org,
+       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 5b/5] Removing dead CONFIG_PPC47x
+Message-ID: <20100609120522.GH7801@zod.rchland.ibm.com>
+References: <cover.1275925219.git.siccegge@cs.fau.de> <20100609110239.GA28290@faui48a.informatik.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1276084414.2046.1335.camel@twins>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100609110239.GA28290@faui48a.informatik.uni-erlangen.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jun 09, 2010 at 01:53:34PM +0200, Peter Zijlstra escreveu:
-> On Wed, 2010-06-09 at 17:17 +0530, Srikar Dronamraju wrote:
-> > * Peter Zijlstra <peterz@infradead.org> [2010-06-09 08:32:30]:
-> > 
-> > > On Wed, 2010-06-09 at 10:35 +0530, Srikar Dronamraju wrote:
-> > > 
-> > > > Peter, can you please point me to the fix for the floating point
-> > > > exception patch?
-> > > 
-> > > Ingo just commited the fix, see tip commit f6ab91add6 (perf: Fix signed
-> > > comparison in perf_adjust_period()).
-> > 
-> > Actually this fix was already checked-in but I still see the problem.
-> > 
-> > When ran gdb on the core, it showed me that it was dumping in
-> > /usr/lib64/libnewt.so.0.52. in newtScaleSet function.
-> > My newt lib was of version : newt-0.52.2-15
-> > 
-> > I am now able to workaround the problem by uninstalling newt-devel.
-> 
-> Ah, ok, then we're talking about two different issues, the patch I
-> referred to solves a possible /0 in the kernel which triggers easily
-> with software events because of that unsigned comparison.
-> 
-> I'll have to defer to Arnaldo on the newt issue.
+On Wed, Jun 09, 2010 at 01:02:39PM +0200, Christoph Egger wrote:
+>CONFIG_PPC47x should actually be spelled CONFIG_PPC_47x as reported by
+>Andreas Schwab.
+>
+>Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 
-I'm trying to reproduce this now.
+Thanks, I'll pull this one in and get it merged.
+
+josh
+
+>---
+> arch/powerpc/mm/44x_mmu.c |    4 ----
+> 1 files changed, 0 insertions(+), 4 deletions(-)
+>
+>diff --git a/arch/powerpc/mm/44x_mmu.c b/arch/powerpc/mm/44x_mmu.c
+>index d8c6efb..f70da7e 100644
+>--- a/arch/powerpc/mm/44x_mmu.c
+>+++ b/arch/powerpc/mm/44x_mmu.c
+>@@ -76,11 +76,11 @@ static void __init ppc44x_pin_tlb(unsigned int virt, unsigned int phys)
+> 		"tlbwe	%1,%3,%5\n"
+> 		"tlbwe	%0,%3,%6\n"
+> 	:
+>-#ifdef CONFIG_PPC47x
+>+#ifdef CONFIG_PPC_47x
+> 	: "r" (PPC47x_TLB2_S_RWX),
+> #else
+> 	: "r" (PPC44x_TLB_SW | PPC44x_TLB_SR | PPC44x_TLB_SX | PPC44x_TLB_G),
+> #endif
+> 	  "r" (phys),
+> 	  "r" (virt | PPC44x_TLB_VALID | PPC44x_TLB_256M),
+> 	  "r" (entry),
+>-- 
+>1.6.3.3
+>
