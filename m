@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab0FIAHV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 20:07:21 -0400
-Received: from kroah.org ([198.145.64.141]:51501 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751385Ab0FIAHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 20:07:19 -0400
-Date: Tue, 8 Jun 2010 17:07:13 -0700
-From: Greg KH <greg@kroah.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Andrew Lunn <andrew@lunn.ch>,
-       Jarod Wilson <jarod@wilsonet.com>, Jakub Schmidtke <sjakub@gmail.com>,
-       Henk de Groot <pe1dnn@amsat.org>, Naren Sankar <nsankar@broadcom.com>,
-       Jonathan Cameron <jic23@cam.ac.uk>, Pavel Machek <pavel@ucw.cz>,
-       Luis Rodriguez <Luis.Rodriguez@Atheros.com>, devel@driverdev.osuosl.org,
-       Mori Hess <fmhess@users.sourceforge.net>,
-       Steve Underwood <steveu@coppice.org>,
-       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-       Arnaud Patard <apatard@mandriva.com>,
-       Marek Lindner <lindner_marek@yahoo.de>,
-       Teddy Wang <teddy.wang@siliconmotion.com.cn>,
-       Ossama Othman <ossama.othman@intel.com>,
-       Haiyang Zhang <haiyangz@microsoft.com>, Ian Abbott <abbotti@mev.co.uk>,
-       Willy Tarreau <willy@meta-x.org>, Scott Davilla <davilla@4pi.com>,
-       Scott Smedley <ss@aao.gov.au>, linux-kernel@vger.kernel.org,
-       Forest Bond <forest@alittletooquiet.net>,
-       David Rowe <david@rowetel.com>
-Subject: Re: [PATCH 00/17] MAINTAINERS: Add drivers/staging entries
-Message-ID: <20100609000713.GB16160@kroah.com>
-References: <cover.1275935090.git.joe@perches.com>
- <20100608211246.GC10657@kroah.com>
- <1276032382.24044.23.camel@Joe-Laptop.home>
+	id S1756686Ab0FICD6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 22:03:58 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38020 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453Ab0FICD4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 22:03:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=A+agQ36ucwGZ8cXQ+N3XKQaGdbFheUmzwY+y5wwMA6TW5WCeAMIrkE1ERrBEnoCF65
+         9V9TEyqeoLuykBiPzGAG8V9NHZejvXTWwgf2bPObl9bkHbL5nnfcDzhIrH0flzXxuS+6
+         8+YkfES0sEiUnNoj3caL3SClaGEU9uaZt07Nw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276032382.24044.23.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1006081855170.4506@i5.linux-foundation.org>
+References: <20100608221901.GA25294@srcf.ucam.org>
+	<alpine.LFD.2.00.1006081806040.4506@i5.linux-foundation.org>
+	<20100608182456.3e681359@virtuousgeek.org>
+	<alpine.LFD.2.00.1006081855170.4506@i5.linux-foundation.org>
+Date: Wed, 9 Jun 2010 12:03:55 +1000
+Message-ID: <AANLkTin45ibtZoThRwOG3eTjFmT0LJ4gKS-ExXqpKx2v@mail.gmail.com>
+Subject: Re: [GIT PULL] x86 platform driver updates for 2.6.35-rc3
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 02:26:22PM -0700, Joe Perches wrote:
-> On Tue, 2010-06-08 at 14:12 -0700, Greg KH wrote:
-> > On Mon, Jun 07, 2010 at 11:49:34AM -0700, Joe Perches wrote:
-> > > Some drivers/staging directories use a TODO file with email entries.
-> > > Make the same entries in the normal MAINTAINERS file.
-> > 
-> > No, please don't do this.  I don't want to clutter up the MAINTAINERS
-> > file with staging stuff.
-> 
-> It's not clutter when it helps get patches to the right reviewers
-> or responsible parties.
+On Wed, Jun 9, 2010 at 11:57 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>
+> On Tue, 8 Jun 2010, Jesse Barnes wrote:
+>>
+>> FWIW this is the "make ironlake go fast" driver.  It interacts with the
+>> i915 driver to increase graphics performance significantly.  But yeah,
+>> Matthew and I didn't get it integrated into his tree in time for the
+>> merge window, so I understand if you don't want it right now.
+>
+> I'm not great at all the intel code-names. Is ironlake the expected-Q4
+> on-die GPU or the current one?
+>
+> Not that I'd prefer to pull it even if it's the current one, but if it's
+> the next-gen one then we're in even less of a hurry, I think.
+>
 
-That's my job as staging maintainer, right?  Am I somehow not doing this
-properly?
+Its probably the one on your desk, its at least the one in the two
+laptops on mine.
 
-> > The get_maintainer.pl script handles staging
-> > patches just fine today without this being needed at all.
-> 
-> Dubious.
-> 
-> Many of these nominal maintainer email entries are not
-> found in git logs.
+So definitely now-gen.
 
-Many, but not all, as you pointed out.
-
-> > I also found it a bit odd you didn't send these to the stable subsystem
-> > maintainer, why?
-> 
-> The MAINTAINERS patches are forward going, not historical.
-
-What does that mean?
+Dave.
