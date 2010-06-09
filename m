@@ -1,141 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034Ab0FIImu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 04:42:50 -0400
-Received: from smtp-out12.alice.it ([85.37.17.107]:3301 "EHLO
-	smtp-out12.alice.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab0FIImr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 04:42:47 -0400
-Date: Wed, 9 Jun 2010 10:42:35 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Alan Ott <alan@signal11.us>
-Cc: Jiri Kosina <jkosina@suse.cz>, Alexey Dobriyan <adobriyan@gmail.com>,
-       Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Stephane Chatty <chatty@enac.fr>,
-       Michael Poole <mdpoole@troilus.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH] HID: Add Support for Setting and Getting Feature 
- Reports  from hidraw
-Message-Id: <20100609104235.ccce2289.ospite@studenti.unina.it>
-In-Reply-To: <4C0E48DF.7000006@signal11.us>
-References: <1275969108-14948-1-git-send-email-alan@signal11.us>
-	<20100608083226.2dac88d2.ospite@studenti.unina.it>
-	<4C0E48DF.7000006@signal11.us>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__9_Jun_2010_10_42_35_+0200_flczoNE2olJ/V8Iz"
-X-OriginalArrivalTime: 09 Jun 2010 08:42:42.0280 (UTC) FILETIME=[B97C6680:01CB07AF]
+	id S1756263Ab0FIIpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 04:45:45 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44738 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755031Ab0FIIpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 04:45:42 -0400
+From: naveen_jain@ti.com
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       pavan_savoy@ti.com, Naveen Jain <naveen_jain@ti.com>
+Subject: [PATCH 1/2] drivers:staging: ti-st: cleanup sysfs code
+Date: Wed,  9 Jun 2010 03:45:32 -0500
+Message-Id: <1276073133-17711-1-git-send-email-naveen_jain@ti.com>
+X-Mailer: git-send-email 1.5.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__9_Jun_2010_10_42_35_+0200_flczoNE2olJ/V8Iz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Naveen Jain <naveen_jain@ti.com>
 
-On Tue, 08 Jun 2010 09:42:55 -0400
-Alan Ott <alan@signal11.us> wrote:
+Remove the older way of communicating with user-space
+daemon UIM.
+The older way involved creating of a new kobj and pid
+sysfs file under it, and sending signal using that pid.
 
-> On 06/08/2010 02:32 AM, Antonio Ospite wrote:
-> > On Mon,  7 Jun 2010 23:51:48 -0400
-> > Alan Ott<alan@signal11.us>  wrote:
-> >
-> >   =20
-> >> Per the HID Specification, Feature reports must be sent and received on
-> >> the Configuration endpoint (EP 0) through the Set_Report/Get_Report
-> >> interfaces.  This patch adds two ioctls to hidraw to set and get featu=
-re
-> >> reports to and from the device.  Modifications were made to hidraw and
-> >> usbhid.
-> >>
-> >> New hidraw ioctls:
-> >>    HIDIOCSFEATURE - Perform a Set_Report transfer of a Feature report.
-> >>    HIDIOCGFEATURE - Perform a Get_Report transfer of a Feature report.
-> >>
-> >> Signed-off-by: Alan Ott<alan@signal11.us>
-> >> ---
-> >>     =20
-> > Thanks Alan, I am going to test this quite soon.
-> >
-> > TBH, when I was thinking about how to extend hidraw I thought we could
-> > have added a new report_type field to struct hidraw_report_descriptor,
-> > in order to re-use the HIDIOCGRDESC ioctl handler itself, adding then a
-> > HIDIOCSRDESC for setting the report. This looked cleaner to my eyes,
-> >   =20
-> Thanks for the feedback, Antonio. The HIDIOCGRDESC ioctl copies the=20
-> existing descriptor from the hid_device structure. Since it does not=20
-> initiate a Get_Report transfer, I'm not sure how much re-use there could=
-=20
-> have been using that method. In my estimation, a Set_Report/Get_Report=20
-> was more similar to the call to write().
->
+Now we communicate via rfkill to user-space UIM.
 
-I was only thinking about the interface to userspace,
-HIDIOCGRDESC/HIDIOCSRDESC sounded more general to me (and look like
-HIDIOCGREPORT/HIDIOCSREPORT from hiddev) if they could be made to work
-with different report types, but as I said I didn't look at the
-current code very well, so my remark are surely quite naive.
+Background: UIM is the user-space daemon which upon
+notification from ldisc driver, opens the tty, sets
+default baud and then installs (tiocsetd) the ldisc.
 
-> > but I didn't actually implement this, so I don't know if it was
-> > feasible, for instance one problem I didn't investigate further was
-> > about the default value of the aforementioned report_type field in
-> > order to keep the current behavior of HIDIOCGRDESC.
-> >   =20
-> I'm not sure what you mean here, as the report_type field is not part of=
-=20
-> hidraw_report_descriptor.
->
+Signed-off-by: Naveen Jain <naveen_jain@ti.com>
+---
+ drivers/staging/ti-st/st_kim.c |   49 +++++-----------------------------------
+ drivers/staging/ti-st/st_kim.h |    4 ---
+ 2 files changed, 6 insertions(+), 47 deletions(-)
 
-I was thinking about _adding_ that field, but again, pretty arbitrarily
-thought.
+diff --git a/drivers/staging/ti-st/st_kim.c b/drivers/staging/ti-st/st_kim.c
+index 98cbabb..cfba5f8 100644
+--- a/drivers/staging/ti-st/st_kim.c
++++ b/drivers/staging/ti-st/st_kim.c
+@@ -55,7 +55,6 @@ static struct platform_driver kim_platform_driver = {
+ 		   },
+ };
+ 
+-#ifndef LEGACY_RFKILL_SUPPORT
+ static ssize_t show_pid(struct device *dev, struct device_attribute
+ 			*attr, char *buf);
+ static ssize_t store_pid(struct device *dev, struct device_attribute
+@@ -80,12 +79,11 @@ static struct attribute *uim_attrs[] = {
+ static struct attribute_group uim_attr_grp = {
+ 	.attrs = uim_attrs,
+ };
+-#else
++
+ static int kim_toggle_radio(void*, bool);
+ static const struct rfkill_ops kim_rfkill_ops = {
+ 	.set_block = kim_toggle_radio,
+ };
+-#endif	/* LEGACY_RFKILL_SUPPORT */
+ 
+ /* strings to be used for rfkill entries and by
+  * ST Core to be used for sysfs debug entry
+@@ -436,13 +434,11 @@ long st_kim_start(void)
+ 	pr_info(" %s", __func__);
+ 
+ 	do {
+-#ifdef LEGACY_RFKILL_SUPPORT
+ 		/* TODO: this is only because rfkill sub-system
+ 		 * doesn't send events to user-space if the state
+ 		 * isn't changed
+ 		 */
+ 		rfkill_set_hw_state(kim_gdata->rfkill[ST_BT], 1);
+-#endif
+ 		/* Configure BT nShutdown to HIGH state */
+ 		gpio_set_value(kim_gdata->gpios[ST_BT], GPIO_LOW);
+ 		mdelay(5);	/* FIXME: a proper toggle */
+@@ -450,7 +446,7 @@ long st_kim_start(void)
+ 		mdelay(100);
+ 		/* re-initialize the completion */
+ 		INIT_COMPLETION(kim_gdata->ldisc_installed);
+-#ifndef LEGACY_RFKILL_SUPPORT
++#if 0 /* older way of signalling user-space UIM */
+ 		/* send signal to UIM */
+ 		err = kill_pid(find_get_pid(kim_gdata->uim_pid), SIGUSR2, 0);
+ 		if (err != 0) {
+@@ -458,10 +454,9 @@ long st_kim_start(void)
+ 			err = ST_ERR_FAILURE;
+ 			continue;
+ 		}
+-#else
++#endif
+ 		/* unblock and send event to UIM via /dev/rfkill */
+ 		rfkill_set_hw_state(kim_gdata->rfkill[ST_BT], 0);
+-#endif
+ 		/* wait for ldisc to be installed */
+ 		err = wait_for_completion_timeout(&kim_gdata->ldisc_installed,
+ 				msecs_to_jiffies(LDISC_TIME));
+@@ -491,17 +486,16 @@ long st_kim_stop(void)
+ 	long err = ST_SUCCESS;
+ 
+ 	INIT_COMPLETION(kim_gdata->ldisc_installed);
+-#ifndef LEGACY_RFKILL_SUPPORT
++#if 0 /* older way of signalling user-space UIM */
+ 	/* send signal to UIM */
+ 	err = kill_pid(find_get_pid(kim_gdata->uim_pid), SIGUSR2, 1);
+ 	if (err != 0) {
+ 		pr_err("sending SIGUSR2 to uim failed %ld", err);
+ 		return ST_ERR_FAILURE;
+ 	}
+-#else
++#endif
+ 	/* set BT rfkill to be blocked */
+ 	err = rfkill_set_hw_state(kim_gdata->rfkill[ST_BT], 1);
+-#endif
+ 
+ 	/* wait for ldisc to be un-installed */
+ 	err = wait_for_completion_timeout(&kim_gdata->ldisc_installed,
+@@ -523,7 +517,6 @@ long st_kim_stop(void)
+ /**********************************************************************/
+ /* functions called from subsystems */
+ 
+-#ifndef LEGACY_RFKILL_SUPPORT
+ /* called when sysfs entry is written to */
+ static ssize_t store_pid(struct device *dev, struct device_attribute
+ 			 *devattr, char *buf, size_t count)
+@@ -551,8 +544,6 @@ static ssize_t show_list(struct device *dev, struct device_attribute
+ 	return strlen(buf);
+ }
+ 
+-#else /* LEGACY_RFKILL_SUPPORT */
+-
+ /* function called from rfkill subsystem, when someone from
+  * user space would write 0/1 on the sysfs entry
+  * /sys/class/rfkill/rfkill0,1,3/state
+@@ -580,8 +571,6 @@ static int kim_toggle_radio(void *data, bool blocked)
+ 	return ST_SUCCESS;
+ }
+ 
+-#endif	/* LEGACY_RFKILL_SUPPORT */
+-
+ void st_kim_ref(struct st_data_s **core_data)
+ {
+ 	*core_data = kim_gdata->core_data;
+@@ -639,30 +628,12 @@ static int kim_probe(struct platform_device *pdev)
+ 			return status;
+ 		}
+ 	}
+-#ifndef LEGACY_RFKILL_SUPPORT
+-	/* pdev to contain BT, FM and GPS enable/N-Shutdown GPIOs
+-	 * execute request_gpio, set output direction
+-	 */
+-	kim_gdata->kim_kobj = kobject_create_and_add("uim", NULL);
+-	/* create the sysfs entry for UIM to put in pid */
+-	if (sysfs_create_group(kim_gdata->kim_kobj, &uim_attr_grp)) {
+-		pr_err(" sysfs entry creation failed");
+-		kobject_put(kim_gdata->kim_kobj);
+-		/* free requested GPIOs and fail probe */
+-		for (proto = ST_BT; proto < ST_MAX; proto++) {
+-			if (gpios[proto] != -1)
+-				gpio_free(gpios[proto]);
+-		}
+-		return -1;	/* fail insmod */
+-	}
+-	pr_info(" sysfs entry created ");
+-#endif
+ 	/* get reference of pdev for request_firmware
+ 	 */
+ 	kim_gdata->kim_pdev = pdev;
+ 	init_completion(&kim_gdata->kim_rcvd);
+ 	init_completion(&kim_gdata->ldisc_installed);
+-#ifdef LEGACY_RFKILL_SUPPORT
++
+ 	for (proto = 0; (proto < ST_MAX) && (gpios[proto] != -1); proto++) {
+ 		/* TODO: should all types be rfkill_type_bt ? */
+ 		kim_gdata->rf_protos[proto] = proto;
+@@ -685,7 +656,6 @@ static int kim_probe(struct platform_device *pdev)
+ 		}
+ 		pr_info("rfkill entry created for %ld", gpios[proto]);
+ 	}
+-#endif
+ 	return ST_SUCCESS;
+ }
+ 
+@@ -701,18 +671,11 @@ static int kim_remove(struct platform_device *pdev)
+ 		 * nShutdown gpio from the system
+ 		 */
+ 		gpio_free(gpios[proto]);
+-#ifdef LEGACY_RFKILL_SUPPORT
+ 		rfkill_unregister(kim_gdata->rfkill[proto]);
+ 		rfkill_destroy(kim_gdata->rfkill[proto]);
+ 		kim_gdata->rfkill[proto] = NULL;
+-#endif
+ 	}
+ 	pr_info("kim: GPIO Freed");
+-#ifndef LEGACY_RFKILL_SUPPORT
+-	/* delete the sysfs entries */
+-	sysfs_remove_group(kim_gdata->kim_kobj, &uim_attr_grp);
+-	kobject_put(kim_gdata->kim_kobj);
+-#endif
+ 	kim_gdata->kim_pdev = NULL;
+ 	st_core_exit(kim_gdata->core_data);
+ 	return ST_SUCCESS;
+diff --git a/drivers/staging/ti-st/st_kim.h b/drivers/staging/ti-st/st_kim.h
+index ff3270e..49c42ae 100644
+--- a/drivers/staging/ti-st/st_kim.h
++++ b/drivers/staging/ti-st/st_kim.h
+@@ -48,7 +48,6 @@
+  * devices are created for the 3 gpios
+  * that ST has requested
+  */
+-#define LEGACY_RFKILL_SUPPORT
+ /*
+  * header file for ST provided by KIM
+  */
+@@ -60,15 +59,12 @@ struct kim_data_s {
+ 	char resp_buffer[30];
+ 	const struct firmware *fw_entry;
+ 	long gpios[ST_MAX];
+-	struct kobject *kim_kobj;
+ /* used by kim_int_recv to validate fw response */
+ 	unsigned long rx_state;
+ 	unsigned long rx_count;
+ 	struct sk_buff *rx_skb;
+-#ifdef LEGACY_RFKILL_SUPPORT
+ 	struct rfkill *rfkill[ST_MAX];
+ 	enum proto_type rf_protos[ST_MAX];
+-#endif
+ 	struct st_data_s *core_data;
+ };
+ 
+-- 
+1.5.6.3
 
-> Thanks for testing my patch. Please let me know if you have problems=20
-> with it.
->
-
-It works basically ok for my needs, thanks again, waiting for comments
-from usb/HID people.
-
-Note that there are some checkpatch.pl errors in the current patch, and
-also a style fix mixed with functional ones (@@ -315,7 +411,7 @@), you
-may want to sort these out in a v2.
-
-After this gets in, some more style fixes to hidraw.c could be made,
-I'll do these. Maybe some naming cleanup can be made too,
-hid_output_raw_report could become hid_set_raw_report for instance, but
-I am waiting for the topic to settle first.
-
-Thanks,
-   Antonio
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-A: Top-posting.
-Q: What is the most annoying thing in e-mail?
-
---Signature=_Wed__9_Jun_2010_10_42_35_+0200_flczoNE2olJ/V8Iz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwPU/sACgkQ5xr2akVTsAGilACeKT/YwLKe10oCE7rIK3Gye/Zj
-QK4AoKFe/OCuGgXWeWyPCOlQzNPh1stZ
-=yQ4k
------END PGP SIGNATURE-----
-
---Signature=_Wed__9_Jun_2010_10_42_35_+0200_flczoNE2olJ/V8Iz--
