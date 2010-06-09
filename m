@@ -1,385 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab0FIKOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:14:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41296 "EHLO hera.kernel.org"
+	id S932179Ab0FIKOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:14:17 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41285 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932212Ab0FIKOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:14:19 -0400
-Date: Wed, 9 Jun 2010 10:12:41 GMT
-From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+	id S932134Ab0FIKOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 06:14:12 -0400
+Date: Wed, 9 Jun 2010 10:13:02 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-       peterz@infradead.org, akpm@linux-foundation.org, fabio@gandalf.sssup.it,
-       suresh.b.siddha@intel.com, tglx@linutronix.de, mingo@elte.hu,
-       venki@google.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-       peterz@infradead.org, akpm@linux-foundation.org, fabio@gandalf.sssup.it,
-       suresh.b.siddha@intel.com, tglx@linutronix.de, venki@google.com,
+       akpm@linux-foundation.org, tglx@linutronix.de, jaxboe@fusionio.com,
        mingo@elte.hu
-In-Reply-To: <1275414172.27810.27961.camel@twins>
-References: <1275414172.27810.27961.camel@twins>
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
+       torvalds@linux-foundation.org, tglx@linutronix.de, jaxboe@fusionio.com,
+       mingo@elte.hu
+In-Reply-To: <1275052414.1645.52.camel@laptop>
+References: <1275052414.1645.52.camel@laptop>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/pat] rbtree: Undo augmented trees performance damage
-Message-ID: <tip-2463eb8b3093995e09a0d41b3d78ee0cf5fb4249@git.kernel.org>
-Git-Commit-ID: 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
+Subject: [tip:sched/core] sched_clock: Add local_clock() API and improve documentation
+Message-ID: <tip-c676329abb2b8359d9a5d734dec0c81779823fd6@git.kernel.org>
+Git-Commit-ID: c676329abb2b8359d9a5d734dec0c81779823fd6
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:12:44 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:13:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
-Gitweb:     http://git.kernel.org/tip/2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Sat, 29 May 2010 15:31:43 +0200
+Commit-ID:  c676329abb2b8359d9a5d734dec0c81779823fd6
+Gitweb:     http://git.kernel.org/tip/c676329abb2b8359d9a5d734dec0c81779823fd6
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Tue, 25 May 2010 10:48:51 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 9 Jun 2010 10:32:49 +0200
+CommitDate: Wed, 9 Jun 2010 10:34:49 +0200
 
-rbtree: Undo augmented trees performance damage
+sched_clock: Add local_clock() API and improve documentation
 
-Reimplement augmented RB-trees without sprinkling extra branches
-all over the RB-tree code (which lives in the scheduler hot path).
+For people who otherwise get to write: cpu_clock(smp_processor_id()),
+there is now: local_clock().
 
-This approach is 'borrowed' from Fabio's BFQ implementation and
-relies on traversing the rebalance path after the RB-tree-op to
-correct the heap property for insertion/removal and make up for
-the damage done by the tree rotations.
+Also, as per suggestion from Andrew, provide some documentation on
+the various clock interfaces, and minimize the unsigned long long vs
+u64 mess.
 
-For insertion the rebalance path is trivially that from the new
-node upwards to the root, for removal it is that from the deepest
-node in the path from the to be removed node that will still
-be around after the removal.
-
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Venkatesh Pallipadi <venki@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Fabio Checconi <fabio@gandalf.sssup.it>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-LKML-Reference: <1275414172.27810.27961.camel@twins>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+LKML-Reference: <1275052414.1645.52.camel@laptop>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/mm/pat_rbtree.c |   34 ++-----------
- include/linux/rbtree.h   |   13 ++++--
- lib/rbtree.c             |  116 ++++++++++++++++++++++++++++-----------------
- 3 files changed, 87 insertions(+), 76 deletions(-)
+ arch/parisc/kernel/ftrace.c |    4 +-
+ include/linux/sched.h       |   37 +++++++++-------
+ kernel/lockdep.c            |    2 +-
+ kernel/perf_event.c         |    2 +-
+ kernel/rcutorture.c         |    3 +-
+ kernel/sched.c              |    2 +-
+ kernel/sched_clock.c        |   95 ++++++++++++++++++++++++++++++++++++++-----
+ kernel/trace/trace_clock.c  |    2 +-
+ 8 files changed, 113 insertions(+), 34 deletions(-)
 
-diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
-index f537087..a2903e6 100644
---- a/arch/x86/mm/pat_rbtree.c
-+++ b/arch/x86/mm/pat_rbtree.c
-@@ -34,8 +34,7 @@
-  * memtype_lock protects the rbtree.
-  */
+diff --git a/arch/parisc/kernel/ftrace.c b/arch/parisc/kernel/ftrace.c
+index 9877372..5beb97b 100644
+--- a/arch/parisc/kernel/ftrace.c
++++ b/arch/parisc/kernel/ftrace.c
+@@ -82,7 +82,7 @@ unsigned long ftrace_return_to_handler(unsigned long retval0,
+ 	unsigned long ret;
  
--static void memtype_rb_augment_cb(struct rb_node *node);
--static struct rb_root memtype_rbroot = RB_AUGMENT_ROOT(&memtype_rb_augment_cb);
-+static struct rb_root memtype_rbroot = RB_ROOT;
+ 	pop_return_trace(&trace, &ret);
+-	trace.rettime = cpu_clock(raw_smp_processor_id());
++	trace.rettime = local_clock();
+ 	ftrace_graph_return(&trace);
  
- static int is_node_overlap(struct memtype *node, u64 start, u64 end)
- {
-@@ -56,7 +55,7 @@ static u64 get_subtree_max_end(struct rb_node *node)
- }
- 
- /* Update 'subtree_max_end' for a node, based on node and its children */
--static void update_node_max_end(struct rb_node *node)
-+static void memtype_rb_augment_cb(struct rb_node *node, void *__unused)
- {
- 	struct memtype *data;
- 	u64 max_end, child_max_end;
-@@ -78,25 +77,6 @@ static void update_node_max_end(struct rb_node *node)
- 	data->subtree_max_end = max_end;
- }
- 
--/* Update 'subtree_max_end' for a node and all its ancestors */
--static void update_path_max_end(struct rb_node *node)
--{
--	u64 old_max_end, new_max_end;
--
--	while (node) {
--		struct memtype *data = container_of(node, struct memtype, rb);
--
--		old_max_end = data->subtree_max_end;
--		update_node_max_end(node);
--		new_max_end = data->subtree_max_end;
--
--		if (new_max_end == old_max_end)
--			break;
--
--		node = rb_parent(node);
--	}
--}
--
- /* Find the first (lowest start addr) overlapping range from rb tree */
- static struct memtype *memtype_rb_lowest_match(struct rb_root *root,
- 				u64 start, u64 end)
-@@ -190,12 +170,6 @@ failure:
- 	return -EBUSY;
- }
- 
--static void memtype_rb_augment_cb(struct rb_node *node)
--{
--	if (node)
--		update_path_max_end(node);
--}
--
- static void memtype_rb_insert(struct rb_root *root, struct memtype *newdata)
- {
- 	struct rb_node **node = &(root->rb_node);
-@@ -213,6 +187,7 @@ static void memtype_rb_insert(struct rb_root *root, struct memtype *newdata)
- 
- 	rb_link_node(&newdata->rb, parent, node);
- 	rb_insert_color(&newdata->rb, root);
-+	rb_augment_insert(&newdata->rb, memtype_rb_augment_cb, NULL);
- }
- 
- int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
-@@ -233,13 +208,16 @@ int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
- 
- struct memtype *rbt_memtype_erase(u64 start, u64 end)
- {
-+	struct rb_node *deepest;
- 	struct memtype *data;
- 
- 	data = memtype_rb_exact_match(&memtype_rbroot, start, end);
- 	if (!data)
- 		goto out;
- 
-+	deepest = rb_augment_erase_begin(&data->rb);
- 	rb_erase(&data->rb, &memtype_rbroot);
-+	rb_augment_erase_end(deepest, memtype_rb_augment_cb, NULL);
- out:
- 	return data;
- }
-diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index fe1872e..7066acb 100644
---- a/include/linux/rbtree.h
-+++ b/include/linux/rbtree.h
-@@ -110,7 +110,6 @@ struct rb_node
- struct rb_root
- {
- 	struct rb_node *rb_node;
--	void (*augment_cb)(struct rb_node *node);
- };
- 
- 
-@@ -130,9 +129,7 @@ static inline void rb_set_color(struct rb_node *rb, int color)
- 	rb->rb_parent_color = (rb->rb_parent_color & ~1) | color;
- }
- 
--#define RB_ROOT	(struct rb_root) { NULL, NULL, }
--#define RB_AUGMENT_ROOT(x)	(struct rb_root) { NULL, x}
--
-+#define RB_ROOT	(struct rb_root) { NULL, }
- #define	rb_entry(ptr, type, member) container_of(ptr, type, member)
- 
- #define RB_EMPTY_ROOT(root)	((root)->rb_node == NULL)
-@@ -142,6 +139,14 @@ static inline void rb_set_color(struct rb_node *rb, int color)
- extern void rb_insert_color(struct rb_node *, struct rb_root *);
- extern void rb_erase(struct rb_node *, struct rb_root *);
- 
-+typedef void (*rb_augment_f)(struct rb_node *node, void *data);
-+
-+extern void rb_augment_insert(struct rb_node *node,
-+			      rb_augment_f func, void *data);
-+extern struct rb_node *rb_augment_erase_begin(struct rb_node *node);
-+extern void rb_augment_erase_end(struct rb_node *node,
-+				 rb_augment_f func, void *data);
-+
- /* Find logical next and previous nodes in a tree */
- extern struct rb_node *rb_next(const struct rb_node *);
- extern struct rb_node *rb_prev(const struct rb_node *);
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index 15e10b1..4693f79 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -44,11 +44,6 @@ static void __rb_rotate_left(struct rb_node *node, struct rb_root *root)
- 	else
- 		root->rb_node = right;
- 	rb_set_parent(node, right);
--
--	if (root->augment_cb) {
--		root->augment_cb(node);
--		root->augment_cb(right);
--	}
- }
- 
- static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
-@@ -72,20 +67,12 @@ static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
- 	else
- 		root->rb_node = left;
- 	rb_set_parent(node, left);
--
--	if (root->augment_cb) {
--		root->augment_cb(node);
--		root->augment_cb(left);
--	}
- }
- 
- void rb_insert_color(struct rb_node *node, struct rb_root *root)
- {
- 	struct rb_node *parent, *gparent;
- 
--	if (root->augment_cb)
--		root->augment_cb(node);
--
- 	while ((parent = rb_parent(node)) && rb_is_red(parent))
- 	{
- 		gparent = rb_parent(parent);
-@@ -240,15 +227,12 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- 	else
- 	{
- 		struct rb_node *old = node, *left;
--		int old_parent_cb = 0;
--		int successor_parent_cb = 0;
- 
- 		node = node->rb_right;
- 		while ((left = node->rb_left) != NULL)
- 			node = left;
- 
- 		if (rb_parent(old)) {
--			old_parent_cb = 1;
- 			if (rb_parent(old)->rb_left == old)
- 				rb_parent(old)->rb_left = node;
- 			else
-@@ -263,10 +247,8 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- 		if (parent == old) {
- 			parent = node;
- 		} else {
--			successor_parent_cb = 1;
- 			if (child)
- 				rb_set_parent(child, parent);
--
- 			parent->rb_left = child;
- 
- 			node->rb_right = old->rb_right;
-@@ -277,24 +259,6 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- 		node->rb_left = old->rb_left;
- 		rb_set_parent(old->rb_left, node);
- 
--		if (root->augment_cb) {
--			/*
--			 * Here, three different nodes can have new children.
--			 * The parent of the successor node that was selected
--			 * to replace the node to be erased.
--			 * The node that is getting erased and is now replaced
--			 * by its successor.
--			 * The parent of the node getting erased-replaced.
--			 */
--			if (successor_parent_cb)
--				root->augment_cb(parent);
--
--			root->augment_cb(node);
--
--			if (old_parent_cb)
--				root->augment_cb(rb_parent(old));
--		}
--
- 		goto color;
+ 	if (unlikely(!ret)) {
+@@ -126,7 +126,7 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr)
+ 		return;
  	}
  
-@@ -303,19 +267,15 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
+-	calltime = cpu_clock(raw_smp_processor_id());
++	calltime = local_clock();
  
- 	if (child)
- 		rb_set_parent(child, parent);
--
--	if (parent) {
-+	if (parent)
-+	{
- 		if (parent->rb_left == node)
- 			parent->rb_left = child;
- 		else
- 			parent->rb_right = child;
--
--		if (root->augment_cb)
--			root->augment_cb(parent);
--
--	} else {
--		root->rb_node = child;
- 	}
-+	else
-+		root->rb_node = child;
+ 	if (push_return_trace(old, calltime,
+ 				self_addr, &trace.depth) == -EBUSY) {
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index edc3dd1..c2d4316 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1791,20 +1791,23 @@ static inline int set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
+ #endif
  
-  color:
- 	if (color == RB_BLACK)
-@@ -323,6 +283,74 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
- }
- EXPORT_SYMBOL(rb_erase);
- 
-+static void rb_augment_path(struct rb_node *node, rb_augment_f func, void *data)
-+{
-+	struct rb_node *parent;
-+
-+up:
-+	func(node, data);
-+	parent = rb_parent(node);
-+	if (!parent)
-+		return;
-+
-+	if (node == parent->rb_left && parent->rb_right)
-+		func(parent->rb_right, data);
-+	else if (parent->rb_left)
-+		func(parent->rb_left, data);
-+
-+	node = parent;
-+	goto up;
-+}
-+
-+/*
-+ * after inserting @node into the tree, update the tree to account for
-+ * both the new entry and any damage done by rebalance
-+ */
-+void rb_augment_insert(struct rb_node *node, rb_augment_f func, void *data)
-+{
-+	if (node->rb_left)
-+		node = node->rb_left;
-+	else if (node->rb_right)
-+		node = node->rb_right;
-+
-+	rb_augment_path(node, func, data);
-+}
-+
-+/*
-+ * before removing the node, find the deepest node on the rebalance path
-+ * that will still be there after @node gets removed
-+ */
-+struct rb_node *rb_augment_erase_begin(struct rb_node *node)
-+{
-+	struct rb_node *deepest;
-+
-+	if (!node->rb_right && !node->rb_left)
-+		deepest = rb_parent(node);
-+	else if (!node->rb_right)
-+		deepest = node->rb_left;
-+	else if (!node->rb_left)
-+		deepest = node->rb_right;
-+	else {
-+		deepest = rb_next(node);
-+		if (deepest->rb_right)
-+			deepest = deepest->rb_right;
-+		else if (rb_parent(deepest) != node)
-+			deepest = rb_parent(deepest);
-+	}
-+
-+	return deepest;
-+}
-+
-+/*
-+ * after removal, update the tree to account for the removed entry
-+ * and any rebalance damage.
-+ */
-+void rb_augment_erase_end(struct rb_node *node, rb_augment_f func, void *data)
-+{
-+	if (node)
-+		rb_augment_path(node, func, data);
-+}
-+
  /*
-  * This function returns the first node (in sort order) of the tree.
+- * Architectures can set this to 1 if they have specified
+- * CONFIG_HAVE_UNSTABLE_SCHED_CLOCK in their arch Kconfig,
+- * but then during bootup it turns out that sched_clock()
+- * is reliable after all:
++ * Do not use outside of architecture code which knows its limitations.
++ *
++ * sched_clock() has no promise of monotonicity or bounded drift between
++ * CPUs, use (which you should not) requires disabling IRQs.
++ *
++ * Please use one of the three interfaces below.
   */
+-#ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+-extern int sched_clock_stable;
+-#endif
+-
+-/* ftrace calls sched_clock() directly */
+ extern unsigned long long notrace sched_clock(void);
++/*
++ * See the comment in kernel/sched_clock.c
++ */
++extern u64 cpu_clock(int cpu);
++extern u64 local_clock(void);
++extern u64 sched_clock_cpu(int cpu);
++
+ 
+ extern void sched_clock_init(void);
+-extern u64 sched_clock_cpu(int cpu);
+ 
+ #ifndef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+ static inline void sched_clock_tick(void)
+@@ -1819,17 +1822,19 @@ static inline void sched_clock_idle_wakeup_event(u64 delta_ns)
+ {
+ }
+ #else
++/*
++ * Architectures can set this to 1 if they have specified
++ * CONFIG_HAVE_UNSTABLE_SCHED_CLOCK in their arch Kconfig,
++ * but then during bootup it turns out that sched_clock()
++ * is reliable after all:
++ */
++extern int sched_clock_stable;
++
+ extern void sched_clock_tick(void);
+ extern void sched_clock_idle_sleep_event(void);
+ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
+ #endif
+ 
+-/*
+- * For kernel-internal use: high-speed (but slightly incorrect) per-cpu
+- * clock constructed from sched_clock():
+- */
+-extern unsigned long long cpu_clock(int cpu);
+-
+ extern unsigned long long
+ task_sched_runtime(struct task_struct *task);
+ extern unsigned long long thread_group_sched_runtime(struct task_struct *task);
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 5428679..f2852a5 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -146,7 +146,7 @@ static DEFINE_PER_CPU(struct lock_class_stats[MAX_LOCKDEP_KEYS],
+ 
+ static inline u64 lockstat_clock(void)
+ {
+-	return cpu_clock(smp_processor_id());
++	return local_clock();
+ }
+ 
+ static int lock_point(unsigned long points[], unsigned long ip)
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 31d6afe..109c5ec 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -214,7 +214,7 @@ static void perf_unpin_context(struct perf_event_context *ctx)
+ 
+ static inline u64 perf_clock(void)
+ {
+-	return cpu_clock(raw_smp_processor_id());
++	return local_clock();
+ }
+ 
+ /*
+diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+index 6535ac8..2e2726d 100644
+--- a/kernel/rcutorture.c
++++ b/kernel/rcutorture.c
+@@ -239,8 +239,7 @@ static unsigned long
+ rcu_random(struct rcu_random_state *rrsp)
+ {
+ 	if (--rrsp->rrs_count < 0) {
+-		rrsp->rrs_state +=
+-			(unsigned long)cpu_clock(raw_smp_processor_id());
++		rrsp->rrs_state += (unsigned long)local_clock();
+ 		rrsp->rrs_count = RCU_RANDOM_REFRESH;
+ 	}
+ 	rrsp->rrs_state = rrsp->rrs_state * RCU_RANDOM_MULT + RCU_RANDOM_ADD;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 8f351c5..3abd8f7 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1647,7 +1647,7 @@ static void update_shares(struct sched_domain *sd)
+ 	if (root_task_group_empty())
+ 		return;
+ 
+-	now = cpu_clock(raw_smp_processor_id());
++	now = local_clock();
+ 	elapsed = now - sd->last_update;
+ 
+ 	if (elapsed >= (s64)(u64)sysctl_sched_shares_ratelimit) {
+diff --git a/kernel/sched_clock.c b/kernel/sched_clock.c
+index 906a0f7..52f1a14 100644
+--- a/kernel/sched_clock.c
++++ b/kernel/sched_clock.c
+@@ -10,19 +10,55 @@
+  *   Ingo Molnar <mingo@redhat.com>
+  *   Guillaume Chazarain <guichaz@gmail.com>
+  *
+- * Create a semi stable clock from a mixture of other events, including:
+- *  - gtod
++ *
++ * What:
++ *
++ * cpu_clock(i) provides a fast (execution time) high resolution
++ * clock with bounded drift between CPUs. The value of cpu_clock(i)
++ * is monotonic for constant i. The timestamp returned is in nanoseconds.
++ *
++ * ######################### BIG FAT WARNING ##########################
++ * # when comparing cpu_clock(i) to cpu_clock(j) for i != j, time can #
++ * # go backwards !!                                                  #
++ * ####################################################################
++ *
++ * There is no strict promise about the base, although it tends to start
++ * at 0 on boot (but people really shouldn't rely on that).
++ *
++ * cpu_clock(i)       -- can be used from any context, including NMI.
++ * sched_clock_cpu(i) -- must be used with local IRQs disabled (implied by NMI)
++ * local_clock()      -- is cpu_clock() on the current cpu.
++ *
++ * How:
++ *
++ * The implementation either uses sched_clock() when
++ * !CONFIG_HAVE_UNSTABLE_SCHED_CLOCK, which means in that case the
++ * sched_clock() is assumed to provide these properties (mostly it means
++ * the architecture provides a globally synchronized highres time source).
++ *
++ * Otherwise it tries to create a semi stable clock from a mixture of other
++ * clocks, including:
++ *
++ *  - GTOD (clock monotomic)
+  *  - sched_clock()
+  *  - explicit idle events
+  *
+- * We use gtod as base and the unstable clock deltas. The deltas are filtered,
+- * making it monotonic and keeping it within an expected window.
++ * We use GTOD as base and use sched_clock() deltas to improve resolution. The
++ * deltas are filtered to provide monotonicity and keeping it within an
++ * expected window.
+  *
+  * Furthermore, explicit sleep and wakeup hooks allow us to account for time
+  * that is otherwise invisible (TSC gets stopped).
+  *
+- * The clock: sched_clock_cpu() is monotonic per cpu, and should be somewhat
+- * consistent between cpus (never more than 2 jiffies difference).
++ *
++ * Notes:
++ *
++ * The !IRQ-safetly of sched_clock() and sched_clock_cpu() comes from things
++ * like cpufreq interrupts that can change the base clock (TSC) multiplier
++ * and cause funny jumps in time -- although the filtering provided by
++ * sched_clock_cpu() should mitigate serious artifacts we cannot rely on it
++ * in general since for !CONFIG_HAVE_UNSTABLE_SCHED_CLOCK we fully rely on
++ * sched_clock().
+  */
+ #include <linux/spinlock.h>
+ #include <linux/hardirq.h>
+@@ -170,6 +206,11 @@ again:
+ 	return val;
+ }
+ 
++/*
++ * Similar to cpu_clock(), but requires local IRQs to be disabled.
++ *
++ * See cpu_clock().
++ */
+ u64 sched_clock_cpu(int cpu)
+ {
+ 	struct sched_clock_data *scd;
+@@ -237,9 +278,19 @@ void sched_clock_idle_wakeup_event(u64 delta_ns)
+ }
+ EXPORT_SYMBOL_GPL(sched_clock_idle_wakeup_event);
+ 
+-unsigned long long cpu_clock(int cpu)
++/*
++ * As outlined at the top, provides a fast, high resolution, nanosecond
++ * time source that is monotonic per cpu argument and has bounded drift
++ * between cpus.
++ *
++ * ######################### BIG FAT WARNING ##########################
++ * # when comparing cpu_clock(i) to cpu_clock(j) for i != j, time can #
++ * # go backwards !!                                                  #
++ * ####################################################################
++ */
++u64 cpu_clock(int cpu)
+ {
+-	unsigned long long clock;
++	u64 clock;
+ 	unsigned long flags;
+ 
+ 	local_irq_save(flags);
+@@ -249,6 +300,25 @@ unsigned long long cpu_clock(int cpu)
+ 	return clock;
+ }
+ 
++/*
++ * Similar to cpu_clock() for the current cpu. Time will only be observed
++ * to be monotonic if care is taken to only compare timestampt taken on the
++ * same CPU.
++ *
++ * See cpu_clock().
++ */
++u64 local_clock(void)
++{
++	u64 clock;
++	unsigned long flags;
++
++	local_irq_save(flags);
++	clock = sched_clock_cpu(smp_processor_id());
++	local_irq_restore(flags);
++
++	return clock;
++}
++
+ #else /* CONFIG_HAVE_UNSTABLE_SCHED_CLOCK */
+ 
+ void sched_clock_init(void)
+@@ -264,12 +334,17 @@ u64 sched_clock_cpu(int cpu)
+ 	return sched_clock();
+ }
+ 
+-
+-unsigned long long cpu_clock(int cpu)
++u64 cpu_clock(int cpu)
+ {
+ 	return sched_clock_cpu(cpu);
+ }
+ 
++u64 local_clock(void)
++{
++	return sched_clock_cpu(0);
++}
++
+ #endif /* CONFIG_HAVE_UNSTABLE_SCHED_CLOCK */
+ 
+ EXPORT_SYMBOL_GPL(cpu_clock);
++EXPORT_SYMBOL_GPL(local_clock);
+diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
+index 9d589d8..1723e2b 100644
+--- a/kernel/trace/trace_clock.c
++++ b/kernel/trace/trace_clock.c
+@@ -56,7 +56,7 @@ u64 notrace trace_clock_local(void)
+  */
+ u64 notrace trace_clock(void)
+ {
+-	return cpu_clock(raw_smp_processor_id());
++	return local_clock();
+ }
+ 
+ 
