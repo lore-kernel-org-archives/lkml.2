@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597Ab0FIKTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:19:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36459 "EHLO hera.kernel.org"
+	id S932188Ab0FIKVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:21:11 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:42937 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757437Ab0FIKS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:18:58 -0400
-Date: Wed, 9 Jun 2010 10:18:39 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Fix build breakage for architecutes without atomic64_t
-Message-ID: <tip-7be7923633a142402266d642ccebf74f556a649b@git.kernel.org>
-Git-Commit-ID: 7be7923633a142402266d642ccebf74f556a649b
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:18:39 +0000 (UTC)
+	id S1754218Ab0FIKVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 06:21:09 -0400
+Date: Wed, 9 Jun 2010 12:20:50 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: pm list <linux-pm@lists.linux-foundation.org>, james.bottomley@suse.de,
+       markgross@thegnar.org, mgross@linux.intel.com,
+       "John W. Linville" <linville@tuxdriver.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Javier Cardona <javier@cozybit.com>, Jouni Malinen <j@w1.fi>,
+       Rui Paulo <rpaulo@gmail.com>, Kalle Valo <kalle.valo@nokia.com>,
+       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 1/2] mac80211: make max_network_latency notifier
+ atomic safe
+Message-ID: <20100609122050.1dd18132@schatten.dmk.lab>
+In-Reply-To: <1276076287.3727.15.camel@jlt3.sipsolutions.net>
+References: <1276074915-26879-1-git-send-email-florian@mickler.org>
+	<1276076287.3727.15.camel@jlt3.sipsolutions.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7be7923633a142402266d642ccebf74f556a649b
-Gitweb:     http://git.kernel.org/tip/7be7923633a142402266d642ccebf74f556a649b
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Wed, 9 Jun 2010 11:57:23 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 9 Jun 2010 12:03:00 +0200
+On Wed, 09 Jun 2010 11:38:07 +0200
+Johannes Berg <johannes@sipsolutions.net> wrote:
 
-perf: Fix build breakage for architecutes without atomic64_t
+> On Wed, 2010-06-09 at 11:15 +0200, florian@mickler.org wrote:
+> > In order to have the pm_qos framework be callable from interrupt
+> > context, all listeners have to also be callable in that context.
+> 
+> That makes no sense at all. Why add work structs _everywhere_ in the
+> callees and make the API harder to use and easy to get wrong completely,
+> instead of just adding a single work struct that will be queued from the
+> caller and dealing with the locking complexity etc. just once.
+> 
+> johannes
 
-The local64.h include dependency was not dependent on PERF_EVENT=y,
-which meant that arch's without atomic64_t support ended up including
-it and failed to build.
+Just to defend this approach, but I'm certainly not married to it
+(hence RFC):
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
----
- include/linux/perf_event.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+There are only two listeners at the moment. I suspect that most future
+uses of the framework need to be atomic, as the driver that
+requests a specific quality of service probably doesn't want to get into
+races with the provider of that service(listener). So i suspected the
+network listener to be the special case.  
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 7342979..1218d05 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -462,6 +462,7 @@ enum perf_callchain_context {
- 
- #ifdef CONFIG_PERF_EVENTS
- # include <asm/perf_event.h>
-+# include <asm/local64.h>
- #endif
- 
- struct perf_guest_info_callbacks {
-@@ -487,7 +488,6 @@ struct perf_guest_info_callbacks {
- #include <linux/cpu.h>
- #include <asm/atomic.h>
- #include <asm/local.h>
--#include <asm/local64.h>
- 
- #define PERF_MAX_STACK_DEPTH		255
- 
+The race between service-provider and qos-requester for non-atomic
+contextes is already there, isn't it? so, locking complexity shouldn't
+be worse than before.
+
+But my first approach to this is seen here:
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-June/026902.html
+
+A third possibility would be to make it dependent on the
+type of the constraint, if blocking notifiers are allowed or not. 
+But that would sacrifice API consistency (update_request for one
+constraint is allowed to be called in interrupt context and
+update_request for another would be not).
+
+Cheers,
+Flo
