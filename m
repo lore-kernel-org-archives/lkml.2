@@ -1,68 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab0FIJxa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:53:30 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47366 "EHLO mail.skyhub.de"
+	id S1757383Ab0FIJyK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:54:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32487 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755918Ab0FIJx2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:53:28 -0400
-Date: Wed, 9 Jun 2010 11:53:15 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Alexander Kurz <linux@blala.de>
-Cc: Borislav Petkov <bp@amd64.org>, Randy Dunlap <randy.dunlap@oracle.com>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Alexander Kurz <linux@kbdbabel.org>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
-Subject: Re: linux-next: Tree for June 2 (staging/comedi)
-Message-ID: <20100609095315.GA19580@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Alexander Kurz <linux@blala.de>, Borislav Petkov <bp@amd64.org>,
-	Randy Dunlap <randy.dunlap@oracle.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	Alexander Kurz <linux@kbdbabel.org>, linux-next@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
-References: <20100602151439.6de66132.sfr@canb.auug.org.au>
- <20100602100735.0812c063.randy.dunlap@oracle.com>
- <20100603091555.GA25287@aftab>
- <alpine.DEB.1.10.1006052043140.21893@vs81.sauer-cs.de>
+	id S1755918Ab0FIJyI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 05:54:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,390,1272870000"; 
+   d="scan'208";a="574678087"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+       Stephen Hemminger <shemminger@vyatta.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>
+Date: Wed, 9 Jun 2010 17:54:02 +0800
+Subject: RE: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Thread-Topic: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Thread-Index: AcsGy1myf2IqVoNpR8alOJy2pHL5igA6f7Jg
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com>
+References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
+ <20100606161348.427822fb@nehalam>
+ <20100608052744.GA21547@gondor.apana.org.au>
+In-Reply-To: <20100608052744.GA21547@gondor.apana.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.1.10.1006052043140.21893@vs81.sauer-cs.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Kurz <linux@blala.de>
-Date: Sat, Jun 05, 2010 at 08:50:57PM +0400
+>-----Original Message-----
+>From: Herbert Xu [mailto:herbert@gondor.apana.org.au]
+>Sent: Tuesday, June 08, 2010 1:28 PM
+>To: Stephen Hemminger
+>Cc: Xin, Xiaohui; netdev@vger.kernel.org; kvm@vger.kernel.org;
+>linux-kernel@vger.kernel.org; mst@redhat.com; mingo@elte.hu; davem@davemloft.net;
+>jdike@linux.intel.com
+>Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from external.
+>
+>On Sun, Jun 06, 2010 at 04:13:48PM -0700, Stephen Hemminger wrote:
+>> Still not sure this is a good idea for a couple of reasons:
+>>
+>> 1. We already have lots of special cases with skb's (frags and fraglist),
+>>    and skb's travel through a lot of different parts of the kernel.  So any
+>>    new change like this creates lots of exposed points for new bugs. Look
+>>    at cases like MD5 TCP and netfilter, and forwarding these SKB's to ipsec
+>>    and ppp and ...
+>>
+>> 2. SKB's can have infinite lifetime in the kernel. If these buffers come from
+>>    a fixed size pool in an external device, they can easily all get tied up
+>>    if you have a slow listener. What happens then?
+>
+>I agree with Stephen on this.
+>
+>FWIW I don't think we even need the external pages concept in
+>order to implement zero-copy receive (which I gather is the intent
+>here).
+>
+>Here is one way to do it, simply construct a completely non-linear
+>packet in the driver, as you would if you were using the GRO frags
+>interface (grep for napi_gro_frags under drivers/net for examples).
+>
+I'm not sure if I understand your way correctly:
+1) Does the way only deal with driver with SG feature? Since packet 
+is non-linear...
 
-> Hi,
-> could you please repeat the test on 2.6.35-rc1-git3 or later
-> 
-> On Thu, 3 Jun 2010, Borislav Petkov wrote:
-> > I get a different set of errors with 2.6.35-rc1:
-> > 
-> > ERROR: "cfc_write_array_to_buffer" [drivers/staging/comedi/drivers/usbduxfast.ko] undefined!
-> > ERROR: "cfc_write_array_to_buffer" [drivers/staging/comedi/drivers/comedi_test.ko] undefined!
-> was caused by
-> > CONFIG_COMEDI_FC=y
-> and is fixed in 824196248c1f28aa7d151fd5b11d76182c751f19
-> by adding COMEDI_FC depends on COMEDI.
-> CONFIG_COMEDI_FC=m would be correct.
-> 
-> > ERROR: "subdev_8255_cleanup" [drivers/staging/comedi/drivers/das08.ko] undefined!
-> > ERROR: "subdev_8255_init" [drivers/staging/comedi/drivers/das08.ko] undefined! 
-> CONFIG_COMEDI_8255=m should have been set.
-> this should be as well fixed in 824196248c1f28aa7d151fd5b11d76182c751f19 
-> by pulling das08 out of the ISA group.
+2) Is skb->data still pointing to guest user buffers?
+If yes, how to avoid the modifications to net core change to skb?
 
-sorry, but I'm away from my testing machines right now and won't be able
-to do it until next week. But you could do it yourself in the meantime
-using the randconfig I had attached to the previous message.
+3) In our way only parts of drivers need be modified to support zero-copy.
+and here, need we modify all the drivers?
 
-Thanks.
+If I missed your idea, may you explain it in more detail?
 
--- 
-Regards/Gruss,
-Boris.
+>This way you can transfer the entire contents of the packet without
+>copying through to the other side, provided that the host stack does
+>not modify the packet.
+>
+
+>If the host side did modify the packet then we have to incur the
+>memory cost anyway.
+>
+>IOW I think the only feature provided by the external pages
+>construct is allowing the skb->head area to be shared without
+>copying.  I'm claiming that this can be done by simply making
+>skb->head empty.
+>
+I think to make skb->head empty at first will cause more effort to pass the check with 
+skb header. Have I missed something here? I really make the skb->head NULL
+just before kfree(skb) in skb_release_data(), it's done by callback we have made for skb.
+
+Thanks
+Xiaohui
+
+>Cheers,
+>--
+>Visit Openswan at http://www.openswan.org/
+>Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+>Home Page: http://gondor.apana.org.au/~herbert/
+>PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
