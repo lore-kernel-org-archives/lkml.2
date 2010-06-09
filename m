@@ -1,53 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757774Ab0FINdF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 09:33:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46309 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757643Ab0FINdD convert rfc822-to-8bit (ORCPT
+	id S1757809Ab0FINzH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 09:55:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34753 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757108Ab0FINzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 09:33:03 -0400
-Subject: Re: [PATCH 10/28] mm: Make use of the anon_vma ref count
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Nick Piggin <npiggin@suse.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20100609132245.GF5650@csn.ul.ie>
-References: <20100607110654.606530953@chello.nl>
-	 <20100607111407.309924253@chello.nl>  <20100609132245.GF5650@csn.ul.ie>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 09 Jun 2010 15:32:27 +0200
-Message-ID: <1276090347.1645.582.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 9 Jun 2010 09:55:05 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>,
+       Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Staticise ab3550 register access functions
+Date: Wed,  9 Jun 2010 14:54:54 +0100
+Message-Id: <1276091694-31331-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 14:22 +0100, Mel Gorman wrote:
-> This comment is no longer strictly correct. anon_vma_alloc() can also be
-> called from anon_vma_fork where the root of the newly allocated anon_vma
-> will be set to the same as the parents anon_vma. Maybe something like
-> 
-> /*
->  * Initialise the anon_vma root to point to itself. If called from
->  * fork, the root will be reset to the parents anon_vma 
->  */
+These are now exported via an ops table rather than referenced
+directly and so should be staticised.
 
-Sure, I'll change the comment.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/ab3550-core.c |   23 ++++++++++++-----------
+ 1 files changed, 12 insertions(+), 11 deletions(-)
 
-> Else, just leave the initialisation of the root where it was but only
-> init the refcount here.
+diff --git a/drivers/mfd/ab3550-core.c b/drivers/mfd/ab3550-core.c
+index f54ab62..8a98739 100644
+--- a/drivers/mfd/ab3550-core.c
++++ b/drivers/mfd/ab3550-core.c
+@@ -589,16 +589,16 @@ static bool reg_read_allowed(const struct ab3550_reg_ranges *ranges, u8 reg)
+ }
+ 
+ /*
+- * The exported register access functionality.
++ * The register access functionality.
+  */
+-int ab3550_get_chip_id(struct device *dev)
++static int ab3550_get_chip_id(struct device *dev)
+ {
+ 	struct ab3550 *ab = dev_get_drvdata(dev->parent);
+ 	return (int)ab->chip_id;
+ }
+ 
+-int ab3550_mask_and_set_register_interruptible(struct device *dev, u8 bank,
+-	u8 reg, u8 bitmask, u8 bitvalues)
++static int ab3550_mask_and_set_register_interruptible(struct device *dev,
++	u8 bank, u8 reg, u8 bitmask, u8 bitvalues)
+ {
+ 	struct ab3550 *ab;
+ 	struct platform_device *pdev = to_platform_device(dev);
+@@ -612,15 +612,15 @@ int ab3550_mask_and_set_register_interruptible(struct device *dev, u8 bank,
+ 		bitmask, bitvalues);
+ }
+ 
+-int ab3550_set_register_interruptible(struct device *dev, u8 bank, u8 reg,
+-	u8 value)
++static int ab3550_set_register_interruptible(struct device *dev, u8 bank,
++	u8 reg, u8 value)
+ {
+ 	return ab3550_mask_and_set_register_interruptible(dev, bank, reg, 0xFF,
+ 		value);
+ }
+ 
+-int ab3550_get_register_interruptible(struct device *dev, u8 bank, u8 reg,
+-	u8 *value)
++static int ab3550_get_register_interruptible(struct device *dev, u8 bank,
++	u8 reg, u8 *value)
+ {
+ 	struct ab3550 *ab;
+ 	struct platform_device *pdev = to_platform_device(dev);
+@@ -633,7 +633,7 @@ int ab3550_get_register_interruptible(struct device *dev, u8 bank, u8 reg,
+ 	return get_register_interruptible(ab, bank, reg, value);
+ }
+ 
+-int ab3550_get_register_page_interruptible(struct device *dev, u8 bank,
++static int ab3550_get_register_page_interruptible(struct device *dev, u8 bank,
+ 	u8 first_reg, u8 *regvals, u8 numregs)
+ {
+ 	struct ab3550 *ab;
+@@ -649,7 +649,8 @@ int ab3550_get_register_page_interruptible(struct device *dev, u8 bank,
+ 		numregs);
+ }
+ 
+-int ab3550_event_registers_startup_state_get(struct device *dev, u8 *event)
++static int ab3550_event_registers_startup_state_get(struct device *dev,
++	u8 *event)
+ {
+ 	struct ab3550 *ab;
+ 
+@@ -661,7 +662,7 @@ int ab3550_event_registers_startup_state_get(struct device *dev, u8 *event)
+ 	return 0;
+ }
+ 
+-int ab3550_startup_irq_enabled(struct device *dev, unsigned int irq)
++static int ab3550_startup_irq_enabled(struct device *dev, unsigned int irq)
+ {
+ 	struct ab3550 *ab;
+ 	struct ab3550_platform_data *plf_data;
+-- 
+1.7.1
 
-Ah, that would lead to problems. We use put_anon_vma() to free in the
-create error path, and __put_anon_vma() will also check the
-anon_vma->root, so by not setting it the error path will explode.
