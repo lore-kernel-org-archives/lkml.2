@@ -1,111 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab0FIJmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:42:20 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:36452 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755012Ab0FIJmR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:42:17 -0400
-X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Jun 2010 05:42:15 EDT
-X-ClientAddr: 91.119.7.171
-Date: Wed, 9 Jun 2010 11:25:05 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drm/savage: fixed brace coding style issues
-Message-ID: <20100609112505.2d3666fe@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932125Ab0FIJqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:46:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36110 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756127Ab0FIJqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 05:46:35 -0400
+Message-ID: <4C0F62E2.1090008@redhat.com>
+Date: Wed, 09 Jun 2010 12:46:10 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC] para virt interface of perf to support kvm guest os statistics
+ collection in guest os
+References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>	 <4C0F5804.9080406@redhat.com> <1276075823.2096.436.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1276075823.2096.436.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-m2soft-MailScanner-Information: Please contact the ISP for more information
-X-m2soft-MailScanner-ID: o599V6cM019724
-X-m2soft-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
-X-m2soft-MailScanner-From: nikai@nikai.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed brace coding style issues.
+On 06/09/2010 12:30 PM, Zhang, Yanmin wrote:
+> On Wed, 2010-06-09 at 11:59 +0300, Avi Kivity wrote:
+>    
+>> On 06/09/2010 06:30 AM, Zhang, Yanmin wrote:
+>>      
+>>> From: Zhang, Yanmin<yanmin_zhang@linux.intel.com>
+>>>
+>>> Based on Ingo's idea, I implement a para virt interface for perf to support
+>>> statistics collection in guest os. That means we could run tool perf in guest
+>>> os directly.
+>>>
+>>> Great thanks to Peter Zijlstra. He is really the architect and gave me architecture
+>>> design suggestions. I also want to thank Yangsheng and LinMing for their generous
+>>> help.
+>>>
+>>> The design is:
+>>>
+>>> 1) Add a kvm_pmu whose callbacks mostly just calls hypercall to vmexit to host kernel;
+>>> 2) Create a host perf_event per guest perf_event;
+>>> 3) Host kernel syncs perf_event count/overflows data changes to guest perf_event
+>>> when processing perf_event overflows after NMI arrives. Host kernel inject NMI to guest
+>>> kernel if a guest event overflows.
+>>> 4) Guest kernel goes through all enabled event on current cpu and output data when they
+>>> overflows.
+>>> 5) No change in user space.
+>>>
+>>>        
+>> Other issues:
+>>
+>> - save/restore support for live migration
+>>      
+> Well, it's a little hard to process perf_event under live migration case.
+> I will check it.
+>    
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/gpu/drm/savage/savage_bci.c   |   16 ++++++----------
- drivers/gpu/drm/savage/savage_state.c |    3 +--
- 2 files changed, 7 insertions(+), 12 deletions(-)
+It's probably the biggest benefit of paravirt PMU over non-paravirt PMU, 
+and live migration is one of the most important features of 
+virtualization.  So we really need to get this working.
 
-diff --git a/drivers/gpu/drm/savage/savage_bci.c b/drivers/gpu/drm/savage/savage_bci.c
-index 2d0c9ca..0db51f1 100644
---- a/drivers/gpu/drm/savage/savage_bci.c
-+++ b/drivers/gpu/drm/savage/savage_bci.c
-@@ -525,9 +525,8 @@ static void savage_fake_dma_flush(drm_savage_private_t * dev_priv)
- 		}
- #endif
- 		BEGIN_BCI(dev_priv->dma_pages[i].used);
--		for (j = 0; j < dev_priv->dma_pages[i].used; ++j) {
-+		for (j = 0; j < dev_priv->dma_pages[i].used; ++j)
- 			BCI_WRITE(dma_ptr[j]);
--		}
- 		dev_priv->dma_pages[i].used = 0;
- 	}
- 
-@@ -855,11 +854,10 @@ static int savage_do_init_bci(struct drm_device * dev, drm_savage_init_t * init)
- 	dev_priv->event_wrap = 0;
- 	dev_priv->bci_ptr = (volatile uint32_t *)
- 	    ((uint8_t *) dev_priv->mmio->handle + SAVAGE_BCI_OFFSET);
--	if (S3_SAVAGE3D_SERIES(dev_priv->chipset)) {
-+	if (S3_SAVAGE3D_SERIES(dev_priv->chipset))
- 		dev_priv->status_used_mask = SAVAGE_FIFO_USED_MASK_S3D;
--	} else {
-+	else
- 		dev_priv->status_used_mask = SAVAGE_FIFO_USED_MASK_S4;
--	}
- 	if (dev_priv->status != NULL) {
- 		dev_priv->status_ptr =
- 		    (volatile uint32_t *)dev_priv->status->handle;
-@@ -868,11 +866,10 @@ static int savage_do_init_bci(struct drm_device * dev, drm_savage_init_t * init)
- 		dev_priv->status_ptr[1023] = dev_priv->event_counter;
- 	} else {
- 		dev_priv->status_ptr = NULL;
--		if (S3_SAVAGE3D_SERIES(dev_priv->chipset)) {
-+		if (S3_SAVAGE3D_SERIES(dev_priv->chipset))
- 			dev_priv->wait_fifo = savage_bci_wait_fifo_s3d;
--		} else {
-+		else
- 			dev_priv->wait_fifo = savage_bci_wait_fifo_s4;
--		}
- 		dev_priv->wait_evnt = savage_bci_wait_event_reg;
- 	}
- 
-@@ -1040,9 +1037,8 @@ int savage_bci_buffers(struct drm_device *dev, void *data, struct drm_file *file
- 
- 	d->granted_count = 0;
- 
--	if (d->request_count) {
-+	if (d->request_count)
- 		ret = savage_bci_get_buffers(dev, file_priv, d);
--	}
- 
- 	return ret;
- }
-diff --git a/drivers/gpu/drm/savage/savage_state.c b/drivers/gpu/drm/savage/savage_state.c
-index 8a3e315..d14dba4 100644
---- a/drivers/gpu/drm/savage/savage_state.c
-+++ b/drivers/gpu/drm/savage/savage_state.c
-@@ -993,8 +993,7 @@ int savage_bci_cmdbuf(struct drm_device *dev, void *data, struct drm_file *file_
- 			return -ENOMEM;
- 
- 		if (DRM_COPY_FROM_USER(kcmd_addr, cmdbuf->cmd_addr,
--				       cmdbuf->size * 8))
--		{
-+				       cmdbuf->size * 8)) {
- 			kfree(kcmd_addr);
- 			return -EFAULT;
- 		}
+>> - some way to limit the number of open handles (comes automatically with
+>> the table approach I suggested earlier)
+>>      
+> Current perf doesn't restrict perf_event number. Kernel does a rotation to collect
+> statistics of all perf_events.
+
+We must have some restriction, since we consume host resources for each 
+perf_event.
+
+> My patch just follows this style.
+> The table method might be not good, because below scenario:
+> guest perf_event might be a per-task event at guest side. When the guest application task is
+> migrated to another cpu, the perf_event peer at host side should also be migrated to the new vcpu
+> thread. With table method, we need do some rearrangement on the table when event migration happens.
+> Here migration I mention is not guest live migration.
+>    
+
+Yes.  But the code for that already exists, no?  Real hardware has 
+limited resources so perf multiplexes unlimited user perf_events on 
+limited hardware perf_events.  The same can happen here, perhaps with a 
+larger limit.
+
 -- 
-1.6.4.4
+error compiling committee.c: too many arguments to function
 
