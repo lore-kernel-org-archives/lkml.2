@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758098Ab0FISNI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 14:13:08 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:57578 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758075Ab0FISNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 14:13:06 -0400
-Date: Wed, 9 Jun 2010 20:12:46 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Robert Sch??ne <robert.schoene@tu-dresden.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] power_end event (Resend)
-Message-ID: <20100609181246.GA6021@elte.hu>
-References: <1276091847.1763.18.camel@localhost>
- <4C0FC9CE.30705@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C0FC9CE.30705@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.3941]
+	id S1758075Ab0FISPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 14:15:45 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41268 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754991Ab0FISPo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 14:15:44 -0400
+Subject: Re: 2.6.35-rc2-git1 - include/linux/cgroup.h:534 invoked 
+ rcu_dereference_check() without protection!
+From: Peter Zijlstra <peterz@infradead.org>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Vivek Goyal <vgoyal@redhat.com>,
+       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       nauman@google.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       Johannes Berg <johannes@sipsolutions.net>
+In-Reply-To: <1276106229.1745.65.camel@laptop>
+References: <AANLkTin2pPqOUx--9fIX3BH3e-cU6oCRufijcx_4ozx5@mail.gmail.com>
+	 <20100608001929.GF2387@linux.vnet.ibm.com>
+	 <AANLkTikl13cJNuU32JzRarrUnoh5DYHr-Tbnv9B-UjsG@mail.gmail.com>
+	 <1275986441.5408.111.camel@twins>
+	 <AANLkTimXVlgzHivCQberLdrFP8BH_nJzt8_ozUNHG_aI@mail.gmail.com>
+	 <1276004075.2987.208.camel@twins>
+	 <AANLkTil6ucLZ0A6tWx-OQt_2EeKnx8nSx6rIg2t1L2t5@mail.gmail.com>
+	 <1276097068.1745.13.camel@laptop>
+	 <AANLkTinl2JKUX6859Ioa1y0DqHWXH5TrkissQ8BAF4cP@mail.gmail.com>
+	 <AANLkTilpM9O373rA0cw_wTYVfTiDPbjaKHScAGlt7IAr@mail.gmail.com>
+	 <1276106229.1745.65.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 09 Jun 2010 20:15:11 +0200
+Message-ID: <1276107311.1745.66.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-06-09 at 19:57 +0200, Peter Zijlstra wrote:
+> +       /*
+> +        * We're not in the pid-hash yet so no cgroup attach races, and the
+> +        * cgroup is pinned by the parent running this.
+> +        *
+> +        * Silence PROVE_RCU.
+> +        */ 
 
-* Arjan van de Ven <arjan@linux.intel.com> wrote:
-
-> the patch makes sense; Acked-by: Arjan van de Ven <arjan@linux.intel.com>
-
-Great!
-
-Robert, mind resending the patch with Arjan's ack included and with a 
-meaningful changelog added as well, describing the problem and the solution.
-
-Thanks,
-
-	Ingo
+Hum,.. not sure that's actually true though, the parent itself is still
+susceptible to races afaict..
