@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143Ab0FIJ30 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:29:26 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:47139 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756941Ab0FIJ3Y convert rfc822-to-8bit (ORCPT
+	id S1757162Ab0FIJbf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:31:35 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:50115 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757071Ab0FIJbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:29:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bu6ceFGpQsw56MEOpjAjRkFOyKE1PLG8a5kcpk5e448dq0q3lL2fRW4MoDKfcAQXEJ
-         pzJlMlqqBR8btrG+tmr6Nk91DtuLoA5PG2ZQEP3gGnoGuF6g9tcKuaLMQHM5V6EA6V9W
-         IzfiW53OP7oCz52DjKPHt2kBF1ghr6tkaLhZA=
+	Wed, 9 Jun 2010 05:31:33 -0400
+Date: Wed, 9 Jun 2010 11:31:31 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux/m68k <linux-m68k@vger.kernel.org>,
+       Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [PATCH] zorro: Fix reading of proc/bus/zorro/* in small chunks
+Message-ID: <alpine.DEB.2.00.1006091129240.8858@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <op.vd0y3ds37p4s8u@pikus>
-References: <996015.66352.qm@web180311.mail.gq1.yahoo.com>
-	<op.vd0y3ds37p4s8u@pikus>
-Date: Wed, 9 Jun 2010 17:29:22 +0800
-Message-ID: <AANLkTim6GHWVNvZ1XOJBZiu7ltl7TVpVJwVltLoKpYRi@mail.gmail.com>
-Subject: Re: [PATCHv4 08/13] USB: gadget: g_serial: INF file updated
-From: Xiaofan Chen <xiaofanc@gmail.com>
-To: =?ISO-8859-2?Q?Micha=B3_Nazarewicz?= <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, David Brownell <david-b@pacbell.net>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/9 Michał Nazarewicz <m.nazarewicz@samsung.com>:
-> As for CDC ACM INF file, my understanding is similar except the template
-> is provided by Microchip rather then Microsoft itself.
->
+proc_bus_zorro_read() didn't take into account the current file position,
+hence it always read from the start of the ConfigDev.
 
-Actually Microchip is also copying from Microsoft's template.
-I could not find the CDC-ACM inf template from Microsoft
-website now but I clearly remember I saw it somewhere.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Other companies does not really put Copyrights on the inf file
-for usbser.sys, for example, look at the following file from ST.
-http://www.st.com/stonline/books/pdf/docs/12571.pdf (page 5).
-
-Another example (old format).
-http://www.lvr.com/files/usbcomport.txt
-
-So it is probably okay to drop the copyright line. On the
-other hand, even if there is the copyright line from Microsoft,
-I think you can still redistribute it. But I am not a lawyer but
-a hardware engineer. ;-)
-
-
+diff --git a/drivers/zorro/proc.c b/drivers/zorro/proc.c
+index aaf8abb..108096f 100644
+--- a/drivers/zorro/proc.c
++++ b/drivers/zorro/proc.c
+@@ -73,7 +73,7 @@ proc_bus_zorro_read(struct file *file, char __user *buf, size_t nbytes, loff_t *
+ 	cd.cd_BoardAddr = (void *)zorro_resource_start(z);
+ 	cd.cd_BoardSize = zorro_resource_len(z);
+ 
+-	if (copy_to_user(buf, &cd, nbytes))
++	if (copy_to_user(buf, (void *)&cd + pos, nbytes))
+ 		return -EFAULT;
+ 	*ppos += nbytes;
+ 
 -- 
-Xiaofan http://mcuee.blogspot.com
+1.7.0.4
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
