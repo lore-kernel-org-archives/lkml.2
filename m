@@ -1,122 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab0FIWEs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 18:04:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53267 "EHLO mx2.suse.de"
+	id S1754546Ab0FIWHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 18:07:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46892 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751454Ab0FIWEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 18:04:47 -0400
-Date: Thu, 10 Jun 2010 08:04:25 +1000
-From: Neil Brown <neilb@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Brian Swetland <swetland@google.com>,
-       Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
-       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-Message-ID: <20100610080425.6f005dbb@notabene.brown>
-In-Reply-To: <201006091140.28034.rjw@sisk.pl>
-References: <20100603193045.GA7188@elte.hu>
-	<alpine.LFD.2.00.1006082042020.4506@i5.linux-foundation.org>
-	<AANLkTino9hnqao9402dR543MIlf66qYYjxrknHrxd39o@mail.gmail.com>
-	<201006091140.28034.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751495Ab0FIWHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 18:07:06 -0400
+Date: Wed, 9 Jun 2010 22:06:46 GMT
+From: "tip-bot for Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       yinghai.lu@oracle.com, ebiederm@xmission.com, tglx@linutronix.de,
+       jacob.jun.pan@linux.intel.com, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       ebiederm@xmission.com, yinghai.lu@oracle.com, tglx@linutronix.de,
+       jacob.jun.pan@linux.intel.com, hpa@linux.intel.com
+In-Reply-To: <m17hm9jre7.fsf_-_@fess.ebiederm.org>
+References: <m17hm9jre7.fsf_-_@fess.ebiederm.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, irq: Rename gsi_end gsi_top, and fix off by one errors
+Message-ID: <tip-a4384df3e24579d6292a1b3b41d500349948f30b@git.kernel.org>
+Git-Commit-ID: a4384df3e24579d6292a1b3b41d500349948f30b
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 22:06:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jun 2010 11:40:27 +0200
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+Commit-ID:  a4384df3e24579d6292a1b3b41d500349948f30b
+Gitweb:     http://git.kernel.org/tip/a4384df3e24579d6292a1b3b41d500349948f30b
+Author:     Eric W. Biederman <ebiederm@xmission.com>
+AuthorDate: Tue, 8 Jun 2010 11:44:32 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 9 Jun 2010 13:34:06 -0700
 
-> On Wednesday 09 June 2010, Felipe Contreras wrote:
-> > On Wed, Jun 9, 2010 at 6:46 AM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> > > On Tue, 8 Jun 2010, david@lang.hm wrote:
-> > >>
-> > >> having suspend blockers inside the kernel adds significant complexity, it's
-> > >> worth it only if the complexity buys you enough. In this case the question is
-> > >> if the suspend blockers would extend the sleep time enough more to matter. As
-> > >> per my other e-mail, this is an area with rapidly diminishing returns as the
-> > >> sleep times get longer.
-> > >
-> > > Well, the counter-argument that nobody seems to have brought up is that
-> > > suspend blockers exist, are real code, and end up being shipped in a lot
-> > > of machines.
-> > >
-> > > That's a _big_ argument in favour of them. Certainly much bigger than
-> > > arguing against them based on some complexity-arguments for an alternative
-> > > that hasn't seen any testing at all.
-> > >
-> > > IOW, I would seriously hope that this discussion was more about real code
-> > > that _exists_ and does what people need. It seems to have degenerated into
-> > > something else.
-> > >
-> > > Because in the end, "code talks, bullshit walks". People can complain and
-> > > suggest alternatives all they want, but you can't just argue. At some
-> > > point you need to show the code that actually solves the problem.
-> > 
-> > That's assuming there is an actual problem, which according to all the
-> > embedded people except android, there is not.
-> 
-> Yes, there is, but they've decided to ignore it.
-> 
-> > And if there is indeed such a problem (probably not big), it might be
-> > solved properly by the time suspend blockers are merged, or few
-> > releases after.
-> 
-> Not quite.  Have you followed all of the discussion, actually?
-> 
-> > Whatever the solution (or workaround) is, it would be nice if it could
-> > be used by more than just android people, and it would also be nice to
-> > do it without introducing user-space API that *nobody* likes and might
-> > be quickly deprecated.
-> 
-> I agree with Linus and I don't have that much of a problem with the API that
-> people seem to have.  In fact the much-hated user space API is just a char
-> device driver with 3 ioctls (that can be extended in future if need be) and
-> the kernel API is acceptable to me. 
+x86, irq: Rename gsi_end gsi_top, and fix off by one errors
 
-I think there is a little bit more to it than that.  It seems there is a new
-ioctl for input/event devices to say "Any events queued here should be
-treated as wake-up events".  There may be similar additions to other devices,
-but I know of no details.
+When I introduced the global variable gsi_end I thought gsi_end on
+io_apics was one past the end of the gsi range for the io_apic.  After
+it was pointed out the the range on io_apics was inclusive I changed
+my global variable to match.  That was a big mistake.  Inclusive
+semantics without a range start cannot describe the case when no gsi's
+are allocated.  Describing the case where no gsi's are allocated is
+important in sfi.c and mpparse.c so that we can assign gsi numbers
+instead of blindly copying the gsi assignments the BIOS has done as we
+do in the acpi case.
 
-I wonder if we can get a complete statement of changes to the user-space
-API...
+To keep from getting the global variable confused with the gsi range
+end rename it gsi_top.
 
->                                       Yes, there is some overlap between it
-> and PM QoS, but IMhO that overlap may be reduced over time (eg. by
-> using PM QoS requirements to implement suspend blockers). 
-> 
-> To me, the question boils down to whether or not we're able to persuade the
-> Android people to use any other approach (eg. by demonstrating that something
-> else is actually better), because even if we invent a brilliant new approach,
-> but Android ends up using its old one anyway, the net result will be as though
-> we haven't done anything useful.
+To allow describing the case where no gsi's are allocated have gsi_top
+be one place the highest gsi number seen in the system.
 
-Yes.  There is no point unless we can meet somewhere in the middle.  I think
-that would have to include a full suspend that freezes all processes.
-Solutions which reject that - while quite clever - would require too much
-change to Android user-space to be acceptable.
+This fixes an off by one bug in sfi.c:
+Reported-by: jacob pan <jacob.jun.pan@linux.intel.com>
 
-NeilBrown
+This fixes the same off by one bug in mpparse.c:
 
-> 
-> Rafael
+This fixes an off unreachable by one bug in acpi/boot.c:irq_to_gsi
+Reported-by: Yinghai <yinghai.lu@oracle.com>
 
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+LKML-Reference: <m17hm9jre7.fsf_-_@fess.ebiederm.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/io_apic.h |    4 ++--
+ arch/x86/kernel/acpi/boot.c    |    8 ++++----
+ arch/x86/kernel/apic/io_apic.c |   12 ++++++------
+ arch/x86/kernel/mpparse.c      |    2 +-
+ arch/x86/kernel/sfi.c          |    2 +-
+ 5 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 63cb409..9cb2edb 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -183,7 +183,7 @@ struct mp_ioapic_gsi{
+ 	u32 gsi_end;
+ };
+ extern struct mp_ioapic_gsi  mp_gsi_routing[];
+-extern u32 gsi_end;
++extern u32 gsi_top;
+ int mp_find_ioapic(u32 gsi);
+ int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
+@@ -197,7 +197,7 @@ static const int timer_through_8259 = 0;
+ static inline void ioapic_init_mappings(void)	{ }
+ static inline void ioapic_insert_resources(void) { }
+ static inline void probe_nr_irqs_gsi(void)	{ }
+-#define gsi_end (NR_IRQS_LEGACY - 1)
++#define gsi_top (NR_IRQS_LEGACY)
+ static inline int mp_find_ioapic(u32 gsi) { return 0; }
+ 
+ struct io_apic_irq_attr;
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 60cc405..c05872a 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -118,7 +118,7 @@ static unsigned int gsi_to_irq(unsigned int gsi)
+ 	if (gsi >= NR_IRQS_LEGACY)
+ 		irq = gsi;
+ 	else
+-		irq = gsi_end + 1 + gsi;
++		irq = gsi_top + gsi;
+ 
+ 	return irq;
+ }
+@@ -129,10 +129,10 @@ static u32 irq_to_gsi(int irq)
+ 
+ 	if (irq < NR_IRQS_LEGACY)
+ 		gsi = isa_irq_to_gsi[irq];
+-	else if (irq <= gsi_end)
++	else if (irq < gsi_top)
+ 		gsi = irq;
+-	else if (irq <= (gsi_end + NR_IRQS_LEGACY))
+-		gsi = irq - gsi_end;
++	else if (irq < (gsi_top + NR_IRQS_LEGACY))
++		gsi = irq - gsi_top;
+ 	else
+ 		gsi = 0xffffffff;
+ 
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 33f3563..e41ed24 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -89,8 +89,8 @@ int nr_ioapics;
+ /* IO APIC gsi routing info */
+ struct mp_ioapic_gsi  mp_gsi_routing[MAX_IO_APICS];
+ 
+-/* The last gsi number used */
+-u32 gsi_end;
++/* The one past the highest gsi number used */
++u32 gsi_top;
+ 
+ /* MP IRQ source entries */
+ struct mpc_intsrc mp_irqs[MAX_IRQ_SOURCES];
+@@ -1035,7 +1035,7 @@ static int pin_2_irq(int idx, int apic, int pin)
+ 		if (gsi >= NR_IRQS_LEGACY)
+ 			irq = gsi;
+ 		else
+-			irq = gsi_end + 1 + gsi;
++			irq = gsi_top + gsi;
+ 	}
+ 
+ #ifdef CONFIG_X86_32
+@@ -3853,7 +3853,7 @@ void __init probe_nr_irqs_gsi(void)
+ {
+ 	int nr;
+ 
+-	nr = gsi_end + 1 + NR_IRQS_LEGACY;
++	nr = gsi_top + NR_IRQS_LEGACY;
+ 	if (nr > nr_irqs_gsi)
+ 		nr_irqs_gsi = nr;
+ 
+@@ -4294,8 +4294,8 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	 */
+ 	nr_ioapic_registers[idx] = entries;
+ 
+-	if (mp_gsi_routing[idx].gsi_end > gsi_end)
+-		gsi_end = mp_gsi_routing[idx].gsi_end;
++	if (mp_gsi_routing[idx].gsi_end >= gsi_top)
++		gsi_top = mp_gsi_routing[idx].gsi_end + 1;
+ 
+ 	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
+ 	       "GSI %d-%d\n", idx, mp_ioapics[idx].apicid,
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index 5ae5d24..d86dbf7 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -123,7 +123,7 @@ static void __init MP_ioapic_info(struct mpc_ioapic *m)
+ 	printk(KERN_INFO "I/O APIC #%d Version %d at 0x%X.\n",
+ 	       m->apicid, m->apicver, m->apicaddr);
+ 
+-	mp_register_ioapic(m->apicid, m->apicaddr, gsi_end + 1);
++	mp_register_ioapic(m->apicid, m->apicaddr, gsi_top);
+ }
+ 
+ static void print_MP_intsrc_info(struct mpc_intsrc *m)
+diff --git a/arch/x86/kernel/sfi.c b/arch/x86/kernel/sfi.c
+index 7ded578..cb22acf 100644
+--- a/arch/x86/kernel/sfi.c
++++ b/arch/x86/kernel/sfi.c
+@@ -93,7 +93,7 @@ static int __init sfi_parse_ioapic(struct sfi_table_header *table)
+ 	pentry = (struct sfi_apic_table_entry *)sb->pentry;
+ 
+ 	for (i = 0; i < num; i++) {
+-		mp_register_ioapic(i, pentry->phys_addr, gsi_end + 1);
++		mp_register_ioapic(i, pentry->phys_addr, gsi_top);
+ 		pentry++;
+ 	}
+ 
