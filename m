@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758553Ab0FIVlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 17:41:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19948 "EHLO mx1.redhat.com"
+	id S1758527Ab0FIVlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 17:41:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32211 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758412Ab0FIVjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 17:39:35 -0400
-Date: Wed, 9 Jun 2010 17:39:00 -0400
+	id S1758402Ab0FIVje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 17:39:34 -0400
+Date: Wed, 9 Jun 2010 17:39:07 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
@@ -14,173 +14,251 @@ Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
        vgoyal@redhat.com, sam@ravnborg.org
-Message-Id: <c837d1a0a380030a4ea61acbcf0183518675a8ee.1276116186.git.jbaron@redhat.com>
+Message-Id: <f193179b80f4bef1be3236a2d452e7d093e4efa2.1276116186.git.jbaron@redhat.com>
 In-Reply-To: <cover.1276116186.git.jbaron@redhat.com>
 References: <cover.1276116186.git.jbaron@redhat.com>
-Subject: [PATCH 03/13] jump label v9: x86 support
+Subject: [PATCH 05/13] jump label v9: add module support
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add x86 support for jump label. I'm keeping this patch separate so its clear to
-arch maintainers what was required for x86 support this new feature. hopefully,
-it wouldn't be too painful for other arches.
+Add support for 'jump label' for modules.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- arch/x86/Kconfig                  |    1 +
- arch/x86/include/asm/jump_label.h |   48 +++++++++++++++++++++++++++++
- arch/x86/kernel/Makefile          |    2 +-
- arch/x86/kernel/jump_label.c      |   60 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 110 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/include/asm/jump_label.h
- create mode 100644 arch/x86/kernel/jump_label.c
+ arch/x86/kernel/ptrace.c   |    1 +
+ include/linux/jump_label.h |    3 +-
+ include/linux/module.h     |    5 +-
+ kernel/jump_label.c        |  136 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/module.c            |    7 ++
+ 5 files changed, 150 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 6f77afa..4ac6115 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -59,6 +59,7 @@ config X86
- 	select ANON_INODES
- 	select HAVE_ARCH_KMEMCHECK
- 	select HAVE_USER_RETURN_NOTIFIER
-+	select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
-diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
-new file mode 100644
-index 0000000..f8e3f82
---- /dev/null
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -0,0 +1,48 @@
-+#ifndef _ASM_X86_JUMP_LABEL_H
-+#define _ASM_X86_JUMP_LABEL_H
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/types.h>
-+#include <asm/nops.h>
-+
-+#define JUMP_LABEL_NOP_SIZE 5
-+
-+#ifdef CONFIG_X86_64
-+# define JUMP_LABEL_NOP P6_NOP5
-+#else
-+# define JUMP_LABEL_NOP ".byte 0xe9 \n\t .long 0\n\t"
-+#endif
-+
-+#define JUMP_LABEL(tag, label, cond)				\
-+	do {							\
-+		extern const char __jlstrtab_##tag[];		\
-+		asm goto("1:"					\
-+			JUMP_LABEL_NOP				\
-+			".pushsection __jump_table,  \"a\" \n\t"\
-+			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
-+			".popsection \n\t"			\
-+			: :  "i" (__jlstrtab_##tag) :  : label);\
-+	} while (0)
-+
-+#endif /* __KERNEL__ */
-+
-+#ifdef CONFIG_X86_64
-+
-+struct jump_entry {
-+	__u64 code;
-+	__u64 target;
-+	__u64 name;
-+};
-+
-+#else
-+
-+struct jump_entry {
-+	__u32 code;
-+	__u32 target;
-+	__u32 name;
-+};
-+
-+#endif
-+
-+#endif
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index e77b220..44f6bea 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -32,7 +32,7 @@ GCOV_PROFILE_paravirt.o		:= n
- obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
- obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
- obj-y			+= time.o ioport.o ldt.o dumpstack.o
--obj-y			+= setup.o x86_init.o i8259.o irqinit.o
-+obj-y			+= setup.o x86_init.o i8259.o irqinit.o jump_label.o
- obj-$(CONFIG_X86_VISWS)	+= visws_quirks.o
- obj-$(CONFIG_X86_32)	+= probe_roms_32.o
- obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
-diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-new file mode 100644
-index 0000000..c347431
---- /dev/null
-+++ b/arch/x86/kernel/jump_label.c
-@@ -0,0 +1,60 @@
-+/*
-+ * jump label x86 support
-+ *
-+ * Copyright (C) 2009 Jason Baron <jbaron@redhat.com>
-+ *
-+ */
-+#include <linux/jump_label.h>
-+#include <linux/memory.h>
-+#include <linux/uaccess.h>
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 70c4872..8b83cf7 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -21,6 +21,7 @@
+ #include <linux/signal.h>
+ #include <linux/perf_event.h>
+ #include <linux/hw_breakpoint.h>
 +#include <linux/module.h>
-+#include <linux/list.h>
-+#include <linux/jhash.h>
-+#include <linux/cpu.h>
-+#include <asm/kprobes.h>
-+
+ 
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index e631401..a84474c 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -18,7 +18,8 @@ extern struct jump_entry __stop___jump_table[];
+ 
+ #define DEFINE_JUMP_LABEL(name)						\
+ 	const char __jlstrtab_##name[]					\
+-	__used __attribute__((section("__jump_strings")))  = #name;
++	__used __attribute__((section("__jump_strings")))  = #name;	\
++	EXPORT_SYMBOL_GPL(__jlstrtab_##name);
+ 
+ extern void arch_jump_label_transform(struct jump_entry *entry,
+ 				 enum jump_label_type type);
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 8a6b9fd..403ac26 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -350,7 +350,10 @@ struct module
+ 	struct tracepoint *tracepoints;
+ 	unsigned int num_tracepoints;
+ #endif
+-
 +#ifdef HAVE_JUMP_LABEL
-+
-+union jump_code_union {
-+	char code[JUMP_LABEL_NOP_SIZE];
-+	struct {
-+		char jump;
-+		int offset;
-+	} __attribute__((packed));
++	struct jump_entry *jump_entries;
++	unsigned int num_jump_entries;
++#endif
+ #ifdef CONFIG_TRACING
+ 	const char **trace_bprintk_fmt_start;
+ 	unsigned int num_trace_bprintk_fmt;
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 8e76e45..59316f0 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -30,6 +30,13 @@ struct jump_label_entry {
+ 	const char *name;
+ };
+ 
++struct jump_label_module_entry {
++	struct hlist_node hlist;
++	struct jump_entry *table;
++	int nr_entries;
++	struct module *mod;
 +};
 +
-+void arch_jump_label_transform(struct jump_entry *entry, enum jump_label_type type)
-+{
-+	union jump_code_union code;
+ static void swap_jump_label_entries(struct jump_entry *previous, struct jump_entry *next)
+ {
+ 	struct jump_entry tmp;
+@@ -159,6 +166,17 @@ void jump_label_update(const char *name, enum jump_label_type type)
+ 				arch_jump_label_transform(iter, type);
+ 			iter++;
+ 		}
++		/* eanble/disable jump labels in modules */
++		hlist_for_each_entry(e_module, module_node, &(entry->modules),
++							hlist) {
++			count = e_module->nr_entries;
++			iter = e_module->table;
++			while (count--) {
++				if (kernel_text_address(iter->code))
++					arch_jump_label_transform(iter, type);
++				iter++;
++			}
++		}
+ 	}
+ 	mutex_unlock(&jump_label_mutex);
+ }
+@@ -175,4 +193,122 @@ static int init_jump_label(void)
+ }
+ early_initcall(init_jump_label);
+ 
++#ifdef CONFIG_MODULES
 +
-+	if (type == JUMP_LABEL_ENABLE) {
-+		code.jump = 0xe9;
-+		code.offset = entry->target - (entry->code + JUMP_LABEL_NOP_SIZE);
-+	} else {
-+#ifdef CONFIG_X86_64
-+		/* opcode for P6_NOP5 */
-+		code.code[0] = 0x0f;
-+		code.code[1] = 0x1f;
-+		code.code[2] = 0x44;
-+		code.code[3] = 0x00;
-+		code.code[4] = 0x00;
-+#else
-+		code.jump = 0xe9;
-+		code.offset = 0;
-+#endif
++static struct jump_label_module_entry *add_jump_label_module_entry(struct jump_label_entry *entry, struct jump_entry *iter_begin, int count, struct module *mod)
++{
++	struct jump_label_module_entry *e;
++
++	e = kmalloc(sizeof(struct jump_label_module_entry), GFP_KERNEL);
++	if (!e)
++		return ERR_PTR(-ENOMEM);
++	e->mod = mod;
++	e->nr_entries = count;
++	e->table = iter_begin;
++	hlist_add_head(&e->hlist, &entry->modules);
++	return e;
++}
++
++static int add_jump_label_module(struct module *mod)
++{
++	struct jump_entry *iter, *iter_begin;
++	struct jump_label_entry *entry;
++	struct jump_label_module_entry *module_entry;
++	int count;
++
++	/* if the module doesn't have jump label entries, just return */
++	if (!mod->num_jump_entries)
++		return 0;
++
++	sort_jump_label_entries(mod->jump_entries,
++				mod->jump_entries + mod->num_jump_entries);
++	iter = mod->jump_entries;
++	while (iter < mod->jump_entries + mod->num_jump_entries) {
++		entry = get_jump_label_entry((char *)iter->name);
++		iter_begin = iter;
++		count = 0;
++		while ((iter < mod->jump_entries + mod->num_jump_entries) &&
++			(strcmp((char *)iter->name, (char *)iter_begin->name) == 0)) {
++				iter++;
++				count++;
++		}
++		if (!entry) {
++			entry = add_jump_label_entry((char *)iter_begin->name, 0, NULL);
++			if (IS_ERR(entry))
++				return PTR_ERR(entry);
++		}
++		module_entry = add_jump_label_module_entry(entry, iter_begin,
++							   count, mod);
++		if (IS_ERR(module_entry))
++			return PTR_ERR(module_entry);
 +	}
-+	get_online_cpus();
-+	mutex_lock(&text_mutex);
-+	text_poke_smp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-+	mutex_unlock(&text_mutex);
-+	put_online_cpus();
++	return 0;
 +}
 +
-+static const u8 jump_label_nop[JUMP_LABEL_NOP_SIZE] = { 0x0f, 0x1f, 0x44, 0x00, 0x00 };
-+
-+const u8 *arch_get_jump_label_nop()
++static void remove_jump_label_module(struct module *mod)
 +{
-+	return jump_label_nop;
++	struct hlist_head *head;
++	struct hlist_node *node, *node_next, *module_node, *module_node_next;
++	struct jump_label_entry *e;
++	struct jump_label_module_entry *e_module;
++	int i;
++
++	/* if the module doesn't have jump label entries, just return */
++	if (!mod->num_jump_entries)
++		return;
++
++	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
++		head = &jump_label_table[i];
++		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
++			hlist_for_each_entry_safe(e_module, module_node,
++						  module_node_next,
++						  &(e->modules), hlist) {
++				if (e_module->mod == mod) {
++					hlist_del(&e_module->hlist);
++					kfree(e_module);
++				}
++			}
++			if (hlist_empty(&e->modules) && (e->nr_entries == 0)) {
++				hlist_del(&e->hlist);
++				kfree(e);
++			}
++		}
++	}
 +}
 +
++static int jump_label_module_notify(struct notifier_block *self, unsigned long val, void *data)
++{
++	struct module *mod = data;
++	int ret = 0;
++
++	switch (val) {
++	case MODULE_STATE_COMING:
++		mutex_lock(&jump_label_mutex);
++		ret = add_jump_label_module(mod);
++		if (ret)
++			remove_jump_label_module(mod);
++		mutex_unlock(&jump_label_mutex);
++		break;
++	case MODULE_STATE_GOING:
++		mutex_lock(&jump_label_mutex);
++		remove_jump_label_module(mod);
++		mutex_unlock(&jump_label_mutex);
++		break;
++	}
++	return ret;
++}
++
++struct notifier_block jump_label_module_nb = {
++	.notifier_call = jump_label_module_notify,
++	.priority = 0,
++};
++
++static int init_jump_label_module(void)
++{
++	return register_module_notifier(&jump_label_module_nb);
++}
++early_initcall(init_jump_label_module);
++
++#endif /* CONFIG_MODULES */
++
+ #endif
+diff --git a/kernel/module.c b/kernel/module.c
+index 8c6b428..c31cfa9 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -55,6 +55,7 @@
+ #include <linux/async.h>
+ #include <linux/percpu.h>
+ #include <linux/kmemleak.h>
++#include <linux/jump_label.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/module.h>
+@@ -2405,6 +2406,12 @@ static noinline struct module *load_module(void __user *umod,
+ 					sizeof(*mod->tracepoints),
+ 					&mod->num_tracepoints);
+ #endif
++#ifdef HAVE_JUMP_LABEL
++	mod->jump_entries = section_objs(hdr, sechdrs, secstrings,
++					"__jump_table",
++					sizeof(*mod->jump_entries),
++					&mod->num_jump_entries);
 +#endif
+ #ifdef CONFIG_EVENT_TRACING
+ 	mod->trace_events = section_objs(hdr, sechdrs, secstrings,
+ 					 "_ftrace_events",
 -- 
 1.7.1
 
