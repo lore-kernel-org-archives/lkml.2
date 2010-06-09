@@ -1,150 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab0FIPUk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 11:20:40 -0400
-Received: from core.signal11.us ([64.251.29.136]:59344 "EHLO core.signal11.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756651Ab0FIPUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 11:20:37 -0400
-Message-ID: <4C0FB140.90700@signal11.us>
-Date: Wed, 09 Jun 2010 11:20:32 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Antonio Ospite <ospite@studenti.unina.it>
-Cc: Jiri Kosina <jkosina@suse.cz>, Alexey Dobriyan <adobriyan@gmail.com>,
-       Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Stephane Chatty <chatty@enac.fr>,
-       Michael Poole <mdpoole@troilus.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH] HID: Add Support for Setting and Getting Feature   Reports   from hidraw
-References: <1275969108-14948-1-git-send-email-alan@signal11.us>	<20100608083226.2dac88d2.ospite@studenti.unina.it>	<4C0E48DF.7000006@signal11.us> <20100609104235.ccce2289.ospite@studenti.unina.it>
-In-Reply-To: <20100609104235.ccce2289.ospite@studenti.unina.it>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Wed Jun  9 11:20:36 2010
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4c0fb14427652046537818
-X-DSPAM-Factors: 27,
-	reports, 0.01000,
-	Received*26+177, 0.01000,
-	or, 0.01000,
-	or, 0.01000,
-	interface, 0.01000,
-	from, 0.01000,
-	from, 0.01000,
-	of, 0.01000,
-	of, 0.01000,
-	Received*ESMTP, 0.01000,
-	}, 0.01000,
-	Received*(c+76, 0.01000,
-	Received*242.hsd1.fl.comcast.net+[76.26.177.242]), 0.01000,
-	report, 0.01000,
-	From*<alan, 0.01000,
-	int, 0.01000,
-	int, 0.01000,
-	Content-Type*8859+1, 0.01000,
-	first, 0.01000,
-	that, 0.01000,
-	that, 0.01000,
-	Cc*vger.kernel.org+linux, 0.01000,
-	Subject*for, 0.01000,
-	Received*core.signal11.us, 0.01000,
-	Date*2010, 0.01000,
-	as, 0.01000,
-	as, 0.01000
+	id S1756899Ab0FIPWP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 11:22:15 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:61467 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab0FIPWN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 11:22:13 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Wed, 09 Jun 2010 17:22:58 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv4 08/13] USB: gadget: g_serial: INF file updated
+In-reply-to: <20100609145946.GB20543@kroah.com>
+To: Greg KH <greg@kroah.com>
+Cc: Xiaofan Chen <xiaofanc@gmail.com>, linux-usb@vger.kernel.org,
+       David Brownell <david-b@pacbell.net>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <op.vd1g0kcc7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.53 (Linux)
+References: <996015.66352.qm@web180311.mail.gq1.yahoo.com>
+ <op.vd0y3ds37p4s8u@pikus>
+ <AANLkTim6GHWVNvZ1XOJBZiu7ltl7TVpVJwVltLoKpYRi@mail.gmail.com>
+ <op.vd014urd7p4s8u@pikus> <20100609145946.GB20543@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2010 04:42 AM, Antonio Ospite wrote:
-> I was only thinking about the interface to userspace,
-> HIDIOCGRDESC/HIDIOCSRDESC sounded more general to me (and look like
-> HIDIOCGREPORT/HIDIOCSREPORT from hiddev) if they could be made to work
-> with different report types, but as I said I didn't look at the
-> current code very well, so my remark are surely quite naive.
->    
-I see what you mean, re-using the _struct_ not the code. You would have to add
-a report_id, like you said, but it would break the current userspace.
+>> I dunno, obviously I want to make everything according to law to avoid
+>> any problems.  Maybe we should contact someone at The Software Freedom
+>> Law Center or some similar entity?
 
-Along those lines, I wouldn't be opposed to making the ioctl instead of taking
-a variable-length buffer, take a struct. Something like:
+On Wed, 09 Jun 2010 16:59:46 +0200, Greg KH <greg@kroah.com> wrote:
+> Ick, no, that's not needed here.
 
-struct hidraw_report {
-	int report_number;
-	int size;
-	char data[HID_MAX_BUFFER_SIZE /*or something similar*/];
-};
-
-The thing I ran into is that the user would most conveniently create
-the entire struct in userspace, using much more space than is probably necessary
-(since most reports aren't going to be anywhere close to the max allowable
-size, and the max allowable size must be sufficiently large).
-
-The user _could_ do something like:
-	char *buf = malloc(sizeof(int)*2 + requried_data_length);
-	ioctl(fd, ...SREPORT, (hidraw_report*)buf);
-but I don't envision most users doing that as it would be error-prone.
-
-This would require hidraw to copy_from_user() only size bytes from the data
-field, not the entire thing.
-
-I'm open to doing it this way if it seems to fit existing paradigms better,
-but like I said, it will (for most users) require more memory in userspace.
+Still I had a chat on IRC with a person who knows copyright law rather
+well[1] which pointed me to a few things. ;)
 
 
->>> but I didn't actually implement this, so I don't know if it was
->>> feasible, for instance one problem I didn't investigate further was
->>> about the default value of the aforementioned report_type field in
->>> order to keep the current behavior of HIDIOCGRDESC.
->>>
->>>        
->> I'm not sure what you mean here, as the report_type field is not part of
->> hidraw_report_descriptor.
->>
->>      
-> I was thinking about _adding_ that field, but again, pretty arbitrarily
-> thought.
+> Take the copyright off if this is something that _you_ wrote.  If you
+> copied it from somewhere and modified it, say where you copied it from,
+> and show the rights that allowed you to copy it.
 >
->    
->> Thanks for testing my patch. Please let me know if you have problems
->> with it.
->>
->>      
-> It works basically ok for my needs, thanks again, waiting for comments
-> from usb/HID people.
->
-> Note that there are some checkpatch.pl errors in the current patch, and
-> also a style fix mixed with functional ones (@@ -315,7 +411,7 @@), you
-> may want to sort these out in a v2.
->
->    
-I didn't worry about the 80 column warnings, because many of them are
-copy/paste from existing code in the same file, and fixing them would have
-meant either making the code inconsistent in format with the code around it,
-or making formatting corrections which would have violated the "make the
-patch do only one thing" rule. I would appreciate some guidance as to what
-is the best way to handle this kind of thing.
+> Where exactly did you get it from originally?
 
-That said, I had fixed the trailing whitespace errors, but apparently messed
-up when generating my patch. I'll put out a v2 shortly.
+The RNDIS template was taken from:
+http://msdn.microsoft.com/en-us/library/ff570620.aspx
+
+The CDC ACM was sent by Xiaofan Chen who said that it is probably
+taken indirectly form MSDN as well.
 
 
-> After this gets in, some more style fixes to hidraw.c could be made,
-> I'll do these. Maybe some naming cleanup can be made too,
-> hid_output_raw_report could become hid_set_raw_report for instance, but
-> I am waiting for the topic to settle first.
->    
-Agreed. I've made note of a handful of other (small) things which could
-be made a bit better as well. I'm holding off on that stuff until we get this
-functionality ironed out.
+The MSDN TOS reads:
+> If Microsoft makes any code marked as “sample” available on this
+> Web Site without a License Agreement, then that code is licensed
+> to you under the terms of the Microsoft Limited Public License.
 
-Thanks,
+Where the MLPL can be found at:
+<http://msdn.microsoft.com/en-us/cc300389.aspx#MLPL>.  It seems like
+a perfectly legal free software license except point 3(F):
 
-Alan.
+> (F) Platform Limitation- The licenses granted in sections 2(A) & 2(B)
+> extend only to the software or derivative works that you create that
+> run on a Microsoft Windows operating system product.
 
+Also, 3(D) requires that the whole license is included:
+> (D) If you distribute any portion of the software in source code form,
+> you may do so only under this license by including a complete copy of
+> this license with your distribution. If you distribute any portion of
+> the software in compiled or object code form, you may only do so under
+> a license that complies with this license.
 
+Therefore, shall we include the license along with the INFs and ignore
+the fact it's not fully free software?
 
+_______________________________________________________________________
+[1] I'm deliberately not using the word "lawyer" here not I give the
+     person's name as to not make an impression that it was a legal
+     advice or to make him in any way liable.  This was *not* a legal
+     advice.
+
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
