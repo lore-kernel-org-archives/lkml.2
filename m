@@ -1,106 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab0FIHx0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 03:53:26 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:53073 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755585Ab0FIHxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 03:53:23 -0400
-Message-ID: <4C0F4872.7090909@fusionio.com>
-Date: Wed, 09 Jun 2010 09:53:22 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1756314Ab0FIHyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 03:54:13 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:32671 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755801Ab0FIHyM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 03:54:12 -0400
+Message-ID: <4C0F489F.4020204@panasas.com>
+Date: Wed, 09 Jun 2010 10:54:07 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Carl Worth <cworth@cworth.org>,
-       Eric Anholt <eric@anholt.net>, Venkatesh Pallipadi <venki@google.com>,
-       Dave Airlie <airlied@gmail.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Ingo Molnar <mingo@elte.hu>,
-       =?ISO-8859-15?Q?David_H=E4rdeman?= <david@hardeman.nu>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
-Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
-References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera> <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-15
+To: David Rientjes <rientjes@google.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Frans Pop <elendil@planet.nl>,
+       Dirk Hohndel <hohndel@infradead.org>, Len Brown <lenb@kernel.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: kbuild: Fix the breakage caused by "improve version string logic"
+References: <alpine.LFD.2.01.0910041727310.3432@localhost.localdomain> <alpine.LFD.2.00.0910052140100.309@localhost.localdomain> <1254797502.14122.146.camel@dhohndel-mobl.amr.corp.intel.com> <alpine.LFD.2.01.0910060705240.3432@localhost.localdomain> <20091006144449.GA23078@elte.hu> <alpine.LFD.2.01.0910060815320.3432@localhost.localdomain> <20091006153632.GA29795@elte.hu> <alpine.LFD.2.01.0910060843560.3432@localhost.localdomain> <alpine.LFD.2.01.0910060925490.3432@localhost.localdomain> <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu> <4C0D29DE.6050602@panasas.com> <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com> <4C0DFFFF.1010704@panasas.com> <alpine.DEB.2.00.1006080200190.18052@chino.kir.corp.google.com> <4C0E17F0.5010902@panasas.com> <alpine.DEB.2.00.1006082352120.30606@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1006082352120.30606@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Jun 2010 07:54:10.0042 (UTC) FILETIME=[F1A825A0:01CB07A8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-06-09 03:53, Linus Torvalds wrote:
->> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16129
->> Subject	: BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2
->> Submitter	: Jan Kreuzer <kontrollator@gmx.de>
->> Date		: 2010-06-05 06:15 (4 days old)
+On 06/09/2010 09:55 AM, David Rientjes wrote:
+> On Tue, 8 Jun 2010, Boaz Harrosh wrote:
 > 
-> This seems to have been introduced by
+>> What is a tagged commit:
+>>
+>> [my_tree] $ git branch
+>> *master
+>> [my_tree] $ git tag v2.6.35-rc2-my-tree
+>> [my_tree] $ cat localversion-my-tree
+>> -my-tree
+>>
+>> I still get: DEPMOD 2.6.35-rc2-my-tree+
+>>
+>> How to solve? please specify.
+>>
 > 
-> 	commit 7cbaef9c83e58bbd4bdd534b09052b6c5ec457d5
-> 	Author: Ingo Molnar <mingo@elte.hu>
-> 	Date:   Sat Nov 8 17:05:38 2008 +0100
+> You need to use git tag -a.
 > 
-> 	    sched: optimize sched_clock() a bit
->     
-> 	    sched_clock() uses cycles_2_ns() needlessly - which is an irq-disabling
-> 	    variant of __cycles_2_ns().
->     
-> 	    Most of the time sched_clock() is called with irqs disabled already.
-> 	    The few places that call it with irqs enabled need to be updated.
->     
-> 	    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> 
-> and this seems to be one of those calling cases that need to be updated.
-> 
-> Ingo? The call trace is:
-> 
-> 	BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2-8/337
-> 	caller is native_sched_clock+0x3c/0x68
-> 	Pid: 337, comm: jbd2/sda2-8 Not tainted 2.6.35-rc1jan+ #4
-> 	Call Trace:
-> 	[<ffffffff812362c5>] debug_smp_processor_id+0xc9/0xe4
-> 	[<ffffffff8101059d>] native_sched_clock+0x3c/0x68
-> 	[<ffffffff8101043d>] sched_clock+0x9/0xd
-> 	[<ffffffff81212d7a>] blk_rq_init+0x97/0xa3
-> 	[<ffffffff81214d71>] get_request+0x1c4/0x2d0
-> 	[<ffffffff81214ea6>] get_request_wait+0x29/0x1a6
-> 	[<ffffffff81215537>] __make_request+0x338/0x45b
-> 	[<ffffffff812147c2>] generic_make_request+0x2bb/0x330
-> 	[<ffffffff81214909>] submit_bio+0xd2/0xef
-> 	[<ffffffff811413cb>] submit_bh+0xf4/0x116
-> 	[<ffffffff81144853>] block_write_full_page_endio+0x89/0x96
-> 	[<ffffffff81144875>] block_write_full_page+0x15/0x17
-> 	[<ffffffff8119b00a>] ext4_writepage+0x356/0x36b
-> 	[<ffffffff810e1f91>] __writepage+0x1a/0x39
-> 	[<ffffffff810e32a6>] write_cache_pages+0x20d/0x346
-> 	[<ffffffff810e3406>] generic_writepages+0x27/0x29
-> 	[<ffffffff811ca279>] journal_submit_data_buffers+0x110/0x17d
-> 	[<ffffffff811ca986>] jbd2_journal_commit_transaction+0x4cb/0x156d
-> 	[<ffffffff811d0cba>] kjournald2+0x147/0x37a
-> 
-> (from the bugzilla thing)
 
-This should be fixed by commit 28f4197e which was merged on friday.
+Right, I got that
 
->> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16122
->> Subject	: 2.6.35-rc1: WARNING at fs/fs-writeback.c:1142 __mark_inode_dirty+0x103/0x170
->> Submitter	: Larry Finger <Larry.Finger@lwfinger.net>
->> Date		: 2010-06-04 13:18 (5 days old)
+>> In my tree there is 2.6.35-rc2-my-tree so it cannot be mistaken with
+>> Linus tree.
+>>
 > 
-> Jens?
+> Just because you have appended "-my-tree" to the version string does not 
+> mean it is not vanilla 2.6.35-rc2.  You could append information such as 
+> that just for a different config, for instance.  
 
-Looking into this one.
+No, this is all naming convention. Just like the '+' is. If it was a config
+thing then it would be added via CONFIG_LOCALVERSION and *appended* to any
+compilation using that config. From a git tree you get added the localversion*
+file that gets pulled by a checkout. and so on. So at a glance I know that
+the presence of my_tree was added because it is from my tree. They are all
+chained and ordered so we know exactly what contributed what.
 
--- 
-Jens Axboe
+> The `+' modifies the base 
+> kernel version (2.6.35-rc2), not the string itself or whatever you choose 
+> to add to it.
+> 
 
+Not, correct. As you yourself explained. The `+' modifies any Kernel that
+is not a "tag -a" and/or modified from the tree it derives from.
+Base kernel version has nothing to do with it.
+
+>>> As mentioned previously, you can easily suppress that from being added by 
+>>> using "make LOCALVERSION=-foo" to create a 2.6.35-rc2-foo kernel when you 
+>>> do not have CONFIG_LOCALVERSION_AUTO enabled.  You already found that you 
+>>> cannot pass an empty LOCALVERSION string, so it must be something to 
+>>> identify itself as unique from vanilla 2.6.35-rc2.
+>>>
+>>
+>> As mentioned previously this is not an option I do not have git control
+>> over how this gets compiled.
+>>
+> 
+> If your git repository is publically accessible, it is very simple to tag 
+> commits that you want your users to pull from to indicate it's a 
+> "release".  That allows you to determine whether other users have extra 
+> commits on top of your release when they send you bug reports, for 
+> example, which is quite helpful.
+
+Sigh, I give up. Let me spell it out for you once more and I'll not mention
+this again:
+  "For multitude of reasons, there are times that even when running from
+   a git tree, I wish to compile a Kernel as if it's from a tar-ball. .i.e
+   Don't poke in my git tree for this compilation."
+
+Because I'm cross compiling, because I'm bisecting, because my scripts and
+environment demand specific names, because i need to save space and time...
+
+But it seems I will not be granted my wish. I'll go damage my
+scripts/setlocalversion and be done with this.
+
+Thanks
+Boaz
