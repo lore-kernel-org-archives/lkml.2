@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab0FISxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 14:53:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56713 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758162Ab0FISxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 14:53:01 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] FRV: Reinstate null behaviour for the GDB remote protocol 'p'
-	command
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
-Date: Wed, 09 Jun 2010 19:52:22 +0100
-Message-ID: <20100609185222.21720.31044.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1758188Ab0FISxF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 14:53:05 -0400
+Received: from 15.db.79ae.static.theplanet.com ([174.121.219.21]:37840 "EHLO
+	web.webtapells.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1758136Ab0FISw6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 14:52:58 -0400
+Message-ID: <20100609131437.6wrbfbvp4wg8sosc@174.121.227.54>
+Date: Wed, 09 Jun 2010 13:14:37 -0500
+From: Alexander Schell <alexschell000@yahoo.cn>
+Reply-to: alexschell0012@yahoo.cn
+To: undisclosed-recipients:;
+Subject: Business Offer, Call Me
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - web.webtapells.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - yahoo.cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reinstate the null behaviour that the in-kernel gdbstub had for the GDB remote
-protocol 'p' command (retrieve a single register value) prior to the following
-commit:
-
-	commit 7ca8b9c0dafd1cb36289aa4c92c7beae7adcd34f
-	Author: David Howells <dhowells@redhat.com>
-	Date:   Mon May 24 14:32:54 2010 -0700
-	Subject: frv: extend gdbstub to support more features of gdb
-
-Before that, the 'p' command just returned an empty reply, which causes gdb to
-then go and use the 'g' command.  However, since that commit, the 'p' command
-returns an error string, which causes gdb to abort its connection to the
-target.
-
-Not all gdb versions are affected, some use try 'g' first, and if that works,
-don't bother with 'p', and so don't see the error.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- arch/frv/kernel/gdb-stub.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
 
 
-diff --git a/arch/frv/kernel/gdb-stub.c b/arch/frv/kernel/gdb-stub.c
-index 84d103c..a4dba6b 100644
---- a/arch/frv/kernel/gdb-stub.c
-+++ b/arch/frv/kernel/gdb-stub.c
-@@ -1789,6 +1789,12 @@ void gdbstub(int sigval)
- 			flush_cache = 1;
- 			break;
- 
-+			/* pNN: Read value of reg N and return it */
-+		case 'p':
-+			/* return no value, indicating that we don't support
-+			 * this command and that gdb should use 'g' instead */
-+			break;
-+
- 			/* PNN,=RRRRRRRR: Write value R to reg N return OK */
- 		case 'P':
- 			ptr = &input_buffer[1];
+Dear,
+
+
+I know it will be of much interest to you, this is the reason I contacted you.
+
+
+I want to transfer a certain amount of money from my bank here in England to
+any country you may suggest and I would required your full co-operation to
+transfer the money.
+
+
+Call me on +44 701 11 64380, or contact via e-mail alexschell0011@yahoo.cn to
+discuss about this proposal with you.
+
+
+If you are interesting, I will discuss with you about the details and
+procedures of the transaction.
+
+
+Look forward to discussing this opportunity further with you in more detail
+shortly.
+
+
+Sincerely,
+
+Alexander Schell.
+Tel: +44 701 11 64380
+
+
+
+
 
