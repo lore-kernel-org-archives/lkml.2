@@ -1,36 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab0FIExj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 00:53:39 -0400
-Received: from vms173001pub.verizon.net ([206.46.173.1]:50025 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab0FIExi (ORCPT
+	id S1752344Ab0FIFcN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 01:32:13 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38401 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab0FIFcM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 00:53:38 -0400
-Date: Wed, 09 Jun 2010 00:53:28 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       "Moore, Robert" <robert.moore@intel.com>,
-       Len Brown <len.brown@intel.com>, Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH 0/5] ACPI / ACPICA: Fix problems related to GPE reference
- counting
-In-reply-to: <201006081046.48488.rjw@sisk.pl>
-Message-id: <alpine.LFD.2.00.1006090053160.9389@localhost.localdomain>
-References: <201006080024.46142.rjw@sisk.pl> <201006081046.48488.rjw@sisk.pl>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 9 Jun 2010 01:32:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=si2blveVSEs5vrd6u2fYJfsh3248GzyJrzlqVR7l/kXr5QKyOvjuMiAqEHMaQzgF32
+         rmvsltRvb5zNXpk5mTw+8M5uJ8+eZ1laiMF4qo/B9IG3Vjag/XxGuljiCiEcMmoyHn50
+         DYw8QAPiDPDs/0tTdWHqz9ntHZPjooZOV5uxU=
+MIME-Version: 1.0
+In-Reply-To: <1276051329.13426.48.camel@localhost.localdomain>
+References: <AANLkTik0UvRGmGeZOMaJVaoHk-lv2V8umAF3EIckh9CT@mail.gmail.com>
+	<1276051329.13426.48.camel@localhost.localdomain>
+Date: Wed, 9 Jun 2010 13:32:11 +0800
+Message-ID: <AANLkTikSaMcKPh5GI3Tq2SZkVXsNKwE8pfR8me5IHDDv@mail.gmail.com>
+Subject: Re: When and how to use ftrace?
+From: Ryan Wang <openspace.wang@gmail.com>
+To: Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kernelnewbies@nl.linux.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-series applied to acpi-test
+2010/6/9 Steven Rostedt <srostedt@redhat.com>:
+> On Wed, 2010-06-09 at 09:38 +0800, Ryan Wang wrote:
+>> Hi all,
+>>
+>>        I'm new to kernel development, and I'm learning
+>> ftrace recently. I have one question:
+>>        When to use ftrace, or in which cases ftrace can be
+>> more efficient?
+>
+> I can't really answer these questions without knowing what you want to
+> do?
+>
+> ftrace allows you to see what is happening inside the kernel. What would
+> you like to see?
+>
+> -- Steve
+>
+>
+>
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+I really want to know is the differences between ftrace and other kernel debug
+tools such as kdump, kdb, etc.
 
+thanks!
