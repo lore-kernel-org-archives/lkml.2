@@ -1,169 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab0FIPhU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 11:37:20 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45294 "EHLO mx1.suse.de"
+	id S1757468Ab0FIPiE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 11:38:04 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:48312 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932078Ab0FIPhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 11:37:17 -0400
-Subject: Re: [PATCH v4] pm_qos: make update_request non blocking
-From: James Bottomley <James.Bottomley@suse.de>
-To: florian@mickler.org
-Cc: pm list <linux-pm@lists.linux-foundation.org>, markgross@thegnar.org,
-       mgross@linux.intel.com, linville@tuxdriver.com,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <1276097381-3982-1-git-send-email-florian@mickler.org>
-References: <1276097381-3982-1-git-send-email-florian@mickler.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Jun 2010 11:37:12 -0400
-Message-ID: <1276097832.4343.223.camel@mulgrave.site>
+	id S1751029Ab0FIPiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 11:38:00 -0400
+Date: Wed, 9 Jun 2010 17:37:40 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: pm list <linux-pm@lists.linux-foundation.org>, james.bottomley@suse.de,
+       markgross@thegnar.org, mgross@linux.intel.com,
+       "John W. Linville" <linville@tuxdriver.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Javier Cardona <javier@cozybit.com>, Jouni Malinen <j@w1.fi>,
+       Rui Paulo <rpaulo@gmail.com>, Kalle Valo <kalle.valo@nokia.com>,
+       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 1/2] mac80211: make max_network_latency notifier
+ atomic safe
+Message-ID: <20100609173740.3851c6a5@schatten.dmk.lab>
+In-Reply-To: <1276086425.14580.14.camel@jlt3.sipsolutions.net>
+References: <1276074915-26879-1-git-send-email-florian@mickler.org>
+	<1276076287.3727.15.camel@jlt3.sipsolutions.net>
+	<20100609122050.1dd18132@schatten.dmk.lab>
+	<1276080128.14580.5.camel@jlt3.sipsolutions.net>
+	<20100609141643.14e9aedc@schatten.dmk.lab>
+	<1276086425.14580.14.camel@jlt3.sipsolutions.net>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 17:29 +0200, florian@mickler.org wrote:
-> In order to allow drivers to use pm_qos_update_request from interrupt
-> context we call the notifiers via schedule_work().
-> 
-> Signed-off-by: Florian Mickler <florian@mickler.org>
-> ---
-> 
-> Well, this would be the schedule_work() alternative. 
-> 
->  kernel/pm_qos_params.c |   47 ++++++++++++++++++++++++++++++-----------------
->  1 files changed, 30 insertions(+), 17 deletions(-)
-> 
-> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> index f42d3f7..296343a 100644
-> --- a/kernel/pm_qos_params.c
-> +++ b/kernel/pm_qos_params.c
-> @@ -40,6 +40,7 @@
->  #include <linux/string.h>
->  #include <linux/platform_device.h>
->  #include <linux/init.h>
-> +#include <linux/workqueue.h>
->  
->  #include <linux/uaccess.h>
->  
-> @@ -60,11 +61,13 @@ struct pm_qos_request_list {
->  
->  static s32 max_compare(s32 v1, s32 v2);
->  static s32 min_compare(s32 v1, s32 v2);
-> +static void update_notify(struct work_struct *work);
->  
->  struct pm_qos_object {
->  	struct pm_qos_request_list requests;
->  	struct blocking_notifier_head *notifiers;
->  	struct miscdevice pm_qos_power_miscdev;
-> +	struct work_struct notify;
->  	char *name;
->  	s32 default_value;
->  	atomic_t target_value;
-> @@ -72,10 +75,12 @@ struct pm_qos_object {
->  };
->  
->  static struct pm_qos_object null_pm_qos;
-> +
->  static BLOCKING_NOTIFIER_HEAD(cpu_dma_lat_notifier);
->  static struct pm_qos_object cpu_dma_pm_qos = {
->  	.requests = {LIST_HEAD_INIT(cpu_dma_pm_qos.requests.list)},
->  	.notifiers = &cpu_dma_lat_notifier,
-> +	.notify = __WORK_INITIALIZER(cpu_dma_pm_qos.notify, update_notify),
->  	.name = "cpu_dma_latency",
->  	.default_value = 2000 * USEC_PER_SEC,
->  	.target_value = ATOMIC_INIT(2000 * USEC_PER_SEC),
-> @@ -86,6 +91,7 @@ static BLOCKING_NOTIFIER_HEAD(network_lat_notifier);
->  static struct pm_qos_object network_lat_pm_qos = {
->  	.requests = {LIST_HEAD_INIT(network_lat_pm_qos.requests.list)},
->  	.notifiers = &network_lat_notifier,
-> +	.notify = __WORK_INITIALIZER(network_lat_pm_qos.notify, update_notify),
->  	.name = "network_latency",
->  	.default_value = 2000 * USEC_PER_SEC,
->  	.target_value = ATOMIC_INIT(2000 * USEC_PER_SEC),
-> @@ -97,13 +103,14 @@ static BLOCKING_NOTIFIER_HEAD(network_throughput_notifier);
->  static struct pm_qos_object network_throughput_pm_qos = {
->  	.requests = {LIST_HEAD_INIT(network_throughput_pm_qos.requests.list)},
->  	.notifiers = &network_throughput_notifier,
-> +	.notify = __WORK_INITIALIZER(network_throughput_pm_qos.notify,
-> +			update_notify),
->  	.name = "network_throughput",
->  	.default_value = 0,
->  	.target_value = ATOMIC_INIT(0),
->  	.comparitor = max_compare
->  };
->  
-> -
->  static struct pm_qos_object *pm_qos_array[] = {
->  	&null_pm_qos,
->  	&cpu_dma_pm_qos,
-> @@ -135,35 +142,40 @@ static s32 min_compare(s32 v1, s32 v2)
->  	return min(v1, v2);
->  }
->  
-> +static void update_notify(struct work_struct *work)
-> +{
-> +	struct pm_qos_object *obj =
-> +		container_of(work, struct pm_qos_object, notify);
-> +
-> +	s32 extreme_value = atomic_read(&obj->target_value);
-> +	blocking_notifier_call_chain(
-> +		obj->notifiers,
-> +			(unsigned long) extreme_value, NULL);
-> +}
->  
->  static void update_target(int pm_qos_class)
->  {
->  	s32 extreme_value;
->  	struct pm_qos_request_list *node;
-> +	struct pm_qos_object *obj = pm_qos_array[pm_qos_class];
->  	unsigned long flags;
->  	int call_notifier = 0;
->  
->  	spin_lock_irqsave(&pm_qos_lock, flags);
-> -	extreme_value = pm_qos_array[pm_qos_class]->default_value;
-> -	list_for_each_entry(node,
-> -			&pm_qos_array[pm_qos_class]->requests.list, list) {
-> -		extreme_value = pm_qos_array[pm_qos_class]->comparitor(
-> -				extreme_value, node->value);
-> -	}
-> -	if (atomic_read(&pm_qos_array[pm_qos_class]->target_value) !=
-> -			extreme_value) {
-> +	extreme_value = obj->default_value;
-> +	list_for_each_entry(node, &obj->requests.list, list)
-> +		extreme_value = obj->comparitor(extreme_value, node->value);
-> +
-> +	if (atomic_read(&obj->target_value) != extreme_value) {
->  		call_notifier = 1;
-> -		atomic_set(&pm_qos_array[pm_qos_class]->target_value,
-> -				extreme_value);
-> +		atomic_set(&obj->target_value, extreme_value);
->  		pr_debug(KERN_ERR "new target for qos %d is %d\n", pm_qos_class,
-> -			atomic_read(&pm_qos_array[pm_qos_class]->target_value));
-> +			atomic_read(&obj->target_value));
->  	}
->  	spin_unlock_irqrestore(&pm_qos_lock, flags);
->  
->  	if (call_notifier)
-> -		blocking_notifier_call_chain(
-> -				pm_qos_array[pm_qos_class]->notifiers,
-> -					(unsigned long) extreme_value, NULL);
-> +		schedule_work(&obj->notify);
->  }
+On Wed, 09 Jun 2010 14:27:05 +0200
+Johannes Berg <johannes@sipsolutions.net> wrote:
 
-This still isn't resilient against two successive calls to update.  If
-the second one gets to schedule_work() before the work of the first one
-has finished, you'll corrupt the workqueue.
+> On Wed, 2010-06-09 at 14:16 +0200, Florian Mickler wrote:
+> 
+> > That was also my first idea, but then I thought about qos and thought
+> > atomic notification are necessary.
+> > Do you see any value in having atomic notification? 
+> > 
+> > I have the following situation before my eyes:
+> > 
+> > 	Driver A gets an interrupt and needs (to service that
+> > 	interrupt) the cpu to guarantee a latency of X because the
+> > 	device is a bit icky.
+> > 
+> > Now, in that situation, if we don't immediately (without scheduling in
+> > between) notify the system to be in that latency-mode the driver won't
+> > function properly. Is this a realistic scene?
+> > 
+> > At the moment we only have process context notification and only 2
+> > listeners.
+> > 
+> > I think providing for atomic as well as "relaxed" notification could be
+> > useful. 
+> > 
+> > If atomic notification is deemed unnecessary, I have no
+> > problems to just use schedule_work() in update request.
+> > Anyway, it is probably best to split this. I.e. first make
+> > update_request callable from atomic contexts with doing the
+> > schedule_work in update_request and then
+> > as an add on provide for constraints_objects with atomic notifications.
+> 
+> Well I remember http://thread.gmane.org/gmane.linux.kernel/979935 where
+> Mark renamed things to "request" which seems to imply to me more of a
+> "please do this" than "I NEED IT NOW!!!!!".
+> 
+> johannes
 
-The mechanisms to solve this race (refcounting a pool of structures) are
-so heavyweight that I concluded it was simpler just to have atomically
-updated pm_qos objects and enforce it ... rather than trying to allow
-blocking chains to be added to atomic sites via a workqueue.
+Yes. I just posted a version which uses schedule_work().
+Just FYI, James has also posted his version which uses either a blocking
+or an atomic notifier chain.
+http://article.gmane.org/gmane.linux.kernel/996813
 
-James
-
+Cheers,
+Flo
 
