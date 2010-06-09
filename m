@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab0FIXbG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 19:31:06 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:1301 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000Ab0FIXbE (ORCPT
+	id S1755898Ab0FIXgL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 19:36:11 -0400
+Received: from mail.avellaneda-ba.gov.ar ([200.71.230.2]:53234 "EHLO
+	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752222Ab0FIXgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 19:31:04 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai Lu <yinghai.lu@oracle.com>
-Subject: Re: [PATCH -v2] pci: clear bridge resource size if BIOS assign bad one
-Date: Wed, 9 Jun 2010 17:30:31 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Yannick Roehlly <yannick.roehlly@free.fr>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <bug-16009-13546@https.bugzilla.kernel.org/> <201006081649.00332.bjorn.helgaas@hp.com> <4C0ED401.6060800@oracle.com>
-In-Reply-To: <4C0ED401.6060800@oracle.com>
+	Wed, 9 Jun 2010 19:36:09 -0400
+Message-ID: <20453.41.220.68.4.1276124778.squirrel@41.220.68.4>
+Date: Wed, 9 Jun 2010 21:06:18 -0200 (FNT)
+Subject: Official Prize Notification
+From: "Microsoft E-mail Promo Department" <info.winner@microsoft.com>
+Reply-To: ivannickerson001@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006091730.32724.bjorn.helgaas@hp.com>
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 08, 2010 05:36:33 pm Yinghai Lu wrote:
-> On 06/08/2010 03:48 PM, Bjorn Helgaas wrote:
-> > On Tuesday, June 08, 2010 03:43:50 pm Jesse Barnes wrote:
-> > 
-> > In this case, the aperture *size* from the BIOS is actually OK, but
-> > the beginning of the aperture overlaps system memory.  With Yinghai's
-> > patch, we reduce the size and move the start.  Windows was able to
-> > just move the start of the aperture and preserve the original
-> > 0x20000000 size (but I think it had to move something else out of
-> > the way).
-> 
-> are you sure? that looks more aggressive.
+Official Prize Notification
 
-I don't have the machine and can't be 100% sure, but based on what
-Yannic reported here: https://bugzilla.kernel.org/show_bug.cgi?id=16009#c11,
-it looks like Windows moved that aperture.
+The MICROSOFT EMAIL PROMO TEAM is glad to announce that
+after a successful completion of the PROMO DRAWS held on the
+8th June 2010, your e-mail address,attached to winning
+numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
+lottery category.
 
-I haven't used it myself, but possibly a program like SIV
-(http://rh-software.com/) would give more detailed information
-about what Windows is doing.
+You have therefore been approved to claim a total sum of
+£250,000,00 GBP(Two Hundred and Fifty Thousand Great British
+Pounds Sterling) in cash credited to file REF NO:MICRO-L/2009-END10,
+BATCH NO:2009MJL-05, this is from a total prize money of
+£3,750,000 (Three Million,Seven hundred and Fifty Thousand
+British Pounds Sterling),shared among the Twenty five (25)
+international winners in this category.
 
-Bjorn
+All participants were selected through our Microsoft computer
+ballot system drawn from 167,000 Names,as part of our
+International  \"E-MAIL"\ Promotion Program for our prominent
+MS-WORD users all over the world and for the continuous use
+of the internet. You are advised to contact the claims
+processor with the details below via his e-mail address :
+
+NAME:  Ivan Nickerson
+EMAIL: ivan.nickerson@yahoo.com.hk
+
+PLEASE NOTE THAT YOU ARE TO SEND THE FOLLOWING INFORMATION TO
+CLAIM YOUR WINNINGS:
+
+1.Full Name....................................
+2.Address:....................................
+3.Phone:...............Fax:...................
+4.Country:....................................
+5.Sex/Gender...................................
+
+In order to avoid unnecessary delay and complications,please
+remember to quote your reference and winning ticket number in
+all correspondence with your claims officer.Your secret pin
+code is ML0757985.Be warned that cases of double claims and
+unwarranted abuse of this program will be legally pursued.
+
+
+
+YOURS SINCERELY,
+DOROTHY CAMPBELL.
+
