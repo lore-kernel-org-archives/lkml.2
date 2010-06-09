@@ -1,65 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508Ab0FIJAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:00:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46272 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab0FIJAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:00:07 -0400
-Message-ID: <4C0F5804.9080406@redhat.com>
-Date: Wed, 09 Jun 2010 11:59:48 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1756567Ab0FIJCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:02:45 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:33712 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754926Ab0FIJCl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 05:02:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=fAisWGLS3E/WhKxsTScTu8n5ajwHzT0p6cFB5pORIxumsQOoFeuM4zIs0WUSwJhY5D
+         AhBLnJMrb0mtuSNa2qrcl2psg93E3kUZN3iuSCbYJk4Ix6ozk7tG1oYc5S7rCzhIYj+7
+         a5AhYLATBAZ1nweesyEQZY8BSdGf+5nWHEaGE=
 MIME-Version: 1.0
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com
-Subject: Re: [RFC] para virt interface of perf to support kvm guest os statistics
- collection in guest os
-References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>
-In-Reply-To: <1276054214.2096.383.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
+References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
+Date: Wed, 9 Jun 2010 11:02:34 +0200
+Message-ID: <AANLkTiksbL1qHg7Q0A-6TbX0uUrxra4jctUoIGVk5vnE@mail.gmail.com>
+Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>, dmonakhov@openvz.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2010 06:30 AM, Zhang, Yanmin wrote:
-> From: Zhang, Yanmin<yanmin_zhang@linux.intel.com>
->
-> Based on Ingo's idea, I implement a para virt interface for perf to support
-> statistics collection in guest os. That means we could run tool perf in guest
-> os directly.
->
-> Great thanks to Peter Zijlstra. He is really the architect and gave me architecture
-> design suggestions. I also want to thank Yangsheng and LinMing for their generous
-> help.
->
-> The design is:
->
-> 1) Add a kvm_pmu whose callbacks mostly just calls hypercall to vmexit to host kernel;
-> 2) Create a host perf_event per guest perf_event;
-> 3) Host kernel syncs perf_event count/overflows data changes to guest perf_event
-> when processing perf_event overflows after NMI arrives. Host kernel inject NMI to guest
-> kernel if a guest event overflows.
-> 4) Guest kernel goes through all enabled event on current cpu and output data when they
-> overflows.
-> 5) No change in user space.
->    
+The patch from [1] is still missing.
 
-Other issues:
+   "cpufreq-call-nr_iowait_cpu-with-disabled-preemption.patch" from
+Dmitry Monakhoc
 
-- save/restore support for live migration
-- some way to limit the number of open handles (comes automatically with 
-the table approach I suggested earlier)
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Tested-by Maciej Rutecki <maciej.rutecki@gmail.com>
 
--- 
-error compiling committee.c: too many arguments to function
+I have already reported this issue on LKML [2] and cpufreq ML [3].
 
+- Sedat -
+
+[1] http://www.spinics.net/lists/cpufreq/msg01631.html
+[2] http://lkml.org/lkml/2010/5/31/77
+[3] http://www.spinics.net/lists/cpufreq/msg01637.html
+
+On Wed, Jun 9, 2010 at 12:06 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> [NOTES:
+>  * This by no means is a complete list, but we only put e-mail reports that
+>   are at least 1 week old into the Bugzilla.
+>  * Quite a few of the already reported regressions may be related to the bug
+>   fixed by 386f40c86d6c8d5b717ef20620af1a750d0dacb4 (Revert "tty: fix a little
+>   bug in scrup, vt.c"), so reporters please retest with this commit applied.]
+>
+> This message contains a list of some regressions from 2.6.34,
+> for which there are no fixes in the mainline known to the tracking team.
+> If any of them have been fixed already, please let us know.
+>
+> If you know of any other unresolved regressions from 2.6.34, please let us
+> know either and we'll add them to the list.  Also, please let us know
+> if any of the entries below are invalid.
+>
+> Each entry from the list will be sent additionally in an automatic reply
+> to this message with CCs to the people involved in reporting and handling
+> the issue.
+>
+>
+> Listed regressions statistics:
+>
+>  Date          Total  Pending  Unresolved
+>  ----------------------------------------
+>  2010-06-09       15       13          10
+>
+>
+> Unresolved regressions
+> ----------------------
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16163
+> Subject         : [2.6.35-rc1 Regression] i915: Commit cfecde causes VGA to stay off
+> Submitter       : David John <davidjon@xenontk.org>
+> Date            : 2010-06-02 12:52 (7 days old)
+> Message-ID      : <4C065423.3000202@xenontk.org>
+> References      : http://marc.info/?l=linux-kernel&m=127548313828613&w=2
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16161
+> Subject         : [2.6.35-rc1 regression] sysfs: cannot create duplicate filename ... XVR-600 related?
+> Submitter       : Mikael Pettersson <mikpe@it.uu.se>
+> Date            : 2010-06-01 19:57 (8 days old)
+> Message-ID      : <19461.26166.427857.612983@pilspetsen.it.uu.se>
+> References      : http://marc.info/?l=linux-kernel&m=127542227511925&w=2
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16160
+> Subject         : 2.6.35 Radeon KMS power management regression?
+> Submitter       : Nigel Cunningham <ncunningham@crca.org.au>
+> Date            : 2010-06-01 6:23 (8 days old)
+> Message-ID      : <4C04A767.8000209@crca.org.au>
+> References      : http://marc.info/?l=linux-kernel&m=127537343722290&w=2
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16145
+> Subject         : Unable to boot after "ACPI: Don't let acpi_pad needlessly mark TSC unstable"
+> Submitter       : Tom Gundersen <teg@jklm.no>
+> Date            : 2010-06-07 13:11 (2 days old)
+> Handled-By      : Venkatesh Pallipadi <venki@google.com>
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16129
+> Subject         : BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2
+> Submitter       : Jan Kreuzer <kontrollator@gmx.de>
+> Date            : 2010-06-05 06:15 (4 days old)
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16122
+> Subject         : 2.6.35-rc1: WARNING at fs/fs-writeback.c:1142 __mark_inode_dirty+0x103/0x170
+> Submitter       : Larry Finger <Larry.Finger@lwfinger.net>
+> Date            : 2010-06-04 13:18 (5 days old)
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16120
+> Subject         : Oops: 0000 [#1] SMP, unable to handle kernel NULL pointer dereference at (null)
+> Submitter       : Alex Zhavnerchik <alex.vizor@gmail.com>
+> Date            : 2010-06-04 09:25 (5 days old)
+> Handled-By      : Eric Dumazet <eric.dumazet@gmail.com>
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16104
+> Subject         : Radeon KMS does not start after merge of the new PM-Code
+> Submitter       : Jan Kreuzer <kontrollator@gmx.de>
+> Date            : 2010-06-02 07:47 (7 days old)
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16090
+> Subject         : sysfs: cannot create duplicate filename
+> Submitter       : Tobias <devnull@plzk.org>
+> Date            : 2010-06-01 15:59 (8 days old)
+> Handled-By      : Jesse Barnes <jbarnes@virtuousgeek.org>
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16037
+> Subject         : NULL Pointer dereference in __ir_input_register/budget_ci_attach
+> Submitter       : Sean Finney <seanius@debian.org>
+> Date            : 2010-05-23 19:52 (17 days old)
+>
+>
+> Regressions with patches
+> ------------------------
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16131
+> Subject         : kernel BUG at fs/btrfs/extent-tree.c:4363 (btrfs_free_tree_block)
+> Submitter       : Chow Loong Jin <hyperair@ubuntu.com>
+> Date            : 2010-06-05 18:53 (4 days old)
+> Handled-By      : Yan Zheng <zheng.yan@oracle.com>
+> Patch           : https://patchwork.kernel.org/patch/103235/
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16127
+> Subject         : Boot freeze on HP Compaq nx6325 (RS482) with Radeon KMS
+> Submitter       : Jure Repinc <jlp.bugs@gmail.com>
+> Date            : 2010-06-04 21:14 (5 days old)
+> Handled-By      : Dave Airlie <airlied@linux.ie>
+> Patch           : https://bugzilla.kernel.org/attachment.cgi?id=26677
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16092
+> Subject         : Caught 64-bit read from uninitialized memory in memtype_rb_augment_cb
+> Submitter       : Christian Casteyde <casteyde.christian@free.fr>
+> Date            : 2010-06-01 18:08 (8 days old)
+> Handled-By      : Venki <venki@google.com>
+> Patch           : https://bugzilla.kernel.org/show_bug.cgi?id=16092#c2
+>
+>
+> For details, please visit the bug entries and follow the links given in
+> references.
+>
+> As you can see, there is a Bugzilla entry for each of the listed regressions.
+> There also is a Bugzilla entry used for tracking the regressions from 2.6.34,
+> unresolved as well as resolved, at:
+>
+> http://bugzilla.kernel.org/show_bug.cgi?id=16055
+>
+> Please let the tracking team know if there are any Bugzilla entries that
+> should be added to the list in there.
+>
+> Thanks!
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
