@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109Ab0FISbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 14:31:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51401 "EHLO mail.zytor.com"
+	id S1758121Ab0FISgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 14:36:04 -0400
+Received: from THUNK.ORG ([69.25.196.29]:41267 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753530Ab0FISbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 14:31:38 -0400
-Message-ID: <4C0FDD8C.2020704@zytor.com>
-Date: Wed, 09 Jun 2010 11:29:32 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Boaz Harrosh <bharrosh@panasas.com>, Borislav Petkov <bp@alien8.de>,
-       =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
-       uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Jeff Dike <jdike@addtoit.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [uml-devel] [PATCH resend] um, hweight: Fix UML boot crash
-References: <4C0F4B00.4090307@panasas.com>	<4C0F4C40.5020207@panasas.com> <AANLkTinwQmWP-rFu9e-ns5twsZwZjuSLi5vcll55ZZhx@mail.gmail.com>
-In-Reply-To: <AANLkTinwQmWP-rFu9e-ns5twsZwZjuSLi5vcll55ZZhx@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1758067Ab0FISgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 14:36:03 -0400
+Date: Wed, 09 Jun 2010 14:36:00 -0400
+Message-Id: <E1OMQ88-0002a1-Gb@closure.thunk.org>
+To: Dave Airlie <airlied@redhat.com>, David Howells <dhowells@redhat.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Why is kslowd accumulating so much CPU time?
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2010 01:46 AM, Geert Uytterhoeven wrote:
-> 
-> Peter, are you happy with this?
-> Although we still don't know why UML cannot grok it, it does fix a
-> regression in post-2.6.34.
-> 
 
-Yes, I'll push it.
+My laptop is running 2.6.35-rc2 (plus a few patches) and after not quite
+four hours of beeing booted (3:45 to be precise), top shows that kslowd
+has accumulated as surprising amount of CPU time.  From top display:
 
-	-hpa
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+ 6173 root      15  -5     0    0    0 S    6  0.0  10:42.91 kslowd001
+ 1219 root      15  -5     0    0    0 S    5  0.0  11:00.68 kslowd000
+ 1765 root      15  -5     0    0    0 S    5  0.0  10:59.20 kslowd002
+ 6784 root      15  -5     0    0    0 S    4  0.0  10:34.37 kslowd003
+ 4946 root      20   0  144m  34m  17m S    3  0.9   2:24.62 Xorg
+
+This came up because I was trying to figure out why mouse response was
+being so jerky.  There aren't that many users of slow-work, and given
+that I'm not using cifs, fscache, gfs2, my suspicions are falling on
+drivers/gpu/drm/drm_crtc_helper.c (Would this be something that would be
+in use on a Lenovo T400 laptop?)
+
+Is there any way to easily see what is scheduling themselves to use the
+slow workqueue?
+
+Thanks,
+
+						- Ted
