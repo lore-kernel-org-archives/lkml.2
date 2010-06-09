@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab0FILyF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 07:54:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58661 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760Ab0FILyE convert rfc822-to-8bit (ORCPT
+	id S1757439Ab0FIMCS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 08:02:18 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61376 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754848Ab0FIMCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 07:54:04 -0400
-Subject: Re: [PATCH][RFC] tracing: Use class->reg() for all registering of
- events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-In-Reply-To: <20100609114753.GB5878@linux.vnet.ibm.com>
-References: <1276011215.15884.96.camel@gandalf.stny.rr.com>
-	 <1276012661.2046.120.camel@twins>
-	 <20100608173559.GE2800@linux.vnet.ibm.com>
-	 <1276024211.15884.107.camel@gandalf.stny.rr.com>
-	 <20100609050534.GA5878@linux.vnet.ibm.com>
-	 <1276065150.2046.1004.camel@twins>
-	 <20100609114753.GB5878@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 09 Jun 2010 13:53:34 +0200
-Message-ID: <1276084414.2046.1335.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 9 Jun 2010 08:02:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=pRRXF0xtdCfRoSsvL1iYoD989Wt4Tcrt/xPMTdOyi6lOPA+/Jgg6I2PL3ozWe0PyrS
+         PRB90UzgdEN6lsTLNSww46FJqhxKCrxsCmA1s1+miNNKsCS2EPrGXuEIgIhpq17oPb/q
+         L2Y0UcitZjzIoEpnHR/cN8KrDmO3ZUs799+Os=
+Date: Wed, 9 Jun 2010 14:01:54 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: Tejun Heo <tj@kernel.org>, Robert Hancock <hancockrwd@gmail.com>,
+       Vivek Mahajan <vivek.mahajan@freescale.com>, linux-ide@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] sata_sil24: memset() overflow
+Message-ID: <20100609120153.GF5483@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>,
+	Robert Hancock <hancockrwd@gmail.com>,
+	Vivek Mahajan <vivek.mahajan@freescale.com>,
+	linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 17:17 +0530, Srikar Dronamraju wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2010-06-09 08:32:30]:
-> 
-> > On Wed, 2010-06-09 at 10:35 +0530, Srikar Dronamraju wrote:
-> > 
-> > > Peter, can you please point me to the fix for the floating point
-> > > exception patch?
-> > 
-> > Ingo just commited the fix, see tip commit f6ab91add6 (perf: Fix signed
-> > comparison in perf_adjust_period()).
-> 
-> Actually this fix was already checked-in but I still see the problem.
-> 
-> When ran gdb on the core, it showed me that it was dumping in
-> /usr/lib64/libnewt.so.0.52. in newtScaleSet function.
-> My newt lib was of version : newt-0.52.2-15
-> 
-> I am now able to workaround the problem by uninstalling newt-devel.
+cb->atapi.cdb is an array of 16 u8 elements.  The call too memset() 
+would set the first part of the sge array to zero as well.  It's not
+a packed struct. 
 
-Ah, ok, then we're talking about two different issues, the patch I
-referred to solves a possible /0 in the kernel which triggers easily
-with software events because of that unsigned comparison.
+This one has been around for five years.  I found it with Smatch.  I
+think the reason no one has seen it before is because we normally call
+sil24_fill_sg() and that overwrites sge with proper information?
 
-I'll have to defer to Arnaldo on the newt issue.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+---
+I don't have this hardware myself so I can't test it.  Sorry. :(
+
+diff --git a/drivers/ata/sata_sil24.c b/drivers/ata/sata_sil24.c
+index e925051..9e459eb 100644
+--- a/drivers/ata/sata_sil24.c
++++ b/drivers/ata/sata_sil24.c
+@@ -865,7 +865,7 @@ static void sil24_qc_prep(struct ata_queued_cmd *qc)
+ 	} else {
+ 		prb = &cb->atapi.prb;
+ 		sge = cb->atapi.sge;
+-		memset(cb->atapi.cdb, 0, 32);
++		memset(cb->atapi.cdb, 0, sizeof(cb->atapi.cdb));
+ 		memcpy(cb->atapi.cdb, qc->cdb, qc->dev->cdb_len);
+ 
+ 		if (ata_is_data(qc->tf.protocol)) {
