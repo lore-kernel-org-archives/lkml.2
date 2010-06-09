@@ -1,108 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab0FIKOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:14:01 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41272 "EHLO hera.kernel.org"
+	id S932211Ab0FIKOT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:14:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41286 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752080Ab0FIKN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:13:59 -0400
-Date: Wed, 9 Jun 2010 10:13:20 GMT
-From: tip-bot for Oleg Nesterov <oleg@redhat.com>
+	id S932144Ab0FIKON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 06:14:13 -0400
+Date: Wed, 9 Jun 2010 10:13:39 GMT
+From: tip-bot for Venkatesh Pallipadi <venki@google.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, oleg@redhat.com, tglx@linutronix.de,
-       mingo@elte.hu
+       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu,
+       venki@google.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, oleg@redhat.com,
+       a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com,
        mingo@elte.hu
-In-Reply-To: <20100519125711.GA30199@redhat.com>
-References: <20100519125711.GA30199@redhat.com>
+In-Reply-To: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
+References: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Simplify the reacquire_kernel_lock() logic
-Message-ID: <tip-246d86b51845063e4b06b27579990492dc5fa317@git.kernel.org>
-Git-Commit-ID: 246d86b51845063e4b06b27579990492dc5fa317
+Subject: [tip:sched/core] sched: Avoid side-effect of tickless idle on update_cpu_load
+Message-ID: <tip-fdf3e95d3916f18bf8703fb065499fdbc4dfe34c@git.kernel.org>
+Git-Commit-ID: fdf3e95d3916f18bf8703fb065499fdbc4dfe34c
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:13:21 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:13:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  246d86b51845063e4b06b27579990492dc5fa317
-Gitweb:     http://git.kernel.org/tip/246d86b51845063e4b06b27579990492dc5fa317
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Wed, 19 May 2010 14:57:11 +0200
+Commit-ID:  fdf3e95d3916f18bf8703fb065499fdbc4dfe34c
+Gitweb:     http://git.kernel.org/tip/fdf3e95d3916f18bf8703fb065499fdbc4dfe34c
+Author:     Venkatesh Pallipadi <venki@google.com>
+AuthorDate: Mon, 17 May 2010 18:14:43 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 9 Jun 2010 10:34:50 +0200
+CommitDate: Wed, 9 Jun 2010 10:34:51 +0200
 
-sched: Simplify the reacquire_kernel_lock() logic
+sched: Avoid side-effect of tickless idle on update_cpu_load
 
-- Contrary to what 6d558c3a says, there is no need to reload
-  prev = rq->curr after the context switch. You always schedule
-  back to where you came from, prev must be equal to current
-  even if cpu/rq was changed.
+tickless idle has a negative side effect on update_cpu_load(), which
+in turn can affect load balancing behavior.
 
-- This also means reacquire_kernel_lock() can use prev instead
-  of current.
+update_cpu_load() is supposed to be called every tick, to keep track
+of various load indicies. With tickless idle, there are no scheduler
+ticks called on the idle CPUs. Idle CPUs may still do load balancing
+(with idle_load_balance CPU) using the stale cpu_load. It will also
+cause problems when all CPUs go idle for a while and become active
+again. In this case loads would not degrade as expected.
 
-- No need to reassign switch_count if reacquire_kernel_lock()
-  reports need_resched(), we can just move the initial assignment
-  down, under the "need_resched_nonpreemptible:" label.
+This is how rq->nr_load_updates change looks like under different
+conditions:
 
-- Try to update the comment after context_switch().
+<cpu_num> <nr_load_updates change>
+All CPUS idle for 10 seconds (HZ=1000)
+0 1621
+10 496
+11 139
+12 875
+13 1672
+14 12
+15 21
+1 1472
+2 2426
+3 1161
+4 2108
+5 1525
+6 701
+7 249
+8 766
+9 1967
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+One CPU busy rest idle for 10 seconds
+0 10003
+10 601
+11 95
+12 966
+13 1597
+14 114
+15 98
+1 3457
+2 93
+3 6679
+4 1425
+5 1479
+6 595
+7 193
+8 633
+9 1687
+
+All CPUs busy for 10 seconds
+0 10026
+10 10026
+11 10026
+12 10026
+13 10025
+14 10025
+15 10025
+1 10026
+2 10026
+3 10026
+4 10026
+5 10026
+6 10026
+7 10026
+8 10026
+9 10026
+
+That is update_cpu_load works properly only when all CPUs are busy.
+If all are idle, all the CPUs get way lower updates.  And when few
+CPUs are busy and rest are idle, only busy and ilb CPU does proper
+updates and rest of the idle CPUs will do lower updates.
+
+The patch keeps track of when a last update was done and fixes up
+the load avg based on current time.
+
+On one of my test system SPECjbb with warehouse 1..numcpus, patch
+improves throughput numbers by ~1% (average of 6 runs).  On another
+test system (with different domain hierarchy) there is no noticable
+change in perf.
+
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20100519125711.GA30199@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+LKML-Reference: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched.c |   13 ++++++-------
- 1 files changed, 6 insertions(+), 7 deletions(-)
+ kernel/sched.c      |  100 ++++++++++++++++++++++++++++++++++++++++++++++++---
+ kernel/sched_fair.c |    5 ++-
+ 2 files changed, 99 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/sched.c b/kernel/sched.c
-index 3abd8f7..f37a961 100644
+index f37a961..a757f6b 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -3636,7 +3636,6 @@ need_resched:
- 	rq = cpu_rq(cpu);
- 	rcu_note_context_switch(cpu);
- 	prev = rq->curr;
--	switch_count = &prev->nivcsw;
+@@ -457,6 +457,7 @@ struct rq {
+ 	unsigned long nr_running;
+ 	#define CPU_LOAD_IDX_MAX 5
+ 	unsigned long cpu_load[CPU_LOAD_IDX_MAX];
++	unsigned long last_load_update_tick;
+ #ifdef CONFIG_NO_HZ
+ 	u64 nohz_stamp;
+ 	unsigned char in_nohz_recently;
+@@ -1803,6 +1804,7 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
+ static void calc_load_account_idle(struct rq *this_rq);
+ static void update_sysctl(void);
+ static int get_update_sysctl_factor(void);
++static void update_cpu_load(struct rq *this_rq);
  
- 	release_kernel_lock(prev);
- need_resched_nonpreemptible:
-@@ -3649,6 +3648,7 @@ need_resched_nonpreemptible:
- 	raw_spin_lock_irq(&rq->lock);
- 	clear_tsk_need_resched(prev);
+ static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
+ {
+@@ -3050,23 +3052,102 @@ static void calc_load_account_active(struct rq *this_rq)
+ }
  
-+	switch_count = &prev->nivcsw;
- 	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
- 		if (unlikely(signal_pending_state(prev->state, prev))) {
- 			prev->state = TASK_RUNNING;
-@@ -3689,8 +3689,10 @@ need_resched_nonpreemptible:
+ /*
++ * The exact cpuload at various idx values, calculated at every tick would be
++ * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
++ *
++ * If a cpu misses updates for n-1 ticks (as it was idle) and update gets called
++ * on nth tick when cpu may be busy, then we have:
++ * load = ((2^idx - 1) / 2^idx)^(n-1) * load
++ * load = (2^idx - 1) / 2^idx) * load + 1 / 2^idx * cur_load
++ *
++ * decay_load_missed() below does efficient calculation of
++ * load = ((2^idx - 1) / 2^idx)^(n-1) * load
++ * avoiding 0..n-1 loop doing load = ((2^idx - 1) / 2^idx) * load
++ *
++ * The calculation is approximated on a 128 point scale.
++ * degrade_zero_ticks is the number of ticks after which load at any
++ * particular idx is approximated to be zero.
++ * degrade_factor is a precomputed table, a row for each load idx.
++ * Each column corresponds to degradation factor for a power of two ticks,
++ * based on 128 point scale.
++ * Example:
++ * row 2, col 3 (=12) says that the degradation at load idx 2 after
++ * 8 ticks is 12/128 (which is an approximation of exact factor 3^8/4^8).
++ *
++ * With this power of 2 load factors, we can degrade the load n times
++ * by looking at 1 bits in n and doing as many mult/shift instead of
++ * n mult/shifts needed by the exact degradation.
++ */
++#define DEGRADE_SHIFT		7
++static const unsigned char
++		degrade_zero_ticks[CPU_LOAD_IDX_MAX] = {0, 8, 32, 64, 128};
++static const unsigned char
++		degrade_factor[CPU_LOAD_IDX_MAX][DEGRADE_SHIFT + 1] = {
++					{0, 0, 0, 0, 0, 0, 0, 0},
++					{64, 32, 8, 0, 0, 0, 0, 0},
++					{96, 72, 40, 12, 1, 0, 0},
++					{112, 98, 75, 43, 15, 1, 0},
++					{120, 112, 98, 76, 45, 16, 2} };
++
++/*
++ * Update cpu_load for any missed ticks, due to tickless idle. The backlog
++ * would be when CPU is idle and so we just decay the old load without
++ * adding any new load.
++ */
++static unsigned long
++decay_load_missed(unsigned long load, unsigned long missed_updates, int idx)
++{
++	int j = 0;
++
++	if (!missed_updates)
++		return load;
++
++	if (missed_updates >= degrade_zero_ticks[idx])
++		return 0;
++
++	if (idx == 1)
++		return load >> missed_updates;
++
++	while (missed_updates) {
++		if (missed_updates % 2)
++			load = (load * degrade_factor[idx][j]) >> DEGRADE_SHIFT;
++
++		missed_updates >>= 1;
++		j++;
++	}
++	return load;
++}
++
++/*
+  * Update rq->cpu_load[] statistics. This function is usually called every
+- * scheduler tick (TICK_NSEC).
++ * scheduler tick (TICK_NSEC). With tickless idle this will not be called
++ * every tick. We fix it up based on jiffies.
+  */
+ static void update_cpu_load(struct rq *this_rq)
+ {
+ 	unsigned long this_load = this_rq->load.weight;
++	unsigned long curr_jiffies = jiffies;
++	unsigned long pending_updates;
+ 	int i, scale;
  
- 		context_switch(rq, prev, next); /* unlocks the rq */
+ 	this_rq->nr_load_updates++;
+ 
++	/* Avoid repeated calls on same jiffy, when moving in and out of idle */
++	if (curr_jiffies == this_rq->last_load_update_tick)
++		return;
++
++	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
++	this_rq->last_load_update_tick = curr_jiffies;
++
+ 	/* Update our load: */
+-	for (i = 0, scale = 1; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
++	this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
++	for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
+ 		unsigned long old_load, new_load;
+ 
+ 		/* scale is effectively 1 << i now, and >> i divides by scale */
+ 
+ 		old_load = this_rq->cpu_load[i];
++		old_load = decay_load_missed(old_load, pending_updates - 1, i);
+ 		new_load = this_load;
  		/*
--		 * the context switch might have flipped the stack from under
--		 * us, hence refresh the local variables.
-+		 * The context switch have flipped the stack from under us
-+		 * and restored the local variables which were saved when
-+		 * this task called schedule() in the past. prev == current
-+		 * is still correct, but it can be moved to another cpu/rq.
+ 		 * Round up the averaging division if load is increasing. This
+@@ -3074,9 +3155,15 @@ static void update_cpu_load(struct rq *this_rq)
+ 		 * example.
  		 */
- 		cpu = smp_processor_id();
- 		rq = cpu_rq(cpu);
-@@ -3699,11 +3701,8 @@ need_resched_nonpreemptible:
+ 		if (new_load > old_load)
+-			new_load += scale-1;
+-		this_rq->cpu_load[i] = (old_load*(scale-1) + new_load) >> i;
++			new_load += scale - 1;
++
++		this_rq->cpu_load[i] = (old_load * (scale - 1) + new_load) >> i;
+ 	}
++}
++
++static void update_cpu_load_active(struct rq *this_rq)
++{
++	update_cpu_load(this_rq);
  
- 	post_schedule(rq);
+ 	calc_load_account_active(this_rq);
+ }
+@@ -3464,7 +3551,7 @@ void scheduler_tick(void)
  
--	if (unlikely(reacquire_kernel_lock(current) < 0)) {
--		prev = rq->curr;
--		switch_count = &prev->nivcsw;
-+	if (unlikely(reacquire_kernel_lock(prev)))
- 		goto need_resched_nonpreemptible;
--	}
+ 	raw_spin_lock(&rq->lock);
+ 	update_rq_clock(rq);
+-	update_cpu_load(rq);
++	update_cpu_load_active(rq);
+ 	curr->sched_class->task_tick(rq, curr, 0);
+ 	raw_spin_unlock(&rq->lock);
  
- 	preempt_enable_no_resched();
- 	if (need_resched())
+@@ -7688,6 +7775,9 @@ void __init sched_init(void)
+ 
+ 		for (j = 0; j < CPU_LOAD_IDX_MAX; j++)
+ 			rq->cpu_load[j] = 0;
++
++		rq->last_load_update_tick = jiffies;
++
+ #ifdef CONFIG_SMP
+ 		rq->sd = NULL;
+ 		rq->rd = NULL;
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index eed35ed..22b8b4f 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3420,9 +3420,12 @@ static void run_rebalance_domains(struct softirq_action *h)
+ 			if (need_resched())
+ 				break;
+ 
++			rq = cpu_rq(balance_cpu);
++			raw_spin_lock_irq(&rq->lock);
++			update_cpu_load(rq);
++			raw_spin_unlock_irq(&rq->lock);
+ 			rebalance_domains(balance_cpu, CPU_IDLE);
+ 
+-			rq = cpu_rq(balance_cpu);
+ 			if (time_after(this_rq->next_balance, rq->next_balance))
+ 				this_rq->next_balance = rq->next_balance;
+ 		}
