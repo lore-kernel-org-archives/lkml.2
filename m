@@ -1,114 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab0FIC4m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 22:56:42 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37600 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846Ab0FIC4l (ORCPT
+	id S1756864Ab0FICoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 22:44:13 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48274 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752457Ab0FICoM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 22:56:41 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 9 Jun 2010 11:52:11 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-Message-Id: <20100609115211.435a45f7.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jun 2010 22:44:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=o3OhFmJQRm0saJzi3JK7PPn2jdOutkjQvuNKLqnDwCqw4HAFPkErzisBrvTpxP6y0G
+         /T5/GR7zVjOldXAhDZEFUHb8DXdWIP8Sfz/xdPR1vTJVGS7mK/mk8CU8xHvvW/1KjawM
+         6TI0AUGSj2I/RU0lUXIudf37e/oKNl9A0gDoY=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTilsCkBiGtfEKkNXYclsRKhfuq4yI_1mrxMa8yJG@mail.gmail.com>
+References: <AANLkTin1OS3LohKBvWyS81BoAk15Y-riCiEdcevSA7ye@mail.gmail.com>
+	<1275929000.3021.56.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTilsCkBiGtfEKkNXYclsRKhfuq4yI_1mrxMa8yJG@mail.gmail.com>
+Date: Wed, 9 Jun 2010 10:44:10 +0800
+Message-ID: <AANLkTilbhdPy8tq-brAotFDlOkyZxB3uEXSD-PQJLpBL@mail.gmail.com>
+Subject: Re: mmotm 2010-06-03-16-36 lots of suspected kmemleak
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-mm@kvack.org, riel@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  8 Jun 2010 10:02:19 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
+On Wed, Jun 9, 2010 at 10:37 AM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> On Tue, Jun 8, 2010 at 12:43 AM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+>> On Mon, 2010-06-07 at 11:00 +0100, Dave Young wrote:
+>>> On Mon, Jun 7, 2010 at 5:19 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>>> > On Mon, 2010-06-07 at 06:20 +0100, Dave Young wrote:
+>>> >> On Fri, Jun 4, 2010 at 9:55 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+>>> >> > On Fri, Jun 4, 2010 at 6:50 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>>> >> >> Dave Young <hidave.darkstar@gmail.com> wrote:
+>>> >> >>> With mmotm 2010-06-03-16-36, I gots tuns of kmemleaks
+>>> >> >>
+>>> >> >> Do you have CONFIG_NO_BOOTMEM enabled? I posted a patch for this but
+>>> >> >> hasn't been reviewed yet (I'll probably need to repost, so if it fixes
+>>> >> >> the problem for you a Tested-by would be nice):
+>>> >> >>
+>>> >> >> http://lkml.org/lkml/2010/5/4/175
+>>> >> >
+>>> >> >
+>>> >> > I'd like to test, but I can not access the test pc during weekend. So
+>>> >> > I will test it next monday.
+>>> >>
+>>> >> Bad news, the patch does not fix this issue.
+>>> >
+>>> > Thanks for trying. Could you please just disable CONFIG_NO_BOOTMEM and
+>>> > post the kmemleak reported leaks again?
+>>>
+>>> Still too many suspected leaks, results similar with
+>>> (CONFIG_NO_BOOTMEM = y && apply your patch), looks like a little
+>>> different from original ones? I just copy some of them here:
+>>>
+>>> unreferenced object 0xde3c7420 (size 44):
+>>>   comm "bash", pid 1631, jiffies 4294897023 (age 223.573s)
+>>>   hex dump (first 32 bytes):
+>>>     05 05 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
+>>>     98 42 d9 c1 00 00 00 00 50 fe 63 c1 10 32 8f dd  .B......P.c..2..
+>>>   backtrace:
+>>>     [<c1498ad2>] kmemleak_alloc+0x4a/0x83
+>>>     [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
+>>>     [<c10b421b>] anon_vma_fork+0x31/0x88
+>>>     [<c102c71d>] dup_mm+0x1d3/0x38f
+>>>     [<c102d20d>] copy_process+0x8ce/0xf39
+>>>     [<c102d990>] do_fork+0x118/0x295
+>>>     [<c1007fe0>] sys_clone+0x1f/0x24
+>>>     [<c10029b1>] ptregs_clone+0x15/0x24
+>>>     [<ffffffff>] 0xffffffff
+>>
+>> I'll try to test the mmotm kernel as well. I don't get any kmemleak
+>> reports with the 2.6.35-rc1 kernel.
 
-> I finally got a chance last week to visit the topic of direct reclaim
-> avoiding the writing out pages. As it came up during discussions the last
-> time, I also had a stab at making the VM writing ranges of pages instead
-> of individual pages. I am not proposing for merging yet until I want to see
-> what people think of this general direction and if we can agree on if this
-> is the right one or not.
-> 
-> To summarise, there are two big problems with page reclaim right now. The
-> first is that page reclaim uses a_op->writepage to write a back back
-> under the page lock which is inefficient from an IO perspective due to
-> seeky patterns.  The second is that direct reclaim calling the filesystem
-> splices two potentially deep call paths together and potentially overflows
-> the stack on complex storage or filesystems. This series is an early draft
-> at tackling both of these problems and is in three stages.
-> 
-> The first 4 patches are a forward-port of trace points that are partly
-> based on trace points defined by Larry Woodman but never merged. They trace
-> parts of kswapd, direct reclaim, LRU page isolation and page writeback. The
-> tracepoints can be used to evaluate what is happening within reclaim and
-> whether things are getting better or worse. They do not have to be part of
-> the final series but might be useful during discussion.
-> 
-> Patch 5 writes out contiguous ranges of pages where possible using
-> a_ops->writepages. When writing a range, the inode is pinned and the page
-> lock released before submitting to writepages(). This potentially generates
-> a better IO pattern and it should avoid a lock inversion problem within the
-> filesystem that wants the same page lock held by the VM. The downside with
-> writing ranges is that the VM may not be generating more IO than necessary.
-> 
-> Patch 6 prevents direct reclaim writing out pages at all and instead dirty
-> pages are put back on the LRU. For lumpy reclaim, the caller will briefly
-> wait on dirty pages to be written out before trying to reclaim the dirty
-> pages a second time.
-> 
-> The last patch increases the responsibility of kswapd somewhat because
-> it's now cleaning pages on behalf of direct reclaimers but kswapd seemed
-> a better fit than background flushers to clean pages as it knows where the
-> pages needing cleaning are. As it's async IO, it should not cause kswapd to
-> stall (at least until the queue is congested) but the order that pages are
-> reclaimed on the LRU is altered. Dirty pages that would have been reclaimed
-> by direct reclaimers are getting another lap on the LRU. The dirty pages
-> could have been put on a dedicated list but this increased counter overhead
-> and the number of lists and it is unclear if it is necessary.
-> 
-> The series has survived performance and stress testing, particularly around
-> high-order allocations on X86, X86-64 and PPC64. The results of the tests
-> showed that while lumpy reclaim has a slightly lower success rate when
-> allocating huge pages but it was still very acceptable rates, reclaim was
-> a lot less disruptive and allocation latency was lower.
-> 
-> Comments?
-> 
+maybe you do not set CONFIG_KSM?
 
-My concern is how memcg should work. IOW, what changes will be necessary for
-memcg to work with the new vmscan logic as no-direct-writeback.
-
-Maybe an ideal solution will be
- - support buffered I/O tracking in I/O cgroup.
- - flusher threads should work with I/O cgroup.
- - memcg itself should support dirty ratio. and add a trigger to kick flusher
-   threads for dirty pages in a memcg.
-But I know it's a long way.
-
-How the new logic works with memcg ? Because memcg doesn't trigger kswapd,
-memcg has to wait for a flusher thread make pages clean ?
-Or memcg should have kswapd-for-memcg ?
-
-Is it okay to call writeback directly when !scanning_global_lru() ?
-memcg's reclaim routine is only called from specific positions, so, I guess
-no stack problem. But we just have I/O pattern problem.
-
-Thanks,
--Kame
+>
+> Manually bisected mm patches, the memleak caused by following patch:
+>
+> mm-extend-ksm-refcounts-to-the-anon_vma-root.patch
+>
+> cc Rik van Riel
+>
+>>
+>> Can you send me your .config file? Do you have CONFIG_HUGETLBFS enabled?
+>>
+>> Thanks.
+>>
+>> --
+>> Catalin
+>>
+>>
+>
+>
+>
+> --
+> Regards
+> dave
+>
 
 
 
-
-
-
-
+-- 
+Regards
+dave
