@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab0FIKzj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:55:39 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34681 "EHLO gir.skynet.ie"
+	id S1757281Ab0FIK5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:57:10 -0400
+Received: from smtp.ispras.ru ([83.149.198.201]:48551 "EHLO smtp.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752149Ab0FIKzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:55:37 -0400
-Date: Wed, 9 Jun 2010 11:55:18 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Nick Piggin <npiggin@suse.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 07/28] extend KSM refcounts to the anon_vma root
-Message-ID: <20100609105518.GC5650@csn.ul.ie>
-References: <20100607110654.606530953@chello.nl> <20100607111407.033426211@chello.nl>
+	id S1757069Ab0FIK5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 06:57:08 -0400
+From: "Pavel N. Iakovenko" <yak@ispras.ru>
+To: <linux-kernel@vger.kernel.org>
+Subject: setgroups32 syscall changes RCX register
+Date: Wed, 9 Jun 2010 14:57:03 +0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100607111407.033426211@chello.nl>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain;
+	charset="koi8-r"
+X-Mailer: Microsoft Office Outlook, Build 11.0.5510
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+Thread-Index: AcsHvWBny95jSKvjRBWst9es3+YdugABP9lg
+Message-Id: <20100609105115.6EB2D5D40B9@smtp.ispras.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o59AvFim012416
 
-On Mon, Jun 07, 2010 at 01:07:01PM +0200, Peter Zijlstra wrote:
-> From: Rik van Riel <riel@redhat.com>
-> 
-> KSM reference counts can cause an anon_vma to exist after the processe
-> it belongs to have already exited.  Because the anon_vma lock now lives
-> in the root anon_vma, we need to ensure that the root anon_vma stays
-> around until after all the "child" anon_vmas have been freed.
-> 
-> The obvious way to do this is to have a "child" anon_vma take a
-> reference to the root in anon_vma_fork.  When the anon_vma is freed
-> at munmap or process exit, we drop the refcount in anon_vma_unlink
-> and possibly free the root anon_vma.
-> 
-> The KSM anon_vma reference count function also needs to be modified
-> to deal with the possibility of freeing 2 levels of anon_vma.  The
-> easiest way to do this is to break out the KSM magic and make it
-> generic.
-> 
-> When compiling without CONFIG_KSM, this code is compiled out.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> LKML-Reference: <20100526154124.04607d04@annuminas.surriel.com>
+Hello
 
-Acked-by: Mel Gorman <mel@csn.ul.ie
+I noticed that setgroups32 syscall changes the value of RCX register. In my
+case š- it is increased by PAGE_SIZE. Is it an acceptable behavior?
+Kernel version is 2.6.31.6. Testing program is enclosed.
 
-> <SNIP>
+Please CC me on reply.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Best regards,
+Pavel Iakovenko
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <syscall.h>
+#include <grp.h>
+#include <stdio.h>
+#include <errno.h>
+
+int main()
+{
+ššššššššššš gid_t groups;
+ššššššššššš unsigned long rcx;
+ššššššššššš int r ;
+
+ššššššššššš r = initgroups("root", groups);
+ššššššššššš if (r) {
+ššššššššššš ššš printf("initgroups failed\n");
+ššššššššššš ššš goto out;
+ššššššššššš }
+ššššššššššš 
+ššššššššššš printf("before setgroups32: RCX = 0x%lx\n", (unsigned
+long)&groups);
+
+ššššššššššš asm
+ššššššššššš (
+ššššššššššššššššššššššš "int $0x80"
+ššššššššššššššššššššššš : "=a" (r), "=c" (rcx)
+ššššššššššššššššššššššš : "a" (SYS_setgroups32), "b"(1), "c" (&groups)
+ššššššššššš );
+
+ššššššššššš if (r) {
+ššššššššššš ššš printf("setgroups32 failed\n");
+ššššššššššš ššš goto out;
+ššššššššššš }
+ššššššššššš 
+ššššššššššš printf("after setgroups32: RCX = 0x%lx\n", rcx);
+
+out:
+ššššššššššš return 0;
+}
+ 
+
+__________ Information from ESET NOD32 Antivirus, version of virus signature
+database 5184 (20100609) __________
+
+The message was checked by ESET NOD32 Antivirus.
+
+http://www.esetnod32.ru/.ml
+ 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
