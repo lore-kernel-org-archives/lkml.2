@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397Ab0FIKAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:00:50 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:64802 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756651Ab0FIKAs (ORCPT
+	id S1757414Ab0FIKA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:00:56 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:63717 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757299Ab0FIKAt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:00:48 -0400
-Date: Wed, 9 Jun 2010 12:00:46 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>, linuxppc-dev@ozlabs.org,
+	Wed, 9 Jun 2010 06:00:49 -0400
+Date: Wed, 09 Jun 2010 12:01:32 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv4 08/13] USB: gadget: g_serial: INF file updated
+In-reply-to: <AANLkTim6GHWVNvZ1XOJBZiu7ltl7TVpVJwVltLoKpYRi@mail.gmail.com>
+To: Xiaofan Chen <xiaofanc@gmail.com>
+Cc: linux-usb@vger.kernel.org, David Brownell <david-b@pacbell.net>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
        linux-kernel@vger.kernel.org
-Cc: vamos@i4.informatik.uni-erlangen.de
-Subject: [PATCH 4/5] Removing dead CONFIG_SERIAL_TEXT_DEBUG
-Message-ID: <ddcbd960ff300073939bb0c6f20a38118c0875d4.1275925219.git.siccegge@cs.fau.de>
-References: <cover.1275925219.git.siccegge@cs.fau.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1275925219.git.siccegge@cs.fau.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-id: <op.vd014urd7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.53 (Linux)
+References: <996015.66352.qm@web180311.mail.gq1.yahoo.com>
+ <op.vd0y3ds37p4s8u@pikus>
+ <AANLkTim6GHWVNvZ1XOJBZiu7ltl7TVpVJwVltLoKpYRi@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_SERIAL_TEXT_DEBUG doesn't exist in Kconfig, therefore removing all
-references for it from the source code.
+> 2010/6/9 Michał Nazarewicz <m.nazarewicz@samsung.com>:
+>> As for CDC ACM INF file, my understanding is similar except the template
+>> is provided by Microchip rather then Microsoft itself.
 
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
----
- arch/powerpc/kernel/head_40x.S |   19 -------------------
- 1 files changed, 0 insertions(+), 19 deletions(-)
+On Wed, 09 Jun 2010 11:29:22 +0200, Xiaofan Chen <xiaofanc@gmail.com> wrote:
+> So it is probably okay to drop the copyright line. On the
+> other hand, even if there is the copyright line from Microsoft,
+> I think you can still redistribute it.
 
-diff --git a/arch/powerpc/kernel/head_40x.S b/arch/powerpc/kernel/head_40x.S
-index a90625f..1a10e4d 100644
---- a/arch/powerpc/kernel/head_40x.S
-+++ b/arch/powerpc/kernel/head_40x.S
-@@ -939,25 +939,6 @@ initial_mmu:
- 	tlbwe	r4,r0,TLB_DATA		/* Load the data portion of the entry */
- 	tlbwe	r3,r0,TLB_TAG		/* Load the tag portion of the entry */
- 
--#if defined(CONFIG_SERIAL_TEXT_DEBUG) && defined(SERIAL_DEBUG_IO_BASE)
--
--	/* Load a TLB entry for the UART, so that ppc4xx_progress() can use
--	 * the UARTs nice and early.  We use a 4k real==virtual mapping. */
--
--	lis	r3,SERIAL_DEBUG_IO_BASE@h
--	ori	r3,r3,SERIAL_DEBUG_IO_BASE@l
--	mr	r4,r3
--	clrrwi	r4,r4,12
--	ori	r4,r4,(TLB_WR|TLB_I|TLB_M|TLB_G)
--
--	clrrwi	r3,r3,12
--	ori	r3,r3,(TLB_VALID | TLB_PAGESZ(PAGESZ_4K))
--
--	li	r0,0			/* TLB slot 0 */
--	tlbwe	r4,r0,TLB_DATA
--	tlbwe	r3,r0,TLB_TAG
--#endif /* CONFIG_SERIAL_DEBUG_TEXT && SERIAL_DEBUG_IO_BASE */
--
- 	isync
- 
- 	/* Establish the exception vector base
+> But I am not a lawyer but a hardware engineer. ;-)
+
+I think we all have the same problem here. ;)
+
+I dunno, obviously I want to make everything according to law to avoid
+any problems.  Maybe we should contact someone at The Software Freedom
+Law Center or some similar entity?
+
 -- 
-1.6.3.3
-
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
