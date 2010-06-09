@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab0FIQcZ (ORCPT <rfc822;w@1wt.eu>);
+	id S1757964Ab0FIQc1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 12:32:27 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:46971 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757950Ab0FIQcZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jun 2010 12:32:25 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:46614 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab0FIQcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 12:32:24 -0400
-Date: Wed, 9 Jun 2010 18:32:04 +0200
-From: Florian Mickler <florian@mickler.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: pm list <linux-pm@lists.linux-foundation.org>, markgross@thegnar.org,
-       mgross@linux.intel.com, linville@tuxdriver.com,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] pm_qos: make update_request non blocking
-Message-ID: <20100609183204.1eeca494@schatten.dmk.lab>
-In-Reply-To: <1276099645.4343.257.camel@mulgrave.site>
-References: <1276097381-3982-1-git-send-email-florian@mickler.org>
-	<1276097832.4343.223.camel@mulgrave.site>
-	<20100609180033.39d5b499@schatten.dmk.lab>
-	<1276099645.4343.257.camel@mulgrave.site>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=DiqIz5piUA95a9F6vtc3ugZhNieFOyzUwtHC5Ol+QaNC6FmEgcJsw4JdBXo/735Amci1/DvSacdMDkhOciiYBy7WPcGmDFOd+DOa7CaWVJVSTcyvP96ucatrXuuhj5ax;
+Date: Wed, 9 Jun 2010 09:31:18 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org
+Subject: Re: [GIT PULL] x86 platform driver updates for 2.6.35-rc3
+Message-ID: <20100609093118.784f3683@virtuousgeek.org>
+In-Reply-To: <AANLkTin45ibtZoThRwOG3eTjFmT0LJ4gKS-ExXqpKx2v@mail.gmail.com>
+References: <20100608221901.GA25294@srcf.ucam.org>
+	<alpine.LFD.2.00.1006081806040.4506@i5.linux-foundation.org>
+	<20100608182456.3e681359@virtuousgeek.org>
+	<alpine.LFD.2.00.1006081855170.4506@i5.linux-foundation.org>
+	<AANLkTin45ibtZoThRwOG3eTjFmT0LJ4gKS-ExXqpKx2v@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Jun 2010 12:07:25 -0400
-James Bottomley <James.Bottomley@suse.de> wrote:
+On Wed, 9 Jun 2010 12:03:55 +1000
+Dave Airlie <airlied@gmail.com> wrote:
 
-> On Wed, 2010-06-09 at 18:00 +0200, Florian Mickler wrote:
-> > On Wed, 09 Jun 2010 11:37:12 -0400
-> > James Bottomley <James.Bottomley@suse.de> wrote:
-> > 
-> > 
-> > > This still isn't resilient against two successive calls to update.  If
-> > > the second one gets to schedule_work() before the work of the first one
-> > > has finished, you'll corrupt the workqueue.
-> > 
-> > Sorry, I don't see it. Can you elaborate?
-> > 
-> > In "run_workqueue(" we do a list_del_init() which resets the
-> > list-pointers of the workitem and only after that reset the
-> > WORK_STRUCT_PENDING member of said structure. 
-> > 
-> > 
-> > schedule_work does a queue_work_on which does a test_and_set_bit on
-> > the WORK_STRUCT_PENDING member of the work and only queues the work
-> > via list_add_tail in insert_work afterwards.
-> > 
-> > Where is my think'o? Or was this fixed while you didn't look?
-> > 
-> > So what _can_ happen, is that we miss a new notfication while the old
-> > notification is still in the queue. But I don't think this is a problem.
+> On Wed, Jun 9, 2010 at 11:57 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> >
+> > On Tue, 8 Jun 2010, Jesse Barnes wrote:
+> >>
+> >> FWIW this is the "make ironlake go fast" driver.  It interacts with the
+> >> i915 driver to increase graphics performance significantly.  But yeah,
+> >> Matthew and I didn't get it integrated into his tree in time for the
+> >> merge window, so I understand if you don't want it right now.
+> >
+> > I'm not great at all the intel code-names. Is ironlake the expected-Q4
+> > on-die GPU or the current one?
+> >
+> > Not that I'd prefer to pull it even if it's the current one, but if it's
+> > the next-gen one then we're in even less of a hurry, I think.
+> >
 > 
-> OK, so the expression of the race is that the latest notification gets
-> lost.  If something is tracking values, you'd really like to lose the
-> previous one (which is now irrelevant) not the latest one.  The point is
-> there's still a race.
+> Its probably the one on your desk, its at least the one in the two
+> laptops on mine.
 > 
-> James
-> 
+> So definitely now-gen.
 
-Yeah, but for blocking notification it is not that bad. 
+Right, Ironlake is the class of graphics chips found in Core i3/5/7
+with HD graphics, which are shipping in volume now.
 
-Doesn't using blocking notifiers mean that you need to always check
-via pm_qos_request() to get the latest value anyways? I.e. the
-notification is just a hint, that something changed so you can act on
-it. But if you act (may it because of notification or because of
-something other) then you have to get the current value anyways.
+The IPS driver is mostly standalone, but it does make some calls into
+the i915 driver to increase or decrease available graphics frequencies,
+so it's not a clear cut case of a new driver and does introduce some
+risk.
 
-I think there are 2 schemes of operation. The one which needs
-atomic notifiers and where it would be bad if we lost any notification
-and the other where it is just a way of doing some work in a timely
-fashion but it isn't critical that it is done right away.
-
-pm_qos was the second kind of operation up until now, because the
-notifiers may have got scheduled away while blocked. 
-
-I think we should allow for both kinds of operations simultaneous. But
-as I got that pushback to the change from John Linville as I touched his
-code, I got a bit reluctant and just have done the simple variant. :)
-
-(for example if we want to implement some sort of debugging stats, we
-could use blocking notifications, but if we for example block some
-c-stats due to a latency-requirement we probably need some atomic
-notifications.)
-
-Cheers,
-Flo
+-- 
+Jesse Barnes, Intel Open Source Technology Center
