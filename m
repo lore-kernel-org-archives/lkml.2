@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758575Ab0FJDAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 23:00:00 -0400
-Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:53153 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755314Ab0FJC77 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 22:59:59 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>,
-       "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
-CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-       "'akpm@osdl.org'" <akpm@osdl.org>,
-       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Wed, 9 Jun 2010 20:59:43 -0600
-Subject: [PATCH 3/12] scsi: megaraid_sas - Online Controller Reset - III:
- add the reset function for Gen2 related chip
-Thread-Topic: [PATCH 3/12] scsi: megaraid_sas - Online Controller Reset -
- III: add the reset function for Gen2 related chip
-Thread-Index: AcsISPnOZnFQYxn1TaKnA/NMZ/+H5g==
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3D0804546@cosmail02.lsi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758379Ab0FJDGf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 23:06:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49989 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751496Ab0FJDGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 23:06:33 -0400
+Message-ID: <4C10569E.6020503@redhat.com>
+Date: Thu, 10 Jun 2010 06:06:06 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC] para virt interface of perf to support kvm guest os statistics
+ collection in guest os
+References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>	 <4C0F51DD.3080200@redhat.com>	 <1276075280.2096.427.camel@ymzhang.sh.intel.com>	 <4C0F61D3.9000402@redhat.com> <1276136493.2096.462.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1276136493.2096.462.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the gen2 chip reset functions to the driver.  Driver will write the gen2 chip register offset to force the controller to reset.
+On 06/10/2010 05:21 AM, Zhang, Yanmin wrote:
+>
+>> I see.  So put it in a union.  Or perhaps not even in a union - what if
+>> a kvm guest is also acting as a kvm host?
+>>      
+> My patch has consideration on it. I compiled kernel with host and guest support
+> at the same time. The accessing to perf_event->shadow is really under specific
+> scenarios, or they are just in specific functions. These functions are called
+> just bu host kernel , or just by guest kernel.
+>    
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+But a kernel can be both guest and host at the same time.  Currently 
+this only works on AMD, but there was some work to bring it to Intel as 
+well.
 
----
-drivers/scsi/megaraid/megaraid_sas.c |   41 +++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
 
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
---- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 14:38:29.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 14:38:43.000000000 -0400
-@@ -662,6 +662,47 @@ static int
- megasas_adp_reset_gen2(struct megasas_instance *instance,
- 			struct megasas_register_set __iomem *reg_set)
- {
-+	u32			retry = 0 ;
-+	u32			HostDiag;
-+
-+	writel(0, &reg_set->seq_offset);
-+	writel(4, &reg_set->seq_offset);
-+	writel(0xb, &reg_set->seq_offset);
-+	writel(2, &reg_set->seq_offset);
-+	writel(7, &reg_set->seq_offset);
-+	writel(0xd, &reg_set->seq_offset);
-+	msleep(1000);
-+
-+	HostDiag = (u32)readl(&reg_set->host_diag);
-+
-+	while ( !( HostDiag & DIAG_WRITE_ENABLE) ) {
-+		msleep(100);
-+		HostDiag = (u32)readl(&reg_set->host_diag);
-+		printk(KERN_NOTICE "RESETGEN2: retry=%x, hostdiag=%x\n",
-+					retry, HostDiag);
-+
-+		if (retry++ >= 100)
-+			return 1;
-+
-+	}
-+
-+	printk(KERN_NOTICE "ADP_RESET_GEN2: HostDiag=%x\n", HostDiag);
-+
-+	writel((HostDiag | DIAG_RESET_ADAPTER), &reg_set->host_diag);
-+
-+	ssleep(10);
-+
-+	HostDiag = (u32)readl(&reg_set->host_diag);
-+	while ( ( HostDiag & DIAG_RESET_ADAPTER) ) {
-+		msleep(100);
-+		HostDiag = (u32)readl(&reg_set->host_diag);
-+		printk(KERN_NOTICE "RESET_GEN2: retry=%x, hostdiag=%x\n",
-+				retry, HostDiag);
-+
-+		if (retry++ >= 1000)
-+			return 1;
-+
-+	}
- 	return 0;
- }
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
