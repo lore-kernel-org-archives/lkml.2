@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759698Ab0FJTxa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 15:53:30 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:43157 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab0FJTx2 (ORCPT
+	id S1759677Ab0FJTyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 15:54:55 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:33065 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab0FJTyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 15:53:28 -0400
-Subject: Re: Timekeeping issue on aggressive suspend/resume
-From: john stultz <johnstul@us.ibm.com>
-To: Suresh Rajashekara <suresh.raj+linuxomap@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       linux-pm@lists.linux-foundation.org
-In-Reply-To: <AANLkTin-6XsW49ECufTLcdzaD1eK9bAxe0j7RXvPqN7p@mail.gmail.com>
-References: <AANLkTinIO5a1EeK6Ej2ljkuyL9zv06OMfbyiZBaxTQTd@mail.gmail.com>
-	 <alpine.LFD.2.00.1006092206020.2933@localhost.localdomain>
-	 <AANLkTin-6XsW49ECufTLcdzaD1eK9bAxe0j7RXvPqN7p@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Jun 2010 12:52:48 -0700
-Message-ID: <1276199568.16089.35.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jun 2010 15:54:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=dVQ7VbfWeb5uFem0VT5Tv2gqglQfohHBxVuBdeAHZNaaO0+5jCD+xmaQvu+z7VZM8m
+         jb0sB6XerAl9jdEqL6NE6RlfGXWXpo4KXpZmlfp/4a7K6N9Ai+YxKzcRV+hY93PE/E8V
+         p0ikS6WmswhnhHYzYDXgL9sXGpL0yoK9JZu4E=
+Date: Thu, 10 Jun 2010 21:54:53 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@google.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>,
+       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/5] perf: Provide a proper stop action for software
+	events
+Message-ID: <20100610195451.GI5255@nowhere>
+References: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com> <1276141760-11590-2-git-send-regression-fweisbec@gmail.com> <1276166813.2077.96.camel@twins> <1276168242.2077.134.camel@twins> <20100610161234.GA5255@nowhere> <1276186576.2077.554.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276186576.2077.554.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 23:34 -0700, Suresh Rajashekara wrote:
-> On Wed, Jun 9, 2010 at 1:22 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > Though we could change that conditionally - the default would still be
-> > the freeze of jiffies and CLOCK_MONOTONIC for historical compability.
-> 
-> If I were to change it only for our implementation, and make all the
-> user space timers use CLOCK_REALTIME, then could you please point me
-> in a direction as to what part of the kernel I should be touching to
-> make that change?
+On Thu, Jun 10, 2010 at 06:16:16PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-06-10 at 18:12 +0200, Frederic Weisbecker wrote:
+> > On Thu, Jun 10, 2010 at 01:10:42PM +0200, Peter Zijlstra wrote:
+> > > On Thu, 2010-06-10 at 12:46 +0200, Peter Zijlstra wrote:
+> > > > 
+> > > > Something like the below would work, the only 'problem' is that it grows
+> > > > hw_perf_event.
+> > > 
+> > > If we do the whole PAUSEd thing right, we'd not need this I think.
+> > 
+> > 
+> > It's not needed, and moreover software_pmu:stop/start() can be the same
+> > than software:pmu:disable/enable() without the need to add another check
+> > in the fast path.
+> > 
+> > But we need perf_event_stop/start() to work on software events. And in fact
+> > now that we use the hlist_del_init, it's safe, but a bit wasteful in
+> > the period reset path. That's another problem that is not critical, but
+> > if you want to solve this by ripping the differences between software and
+> > hardware (which I agree with), we need a ->reset_period callback.
+> > 
+> Why? ->start() should reprogram the hardware, so a
+> ->stop()/poke-at-state/->start() cycle is much more flexible.
 
-I think Thomas was suggesting that you consider creating a option for
-where CLOCK_MONOTONIC included total_sleep_time.
 
-In that case the *hack* (and this is a hack, we'll need some more
-thoughtful discussion before anything like it could make it upstream)
-would be in timekeeping_resume() to comment out the lines that update
-wall_to_monotonic and total_sleep_time.
+Reconsidering the situation after remembering the race with software
+events on period adjusting:
 
-It would be interesting to hear if that hack works for you, and we can
-try to come up with a better way to think about how to accommodate both
-views of how to account time over suspend.
+In fact, if we want to support start/stop on software events, we still
+need the if (!software event) in perf_adjust_period(), otherwise
+start and stop may race on a software event with the hlist ops.
 
-Thomas, might this call for a new posix clock_id, CLOCK_BOOTTIME (ie:
-CLOCK_MONOTONIC + total_sleep_time) or something that userland could use
-to set timers on?
+So it's now both useless and dangerous.
 
-thanks
--john
-
+What about keeping this software event check for now?
+Once we'll have a pmu:disable_all()/enable_all(), this
+can serve as a more appropriate check later.
 
