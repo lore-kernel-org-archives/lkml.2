@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758778Ab0FJKuj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 06:50:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47244 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758100Ab0FJKuh convert rfc822-to-8bit (ORCPT
+	id S1758788Ab0FJKwA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 06:52:00 -0400
+Received: from smtp208.alice.it ([82.57.200.104]:44504 "EHLO
+	smtp208-alice.cp.alice.it" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758100Ab0FJKv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 06:50:37 -0400
-Subject: Re: [PATCH 2/5] perf: Support disable() after stop() on software
- events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Stephane Eranian <eranian@google.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>,
-       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
-       Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <1276141760-11590-3-git-send-regression-fweisbec@gmail.com>
-References: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com>
-	 <1276141760-11590-3-git-send-regression-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 10 Jun 2010 12:50:17 +0200
-Message-ID: <1276167017.2077.100.camel@twins>
+	Thu, 10 Jun 2010 06:51:58 -0400
+X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jun 2010 06:51:58 EDT
+Date: Thu, 10 Jun 2010 12:45:11 +0200
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: Alan Ott <alan@signal11.us>
+Cc: Jiri Kosina <jkosina@suse.cz>, Alexey Dobriyan <adobriyan@gmail.com>,
+       Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Stephane Chatty <chatty@enac.fr>,
+       Michael Poole <mdpoole@troilus.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2] HID: Add Support for Setting and Getting Feature
+ Reports from hidraw
+Message-Id: <20100610124511.973a2ca5.ospite@studenti.unina.it>
+In-Reply-To: <1276098868-3262-1-git-send-email-alan@signal11.us>
+References: <1275969108-14948-1-git-send-email-alan@signal11.us>
+	<1276098868-3262-1-git-send-email-alan@signal11.us>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__10_Jun_2010_12_45_11_+0200_=L0YqTYKWoKfYaWU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-10 at 05:49 +0200, Frederic Weisbecker wrote:
-> If we call perf_event_stop() on a software event and then the
-> disable() pmu callback on them after that, we'll call twice
-> hlist_del_rcu() on the same hlist node and then bring a crash
-> by dereferencing LIST_POISON2.
-> 
-> Just use hlist_del_init_rcu() instead to fix this problem.
-> 
-> This preparates for new context exclusions.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Stephane Eranian <eranian@google.com>
-> Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-> Cc: Zhang Yanmin <yanmin_zhang@linux.intel.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/perf_event.c             |    2 +-
->  kernel/trace/trace_event_perf.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index 5c004f7..2d818bc 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -4291,7 +4291,7 @@ static int perf_swevent_enable(struct perf_event *event)
->  
->  static void perf_swevent_disable(struct perf_event *event)
->  {
-> -	hlist_del_rcu(&event->hlist_entry);
-> +	hlist_del_init_rcu(&event->hlist_entry);
->  }
->  
->  static void perf_swevent_void(struct perf_event *event)
-> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-> index 4799d70..7bc1f26 100644
-> --- a/kernel/trace/trace_event_perf.c
-> +++ b/kernel/trace/trace_event_perf.c
-> @@ -122,7 +122,7 @@ int perf_trace_enable(struct perf_event *p_event)
->  
->  void perf_trace_disable(struct perf_event *p_event)
->  {
-> -	hlist_del_rcu(&p_event->hlist_entry);
-> +	hlist_del_init_rcu(&p_event->hlist_entry);
->  }
->  
->  void perf_trace_destroy(struct perf_event *p_event)
+--Signature=_Thu__10_Jun_2010_12_45_11_+0200_=L0YqTYKWoKfYaWU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Wed,  9 Jun 2010 11:54:28 -0400
+Alan Ott <alan@signal11.us> wrote:
 
-Ok, so then why did you need the first patch?
+> Per the HID Specification, Feature reports must be sent and received on
+> the Configuration endpoint (EP 0) through the Set_Report/Get_Report
+> interfaces.  This patch adds two ioctls to hidraw to set and get feature
+> reports to and from the device.  Modifications were made to hidraw and
+> usbhid.
+>=20
+> New hidraw ioctls:
+>   HIDIOCSFEATURE - Perform a Set_Report transfer of a Feature report.
+>   HIDIOCGFEATURE - Perform a Get_Report transfer of a Feature report.
+>=20
+> Signed-off-by: Alan Ott <alan@signal11.us>
+
+Tested-by: Antonio Ospite <ospite@studenti.unina.it>
+
+Regards,
+   Antonio
+
+--=20
+Antonio Ospite
+http://ao2.it
+
+PGP public key ID: 0x4553B001
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
+A: Top-posting.
+Q: What is the most annoying thing in e-mail?
+
+--Signature=_Thu__10_Jun_2010_12_45_11_+0200_=L0YqTYKWoKfYaWU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwQwjcACgkQ5xr2akVTsAGi5QCfddQ3+Tw0qKSEPpahyuFJul2y
+KloAn04s+M7U21CxsUH6G4FJmr/5FKvg
+=f32D
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__10_Jun_2010_12_45_11_+0200_=L0YqTYKWoKfYaWU--
