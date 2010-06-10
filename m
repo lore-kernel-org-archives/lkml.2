@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759178Ab0FJSUc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 14:20:32 -0400
-Received: from parsec.stupidest.org ([71.6.196.126]:45690 "EHLO
-	parsec.stupidest.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963Ab0FJSUb (ORCPT
+	id S1759252Ab0FJSXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 14:23:10 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:45689 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752068Ab0FJSXI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 14:20:31 -0400
-X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jun 2010 14:20:31 EDT
-Date: Thu, 10 Jun 2010 11:10:42 -0700
-From: Chris Wedgwood <cw@f00f.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Jef Driesen <jefdriesen@telenet.be>, linux-kernel@vger.kernel.org
-Subject: Re: Slow pty's (was Re: libdivecomputer interfaces?)
-Message-ID: <20100610181042.GA19210@puku.stupidest.org>
-References: <AANLkTinLth4iKXAwszEEsPm_9ZDlj8HtqsiG5cdFE1cZ@mail.gmail.com>
+	Thu, 10 Jun 2010 14:23:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rq3tsFZ8x3BPM03dV/OcN8JcbUBxPy1/WTUETssqS/OXec+IhF77/QFqY/P1pZApsp
+         Si0cACrC1RKsU8iPdr+9IhaLxXjABEUamKo0RsmWX9f/RoxuUqIc0Z/1lA85DWabc4+L
+         a72tJ2/QrnDRPPIYarb9ChWgPVTbs+0w3NONg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinLth4iKXAwszEEsPm_9ZDlj8HtqsiG5cdFE1cZ@mail.gmail.com>
+In-Reply-To: <73e9e4bd7615488c9567f02f8962825386956365.1275925108.git.siccegge@cs.fau.de>
+References: <cover.1275925108.git.siccegge@cs.fau.de>
+	<73e9e4bd7615488c9567f02f8962825386956365.1275925108.git.siccegge@cs.fau.de>
+Date: Thu, 10 Jun 2010 12:23:06 -0600
+Message-ID: <AANLkTillx50SaxZU2cT9YSlS4uRF_ED5-wlG-JwfXfFT@mail.gmail.com>
+Subject: Re: [PATCH 5/9] Removing dead CONFIG_BLK_DEV_IDE
+From: Shane McDonald <mcdonald.shane@gmail.com>
+To: Christoph Egger <siccegge@cs.fau.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(sorry if this reponse isn't on target, i was just pointed to this
-thread a few minutes ago)
+On Wed, Jun 9, 2010 at 5:21 AM, Christoph Egger <siccegge@cs.fau.de> wrote:
+> CONFIG_BLK_DEV_IDE doesn't exist in Kconfig, therefore removing all
+> references for it from the source code.
+>
+> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> ---
+>  arch/mips/mti-malta/malta-setup.c |   25 -------------------------
+>  1 files changed, 0 insertions(+), 25 deletions(-)
+>
+> diff --git a/arch/mips/mti-malta/malta-setup.c b/arch/mips/mti-malta/malta-setup.c
+> index b7f37d4..d85143c 100644
+> --- a/arch/mips/mti-malta/malta-setup.c
+> +++ b/arch/mips/mti-malta/malta-setup.c
+> @@ -105,28 +105,6 @@ static void __init fd_activate(void)
+>  }
+>  #endif
+>
+> -#ifdef CONFIG_BLK_DEV_IDE
+> -static void __init pci_clock_check(void)
+> -{
+> -       unsigned int __iomem *jmpr_p =
+> -               (unsigned int *) ioremap(MALTA_JMPRS_REG, sizeof(unsigned int));
+> -       int jmpr = (__raw_readl(jmpr_p) >> 2) & 0x07;
+> -       static const int pciclocks[] __initdata = {
+> -               33, 20, 25, 30, 12, 16, 37, 10
+> -       };
+> -       int pciclock = pciclocks[jmpr];
+> -       char *argptr = prom_getcmdline();
+> -
+> -       if (pciclock != 33 && !strstr(argptr, "idebus=")) {
+> -               printk(KERN_WARNING "WARNING: PCI clock is %dMHz, "
+> -                               "setting idebus\n", pciclock);
+> -               argptr += strlen(argptr);
+> -               sprintf(argptr, " idebus=%d", pciclock);
+> -               if (pciclock < 20 || pciclock > 66)
+> -                       printk(KERN_WARNING "WARNING: IDE timing "
+> -                                       "calculations will be incorrect\n");
+> -       }
+> -}
+>  #endif
+>
+>  #if defined(CONFIG_VT) && defined(CONFIG_VGA_CONSOLE)
+> @@ -207,9 +185,6 @@ void __init plat_mem_setup(void)
+>        if (mips_revision_sconid == MIPS_REVISION_SCON_BONITO)
+>                bonito_quirks_setup();
+>
+> -#ifdef CONFIG_BLK_DEV_IDE
+> -       pci_clock_check();
+> -#endif
+>
+>  #ifdef CONFIG_BLK_DEV_FD
+>        fd_activate();
+> --
+> 1.6.3.3
 
+  I wonder if, instead of deleting the code, the constant should be
+changed from CONFIG_BLK_DEV_IDE to CONFIG_IDE.  The original
+patch that removed CONFIG_BLK_DEV_IDE seemed to make this change:
+http://kerneltrap.org/mailarchive/linux-kernel/2008/8/13/2929444
 
-On Thu, Jun 10, 2010 at 10:25:36AM -0700, Linus Torvalds wrote:
-
->  I thought we long since (ie back last fall) fixed the latency
-> problems with pty's, but there does seem to be something very fishy
-> going on there still.
-
-this might not be related, but i have slow serial ports with NOHZ that
-goes away when i revert 39c0cbe2150cbd848a25ba6cdb271d1ad46818ad.
-
-
-commit 39c0cbe2150cbd848a25ba6cdb271d1ad46818ad
-Author: Mike Galbraith <efault@gmx.de>
-Date:   Thu Mar 11 17:17:13 2010 +0100
-
-    sched: Rate-limit nohz
-
-    Entering nohz code on every micro-idle is costing ~10% throughput for netperf
-    TCP_RR when scheduling cross-cpu.  Rate limiting entry fixes this, but raises
-    ticks a bit.  On my Q6600, an idle box goes from ~85 interrupts/sec to 128.
-
-    The higher the context switch rate, the more nohz entry costs.  With this patch
-    and some cycle recovery patches in my tree, max cross cpu context switch rate is
-    improved by ~16%, a large portion of which of which is this ratelimiting.
-
-and looking at the only two interesting hunks it's not clear why:
-
-+int nohz_ratelimit(int cpu)
-+{
-+       struct rq *rq = cpu_rq(cpu);
-+       u64 diff = rq->clock - rq->nohz_stamp;
-+
-+       rq->nohz_stamp = rq->clock;
-+
-+       return diff < (NSEC_PER_SEC / HZ) >> 1;
-+}
-
-+       if (nohz_ratelimit(cpu))
-+               goto end;
-+
-
-network latnecy is fine, and if i create lots of wakeups (network IO
-is fine) then the serial port latency is noticable
+Shane
