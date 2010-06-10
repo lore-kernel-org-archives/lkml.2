@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759572Ab0FJSth (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 14:49:37 -0400
-Received: from zrtps0kp.nortel.com ([47.140.192.56]:39162 "EHLO
-	zrtps0kp.nortel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759508Ab0FJStf (ORCPT
+	id S1759623Ab0FJStv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 14:49:51 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50145 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752752Ab0FJStt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 14:49:35 -0400
-Message-ID: <4C11330A.4040309@nortel.com>
-Date: Thu, 10 Jun 2010 12:46:34 -0600
-From: "Chris Friesen" <cfriesen@nortel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Thu, 10 Jun 2010 14:49:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=eWc0TEvvupZMxWv7bEcpxpAdamOBkQheoVH9MreTkNpr3kiEDHYoWtoTu67E97ZO+c
+         0UB5aGYlf+r8oXa+KuwYW5u5PNzrRlRSP7z/fwXLsISuKAeqEGBCta/JkFVZF2p0vqi1
+         UhSkhdfTjRYr4nhKOA8CKL+QMQCvuJ6r6SNIs=
 MIME-Version: 1.0
-To: Brian Gordon <legerde@gmail.com>
-CC: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: Aerospace and linux
-References: <AANLkTimrZvKyh6zYnUg2xzDVBVr5NxqtJhxZ42AVhkVI@mail.gmail.com>	<877hm64ui4.fsf@basil.nowhere.org> <AANLkTik3XiOjYM67RdPG-3RM3rY-0vondiMmJsETAHfX@mail.gmail.com>
-In-Reply-To: <AANLkTik3XiOjYM67RdPG-3RM3rY-0vondiMmJsETAHfX@mail.gmail.com>
+In-Reply-To: <1275600737.2091.32332.camel@rchatre-DESK>
+References: <AANLkTik_7rxDBc0TKlAfoYyM5S6Cf_Hyxbr4W5ORnTsq@mail.gmail.com>
+	<1274726029.2091.15160.camel@rchatre-DESK>
+	<1274738896.2091.15438.camel@rchatre-DESK>
+	<1274830187.2091.17034.camel@rchatre-DESK>
+	<1275600737.2091.32332.camel@rchatre-DESK>
+Date: Fri, 11 Jun 2010 00:19:48 +0530
+Message-ID: <AANLkTinfoyhEyFjxReR6Oza7r_AQhcyMlpaXYB4ZjjlU@mail.gmail.com>
+Subject: Re: iwl3945 bug in 2.6.34
+From: Satish Eerpini <eerpini@gmail.com>
+To: reinette chatre <reinette.chatre@intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Jun 2010 18:49:28.0173 (UTC) FILETIME=[A78091D0:01CB08CD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2010 12:38 PM, Brian Gordon wrote:
+I have applied the patches to the 2.6.34 kernel, my machine has been
+up for 20 hours now, there is nothing in the dmesg either, dmesg |
+grep wlan0 just gives this :
 
-> On the more exotic end, I have also seen systems that have dual
-> redundant processors / memories.  Then they add compare logic between
-> the redundant processors that compare most pins each clock cycle.   If
-> any pins are not identical at a clock cycle, then something has gone
-> wrong (SEU, hardware failure, etc..)
+ADDRCONF(NETDEV_UP): wlan0: link is not ready
+wlan0: deauthenticating from 00:1b:da:2a:a1:53 by local choice (reason=3)
+wlan0: authenticate with 00:1b:da:2a:a1:53 (try 1)
+wlan0: authenticated
+wlan0: associate with 00:1b:da:2a:a1:53 (try 1)
+wlan0: RX AssocResp from 00:1b:da:2a:a1:53 (capab=0x411 status=0 aid=1)
+wlan0: associated
+ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
+wlan0: no IPv6 routers present
+wlan0: deauthenticating from 00:1b:da:2a:a1:53 by local choice (reason=3)
+ADDRCONF(NETDEV_UP): wlan0: link is not ready
+wlan0: deauthenticating from 00:1b:da:2a:a1:53 by local choice (reason=3)
+wlan0: authenticate with 00:1b:da:2a:a1:53 (try 1)
+wlan0: authenticated
+wlan0: associate with 00:1b:da:2a:a1:53 (try 1)
+wlan0: RX AssocResp from 00:1b:da:2a:a1:53 (capab=0x411 status=0 aid=1)
+wlan0: associated
+ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
+wlan0: no IPv6 routers present
+wlan0: authenticate with 00:1b:da:2a:a1:53 (try 1)
+wlan0: authenticated
+wlan0: associate with 00:1b:da:2a:a1:53 (try 1)
+wlan0: RX AssocResp from 00:1b:da:2a:a1:53 (capab=0x411 status=0 aid=1)
+wlan0: associated
+wlan0: authenticate with 00:1b:da:2a:a1:53 (try 1)
+wlan0: authenticated
+wlan0: associate with 00:1b:da:2a:a1:53 (try 1)
+wlan0: RX AssocResp from 00:1b:da:2a:a1:53 (capab=0x411 status=0 aid=1)
+wlan0: associated
 
-Some phone switches do this.  Some of them also have at least two copies
-of everything in memory and will do transactional operations that can be
-rolled back if there is a hardware glitch.
+so I think after applying the patches, things have been working fine.
 
-> So, some pages of RAM are going to be read-only and the data in those
-> pages came from some source (file system?).   Can anyone describe a
-> high level strategy to occasionaly provide some coverage of this data?
-
-> So far I have thought about page descriptors adding an MD5 hash
-> whenever they are read-only and first being "loaded/mapped?" and then
-> a background daemon could occasionaly verify.
-
-Makes sense to me.  You might also pick an on-disk format with extra
-checksumming so you could compare the on-disk checksum with the
-in-memory checksum.
-
-Chris
+Cheers
+Satish
 
 -- 
-The author works for GENBAND Corporation (GENBAND) who is solely
-responsible for this email and its contents. All enquiries regarding
-this email should be addressed to GENBAND. Nortel has provided the use
-of the nortel.com domain to GENBAND in connection with this email solely
-for the purpose of connectivity and Nortel Networks Inc. has no
-liability for the email or its contents. GENBAND's web site is
-http://www.genband.com
+http://satisheerpini.net
