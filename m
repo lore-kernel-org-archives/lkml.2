@@ -1,53 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758631Ab0FJDwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 23:52:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46129 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753853Ab0FJDwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 23:52:12 -0400
-Date: Thu, 10 Jun 2010 13:52:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Philipp Reisner <philipp.reisner@linbit.com>, <drbd-dev@linbit.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jens Axboe <axboe@kernel.dk>
-Subject: linux-next: manual merge of the drbd tree with the block trees
-Message-Id: <20100610135203.4649453a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__10_Jun_2010_13_52_03_+1000_you=wQaCdG6.Z_Oj"
+	id S1758607Ab0FJDyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 23:54:36 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:39794 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755525Ab0FJDyb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 23:54:31 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+       "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+       "'akpm@osdl.org'" <akpm@osdl.org>,
+       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Wed, 9 Jun 2010 21:54:04 -0600
+Subject: [PATCH 5/12] scsi: megaraid_sas - Online Controller Reset (OCR):
+ Add and initialize the OCR relaed variable
+Thread-Topic: [PATCH 5/12] scsi: megaraid_sas - Online Controller Reset
+ (OCR): Add and initialize the OCR relaed variable
+Thread-Index: AcsIUJHqwNyIazodTtqyFBQNtP28RQ==
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3D0804554@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: AjC1 A4PB BCwc GEFk IWT5 Mu6V Q+f7 YJbX ZjsM dvay fn5u
+ k3o+ rNsA tqNu unNZ
+ x51E;5;YQBrAHAAbQBAAG8AcwBkAGwALgBvAHIAZwA7AGoAYQBtAGUAcwAuAGIAbwB0AHQAbwBtAGwAZQB5AEAAaABhAG4AcwBlAG4AcABhAHIAdABuAGUAcgBzAGgAaQBwAC4AYwBvAG0AOwBqAGEAbQBlAHMALgBiAG8AdAB0AG8AbQBsAGUAeQBAAHMAdQBzAGUALgBkAGUAOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AcwBjAHMAaQBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnAA==;Sosha1_v1;7;{8D7DF27E-3BCD-4475-B52A-50922F282D40};YgBvAC4AeQBhAG4AZwBAAGwAcwBpAC4AYwBvAG0A;Thu,
+ 10 Jun 2010 03:54:04
+ GMT;WwBQAEEAVABDAEgAIAA1AC8AMQAyAF0AIABzAGMAcwBpADoAIABtAGUAZwBhAHIAYQBpAGQAXwBzAGEAcwAgAC0AIABPAG4AbABpAG4AZQAgAEMAbwBuAHQAcgBvAGwAbABlAHIAIABSAGUAcwBlAHQAIAAoAE8AQwBSACkAOgAgAEEAZABkACAAYQBuAGQAIABpAG4AaQB0AGkAYQBsAGkAegBlACAAdABoAGUAIABPAEMAUgAgAHIAZQBsAGEAZQBkACAAdgBhAHIAaQBhAGIAbABlAA==
+x-cr-puzzleid: {8D7DF27E-3BCD-4475-B52A-50922F282D40}
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__10_Jun_2010_13_52_03_+1000_you=wQaCdG6.Z_Oj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+To support online controller reset, driver need to define some instance based variable and initialize them.
 
-Hi all,
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
-Today's linux-next merge of the drbd tree got a conflicts in
-fs/fs-writeback.c against the block tree.
+---
+drivers/scsi/megaraid/megaraid_sas.c |   80 ++++++++++++++++++++++++++---------
+ drivers/scsi/megaraid/megaraid_sas.h |   13 ++++-
+ 2 files changed, 70 insertions(+), 23 deletions(-)
 
-It looks like the block tree has moved under the drbd tree again.  I used
-the version of this file from the block tree for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__10_Jun_2010_13_52_03_+1000_you=wQaCdG6.Z_Oj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwQYWMACgkQjjKRsyhoI8yEAwCeL6kicpb/0nbdh0HOzwoKfUZb
-v6kAoIghvlDHLarzhUg2MYytPS4KT/As
-=sfiT
------END PGP SIGNATURE-----
-
---Signature=_Thu__10_Jun_2010_13_52_03_+1000_you=wQaCdG6.Z_Oj--
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
+--- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 15:39:25.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 16:07:25.000000000 -0400
+@@ -1856,7 +1856,8 @@ megasas_service_aen(struct megasas_insta
+ 	instance->aen_cmd = NULL;
+ 	megasas_return_cmd(instance, cmd);
+ 
+-	if (instance->unload == 0) {
++	if ((instance->unload == 0) &&
++		((instance->issuepend_done == 1))) {
+ 		struct megasas_aen_event *ev;
+ 		ev = kzalloc(sizeof(*ev), GFP_ATOMIC);
+ 		if (!ev) {
+@@ -1951,6 +1952,9 @@ megasas_complete_cmd(struct megasas_inst
+ 	struct megasas_header *hdr = &cmd->frame->hdr;
+ 	unsigned long flags;
+ 
++	/* flag for the retry reset */
++	cmd->retry_for_fw_reset = 0;
++
+ 	if (cmd->scmd)
+ 		cmd->scmd->SCp.ptr = NULL;
+ 
+@@ -2076,27 +2080,29 @@ megasas_complete_cmd(struct megasas_inst
+  * @alt_status:				Alternate status to be returned to
+  * 					SCSI mid-layer instead of the status
+  * 					returned by the FW
++ * Note: this must be called with hba lock held
+  */
+ static int
+-megasas_deplete_reply_queue(struct megasas_instance *instance, u8 alt_status)
++megasas_deplete_reply_queue(struct megasas_instance *instance,
++					u8 alt_status)
+ {
+-	/*
+-	 * Check if it is our interrupt
+-	 * Clear the interrupt 
+-	 */
+-	if(instance->instancet->clear_intr(instance->reg_set))
++	u32 mfiStatus;
++	u32 fw_state;
++
++	if ((mfiStatus = instance->instancet->check_reset(instance,
++					instance->reg_set)) == 1) {
++		return IRQ_HANDLED;
++	}
++
++	if ((mfiStatus = instance->instancet->clear_intr(
++						instance->reg_set)
++						) == 0) {
+ 		return IRQ_NONE;
++	}
+ 
+-	if (instance->hw_crit_error)
+-		goto out_done;
+-        /*
+-	 * Schedule the tasklet for cmd completion
+-	 */
+ 	tasklet_schedule(&instance->isr_tasklet);
+-out_done:
+ 	return IRQ_HANDLED;
+ }
+-
+ /**
+  * megasas_isr - isr entry point
+  */
+@@ -2260,7 +2266,7 @@ megasas_transition_to_ready(struct megas
+ 			       "in %d secs\n", fw_state, max_wait);
+ 			return -ENODEV;
+ 		}
+-	};
++	}
+  	printk(KERN_INFO "megasas: FW now in Ready state\n");
+ 
+ 	return 0;
+@@ -2342,6 +2348,7 @@ static int megasas_create_frame_pool(str
+ 	 */
+ 	sgl_sz = sge_sz * instance->max_num_sge;
+ 	frame_count = (sgl_sz + MEGAMFI_FRAME_SIZE - 1) / MEGAMFI_FRAME_SIZE;
++	frame_count = 15;
+ 
+ 	/*
+ 	 * We need one extra frame for the MFI command
+@@ -2489,6 +2496,7 @@ static int megasas_alloc_cmds(struct meg
+ 		cmd = instance->cmd_list[i];
+ 		memset(cmd, 0, sizeof(struct megasas_cmd));
+ 		cmd->index = i;
++		cmd->scmd = NULL;
+ 		cmd->instance = instance;
+ 
+ 		list_add_tail(&cmd->list, &instance->cmd_pool);
+@@ -2656,7 +2664,7 @@ megasas_get_ld_list(struct megasas_insta
+ 
+ 	/* the following function will get the instance PD LIST */
+ 
+-	if ((ret == 0) && (ci->ldCount < MAX_LOGICAL_DRIVES)) {
++	if ((ret == 0) && (ci->ldCount <= MAX_LOGICAL_DRIVES)) {
+ 		memset(instance->ld_ids, 0xff, MEGASAS_MAX_LD_IDS);
+ 
+ 		for (ld_index = 0; ld_index < ci->ldCount; ld_index++) {
+@@ -2970,6 +2978,21 @@ static int megasas_init_mfi(struct megas
+ 	if (megasas_issue_init_mfi(instance))
+ 		goto fail_fw_init;
+ 
++	instance->fw_support_ieee = 0;
++	instance->fw_support_ieee =
++		(instance->instancet->read_fw_status_reg(reg_set) &
++		0x04000000);
++
++	printk(KERN_NOTICE "megasas_init_mfi: fw_support_ieee=%d",
++			instance->fw_support_ieee);
++
++	if (instance->fw_support_ieee)
++		instance->flag_ieee = 1;
++
++	/** for passthrough
++	* the following function will get the PD LIST.
++	*/
++
+ 	memset(instance->pd_list, 0 ,
+ 		(MEGASAS_MAX_PD * sizeof(struct megasas_pd_list)));
+ 	megasas_get_pd_list(instance);
+@@ -2996,6 +3019,8 @@ static int megasas_init_mfi(struct megas
+ 		max_sectors_2 = ctrl_info->max_request_size;
+ 
+ 		tmp_sectors = min_t(u32, max_sectors_1 , max_sectors_2);
++		instance->disableOnlineCtrlReset =
++		ctrl_info->properties.OnOffProperties.disableOnlineCtrlReset;
+ 	}
+ 
+ 	instance->max_sectors_per_req = instance->max_num_sge *
+@@ -3217,6 +3242,7 @@ megasas_register_aen(struct megasas_inst
+ 	dcmd->flags = MFI_FRAME_DIR_READ;
+ 	dcmd->timeout = 0;
+ 	dcmd->pad_0 = 0;
++	instance->last_seq_num = seq_num;
+ 	dcmd->data_xfer_len = sizeof(struct megasas_evt_detail);
+ 	dcmd->opcode = MR_DCMD_CTRL_EVENT_WAIT;
+ 	dcmd->mbox.w[0] = seq_num;
+@@ -3385,6 +3411,7 @@ megasas_probe_one(struct pci_dev *pdev, 
+ 
+ 	instance = (struct megasas_instance *)host->hostdata;
+ 	memset(instance, 0, sizeof(*instance));
++	atomic_set( &instance->fw_reset_no_pci_access, 0 );
+ 
+ 	instance->producer = pci_alloc_consistent(pdev, sizeof(u32),
+ 						  &instance->producer_h);
+@@ -3402,6 +3429,9 @@ megasas_probe_one(struct pci_dev *pdev, 
+ 	megasas_poll_wait_aen = 0;
+ 	instance->flag_ieee = 0;
+ 	instance->ev = NULL;
++	instance->issuepend_done = 1;
++	instance->adprecovery = MEGASAS_HBA_OPERATIONAL;
++	megasas_poll_wait_aen = 0;
+ 
+ 	instance->evt_detail = pci_alloc_consistent(pdev,
+ 						    sizeof(struct
+@@ -3451,6 +3481,9 @@ megasas_probe_one(struct pci_dev *pdev, 
+ 	instance->flag = 0;
+ 	instance->unload = 1;
+ 	instance->last_time = 0;
++	instance->disableOnlineCtrlReset = 1;
++
++	INIT_WORK(&instance->work_init, process_fw_state_change_wq);
+ 
+ 	/*
+ 	 * Initialize MFI Firmware
+@@ -3542,6 +3575,9 @@ static void megasas_flush_cache(struct m
+ 	struct megasas_cmd *cmd;
+ 	struct megasas_dcmd_frame *dcmd;
+ 
++	if (instance->adprecovery == MEGASAS_HW_CRITICAL_ERROR)
++		return;
++
+ 	cmd = megasas_get_cmd(instance);
+ 
+ 	if (!cmd)
+@@ -3579,6 +3615,9 @@ static void megasas_shutdown_controller(
+ 	struct megasas_cmd *cmd;
+ 	struct megasas_dcmd_frame *dcmd;
+ 
++	if (instance->adprecovery == MEGASAS_HW_CRITICAL_ERROR)
++		return;
++
+ 	cmd = megasas_get_cmd(instance);
+ 
+ 	if (!cmd)
+@@ -4086,8 +4125,8 @@ static int megasas_mgmt_ioctl_fw(struct 
+ 		goto out_kfree_ioc;
+ 	}
+ 
+-	if (instance->hw_crit_error == 1) {
+-		printk(KERN_DEBUG "Controller in Crit ERROR\n");
++	if (instance->adprecovery == MEGASAS_HW_CRITICAL_ERROR) {
++		printk(KERN_ERR "Controller in crit error\n");
+ 		error = -ENODEV;
+ 		goto out_kfree_ioc;
+ 	}
+@@ -4104,6 +4143,7 @@ static int megasas_mgmt_ioctl_fw(struct 
+ 		error = -ERESTARTSYS;
+ 		goto out_kfree_ioc;
+ 	}
++
+ 	error = megasas_mgmt_fw_ioctl(instance, user_ioc, ioc);
+ 	up(&instance->ioctl_sem);
+ 
+@@ -4132,8 +4172,8 @@ static int megasas_mgmt_ioctl_aen(struct
+ 	if (!instance)
+ 		return -ENODEV;
+ 
+-	if (instance->hw_crit_error == 1) {
+-		error = -ENODEV;
++	if (instance->adprecovery == MEGASAS_HW_CRITICAL_ERROR) {
++		return -ENODEV;
+ 	}
+ 
+ 	if (instance->unload == 1) {
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.h new/drivers/scsi/megaraid/megaraid_sas.h
+--- old/drivers/scsi/megaraid/megaraid_sas.h	2010-06-08 15:39:25.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.h	2010-06-08 15:59:09.000000000 -0400
+@@ -60,6 +60,7 @@
+ #define MFI_STATE_READY				0xB0000000
+ #define MFI_STATE_OPERATIONAL			0xC0000000
+ #define MFI_STATE_FAULT				0xF0000000
++#define  MFI_RESET_REQUIRED			0x00000001
+ 
+ #define MEGAMFI_FRAME_SIZE			64
+ 
+@@ -409,7 +410,6 @@ struct megasas_ctrl_prop {
+ 	u8 restore_hotspare_on_insertion;
+ 	u8 expose_encl_devices;
+ 	u8 reserved[38];
+-
+ } __packed;
+ 
+ /*
+@@ -1265,19 +1265,24 @@ struct megasas_instance {
+ 
+ 	struct pci_dev *pdev;
+ 	u32 unique_id;
++	u32 fw_support_ieee;
+ 
+ 	atomic_t fw_outstanding;
+-	u32 hw_crit_error;
++	atomic_t fw_reset_no_pci_access;
+ 
+ 	struct megasas_instance_template *instancet;
+ 	struct tasklet_struct isr_tasklet;
++	struct work_struct work_init;
+ 
+ 	u8 flag;
+ 	u8 unload;
+ 	u8 flag_ieee;
+ 	u8 issuepend_done;
++	u8 disableOnlineCtrlReset;
+ 	u8 adprecovery;
+ 	unsigned long last_time;
++	u32 mfiStatus;
++	u32 last_seq_num;
+ 
+ 	struct timer_list io_completion_timer;
+ 	struct list_head internal_reset_pending_q;
+@@ -1325,7 +1330,9 @@ struct megasas_cmd {
+ 	u32 index;
+ 	u8 sync_cmd;
+ 	u8 cmd_status;
+-	u16 abort_aen;
++	u8 abort_aen;
++	u8 retry_for_fw_reset;
++
+ 
+ 	struct list_head list;
+ 	struct scsi_cmnd *scmd;
