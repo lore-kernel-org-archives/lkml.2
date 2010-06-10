@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759593Ab0FJQzt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 12:55:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58102 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752660Ab0FJQzr (ORCPT
+	id S1759607Ab0FJQ5D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 12:57:03 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51220 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab0FJQ5A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 12:55:47 -0400
+	Thu, 10 Jun 2010 12:57:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Wq3P40GRaICQM6nLWmdIqDFgoXTXYTewdHmr6sa7yMGkRkL3a095/DnrFz+plZWNDN
+         3YAi/a4TMx6XjxJbesrOuhfNX2RiPfj3rsWPdXX7ExRpn2rpY3rHqKtJNACduDuQ2qvJ
+         GbSr4EY/w3A0tmNrzBr3EFE/3AowshL2sNH4c=
 MIME-Version: 1.0
-In-Reply-To: <4C1111ED.6020008@fusionio.com>
-References: <4C10EC2A.8060002@fusionio.com>
-	<AANLkTimus1Ajk-6HyDtZBmsYwQjkAf3zW-dvxNJlSlGw@mail.gmail.com>
-	<4C1111ED.6020008@fusionio.com>
-Date: Thu, 10 Jun 2010 09:55:10 -0700
-Message-ID: <AANLkTikKwoZKYsj2Nd98rIa8i947a-AlpEd47lkuHyro@mail.gmail.com>
-Subject: Re: [GIT PULL] block/io bits for 2.6.35-rc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Christoph Hellwig <hch@lst.de>, Dave Chinner <dchinner@redhat.com>
+In-Reply-To: <AANLkTik6xP9vVEyW4QG-4RfZu-iEuHcl2pBV_-mfHP4y@mail.gmail.com>
+References: <AANLkTik6xP9vVEyW4QG-4RfZu-iEuHcl2pBV_-mfHP4y@mail.gmail.com>
+From: Mulyadi Santosa <mulyadi.santosa@gmail.com>
+Date: Thu, 10 Jun 2010 23:56:30 +0700
+Message-ID: <AANLkTinXqriwgslQwjmjYaGjiyVK4oh1HZcTwxgWCZkh@mail.gmail.com>
+Subject: Re: oom killer and long-waiting processes
+To: Ryan Wang <openspace.wang@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       kernelnewbies@nl.linux.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 9:25 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+Hi
+
+On Thu, Jun 10, 2010 at 14:17, Ryan Wang <openspace.wang@gmail.com> wrote:
+> Hi all,
 >
-> It's fixing a regression where umount takes a LONG time if you have
-> a lot of dirty inodes, since it basically degenerates to a data
-> integrity writeback instead of a simple WB_SYNC_NONE. If it wasn't
-> fixing a nasty regression (the distros are all wanting a real fix
-> for this, it's a user problem), I would not be submitting this code
-> at this point in time.
+>        I have one question about oom killer:
+> If many processes dealing with network communications,
+> but due to bad network traffic, the processes have to wait
+> for a very long time. And meanwhile they may consume
+> some memeory separately for computation. The number
+> of such processes may be large.
 
-I'm not sure if you noticed, we had a separate thread with Dave
-Chinner that resulted in three hopefully fairly minimal patches going
-in instead.
 
-See commits
+Please refer to my article here :
+http://linuxdevcenter.com/pub/a/linux/2006/11/30/linux-out-of-memory.html
 
-   git log -3  d87815cb2090
+Right now, I can not recall entirely about the rules, but IIRC the
+processes that do I/O get lower "score". But that doesn't mean it
+won't be killed if free memory amount is really low...
 
-and I thought that last one (first one applied: "pay attention to
-wbc->nr_to_write") was the one that had fixed the worst XFS issues.
+-- 
+regards,
 
-But maybe it was an unrelated thing.
+Mulyadi Santosa
+Freelance Linux trainer and consultant
 
-                 Linus
+blog: the-hydra.blogspot.com
+training: mulyaditraining.blogspot.com
