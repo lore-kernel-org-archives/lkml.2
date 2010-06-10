@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758100Ab0FJJnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 05:43:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51797 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752008Ab0FJJnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 05:43:16 -0400
-Message-ID: <4C10B3AF.7020908@redhat.com>
-Date: Thu, 10 Jun 2010 12:43:11 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-CC: kvm <kvm@vger.kernel.org>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
- control
-References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com> <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>
-In-Reply-To: <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758717Ab0FJJux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 05:50:53 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:47705 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008Ab0FJJuw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 05:50:52 -0400
+Subject: Re: [RFC] para virt interface of perf to support kvm guest os
+ statistics collection in guest os
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com
+In-Reply-To: <1276136493.2096.462.camel@ymzhang.sh.intel.com>
+References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>
+	 <4C0F51DD.3080200@redhat.com>
+	 <1276075280.2096.427.camel@ymzhang.sh.intel.com>
+	 <4C0F61D3.9000402@redhat.com>
+	 <1276136493.2096.462.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 10 Jun 2010 11:50:37 +0200
+Message-ID: <1276163437.2077.6.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2010 06:51 PM, Balbir Singh wrote:
-> Balloon unmapped page cache pages first
->
-> From: Balbir Singh<balbir@linux.vnet.ibm.com>
->
-> This patch builds on the ballooning infrastructure by ballooning unmapped
-> page cache pages first. It looks for low hanging fruit first and tries
-> to reclaim clean unmapped pages first.
->    
+On Thu, 2010-06-10 at 10:21 +0800, Zhang, Yanmin wrote:
+> . The ABI mostly includes the definition of struct perf_event_attr,
+> guest_perf_counter,
+> and hypercalls. 
 
-I'm not sure victimizing unmapped cache pages is a good idea.  Shouldn't 
-page selection use the LRU for recency information instead of the cost 
-of guest reclaim?  Dropping a frequently used unmapped cache page can be 
-more expensive than dropping an unused text page that was loaded as part 
-of some executable's initialization and forgotten.
-
-Many workloads have many unmapped cache pages, for example static web 
-serving and the all-important kernel build.
-
-> The key advantage was that it resulted in lesser RSS usage in the host and
-> more cached usage, indicating that the caching had been pushed towards
-> the host. The guest cached memory usage was lower and free memory in
-> the guest was also higher.
->    
-
-Caching in the host is only helpful if the cache can be shared, 
-otherwise it's better to cache in the guest.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Note that perf_event_attr isn't guaranteed to be stable between kernels,
+it can grow.
