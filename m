@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759355Ab0FJO62 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 10:58:28 -0400
-Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:35650 "EHLO
-	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753589Ab0FJO61 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 10:58:27 -0400
-Message-ID: <4C10FD91.4060209@sandeen.net>
-Date: Thu, 10 Jun 2010 09:58:25 -0500
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1759276Ab0FJPFE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 11:05:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755989Ab0FJPFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 11:05:02 -0400
+Date: Thu, 10 Jun 2010 11:04:22 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+       rostedt@goodmis.org, andi@firstfloor.org, roland@redhat.com,
+       rth@redhat.com, mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+       davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org
+Subject: Re: [PATCH 03/13] jump label v9: x86 support
+Message-ID: <20100610150422.GA3923@redhat.com>
+References: <cover.1276116186.git.jbaron@redhat.com>
+ <c837d1a0a380030a4ea61acbcf0183518675a8ee.1276116186.git.jbaron@redhat.com>
+ <1276171930.2077.200.camel@twins>
+ <20100610121440.GA20130@elte.hu>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Michael Tokarev <mjt@tls.msk.ru>,
-       Linux-kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs, 2.6.27=>.32 sync write 10 times slowdown [was: xfs,	aacraid
- 2.6.27 => 2.6.32 results in 6 times slowdown]
-References: <4C0E13A7.20402@msgid.tls.msk.ru> <20100608122919.GC7869@dastard>	<4C0EA938.9000104@msgid.tls.msk.ru> <20100608231845.GG7869@dastard>	<4C0F3819.4000409@msgid.tls.msk.ru> <20100609074741.GJ7869@dastard>	<4C0FE779.8010603@msgid.tls.msk.ru> <20100610004701.GN7869@dastard>
-In-Reply-To: <20100610004701.GN7869@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100610121440.GA20130@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner wrote:
-> On Wed, Jun 09, 2010 at 11:11:53PM +0400, Michael Tokarev wrote:
-
-
->> The same is with -o osyncisosync (in .34).  Actually,
->> osyncis[od]sync mount options does not change anything, not
->> in .32 nor in .34.
+On Thu, Jun 10, 2010 at 02:14:40PM +0200, Ingo Molnar wrote:
+> * Peter Zijlstra <peterz@infradead.org> wrote:
 > 
-> I think only osyncisosync exists, and it doesn't do anything
-> anymore.
-
-Just to be pedantic, osyncisdsync "exists," but is deprecated and does
-nothing to change defaults:
-
-                } else if (!strcmp(this_char, "osyncisdsync")) {
-                        /* no-op, this is now the default */
-                        cmn_err(CE_WARN,
-        "XFS: osyncisdsync is now the default, option is deprecated.");
-                }
-
-huh, didn't realize that osyncisosync does nothing but set a flag that
-is never tested other than to show mount options:
-
-  File                  Function      Line
-0 xfs_mount.h           <global>      285 #define XFS_MOUNT_OSYNCISOSYNC (1ULL << 13)
-1 linux-2.6/xfs_super.c xfs_parseargs 292 mp->m_flags |= XFS_MOUNT_OSYNCISOSYNC;
-2 linux-2.6/xfs_super.c xfs_showargs  542 { XFS_MOUNT_OSYNCISOSYNC, "," MNTOPT_OSYNCISOSYNC },
-
-Time to deprecate/remove that one too I guess?
-
--Eric
- 
-> Cheers,
+> > On Wed, 2010-06-09 at 17:39 -0400, Jason Baron wrote:
+> > > +       select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
+> > 
+> > That deserves a comment somewhere, it basically makes OPTIMIZE_FOR_SIZE 
+> > useless...
 > 
-> Dave.
+> Hm, we need more than a comment for that - distros enable CC_OPTIMIZE_FOR_SIZE 
+> all the time, for the massive kernel image (and hotpath cache footprint) 
+> savings. Is this fixable?
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
 
+When I tested 'jump label' with CC_OPTIMIZE_FOR_SIZE, I saw a small
+performance drop , b/c there is less block re-ordering happening. There
+was a small gcc patch that Richard Henderson wrote to allow block
+re-ordering while still taking size into account. However, it did
+increase the text size somewhat from what current optimize for size
+does. This small patch combined with jump labels resulted in the
+expected performance gains. However, to keep the size to what it is now
+a much more involved gcc patch would be required.
+
+Thus, until this additional gcc optimization is done, I've posted this
+as depends on !CC_OPTIMIZE_FOR_SIZE. If this gcc work is done, we can
+lift this restriction. As mentioned, a number of large distros are
+compiled !CC_OPTIMIZE_FOR_SIZE (rhel, sles), so we should still get a lot of
+benefit from this. Also, if people find these patches useful we might
+create some more impetus for the gcc work. So i see this as an iterative
+thing.
+
+thanks,
+
+-Jason
