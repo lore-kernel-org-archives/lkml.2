@@ -1,133 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758882Ab0FJLK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 07:10:56 -0400
+	id S1758901Ab0FJLLB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 07:11:01 -0400
 Received: from one.firstfloor.org ([213.235.205.2]:39173 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758867Ab0FJLKv (ORCPT
+	with ESMTP id S1758867Ab0FJLK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 07:10:51 -0400
+	Thu, 10 Jun 2010 07:10:57 -0400
 From: Andi Kleen <andi@firstfloor.org>
 References: <20100610110.764742110@firstfloor.org>
 In-Reply-To: <20100610110.764742110@firstfloor.org>
-To: viro@zeniv.linux.org.uk, neilb@suse.de, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] [14/23] NFSD: Fix initialized but not read warnings
-Message-Id: <20100610111050.30FCCB1A2B@basil.firstfloor.org>
-Date: Thu, 10 Jun 2010 13:10:50 +0200 (CEST)
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] [20/23] MM: Fix unused but set warnings
+Message-Id: <20100610111056.557F8B1A2B@basil.firstfloor.org>
+Date: Thu, 10 Jun 2010 13:10:56 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Fixes at least one real minor bug: the nfs4 recovery dir sysctl
-would not return its status properly.
-
-Also I finished Al's 1e41568d7378d ("Take ima_path_check() in nfsd 
-past dentry_open() in nfsd_open()") commit, it moved the IMA
-code, but left the old path initializer in there.
-
-The rest is just dead code removed I think, although I was not 
-fully sure about the "is_borc" stuff. Some more review
-would be still good.
-
-Found by gcc 4.6's new warnings.
-
-Cc: viro@zeniv.linux.org.uk
-Cc: neilb@suse.de
+No real bugs, just some dead code and some fixups.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/nfsd/nfs4state.c |    2 --
- fs/nfsd/nfsctl.c    |    2 ++
- fs/nfsd/nfsproc.c   |    2 --
- fs/nfsd/vfs.c       |   11 +----------
- 4 files changed, 3 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/pgtable_64.h |    4 ++--
+ include/linux/highmem.h           |    6 +++++-
+ include/linux/mmdebug.h           |    2 +-
+ mm/filemap.c                      |    2 --
+ mm/memory.c                       |    2 --
+ mm/slab.c                         |    2 +-
+ 6 files changed, 9 insertions(+), 9 deletions(-)
 
-Index: linux-2.6.35-rc2-gcc/fs/nfsd/nfs4state.c
+Index: linux-2.6.35-rc2-gcc/mm/filemap.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/nfsd/nfs4state.c
-+++ linux-2.6.35-rc2-gcc/fs/nfsd/nfs4state.c
-@@ -3346,11 +3346,9 @@ static inline void
- nfs4_set_lock_denied(struct file_lock *fl, struct nfsd4_lock_denied *deny)
+--- linux-2.6.35-rc2-gcc.orig/mm/filemap.c
++++ linux-2.6.35-rc2-gcc/mm/filemap.c
+@@ -2238,14 +2238,12 @@ static ssize_t generic_perform_write(str
+ 
+ 	do {
+ 		struct page *page;
+-		pgoff_t index;		/* Pagecache index for current page */
+ 		unsigned long offset;	/* Offset into pagecache page */
+ 		unsigned long bytes;	/* Bytes to write to page */
+ 		size_t copied;		/* Bytes copied from user */
+ 		void *fsdata;
+ 
+ 		offset = (pos & (PAGE_CACHE_SIZE - 1));
+-		index = pos >> PAGE_CACHE_SHIFT;
+ 		bytes = min_t(unsigned long, PAGE_CACHE_SIZE - offset,
+ 						iov_iter_count(i));
+ 
+Index: linux-2.6.35-rc2-gcc/mm/memory.c
+===================================================================
+--- linux-2.6.35-rc2-gcc.orig/mm/memory.c
++++ linux-2.6.35-rc2-gcc/mm/memory.c
+@@ -307,7 +307,6 @@ void free_pgd_range(struct mmu_gather *t
  {
- 	struct nfs4_stateowner *sop;
--	unsigned int hval;
+ 	pgd_t *pgd;
+ 	unsigned long next;
+-	unsigned long start;
  
- 	if (fl->fl_lmops == &nfsd_posix_mng_ops) {
- 		sop = (struct nfs4_stateowner *) fl->fl_owner;
--		hval = lockownerid_hashval(sop->so_id);
- 		kref_get(&sop->so_ref);
- 		deny->ld_sop = sop;
- 		deny->ld_clientid = sop->so_client->cl_clientid;
-Index: linux-2.6.35-rc2-gcc/fs/nfsd/nfsctl.c
+ 	/*
+ 	 * The next few lines have given us lots of grief...
+@@ -351,7 +350,6 @@ void free_pgd_range(struct mmu_gather *t
+ 	if (addr > end - 1)
+ 		return;
+ 
+-	start = addr;
+ 	pgd = pgd_offset(tlb->mm, addr);
+ 	do {
+ 		next = pgd_addr_end(addr, end);
+Index: linux-2.6.35-rc2-gcc/arch/x86/include/asm/pgtable_64.h
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/nfsd/nfsctl.c
-+++ linux-2.6.35-rc2-gcc/fs/nfsd/nfsctl.c
-@@ -1310,6 +1310,8 @@ static ssize_t __write_recoverydir(struc
- 			return -EINVAL;
+--- linux-2.6.35-rc2-gcc.orig/arch/x86/include/asm/pgtable_64.h
++++ linux-2.6.35-rc2-gcc/arch/x86/include/asm/pgtable_64.h
+@@ -126,8 +126,8 @@ static inline int pgd_large(pgd_t pgd) {
+ /* x86-64 always has all page tables mapped. */
+ #define pte_offset_map(dir, address) pte_offset_kernel((dir), (address))
+ #define pte_offset_map_nested(dir, address) pte_offset_kernel((dir), (address))
+-#define pte_unmap(pte) /* NOP */
+-#define pte_unmap_nested(pte) /* NOP */
++#define pte_unmap(pte) ((void)(pte))/* NOP */
++#define pte_unmap_nested(pte) ((void)(pte)) /* NOP */
  
- 		status = nfs4_reset_recoverydir(recdir);
-+		if (status)
-+			return status;
- 	}
+ #define update_mmu_cache(vma, address, ptep) do { } while (0)
  
- 	return scnprintf(buf, SIMPLE_TRANSACTION_LIMIT, "%s\n",
-Index: linux-2.6.35-rc2-gcc/fs/nfsd/nfsproc.c
+Index: linux-2.6.35-rc2-gcc/include/linux/mmdebug.h
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/nfsd/nfsproc.c
-+++ linux-2.6.35-rc2-gcc/fs/nfsd/nfsproc.c
-@@ -290,7 +290,6 @@ nfsd_proc_create(struct svc_rqst *rqstp,
- 	 * gospel of sun micro
- 	 */
- 	if (type != S_IFREG) {
--		int	is_borc = 0;
- 		if (type != S_IFBLK && type != S_IFCHR) {
- 			rdev = 0;
- 		} else if (type == S_IFCHR && !(attr->ia_valid & ATTR_SIZE)) {
-@@ -298,7 +297,6 @@ nfsd_proc_create(struct svc_rqst *rqstp,
- 			type = S_IFIFO;
- 		} else {
- 			/* Okay, char or block special */
--			is_borc = 1;
- 			if (!rdev)
- 				rdev = wanted;
- 		}
-Index: linux-2.6.35-rc2-gcc/fs/nfsd/vfs.c
+--- linux-2.6.35-rc2-gcc.orig/include/linux/mmdebug.h
++++ linux-2.6.35-rc2-gcc/include/linux/mmdebug.h
+@@ -4,7 +4,7 @@
+ #ifdef CONFIG_DEBUG_VM
+ #define VM_BUG_ON(cond) BUG_ON(cond)
+ #else
+-#define VM_BUG_ON(cond) do { } while (0)
++#define VM_BUG_ON(cond) do { (void)(cond); } while (0)
+ #endif
+ 
+ #ifdef CONFIG_DEBUG_VIRTUAL
+Index: linux-2.6.35-rc2-gcc/mm/slab.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/nfsd/vfs.c
-+++ linux-2.6.35-rc2-gcc/fs/nfsd/vfs.c
-@@ -1632,7 +1632,7 @@ nfsd_link(struct svc_rqst *rqstp, struct
- 				char *name, int len, struct svc_fh *tfhp)
- {
- 	struct dentry	*ddir, *dnew, *dold;
--	struct inode	*dirp, *dest;
-+	struct inode	*dirp;
- 	__be32		err;
- 	int		host_err;
- 
-@@ -1660,7 +1660,6 @@ nfsd_link(struct svc_rqst *rqstp, struct
- 		goto out_nfserr;
- 
- 	dold = tfhp->fh_dentry;
--	dest = dold->d_inode;
- 
- 	host_err = mnt_want_write(tfhp->fh_export->ex_path.mnt);
- 	if (host_err) {
-@@ -2112,15 +2111,7 @@ nfsd_permission(struct svc_rqst *rqstp,
- 	if (err == -EACCES && S_ISREG(inode->i_mode) &&
- 	    acc == (NFSD_MAY_READ | NFSD_MAY_OWNER_OVERRIDE))
- 		err = inode_permission(inode, MAY_EXEC);
--	if (err)
--		goto nfsd_out;
- 
--	/* Do integrity (permission) checking now, but defer incrementing
--	 * IMA counts to the actual file open.
--	 */
--	path.mnt = exp->ex_path.mnt;
--	path.dentry = dentry;
--nfsd_out:
- 	return err? nfserrno(err) : 0;
+--- linux-2.6.35-rc2-gcc.orig/mm/slab.c
++++ linux-2.6.35-rc2-gcc/mm/slab.c
+@@ -395,7 +395,7 @@ static void kmem_list3_init(struct kmem_
+ #define	STATS_DEC_ACTIVE(x)	do { } while (0)
+ #define	STATS_INC_ALLOCED(x)	do { } while (0)
+ #define	STATS_INC_GROWN(x)	do { } while (0)
+-#define	STATS_ADD_REAPED(x,y)	do { } while (0)
++#define	STATS_ADD_REAPED(x,y)	do { (void)(y); } while (0)
+ #define	STATS_SET_HIGH(x)	do { } while (0)
+ #define	STATS_INC_ERR(x)	do { } while (0)
+ #define	STATS_INC_NODEALLOCS(x)	do { } while (0)
+Index: linux-2.6.35-rc2-gcc/include/linux/highmem.h
+===================================================================
+--- linux-2.6.35-rc2-gcc.orig/include/linux/highmem.h
++++ linux-2.6.35-rc2-gcc/include/linux/highmem.h
+@@ -72,7 +72,11 @@ static inline void *kmap_atomic(struct p
  }
+ #define kmap_atomic_prot(page, idx, prot)	kmap_atomic(page, idx)
+ 
+-#define kunmap_atomic(addr, idx)	do { pagefault_enable(); } while (0)
++static inline void kunmap_atomic(void *addr, enum km_type idx)
++{
++	pagefault_enable();
++}
++
+ #define kmap_atomic_pfn(pfn, idx)	kmap_atomic(pfn_to_page(pfn), (idx))
+ #define kmap_atomic_to_page(ptr)	virt_to_page(ptr)
  
