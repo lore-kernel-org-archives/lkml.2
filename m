@@ -1,79 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab0FJGPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 02:15:47 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53826 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab0FJGPp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 02:15:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=t8USBPOUVZcPu5VNjXIasW8+3hQj73N1jHFz0Kwx5JKDvOtrrFapGsSVXvCYAmSFn4
-         xo5Adfd26Rix6dQBnDCVi8KI4+gJJlENFXIe+hWeqrajzBavxLJRppaiBc1v0qSPQc1V
-         k2l5hCum7RicNKJvwA4IUOSOcFs9Vf+ZDpZfc=
-MIME-Version: 1.0
-In-Reply-To: <20100610055026.GM7660@chipmunk>
-References: <4c104d7a.0c3ddf0a.2185.329a@mx.google.com> <20100610055026.GM7660@chipmunk>
-From: Dmytro Milinevskyy <milinevskyy@gmail.com>
-Date: Thu, 10 Jun 2010 09:15:24 +0300
-X-Google-Sender-Auth: GJ5Hj4zZ8X3ONDFxTE1s645-LqA
-Message-ID: <AANLkTilVxQBnoLNT_Z7aoPqjHqNqqXS58Av2txdsuTWm@mail.gmail.com>
-Subject: Re: [PATCH] Marvell OpenRD-Ultimate machine support
-To: Alexander Clouter <alex@digriz.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org,
-       Russell King <linux@arm.linux.org.uk>,
-       Dhaval Vasa <dhaval.vasa@einfochips.com>,
-       Lennert Buytenhek <kernel@wantstofly.org>,
-       Nicolas Pitre <nico@fluxnic.net>, Simon Guinot <sguinot@lacie.com>,
-       Martin Michlmayr <tbm@cyrius.com>,
-       Simon Kagstrom <simon.kagstrom@netinsight.net>,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754515Ab0FJGSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 02:18:09 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38516 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751733Ab0FJGSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 02:18:07 -0400
+Subject: Re: [PATCH 1/5] Removing dead BOOK3E_MMU_TLB_STATS
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Christoph Egger <siccegge@cs.fau.de>
+Cc: Paul Mackerras <paulus@samba.org>, Kumar Gala <galak@kernel.crashing.org>,
+       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+       Huang Weiyi <weiyi.huang@gmail.com>, linuxppc-dev@ozlabs.org,
+       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
+In-Reply-To: <20aa4815e07e1be0b073bcf4f63331a68b8f74be.1275925219.git.siccegge@cs.fau.de>
+References: <cover.1275925219.git.siccegge@cs.fau.de>
+	 <20aa4815e07e1be0b073bcf4f63331a68b8f74be.1275925219.git.siccegge@cs.fau.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Jun 2010 15:20:19 +1000
+Message-ID: <1276147219.1962.41.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wed, 2010-06-09 at 11:59 +0200, Christoph Egger wrote:
+> BOOK3E_MMU_TLB_STATS doesn't exist in Kconfig, therefore removing all
+> references for it from the source code.
 
-You are right, I didn't notice that it's called via subsys_initcall.
+Heh, thanks but no :-)
 
--- Dima
+I want to keep that code here, until we hook it up again. It was hooked
+up properly in some internal stuff that didn't go upstream for some
+reason and I need to fix that.
 
-On Thu, Jun 10, 2010 at 8:50 AM, Alexander Clouter <alex@digriz.org.uk> wrote:
-> Hi,
->
-> * Dmytro Milinevskyy <milinevskyy@gmail.com> [2010-06-10 05:24:56+0300]:
->>
->> [snipped]
->>
->> @@ -84,8 +90,7 @@ static void __init openrd_init(void)
->>
->>  static int __init openrd_pci_init(void)
->>  {
->> -     if (machine_is_openrd_base() || machine_is_openrd_client())
->> -             kirkwood_pcie_init();
->> +     kirkwood_pcie_init();
->>
->>       return 0;
->>  }
->>
-> You just 'broke' kirkwood, welcome to the club.  We all have done this:
->
-> http://marc.info/?l=linux-arm-kernel&m=125624586625065&w=2
-> http://marc.info/?l=linux-arm-kernel&m=125804222219159&w=2
->
-> Put that 'if()' clause back in, the 'subsys_initcall(openrd_pci_init)'
-> causes that code to run on *all* compiled in boards (think of the case
-> where you have SheevaPlug's also enabled).
->
-> Cheers
->
-> --
-> Alexander Clouter
-> .sigmonster says: Poverty begins at home.
->
+Cheers,
+Ben.
+
+> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> ---
+>  arch/powerpc/include/asm/exception-64e.h |   38 ------------------------------
+>  arch/powerpc/mm/tlb_low_64e.S            |    9 -------
+>  2 files changed, 0 insertions(+), 47 deletions(-)
+> 
+> diff --git a/arch/powerpc/include/asm/exception-64e.h b/arch/powerpc/include/asm/exception-64e.h
+> index 6d53f31..db74814 100644
+> --- a/arch/powerpc/include/asm/exception-64e.h
+> +++ b/arch/powerpc/include/asm/exception-64e.h
+> @@ -65,14 +65,7 @@
+>  #define EX_TLB_MMUCR0	(12 * 8) /* Level 0 */
+>  #define EX_TLB_MAS1	(12 * 8) /* Level 0 */
+>  #define EX_TLB_MAS2	(13 * 8) /* Level 0 */
+> -#ifdef CONFIG_BOOK3E_MMU_TLB_STATS
+> -#define EX_TLB_R8	(14 * 8)
+> -#define EX_TLB_R9	(15 * 8)
+> -#define EX_TLB_LR	(16 * 8)
+> -#define EX_TLB_SIZE	(17 * 8)
+> -#else
+>  #define EX_TLB_SIZE	(14 * 8)
+> -#endif
+>  
+>  #define	START_EXCEPTION(label)						\
+>  	.globl exc_##label##_book3e;					\
+> @@ -157,36 +150,6 @@ exc_##label##_book3e:
+>  	addi	r11,r13,PACA_EXTLB;					    \
+>  	TLB_MISS_RESTORE(r11)
+>  
+> -#ifdef CONFIG_BOOK3E_MMU_TLB_STATS
+> -#define TLB_MISS_PROLOG_STATS						    \
+> -	mflr	r10;							    \
+> -	std	r8,EX_TLB_R8(r12);					    \
+> -	std	r9,EX_TLB_R9(r12);					    \
+> -	std	r10,EX_TLB_LR(r12);
+> -#define TLB_MISS_RESTORE_STATS					            \
+> -	ld	r16,EX_TLB_LR(r12);					    \
+> -	ld	r9,EX_TLB_R9(r12);					    \
+> -	ld	r8,EX_TLB_R8(r12);					    \
+> -	mtlr	r16;
+> -#define TLB_MISS_STATS_D(name)						    \
+> -	addi	r9,r13,MMSTAT_DSTATS+name;				    \
+> -	bl	.tlb_stat_inc;
+> -#define TLB_MISS_STATS_I(name)						    \
+> -	addi	r9,r13,MMSTAT_ISTATS+name;				    \
+> -	bl	.tlb_stat_inc;
+> -#define TLB_MISS_STATS_X(name)						    \
+> -	ld	r8,PACA_EXTLB+EX_TLB_ESR(r13);				    \
+> -	cmpdi	cr2,r8,-1;						    \
+> -	beq	cr2,61f;						    \
+> -	addi	r9,r13,MMSTAT_DSTATS+name;				    \
+> -	b	62f;							    \
+> -61:	addi	r9,r13,MMSTAT_ISTATS+name;				    \
+> -62:	bl	.tlb_stat_inc;
+> -#define TLB_MISS_STATS_SAVE_INFO					    \
+> -	std	r14,EX_TLB_ESR(r12);	/* save ESR */			    \
+> -
+> -
+> -#else
+>  #define TLB_MISS_PROLOG_STATS
+>  #define TLB_MISS_RESTORE_STATS
+>  #define TLB_MISS_STATS_D(name)
+> @@ -194,7 +157,6 @@ exc_##label##_book3e:
+>  #define TLB_MISS_STATS_X(name)
+>  #define TLB_MISS_STATS_Y(name)
+>  #define TLB_MISS_STATS_SAVE_INFO
+> -#endif
+>  
+>  #define SET_IVOR(vector_number, vector_offset)	\
+>  	li	r3,vector_offset@l; 		\
+> diff --git a/arch/powerpc/mm/tlb_low_64e.S b/arch/powerpc/mm/tlb_low_64e.S
+> index 8b04c54..4d7d059 100644
+> --- a/arch/powerpc/mm/tlb_low_64e.S
+> +++ b/arch/powerpc/mm/tlb_low_64e.S
+> @@ -758,12 +758,3 @@ tlb_load_linear_fault:
+>  1:	TLB_MISS_EPILOG_ERROR_SPECIAL
+>  	b	exc_instruction_storage_book3e
+>  
+> -
+> -#ifdef CONFIG_BOOK3E_MMU_TLB_STATS
+> -.tlb_stat_inc:
+> -1:	ldarx	r8,0,r9
+> -	addi	r8,r8,1
+> -	stdcx.	r8,0,r9
+> -	bne-	1b
+> -	blr
+> -#endif
+
+
