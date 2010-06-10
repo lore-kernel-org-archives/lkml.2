@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab0FJN2Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 09:28:25 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:44457 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752912Ab0FJN2Y (ORCPT
+	id S1758658Ab0FJN3F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 09:29:05 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:40375 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752940Ab0FJN3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 09:28:24 -0400
-To: Tejun Heo <tj@kernel.org>
-CC: miklos@szeredi.hu, hmajxxlh@corbac.com, fuse-devel@lists.sourceforge.net,
-       mszeredi@suse.cz, linux-kernel@vger.kernel.org
-In-reply-to: <869cdc8d-85cf-468e-8f94-ff50551684ba@email.android.com> (message
-	from Tejun Heo on Thu, 10 Jun 2010 15:13:33 +0200)
-Subject: Re: [fuse-devel] OSS Proxy Jack slave
-References: =?US-ASCII?Q?=3C20100601092456=2EGA23572=40alia?= =?US-ASCII?Q?=2Enute=2Enet=3E_=3C4C066CF4=2E2050902=40gm?= =?US-ASCII?Q?ail=2Ecom=3E=09=3C20100605085045=2EGA56?= =?US-ASCII?Q?30=40alia=2Enute=2Enet=3E_=3C4C0A1369=2E9010?= =?US-ASCII?Q?601=40kernel=2Eorg=3E_=3CE1OMICc-0005?= =?US-ASCII?Q?f8-G5=40pomaz-ex=2Eszeredi=2Ehu=3E_=3C4C1?= =?US-ASCII?Q?0CB39=2E70002=40kernel=2Eorg=3E_=3CE1OMg?= =?US-ASCII?Q?Iz-0005Wb-2a=40pomaz-ex=2Eszeredi=2Ehu=3E?= <869cdc8d-85cf-468e-8f94-ff50551684ba@email.android.com>
-Message-Id: <E1OMhnk-0005i4-8F@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 10 Jun 2010 15:28:08 +0200
+	Thu, 10 Jun 2010 09:29:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ABnNIyOkyUCWzP+AjoMKljgtuIHFmliwgoF5/6Kv5MRq4vFRRALGRGLBf6X7RIPR+B
+         mlFJ8xWQEOvdQDpwtTOZAs4Zuw0NpS2949xH9+5SQKQIos1oEUtt0hxC62XHMMIxEnJQ
+         eIAGR9w2kluc9KVifMIB5VBnBJtHtoWR08/OE=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Christoph Lameter <clameter@sgi.com>
+Subject: [PATCH 1/2] Cleanup: use for_each_online_cpu in vmstat
+Date: Thu, 10 Jun 2010 22:28:46 +0900
+Message-Id: <1276176526-2952-1-git-send-email-minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jun 2010, Tejun Heo wrote:
-> Hello,
-> 
-> Nope, it's not required for osspd but it's a rather strong
-> limitation on the interface which would be pretty difficult to work
-> around later.  Page protection tricks would be very cumbersome and
-> unscalable.  Hmmm, it does remove the necessity for allocating
-> kernel pages, right?  Still, it seems like a big limitation.  Are
-> you sure this is a good idea?
+The sum_vm_events passes cpumask for for_each_cpu.
+But it's useless since we have for_each_online_cpu.
+Althougth it's tirival overhead, it's not good about
+coding consistency.
 
-I'm sure its a good idea to provide an interface that does't _require_
-server side mmaps.  This doesn't preclude an mmap interface later on,
-but I'd rather start with a "pure" read/write device interface, which
-is in a lot of ways simpler to solve than mmap.
+Let's use for_each_online_cpu instead of for_each_cpu with
+cpumask argument.
 
-As for pinning kernel pages, I still think it's a good idea for the
-char device interface, but you're right, it's not necessary.
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Christoph Lameter <clameter@sgi.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ mm/vmstat.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-In fact I'm mostly ready with an implementation of store/retrieve that
-just pokes the regular page cache.
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 7759941..15a14b1 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -22,14 +22,14 @@
+ DEFINE_PER_CPU(struct vm_event_state, vm_event_states) = {{0}};
+ EXPORT_PER_CPU_SYMBOL(vm_event_states);
+ 
+-static void sum_vm_events(unsigned long *ret, const struct cpumask *cpumask)
++static void sum_vm_events(unsigned long *ret)
+ {
+ 	int cpu;
+ 	int i;
+ 
+ 	memset(ret, 0, NR_VM_EVENT_ITEMS * sizeof(unsigned long));
+ 
+-	for_each_cpu(cpu, cpumask) {
++	for_each_online_cpu(cpu) {
+ 		struct vm_event_state *this = &per_cpu(vm_event_states, cpu);
+ 
+ 		for (i = 0; i < NR_VM_EVENT_ITEMS; i++)
+@@ -45,7 +45,7 @@ static void sum_vm_events(unsigned long *ret, const struct cpumask *cpumask)
+ void all_vm_events(unsigned long *ret)
+ {
+ 	get_online_cpus();
+-	sum_vm_events(ret, cpu_online_mask);
++	sum_vm_events(ret);
+ 	put_online_cpus();
+ }
+ EXPORT_SYMBOL_GPL(all_vm_events);
+-- 
+1.7.0.5
 
-Thanks,
-Miklos
