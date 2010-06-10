@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759131Ab0FJOqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 10:46:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58219 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758555Ab0FJOqy convert rfc822-to-8bit (ORCPT
+	id S1759305Ab0FJOrd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 10:47:33 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:40275 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758911Ab0FJOrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 10:46:54 -0400
-Subject: Re: [PATCH 10/13] jump label v9: convert jump label to use a key
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-       davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org
-In-Reply-To: <20100610135732.GC2410@redhat.com>
-References: <cover.1276116186.git.jbaron@redhat.com>
-	 <2a7e0be296375cf6658647c8a9c6cb208d875ac8.1276116186.git.jbaron@redhat.com>
-	 <1276173826.2077.252.camel@twins>  <20100610135732.GC2410@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 10 Jun 2010 16:46:34 +0200
-Message-ID: <1276181194.2077.404.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 10 Jun 2010 10:47:32 -0400
+Date: Thu, 10 Jun 2010 10:47:31 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Neil Brown <neilb@suse.de>, Felipe Contreras <felipe.contreras@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>, <david@lang.hm>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Brian Swetland <swetland@google.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Arjan van de Ven <arjan@infradead.org>, <tytso@mit.edu>,
+       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Felipe Balbi <felipe.balbi@nokia.com>
+Subject: Re: [linux-pm] suspend blockers & Android integration
+In-Reply-To: <201006101059.44411.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1006101043510.1702-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-10 at 09:57 -0400, Jason Baron wrote:
+On Thu, 10 Jun 2010, Rafael J. Wysocki wrote:
 
-> right. I was going to clean that up in a followup. But you are right - I
-> think it makes the code much clearer. will fix.
+> Moreover, having thought a bit more about the "power manager in user space"
+> concept I'm not sure if it really is that better than the original wakelocks
+> idea.  Namely, it only repaces a kernel-based mechanism with a user space
+> task doing basically the same thing, but the communication between that task
+> and the other cooperating user space tasks is arguably more complicated (it
+> also uses the kernel resources, although indirectly).
 
-Please fold this patch into the previous patches. That makes the series
-much more readable.
+That is all true.  The "power manager in userspace" was meant to prove
+a point: that this _could_ be done without invasive changes to the
+kernel.  It wasn't necessarily meant to be a _better_ solution.
+
+> So, for a phone-like system, where you'd generally want to simplify user space,
+> having a "power manager" in the kernel seems to make sense to me.
+
+This is a judgment call.  Obviously different people have different 
+opinions.
+
+Alan Stern
+
