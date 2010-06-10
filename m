@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab0FJG0f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 02:26:35 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44686 "EHLO mx3.mail.elte.hu"
+	id S1755048Ab0FJG21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 02:28:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54088 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752324Ab0FJG0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 02:26:34 -0400
-Date: Thu, 10 Jun 2010 08:26:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Stephane Eranian <eranian@google.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>,
-       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 0/5] perf events finer grained context instrumentation /
- context exclusion
-Message-ID: <20100610062618.GA20062@elte.hu>
-References: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com>
+	id S1752260Ab0FJG20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 02:28:26 -0400
+Message-ID: <4C108587.6070409@zytor.com>
+Date: Wed, 09 Jun 2010 23:26:15 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, mingo@redhat.com,
+       linux-kernel@vger.kernel.org, jdike@addtoit.com, bharrosh@panasas.com,
+       bp@alien8.de, akpm@linux-foundation.org, toralf.foerster@gmx.de,
+       tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, hweight: Fix UML boot crash
+References: <201005271944.09541.toralf.foerster@gmx.de>	<20100530170346.GC1565@liondog.tnic>	<tip-cc7f0a7b3004a4ca0bfef0e1ca79f2e0da6ca1b0@git.kernel.org>	<4C1018FD.8090109@linux.intel.com> <AANLkTil3rzSvLnxTerj_FxaCLpdokL5BB5z8QOcL7dbr@mail.gmail.com>
+In-Reply-To: <AANLkTil3rzSvLnxTerj_FxaCLpdokL5BB5z8QOcL7dbr@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/09/2010 10:32 PM, Geert Uytterhoeven wrote:
+> On Thu, Jun 10, 2010 at 00:43, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>> Note: I have applied this  because it fixes a regression, but it bugs
+> 
+> You seem to have pushed the wrong one, from this/the old thread (new one has
+> `resent' in the subject)?
+> 
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+I tried to make sure I wouldn't get bad metadata, and found that the
+newer patch was supposedly marked "doesn't work".
 
-> Here is the new version of per context exclusion, based on hooks on 
-> irq_enter/irq_exit. I haven't observed slowdowns but I haven't actually 
-> measured the impact.
+If it was a build dependency issue that is one thing.  I'll replace the
+patch tomorrow.
 
-One thing that would be nice to see in this discussion is a comparison of 
-before/after perf stat --repeat runs.
+	-hpa
 
-Something like:
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-  perf stat --repeat ./hackbench 5
-
-Done with full stat, and then also done with hardirqs/softirqs excluded. (i.e. 
-task context stats only)
-
-I.e. does the feature really give us the expected statistical stability in 
-results? Does it really exclude hardirq/softirq workloads, etc.?
-
-Thanks,
-
-	Ingo
