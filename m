@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759664Ab0FJTBl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 15:01:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41725 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759600Ab0FJTBj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 15:01:39 -0400
-Date: Thu, 10 Jun 2010 20:01:36 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Neil Brown <neilb@suse.de>, Felipe Contreras <felipe.contreras@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Brian Swetland <swetland@google.com>, Arve Hj?nnev?g <arve@android.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
-       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-Message-ID: <20100610190136.GD17945@opensource.wolfsonmicro.com>
-References: <20100603193045.GA7188@elte.hu> <201006101059.44411.rjw@sisk.pl> <20100610135714.GA27848@sirena.org.uk> <201006101746.47035.rjw@sisk.pl>
+	id S1759695Ab0FJTCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 15:02:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12171 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752732Ab0FJTCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 15:02:16 -0400
+Date: Thu, 10 Jun 2010 21:57:04 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sridhar Samudrala <sri@us.ibm.com>
+Cc: virtualization@lists.linux-foundation.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Jiri Pirko <jpirko@redhat.com>,
+       Shirley Ma <xma@us.ibm.com>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH for-2.6.35] virtio_net: fix oom handling on tx
+Message-ID: <20100610185704.GB4044@redhat.com>
+References: <20100610152041.GA3480@redhat.com> <1276190227.22064.19.camel@w-sridhar.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201006101746.47035.rjw@sisk.pl>
-X-Cookie: Avoid gunfire in the bathroom tonight.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1276190227.22064.19.camel@w-sridhar.beaverton.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 05:46:46PM +0200, Rafael J. Wysocki wrote:
-> On Thursday, June 10, 2010, Mark Brown wrote:
-> > On Thu, Jun 10, 2010 at 10:59:43AM +0200, Rafael J. Wysocki wrote:
+On Thu, Jun 10, 2010 at 10:17:07AM -0700, Sridhar Samudrala wrote:
+> On Thu, 2010-06-10 at 18:20 +0300, Michael S. Tsirkin wrote:
+> > virtio net will never try to overflow the TX ring, so the only reason
+> > add_buf may fail is out of memory. Thus, we can not stop the
+> > device until some request completes - there's no guarantee anything
+> > at all is outstanding.
+> > 
+> > Make the error message clearer as well: error here does not
+> > indicate queue full.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  drivers/net/virtio_net.c |   15 ++++++++-------
+> >  1 files changed, 8 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > index 85615a3..e48a06f 100644
+> > --- a/drivers/net/virtio_net.c
+> > +++ b/drivers/net/virtio_net.c
+> > @@ -563,7 +563,6 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+> >  	struct virtnet_info *vi = netdev_priv(dev);
+> >  	int capacity;
+> > 
+> > -again:
+> >  	/* Free up any pending old buffers before queueing new ones. */
+> >  	free_old_xmit_skbs(vi);
+> > 
+> > @@ -572,12 +571,14 @@ again:
+> > 
+> >  	/* This can happen with OOM and indirect buffers. */
+> >  	if (unlikely(capacity < 0)) {
+> > -		netif_stop_queue(dev);
+> > -		dev_warn(&dev->dev, "Unexpected full queue\n");
+> > -		if (unlikely(!virtqueue_enable_cb(vi->svq))) {
+> > -			virtqueue_disable_cb(vi->svq);
+> > -			netif_start_queue(dev);
+> > -			goto again;
+> > +		if (net_ratelimit()) {
+> > +			if (likely(capacity == -ENOMEM))
+> > +				dev_warn(&dev->dev,
+> > +					 "TX queue failure: out of memory\n");
+> > +			else
+> > +				dev_warn(&dev->dev,
+> > +					 "Unexpected TX queue failure: %d\n",
+> > +					 capacity);
+> >  		}
+> >  		return NETDEV_TX_BUSY;
+> >  	}
+> 
+> It is not clear to me how xmit_skb() can return -ENOMEM.
+> xmit_skb() calls virtqueue_add_buf_gfp() which can return -ENOSPC.
+> Even vring_add_indirect() doesn't return -ENOMEM on kmalloc failure.
+> 
+> Thanks
+> Sridhar
 
-> > > So, for a phone-like system, where you'd generally want to simplify user space,
-> > > having a "power manager" in the kernel seems to make sense to me.
+A separate patch fixes vring_add_indirect to return -ENOMEM.
+-ENOSPC really means ring is full so nothing to do
+and no need to retry.
 
-> > I'm not clear where this requirement to simplify user space specifically
-> > for phones comes from
-
-> This isn't a requirement, but something that IMO is reasonable.
-
-> > - phones do have pretty substantial software stacks that aren't that far away
-> > to PCs.
-
-> That doesn't seem to be relevant here.
-
-Sure, that's my point - you seem to be suggesting that phones have a
-different requirement here.
+-- 
+MST
