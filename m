@@ -1,100 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976Ab0FJAKJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 20:10:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45751 "EHLO hera.kernel.org"
+	id S1756911Ab0FJAKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 20:10:49 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45773 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753982Ab0FJAKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 20:10:07 -0400
-Date: Thu, 10 Jun 2010 00:09:45 GMT
-From: tip-bot for Dan Carpenter <error27@gmail.com>
+	id S1754320Ab0FJAKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 20:10:47 -0400
+Date: Thu, 10 Jun 2010 00:10:25 GMT
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       error27@gmail.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
-       hpa@linux.intel.com
+       tglx@linutronix.de, hpa@linux.intel.com, borislav.petkov@amd.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       error27@gmail.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
-       hpa@linux.intel.com
-In-Reply-To: <20100603100746.GU5483@bicker>
-References: <20100603100746.GU5483@bicker>
+       tglx@linutronix.de, hpa@linux.intel.com, borislav.petkov@amd.com
+In-Reply-To: <20100602182921.GA21557@aftab>
+References: <20100602182921.GA21557@aftab>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, xsave: Cleanup return codes in check_for_xstate()
-Message-ID: <tip-d6d4d4205cf4ce4ba13bc320305afbda25303496@git.kernel.org>
-Git-Commit-ID: d6d4d4205cf4ce4ba13bc320305afbda25303496
+Subject: [tip:x86/cpu] x86, AMD: Extend support to future families
+Message-ID: <tip-12d8a961289644d265d8b3e88201878837c3b814@git.kernel.org>
+Git-Commit-ID: 12d8a961289644d265d8b3e88201878837c3b814
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Jun 2010 00:09:45 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Jun 2010 00:10:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d6d4d4205cf4ce4ba13bc320305afbda25303496
-Gitweb:     http://git.kernel.org/tip/d6d4d4205cf4ce4ba13bc320305afbda25303496
-Author:     Dan Carpenter <error27@gmail.com>
-AuthorDate: Thu, 3 Jun 2010 12:07:46 +0200
+Commit-ID:  12d8a961289644d265d8b3e88201878837c3b814
+Gitweb:     http://git.kernel.org/tip/12d8a961289644d265d8b3e88201878837c3b814
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Wed, 2 Jun 2010 20:29:21 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 9 Jun 2010 15:57:36 -0700
+CommitDate: Wed, 9 Jun 2010 15:57:47 -0700
 
-x86, xsave: Cleanup return codes in check_for_xstate()
+x86, AMD: Extend support to future families
 
-The places which call check_for_xstate() only care about zero or
-non-zero so this patch doesn't change how the code runs, but it's a
-cleanup.  The main reason for this patch is that I'm looking for places
-which don't return -EFAULT for copy_from_user() failures.
+Extend support to future families, and in particular:
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-LKML-Reference: <20100603100746.GU5483@bicker>
+* extend direct mapping split of Tseg SMM area.
+* extend K8 flavored alternatives (NOPS).
+* rep movs* prefix is fast in ucode.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <20100602182921.GA21557@aftab>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
- arch/x86/kernel/xsave.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/kernel/cpu/amd.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 37e68fc..9801498 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -36,15 +36,14 @@ int check_for_xstate(struct i387_fxsave_struct __user *buf,
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index e485825..12b9cff 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -466,7 +466,7 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		}
  
- 	err = __copy_from_user(fx_sw_user, &buf->sw_reserved[0],
- 			       sizeof(struct _fpx_sw_bytes));
--
- 	if (err)
--		return err;
-+		return -EFAULT;
+ 	}
+-	if (c->x86 == 0x10 || c->x86 == 0x11)
++	if (c->x86 >= 0x10)
+ 		set_cpu_cap(c, X86_FEATURE_REP_GOOD);
  
- 	/*
- 	 * First Magic check failed.
- 	 */
- 	if (fx_sw_user->magic1 != FP_XSTATE_MAGIC1)
--		return -1;
-+		return -EINVAL;
+ 	/* get apicid instead of initial apic id from cpuid */
+@@ -529,7 +529,7 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 			num_cache_leaves = 3;
+ 	}
  
- 	/*
- 	 * Check for error scenarios.
-@@ -52,19 +51,21 @@ int check_for_xstate(struct i387_fxsave_struct __user *buf,
- 	if (fx_sw_user->xstate_size < min_xstate_size ||
- 	    fx_sw_user->xstate_size > xstate_size ||
- 	    fx_sw_user->xstate_size > fx_sw_user->extended_size)
--		return -1;
-+		return -EINVAL;
+-	if (c->x86 >= 0xf && c->x86 <= 0x11)
++	if (c->x86 >= 0xf)
+ 		set_cpu_cap(c, X86_FEATURE_K8);
  
- 	err = __get_user(magic2, (__u32 *) (((void *)fpstate) +
- 					    fx_sw_user->extended_size -
- 					    FP_XSTATE_MAGIC2_SIZE));
-+	if (err)
-+		return err;
- 	/*
- 	 * Check for the presence of second magic word at the end of memory
- 	 * layout. This detects the case where the user just copied the legacy
- 	 * fpstate layout with out copying the extended state information
- 	 * in the memory layout.
- 	 */
--	if (err || magic2 != FP_XSTATE_MAGIC2)
--		return -1;
-+	if (magic2 != FP_XSTATE_MAGIC2)
-+		return -EFAULT;
+ 	if (cpu_has_xmm2) {
+@@ -546,7 +546,7 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		fam10h_check_enable_mmcfg();
+ 	}
  
- 	return 0;
- }
+-	if (c == &boot_cpu_data && c->x86 >= 0xf && c->x86 <= 0x11) {
++	if (c == &boot_cpu_data && c->x86 >= 0xf) {
+ 		unsigned long long tseg;
+ 
+ 		/*
