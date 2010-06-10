@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758959Ab0FJLON (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 07:14:13 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39169 "EHLO
+	id S1758893Ab0FJLOd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 07:14:33 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39167 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758830Ab0FJLKq (ORCPT
+	with ESMTP id S1753411Ab0FJLKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 07:10:46 -0400
+	Thu, 10 Jun 2010 07:10:45 -0400
 From: Andi Kleen <andi@firstfloor.org>
 References: <20100610110.764742110@firstfloor.org>
 In-Reply-To: <20100610110.764742110@firstfloor.org>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] [9/23] PRINTK: Use stable variable to dump kmsg buffer
-Message-Id: <20100610111045.13CE3B1A2B@basil.firstfloor.org>
-Date: Thu, 10 Jun 2010 13:10:45 +0200 (CEST)
+To: jason.wessel@windriver.com, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] [8/23] KGDB: Remove set but unused newPC
+Message-Id: <20100610111044.0E350B1A2B@basil.firstfloor.org>
+Date: Thu, 10 Jun 2010 13:10:44 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-kmsg_dump takes care to sample the global variables
-inside a spinlock, but then goes on to use the same
-variables outside the spinlock region too.
+I'm not fully sure this is the correct fix, maybe this
+was a bug and newPC should really have a side effect.
+Jason?
 
-Use the correct variable. This will make the race
-window smaller.
+Found by gcc 4.6's new warnings
 
-Found by gcc 4.6's new warnings.
+Cc: jason.wessel@windriver.com
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- kernel/printk.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/kernel/kgdb.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-Index: linux-2.6.35-rc2-gcc/kernel/printk.c
+Index: linux-2.6.35-rc2-gcc/arch/x86/kernel/kgdb.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/kernel/printk.c
-+++ linux-2.6.35-rc2-gcc/kernel/printk.c
-@@ -1520,9 +1520,9 @@ void kmsg_dump(enum kmsg_dump_reason rea
- 	chars = logged_chars;
- 	spin_unlock_irqrestore(&logbuf_lock, flags);
+--- linux-2.6.35-rc2-gcc.orig/arch/x86/kernel/kgdb.c
++++ linux-2.6.35-rc2-gcc/arch/x86/kernel/kgdb.c
+@@ -458,7 +458,6 @@ int kgdb_arch_handle_exception(int e_vec
+ {
+ 	unsigned long addr;
+ 	char *ptr;
+-	int newPC;
  
--	if (logged_chars > end) {
--		s1 = log_buf + log_buf_len - logged_chars + end;
--		l1 = logged_chars - end;
-+	if (chars > end) {
-+		s1 = log_buf + log_buf_len - chars + end;
-+		l1 = chars - end;
- 
- 		s2 = log_buf;
- 		l2 = end;
-@@ -1530,8 +1530,8 @@ void kmsg_dump(enum kmsg_dump_reason rea
- 		s1 = "";
- 		l1 = 0;
- 
--		s2 = log_buf + end - logged_chars;
--		l2 = logged_chars;
-+		s2 = log_buf + end - chars;
-+		l2 = chars;
- 	}
- 
- 	if (!spin_trylock_irqsave(&dump_list_lock, flags)) {
+ 	switch (remcomInBuffer[0]) {
+ 	case 'c':
+@@ -469,8 +468,6 @@ int kgdb_arch_handle_exception(int e_vec
+ 			linux_regs->ip = addr;
+ 	case 'D':
+ 	case 'k':
+-		newPC = linux_regs->ip;
+-
+ 		/* clear the trace bit */
+ 		linux_regs->flags &= ~X86_EFLAGS_TF;
+ 		atomic_set(&kgdb_cpu_doing_single_step, -1);
