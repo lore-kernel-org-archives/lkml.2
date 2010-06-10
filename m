@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759878Ab0FJX2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 19:28:35 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:40784 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab0FJX2d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 19:28:33 -0400
-Date: Thu, 10 Jun 2010 17:28:25 -0600
-From: Alex Chiang <achiang@canonical.com>
-To: Greg KH <greg@kroah.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Jiri Slaby <jslaby@suse.cz>,
-       linux-pci@vger.kernel.org,
-       Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: cpqphp: NULL ptr deref in cpqhpc_probe
-Message-ID: <20100610232825.GH8257@canonical.com>
-Mail-Followup-To: Alex Chiang <achiang@canonical.com>,
-	Greg KH <greg@kroah.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-	Jiri Slaby <jslaby@suse.cz>, linux-pci@vger.kernel.org,
-	Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-	Jiri Slaby <jirislaby@gmail.com>
-References: <4C0774C6.4090000@suse.cz>
- <20100608143739.192a94cd@virtuousgeek.org>
- <20100610223436.GE8257@canonical.com>
- <20100610231919.GA21669@kroah.com>
+	id S1759898Ab0FJXnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 19:43:13 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37052 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752621Ab0FJXnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 19:43:12 -0400
+Date: Thu, 10 Jun 2010 23:42:44 GMT
+From: tip-bot for Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       andi@firstfloor.org, ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       andi@firstfloor.org, ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <20100610111040.F1781B1A2B@basil.firstfloor.org>
+References: <20100610111040.F1781B1A2B@basil.firstfloor.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, setup: Set ax register in boot vga query
+Message-ID: <tip-cf3bdc29fcbf2cb4cfa238591021d41ea8f8431f@git.kernel.org>
+Git-Commit-ID: cf3bdc29fcbf2cb4cfa238591021d41ea8f8431f
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100610231919.GA21669@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Jun 2010 23:42:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH <greg@kroah.com>:
-> On Thu, Jun 10, 2010 at 04:34:36PM -0600, Alex Chiang wrote:
-> > But I seriously think it's just time to rip this driver out
-> > of the tree. If anyone is actually using this driver to do
-> > hotplug, I will personally buy that person a full half-barrel
-> > of Colorado's finest microbrew of choice in order to numb the
-> > pain of making poor career decisions. Hell, we can drink it
-> > together, during which time I'll hack on the driver. The code
-> > surely can't get any worse.
-> 
-> A real user found this problem on their machine, so you might
-> have to go buy that barrel.  Jiri has more details on that :)
+Commit-ID:  cf3bdc29fcbf2cb4cfa238591021d41ea8f8431f
+Gitweb:     http://git.kernel.org/tip/cf3bdc29fcbf2cb4cfa238591021d41ea8f8431f
+Author:     Andi Kleen <andi@firstfloor.org>
+AuthorDate: Thu, 10 Jun 2010 13:10:40 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 10 Jun 2010 15:24:29 -0700
 
-Well, I went and read the bz before responding, and the user did
-say that he wan't interested in the actual hotplug aspect of it.
-;)
+x86, setup: Set ax register in boot vga query
 
-> Me, I gave the machine that had this hardware in it to
-> osuosl.org a long time ago, odds are, it's still being used by
-> some group.
+Catch missing conversion to the register structure "glove box" scheme.
 
-Oh, I don't doubt that someone is using the hardware to do
-something useful. But I do doubt that anyone's using the hotplug
-driver. It's been in various stages of brokenness for several
-years now.
+Found by gcc 4.6's new warnings.
 
-/ac
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+LKML-Reference: <20100610111040.F1781B1A2B@basil.firstfloor.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/boot/video-vga.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/boot/video-vga.c b/arch/x86/boot/video-vga.c
+index ed7aeff..45bc940 100644
+--- a/arch/x86/boot/video-vga.c
++++ b/arch/x86/boot/video-vga.c
+@@ -41,13 +41,12 @@ static __videocard video_vga;
+ static u8 vga_set_basic_mode(void)
+ {
+ 	struct biosregs ireg, oreg;
+-	u16 ax;
+ 	u8 mode;
+ 
+ 	initregs(&ireg);
+ 
+ 	/* Query current mode */
+-	ax = 0x0f00;
++	ireg.ax = 0x0f00;
+ 	intcall(0x10, &ireg, &oreg);
+ 	mode = oreg.al;
+ 
