@@ -1,273 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248Ab0FJCT2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 22:19:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:44374 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756464Ab0FJCT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 22:19:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,395,1272870000"; 
-   d="scan'208";a="806472170"
-Subject: Re: [RFC] para virt interface of perf to support kvm guest os
- statistics collection in guest os
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <4C0F61D3.9000402@redhat.com>
-References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>
-	 <4C0F51DD.3080200@redhat.com>
-	 <1276075280.2096.427.camel@ymzhang.sh.intel.com>
-	 <4C0F61D3.9000402@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 10 Jun 2010 10:21:33 +0800
-Message-Id: <1276136493.2096.462.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+	id S932313Ab0FJCXb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 22:23:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51589 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932219Ab0FJCXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 22:23:30 -0400
+Message-ID: <4C104CBE.8060404@cn.fujitsu.com>
+Date: Thu, 10 Jun 2010 10:23:58 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+MIME-Version: 1.0
+To: Izik Eidus <ieidus@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+       Chris Wright <chrisw@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH] ksm: cleanup for mm_slots_hash
+References: <4BFF66CC.4050204@cn.fujitsu.com>
+In-Reply-To: <4BFF66CC.4050204@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 12:41 +0300, Avi Kivity wrote:
-> On 06/09/2010 12:21 PM, Zhang, Yanmin wrote:
-> >
-> >> One thing that's missing is documentation of the guest/host ABI.  It
-> >> will be a requirement for inclusion, but it will also be a great help
-> >> for review, so please provide it ASAP.
-> >>      
-> > I will add such document. It will includes:
-> > 1) Data struct perf_event definition. Guest os and host os have to share the same
-> > data structure as host kernel will sync data (counte/overflows and others if needed)
-> > changes back to guest os.
-> > 2) A list of all hypercalls
-> > 3) Guest need have NMI handler which checks all guest events.
-> >    
-> 
-> Thanks.  It may be easier to have just the documentation for the first 
-> few iterations so we can converge on a good interface, then update the 
-> code to match the interface.
-I thought over it last night. Your input is important. I need define a clear ABI.
-At guest side, I plan to use perf_event->shadow to point to another data area, such like:
-struct guest_perf_counter {
-	u64 count;
-	atomic_t overflows;
-};
+Hi, Izik
 
-So host side just copy data to this area, then guest copy them to its own
-perf_event.
+Could you give some comments about this patch.
+Thanks,
 
-The ABI becomes more simple than before. Function kvm_sync_event_to_guest also becomes
-clearer. The ABI mostly includes the definition of struct perf_event_attr, guest_perf_counter,
-and hypercalls.
+Lai
 
-
-> >> Disabling the watchdog is unfortunate.  Why is it necessary?
-> >>      
-> > perf always uses NMI, so we disable the nmi_watchdog when a perf_event is
-> > set up in case they might have impact.
-> >    
+Lai Jiangshan wrote:
+> Use compile-allocated memory instead of dynamic allocated
+> memory for mm_slots_hash.
 > 
-> Ok.  Is that the case for the hardware pmus as well?  If so it might be 
-> done in common code.
+> Use hash_ptr() instead divisions for bucket calculation.
 > 
-> >>> +
-> >>> +static int kvm_pmu_enable(struct perf_event *event)
-> >>> +{
-> >>> +	int ret;
-> >>> +	unsigned long addr = __pa(event);
-> >>> +
-> >>> +	if (kvm_add_event(event))
-> >>> +		return -1;
-> >>> +
-> >>> +	ret = kvm_hypercall3(KVM_PERF_OP, KVM_PERF_OP_ENABLE,
-> >>> +	 		addr, (unsigned long) event->shadow);
-> >>>
-> >>>        
-> >> This is suspicious.  Passing virtual addresses to the host is always
-> >> problematic.  Or event->shadow only used as an opaque cookie?
-> >>      
-> > I use perf_event->shadow at both host and guest side.
-> > 1) At host side, perf_event->shadow points to an area including the page
-> > mapping information about guest perf_event. Host kernel uses it to sync data
-> > changes back to guest;
-> > 2) At guest side, perf_event->shadow save the virtual address of host
-> > perf_event at host side. At guest side,
-> > kvm_hypercall3(KVM_PERF_OP, KVM_PERF_OP_OPEN, ...) return the virtual address.
-> > Guest os shouldn't use it but using it to pass it back to host kernel in following
-> > hypercalls. It might be a security issue for host kernel. Originally, I planed guest
-> > os not to use perf_event->shadow. Host kernel maintains a per-vcpu event-related
-> > list whose key is addr of guest perf_event. But considering the vcpu thread migration
-> > on logical cpu, such list needs lock and implementation becomes a little complicated.
-> >
-> > I will double-check the list method as the security issue is there.
-> >    
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+> diff --git a/mm/ksm.c b/mm/ksm.c
+> index 8cdfc2a..81b379e 100644
+> --- a/mm/ksm.c
+> +++ b/mm/ksm.c
+> @@ -33,6 +33,7 @@
+>  #include <linux/mmu_notifier.h>
+>  #include <linux/swap.h>
+>  #include <linux/ksm.h>
+> +#include <linux/hash.h>
+>  
+>  #include <asm/tlbflush.h>
+>  #include "internal.h"
+> @@ -153,8 +154,9 @@ struct rmap_item {
+>  static struct rb_root root_stable_tree = RB_ROOT;
+>  static struct rb_root root_unstable_tree = RB_ROOT;
+>  
+> -#define MM_SLOTS_HASH_HEADS 1024
+> -static struct hlist_head *mm_slots_hash;
+> +#define MM_SLOTS_HASH_SHIFT 10
+> +#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
+> +static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
+>  
+>  static struct mm_slot ksm_mm_head = {
+>  	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
+> @@ -269,28 +271,13 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
+>  	kmem_cache_free(mm_slot_cache, mm_slot);
+>  }
+>  
+> -static int __init mm_slots_hash_init(void)
+> -{
+> -	mm_slots_hash = kzalloc(MM_SLOTS_HASH_HEADS * sizeof(struct hlist_head),
+> -				GFP_KERNEL);
+> -	if (!mm_slots_hash)
+> -		return -ENOMEM;
+> -	return 0;
+> -}
+> -
+> -static void __init mm_slots_hash_free(void)
+> -{
+> -	kfree(mm_slots_hash);
+> -}
+> -
+>  static struct mm_slot *get_mm_slot(struct mm_struct *mm)
+>  {
+>  	struct mm_slot *mm_slot;
+>  	struct hlist_head *bucket;
+>  	struct hlist_node *node;
+>  
+> -	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
+> -				% MM_SLOTS_HASH_HEADS];
+> +	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
+>  	hlist_for_each_entry(mm_slot, node, bucket, link) {
+>  		if (mm == mm_slot->mm)
+>  			return mm_slot;
+> @@ -303,8 +290,7 @@ static void insert_to_mm_slots_hash(struct mm_struct *mm,
+>  {
+>  	struct hlist_head *bucket;
+>  
+> -	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
+> -				% MM_SLOTS_HASH_HEADS];
+> +	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
+>  	mm_slot->mm = mm;
+>  	hlist_add_head(&mm_slot->link, bucket);
+>  }
+> @@ -1943,15 +1929,11 @@ static int __init ksm_init(void)
+>  	if (err)
+>  		goto out;
+>  
+> -	err = mm_slots_hash_init();
+> -	if (err)
+> -		goto out_free1;
+> -
+>  	ksm_thread = kthread_run(ksm_scan_thread, NULL, "ksmd");
+>  	if (IS_ERR(ksm_thread)) {
+>  		printk(KERN_ERR "ksm: creating kthread failed\n");
+>  		err = PTR_ERR(ksm_thread);
+> -		goto out_free2;
+> +		goto out_free;
+>  	}
+>  
+>  #ifdef CONFIG_SYSFS
+> @@ -1959,7 +1941,7 @@ static int __init ksm_init(void)
+>  	if (err) {
+>  		printk(KERN_ERR "ksm: register sysfs failed\n");
+>  		kthread_stop(ksm_thread);
+> -		goto out_free2;
+> +		goto out_free;
+>  	}
+>  #else
+>  	ksm_run = KSM_RUN_MERGE;	/* no way for user to start it */
+> @@ -1975,9 +1957,7 @@ static int __init ksm_init(void)
+>  #endif
+>  	return 0;
+>  
+> -out_free2:
+> -	mm_slots_hash_free();
+> -out_free1:
+> +out_free:
+>  	ksm_slab_free();
+>  out:
+>  	return err;
 > 
-> Besides the other concern, you cannot live migrate a host virtual 
-> address, since it changes from host to host.  It's better to use a 
-> guest-chosen bounded small integer.
-Ok. Perhaps a single u32 per guest os instance is enough. So I will change the shadow
-pointing to a structure like below in guest kernel:
-
-struct guest_perf_counter {
-	u64 count;
-	atomic_t overflows;
-};
-
-struct guest_perf_shadow {
-	u32 id;
-	struct guest_perf_counter sync_data;
-};
-
-atomic_t guest_perf_id; /*Global id counter per guest os*/
-
-
-> 
-> >> Need to detect the kvm pmu via its own cpuid bit.
-> >>      
-> > Ok. I will add a feature, KVM_FEATURE_PARA_PERF, something like
-> > bit KVM_FEATURE_CLOCKSOURCE.
-> >    
-> 
-> Don't forget Documentation/kvm/cpuid.txt.
-Thanks for your kind reminder.
-
-> >> Ok, so event->shadow is never dereferenced.  In that case better not
-> >> make it a pointer at all, keep it unsigned long.
-> >>      
-> > Host kernel also uses it.
-> >    
-> 
-> I see.  So put it in a union.  Or perhaps not even in a union - what if 
-> a kvm guest is also acting as a kvm host?
-My patch has consideration on it. I compiled kernel with host and guest support
-at the same time. The accessing to perf_event->shadow is really under specific
-scenarios, or they are just in specific functions. These functions are called
-just bu host kernel , or just by guest kernel.
-
-> 
-> 
-> >    
-> >>      
-> >>> +
-> >>> +static void kvm_sync_event_to_guest(struct perf_event *event, int overflows)
-> >>> +{
-> >>> +	struct hw_perf_event *hwc =&event->hw;
-> >>> +	struct kvmperf_event *kvmevent;
-> >>> +	int offset, len, data_len, copied, page_offset;
-> >>> +	struct page *event_page;
-> >>> +	void *shared_kaddr;
-> >>> +
-> >>> +	kvmevent = event->shadow;
-> >>> +	offset = kvmevent->event_offset;
-> >>> +
-> >>> +	/* Copy perf_event->count firstly */
-> >>> +	offset += offsetof(struct perf_event, count);
-> >>> +	if (offset<   PAGE_SIZE) {
-> >>> +		event_page = kvmevent->event_page;
-> >>> +		page_offset = offset;
-> >>> +	} else {
-> >>> +		event_page = kvmevent->event_page2;
-> >>> +		page_offset = offset - PAGE_SIZE;
-> >>> +	}
-> >>> +	shared_kaddr = kmap_atomic(event_page, KM_USER0);
-> >>> +	*((atomic64_t *)(shared_kaddr + page_offset)) = event->count;
-> >>>
-> >>>        
-> >> This copy will not be atomic on 32-bit hosts.
-> >>      
-> > Right. But it shouldn't be a problem as vcpu thread stops when vmexit to
-> > host to process events. In addition, only current cpu in guest accesses
-> > perf_events linked to current cpu.
-> >    
-> 
-> Ok.  These restrictions should be documented.
-Perhaps I need write them down as code comments in the patch.
-
-> 
-> >>      
-> >>> +}
-> >>> +
-> >>>
-> >>> +static struct perf_event *
-> >>> +kvm_pv_perf_op_open(struct kvm_vcpu *vcpu, gpa_t addr)
-> >>> +{
-> >>> +	int ret;
-> >>> +	struct perf_event *event;
-> >>> +	struct perf_event *host_event = NULL;
-> >>> +	struct kvmperf_event *shadow = NULL;
-> >>> +
-> >>> +	event = kzalloc(sizeof(*event), GFP_KERNEL);
-> >>> +	if (!event)
-> >>> +		goto out;
-> >>> +
-> >>> +	shadow = kzalloc(sizeof(*shadow), GFP_KERNEL);
-> >>> +	if (!shadow)
-> >>> +		goto out;
-> >>> +
-> >>> +	shadow->event_page = gfn_to_page(vcpu->kvm, addr>>   PAGE_SHIFT);
-> >>> +	shadow->event_offset = addr&   ~PAGE_MASK;
-> >>>
-> >>>        
-> >> Might truncate on 32-bit hosts.  PAGE_MASK is 32-bit while addr is 64 bit.
-> >>      
-> > Above codes just run at host side. Is it possible that host kernel is 32 bit and
-> > guest kernel is 64bits?
-> 
-> No, guest bitness always <= host bitness.  But gpa_t is 64-bit even on 
-> 32-bit host/guest, so you can't use PAGE_MASK on that.
-I will check it.
-
-> 
-> >>> +
-> >>> +	ret = kvm_read_guest(vcpu->kvm, addr, event, sizeof(*event));
-> >>> +	if (ret)
-> >>> +		goto out;
-> >>>
-> >>>        
-> >> I assume this is to check existence?
-> >>      
-> > Here calling kvm_read_guest is to get a copy of guest perf_event as it has
-> > perf_event.attr. Host need the attr to create host perf_event.
-> >
-> >    
-> >>    It doesn't work well with memory
-> >> hotplug.  In general it's preferred to use
-> >> kvm_read_guest()/kvm_write_guest() instead of gfn_to_page() during
-> >> initialization to prevent pinning and allow for hotplug.
-> >>      
-> > That's an issue. But host kernel couldn't go to sleep when processing event
-> > overflows under NMI context.
-> >    
-> 
-> You can set a bit in vcpu->requests and schedule the copying there.  
-> vcpu->requests is always checked before guest entry.
-That becomes a little complicated as we need record overflowed events in vcpu.
-Let me check it again.
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 > 
-> >
-> >> It may be better to have the guest create an id to the host, and the
-> >> host can simply look up the id in a table:
-> >>      
-> > Perhaps the address of guest perf_event is the best id.
-> >    
-> 
-> That will need to be looked up in a hash table.  A small id is best 
-> because it can be easily looked up by both guest and host.
-Yes. I will use a u32 or atomic_t.
-
-Thanks for your patience!
-
-Yanmin
-
 
