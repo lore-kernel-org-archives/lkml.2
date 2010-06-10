@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759054Ab0FJMd2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 08:33:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46311 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab0FJMd1 convert rfc822-to-8bit (ORCPT
+	id S1758947Ab0FJMiW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 08:38:22 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57186 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079Ab0FJMiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 08:33:27 -0400
-Subject: Re: [PATCH 03/13] jump label v9: x86 support
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-       davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org
-In-Reply-To: <c837d1a0a380030a4ea61acbcf0183518675a8ee.1276116186.git.jbaron@redhat.com>
-References: <cover.1276116186.git.jbaron@redhat.com>
-	 <c837d1a0a380030a4ea61acbcf0183518675a8ee.1276116186.git.jbaron@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 10 Jun 2010 14:33:04 +0200
-Message-ID: <1276173184.2077.232.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 10 Jun 2010 08:38:20 -0400
+Message-ID: <4C10DCB7.7090903@in.ibm.com>
+Date: Thu, 10 Jun 2010 18:08:15 +0530
+From: Sachin Sant <sachinp@in.ibm.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+MIME-Version: 1.0
+To: linux-next@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, linux-s390@vger.kernel.org,
+       Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: next June 10: S390 build failure [arch/s390/kvm/kvm.ko]
+References: <20100610160012.30ea7606.sfr@canb.auug.org.au>
+In-Reply-To: <20100610160012.30ea7606.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 17:39 -0400, Jason Baron wrote:
-> add x86 support for jump label. I'm keeping this patch separate so its clear to
-> arch maintainers what was required for x86 support this new feature. hopefully,
-> it wouldn't be too painful for other arches.
+Today's next fails to build on a s390 box with
 
-Well patch 10 really rather spoils that, doesn't it?
+ERROR: "__kvm_s390_vcpu_store_status" [arch/s390/kvm/kvm.ko] undefined!
+
+Yesterday's next was good.
+
+Thanks
+-Sachin
+
+
+-- 
+
+---------------------------------
+Sachin Sant
+IBM Linux Technology Center
+India Systems and Technology Labs
+Bangalore, India
+---------------------------------
+
