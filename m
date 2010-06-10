@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab0FJEjz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 00:39:55 -0400
-Received: from clueserver.org ([65.102.45.174]:51402 "EHLO clueserver.org"
+	id S1752941Ab0FJEnE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 00:43:04 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36601 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122Ab0FJEjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 00:39:53 -0400
-Message-ID: <34979.10.6.6.23.1276144792.squirrel@10.6.6.2>
-Date: Wed, 9 Jun 2010 21:39:52 -0700 (PDT)
-Subject: Question on siig sata 3 controller
-From: "Alan" <alan@clueserver.org>
-To: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.10a-1.fc6
+	id S1751011Ab0FJEnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 00:43:02 -0400
+Date: Thu, 10 Jun 2010 14:42:35 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Joel Becker <joel.becker@oracle.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH v2] ocfs2: Let ocfs2_setattr use new truncate sequence.
+Message-ID: <20100610044234.GD26335@laptop>
+References: <1276141986-9200-1-git-send-email-tao.ma@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276141986-9200-1-git-send-email-tao.ma@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Does anyone know the status of the SIIG DP SATA 6Gb/s 2S1P PCIe (Part
-number: SC-SA0E12-S1)?
+On Thu, Jun 10, 2010 at 11:53:06AM +0800, Tao Ma wrote:
+> Let ocfs2 use the new truncate sequence. The changes include:
+> 1. Remove the extra check for inode_newsize_ok since Christoph
+>    has moved it into inode_change_ok. So we will check it at the
+>    beginning of ocfs2_setattr.
 
-I am encountering problems writing a large quantity through this
-controller and I want to see if there is a way to fix this.  The pci ids
-do not appear to be referenced in the kernel.
+So this deals with our questions regarding check of i_size outside
+the inode cluster lock? (see fsdevel discussion)
 
-Are any of the siig sata controllers supported? Is there some issue with
-them supporting Linux that I am not aware of?
 
-Here is the lspci data:
+> 2. Use truncate_setsize directly since we don't implement our
+>    own ->truncate and what we need is "update i_size and
+>    truncate_pagecache" which truncate_setsize now does.
+> 3. For direct write, ocfs2 actually don't allow write to pass
+>    i_size(see ocfs2_prepare_inode_for_write), so we don't have
+>    a chance to increase i_size. So remove the bogus check.
+> 
+> Cc: Joel Becker <joel.becker@oracle.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Nick Piggin <npiggin@suse.de>
+> Signed-off-by: Tao Ma <tao.ma@oracle.com>
+> ---
+>  fs/ocfs2/file.c |   34 +++++-----------------------------
+>  1 files changed, 5 insertions(+), 29 deletions(-)
+> 
+> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+> index 1fb0985..764fffb 100644
+> --- a/fs/ocfs2/file.c
+> +++ b/fs/ocfs2/file.c
+> @@ -983,10 +983,6 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
+>  	}
+>  
+>  	if (size_change && attr->ia_size != i_size_read(inode)) {
+> -		status = inode_newsize_ok(inode, attr->ia_size);
+> -		if (status)
+> -			goto bail_unlock;
+> -
+>  		if (i_size_read(inode) > attr->ia_size) {
 
-05:00.0 SATA controller: Device 1b4b:9123 (rev 11) (prog-if 01 [AHCI 1.0])
-	Subsystem: Device 1b4b:9123
-	Flags: bus master, fast devsel, latency 0, IRQ 30
-	I/O ports at dc00 [size=8]
-	I/O ports at d880 [size=4]
-	I/O ports at d800 [size=8]
-	I/O ports at d480 [size=4]
-	I/O ports at d400 [size=16]
-	Memory at f9fff800 (32-bit, non-prefetchable) [size=2K]
-	Expansion ROM at f9fe0000 [disabled] [size=64K]
-	Capabilities: <access denied>
-	Kernel driver in use: ahci
-
-05:00.1 IDE interface: Device 1b4b:91a4 (rev 11) (prog-if 8f [Master SecP
-SecO PriP PriO])
-	Subsystem: Device 1b4b:91a4
-	Flags: fast devsel, IRQ 18
-	I/O ports at d080 [size=8]
-	I/O ports at d000 [size=4]
-	I/O ports at cc00 [size=8]
-	I/O ports at c880 [size=4]
-	I/O ports at c800 [size=16]
-	Memory at f9fff400 (32-bit, non-prefetchable) [size=16]
-	Expansion ROM at f9fd0000 [disabled] [size=64K]
-	Capabilities: <access denied>
-	Kernel modules: ata_generic, pata_acpi
-
-Thanks!
+While you're here, you should be able to use inode->i_size if you're
+under i_mutex, no?
 
