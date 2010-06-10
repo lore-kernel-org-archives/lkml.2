@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759254Ab0FJOW6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 10:22:58 -0400
-Received: from relay01.mx.bawue.net ([193.7.176.67]:38439 "EHLO
-	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759148Ab0FJOW5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 10:22:57 -0400
-Date: Thu, 10 Jun 2010 16:22:54 +0200
-From: Nils Radtke <lkml@Think-Future.de>
-To: reinette chatre <reinette.chatre@intel.com>
-Cc: "linville@tuxdriver.com" <linville@tuxdriver.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some
- accesspoint == hardlock
-Message-ID: <20100610142254.GD4452@localhost>
-Reply-To: Nils Radtke <lkml@Think-Future.de>
-References: <20100531201225.GA6327@localhost>
- <1275501085.2091.28873.camel@rchatre-DESK>
- <20100604165732.GB28003@localhost>
- <1276019189.1835.11781.camel@rchatre-DESK>
+	id S1759261Ab0FJOZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 10:25:42 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:52631 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759165Ab0FJOZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 10:25:40 -0400
+Date: Thu, 10 Jun 2010 19:55:12 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: kvm <kvm@vger.kernel.org>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
+ control
+Message-ID: <20100610142512.GB5191@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>
+ <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>
+ <4C10B3AF.7020908@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1276019189.1835.11781.camel@rchatre-DESK>
-X-Url: http://www.Think-Future.de
-X-Editor: Vi it! http://www.vim.org
-X-Bkp: p2mi
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C10B3AF.7020908@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Avi Kivity <avi@redhat.com> [2010-06-10 12:43:11]:
 
-  Hi Reinette,
+> On 06/08/2010 06:51 PM, Balbir Singh wrote:
+> >Balloon unmapped page cache pages first
+> >
+> >From: Balbir Singh<balbir@linux.vnet.ibm.com>
+> >
+> >This patch builds on the ballooning infrastructure by ballooning unmapped
+> >page cache pages first. It looks for low hanging fruit first and tries
+> >to reclaim clean unmapped pages first.
+> 
+> I'm not sure victimizing unmapped cache pages is a good idea.
+> Shouldn't page selection use the LRU for recency information instead
+> of the cost of guest reclaim?  Dropping a frequently used unmapped
+> cache page can be more expensive than dropping an unused text page
+> that was loaded as part of some executable's initialization and
+> forgotten.
+>
 
-  Thanks for your message.
+We victimize the unmapped cache only if it is unused (in LRU order).
+We don't force the issue too much. We also have free slab cache to go
+after.
 
-  Yes, you're right about the multiple bugs one thread thing.
+> Many workloads have many unmapped cache pages, for example static
+> web serving and the all-important kernel build.
+> 
 
-  Just today I got registered w/ the wireless ml because the
-  system just did not send me a registration message. 
+I've tested kernbench, you can see the results in the original posting
+and there is no observable overhead as a result of the patch in my
+run.
 
-  For the bug reports to be created it will take me some time.
-  I'll firstly report the main issue, the 2 other ones afterwards.
-  Would it be ok cross referencing i.e. to the log and such 
-  between the reports?
+> >The key advantage was that it resulted in lesser RSS usage in the host and
+> >more cached usage, indicating that the caching had been pushed towards
+> >the host. The guest cached memory usage was lower and free memory in
+> >the guest was also higher.
+> 
+> Caching in the host is only helpful if the cache can be shared,
+> otherwise it's better to cache in the guest.
+>
 
-  Should I paste all the mail messages in separate report messages 
-  (belonging to one bug report, of course) or should I paste some
-  links to the thread?
+Hmm.. so we would need a ballon cache hint from the monitor, so that
+it is not unconditional? Overall my results show the following
 
-  Cheers,
-
-        Nils
-
-@John: Yes, you're right but the 2.6.33.4 tree which for me still
-  has the bug_on in.
-
-
-On Tue 2010-06-08 @ 10-46-29AM -0700, reinette chatre wrote: 
-# On Fri, 2010-06-04 at 09:57 -0700, Nils Radtke wrote:
-# > I haven't yet received a comment of yours regarding my many other questions in
-# > my previous message. I am willing to help investigate more, assist in other ways 
-# > than testing only (always only doing testing isn't a way to keep up fun..)
-# 
-# Your messages contain references to many issues and it is becoming
-# increasingly hard to keep track of them all in a single email thread.
-# Since the system crash is clearly the big issue I would like to focus on
-# that and get that resolved. This is why I proposed that you create bug
-# reports to help track your various issues better.
-# 
-# Reinette
-# 
-# 
+1. No drastic reduction of guest unmapped cache, just sufficient to
+show lesser RSS in the host. More freeable memory (as in cached
+memory + free memory) visible on the host.
+2. No significant impact on the benchmark (numbers) running in the
+guest.
 
 -- 
+	Three Cheers,
+	Balbir
