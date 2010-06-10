@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab0FJEvl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 00:51:41 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:38557 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab0FJEvj convert rfc822-to-8bit (ORCPT
+	id S1753180Ab0FJEyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 00:54:14 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50185 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122Ab0FJEyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 00:51:39 -0400
+	Thu, 10 Jun 2010 00:54:13 -0400
+Subject: [PATCH] of/device: Move struct of_device define outside of
+	CONFIG_OF_DEVICE test
+From: Grant Likely <grant.likely@secretlab.ca>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, sfr@canb.auug.org.au,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 09 Jun 2010 22:54:10 -0600
+Message-ID: <20100610045159.615.89343.stgit@angua>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.01.1006092117100.17462@asgard.lang.hm>
-References: <AANLkTilALyvthzh8rMiDFFP_QTz_o5hxdE8tArMUonpP@mail.gmail.com>
-	<Pine.LNX.4.44L0.1006091031030.1728-100000@iolanthe.rowland.org>
-	<AANLkTil2JhBgJ27qcTARVj2wVgEltxZKPOc9Ddu4c8yY@mail.gmail.com>
-	<alpine.DEB.2.01.1006092117100.17462@asgard.lang.hm>
-Date: Wed, 9 Jun 2010 21:51:38 -0700
-Message-ID: <AANLkTilrJYg-z6mbRfhhrDdhpWUYSXGQEMCGgBj24xZs@mail.gmail.com>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: david@lang.hm
-Cc: Alan Stern <stern@rowland.harvard.edu>, tytso@mit.edu,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Florian Mickler <florian@mickler.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Brian Swetland <swetland@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Felipe Balbi <felipe.balbi@nokia.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/9  <david@lang.hm>:
-> On Wed, 9 Jun 2010, Arve Hj?nnev?g wrote:
->
->>
->> The power may not see the event, the process that reads the event will
->> always see it. If the power manager is not in the poll call when the
->> event happens, the process that reads the event can read the event
->> before the power manager calls poll.
->>
->
->>
->> All input events that can wake the system are handled by one
->> user-space suspend blocker. Input devices come and go so we would need
->> to add and remove the fds dynamically.
->
->
->>
->> For that to work the wakeup events would have to be reported to the
->> power manager in a reliable way in the first place. Passing the file
->> descriptor that the app uses to the power manager does not work for
->> this, since the app could read the event while the power manager was
->> not in the poll call and the power manager would never see it. Also,
->> existing apps don't pass their file descriptors to the power manager,
->> so it has the get the event from somewhere else.
->>
->
-> why could the suspend blocker process see all events, but the power manager
-> process not see the events?
->
+Some code uses of_device even when CONFIG_OF_DEVICE is not set.  This
+patch makes of_device valid all the time by moving it outside of the
+ifdef CONFIG_OF_DEVICE test.
 
-Because in this proposal the power manager only looks for the events
-(on the same queue) when no user space suspend blockers are active.
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
 
-> have the userspace talk to the power manager the way it does to the suspend
-> blocker now and what's the difference?
->
-> effectivly think s/suspend blocker/power manager/ (with the power manager
-> doing all the other things that are proposed instead of grabbing the
-> wakelock), the difference should be hidden to the rest of userspace.
->
-> what am I missing here?
->
+Hi Randy,
 
-The current user space interface does not require that clients
-register the file descriptors that they get wakeup events from with
-another process.
+Here's what I applied to my tree to fix the niu driver compile warning.
+I've compile tested it on several architectures, and am pushing it out
+to my linux-next branch now.
 
--- 
-Arve Hjønnevåg
+g.
+
+ include/linux/of_device.h |   12 +++++-------
+ 1 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/of_device.h b/include/linux/of_device.h
+index c877d54..8cd1fe7 100644
+--- a/include/linux/of_device.h
++++ b/include/linux/of_device.h
+@@ -1,13 +1,6 @@
+ #ifndef _LINUX_OF_DEVICE_H
+ #define _LINUX_OF_DEVICE_H
+ 
+-#ifdef CONFIG_OF_DEVICE
+-#include <linux/device.h>
+-#include <linux/platform_device.h>
+-#include <linux/of.h>
+-#include <linux/mod_devicetable.h>
+-
+-
+ /*
+  * The of_device *was* a kind of "base class" that was a superset of
+  * struct device for use by devices attached to an OF node and probed
+@@ -22,7 +15,12 @@
+  * from the kernel.
+  */
+ #define of_device platform_device
++#include <linux/platform_device.h>
+ 
++#ifdef CONFIG_OF_DEVICE
++#include <linux/device.h>
++#include <linux/of.h>
++#include <linux/mod_devicetable.h>
+ #include <asm/of_device.h>
+ 
+ #define	to_of_device(d) container_of(d, struct of_device, dev)
+
