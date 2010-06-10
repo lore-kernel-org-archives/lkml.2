@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759748Ab0FJVEb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 17:04:31 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:60978 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759565Ab0FJVEa convert rfc822-to-8bit (ORCPT
+	id S1753063Ab0FJVIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 17:08:48 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:59554 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab0FJVIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 17:04:30 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	content-type:content-transfer-encoding;
-	b=DBABP/DGicUrwVmHn4wfzfRJ13yU42jSU6nFVitvRs+kmp5wKUjERqKEhV8ntPsK5
-	dVThJFuhcD/zs94Yc59NA==
+	Thu, 10 Jun 2010 17:08:47 -0400
+Date: Thu, 10 Jun 2010 14:09:22 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] ceph fixes for 2.6.35-rc3
+Message-ID: <Pine.LNX.4.64.1006101351070.1777@cobra.newdream.net>
 MIME-Version: 1.0
-In-Reply-To: <20100610203815.GA15868@thunk.org>
-References: <20100610200911.18287.29658.stgit@bumblebee1.mtv.corp.google.com>
-	<20100610203815.GA15868@thunk.org>
-Date: Thu, 10 Jun 2010 14:04:25 -0700
-Message-ID: <AANLkTimCWkl2cxt2Yz0IB6ou_lSfWPssvvTjGplKTaIT@mail.gmail.com>
-Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be 
-	reused immediately.
-From: Salman Qazi <sqazi@google.com>
-To: tytso@mit.edu, Salman <sqazi@google.com>, peterz@infradead.org,
-       linux-kernel@vger.kernel.org, tytso@google.com,
-       akpm@linux-foundation.org, walken@google.com,
-       torvalds@linux-foundation.org, mingo@elte.hu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 1:38 PM,  <tytso@mit.edu> wrote:
-> On Thu, Jun 10, 2010 at 01:09:11PM -0700, Salman wrote:
->> A program that repeatedly forks and waits is susceptible to having the
->> same pid repeated, especially when it competes with another instance of the
->> same program.  This is really bad for bash implementation.  Furthermore, many shell
->> scripts assume that pid numbers will not be used for some length of time.
->
-> This should probably get wrapped at column 74 or so....
->
->> +static int pid_before(int base, int a, int b)
->> +{
->> +     /*
->> +      * This is the same as saying
->> +      *
->> +      * (a - base + MAXUINT) % MAXUINT < (b - base + MAXUINT) % MAXUINT
->> +      * and that mapping orders 'a' and 'b' with respect to 'base'.
->> +      *
->> +      */
->> +     return (unsigned)(a - base) < (unsigned)(b - base);
->> +}
->
-> Does this work though if /proc/sys/kernel/pid_max is not set to
-> MAXUINT?
+Hi Linus,
 
-Yes it does.  It should work for all values of pid_max.
->
-> I like the optimization, but it looks like pid_max defaults to 4096 if
-> CONFIG_BASE_SMALL is set, and 32768 otherwise.
->
-> Am I missing something?
+Please pull the following ceph fixes from
 
-Yes.
+ git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-(a - base + pid_max) % pid_max < (b - base + max_pid) % pid_max iff
-(a - base + MAXUINT) % MAXUINT < (b - base + MAXUINT) % MAXUINT
-for all pid_max <= MAXUINT.
+Most of these are one- or few-liners, including an IA64 build error, a 
+caching issue, a statfs memory leak, a bad statfs result, a lease 
+revocation fix, and misleading console output.  The last two patches fix 
+an mds interaction problem (deadlock with the mds) but need to move some 
+code into a helper function to do it.
 
-The values of 'a' (or 'b')  in the range [base, pid_max) gets mapped
-to [0, pid_max - base) and the range [0, base) gets mapped to
-[MAXUINT, MAXUINT - base).  So, the order is essentially maintained by
-this mapping.
+Thanks!
+sage
 
->
->                                        - Ted
->
+
+Henry C Chang (1):
+      ceph: fix d_subdirs ordering problem
+
+Jeff Mahoney (1):
+      ceph: fix atomic64_t initialization on ia64
+
+Sage Weil (5):
+      ceph: fix f_namelen reported by statfs
+      ceph: fix lease revocation when seq doesn't match
+      ceph: fix misleading/incorrect debug message
+      ceph: release cap on import if we don't have the inode
+      ceph: try to send partial cap release on cap message on missing inode
+
+Yehuda Sadeh (1):
+      ceph: fix memory leak in statfs
+
+ fs/ceph/caps.c       |   93 ++++++++++++++++++++++++++++++-------------------
+ fs/ceph/inode.c      |    2 +-
+ fs/ceph/mds_client.c |   28 ++++++++------
+ fs/ceph/mds_client.h |    6 +++
+ fs/ceph/mon_client.c |    2 +
+ fs/ceph/super.c      |    4 +-
+ 6 files changed, 84 insertions(+), 51 deletions(-)
