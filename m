@@ -1,44 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab0FJGHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 02:07:07 -0400
-Received: from eazy.amigager.de ([213.239.192.238]:35747 "EHLO
-	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712Ab0FJGHF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 02:07:05 -0400
-Date: Thu, 10 Jun 2010 08:07:04 +0200
-From: Tino Keitel <tino.keitel+xorg@tikei.de>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, intel-gfx@lists.freedesktop.org,
-       linux-kernel@vger.kernel.org,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: Suspend hangs since 2.6.34
-Message-ID: <20100610060704.GA25573@mac.home>
-Mail-Followup-To: Michael Tokarev <mjt@tls.msk.ru>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, intel-gfx@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org,
-	Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-References: <20100609175356.GA17332@x61.home>
- <201006100142.13131.rjw@sisk.pl>
- <4C108091.3060204@msgid.tls.msk.ru>
+	id S932234Ab0FJGIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 02:08:13 -0400
+Received: from www.tglx.de ([62.245.132.106]:51812 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752055Ab0FJGIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 02:08:12 -0400
+Date: Thu, 10 Jun 2010 08:07:57 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Will Schmidt <will_schmidt@vnet.ibm.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+       rt-users <linux-rt-users@vger.kernel.org>,
+       John Stultz <johnstul@us.ibm.com>, Nick Piggin <npiggin@suse.de>
+Subject: Re: [ANNOUNCE] 2.6.33.5-rt23
+In-Reply-To: <1276119074.15867.311.camel@lexx>
+Message-ID: <alpine.LFD.2.00.1006100800330.2933@localhost.localdomain>
+References: <alpine.LFD.2.00.1002241740410.4245@localhost.localdomain>  <alpine.LFD.2.00.1002262041020.4245@localhost.localdomain>  <alpine.LFD.2.00.1003121124120.22855@localhost.localdomain>  <alpine.LFD.2.00.1003211158130.3147@localhost.localdomain> 
+ <alpine.LFD.2.00.1004071619490.32352@localhost.localdomain>  <alpine.LFD.2.00.1004271744280.2951@localhost.localdomain>  <alpine.LFD.2.00.1004301156590.2951@localhost.localdomain>  <alpine.LFD.2.00.1005022109150.25342@localhost.localdomain> 
+ <alpine.LFD.2.00.1006091837410.2933@localhost.localdomain> <1276119074.15867.311.camel@lexx>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C108091.3060204@msgid.tls.msk.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 10:05:05 +0400, Michael Tokarev wrote:
+On Wed, 9 Jun 2010, Will Schmidt wrote:
 
-[...]
+> On Wed, 2010-06-09 at 18:44 +0200, Thomas Gleixner wrote:
+> I'm still on 2.6.33.5-rt22 on powerpc, and have run into a couple
+> "sleeping function called from invalid context..." BUGs.   The first was
+> during system boot, second during a 'make'.
+> 
+> relevant code paths don't seem to have changed between -rt22 and -rt23,
+> so I think still valid.. :-)  
+> 
+> This is on a POWER7 system, which may have opened up some timing
+> windows, wrt previous runs on POWER6 systems.
+> 
+> 
+> BUG: sleeping function called from invalid context at
+> kernel/rtmutex.c:684
 
-> Sounds very much like the problem I have with 2.6.34 final.  Did not
-> happen with 2.6.34-rc7 which suspended just fine, but happens quite
+> [c000000078cf2cf0] [c000000000131a04] .irq_to_desc_alloc_node+0xdc/0x2b8
 
-I also had this hang before -rc7.
+Grr. I thought I had the SPARSE_IRQ stuff disabled on -rt, but seems
+it came back somehow. Can you disable that, or does you machine depend
+on it ?
+ 
+> BUG: sleeping function called from invalid context at kernel/rtmutex.c:684
+> pcnt: 0 0 in_atomic(): 0, irqs_disabled(): 1, pid: 4760, name: make
+> Call Trace:
+> [c0000000792978b0] [c000000000015550] .show_stack+0xd8/0x218 (unreliable)
+> [c000000079297990] [c0000000006a99c8] .dump_stack+0x28/0x3c
+> [c000000079297a10] [c00000000006cea8] .__might_sleep+0x134/0x15c
+> [c000000079297ab0] [c0000000006a2f78] .rt_spin_lock+0x4c/0x9c
+> [c000000079297b40] [c0000000000a1ff0] .get_signal_to_deliver+0xcc/0x4ec
+> [c000000079297c50] [c000000000018604] .do_signal_pending.clone.0+0x6c/0x2e0
+> [c000000079297d90] [c0000000000188b0] .do_signal+0x38/0x74
+> [c000000079297e30] [c000000000008b40] user_work+0x24/0x28
 
-Regards,
-Tino
+Does the patch below fix it ?
+
+Thanks,
+
+	tglx
+-----
+diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
+index 00b5078..fa580f9 100644
+--- a/arch/powerpc/kernel/signal.c
++++ b/arch/powerpc/kernel/signal.c
+@@ -120,6 +120,14 @@ static int do_signal_pending(sigset_t *oldset, struct pt_regs *regs)
+ 	int ret;
+ 	int is32 = is_32bit_task();
+ 
++#ifdef CONFIG_PREEMPT_RT
++	/*
++	 * Fully-preemptible kernel does not need interrupts disabled:
++	 */
++	local_irq_enable();
++	preempt_check_resched();
++#endif
++
+ 	if (current_thread_info()->local_flags & _TLF_RESTORE_SIGMASK)
+ 		oldset = &current->saved_sigmask;
+ 	else if (!oldset)
