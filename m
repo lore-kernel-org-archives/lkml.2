@@ -1,372 +1,433 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759052Ab0FJMK1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 08:10:27 -0400
-Received: from wine.ocn.ne.jp ([122.1.235.145]:49833 "EHLO smtp.wine.ocn.ne.jp"
+	id S1759057Ab0FJMLP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 08:11:15 -0400
+Received: from wine.ocn.ne.jp ([122.1.235.145]:57964 "EHLO smtp.wine.ocn.ne.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758925Ab0FJMKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 08:10:21 -0400
+	id S1758955Ab0FJMLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 08:11:11 -0400
 To: linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] TOMOYO: Add symlink's target condition support.
+Subject: [PATCH 4/4] TOMOYO: Remove alias support.
 From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 References: <201006102107.EEE43266.VFQMFOLHOSOJtF@I-love.SAKURA.ne.jp>
 In-Reply-To: <201006102107.EEE43266.VFQMFOLHOSOJtF@I-love.SAKURA.ne.jp>
-Message-Id: <201006102110.DHJ56772.tQOLFSVHMFOOJF@I-love.SAKURA.ne.jp>
+Message-Id: <201006102111.DBB12907.VFFSFHQtOJOOML@I-love.SAKURA.ne.jp>
 X-Mailer: Winbiff [Version 2.51 PL2]
 X-Accept-Language: ja,en,zh
-Date: Thu, 10 Jun 2010 21:10:18 +0900
+Date: Thu, 10 Jun 2010 21:11:01 +0900
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Symlinks are frequently abused by attackers. TOMOYO checks permissions using
-dereferenced pathname. Thus, symlinks don't affect on whether the dereferenced
-file is accessible or not. But symlinks do affect on how the dereferenced file
-is used if the file is accessible. For example, symlink from
-/var/www/html/index.txt to /var/www/html/.htpasswd will make Apache disclose
-the content of /var/www/html/.htpasswd if FollowSymLinks is specified in the
-configuration files.
-
-  # echo 'demo:$apr1$Dim11...$yaZFoEyPOeO/gJe2lA0wz/' > /var/www/html/.htpasswd
-  # ln -s .htpasswd /var/www/html/index.txt
-  # curl http://127.0.0.1/index.txt
-  demo:$apr1$Dim11...$yaZFoEyPOeO/gJe2lA0wz/
-
-This patch allows users to check symlink's target passed to symlink()
-operation. For example,
-
-  allow_symlink /var/www/html/index.html if symlink.target="\*.html"
-
-will allow creation of symlink /var/www/html/index.html only if the symlink's
-target matches pattern "\*.html".
+Now "allow_execute" checks symlink's pathname and "if exec.realpath" checks
+dereferenced pathname, "alias" is no longer needed. Removing "alias" shortens
+TOMOYO's installation time from several minutes to few seconds since scanning
+the entire disk for symlinks becomes unnecessary.
 
 Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 ---
- security/tomoyo/common.c    |   49 ++++++++++++++++++++++++++++++++++++++++----
- security/tomoyo/common.h    |   10 ++++++++
- security/tomoyo/condition.c |   17 +++++++++++++--
- security/tomoyo/file.c      |   15 ++++++++++++-
- security/tomoyo/tomoyo.c    |   15 +++++++------
- 5 files changed, 91 insertions(+), 15 deletions(-)
+ security/tomoyo/common.c   |    4 -
+ security/tomoyo/common.h   |   30 --------
+ security/tomoyo/domain.c   |  164 ---------------------------------------------
+ security/tomoyo/file.c     |    4 -
+ security/tomoyo/gc.c       |   21 -----
+ security/tomoyo/realpath.c |   19 -----
+ 6 files changed, 5 insertions(+), 237 deletions(-)
 
 --- security-testing-2.6.orig/security/tomoyo/common.c
 +++ security-testing-2.6/security/tomoyo/common.c
-@@ -20,6 +20,7 @@ static struct tomoyo_profile tomoyo_defa
- 	.preference.learning_verbose = false,
- 	.preference.learning_exec_realpath = true,
- 	.preference.learning_exec_argv0 = true,
-+	.preference.learning_symlink_target = true,
- 	.preference.permissive_verbose = true
- };
- 
-@@ -362,6 +363,10 @@ static int tomoyo_write_profile(struct t
- 			profile->preference.learning_exec_argv0 = true;
- 		else if (strstr(cp, "exec.argv0=no"))
- 			profile->preference.learning_exec_argv0 = false;
-+		if (strstr(cp, "symlink.target=yes"))
-+			profile->preference.learning_symlink_target = true;
-+		else if (strstr(cp, "symlink.target=no"))
-+			profile->preference.learning_symlink_target = false;
- 		return 0;
- 	}
- 	if (profile == &tomoyo_default_profile)
-@@ -422,14 +427,17 @@ static int tomoyo_read_profile(struct to
- 		goto body;
- 	tomoyo_io_printf(head, "PROFILE_VERSION=%s\n", "20090903");
- 	tomoyo_io_printf(head, "PREFERENCE::learning={ verbose=%s "
--			 "max_entry=%u exec.realpath=%s exec.argv0=%s }\n",
-+			 "max_entry=%u exec.realpath=%s exec.argv0=%s "
-+			 "symlink.target=%s }\n",
- 			 tomoyo_yesno(tomoyo_default_profile.preference.
- 				      learning_verbose),
- 			 tomoyo_default_profile.preference.learning_max_entry,
- 			 tomoyo_yesno(tomoyo_default_profile.preference.
- 				      learning_exec_realpath),
- 			 tomoyo_yesno(tomoyo_default_profile.preference.
--				      learning_exec_argv0));
-+				      learning_exec_argv0),
-+			 tomoyo_yesno(tomoyo_default_profile.preference.
-+				      learning_symlink_target));
- 	tomoyo_io_printf(head, "PREFERENCE::permissive={ verbose=%s }\n",
- 			 tomoyo_yesno(tomoyo_default_profile.preference.
- 				      permissive_verbose));
-@@ -474,14 +482,16 @@ static int tomoyo_read_profile(struct to
- 		    !tomoyo_io_printf(head, "%u-PREFERENCE::learning={ "
- 				      "verbose=%s max_entry=%u "
- 				      "exec.realpath=%s exec.argv0=%s "
--				      "}\n", index,
-+				      "symlink.target=%s }\n", index,
- 				      tomoyo_yesno(profile->preference.
- 						   learning_verbose),
- 				      profile->preference.learning_max_entry,
- 				      tomoyo_yesno(profile->preference.
- 						   learning_exec_realpath),
- 				      tomoyo_yesno(profile->preference.
--						   learning_exec_argv0)))
-+						   learning_exec_argv0),
-+				      tomoyo_yesno(profile->preference.
-+						   learning_symlink_target)))
- 			goto out;
- 		if (profile->permissive != &tomoyo_default_profile.preference
- 		    && !tomoyo_io_printf(head, "%u-PREFERENCE::permissive={ "
-@@ -1706,6 +1716,35 @@ static struct tomoyo_condition *tomoyo_g
- 	return cond;
- }
- 
-+/**
-+ * tomoyo_get_symlink_condition - Get condition part for symlink requests.
-+ *
-+ * @r: Pointer to "struct tomoyo_request_info".
-+ *
-+ * Returns pointer to "struct tomoyo_condition" on success, NULL otherwise.
-+ */
-+static struct tomoyo_condition *tomoyo_get_symlink_condition
-+(const struct tomoyo_request_info *r)
-+{
-+	struct tomoyo_condition *cond;
-+	char *buf;
-+	int len;
-+	const char *symlink;
-+	const struct tomoyo_preference *pref = tomoyo_profile(r->profile)->
-+		learning;
-+	if (!pref->learning_symlink_target)
-+		return NULL;
-+	symlink = r->obj->symlink_target->name;
-+	len = strlen(symlink) + 32;
-+	buf = kmalloc(len, GFP_NOFS);
-+	if (!buf)
-+		return NULL;
-+	snprintf(buf, len - 1, "if symlink.target=\"%s\"", symlink);
-+	cond = tomoyo_get_condition(buf);
-+	kfree(buf);
-+	return cond;
-+}
-+
- /* Wait queue for tomoyo_query_list. */
- static DECLARE_WAIT_QUEUE_HEAD(tomoyo_query_wait);
- 
-@@ -1770,6 +1809,8 @@ int tomoyo_supervisor(struct tomoyo_requ
- 		tomoyo_normalize_line(buffer);
- 		if (r->ee)
- 			cond = tomoyo_get_execute_condition(r->ee);
-+		else if (r->obj && r->obj->symlink_target)
-+			cond = tomoyo_get_symlink_condition(r);
- 		else
- 			cond = NULL;
- 		tomoyo_write_domain_policy2(buffer, r->domain, cond, false);
+@@ -1455,8 +1455,6 @@ static int tomoyo_write_exception_policy
+ 							      is_delete);
+ 	if (tomoyo_str_starts(&data, TOMOYO_KEYWORD_AGGREGATOR))
+ 		return tomoyo_write_aggregator_policy(data, is_delete);
+-	if (tomoyo_str_starts(&data, TOMOYO_KEYWORD_ALIAS))
+-		return tomoyo_write_alias_policy(data, is_delete);
+ 	if (tomoyo_str_starts(&data, TOMOYO_KEYWORD_ALLOW_READ))
+ 		return tomoyo_write_globally_readable_policy(data, is_delete);
+ 	if (tomoyo_str_starts(&data, TOMOYO_KEYWORD_FILE_PATTERN))
+@@ -1505,8 +1503,6 @@ static int tomoyo_read_exception_policy(
+ 			head->read_var2 = NULL;
+ 			head->read_step = 5;
+ 		case 5:
+-			if (!tomoyo_read_alias_policy(head))
+-				break;
+ 			head->read_var2 = NULL;
+ 			head->read_step = 6;
+ 		case 6:
 --- security-testing-2.6.orig/security/tomoyo/common.h
 +++ security-testing-2.6/security/tomoyo/common.h
-@@ -196,6 +196,7 @@ enum tomoyo_conditions_index {
- 	TOMOYO_EXEC_ARGC,            /* "struct linux_binprm *"->argc */
- 	TOMOYO_EXEC_ENVC,            /* "struct linux_binprm *"->envc */
- 	TOMOYO_EXEC_REALPATH,
-+	TOMOYO_SYMLINK_TARGET,
- 	TOMOYO_MAX_CONDITION_KEYWORD,
- 	TOMOYO_NUMBER_UNION,
- 	TOMOYO_NAME_UNION,
-@@ -213,6 +214,11 @@ struct tomoyo_page_dump {
- 	char *data;           /* Contents of "page". Size is PAGE_SIZE. */
+@@ -48,7 +48,6 @@ enum tomoyo_mode_index {
+ 
+ /* Keywords for ACLs. */
+ #define TOMOYO_KEYWORD_AGGREGATOR                "aggregator "
+-#define TOMOYO_KEYWORD_ALIAS                     "alias "
+ #define TOMOYO_KEYWORD_ALLOW_MOUNT               "allow_mount "
+ #define TOMOYO_KEYWORD_ALLOW_READ                "allow_read "
+ #define TOMOYO_KEYWORD_DELETE                    "delete "
+@@ -740,23 +739,6 @@ struct tomoyo_aggregator_entry {
  };
  
-+/* Structure for attribute checks in addition to pathname checks. */
-+struct tomoyo_obj_info {
-+	struct tomoyo_path_info *symlink_target;
-+};
-+
- struct tomoyo_condition_element {
- 	/*
- 	 * Left hand operand. A "struct tomoyo_argv" for TOMOYO_ARGV_ENTRY, a
-@@ -264,6 +270,7 @@ struct tomoyo_execve_entry;
- struct tomoyo_request_info {
- 	struct tomoyo_domain_info *domain;
- 	struct tomoyo_execve_entry *ee;
-+	struct tomoyo_obj_info *obj;
- 	u8 retry;
- 	u8 profile;
- 	u8 mode; /* One of tomoyo_mode_index . */
-@@ -776,6 +783,7 @@ struct tomoyo_preference {
- 	bool learning_verbose;
- 	bool learning_exec_realpath;
- 	bool learning_exec_argv0;
-+	bool learning_symlink_target;
- 	bool permissive_verbose;
- };
+ /*
+- * tomoyo_alias_entry is a structure which is used for holding "alias" entries.
+- * It has following fields.
+- *
+- *  (1) "list" which is linked to tomoyo_alias_list .
+- *  (2) "original_name" which is a dereferenced pathname.
+- *  (3) "aliased_name" which is a symlink's pathname.
+- *  (4) "is_deleted" is a bool which is true if marked as deleted, false
+- *      otherwise.
+- */
+-struct tomoyo_alias_entry {
+-	struct list_head list;
+-	const struct tomoyo_path_info *original_name;
+-	const struct tomoyo_path_info *aliased_name;
+-	bool is_deleted;
+-};
+-
+-/*
+  * tomoyo_policy_manager_entry is a structure which is used for holding list of
+  * domainnames or programs which are permitted to modify configuration via
+  * /sys/kernel/security/tomoyo/ interface.
+@@ -870,8 +852,6 @@ bool tomoyo_parse_number_union(char *dat
  
-@@ -1004,7 +1012,7 @@ int tomoyo_path_number_perm(const u8 ope
- 			    unsigned long number);
- int tomoyo_path_number3_perm(const u8 operation, struct path *path,
- 			     const unsigned int mode, unsigned int dev);
--int tomoyo_path_perm(const u8 operation, struct path *path);
-+int tomoyo_path_perm(const u8 operation, struct path *path, const char *target);
- int tomoyo_path2_perm(const u8 operation, struct path *path1,
- 		      struct path *path2);
- int tomoyo_find_next_domain(struct linux_binprm *bprm);
---- security-testing-2.6.orig/security/tomoyo/condition.c
-+++ security-testing-2.6/security/tomoyo/condition.c
-@@ -382,6 +382,7 @@ const char *tomoyo_condition_keyword[TOM
- 	[TOMOYO_EXEC_ARGC]            = "exec.argc",
- 	[TOMOYO_EXEC_ENVC]            = "exec.envc",
- 	[TOMOYO_EXEC_REALPATH]        = "exec.realpath",
-+	[TOMOYO_SYMLINK_TARGET]       = "symlink.target",
- };
+ /* Read "aggregator" entry in exception policy. */
+ bool tomoyo_read_aggregator_policy(struct tomoyo_io_buffer *head);
+-/* Read "alias" entry in exception policy. */
+-bool tomoyo_read_alias_policy(struct tomoyo_io_buffer *head);
+ /*
+  * Read "initialize_domain" and "no_initialize_domain" entry
+  * in exception policy.
+@@ -910,8 +890,6 @@ int tomoyo_mount_permission(char *dev_na
+ 			    unsigned long flags, void *data_page);
+ /* Create "aggregator" entry in exception policy. */
+ int tomoyo_write_aggregator_policy(char *data, const bool is_delete);
+-/* Create "alias" entry in exception policy. */
+-int tomoyo_write_alias_policy(char *data, const bool is_delete);
+ /*
+  * Create "initialize_domain" and "no_initialize_domain" entry
+  * in exception policy.
+@@ -1041,7 +1019,6 @@ extern struct list_head tomoyo_number_gr
+ extern struct list_head tomoyo_domain_initializer_list;
+ extern struct list_head tomoyo_domain_keeper_list;
+ extern struct list_head tomoyo_aggregator_list;
+-extern struct list_head tomoyo_alias_list;
+ extern struct list_head tomoyo_globally_readable_list;
+ extern struct list_head tomoyo_pattern_list;
+ extern struct list_head tomoyo_no_rewrite_list;
+@@ -1254,13 +1231,6 @@ static inline bool tomoyo_is_same_condit
+ 		!memcmp(p1 + 1, p2 + 1, p1->size - sizeof(*p1));
+ }
  
- /* #define DEBUG_CONDITION */
-@@ -473,7 +474,8 @@ struct tomoyo_condition *tomoyo_get_cond
- 		condc++;
- 		dprintk(KERN_WARNING "%u: <%s> left=%u\n", __LINE__,
- 			word, left);
--		if (left == TOMOYO_EXEC_REALPATH) {
-+		if (left == TOMOYO_EXEC_REALPATH ||
-+		    left == TOMOYO_SYMLINK_TARGET) {
- 			names_count++;
- 			continue;
- 		}
-@@ -588,7 +590,8 @@ struct tomoyo_condition *tomoyo_get_cond
- 		condc--;
- 		dprintk(KERN_WARNING "%u: <%s> left=%u\n", __LINE__,
- 			word, left);
--		if (left == TOMOYO_EXEC_REALPATH) {
-+		if (left == TOMOYO_EXEC_REALPATH ||
-+		    left == TOMOYO_SYMLINK_TARGET) {
- 			right = TOMOYO_NAME_UNION;
- 			if (!tomoyo_parse_name_union_quoted(word, names_p++))
- 				goto out;
-@@ -689,6 +692,7 @@ bool tomoyo_condition(struct tomoyo_requ
- 	const struct tomoyo_name_union *names_p;
- 	const struct tomoyo_argv_entry *argv;
- 	const struct tomoyo_envp_entry *envp;
-+	struct tomoyo_obj_info *obj;
- 	u16 condc;
- 	u16 argc;
- 	u16 envc;
-@@ -699,6 +703,7 @@ bool tomoyo_condition(struct tomoyo_requ
- 	condc = cond->condc;
- 	argc = cond->argc;
- 	envc = cond->envc;
-+	obj = r->obj;
- 	if (r->ee)
- 		bprm = r->ee->bprm;
- 	if (!bprm && (argc || envc))
-@@ -722,8 +727,16 @@ bool tomoyo_condition(struct tomoyo_requ
- 		if (right == TOMOYO_NAME_UNION) {
- 			const struct tomoyo_name_union *ptr = names_p++;
- 			switch (left) {
-+				struct tomoyo_path_info *symlink;
- 				struct tomoyo_execve_entry *ee;
- 				struct file *file;
-+			case TOMOYO_SYMLINK_TARGET:
-+				symlink = obj ? obj->symlink_target : NULL;
-+				if (!symlink ||
-+				    tomoyo_compare_name_union(symlink, ptr)
-+				    != match)
-+					goto out;
-+				break;
- 			case TOMOYO_EXEC_REALPATH:
- 				ee = r->ee;
- 				file = ee ? ee->bprm->file : NULL;
+-static inline bool tomoyo_is_same_alias_entry
+-(const struct tomoyo_alias_entry *p1, const struct tomoyo_alias_entry *p2)
+-{
+-	return p1->original_name == p2->original_name &&
+-		p1->aliased_name == p2->aliased_name;
+-}
+-
+ /**
+  * list_for_each_cookie - iterate over a list with cookie.
+  * @pos:        the &struct list_head to use as a loop cursor.
+--- security-testing-2.6.orig/security/tomoyo/domain.c
++++ security-testing-2.6/security/tomoyo/domain.c
+@@ -613,138 +613,6 @@ int tomoyo_write_aggregator_policy(char 
+ 	return tomoyo_update_aggregator_entry(data, cp, is_delete);
+ }
+ 
+-/*
+- * tomoyo_alias_list is used for holding list of symlink's pathnames which are
+- * allowed to be passed to an execve() request. Normally, the domainname which
+- * the current process will belong to after execve() succeeds is calculated
+- * using dereferenced pathnames. But some programs behave differently depending
+- * on the name passed to argv[0]. For busybox, calculating domainname using
+- * dereferenced pathnames will cause all programs in the busybox to belong to
+- * the same domain. Thus, TOMOYO provides a way to allow use of symlink's
+- * pathname for checking execve()'s permission and calculating domainname which
+- * the current process will belong to after execve() succeeds.
+- *
+- * An entry is added by
+- *
+- * # echo 'alias /bin/busybox /bin/cat' > \
+- *                            /sys/kernel/security/tomoyo/exception_policy
+- *
+- * and is deleted by
+- *
+- * # echo 'delete alias /bin/busybox /bin/cat' > \
+- *                            /sys/kernel/security/tomoyo/exception_policy
+- *
+- * and all entries are retrieved by
+- *
+- * # grep ^alias /sys/kernel/security/tomoyo/exception_policy
+- *
+- * In the example above, if /bin/cat is a symlink to /bin/busybox and execution
+- * of /bin/cat is requested, permission is checked for /bin/cat rather than
+- * /bin/busybox and domainname which the current process will belong to after
+- * execve() succeeds is calculated using /bin/cat rather than /bin/busybox .
+- */
+-LIST_HEAD(tomoyo_alias_list);
+-
+-/**
+- * tomoyo_update_alias_entry - Update "struct tomoyo_alias_entry" list.
+- *
+- * @original_name: The original program's real name.
+- * @aliased_name:  The symbolic program's symbolic link's name.
+- * @is_delete:     True if it is a delete request.
+- *
+- * Returns 0 on success, negative value otherwise.
+- *
+- * Caller holds tomoyo_read_lock().
+- */
+-static int tomoyo_update_alias_entry(const char *original_name,
+-				     const char *aliased_name,
+-				     const bool is_delete)
+-{
+-	struct tomoyo_alias_entry *ptr;
+-	struct tomoyo_alias_entry e = { };
+-	int error = is_delete ? -ENOENT : -ENOMEM;
+-
+-	if (!tomoyo_is_correct_path(original_name) ||
+-	    !tomoyo_is_correct_path(aliased_name))
+-		return -EINVAL;
+-	e.original_name = tomoyo_get_name(original_name);
+-	e.aliased_name = tomoyo_get_name(aliased_name);
+-	if (!e.original_name || !e.aliased_name ||
+-	    e.original_name->is_patterned || e.aliased_name->is_patterned)
+-		goto out; /* No patterns allowed. */
+-	if (mutex_lock_interruptible(&tomoyo_policy_lock))
+-		goto out;
+-	list_for_each_entry_rcu(ptr, &tomoyo_alias_list, list) {
+-		if (!tomoyo_is_same_alias_entry(ptr, &e))
+-			continue;
+-		ptr->is_deleted = is_delete;
+-		error = 0;
+-		break;
+-	}
+-	if (!is_delete && error) {
+-		struct tomoyo_alias_entry *entry =
+-			tomoyo_commit_ok(&e, sizeof(e));
+-		if (entry) {
+-			list_add_tail_rcu(&entry->list, &tomoyo_alias_list);
+-			error = 0;
+-		}
+-	}
+-	mutex_unlock(&tomoyo_policy_lock);
+- out:
+-	tomoyo_put_name(e.original_name);
+-	tomoyo_put_name(e.aliased_name);
+-	return error;
+-}
+-
+-/**
+- * tomoyo_read_alias_policy - Read "struct tomoyo_alias_entry" list.
+- *
+- * @head: Pointer to "struct tomoyo_io_buffer".
+- *
+- * Returns true on success, false otherwise.
+- *
+- * Caller holds tomoyo_read_lock().
+- */
+-bool tomoyo_read_alias_policy(struct tomoyo_io_buffer *head)
+-{
+-	struct list_head *pos;
+-	bool done = true;
+-
+-	list_for_each_cookie(pos, head->read_var2, &tomoyo_alias_list) {
+-		struct tomoyo_alias_entry *ptr;
+-
+-		ptr = list_entry(pos, struct tomoyo_alias_entry, list);
+-		if (ptr->is_deleted)
+-			continue;
+-		done = tomoyo_io_printf(head, TOMOYO_KEYWORD_ALIAS "%s %s\n",
+-					ptr->original_name->name,
+-					ptr->aliased_name->name);
+-		if (!done)
+-			break;
+-	}
+-	return done;
+-}
+-
+-/**
+- * tomoyo_write_alias_policy - Write "struct tomoyo_alias_entry" list.
+- *
+- * @data:      String to parse.
+- * @is_delete: True if it is a delete request.
+- *
+- * Returns 0 on success, negative value otherwise.
+- *
+- * Caller holds tomoyo_read_lock().
+- */
+-int tomoyo_write_alias_policy(char *data, const bool is_delete)
+-{
+-	char *cp = strchr(data, ' ');
+-
+-	if (!cp)
+-		return -EINVAL;
+-	*cp++ = '\0';
+-	return tomoyo_update_alias_entry(data, cp, is_delete);
+-}
+-
+ /**
+  * tomoyo_find_or_assign_new_domain - Create a domain.
+  *
+@@ -862,7 +730,6 @@ static int tomoyo_find_next_domain2(stru
+ 	int retval = -ENOMEM;
+ 	bool need_kfree = false;
+ 	struct tomoyo_path_info rn = { }; /* real name */
+-	struct tomoyo_path_info sn = { }; /* symlink name */
+ 	struct tomoyo_path_info ln; /* last name */
+ 
+ 	ln.name = tomoyo_get_last_name(old_domain);
+@@ -872,37 +739,14 @@ static int tomoyo_find_next_domain2(stru
+ 		kfree(rn.name);
+ 		need_kfree = false;
+ 	}
+-	/* Get tomoyo_realpath of program. */
++	/* Get symlink's pathname of program. */
+ 	retval = -ENOENT;
+-	rn.name = tomoyo_realpath(original_name);
++	rn.name = tomoyo_realpath_nofollow(original_name);
+ 	if (!rn.name)
+ 		goto out;
+ 	tomoyo_fill_path_info(&rn);
+ 	need_kfree = true;
+ 
+-	/* Get tomoyo_realpath of symbolic link. */
+-	sn.name = tomoyo_realpath_nofollow(original_name);
+-	if (!sn.name)
+-		goto out;
+-	tomoyo_fill_path_info(&sn);
+-
+-	/* Check 'alias' directive. */
+-	if (tomoyo_pathcmp(&rn, &sn)) {
+-		struct tomoyo_alias_entry *ptr;
+-		/* Is this program allowed to be called via symbolic links? */
+-		list_for_each_entry_rcu(ptr, &tomoyo_alias_list, list) {
+-			if (ptr->is_deleted ||
+-			    tomoyo_pathcmp(&rn, ptr->original_name) ||
+-			    tomoyo_pathcmp(&sn, ptr->aliased_name))
+-				continue;
+-			kfree(rn.name);
+-			need_kfree = false;
+-			/* This is OK because it is read only. */
+-			rn = *ptr->aliased_name;
+-			break;
+-		}
+-	}
+-
+ 	/* Check 'aggregator' directive. */
+ 	{
+ 		struct tomoyo_aggregator_entry *ptr;
+@@ -911,8 +755,7 @@ static int tomoyo_find_next_domain2(stru
+ 			    !tomoyo_path_matches_pattern(&rn,
+ 							 ptr->original_name))
+ 				continue;
+-			if (need_kfree)
+-				kfree(rn.name);
++			kfree(rn.name);
+ 			need_kfree = false;
+ 			/* This is OK because it is read only. */
+ 			rn = *ptr->aggregated_name;
+@@ -978,7 +821,6 @@ static int tomoyo_find_next_domain2(stru
+ 	ee->bprm->cred->security = domain;
+ 	if (need_kfree)
+ 		kfree(rn.name);
+-	kfree(sn.name);
+ 	return retval;
+ }
+ 
 --- security-testing-2.6.orig/security/tomoyo/file.c
 +++ security-testing-2.6/security/tomoyo/file.c
-@@ -1407,14 +1407,17 @@ int tomoyo_check_open_permission(struct 
-  *
-  * @operation: Type of operation.
-  * @path:      Pointer to "struct path".
-+ * @target:    Symlink's target if @operation is TOMOYO_TYPE_SYMLINK.
-  *
-  * Returns 0 on success, negative value otherwise.
-  */
--int tomoyo_path_perm(const u8 operation, struct path *path)
-+int tomoyo_path_perm(const u8 operation, struct path *path, const char *target)
- {
- 	int error = -ENOMEM;
- 	struct tomoyo_path_info buf;
- 	struct tomoyo_request_info r;
-+	struct tomoyo_obj_info obj;
-+	struct tomoyo_path_info symlink_target;
- 	int idx;
+@@ -793,9 +793,9 @@ static int tomoyo_file_perm(struct tomoy
+ 		error = tomoyo_supervisor(r, "allow_%s %s\n", msg,
+ 					  tomoyo_file_pattern(filename));
+ 		/*
+-                 * Do not retry for execute request, for alias may have
++		 * Do not retry for execute request, for agrgegator may have
+ 		 * changed.
+-                 */
++		 */
+ 	} while (error == TOMOYO_RETRY_REQUEST && mode != 1);
+ 	if (r->mode != TOMOYO_CONFIG_ENFORCING)
+ 		error = 0;
+--- security-testing-2.6.orig/security/tomoyo/gc.c
++++ security-testing-2.6/security/tomoyo/gc.c
+@@ -19,7 +19,6 @@ enum tomoyo_gc_id {
+ 	TOMOYO_ID_DOMAIN_INITIALIZER,
+ 	TOMOYO_ID_DOMAIN_KEEPER,
+ 	TOMOYO_ID_AGGREGATOR,
+-	TOMOYO_ID_ALIAS,
+ 	TOMOYO_ID_GLOBALLY_READABLE,
+ 	TOMOYO_ID_PATTERN,
+ 	TOMOYO_ID_NO_REWRITE,
+@@ -85,12 +84,6 @@ static void tomoyo_del_aggregator(struct
+ 	tomoyo_put_name(ptr->aggregated_name);
+ }
  
- 	if (!path->mnt)
-@@ -1438,8 +1441,18 @@ int tomoyo_path_perm(const u8 operation,
- 	case TOMOYO_TYPE_UMOUNT:
- 		tomoyo_add_slash(&buf);
- 		break;
-+	case TOMOYO_TYPE_SYMLINK:
-+		symlink_target.name = tomoyo_encode(target);
-+		if (!symlink_target.name)
-+			goto out;
-+		tomoyo_fill_path_info(&symlink_target);
-+		obj.symlink_target = &symlink_target;
-+		r.obj = &obj;
-+		break;
+-static void tomoyo_del_alias(struct tomoyo_alias_entry *ptr)
+-{
+-	tomoyo_put_name(ptr->original_name);
+-	tomoyo_put_name(ptr->aliased_name);
+-}
+-
+ static void tomoyo_del_manager(struct tomoyo_policy_manager_entry *ptr)
+ {
+ 	tomoyo_put_name(ptr->manager);
+@@ -318,17 +311,6 @@ static void tomoyo_collect_entry(void)
+ 		}
  	}
- 	error = tomoyo_path_permission(&r, operation, &buf);
-+	if (operation == TOMOYO_TYPE_SYMLINK)
-+		kfree(symlink_target.name);
-  out:
- 	kfree(buf.name);
- 	tomoyo_read_unlock(idx);
---- security-testing-2.6.orig/security/tomoyo/tomoyo.c
-+++ security-testing-2.6/security/tomoyo/tomoyo.c
-@@ -95,13 +95,13 @@ static int tomoyo_bprm_check_security(st
- 
- static int tomoyo_path_truncate(struct path *path)
- {
--	return tomoyo_path_perm(TOMOYO_TYPE_TRUNCATE, path);
-+	return tomoyo_path_perm(TOMOYO_TYPE_TRUNCATE, path, NULL);
+ 	{
+-		struct tomoyo_alias_entry *ptr;
+-		list_for_each_entry_rcu(ptr, &tomoyo_alias_list, list) {
+-			if (!ptr->is_deleted)
+-				continue;
+-			if (tomoyo_add_to_gc(TOMOYO_ID_ALIAS, ptr))
+-				list_del_rcu(&ptr->list);
+-			else
+-				break;
+-		}
+-	}
+-	{
+ 		struct tomoyo_policy_manager_entry *ptr;
+ 		list_for_each_entry_rcu(ptr, &tomoyo_policy_manager_list,
+ 					list) {
+@@ -491,9 +473,6 @@ static void tomoyo_kfree_entry(void)
+ 		case TOMOYO_ID_AGGREGATOR:
+ 			tomoyo_del_aggregator(p->element);
+ 			break;
+-		case TOMOYO_ID_ALIAS:
+-			tomoyo_del_alias(p->element);
+-			break;
+ 		case TOMOYO_ID_GLOBALLY_READABLE:
+ 			tomoyo_del_allow_read(p->element);
+ 			break;
+--- security-testing-2.6.orig/security/tomoyo/realpath.c
++++ security-testing-2.6/security/tomoyo/realpath.c
+@@ -162,25 +162,6 @@ char *tomoyo_realpath_from_path(struct p
  }
  
- static int tomoyo_path_unlink(struct path *parent, struct dentry *dentry)
- {
- 	struct path path = { parent->mnt, dentry };
--	return tomoyo_path_perm(TOMOYO_TYPE_UNLINK, &path);
-+	return tomoyo_path_perm(TOMOYO_TYPE_UNLINK, &path, NULL);
- }
- 
- static int tomoyo_path_mkdir(struct path *parent, struct dentry *dentry,
-@@ -115,14 +115,14 @@ static int tomoyo_path_mkdir(struct path
- static int tomoyo_path_rmdir(struct path *parent, struct dentry *dentry)
- {
- 	struct path path = { parent->mnt, dentry };
--	return tomoyo_path_perm(TOMOYO_TYPE_RMDIR, &path);
-+	return tomoyo_path_perm(TOMOYO_TYPE_RMDIR, &path, NULL);
- }
- 
- static int tomoyo_path_symlink(struct path *parent, struct dentry *dentry,
- 			       const char *old_name)
- {
- 	struct path path = { parent->mnt, dentry };
--	return tomoyo_path_perm(TOMOYO_TYPE_SYMLINK, &path);
-+	return tomoyo_path_perm(TOMOYO_TYPE_SYMLINK, &path, old_name);
- }
- 
- static int tomoyo_path_mknod(struct path *parent, struct dentry *dentry,
-@@ -177,7 +177,8 @@ static int tomoyo_file_fcntl(struct file
- 			     unsigned long arg)
- {
- 	if (cmd == F_SETFL && ((arg ^ file->f_flags) & O_APPEND))
--		return tomoyo_path_perm(TOMOYO_TYPE_REWRITE, &file->f_path);
-+		return tomoyo_path_perm(TOMOYO_TYPE_REWRITE, &file->f_path,
-+					NULL);
- 	return 0;
- }
- 
-@@ -216,7 +217,7 @@ static int tomoyo_path_chown(struct path
- 
- static int tomoyo_path_chroot(struct path *path)
- {
--	return tomoyo_path_perm(TOMOYO_TYPE_CHROOT, path);
-+	return tomoyo_path_perm(TOMOYO_TYPE_CHROOT, path, NULL);
- }
- 
- static int tomoyo_sb_mount(char *dev_name, struct path *path,
-@@ -228,7 +229,7 @@ static int tomoyo_sb_mount(char *dev_nam
- static int tomoyo_sb_umount(struct vfsmount *mnt, int flags)
- {
- 	struct path path = { mnt, mnt->mnt_root };
--	return tomoyo_path_perm(TOMOYO_TYPE_UMOUNT, &path);
-+	return tomoyo_path_perm(TOMOYO_TYPE_UMOUNT, &path, NULL);
- }
- 
- static int tomoyo_sb_pivotroot(struct path *old_path, struct path *new_path)
+ /**
+- * tomoyo_realpath - Get realpath of a pathname.
+- *
+- * @pathname: The pathname to solve.
+- *
+- * Returns the realpath of @pathname on success, NULL otherwise.
+- */
+-char *tomoyo_realpath(const char *pathname)
+-{
+-	struct path path;
+-
+-	if (pathname && kern_path(pathname, LOOKUP_FOLLOW, &path) == 0) {
+-		char *buf = tomoyo_realpath_from_path(&path);
+-		path_put(&path);
+-		return buf;
+-	}
+-	return NULL;
+-}
+-
+-/**
+  * tomoyo_realpath_nofollow - Get realpath of a pathname.
+  *
+  * @pathname: The pathname to solve.
