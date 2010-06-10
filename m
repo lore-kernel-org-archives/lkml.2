@@ -1,217 +1,458 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759459Ab0FJQI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 12:08:28 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49153 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752819Ab0FJQI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 12:08:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-Organization: SiSK
-To: Neil Brown <neilb@suse.de>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-Date: Thu, 10 Jun 2010 18:06:20 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc2-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Brian Swetland <swetland@google.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
-       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Alan Stern <stern@rowland.harvard.edu>
-References: <20100603193045.GA7188@elte.hu> <201006101059.44411.rjw@sisk.pl> <20100610220040.7e9eaf55@notabene.brown>
-In-Reply-To: <20100610220040.7e9eaf55@notabene.brown>
+	id S932280Ab0FJQIf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 12:08:35 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:50595 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab0FJQIa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 12:08:30 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Michal Marek <mmarek@suse.cz>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
+       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 1/1] perf tools: Reorganize the Makefile feature tests
+Date: Thu, 10 Jun 2010 13:08:11 -0300
+Message-Id: <1276186091-19178-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1276186091-19178-1-git-send-email-acme@infradead.org>
+References: <1276186091-19178-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006101806.20866.rjw@sisk.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 10, 2010, Neil Brown wrote:
-> On Thu, 10 Jun 2010 10:59:43 +0200
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > On Thursday, June 10, 2010, Neil Brown wrote:
-> > > On Wed, 9 Jun 2010 11:40:27 +0200
-> > > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> > > 
-> > > > On Wednesday 09 June 2010, Felipe Contreras wrote:
-> > > > > On Wed, Jun 9, 2010 at 6:46 AM, Linus Torvalds
-> > > > > <torvalds@linux-foundation.org> wrote:
-> > > > > > On Tue, 8 Jun 2010, david@lang.hm wrote:
-> > > > > >>
-> > > > > >> having suspend blockers inside the kernel adds significant complexity, it's
-> > > > > >> worth it only if the complexity buys you enough. In this case the question is
-> > > > > >> if the suspend blockers would extend the sleep time enough more to matter. As
-> > > > > >> per my other e-mail, this is an area with rapidly diminishing returns as the
-> > > > > >> sleep times get longer.
-> > > > > >
-> > > > > > Well, the counter-argument that nobody seems to have brought up is that
-> > > > > > suspend blockers exist, are real code, and end up being shipped in a lot
-> > > > > > of machines.
-> > > > > >
-> > > > > > That's a _big_ argument in favour of them. Certainly much bigger than
-> > > > > > arguing against them based on some complexity-arguments for an alternative
-> > > > > > that hasn't seen any testing at all.
-> > > > > >
-> > > > > > IOW, I would seriously hope that this discussion was more about real code
-> > > > > > that _exists_ and does what people need. It seems to have degenerated into
-> > > > > > something else.
-> > > > > >
-> > > > > > Because in the end, "code talks, bullshit walks". People can complain and
-> > > > > > suggest alternatives all they want, but you can't just argue. At some
-> > > > > > point you need to show the code that actually solves the problem.
-> > > > > 
-> > > > > That's assuming there is an actual problem, which according to all the
-> > > > > embedded people except android, there is not.
-> > > > 
-> > > > Yes, there is, but they've decided to ignore it.
-> > > > 
-> > > > > And if there is indeed such a problem (probably not big), it might be
-> > > > > solved properly by the time suspend blockers are merged, or few
-> > > > > releases after.
-> > > > 
-> > > > Not quite.  Have you followed all of the discussion, actually?
-> > > > 
-> > > > > Whatever the solution (or workaround) is, it would be nice if it could
-> > > > > be used by more than just android people, and it would also be nice to
-> > > > > do it without introducing user-space API that *nobody* likes and might
-> > > > > be quickly deprecated.
-> > > > 
-> > > > I agree with Linus and I don't have that much of a problem with the API that
-> > > > people seem to have.  In fact the much-hated user space API is just a char
-> > > > device driver with 3 ioctls (that can be extended in future if need be) and
-> > > > the kernel API is acceptable to me. 
-> > > 
-> > > I think there is a little bit more to it than that.  It seems there is a new
-> > > ioctl for input/event devices to say "Any events queued here should be
-> > > treated as wake-up events".  There may be similar additions to other devices,
-> > > but I know of no details.
-> > 
-> > That's not in the patchset as in my pull request.
-> > 
-> > It is used on Android, though, and it would have been submitted separately, had
-> > the first patchset been merged.
-> 
-> Very true.  But as the one cannot be used without the other, they really need
-> to be considered as a package.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-You can use suspend blockers as in the pull request without the input patch
-in principle.
+Moving the tests to a separate file, feature-tests.mak and using a try-cc
+function similar to the try-run in Kbuild.
 
-> > 
-> > > I wonder if we can get a complete statement of changes to the user-space
-> > > API...
-> > > 
-> > > >                                       Yes, there is some overlap between it
-> > > > and PM QoS, but IMhO that overlap may be reduced over time (eg. by
-> > > > using PM QoS requirements to implement suspend blockers). 
-> > > > 
-> > > > To me, the question boils down to whether or not we're able to persuade the
-> > > > Android people to use any other approach (eg. by demonstrating that something
-> > > > else is actually better), because even if we invent a brilliant new approach,
-> > > > but Android ends up using its old one anyway, the net result will be as though
-> > > > we haven't done anything useful.
-> > > 
-> > > Yes.  There is no point unless we can meet somewhere in the middle.  I think
-> > > that would have to include a full suspend that freezes all processes.
-> > > Solutions which reject that - while quite clever - would require too much
-> > > change to Android user-space to be acceptable.
-> > 
-> > Moreover, having thought a bit more about the "power manager in user space"
-> > concept I'm not sure if it really is that better than the original wakelocks
-> > idea.  Namely, it only repaces a kernel-based mechanism with a user space
-> > task doing basically the same thing, but the communication between that task
-> > and the other cooperating user space tasks is arguably more complicated (it
-> > also uses the kernel resources, although indirectly).
-> > 
-> > So, for a phone-like system, where you'd generally want to simplify user space,
-> > having a "power manager" in the kernel seems to make sense to me.
-> >
-> 
-> Following that logic would we end up putting everything in the kernel?
+This also makes the output more quiet as we can stop using the INTERMEDIATE
+target to remove the .perf.dev.null file needed for some gcc versions where
+/dev/null can't be used as the output file name.
 
-No, I don't think so.
+As the tests get shorter by uninlining the source code used to test for
+features, we can more properly use identation.
 
-> To my mind the advantage of having something in user-space is flexibility -
-> you can refine the interfaces and behaviours without bothering the kernel.
-> The reasons for putting things in the kernel are:
->  - tight integration with VM or processes (the two main abstractions that the
->    kernel has to manage)
->  - privileged access to devices
->  - arbitration between processes with different privilege levels
+The feature tests itself can be made more clear and reused, like when trying to
+see what is needed to have bfd_demangle.
 
-I'd add inter-process communication to this list as well.
+We also get a bit closer to reusing scripts/Kbuild.include, reducing the
+distance from the kernel build system.
 
-> Need-for-speed, on the other hand, is not necessarily a justification for
-> going in the kernel - experience shows that we can make user-space
-> interactions quite fast enough.
+Tests performed:
 
-Still, if a kernel-based approach ends up being simpler than a user-space-only
-alternative, I tend to prefer the former.  And please remember that in this
-particular case all user-space-only alternatives in fact _have_ _to_ use
-facilities provided by the kernel anyway, although they can use the existing
-ones.
+[root@emilia perf]# make -j9 O=/tmp/perf
+PERF_VERSION = 0.0.2.PERF
+    GEN /tmp/perf/common-cmds.h
+    * new build flags or prefix
+    GEN perf-archive
+    CC /tmp/perf/builtin-annotate.o
+    CC /tmp/perf/bench/sched-messaging.o
+    CC /tmp/perf/builtin-diff.o
+<SNIP>
+    CC /tmp/perf/scripts/python/Perf-Trace-Util/Context.o
+    CC /tmp/perf/perf.o
+    CC /tmp/perf/builtin-help.o
+    AR /tmp/perf/libperf.a
+    LINK /tmp/perf/perf
+[root@emilia perf]#
 
-> The "power manager" itself is quite trivial.  It just needs something like:
->     while true
->           wait for all wake-locks to be dropped
->           activate suspend
-> and for 'activate suspend' to be interruptible by something taking out a
-> wake-lock.
+If we uninstall, for instance newt-devel we get:
 
-Where the last thing is kind of complicated.
+[root@emilia perf]# rpm -e newt-devel
+[root@emilia perf]# make -j9 O=/tmp/perf
+Makefile:564: newt not found, disables TUI support. Please install newt-devel or libnewt-dev
+    * new build flags or prefix
+    GEN perf-archive
+    CC /tmp/perf/perf.o
+    CC /tmp/perf/builtin-annotate.o
+<SNIP>
+    AR /tmp/perf/libperf.a
+    LINK /tmp/perf/perf
+[root@emilia perf]#
 
-> To my mind, the most interesting part of this is interruptibility.  There is
-> essentially only one way to do that in Unix/Linux: signals.
+And then binutils-devel:
 
-Well, I don't follow. :-)
+[root@emilia perf]# make -j9 O=/tmp/perf
+Makefile:564: newt not found, disables TUI support. Please install newt-devel or libnewt-dev
+Makefile:632: No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling
+    * new build flags or prefix
+    GEN perf-archive
+    CC /tmp/perf/perf.o
+<SNIP>
+    AR /tmp/perf/libperf.a
+    LINK /tmp/perf/perf
+[root@emilia perf]#
 
-> So it makes sense to have a task - with a pid - performing this loop so that
-> it can be sent a signal.
-> And we already have mechanisms for sending signals on all sorts of different
-> events, both kernel events (fcntl(F_OWNER)), file events (FNOTIFY), and
-> normal process operations (kill).
-> 
-> If you are going to have a process (which I think you should)
+And then strictly required devel packages:
 
-There's no such process in the original patchset and it seemed to get away with
-that.
+[root@emilia perf]# rpm -e elfutils-libelf-devel elfutils-devel
+[root@emilia perf]# make -j9 O=/tmp/perf
+Makefile:509: No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev
+Makefile:542: *** No libelf.h/libelf found, please install libelf-dev/elfutils-libelf-devel.  Stop.
+[root@emilia perf]#
 
-> it makes sense for it to spend some time in user-space to use ipc-of-your-choice to
-> communicate with other processes, and spend some time in kernel-space to be
-> able to wait for in-kernel locks to be dropped, and to use signals to get out
-> of kernel-space, and system calls to get into kernel space.
-> 
-> Yes, the proposed user-space interface for suspend blocks may not be all that
-> horrible.  But the fact is that you can get all the required functionality by
-> just using currently existing interfaces.  Against that background, adding
-> anything new should be avoided.
+After installing everything back on:
 
-Again, if things can be simplified overall by adding something new to the
-kernel, I don't see a problem with that in principle.  Especially if that new
-stuff doesn't really interfere with anything already existing.
+[root@emilia perf]# yum install elfutils-devel binutils-devel newt-devel
+<SNIP>
+Installed:
+  binutils-devel.x86_64 0:2.20.51.0.2-5.11.el6
+  elfutils-devel.x86_64 0:0.147-1.el6
+  elfutils-libelf-devel.x86_64 0:0.147-1.el6
+  newt-devel.x86_64 0:0.52.11-1.el6
 
-There also is the "real code" argument you seem to totally neglect.  Whatever
-you suggest, you should actually implement it and show that it works and that
-it really is better than the proposed approach.  Till then, it's just pure
-speculation.
+Complete!
+[root@emilia perf]# make -j9
+PERF_VERSION = 0.0.2.PERF
+    GEN common-cmds.h
+    * new build flags or prefix
+    GEN perf-archive
+    CC builtin-annotate.o
+<SNIP>
+    AR libperf.a
+    LINK perf
+[root@emilia perf]# make -j9
+[root@emilia perf]#
 
-So there's real code that I don't really have a problem with and I haven't seen
-any alternative implemented and working yet.
+Thanks to Sam for pointing me to try-run.
 
-Rafael
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile          |  109 ++++++++++++++++++++-------------------
+ tools/perf/feature-tests.mak |  119 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 175 insertions(+), 53 deletions(-)
+ create mode 100644 tools/perf/feature-tests.mak
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 3d8f31e..6aa2fe3 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -285,14 +285,10 @@ else
+ 	QUIET_STDERR = ">/dev/null 2>&1"
+ endif
+ 
+-BITBUCKET = "/dev/null"
++-include feature-tests.mak
+ 
+-ifneq ($(shell sh -c "(echo '\#include <stdio.h>'; echo 'int main(void) { return puts(\"hi\"); }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) "$(QUIET_STDERR)" && echo y"), y)
+-	BITBUCKET = .perf.dev.null
+-endif
+-
+-ifeq ($(shell sh -c "echo 'int foo(void) {char X[2]; return 3;}' | $(CC) -x c -c -Werror -fstack-protector-all - -o $(BITBUCKET) "$(QUIET_STDERR)" && echo y"), y)
+-  CFLAGS := $(CFLAGS) -fstack-protector-all
++ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -fstack-protector-all),y)
++	CFLAGS := $(CFLAGS) -fstack-protector-all
+ endif
+ 
+ 
+@@ -508,7 +504,8 @@ PERFLIBS = $(LIB_FILE)
+ -include config.mak
+ 
+ ifndef NO_DWARF
+-ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo '\#include <version.h>'; echo '\#ifndef _ELFUTILS_PREREQ'; echo '\#error'; echo '\#endif'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
++FLAGS_DWARF=$(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
++ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
+ 	msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+ 	NO_DWARF := 1
+ endif # Dwarf support
+@@ -536,16 +533,18 @@ ifneq ($(OUTPUT),)
+ 	BASIC_CFLAGS += -I$(OUTPUT)
+ endif
+ 
+-ifeq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
+-ifneq ($(shell sh -c "(echo '\#include <gnu/libc-version.h>'; echo 'int main(void) { const char * version = gnu_get_libc_version(); return (long)version; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
+-	msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
++FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
++	FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
++	ifneq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC)),y)
++		msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
++	else
++		msg := $(error No libelf.h/libelf found, please install libelf-dev/elfutils-libelf-devel);
++	endif
+ endif
+ 
+-	ifneq ($(shell sh -c "(echo '\#include <libelf.h>'; echo 'int main(void) { Elf * elf = elf_begin(0, ELF_C_READ_MMAP, 0); return (long)elf; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
+-		BASIC_CFLAGS += -DLIBELF_NO_MMAP
+-	endif
+-else
+-	msg := $(error No libelf.h/libelf found, please install libelf-dev/elfutils-libelf-devel and glibc-dev[el]);
++ifneq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON)),y)
++	BASIC_CFLAGS += -DLIBELF_NO_MMAP
+ endif
+ 
+ ifndef NO_DWARF
+@@ -561,41 +560,47 @@ endif # NO_DWARF
+ ifdef NO_NEWT
+ 	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
+ else
+-ifneq ($(shell sh -c "(echo '\#include <newt.h>'; echo 'int main(void) { newtInit(); newtCls(); return newtFinished(); }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -lnewt -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
+-	msg := $(warning newt not found, disables TUI support. Please install newt-devel or libnewt-dev);
+-	BASIC_CFLAGS += -DNO_NEWT_SUPPORT
+-else
+-	# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
+-	BASIC_CFLAGS += -I/usr/include/slang
+-	EXTLIBS += -lnewt -lslang
+-	LIB_OBJS += $(OUTPUT)util/newt.o
+-endif
+-endif # NO_NEWT
+-
+-ifndef NO_LIBPERL
+-PERL_EMBED_LDOPTS = `perl -MExtUtils::Embed -e ldopts 2>/dev/null`
+-PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
++	FLAGS_NEWT=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lnewt
++	ifneq ($(call try-cc,$(SOURCE_NEWT),$(FLAGS_NEWT)),y)
++		msg := $(warning newt not found, disables TUI support. Please install newt-devel or libnewt-dev);
++		BASIC_CFLAGS += -DNO_NEWT_SUPPORT
++	else
++		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
++		BASIC_CFLAGS += -I/usr/include/slang
++		EXTLIBS += -lnewt -lslang
++		LIB_OBJS += $(OUTPUT)util/newt.o
++	endif
+ endif
+ 
+-ifneq ($(shell sh -c "(echo '\#include <EXTERN.h>'; echo '\#include <perl.h>'; echo 'int main(void) { perl_alloc(); return 0; }') | $(CC) -x c - $(PERL_EMBED_CCOPTS) -o $(BITBUCKET) $(PERL_EMBED_LDOPTS) > /dev/null 2>&1 && echo y"), y)
++ifdef NO_LIBPERL
+ 	BASIC_CFLAGS += -DNO_LIBPERL
+ else
+-	ALL_LDFLAGS += $(PERL_EMBED_LDOPTS)
+-	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
+-	LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+-endif
++	PERL_EMBED_LDOPTS = `perl -MExtUtils::Embed -e ldopts 2>/dev/null`
++	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
++	PERL_EMBED_FLAGS=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
+ 
+-ifndef NO_LIBPYTHON
+-PYTHON_EMBED_LDOPTS = `python-config --ldflags 2>/dev/null`
+-PYTHON_EMBED_CCOPTS = `python-config --cflags 2>/dev/null`
++	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED)),y)
++		BASIC_CFLAGS += -DNO_LIBPERL
++	else
++		ALL_LDFLAGS += $(PERL_EMBED_LDOPTS)
++		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
++		LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
++	endif
+ endif
+ 
+-ifneq ($(shell sh -c "(echo '\#include <Python.h>'; echo 'int main(void) { Py_Initialize(); return 0; }') | $(CC) -x c - $(PYTHON_EMBED_CCOPTS) -o $(BITBUCKET) $(PYTHON_EMBED_LDOPTS) > /dev/null 2>&1 && echo y"), y)
++ifdef NO_LIBPYTHON
+ 	BASIC_CFLAGS += -DNO_LIBPYTHON
+ else
+-	ALL_LDFLAGS += $(PYTHON_EMBED_LDOPTS)
+-	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
+-	LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
++	PYTHON_EMBED_LDOPTS = `python-config --ldflags 2>/dev/null`
++	PYTHON_EMBED_CCOPTS = `python-config --cflags 2>/dev/null`
++	FLAGS_PYTHON_EMBED=$(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
++	ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
++		BASIC_CFLAGS += -DNO_LIBPYTHON
++	else
++		ALL_LDFLAGS += $(PYTHON_EMBED_LDOPTS)
++		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
++		LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
++	endif
+ endif
+ 
+ ifdef NO_DEMANGLE
+@@ -604,20 +609,23 @@ else ifdef HAVE_CPLUS_DEMANGLE
+ 	EXTLIBS += -liberty
+ 	BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+ else
+-	has_bfd := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd "$(QUIET_STDERR)" && echo y")
+-
++	FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd
++	has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
+ 	ifeq ($(has_bfd),y)
+ 		EXTLIBS += -lbfd
+ 	else
+-		has_bfd_iberty := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd -liberty "$(QUIET_STDERR)" && echo y")
++		FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
++		has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY))
+ 		ifeq ($(has_bfd_iberty),y)
+ 			EXTLIBS += -lbfd -liberty
+ 		else
+-			has_bfd_iberty_z := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd -liberty -lz "$(QUIET_STDERR)" && echo y")
++			FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
++			has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z))
+ 			ifeq ($(has_bfd_iberty_z),y)
+ 				EXTLIBS += -lbfd -liberty -lz
+ 			else
+-				has_cplus_demangle := $(shell sh -c "(echo 'extern char *cplus_demangle(const char *, int);'; echo 'int main(void) { cplus_demangle(0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -liberty "$(QUIET_STDERR)" && echo y")
++				FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
++				has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE))
+ 				ifeq ($(has_cplus_demangle),y)
+ 					EXTLIBS += -liberty
+ 					BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+@@ -865,7 +873,7 @@ export TAR INSTALL DESTDIR SHELL_PATH
+ 
+ SHELL = $(SHELL_PATH)
+ 
+-all:: .perf.dev.null shell_compatibility_test $(ALL_PROGRAMS) $(BUILT_INS) $(OTHER_PROGRAMS) $(OUTPUT)PERF-BUILD-OPTIONS
++all:: shell_compatibility_test $(ALL_PROGRAMS) $(BUILT_INS) $(OTHER_PROGRAMS) $(OUTPUT)PERF-BUILD-OPTIONS
+ ifneq (,$X)
+ 	$(foreach p,$(patsubst %$X,%,$(filter %$X,$(ALL_PROGRAMS) $(BUILT_INS) perf$X)), test '$p' -ef '$p$X' || $(RM) '$p';)
+ endif
+@@ -1195,11 +1203,6 @@ clean:
+ .PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
+ .PHONY: .FORCE-PERF-BUILD-OPTIONS
+ 
+-.perf.dev.null:
+-		touch .perf.dev.null
+-
+-.INTERMEDIATE:	.perf.dev.null
+-
+ ### Make sure built-ins do not have dups and listed in perf.c
+ #
+ check-builtins::
+diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
+new file mode 100644
+index 0000000..ddb68e6
+--- /dev/null
++++ b/tools/perf/feature-tests.mak
+@@ -0,0 +1,119 @@
++define SOURCE_HELLO
++#include <stdio.h>
++int main(void)
++{
++	return puts(\"hi\");
++}
++endef
++
++ifndef NO_DWARF
++define SOURCE_DWARF
++#include <dwarf.h>
++#include <libdw.h>
++#include <version.h>
++#ifndef _ELFUTILS_PREREQ
++#error
++#endif
++
++int main(void)
++{
++	Dwarf *dbg = dwarf_begin(0, DWARF_C_READ);
++	return (long)dbg;
++}
++endef
++endif
++
++define SOURCE_LIBELF
++#include <libelf.h>
++
++int main(void)
++{
++	Elf *elf = elf_begin(0, ELF_C_READ, 0);
++	return (long)elf;
++}
++endef
++
++define SOURCE_GLIBC
++#include <gnu/libc-version.h>
++
++int main(void)
++{
++	const char *version = gnu_get_libc_version();
++	return (long)version;
++}
++endef
++
++define SOURCE_ELF_MMAP
++#include <libelf.h>
++int main(void)
++{
++	Elf *elf = elf_begin(0, ELF_C_READ_MMAP, 0);
++	return (long)elf;
++}
++endef
++
++ifndef NO_NEWT
++define SOURCE_NEWT
++#include <newt.h>
++
++int main(void)
++{
++	newtInit();
++	newtCls();
++	return newtFinished();
++}
++endef
++endif
++
++ifndef NO_LIBPERL
++define SOURCE_PERL_EMBED
++#include <EXTERN.h>
++#include <perl.h>
++
++int main(void)
++{
++perl_alloc();
++return 0;
++}
++endef
++endif
++
++ifndef NO_LIBPYTHON
++define SOURCE_PYTHON_EMBED
++#include <Python.h>
++
++int main(void)
++{
++	Py_Initialize();
++	return 0;
++}
++endef
++endif
++
++define SOURCE_BFD
++#include <bfd.h>
++
++int main(void)
++{
++	bfd_demangle(0, 0, 0);
++	return 0;
++}
++endef
++
++define SOURCE_CPLUS_DEMANGLE
++extern char *cplus_demangle(const char *, int);
++
++int main(void)
++{
++	cplus_demangle(0, 0);
++	return 0;
++}
++endef
++
++# try-cc
++# Usage: option = $(call try-cc, source-to-build, cc-options)
++try-cc = $(shell sh -c						  \
++	'TMP="$(TMPOUT).$$$$";			 		  \
++	 echo "$(1)" |						  \
++	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
++	 rm -f "$$TMP"')
+-- 
+1.6.2.5
+
