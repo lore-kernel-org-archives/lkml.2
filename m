@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759162Ab0FJN6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 09:58:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752486Ab0FJN6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 09:58:12 -0400
-Date: Thu, 10 Jun 2010 09:57:32 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-       davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org
-Subject: Re: [PATCH 10/13] jump label v9: convert jump label to use a key
-Message-ID: <20100610135732.GC2410@redhat.com>
-References: <cover.1276116186.git.jbaron@redhat.com>
- <2a7e0be296375cf6658647c8a9c6cb208d875ac8.1276116186.git.jbaron@redhat.com>
- <1276173826.2077.252.camel@twins>
+	id S1759189Ab0FJN6v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 09:58:51 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51599 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752486Ab0FJN6t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 09:58:49 -0400
+Date: Thu, 10 Jun 2010 14:57:15 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Neil Brown <neilb@suse.de>, Felipe Contreras <felipe.contreras@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Brian Swetland <swetland@google.com>, Arve Hj?nnev?g <arve@android.com>,
+       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
+       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [linux-pm] suspend blockers & Android integration
+Message-ID: <20100610135714.GA27848@sirena.org.uk>
+References: <20100603193045.GA7188@elte.hu> <201006091140.28034.rjw@sisk.pl> <20100610080425.6f005dbb@notabene.brown> <201006101059.44411.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1276173826.2077.252.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <201006101059.44411.rjw@sisk.pl>
+X-Cookie: An evil mind is a great comfort.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 02:43:46PM +0200, Peter Zijlstra wrote:
-> On Wed, 2010-06-09 at 17:39 -0400, Jason Baron wrote:
-> > -static inline int enable_jump_label(const char *name)
-> > -{
-> > -       return 0;
-> > -}
-> > -
-> > -static inline int disable_jump_label(const char *name)
-> > -{
-> > -       return 0;
-> > -}
-> > +#define enable_jump_label(key)
-> > +#define disable_jump_label(key) 
-> 
-> I would expect enable_jump_label() to look something like:
-> 
-> #define enable_jump_label(cond_var)	\
-> do {					\
-> 	*(cond_var) = 1;		\
-> } while (0)
-> 
-> That way the HAVE_JUMP_LABEL and !HAVE_JUMP_LABEL code has similar
-> effects.
+On Thu, Jun 10, 2010 at 10:59:43AM +0200, Rafael J. Wysocki wrote:
 
-right. I was going to clean that up in a followup. But you are right - I
-think it makes the code much clearer. will fix.
+> So, for a phone-like system, where you'd generally want to simplify user space,
+> having a "power manager" in the kernel seems to make sense to me.
 
-thanks,
-
--Jason
+I'm not clear where this requirement to simplify user space specifically
+for phones comes from - phones do have pretty substantial software
+stacks that aren't that far away to PCs.
