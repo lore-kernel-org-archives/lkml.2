@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341Ab0FJBPX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 21:15:23 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58478 "EHLO smtps.tip.net.au"
+	id S1757798Ab0FJBRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 21:17:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20564 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754869Ab0FJBPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 21:15:21 -0400
-Date: Thu, 10 Jun 2010 11:15:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the kbuid-current tree
-Message-Id: <20100610111517.3a4ed458.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1755921Ab0FJBRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 21:17:14 -0400
+Date: Wed, 9 Jun 2010 21:16:17 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-mm@kvack.org
+Subject: [PATCH -mm] only drop root anon_vma if not self
+Message-ID: <20100609211617.3e7e41bd@annuminas.surriel.com>
+In-Reply-To: <AANLkTik-cwrabXH_bQRPFtTo3C9r30B83jMf4IwJKCms@mail.gmail.com>
+References: <AANLkTin1OS3LohKBvWyS81BoAk15Y-riCiEdcevSA7ye@mail.gmail.com>
+	<1275929000.3021.56.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTilsCkBiGtfEKkNXYclsRKhfuq4yI_1mrxMa8yJG@mail.gmail.com>
+	<AANLkTik-cwrabXH_bQRPFtTo3C9r30B83jMf4IwJKCms@mail.gmail.com>
+Organization: Red Hat, Inc.
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__10_Jun_2010_11_15_17_+1000_X74L7HcsqHpLQERK"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__10_Jun_2010_11_15_17_+1000_X74L7HcsqHpLQERK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 9 Jun 2010 17:19:02 +0800
+Dave Young <hidave.darkstar@gmail.com> wrote:
 
-Hi Michal,
+> > Manually bisected mm patches, the memleak caused by following patch:
+> >
+> > mm-extend-ksm-refcounts-to-the-anon_vma-root.patch
+>
+> 
+> So I guess the refcount break, either drop-without-get or over-drop
 
-After merging the kbuild-current tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+I'm guessing I did not run the kernel with enough debug options enabled
+when I tested my patches...
 
-/bin/sh: line 1: init/modules.builtin: No such file or directory
-make[2]: *** [init/modules.builtin] Error 1
-make[1]: *** [init/modules.builtin] Error 2
+Dave & Catalin, thank you for tracking this down.
 
-Caused by commit 2da30e703c5a56e27249fa8b8607708123fa52f5 ("kbuild:
-Generate modules.builtin in make modules").
+Dave, does the below patch fix your issue?
 
-I started with a completely empty separate object directory ...
+Andrew, if the patch below works, you'll probably want to merge it as
+mm-extend-ksm-refcounts-to-the-anon_vma-root-fix.patch :)
 
-I have used the version of the kbuild-current tree from next-20100609 for
-today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+----------------
 
---Signature=_Thu__10_Jun_2010_11_15_17_+1000_X74L7HcsqHpLQERK
-Content-Type: application/pgp-signature
+With the new anon_vma code we take a refcount on the root anon_vma.
+However, the root anon_vma does not have a refcount on itself, so
+we should not try to do a drop on itself when it is being unlinked.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Signed-off-by: Rik van Riel <riel@redhat.com>
 
-iEYEARECAAYFAkwQPKUACgkQjjKRsyhoI8y7NwCgphClbe4mSyXHmNj8/l3Qu9WC
-iswAoJeC+hjbBTw2eWf9YMs/hZhZcWnK
-=j65q
------END PGP SIGNATURE-----
-
---Signature=_Thu__10_Jun_2010_11_15_17_+1000_X74L7HcsqHpLQERK--
+--- linux-2.6-rtavma/mm/rmap.c.orig	2010-06-09 21:10:07.349376896 -0400
++++ linux-2.6-rtavma/mm/rmap.c	2010-06-09 21:10:24.180406299 -0400
+@@ -275,7 +275,8 @@ static void anon_vma_unlink(struct anon_
+ 
+ 	if (empty) {
+ 		/* We no longer need the root anon_vma */
+-		drop_anon_vma(anon_vma->root);
++		if (anon_vma->root != anon_vma)
++			drop_anon_vma(anon_vma->root);
+ 		anon_vma_free(anon_vma);
+ 	}
+ }
