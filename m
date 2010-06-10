@@ -1,101 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607Ab0FJIFs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 04:05:48 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:52212 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab0FJIFo (ORCPT
+	id S1758171Ab0FJIUF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 04:20:05 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49153 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab0FJIUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 04:05:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=hyuNKE+glECrmUCC0RN0PZ2cRMdbiB1BTDLmYgPiuGU1YXSQhZCt2eQ4ya+oJ0XUac
-         5lmpBIw2ACaSx27TySjgttq/ogzKaeV4oz7OhB2wSL5GNZHrYySdEYbzQ2n9kcjgAe2r
-         kWnppa7+CTA0Tt20zCWxjAC4pnEp/f+3Nb1ZI=
-Subject: [PATCH] hp-wmi: add error handling for hp_wmi_init
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       platform-driver-x86@vger.kernel.org
-Content-Type: text/plain
-Date: Thu, 10 Jun 2010 16:06:40 +0800
-Message-Id: <1276157200.29462.3.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jun 2010 04:20:01 -0400
+Date: Thu, 10 Jun 2010 04:19:50 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 1/4] block: Allow drivers to implement BLKDISCARD and add
+ BLKSECDISCARD
+Message-ID: <20100610081950.GA15888@infradead.org>
+References: <4C081AEC.7010302@nokia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C081AEC.7010302@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current implementation in hp_wmi_init does not check any error and always
-return success.
-This patch properly handles recource reclaim and return err in error path.
+On Fri, Jun 04, 2010 at 12:13:16AM +0300, Adrian Hunter wrote:
+> SD/MMC cards provide an erase operation that is too inefficient to
+> allow file systems to use it, however it is still useful for
+> userspace tools because it is still 10 - 100 times faster than
+> writing zeroes.  Allow the MMC block driver to provide its own
+> BLKDISCARD implementation for this purpose.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/platform/x86/hp-wmi.c |   31 +++++++++++++++++++++++++------
- 1 files changed, 25 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/platform/x86/hp-wmi.c b/drivers/platform/x86/hp-wmi.c
-index 51c07a0..2fa4577 100644
---- a/drivers/platform/x86/hp-wmi.c
-+++ b/drivers/platform/x86/hp-wmi.c
-@@ -585,23 +585,42 @@ static int __init hp_wmi_init(void)
- 	if (wmi_has_guid(HPWMI_EVENT_GUID)) {
- 		err = wmi_install_notify_handler(HPWMI_EVENT_GUID,
- 						 hp_wmi_notify, NULL);
--		if (ACPI_SUCCESS(err))
--			hp_wmi_input_setup();
-+		if (ACPI_FAILURE(err))
-+			return -EINVAL;
-+		err = hp_wmi_input_setup();
-+		if (err) {
-+			wmi_remove_notify_handler(HPWMI_EVENT_GUID);
-+			return err;
-+		}
- 	}
- 
- 	if (wmi_has_guid(HPWMI_BIOS_GUID)) {
- 		err = platform_driver_register(&hp_wmi_driver);
- 		if (err)
--			return 0;
-+			goto err_driver_reg;
- 		hp_wmi_platform_dev = platform_device_alloc("hp-wmi", -1);
- 		if (!hp_wmi_platform_dev) {
--			platform_driver_unregister(&hp_wmi_driver);
--			return 0;
-+			err = -ENOMEM;
-+			goto err_device_alloc;
- 		}
--		platform_device_add(hp_wmi_platform_dev);
-+		err = platform_device_add(hp_wmi_platform_dev);
-+		if (err)
-+			goto err_device_add;
- 	}
- 
- 	return 0;
-+
-+err_device_add:
-+	platform_device_put(hp_wmi_platform_dev);
-+err_device_alloc:
-+	platform_driver_unregister(&hp_wmi_driver);
-+err_driver_reg:
-+	if (wmi_has_guid(HPWMI_EVENT_GUID)) {
-+		input_unregister_device(hp_wmi_input_dev);
-+		wmi_remove_notify_handler(HPWMI_EVENT_GUID);
-+	}
-+
-+	return err;
- }
- 
- static void __exit hp_wmi_exit(void)
--- 
-1.5.4.3
-
-
+That's no good reason.  Almost all current SSD TRIM implementations
+have the same issue, that's why filesustems require the -o discard
+option to enabled it.  In addition I've not actually seen any numbers
+from you on a current kernel.
 
