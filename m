@@ -1,116 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab0FJEWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 00:22:24 -0400
-Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:46914 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752044Ab0FJEWW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 00:22:22 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>,
-       "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
-CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-       "'akpm@osdl.org'" <akpm@osdl.org>,
-       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Wed, 9 Jun 2010 22:22:12 -0600
-Subject: [PATCH 12/12] scsi: megaraid_sas - Version and documentation update 
-Thread-Topic: [PATCH 12/12] scsi: megaraid_sas - Version and documentation
- update 
-Thread-Index: Aco28IhK0BCwqEkwToSTDcG+BIA9kwDb1hagAACJvwADF6mW4AvxomIAHahLLtAABGVuwAbGnGQQ
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3D0804562@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>
- <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3CDB80C39@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3CDB80C39@cosmail02.lsi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752787Ab0FJEga (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 00:36:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42488 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074Ab0FJEg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 00:36:29 -0400
+Message-ID: <4C106BB3.7090107@zytor.com>
+Date: Wed, 09 Jun 2010 21:36:03 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: Andres Salomon <dilinger@queued.net>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, mingo@redhat.com, x86@kernel.org
+Subject: Re: [PATCH] x86: OLPC: add support for calling into OpenFirmware
+ (v2)
+References: <20100610001419.7487d5f7@dev.queued.net>
+In-Reply-To: <20100610001419.7487d5f7@dev.queued.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the version and documentation.
+On 06/09/2010 09:14 PM, Andres Salomon wrote:
+> 
+> Add support for saving OFW's cif, and later calling into it to run OFW
+> commands.  OFW remains resident in memory, living within virtual range
+> 0xff800000 - 0xffc00000.  A single page directory entry points to the
+> pgdir that OFW actually uses, so rather than saving the entire page
+> table, we save that one entry (and restore it for the call into OFW).
+> 
+> This is currently only used by the OLPC XO; however, there's nothing
+> restricting OFW's usage on other (x86) platforms.
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+... well, except for the fact that the protocol is insane, and not used
+by anything else ...
 
----
-Documentation/scsi/ChangeLog.megaraid_sas |   42 ++++++++++++++++++++++++++++++
-drivers/scsi/megaraid/megaraid_sas.h      |    6 ++--
- 2 files changed, 45 insertions(+), 3 deletions(-)
+> diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+> index 86b1506..5cba9eb 100644
+> --- a/arch/x86/include/asm/setup.h
+> +++ b/arch/x86/include/asm/setup.h
+> @@ -21,6 +21,7 @@
+>  #define OLD_CL_MAGIC		0xA33F
+>  #define OLD_CL_ADDRESS		0x020	/* Relative to real mode data */
+>  #define NEW_CL_POINTER		0x228	/* Relative to real mode data */
+> +#define OLPC_OFW_INFO_OFFSET	0xB0	/* Relative to real mode data */
 
-diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas new/Documentation/scsi/ChangeLog.megaraid_sas
---- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-05-05 02:08:10.000000000 -0400
-+++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-05-05 04:54:38.000000000 -0400
-@@ -1,3 +1,45 @@
-+1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
-+			(emaild-id:megaraidlinux@lsi.com)
-+			Bo Yang
-+
-+2 Current Version : 00.00.04.30-rc1
-+3 Older Version   : 00.00.04.17.1-rc1
-+
-+1.	Add the Online Controller Reset (OCR) to the Driver.
-+	OCR is the new feature for megaraid_sas driver which
-+	will allow the fw to do the chip reset which will not
-+	affact the OS hbhavious.
-+
-+	To add the OCR support, driver need to do: 
-+		a). reset the controller chip -- Xscale and Gen2.
-+		
-+		b). during the reset, driver will store the pending
-+		cmds to pending queue.
-+		
-+		c). Also in driver's timeout routine, driver will
-+		report to OS as reset.
-+		
-+		d). in Driver's ISR routine, if driver get the FW
-+		state as state change and FW in Failure status,
-+		driver will start to do the controller reset.
-+		
-+		e). If driver goes to timeout, but driver is in
-+		operational status, driver will check if fw in failed
-+		status, if yes, driver will do OCR to FW upto three times.
-+		
-+		f). Before driver kill adapter, driver will do last chance of
-+		OCR to see if driver can bring back the FW.      
-+
-+2.	Add the CTIO support to the driver.
-+3.	Add the support update flag to the driver to tell LSI megaraid_sas
-+	application which driver will support the device update.  So application
-+	will not need to do the device update after application add/del the device
-+	from the system.
-+
-+4.	Add the input parameter max_sectors to 1MB support to our GEN2 controller.
-+	customer can use the input paramenter max_sectors to add 1MB support to GEN2
-+	controller.
-+
- 1 Release Date    : Thur.  Oct 29, 2009 09:12:45 PST 2009 -
- 			(emaild-id:megaraidlinux@lsi.com)
- 			Bo Yang
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.h new/drivers/scsi/megaraid/megaraid_sas.h
---- old/drivers/scsi/megaraid/megaraid_sas.h	2010-05-05 01:55:42.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.h	2010-05-05 02:35:16.000000000 -0400
-@@ -18,9 +18,9 @@
- /*
-  * MegaRAID SAS Driver meta data
-  */
--#define MEGASAS_VERSION			"00.00.04.17.1-rc1"
--#define MEGASAS_RELDATE			"Oct. 29, 2009"
--#define MEGASAS_EXT_VERSION		"Thu. Oct. 29, 11:41:51 PST 2009"
-+#define MEGASAS_VERSION			"00.00.04.30-rc1"
-+#define MEGASAS_RELDATE			"May 3, 2010"
-+#define MEGASAS_EXT_VERSION		"Mon. May 3, 11:41:51 PST 2010"
- 
- /*
-  * Device IDs
+This should be added to struct boot_params as well as the various
+documentation files.  I note also that this interrupts one of the
+largest available spans we have in this structure, but I guess there is
+very little that can be done about that.
+
+> +#ifdef CONFIG_OLPC_OPENFIRMWARE
+> +	movl $0x0, pa(olpc_ofw_cif)
+> +
+
+We just cleared BSS -- there is no point in doing this.
+
+> +	/* Did OpenFirmware boot us? */
+> +	movl $pa(boot_params) + OLPC_OFW_INFO_OFFSET, %ebp
+> +	cmpl $0x2057464F, (%ebp)	/* Magic number "OFW " */
+> +	jne 3f
+> +
+
+This stuff is in high memory, or otherwise protected in the memory map,
+no?  If so, there is absolutely no point in doing this this early; it
+can be done in C code just fine.  The only thing that needs to be done
+is to same the value of %cr3 on entry (and not even the offset value of
+%cr3).
+
+> +	/* Save the callback address for calling into OFW from linux */
+> +	mov 0x8(%ebp), %eax
+> +	mov %eax, pa(olpc_ofw_cif)
+
+Again, please put the definition of the entire structure into struct
+boot_params as well as in the relevant documentation files.
+
+It's really too bad that you didn't re-use the location used for struct
+efi_info since that is mutually exclusive and has a signature.
+
+I won't pick on you for not using the platform ID since that is a rather
+new invention, but it would have been beneficial rather than ad hoc
+inventions all along...
+
+> +/* setup and do actual call into OFW */
+> +static int setup_ofw(int *ofw_args)
+> +{
+> +	pgd_t *base, *pde;
+> +	pgdval_t oldval;
+> +	int ret;
+> +
+> +	/* temporarily clobber %cr3[OLPC_OFW_PDE_NR] w/ olpc_ofw_pgd */
+> +	base = __va(read_cr3());
+> +	pde = &base[OLPC_OFW_PDE_NR];
+> +	oldval = pgd_val(*pde);
+> +	set_pgd(pde, __pgd(olpc_ofw_pgd));
+> +	flush_tlb();
+> +
+> +	/* call into ofw */
+> +	ret = olpc_ofw_cif(ofw_args);
+> +
+> +	/* restore %cr3[OLPC_OFW_PDE_NR] */
+> +	set_pgd(pde, __pgd(oldval));
+> +	flush_tlb();
+> +
+> +	return ret;
+> +}
+
+Why are you still mucking around with swapping %cr3s?  Once you have
+claimed top of the virtual address space, you can install your PGD
+permanently.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
