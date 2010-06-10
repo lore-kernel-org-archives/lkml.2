@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759700Ab0FJUyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 16:54:43 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:1621 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab0FJUym (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 16:54:42 -0400
-X-SpamScore: -1
-X-BigFish: VPS-1(z5edIzzz1202hzzz2fh2a8h62h)
-X-Spam-TCS-SCL: 1:0
-Message-ID: <4C1150F2.7020807@am.sony.com>
-Date: Thu, 10 Jun 2010 13:54:10 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: frank.rowand@am.sony.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+	id S1755925Ab0FJVEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 17:04:16 -0400
+Received: from mail.tmr.com ([64.65.253.246]:44888 "EHLO partygirl.tmr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751492Ab0FJVEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 17:04:15 -0400
+Message-ID: <4C115345.1060805@tmr.com>
+Date: Thu, 10 Jun 2010 17:04:05 -0400
+From: Bill Davidsen <davidsen@tmr.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 pango-text SeaMonkey/1.1.16
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Peter Zijlstra <peterz@infradead.org>,
-       Bruno Premont <bonbons@linux-vserver.org>,
-       Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-       Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: [patch] genirq: update comments related to buslock support
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jeffrey Merkey <jeffmerkey@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Fwd: EXT3 File System Corruption 2.6.34
+References: <AANLkTinQatQEYahpkN3bT-S5C41HqRoH--gTrvIbGs_c@mail.gmail.com>	<4C0D5DCD.5010201@sandeen.net>	<AANLkTik1T2nJxsoK9UGIVy6q6pfSxniFfJXJY0InmuUh@mail.gmail.com>	<AANLkTil4FMnGl7llR4N0PkXuNyEClQmTspNK6PT62PAi@mail.gmail.com>	<889B6B31-A1F0-438D-B782-DBB855912854@sandeen.net>	<AANLkTilrmEnLrxRSYNnwr8vFaZi7R9U5vY39NmBWUEMy@mail.gmail.com> <AANLkTil7toVuTbCExPtGMOqzqBVG3hG5JeEqzS6ZZ8T6@mail.gmail.com>
+In-Reply-To: <AANLkTil7toVuTbCExPtGMOqzqBVG3hG5JeEqzS6ZZ8T6@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Reverse-DNS: mail7.fw-bc.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jeffrey Merkey wrote:
+> ---------- Forwarded message ----------
+> From: Jeffrey Merkey <jeffmerkey@gmail.com>
+> Date: Mon, Jun 7, 2010 at 7:55 PM
+> Subject: Re: EXT3 File System Corruption 2.6.34
+> To: Eric Sandeen <sandeen@sandeen.net>
+> 
+> 
+>> On Jun 7, 2010, at 6:55 PM, Jeffrey Merkey <jeffmerkey@gmail.com> wrote:
+>>
+>>> ---------- Forwarded message ----------
+>>> From: Jeffrey Merkey <jeffmerkey@gmail.com>
+>>> Date: Mon, Jun 7, 2010 at 5:54 PM
+>>> Subject: Re: EXT3 File System Corruption 2.6.34
+>>> To: Eric Sandeen <sandeen@sandeen.net>
+>>>
+>>>
+>>> REPLY TO ALL
+>>>
+>>> CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+>>>
+>>> Whether set this way or not, should not see corruption.
+>> Here you are mistaken.  Mount with data=ordered and see.  Writeback can
+>> expose stale data.
+>>
+>> -Eric
+>>
+> 
+> OK.  I will set this up.  You may want to make this option the default
+> in the build scripts.  here is a corrupted file.  This was a .gif
+> image file I saved THEN AFTER SAVING THE FILE I pulled the power to
+> the machine and during recovery the file was FUCKED.  At any rate,
+> this does not happen with 2.6.28.
+> 
+Having bad things happen when power is removed is not much of a surprise, and 
+various options can fix that at the cost of speed. The fact that this didn't 
+happen with 2.6.28 is bothersome.
 
-Update comments to match code change in 70aedd24
+I actually take some care to avoid testing behavior in this area, not my normal 
+intended mode of operation.
 
-Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
-
----
- kernel/irq/manage.c |    7 	5 +	2 -	0 !
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-Index: b/kernel/irq/manage.c
-===================================================================
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -236,7 +236,8 @@ void __disable_irq(struct irq_desc *desc
-  *	Unlike disable_irq(), this function does not ensure existing
-  *	instances of the IRQ handler have completed before returning.
-  *
-- *	This function may be called from IRQ context.
-+ *	This function may be called from IRQ context only when
-+ *	desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
-  */
- void disable_irq_nosync(unsigned int irq)
- {
-@@ -264,7 +265,9 @@ EXPORT_SYMBOL(disable_irq_nosync);
-  *	to complete before returning. If you use this function while
-  *	holding a resource the IRQ handler may need you will deadlock.
-  *
-- *	This function may be called - with care - from IRQ context.
-+ *	This function may be called - with care - from IRQ context only when
-+ *	desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
-+ *	See synchronize_irq() comments for explanation of "with care".
-  */
- void disable_irq(unsigned int irq)
- {
-
+-- 
+Bill Davidsen <davidsen@tmr.com>
+   "We have more to fear from the bungling of the incompetent than from
+the machinations of the wicked."  - from Slashdot
