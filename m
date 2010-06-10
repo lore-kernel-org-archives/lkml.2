@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759364Ab0FJOz5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 10:55:57 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43457 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759300Ab0FJOzz convert rfc822-to-8bit (ORCPT
+	id S1759356Ab0FJO4l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 10:56:41 -0400
+Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:55797 "EHLO
+	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753589Ab0FJO4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 10:55:55 -0400
-Subject: Re: [PATCH] [10/23] SCHED: Only allocate per cpu cpu mask buffer
- with offstack cpumasks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@elte.hu, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100610145243.GC19561@basil.fritz.box>
-References: <20100610110.764742110@firstfloor.org>
-	 <20100610111046.18EB4B1A2B@basil.firstfloor.org>
-	 <1276181030.2077.399.camel@twins>  <20100610145243.GC19561@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 10 Jun 2010 16:55:43 +0200
-Message-ID: <1276181743.2077.426.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 10 Jun 2010 10:56:40 -0400
+Message-ID: <4C10FD1C.7080200@tu-dresden.de>
+Date: Thu, 10 Jun 2010 16:56:28 +0200
+From: =?ISO-8859-15?Q?Ronny_Tsch=FCter?= <Ronny.Tschueter@tu-dresden.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: BUG: sched:sched_migrate_task event tracing returns incorrect events
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-10 at 16:52 +0200, Andi Kleen wrote:
-> > This patch will actually break things.. please read the code.
-> > 
-> > I guess we could move the unsigned long into that block, but I really
-> > don't see the point.
-> 
-> How does it break things? 
-> 
-> ptr is not used for anything unless that define is set. gcc doesn't
-> lie on this.
+Hi,
 
-        if (alloc_size) {
-                ptr = (unsigned long)kzalloc(alloc_size, GFP_NOWAIT);
+I want to know a little bit more about the execution of my program. 
+Especially I'm interested in cpu migrations of my process. Therefore I 
+use the Linux performance counter infrastructure, set appropriate 
+perf_event attributes and setup the sched:sched_migrate_task event with 
+a system call:
+...
+attr.type = PERF_TYPE_TRACEPOINT;
+attr.size = sizeof( struct perf_event_attr );
+attr.config = event_id; // id of sched:sched_migrate_task event
+attr.sample_type = PERF_SAMPLE_TIME|PERF_SAMPLE_CPU|PERF_SAMPLE_RAW;
+attr.freq = 0;
+attr.sample_freq = 1;
+fd = syscall( __NR_perf_counter_open, &attr, getpid(), -1, -1, 0 );
+...
+Finally to read the events I map the kernel event buffer via mmap and 
+process every event in this buffer. However I run into two problems:
 
-#ifdef CONFIG_FAIR_GROUP_SCHED
-                init_task_group.se = (struct sched_entity **)ptr;
-                ptr += nr_cpu_ids * sizeof(void **);
+(1) I need root privileges to open the counter successfully. Without 
+root privileges syscall returns -1. I think that is not OK because users 
+should be allowed to create per task counters.
 
-                init_task_group.cfs_rq = (struct cfs_rq **)ptr;
-                ptr += nr_cpu_ids * sizeof(void **);
+(2) The buffer contains events that aren't caused by my process (i.e. 
+the COMM field does not contain the name of my process and the PID field 
+is not equal to the pid of my process).
 
-#endif /* CONFIG_FAIR_GROUP_SCHED */
-#ifdef CONFIG_RT_GROUP_SCHED
-                init_task_group.rt_se = (struct sched_rt_entity **)ptr;
-                ptr += nr_cpu_ids * sizeof(void **);
+Some information about my system:
+Processor: Core 2 Duo E6750
+Kernel information: Linux version 2.6.34-100610-1530 (gcc version 4.4.3 
+(Ubuntu 4.4.3-4ubuntu5) ) #1 SMP
 
-                init_task_group.rt_rq = (struct rt_rq **)ptr;
-                ptr += nr_cpu_ids * sizeof(void **);
+This behaviour could also be observed in tests with
+- Linux version 2.6.33.3 (gcc version 4.4.1 (Ubuntu 4.4.1-4ubuntu9) ) #1 SMP
+- Linux version 2.6.32-22-generic (buildd@yellow) (gcc version 4.4.3 
+(Ubuntu 4.4.3-4ubuntu5) ) #36-Ubuntu SMP (Ubuntu 10.04)
 
-#endif /* CONFIG_RT_GROUP_SCHED */
-#ifdef CONFIG_CPUMASK_OFFSTACK
-                for_each_possible_cpu(i) {
-                        per_cpu(load_balance_tmpmask, i) = (void *)ptr;
-                        ptr += cpumask_size();
-                }
-#endif /* CONFIG_CPUMASK_OFFSTACK */
-        }
+
+Bye, Ronny Tschueter
 
