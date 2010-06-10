@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759278Ab0FJRfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 13:35:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56973 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555Ab0FJRfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 13:35:04 -0400
-Message-ID: <4C11223E.7010806@redhat.com>
-Date: Thu, 10 Jun 2010 20:34:54 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1759350Ab0FJRnq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 13:43:46 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:45436 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab0FJRnp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 13:43:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=XJPv7svX7RiE5FDhPzxgQ7XKuOixFiaNu53cNQ8d0JR3t1p06P6SOB7wh7fhMh9bPB
+         57UuX6sBm3UeUnqkh4cPE/IioC/BUP3lPCzV/bdPlQs0PGwN0dLubQ01HzyJEd28fijm
+         ros3xCUH76895MkaGjTCeSr47ebuP8PKKTm4w=
+Message-ID: <4C112452.60200@gmail.com>
+Date: Thu, 10 Jun 2010 10:43:46 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] KVM updates for 2.6.35-rc2
-References: <4C10B10D.80304@redhat.com> <AANLkTilIIesuFHNVBhpeOe3XiJ5JDDIxt2wLH9MzyF_e@mail.gmail.com>
-In-Reply-To: <AANLkTilIIesuFHNVBhpeOe3XiJ5JDDIxt2wLH9MzyF_e@mail.gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Tejun Heo <tj@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+       x86@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [1/23] x86: percpu: Avoid warnings of unused variables
+ in per cpu
+References: <20100610110.764742110@firstfloor.org> <20100610111036.DAE8EB1A2C@basil.firstfloor.org> <4C10C930.9080900@kernel.org> <20100610120951.GC16514@elte.hu>
+In-Reply-To: <20100610120951.GC16514@elte.hu>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2010 07:33 PM, Linus Torvalds wrote:
-> On Thu, Jun 10, 2010 at 2:31 AM, Avi Kivity<avi@redhat.com>  wrote:
->    
->> Linus, please pull from
+On 06/10/2010 05:09 AM, Ingo Molnar wrote:
+>
+> * Tejun Heo<tj@kernel.org>  wrote:
+>
+>> On 06/10/2010 01:10 PM, Andi Kleen wrote:
+>>> Avoid hundreds of warnings with a gcc 4.6 -Wall build
+>>>
+>>> Cc: tj@kernel.org
+>>> Cc: x86@kernel.org
+>>>
+>>> Signed-off-by: Andi Kleen<ak@linux.intel.com>
 >>
->>   git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/2.6.35
+>> Acked-by: Tejun Heo<tj@kernel.org>
 >>
->> to receive a bunch of KVM fixes for 2.6.35-rc2, including a workaround for a
->> cpu erratum that can allow a guest to crash the host.
->>      
-> Hmm. This looks bigger than I'd wish for at this point. I'll be
-> offline starting Saturday, so I want -rc3 (on Friday evening) to be in
-> as well-known a state as humanly possible. Which is why I've been
-> pushing back a lot on anything that isn't absolutely essential.
->    
+>> Can x86 or -mm please take this patch?  There isn't any pending percpu
+>> patch currently and it seems a bit silly to start a branch for this
+>> one.
+>
+> Sure, queued it up.
+>
+> Thanks,
+>
+> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Ok.  I've dropped the SRAO patch; this still leaves ~100 changed lines, 
-but they are almost all due to the erratum 383 workaround, which can 
-result in a guest killing the host.  The rest of the patches are less 
-critical, but they are one liners and I am comfortable with them in 
--rc3.  The new diffstat also shows no changes to core code:
 
-  arch/ia64/kvm/kvm-ia64.c         |    1 +
-  arch/powerpc/kvm/e500.c          |    2 +-
-  arch/x86/include/asm/msr-index.h |    1 +
-  arch/x86/kvm/mmu.c               |    5 ++
-  arch/x86/kvm/svm.c               |   96 
-+++++++++++++++++++++++++++++++++++++-
-  virt/kvm/ioapic.c                |    3 +-
-  virt/kvm/iommu.c                 |    2 +-
-  7 files changed, 106 insertions(+), 4 deletions(-)
+Thanks for this.. I applied it over
+here.. and now don't have all of
+that spam from percpu while compiling
+the kernel..
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+only one I see now is something about
+warning: variable 'gfp' set but not used
 
+if there's another I can test it if you
+would like.
+
+Justin P. Mattock
