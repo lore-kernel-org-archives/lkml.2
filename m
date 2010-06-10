@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759356Ab0FJO4l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 10:56:41 -0400
-Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:55797 "EHLO
-	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753589Ab0FJO4k (ORCPT
+	id S1759355Ab0FJO62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 10:58:28 -0400
+Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:35650 "EHLO
+	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753589Ab0FJO61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 10:56:40 -0400
-Message-ID: <4C10FD1C.7080200@tu-dresden.de>
-Date: Thu, 10 Jun 2010 16:56:28 +0200
-From: =?ISO-8859-15?Q?Ronny_Tsch=FCter?= <Ronny.Tschueter@tu-dresden.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
+	Thu, 10 Jun 2010 10:58:27 -0400
+Message-ID: <4C10FD91.4060209@sandeen.net>
+Date: Thu, 10 Jun 2010 09:58:25 -0500
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: BUG: sched:sched_migrate_task event tracing returns incorrect events
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Dave Chinner <david@fromorbit.com>
+CC: Michael Tokarev <mjt@tls.msk.ru>,
+       Linux-kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: xfs, 2.6.27=>.32 sync write 10 times slowdown [was: xfs,	aacraid
+ 2.6.27 => 2.6.32 results in 6 times slowdown]
+References: <4C0E13A7.20402@msgid.tls.msk.ru> <20100608122919.GC7869@dastard>	<4C0EA938.9000104@msgid.tls.msk.ru> <20100608231845.GG7869@dastard>	<4C0F3819.4000409@msgid.tls.msk.ru> <20100609074741.GJ7869@dastard>	<4C0FE779.8010603@msgid.tls.msk.ru> <20100610004701.GN7869@dastard>
+In-Reply-To: <20100610004701.GN7869@dastard>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-I want to know a little bit more about the execution of my program. 
-Especially I'm interested in cpu migrations of my process. Therefore I 
-use the Linux performance counter infrastructure, set appropriate 
-perf_event attributes and setup the sched:sched_migrate_task event with 
-a system call:
-...
-attr.type = PERF_TYPE_TRACEPOINT;
-attr.size = sizeof( struct perf_event_attr );
-attr.config = event_id; // id of sched:sched_migrate_task event
-attr.sample_type = PERF_SAMPLE_TIME|PERF_SAMPLE_CPU|PERF_SAMPLE_RAW;
-attr.freq = 0;
-attr.sample_freq = 1;
-fd = syscall( __NR_perf_counter_open, &attr, getpid(), -1, -1, 0 );
-...
-Finally to read the events I map the kernel event buffer via mmap and 
-process every event in this buffer. However I run into two problems:
-
-(1) I need root privileges to open the counter successfully. Without 
-root privileges syscall returns -1. I think that is not OK because users 
-should be allowed to create per task counters.
-
-(2) The buffer contains events that aren't caused by my process (i.e. 
-the COMM field does not contain the name of my process and the PID field 
-is not equal to the pid of my process).
-
-Some information about my system:
-Processor: Core 2 Duo E6750
-Kernel information: Linux version 2.6.34-100610-1530 (gcc version 4.4.3 
-(Ubuntu 4.4.3-4ubuntu5) ) #1 SMP
-
-This behaviour could also be observed in tests with
-- Linux version 2.6.33.3 (gcc version 4.4.1 (Ubuntu 4.4.1-4ubuntu9) ) #1 SMP
-- Linux version 2.6.32-22-generic (buildd@yellow) (gcc version 4.4.3 
-(Ubuntu 4.4.3-4ubuntu5) ) #36-Ubuntu SMP (Ubuntu 10.04)
+Dave Chinner wrote:
+> On Wed, Jun 09, 2010 at 11:11:53PM +0400, Michael Tokarev wrote:
 
 
-Bye, Ronny Tschueter
+>> The same is with -o osyncisosync (in .34).  Actually,
+>> osyncis[od]sync mount options does not change anything, not
+>> in .32 nor in .34.
+> 
+> I think only osyncisosync exists, and it doesn't do anything
+> anymore.
+
+Just to be pedantic, osyncisdsync "exists," but is deprecated and does
+nothing to change defaults:
+
+                } else if (!strcmp(this_char, "osyncisdsync")) {
+                        /* no-op, this is now the default */
+                        cmn_err(CE_WARN,
+        "XFS: osyncisdsync is now the default, option is deprecated.");
+                }
+
+huh, didn't realize that osyncisosync does nothing but set a flag that
+is never tested other than to show mount options:
+
+  File                  Function      Line
+0 xfs_mount.h           <global>      285 #define XFS_MOUNT_OSYNCISOSYNC (1ULL << 13)
+1 linux-2.6/xfs_super.c xfs_parseargs 292 mp->m_flags |= XFS_MOUNT_OSYNCISOSYNC;
+2 linux-2.6/xfs_super.c xfs_showargs  542 { XFS_MOUNT_OSYNCISOSYNC, "," MNTOPT_OSYNCISOSYNC },
+
+Time to deprecate/remove that one too I guess?
+
+-Eric
+ 
+> Cheers,
+> 
+> Dave.
 
