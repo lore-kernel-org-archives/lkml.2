@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab0FJFgs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 01:36:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44760 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab0FJFgr (ORCPT
+	id S1753794Ab0FJFkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 01:40:46 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41158 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab0FJFkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 01:36:47 -0400
-Message-ID: <4C1079CA.1030301@oracle.com>
-Date: Wed, 09 Jun 2010 22:36:10 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Thu, 10 Jun 2010 01:40:45 -0400
+Subject: [PATCH v2 0/5] Generalize OF gpio support code
+To: dbrownell@users.sourceforge.net, avorontsov@ru.mvista.com
+From: Grant Likely <grant.likely@secretlab.ca>
+Cc: bgat@billgatliff.com, dbaryshkov@gmail.com, benh@kernel.crashing.org,
+       devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
+Date: Wed, 09 Jun 2010 23:40:41 -0600
+Message-ID: <20100610053439.16716.53944.stgit@angua>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of/device: Move struct of_device define outside of CONFIG_OF_DEVICE
- test
-References: <20100610045159.615.89343.stgit@angua>
-In-Reply-To: <20100610045159.615.89343.stgit@angua>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4C1079EB.01E2:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/10 21:54, Grant Likely wrote:
-> Some code uses of_device even when CONFIG_OF_DEVICE is not set.  This
-> patch makes of_device valid all the time by moving it outside of the
-> ifdef CONFIG_OF_DEVICE test.
-> 
-> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
-> 
-> Hi Randy,
-> 
-> Here's what I applied to my tree to fix the niu driver compile warning.
-> I've compile tested it on several architectures, and am pushing it out
-> to my linux-next branch now.
+This series makes all gpio drivers usable from the OF support apis by
+automatically registering a default OF translator when the of_node
+pointer is assigned.  These patches are heavily based on the work that
+Anton did earlier, but I didn't add the notifiers infrastructure and
+the OF data now lives directly inside the core gpio_chip structure so
+that fewer gymnastics are needed to get at it.
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+These patches are currently sitting in the following branch:
 
-along with the niu.c patch, of course.
+git://git.secretlab.ca/git/linux-2.6 next-devicetree
 
-> g.
-> 
->  include/linux/of_device.h |   12 +++++-------
->  1 files changed, 5 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/linux/of_device.h b/include/linux/of_device.h
-> index c877d54..8cd1fe7 100644
-> --- a/include/linux/of_device.h
-> +++ b/include/linux/of_device.h
-> @@ -1,13 +1,6 @@
->  #ifndef _LINUX_OF_DEVICE_H
->  #define _LINUX_OF_DEVICE_H
->  
-> -#ifdef CONFIG_OF_DEVICE
-> -#include <linux/device.h>
-> -#include <linux/platform_device.h>
-> -#include <linux/of.h>
-> -#include <linux/mod_devicetable.h>
-> -
-> -
->  /*
->   * The of_device *was* a kind of "base class" that was a superset of
->   * struct device for use by devices attached to an OF node and probed
-> @@ -22,7 +15,12 @@
->   * from the kernel.
->   */
->  #define of_device platform_device
-> +#include <linux/platform_device.h>
->  
-> +#ifdef CONFIG_OF_DEVICE
-> +#include <linux/device.h>
-> +#include <linux/of.h>
-> +#include <linux/mod_devicetable.h>
->  #include <asm/of_device.h>
->  
->  #define	to_of_device(d) container_of(d, struct of_device, dev)
-> 
+---
+
+Anton Vorontsov (3):
+      gpiolib: cosmetic improvements for error handling in gpiochip_add()
+      of/gpio: Kill of_gpio_chip and add members directly to gpio_chip
+      of/gpio: add default of_xlate function if device has a node pointer
+
+Grant Likely (2):
+      of/gpio: stop using device_node data pointer to find gpio_chip
+      of/device: Add OF style matching helper function
 
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ arch/microblaze/kernel/reset.c                 |   12 ++-
+ arch/powerpc/platforms/52xx/mpc52xx_gpio.c     |   30 ++++----
+ arch/powerpc/platforms/52xx/mpc52xx_gpt.c      |   29 ++++----
+ arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c |   34 ++-------
+ arch/powerpc/platforms/86xx/gef_gpio.c         |   24 +++----
+ arch/powerpc/sysdev/cpm1.c                     |   10 +--
+ arch/powerpc/sysdev/cpm_common.c               |    5 -
+ arch/powerpc/sysdev/mpc8xxx_gpio.c             |    5 -
+ arch/powerpc/sysdev/ppc4xx_gpio.c              |    5 -
+ arch/powerpc/sysdev/qe_lib/gpio.c              |   31 ++++-----
+ arch/powerpc/sysdev/simple_gpio.c              |    5 -
+ drivers/gpio/gpiolib.c                         |   55 ++++++++++++++-
+ drivers/gpio/xilinx_gpio.c                     |   15 ++--
+ drivers/of/device.c                            |    2 -
+ drivers/of/gpio.c                              |   86 +++++++++++++++---------
+ include/asm-generic/gpio.h                     |   15 ++++
+ include/linux/of_device.h                      |   19 +++++
+ include/linux/of_gpio.h                        |   35 +++-------
+ 18 files changed, 226 insertions(+), 191 deletions(-)
