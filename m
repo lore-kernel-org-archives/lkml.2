@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759368Ab0FJPGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 11:06:21 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:55337 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753693Ab0FJPGT (ORCPT
+	id S1759350Ab0FJPLu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 11:11:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43694 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753925Ab0FJPLt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 11:06:19 -0400
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@elte.hu, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [10/23] SCHED: Only allocate per cpu cpu mask buffer with offstack cpumasks
-From: Andi Kleen <andi@firstfloor.org>
-References: <20100610110.764742110@firstfloor.org>
-	<20100610111046.18EB4B1A2B@basil.firstfloor.org>
-	<1276181030.2077.399.camel@twins>
-	<20100610145243.GC19561@basil.fritz.box>
-	<1276181743.2077.426.camel@twins>
-Date: Thu, 10 Jun 2010 17:06:18 +0200
-In-Reply-To: <1276181743.2077.426.camel@twins> (Peter Zijlstra's message of "Thu\, 10 Jun 2010 16\:55\:43 +0200")
-Message-ID: <87fx0v3p1x.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 10 Jun 2010 11:11:49 -0400
+Subject: Re: BUG: sched:sched_migrate_task event tracing returns incorrect
+ events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ronny =?ISO-8859-1?Q?Tsch=FCter?= <Ronny.Tschueter@tu-dresden.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C10FD1C.7080200@tu-dresden.de>
+References: <4C10FD1C.7080200@tu-dresden.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 10 Jun 2010 17:11:41 +0200
+Message-ID: <1276182701.2077.462.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+On Thu, 2010-06-10 at 16:56 +0200, Ronny Tschüter wrote:
+> Hi,
+> 
+> I want to know a little bit more about the execution of my program. 
+> Especially I'm interested in cpu migrations of my process. Therefore I 
+> use the Linux performance counter infrastructure, set appropriate 
+> perf_event attributes and setup the sched:sched_migrate_task event with 
+> a system call:
+> ...
+> attr.type = PERF_TYPE_TRACEPOINT;
+> attr.size = sizeof( struct perf_event_attr );
+> attr.config = event_id; // id of sched:sched_migrate_task event
+> attr.sample_type = PERF_SAMPLE_TIME|PERF_SAMPLE_CPU|PERF_SAMPLE_RAW;
+> attr.freq = 0;
+> attr.sample_freq = 1;
+> fd = syscall( __NR_perf_counter_open, &attr, getpid(), -1, -1, 0 );
+> ...
+> Finally to read the events I map the kernel event buffer via mmap and 
+> process every event in this buffer. However I run into two problems:
+> 
+> (1) I need root privileges to open the counter successfully. Without 
+> root privileges syscall returns -1. I think that is not OK because users 
+> should be allowed to create per task counters.
 
-> On Thu, 2010-06-10 at 16:52 +0200, Andi Kleen wrote:
->> > This patch will actually break things.. please read the code.
->> > 
->> > I guess we could move the unsigned long into that block, but I really
->> > don't see the point.
->> 
->> How does it break things? 
->> 
->> ptr is not used for anything unless that define is set. gcc doesn't
->> lie on this.
+It is, because you specify PERF_SAMPLE_RAW, which is considered a data
+leak for unpriv users.
 
-Ok.
+> (2) The buffer contains events that aren't caused by my process (i.e. 
+> the COMM field does not contain the name of my process and the PID field 
+> is not equal to the pid of my process).
 
-For the !FAIR_GROUP_SCHED || !CPUMASK_OFFSTACK case it's still wasted
-memory because it is not used for anything. If you enable the kmemleak
-tracer you should also get a warning about this
-
-I updated the patch with a better ifdef to have CONFIG_UNFAIR_GROUP_SCHED
-too.
-
--Andi
-
----
-
-SCHED: Only allocate per cpu cpu mask buffer with offstack cpumasks v2
-
-This will save a few bytes in the non offstack cpumask case.
-
-Found by gcc 4.6's new warnings.
-
-Cc: peterz@infradead.org
-Cc: mingo@elte.hu
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
----
- kernel/sched.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-Index: linux-2.6.35-rc2-gcc/kernel/sched.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/kernel/sched.c
-+++ linux-2.6.35-rc2-gcc/kernel/sched.c
-@@ -7482,7 +7482,7 @@ static void init_tg_rt_entry(struct task
- void __init sched_init(void)
- {
- 	int i, j;
--	unsigned long alloc_size = 0, ptr;
-+	unsigned long alloc_size = 0;
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	alloc_size += 2 * nr_cpu_ids * sizeof(void **);
-@@ -7494,7 +7494,10 @@ void __init sched_init(void)
- 	alloc_size += num_possible_cpus() * cpumask_size();
- #endif
- 	if (alloc_size) {
-+#if defined(CONFIG_CPUMASK_OFFSTACK) || defined(CONFIG_FAIR_GROUP_SCHED)
-+		unsigned long ptr;
- 		ptr = (unsigned long)kzalloc(alloc_size, GFP_NOWAIT);
-+#endif
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 		init_task_group.se = (struct sched_entity **)ptr;
-
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+I think that could happen if the migration happens from interrupt
+context while your task is running. Also wakeups your process does can
+result in migrations of the woken task from the context of your task.
