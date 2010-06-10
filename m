@@ -1,88 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab0FJIje (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 04:39:34 -0400
-Received: from mga14.intel.com ([143.182.124.37]:11016 "EHLO mga14.intel.com"
+	id S1758617Ab0FJImv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 04:42:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41848 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752670Ab0FJIjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 04:39:33 -0400
+	id S1753040Ab0FJImt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 04:42:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,397,1272870000"; 
-   d="scan'208";a="287231720"
-Date: Thu, 10 Jun 2010 01:40:18 -0700
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Alan Cox <alan@linux.intel.com>, Arjan van de Ven <arjan@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Feng Tang <feng.tang@intel.com>,
-       Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH] x86/sfi: fix ioapic gsi range
-Message-ID: <20100610014018.00001c23@unknown>
-In-Reply-To: <m1r5kfwz3o.fsf@fess.ebiederm.org>
-References: <1275952044-27996-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<m1631ue5ho.fsf@fess.ebiederm.org>
-	<20100607225010.342e2fab@jacob-laptop>
-	<m1631tfh1i.fsf@fess.ebiederm.org>
-	<20100608134123.6d9a6fb6@jacob-laptop>
-	<m1sk4x9q45.fsf@fess.ebiederm.org>
-	<20100608151735.1693105f@jacob-laptop>
-	<m1r5kfwz3o.fsf@fess.ebiederm.org>
-Organization: Intel OTC
-X-Mailer: Claws Mail 3.7.4cvs1 (GTK+ 2.16.0; i586-pc-mingw32msvc)
+   d="scan'208";a="806557058"
+Subject: [PATCH] ACPI, APEI, Rename CPER and GHES severity constants
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>, Andi Kleen <ak@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Jun 2010 16:42:47 +0800
+Message-ID: <1276159367.3004.12.camel@yhuang-dev.sh.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric W. Biederman Wed, 09 Jun 2010 16:44:11 -0700
->jacob pan <jacob.jun.pan@linux.intel.com> writes:
->
->> [jacob pan] 
->>
->> In arch/x86/kernel/mrst.c we parse SFI MTMR table then
->> add timer irqs to mp_irqs. what is broken by this patch is
->> pin_2_irq() lookup for the legacy irq range since we want
->> NR_IRQS_LEGACY to be 0 on Moorestown. We do have the assumption that
->> mp_irqs from SFI is 1:1 mapped to IRQs.
->
->NR_IRQS_LEGACY is a constant of 16.
-i know, what i meant is we want this to be a variable.
->
->> Doing this can fix the problem, but you mentioned you have to use
->> NR_IRQS_LEGACY, which i still don't understand.
->
->Looking at the code in io_apic.c there is a relatively clean way to
->handle this.  The actual concept in io_apic.c today is mp_bus_not_pci.
->
->So you just need to do:
->
->diff --git a/arch/x86/kernel/mrst.c b/arch/x86/kernel/mrst.c
->index e796448..9377fda 100644
->--- a/arch/x86/kernel/mrst.c
->+++ b/arch/x86/kernel/mrst.c
->@@ -242,4 +242,5 @@ void __init x86_mrst_early_setup(void)
-> 	x86_init.mpparse.find_smp_config = x86_init_noop;
-> 	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
-> 
->+	set_bit(0, mp_bus_not_pci);
-> }
->
->
->Then you get treated as ISA for purposes of pin_2_irq, and everything
->is a pass through.  Since that seems to be what you want anyway I don't
->see a problem with that for now.
->
-I think this may work better. Since we already assign srcbus = MP_ISA_BUS to 
-use the mp_irqs, this may be more inline with the current code.
-Thanks for the pointer.
+The abbreviation of severity should be SEV instead of SER, so the CPER
+severity constants are renamed accordingly. GHES severity constants
+are renamed in the same way too.
 
-But the nr_irqs_gsi would still be wrong for Moorestown if don't use legacy_pic
-or some sort of runtime detection.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce-apei.c |    4 ++--
+ drivers/acpi/apei/ghes.c              |   32 ++++++++++++++++----------------
+ include/linux/cper.h                  |    8 ++++----
+ 3 files changed, 22 insertions(+), 22 deletions(-)
 
->Using legacy pic to even talk about this behavior is wrong as that is
->hardware abstraction and the presence or absence of an i8259 has
->nothing to do with the presence of ISA irqs and their descendants.
->
->Eric
+--- a/arch/x86/kernel/cpu/mcheck/mce-apei.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-apei.c
+@@ -80,7 +80,7 @@ int apei_write_mce(struct mce *m)
+ 	rcd.hdr.revision = CPER_RECORD_REV;
+ 	rcd.hdr.signature_end = CPER_SIG_END;
+ 	rcd.hdr.section_count = 1;
+-	rcd.hdr.error_severity = CPER_SER_FATAL;
++	rcd.hdr.error_severity = CPER_SEV_FATAL;
+ 	/* timestamp, platform_id, partition_id are all invalid */
+ 	rcd.hdr.validation_bits = 0;
+ 	rcd.hdr.record_length = sizeof(rcd);
+@@ -96,7 +96,7 @@ int apei_write_mce(struct mce *m)
+ 	rcd.sec_hdr.validation_bits = 0;
+ 	rcd.sec_hdr.flags = CPER_SEC_PRIMARY;
+ 	rcd.sec_hdr.section_type = CPER_SECTION_TYPE_MCE;
+-	rcd.sec_hdr.section_severity = CPER_SER_FATAL;
++	rcd.sec_hdr.section_severity = CPER_SEV_FATAL;
+ 
+ 	memcpy(&rcd.mce, m, sizeof(*m));
+ 
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -132,26 +132,26 @@ static void ghes_fini(struct ghes *ghes)
+ }
+ 
+ enum {
+-	GHES_SER_NO = 0x0,
+-	GHES_SER_CORRECTED = 0x1,
+-	GHES_SER_RECOVERABLE = 0x2,
+-	GHES_SER_PANIC = 0x3,
++	GHES_SEV_NO = 0x0,
++	GHES_SEV_CORRECTED = 0x1,
++	GHES_SEV_RECOVERABLE = 0x2,
++	GHES_SEV_PANIC = 0x3,
+ };
+ 
+ static inline int ghes_severity(int severity)
+ {
+ 	switch (severity) {
+-	case CPER_SER_INFORMATIONAL:
+-		return GHES_SER_NO;
+-	case CPER_SER_CORRECTED:
+-		return GHES_SER_CORRECTED;
+-	case CPER_SER_RECOVERABLE:
+-		return GHES_SER_RECOVERABLE;
+-	case CPER_SER_FATAL:
+-		return GHES_SER_PANIC;
++	case CPER_SEV_INFORMATIONAL:
++		return GHES_SEV_NO;
++	case CPER_SEV_CORRECTED:
++		return GHES_SEV_CORRECTED;
++	case CPER_SEV_RECOVERABLE:
++		return GHES_SEV_RECOVERABLE;
++	case CPER_SEV_FATAL:
++		return GHES_SEV_PANIC;
+ 	default:
+ 		/* Unkown, go panic */
+-		return GHES_SER_PANIC;
++		return GHES_SEV_PANIC;
+ 	}
+ }
+ 
+@@ -237,16 +237,16 @@ static void ghes_clear_estatus(struct gh
+ 
+ static void ghes_do_proc(struct ghes *ghes)
+ {
+-	int ser, processed = 0;
++	int sev, processed = 0;
+ 	struct acpi_hest_generic_data *gdata;
+ 
+-	ser = ghes_severity(ghes->estatus->error_severity);
++	sev = ghes_severity(ghes->estatus->error_severity);
+ 	apei_estatus_for_each_section(ghes->estatus, gdata) {
+ #ifdef CONFIG_X86_MCE
+ 		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
+ 				 CPER_SEC_PLATFORM_MEM)) {
+ 			apei_mce_report_mem_error(
+-				ser == GHES_SER_CORRECTED,
++				sev == GHES_SEV_CORRECTED,
+ 				(struct cper_sec_mem_err *)(gdata+1));
+ 			processed = 1;
+ 		}
+--- a/include/linux/cper.h
++++ b/include/linux/cper.h
+@@ -39,10 +39,10 @@
+  * Severity difinition for error_severity in struct cper_record_header
+  * and section_severity in struct cper_section_descriptor
+  */
+-#define CPER_SER_RECOVERABLE			0x0
+-#define CPER_SER_FATAL				0x1
+-#define CPER_SER_CORRECTED			0x2
+-#define CPER_SER_INFORMATIONAL			0x3
++#define CPER_SEV_RECOVERABLE			0x0
++#define CPER_SEV_FATAL				0x1
++#define CPER_SEV_CORRECTED			0x2
++#define CPER_SEV_INFORMATIONAL			0x3
+ 
+ /*
+  * Validation bits difinition for validation_bits in struct
+
+
