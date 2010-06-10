@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab0FJFLO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 01:11:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33466 "EHLO mx2.suse.de"
+	id S1754003Ab0FJFL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 01:11:28 -0400
+Received: from mga14.intel.com ([143.182.124.37]:11854 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797Ab0FJFLM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 01:11:12 -0400
-Date: Thu, 10 Jun 2010 15:10:55 +1000
-From: Neil Brown <neilb@suse.de>
-To: Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
-Cc: david@lang.hm, Alan Stern <stern@rowland.harvard.edu>, tytso@mit.edu,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Florian Mickler <florian@mickler.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Brian Swetland <swetland@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Felipe Balbi <felipe.balbi@nokia.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-Message-ID: <20100610151055.5a0870ba@notabene.brown>
-In-Reply-To: <AANLkTilrJYg-z6mbRfhhrDdhpWUYSXGQEMCGgBj24xZs@mail.gmail.com>
-References: <AANLkTilALyvthzh8rMiDFFP_QTz_o5hxdE8tArMUonpP@mail.gmail.com>
-	<Pine.LNX.4.44L0.1006091031030.1728-100000@iolanthe.rowland.org>
-	<AANLkTil2JhBgJ27qcTARVj2wVgEltxZKPOc9Ddu4c8yY@mail.gmail.com>
-	<alpine.DEB.2.01.1006092117100.17462@asgard.lang.hm>
-	<AANLkTilrJYg-z6mbRfhhrDdhpWUYSXGQEMCGgBj24xZs@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1753766Ab0FJFLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 01:11:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,396,1272870000"; 
+   d="scan'208";a="287177932"
+Subject: Re: [RFC] para virt interface of perf to support kvm guest os
+ statistics collection in guest os
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <4C10569E.6020503@redhat.com>
+References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>
+	 <4C0F51DD.3080200@redhat.com>
+	 <1276075280.2096.427.camel@ymzhang.sh.intel.com>
+	 <4C0F61D3.9000402@redhat.com>
+	 <1276136493.2096.462.camel@ymzhang.sh.intel.com>
+	 <4C10569E.6020503@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 10 Jun 2010 13:13:31 +0800
+Message-Id: <1276146811.2096.463.camel@ymzhang.sh.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jun 2010 21:51:38 -0700
-Arve Hjønnevåg <arve@android.com> wrote:
-
-> The current user space interface does not require that clients
-> register the file descriptors that they get wakeup events from with
-> another process.
+On Thu, 2010-06-10 at 06:06 +0300, Avi Kivity wrote:
+> On 06/10/2010 05:21 AM, Zhang, Yanmin wrote:
+> >
+> >> I see.  So put it in a union.  Or perhaps not even in a union - what if
+> >> a kvm guest is also acting as a kvm host?
+> >>      
+> > My patch has consideration on it. I compiled kernel with host and guest support
+> > at the same time. The accessing to perf_event->shadow is really under specific
+> > scenarios, or they are just in specific functions. These functions are called
+> > just bu host kernel , or just by guest kernel.
+> >    
 > 
-
-However I believe they *do* register these file descriptors with the kernel,
-via some sort of ioctl (I think you have said that is the case for input
-devices at least).
-Can you confirm that?
-
-If that is the case, is it really such a big change to register with another
-process instead of with the kernel?
-
-Thanks,
-NeilBrown
-
+> But a kernel can be both guest and host at the same time.  Currently 
+> this only works on AMD, but there was some work to bring it to Intel as 
+> well.
+Oh, this is a fancy VT feature. My patch doesn't support this mode.
 
