@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758959Ab0FJMZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 08:25:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47540 "EHLO hera.kernel.org"
+	id S1758905Ab0FJM2i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 08:28:38 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51024 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753364Ab0FJMZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 08:25:38 -0400
-Date: Thu, 10 Jun 2010 12:25:08 GMT
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-       mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-       linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4c10cb56.5120e30a.2eb4.ffffc3de@mx.google.com>
-References: <4c10cb56.5120e30a.2eb4.ffffc3de@mx.google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf_events: Fix Intel Westmere event constraints
-Message-ID: <tip-d11007703c31db534674ebeeb9eb047bbbe758bd@git.kernel.org>
-Git-Commit-ID: d11007703c31db534674ebeeb9eb047bbbe758bd
-X-Mailer: tip-git-log-daemon
+	id S1753689Ab0FJM2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 08:28:36 -0400
+Date: Thu, 10 Jun 2010 22:28:33 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Joel Becker <joel.becker@oracle.com>,
+       mfasheh@suse.com
+Subject: Re: [PATCH v3] ocfs2: Let ocfs2_setattr use new truncate sequence.
+Message-ID: <20100610122833.GF26335@laptop>
+References: <20100610044234.GD26335@laptop>
+ <1276146485-9346-1-git-send-email-tao.ma@oracle.com>
+ <20100610082711.GA2173@lst.de>
+ <20100610084707.GG30672@mail.oracle.com>
+ <4C10D600.60209@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Jun 2010 12:25:09 +0000 (UTC)
+In-Reply-To: <4C10D600.60209@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d11007703c31db534674ebeeb9eb047bbbe758bd
-Gitweb:     http://git.kernel.org/tip/d11007703c31db534674ebeeb9eb047bbbe758bd
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Thu, 10 Jun 2010 13:25:01 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 10 Jun 2010 14:16:32 +0200
+On Thu, Jun 10, 2010 at 08:09:36PM +0800, Tao Ma wrote:
+> Joel Becker wrote:
+> >On Thu, Jun 10, 2010 at 10:27:11AM +0200, Christoph Hellwig wrote:
+> >>You just leave the duplicate inode_newsize_ok in, but still have
+> >>one as part of inode_change_ok.  See the previous thread - we'll
+> >>need to move inode_change_ok to under the cluster locks, both
+> >>for the truncate and non-truncate case.
+> >
+> >	Is your concern that the u/gid checks may be against stale ids?
+> So I think we should have one inode_change_ok before the cluster
+> lock and another after the cluster lock.
+> The first one will save us a lot of cluster lock effort if the user
+> pass us the wrong arguments while the later
+> one will test again with the refreshed inode info.
 
-perf_events: Fix Intel Westmere event constraints
+If attributes cannot be stale, then do the checks before the cluster
+lock and not again. If they can be stale, then the check outside the
+cluster lock might give incorrect results so it is not harmless to do
+it twice.
 
-Based on Intel Vol3b (March 2010), the event
-SNOOPQ_REQUEST_OUTSTANDING is restricted to counters 0,1 so
-update the event table for Intel Westmere accordingly.
+If you have a mix of some attributes may be stale, then why not do the
+inode_change_ok check inside the lock, and then do some open code checks
+for optimization before taking the lock.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: peterz@infradead.org
-Cc: paulus@samba.org
-Cc: davem@davemloft.net
-Cc: fweisbec@gmail.com
-Cc: perfmon2-devel@lists.sf.net
-Cc: eranian@gmail.com
-Cc: <stable@kernel.org> # .34.x
-LKML-Reference: <4c10cb56.5120e30a.2eb4.ffffc3de@mx.google.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event_intel.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index fdbc652..214ac86 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -72,6 +72,7 @@ static struct event_constraint intel_westmere_event_constraints[] =
- 	INTEL_EVENT_CONSTRAINT(0x51, 0x3), /* L1D */
- 	INTEL_EVENT_CONSTRAINT(0x60, 0x1), /* OFFCORE_REQUESTS_OUTSTANDING */
- 	INTEL_EVENT_CONSTRAINT(0x63, 0x3), /* CACHE_LOCK_CYCLES */
-+	INTEL_EVENT_CONSTRAINT(0xb3, 0x1), /* SNOOPQ_REQUEST_OUTSTANDING */
- 	EVENT_CONSTRAINT_END
- };
- 
