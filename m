@@ -1,33 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759730Ab0FJT7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 15:59:40 -0400
-Received: from smtp-out115.alice.it ([85.37.17.115]:2275 "EHLO
-	smtp-out115.alice.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907Ab0FJT7j (ORCPT
+	id S1759745Ab0FJUBM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 16:01:12 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:37150 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759450Ab0FJUBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 15:59:39 -0400
-Message-ID: <4C114427.8090806@libero.it>
-Date: Thu, 10 Jun 2010 21:59:35 +0200
-From: Massimiliano Galanti <massiblue@libero.it>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
+	Thu, 10 Jun 2010 16:01:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=mGy2dqlXlfkWtSLu+gq5lFHrHUW4wBmKSgvsE2SAzFVEf21WAg3wyy96/Lf3j6WjCj
+         6fP44HCeflJsuvrM7qWlnEAnj3zikZxqdcnf/Y4nv3FNmtdjDu6EWMhx2lTYnHFNC9wt
+         fO5cptx94ClMpMyTTlYzU/DEEud80kVMLdLk4=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Sachin Sant <sachinp@in.ibm.com>
+Subject: Re: 2.6.35-rc2 : OOPS with LTP memcg regression test run.
+Date: Thu, 10 Jun 2010 22:00:57 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.35-rc2; KDE/4.3.4; i686; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+       "Linux/PPC Development" <linuxppc-dev@ozlabs.org>
+References: <4C0BB98E.9030101@in.ibm.com>
+In-Reply-To: <4C0BB98E.9030101@in.ibm.com>
 MIME-Version: 1.0
-To: Brian Gordon <legerde@gmail.com>, Chris Friesen <cfriesen@nortel.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Aerospace and linux
-References: <AANLkTimrZvKyh6zYnUg2xzDVBVr5NxqtJhxZ42AVhkVI@mail.gmail.com>	<4C112E7B.1040101@nortel.com> <AANLkTinIAKHVYKiILxQZXTr30K_Cr5EZQwRzNpYlLULw@mail.gmail.com> <4C113BC2.6070000@libero.it>
-In-Reply-To: <4C113BC2.6070000@libero.it>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Jun 2010 19:59:35.0356 (UTC) FILETIME=[732DBFC0:01CB08D7]
+Message-Id: <201006102200.57617.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> using XIP (where possible, e.g. on NORs)? That would not put .data
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=16178
+for your bug report, please add your address to the CC list in there, thanks!
 
-err... _.ro_data (and .text)
-
+On niedziela, 6 czerwca 2010 o 17:06:54 Sachin Sant wrote:
+> While executing LTP Controller tests(memcg regression) on
+> a POWER6 box came across this following OOPS.
+> 
+> Memory cgroup out of memory: kill process 9139 (memcg_test_1) score 3 or a
+>  child Killed process 9139 (memcg_test_1) vsz:3456kB, anon-rss:448kB,
+>  file-rss:1088kB Memory cgroup out of memory: kill process 9140
+>  (memcg_test_1) score 3 or a child Killed process 9140 (memcg_test_1)
+>  vsz:3456kB, anon-rss:448kB, file-rss:1088kB Unable to handle kernel paging
+>  request for data at address 0x720072007200720 Faulting instruction
+>  address: 0xc00000000015b778
+> Oops: Kernel access of bad area, sig: 11 [#2]
+> SMP NR_CPUS=1024 NUMA pSeries
+> last sysfs file: /sys/devices/system/cpu/cpu1/cache/index1/shared_cpu_map
+> Modules linked in: quota_v2 quota_tree ipv6 fuse loop dm_mod sr_mod cdrom
+>  sg sd_mod crc_t10dif ibmvscsic scsi_transport_srp scsi_tgt scsi_mod NIP:
+>  c00000000015b778 LR: c00000000015b740 CTR: 0000000000000000
+> REGS: c000000009812ff0 TRAP: 0300   Tainted: G      D     
+>  (2.6.35-rc2-autotest) MSR: 8000000000009032 <EE,ME,IR,DR>  CR: 44004424 
+>  XER: 00000001
+> DAR: 0720072007200720, DSISR: 0000000040000000
+> TASK = c000000005fb1100[9155] 'umount' THREAD: c000000009810000 CPU: 0
+> GPR00: 0000000000000000 c000000009813270 c000000000d3d7a0 0000000000000000
+> GPR04: 0000000000008050 0000000000160000 0000000000000027 c00000000f2c6870
+> GPR08: 00000000000006a5 c000000000b16870 c000000000cf0140 000000000e7b0000
+> GPR12: 0000000024004428 c000000007440000 0000000000008000 fffffffffffff000
+> GPR16: 0000000000000000 c0000000098138f0 000000000000002d 0000000000000027
+> GPR20: 0000000000000000 0000000000000027 0000000000000000 c000000007063138
+> GPR24: ffffffffffffffff 0000000000000000 c00000000019bafc c00000000e02e000
+> GPR28: 0000000000000001 0000000000008050 c000000000ca6b00 0720072007200720
+> NIP [c00000000015b778] .kmem_cache_alloc+0xb0/0x13c
+> LR [c00000000015b740] .kmem_cache_alloc+0x78/0x13c
+> Call Trace:
+> [c000000009813270] [c00000000015b740] .kmem_cache_alloc+0x78/0x13c
+>  (unreliable) [c000000009813310] [c00000000019bafc]
+>  .alloc_buffer_head+0x2c/0x78 [c000000009813390] [c00000000019c99c]
+>  .alloc_page_buffers+0x60/0x114 [c000000009813450] [c00000000019ca78]
+>  .create_empty_buffers+0x28/0x140 [c0000000098134e0] [c00000000019f2ec]
+>  .__block_prepare_write+0xe4/0x4f0 [c000000009813610] [c00000000019f94c]
+>  .block_write_begin_newtrunc+0xa8/0x120 [c0000000098136d0]
+>  [c00000000019fea0] .block_write_begin+0x34/0x8c [c000000009813770]
+>  [c00000000022b458] .ext3_write_begin+0x13c/0x298 [c000000009813880]
+>  [c000000000117500] .generic_file_buffered_write+0x13c/0x320
+>  [c0000000098139b0] [c000000000119c80]
+>  .__generic_file_aio_write+0x378/0x3dc [c000000009813ab0]
+>  [c000000000119d68] .generic_file_aio_write+0x84/0xfc [c000000009813b60]
+>  [c00000000016e460] .do_sync_write+0xac/0x10c
+> [c000000009813ce0] [c00000000016f204] .vfs_write+0xd0/0x1dc
+> [c000000009813d80] [c00000000016f418] .SyS_write+0x58/0xa0
+> [c000000009813e30] [c0000000000085b4] syscall_exit+0x0/0x40
+> Instruction dump:
+> 38600000 409e0090 38000000 8b8d0212 980d0212 e96d0040 e93b0000 7ce95a14
+> 7fe9582a 2fbf0000 419e0014 e81b001a <7c1f002a> 7c09592a 4800001c 7f46d378
+> ---[ end trace f24cb0cb5729d2bb ]---
+> 
+> And few more of these. Previous snapshot release
+>  2.6.35-rc1-git5(6c5de280b6...) was good.
+> 
+> Thanks
+> -Sachin
+> 
 
 -- 
-Massimiliano
+Maciej Rutecki
+http://www.maciek.unixy.pl
