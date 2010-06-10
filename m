@@ -1,52 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab0FJNJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 09:09:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48637 "EHLO mx2.suse.de"
+	id S1756931Ab0FJNOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 09:14:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53095 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753608Ab0FJNJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 09:09:20 -0400
-Date: Thu, 10 Jun 2010 15:09:17 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Ott <alan@signal11.us>
-Cc: Antonio Ospite <ospite@studenti.unina.it>,
-       Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
-       Marcel Holtmann <marcel@holtmann.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Stephane Chatty <chatty@enac.fr>,
-       Michael Poole <mdpoole@troilus.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2] HID: Add Support for Setting and Getting Feature
- Reports from hidraw
-In-Reply-To: <1276098868-3262-1-git-send-email-alan@signal11.us>
-Message-ID: <alpine.LNX.2.00.1006101508410.12271@pobox.suse.cz>
-References: <1275969108-14948-1-git-send-email-alan@signal11.us> <1276098868-3262-1-git-send-email-alan@signal11.us>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753608Ab0FJNOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 09:14:18 -0400
+X-User-Agent: K-9 Mail for Android
+In-Reply-To: <E1OMgIz-0005Wb-2a@pomaz-ex.szeredi.hu>
+References: =?US-ASCII?Q?=3C20100601092456=2EGA23572=40alia?= =?US-ASCII?Q?=2Enute=2Enet=3E_=3C4C066CF4=2E2050902=40gm?= =?US-ASCII?Q?ail=2Ecom=3E=09=3C20100605085045=2EGA56?= =?US-ASCII?Q?30=40alia=2Enute=2Enet=3E_=3C4C0A1369=2E9010?= =?US-ASCII?Q?601=40kernel=2Eorg=3E_=3CE1OMICc-0005?= =?US-ASCII?Q?f8-G5=40pomaz-ex=2Eszeredi=2Ehu=3E_=3C4C1?= =?US-ASCII?Q?0CB39=2E70002=40kernel=2Eorg=3E_=3CE1OMg?= =?US-ASCII?Q?Iz-0005Wb-2a=40pomaz-ex=2Eszeredi=2Ehu=3E?=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [fuse-devel] OSS Proxy Jack slave
+From: Tejun Heo <tj@kernel.org>
+Date: Thu, 10 Jun 2010 15:13:33 +0200
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: hmajxxlh@corbac.com, fuse-devel@lists.sourceforge.net, mszeredi@suse.cz,
+       linux-kernel@vger.kernel.org
+Message-ID: <869cdc8d-85cf-468e-8f94-ff50551684ba@email.android.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Jun 2010 13:13:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jun 2010, Alan Ott wrote:
+Hello,
 
-> Per the HID Specification, Feature reports must be sent and received on
-> the Configuration endpoint (EP 0) through the Set_Report/Get_Report
-> interfaces.  This patch adds two ioctls to hidraw to set and get feature
-> reports to and from the device.  Modifications were made to hidraw and
-> usbhid.
-> 
-> New hidraw ioctls:
->   HIDIOCSFEATURE - Perform a Set_Report transfer of a Feature report.
->   HIDIOCGFEATURE - Perform a Get_Report transfer of a Feature report.
+Nope, it's not required for osspd but it's a rather strong limitation on the interface which would be pretty difficult to work around later.  Page protection tricks would be very cumbersome and unscalable.  Hmmm, it does remove the necessity for allocating kernel pages, right?  Still, it seems like a big limitation.  Are you sure this is a good idea?
 
-Hi Alan,
-
-thanks for the patch. Could you please also update the Bluetooth 
-implementation (in net/bluetooth/hidp/).
-
-Thanks,
+Thanks.
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+tejun
