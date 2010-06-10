@@ -1,42 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759310Ab0FJOlK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 10:41:10 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:59981 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759276Ab0FJOlH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 10:41:07 -0400
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Samuel Ortiz <sameo@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 10 Jun 2010 16:40:53 +0200
-Subject: RE: [PATCH] mfd: Staticise ab3550 register access functions
-Thread-Topic: [PATCH] mfd: Staticise ab3550 register access functions
-Thread-Index: AcsH217zKxAuuw9BTk6h6NkWHkN9hAAz3oHQ
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A025A9F90C5@EXDCVYMBSTM006.EQ1STM.local>
-References: <1276091694-31331-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1276091694-31331-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1758807Ab0FJOlk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 10:41:40 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:41486 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751320Ab0FJOlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 10:41:39 -0400
+Date: Thu, 10 Jun 2010 16:41:18 +0200
+From: Florian Mickler <florian@mickler.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Jonathan Corbet <corbet@lwn.net>, Frederic Weisbecker <fweisbec@gmail.com>,
+       markgross@thegnar.org, linville@tuxdriver.com,
+       linux-kernel@vger.kernel.org,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [linux-pm] [PATCH v4] pm_qos: make update_request non blocking
+Message-ID: <20100610164118.15ec7a05@schatten.dmk.lab>
+In-Reply-To: <1276177144.27283.37.camel@mulgrave.site>
+References: <1276097381-3982-1-git-send-email-florian@mickler.org>
+	<1276097832.4343.223.camel@mulgrave.site>
+	<20100609180033.39d5b499@schatten.dmk.lab>
+	<1276099645.4343.257.camel@mulgrave.site>
+	<20100609183204.1eeca494@schatten.dmk.lab>
+	<1276103149.4343.350.camel@mulgrave.site>
+	<20100610094525.0449d797@schatten.dmk.lab>
+	<1276177144.27283.37.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Mark Brown]
-> These are now exported via an ops table rather than referenced
-> directly and so should be staticised.
+On Thu, 10 Jun 2010 08:39:04 -0500
+James Bottomley <James.Bottomley@suse.de> wrote:
+
+> On Thu, 2010-06-10 at 09:45 +0200, Florian Mickler wrote:
+> > On Wed, 09 Jun 2010 13:05:49 -0400
+> > James Bottomley <James.Bottomley@suse.de> wrote:
+> > > On Wed, 2010-06-09 at 18:32 +0200, Florian Mickler wrote:
+> > > > On Wed, 09 Jun 2010 12:07:25 -0400
+> > > > James Bottomley <James.Bottomley@suse.de> wrote:
+> > > > > OK, so the expression of the race is that the latest notification gets
+> > > > > lost.  If something is tracking values, you'd really like to lose the
+> > > > > previous one (which is now irrelevant) not the latest one.  The point is
+> > > > > there's still a race.
+> > > > > 
+> > > > > James
+> > > > > 
+> > > > 
+> > > > Yeah, but for blocking notification it is not that bad. 
+> > > 
+> > > The network latency notifier uses the value to recalculate something.
+> > > Losing the last value will mean it's using stale data.
+> > 
+> > Actually after pondering a bit, it is not stale data that gets
+> > delivered: (Correct me if I'm wrong)
+> > 
+> > The update_notify() function determines the extreme value and then
+> > calls the blocking_notifier_chain. 
+> > 
+> > But just before the update_notify() function get's called, the
+> > work-structure is reset and re-queue-able. So it is possible to queue it
+> > already even before the extreme_value in update_notify get's
+> > determined. 
+> > 
+> > So the notified value is always the latest or there is another
+> > notification underway.
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Well, no ... it's a race, and like all good races the winner is non
+> deterministic.
 
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Can you point out where I'm wrong?
 
-Yours,
-Linus Walleij
+U1. update_request gets called
+U2. 	new extreme value gets calculated under spinlock
+U3.	notify gets queued if its WORK_PENDING_BIT is not set.
+
+run_workqueue() does the following:
+R1. clears the WORK_PENDING_BIT
+R2. calls update_notify()
+R3. 	reads the current extreme value
+R4. 	notification gets called with that value		
+
+
+If another update_request comes to schedule_work before
+run_workqueue() has cleared the WORK_PENDING_BIT, the work will not be
+requeued, but R3 isn't yet executed. So the notifiers will get the last
+value.
+
+If another update_request comes to schedule_work() after
+run_workqueue() has cleared the WORK_PENDING_BIT, the work will be
+requeued and another update_notify will be executed later.
+
+> 
+> If the update comes in before the work queue is run, then everyone
+> eventually sees the new value.  If it comes in as the chain is running,
+> some notifiers see the old value and some the new.  If it comes in
+> during back end processing, no-one sees the new value.
+> 
+> James
+> 
+
+No, I think that is not correct. There will always be another
+update_notify()-call after the last update_request-recalculation due to
+the fact that run_workqueue() calls work_clear_pending() before calling
+the callback function of that work. 
+
+(We could even requeue the work from within that callback function if we
+wanted to keep the number of notifications the same. But then we would
+need to queue the extreme_values in the framework. I think this
+isn't needed.)
+
+Cheers,
+Flo
