@@ -1,103 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758981Ab0FJMa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 08:30:59 -0400
-Received: from faui03.informatik.uni-erlangen.de ([131.188.30.103]:42815 "EHLO
-	faui03.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754034Ab0FJMa6 (ORCPT
+	id S1759054Ab0FJMd2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 08:33:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46311 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab0FJMd1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 08:30:58 -0400
-X-Greylist: delayed 463 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jun 2010 08:30:57 EDT
-Date: Thu, 10 Jun 2010 14:23:11 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Josh Boyer <jwboyer@linux.vnet.ibm.com>, Paul Mackerras <paulus@samba.org>,
-       linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-       vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 3/5] Removing dead CONFIG_SMP_750
-Message-ID: <20100610122311.GA3885@stud.informatik.uni-erlangen.de>
-References: <cover.1275925219.git.siccegge@cs.fau.de> <8bf8cfaf47590e1a85f9510bb546ca35e3458bf8.1275925219.git.siccegge@cs.fau.de> <20100609123557.GJ7801@zod.rchland.ibm.com> <1276150461.1962.42.camel@pasglop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276150461.1962.42.camel@pasglop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 10 Jun 2010 08:33:27 -0400
+Subject: Re: [PATCH 03/13] jump label v9: x86 support
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+       davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org
+In-Reply-To: <c837d1a0a380030a4ea61acbcf0183518675a8ee.1276116186.git.jbaron@redhat.com>
+References: <cover.1276116186.git.jbaron@redhat.com>
+	 <c837d1a0a380030a4ea61acbcf0183518675a8ee.1276116186.git.jbaron@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 10 Jun 2010 14:33:04 +0200
+Message-ID: <1276173184.2077.232.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 04:14:21PM +1000, Benjamin Herrenschmidt wrote:
-> On Wed, 2010-06-09 at 08:35 -0400, Josh Boyer wrote:
-> > On Wed, Jun 09, 2010 at 12:00:21PM +0200, Christoph Egger wrote:
-> > >CONFIG_SMP_750 doesn't exist in Kconfig, therefore removing all
-> > >references for it from the source code.
-> > 
-> > Yeah, we don't support SMP on 750 at the moment.  This code was carried over
-> > from the arch/ppc days, and that code was present pre-git.  I think we can
-> > drop it, but I'll leave that up to Ben.  Maybe he has crazy plans for a 750 SMP
-> > board.
-> 
-> Nope :-) Though it would be nice to also remove the call sites too and
-> thus remove the macro entirely.
+On Wed, 2010-06-09 at 17:39 -0400, Jason Baron wrote:
+> add x86 support for jump label. I'm keeping this patch separate so its clear to
+> arch maintainers what was required for x86 support this new feature. hopefully,
+> it wouldn't be too painful for other arches.
 
-SOmething like below?
-
------
-From: Christoph Egger <siccegge@cs.fau.de>
-Subject: [PATCH 3/5] Removing dead CONFIG_SMP_750
-
-CONFIG_SMP_750 doesn't exist in Kconfig, therefore removing all
-references for it from the source code.
-
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-
-diff --git a/arch/powerpc/mm/tlb_hash32.c b/arch/powerpc/mm/tlb_hash32.c
-index 8aaa8b7..09c7820 100644
---- a/arch/powerpc/mm/tlb_hash32.c
-+++ b/arch/powerpc/mm/tlb_hash32.c
-@@ -94,11 +94,6 @@ void tlb_flush(struct mmu_gather *tlb)
-  * the cache operations on the bus.  Hence we need to use an IPI
-  * to get the other CPU(s) to invalidate their TLBs.
-  */
--#ifdef CONFIG_SMP_750
--#define FINISH_FLUSH   smp_send_tlb_invalidate(0)
--#else
--#define FINISH_FLUSH   do { } while (0)
--#endif
- 
- static void flush_range(struct mm_struct *mm, unsigned long start,
-                        unsigned long end)
-@@ -138,7 +133,6 @@ static void flush_range(struct mm_struct *mm, unsigned long start,
- void flush_tlb_kernel_range(unsigned long start, unsigned long end)
- {
-        flush_range(&init_mm, start, end);
--       FINISH_FLUSH;
- }
- EXPORT_SYMBOL(flush_tlb_kernel_range);
- 
-@@ -162,7 +156,6 @@ void flush_tlb_mm(struct mm_struct *mm)
-         */
-        for (mp = mm->mmap; mp != NULL; mp = mp->vm_next)
-                flush_range(mp->vm_mm, mp->vm_start, mp->vm_end);
--       FINISH_FLUSH;
- }
- EXPORT_SYMBOL(flush_tlb_mm);
- 
-@@ -179,7 +172,6 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long vmaddr)
-        pmd = pmd_offset(pud_offset(pgd_offset(mm, vmaddr), vmaddr), vmaddr);
-        if (!pmd_none(*pmd))
-                flush_hash_pages(mm->context.id, vmaddr, pmd_val(*pmd), 1);
--       FINISH_FLUSH;
- }
- EXPORT_SYMBOL(flush_tlb_page);
- 
-@@ -192,6 +184,5 @@ void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
-                     unsigned long end)
- {
-        flush_range(vma->vm_mm, start, end);
--       FINISH_FLUSH;
- }
- EXPORT_SYMBOL(flush_tlb_range);
--- 
-1.6.3.3
-
+Well patch 10 really rather spoils that, doesn't it?
