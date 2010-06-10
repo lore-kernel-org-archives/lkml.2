@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab0FJVEQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 17:04:16 -0400
-Received: from mail.tmr.com ([64.65.253.246]:44888 "EHLO partygirl.tmr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751492Ab0FJVEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 17:04:15 -0400
-Message-ID: <4C115345.1060805@tmr.com>
-Date: Thu, 10 Jun 2010 17:04:05 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 pango-text SeaMonkey/1.1.16
+	id S1759748Ab0FJVEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 17:04:31 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:60978 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759565Ab0FJVEa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 17:04:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	content-type:content-transfer-encoding;
+	b=DBABP/DGicUrwVmHn4wfzfRJ13yU42jSU6nFVitvRs+kmp5wKUjERqKEhV8ntPsK5
+	dVThJFuhcD/zs94Yc59NA==
 MIME-Version: 1.0
-To: Jeffrey Merkey <jeffmerkey@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Fwd: EXT3 File System Corruption 2.6.34
-References: <AANLkTinQatQEYahpkN3bT-S5C41HqRoH--gTrvIbGs_c@mail.gmail.com>	<4C0D5DCD.5010201@sandeen.net>	<AANLkTik1T2nJxsoK9UGIVy6q6pfSxniFfJXJY0InmuUh@mail.gmail.com>	<AANLkTil4FMnGl7llR4N0PkXuNyEClQmTspNK6PT62PAi@mail.gmail.com>	<889B6B31-A1F0-438D-B782-DBB855912854@sandeen.net>	<AANLkTilrmEnLrxRSYNnwr8vFaZi7R9U5vY39NmBWUEMy@mail.gmail.com> <AANLkTil7toVuTbCExPtGMOqzqBVG3hG5JeEqzS6ZZ8T6@mail.gmail.com>
-In-Reply-To: <AANLkTil7toVuTbCExPtGMOqzqBVG3hG5JeEqzS6ZZ8T6@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100610203815.GA15868@thunk.org>
+References: <20100610200911.18287.29658.stgit@bumblebee1.mtv.corp.google.com>
+	<20100610203815.GA15868@thunk.org>
+Date: Thu, 10 Jun 2010 14:04:25 -0700
+Message-ID: <AANLkTimCWkl2cxt2Yz0IB6ou_lSfWPssvvTjGplKTaIT@mail.gmail.com>
+Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be 
+	reused immediately.
+From: Salman Qazi <sqazi@google.com>
+To: tytso@mit.edu, Salman <sqazi@google.com>, peterz@infradead.org,
+       linux-kernel@vger.kernel.org, tytso@google.com,
+       akpm@linux-foundation.org, walken@google.com,
+       torvalds@linux-foundation.org, mingo@elte.hu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeffrey Merkey wrote:
-> ---------- Forwarded message ----------
-> From: Jeffrey Merkey <jeffmerkey@gmail.com>
-> Date: Mon, Jun 7, 2010 at 7:55 PM
-> Subject: Re: EXT3 File System Corruption 2.6.34
-> To: Eric Sandeen <sandeen@sandeen.net>
-> 
-> 
->> On Jun 7, 2010, at 6:55 PM, Jeffrey Merkey <jeffmerkey@gmail.com> wrote:
->>
->>> ---------- Forwarded message ----------
->>> From: Jeffrey Merkey <jeffmerkey@gmail.com>
->>> Date: Mon, Jun 7, 2010 at 5:54 PM
->>> Subject: Re: EXT3 File System Corruption 2.6.34
->>> To: Eric Sandeen <sandeen@sandeen.net>
->>>
->>>
->>> REPLY TO ALL
->>>
->>> CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
->>>
->>> Whether set this way or not, should not see corruption.
->> Here you are mistaken.  Mount with data=ordered and see.  Writeback can
->> expose stale data.
->>
->> -Eric
->>
-> 
-> OK.  I will set this up.  You may want to make this option the default
-> in the build scripts.  here is a corrupted file.  This was a .gif
-> image file I saved THEN AFTER SAVING THE FILE I pulled the power to
-> the machine and during recovery the file was FUCKED.  At any rate,
-> this does not happen with 2.6.28.
-> 
-Having bad things happen when power is removed is not much of a surprise, and 
-various options can fix that at the cost of speed. The fact that this didn't 
-happen with 2.6.28 is bothersome.
+On Thu, Jun 10, 2010 at 1:38 PM,  <tytso@mit.edu> wrote:
+> On Thu, Jun 10, 2010 at 01:09:11PM -0700, Salman wrote:
+>> A program that repeatedly forks and waits is susceptible to having the
+>> same pid repeated, especially when it competes with another instance of the
+>> same program.  This is really bad for bash implementation.  Furthermore, many shell
+>> scripts assume that pid numbers will not be used for some length of time.
+>
+> This should probably get wrapped at column 74 or so....
+>
+>> +static int pid_before(int base, int a, int b)
+>> +{
+>> +     /*
+>> +      * This is the same as saying
+>> +      *
+>> +      * (a - base + MAXUINT) % MAXUINT < (b - base + MAXUINT) % MAXUINT
+>> +      * and that mapping orders 'a' and 'b' with respect to 'base'.
+>> +      *
+>> +      */
+>> +     return (unsigned)(a - base) < (unsigned)(b - base);
+>> +}
+>
+> Does this work though if /proc/sys/kernel/pid_max is not set to
+> MAXUINT?
 
-I actually take some care to avoid testing behavior in this area, not my normal 
-intended mode of operation.
+Yes it does.  It should work for all values of pid_max.
+>
+> I like the optimization, but it looks like pid_max defaults to 4096 if
+> CONFIG_BASE_SMALL is set, and 32768 otherwise.
+>
+> Am I missing something?
 
--- 
-Bill Davidsen <davidsen@tmr.com>
-   "We have more to fear from the bungling of the incompetent than from
-the machinations of the wicked."  - from Slashdot
+Yes.
+
+(a - base + pid_max) % pid_max < (b - base + max_pid) % pid_max iff
+(a - base + MAXUINT) % MAXUINT < (b - base + MAXUINT) % MAXUINT
+for all pid_max <= MAXUINT.
+
+The values of 'a' (or 'b')  in the range [base, pid_max) gets mapped
+to [0, pid_max - base) and the range [0, base) gets mapped to
+[MAXUINT, MAXUINT - base).  So, the order is essentially maintained by
+this mapping.
+
+>
+>                                        - Ted
+>
