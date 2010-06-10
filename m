@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758671Ab0FJXIY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 19:08:24 -0400
-Received: from khc.piap.pl ([195.187.100.11]:56123 "EHLO khc.piap.pl"
+	id S1759906Ab0FJXLb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 19:11:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10585 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753351Ab0FJXIX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 19:08:23 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Alan <alan@clueserver.org>
-Cc: Michal Marek <mmarek@suse.cz>,
-       =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: Additional info on modpost segfault
-References: <Pine.LNX.4.64.1006032008220.30918@blackbox.fnordora.org>
-	<20100604045118.GC5167@cr0.nay.redhat.com> <4C08A9D0.8000505@suse.cz>
-	<1275929979.2923.0.camel@zowie.clueserver.org>
-Date: Fri, 11 Jun 2010 01:08:20 +0200
-In-Reply-To: <1275929979.2923.0.camel@zowie.clueserver.org>
-	(alan@clueserver.org's message of "Mon, 07 Jun 2010 09:59:39 -0700")
-Message-ID: <m37hm6zdsr.fsf@intrepid.localdomain>
+	id S1753684Ab0FJXL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 19:11:28 -0400
+Date: Fri, 11 Jun 2010 01:09:48 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Stanislaw Gruszka <sgruszka@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] sched: task_tick_rt: remove the obsolete ->signal !=
+	NULL check
+Message-ID: <20100610230948.GA25911@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan <alan@clueserver.org> writes:
+Remove the obsolete ->signal != NULL check in watchdog().
+Since ea6d290c ->signal can't be NULL.
 
-> program: /home/alan/GitTrees/linux-2.6-mid-ref/scripts/mod/modpost -o
-> Module.symvers -S vmlinux.o
->
-> Program received signal SIGSEGV, Segmentation fault.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
 
-It just hit me.
-It's the offset calculation in reloc_location() which overflows:
-        return (void *)elf->hdr + sechdrs[section].sh_offset +
-               (r->r_offset - sechdrs[section].sh_addr);
+ kernel/sched_rt.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-E.g. for the first rodata r entry:
-r->r_offset < sechdrs[section].sh_addr
-and the expression in the parenthesis produces 0xFFFFFFE0 or something
-equally wise.
-
-Does the attached patch fix it?
-
-Signed-off-by: Krzysztof Hałasa <khc@pm.waw.pl>
-
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -1317,8 +1317,8 @@ static unsigned int *reloc_location(struct elf_info *elf,
- 	Elf_Shdr *sechdrs = elf->sechdrs;
- 	int section = sechdr->sh_info;
+--- 35-rc2/kernel/sched_rt.c~2_WD_DONT_CK_SIGNAL	2010-06-11 00:47:34.000000000 +0200
++++ 35-rc2/kernel/sched_rt.c	2010-06-11 01:07:25.000000000 +0200
+@@ -1663,9 +1663,6 @@ static void watchdog(struct rq *rq, stru
+ {
+ 	unsigned long soft, hard;
  
- 	return (void *)elf->hdr + sechdrs[section].sh_offset +
--		(r->r_offset - sechdrs[section].sh_addr);
-+		r->r_offset - sechdrs[section].sh_addr;
- }
- 
- static int addend_386_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
+-	if (!p->signal)
+-		return;
+-
+ 	/* max may change after cur was read, this will be fixed next tick */
+ 	soft = task_rlimit(p, RLIMIT_RTTIME);
+ 	hard = task_rlimit_max(p, RLIMIT_RTTIME);
+
