@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327Ab0FJAVg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 20:21:36 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:34478 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757857Ab0FJAVe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 20:21:34 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Nb/kO+41VpF6fC3WX5i3U1a4ryUvcEIpUreMSXC1aEM/6X6xwNnkC2RgMulE0eYxM0p2Jekclh0M5gO4qKQnEMmipu9mV/Rfn19BsvbtCJ+4MRQ1/t7z3ecUCFquJZAN;
-Date: Wed, 9 Jun 2010 17:20:26 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [git pull] PCI fixes
-Message-ID: <20100609172026.088878ee@virtuousgeek.org>
-In-Reply-To: <alpine.LFD.2.00.1006091611040.4506@i5.linux-foundation.org>
-References: <20100609155321.299cadd9@virtuousgeek.org>
-	<alpine.LFD.2.00.1006091611040.4506@i5.linux-foundation.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1758300Ab0FJA3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 20:29:16 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57104
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753718Ab0FJA3P convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 20:29:15 -0400
+Date: Wed, 09 Jun 2010 17:29:25 -0700 (PDT)
+Message-Id: <20100609.172925.183044544.davem@davemloft.net>
+To: grant.likely@secretlab.ca
+Cc: randy.dunlap@oracle.com, sfr@canb.auug.org.au, netdev@vger.kernel.org,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2 -next] niu: always include of_device.h
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTikuIgeSMC5_IzAQGEQRso4udBvBGPcioAiArWb5@mail.gmail.com>
+References: <20100609.110638.112605100.davem@davemloft.net>
+	<20100609154409.bf024c0c.randy.dunlap@oracle.com>
+	<AANLkTikuIgeSMC5_IzAQGEQRso4udBvBGPcioAiArWb5@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jun 2010 16:14:10 -0700 (PDT)
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 9 Jun 2010 17:45:54 -0600
 
+> On Wed, Jun 9, 2010 at 4:44 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> The niu driver uses struct of_device when built on any arch, not
+>> only SPARC64, so always #include <linux/of_device.h>.
+>>
+>> drivers/net/niu.c:9700: warning: 'struct of_device' declared inside parameter list
+>> drivers/net/niu.c:9700: warning: its scope is only this definition or declaration, which is probably not what you want
+>> drivers/net/niu.c:9716: warning: assignment from incompatible pointer type
+>>
+>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+>> Cc:     Grant Likely <grant.likely@secretlab.ca>
+>> Cc:     Dave Miller <davem@davemloft.net>
+>> ---
+>>  drivers/net/niu.c |    3 ---
 > 
+> Looks okay to me (but I haven't build tested it yet).  The bulk of
+> of_device.h is compiled out when CONFIG_OF_DEVICE is not selected.
 > 
-> On Wed, 9 Jun 2010, Jesse Barnes wrote:
-> > 
-> > Nothing too big here; I do have a couple of fixes in the queue that
-> > aren't included here though.  I'll be pulling them together over the
-> > next couple of days.
-> 
-> Hmm. None of these seem to really be relevant. The fact that one is from 
-> me doesn't make me any more eager to pull. Are any of these real 
-> regressions (the missing parenthesis one seems to be the only one that 
-> could be serious, but I didn't grep for actual use).
+> David, are you okay with me taking this via my tree as it depends on
+> Randy's other patch?
 
-I wanted Bjorn's fix to avoid false regression and bug reports, but
-yes, the others are just trivial patches.  I can drop them out and send
-you a new tree once I pull in the other fixes if you'd prefer that.
+Yep, that's totally fine with me:
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Acked-by: David S. Miller <davem@davemloft.net>
