@@ -1,296 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab0FJGAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 02:00:24 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48046 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753469Ab0FJGAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 02:00:21 -0400
-Date: Thu, 10 Jun 2010 16:00:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for June 10
-Message-Id: <20100610160012.30ea7606.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__10_Jun_2010_16_00_12_+1000_+svrna9F3pMTdz3Y"
+	id S1754864Ab0FJGAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 02:00:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55904 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab0FJGAc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 02:00:32 -0400
+Date: Wed, 9 Jun 2010 22:58:57 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Tao Ma <tao.ma@oracle.com>, Al Viro <viro@ftp.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Christoph Hellwig <hch@lst.de>, Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH v3] ocfs2: Let ocfs2_setattr use new truncate sequence.
+Message-ID: <20100610055857.GB30672@mail.oracle.com>
+Mail-Followup-To: Tao Ma <tao.ma@oracle.com>,
+	Al Viro <viro@ftp.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+	linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+	Nick Piggin <npiggin@suse.de>
+References: <20100610044234.GD26335@laptop>
+ <1276146485-9346-1-git-send-email-tao.ma@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276146485-9346-1-git-send-email-tao.ma@oracle.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4C107F73.01C9:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__10_Jun_2010_16_00_12_+1000_+svrna9F3pMTdz3Y
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Joel Becker <joel.becker@oracle.com>
 
-Hi all,
+Al, can you carry this atop the truncate sequence code?
 
-Changes since 20100609:
+Joel
 
-My fixes tree contains:
-      v4l-dvb: update gfp/slab.h includes
-      arm: update gfp/slab.h includes
-      davinci: update gfp/slab.h includes
-      ocfs2: update gfp/slab.h includes
-      acpi: update gfp/slab.h includes
+On Thu, Jun 10, 2010 at 01:08:05PM +0800, Tao Ma wrote:
+> Let ocfs2 use the new truncate sequence. The changes include:
+> 1. Use truncate_setsize directly since we don't implement our
+>    own ->truncate and what we need is "update i_size and
+>    truncate_pagecache" which truncate_setsize now does.
+> 2. For direct write, ocfs2 actually don't allow write to pass
+>    i_size(see ocfs2_prepare_inode_for_write), so we don't have
+>    a chance to increase i_size. So remove the bogus check.
+> 
+> Cc: Joel Becker <joel.becker@oracle.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Nick Piggin <npiggin@suse.de>
+> Signed-off-by: Tao Ma <tao.ma@oracle.com>
+> ---
+>  fs/ocfs2/file.c |   32 ++++++--------------------------
+>  1 files changed, 6 insertions(+), 26 deletions(-)
+> 
+> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+> index 1fb0985..8b5447e 100644
+> --- a/fs/ocfs2/file.c
+> +++ b/fs/ocfs2/file.c
+> @@ -987,7 +987,7 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
+>  		if (status)
+>  			goto bail_unlock;
+>  
+> -		if (i_size_read(inode) > attr->ia_size) {
+> +		if (inode->i_size > attr->ia_size) {
+>  			if (ocfs2_should_order_data(inode)) {
+>  				status = ocfs2_begin_ordered_truncate(inode,
+>  								      attr->ia_size);
+> @@ -1052,22 +1052,13 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
+>  	}
+>  
+>  	/*
+> -	 * This will intentionally not wind up calling truncate_setsize(),
+> -	 * since all the work for a size change has been done above.
+> -	 * Otherwise, we could get into problems with truncate as
+> -	 * ip_alloc_sem is used there to protect against i_size
+> -	 * changes.
+> -	 *
+> -	 * XXX: this means the conditional below can probably be removed.
+> +	 * Since all the work for a size change has been done above.
+> +	 * Call truncate_setsize directly to change size and truncate
+> +	 * pagecache.
+>  	 */
+>  	if ((attr->ia_valid & ATTR_SIZE) &&
+> -	    attr->ia_size != i_size_read(inode)) {
+> -		status = vmtruncate(inode, attr->ia_size);
+> -		if (status) {
+> -			mlog_errno(status);
+> -			goto bail_commit;
+> -		}
+> -	}
+> +	    attr->ia_size != inode->i_size)
+> +		truncate_setsize(inode, attr->ia_size);
+>  
+>  	setattr_copy(inode, attr);
+>  	mark_inode_dirty(inode);
+> @@ -2122,17 +2113,6 @@ relock:
+>  		written = generic_file_direct_write(iocb, iov, &nr_segs, *ppos,
+>  						    ppos, count, ocount);
+>  		if (written < 0) {
+> -			/*
+> -			 * direct write may have instantiated a few
+> -			 * blocks outside i_size. Trim these off again.
+> -			 * Don't need i_size_read because we hold i_mutex.
+> -			 *
+> -			 * XXX(truncate): this looks buggy because ocfs2 did not
+> -			 * actually implement ->truncate.  Take a look at
+> -			 * the new truncate sequence and update this accordingly
+> -			 */
+> -			if (*ppos + count > inode->i_size)
+> -				truncate_setsize(inode, inode->i_size);
+>  			ret = written;
+>  			goto out_dio;
+>  		}
+> -- 
+> 1.5.5
+> 
 
-The kbuild-current tree gained a build failure so I used the version from
-next-20100609.
+-- 
 
-The drbd tree gained a conflict against the block tree.
+"If you took all of the grains of sand in the world, and lined
+ them up end to end in a row, you'd be working for the government!"
+	- Mr. Interesting
 
-The hwpoison tree gained a conflict against the kvm tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 164 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/for-linus
-$ git reset --hard HEAD^
-Merging refs/next/20100609/kbuild-current
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
-Merging galak/next
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-CONFLICT (content): Merge conflict in include/linux/serial_sci.h
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-CONFLICT (content): Merge conflict in fs/ecryptfs/main.c
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
-Merging quilt/jdelvare-hwmon
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging ibft/master
-Merging swiotlb/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/wl12xx/wl1271.h
-CONFLICT (content): Merge conflict in drivers/net/wireless/wl12xx/wl1271_cm=
-d.h
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-CONFLICT (content): Merge conflict in kernel/module.c
-Merging mmc/next
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/evergreen.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/r600.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_combios=
-.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_pm.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/rv770.c
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
-or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
-eft in tree.
-$ git rm -f fs/notify/inotify/inotify.c
-Applying: fsnotify: update gfp/slab.h includes
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging drbd/for-jens
-CONFLICT (content): Merge conflict in fs/fs-writeback.c
-CONFLICT (content): Merge conflict in include/linux/drbd.h
-Merging catalin/for-next
-Merging alacrity/linux-next
-Merging i7core_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging omap_dss2/for-next
-Merging tip/auto-latest
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-CONFLICT (content): Merge conflict in mm/memory-failure.c
-Merging sysctl/master
-Merging bkl-core/bkl/core
-Merging bkl-procfs/bkl/procfs
-Merging bkl-ioctl/bkl/ioctl
-Merging quilt/driver-core
-Merging quilt/tty
-Merging quilt/usb
-Merging staging-next/staging-next
-Merging slabh/slabh
-Merging scsi-post-merge/master
-
---Signature=_Thu__10_Jun_2010_16_00_12_+1000_+svrna9F3pMTdz3Y
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwQf2wACgkQjjKRsyhoI8xLmQCfUmQAOv+wWNTAr4meu+qxSkCz
-RYsAoIfm2vnQo7eI6YVuZ45U9qeP65u9
-=OkEF
------END PGP SIGNATURE-----
-
---Signature=_Thu__10_Jun_2010_16_00_12_+1000_+svrna9F3pMTdz3Y--
+Joel Becker
+Principal Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
