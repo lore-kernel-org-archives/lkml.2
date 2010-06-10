@@ -1,212 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab0FJLL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 07:11:59 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39178 "EHLO
+	id S1758944Ab0FJLMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 07:12:05 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39187 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758877Ab0FJLKz (ORCPT
+	with ESMTP id S1758874Ab0FJLKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Jun 2010 07:10:55 -0400
 From: Andi Kleen <andi@firstfloor.org>
 References: <20100610110.764742110@firstfloor.org>
 In-Reply-To: <20100610110.764742110@firstfloor.org>
-To: lenb@kernel.org, linux-acpi@vger.kernel.org, akpm@linux-foundation.org,
+To: tytso@mit.edu, linux-ext4@vger.kernel.org, akpm@linux-foundation.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH] [18/23] ACPI: Fix unused but set variables in ACPI
-Message-Id: <20100610111054.49C89B1A2B@basil.firstfloor.org>
-Date: Thu, 10 Jun 2010 13:10:54 +0200 (CEST)
+Subject: [PATCH] [17/23] EXT3: Fix set but unused variables
+Message-Id: <20100610111053.43E78B1A2B@basil.firstfloor.org>
+Date: Thu, 10 Jun 2010 13:10:53 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Some minor improvements in error handling, but overall
-it was mostly dead code.
+I think it's mostly dead code, but needs more review. I was not fully sure
+about the jbd case.
 
-cc: lenb@kernel.org
-cc: linux-acpi@vger.kernel.org
-
+cc: tytso@mit.edu
+cc: linux-ext4@vger.kernel.org
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/acpi/acpica/utmutex.c    |    5 +----
- drivers/acpi/numa.c              |    4 +---
- drivers/acpi/osl.c               |    7 +++----
- drivers/acpi/power.c             |    6 +-----
- drivers/acpi/processor_idle.c    |    3 +--
- drivers/acpi/processor_thermal.c |    2 ++
- drivers/acpi/video.c             |   10 +++++-----
- drivers/ata/libata-acpi.c        |    6 ------
- 8 files changed, 14 insertions(+), 29 deletions(-)
+ fs/ext3/namei.c   |    3 +--
+ fs/ext3/resize.c  |    2 --
+ fs/jbd/journal.c  |    7 -------
+ fs/jbd/recovery.c |    7 -------
+ 4 files changed, 1 insertion(+), 18 deletions(-)
 
-Index: linux-2.6.35-rc2-gcc/drivers/acpi/processor_thermal.c
+Index: linux-2.6.35-rc2-gcc/fs/ext3/namei.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/drivers/acpi/processor_thermal.c
-+++ linux-2.6.35-rc2-gcc/drivers/acpi/processor_thermal.c
-@@ -506,6 +506,8 @@ static ssize_t acpi_processor_write_limi
+--- linux-2.6.35-rc2-gcc.orig/fs/ext3/namei.c
++++ linux-2.6.35-rc2-gcc/fs/ext3/namei.c
+@@ -1447,7 +1447,6 @@ static int ext3_add_entry (handle_t *han
+ 	struct inode *inode)
+ {
+ 	struct inode *dir = dentry->d_parent->d_inode;
+-	unsigned long offset;
+ 	struct buffer_head * bh;
+ 	struct ext3_dir_entry_2 *de;
+ 	struct super_block * sb;
+@@ -1469,7 +1468,7 @@ static int ext3_add_entry (handle_t *han
+ 		ext3_mark_inode_dirty(handle, dir);
  	}
- 
- 	result = acpi_processor_apply_limit(pr);
-+	if (result < 0)
-+		return result;
- 
- 	return count;
- }
-Index: linux-2.6.35-rc2-gcc/drivers/acpi/acpica/utmutex.c
+ 	blocks = dir->i_size >> sb->s_blocksize_bits;
+-	for (block = 0, offset = 0; block < blocks; block++) {
++	for (block = 0; block < blocks; block++) {
+ 		bh = ext3_bread(handle, dir, block, 0, &retval);
+ 		if(!bh)
+ 			return retval;
+Index: linux-2.6.35-rc2-gcc/fs/ext3/resize.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/drivers/acpi/acpica/utmutex.c
-+++ linux-2.6.35-rc2-gcc/drivers/acpi/acpica/utmutex.c
-@@ -279,13 +279,10 @@ acpi_status acpi_ut_acquire_mutex(acpi_m
- 
- acpi_status acpi_ut_release_mutex(acpi_mutex_handle mutex_id)
+--- linux-2.6.35-rc2-gcc.orig/fs/ext3/resize.c
++++ linux-2.6.35-rc2-gcc/fs/ext3/resize.c
+@@ -964,7 +964,6 @@ int ext3_group_extend(struct super_block
+ 		      ext3_fsblk_t n_blocks_count)
  {
--	acpi_thread_id this_thread_id;
--
- 	ACPI_FUNCTION_NAME(ut_release_mutex);
+ 	ext3_fsblk_t o_blocks_count;
+-	unsigned long o_groups_count;
+ 	ext3_grpblk_t last;
+ 	ext3_grpblk_t add;
+ 	struct buffer_head * bh;
+@@ -976,7 +975,6 @@ int ext3_group_extend(struct super_block
+ 	 * yet: we're going to revalidate es->s_blocks_count after
+ 	 * taking the s_resize_lock below. */
+ 	o_blocks_count = le32_to_cpu(es->s_blocks_count);
+-	o_groups_count = EXT3_SB(sb)->s_groups_count;
  
--	this_thread_id = acpi_os_get_thread_id();
- 	ACPI_DEBUG_PRINT((ACPI_DB_MUTEX, "Thread %p releasing Mutex [%s]\n",
--			  ACPI_CAST_PTR(void, this_thread_id),
-+			  ACPI_CAST_PTR(void, acpi_os_get_thread_id()),
- 			  acpi_ut_get_mutex_name(mutex_id)));
- 
- 	if (mutex_id > ACPI_MAX_MUTEX) {
-Index: linux-2.6.35-rc2-gcc/drivers/acpi/numa.c
+ 	if (test_opt(sb, DEBUG))
+ 		printk(KERN_DEBUG "EXT3-fs: extending last group from "E3FSBLK" uto "E3FSBLK" blocks\n",
+Index: linux-2.6.35-rc2-gcc/fs/jbd/journal.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/drivers/acpi/numa.c
-+++ linux-2.6.35-rc2-gcc/drivers/acpi/numa.c
-@@ -255,12 +255,10 @@ acpi_parse_memory_affinity(struct acpi_s
- 
- static int __init acpi_parse_srat(struct acpi_table_header *table)
+--- linux-2.6.35-rc2-gcc.orig/fs/jbd/journal.c
++++ linux-2.6.35-rc2-gcc/fs/jbd/journal.c
+@@ -1281,13 +1281,9 @@ int journal_check_used_features (journal
+ int journal_check_available_features (journal_t *journal, unsigned long compat,
+ 				      unsigned long ro, unsigned long incompat)
  {
--	struct acpi_table_srat *srat;
+-	journal_superblock_t *sb;
 -
- 	if (!table)
- 		return -EINVAL;
+ 	if (!compat && !ro && !incompat)
+ 		return 1;
  
--	srat = (struct acpi_table_srat *)table;
-+	/* Real work done in acpi_table_parse_srat below. */
+-	sb = journal->j_superblock;
+-
+ 	/* We can support any known requested features iff the
+ 	 * superblock is in version 2.  Otherwise we fail to support any
+ 	 * extended sb features. */
+@@ -1481,7 +1477,6 @@ int journal_flush(journal_t *journal)
  
- 	return 0;
- }
-Index: linux-2.6.35-rc2-gcc/drivers/acpi/osl.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/drivers/acpi/osl.c
-+++ linux-2.6.35-rc2-gcc/drivers/acpi/osl.c
-@@ -141,15 +141,14 @@ static struct osi_linux {
- static void __init acpi_request_region (struct acpi_generic_address *addr,
- 	unsigned int length, char *desc)
+ int journal_wipe(journal_t *journal, int write)
  {
--	struct resource *res;
+-	journal_superblock_t *sb;
+ 	int err = 0;
+ 
+ 	J_ASSERT (!(journal->j_flags & JFS_LOADED));
+@@ -1490,8 +1485,6 @@ int journal_wipe(journal_t *journal, int
+ 	if (err)
+ 		return err;
+ 
+-	sb = journal->j_superblock;
 -
- 	if (!addr->address || !length)
- 		return;
+ 	if (!journal->j_tail)
+ 		goto no_recovery;
  
-+	/* Resources are never freed */
- 	if (addr->space_id == ACPI_ADR_SPACE_SYSTEM_IO)
--		res = request_region(addr->address, length, desc);
-+		request_region(addr->address, length, desc);
- 	else if (addr->space_id == ACPI_ADR_SPACE_SYSTEM_MEMORY)
--		res = request_mem_region(addr->address, length, desc);
-+		request_mem_region(addr->address, length, desc);
- }
- 
- static int __init acpi_reserve_resources(void)
-Index: linux-2.6.35-rc2-gcc/drivers/acpi/processor_idle.c
+Index: linux-2.6.35-rc2-gcc/fs/jbd/recovery.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/drivers/acpi/processor_idle.c
-+++ linux-2.6.35-rc2-gcc/drivers/acpi/processor_idle.c
-@@ -795,13 +795,12 @@ static inline void acpi_idle_do_entry(st
- 	} else if (cx->entry_method == ACPI_CSTATE_HALT) {
- 		acpi_safe_halt();
- 	} else {
--		int unused;
- 		/* IO port based C-state */
- 		inb(cx->address);
- 		/* Dummy wait op - must do something useless after P_LVL2 read
- 		   because chipsets cannot guarantee that STPCLK# signal
- 		   gets asserted in time to freeze execution properly. */
--		unused = inl(acpi_gbl_FADT.xpm_timer_block.address);
-+		inl(acpi_gbl_FADT.xpm_timer_block.address);
- 	}
- 	start_critical_timings();
- }
-Index: linux-2.6.35-rc2-gcc/drivers/acpi/video.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/drivers/acpi/video.c
-+++ linux-2.6.35-rc2-gcc/drivers/acpi/video.c
-@@ -2140,7 +2140,7 @@ acpi_video_bus_get_devices(struct acpi_v
- 		status = acpi_video_bus_get_one_device(dev, video);
- 		if (ACPI_FAILURE(status)) {
- 			printk(KERN_WARNING PREFIX
--					"Cant attach device");
-+					"Cant attach device\n");
- 			continue;
- 		}
- 	}
-@@ -2150,19 +2150,19 @@ acpi_video_bus_get_devices(struct acpi_v
- static int acpi_video_bus_put_one_device(struct acpi_video_device *device)
+--- linux-2.6.35-rc2-gcc.orig/fs/jbd/recovery.c
++++ linux-2.6.35-rc2-gcc/fs/jbd/recovery.c
+@@ -283,12 +283,10 @@ int journal_recover(journal_t *journal)
+ int journal_skip_recovery(journal_t *journal)
  {
- 	acpi_status status;
--	struct acpi_video_bus *video;
+ 	int			err;
+-	journal_superblock_t *	sb;
+ 
+ 	struct recovery_info	info;
+ 
+ 	memset (&info, 0, sizeof(info));
+-	sb = journal->j_superblock;
+ 
+ 	err = do_one_pass(journal, &info, PASS_SCAN);
+ 
+@@ -321,11 +319,6 @@ static int do_one_pass(journal_t *journa
+ 	unsigned int		sequence;
+ 	int			blocktype;
+ 
+-	/* Precompute the maximum metadata descriptors in a descriptor block */
+-	int			MAX_BLOCKS_PER_DESC;
+-	MAX_BLOCKS_PER_DESC = ((journal->j_blocksize-sizeof(journal_header_t))
+-			       / sizeof(journal_block_tag_t));
 -
- 
- 	if (!device || !device->video)
- 		return -ENOENT;
- 
--	video = device->video;
--
- 	acpi_video_device_remove_fs(device->dev);
- 
- 	status = acpi_remove_notify_handler(device->dev->handle,
- 					    ACPI_DEVICE_NOTIFY,
- 					    acpi_video_device_notify);
-+	if (ACPI_FAILURE(status)) {
-+		printk(KERN_WARNING PREFIX
-+		       "Cant remove video notify handler\n");
-+	}
- 	if (device->backlight) {
- 		sysfs_remove_link(&device->backlight->dev.kobj, "device");
- 		backlight_device_unregister(device->backlight);
-Index: linux-2.6.35-rc2-gcc/drivers/ata/libata-acpi.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/drivers/ata/libata-acpi.c
-+++ linux-2.6.35-rc2-gcc/drivers/ata/libata-acpi.c
-@@ -145,12 +145,6 @@ static void ata_acpi_handle_hotplug(stru
- 	struct ata_eh_info *ehi = &ap->link.eh_info;
- 	int wait = 0;
- 	unsigned long flags;
--	acpi_handle handle;
--
--	if (dev)
--		handle = dev->acpi_handle;
--	else
--		handle = ap->acpi_handle;
- 
- 	spin_lock_irqsave(ap->lock, flags);
  	/*
-Index: linux-2.6.35-rc2-gcc/drivers/acpi/power.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/drivers/acpi/power.c
-+++ linux-2.6.35-rc2-gcc/drivers/acpi/power.c
-@@ -553,8 +553,6 @@ static int acpi_power_seq_show(struct se
- 	int result = 0, state;
- 	struct acpi_power_resource *resource = NULL;
- 	struct list_head *node, *next;
--	struct acpi_power_reference *ref;
--
- 
- 	resource = seq->private;
- 
-@@ -579,10 +577,8 @@ static int acpi_power_seq_show(struct se
- 	}
- 
- 	mutex_lock(&resource->resource_lock);
--	list_for_each_safe(node, next, &resource->reference) {
--		ref = container_of(node, struct acpi_power_reference, node);
-+	list_for_each_safe(node, next, &resource->reference)
- 		count++;
--	}
- 	mutex_unlock(&resource->resource_lock);
- 
- 	seq_printf(seq, "system level:            S%d\n"
+ 	 * First thing is to establish what we expect to find in the log
+ 	 * (in terms of transaction IDs), and where (in terms of log
