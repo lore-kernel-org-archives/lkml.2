@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759022Ab0FJMtX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 08:49:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36590 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969Ab0FJMtW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 08:49:22 -0400
-Subject: Re: [PATCH 13/13] jump label v9: add docs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-       davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org
-In-Reply-To: <382f7818b6a8e63ff971743ee0c4820b364c7f2f.1276116186.git.jbaron@redhat.com>
-References: <cover.1276116186.git.jbaron@redhat.com>
-	 <382f7818b6a8e63ff971743ee0c4820b364c7f2f.1276116186.git.jbaron@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 10 Jun 2010 14:49:00 +0200
-Message-ID: <1276174140.2077.261.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756811Ab0FJNJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 09:09:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48637 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753608Ab0FJNJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 09:09:20 -0400
+Date: Thu, 10 Jun 2010 15:09:17 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Ott <alan@signal11.us>
+Cc: Antonio Ospite <ospite@studenti.unina.it>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
+       Marcel Holtmann <marcel@holtmann.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Stephane Chatty <chatty@enac.fr>,
+       Michael Poole <mdpoole@troilus.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2] HID: Add Support for Setting and Getting Feature
+ Reports from hidraw
+In-Reply-To: <1276098868-3262-1-git-send-email-alan@signal11.us>
+Message-ID: <alpine.LNX.2.00.1006101508410.12271@pobox.suse.cz>
+References: <1275969108-14948-1-git-send-email-alan@signal11.us> <1276098868-3262-1-git-send-email-alan@signal11.us>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 17:39 -0400, Jason Baron wrote:
-> +The optimization depends on !CC_OPTIMIZE_FOR_SIZE. When CC_OPTIMIZE_FOR_SIZE is
-> +set, gcc does not always out of line the not taken label path in the same way
-> +that the "if unlikely()" paths are made out of line. Thus, with
-> +CC_OPTIMIZE_FOR_SIZE set, this optimization is not always optimal. This may be
-> +solved in subsequent gcc versions, that allow us to move labels out of line,
-> +while still optimizing for size. In the case of !CC_OPTIMIZE_FOR_SIZE this
-> +optimization is seen on high level benchmarks such as tbench where I can get
-> +~1-2% higher throughput. In addition we are within .5% of the performance of no
-> +tracepoints compiled in at all. 
+On Wed, 9 Jun 2010, Alan Ott wrote:
 
-But does it generate invalid code for whatever -f flag triggers this
-(-fno-reorder-blocks ?)
+> Per the HID Specification, Feature reports must be sent and received on
+> the Configuration endpoint (EP 0) through the Set_Report/Get_Report
+> interfaces.  This patch adds two ioctls to hidraw to set and get feature
+> reports to and from the device.  Modifications were made to hidraw and
+> usbhid.
+> 
+> New hidraw ioctls:
+>   HIDIOCSFEATURE - Perform a Set_Report transfer of a Feature report.
+>   HIDIOCGFEATURE - Perform a Get_Report transfer of a Feature report.
 
+Hi Alan,
+
+thanks for the patch. Could you please also update the Bluetooth 
+implementation (in net/bluetooth/hidp/).
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
