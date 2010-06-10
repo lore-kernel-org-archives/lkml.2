@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759050Ab0FJNoP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 09:44:15 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:52806 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753808Ab0FJNoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 09:44:14 -0400
-Message-ID: <4C10EC2A.8060002@fusionio.com>
-Date: Thu, 10 Jun 2010 15:44:10 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] block/io bits for 2.6.35-rc
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759101Ab0FJNsx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 09:48:53 -0400
+Received: from mtagate5.de.ibm.com ([195.212.17.165]:49631 "EHLO
+	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758198Ab0FJNsv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 09:48:51 -0400
+Date: Thu, 10 Jun 2010 15:48:48 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Sachin Sant <sachinp@in.ibm.com>, Avi Kivity <avi@redhat.com>,
+       Carsten Otte <cotte@de.ibm.com>,
+       Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       linux-s390@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: next June 10: S390 build failure [arch/s390/kvm/kvm.ko]
+Message-ID: <20100610154848.616aff99@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <4C10DCB7.7090903@in.ibm.com>
+References: <20100610160012.30ea7606.sfr@canb.auug.org.au>
+	<4C10DCB7.7090903@in.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 10 Jun 2010 18:08:15 +0530
+Sachin Sant <sachinp@in.ibm.com> wrote:
 
-Some important fixes for 2.6.35:
+> Today's next fails to build on a s390 box with
+> 
+> ERROR: "__kvm_s390_vcpu_store_status" [arch/s390/kvm/kvm.ko] undefined!
+> 
+> Yesterday's next was good.
 
-- A set of patches fixing the WB_SYNC_NONE writeback from Christoph. So
-  we should finally have both functional and working WB_SYNC_NONE from
-  umount context.
+That is caused by git commit fbc5eec58e652339e9df1332cd5e10e8d8250aaf
+which fails to take git commit 5288fbf0ef041ba0e8b4dcb2df4536b5e3a48b32
+into account. There is a second caller of __kvm_s390_vcpu_store_status
+in arch/s390/kvm/intercept.c. As far as I understand the code you could
+just drop the 'static' from kvm_s390_vcpu_store_status and call it from
+handle_stop instead of the old __kvm_s390_vcpu_store_status.
 
-- Two fixes for the pipe resizing and fcntl() interface, where the
-  last conversion to a byte API introduced a dumb bug.
-
-- Fix for the module count problem from Nick.
-
-Please pull.
-
-
-  git://git.kernel.dk/linux-2.6-block.git for-linus
-
-Christoph Hellwig (8):
-      writeback: fix writeback completion notifications
-      writeback: queue work on stack in writeback_inodes_sb
-      writeback: enforce s_umount locking in writeback_inodes_sb
-      writeback: fix writeback_inodes_wb from writeback_inodes_sb
-      writeback: simplify wakeup_flusher_threads
-      writeback: simplify and split bdi_start_writeback
-      writeback: add missing requeue_io in writeback_inodes_wb
-      writeback: fix pin_sb_for_writeback
-
-Jens Axboe (1):
-      block: remove duplicate BUG_ON() in bd_finish_claiming()
-
-Miklos Szeredi (2):
-      pipe: fix pipe buffer resizing
-      pipe: fix check in "set size" fcntl
-
-Nick Piggin (2):
-      block: bd_start_claiming fix module refcount
-      block: bd_start_claiming cleanup
-
- fs/block_dev.c              |   72 ++++++++----
- fs/fs-writeback.c           |  254 ++++++++++++++++++-------------------------
- fs/pipe.c                   |   20 +++-
- fs/ubifs/budget.c           |    2 +
- include/linux/backing-dev.h |    4 +-
- mm/page-writeback.c         |    5 +-
- 6 files changed, 175 insertions(+), 182 deletions(-)
+Carsten, Christian: could one of you have a look please?
 
 -- 
-Jens Axboe
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
