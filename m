@@ -1,31 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758658Ab0FJN3F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 09:29:05 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:40375 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752940Ab0FJN3D (ORCPT
+	id S1758889Ab0FJNcx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 09:32:53 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:46079 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752989Ab0FJNcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 09:29:03 -0400
+	Thu, 10 Jun 2010 09:32:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ABnNIyOkyUCWzP+AjoMKljgtuIHFmliwgoF5/6Kv5MRq4vFRRALGRGLBf6X7RIPR+B
-         mlFJ8xWQEOvdQDpwtTOZAs4Zuw0NpS2949xH9+5SQKQIos1oEUtt0hxC62XHMMIxEnJQ
-         eIAGR9w2kluc9KVifMIB5VBnBJtHtoWR08/OE=
+        b=rIkcb5VwpKKy/VLKn0D0bCACeVSf5NegCjNUbZkeH33kK3xxRU0wW5dnc038JCkKyD
+         /LKCXBKm7Hh4qPDTrRfgustVqT77F2Ht3YIi2OivlIA/046moxmoiXR9JKbuV+IBVmzt
+         PEn9BOVPXOqOs024OIq9oOK6xBhIN3nyWHCeo=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
        Minchan Kim <minchan.kim@gmail.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <clameter@sgi.com>
-Subject: [PATCH 1/2] Cleanup: use for_each_online_cpu in vmstat
-Date: Thu, 10 Jun 2010 22:28:46 +0900
-Message-Id: <1276176526-2952-1-git-send-email-minchan.kim@gmail.com>
+       Christoph Lameter <cl@linux.com>
+Subject: [mmotm] Cleanup: use for_each_online_cpu in vmstat
+Date: Thu, 10 Jun 2010 22:32:31 +0900
+Message-Id: <1276176751-2990-1-git-send-email-minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Sorry. It's not [1/2] and I used Chrisopth's old mail address.
+Resend. 
+
+--
 
 The sum_vm_events passes cpumask for for_each_cpu.
 But it's useless since we have for_each_online_cpu.
@@ -36,7 +41,7 @@ Let's use for_each_online_cpu instead of for_each_cpu with
 cpumask argument.
 
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Christoph Lameter <clameter@sgi.com>
+Cc: Christoph Lameter <cl@linux.com>
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 ---
  mm/vmstat.c |    6 +++---
