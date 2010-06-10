@@ -1,415 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab0FJLMi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 07:12:38 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39173 "EHLO
+	id S932474Ab0FJLMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 07:12:42 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39183 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758868Ab0FJLKx (ORCPT
+	with ESMTP id S1758855Ab0FJLKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Jun 2010 07:10:53 -0400
 From: Andi Kleen <andi@firstfloor.org>
 References: <20100610110.764742110@firstfloor.org>
 In-Reply-To: <20100610110.764742110@firstfloor.org>
-To: xfs@oss.sgi.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] [16/23] XFS: Fix gcc 4.6 set but not read and unused statement warnings
-Message-Id: <20100610111052.3DDC5B1A2B@basil.firstfloor.org>
-Date: Thu, 10 Jun 2010 13:10:52 +0200 (CEST)
+To: tytso@mit.edu, linux-ext4@vger.kernel.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] [15/23] EXT4: Fix initialized but not read variables
+Message-Id: <20100610111051.36EFEB1A2B@basil.firstfloor.org>
+Date: Thu, 10 Jun 2010 13:10:51 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-For my configuration, that is without quota or RT.
+No real bugs found, just various dead code removed I believe.
+Some review would be good.
 
-Mostly dead code removed I think (but needs additional review) 
+Found by gcc 4.6's new warnings
 
-That is there were one or two bad error handling cases,
-but they were not easily fixable, with comments 
-and I left the warnings in for those for you to remember.
-
-e.g. if there is a ENOSPC down in xfs_trans.c while
-modifying the superblock it would not be handled.
-
-Unused statements were mostly related to stub macros for disabled
-features like QUOTA or RT ALLOC. I replace those with
-inlines.
-
-There were also some problems with variables used in ASSERT()
-I partly moved those into the ASSERT itself and partly
-used a new QASSERT that always evaluates.
-
-Cc: xfs@oss.sgi.com
+Cc: tytso@mit.edu
+Cc: linux-ext4@vger.kernel.org
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/xfs/linux-2.6/xfs_sync.c |    3 +++
- fs/xfs/support/debug.h      |    4 ++++
- fs/xfs/xfs_alloc.c          |   10 +++-------
- fs/xfs/xfs_da_btree.c       |   15 +++++----------
- fs/xfs/xfs_dir2_block.c     |    6 +++---
- fs/xfs/xfs_filestream.c     |   10 ++--------
- fs/xfs/xfs_iget.c           |    3 ---
- fs/xfs/xfs_inode.c          |    4 ----
- fs/xfs/xfs_inode_item.c     |    8 ++------
- fs/xfs/xfs_log.c            |    2 --
- fs/xfs/xfs_quota.h          |   14 ++++++++++----
- fs/xfs/xfs_trans.c          |    1 +
- 12 files changed, 33 insertions(+), 47 deletions(-)
+ fs/ext4/balloc.c   |    2 --
+ fs/ext4/extents.c  |    8 ++------
+ fs/ext4/inode.c    |    5 -----
+ fs/ext4/mballoc.c  |   23 ++++++++---------------
+ fs/ext4/namei.c    |    2 --
+ fs/ext4/resize.c   |    2 --
+ fs/jbd2/journal.c  |   12 ------------
+ fs/jbd2/recovery.c |    7 -------
+ 8 files changed, 10 insertions(+), 51 deletions(-)
 
-Index: linux-2.6.35-rc2-gcc/fs/xfs/linux-2.6/xfs_sync.c
+Index: linux-2.6.35-rc2-gcc/fs/ext4/balloc.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/linux-2.6/xfs_sync.c
-+++ linux-2.6.35-rc2-gcc/fs/xfs/linux-2.6/xfs_sync.c
-@@ -554,6 +554,9 @@ xfs_sync_worker(
- 		xfs_log_force(mp, 0);
- 		xfs_reclaim_inodes(mp, 0);
- 		/* dgc: errors ignored here */
-+		/* ak: yes and you'll get a warning for it now when you
-+		 * upgrade compilers.
-+		 */
- 		error = xfs_qm_sync(mp, SYNC_TRYLOCK);
- 		if (xfs_log_need_covered(mp))
- 			error = xfs_commit_dummy_trans(mp, 0);
-Index: linux-2.6.35-rc2-gcc/fs/xfs/xfs_da_btree.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/xfs_da_btree.c
-+++ linux-2.6.35-rc2-gcc/fs/xfs/xfs_da_btree.c
-@@ -581,10 +581,8 @@ xfs_da_node_add(xfs_da_state_t *state, x
- 	xfs_da_intnode_t *node;
- 	xfs_da_node_entry_t *btree;
- 	int tmp;
--	xfs_mount_t *mp;
+--- linux-2.6.35-rc2-gcc.orig/fs/ext4/balloc.c
++++ linux-2.6.35-rc2-gcc/fs/ext4/balloc.c
+@@ -377,14 +377,12 @@ void ext4_add_groupblocks(handle_t *hand
+ 	ext4_grpblk_t bit;
+ 	unsigned int i;
+ 	struct ext4_group_desc *desc;
+-	struct ext4_super_block *es;
+ 	struct ext4_sb_info *sbi;
+ 	int err = 0, ret, blk_free_count;
+ 	ext4_grpblk_t blocks_freed;
+ 	struct ext4_group_info *grp;
  
- 	node = oldblk->bp->data;
--	mp = state->mp;
- 	ASSERT(be16_to_cpu(node->hdr.info.magic) == XFS_DA_NODE_MAGIC);
- 	ASSERT((oldblk->index >= 0) && (oldblk->index <= be16_to_cpu(node->hdr.count)));
- 	ASSERT(newblk->blkno != 0);
-@@ -710,8 +708,6 @@ STATIC int
- xfs_da_root_join(xfs_da_state_t *state, xfs_da_state_blk_t *root_blk)
+ 	sbi = EXT4_SB(sb);
+-	es = sbi->s_es;
+ 	ext4_debug("Adding block(s) %llu-%llu\n", block, block + count - 1);
+ 
+ 	ext4_get_group_no_and_offset(sb, block, &block_group, &bit);
+Index: linux-2.6.35-rc2-gcc/fs/ext4/extents.c
+===================================================================
+--- linux-2.6.35-rc2-gcc.orig/fs/ext4/extents.c
++++ linux-2.6.35-rc2-gcc/fs/ext4/extents.c
+@@ -1083,7 +1083,6 @@ static int ext4_ext_grow_indepth(handle_
  {
- 	xfs_da_intnode_t *oldroot;
--	/* REFERENCED */
--	xfs_da_blkinfo_t *blkinfo;
- 	xfs_da_args_t *args;
- 	xfs_dablk_t child;
- 	xfs_dabuf_t *bp;
-@@ -742,15 +738,14 @@ xfs_da_root_join(xfs_da_state_t *state,
- 	if (error)
- 		return(error);
- 	ASSERT(bp != NULL);
--	blkinfo = bp->data;
- 	if (be16_to_cpu(oldroot->hdr.level) == 1) {
--		ASSERT(be16_to_cpu(blkinfo->magic) == XFS_DIR2_LEAFN_MAGIC ||
--		       be16_to_cpu(blkinfo->magic) == XFS_ATTR_LEAF_MAGIC);
-+		ASSERT(be16_to_cpu(bp->data->magic) == XFS_DIR2_LEAFN_MAGIC ||
-+		       be16_to_cpu(bp->data->magic) == XFS_ATTR_LEAF_MAGIC);
- 	} else {
--		ASSERT(be16_to_cpu(blkinfo->magic) == XFS_DA_NODE_MAGIC);
-+		ASSERT(be16_to_cpu(bp->data->magic) == XFS_DA_NODE_MAGIC);
- 	}
--	ASSERT(!blkinfo->forw);
--	ASSERT(!blkinfo->back);
-+	ASSERT(!bp->data->forw);
-+	ASSERT(!bp->data->back);
- 	memcpy(root_blk->bp->data, bp->data, state->blocksize);
- 	xfs_da_log_buf(args->trans, root_blk->bp, 0, state->blocksize - 1);
- 	error = xfs_da_shrink_inode(args, child, bp);
-Index: linux-2.6.35-rc2-gcc/fs/xfs/xfs_dir2_block.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/xfs_dir2_block.c
-+++ linux-2.6.35-rc2-gcc/fs/xfs/xfs_dir2_block.c
-@@ -1073,10 +1073,10 @@ xfs_dir2_sf_to_block(
- 	 */
+ 	struct ext4_ext_path *curp = path;
+ 	struct ext4_extent_header *neh;
+-	struct ext4_extent_idx *fidx;
+ 	struct buffer_head *bh;
+ 	ext4_fsblk_t newblock;
+ 	int err = 0;
+@@ -1144,10 +1143,10 @@ static int ext4_ext_grow_indepth(handle_
+ 	ext4_idx_store_pblock(curp->p_idx, newblock);
  
- 	buf_len = dp->i_df.if_bytes;
--	buf = kmem_alloc(dp->i_df.if_bytes, KM_SLEEP);
-+	buf = kmem_alloc(buf_len, KM_SLEEP);
+ 	neh = ext_inode_hdr(inode);
+-	fidx = EXT_FIRST_INDEX(neh);
+ 	ext_debug("new root: num %d(%d), lblock %d, ptr %llu\n",
+ 		  le16_to_cpu(neh->eh_entries), le16_to_cpu(neh->eh_max),
+-		  le32_to_cpu(fidx->ei_block), idx_pblock(fidx));
++		  le32_to_cpu(EXT_FIRST_INDEX(neh)->ei_block),
++		  idx_pblock(fidx));
  
--	memcpy(buf, sfp, dp->i_df.if_bytes);
--	xfs_idata_realloc(dp, -dp->i_df.if_bytes, XFS_DATA_FORK);
-+	memcpy(buf, sfp, buf_len);
-+	xfs_idata_realloc(dp, -buf_len, XFS_DATA_FORK);
- 	dp->i_d.di_size = 0;
- 	xfs_trans_log_inode(tp, dp, XFS_ILOG_CORE);
- 	/*
-Index: linux-2.6.35-rc2-gcc/fs/xfs/xfs_filestream.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/xfs_filestream.c
-+++ linux-2.6.35-rc2-gcc/fs/xfs/xfs_filestream.c
-@@ -140,9 +140,8 @@ _xfs_filestream_pick_ag(
- 	int		flags,
- 	xfs_extlen_t	minlen)
- {
--	int		streams, max_streams;
- 	int		err, trylock, nscan;
--	xfs_extlen_t	longest, free, minfree, maxfree = 0;
-+	xfs_extlen_t	longest, minfree, maxfree = 0;
- 	xfs_agnumber_t	ag, max_ag = NULLAGNUMBER;
- 	struct xfs_perag *pag;
+ 	neh->eh_depth = cpu_to_le16(path->p_depth + 1);
+ 	err = ext4_ext_dirty(handle, inode, curp);
+@@ -2954,7 +2953,6 @@ static int ext4_split_unwritten_extents(
+ 	struct ext4_extent *ex1 = NULL;
+ 	struct ext4_extent *ex2 = NULL;
+ 	struct ext4_extent *ex3 = NULL;
+-	struct ext4_extent_header *eh;
+ 	ext4_lblk_t ee_block, eof_block;
+ 	unsigned int allocated, ee_len, depth;
+ 	ext4_fsblk_t newblock;
+@@ -2971,7 +2969,6 @@ static int ext4_split_unwritten_extents(
+ 		eof_block = map->m_lblk + map->m_len;
  
-@@ -174,7 +173,6 @@ _xfs_filestream_pick_ag(
- 		/* Keep track of the AG with the most free blocks. */
- 		if (pag->pagf_freeblks > maxfree) {
- 			maxfree = pag->pagf_freeblks;
--			max_streams = atomic_read(&pag->pagf_fstrms);
- 			max_ag = ag;
+ 	depth = ext_depth(inode);
+-	eh = path[depth].p_hdr;
+ 	ex = path[depth].p_ext;
+ 	ee_block = le32_to_cpu(ex->ee_block);
+ 	ee_len = ext4_ext_get_actual_len(ex);
+@@ -3058,7 +3055,6 @@ static int ext4_split_unwritten_extents(
+ 			err = PTR_ERR(path);
+ 			goto out;
  		}
- 
-@@ -196,8 +194,6 @@ _xfs_filestream_pick_ag(
- 		     (flags & XFS_PICK_LOWSPACE))) {
- 
- 			/* Break out, retaining the reference on the AG. */
--			free = pag->pagf_freeblks;
--			streams = atomic_read(&pag->pagf_fstrms);
- 			xfs_perag_put(pag);
- 			*agp = ag;
- 			break;
-@@ -234,8 +230,6 @@ next_ag:
- 		if (max_ag != NULLAGNUMBER) {
- 			xfs_filestream_get_ag(mp, max_ag);
- 			TRACE_AG_PICK1(mp, max_ag, maxfree);
--			streams = max_streams;
--			free = maxfree;
- 			*agp = max_ag;
- 			break;
- 		}
-@@ -364,7 +358,7 @@ xfs_fstrm_free_func(
- 	/* Drop the reference taken on the AG when the item was added. */
- 	ref = xfs_filestream_put_ag(ip->i_mount, item->ag);
- 
--	ASSERT(ref >= 0);
-+	QASSERT(ref >= 0);
- 	TRACE_FREE(ip->i_mount, ip, item->pip, item->ag,
- 		xfs_filestream_peek_ag(ip->i_mount, item->ag));
- 
-Index: linux-2.6.35-rc2-gcc/fs/xfs/xfs_iget.c
+-		eh = path[depth].p_hdr;
+ 		ex = path[depth].p_ext;
+ 		if (ex2 != &newex)
+ 			ex2 = ex;
+Index: linux-2.6.35-rc2-gcc/fs/ext4/inode.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/xfs_iget.c
-+++ linux-2.6.35-rc2-gcc/fs/xfs/xfs_iget.c
-@@ -265,7 +265,6 @@ xfs_iget_cache_miss(
+--- linux-2.6.35-rc2-gcc.orig/fs/ext4/inode.c
++++ linux-2.6.35-rc2-gcc/fs/ext4/inode.c
+@@ -3146,13 +3146,10 @@ static int ext4_da_write_begin(struct fi
+ 	int ret, retries = 0;
+ 	struct page *page;
+ 	pgoff_t index;
+-	unsigned from, to;
+ 	struct inode *inode = mapping->host;
+ 	handle_t *handle;
+ 
+ 	index = pos >> PAGE_CACHE_SHIFT;
+-	from = pos & (PAGE_CACHE_SIZE - 1);
+-	to = from + len;
+ 
+ 	if (ext4_nonda_switch(inode->i_sb)) {
+ 		*fsdata = (void *)FALL_BACK_TO_NONDELALLOC;
+@@ -5754,7 +5751,6 @@ static int ext4_expand_extra_isize(struc
  {
- 	struct xfs_inode	*ip;
- 	int			error;
--	unsigned long		first_index, mask;
- 	xfs_agino_t		agino = XFS_INO_TO_AGINO(mp, ino);
+ 	struct ext4_inode *raw_inode;
+ 	struct ext4_xattr_ibody_header *header;
+-	struct ext4_xattr_entry *entry;
  
- 	ip = xfs_inode_alloc(mp, ino);
-@@ -302,8 +301,6 @@ xfs_iget_cache_miss(
- 			BUG();
+ 	if (EXT4_I(inode)->i_extra_isize >= new_extra_isize)
+ 		return 0;
+@@ -5762,7 +5758,6 @@ static int ext4_expand_extra_isize(struc
+ 	raw_inode = ext4_raw_inode(&iloc);
+ 
+ 	header = IHDR(inode, raw_inode);
+-	entry = IFIRST(header);
+ 
+ 	/* No extended attributes present */
+ 	if (!ext4_test_inode_state(inode, EXT4_STATE_XATTR) ||
+Index: linux-2.6.35-rc2-gcc/fs/ext4/mballoc.c
+===================================================================
+--- linux-2.6.35-rc2-gcc.orig/fs/ext4/mballoc.c
++++ linux-2.6.35-rc2-gcc/fs/ext4/mballoc.c
+@@ -1999,7 +1999,6 @@ ext4_mb_regular_allocator(struct ext4_al
+ 	ext4_group_t ngroups, group, i;
+ 	int cr;
+ 	int err = 0;
+-	int bsbits;
+ 	struct ext4_sb_info *sbi;
+ 	struct super_block *sb;
+ 	struct ext4_buddy e4b;
+@@ -2041,8 +2040,6 @@ ext4_mb_regular_allocator(struct ext4_al
+ 			ac->ac_2order = i - 1;
  	}
  
--	mask = ~(((XFS_INODE_CLUSTER_SIZE(mp) >> mp->m_sb.sb_inodelog)) - 1);
--	first_index = agino & mask;
- 	write_lock(&pag->pag_ici_lock);
- 
- 	/* insert the new inode */
-Index: linux-2.6.35-rc2-gcc/fs/xfs/xfs_inode.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/xfs_inode.c
-+++ linux-2.6.35-rc2-gcc/fs/xfs/xfs_inode.c
-@@ -925,7 +925,6 @@ xfs_iread_extents(
- 	int		error;
- 	xfs_ifork_t	*ifp;
- 	xfs_extnum_t	nextents;
--	size_t		size;
- 
- 	if (unlikely(XFS_IFORK_FORMAT(ip, whichfork) != XFS_DINODE_FMT_BTREE)) {
- 		XFS_ERROR_REPORT("xfs_iread_extents", XFS_ERRLEVEL_LOW,
-@@ -933,7 +932,6 @@ xfs_iread_extents(
- 		return XFS_ERROR(EFSCORRUPTED);
- 	}
- 	nextents = XFS_IFORK_NEXTENTS(ip, whichfork);
--	size = nextents * sizeof(xfs_bmbt_rec_t);
- 	ifp = XFS_IFORK_PTR(ip, whichfork);
- 
- 	/*
-@@ -3517,13 +3515,11 @@ xfs_iext_remove_indirect(
- 	xfs_extnum_t	ext_diff;	/* extents to remove in current list */
- 	xfs_extnum_t	nex1;		/* number of extents before idx */
- 	xfs_extnum_t	nex2;		/* extents after idx + count */
--	int		nlists;		/* entries in indirection array */
- 	int		page_idx = idx;	/* index in target extent list */
- 
- 	ASSERT(ifp->if_flags & XFS_IFEXTIREC);
- 	erp = xfs_iext_idx_to_irec(ifp,  &page_idx, &erp_idx, 0);
- 	ASSERT(erp != NULL);
--	nlists = ifp->if_real_bytes / XFS_IEXT_BUFSZ;
- 	nex1 = page_idx;
- 	ext_cnt = count;
- 	while (ext_cnt) {
-Index: linux-2.6.35-rc2-gcc/fs/xfs/xfs_inode_item.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/xfs_inode_item.c
-+++ linux-2.6.35-rc2-gcc/fs/xfs/xfs_inode_item.c
-@@ -220,7 +220,6 @@ xfs_inode_item_format(
- 	xfs_inode_t		*ip;
- 	size_t			data_bytes;
- 	xfs_bmbt_rec_t		*ext_buffer;
--	int			nrecs;
- 	xfs_mount_t		*mp;
- 
- 	ip = iip->ili_inode;
-@@ -323,9 +322,8 @@ xfs_inode_item_format(
- 			ASSERT(ip->i_df.if_u1.if_extents != NULL);
- 			ASSERT(ip->i_d.di_nextents > 0);
- 			ASSERT(iip->ili_extents_buf == NULL);
--			nrecs = ip->i_df.if_bytes /
--				(uint)sizeof(xfs_bmbt_rec_t);
--			ASSERT(nrecs > 0);
-+			ASSERT((ip->i_df.if_bytes /
-+				(uint)sizeof(xfs_bmbt_rec_t)) > 0);
- #ifdef XFS_NATIVE_HOST
- 			if (nrecs == ip->i_d.di_nextents) {
- 				/*
-@@ -957,10 +955,8 @@ xfs_iflush_abort(
- 	xfs_inode_t		*ip)
+-	bsbits = ac->ac_sb->s_blocksize_bits;
+-
+ 	/* if stream allocation is enabled, use global goal */
+ 	if (ac->ac_flags & EXT4_MB_STREAM_ALLOC) {
+ 		/* TBD: may be hot point */
+@@ -2712,7 +2709,6 @@ ext4_mb_mark_diskspace_used(struct ext4_
+ 				handle_t *handle, unsigned int reserv_blks)
  {
- 	xfs_inode_log_item_t	*iip = ip->i_itemp;
--	xfs_mount_t		*mp;
+ 	struct buffer_head *bitmap_bh = NULL;
+-	struct ext4_super_block *es;
+ 	struct ext4_group_desc *gdp;
+ 	struct buffer_head *gdp_bh;
+ 	struct ext4_sb_info *sbi;
+@@ -2725,8 +2721,6 @@ ext4_mb_mark_diskspace_used(struct ext4_
  
- 	iip = ip->i_itemp;
--	mp = ip->i_mount;
- 	if (iip) {
- 		struct xfs_ail	*ailp = iip->ili_item.li_ailp;
- 		if (iip->ili_item.li_flags & XFS_LI_IN_AIL) {
-Index: linux-2.6.35-rc2-gcc/fs/xfs/xfs_log.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/xfs_log.c
-+++ linux-2.6.35-rc2-gcc/fs/xfs/xfs_log.c
-@@ -1047,7 +1047,6 @@ xlog_alloc_log(xfs_mount_t	*mp,
- 	xlog_in_core_t		*iclog, *prev_iclog=NULL;
- 	xfs_buf_t		*bp;
- 	int			i;
--	int			iclogsize;
- 	int			error = ENOMEM;
- 	uint			log2_size = 0;
+ 	sb = ac->ac_sb;
+ 	sbi = EXT4_SB(sb);
+-	es = sbi->s_es;
+-
  
-@@ -1127,7 +1126,6 @@ xlog_alloc_log(xfs_mount_t	*mp,
- 	 * with different amounts of memory.  See the definition of
- 	 * xlog_in_core_t in xfs_log_priv.h for details.
- 	 */
--	iclogsize = log->l_iclog_size;
- 	ASSERT(log->l_iclog_size >= 4096);
- 	for (i=0; i < log->l_iclog_bufs; i++) {
- 		*iclogp = kmem_zalloc(sizeof(xlog_in_core_t), KM_MAYFAIL);
-Index: linux-2.6.35-rc2-gcc/fs/xfs/xfs_quota.h
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/xfs_quota.h
-+++ linux-2.6.35-rc2-gcc/fs/xfs/xfs_quota.h
-@@ -346,7 +346,13 @@ xfs_qm_vop_dqalloc(struct xfs_inode *ip,
- #define xfs_trans_mod_dquot_byino(tp, ip, fields, delta)
- #define xfs_trans_apply_dquot_deltas(tp)
- #define xfs_trans_unreserve_and_mod_dquots(tp)
--#define xfs_trans_reserve_quota_nblks(tp, ip, nblks, ninos, flags)	(0)
-+
-+static inline int xfs_trans_reserve_quota_nblks(struct xfs_trans *t,
-+		struct xfs_inode *i, long a, long b, uint c)
-+{
-+	return 0;
-+}
-+
- #define xfs_trans_reserve_quota_bydquots(tp, mp, u, g, nb, ni, fl)	(0)
- #define xfs_qm_vop_create_dqattach(tp, ip, u, g)
- #define xfs_qm_vop_rename_dqattach(it)					(0)
-@@ -355,13 +361,13 @@ xfs_qm_vop_dqalloc(struct xfs_inode *ip,
- #define xfs_qm_dqattach(ip, fl)						(0)
- #define xfs_qm_dqattach_locked(ip, fl)					(0)
- #define xfs_qm_dqdetach(ip)
--#define xfs_qm_dqrele(d)
-+static inline void xfs_qm_dqrele(struct xfs_dquot *d) {}
- #define xfs_qm_statvfs(ip, s)
--#define xfs_qm_sync(mp, fl)						(0)
-+static inline int xfs_qm_sync(struct xfs_mount *m, int i) { return 0; }
- #define xfs_qm_newmount(mp, a, b)					(0)
- #define xfs_qm_mount_quotas(mp)
- #define xfs_qm_unmount(mp)
--#define xfs_qm_unmount_quotas(mp)					(0)
-+static inline void xfs_qm_unmount_quotas(struct xfs_mount *m) {}
- #endif /* CONFIG_XFS_QUOTA */
+ 	err = -EIO;
+ 	bitmap_bh = ext4_read_block_bitmap(sb, ac->ac_b_ex.fe_group);
+@@ -2849,8 +2843,8 @@ ext4_mb_normalize_request(struct ext4_al
+ {
+ 	int bsbits, max;
+ 	ext4_lblk_t end;
+-	loff_t size, orig_size, start_off;
+-	ext4_lblk_t start, orig_start;
++	loff_t size, start_off;
++	ext4_lblk_t start;
+ 	struct ext4_inode_info *ei = EXT4_I(ac->ac_inode);
+ 	struct ext4_prealloc_space *pa;
  
- #define xfs_trans_unreserve_quota_nblks(tp, ip, nblks, ninos, flags) \
-Index: linux-2.6.35-rc2-gcc/fs/xfs/xfs_trans.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/xfs_trans.c
-+++ linux-2.6.35-rc2-gcc/fs/xfs/xfs_trans.c
-@@ -1120,6 +1120,7 @@ xfs_trans_unreserve_and_mod_sb(
- 		error = xfs_mod_incore_sb_batch(tp->t_mountp, msb,
- 			(uint)(msbp - msb), rsvd);
- 		ASSERT(error == 0);
-+		/* FIXME: need real error handling here, error can be ENOSPC */
+@@ -2922,8 +2916,9 @@ ext4_mb_normalize_request(struct ext4_al
+ 		start_off = (loff_t)ac->ac_o_ex.fe_logical << bsbits;
+ 		size	  = ac->ac_o_ex.fe_len << bsbits;
  	}
- }
- 
-Index: linux-2.6.35-rc2-gcc/fs/xfs/xfs_alloc.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/xfs_alloc.c
-+++ linux-2.6.35-rc2-gcc/fs/xfs/xfs_alloc.c
-@@ -688,8 +688,6 @@ xfs_alloc_ag_vextent_near(
- 	xfs_agblock_t	ltbno;		/* start bno of left side entry */
- 	xfs_agblock_t	ltbnoa;		/* aligned ... */
- 	xfs_extlen_t	ltdiff;		/* difference to left side entry */
--	/*REFERENCED*/
--	xfs_agblock_t	ltend;		/* end bno of left side entry */
- 	xfs_extlen_t	ltlen;		/* length of left side entry */
- 	xfs_extlen_t	ltlena;		/* aligned ... */
- 	xfs_agblock_t	ltnew;		/* useful start bno of left side */
-@@ -814,8 +812,7 @@ xfs_alloc_ag_vextent_near(
- 		if ((error = xfs_alloc_get_rec(cnt_cur, &ltbno, &ltlen, &i)))
- 			goto error0;
- 		XFS_WANT_CORRUPTED_GOTO(i == 1, error0);
--		ltend = ltbno + ltlen;
--		ASSERT(ltend <= be32_to_cpu(XFS_BUF_TO_AGF(args->agbp)->agf_length));
-+		ASSERT(ltbno + ltlen <= be32_to_cpu(XFS_BUF_TO_AGF(args->agbp)->agf_length));
- 		args->len = blen;
- 		if (!xfs_alloc_fix_minleft(args)) {
- 			xfs_btree_del_cursor(cnt_cur, XFS_BTREE_NOERROR);
-@@ -828,7 +825,7 @@ xfs_alloc_ag_vextent_near(
- 		 */
- 		args->agbno = bnew;
- 		ASSERT(bnew >= ltbno);
--		ASSERT(bnew + blen <= ltend);
-+		ASSERT(bnew + blen <= ltbno + ltlen);
- 		/*
- 		 * Set up a cursor for the by-bno tree.
- 		 */
-@@ -1157,7 +1154,6 @@ xfs_alloc_ag_vextent_near(
- 	/*
- 	 * Fix up the length and compute the useful address.
- 	 */
--	ltend = ltbno + ltlen;
- 	args->len = XFS_EXTLEN_MIN(ltlena, args->maxlen);
- 	xfs_alloc_fix_len(args);
- 	if (!xfs_alloc_fix_minleft(args)) {
-@@ -1170,7 +1166,7 @@ xfs_alloc_ag_vextent_near(
- 	(void)xfs_alloc_compute_diff(args->agbno, rlen, args->alignment, ltbno,
- 		ltlen, &ltnew);
- 	ASSERT(ltnew >= ltbno);
--	ASSERT(ltnew + rlen <= ltend);
-+	ASSERT(ltnew + rlen <= ltbno + ltlen);
- 	ASSERT(ltnew + rlen <= be32_to_cpu(XFS_BUF_TO_AGF(args->agbp)->agf_length));
- 	args->agbno = ltnew;
- 	if ((error = xfs_alloc_fixup_trees(cnt_cur, bno_cur_lt, ltbno, ltlen,
-Index: linux-2.6.35-rc2-gcc/fs/xfs/support/debug.h
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/fs/xfs/support/debug.h
-+++ linux-2.6.35-rc2-gcc/fs/xfs/support/debug.h
-@@ -37,6 +37,9 @@ extern void assfail(char *expr, char *f,
- #ifndef DEBUG
- #define ASSERT(expr)	((void)0)
- 
-+/* Assert that always evaluates its input to avoid warnings */
-+#define QASSERT(expr)	((void)(expr))
+-	orig_size = size = size >> bsbits;
+-	orig_start = start = start_off >> bsbits;
 +
- #ifndef STATIC
- # define STATIC static noinline
- #endif
-@@ -45,6 +48,7 @@ extern void assfail(char *expr, char *f,
++	/* FIXME: start_off is not used for anything. bug? */
++	/* FIXME: start may be uninitialized? */
  
- #define ASSERT(expr)	\
- 	(unlikely(expr) ? (void)0 : assfail(#expr, __FILE__, __LINE__))
-+#define QASSERT(expr) ASSERT(expr)
+ 	/* don't cover already allocated blocks in selected range */
+ 	if (ar->pleft && start <= ar->lleft) {
+@@ -3547,7 +3542,6 @@ ext4_mb_release_inode_pa(struct ext4_bud
+ 	ext4_group_t group;
+ 	ext4_grpblk_t bit;
+ 	unsigned long long grp_blk_start;
+-	sector_t start;
+ 	int err = 0;
+ 	int free = 0;
  
- #ifndef STATIC
- # define STATIC noinline
+@@ -3567,9 +3561,10 @@ ext4_mb_release_inode_pa(struct ext4_bud
+ 		if (bit >= end)
+ 			break;
+ 		next = mb_find_next_bit(bitmap_bh->b_data, end, bit);
+-		start = ext4_group_first_block_no(sb, group) + bit;
+ 		mb_debug(1, "    free preallocated %u/%u in group %u\n",
+-				(unsigned) start, (unsigned) next - bit,
++				(unsigned)
++			 ext4_group_first_block_no(sb, group) + bit,
++			 	(unsigned) next - bit,
+ 				(unsigned) group);
+ 		free += next - bit;
+ 
+@@ -4494,7 +4489,6 @@ void ext4_free_blocks(handle_t *handle,
+ 	struct super_block *sb = inode->i_sb;
+ 	struct ext4_allocation_context *ac = NULL;
+ 	struct ext4_group_desc *gdp;
+-	struct ext4_super_block *es;
+ 	unsigned long freed = 0;
+ 	unsigned int overflow;
+ 	ext4_grpblk_t bit;
+@@ -4513,7 +4507,6 @@ void ext4_free_blocks(handle_t *handle,
+ 	}
+ 
+ 	sbi = EXT4_SB(sb);
+-	es = EXT4_SB(sb)->s_es;
+ 	if (!(flags & EXT4_FREE_BLOCKS_VALIDATED) &&
+ 	    !ext4_data_block_valid(sbi, block, count)) {
+ 		ext4_error(sb, "Freeing blocks not in datazone - "
+Index: linux-2.6.35-rc2-gcc/fs/ext4/namei.c
+===================================================================
+--- linux-2.6.35-rc2-gcc.orig/fs/ext4/namei.c
++++ linux-2.6.35-rc2-gcc/fs/ext4/namei.c
+@@ -1088,7 +1088,6 @@ static struct dentry *ext4_lookup(struct
+ struct dentry *ext4_get_parent(struct dentry *child)
+ {
+ 	__u32 ino;
+-	struct inode *inode;
+ 	static const struct qstr dotdot = {
+ 		.name = "..",
+ 		.len = 2,
+@@ -1097,7 +1096,6 @@ struct dentry *ext4_get_parent(struct de
+ 	struct buffer_head *bh;
+ 
+ 	bh = ext4_find_entry(child->d_inode, &dotdot, &de);
+-	inode = NULL;
+ 	if (!bh)
+ 		return ERR_PTR(-ENOENT);
+ 	ino = le32_to_cpu(de->inode);
+Index: linux-2.6.35-rc2-gcc/fs/ext4/resize.c
+===================================================================
+--- linux-2.6.35-rc2-gcc.orig/fs/ext4/resize.c
++++ linux-2.6.35-rc2-gcc/fs/ext4/resize.c
+@@ -953,7 +953,6 @@ int ext4_group_extend(struct super_block
+ 		      ext4_fsblk_t n_blocks_count)
+ {
+ 	ext4_fsblk_t o_blocks_count;
+-	ext4_group_t o_groups_count;
+ 	ext4_grpblk_t last;
+ 	ext4_grpblk_t add;
+ 	struct buffer_head *bh;
+@@ -965,7 +964,6 @@ int ext4_group_extend(struct super_block
+ 	 * yet: we're going to revalidate es->s_blocks_count after
+ 	 * taking the s_resize_lock below. */
+ 	o_blocks_count = ext4_blocks_count(es);
+-	o_groups_count = EXT4_SB(sb)->s_groups_count;
+ 
+ 	if (test_opt(sb, DEBUG))
+ 		printk(KERN_DEBUG "EXT4-fs: extending last group from %llu uto %llu blocks\n",
+Index: linux-2.6.35-rc2-gcc/fs/jbd2/journal.c
+===================================================================
+--- linux-2.6.35-rc2-gcc.orig/fs/jbd2/journal.c
++++ linux-2.6.35-rc2-gcc/fs/jbd2/journal.c
+@@ -1392,13 +1392,9 @@ int jbd2_journal_check_used_features (jo
+ int jbd2_journal_check_available_features (journal_t *journal, unsigned long compat,
+ 				      unsigned long ro, unsigned long incompat)
+ {
+-	journal_superblock_t *sb;
+-
+ 	if (!compat && !ro && !incompat)
+ 		return 1;
+ 
+-	sb = journal->j_superblock;
+-
+ 	/* We can support any known requested features iff the
+ 	 * superblock is in version 2.  Otherwise we fail to support any
+ 	 * extended sb features. */
+@@ -1618,7 +1614,6 @@ int jbd2_journal_flush(journal_t *journa
+ 
+ int jbd2_journal_wipe(journal_t *journal, int write)
+ {
+-	journal_superblock_t *sb;
+ 	int err = 0;
+ 
+ 	J_ASSERT (!(journal->j_flags & JBD2_LOADED));
+@@ -1627,8 +1622,6 @@ int jbd2_journal_wipe(journal_t *journal
+ 	if (err)
+ 		return err;
+ 
+-	sb = journal->j_superblock;
+-
+ 	if (!journal->j_tail)
+ 		goto no_recovery;
+ 
+@@ -2202,8 +2195,6 @@ void jbd2_journal_init_jbd_inode(struct
+ void jbd2_journal_release_jbd_inode(journal_t *journal,
+ 				    struct jbd2_inode *jinode)
+ {
+-	int writeout = 0;
+-
+ 	if (!journal)
+ 		return;
+ restart:
+@@ -2220,9 +2211,6 @@ restart:
+ 		goto restart;
+ 	}
+ 
+-	/* Do we need to wait for data writeback? */
+-	if (journal->j_committing_transaction == jinode->i_transaction)
+-		writeout = 1;
+ 	if (jinode->i_transaction) {
+ 		list_del(&jinode->i_list);
+ 		jinode->i_transaction = NULL;
+Index: linux-2.6.35-rc2-gcc/fs/jbd2/recovery.c
+===================================================================
+--- linux-2.6.35-rc2-gcc.orig/fs/jbd2/recovery.c
++++ linux-2.6.35-rc2-gcc/fs/jbd2/recovery.c
+@@ -285,12 +285,10 @@ int jbd2_journal_recover(journal_t *jour
+ int jbd2_journal_skip_recovery(journal_t *journal)
+ {
+ 	int			err;
+-	journal_superblock_t *	sb;
+ 
+ 	struct recovery_info	info;
+ 
+ 	memset (&info, 0, sizeof(info));
+-	sb = journal->j_superblock;
+ 
+ 	err = do_one_pass(journal, &info, PASS_SCAN);
+ 
+@@ -365,11 +363,6 @@ static int do_one_pass(journal_t *journa
+ 	int			tag_bytes = journal_tag_bytes(journal);
+ 	__u32			crc32_sum = ~0; /* Transactional Checksums */
+ 
+-	/* Precompute the maximum metadata descriptors in a descriptor block */
+-	int			MAX_BLOCKS_PER_DESC;
+-	MAX_BLOCKS_PER_DESC = ((journal->j_blocksize-sizeof(journal_header_t))
+-			       / tag_bytes);
+-
+ 	/*
+ 	 * First thing is to establish what we expect to find in the log
+ 	 * (in terms of transaction IDs), and where (in terms of log
