@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759128Ab0FJRRp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 13:17:45 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:33936 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751610Ab0FJRRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 13:17:44 -0400
-Subject: Re: [PATCH for-2.6.35] virtio_net: fix oom handling on tx
-From: Sridhar Samudrala <sri@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org,
-       Rusty Russell <rusty@rustcorp.com.au>, Jiri Pirko <jpirko@redhat.com>,
-       Shirley Ma <xma@us.ibm.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100610152041.GA3480@redhat.com>
-References: <20100610152041.GA3480@redhat.com>
-Content-Type: text/plain
-Date: Thu, 10 Jun 2010 10:17:07 -0700
-Message-Id: <1276190227.22064.19.camel@w-sridhar.beaverton.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1759148Ab0FJR0P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 13:26:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36150 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752498Ab0FJR0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 13:26:14 -0400
+MIME-Version: 1.0
+Date: Thu, 10 Jun 2010 10:25:36 -0700
+Message-ID: <AANLkTinLth4iKXAwszEEsPm_9ZDlj8HtqsiG5cdFE1cZ@mail.gmail.com>
+Subject: Slow pty's (was Re: libdivecomputer interfaces?)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Jef Driesen <jefdriesen@telenet.be>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-10 at 18:20 +0300, Michael S. Tsirkin wrote:
-> virtio net will never try to overflow the TX ring, so the only reason
-> add_buf may fail is out of memory. Thus, we can not stop the
-> device until some request completes - there's no guarantee anything
-> at all is outstanding.
-> 
-> Make the error message clearer as well: error here does not
-> indicate queue full.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/net/virtio_net.c |   15 ++++++++-------
->  1 files changed, 8 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 85615a3..e48a06f 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -563,7 +563,6 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
->  	struct virtnet_info *vi = netdev_priv(dev);
->  	int capacity;
-> 
-> -again:
->  	/* Free up any pending old buffers before queueing new ones. */
->  	free_old_xmit_skbs(vi);
-> 
-> @@ -572,12 +571,14 @@ again:
-> 
->  	/* This can happen with OOM and indirect buffers. */
->  	if (unlikely(capacity < 0)) {
-> -		netif_stop_queue(dev);
-> -		dev_warn(&dev->dev, "Unexpected full queue\n");
-> -		if (unlikely(!virtqueue_enable_cb(vi->svq))) {
-> -			virtqueue_disable_cb(vi->svq);
-> -			netif_start_queue(dev);
-> -			goto again;
-> +		if (net_ratelimit()) {
-> +			if (likely(capacity == -ENOMEM))
-> +				dev_warn(&dev->dev,
-> +					 "TX queue failure: out of memory\n");
-> +			else
-> +				dev_warn(&dev->dev,
-> +					 "Unexpected TX queue failure: %d\n",
-> +					 capacity);
->  		}
->  		return NETDEV_TX_BUSY;
->  	}
+Greg, Alan, Hirofumi-san,
 
-It is not clear to me how xmit_skb() can return -ENOMEM.
-xmit_skb() calls virtqueue_add_buf_gfp() which can return -ENOSPC.
-Even vring_add_indirect() doesn't return -ENOMEM on kmalloc failure.
+ I thought we long since (ie back last fall) fixed the latency
+problems with pty's, but there does seem to be something very fishy
+going on there still.
 
-Thanks
-Sridhar
+On Thu, Jun 10, 2010 at 8:01 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>On Sat, May 29, 2010 at 12:53 PM, Jef Driesen <jefdriesen@telenet.be> wrote
+>> BTW, now that I have your attention, could you maybe help me with a linux
+>> kernel problem I'm experiencing in this area? I reported the problem on LKML
+>> but got no response:
+>>
+>> http://www.divesoftware.org/libdc/simulator.html
+>> http://groups.google.com/group/linux.kernel/browse_thread/thread/5a2b00e35b0864a7
+>
+> [ Hmm.. Testing.. ]
+>
+> Yeah, it's slow. Your test thing takes one and a quarter minutes for
+> me. That's ridiculous.
+>
+> And no, we shouldn't need the low-latency flag, we're supposed to do
+> this all automatically correctly. I'll talk to the tty people.
 
+This is clearly not a regression (it's been going on forever, I
+suspect), but taking over a minute to transfer just over half a MB of
+data over a pty seems crazy.
+
+Maybe it's not a kernel problem, and it's something done wrong by
+rx/sx/socat, I haven't looked at what they do. But since setting
+low_latency apparently helps (I didn't test that part, but I did test
+"ridiculously slow"), it sounds very much like something is still
+wrong in the kernel unless there is some really subtle timing issue in
+user space.
+
+>From Jef's original lkml report linked to above:
+
+> You can reproduce the problem by running these commands in three
+> different terminals:
+>
+> # Terminal 1: Setup the pty's.
+> socat PTY,link=/tmp/ttyS0 PTY,link=/tmp/ttyS1
+> # Terminal 2: Send some data.
+> dd if=/dev/urandom of=input.bin bs=538368 count=1
+> sx input.bin >>/tmp/ttyS0 </tmp/ttyS0
+> # Terminal 2: Receive the data data.
+> time rx output.bin >/tmp/ttyS1 </tmp/ttyS1
+
+and yeah, it's pretty clear to see. A "perf report" on that receiving
+side just shows queue_delayed_work_on(), but that doesn't mean much.
+It's clearly just sleeping all the time...
+
+Any ideas?
+
+                     Linus
