@@ -1,33 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab0FJDtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 23:49:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:32830 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758108Ab0FJDtY (ORCPT
+	id S1758651Ab0FJDtn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 23:49:43 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:35474 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758613Ab0FJDt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 23:49:24 -0400
+	Wed, 9 Jun 2010 23:49:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=rgRHEI+VdPK7/cTvBW63RhCYRZ3iqQUHPeKQHdhOySQmO/2wjGnSmGBWD7q0yTv/+i
-         T6berVi3qwdOHUy9mNMMuVOSoJG/grNKcvwRfp7SETZIe44JVzkVQBFhZgLVqJlzke4q
-         jQI6b7oHhTTSIyrTM0zBvPv39k+aIQsFWVTSk=
+        b=bTF0VhK7KStW9UpjMWuMEVszTrEodNFkG0y5gWEnQNozdup0mA4lHcgcjxmNjpwJxp
+         7EJwbV7sDf/KmMFRsvIOvwgxgJTS/CoY+artNnxjivOROtrEhdb9qx4uQ5dBMOSQL5Xu
+         JeILB4VvM0GUXw3BzzMC8CjGL7r0dpniAAg3w=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Stephane Eranian <eranian@google.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>,
+       Paul Mackerras <paulus@samba.org>, Cyrill Gorcunov <gorcunov@gmail.com>,
        Zhang Yanmin <yanmin_zhang@linux.intel.com>,
        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 2/5] perf: Support disable() after stop() on software events
-Date: Thu, 10 Jun 2010 05:49:17 +0200
-Message-Id: <1276141760-11590-3-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH 5/5] perf: Support for task/softirq/hardirq exclusion on tools
+Date: Thu, 10 Jun 2010 05:49:20 +0200
+Message-Id: <1276141760-11590-6-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com>
@@ -36,55 +34,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we call perf_event_stop() on a software event and then the
-disable() pmu callback on them after that, we'll call twice
-hlist_del_rcu() on the same hlist node and then bring a crash
-by dereferencing LIST_POISON2.
+Bring the following new flags on perf events:
 
-Just use hlist_del_init_rcu() instead to fix this problem.
+- t = Profile task context
+- s = Profile softirq context
+- i = Profile hardirq context
 
-This preparates for new context exclusions.
+Example:
+
+	perf record -a -g -e cycles:i ls -R /usr > /dev/null
+
+         3.11%           ls  [kernel.kallsyms]  [k] __lock_acquire
+                         |
+                         --- __lock_acquire
+                            |
+                            |--95.83%-- lock_acquire
+                            |          _raw_spin_lock
+                            |          |
+                            |          |--30.43%-- perf_ctx_adjust_freq
+                            |          |          perf_event_task_tick
+                            |          |          scheduler_tick
+                            |          |          update_process_times
+                            |          |          tick_sched_timer
+                            |          |          __run_hrtimer
+                            |          |          hrtimer_interrupt
+                            |          |          smp_apic_timer_interrupt
+                            |          |          apic_timer_interrupt
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
 Cc: Cyrill Gorcunov <gorcunov@gmail.com>
 Cc: Zhang Yanmin <yanmin_zhang@linux.intel.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/perf_event.c             |    2 +-
- kernel/trace/trace_event_perf.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/parse-events.c |   37 ++++++++++++++++++++++++++-----------
+ 1 files changed, 26 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 5c004f7..2d818bc 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4291,7 +4291,7 @@ static int perf_swevent_enable(struct perf_event *event)
- 
- static void perf_swevent_disable(struct perf_event *event)
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 9bf0f40..7a18e71 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -688,24 +688,36 @@ static enum event_result
+ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
  {
--	hlist_del_rcu(&event->hlist_entry);
-+	hlist_del_init_rcu(&event->hlist_entry);
- }
+ 	const char *str = *strp;
+-	int exclude = 0;
+-	int eu = 0, ek = 0, eh = 0, precise = 0;
++	int exclude_ring = 0, exclude_context = 0;
++	int eu = 0, ek = 0, eh = 0, et = 0, es = 0, ei = 0, precise = 0;
  
- static void perf_swevent_void(struct perf_event *event)
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 4799d70..7bc1f26 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -122,7 +122,7 @@ int perf_trace_enable(struct perf_event *p_event)
- 
- void perf_trace_disable(struct perf_event *p_event)
- {
--	hlist_del_rcu(&p_event->hlist_entry);
-+	hlist_del_init_rcu(&p_event->hlist_entry);
- }
- 
- void perf_trace_destroy(struct perf_event *p_event)
+ 	if (*str++ != ':')
+ 		return 0;
+ 	while (*str) {
+ 		if (*str == 'u') {
+-			if (!exclude)
+-				exclude = eu = ek = eh = 1;
++			if (!exclude_ring)
++				exclude_ring = eu = ek = eh = 1;
+ 			eu = 0;
+ 		} else if (*str == 'k') {
+-			if (!exclude)
+-				exclude = eu = ek = eh = 1;
++			if (!exclude_ring)
++				exclude_ring = eu = ek = eh = 1;
+ 			ek = 0;
+ 		} else if (*str == 'h') {
+-			if (!exclude)
+-				exclude = eu = ek = eh = 1;
++			if (!exclude_ring)
++				exclude_ring = eu = ek = eh = 1;
+ 			eh = 0;
++		} else if (*str == 't') {
++			if (!exclude_context)
++				exclude_context = et = es = ei = 1;
++			et = 0;
++		} else if (*str == 's') {
++			if (!exclude_context)
++				exclude_context = et = es = ei = 1;
++			es = 0;
++		} else if (*str == 'i') {
++			if (!exclude_context)
++				exclude_context = et = es = ei = 1;
++			ei = 0;
+ 		} else if (*str == 'p') {
+ 			precise++;
+ 		} else
+@@ -715,9 +727,12 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
+ 	}
+ 	if (str >= *strp + 2) {
+ 		*strp = str;
+-		attr->exclude_user   = eu;
+-		attr->exclude_kernel = ek;
+-		attr->exclude_hv     = eh;
++		attr->exclude_user	= eu;
++		attr->exclude_kernel	= ek;
++		attr->exclude_hv	= eh;
++		attr->exclude_task	= et;
++		attr->exclude_softirq	= es;
++		attr->exclude_hardirq	= ei;
+ 		attr->precise_ip     = precise;
+ 		return 1;
+ 	}
 -- 
 1.6.2.3
 
