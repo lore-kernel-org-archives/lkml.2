@@ -1,85 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758472Ab0FJCtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 22:49:50 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:64556 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab0FJCtt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 22:49:49 -0400
-Date: Thu, 10 Jun 2010 11:34:24 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC][PATCH] memcg remove css_get/put per pages v2
-Message-Id: <20100610113424.d1037621.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100609155940.dd121130.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100608121901.3cab9bdf.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100609155940.dd121130.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1758575Ab0FJCvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 22:51:33 -0400
+Received: from mx1.oke.net.id ([202.91.24.46]:3295 "EHLO mx1.oke.net.id"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750900Ab0FJCvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 22:51:32 -0400
+Date: Thu, 10 Jun 2010 09:51:35 +0700
+From: Postmaster@oke.net.id
+Reply-To: Postmaster@oke.net.id
+Subject: MDaemon Notification -- Attachment Removed
+To: linux-kernel@vger.kernel.org
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Message-ID: <MDAEMON2563201006100951.AA5135515@oke.net.id>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Actual-From: Postmaster@oke.net.id
+X-MDSend-Notifications-To: [trash]
+X-MDCF-Generated: yes
+Content-Type: text/plain; charset=iso-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I can't find any trivial bugs from my review at the moment.
-I'll do some tests.
+-------------------------------------------------------------------
+MDaemon has detected restricted attachments within an email message
+-------------------------------------------------------------------
 
-Some minor commens.
+>From      : linux-kernel@vger.kernel.org
+To        : sales@infracom.co.id
+Subject   : Mail System Error - Returned Mail
+Message-ID: 
 
-On Wed, 9 Jun 2010 15:59:40 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> Still RFC, added lkml to CC: list.
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Now, memory cgroup increments css(cgroup subsys state)'s reference
-> count per a charged page. And the reference count is kept until
-> the page is uncharged. But this has 2 bad effect. 
-> 
->  1. Because css_get/put calls atoimic_inc()/dec, heavy call of them
->     on large smp will not scale well.
->  2. Because css's refcnt cannot be in a state as "ready-to-release",
->     cgroup's notify_on_release handler can't work with memcg.
-> 
-> This is a trial to remove css's refcnt per a page. Even if we remove
-> refcnt, pre_destroy() does enough synchronization.
-> 
-> After this patch, it seems css_get() is still called in try_charge().
-> But the logic is.
-> 
->   1. task_lock(mm->owner)
-There is no task_lock() in this version :)
-
-(snip)
-> @@ -4219,7 +4252,6 @@ static int mem_cgroup_do_precharge(unsig
->  		mc.precharge += count;
->  		VM_BUG_ON(test_bit(CSS_ROOT, &mem->css.flags));
->  		WARN_ON_ONCE(count > INT_MAX);
-> -		__css_get(&mem->css, (int)count);
->  		return ret;
->  	}
->  one_by_one:
-You can remove VM_BUG_ON() and WARN_ON_ONCE() here, too.
-
-> @@ -4469,8 +4501,6 @@ static void mem_cgroup_clear_mc(void)
->  			 */
->  			res_counter_uncharge(&mc.to->res,
->  						PAGE_SIZE * mc.moved_swap);
-> -			VM_BUG_ON(test_bit(CSS_ROOT, &mc.to->css.flags));
-> -			__css_put(&mc.to->css, mc.moved_swap);
->  		}
->  		/* we've already done mem_cgroup_get(mc.to) */
->  
-> 
-And, you can remove "WARN_ON_ONCE(mc.moved_swap > INT_MAX)" at the beginning
-of this block, too.
+---------------------
+Attachment(s) removed
+---------------------
+letter.bat
 
 
-Thanks,
-Daisuke Nishimura.
