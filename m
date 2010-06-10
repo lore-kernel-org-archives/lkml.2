@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab0FJFL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 01:11:28 -0400
-Received: from mga14.intel.com ([143.182.124.37]:11854 "EHLO mga14.intel.com"
+	id S1753892Ab0FJFL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 01:11:26 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51628 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753766Ab0FJFLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 01:11:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,396,1272870000"; 
-   d="scan'208";a="287177932"
-Subject: Re: [RFC] para virt interface of perf to support kvm guest os
- statistics collection in guest os
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <4C10569E.6020503@redhat.com>
-References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>
-	 <4C0F51DD.3080200@redhat.com>
-	 <1276075280.2096.427.camel@ymzhang.sh.intel.com>
-	 <4C0F61D3.9000402@redhat.com>
-	 <1276136493.2096.462.camel@ymzhang.sh.intel.com>
-	 <4C10569E.6020503@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 10 Jun 2010 13:13:31 +0800
-Message-Id: <1276146811.2096.463.camel@ymzhang.sh.intel.com>
+	id S1753615Ab0FJFLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 01:11:23 -0400
+Date: Thu, 10 Jun 2010 15:11:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Huang Ying <ying.huang@intel.com>,
+       Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+       Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: linux-next: manual merge of the hwpoison tree with the kvm tree
+Message-Id: <20100610151115.8019d072.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-10 at 06:06 +0300, Avi Kivity wrote:
-> On 06/10/2010 05:21 AM, Zhang, Yanmin wrote:
-> >
-> >> I see.  So put it in a union.  Or perhaps not even in a union - what if
-> >> a kvm guest is also acting as a kvm host?
-> >>      
-> > My patch has consideration on it. I compiled kernel with host and guest support
-> > at the same time. The accessing to perf_event->shadow is really under specific
-> > scenarios, or they are just in specific functions. These functions are called
-> > just bu host kernel , or just by guest kernel.
-> >    
-> 
-> But a kernel can be both guest and host at the same time.  Currently 
-> this only works on AMD, but there was some work to bring it to Intel as 
-> well.
-Oh, this is a fancy VT feature. My patch doesn't support this mode.
+Hi Andi,
 
+Today's linux-next merge of the hwpoison tree got a conflict in
+mm/memory-failure.c between commit
+7c5663142a8e9fbf31c82fc9ab6ebc3fda10d6b9 ("KVM: Avoid killing userspace
+through guest SRAO MCE on unmapped pages") from the kvm tree and commit
+2164d3b53f002264d760c76799958ad7a48b9f41 ("HWPOISON, hugetlb: enable
+error handling path for hugepage") from the hwpoison tree.
+
+Just overlapping additions.  I fixed it up (see below) and can carry the
+fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc mm/memory-failure.c
+index 378b0f6,d0b420a..0000000
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@@ -45,7 -45,7 +45,8 @@@
+  #include <linux/page-isolation.h>
+  #include <linux/suspend.h>
+  #include <linux/slab.h>
+ +#include <linux/swapops.h>
++ #include <linux/hugetlb.h>
+  #include "internal.h"
+  
+  int sysctl_memory_failure_early_kill __read_mostly = 0;
