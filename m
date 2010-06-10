@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759178Ab0FJSke (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 14:40:34 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41415 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632Ab0FJSkd (ORCPT
+	id S1759403Ab0FJSlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 14:41:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51817 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276Ab0FJSlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 14:40:33 -0400
-Date: Thu, 10 Jun 2010 19:40:23 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Rezwanul_Kabir@Dell.com
-Cc: pharon@gmail.com, linux-kernel@vger.kernel.org,
-       platform-driver-x86@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: Dell Studio 1555 eject key does not work ( small patch to fix
-	included )
-Message-ID: <20100610184023.GA17320@srcf.ucam.org>
-References: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com> <20100602213429.GA14866@srcf.ucam.org> <57DF5FDC2DC0634FA2A310BC5B81A68D01DF4CD01E@AUSX7MCPC108.AMER.DELL.COM> <AANLkTimIl6UL0HQT1wxRgXuj_m0O3CwMHQIa1xNE1Ax9@mail.gmail.com> <AANLkTin0qht1XR2rUgIXMEeJNU_gb3IZWqSBJb7NXD8K@mail.gmail.com> <57DF5FDC2DC0634FA2A310BC5B81A68D01DFD57663@AUSX7MCPC108.AMER.DELL.COM>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <57DF5FDC2DC0634FA2A310BC5B81A68D01DFD57663@AUSX7MCPC108.AMER.DELL.COM>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Thu, 10 Jun 2010 14:41:13 -0400
+X-Authority-Analysis: v=1.1 cv=rR912iD8TqKBQWPhXASLR67rt2rT9ApkpBWj5XB9Duc= c=1 sm=0 a=eX2VPhT_8KEA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=D4EBODMCcXe7Nzv1V5gA:9 a=MtvAgvWJPsDJci2yuHw0hwP6YKoA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH][RFC] tracing: Use class->reg() for all registering of
+ events
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+In-Reply-To: <1276024211.15884.107.camel@gandalf.stny.rr.com>
+References: <1276011215.15884.96.camel@gandalf.stny.rr.com>
+	 <1276012661.2046.120.camel@twins>
+	 <20100608173559.GE2800@linux.vnet.ibm.com>
+	 <1276024211.15884.107.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 10 Jun 2010 14:41:11 -0400
+Message-ID: <1276195271.28329.2.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 01:36:56PM -0500, Rezwanul_Kabir@Dell.com wrote:
-> Hi Islam Amer
+On Tue, 2010-06-08 at 15:10 -0400, Steven Rostedt wrote:
+> On Tue, 2010-06-08 at 23:05 +0530, Srikar Dronamraju wrote:
+> > > On Tue, 2010-06-08 at 11:33 -0400, Steven Rostedt wrote:
 > 
->    I got report that "Ubuntu 10.04 + BIOS A11" was tested and the "Eject CD" key is working
->    as expected. Sorry, I couldn't find any Studio 1555 to test myself and cannot provide you
->    with more details. 
+> > I tested the patch and it fixed the regression where
+> > perf record -e probe:do_fork -aR sleep 1 would fail. 
+> > 
 > 
->     Also, you may try acpi_osi="Windows 2009" kernel parameter and see if there is any difference.
+> Thanks! Unfortunately the patch does two things, one is to fix this
+> regression, the other is a clean up. Linus is currently only wanting
+> fixes now and may not accept the clean up part of this patch. Can you
+> test the patch below. It only addresses the regression.
+> 
 
-That's the default on any kernel that has this support in dell-wmi. Rez, 
-could you let me know if the proposed patch breaks the spec in ways that 
-are likely to cause problems?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Peter,
+
+Can I get an Acked-by from you on this patch? I know you acked the clean
+up version. But this is a minimal fix for .35. We'll add the clean up
+version to .36.
+
+Thanks,
+
+-- Steve
+
+
+> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+> index e6f6588..8a2b73f 100644
+> --- a/kernel/trace/trace_event_perf.c
+> +++ b/kernel/trace/trace_event_perf.c
+> @@ -96,7 +96,9 @@ int perf_trace_init(struct perf_event *p_event)
+>  	mutex_lock(&event_mutex);
+>  	list_for_each_entry(tp_event, &ftrace_events, list) {
+>  		if (tp_event->event.type == event_id &&
+> -		    tp_event->class && tp_event->class->perf_probe &&
+> +		    tp_event->class &&
+> +		    (tp_event->class->perf_probe ||
+> +		     tp_event->class->reg) &&
+>  		    try_module_get(tp_event->mod)) {
+>  			ret = perf_trace_event_init(tp_event, p_event);
+>  			break;
+> 
+
+
