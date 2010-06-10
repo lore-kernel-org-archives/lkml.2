@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759403Ab0FJSlO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 14:41:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51817 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab0FJSlN (ORCPT
+	id S1759356Ab0FJSm3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 14:42:29 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64607 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756284Ab0FJSm1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 14:41:13 -0400
-X-Authority-Analysis: v=1.1 cv=rR912iD8TqKBQWPhXASLR67rt2rT9ApkpBWj5XB9Duc= c=1 sm=0 a=eX2VPhT_8KEA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=D4EBODMCcXe7Nzv1V5gA:9 a=MtvAgvWJPsDJci2yuHw0hwP6YKoA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH][RFC] tracing: Use class->reg() for all registering of
- events
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-In-Reply-To: <1276024211.15884.107.camel@gandalf.stny.rr.com>
-References: <1276011215.15884.96.camel@gandalf.stny.rr.com>
-	 <1276012661.2046.120.camel@twins>
-	 <20100608173559.GE2800@linux.vnet.ibm.com>
-	 <1276024211.15884.107.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 10 Jun 2010 14:41:11 -0400
-Message-ID: <1276195271.28329.2.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jun 2010 14:42:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=e0V9wZ3Xxx5Ra8te5BNtgt2OupsE9+L4rSeJQJuD+gjF+YP5XGLMYRzSuAp0/dLOd8
+         zli2axN3kGWlcsXMyv087NFRSs5vuv8+/iVYmji3wnmR2VJjB91ubFSBIpcV+5i/c/dr
+         mv3pxAWaVZ0A32NudOQ/7hSHcgcsniwIw2E1k=
+MIME-Version: 1.0
+In-Reply-To: <4C112E7B.1040101@nortel.com>
+References: <AANLkTimrZvKyh6zYnUg2xzDVBVr5NxqtJhxZ42AVhkVI@mail.gmail.com>
+	<4C112E7B.1040101@nortel.com>
+Date: Thu, 10 Jun 2010 12:42:27 -0600
+Message-ID: <AANLkTinIAKHVYKiILxQZXTr30K_Cr5EZQwRzNpYlLULw@mail.gmail.com>
+Subject: Re: Aerospace and linux
+From: Brian Gordon <legerde@gmail.com>
+To: Chris Friesen <cfriesen@nortel.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-08 at 15:10 -0400, Steven Rostedt wrote:
-> On Tue, 2010-06-08 at 23:05 +0530, Srikar Dronamraju wrote:
-> > > On Tue, 2010-06-08 at 11:33 -0400, Steven Rostedt wrote:
-> 
-> > I tested the patch and it fixed the regression where
-> > perf record -e probe:do_fork -aR sleep 1 would fail. 
-> > 
-> 
-> Thanks! Unfortunately the patch does two things, one is to fix this
-> regression, the other is a clean up. Linus is currently only wanting
-> fixes now and may not accept the clean up part of this patch. Can you
-> test the patch below. It only addresses the regression.
-> 
+> I do work in telco stuff.  We use ECC RAM, turn on ECC/parity on the
+> various buses, enable error-checking in the hardware, etc.
 
+Excellent stuff when you have it. :)
 
-Peter,
+> At higher abstraction levels you can checksum the data being stored and
+> validate it when you access it.
 
-Can I get an Acked-by from you on this patch? I know you acked the clean
-up version. But this is a minimal fix for .35. We'll add the clean up
-version to .36.
+What about .ro and .text sections of an executable?   I would think
+kernel support for that would be required.   If its application data,
+then all sorts of things are possible like you described.   Ive also
+seen critical ram variables be stored in triplicate and then
+compared/voted just to ensure no silent SEU corruption.
 
-Thanks,
+> You might start by taking a look at the "edac" code in the kernel.
+> Linux in general doesn't normally enable all the fault detection code,
+> so you may need to start looking at datasheets.
 
--- Steve
-
-
-> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-> index e6f6588..8a2b73f 100644
-> --- a/kernel/trace/trace_event_perf.c
-> +++ b/kernel/trace/trace_event_perf.c
-> @@ -96,7 +96,9 @@ int perf_trace_init(struct perf_event *p_event)
->  	mutex_lock(&event_mutex);
->  	list_for_each_entry(tp_event, &ftrace_events, list) {
->  		if (tp_event->event.type == event_id &&
-> -		    tp_event->class && tp_event->class->perf_probe &&
-> +		    tp_event->class &&
-> +		    (tp_event->class->perf_probe ||
-> +		     tp_event->class->reg) &&
->  		    try_module_get(tp_event->mod)) {
->  			ret = perf_trace_event_init(tp_event, p_event);
->  			break;
-> 
-
-
+Thank you for the suggestion.  If the memory device supports EDAC/ECC
+then definitely enabling it is a good strategy.
