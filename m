@@ -1,131 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758901Ab0FJLLB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 07:11:01 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39173 "EHLO
+	id S1758911Ab0FJLLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 07:11:06 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39183 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758867Ab0FJLK5 (ORCPT
+	with ESMTP id S1758880Ab0FJLK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 07:10:57 -0400
+	Thu, 10 Jun 2010 07:10:56 -0400
 From: Andi Kleen <andi@firstfloor.org>
 References: <20100610110.764742110@firstfloor.org>
 In-Reply-To: <20100610110.764742110@firstfloor.org>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] [20/23] MM: Fix unused but set warnings
-Message-Id: <20100610111056.557F8B1A2B@basil.firstfloor.org>
-Date: Thu, 10 Jun 2010 13:10:56 +0200 (CEST)
+To: avi@redhat.com, kvm@vger.kernel.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] [19/23] KVM: Fix unused but set warnings
+Message-Id: <20100610111055.4FB51B1A2B@basil.firstfloor.org>
+Date: Thu, 10 Jun 2010 13:10:55 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-No real bugs, just some dead code and some fixups.
+No real bugs in this one, the real bug I found is in a separate
+patch.
+
+Cc: avi@redhat.com
+Cc: kvm@vger.kernel.org
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/x86/include/asm/pgtable_64.h |    4 ++--
- include/linux/highmem.h           |    6 +++++-
- include/linux/mmdebug.h           |    2 +-
- mm/filemap.c                      |    2 --
- mm/memory.c                       |    2 --
- mm/slab.c                         |    2 +-
- 6 files changed, 9 insertions(+), 9 deletions(-)
+ arch/x86/kvm/paging_tmpl.h |    1 +
+ arch/x86/kvm/vmx.c         |    3 +--
+ virt/kvm/assigned-dev.c    |    2 --
+ 3 files changed, 2 insertions(+), 4 deletions(-)
 
-Index: linux-2.6.35-rc2-gcc/mm/filemap.c
+Index: linux-2.6.35-rc2-gcc/arch/x86/kvm/paging_tmpl.h
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/mm/filemap.c
-+++ linux-2.6.35-rc2-gcc/mm/filemap.c
-@@ -2238,14 +2238,12 @@ static ssize_t generic_perform_write(str
+--- linux-2.6.35-rc2-gcc.orig/arch/x86/kvm/paging_tmpl.h
++++ linux-2.6.35-rc2-gcc/arch/x86/kvm/paging_tmpl.h
+@@ -442,6 +442,7 @@ static int FNAME(page_fault)(struct kvm_
+ 	kvm_mmu_free_some_pages(vcpu);
+ 	sptep = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
+ 			     level, &write_pt, pfn);
++	(void)sptep;
+ 	pgprintk("%s: shadow pte %p %llx ptwrite %d\n", __func__,
+ 		 sptep, *sptep, write_pt);
  
- 	do {
- 		struct page *page;
--		pgoff_t index;		/* Pagecache index for current page */
- 		unsigned long offset;	/* Offset into pagecache page */
- 		unsigned long bytes;	/* Bytes to write to page */
- 		size_t copied;		/* Bytes copied from user */
- 		void *fsdata;
- 
- 		offset = (pos & (PAGE_CACHE_SIZE - 1));
--		index = pos >> PAGE_CACHE_SHIFT;
- 		bytes = min_t(unsigned long, PAGE_CACHE_SIZE - offset,
- 						iov_iter_count(i));
- 
-Index: linux-2.6.35-rc2-gcc/mm/memory.c
+Index: linux-2.6.35-rc2-gcc/arch/x86/kvm/vmx.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/mm/memory.c
-+++ linux-2.6.35-rc2-gcc/mm/memory.c
-@@ -307,7 +307,6 @@ void free_pgd_range(struct mmu_gather *t
+--- linux-2.6.35-rc2-gcc.orig/arch/x86/kvm/vmx.c
++++ linux-2.6.35-rc2-gcc/arch/x86/kvm/vmx.c
+@@ -1624,10 +1624,9 @@ static void enter_pmode(struct kvm_vcpu
+ static gva_t rmode_tss_base(struct kvm *kvm)
  {
- 	pgd_t *pgd;
- 	unsigned long next;
--	unsigned long start;
+ 	if (!kvm->arch.tss_addr) {
+-		struct kvm_memslots *slots;
+ 		gfn_t base_gfn;
  
- 	/*
- 	 * The next few lines have given us lots of grief...
-@@ -351,7 +350,6 @@ void free_pgd_range(struct mmu_gather *t
- 	if (addr > end - 1)
- 		return;
- 
--	start = addr;
- 	pgd = pgd_offset(tlb->mm, addr);
- 	do {
- 		next = pgd_addr_end(addr, end);
-Index: linux-2.6.35-rc2-gcc/arch/x86/include/asm/pgtable_64.h
+-		slots = kvm_memslots(kvm);
++		kvm_memslots(kvm);
+ 		base_gfn = kvm->memslots->memslots[0].base_gfn +
+ 				 kvm->memslots->memslots[0].npages - 3;
+ 		return base_gfn << PAGE_SHIFT;
+Index: linux-2.6.35-rc2-gcc/virt/kvm/assigned-dev.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/arch/x86/include/asm/pgtable_64.h
-+++ linux-2.6.35-rc2-gcc/arch/x86/include/asm/pgtable_64.h
-@@ -126,8 +126,8 @@ static inline int pgd_large(pgd_t pgd) {
- /* x86-64 always has all page tables mapped. */
- #define pte_offset_map(dir, address) pte_offset_kernel((dir), (address))
- #define pte_offset_map_nested(dir, address) pte_offset_kernel((dir), (address))
--#define pte_unmap(pte) /* NOP */
--#define pte_unmap_nested(pte) /* NOP */
-+#define pte_unmap(pte) ((void)(pte))/* NOP */
-+#define pte_unmap_nested(pte) ((void)(pte)) /* NOP */
+--- linux-2.6.35-rc2-gcc.orig/virt/kvm/assigned-dev.c
++++ linux-2.6.35-rc2-gcc/virt/kvm/assigned-dev.c
+@@ -58,12 +58,10 @@ static int find_index_from_host_irq(stru
+ static void kvm_assigned_dev_interrupt_work_handler(struct work_struct *work)
+ {
+ 	struct kvm_assigned_dev_kernel *assigned_dev;
+-	struct kvm *kvm;
+ 	int i;
  
- #define update_mmu_cache(vma, address, ptep) do { } while (0)
+ 	assigned_dev = container_of(work, struct kvm_assigned_dev_kernel,
+ 				    interrupt_work);
+-	kvm = assigned_dev->kvm;
  
-Index: linux-2.6.35-rc2-gcc/include/linux/mmdebug.h
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/include/linux/mmdebug.h
-+++ linux-2.6.35-rc2-gcc/include/linux/mmdebug.h
-@@ -4,7 +4,7 @@
- #ifdef CONFIG_DEBUG_VM
- #define VM_BUG_ON(cond) BUG_ON(cond)
- #else
--#define VM_BUG_ON(cond) do { } while (0)
-+#define VM_BUG_ON(cond) do { (void)(cond); } while (0)
- #endif
- 
- #ifdef CONFIG_DEBUG_VIRTUAL
-Index: linux-2.6.35-rc2-gcc/mm/slab.c
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/mm/slab.c
-+++ linux-2.6.35-rc2-gcc/mm/slab.c
-@@ -395,7 +395,7 @@ static void kmem_list3_init(struct kmem_
- #define	STATS_DEC_ACTIVE(x)	do { } while (0)
- #define	STATS_INC_ALLOCED(x)	do { } while (0)
- #define	STATS_INC_GROWN(x)	do { } while (0)
--#define	STATS_ADD_REAPED(x,y)	do { } while (0)
-+#define	STATS_ADD_REAPED(x,y)	do { (void)(y); } while (0)
- #define	STATS_SET_HIGH(x)	do { } while (0)
- #define	STATS_INC_ERR(x)	do { } while (0)
- #define	STATS_INC_NODEALLOCS(x)	do { } while (0)
-Index: linux-2.6.35-rc2-gcc/include/linux/highmem.h
-===================================================================
---- linux-2.6.35-rc2-gcc.orig/include/linux/highmem.h
-+++ linux-2.6.35-rc2-gcc/include/linux/highmem.h
-@@ -72,7 +72,11 @@ static inline void *kmap_atomic(struct p
- }
- #define kmap_atomic_prot(page, idx, prot)	kmap_atomic(page, idx)
- 
--#define kunmap_atomic(addr, idx)	do { pagefault_enable(); } while (0)
-+static inline void kunmap_atomic(void *addr, enum km_type idx)
-+{
-+	pagefault_enable();
-+}
-+
- #define kmap_atomic_pfn(pfn, idx)	kmap_atomic(pfn_to_page(pfn), (idx))
- #define kmap_atomic_to_page(ptr)	virt_to_page(ptr)
- 
+ 	spin_lock_irq(&assigned_dev->assigned_dev_lock);
+ 	if (assigned_dev->irq_requested_type & KVM_DEV_IRQ_HOST_MSIX) {
