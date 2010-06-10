@@ -1,131 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759760Ab0FJTPR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 15:15:17 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39939 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759732Ab0FJTPN (ORCPT
+	id S1759515Ab0FJTYM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 15:24:12 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:46469 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759128Ab0FJTYL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 15:15:13 -0400
+	Thu, 10 Jun 2010 15:24:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:subject:to:cc;
-        b=u5arixOsGFG0veNGU/YtYhXvr8LadKUcabfEwne2I5cCrtbfFVKrSS7c1VeNTq2Ife
-         HcqhnKWuQBPmf+cK5ieMYYDMHUR0G3cL028uFUxF6f3DnOnk5PFFvm6k+Sl6oSCft1j5
-         9cRuKTz5KV2sU1+o10taI7E2lZK9mGE+DlEck=
-Message-ID: <4c1139ba.0d01df0a.42a6.1368@mx.google.com>
-Date: Thu, 10 Jun 2010 22:12:55 +0300
-From: Dmytro Milinevskyy <milinevskyy@gmail.com>
-Subject: [PATCH] Marvell OpenRD-Ultimate machine support
-To: linux-arm-kernel@lists.infradead.org,
-       Russell King <linux@arm.linux.org.uk>
-Cc: Dhaval Vasa <dhaval.vasa@einfochips.com>,
-       Lennert Buytenhek <kernel@wantstofly.org>,
-       Nicolas Pitre <nico@fluxnic.net>, Simon Guinot <sguinot@lacie.com>,
-       Martin Michlmayr <tbm@cyrius.com>,
-       Alexander Clouter <alex@digriz.org.uk>,
-       Simon Kagstrom <simon.kagstrom@netinsight.net>,
-       linux-kernel@vger.kernel.org
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZvCaC0URlV9mTeEoPGv3eoOVoycolmxy/4wBL3/JqoYQeK1cg6g0v9DMpcvGYzZQOo
+         MU/N8WcgOJVWfFEOhIOsXO8V8kZ8TQADGuuT9JwoJ3ckiszgSa8FlMQh/UCpRBk6EOyl
+         2ke52nYYAdpUSO7hMH3tFNy2J6KxN24nqYFIA=
+MIME-Version: 1.0
+In-Reply-To: <0a4b5e5841e7842f7b80e368c1d103b5e98d3335.1275925108.git.siccegge@cs.fau.de>
+References: <cover.1275925108.git.siccegge@cs.fau.de>
+	<0a4b5e5841e7842f7b80e368c1d103b5e98d3335.1275925108.git.siccegge@cs.fau.de>
+Date: Thu, 10 Jun 2010 13:24:08 -0600
+Message-ID: <AANLkTin3EsoPJPb9s7_nwSrWY9HihXMJHorAK96dKKIa@mail.gmail.com>
+Subject: Re: [PATCH 7/9] Removing dead CONFIG_PMCTWILED
+From: Shane McDonald <mcdonald.shane@gmail.com>
+To: Christoph Egger <siccegge@cs.fau.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-This patch adds support for the OpenRD Ultimate machine(could be found at http://www.arm.linux.org.uk/developer/machines/list.php?id=2884)
+On Wed, Jun 9, 2010 at 5:22 AM, Christoph Egger <siccegge@cs.fau.de> wrote:
+> CONFIG_PMCTWILED doesn't exist in Kconfig, therefore removing all
+> references for it from the source code.
+>
+> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> ---
+>  arch/mips/pmc-sierra/msp71xx/msp_hwbutton.c |   11 -----------
+>  1 files changed, 0 insertions(+), 11 deletions(-)
+>
+> diff --git a/arch/mips/pmc-sierra/msp71xx/msp_hwbutton.c b/arch/mips/pmc-sierra/msp71xx/msp_hwbutton.c
+> index 11769b5..c841f08 100644
+> --- a/arch/mips/pmc-sierra/msp71xx/msp_hwbutton.c
+> +++ b/arch/mips/pmc-sierra/msp71xx/msp_hwbutton.c
+> @@ -32,9 +32,6 @@
+>  #include <msp_int.h>
+>  #include <msp_regs.h>
+>  #include <msp_regops.h>
+> -#ifdef CONFIG_PMCTWILED
+> -#include <msp_led_macros.h>
+> -#endif
+>
+>  /* For hwbutton_interrupt->initial_state */
+>  #define HWBUTTON_HI    0x1
+> @@ -82,10 +79,6 @@ static void standby_on(void *data)
+>        printk(KERN_WARNING "STANDBY switch was set to ON (not implemented)\n");
+>
+>        /* TODO: Put board in standby mode */
+> -#ifdef CONFIG_PMCTWILED
+> -       msp_led_turn_off(MSP_LED_PWRSTANDBY_GREEN);
+> -       msp_led_turn_on(MSP_LED_PWRSTANDBY_RED);
+> -#endif
+>  }
+>
+>  static void standby_off(void *data)
+> @@ -94,10 +87,6 @@ static void standby_off(void *data)
+>                "STANDBY switch was set to OFF (not implemented)\n");
+>
+>        /* TODO: Take out of standby mode */
+> -#ifdef CONFIG_PMCTWILED
+> -       msp_led_turn_on(MSP_LED_PWRSTANDBY_GREEN);
+> -       msp_led_turn_off(MSP_LED_PWRSTANDBY_RED);
+> -#endif
+>  }
+>
+>  static struct hwbutton_interrupt softreset_sw = {
+> --
+> 1.6.3.3
 
-Besides adding machine description this patch adds correction for PHY address for Ultimate version.
+This constant was added in a patch that was never accepted:
+http://www.linux-mips.org/archives/linux-mips/2007-03/msg00421.html.
+Because this patch was submitted over 3 years ago, I think
+it's reasonable to assume that work on the patch has stalled,
+and so I think removing the CONFIG_PMCTWILED constant
+makes sense.
 
-Differences from the previous attempt:
- - Correctly filled instances of mv643xx_eth_platform_data in case of ultimate version.
- - Do PCIE initialization for Ultimate version along with Base and Client
- - Init ge01 if (!openrd-base) to make the code cleaner
+I seem to be the only person semi-actively doing anything
+with the MSP7120 code base, so if I ever try to clean up the
+patch and re-submit, I'll re-submit the changes being
+removed in this patch.
 
-Regards,
-
--- Dmytro Milinevskyy
-
-Signed-off-by: Dmytro Milinevskyy <milinevskyy@gmail.com>
----
- arch/arm/mach-kirkwood/Kconfig        |    7 +++++++
- arch/arm/mach-kirkwood/openrd-setup.c |   27 ++++++++++++++++++++++++---
- 2 files changed, 31 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/mach-kirkwood/Kconfig b/arch/arm/mach-kirkwood/Kconfig
-index 29b2163..110a3b8 100644
---- a/arch/arm/mach-kirkwood/Kconfig
-+++ b/arch/arm/mach-kirkwood/Kconfig
-@@ -75,6 +75,13 @@ config MACH_OPENRD_CLIENT
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell OpenRD Client Board.
- 
-+config MACH_OPENRD_ULTIMATE
-+	bool "Marvell OpenRD Ultimate Board"
-+	select MACH_OPENRD
-+	help
-+	  Say 'Y' here if you want your kernel to support the
-+	  Marvell OpenRD Ultimate Board.
-+
- config MACH_NETSPACE_V2
- 	bool "LaCie Network Space v2 NAS Board"
- 	help
-diff --git a/arch/arm/mach-kirkwood/openrd-setup.c b/arch/arm/mach-kirkwood/openrd-setup.c
-index ad3f1ec..284b00f 100644
---- a/arch/arm/mach-kirkwood/openrd-setup.c
-+++ b/arch/arm/mach-kirkwood/openrd-setup.c
-@@ -1,7 +1,7 @@
- /*
-  * arch/arm/mach-kirkwood/openrd-setup.c
-  *
-- * Marvell OpenRD (Base|Client) Board Setup
-+ * Marvell OpenRD (Base|Client|Ultimate) Board Setup
-  *
-  * This file is licensed under the terms of the GNU General Public
-  * License version 2.  This program is licensed "as is" without any
-@@ -73,9 +73,15 @@ static void __init openrd_init(void)
- 
- 	kirkwood_ehci_init();
- 
-+	if (machine_is_openrd_ultimate()) {
-+		openrd_ge00_data.phy_addr = MV643XX_ETH_PHY_ADDR(0);
-+		openrd_ge01_data.phy_addr = MV643XX_ETH_PHY_ADDR(1);
-+	}
-+
- 	kirkwood_ge00_init(&openrd_ge00_data);
--	if (machine_is_openrd_client())
-+	if (!machine_is_openrd_base())
- 		kirkwood_ge01_init(&openrd_ge01_data);
-+
- 	kirkwood_sata_init(&openrd_sata_data);
- 	kirkwood_sdio_init(&openrd_mvsdio_data);
- 
-@@ -84,7 +90,9 @@ static void __init openrd_init(void)
- 
- static int __init openrd_pci_init(void)
- {
--	if (machine_is_openrd_base() || machine_is_openrd_client())
-+	if (machine_is_openrd_base() ||
-+		machine_is_openrd_client() ||
-+		machine_is_openrd_ultimate())
- 		kirkwood_pcie_init();
- 
- 	return 0;
-@@ -116,3 +124,16 @@ MACHINE_START(OPENRD_CLIENT, "Marvell OpenRD Client Board")
- 	.timer		= &kirkwood_timer,
- MACHINE_END
- #endif
-+
-+#ifdef CONFIG_MACH_OPENRD_ULTIMATE
-+MACHINE_START(OPENRD_ULTIMATE, "Marvell OpenRD Ultimate Board")
-+	/* Maintainer: Dhaval Vasa <dhaval.vasa@einfochips.com> */
-+	.phys_io	= KIRKWOOD_REGS_PHYS_BASE,
-+	.io_pg_offst	= ((KIRKWOOD_REGS_VIRT_BASE) >> 18) & 0xfffc,
-+	.boot_params	= 0x00000100,
-+	.init_machine	= openrd_init,
-+	.map_io		= kirkwood_map_io,
-+	.init_irq	= kirkwood_init_irq,
-+	.timer		= &kirkwood_timer,
-+MACHINE_END
-+#endif
--- 
-1.7.1
-
+Acked-by: Shane McDonald <mcdonald.shane@gmail.com>
