@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758625Ab0FJDt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 23:49:29 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:35474 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756214Ab0FJDtX (ORCPT
+	id S1756976Ab0FJDtW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 23:49:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:32830 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab0FJDtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 23:49:23 -0400
+	Wed, 9 Jun 2010 23:49:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=amJgJXpKRTRhfU9RHVb10bCz4lpQKJKkFTpNrhVs9PES5AIDTYw/RUoYlDStkqEI7r
-         fhpQxCR6D80pN2yKteWve4sstEz9bdIiDiA9J9E1vGa0Y2rpTOot/8Dqs7A4ovDSkA69
-         sLToKsYqWr2nj6SlsxDaHKWoGAoPAEI5bYWcM=
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=nx9YRyk74u/FlmoS8VnWxyR9jePQa/hY9KEGQFHHU8HtJceKqi85JIkcl61pn22RRH
+         0SRrPyPfB6DrBVOqmgNKrAXmFol6lWzpEACGiVP7kdLljDQSc8vBlzpfQiu3y7kvRd3r
+         A//kHzvxGB4BtCzkVqjuy0aKvbyQCQf0GYqMU=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -25,100 +24,40 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        Cyrill Gorcunov <gorcunov@gmail.com>,
        Zhang Yanmin <yanmin_zhang@linux.intel.com>,
        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 1/5] perf: Provide a proper stop action for software events
-Date: Thu, 10 Jun 2010 05:49:16 +0200
-Message-Id: <1276141760-11590-2-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH 0/5] perf events finer grained context instrumentation / context exclusion
+Date: Thu, 10 Jun 2010 05:49:15 +0200
+Message-Id: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com>
-References: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to introduce new context exclusions, software events will
-have to eventually stop when needed. We'll want perf_event_stop() to
-act on every events.
+Here is the new version of per context exclusion, based on hooks
+on irq_enter/irq_exit. I haven't observed slowdowns but I haven't
+actually measured the impact.
 
-To achieve this, remove the stub stop/start pmu callbacks of software
-and tracepoint events.
+It's pullable from:
 
-This may even optimize the case of hardware and software events
-running at the same time: now we only stop/start all hardware
-events if we reset a hardware event period, not anymore with
-software events.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/exclusion-3
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Zhang Yanmin <yanmin_zhang@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/perf_event.c |   29 ++++++++++++++++-------------
- 1 files changed, 16 insertions(+), 13 deletions(-)
+It's against latest tip:perf/core.
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index c772a3d..5c004f7 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -1541,11 +1541,23 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
- 	hwc->sample_period = sample_period;
- 
- 	if (local64_read(&hwc->period_left) > 8*sample_period) {
--		perf_disable();
--		perf_event_stop(event);
-+		bool software_event = is_software_event(event);
-+
-+		/*
-+		 * Only hardware events need their irq period to be
-+		 * reprogrammed
-+		 */
-+		if (!software_event) {
-+			perf_disable();
-+			perf_event_stop(event);
-+		}
-+
- 		local64_set(&hwc->period_left, 0);
--		perf_event_start(event);
--		perf_enable();
-+
-+		if (!software_event) {
-+			perf_event_start(event);
-+			perf_enable();
-+		}
- 	}
- }
- 
-@@ -4286,16 +4298,9 @@ static void perf_swevent_void(struct perf_event *event)
- {
- }
- 
--static int perf_swevent_int(struct perf_event *event)
--{
--	return 0;
--}
--
- static const struct pmu perf_ops_generic = {
- 	.enable		= perf_swevent_enable,
- 	.disable	= perf_swevent_disable,
--	.start		= perf_swevent_int,
--	.stop		= perf_swevent_void,
- 	.read		= perf_swevent_read,
- 	.unthrottle	= perf_swevent_void, /* hwc->interrupts already reset */
- };
-@@ -4578,8 +4583,6 @@ static int swevent_hlist_get(struct perf_event *event)
- static const struct pmu perf_ops_tracepoint = {
- 	.enable		= perf_trace_enable,
- 	.disable	= perf_trace_disable,
--	.start		= perf_swevent_int,
--	.stop		= perf_swevent_void,
- 	.read		= perf_swevent_read,
- 	.unthrottle	= perf_swevent_void,
- };
--- 
-1.6.2.3
+Thanks.
+
+Frederic Weisbecker (5):
+  perf: Provide a proper stop action for software events
+  perf: Support disable() after stop() on software events
+  perf: New PERF_EVENT_STATE_PAUSED event state
+  perf: Introduce task, softirq and hardirq contexts exclusion
+  perf: Support for task/softirq/hardirq exclusion on tools
+
+ arch/x86/kernel/cpu/perf_event.c |    6 +-
+ include/linux/perf_event.h       |   44 +++++++-
+ kernel/perf_event.c              |  232 ++++++++++++++++++++++++++++++++------
+ kernel/softirq.c                 |    6 +
+ kernel/trace/trace_event_perf.c  |    2 +-
+ tools/perf/util/parse-events.c   |   37 +++++--
+ 6 files changed, 276 insertions(+), 51 deletions(-)
 
