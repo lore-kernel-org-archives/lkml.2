@@ -1,205 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759888Ab0FJWsl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 18:48:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53173 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab0FJWsj (ORCPT
+	id S1753148Ab0FJXCh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 19:02:37 -0400
+Received: from mail-yw0-f204.google.com ([209.85.211.204]:40262 "EHLO
+	mail-yw0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab0FJXCg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 18:48:39 -0400
-X-Authority-Analysis: v=1.1 cv=rR912iD8TqKBQWPhXASLR67rt2rT9ApkpBWj5XB9Duc= c=1 sm=0 a=l0vWjkAIsFQA:10 a=yQWWgrYGNuUA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=BulHB4dBAAAA:8 a=VnNF1IyMAAAA:8 a=XnEp0smhP56TeH7YzVMA:9 a=RK_Ee4clrYU8xpQspoAA:7 a=W0vlE3hO9951npFOs2A6tzdC5EkA:4 a=CjuIK1q_8ugA:10 a=B8IJiNHybsEA:10 a=Nqdp4+S2FArj7gZzHVn+tA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.120.198.24
-Date: Thu, 10 Jun 2010 17:48:45 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
-       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
-       bfields@fieldses.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       selinux@tycho.nsa.gov, labeled-nfs@linux-nfs.org
-Subject: Re: [PATCH 02/10] Security: Add Hook to test if the particular
- xattr is part of a MAC model.
-Message-ID: <20100610224845.GA27104@hallyn.com>
-References: <1276014176-20315-1-git-send-email-dpquigl@tycho.nsa.gov>
- <1276014176-20315-3-git-send-email-dpquigl@tycho.nsa.gov>
+	Thu, 10 Jun 2010 19:02:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276014176-20315-3-git-send-email-dpquigl@tycho.nsa.gov>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.44L0.1006101003480.1702-100000@iolanthe.rowland.org>
+References: <AANLkTil2JhBgJ27qcTARVj2wVgEltxZKPOc9Ddu4c8yY@mail.gmail.com>
+	<Pine.LNX.4.44L0.1006101003480.1702-100000@iolanthe.rowland.org>
+Date: Thu, 10 Jun 2010 16:02:34 -0700
+Message-ID: <AANLkTiniGxuHLeTyxBe7zZxOdYJEkFcl3akR2E_aLDi3@mail.gmail.com>
+Subject: Re: [linux-pm] suspend blockers & Android integration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: tytso@mit.edu, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Florian Mickler <florian@mickler.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Brian Swetland <swetland@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Felipe Balbi <felipe.balbi@nokia.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting David P. Quigley (dpquigl@tycho.nsa.gov):
-> There are areas in the Labeled NFS code where where we need to test if the
-> attribute being requested exhibits the semantics of a MAC model. This allows us
-> to make sure that we get the desired semantics from the attribute instead of
-> something else such as capabilities or a time based LSM.
-> 
-> Signed-off-by: Matthew N. Dodd <Matthew.Dodd@sparta.com>
-> Signed-off-by: David P. Quigley <dpquigl@tycho.nsa.gov>
-> ---
->  include/linux/security.h   |   11 +++++++++++
->  security/capability.c      |    6 ++++++
->  security/security.c        |    6 ++++++
->  security/selinux/hooks.c   |    6 ++++++
->  security/smack/smack_lsm.c |   11 +++++++++++
->  5 files changed, 40 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index 4d01784..9597620 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -1373,6 +1373,10 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
->   *	@pages contains the number of pages.
->   *	Return 0 if permission is granted.
->   *
-> + * @ismaclabel:
-> + * 	Check if the extended attribute specified by @name represents a MAC label.
-> + * 	@name full extended attribute name to check against LSM as a MAC label.
+2010/6/10 Alan Stern <stern@rowland.harvard.edu>:
+> On Wed, 9 Jun 2010, Arve Hjønnevåg wrote:
+>
+>> > I think this is where you misunderstood.  There is no "report wakeup
+>> > event" as such.  All that happens is that data becomes available to be
+>> > read from the input device file.  However the power manager process
+>> > isn't polling the device file at this point (because a suspend blocker
+>> > is active), so it doesn't realize that the source has become active
+>> > again.
+>> >
+>>
+>> Yes this is not what I though you were suggesting. I thought you were
+>> trying to make sure the power manager sees all wakeup events. If you
+>> are only listening for wakeup events while no suspend blockers are
+>> active, why latch them?
+>
+> ...
+>
+>> If you only poll the fd after the last user-space suspend blocker is
+>> released, why do you care when the kernel wakelock could have been
+>> released? It seem the only thing it saves you is an extra poll call
+>> when two wakeup events happen at the same time and one of them is
+>> fully processed and unblocks suspend before the other event handler
+>> blocks suspend. It seems strange to remove your wakeup event from the
+>> list when a specific suspend blocker is acquired when any suspend
+>> blocker will prevent that wakeup event from being added to the list in
+>> the first place.
+>
+> ...
+>
+>> I don't think there is a need to tie the fds to anything else. If you
+>> poll the fds on the last suspend unblock call, you should get the same
+>> behaviour.
+>
+> You are quite right; there is no need to associate suspend blockers
+> with wakeup sources.  The power manager merely needs to poll all wakeup
+> sources whenever no suspend blockers are active.  I put those
+> associations in the proposal because of the line of reasoning that led
+> up to it, but they aren't necessary.
+>
+>
+>> All input events that can wake the system are handled by one
+>> user-space suspend blocker. Input devices come and go so we would need
+>> to add and remove the fds dynamically.
+>
+> Correct; the power manager would need to know whenever a wakeup-capable
+> device file was opened or closed.
+>
+>
+>> > The power manager would indeed have to know about wakeup devices that
+>> > don't need to _keep_ the system awake.  Here's one way to cope: During
+>> > those times when no suspend blockers are active but the PM process
+>> > thinks a wakeup source is active, the PM process could poll every few
+>> > seconds to update its list of active sources.  At those points it could
+>> > remove wakeup sources that have timed out.
+>> >
+>>
+>> For that to work the wakeup events would have to be reported to the
+>> power manager in a reliable way in the first place. Passing the file
+>> descriptor that the app uses to the power manager does not work for
+>> this, since the app could read the event while the power manager was
+>> not in the poll call and the power manager would never see it.
+>
+> If the app activates a suspend blocker before reading the event, this
+> doesn't matter.  If the app doesn't activate a suspend blocker then it
+> risks being suspended after it has read the event but before it has
+> handled the event.  This is equally true with wakelocks.
+>
 
-Can you document the return value here?  The name does suggestion true/false
-rather than success/fail, but it would be nice to have it spelled out without
-having to look at one of the implementations to be sure.
+It is not the same. Using a wakelock with a timeout only has a problem
+if the app did not get a change to run and block suspend before the
+timeout expires. With the timeout values we use there is only a
+problem if the system is already unresponsive. If the driver does not
+block suspend but instead a power manager calls select or poll on a
+file descriptor while the app does a blocking read, the power manager
+can easily miss the event and suspend before the app blocks suspend.
 
-Otherwise
+>> Also,
+>> existing apps don't pass their file descriptors to the power manager,
+>> so it has the get the event from somewhere else.
+>
+> Now you've put your finger on the key.  The main difference between my
+> scheme and the original wakelock scheme is that programs have to inform
+> the power manager whenever they open or close a wakeup-capable device
+> file.  With everything implemented inside the kernel this isn't
+> necessary, because obviously a kernel driver already knows when its
+> device file is opened or closed.
+>
+> As I said before, this additional complication in userspace is the
+> price paid for keeping stuff out of the kernel.  If you had implemented
+> wakelocks this way originally, you would not have needed to patch the
+> vanilla kernel and this entire stormy discussion would never have
+> occurred.  (But of course you couldn't have used this for the original
+> implementation of wakelocks, because back then the hardware couldn't
+> achieve the lowest power states from idle.)
+>
+>> > Obviously this proposal would complicate your userspace.  Not
+>> > enormously, since most of the work is confined to the power manager,
+>>
+>> No, the main problem it that it is not confined to the power manager.
+>> The power manager does not have a list of file descriptors to monitor,
+>> so we have to modify all code that handles wakeup events. This
+>> includes vendor supplied code that we don't have the source for, but,
+>> on some platforms at least, this code relies on kernel wakelocks with
+>> a timeout and could at first be handled the same way we would have to
+>> handle existing apps reading from a socket.
+>
+> Look, I never said this scheme was _better_ than wakelocks.  I merely
+> said that it could be used without significant modifications to the
+> kernel.
+>
+>> The suspend blocker approach is more generally useful since it
+>> supports hardware where suspend is needed. Why this argument is being
+>> ignored is very puzzling.
+>
+> Probably because people doesn't envision system suspend being used for
+> dynamic power management on that kind of hardware.
+>
 
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+I'm not sure what you mean by dynamic power management here (frequency
+of suspends?), but auto suspend is already in use on x86 desktops and
+laptops. Suspend blockers can fix the race with some wakeup events
+there.
+
+>> Your solution is not immediately useful since depends on removing all
+>> periodic kernel timers and adding support to stopping the monotonic
+>> clock for set of processes that are frozen.
+>
+> The monotonic clock is indeed an issue.
+>
+> Periodic kernel timers... I don't know about them.  Has anyone tried to
+> measure them?  There are excellent reasons for trimming them when the
+> system goes into low-power idle, independent of Android.  This sounds
+> like the kind of thing Arjan might have worked on.
+>
+>> Your solution forces the user space interface to be more complicated,
+>> and it creates a new user space power manager that has to start before
+>> any process that handle wakeup events.
+>
+> That's right.
+>
+> Alan Stern
+>
+>
 
 
-> + *
->   * @secid_to_secctx:
->   *	Convert secid to security context.
->   *	@secid contains the security ID.
-> @@ -1664,6 +1668,7 @@ struct security_operations {
->  
->  	int (*getprocattr) (struct task_struct *p, char *name, char **value);
->  	int (*setprocattr) (struct task_struct *p, char *name, void *value, size_t size);
-> +	int (*ismaclabel) (const char * name);
->  	int (*secid_to_secctx) (u32 secid, char **secdata, u32 *seclen);
->  	int (*secctx_to_secid) (const char *secdata, u32 seclen, u32 *secid);
->  	void (*release_secctx) (char *secdata, u32 seclen);
-> @@ -1919,6 +1924,7 @@ int security_getprocattr(struct task_struct *p, char *name, char **value);
->  int security_setprocattr(struct task_struct *p, char *name, void *value, size_t size);
->  int security_netlink_send(struct sock *sk, struct sk_buff *skb);
->  int security_netlink_recv(struct sk_buff *skb, int cap);
-> +int security_ismaclabel(const char *name);
->  int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen);
->  int security_secctx_to_secid(const char *secdata, u32 seclen, u32 *secid);
->  void security_release_secctx(char *secdata, u32 seclen);
-> @@ -2676,6 +2682,11 @@ static inline int security_netlink_recv(struct sk_buff *skb, int cap)
->  	return cap_netlink_recv(skb, cap);
->  }
->  
-> +static inline int security_ismaclabel(const char *name)
-> +{
-> +	return 0;
-> +}
-> +
->  static inline int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
->  {
->  	return -EOPNOTSUPP;
-> diff --git a/security/capability.c b/security/capability.c
-> index 9ce1c2f..0d8f7e9 100644
-> --- a/security/capability.c
-> +++ b/security/capability.c
-> @@ -829,6 +829,11 @@ static int cap_setprocattr(struct task_struct *p, char *name, void *value,
->  	return -EINVAL;
->  }
->  
-> +static int cap_ismaclabel(const char *name)
-> +{
-> +	return 0;
-> +}
-> +
->  static int cap_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
->  {
->  	return -EOPNOTSUPP;
-> @@ -1064,6 +1069,7 @@ void security_fixup_ops(struct security_operations *ops)
->  	set_to_cap_if_null(ops, d_instantiate);
->  	set_to_cap_if_null(ops, getprocattr);
->  	set_to_cap_if_null(ops, setprocattr);
-> +	set_to_cap_if_null(ops, ismaclabel);
->  	set_to_cap_if_null(ops, secid_to_secctx);
->  	set_to_cap_if_null(ops, secctx_to_secid);
->  	set_to_cap_if_null(ops, release_secctx);
-> diff --git a/security/security.c b/security/security.c
-> index c1b6847..1f0765c 100644
-> --- a/security/security.c
-> +++ b/security/security.c
-> @@ -1013,6 +1013,12 @@ int security_netlink_recv(struct sk_buff *skb, int cap)
->  }
->  EXPORT_SYMBOL(security_netlink_recv);
->  
-> +int security_ismaclabel(const char *name)
-> +{
-> +	return security_ops->ismaclabel(name);
-> +}
-> +EXPORT_SYMBOL(security_ismaclabel);
-> +
->  int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
->  {
->  	return security_ops->secid_to_secctx(secid, secdata, seclen);
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index 435c51f..8239f5c 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -5372,6 +5372,11 @@ abort_change:
->  	return error;
->  }
->  
-> +static int selinux_ismaclabel(const char *name)
-> +{
-> +	return (strcmp(name,XATTR_NAME_SELINUX) == 0);
-> +}
-> +
->  static int selinux_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
->  {
->  	return security_sid_to_context(secid, secdata, seclen);
-> @@ -5610,6 +5615,7 @@ static struct security_operations selinux_ops = {
->  	.getprocattr =			selinux_getprocattr,
->  	.setprocattr =			selinux_setprocattr,
->  
-> +	.ismaclabel =			selinux_ismaclabel,
->  	.secid_to_secctx =		selinux_secid_to_secctx,
->  	.secctx_to_secid =		selinux_secctx_to_secid,
->  	.release_secctx =		selinux_release_secctx,
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index fdfeaa2..449e223 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -3012,6 +3012,16 @@ static void smack_audit_rule_free(void *vrule)
->  #endif /* CONFIG_AUDIT */
->  
->  /**
-> + * smack_ismaclabel - check if xattr @name references a smack MAC label
-> + * @name: Full xattr name to check.
-> + */
-> +static int smack_ismaclabel(const char *name)
-> +{
-> +	return (strcmp(name, XATTR_NAME_SMACK) == 0);
-> +}
-> +
-> +
-> +/**
->   * smack_secid_to_secctx - return the smack label for a secid
->   * @secid: incoming integer
->   * @secdata: destination
-> @@ -3199,6 +3209,7 @@ struct security_operations smack_ops = {
->  	.audit_rule_free =		smack_audit_rule_free,
->  #endif /* CONFIG_AUDIT */
->  
-> +	.ismaclabel =			smack_ismaclabel,
->  	.secid_to_secctx = 		smack_secid_to_secctx,
->  	.secctx_to_secid = 		smack_secctx_to_secid,
->  	.release_secctx = 		smack_release_secctx,
-> -- 
-> 1.6.2.5
-> 
-> 
-> --
-> This message was distributed to subscribers of the selinux mailing list.
-> If you no longer wish to subscribe, send mail to majordomo@tycho.nsa.gov with
-> the words "unsubscribe selinux" without quotes as the message.
+
+-- 
+Arve Hjønnevåg
