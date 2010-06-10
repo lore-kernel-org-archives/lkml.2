@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759607Ab0FJQ5D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 12:57:03 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51220 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab0FJQ5A convert rfc822-to-8bit (ORCPT
+	id S1759602Ab0FJQ6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 12:58:38 -0400
+Received: from mail-yw0-f204.google.com ([209.85.211.204]:65014 "EHLO
+	mail-yw0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab0FJQ6g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 12:57:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Wq3P40GRaICQM6nLWmdIqDFgoXTXYTewdHmr6sa7yMGkRkL3a095/DnrFz+plZWNDN
-         3YAi/a4TMx6XjxJbesrOuhfNX2RiPfj3rsWPdXX7ExRpn2rpY3rHqKtJNACduDuQ2qvJ
-         GbSr4EY/w3A0tmNrzBr3EFE/3AowshL2sNH4c=
+	Thu, 10 Jun 2010 12:58:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik6xP9vVEyW4QG-4RfZu-iEuHcl2pBV_-mfHP4y@mail.gmail.com>
-References: <AANLkTik6xP9vVEyW4QG-4RfZu-iEuHcl2pBV_-mfHP4y@mail.gmail.com>
-From: Mulyadi Santosa <mulyadi.santosa@gmail.com>
-Date: Thu, 10 Jun 2010 23:56:30 +0700
-Message-ID: <AANLkTinXqriwgslQwjmjYaGjiyVK4oh1HZcTwxgWCZkh@mail.gmail.com>
-Subject: Re: oom killer and long-waiting processes
-To: Ryan Wang <openspace.wang@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       kernelnewbies@nl.linux.org
+In-Reply-To: <20100610095226.GI5333@pengutronix.de>
+References: <20100610052102.16222.86662.stgit@angua> <20100610052232.16222.942.stgit@angua> 
+	<20100610095226.GI5333@pengutronix.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 10 Jun 2010 10:58:15 -0600
+X-Google-Sender-Auth: _SZeNgd3jVQ4uhb83JJUtZW6iro
+Message-ID: <AANLkTikNDUUc7WODmtOYRf-vDzgWpWTI6kpneUEOPogz@mail.gmail.com>
+Subject: Re: [PATCH 1/2] of/i2c: Generalize OF support
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, jeremy.kerr@canonical.com,
+       devicetree-discuss@lists.ozlabs.org, ben-linux@fluff.org,
+       linux-i2c@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-On Thu, Jun 10, 2010 at 14:17, Ryan Wang <openspace.wang@gmail.com> wrote:
-> Hi all,
+On Thu, Jun 10, 2010 at 3:52 AM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+> Hi Grant,
 >
->        I have one question about oom killer:
-> If many processes dealing with network communications,
-> but due to bad network traffic, the processes have to wait
-> for a very long time. And meanwhile they may consume
-> some memeory separately for computation. The number
-> of such processes may be large.
+> looks good to me in general. A few questions:
+>
+> On Wed, Jun 09, 2010 at 11:22:32PM -0600, Grant Likely wrote:
+>> This patch cleans up the i2c OF support code to make it selectable by
+>> all architectures and allow for automatic registration of i2c devices.
+>>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> ---
+>>  drivers/i2c/busses/i2c-cpm.c     |    3 ++-
+>>  drivers/i2c/busses/i2c-ibm_iic.c |    3 ++-
+>>  drivers/i2c/busses/i2c-mpc.c     |    3 ++-
+>>  drivers/of/Kconfig               |    2 +-
+>>  drivers/of/of_i2c.c              |   44 ++++++++++++++++++++++++--------------
+>>  include/linux/of_i2c.h           |   13 +++++++++--
+>>  6 files changed, 45 insertions(+), 23 deletions(-)
+>>
 
+Hi Wolfram, thanks for the review.  Replies below.
 
-Please refer to my article here :
-http://linuxdevcenter.com/pub/a/linux/2006/11/30/linux-out-of-memory.html
+>> @@ -49,10 +64,8 @@ void of_register_i2c_devices(struct i2c_adapter *adap,
+>>
+>>               result = i2c_new_device(adap, &info);
+>>               if (result == NULL) {
+>> -                     printk(KERN_ERR
+>> -                            "of-i2c: Failed to load driver for %s\n",
+>> -                            info.type);
+>> -                     irq_dispose_mapping(info.irq);
+>
+> Why is the dispose removed?
 
-Right now, I can not recall entirely about the rules, but IIRC the
-processes that do I/O get lower "score". But that doesn't mean it
-won't be killed if free memory amount is really low...
+Hmmm... That looks like a mistake.  I'll add it back.
 
--- 
-regards,
+>
+>> +                     dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
+>> +                             node->full_name);
+>>                       continue;
+>>               }
+>>
+>> @@ -64,7 +77,7 @@ void of_register_i2c_devices(struct i2c_adapter *adap,
+>>               of_node_get(node);
+>>       }
+>>  }
+>> -EXPORT_SYMBOL(of_register_i2c_devices);
+>> +EXPORT_SYMBOL(of_i2c_register_devices);
+>>
+>>  static int of_dev_node_match(struct device *dev, void *data)
+>>  {
+>> @@ -76,8 +89,7 @@ struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
+>>  {
+>>       struct device *dev;
+>>
+>> -     dev = bus_find_device(&i2c_bus_type, NULL, node,
+>> -                                      of_dev_node_match);
+>> +     dev = bus_find_device(&i2c_bus_type, NULL, node, of_dev_node_match);
+>
+> This change looks unrelated to me; where was this changed?
 
-Mulyadi Santosa
-Freelance Linux trainer and consultant
+You're right; unrelated whitespace damage.  I'll remove.
 
-blog: the-hydra.blogspot.com
-training: mulyaditraining.blogspot.com
+g.
