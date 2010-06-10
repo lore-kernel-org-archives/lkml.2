@@ -1,66 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759179Ab0FJQC2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 12:02:28 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41396 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751979Ab0FJQC0 (ORCPT
+	id S1759445Ab0FJQGW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 12:06:22 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:54709 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab0FJQGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 12:02:26 -0400
-Subject: [PATCH v2] sata_sil24: Use memory barriers before issuing commands
-To: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-From: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Tejun Heo <tj@kernel.org>, Colin Tuckley <colin.tuckley@arm.com>,
-       Jeff Garzik <jeff@garzik.org>
-Date: Thu, 10 Jun 2010 17:02:12 +0100
-Message-ID: <20100610160212.18091.29856.stgit@e102109-lin.cambridge.arm.com>
-User-Agent: StGit/0.15-83-g972d5
+	Thu, 10 Jun 2010 12:06:21 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 1/1] perf record: Don't call newt functions when not initialized
+Date: Thu, 10 Jun 2010 13:05:56 -0300
+Message-Id: <1276185956-19099-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1276185956-19099-1-git-send-email-acme@infradead.org>
+References: <1276185956-19099-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Jun 2010 16:02:12.0435 (UTC) FILETIME=[49BC7A30:01CB08B6]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The data in the cmd_block buffers may reach the main memory after the
-writel() to the device ports. This patch introduces two calls to wmb()
-to ensure the relative ordering.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Tested-by: Colin Tuckley <colin.tuckley@arm.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Jeff Garzik <jeff@garzik.org>
+When processing events we want to give visual feedback to the user when
+using the newt browser, so there are ui_progress calls in
+__perf_session__process_events, but those should check if newt is being
+used.
+
+Reported-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Tested-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <20100609123530.GB9471@ghostprotocols.net>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/ata/sata_sil24.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ tools/perf/util/newt.c |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/ata/sata_sil24.c b/drivers/ata/sata_sil24.c
-index e925051..a5d5aff 100644
---- a/drivers/ata/sata_sil24.c
-+++ b/drivers/ata/sata_sil24.c
-@@ -622,6 +622,11 @@ static int sil24_exec_polled_cmd(struct ata_port *ap, int pmp,
- 	irq_enabled = readl(port + PORT_IRQ_ENABLE_SET);
- 	writel(PORT_IRQ_COMPLETE | PORT_IRQ_ERROR, port + PORT_IRQ_ENABLE_CLR);
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index cf182ca..7537ca1 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -43,6 +43,9 @@ struct ui_progress *ui_progress__new(const char *title, u64 total)
  
+ 	if (self != NULL) {
+ 		int cols;
++
++		if (use_browser <= 0)	
++			return self;
+ 		newtGetScreenSize(&cols, NULL);
+ 		cols -= 4;
+ 		newtCenteredWindow(cols, 1, title);
+@@ -67,14 +70,22 @@ out_free_self:
+ 
+ void ui_progress__update(struct ui_progress *self, u64 curr)
+ {
 +	/*
-+	 * The barrier is required to ensure that writes to cmd_block reach
-+	 * the memory before the write to PORT_CMD_ACTIVATE.
++	 * FIXME: We should have a per UI backend way of showing progress,
++	 * stdio will just show a percentage as NN%, etc.
 +	 */
-+	wmb();
- 	writel((u32)paddr, port + PORT_CMD_ACTIVATE);
- 	writel((u64)paddr >> 32, port + PORT_CMD_ACTIVATE + 4);
++	if (use_browser <= 0)
++		return;
+ 	newtScaleSet(self->scale, curr);
+ 	newtRefresh();
+ }
  
-@@ -895,6 +900,11 @@ static unsigned int sil24_qc_issue(struct ata_queued_cmd *qc)
- 	paddr = pp->cmd_block_dma + tag * sizeof(*pp->cmd_block);
- 	activate = port + PORT_CMD_ACTIVATE + tag * 8;
+ void ui_progress__delete(struct ui_progress *self)
+ {
+-	newtFormDestroy(self->form);
+-	newtPopWindow();
++	if (use_browser > 0) {
++		newtFormDestroy(self->form);
++		newtPopWindow();
++	}
+ 	free(self);
+ }
  
-+	/*
-+	 * The barrier is required to ensure that writes to cmd_block reach
-+	 * the memory before the write to PORT_CMD_ACTIVATE.
-+	 */
-+	wmb();
- 	writel((u32)paddr, activate);
- 	writel((u64)paddr >> 32, activate + 4);
- 
+-- 
+1.6.2.5
 
