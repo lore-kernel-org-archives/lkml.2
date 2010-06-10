@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759589Ab0FJQnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 12:43:01 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45104 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752289Ab0FJQm7 (ORCPT
+	id S1759579Ab0FJQo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 12:44:56 -0400
+Received: from sprinkles.athenacr.com ([64.95.46.210]:8828 "EHLO
+	sprinkles.inp.in.athenacr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759278Ab0FJQoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 12:42:59 -0400
-Subject: Re: [PATCH v2] sata_sil24: Use memory barriers before issuing
- commands
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Colin Tuckley <colin.tuckley@arm.com>, Jeff Garzik <jeff@garzik.org>,
-       linux-arch <linux-arch@vger.kernel.org>
-In-Reply-To: <1276187002.24535.88.camel@e102109-lin.cambridge.arm.com>
-References: <20100610160212.18091.29856.stgit@e102109-lin.cambridge.arm.com>
-	 <4C110EDD.2010409@kernel.org>
-	 <1276187002.24535.88.camel@e102109-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Thu, 10 Jun 2010 17:42:48 +0100
-Message-ID: <1276188168.24535.96.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Thu, 10 Jun 2010 12:44:55 -0400
+Message-ID: <4C111685.8010400@athenacr.com>
+Date: Thu, 10 Jun 2010 12:44:53 -0400
+From: Brian Bloniarz <bmb@athenacr.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jens Axboe <jaxboe@fusionio.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>
+Subject: Re: [GIT PULL] block/io bits for 2.6.35-rc
+References: <4C10EC2A.8060002@fusionio.com> <AANLkTimus1Ajk-6HyDtZBmsYwQjkAf3zW-dvxNJlSlGw@mail.gmail.com> <4C1111ED.6020008@fusionio.com>
+In-Reply-To: <4C1111ED.6020008@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Jun 2010 16:42:48.0857 (UTC) FILETIME=[F5F4F890:01CB08BB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-10 at 17:23 +0100, Catalin Marinas wrote:
-> On Thu, 2010-06-10 at 17:12 +0100, Tejun Heo wrote:
-> > On 06/10/2010 06:02 PM, Catalin Marinas wrote:
-> > > The data in the cmd_block buffers may reach the main memory after the
-> > > writel() to the device ports. This patch introduces two calls to wmb()
-> > > to ensure the relative ordering.
-> > >
-> > > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> > > Tested-by: Colin Tuckley <colin.tuckley@arm.com>
-> > > Cc: Tejun Heo <tj@kernel.org>
-> > > Cc: Jeff Garzik <jeff@garzik.org>
-> >
-> > I suppose you have tested and verified that this is actually
-> > necessary, right? 
+On 06/10/2010 12:25 PM, Jens Axboe wrote:
+> On 2010-06-10 17:55, Linus Torvalds wrote:
+>> On Thu, Jun 10, 2010 at 6:44 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>>
+>>> - A set of patches fixing the WB_SYNC_NONE writeback from Christoph. So
+>>>  we should finally have both functional and working WB_SYNC_NONE from
+>>>  umount context.
+>>
+>> I _really_ think this is too late, considering how broken it has been.
+>> We already reverted the WB_SYNC_NONE things exactly because it didn't
+>> work, didn't we? I'm going to be off-line in two days, and this part
+>> of the pull request really makes me nervous, if only simply because of
+>> the history of it all (ie it's always been broken, why shouldn't it be
+>> broken now?).
+>>
+>> IOW, that's a lot of scary changes, that have historically not been
+>> safe or sufficiently tested, and have caused problems for various
+>> filesystems. Convince me why they should suddenly be ok to merge?
 > 
-> Yes, otherwise we get random failures with this device on ARM.
+> I agree, it's late and it makes me nervous too. I had them cook for
+> a day, didn't see any problems. And Christoph would not send it in
+> unless it passes at least xfs qa, which is what found the problems
+> last time (the ones we reverted).
 > 
-> > I've been looking through the docs but couldn't
-> > find anything which described the ordering between writes to main
-> > memory and write[bwl]()'s.  One thing that kind of bothers me is that
-> > r/wmb()'s are for ordering memory accesses among CPUs which
-> > participate in cache coherency protocol and although it may work right
-> > in the above case I'm not really sure whether this is the right thing
-> > to do.  Do you have more information on the subject?
+> It's fixing a regression where umount takes a LONG time if you have
+> a lot of dirty inodes, since it basically degenerates to a data
+> integrity writeback instead of a simple WB_SYNC_NONE. If it wasn't
+> fixing a nasty regression (the distros are all wanting a real fix
+> for this, it's a user problem), I would not be submitting this code
+> at this point in time.
 > 
-> The mb() are not for ordering accesses among CPUs (though they would
-> cover this case as well). For inter-CPU ordering, we have smp_mb() and
-> friends. For all other cases, we have the mandatory barriers mb() and
-> friends and DMA is one of them.
-> 
-> Apart from the memory-barriers.txt document, there is the Device I/O
-> docbook which mentions something about DMA buffers, though not very
-> clear on which barriers to use (something like just make sure that the
-> writes to the buffer reached the memory).
 
-It was actually the DMA-API.txt (rather than deviceiobook) in the
-description of dma_alloc_coherent().
+Reinforcing that last point: from what I could figure out, Fedora 13
+is shipping the buggy WB_SYNC_NONE patch currently. Ubuntu 10.04 is
+shipping an in-kernel workaround that has serious performance
+drawbacks.
 
--- 
-Catalin
-
+https://bugzilla.kernel.org/show_bug.cgi?id=15906 has links to the
+downstream bugs.
