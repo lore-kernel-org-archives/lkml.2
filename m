@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758822Ab0FJLAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 07:00:45 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:38937 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758806Ab0FJLAm (ORCPT
+	id S1758812Ab0FJLBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 07:01:44 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:35747 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab0FJLBn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 07:00:42 -0400
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>, tytso@mit.edu,
-       linux-fsdevel@vger.kernel.org
-Subject: [PATCH 1/1] VFS: introduce s_dirty accessors
-Date: Thu, 10 Jun 2010 13:56:33 +0300
-Message-Id: <1276167393-31492-2-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1276167393-31492-1-git-send-email-dedekind1@gmail.com>
-References: <1276167393-31492-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 10 Jun 2010 11:00:11.0678 (UTC) FILETIME=[18EC63E0:01CB088C]
-X-Nokia-AV: Clean
+	Thu, 10 Jun 2010 07:01:43 -0400
+Subject: Re: [PATCH 4/5] perf: Introduce task, softirq and hardirq contexts
+ exclusion
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@google.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>,
+       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
+       Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <1276141760-11590-5-git-send-regression-fweisbec@gmail.com>
+References: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com>
+	 <1276141760-11590-5-git-send-regression-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 10 Jun 2010 13:01:27 +0200
+Message-ID: <1276167687.2077.120.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+On Thu, 2010-06-10 at 05:49 +0200, Frederic Weisbecker wrote:
+> @@ -642,17 +643,31 @@ event_sched_in(struct perf_event *event,
+>         if (event->state <= PERF_EVENT_STATE_OFF)
+>                 return 0;
+>  
+> -       event->state = PERF_EVENT_STATE_ACTIVE;
+> +       if (event->attr.exclude_task)
+> +               event->state = PERF_EVENT_STATE_PAUSED;
+> +       else
+> +               event->state = PERF_EVENT_STATE_ACTIVE;
+> +
+>         event->oncpu = smp_processor_id();
+> +
 
-This patch introduces 3 VFS accessors: 'sb_mark_dirty()',
-'sb_mark_clean()', and 'sb_is_dirty()'. They simply
-set 'sb->s_dirt' or test 'sb->s_dirt'. The plan is to make
-every FS use these accessors later instead of manipulating
-the 'sb->s_dirt' flag directly.
+Aah, so that is why you added the PAUSE state knowledge to the arch
+code, you want to be able to call ->enable() on a PAUSEd event.
 
-Ultimately, this change is a preparation for the periodic
-superblock synchronization optimization which is about
-preventing the "sync_supers" kernel thread from waking up
-even if there is nothing to synchronize.
+That means you need to audit/touch all implementations anyway, isn't
+there a better interface we can use, like maybe extend ->enable() with a
+flags argument?
 
-This patch does not do any functional change, just adds
-accessor functions.
+>         /*
+>          * The new state must be visible before we turn it on in the hardware:
+>          */
+>         smp_wmb();
+>  
+> -       if (event->pmu->enable(event)) {
+> -               event->state = PERF_EVENT_STATE_INACTIVE;
+> -               event->oncpu = -1;
+> -               return -EAGAIN;
+> +       /*
+> +        * If we exclude the tasks, we only need to schedule hardware
+> +        * events that need to settle themselves, even in a pause mode.
+> +        * Software events can simply be scheduled anytime.
+> +        * If we want more granularity in all that, we can still provide
+> +        * later a pmu->reserve callback.
+> +        */
+> +       if (!event->attr.exclude_task || !is_software_event(event)) {
+> +               if (event->pmu->enable(event)) {
+> +                       event->state = PERF_EVENT_STATE_INACTIVE;
+> +                       event->oncpu = -1;
+> +                       return -EAGAIN;
+> +               }
+>         }
+>  
+>         event->tstamp_running += ctx->time - event->tstamp_stopped; 
 
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
----
- include/linux/fs.h |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 471e1ff..68ca1b0 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1783,6 +1783,19 @@ extern int get_sb_pseudo(struct file_system_type *, char *,
- 	struct vfsmount *mnt);
- extern void simple_set_mnt(struct vfsmount *mnt, struct super_block *sb);
- 
-+static inline void sb_mark_dirty(struct super_block *sb)
-+{
-+	sb->s_dirt = 1;
-+}
-+static inline void sb_mark_clean(struct super_block *sb)
-+{
-+	sb->s_dirt = 0;
-+}
-+static inline int sb_is_dirty(struct super_block *sb)
-+{
-+	return sb->s_dirt;
-+}
-+
- /* Alas, no aliases. Too much hassle with bringing module.h everywhere */
- #define fops_get(fops) \
- 	(((fops) && try_module_get((fops)->owner) ? (fops) : NULL))
--- 
-1.7.0.1
-
+Remove is_software_event(), not add more.
