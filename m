@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759350Ab0FJRnq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 13:43:46 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:45436 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab0FJRnp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 13:43:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=XJPv7svX7RiE5FDhPzxgQ7XKuOixFiaNu53cNQ8d0JR3t1p06P6SOB7wh7fhMh9bPB
-         57UuX6sBm3UeUnqkh4cPE/IioC/BUP3lPCzV/bdPlQs0PGwN0dLubQ01HzyJEd28fijm
-         ros3xCUH76895MkaGjTCeSr47ebuP8PKKTm4w=
-Message-ID: <4C112452.60200@gmail.com>
-Date: Thu, 10 Jun 2010 10:43:46 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Tejun Heo <tj@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-       x86@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [1/23] x86: percpu: Avoid warnings of unused variables
- in per cpu
-References: <20100610110.764742110@firstfloor.org> <20100610111036.DAE8EB1A2C@basil.firstfloor.org> <4C10C930.9080900@kernel.org> <20100610120951.GC16514@elte.hu>
-In-Reply-To: <20100610120951.GC16514@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1759392Ab0FJRrB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 13:47:01 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:34844 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752317Ab0FJRrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 13:47:00 -0400
+Date: Thu, 10 Jun 2010 10:46:53 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Sridhar Samudrala <sri@us.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+       virtualization@lists.linux-foundation.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Jiri Pirko <jpirko@redhat.com>,
+       Shirley Ma <xma@us.ibm.com>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH for-2.6.35] virtio_net: fix oom handling on tx
+Message-ID: <20100610104653.1aed2ecc@nehalam>
+In-Reply-To: <1276190227.22064.19.camel@w-sridhar.beaverton.ibm.com>
+References: <20100610152041.GA3480@redhat.com>
+	<1276190227.22064.19.camel@w-sridhar.beaverton.ibm.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2010 05:09 AM, Ingo Molnar wrote:
->
-> * Tejun Heo<tj@kernel.org>  wrote:
->
->> On 06/10/2010 01:10 PM, Andi Kleen wrote:
->>> Avoid hundreds of warnings with a gcc 4.6 -Wall build
->>>
->>> Cc: tj@kernel.org
->>> Cc: x86@kernel.org
->>>
->>> Signed-off-by: Andi Kleen<ak@linux.intel.com>
->>
->> Acked-by: Tejun Heo<tj@kernel.org>
->>
->> Can x86 or -mm please take this patch?  There isn't any pending percpu
->> patch currently and it seems a bit silly to start a branch for this
->> one.
->
-> Sure, queued it up.
->
-> Thanks,
->
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+On Thu, 10 Jun 2010 10:17:07 -0700
+Sridhar Samudrala <sri@us.ibm.com> wrote:
 
+> On Thu, 2010-06-10 at 18:20 +0300, Michael S. Tsirkin wrote:
+> > virtio net will never try to overflow the TX ring, so the only reason
+> > add_buf may fail is out of memory. Thus, we can not stop the
+> > device until some request completes - there's no guarantee anything
+> > at all is outstanding.
+> > 
+> > Make the error message clearer as well: error here does not
+> > indicate queue full.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  drivers/net/virtio_net.c |   15 ++++++++-------
+> >  1 files changed, 8 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > index 85615a3..e48a06f 100644
+> > --- a/drivers/net/virtio_net.c
+> > +++ b/drivers/net/virtio_net.c
+> > @@ -563,7 +563,6 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+> >  	struct virtnet_info *vi = netdev_priv(dev);
+> >  	int capacity;
+> > 
+> > -again:
+> >  	/* Free up any pending old buffers before queueing new ones. */
+> >  	free_old_xmit_skbs(vi);
+> > 
+> > @@ -572,12 +571,14 @@ again:
+> > 
+> >  	/* This can happen with OOM and indirect buffers. */
+> >  	if (unlikely(capacity < 0)) {
+> > -		netif_stop_queue(dev);
+> > -		dev_warn(&dev->dev, "Unexpected full queue\n");
+> > -		if (unlikely(!virtqueue_enable_cb(vi->svq))) {
+> > -			virtqueue_disable_cb(vi->svq);
+> > -			netif_start_queue(dev);
+> > -			goto again;
+> > +		if (net_ratelimit()) {
+> > +			if (likely(capacity == -ENOMEM))
+> > +				dev_warn(&dev->dev,
+> > +					 "TX queue failure: out of memory\n");
+> > +			else
+> > +				dev_warn(&dev->dev,
+> > +					 "Unexpected TX queue failure: %d\n",
+> > +					 capacity);
+> >  		}
+> >  		return NETDEV_TX_BUSY;
+> >  	}
+> 
+> It is not clear to me how xmit_skb() can return -ENOMEM.
+> xmit_skb() calls virtqueue_add_buf_gfp() which can return -ENOSPC.
+> Even vring_add_indirect() doesn't return -ENOMEM on kmalloc failure.
 
-Thanks for this.. I applied it over
-here.. and now don't have all of
-that spam from percpu while compiling
-the kernel..
+It makes more sense to have the device increment tx_droppped, 
+and return NETDEV_TX_OK. Skip the message (or make it a pr_debug()). 
+Network devices do not guarantee packet delivery, and if out of
+resources then holding more data in the
+queue is going to hurt not help the situation.
 
-only one I see now is something about
-warning: variable 'gfp' set but not used
-
-if there's another I can test it if you
-would like.
-
-Justin P. Mattock
+-- 
