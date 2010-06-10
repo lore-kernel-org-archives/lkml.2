@@ -1,74 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab0FJEWH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 00:22:07 -0400
-Received: from mail.lang.hm ([64.81.33.126]:51107 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752109Ab0FJEWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 00:22:05 -0400
-Date: Wed, 9 Jun 2010 21:21:00 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: Alan Stern <stern@rowland.harvard.edu>, tytso@mit.edu,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Florian Mickler <florian@mickler.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Brian Swetland <swetland@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Felipe Balbi <felipe.balbi@nokia.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-In-Reply-To: <AANLkTil2JhBgJ27qcTARVj2wVgEltxZKPOc9Ddu4c8yY@mail.gmail.com>
-Message-ID: <alpine.DEB.2.01.1006092117100.17462@asgard.lang.hm>
-References: <AANLkTilALyvthzh8rMiDFFP_QTz_o5hxdE8tArMUonpP@mail.gmail.com> <Pine.LNX.4.44L0.1006091031030.1728-100000@iolanthe.rowland.org> <AANLkTil2JhBgJ27qcTARVj2wVgEltxZKPOc9Ddu4c8yY@mail.gmail.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1753292Ab0FJEWY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 00:22:24 -0400
+Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:46914 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752044Ab0FJEWW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 00:22:22 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+       "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+       "'akpm@osdl.org'" <akpm@osdl.org>,
+       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+       "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Date: Wed, 9 Jun 2010 22:22:12 -0600
+Subject: [PATCH 12/12] scsi: megaraid_sas - Version and documentation update 
+Thread-Topic: [PATCH 12/12] scsi: megaraid_sas - Version and documentation
+ update 
+Thread-Index: Aco28IhK0BCwqEkwToSTDcG+BIA9kwDb1hagAACJvwADF6mW4AvxomIAHahLLtAABGVuwAbGnGQQ
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3D0804562@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>
+ <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3CDB80C39@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3CDB80C39@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jun 2010, Arve Hj?nnev?g wrote:
+Update the version and documentation.
 
->
-> The power may not see the event, the process that reads the event will
-> always see it. If the power manager is not in the poll call when the
-> event happens, the process that reads the event can read the event
-> before the power manager calls poll.
->
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
->
-> All input events that can wake the system are handled by one
-> user-space suspend blocker. Input devices come and go so we would need
-> to add and remove the fds dynamically.
+---
+Documentation/scsi/ChangeLog.megaraid_sas |   42 ++++++++++++++++++++++++++++++
+drivers/scsi/megaraid/megaraid_sas.h      |    6 ++--
+ 2 files changed, 45 insertions(+), 3 deletions(-)
 
-
->
-> For that to work the wakeup events would have to be reported to the
-> power manager in a reliable way in the first place. Passing the file
-> descriptor that the app uses to the power manager does not work for
-> this, since the app could read the event while the power manager was
-> not in the poll call and the power manager would never see it. Also,
-> existing apps don't pass their file descriptors to the power manager,
-> so it has the get the event from somewhere else.
->
-
-why could the suspend blocker process see all events, but the power 
-manager process not see the events?
-
-have the userspace talk to the power manager the way it does to the 
-suspend blocker now and what's the difference?
-
-effectivly think s/suspend blocker/power manager/ (with the power manager 
-doing all the other things that are proposed instead of grabbing the 
-wakelock), the difference should be hidden to the rest of userspace.
-
-what am I missing here?
-
-David Lang
+diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas new/Documentation/scsi/ChangeLog.megaraid_sas
+--- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-05-05 02:08:10.000000000 -0400
++++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-05-05 04:54:38.000000000 -0400
+@@ -1,3 +1,45 @@
++1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
++			(emaild-id:megaraidlinux@lsi.com)
++			Bo Yang
++
++2 Current Version : 00.00.04.30-rc1
++3 Older Version   : 00.00.04.17.1-rc1
++
++1.	Add the Online Controller Reset (OCR) to the Driver.
++	OCR is the new feature for megaraid_sas driver which
++	will allow the fw to do the chip reset which will not
++	affact the OS hbhavious.
++
++	To add the OCR support, driver need to do: 
++		a). reset the controller chip -- Xscale and Gen2.
++		
++		b). during the reset, driver will store the pending
++		cmds to pending queue.
++		
++		c). Also in driver's timeout routine, driver will
++		report to OS as reset.
++		
++		d). in Driver's ISR routine, if driver get the FW
++		state as state change and FW in Failure status,
++		driver will start to do the controller reset.
++		
++		e). If driver goes to timeout, but driver is in
++		operational status, driver will check if fw in failed
++		status, if yes, driver will do OCR to FW upto three times.
++		
++		f). Before driver kill adapter, driver will do last chance of
++		OCR to see if driver can bring back the FW.      
++
++2.	Add the CTIO support to the driver.
++3.	Add the support update flag to the driver to tell LSI megaraid_sas
++	application which driver will support the device update.  So application
++	will not need to do the device update after application add/del the device
++	from the system.
++
++4.	Add the input parameter max_sectors to 1MB support to our GEN2 controller.
++	customer can use the input paramenter max_sectors to add 1MB support to GEN2
++	controller.
++
+ 1 Release Date    : Thur.  Oct 29, 2009 09:12:45 PST 2009 -
+ 			(emaild-id:megaraidlinux@lsi.com)
+ 			Bo Yang
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.h new/drivers/scsi/megaraid/megaraid_sas.h
+--- old/drivers/scsi/megaraid/megaraid_sas.h	2010-05-05 01:55:42.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.h	2010-05-05 02:35:16.000000000 -0400
+@@ -18,9 +18,9 @@
+ /*
+  * MegaRAID SAS Driver meta data
+  */
+-#define MEGASAS_VERSION			"00.00.04.17.1-rc1"
+-#define MEGASAS_RELDATE			"Oct. 29, 2009"
+-#define MEGASAS_EXT_VERSION		"Thu. Oct. 29, 11:41:51 PST 2009"
++#define MEGASAS_VERSION			"00.00.04.30-rc1"
++#define MEGASAS_RELDATE			"May 3, 2010"
++#define MEGASAS_EXT_VERSION		"Mon. May 3, 11:41:51 PST 2010"
+ 
+ /*
+  * Device IDs
