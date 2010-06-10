@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759036Ab0FJNjA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 09:39:00 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:40166 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758492Ab0FJNi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 09:38:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=YfpZJz0iC5y6GfbKc60pgaxr0gtoAvmjYaOhHS9tLbhgQwX9S7WRaxu8JwYcNkIG1I
-         EHBKLYB+ZYcvZFfxMj/5ugHqoJy7WjX5mtW0dpfKAbcAKsEdH22gJ/0It3ryMmn+eQEM
-         Q4JjAFuHRjhm6f0lGhNRG5VaKO7864y6MFp5s=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Minchan Kim <minchan.kim@gmail.com>,
-       David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH] Cleanup : change try_set_zone_oom with try_set_zonelist_oom
-Date: Thu, 10 Jun 2010 22:38:44 +0900
-Message-Id: <1276177124-3395-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.5
+	id S1759108Ab0FJNjP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 09:39:15 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53483 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759091Ab0FJNjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 09:39:13 -0400
+Subject: Re: [linux-pm] [PATCH v4] pm_qos: make update_request non blocking
+From: James Bottomley <James.Bottomley@suse.de>
+To: Florian Mickler <florian@mickler.org>
+Cc: Jonathan Corbet <corbet@lwn.net>, Frederic Weisbecker <fweisbec@gmail.com>,
+       markgross@thegnar.org, linville@tuxdriver.com,
+       linux-kernel@vger.kernel.org,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20100610094525.0449d797@schatten.dmk.lab>
+References: <1276097381-3982-1-git-send-email-florian@mickler.org>
+	 <1276097832.4343.223.camel@mulgrave.site>
+	 <20100609180033.39d5b499@schatten.dmk.lab>
+	 <1276099645.4343.257.camel@mulgrave.site>
+	 <20100609183204.1eeca494@schatten.dmk.lab>
+	 <1276103149.4343.350.camel@mulgrave.site>
+	 <20100610094525.0449d797@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Jun 2010 08:39:04 -0500
+Message-ID: <1276177144.27283.37.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have been used naming try_set_zone_oom and clear_zonelist_oom.
-The role of functions is to lock of zonelist for preventing parallel
-OOM. So clear_zonelist_oom makes sense but try_set_zone_oome is rather
-awkward and unmatched with clear_zonelist_oom.
+On Thu, 2010-06-10 at 09:45 +0200, Florian Mickler wrote:
+> On Wed, 09 Jun 2010 13:05:49 -0400
+> James Bottomley <James.Bottomley@suse.de> wrote:
+> > On Wed, 2010-06-09 at 18:32 +0200, Florian Mickler wrote:
+> > > On Wed, 09 Jun 2010 12:07:25 -0400
+> > > James Bottomley <James.Bottomley@suse.de> wrote:
+> > > > OK, so the expression of the race is that the latest notification gets
+> > > > lost.  If something is tracking values, you'd really like to lose the
+> > > > previous one (which is now irrelevant) not the latest one.  The point is
+> > > > there's still a race.
+> > > > 
+> > > > James
+> > > > 
+> > > 
+> > > Yeah, but for blocking notification it is not that bad. 
+> > 
+> > The network latency notifier uses the value to recalculate something.
+> > Losing the last value will mean it's using stale data.
+> 
+> Actually after pondering a bit, it is not stale data that gets
+> delivered: (Correct me if I'm wrong)
+> 
+> The update_notify() function determines the extreme value and then
+> calls the blocking_notifier_chain. 
+> 
+> But just before the update_notify() function get's called, the
+> work-structure is reset and re-queue-able. So it is possible to queue it
+> already even before the extreme_value in update_notify get's
+> determined. 
+> 
+> So the notified value is always the latest or there is another
+> notification underway.
 
-Let's change it with try_set_zonelist_oom.
+Well, no ... it's a race, and like all good races the winner is non
+deterministic.
 
-Cc: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Let's change it with try_set_zonelist_oom.
+If the update comes in before the work queue is run, then everyone
+eventually sees the new value.  If it comes in as the chain is running,
+some notifiers see the old value and some the new.  If it comes in
+during back end processing, no-one sees the new value.
 
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- include/linux/oom.h |    2 +-
- mm/oom_kill.c       |    4 ++--
- mm/page_alloc.c     |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+James
 
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index 5376623..2e4b90b 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -24,7 +24,7 @@ enum oom_constraint {
- 	CONSTRAINT_MEMORY_POLICY,
- };
- 
--extern int try_set_zone_oom(struct zonelist *zonelist, gfp_t gfp_flags);
-+extern int try_set_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
- extern void clear_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_flags);
- 
- extern void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 709aedf..84840f3 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -509,7 +509,7 @@ EXPORT_SYMBOL_GPL(unregister_oom_notifier);
-  * if a parallel OOM killing is already taking place that includes a zone in
-  * the zonelist.  Otherwise, locks all zones in the zonelist and returns 1.
-  */
--int try_set_zone_oom(struct zonelist *zonelist, gfp_t gfp_mask)
-+int try_set_zonelist_oom(struct zonelist *zonelist, gfp_t gfp_mask)
- {
- 	struct zoneref *z;
- 	struct zone *zone;
-@@ -526,7 +526,7 @@ int try_set_zone_oom(struct zonelist *zonelist, gfp_t gfp_mask)
- 	for_each_zone_zonelist(zone, z, zonelist, gfp_zone(gfp_mask)) {
- 		/*
- 		 * Lock each zone in the zonelist under zone_scan_lock so a
--		 * parallel invocation of try_set_zone_oom() doesn't succeed
-+		 * parallel invocation of try_set_zonelist_oom() doesn't succeed
- 		 * when it shouldn't.
- 		 */
- 		zone_set_flag(zone, ZONE_OOM_LOCKED);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 431214b..492c200 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1738,7 +1738,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	struct page *page;
- 
- 	/* Acquire the OOM killer lock for the zones in zonelist */
--	if (!try_set_zone_oom(zonelist, gfp_mask)) {
-+	if (!try_set_zonelist_oom(zonelist, gfp_mask)) {
- 		schedule_timeout_uninterruptible(1);
- 		return NULL;
- 	}
--- 
-1.7.0.5
 
