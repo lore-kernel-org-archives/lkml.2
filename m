@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab0FJGeg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 02:34:36 -0400
-Received: from mail.tnnet.fi ([217.112.240.26]:54517 "EHLO mail.tnnet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751928Ab0FJGef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 02:34:35 -0400
-Message-ID: <4C108778.71545BCF@users.sourceforge.net>
-Date: Thu, 10 Jun 2010 09:34:32 +0300
-From: Jari Ruusu <jariruusu@users.sourceforge.net>
-To: Tejun Heo <tj@kernel.org>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Nick Piggin <npiggin@suse.de>, Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: 2.6.35-rc2 module reference counting broken
-References: <4C0C819E.EA5D6A18@users.sourceforge.net> <20100607064412.GK31073@ZenIV.linux.org.uk> <20100608234814.GA19826@ZenIV.linux.org.uk> <4C0F3C66.1020601@kernel.org>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755250Ab0FJGex (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 02:34:53 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33300 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754997Ab0FJGew (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 02:34:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=F2HqRpelYzDkeBCFXmUD5bJLZhUi8r9ab61c8rVWN0knXTb1ClgcXUPXHUrpoQSNwy
+         FyE/DBNfJ2se+0Fz8AQSQ95huqp5nB4i755qUVkXGb5MibMXLJ6fE7kZhhoCY9Zez8qT
+         cO6KqcfKA7yh9VJZjMTIvNPKQDuPyZj1OdeQk=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1006092206020.2933@localhost.localdomain>
+References: <AANLkTinIO5a1EeK6Ej2ljkuyL9zv06OMfbyiZBaxTQTd@mail.gmail.com> 
+	<alpine.LFD.2.00.1006092206020.2933@localhost.localdomain>
+From: Suresh Rajashekara <suresh.raj+linuxomap@gmail.com>
+Date: Wed, 9 Jun 2010 23:34:31 -0700
+X-Google-Sender-Auth: QpiV0WornBQzLWjzIEHoqu77EXc
+Message-ID: <AANLkTin-6XsW49ECufTLcdzaD1eK9bAxe0j7RXvPqN7p@mail.gmail.com>
+Subject: Re: Timekeeping issue on aggressive suspend/resume
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-omap@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       linux-pm@lists.linux-foundation.org, John Stultz <johnstul@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
-> On 06/09/2010 01:48 AM, Al Viro wrote:
-> > Yeah...  bd_start_claiming() grabs a reference to gendisk and we never
-> > let it go.  There's your leak...
-> 
-> Eh, I thought you were cc'd.  Sorry.  This was fixed sometime back by
-> Nick and queued in block tree (delayed due to mail misdelivery).
-> 
->   http://thread.gmane.org/gmane.linux.file-systems/40655
+On Wed, Jun 9, 2010 at 1:22 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Though we could change that conditionally - the default would still be
+> the freeze of jiffies and CLOCK_MONOTONIC for historical compability.
 
-That one liner patch makes module refcount mismatch go away.
+If I were to change it only for our implementation, and make all the
+user space timers use CLOCK_REALTIME, then could you please point me
+in a direction as to what part of the kernel I should be touching to
+make that change?
 
-However, I am not sure if that is the right place to insert that
-module_put(). The problem with Nick Piggin's (2010-05-25 15:50:21 GMT) patch
-is that it makes module refcount temporarily drop to zero.
+Earlier we faced issue with time that the application sees. It wasn't
+getting updated when we suspend and resume the system (where as the
+time inside the kernel kept updating) and hence eventually would drift
+from the actual time.
 
-I added this line right after that "module_put(disk->fops->owner);" fix:
+for eg, if I use this loop at the command prompt
 
- if(disk->fops->owner){printk("bd_start_claiming: module_refcount=%u\n", module_refcount(disk->fops->owner));}
+while date
+do
+echo mem > /sys/power/state
+done
 
-And that said "module_refcount=0" when I tried it with my silly floppy
-module mount+umount test.
+then the date command always displayed the same time, but the prints
+from the kernel (I was using the printk time information) was
+advancing as expected.
 
-Later in the mount system call handling the module refrence count is
-incremented. But to me that looks like there is a window of opportunity for
-things to go wrong. What is there to prevent module from being removed at
-zero refcount?
+I found a patch at
+https://patchwork.kernel.org/patch/50070/
 
--- 
-Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
+Though this fixed the application time update issue, there are lot of
+timers in the application which is still not working right.
+
+Could anyone please point in some direction to find the solution?
+
+Thanks,
+Suresh
