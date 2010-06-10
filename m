@@ -1,151 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab0FJCXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 22:23:31 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51589 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932219Ab0FJCXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 22:23:30 -0400
-Message-ID: <4C104CBE.8060404@cn.fujitsu.com>
-Date: Thu, 10 Jun 2010 10:23:58 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
-MIME-Version: 1.0
-To: Izik Eidus <ieidus@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-       Chris Wright <chrisw@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       LKML <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH] ksm: cleanup for mm_slots_hash
-References: <4BFF66CC.4050204@cn.fujitsu.com>
-In-Reply-To: <4BFF66CC.4050204@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932348Ab0FJC1L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 22:27:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58729 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755529Ab0FJC1J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 22:27:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:subject:to:cc;
+        b=jrO54uS7bdonoizGb4RwAkPYU5bGBI/jOwUGKahSpAFSOiIF3yrHssjog2ozUCImni
+         AgZqPfgpTk9U/1QNZxbj4WZe98ZIATzah6Bh5pHBH7tGg4avh+e6C3eYA2A4vE46Imk8
+         sd7+DjIMgmub4V+OXsU7y+TuBaKIBUao9PS+A=
+Message-ID: <4c104d7a.0c3ddf0a.2185.329a@mx.google.com>
+Date: Thu, 10 Jun 2010 05:24:56 +0300
+From: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Subject: [PATCH] Marvell OpenRD-Ultimate machine support
+To: linux-arm-kernel@lists.infradead.org,
+       Russell King <linux@arm.linux.org.uk>
+Cc: Dhaval Vasa <dhaval.vasa@einfochips.com>,
+       Lennert Buytenhek <kernel@wantstofly.org>,
+       Nicolas Pitre <nico@fluxnic.net>, Simon Guinot <sguinot@lacie.com>,
+       Martin Michlmayr <tbm@cyrius.com>,
+       Alexander Clouter <alex@digriz.org.uk>,
+       Simon Kagstrom <simon.kagstrom@netinsight.net>,
+       linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Izik
+Hi!
+This patch adds support for the OpenRD Ultimate machine(could be found at http://www.arm.linux.org.uk/developer/machines/list.php?id=2884)
 
-Could you give some comments about this patch.
-Thanks,
+Besides adding machine description this patch adds correction for PHY address for Ultimate version.
 
-Lai
+Differences from the previous attempt:
+ - Correctly filled instances of mv643xx_eth_platform_data in case of ultimate version.
+ - Do PCIE initialization w/o additional checks since all openrd types have it
+ - Init ge01 if (!openrd-base) to make the code cleaner
 
-Lai Jiangshan wrote:
-> Use compile-allocated memory instead of dynamic allocated
-> memory for mm_slots_hash.
-> 
-> Use hash_ptr() instead divisions for bucket calculation.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/mm/ksm.c b/mm/ksm.c
-> index 8cdfc2a..81b379e 100644
-> --- a/mm/ksm.c
-> +++ b/mm/ksm.c
-> @@ -33,6 +33,7 @@
->  #include <linux/mmu_notifier.h>
->  #include <linux/swap.h>
->  #include <linux/ksm.h>
-> +#include <linux/hash.h>
->  
->  #include <asm/tlbflush.h>
->  #include "internal.h"
-> @@ -153,8 +154,9 @@ struct rmap_item {
->  static struct rb_root root_stable_tree = RB_ROOT;
->  static struct rb_root root_unstable_tree = RB_ROOT;
->  
-> -#define MM_SLOTS_HASH_HEADS 1024
-> -static struct hlist_head *mm_slots_hash;
-> +#define MM_SLOTS_HASH_SHIFT 10
-> +#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
-> +static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
->  
->  static struct mm_slot ksm_mm_head = {
->  	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
-> @@ -269,28 +271,13 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
->  	kmem_cache_free(mm_slot_cache, mm_slot);
->  }
->  
-> -static int __init mm_slots_hash_init(void)
-> -{
-> -	mm_slots_hash = kzalloc(MM_SLOTS_HASH_HEADS * sizeof(struct hlist_head),
-> -				GFP_KERNEL);
-> -	if (!mm_slots_hash)
-> -		return -ENOMEM;
-> -	return 0;
-> -}
-> -
-> -static void __init mm_slots_hash_free(void)
-> -{
-> -	kfree(mm_slots_hash);
-> -}
-> -
->  static struct mm_slot *get_mm_slot(struct mm_struct *mm)
->  {
->  	struct mm_slot *mm_slot;
->  	struct hlist_head *bucket;
->  	struct hlist_node *node;
->  
-> -	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
-> -				% MM_SLOTS_HASH_HEADS];
-> +	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
->  	hlist_for_each_entry(mm_slot, node, bucket, link) {
->  		if (mm == mm_slot->mm)
->  			return mm_slot;
-> @@ -303,8 +290,7 @@ static void insert_to_mm_slots_hash(struct mm_struct *mm,
->  {
->  	struct hlist_head *bucket;
->  
-> -	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
-> -				% MM_SLOTS_HASH_HEADS];
-> +	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
->  	mm_slot->mm = mm;
->  	hlist_add_head(&mm_slot->link, bucket);
->  }
-> @@ -1943,15 +1929,11 @@ static int __init ksm_init(void)
->  	if (err)
->  		goto out;
->  
-> -	err = mm_slots_hash_init();
-> -	if (err)
-> -		goto out_free1;
-> -
->  	ksm_thread = kthread_run(ksm_scan_thread, NULL, "ksmd");
->  	if (IS_ERR(ksm_thread)) {
->  		printk(KERN_ERR "ksm: creating kthread failed\n");
->  		err = PTR_ERR(ksm_thread);
-> -		goto out_free2;
-> +		goto out_free;
->  	}
->  
->  #ifdef CONFIG_SYSFS
-> @@ -1959,7 +1941,7 @@ static int __init ksm_init(void)
->  	if (err) {
->  		printk(KERN_ERR "ksm: register sysfs failed\n");
->  		kthread_stop(ksm_thread);
-> -		goto out_free2;
-> +		goto out_free;
->  	}
->  #else
->  	ksm_run = KSM_RUN_MERGE;	/* no way for user to start it */
-> @@ -1975,9 +1957,7 @@ static int __init ksm_init(void)
->  #endif
->  	return 0;
->  
-> -out_free2:
-> -	mm_slots_hash_free();
-> -out_free1:
-> +out_free:
->  	ksm_slab_free();
->  out:
->  	return err;
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+Regards,
+
+-- Dmytro Milinevskyy
+
+Signed-off-by: Dmytro Milinevskyy <milinevskyy@gmail.com>
+---
+ arch/arm/mach-kirkwood/Kconfig        |    7 +++++++
+ arch/arm/mach-kirkwood/openrd-setup.c |   26 ++++++++++++++++++++++----
+ 2 files changed, 29 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-kirkwood/Kconfig b/arch/arm/mach-kirkwood/Kconfig
+index 29b2163..110a3b8 100644
+--- a/arch/arm/mach-kirkwood/Kconfig
++++ b/arch/arm/mach-kirkwood/Kconfig
+@@ -75,6 +75,13 @@ config MACH_OPENRD_CLIENT
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell OpenRD Client Board.
+ 
++config MACH_OPENRD_ULTIMATE
++	bool "Marvell OpenRD Ultimate Board"
++	select MACH_OPENRD
++	help
++	  Say 'Y' here if you want your kernel to support the
++	  Marvell OpenRD Ultimate Board.
++
+ config MACH_NETSPACE_V2
+ 	bool "LaCie Network Space v2 NAS Board"
+ 	help
+diff --git a/arch/arm/mach-kirkwood/openrd-setup.c b/arch/arm/mach-kirkwood/openrd-setup.c
+index ad3f1ec..c3d8c60 100644
+--- a/arch/arm/mach-kirkwood/openrd-setup.c
++++ b/arch/arm/mach-kirkwood/openrd-setup.c
+@@ -1,7 +1,7 @@
+ /*
+  * arch/arm/mach-kirkwood/openrd-setup.c
+  *
+- * Marvell OpenRD (Base|Client) Board Setup
++ * Marvell OpenRD (Base|Client|Ultimate) Board Setup
+  *
+  * This file is licensed under the terms of the GNU General Public
+  * License version 2.  This program is licensed "as is" without any
+@@ -73,9 +73,15 @@ static void __init openrd_init(void)
+ 
+ 	kirkwood_ehci_init();
+ 
++	if (machine_is_openrd_ultimate()) {
++		openrd_ge00_data.phy_addr = MV643XX_ETH_PHY_ADDR(0);
++		openrd_ge01_data.phy_addr = MV643XX_ETH_PHY_ADDR(1);
++	}
++
+ 	kirkwood_ge00_init(&openrd_ge00_data);
+-	if (machine_is_openrd_client())
++	if (!machine_is_openrd_base())
+ 		kirkwood_ge01_init(&openrd_ge01_data);
++
+ 	kirkwood_sata_init(&openrd_sata_data);
+ 	kirkwood_sdio_init(&openrd_mvsdio_data);
+ 
+@@ -84,8 +90,7 @@ static void __init openrd_init(void)
+ 
+ static int __init openrd_pci_init(void)
+ {
+-	if (machine_is_openrd_base() || machine_is_openrd_client())
+-		kirkwood_pcie_init();
++	kirkwood_pcie_init();
+ 
+ 	return 0;
+ }
+@@ -116,3 +121,16 @@ MACHINE_START(OPENRD_CLIENT, "Marvell OpenRD Client Board")
+ 	.timer		= &kirkwood_timer,
+ MACHINE_END
+ #endif
++
++#ifdef CONFIG_MACH_OPENRD_ULTIMATE
++MACHINE_START(OPENRD_ULTIMATE, "Marvell OpenRD Ultimate Board")
++	/* Maintainer: Dhaval Vasa <dhaval.vasa@einfochips.com> */
++	.phys_io	= KIRKWOOD_REGS_PHYS_BASE,
++	.io_pg_offst	= ((KIRKWOOD_REGS_VIRT_BASE) >> 18) & 0xfffc,
++	.boot_params	= 0x00000100,
++	.init_machine	= openrd_init,
++	.map_io		= kirkwood_map_io,
++	.init_irq	= kirkwood_init_irq,
++	.timer		= &kirkwood_timer,
++MACHINE_END
++#endif
+-- 
+1.7.1
 
