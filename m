@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758797Ab0FJLKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 07:10:44 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39156 "EHLO
+	id S1758959Ab0FJLON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 07:14:13 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39169 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411Ab0FJLKl (ORCPT
+	with ESMTP id S1758830Ab0FJLKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 07:10:41 -0400
+	Thu, 10 Jun 2010 07:10:46 -0400
 From: Andi Kleen <andi@firstfloor.org>
 References: <20100610110.764742110@firstfloor.org>
 In-Reply-To: <20100610110.764742110@firstfloor.org>
-To: x86@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] [3/23] x86: Avoid unused by set variables in rdmsr
-Message-Id: <20100610111038.E6B53B1A2B@basil.firstfloor.org>
-Date: Thu, 10 Jun 2010 13:10:38 +0200 (CEST)
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] [9/23] PRINTK: Use stable variable to dump kmsg buffer
+Message-Id: <20100610111045.13CE3B1A2B@basil.firstfloor.org>
+Date: Thu, 10 Jun 2010 13:10:45 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Avoids quite a lot of warnings with a gcc 4.6 -Wall build
-because this happens in a commonly used header file (apic.h)
+kmsg_dump takes care to sample the global variables
+inside a spinlock, but then goes on to use the same
+variables outside the spinlock region too.
 
-Cc: x86@kernel.org
+Use the correct variable. This will make the race
+window smaller.
+
+Found by gcc 4.6's new warnings.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/x86/include/asm/msr.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/printk.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Index: linux-2.6.35-rc2-gcc/arch/x86/include/asm/msr.h
+Index: linux-2.6.35-rc2-gcc/kernel/printk.c
 ===================================================================
---- linux-2.6.35-rc2-gcc.orig/arch/x86/include/asm/msr.h
-+++ linux-2.6.35-rc2-gcc/arch/x86/include/asm/msr.h
-@@ -148,8 +148,8 @@ static inline unsigned long long native_
- #define rdmsr(msr, val1, val2)					\
- do {								\
- 	u64 __val = native_read_msr((msr));			\
--	(val1) = (u32)__val;					\
--	(val2) = (u32)(__val >> 32);				\
-+	(void)((val1) = (u32)__val);				\
-+	(void)((val2) = (u32)(__val >> 32));			\
- } while (0)
+--- linux-2.6.35-rc2-gcc.orig/kernel/printk.c
++++ linux-2.6.35-rc2-gcc/kernel/printk.c
+@@ -1520,9 +1520,9 @@ void kmsg_dump(enum kmsg_dump_reason rea
+ 	chars = logged_chars;
+ 	spin_unlock_irqrestore(&logbuf_lock, flags);
  
- static inline void wrmsr(unsigned msr, unsigned low, unsigned high)
+-	if (logged_chars > end) {
+-		s1 = log_buf + log_buf_len - logged_chars + end;
+-		l1 = logged_chars - end;
++	if (chars > end) {
++		s1 = log_buf + log_buf_len - chars + end;
++		l1 = chars - end;
+ 
+ 		s2 = log_buf;
+ 		l2 = end;
+@@ -1530,8 +1530,8 @@ void kmsg_dump(enum kmsg_dump_reason rea
+ 		s1 = "";
+ 		l1 = 0;
+ 
+-		s2 = log_buf + end - logged_chars;
+-		l2 = logged_chars;
++		s2 = log_buf + end - chars;
++		l2 = chars;
+ 	}
+ 
+ 	if (!spin_trylock_irqsave(&dump_list_lock, flags)) {
