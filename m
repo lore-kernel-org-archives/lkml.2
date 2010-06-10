@@ -1,53 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758379Ab0FJDGf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 23:06:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49989 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496Ab0FJDGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 23:06:33 -0400
-Message-ID: <4C10569E.6020503@redhat.com>
-Date: Thu, 10 Jun 2010 06:06:06 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1758559Ab0FJDZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 23:25:28 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:57634 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753326Ab0FJDZ0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 23:25:26 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+       "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+       "'akpm@osdl.org'" <akpm@osdl.org>,
+       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+       "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Date: Wed, 9 Jun 2010 21:25:17 -0600
+Subject: [PATCH 4/12] scsi: megaraid_sas - Online controller Reset Support
+ (OCR) : Driver return RESET in timeout routine
+Thread-Topic: [PATCH 4/12] scsi: megaraid_sas - Online controller Reset
+ Support (OCR) : Driver return RESET in timeout routine
+Thread-Index: Aco28IhK0BCwqEkwToSTDcG+BIA9kwDb1hagAACJvwADF6mW4AvxomIAHahLLtAAAKNeAAPxZrRQAtbz4jA=
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3D080454A@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>
+ <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3CDB80BCE@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3D06ADC0F@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D06ADC0F@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC] para virt interface of perf to support kvm guest os statistics
- collection in guest os
-References: <1276054214.2096.383.camel@ymzhang.sh.intel.com>	 <4C0F51DD.3080200@redhat.com>	 <1276075280.2096.427.camel@ymzhang.sh.intel.com>	 <4C0F61D3.9000402@redhat.com> <1276136493.2096.462.camel@ymzhang.sh.intel.com>
-In-Reply-To: <1276136493.2096.462.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2010 05:21 AM, Zhang, Yanmin wrote:
->
->> I see.  So put it in a union.  Or perhaps not even in a union - what if
->> a kvm guest is also acting as a kvm host?
->>      
-> My patch has consideration on it. I compiled kernel with host and guest support
-> at the same time. The accessing to perf_event->shadow is really under specific
-> scenarios, or they are just in specific functions. These functions are called
-> just bu host kernel , or just by guest kernel.
->    
+In this part of the Online Controller Reset (OCR).  When driver doesn't finish to issue the pending
+Cmds, driver will return BUSY to OS.  Also in driver's timeout routine, if online controller reset is going
+On, driver will return RESET to OS. 
 
-But a kernel can be both guest and host at the same time.  Currently 
-this only works on AMD, but there was some work to bring it to Intel as 
-well.
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
+---
+megaraid_sas.c |  110 ++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+megaraid_sas.h |    2 +
+ 2 files changed, 107 insertions(+), 5 deletions(-)
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
+--- old/drivers/scsi/megaraid/megaraid_sas.c	2010-04-21 05:16:37.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-04-28 08:52:56.000000000 -0400
+@@ -1320,14 +1320,22 @@ megasas_queue_command(struct scsi_cmnd *
+ 	u32 frame_count;
+ 	struct megasas_cmd *cmd;
+ 	struct megasas_instance *instance;
++	unsigned long flags;
+ 
+ 	instance = (struct megasas_instance *)
+ 	    scmd->device->host->hostdata;
+ 
+-	/* Don't process if we have already declared adapter dead */
+-	if (instance->hw_crit_error)
++	if (instance->issuepend_done == 0)
+ 		return SCSI_MLQUEUE_HOST_BUSY;
+ 
++	spin_lock_irqsave(&instance->hba_lock, flags);
++	if (instance->adprecovery != MEGASAS_HBA_OPERATIONAL) {
++		spin_unlock_irqrestore(&instance->hba_lock, flags);
++		return SCSI_MLQUEUE_HOST_BUSY;
++	}
++
++	spin_unlock_irqrestore(&instance->hba_lock, flags);
++
+ 	scmd->scsi_done = done;
+ 	scmd->result = 0;
+ 
+@@ -1463,6 +1471,18 @@ static int megasas_slave_alloc(struct sc
+ 	return 0;
+ }
+ 
++static void megaraid_sas_kill_hba(struct megasas_instance *instance)
++{
++	if ((instance->pdev->device == PCI_DEVICE_ID_LSI_SAS0073SKINNY) ||
++		(instance->pdev->device == PCI_DEVICE_ID_LSI_SAS0071SKINNY)) {
++		writel(MFI_STOP_ADP,
++			&instance->reg_set->reserved_0[0]);
++	} else {
++		writel(MFI_STOP_ADP,
++			&instance->reg_set->inbound_doorbell);
++	}
++}
++
+ /**
+  * megasas_complete_cmd_dpc	 -	Returns FW's controller structure
+  * @instance_addr:			Address of adapter soft state
+@@ -1480,7 +1500,7 @@ static void megasas_complete_cmd_dpc(uns
+ 	unsigned long flags;
+ 
+ 	/* If we have already declared adapter dead, donot complete cmds */
+-	if (instance->hw_crit_error)
++	if (instance->adprecovery == MEGASAS_HW_CRITICAL_ERROR )
+ 		return;
+ 
+ 	spin_lock_irqsave(&instance->completion_lock, flags);
+@@ -1490,6 +1510,11 @@ static void megasas_complete_cmd_dpc(uns
+ 
+ 	while (consumer != producer) {
+ 		context = instance->reply_queue[consumer];
++		if (context >= instance->max_fw_cmds) {
++			printk(KERN_ERR "Unexpected context value %x\n",
++				context);
++			BUG();
++		}
+ 
+ 		cmd = instance->cmd_list[context];
+ 
+@@ -1539,7 +1564,76 @@ static void megasas_complete_cmd_dpc(uns
+ static int megasas_wait_for_outstanding(struct megasas_instance *instance)
+ {
+ 	int i;
++	u32 reset_index;
+ 	u32 wait_time = MEGASAS_RESET_WAIT_TIME;
++	u8 adprecovery;
++	unsigned long flags;
++	struct list_head clist_local;
++	struct megasas_cmd *reset_cmd;
++
++	spin_lock_irqsave(&instance->hba_lock, flags);
++	adprecovery = instance->adprecovery;
++	spin_unlock_irqrestore(&instance->hba_lock, flags);
++
++	if (adprecovery != MEGASAS_HBA_OPERATIONAL) {
++
++		INIT_LIST_HEAD(&clist_local);
++		spin_lock_irqsave(&instance->hba_lock, flags);
++		list_splice_init(&instance->internal_reset_pending_q,
++				&clist_local);
++		spin_unlock_irqrestore(&instance->hba_lock, flags);
++
++		printk(KERN_NOTICE "megasas: HBA reset wait ...\n");
++		for (i = 0; i < wait_time; i++) {
++			msleep(1000);
++			spin_lock_irqsave(&instance->hba_lock, flags);
++			adprecovery = instance->adprecovery;
++			spin_unlock_irqrestore(&instance->hba_lock, flags);
++			if (adprecovery == MEGASAS_HBA_OPERATIONAL)
++				break;
++		}
++
++		if (adprecovery != MEGASAS_HBA_OPERATIONAL) {
++			printk(KERN_NOTICE "megasas: reset: Stopping HBA.\n");
++			spin_lock_irqsave(&instance->hba_lock, flags);
++			instance->adprecovery	= MEGASAS_HW_CRITICAL_ERROR;
++			spin_unlock_irqrestore(&instance->hba_lock, flags);
++			return FAILED;
++		}
++
++		reset_index	= 0;
++		while (!list_empty(&clist_local)) {
++			reset_cmd	= list_entry((&clist_local)->next,
++						struct megasas_cmd, list);
++			list_del_init(&reset_cmd->list);
++			if (reset_cmd->scmd) {
++				reset_cmd->scmd->result = DID_RESET << 16;
++				printk(KERN_NOTICE "%d:%p reset [%02x], %#lx\n",
++					reset_index, reset_cmd,
++					reset_cmd->scmd->cmnd[0],
++					reset_cmd->scmd->serial_number);
++
++				reset_cmd->scmd->scsi_done(reset_cmd->scmd);
++				megasas_return_cmd(instance, reset_cmd);
++			} else if (reset_cmd->sync_cmd) {
++				printk(KERN_NOTICE "megasas:%p synch cmds"
++						"reset queue\n",
++						reset_cmd);
++
++				reset_cmd->cmd_status = ENODATA;
++				instance->instancet->fire_cmd(instance,
++						reset_cmd->frame_phys_addr,
++						0, instance->reg_set);
++			} else {
++				printk(KERN_NOTICE "megasas: %p unexpected"
++					"cmds lst\n",
++					reset_cmd);
++			}
++			reset_index++;
++		}
++
++		return SUCCESS;
++	}
+ 
+ 	for (i = 0; i < wait_time; i++) {
+ 
+@@ -1562,6 +1656,7 @@ static int megasas_wait_for_outstanding(
+ 	}
+ 
+ 	if (atomic_read(&instance->fw_outstanding)) {
++		printk(KERN_NOTICE "megaraid_sas: pending cmds after reset\n");
+ 		/*
+ 		* Send signal to FW to stop processing any pending cmds.
+ 		* The controller will be taken offline by the OS now.
+@@ -1577,10 +1672,14 @@ static int megasas_wait_for_outstanding(
+ 				&instance->reg_set->inbound_doorbell);
+ 		}
+ 		megasas_dump_pending_frames(instance);
+-		instance->hw_crit_error = 1;
++		spin_lock_irqsave(&instance->hba_lock, flags);
++		instance->adprecovery	= MEGASAS_HW_CRITICAL_ERROR;
++		spin_unlock_irqrestore(&instance->hba_lock, flags);
+ 		return FAILED;
+ 	}
+ 
++	printk(KERN_NOTICE "megaraid_sas: no pending cmds after reset\n");
++
+ 	return SUCCESS;
+ }
+ 
+@@ -1602,7 +1701,7 @@ static int megasas_generic_reset(struct 
+ 	scmd_printk(KERN_NOTICE, scmd, "megasas: RESET -%ld cmd=%x retries=%x\n",
+ 		 scmd->serial_number, scmd->cmnd[0], scmd->retries);
+ 
+-	if (instance->hw_crit_error) {
++	if (instance->adprecovery == MEGASAS_HW_CRITICAL_ERROR) {
+ 		printk(KERN_ERR "megasas: cannot recover from previous reset "
+ 		       "failures\n");
+ 		return FAILED;
+@@ -3319,6 +3418,7 @@ megasas_probe_one(struct pci_dev *pdev, 
+ 	 * Initialize locks and queues
+ 	 */
+ 	INIT_LIST_HEAD(&instance->cmd_pool);
++	INIT_LIST_HEAD(&instance->internal_reset_pending_q);
+ 
+ 	atomic_set(&instance->fw_outstanding,0);
+ 
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.h new/drivers/scsi/megaraid/megaraid_sas.h
+--- old/drivers/scsi/megaraid/megaraid_sas.h	2010-04-21 05:16:37.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.h	2010-04-28 08:01:45.000000000 -0400
+@@ -1275,10 +1275,12 @@ struct megasas_instance {
+ 	u8 flag;
+ 	u8 unload;
+ 	u8 flag_ieee;
++	u8 issuepend_done;
+ 	u8 adprecovery;
+ 	unsigned long last_time;
+ 
+ 	struct timer_list io_completion_timer;
++	struct list_head internal_reset_pending_q;
+ };
+ 
+ enum {
