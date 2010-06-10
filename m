@@ -1,52 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759142Ab0FJMoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 08:44:05 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37855 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470Ab0FJMoB convert rfc822-to-8bit (ORCPT
+	id S932399Ab0FJMo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 08:44:28 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34346 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932286Ab0FJMo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 08:44:01 -0400
-Subject: Re: [PATCH 10/13] jump label v9: convert jump label to use a key
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-       davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org
-In-Reply-To: <2a7e0be296375cf6658647c8a9c6cb208d875ac8.1276116186.git.jbaron@redhat.com>
-References: <cover.1276116186.git.jbaron@redhat.com>
-	 <2a7e0be296375cf6658647c8a9c6cb208d875ac8.1276116186.git.jbaron@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 10 Jun 2010 14:43:46 +0200
-Message-ID: <1276173826.2077.252.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 10 Jun 2010 08:44:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=IxdcJGqr3ksfwCorvoeS7KUJPZOQmPK4I6/o39a3CSekVu0UTRfgMFagXbAoEvELbB
+         gqnY+eZwbZ+zAypSRXeuKCAPKcjhCnSkLuOIGZoul9/ljIz82gFfbfIoL9+x2nElwkT6
+         haCXsD9koahNttYS2NQz9xalVO7JWu88+OUU0=
+MIME-Version: 1.0
+Date: Thu, 10 Jun 2010 18:14:25 +0530
+Message-ID: <AANLkTimVgcnvb-obG4As0jjZQk6rwsHd-ByrfL4KxP0A@mail.gmail.com>
+Subject: O_NONBLOCK with Ext2/3
+From: "Yedire, Sandeep" <syedire@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 17:39 -0400, Jason Baron wrote:
-> -static inline int enable_jump_label(const char *name)
-> -{
-> -       return 0;
-> -}
-> -
-> -static inline int disable_jump_label(const char *name)
-> -{
-> -       return 0;
-> -}
-> +#define enable_jump_label(key)
-> +#define disable_jump_label(key) 
+Hi All,
+What is the effect  on filesystem blocks,data blocks if O_NONBLOCK
+flag is used with a test application doing write to a file(64MB) on
+NAND Flash.
+Can any one please let me know
+Regards,
+Sandeep.Yedire
 
-I would expect enable_jump_label() to look something like:
-
-#define enable_jump_label(cond_var)	\
-do {					\
-	*(cond_var) = 1;		\
-} while (0)
-
-That way the HAVE_JUMP_LABEL and !HAVE_JUMP_LABEL code has similar
-effects.
+----------------------------------------------------------
+T.Jefferson, 'Victory and defeat are each of the same price"
