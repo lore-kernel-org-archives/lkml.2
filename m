@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab0FJFu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 01:50:29 -0400
-Received: from chipmunk.wormnet.eu ([195.195.131.226]:52915 "EHLO
-	chipmunk.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733Ab0FJFu2 (ORCPT
+	id S1754224Ab0FJFzX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 01:55:23 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:38385 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab0FJFzV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 01:50:28 -0400
-Date: Thu, 10 Jun 2010 06:50:26 +0100
-From: Alexander Clouter <alex@digriz.org.uk>
-To: Dmytro Milinevskyy <milinevskyy@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-       Russell King <linux@arm.linux.org.uk>,
-       Dhaval Vasa <dhaval.vasa@einfochips.com>,
-       Lennert Buytenhek <kernel@wantstofly.org>,
-       Nicolas Pitre <nico@fluxnic.net>, Simon Guinot <sguinot@lacie.com>,
-       Martin Michlmayr <tbm@cyrius.com>,
-       Simon Kagstrom <simon.kagstrom@netinsight.net>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Marvell OpenRD-Ultimate machine support
-Message-ID: <20100610055026.GM7660@chipmunk>
-References: <4c104d7a.0c3ddf0a.2185.329a@mx.google.com>
+	Thu, 10 Jun 2010 01:55:21 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding;
+	b=kTVZHdjSi6yJBTW6c2xqXU/g0A+E7En5TIVFjPwfcMv01GKp9IwcgjPNKI2muYZHj
+	izBHcpKanmUIKBOtgu2hA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4c104d7a.0c3ddf0a.2185.329a@mx.google.com>
-Organization: diGriz
-X-URL: http://www.digriz.org.uk/
-X-JabberID: alex@digriz.org.uk
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTilXJ0X2qxD9cNTlLayKzySEZu1HEZUWu--Go8kw@mail.gmail.com>
+References: <20100609210014.7464.92234.stgit@bumblebee1.mtv.corp.google.com>
+	<alpine.LFD.2.00.1006091408430.4506@i5.linux-foundation.org>
+	<1276119207.1745.154.camel@laptop>
+	<alpine.LFD.2.00.1006091517450.4506@i5.linux-foundation.org>
+	<alpine.LFD.2.00.1006091525250.4506@i5.linux-foundation.org>
+	<AANLkTim56xHJM-6ZgFvEO2YetDLCnjaCoOtxYGTqtE0c@mail.gmail.com>
+	<alpine.LFD.2.00.1006091719100.4506@i5.linux-foundation.org>
+	<AANLkTilXJ0X2qxD9cNTlLayKzySEZu1HEZUWu--Go8kw@mail.gmail.com>
+Date: Wed, 9 Jun 2010 22:55:13 -0700
+Message-ID: <AANLkTikK9m7USWqN9QZnjnNbHen9bVyFt6xiGxNG4OyY@mail.gmail.com>
+Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be 
+	reused immediately.
+From: Salman Qazi <sqazi@google.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
+       mingo@elte.hu, linux-kernel@vger.kernel.org, tytso@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-* Dmytro Milinevskyy <milinevskyy@gmail.com> [2010-06-10 05:24:56+0300]:
+On Wed, Jun 9, 2010 at 10:17 PM, Michel Lespinasse <walken@google.com> wrote:
+> On Wed, Jun 9, 2010 at 5:20 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> On Wed, 9 Jun 2010, Salman Qazi wrote:
+>> >
+>> > I don't think this gives the right answer in the a < base < b  case.
+>> > Here a - base < 0 and
+>> > b - base > 0.  But we really want b to be before a, since a has rolled
+>> > over further than b.
+>>
+>> Right you are.
+>>
+>> > I think the right solution is comparing (a - base + max_pid) % max_pid
+>> > with (b - base + max_pid) % max_pid.  Am I correct or deluded? .
+>>
+>> That would work, but it would be horrible. Just use the three compares
+>> version: doing a integer 'mod' operator is _way_ more expensive.
 >
-> [snipped]
+> As shown by the three compares version, the question here does not depend on
+> the max_pid value. So, we can replace max_pid with any integer >= max_pid
+> without changing the result. This is nice because, replacing max_pid with
+> 2^32, the expression simplifies to:
 >
-> @@ -84,8 +90,7 @@ static void __init openrd_init(void)
->  
->  static int __init openrd_pci_init(void)
->  {
-> -	if (machine_is_openrd_base() || machine_is_openrd_client())
-> -		kirkwood_pcie_init();
-> +	kirkwood_pcie_init();
->  
->  	return 0;
->  }
+> (unsigned)(a - base) < (unsigned)(b - base)
 >
-You just 'broke' kirkwood, welcome to the club.  We all have done this:
+> I think I like this form after all :)
 
-http://marc.info/?l=linux-arm-kernel&m=125624586625065&w=2
-http://marc.info/?l=linux-arm-kernel&m=125804222219159&w=2
+I don't mind doing this, if nobody disagrees.  Should be fine with a
+comment on top explaining the intention?
 
-Put that 'if()' clause back in, the 'subsys_initcall(openrd_pci_init)' 
-causes that code to run on *all* compiled in boards (think of the case 
-where you have SheevaPlug's also enabled).
-
-Cheers
-
--- 
-Alexander Clouter
-.sigmonster says: Poverty begins at home.
+>
+> --
+> Michel "Walken" Lespinasse
+> A program is never fully debugged until the last user dies.
+>
