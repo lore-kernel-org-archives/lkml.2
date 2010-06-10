@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759167Ab0FJN52 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 09:57:28 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:36967 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757992Ab0FJN50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 09:57:26 -0400
-Date: Thu, 10 Jun 2010 15:56:34 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol
- (rev4)
-Message-ID: <20100610135634.GD4514@ucw.cz>
-References: <1274567437-2818-1-git-send-email-rydberg@euromail.se>
- <1274567437-2818-2-git-send-email-rydberg@euromail.se>
+	id S1759162Ab0FJN6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 09:58:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54541 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752486Ab0FJN6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 09:58:12 -0400
+Date: Thu, 10 Jun 2010 09:57:32 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+       davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org
+Subject: Re: [PATCH 10/13] jump label v9: convert jump label to use a key
+Message-ID: <20100610135732.GC2410@redhat.com>
+References: <cover.1276116186.git.jbaron@redhat.com>
+ <2a7e0be296375cf6658647c8a9c6cb208d875ac8.1276116186.git.jbaron@redhat.com>
+ <1276173826.2077.252.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274567437-2818-2-git-send-email-rydberg@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1276173826.2077.252.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, Jun 10, 2010 at 02:43:46PM +0200, Peter Zijlstra wrote:
+> On Wed, 2010-06-09 at 17:39 -0400, Jason Baron wrote:
+> > -static inline int enable_jump_label(const char *name)
+> > -{
+> > -       return 0;
+> > -}
+> > -
+> > -static inline int disable_jump_label(const char *name)
+> > -{
+> > -       return 0;
+> > -}
+> > +#define enable_jump_label(key)
+> > +#define disable_jump_label(key) 
+> 
+> I would expect enable_jump_label() to look something like:
+> 
+> #define enable_jump_label(cond_var)	\
+> do {					\
+> 	*(cond_var) = 1;		\
+> } while (0)
+> 
+> That way the HAVE_JUMP_LABEL and !HAVE_JUMP_LABEL code has similar
+> effects.
 
-> +Protocol Example A
-> +------------------
-> +
-> +Here is what a minimal event sequence for a two-contact touch would look
-> +like for a type A device:
-> +
-> +   ABS_MT_POSITION_X x[0]
-> +   ABS_MT_POSITION_Y y[0]
-> +   SYN_MT_REPORT
-> +   ABS_MT_POSITION_X x[1]
-> +   ABS_MT_POSITION_Y y[1]
-> +   SYN_MT_REPORT
-> +   SYN_REPORT
-...
-> -Usage
-> ------
-> +Here is the sequence after lifting the first contact:
-> +
-> +   ABS_MT_POSITION_X x[1]
-> +   ABS_MT_POSITION_Y y[1]
-> +   SYN_MT_REPORT
-> +   SYN_REPORT
+right. I was going to clean that up in a followup. But you are right - I
+think it makes the code much clearer. will fix.
 
-...
+thanks,
 
-> +Protocol Example B
-> +------------------
-> +
-> +Here is what a minimal event sequence for a two-contact touch would look
-> +like for a type B device:
-> +
-> +   ABS_MT_SLOT 0
-> +   ABS_MT_TRACKING_ID 45
-> +   ABS_MT_POSITION_X x[0]
-> +   ABS_MT_POSITION_Y y[0]
-> +   ABS_MT_SLOT 1
-> +   ABS_MT_TRACKING_ID 46
-> +   ABS_MT_POSITION_X x[1]
-> +   ABS_MT_POSITION_Y y[1]
-> +   SYN_REPORT
-> +
-> +Here is the sequence after moving contact 45 in the x direction:
-> +
-> +   ABS_MT_SLOT 0
-> +   ABS_MT_POSITION_X x[0]
-> +   SYN_REPORT
-
-With this proposed system, protocol A is *very* different from
-protocol B. Is there way to make them more similar?
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+-Jason
