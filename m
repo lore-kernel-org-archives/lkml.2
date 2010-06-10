@@ -1,67 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758606Ab0FJDaY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 23:30:24 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21664 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758228Ab0FJDaT convert rfc822-to-8bit (ORCPT
+	id S1758625Ab0FJDt3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 23:49:29 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:35474 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab0FJDtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 23:30:19 -0400
-MIME-Version: 1.0
-Message-ID: <c773d65b-e107-428c-ba6f-04d4ca9f8361@default>
-Date: Wed, 9 Jun 2010 20:28:21 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: ngupta@vflare.org
-Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-       linux-mm@kvack.org, jeremy@goop.org, JBeulich@novell.com,
-       kurt.hackel@oracle.com, npiggin@suse.de, dave.mccracken@oracle.com,
-       riel@redhat.com, avi@redhat.com, konrad.wilk@oracle.com
-Subject: RE: [PATCH V2 2/7] Cleancache (was Transcendent Memory): core files
-References: <20100528173550.GA12219@ca-server1.us.oracle.com
- 4C1042E0.8080403@vflare.org>
-In-Reply-To: <4C1042E0.8080403@vflare.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090204.4C105C2F.01D3:SCFMA4539811,ss=1,fgs=0
+	Wed, 9 Jun 2010 23:49:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :in-reply-to:references;
+        b=amJgJXpKRTRhfU9RHVb10bCz4lpQKJKkFTpNrhVs9PES5AIDTYw/RUoYlDStkqEI7r
+         fhpQxCR6D80pN2yKteWve4sstEz9bdIiDiA9J9E1vGa0Y2rpTOot/8Dqs7A4ovDSkA69
+         sLToKsYqWr2nj6SlsxDaHKWoGAoPAEI5bYWcM=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@google.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>,
+       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 1/5] perf: Provide a proper stop action for software events
+Date: Thu, 10 Jun 2010 05:49:16 +0200
+Message-Id: <1276141760-11590-2-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+In-Reply-To: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com>
+References: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I just finished a rough (but working) implementation of in-kernel
-> page cache compression backend (called zcache). During this work,
-> I found some issues with cleancache, mostly related to (lack of)
-> comments/documentation:
+In order to introduce new context exclusions, software events will
+have to eventually stop when needed. We'll want perf_event_stop() to
+act on every events.
 
-Great to hear!  And excellent feedback on the missing
-documentation... I am working on this right now so your
-feedback is very timely.
+To achieve this, remove the stub stop/start pmu callbacks of software
+and tracepoint events.
 
-(documentation and funcition return values comments deleted
-as I will fix all of them)
+This may even optimize the case of hardware and software events
+running at the same time: now we only stop/start all hardware
+events if we reset a hardware event period, not anymore with
+software events.
 
-> > +
-> > +static inline int cleancache_init_fs(size_t pagesize)
-> > +
-> 
->  - It seems that returning pool_id of 0 is considered as error
-> condition (as it appears from deactivate_locked_super() changes).
-> This seems weird; I think only negative pool_id should considered
-> as error. Anyway, please add function comments for these.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Zhang Yanmin <yanmin_zhang@linux.intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/perf_event.c |   29 ++++++++++++++++-------------
+ 1 files changed, 16 insertions(+), 13 deletions(-)
 
-Hmmm... this is a bug.  0 is a valid pool_id.  I'll fix it
-for the next rev.
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index c772a3d..5c004f7 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1541,11 +1541,23 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+ 	hwc->sample_period = sample_period;
+ 
+ 	if (local64_read(&hwc->period_left) > 8*sample_period) {
+-		perf_disable();
+-		perf_event_stop(event);
++		bool software_event = is_software_event(event);
++
++		/*
++		 * Only hardware events need their irq period to be
++		 * reprogrammed
++		 */
++		if (!software_event) {
++			perf_disable();
++			perf_event_stop(event);
++		}
++
+ 		local64_set(&hwc->period_left, 0);
+-		perf_event_start(event);
+-		perf_enable();
++
++		if (!software_event) {
++			perf_event_start(event);
++			perf_enable();
++		}
+ 	}
+ }
+ 
+@@ -4286,16 +4298,9 @@ static void perf_swevent_void(struct perf_event *event)
+ {
+ }
+ 
+-static int perf_swevent_int(struct perf_event *event)
+-{
+-	return 0;
+-}
+-
+ static const struct pmu perf_ops_generic = {
+ 	.enable		= perf_swevent_enable,
+ 	.disable	= perf_swevent_disable,
+-	.start		= perf_swevent_int,
+-	.stop		= perf_swevent_void,
+ 	.read		= perf_swevent_read,
+ 	.unthrottle	= perf_swevent_void, /* hwc->interrupts already reset */
+ };
+@@ -4578,8 +4583,6 @@ static int swevent_hlist_get(struct perf_event *event)
+ static const struct pmu perf_ops_tracepoint = {
+ 	.enable		= perf_trace_enable,
+ 	.disable	= perf_trace_disable,
+-	.start		= perf_swevent_int,
+-	.stop		= perf_swevent_void,
+ 	.read		= perf_swevent_read,
+ 	.unthrottle	= perf_swevent_void,
+ };
+-- 
+1.6.2.3
 
-> Page cache compression was a long-pending project. I'm glad its
-> coming into shape with the help of cleancache :)
-
-Thanks!
-Dan
