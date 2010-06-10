@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759737Ab0FJTJY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 15:09:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11551 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759674Ab0FJTJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 15:09:22 -0400
-Date: Thu, 10 Jun 2010 22:03:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>,
-       virtualization@lists.linux-foundation.org,
-       Rusty Russell <rusty@rustcorp.com.au>, Jiri Pirko <jpirko@redhat.com>,
-       Shirley Ma <xma@us.ibm.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH for-2.6.35] virtio_net: fix oom handling on tx
-Message-ID: <20100610190343.GC4044@redhat.com>
-References: <20100610152041.GA3480@redhat.com> <1276190227.22064.19.camel@w-sridhar.beaverton.ibm.com> <20100610104653.1aed2ecc@nehalam>
+	id S1759557Ab0FJTPA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 15:15:00 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59036 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472Ab0FJTO6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 15:14:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ct6d9/G5bV1GDQjRLtc4TfbVFeze1eW2tOYC/+UsdxoSIYyqcYctV5qleadcT1ZHS9
+         8GDVQvdyKhYuBQUQ9OnNgIZklWHh3NxbwF8coidcXJgZuEIsl1dEMXlSke0+CeBh/Rc0
+         2aiuaTwztYeQZH6w4LIPVLHiE4/gS20Yk5rM0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100610104653.1aed2ecc@nehalam>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4C11330A.4040309@nortel.com>
+References: <AANLkTimrZvKyh6zYnUg2xzDVBVr5NxqtJhxZ42AVhkVI@mail.gmail.com>
+	<877hm64ui4.fsf@basil.nowhere.org>
+	<AANLkTik3XiOjYM67RdPG-3RM3rY-0vondiMmJsETAHfX@mail.gmail.com>
+	<4C11330A.4040309@nortel.com>
+Date: Thu, 10 Jun 2010 13:14:57 -0600
+Message-ID: <AANLkTimcJx1XMW3XHJD44EJpOnmMzM6KdMDZAs0Adjgr@mail.gmail.com>
+Subject: Re: Aerospace and linux
+From: Brian Gordon <legerde@gmail.com>
+To: Chris Friesen <cfriesen@nortel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 10:46:53AM -0700, Stephen Hemminger wrote:
-> On Thu, 10 Jun 2010 10:17:07 -0700
-> Sridhar Samudrala <sri@us.ibm.com> wrote:
-> 
-> > On Thu, 2010-06-10 at 18:20 +0300, Michael S. Tsirkin wrote:
-> > > virtio net will never try to overflow the TX ring, so the only reason
-> > > add_buf may fail is out of memory. Thus, we can not stop the
-> > > device until some request completes - there's no guarantee anything
-> > > at all is outstanding.
-> > > 
-> > > Make the error message clearer as well: error here does not
-> > > indicate queue full.
-> > > 
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > >  drivers/net/virtio_net.c |   15 ++++++++-------
-> > >  1 files changed, 8 insertions(+), 7 deletions(-)
-> > > 
-> > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > > index 85615a3..e48a06f 100644
-> > > --- a/drivers/net/virtio_net.c
-> > > +++ b/drivers/net/virtio_net.c
-> > > @@ -563,7 +563,6 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
-> > >  	struct virtnet_info *vi = netdev_priv(dev);
-> > >  	int capacity;
-> > > 
-> > > -again:
-> > >  	/* Free up any pending old buffers before queueing new ones. */
-> > >  	free_old_xmit_skbs(vi);
-> > > 
-> > > @@ -572,12 +571,14 @@ again:
-> > > 
-> > >  	/* This can happen with OOM and indirect buffers. */
-> > >  	if (unlikely(capacity < 0)) {
-> > > -		netif_stop_queue(dev);
-> > > -		dev_warn(&dev->dev, "Unexpected full queue\n");
-> > > -		if (unlikely(!virtqueue_enable_cb(vi->svq))) {
-> > > -			virtqueue_disable_cb(vi->svq);
-> > > -			netif_start_queue(dev);
-> > > -			goto again;
-> > > +		if (net_ratelimit()) {
-> > > +			if (likely(capacity == -ENOMEM))
-> > > +				dev_warn(&dev->dev,
-> > > +					 "TX queue failure: out of memory\n");
-> > > +			else
-> > > +				dev_warn(&dev->dev,
-> > > +					 "Unexpected TX queue failure: %d\n",
-> > > +					 capacity);
-> > >  		}
-> > >  		return NETDEV_TX_BUSY;
-> > >  	}
-> > 
-> > It is not clear to me how xmit_skb() can return -ENOMEM.
-> > xmit_skb() calls virtqueue_add_buf_gfp() which can return -ENOSPC.
-> > Even vring_add_indirect() doesn't return -ENOMEM on kmalloc failure.
-> 
-> It makes more sense to have the device increment tx_droppped, 
-> and return NETDEV_TX_OK. Skip the message (or make it a pr_debug()). 
-> Network devices do not guarantee packet delivery, and if out of
-> resources then holding more data in the
-> queue is going to hurt not help the situation.
-> 
-> -- 
+Thank you both.    This has been very helpful for me.
 
-Well, I only keep the existing behaviour around.  The changes you propose
-would be 2.6.36 material.
-I have it on my todo list to look for a way to test performance under
-GFP_ATOMIC failure scenario. Any suggestions?
+I think I read two conclusions:
+1) R/O is a small percentage of RAM
+2) To cover this small precentage would be non-trivial
 
--- 
-MST
+Thank you both very much for your time and knowledge, I'll move along now.
+
+
+
+On Thu, Jun 10, 2010 at 12:46 PM, Chris Friesen <cfriesen@nortel.com> wrote:
+> On 06/10/2010 12:38 PM, Brian Gordon wrote:
+>
+>> On the more exotic end, I have also seen systems that have dual
+>> redundant processors / memories.  Then they add compare logic between
+>> the redundant processors that compare most pins each clock cycle.   If
+>> any pins are not identical at a clock cycle, then something has gone
+>> wrong (SEU, hardware failure, etc..)
+>
+> Some phone switches do this.  Some of them also have at least two copies
+> of everything in memory and will do transactional operations that can be
+> rolled back if there is a hardware glitch.
+>
+>> So, some pages of RAM are going to be read-only and the data in those
+>> pages came from some source (file system?).   Can anyone describe a
+>> high level strategy to occasionaly provide some coverage of this data?
+>
+>> So far I have thought about page descriptors adding an MD5 hash
+>> whenever they are read-only and first being "loaded/mapped?" and then
+>> a background daemon could occasionaly verify.
+>
+> Makes sense to me.  You might also pick an on-disk format with extra
+> checksumming so you could compare the on-disk checksum with the
+> in-memory checksum.
+>
+> Chris
+>
+> --
+> The author works for GENBAND Corporation (GENBAND) who is solely
+> responsible for this email and its contents. All enquiries regarding
+> this email should be addressed to GENBAND. Nortel has provided the use
+> of the nortel.com domain to GENBAND in connection with this email solely
+> for the purpose of connectivity and Nortel Networks Inc. has no
+> liability for the email or its contents. GENBAND's web site is
+> http://www.genband.com
+>
