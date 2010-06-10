@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759866Ab0FJXL3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 19:11:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57119 "EHLO mx1.redhat.com"
+	id S1759310Ab0FJXUs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 19:20:48 -0400
+Received: from kroah.org ([198.145.64.141]:40543 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753351Ab0FJXL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 19:11:28 -0400
-Date: Fri, 11 Jun 2010 01:09:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Stanislaw Gruszka <sgruszka@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] sched: __sched_setscheduler: read RLIMIT_RTPRIO
-	lockless
-Message-ID: <20100610230944.GA25903@redhat.com>
+	id S1750982Ab0FJXUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 19:20:47 -0400
+Date: Thu, 10 Jun 2010 16:19:19 -0700
+From: Greg KH <greg@kroah.com>
+To: Alex Chiang <achiang@canonical.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, Jiri Slaby <jslaby@suse.cz>,
+       linux-pci@vger.kernel.org,
+       Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+       Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: cpqphp: NULL ptr deref in cpqhpc_probe
+Message-ID: <20100610231919.GA21669@kroah.com>
+References: <4C0774C6.4090000@suse.cz>
+ <20100608143739.192a94cd@virtuousgeek.org>
+ <20100610223436.GE8257@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100610223436.GE8257@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__sched_setscheduler() takes lock_task_sighand() to access task->signal.
-This is not needed since ea6d290c, ->signal can't go away.
+On Thu, Jun 10, 2010 at 04:34:36PM -0600, Alex Chiang wrote:
+> But I seriously think it's just time to rip this driver out of
+> the tree. If anyone is actually using this driver to do hotplug,
+> I will personally buy that person a full half-barrel of
+> Colorado's finest microbrew of choice in order to numb the pain
+> of making poor career decisions. Hell, we can drink it together,
+> during which time I'll hack on the driver. The code surely can't
+> get any worse.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
+A real user found this problem on their machine, so you might have to go
+buy that barrel.  Jiri has more details on that :)
 
- kernel/sched.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+Me, I gave the machine that had this hardware in it to osuosl.org a long
+time ago, odds are, it's still being used by some group.
 
---- 35-rc2/kernel/sched.c~1_SETSCHED_NO_SIGLOCK	2010-06-11 00:47:36.000000000 +0200
-+++ 35-rc2/kernel/sched.c	2010-06-11 01:07:15.000000000 +0200
-@@ -4432,12 +4432,8 @@ recheck:
- 	 */
- 	if (user && !capable(CAP_SYS_NICE)) {
- 		if (rt_policy(policy)) {
--			unsigned long rlim_rtprio;
--
--			if (!lock_task_sighand(p, &flags))
--				return -ESRCH;
--			rlim_rtprio = task_rlimit(p, RLIMIT_RTPRIO);
--			unlock_task_sighand(p, &flags);
-+			unsigned long rlim_rtprio =
-+					task_rlimit(p, RLIMIT_RTPRIO);
- 
- 			/* can't set/change the rt policy */
- 			if (policy != p->policy && !rlim_rtprio)
+thanks,
 
+greg k-h
