@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759101Ab0FJNsx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 09:48:53 -0400
-Received: from mtagate5.de.ibm.com ([195.212.17.165]:49631 "EHLO
-	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758198Ab0FJNsv (ORCPT
+	id S1758707Ab0FJNz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 09:55:29 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:36453 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753456Ab0FJNz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 09:48:51 -0400
-Date: Thu, 10 Jun 2010 15:48:48 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Sachin Sant <sachinp@in.ibm.com>, Avi Kivity <avi@redhat.com>,
-       Carsten Otte <cotte@de.ibm.com>,
-       Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       linux-s390@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: next June 10: S390 build failure [arch/s390/kvm/kvm.ko]
-Message-ID: <20100610154848.616aff99@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <4C10DCB7.7090903@in.ibm.com>
-References: <20100610160012.30ea7606.sfr@canb.auug.org.au>
-	<4C10DCB7.7090903@in.ibm.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Jun 2010 09:55:27 -0400
+Date: Thu, 10 Jun 2010 15:55:17 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: david@lang.hm
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+       Vegard Nossum <vegard.nossum@gmail.com>,
+       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       linux-kbuild@vger.kernel.org, Bart Massey <bart@cs.pdx.edu>,
+       Michal Marek <mmarek@suse.cz>, Greg Kroah-Hartman <greg@kroah.com>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [ANNOUNCE] GSoC project: Improving kconfig using a SAT solver
+Message-ID: <20100610135517.GA4514@ucw.cz>
+References: <AANLkTil73ArhX2w6b_v1bmWjP1FA5zUTfPzK2N4waOu1@mail.gmail.com>
+ <87tyq63eux.fsf@basil.nowhere.org>
+ <AANLkTiktV26Xu_qXFPdTRMLe5UwWnjpqvEKitjRElF6R@mail.gmail.com>
+ <1274102511.4418.18.camel@mulgrave.site>
+ <AANLkTil9lmdG5LY2SFk3cMsPOK-gUm2diMFL_o5bT08u@mail.gmail.com>
+ <1274106526.4418.40.camel@mulgrave.site>
+ <alpine.DEB.2.01.1005172258360.27232@asgard.lang.hm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.01.1005172258360.27232@asgard.lang.hm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jun 2010 18:08:15 +0530
-Sachin Sant <sachinp@in.ibm.com> wrote:
+Hi!
 
-> Today's next fails to build on a s390 box with
+> >>Even if the problem is different from zypper's, it is also here
+> >>possible to get an unsatisfiable instance. You are right that, yes,
+> >>the kconfig files on their own should always be satisfiable. But
+> >>that's before the user has made any choices at all. An example of an
+> >>unsatisfiable instance would be one where the user demands that 1.
+> >>some USB driver is enabled, while 2. USB support in general is
+> >>disabled.
+> >
+> >Actually, these are two separate problems.  The first is basic
+> >consistency within the Kconfig subsytstem (something that select
+> >currently damages for us).  The second is what to present to the user,
+> >which is where the inception of the select problem came from.  A user
+> >doesn't really want to know that USB device X depends on usb storage,
+> >SCSI and a raft of other things ... they just want it to configure a
+> >kernel that supports their device.  In particular, we don't want to
+> >present every possible option to users and then try to work out a
+> >solution, we really need guided configuration (which, in some measure,
+> >is what we have today: if you don't select general USB, you won't see
+> >any USB drivers.  Or more importantly, if you select an Adaptec SCSI
+> >card, we just enable whichever transport library it needs).
 > 
-> ERROR: "__kvm_s390_vcpu_store_status" [arch/s390/kvm/kvm.ko] undefined!
+> There are two modes people can be in when configuring a kernel.
 > 
-> Yesterday's next was good.
+> 1. I want to configure a kernel to support my hardware, enable
+> anything else needed to make it work.
+> 
+> 2. I really care about having a small kernel, don't enable anything
+> I have disabled (but help me figure out why something I want isn't
+> available)
 
-That is caused by git commit fbc5eec58e652339e9df1332cd5e10e8d8250aaf
-which fails to take git commit 5288fbf0ef041ba0e8b4dcb2df4536b5e3a48b32
-into account. There is a second caller of __kvm_s390_vcpu_store_status
-in arch/s390/kvm/intercept.c. As far as I understand the code you could
-just drop the 'static' from kvm_s390_vcpu_store_status and call it from
-handle_stop instead of the old __kvm_s390_vcpu_store_status.
+There are more...
 
-Carsten, Christian: could one of you have a look please?
+...part of the problem is that kconfig is both user-dependend (what
+filesystems do I use) and machine dependend (what does hw need).
+
+Current defconfig system is unfortunately not quite there :-(.
+
+What would be nice for machines like Sharp Zaurus (spitz) would be
+defconfig which answered =Y for hardware spitz definitely has (sound),
+=N for hardware that can't be connected (anything pci), and something
+different (=M?)  for hardware that can be connected to it
+(pcmcia)... leaving 'user' options like filesystems configured ... up
+to the user.
+								Pavel
 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
