@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758925Ab0FJM3v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 08:29:51 -0400
-Received: from elasmtp-curtail.atl.sa.earthlink.net ([209.86.89.64]:34063 "EHLO
-	elasmtp-curtail.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753689Ab0FJM3t (ORCPT
+	id S1758981Ab0FJMa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 08:30:59 -0400
+Received: from faui03.informatik.uni-erlangen.de ([131.188.30.103]:42815 "EHLO
+	faui03.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754034Ab0FJMa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 08:29:49 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=s+ybrX2/g7HOuvN50Lx6v7C4634KWNDILYRhDDK3pJIGC5pmjPL3qutHc2EBBQOJ;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:Subject:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4C10DAB9.5050003@earthlink.net>
-Date: Thu, 10 Jun 2010 08:29:45 -0400
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	Thu, 10 Jun 2010 08:30:58 -0400
+X-Greylist: delayed 463 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jun 2010 08:30:57 EDT
+Date: Thu, 10 Jun 2010 14:23:11 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Josh Boyer <jwboyer@linux.vnet.ibm.com>, Paul Mackerras <paulus@samba.org>,
+       linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+       vamos@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 3/5] Removing dead CONFIG_SMP_750
+Message-ID: <20100610122311.GA3885@stud.informatik.uni-erlangen.de>
+References: <cover.1275925219.git.siccegge@cs.fau.de> <8bf8cfaf47590e1a85f9510bb546ca35e3458bf8.1275925219.git.siccegge@cs.fau.de> <20100609123557.GJ7801@zod.rchland.ibm.com> <1276150461.1962.42.camel@pasglop>
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: asus laptop sound to soft
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec790a8a5e129e628f948e3fcf740f872e2b350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276150461.1962.42.camel@pasglop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jun 10, 2010 at 04:14:21PM +1000, Benjamin Herrenschmidt wrote:
+> On Wed, 2010-06-09 at 08:35 -0400, Josh Boyer wrote:
+> > On Wed, Jun 09, 2010 at 12:00:21PM +0200, Christoph Egger wrote:
+> > >CONFIG_SMP_750 doesn't exist in Kconfig, therefore removing all
+> > >references for it from the source code.
+> > 
+> > Yeah, we don't support SMP on 750 at the moment.  This code was carried over
+> > from the arch/ppc days, and that code was present pre-git.  I think we can
+> > drop it, but I'll leave that up to Ben.  Maybe he has crazy plans for a 750 SMP
+> > board.
+> 
+> Nope :-) Though it would be nice to also remove the call sites too and
+> thus remove the macro entirely.
 
-When I play music on my Asus Z96F laptop using kde volume control set to max
-I can barely hear the music. Same with pulse audio volume control set to 100%.
+SOmething like below?
 
-But if I run the gnome-volume-control it lets me move the volume past 100% and I
-can then hear it without any obvious distortion.
+-----
+From: Christoph Egger <siccegge@cs.fau.de>
+Subject: [PATCH 3/5] Removing dead CONFIG_SMP_750
 
-How is it decided what is 100% especially if the volume can be made louder than
-100% without any distortion ?
+CONFIG_SMP_750 doesn't exist in Kconfig, therefore removing all
+references for it from the source code.
 
-Inquiring minds want to know :).
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 
-
+diff --git a/arch/powerpc/mm/tlb_hash32.c b/arch/powerpc/mm/tlb_hash32.c
+index 8aaa8b7..09c7820 100644
+--- a/arch/powerpc/mm/tlb_hash32.c
++++ b/arch/powerpc/mm/tlb_hash32.c
+@@ -94,11 +94,6 @@ void tlb_flush(struct mmu_gather *tlb)
+  * the cache operations on the bus.  Hence we need to use an IPI
+  * to get the other CPU(s) to invalidate their TLBs.
+  */
+-#ifdef CONFIG_SMP_750
+-#define FINISH_FLUSH   smp_send_tlb_invalidate(0)
+-#else
+-#define FINISH_FLUSH   do { } while (0)
+-#endif
+ 
+ static void flush_range(struct mm_struct *mm, unsigned long start,
+                        unsigned long end)
+@@ -138,7 +133,6 @@ static void flush_range(struct mm_struct *mm, unsigned long start,
+ void flush_tlb_kernel_range(unsigned long start, unsigned long end)
+ {
+        flush_range(&init_mm, start, end);
+-       FINISH_FLUSH;
+ }
+ EXPORT_SYMBOL(flush_tlb_kernel_range);
+ 
+@@ -162,7 +156,6 @@ void flush_tlb_mm(struct mm_struct *mm)
+         */
+        for (mp = mm->mmap; mp != NULL; mp = mp->vm_next)
+                flush_range(mp->vm_mm, mp->vm_start, mp->vm_end);
+-       FINISH_FLUSH;
+ }
+ EXPORT_SYMBOL(flush_tlb_mm);
+ 
+@@ -179,7 +172,6 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long vmaddr)
+        pmd = pmd_offset(pud_offset(pgd_offset(mm, vmaddr), vmaddr), vmaddr);
+        if (!pmd_none(*pmd))
+                flush_hash_pages(mm->context.id, vmaddr, pmd_val(*pmd), 1);
+-       FINISH_FLUSH;
+ }
+ EXPORT_SYMBOL(flush_tlb_page);
+ 
+@@ -192,6 +184,5 @@ void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
+                     unsigned long end)
+ {
+        flush_range(vma->vm_mm, start, end);
+-       FINISH_FLUSH;
+ }
+ EXPORT_SYMBOL(flush_tlb_range);
 -- 
-
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
-
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
-
+1.6.3.3
 
