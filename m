@@ -1,91 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758379Ab0FJBaP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 21:30:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43562 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425Ab0FJBaN convert rfc822-to-8bit (ORCPT
+	id S1758460Ab0FJBe2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 21:34:28 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44576 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271Ab0FJBe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 21:30:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=pWA0x/XvNbQ9WfDtvJ8Wb2ouoaAI8ezgnCZJvL6pptTxuXoPZA7xsp8QgYhd77NhNE
-         5n3L1MM23bxQL8zPNHLWwfhBDzg/GQKU+Tix2h5ay6KvmW2ELqBgkD4AIG0+lWmyGCEZ
-         HiJm4yq2UDCeNnU0xdtjdxddEpn8jHDYEy/Vg=
-MIME-Version: 1.0
-In-Reply-To: <20100609211617.3e7e41bd@annuminas.surriel.com>
-References: <AANLkTin1OS3LohKBvWyS81BoAk15Y-riCiEdcevSA7ye@mail.gmail.com>
-	<1275929000.3021.56.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTilsCkBiGtfEKkNXYclsRKhfuq4yI_1mrxMa8yJG@mail.gmail.com>
-	<AANLkTik-cwrabXH_bQRPFtTo3C9r30B83jMf4IwJKCms@mail.gmail.com>
-	<20100609211617.3e7e41bd@annuminas.surriel.com>
-Date: Thu, 10 Jun 2010 09:30:12 +0800
-Message-ID: <AANLkTin9UTy3qSWJ8u3b1hwhnsX5NHCZNzkFbH9_-vIZ@mail.gmail.com>
-Subject: Re: [PATCH -mm] only drop root anon_vma if not self
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Jun 2010 21:34:26 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 10 Jun 2010 10:29:59 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
+ and use a_ops->writepages() where possible
+Message-Id: <20100610102959.ccbcfb32.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100610011035.GG5650@csn.ul.ie>
+References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+	<20100609115211.435a45f7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100609095200.GA5650@csn.ul.ie>
+	<20100610093842.6a038ab0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100610011035.GG5650@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 9:16 AM, Rik van Riel <riel@redhat.com> wrote:
-> On Wed, 9 Jun 2010 17:19:02 +0800
-> Dave Young <hidave.darkstar@gmail.com> wrote:
->
->> > Manually bisected mm patches, the memleak caused by following patch:
->> >
->> > mm-extend-ksm-refcounts-to-the-anon_vma-root.patch
->>
->>
->> So I guess the refcount break, either drop-without-get or over-drop
->
-> I'm guessing I did not run the kernel with enough debug options enabled
-> when I tested my patches...
->
-> Dave & Catalin, thank you for tracking this down.
->
-> Dave, does the below patch fix your issue?
+On Thu, 10 Jun 2010 02:10:35 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
+> >   # mount -t cgroup none /cgroups -o memory
+> >   # mkdir /cgroups/A
+> >   # echo $$ > /cgroups/A
+> >   # echo 300M > /cgroups/memory.limit_in_bytes
+> >   # make -j 8 or make -j 16
+> > 
+> 
+> That sort of scenario would be barely pushed by kernbench. For a single
+> kernel build, it's about 250-400M depending on the .config but it's still
+> a bit unreliable. Critically, it's not the sort of workload that would have
+> lots of long-lived mappings that would hurt a workload a lot if it was being
+> paged out.
 
-Yes, it fixed the issue. Thanks.
+You're right. An excuse for me is that my concern is usually the amount of
+swap-out and OOM at rapid/heavy pressure comes because it's visible to
+users easily. So, I use short-lived process test.
 
-Tested-by: Dave Young <hidave.darkstar@gmail.com>
+> Maybe it would be reasonable as a starting point but we'd have to be
+> very careful of the stack usage figures? I'm leaning towards this
+> approach to start with.
+> 
+> I'm preparing another release that takes my two most important patches
+> about reclaim but also reduces usage in page relcaim (a combination of
+> two previously released series). In combination, it might be ok for the
+> memcg paths to reclaim pages from a stack perspective although the IO
+> pattern might still blow.
 
->
-> Andrew, if the patch below works, you'll probably want to merge it as
-> mm-extend-ksm-refcounts-to-the-anon_vma-root-fix.patch :)
->
-> ----------------
->
-> With the new anon_vma code we take a refcount on the root anon_vma.
-> However, the root anon_vma does not have a refcount on itself, so
-> we should not try to do a drop on itself when it is being unlinked.
->
-> Signed-off-by: Rik van Riel <riel@redhat.com>
->
-> --- linux-2.6-rtavma/mm/rmap.c.orig     2010-06-09 21:10:07.349376896 -0400
-> +++ linux-2.6-rtavma/mm/rmap.c  2010-06-09 21:10:24.180406299 -0400
-> @@ -275,7 +275,8 @@ static void anon_vma_unlink(struct anon_
->
->        if (empty) {
->                /* We no longer need the root anon_vma */
-> -               drop_anon_vma(anon_vma->root);
-> +               if (anon_vma->root != anon_vma)
-> +                       drop_anon_vma(anon_vma->root);
->                anon_vma_free(anon_vma);
->        }
->  }
->
+sounds nice.
+
+> > > I'm not sure how a flusher thread would work just within a cgroup. It
+> > > would have to do a lot of searching to find the pages it needs
+> > > considering that it's looking at inodes rather than pages.
+> > > 
+> >
+> > yes. So, I(we) need some way for coloring inode for selectable writeback.
+> > But people in this area are very nervous about performance (me too ;), I've
+> > not found the answer yet.
+> > 
+> 
+> I worry that too much targetting of writing back a specific inode would
+> have other consequences.
+
+I personally think this(writeback scheduling) is a job for I/O cgroup.
+So, I guess what memcg can do is dirty-ratio-limiting, at most. The user has to
+set well-balanced combination of memory+I/O cgroup.
+Sorry for wrong mixture of story.
 
 
+> > Okay, I'll consider about how to kick kswapd via memcg or flusher-for-memcg.
+> > Please go ahead as you want. I love good I/O pattern, too.
+> > 
+> 
+> For the moment, I'm strongly leaning towards allowing memcg to write
+> back pages. The IO pattern might not be great, but it would be in line
+> with current behaviour. The critical question is really "is it possible
+> to overflow the stack?".
+> 
 
--- 
-Regards
-dave
+Because I don't use XFS, I don't have relaiable answer, now. But, at least,
+memcg's memory reclaim will never be called as top of do_select(), which
+uses 1000 bytes. 
+
+We have to consider long-term fix for I/O patterns under memmcg but
+please global-reclaim-update-first. We did in that way when splitting LRU
+to ANON and FILE. I don't want to make memcg as a burden for updating
+vmscan.c better. 
+
+Thanks,
+-Kame
+
