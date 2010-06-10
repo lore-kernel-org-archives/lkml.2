@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759312Ab0FJPU6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 11:20:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31401 "EHLO mx1.redhat.com"
+	id S1759328Ab0FJPXP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 11:23:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54948 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752048Ab0FJPU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 11:20:57 -0400
-Date: Thu, 10 Jun 2010 18:16:11 +0300
+	id S1751791Ab0FJPXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 11:23:14 -0400
+Date: Thu, 10 Jun 2010 18:18:27 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Rusty Russell <rusty@rustcorp.com.au>,
-       "Michael S. Tsirkin" <mst@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-       Mark McLoughlin <markmc@redhat.com>, Tejun Heo <tj@kernel.org>,
+       "Michael S. Tsirkin" <mst@redhat.com>, Jiri Pirko <jpirko@redhat.com>,
+       Shirley Ma <xma@us.ibm.com>, netdev@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH for-2.6.35] virtio: return ENOMEM on out of memory
-Message-ID: <20100610151611.GA3430@redhat.com>
+Subject: [PATCH for-2.6.35] virtio_net: do not reschedule rx refill forever
+Message-ID: <20100610151827.GA3452@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,29 +22,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add_buf returns ring size on out of memory,
-this is not what devices expect.
+We currently fill all of RX ring, then add_buf
+returns ENOSPC, which gets mis-detected as an out of
+memory condition and causes us to reschedule the work,
+and so on forever. Fix this by oom = err == -ENOMEM;
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
 
-Please consider this patch for 2.6.35.
+Rusty, please review the following patch for 2.6.35.
 
- drivers/virtio/virtio_ring.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/virtio_net.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index ed845b7..dd35b34 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -119,7 +119,7 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 06c30df..85615a3 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -416,7 +416,7 @@ static int add_recvbuf_mergeable(struct virtnet_info *vi, gfp_t gfp)
+ static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
+ {
+ 	int err;
+-	bool oom = false;
++	bool oom;
  
- 	desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
- 	if (!desc)
--		return vq->vring.num;
-+		return -ENOMEM;
+ 	do {
+ 		if (vi->mergeable_rx_bufs)
+@@ -426,10 +426,9 @@ static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
+ 		else
+ 			err = add_recvbuf_small(vi, gfp);
  
- 	/* Transfer entries from the sg list into the indirect page */
- 	for (i = 0; i < out; i++) {
+-		if (err < 0) {
+-			oom = true;
++		oom = err == -ENOMEM;
++		if (err < 0)
+ 			break;
+-		}
+ 		++vi->num;
+ 	} while (err > 0);
+ 	if (unlikely(vi->num > vi->max))
 -- 
 1.7.1.12.g42b7f
