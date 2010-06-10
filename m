@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759653Ab0FJREe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 13:04:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41574 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753117Ab0FJREb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 13:04:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100610164048.GA25171@lst.de>
-References: <4C10EC2A.8060002@fusionio.com>
-	<AANLkTimus1Ajk-6HyDtZBmsYwQjkAf3zW-dvxNJlSlGw@mail.gmail.com>
-	<4C1111ED.6020008@fusionio.com>
-	<20100610164048.GA25171@lst.de>
-Date: Thu, 10 Jun 2010 10:03:55 -0700
-Message-ID: <AANLkTilnMnUhOFecDdqDJrkGki-6HeDMH4sVGp0lN66g@mail.gmail.com>
-Subject: Re: [GIT PULL] block/io bits for 2.6.35-rc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759644Ab0FJRIf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 13:08:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41657 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753187Ab0FJRIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 13:08:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,399,1272870000"; 
+   d="scan'208";a="525717145"
+Subject: Re: [PATCH v2 1/2] tmpfs: Quick token library to allow scalable
+ retrieval of tokens from token jar
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@google.com>
+In-Reply-To: <20100609153654.0061e9c8.akpm@linux-foundation.org>
+References: <1274902371.31973.9392.camel@mudge.jf.intel.com>
+	 <20100601145126.f46572d1.akpm@linux-foundation.org>
+	 <87ocftyfnh.fsf@basil.nowhere.org>
+	 <20100609153654.0061e9c8.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Jun 2010 10:06:14 -0700
+Message-ID: <1276189574.2385.32.camel@mudge.jf.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 9:40 AM, Christoph Hellwig <hch@lst.de> wrote:
->
-> Maybe give it a bit more beating in linux-next and send it off to Linus
-> once he's back from his vacation?
+On Wed, 2010-06-09 at 15:36 -0700, Andrew Morton wrote:
 
-Yes, I'd probably be happier with that. As long as it's "just" a
-performance regression (and clearly not one that actually affects most
-people all that noticeably), I'd much rather not have to worry about
-any potential new issues being introduced right now.
+> > 
+> > You need some synchronization, otherwise the accounting
+> > would not be exact and you could overflow. Yes you could
+> > open code it, but having it in a library is nicer.
+> 
+> The code doesn't have synchronisation!  qtoken_return() can modify the
+> per-cpu "cache" in parallel with qtoken_avail()'s walk across the
+> per-cpu "caches", yielding an inaccurate result.
+> 
+> This is all the same as percpu_add() executing in parallel with
+> percpu_counter_sum() or percpu_counter_sum_positive().
+> 
+> If we cannot tolerate that inaccuracy then these patches are no good
+> and we need a rethink.
+> 
+> If we _can_ tolerate that inaccuracy then percpu_counters can be used
+> here.  And doing that is preferable to reinventing percpu_counters
+> badly.
+> 
+> I'm just not seeing it.
 
-So I'm more looking for "let's fix catastrophic events" for -rc3.
-After I get back, I'm way more open to "let's fix any real bugs",
-because then I can at least react to any fallout.
 
-(I'm planning on trying to roughly keep up on email etc - I'm today
-doing all my email using gmail to test how well that works as an
-alternative to my usual "inside two firewalls" behavior. But I'm
-seriously trying to avoid even having a laptop with me, because if I
-have something where I can do kernel development and git pulls, I know
-I'm not going to be just on vacation).
+The first version of the patch does a qtoken_reap_cache to reap the
+tokens into pool before doing an accounting of the tokens and the token
+count will be precise.  It was not done in the second version of the
+patch due to objection that it may be  costly, and also the tokens count
+will be fluctuating anyway.  However, qtoken_avail is not called very
+often (usually caller will use qtoken_get to access the tokens and it
+will not need a total accounting of the tokens). We can do it the
+previous way and there will be no inaccuracies. 
 
-                    Linus
+Tim
+
+
+
