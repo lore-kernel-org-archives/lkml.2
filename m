@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab0FJFkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 01:40:46 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41158 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab0FJFkp (ORCPT
+	id S1754251Ab0FJFkx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 01:40:53 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:55957 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754047Ab0FJFkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 01:40:45 -0400
-Subject: [PATCH v2 0/5] Generalize OF gpio support code
+	Thu, 10 Jun 2010 01:40:51 -0400
+Subject: [PATCH v2 1/5] gpiolib: cosmetic improvements for error handling in
+	gpiochip_add()
 To: dbrownell@users.sourceforge.net, avorontsov@ru.mvista.com
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: bgat@billgatliff.com, dbaryshkov@gmail.com, benh@kernel.crashing.org,
        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 09 Jun 2010 23:40:41 -0600
-Message-ID: <20100610053439.16716.53944.stgit@angua>
+Date: Wed, 09 Jun 2010 23:40:46 -0600
+Message-ID: <20100610054046.16716.54159.stgit@angua>
+In-Reply-To: <20100610053439.16716.53944.stgit@angua>
+References: <20100610053439.16716.53944.stgit@angua>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,45 +26,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series makes all gpio drivers usable from the OF support apis by
-automatically registering a default OF translator when the of_node
-pointer is assigned.  These patches are heavily based on the work that
-Anton did earlier, but I didn't add the notifiers infrastructure and
-the OF data now lives directly inside the core gpio_chip structure so
-that fewer gymnastics are needed to get at it.
+From: Anton Vorontsov <avorontsov@ru.mvista.com>
 
-These patches are currently sitting in the following branch:
+Hopefully it makes the code look nicer and makes it easier to extend
+this function.
 
-git://git.secretlab.ca/git/linux-2.6 next-devicetree
-
+Signed-off-by: Anton Vorontsov <avorontsov@ru.mvista.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+CC: devicetree-discuss@lists.ozlabs.org
+CC: linux-kernel@vger.kernel.org
 ---
+ drivers/gpio/gpiolib.c |   18 ++++++++++++------
+ 1 files changed, 12 insertions(+), 6 deletions(-)
 
-Anton Vorontsov (3):
-      gpiolib: cosmetic improvements for error handling in gpiochip_add()
-      of/gpio: Kill of_gpio_chip and add members directly to gpio_chip
-      of/gpio: add default of_xlate function if device has a node pointer
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 3ca3654..713ca0e 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1101,14 +1101,20 @@ int gpiochip_add(struct gpio_chip *chip)
+ 
+ unlock:
+ 	spin_unlock_irqrestore(&gpio_lock, flags);
+-	if (status == 0)
+-		status = gpiochip_export(chip);
++
++	if (status)
++		goto fail;
++
++	status = gpiochip_export(chip);
++	if (status)
++		goto fail;
++
++	return 0;
+ fail:
+ 	/* failures here can mean systems won't boot... */
+-	if (status)
+-		pr_err("gpiochip_add: gpios %d..%d (%s) failed to register\n",
+-			chip->base, chip->base + chip->ngpio - 1,
+-			chip->label ? : "generic");
++	pr_err("gpiochip_add: gpios %d..%d (%s) failed to register\n",
++		chip->base, chip->base + chip->ngpio - 1,
++		chip->label ? : "generic");
+ 	return status;
+ }
+ EXPORT_SYMBOL_GPL(gpiochip_add);
 
-Grant Likely (2):
-      of/gpio: stop using device_node data pointer to find gpio_chip
-      of/device: Add OF style matching helper function
-
-
- arch/microblaze/kernel/reset.c                 |   12 ++-
- arch/powerpc/platforms/52xx/mpc52xx_gpio.c     |   30 ++++----
- arch/powerpc/platforms/52xx/mpc52xx_gpt.c      |   29 ++++----
- arch/powerpc/platforms/83xx/mcu_mpc8349emitx.c |   34 ++-------
- arch/powerpc/platforms/86xx/gef_gpio.c         |   24 +++----
- arch/powerpc/sysdev/cpm1.c                     |   10 +--
- arch/powerpc/sysdev/cpm_common.c               |    5 -
- arch/powerpc/sysdev/mpc8xxx_gpio.c             |    5 -
- arch/powerpc/sysdev/ppc4xx_gpio.c              |    5 -
- arch/powerpc/sysdev/qe_lib/gpio.c              |   31 ++++-----
- arch/powerpc/sysdev/simple_gpio.c              |    5 -
- drivers/gpio/gpiolib.c                         |   55 ++++++++++++++-
- drivers/gpio/xilinx_gpio.c                     |   15 ++--
- drivers/of/device.c                            |    2 -
- drivers/of/gpio.c                              |   86 +++++++++++++++---------
- include/asm-generic/gpio.h                     |   15 ++++
- include/linux/of_device.h                      |   19 +++++
- include/linux/of_gpio.h                        |   35 +++-------
- 18 files changed, 226 insertions(+), 191 deletions(-)
