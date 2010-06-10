@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758747Ab0FJJQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 05:16:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40296 "EHLO mx2.suse.de"
+	id S1758717Ab0FJJcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 05:32:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28850 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753082Ab0FJJQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 05:16:04 -0400
-Date: Thu, 10 Jun 2010 11:16:01 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       lm-sensors@lm-sensors.org, mingo@redhat.com,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "Eric W.Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] fix hwmon/i5k_amb.c sysfs attribute for lockdep
-In-Reply-To: <20100609110719.270634a9@hyperion.delvare>
-Message-ID: <alpine.LNX.2.00.1006101115230.12271@pobox.suse.cz>
-References: <20100609140000.60975b2f.kamezawa.hiroyu@jp.fujitsu.com> <20100609110719.270634a9@hyperion.delvare>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752361Ab0FJJcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 05:32:08 -0400
+Message-ID: <4C10B10D.80304@redhat.com>
+Date: Thu, 10 Jun 2010 12:31:57 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] KVM updates for 2.6.35-rc2
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jun 2010, Jean Delvare wrote:
+Linus, please pull from
 
-> On Wed, 9 Jun 2010 14:00:00 +0900, KAMEZAWA Hiroyuki wrote:
-> > I'm not familiar with this area but I need this patch for lockdep in mmotm.
-> > please check.
-> > -Kame
-> > ==
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> > i5k_amb.ko uses dynamically allocated memory (by kmalloc) for
-> > attributes passed to sysfs. So, sysfs_attr_init() should be called
-> > for working happy with lockdep.
-> 
-> Such a fix is needed, yes. I though Jiri was working on it... Jiri?
+   git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/2.6.35
 
-It's still on my TODO list, but I haven't gotten to it yet. So whoever 
-beats me up fixing it, please merge that. Thanks.
+to receive a bunch of KVM fixes for 2.6.35-rc2, including a workaround 
+for a cpu erratum that can allow a guest to crash the host.
+
+Avi Kivity (1):
+       KVM: MMU: Remove user access when allowing kernel access to 
+gpte.w=0 page
+
+Huang Ying (1):
+       KVM: Avoid killing userspace through guest SRAO MCE on unmapped pages
+
+Jan Kiszka (1):
+       KVM: Fix order passed to iommu_unmap
+
+Jean Delvare (1):
+       KVM: powerpc: fix init/exit annotation
+
+Joerg Roedel (2):
+       KVM: SVM: Handle MCEs early in the vmexit process
+       KVM: SVM: Implement workaround for Erratum 383
+
+Julia Lawall (1):
+       KVM: ia64: Add missing spin_unlock in kvm_arch_hardware_enable()
+
+Marcelo Tosatti (2):
+       KVM: MMU: invalidate and flush on spte small->large page size change
+       KVM: read apic->irr with ioapic lock held
+
+  arch/ia64/kvm/kvm-ia64.c         |    1 +
+  arch/powerpc/kvm/e500.c          |    2 +-
+  arch/x86/include/asm/msr-index.h |    1 +
+  arch/x86/kvm/mmu.c               |   39 ++++++++++++---
+  arch/x86/kvm/paging_tmpl.h       |    7 +--
+  arch/x86/kvm/svm.c               |   96 
++++++++++++++++++++++++++++++++++++++-
+  include/linux/kvm_host.h         |    1 +
+  include/linux/mm.h               |    8 +++
+  mm/memory-failure.c              |   30 ++++++++++++
+  virt/kvm/ioapic.c                |    3 +-
+  virt/kvm/iommu.c                 |    2 +-
+  virt/kvm/kvm_main.c              |   30 +++++++++++-
+  12 files changed, 201 insertions(+), 19 deletions(-)
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+error compiling committee.c: too many arguments to function
+
