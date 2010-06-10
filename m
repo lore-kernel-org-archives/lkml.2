@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab0FJLQX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 07:16:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34715 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752531Ab0FJLQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 07:16:21 -0400
-Message-ID: <4C10C930.9080900@kernel.org>
-Date: Thu, 10 Jun 2010 13:14:56 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: x86@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [1/23] x86: percpu: Avoid warnings of unused variables
- in per cpu
-References: <20100610110.764742110@firstfloor.org> <20100610111036.DAE8EB1A2C@basil.firstfloor.org>
-In-Reply-To: <20100610111036.DAE8EB1A2C@basil.firstfloor.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758802Ab0FJLV5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 07:21:57 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50161 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753680Ab0FJLVz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 07:21:55 -0400
+Subject: Re: [PATCH -mm] only drop root anon_vma if not self
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-mm@kvack.org
+In-Reply-To: <AANLkTin9UTy3qSWJ8u3b1hwhnsX5NHCZNzkFbH9_-vIZ@mail.gmail.com>
+References: <AANLkTin1OS3LohKBvWyS81BoAk15Y-riCiEdcevSA7ye@mail.gmail.com>
+	 <1275929000.3021.56.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTilsCkBiGtfEKkNXYclsRKhfuq4yI_1mrxMa8yJG@mail.gmail.com>
+	 <AANLkTik-cwrabXH_bQRPFtTo3C9r30B83jMf4IwJKCms@mail.gmail.com>
+	 <20100609211617.3e7e41bd@annuminas.surriel.com>
+	 <AANLkTin9UTy3qSWJ8u3b1hwhnsX5NHCZNzkFbH9_-vIZ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Thu, 10 Jun 2010 12:21:06 +0100
+Message-ID: <1276168866.24535.25.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Jun 2010 11:14:58 +0000 (UTC)
+X-OriginalArrivalTime: 10 Jun 2010 11:21:06.0584 (UTC) FILETIME=[04E7D980:01CB088F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2010 01:10 PM, Andi Kleen wrote:
-> Avoid hundreds of warnings with a gcc 4.6 -Wall build
-> 
-> Cc: tj@kernel.org
-> Cc: x86@kernel.org
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Dave,
 
-Acked-by: Tejun Heo <tj@kernel.org>
+On Thu, 2010-06-10 at 02:30 +0100, Dave Young wrote:
+> On Thu, Jun 10, 2010 at 9:16 AM, Rik van Riel <riel@redhat.com> wrote:
+> > On Wed, 9 Jun 2010 17:19:02 +0800
+> > Dave Young <hidave.darkstar@gmail.com> wrote:
+> >
+> >> > Manually bisected mm patches, the memleak caused by following patch:
+> >> >
+> >> > mm-extend-ksm-refcounts-to-the-anon_vma-root.patch
+> >>
+> >>
+> >> So I guess the refcount break, either drop-without-get or over-drop
+> >
+> > I'm guessing I did not run the kernel with enough debug options enabled
+> > when I tested my patches...
+> >
+> > Dave & Catalin, thank you for tracking this down.
+> >
+> > Dave, does the below patch fix your issue?
+> 
+> Yes, it fixed the issue. Thanks.
 
-Can x86 or -mm please take this patch?  There isn't any pending percpu
-patch currently and it seems a bit silly to start a branch for this
-one.
+Thanks for investigating this issue.
+
+BTW, without my kmemleak nobootmem patch (and CONFIG_NOBOOTMEM enabled),
+do you get other leaks (false positives). If my patch fixes the
+nobootmem problem, can I add a Tested-by: Dave Young?
 
 Thanks.
 
 -- 
-tejun
+Catalin
+
