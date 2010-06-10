@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759939Ab0FJXME (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 19:12:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36374 "EHLO mx1.redhat.com"
+	id S1759945Ab0FJXMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 19:12:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11654 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759880Ab0FJXL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 19:11:58 -0400
-Date: Fri, 11 Jun 2010 01:10:18 +0200
+	id S1759930Ab0FJXMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 19:12:00 -0400
+Date: Fri, 11 Jun 2010 01:09:56 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>,
        Stanislaw Gruszka <sgruszka@redhat.com>,
        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] run_posix_cpu_timers: don't check ->exit_state, use
-	lock_task_sighand()
-Message-ID: <20100610231018.GA25942@redhat.com>
+Subject: [PATCH 4/5] thread_group_cputime: simplify, document the "alive"
+	check
+Message-ID: <20100610230956.GA25921@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,61 +23,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-run_posix_cpu_timers() doesn't work if current has already passed
-exit_notify(). This was needed to prevent the races with do_wait().
+thread_group_cputime() looks as if it is rcu-safe, but in fact this
+was wrong until ea6d290c which pins task->signal to task_struct.
+It checks ->sighand != NULL under rcu, but this can't help if ->signal
+can go away. Fortunately the caller either holds ->siglock, or it is
+fastpath_timer_check() which uses current and checks exit_state == 0.
 
-Since ea6d290c ->signal is always valid and can't go away. We can
-remove the "tsk->exit_state == 0" in fastpath_timer_check() and
-convert run_posix_cpu_timers() to use lock_task_sighand().
+- Since ea6d290c commit tsk->signal is stable, we can read it first
+  and avoid the initialization from INIT_CPUTIME.
 
-Note: it makes sense to take group_leader's sighand instead, the
-sub-thread still uses CPU after release_task(). But we need more
-changes to do this.
+- Even if tsk->signal is always valid, we still have to check it
+  is safe to use next_thread() under rcu_read_lock(). Currently
+  the code checks ->sighand != NULL, change it to use pid_alive()
+  which is commonly used to ensure the task wasn't unhashed before
+  we take rcu_read_lock().
+
+  Add the comment to explain this check.
+
+- Change the main loop to use the while_each_thread() helper.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
 
- kernel/posix-cpu-timers.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ kernel/posix-cpu-timers.c |   21 +++++++--------------
+ 1 file changed, 7 insertions(+), 14 deletions(-)
 
---- 35-rc2/kernel/posix-cpu-timers.c~5_RUN_PCT_DONT_CK_EXIT_STATE	2010-06-11 01:07:48.000000000 +0200
-+++ 35-rc2/kernel/posix-cpu-timers.c	2010-06-11 01:08:03.000000000 +0200
-@@ -1272,10 +1272,6 @@ static inline int fastpath_timer_check(s
- {
- 	struct signal_struct *sig;
+--- 35-rc2/kernel/posix-cpu-timers.c~4_TG_CPUTIME	2010-06-11 00:47:33.000000000 +0200
++++ 35-rc2/kernel/posix-cpu-timers.c	2010-06-11 01:07:48.000000000 +0200
+@@ -232,31 +232,24 @@ static int cpu_clock_sample(const clocki
  
--	/* tsk == current, ensure it is safe to use ->signal/sighand */
--	if (unlikely(tsk->exit_state))
--		return 0;
+ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+ {
+-	struct sighand_struct *sighand;
+-	struct signal_struct *sig;
++	struct signal_struct *sig = tsk->signal;
+ 	struct task_struct *t;
+ 
+-	*times = INIT_CPUTIME;
++	times->utime = sig->utime;
++	times->stime = sig->stime;
++	times->sum_exec_runtime = sig->sum_sched_runtime;
+ 
+ 	rcu_read_lock();
+-	sighand = rcu_dereference(tsk->sighand);
+-	if (!sighand)
++	/* make sure we can trust tsk->thread_group list */
++	if (!likely(pid_alive(tsk)))
+ 		goto out;
+ 
+-	sig = tsk->signal;
 -
- 	if (!task_cputime_zero(&tsk->cputime_expires)) {
- 		struct task_cputime task_sample = {
- 			.utime = tsk->utime,
-@@ -1308,6 +1304,7 @@ void run_posix_cpu_timers(struct task_st
- {
- 	LIST_HEAD(firing);
- 	struct k_itimer *timer, *next;
-+	unsigned long flags;
- 
- 	BUG_ON(!irqs_disabled());
- 
-@@ -1318,7 +1315,8 @@ void run_posix_cpu_timers(struct task_st
- 	if (!fastpath_timer_check(tsk))
- 		return;
- 
--	spin_lock(&tsk->sighand->siglock);
-+	if (!lock_task_sighand(tsk, &flags))
-+		return;
- 	/*
- 	 * Here we take off tsk->signal->cpu_timers[N] and
- 	 * tsk->cpu_timers[N] all the timers that are firing, and
-@@ -1340,7 +1338,7 @@ void run_posix_cpu_timers(struct task_st
- 	 * that gets the timer lock before we do will give it up and
- 	 * spin until we've taken care of that timer below.
- 	 */
--	spin_unlock(&tsk->sighand->siglock);
-+	unlock_task_sighand(tsk, &flags);
- 
- 	/*
- 	 * Now that all the timers on our list have the firing flag,
+ 	t = tsk;
+ 	do {
+ 		times->utime = cputime_add(times->utime, t->utime);
+ 		times->stime = cputime_add(times->stime, t->stime);
+ 		times->sum_exec_runtime += t->se.sum_exec_runtime;
+-
+-		t = next_thread(t);
+-	} while (t != tsk);
+-
+-	times->utime = cputime_add(times->utime, sig->utime);
+-	times->stime = cputime_add(times->stime, sig->stime);
+-	times->sum_exec_runtime += sig->sum_sched_runtime;
++	} while_each_thread(tsk, t);
+ out:
+ 	rcu_read_unlock();
+ }
 
