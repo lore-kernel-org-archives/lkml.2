@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759414Ab0FJPeO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 11:34:14 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:45074 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab0FJPeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 11:34:13 -0400
-Date: Thu, 10 Jun 2010 17:34:11 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [10/23] SCHED: Only allocate per cpu cpu mask buffer
-	with offstack cpumasks
-Message-ID: <20100610153410.GD19561@basil.fritz.box>
-References: <20100610110.764742110@firstfloor.org> <20100610111046.18EB4B1A2B@basil.firstfloor.org> <1276181030.2077.399.camel@twins> <20100610145243.GC19561@basil.fritz.box> <1276181743.2077.426.camel@twins> <87fx0v3p1x.fsf@basil.nowhere.org> <1276183176.2077.484.camel@twins>
+	id S932313Ab0FJPfQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 11:35:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6884 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751893Ab0FJPfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 11:35:12 -0400
+Date: Thu, 10 Jun 2010 11:34:33 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+       mhiramat@redhat.com, avi@redhat.com, davem@davemloft.net,
+       vgoyal@redhat.com, sam@ravnborg.org
+Subject: Re: [PATCH 01/13] jump label v9: notifier atomic call chain notrace
+Message-ID: <20100610153432.GB3923@redhat.com>
+References: <cover.1276116186.git.jbaron@redhat.com>
+ <dd363dd9bd8e4d3f6330f4b573dae40b76bd6dd8.1276116186.git.jbaron@redhat.com>
+ <20100609215810.GA12752@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1276183176.2077.484.camel@twins>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100609215810.GA12752@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 05:19:36PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-06-10 at 17:06 +0200, Andi Kleen wrote:
-> > +#if defined(CONFIG_CPUMASK_OFFSTACK) || defined(CONFIG_FAIR_GROUP_SCHED)
+On Wed, Jun 09, 2010 at 11:58:13PM +0200, Frederic Weisbecker wrote:
+> On Wed, Jun 09, 2010 at 05:38:52PM -0400, Jason Baron wrote:
+> > From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+> > 
+> > In LTTng, being able to use the atomic notifier from cpu idle entry to
+> > ensure the tracer flush the last events in the current subbuffer
+> > requires the rcu read-side to be marked "notrace", otherwise it can end
+> > up calling back into lockdep and the tracer.
+> > 
+> > Also apply to the the die notifier.
+> > 
+> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+> > Signed-off-by: Jason Baron <jbaron@redhat.com>
+> > Reviewed-by: Masami Hiramatsu <mhiramat@redhat.com>
+> > ---
 > 
-> Still wrong.. something like the below might work, but I really think
-> its not worth the trouble.
+> 
+> 
+> I don't understand the purpose of this patch. The only notifier
+> I see that is used by jmp label is the module notifier, and I
+> don't see how it can do bad things if we don't use the notrace
+> version.
+> 
 
-Yes it seems the ifdef maze in this function is too much for me.
+hmmm...yeah, this patch was introduced b/c of the use of the 'int3'
+notifier when updating the kernel text. We got into a recursive loop
+without it. However, since the current implementation is using
+stop_machine() to do text updates, I don't think this patch is necessary
+until we have the more optimal text updating mechanism in place. I'll
+re-test without this patch.
 
-Anyways I retract the patch, but you'll be reminded of it once
-you update to gcc 4.6
+thanks,
 
--Andi
+-Jason
