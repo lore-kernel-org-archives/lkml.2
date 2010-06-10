@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab0FIXsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 19:48:13 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63597 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab0FIXsL convert rfc822-to-8bit (ORCPT
+	id S1755536Ab0FJAI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 20:08:28 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:34274 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752747Ab0FJAI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 19:48:11 -0400
+	Wed, 9 Jun 2010 20:08:26 -0400
+Date: Thu, 10 Jun 2010 10:08:11 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, xfs@oss.sgi.com, stable@kernel.org
+Subject: Re: [PATCH 1/3] writeback: pay attention to wbc->nr_to_write in
+ write_cache_pages
+Message-ID: <20100610000811.GL7869@dastard>
+References: <1276043840-1946-1-git-send-email-david@fromorbit.com>
+ <1276043840-1946-2-git-send-email-david@fromorbit.com>
+ <20100609140942.6799c84a.akpm@linux-foundation.org>
+ <20100609225804.GK7869@dastard>
 MIME-Version: 1.0
-In-Reply-To: <20100609154405.20095178.randy.dunlap@oracle.com>
-References: <20100609133443.38f1f957.sfr@canb.auug.org.au> 
-	<20100609103657.66252a27.randy.dunlap@oracle.com> <20100609.110638.112605100.davem@davemloft.net> 
-	<20100609154405.20095178.randy.dunlap@oracle.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 9 Jun 2010 17:47:50 -0600
-X-Google-Sender-Auth: OEHFgZy9SAotfrxhfnCpx1w8u8c
-Message-ID: <AANLkTimEovLvQdvrzu37L8zFxZwvUDlGwtVhO4tR2Hwd@mail.gmail.com>
-Subject: Re: [PATCH 1/2 -next] of_device.h: provide struct of_device even when 
-	not enabled
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: David Miller <davem@davemloft.net>, sfr@canb.auug.org.au,
-       netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100609225804.GK7869@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 9, 2010 at 4:44 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
->
-> Drivers may use struct of_device (struct platform_device), even when
-> CONFIG_OF_DEVICE is not enabled, so minimally provide that struct
-> for that kconfig case.
->
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc:     Grant Likely <grant.likely@secretlab.ca>
-> Cc:     Dave Miller <davem@davemloft.net>
-> ---
->  include/linux/of_device.h |    4 ++++
->  1 file changed, 4 insertions(+)
->
-> --- linux-next-20100609.orig/include/linux/of_device.h
-> +++ linux-next-20100609/include/linux/of_device.h
-> @@ -47,6 +47,10 @@ extern ssize_t of_device_get_modalias(st
->
->  extern int of_device_uevent(struct device *dev, struct kobj_uevent_env *env);
->
-> +#else
-> +
-> +#include <linux/platform_device.h>
-> +#define of_device platform_device
+On Thu, Jun 10, 2010 at 08:58:04AM +1000, Dave Chinner wrote:
+> On Wed, Jun 09, 2010 at 02:09:42PM -0700, Andrew Morton wrote:
+> > On Wed,  9 Jun 2010 10:37:18 +1000
+> > Dave Chinner <david@fromorbit.com> wrote:
+> > 
+> > > From: Dave Chinner <dchinner@redhat.com>
+> > > 
+> > > If a filesystem writes more than one page in ->writepage, write_cache_pages
+> > > fails to notice this and continues to attempt writeback when wbc->nr_to_write
+> > > has gone negative - this trace was captured from XFS:
+> > > 
+> > > 
+> > >     wbc_writeback_start: towrt=1024
+> > >     wbc_writepage: towrt=1024
+> > >     wbc_writepage: towrt=0
+> > >     wbc_writepage: towrt=-1
+> > >     wbc_writepage: towrt=-5
+> > >     wbc_writepage: towrt=-21
+> > >     wbc_writepage: towrt=-85
+> > > 
+> > > This has adverse effects on filesystem writeback behaviour. write_cache_pages()
+> > > needs to terminate after a certain number of pages are written, not after a
+> > > certain number of calls to ->writepage are made.  This is a regression
+> > > introduced by 17bc6c30cf6bfffd816bdc53682dd46fc34a2cf4 ("vfs: Add
+> > > no_nrwrite_index_update writeback control flag"), but cannot be reverted
+> > > directly due to subsequent bug fixes that have gone in on top of it.
+> > 
+> > Might be needed in -stable.  Unfortunately the most important piece of
+> > information which is needed to make that decision was cunningly hidden
+> > from us behind the vague-to-the-point-of-uselessness term "adverse
+> > effects".
+> > 
+> > _what_ "adverse effects"??
+> 
+> Depends on how the specific filesystem handles a negative
+> nr_to_write, doesn't it? I can't speak for the exact effect on
+> anything other than XFS except to say that most ->write_page
+> implemetnations don't handle the wbc->nr_to_write < 0 specifically...
+> 
+> For XFS, it results in increased CPU usage because it triggers
+> page-at-a-time allocation (i.e no clustering), which increases
+> overhead in the elveator due to merging requirements of single page
+> bios and increased fragmentation due to small interleaved
+> allocations on concurrent writeback workloads. Effectively it causes
+> accelerated aging of XFS filesystems...
 
-I should probably just move these 2 lines out of the #if/else/endif
-block entirely.  I'll make that change and test it out.
+Sorry, forgot to address the -stable part of the question.
 
-g.
+This series is dependent on the ext4 change to use it's own
+writepage going into -stable first.  (i.e.
+8e48dcfbd7c0892b4cfd064d682cc4c95a29df32 "ext4: Use our own
+write_cache_pages()").
+
+I'd suggest that all 4 patches (the ext4 patch and the three in this
+series) should go back to 2.6.34-stable due to the long term affect
+this writeback bug could have on XFS filesystems, and the sync
+taking too long problem has been fairly widely reported since at
+least .32...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
