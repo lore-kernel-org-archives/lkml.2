@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759428Ab0FJPfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 11:35:44 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:39588 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759397Ab0FJPfm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 11:35:42 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=aPgaI2xsqQdLHUWsgPctyEQfCsQ9Xz6R7gfzEEfqSzwc8SHQizo6IqxzLMMe7AWtZBl8wTjMGvIpE1bIPIUvf2/D3+6RR0hoOI9lf7ivQio1DBURM/urDXK3DnthyunJ;
-Date: Thu, 10 Jun 2010 08:34:32 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>, Tejun Heo <tj@kernel.org>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Anthony Liguori <aliguori@us.ibm.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       "David S. Miller" <davem@davemloft.net>,
-       Matt Carlson <mcarlson@broadcom.com>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH for-2.6.35] virtio-pci: disable msi at startup
-Message-ID: <20100610083432.3c23ad6a@virtuousgeek.org>
-In-Reply-To: <20100610152252.GA3510@redhat.com>
-References: <20100610152252.GA3510@redhat.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	id S1759424Ab0FJPiV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 11:38:21 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42147 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751451Ab0FJPiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 11:38:19 -0400
+Date: Thu, 10 Jun 2010 17:37:42 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@redhat.com>,
+       linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+       fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+       vgoyal@redhat.com, sam@ravnborg.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH 03/13] jump label v9: x86 support
+Message-ID: <20100610153742.GA9118@elte.hu>
+References: <cover.1276116186.git.jbaron@redhat.com>
+ <c837d1a0a380030a4ea61acbcf0183518675a8ee.1276116186.git.jbaron@redhat.com>
+ <1276171930.2077.200.camel@twins>
+ <20100610121440.GA20130@elte.hu>
+ <20100610132616.GA19561@basil.fritz.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100610132616.GA19561@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0290]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jun 2010 18:22:52 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-> virtio-pci resets the device at startup by writing to the status
-> register, but this does not clear the pci config space,
-> specifically msi enable status which affects register
-> layout.
+* Andi Kleen <andi@firstfloor.org> wrote:
+
+> > Hm, we need more than a comment for that - distros enable 
+> > CC_OPTIMIZE_FOR_SIZE all the time, for the massive kernel image (and 
+> > hotpath cache footprint) savings. Is this fixable?
 > 
-> This breaks things like kdump when they try to use e.g. virtio-blk.
-> 
-> Fix by forcing msi off at startup. Since pci.c already has
-> a routine to do this, we export and use it instead of duplicating code.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> Tested-by: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> Cc: linux-pci@vger.kernel.org
-> ---
+> Actually the big distros (RHEL, SLES) disable it all the time now. [...]
 
-Yeah, looks fine.
+Not all the big distros, Fedora certainly doesnt.
 
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+> [...] It costs you in some benchmarks. [...]
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Microbenchmarks mostly, see below.
+
+> The code generated by -Os is often terrible.
+
+But it results in a kernel .text that is ~30% smaller, so considering the fact 
+that most real-life kernel code execution is instruction-cache-cold it's 
+generally a win.
+
+But micro-benchmarks are instruction-cache-hot so that's where the pressure to 
+remove the flag comes from.
+
+> Nearly everytime I investigate some bad asm code being generated by gcc it 
+> goes away when that flag is disabled.
+
+That is not fixing anything, it is working bugs around.
+
+> A much better to get smaller kernel images is to do more __cold annotations 
+> for slow paths. Newer gcc will then simply only do -Os for these functions.
+
+That's an opt-in method and we cannot reach the kinds of 30% code size 
+reductions that -Os can achieve. Most code in the kernel is not cache-hot, 
+even on microbenchmarks.
+
+A much better model would be to actively mark hot codepaths with a __hot 
+attribute instead. Then the code size difference can be considered on a case 
+by case basis.
+
+And where GCC produces indefensibly crap code there GCC needs to be fixed. 
+Crap code often increases size so the fix would increase the efficiency of 
+-Os.
+
+Thanks,
+
+	Ingo
