@@ -1,35 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab0FJNOT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 09:14:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53095 "EHLO hera.kernel.org"
+	id S1757711Ab0FJNPS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 09:15:18 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:42838 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753608Ab0FJNOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 09:14:18 -0400
-X-User-Agent: K-9 Mail for Android
-In-Reply-To: <E1OMgIz-0005Wb-2a@pomaz-ex.szeredi.hu>
-References: =?US-ASCII?Q?=3C20100601092456=2EGA23572=40alia?= =?US-ASCII?Q?=2Enute=2Enet=3E_=3C4C066CF4=2E2050902=40gm?= =?US-ASCII?Q?ail=2Ecom=3E=09=3C20100605085045=2EGA56?= =?US-ASCII?Q?30=40alia=2Enute=2Enet=3E_=3C4C0A1369=2E9010?= =?US-ASCII?Q?601=40kernel=2Eorg=3E_=3CE1OMICc-0005?= =?US-ASCII?Q?f8-G5=40pomaz-ex=2Eszeredi=2Ehu=3E_=3C4C1?= =?US-ASCII?Q?0CB39=2E70002=40kernel=2Eorg=3E_=3CE1OMg?= =?US-ASCII?Q?Iz-0005Wb-2a=40pomaz-ex=2Eszeredi=2Ehu=3E?=
+	id S1753608Ab0FJNPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 09:15:17 -0400
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, Eric Miao <eric.y.miao@gmail.com>,
+       dbaryshkov@gmail.com, Cyril Hrubis <metan@ucw.cz>, arminlitzel@web.de,
+       kernel list <linux-kernel@vger.kernel.org>, utx@penguin.cz,
+       lenz@cs.wisc.edu, rpurdie@rpsys.net, pave@ucw.cz, thommycheck@gmail.com,
+       zaurus-devel@www.linuxtogo.org, omegamoon@gmail.com
+Subject: Re: usb gadget on zaurus and kexec
+References: <20100519154618.GA26381@atrey.karlin.mff.cuni.cz>
+	<AANLkTim49akRJK0BN_Qk1wL6e5mrdjZioDjGNWlrjUVQ@mail.gmail.com>
+	<AANLkTilCvgvf9Ch55f878nTNTue8tHYmcrLEywsjnylY@mail.gmail.com>
+	<201006100900.23981.marek.vasut@gmail.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Thu, 10 Jun 2010 15:14:52 +0200
+In-Reply-To: <201006100900.23981.marek.vasut@gmail.com> (Marek Vasut's message
+	of "Thu, 10 Jun 2010 09:00:23 +0200")
+Message-ID: <87wru7xc4z.fsf@free.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [fuse-devel] OSS Proxy Jack slave
-From: Tejun Heo <tj@kernel.org>
-Date: Thu, 10 Jun 2010 15:13:33 +0200
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: hmajxxlh@corbac.com, fuse-devel@lists.sourceforge.net, mszeredi@suse.cz,
-       linux-kernel@vger.kernel.org
-Message-ID: <869cdc8d-85cf-468e-8f94-ff50551684ba@email.android.com>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Jun 2010 13:13:54 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Marek Vasut <marek.vasut@gmail.com> writes:
 
-Nope, it's not required for osspd but it's a rather strong limitation on the interface which would be pretty difficult to work around later.  Page protection tricks would be very cumbersome and unscalable.  Hmmm, it does remove the necessity for allocating kernel pages, right?  Still, it seems like a big limitation.  Are you sure this is a good idea?
+>> > Dumping out the registers of the two situations and doing a comparison
+>> > then might be a quick way.
+>> 
+>> Any debugging update on this?
+>
+> Yeah, there's a workaround. Cyril's working on a proper fix, but that might take 
+> some time. Simply -- UP2OCR is misconfigured.
 
-Thanks.
+That's quite interesting. In the pxa27x_udc gadget driver, I seem to have a
+regression on the resume from suspend to RAM path. My USB UDC is not enumerated
+anymore.
 
--- 
-tejun
+The might be a correlation, as UP2OCR is lost in the suspend process. I'm very
+interested by your analysis of the issue you have on kexec, as that might ease
+my work :)
+
+Besides, it's been some time I've been thinking that the pxa deserves a proper
+encapsulation of the USB internal routing paths (ie. a proper way to switch from
+usb host handled by ohci-pxa27x to an usb client handled by pxa2x_udc), to
+reflect the setup of the Pad Unit (see TRM chapter 12.4 : tables 12.2, 12.15,
+12.17, 12.18 and 12.19).
+
+Whatever you find on the USB Port2 configuration register would help me design
+the Pad block.
+
+Cheers.
+
+--
+Robert
