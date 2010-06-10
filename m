@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759479Ab0FJQMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 12:12:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41852 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759426Ab0FJQMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 12:12:33 -0400
-Message-ID: <4C110EDD.2010409@kernel.org>
-Date: Thu, 10 Jun 2010 18:12:13 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1759500Ab0FJQMq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 12:12:46 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59945 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759457Ab0FJQMk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 12:12:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=b/pcBYM43rw+sOuww4cDC33e8qo6Mcigg9HaGDRl9EdFON+FgcUAOKnrJN+lvbv5Wp
+         39zo9h7MYMzKwVFEpK3Bx0P7sWecTz6gaylefDFguo8+Ofy4njciC1ZbKhWB5bbZ8Zm7
+         qSYApBHaUWFWymbwE+36q3HhWzhh5wIJJwKsw=
+Date: Thu, 10 Jun 2010 18:12:37 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@google.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>,
+       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/5] perf: Provide a proper stop action for software
+	events
+Message-ID: <20100610161234.GA5255@nowhere>
+References: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com> <1276141760-11590-2-git-send-regression-fweisbec@gmail.com> <1276166813.2077.96.camel@twins> <1276168242.2077.134.camel@twins>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Colin Tuckley <colin.tuckley@arm.com>, Jeff Garzik <jeff@garzik.org>
-Subject: Re: [PATCH v2] sata_sil24: Use memory barriers before issuing commands
-References: <20100610160212.18091.29856.stgit@e102109-lin.cambridge.arm.com>
-In-Reply-To: <20100610160212.18091.29856.stgit@e102109-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Jun 2010 16:12:14 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276168242.2077.134.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2010 06:02 PM, Catalin Marinas wrote:
-> The data in the cmd_block buffers may reach the main memory after the
-> writel() to the device ports. This patch introduces two calls to wmb()
-> to ensure the relative ordering.
+On Thu, Jun 10, 2010 at 01:10:42PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-06-10 at 12:46 +0200, Peter Zijlstra wrote:
+> > 
+> > Something like the below would work, the only 'problem' is that it grows
+> > hw_perf_event.
 > 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Tested-by: Colin Tuckley <colin.tuckley@arm.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Jeff Garzik <jeff@garzik.org>
+> If we do the whole PAUSEd thing right, we'd not need this I think.
 
-I suppose you have tested and verified that this is actually
-necessary, right?  I've been looking through the docs but couldn't
-find anything which described the ordering between writes to main
-memory and write[bwl]()'s.  One thing that kind of bothers me is that
-r/wmb()'s are for ordering memory accesses among CPUs which
-participate in cache coherency protocol and although it may work right
-in the above case I'm not really sure whether this is the right thing
-to do.  Do you have more information on the subject?
 
-Thanks.
+It's not needed, and moreover software_pmu:stop/start() can be the same
+than software:pmu:disable/enable() without the need to add another check
+in the fast path.
 
--- 
-tejun
+But we need perf_event_stop/start() to work on software events. And in fact
+now that we use the hlist_del_init, it's safe, but a bit wasteful in
+the period reset path. That's another problem that is not critical, but
+if you want to solve this by ripping the differences between software and
+hardware (which I agree with), we need a ->reset_period callback.
+
