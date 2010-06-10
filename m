@@ -1,91 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759602Ab0FJQ6i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 12:58:38 -0400
-Received: from mail-yw0-f204.google.com ([209.85.211.204]:65014 "EHLO
-	mail-yw0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab0FJQ6g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 12:58:36 -0400
+	id S1759615Ab0FJQ75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 12:59:57 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:46395 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759498Ab0FJQ7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 12:59:55 -0400
+Message-ID: <4C111A0A.1030703@fusionio.com>
+Date: Thu, 10 Jun 2010 18:59:54 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <20100610095226.GI5333@pengutronix.de>
-References: <20100610052102.16222.86662.stgit@angua> <20100610052232.16222.942.stgit@angua> 
-	<20100610095226.GI5333@pengutronix.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 10 Jun 2010 10:58:15 -0600
-X-Google-Sender-Auth: _SZeNgd3jVQ4uhb83JJUtZW6iro
-Message-ID: <AANLkTikNDUUc7WODmtOYRf-vDzgWpWTI6kpneUEOPogz@mail.gmail.com>
-Subject: Re: [PATCH 1/2] of/i2c: Generalize OF support
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, jeremy.kerr@canonical.com,
-       devicetree-discuss@lists.ozlabs.org, ben-linux@fluff.org,
-       linux-i2c@vger.kernel.org
+To: Christoph Hellwig <hch@lst.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] block/io bits for 2.6.35-rc
+References: <4C10EC2A.8060002@fusionio.com> <AANLkTimus1Ajk-6HyDtZBmsYwQjkAf3zW-dvxNJlSlGw@mail.gmail.com> <4C1111ED.6020008@fusionio.com> <20100610164048.GA25171@lst.de>
+In-Reply-To: <20100610164048.GA25171@lst.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 3:52 AM, Wolfram Sang <w.sang@pengutronix.de> wrote:
-> Hi Grant,
->
-> looks good to me in general. A few questions:
->
-> On Wed, Jun 09, 2010 at 11:22:32PM -0600, Grant Likely wrote:
->> This patch cleans up the i2c OF support code to make it selectable by
->> all architectures and allow for automatic registration of i2c devices.
+On 2010-06-10 18:40, Christoph Hellwig wrote:
+> On Thu, Jun 10, 2010 at 06:25:17PM +0200, Jens Axboe wrote:
+>> I agree, it's late and it makes me nervous too. I had them cook for
+>> a day, didn't see any problems. And Christoph would not send it in
+>> unless it passes at least xfs qa, which is what found the problems
+>> last time (the ones we reverted).
 >>
->> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
->> ---
->>  drivers/i2c/busses/i2c-cpm.c     |    3 ++-
->>  drivers/i2c/busses/i2c-ibm_iic.c |    3 ++-
->>  drivers/i2c/busses/i2c-mpc.c     |    3 ++-
->>  drivers/of/Kconfig               |    2 +-
->>  drivers/of/of_i2c.c              |   44 ++++++++++++++++++++++++--------------
->>  include/linux/of_i2c.h           |   13 +++++++++--
->>  6 files changed, 45 insertions(+), 23 deletions(-)
->>
+>> It's fixing a regression where umount takes a LONG time if you have
+>> a lot of dirty inodes, since it basically degenerates to a data
+>> integrity writeback instead of a simple WB_SYNC_NONE. If it wasn't
+>> fixing a nasty regression (the distros are all wanting a real fix
+>> for this, it's a user problem), I would not be submitting this code
+>> at this point in time.
+> 
+> Maybe give it a bit more beating in linux-next and send it off to Linus
+> once he's back from his vacation?
 
-Hi Wolfram, thanks for the review.  Replies below.
+We can do that. Linus, I'll split split off the writeback parts and send
+you a new pull request.
 
->> @@ -49,10 +64,8 @@ void of_register_i2c_devices(struct i2c_adapter *adap,
->>
->>               result = i2c_new_device(adap, &info);
->>               if (result == NULL) {
->> -                     printk(KERN_ERR
->> -                            "of-i2c: Failed to load driver for %s\n",
->> -                            info.type);
->> -                     irq_dispose_mapping(info.irq);
->
-> Why is the dispose removed?
+-- 
+Jens Axboe
 
-Hmmm... That looks like a mistake.  I'll add it back.
-
->
->> +                     dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
->> +                             node->full_name);
->>                       continue;
->>               }
->>
->> @@ -64,7 +77,7 @@ void of_register_i2c_devices(struct i2c_adapter *adap,
->>               of_node_get(node);
->>       }
->>  }
->> -EXPORT_SYMBOL(of_register_i2c_devices);
->> +EXPORT_SYMBOL(of_i2c_register_devices);
->>
->>  static int of_dev_node_match(struct device *dev, void *data)
->>  {
->> @@ -76,8 +89,7 @@ struct i2c_client *of_find_i2c_device_by_node(struct device_node *node)
->>  {
->>       struct device *dev;
->>
->> -     dev = bus_find_device(&i2c_bus_type, NULL, node,
->> -                                      of_dev_node_match);
->> +     dev = bus_find_device(&i2c_bus_type, NULL, node, of_dev_node_match);
->
-> This change looks unrelated to me; where was this changed?
-
-You're right; unrelated whitespace damage.  I'll remove.
-
-g.
