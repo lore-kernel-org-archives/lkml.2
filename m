@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759898Ab0FJXnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 19:43:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37052 "EHLO hera.kernel.org"
+	id S1759936Ab0FJXn3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 19:43:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37064 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752621Ab0FJXnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 19:43:12 -0400
-Date: Thu, 10 Jun 2010 23:42:44 GMT
-From: tip-bot for Andi Kleen <andi@firstfloor.org>
+	id S1759918Ab0FJXn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 19:43:26 -0400
+Date: Thu, 10 Jun 2010 23:43:04 GMT
+From: tip-bot for Borislav Petkov <bp@alien8.de>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       andi@firstfloor.org, ak@linux.intel.com, tglx@linutronix.de
+       tglx@linutronix.de, hpa@linux.intel.com, bp@alien8.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       andi@firstfloor.org, ak@linux.intel.com, tglx@linutronix.de
-In-Reply-To: <20100610111040.F1781B1A2B@basil.firstfloor.org>
-References: <20100610111040.F1781B1A2B@basil.firstfloor.org>
+       tglx@linutronix.de, bp@alien8.de, hpa@linux.intel.com
+In-Reply-To: <4C0F4B00.4090307@panasas.com>
+References: <201005271944.09541.toralf.foerster@gmx.de>
+	<4C0F4B00.4090307@panasas.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, setup: Set ax register in boot vga query
-Message-ID: <tip-cf3bdc29fcbf2cb4cfa238591021d41ea8f8431f@git.kernel.org>
-Git-Commit-ID: cf3bdc29fcbf2cb4cfa238591021d41ea8f8431f
+Subject: [tip:x86/urgent] um, hweight: Fix UML boot crash due to x86 optimized hweight
+Message-ID: <tip-055c47272b8f5679d08ccc57efea3cb4aaeb5fc6@git.kernel.org>
+Git-Commit-ID: 055c47272b8f5679d08ccc57efea3cb4aaeb5fc6
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Jun 2010 23:42:48 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Jun 2010 23:43:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cf3bdc29fcbf2cb4cfa238591021d41ea8f8431f
-Gitweb:     http://git.kernel.org/tip/cf3bdc29fcbf2cb4cfa238591021d41ea8f8431f
-Author:     Andi Kleen <andi@firstfloor.org>
-AuthorDate: Thu, 10 Jun 2010 13:10:40 +0200
+Commit-ID:  055c47272b8f5679d08ccc57efea3cb4aaeb5fc6
+Gitweb:     http://git.kernel.org/tip/055c47272b8f5679d08ccc57efea3cb4aaeb5fc6
+Author:     Borislav Petkov <bp@alien8.de>
+AuthorDate: Wed, 9 Jun 2010 11:04:16 +0300
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 10 Jun 2010 15:24:29 -0700
+CommitDate: Thu, 10 Jun 2010 15:24:30 -0700
 
-x86, setup: Set ax register in boot vga query
+um, hweight: Fix UML boot crash due to x86 optimized hweight
 
-Catch missing conversion to the register structure "glove box" scheme.
+Apparently UML cannot stomach callee reg-saving trickery
+introduced with d61931d89be506372d01a90d1755f6d0a9fafe2d
+(x86: Add optimized popcnt variants) and oopses during boot:
+http://marc.info/?l=linux-kernel&m=127522065202435&w=2
 
-Found by gcc 4.6's new warnings.
+Redirect arch_hweight.h include from the x86 portion to the generic
+arch_hweight.h which is a fallback to the software hweight routines.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <20100610111040.F1781B1A2B@basil.firstfloor.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+LKML-Reference: <201005271944.09541.toralf.foerster@gmx.de>
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+LKML-Reference: <4C0F4B00.4090307@panasas.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/boot/video-vga.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ arch/um/include/asm/arch_hweight.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/boot/video-vga.c b/arch/x86/boot/video-vga.c
-index ed7aeff..45bc940 100644
---- a/arch/x86/boot/video-vga.c
-+++ b/arch/x86/boot/video-vga.c
-@@ -41,13 +41,12 @@ static __videocard video_vga;
- static u8 vga_set_basic_mode(void)
- {
- 	struct biosregs ireg, oreg;
--	u16 ax;
- 	u8 mode;
- 
- 	initregs(&ireg);
- 
- 	/* Query current mode */
--	ax = 0x0f00;
-+	ireg.ax = 0x0f00;
- 	intcall(0x10, &ireg, &oreg);
- 	mode = oreg.al;
- 
+diff --git a/arch/um/include/asm/arch_hweight.h b/arch/um/include/asm/arch_hweight.h
+new file mode 100644
+index 0000000..c656cf4
+--- /dev/null
++++ b/arch/um/include/asm/arch_hweight.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_UM_HWEIGHT_H
++#define _ASM_UM_HWEIGHT_H
++
++#include <asm-generic/bitops/arch_hweight.h>
++
++#endif
