@@ -1,130 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab0FJHbo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 03:31:44 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60640 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752633Ab0FJHbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 03:31:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Zyz+IDvg6ev1Xns5Sai9yB0jTdF2q5iEfG/eDUqmlatkeryQcXCNqETKyYAiL9iGqn
-         HGtcQt35kueEm93ABjNASYkC4vsOhcRHt8WA5BVMdgASGOV0pBQYaugt7rw90rAS1fE3
-         X88g7z+3aUebb6uxTwciYxZtCbkR1ol1MLsaA=
-Date: Thu, 10 Jun 2010 09:31:42 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Stephane Eranian <eranian@google.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>,
-       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 0/5] perf events finer grained context instrumentation
-	/ context exclusion
-Message-ID: <20100610073140.GE12752@nowhere>
-References: <1276141760-11590-1-git-send-regression-fweisbec@gmail.com> <20100610062618.GA20062@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100610062618.GA20062@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756214Ab0FJHpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 03:45:47 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:35577 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755099Ab0FJHpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 03:45:45 -0400
+Date: Thu, 10 Jun 2010 09:45:25 +0200
+From: Florian Mickler <florian@mickler.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: pm list <linux-pm@lists.linux-foundation.org>, markgross@thegnar.org,
+       mgross@linux.intel.com, linville@tuxdriver.com,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] pm_qos: make update_request non blocking
+Message-ID: <20100610094525.0449d797@schatten.dmk.lab>
+In-Reply-To: <1276103149.4343.350.camel@mulgrave.site>
+References: <1276097381-3982-1-git-send-email-florian@mickler.org>
+	<1276097832.4343.223.camel@mulgrave.site>
+	<20100609180033.39d5b499@schatten.dmk.lab>
+	<1276099645.4343.257.camel@mulgrave.site>
+	<20100609183204.1eeca494@schatten.dmk.lab>
+	<1276103149.4343.350.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 08:26:18AM +0200, Ingo Molnar wrote:
+On Wed, 09 Jun 2010 13:05:49 -0400
+James Bottomley <James.Bottomley@suse.de> wrote:
+> On Wed, 2010-06-09 at 18:32 +0200, Florian Mickler wrote:
+> > On Wed, 09 Jun 2010 12:07:25 -0400
+> > James Bottomley <James.Bottomley@suse.de> wrote:
+> > > OK, so the expression of the race is that the latest notification gets
+> > > lost.  If something is tracking values, you'd really like to lose the
+> > > previous one (which is now irrelevant) not the latest one.  The point is
+> > > there's still a race.
+> > > 
+> > > James
+> > > 
+> > 
+> > Yeah, but for blocking notification it is not that bad. 
 > 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> The network latency notifier uses the value to recalculate something.
+> Losing the last value will mean it's using stale data.
+
+Actually after pondering a bit, it is not stale data that gets
+delivered: (Correct me if I'm wrong)
+
+The update_notify() function determines the extreme value and then
+calls the blocking_notifier_chain. 
+
+But just before the update_notify() function get's called, the
+work-structure is reset and re-queue-able. So it is possible to queue it
+already even before the extreme_value in update_notify get's
+determined. 
+
+So the notified value is always the latest or there is another
+notification underway.
+
 > 
-> > Here is the new version of per context exclusion, based on hooks on 
-> > irq_enter/irq_exit. I haven't observed slowdowns but I haven't actually 
-> > measured the impact.
+> > Doesn't using blocking notifiers mean that you need to always check
+> > via pm_qos_request() to get the latest value anyways? I.e. the
+> > notification is just a hint, that something changed so you can act on
+> > it. But if you act (may it because of notification or because of
+> > something other) then you have to get the current value anyways.
 > 
-> One thing that would be nice to see in this discussion is a comparison of 
-> before/after perf stat --repeat runs.
+> Well, the network notifier assumes the notifier value is the latest ... 
 > 
-> Something like:
+> > I think there are 2 schemes of operation. The one which needs
+> > atomic notifiers and where it would be bad if we lost any notification
+> > and the other where it is just a way of doing some work in a timely
+> > fashion but it isn't critical that it is done right away.
+> > 
+> > pm_qos was the second kind of operation up until now, because the
+> > notifiers may have got scheduled away while blocked. 
 > 
->   perf stat --repeat ./hackbench 5
+> Actually, no ... the current API preserves ordering semantics.  If a
+> notifier sleeps and another change comes along, the update callsite will
+> sleep on the notifier's mutex ... so ordering is always preserved.
+
+If my above thinkings are right, then the change in semantics is only,
+that now you can not determine by the number of notifications the
+number of update_request-calls.
+
 > 
-> Done with full stat, and then also done with hardirqs/softirqs excluded. (i.e. 
-> task context stats only)
+> James
 > 
-> I.e. does the feature really give us the expected statistical stability in 
-> results? Does it really exclude hardirq/softirq workloads, etc.?
-> 
-> Thanks,
-> 
-> 	Ingo
 
-
-Just got some results:
-
-$ sudo ./perf stat -e instructions -e cycles -e branches -e branch-misses -v -r 10 ./hackbench 5
-
- Performance counter stats for './hackbench 5' (10 runs):
-
-         1313640764  instructions             #      0,241 IPC     ( +-   1,393% )  (scaled from 100,05%)
-         5440853130  cycles                     ( +-   0,925% )  (scaled from 100,05%)
-          214737441  branches                   ( +-   0,948% )
-           12332109  branch-misses            #      5,743 %       ( +-   1,239% )
-
-        1,727051101  seconds time elapsed   ( +-   0,897% )
-
-
-$ sudo ./perf stat -e instructions:t -e cycles:t -e branches:t -e branch-misses:t -v -r 10 ./hackbench 5
-
- Performance counter stats for './hackbench 5' (10 runs):
-
-         1293802776  instructions             #      0,245 IPC     ( +-   0,343% )
-         5280769301  cycles                     ( +-   0,471% )  (scaled from 100,02%)
-          209495435  branches                   ( +-   0,392% )
-           11890938  branch-misses            #      5,676 %       ( +-   0,491% )
-
-        1,750534923  seconds time elapsed   ( +-   0,463% )
-
-
-So yeah, the results look a bit better. Still not perfects:
-
-- we are still instrumenting the tiny parts between the true interrupt
-  and irq_enter() (same for irq_exit() and the end). Same for softirqs.
-
-- random randomnesses...
-
-
-Another try, this time with a kernel downloading in parallel, to generate
-network interrupts:
-
-
-$ sudo ./perf stat -e instructions -e cycles -e branches -e branch-misses -v -r 10 ./hackbench 5
-
- Performance counter stats for './hackbench 5' (10 runs):
-
-         1324759169  instructions             #      0,244 IPC     ( +-   0,494% )  (scaled from 100,09%)
-         5424824320  cycles                     ( +-   0,503% )
-          214443106  branches                   ( +-   0,516% )
-           12245614  branch-misses            #      5,710 %       ( +-   0,604% )
-
-        1,723413199  seconds time elapsed   ( +-   0,483% )
-
-
-$ sudo ./perf stat -e instructions:t -e cycles:t -e branches:t -e branch-misses:t -v -r 10 ./hackbench 5
-
- Performance counter stats for './hackbench 5' (10 runs):
-
-         1292119132  instructions             #      0,251 IPC     ( +-   0,138% )
-         5138407131  cycles                     ( +-   2,708% )
-          209052068  branches                   ( +-   0,139% )
-           11835090  branch-misses            #      5,661 %       ( +-   0,105% )
-
-        1,752192124  seconds time elapsed   ( +-   0,278% )
-
-
-Again, globally better, except for the cycles this time.
-
+Cheers,
+Flo
