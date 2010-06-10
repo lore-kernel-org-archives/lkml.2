@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab0FJAI2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 20:08:28 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:34274 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752747Ab0FJAI0 (ORCPT
+	id S1757374Ab0FJAI7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 20:08:59 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:6982 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754041Ab0FJAI5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 20:08:26 -0400
-Date: Thu, 10 Jun 2010 10:08:11 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, xfs@oss.sgi.com, stable@kernel.org
-Subject: Re: [PATCH 1/3] writeback: pay attention to wbc->nr_to_write in
- write_cache_pages
-Message-ID: <20100610000811.GL7869@dastard>
-References: <1276043840-1946-1-git-send-email-david@fromorbit.com>
- <1276043840-1946-2-git-send-email-david@fromorbit.com>
- <20100609140942.6799c84a.akpm@linux-foundation.org>
- <20100609225804.GK7869@dastard>
+	Wed, 9 Jun 2010 20:08:57 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding;
+	b=v/QjJf4JH/qSZmUliDwkyacmVRQSsm8notrrY1ZlVQbRIMEwZ3Ca53coLBrDE6Ffs
+	YsOiqskMQ3R4INmzLTDOw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100609225804.GK7869@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1006091525250.4506@i5.linux-foundation.org>
+References: <20100609210014.7464.92234.stgit@bumblebee1.mtv.corp.google.com>
+	<alpine.LFD.2.00.1006091408430.4506@i5.linux-foundation.org>
+	<1276119207.1745.154.camel@laptop>
+	<alpine.LFD.2.00.1006091517450.4506@i5.linux-foundation.org>
+	<alpine.LFD.2.00.1006091525250.4506@i5.linux-foundation.org>
+Date: Wed, 9 Jun 2010 17:08:52 -0700
+Message-ID: <AANLkTim56xHJM-6ZgFvEO2YetDLCnjaCoOtxYGTqtE0c@mail.gmail.com>
+Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be 
+	reused immediately.
+From: Salman Qazi <sqazi@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
+       mingo@elte.hu, linux-kernel@vger.kernel.org, tytso@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 08:58:04AM +1000, Dave Chinner wrote:
-> On Wed, Jun 09, 2010 at 02:09:42PM -0700, Andrew Morton wrote:
-> > On Wed,  9 Jun 2010 10:37:18 +1000
-> > Dave Chinner <david@fromorbit.com> wrote:
-> > 
-> > > From: Dave Chinner <dchinner@redhat.com>
-> > > 
-> > > If a filesystem writes more than one page in ->writepage, write_cache_pages
-> > > fails to notice this and continues to attempt writeback when wbc->nr_to_write
-> > > has gone negative - this trace was captured from XFS:
-> > > 
-> > > 
-> > >     wbc_writeback_start: towrt=1024
-> > >     wbc_writepage: towrt=1024
-> > >     wbc_writepage: towrt=0
-> > >     wbc_writepage: towrt=-1
-> > >     wbc_writepage: towrt=-5
-> > >     wbc_writepage: towrt=-21
-> > >     wbc_writepage: towrt=-85
-> > > 
-> > > This has adverse effects on filesystem writeback behaviour. write_cache_pages()
-> > > needs to terminate after a certain number of pages are written, not after a
-> > > certain number of calls to ->writepage are made.  This is a regression
-> > > introduced by 17bc6c30cf6bfffd816bdc53682dd46fc34a2cf4 ("vfs: Add
-> > > no_nrwrite_index_update writeback control flag"), but cannot be reverted
-> > > directly due to subsequent bug fixes that have gone in on top of it.
-> > 
-> > Might be needed in -stable.  Unfortunately the most important piece of
-> > information which is needed to make that decision was cunningly hidden
-> > from us behind the vague-to-the-point-of-uselessness term "adverse
-> > effects".
-> > 
-> > _what_ "adverse effects"??
-> 
-> Depends on how the specific filesystem handles a negative
-> nr_to_write, doesn't it? I can't speak for the exact effect on
-> anything other than XFS except to say that most ->write_page
-> implemetnations don't handle the wbc->nr_to_write < 0 specifically...
-> 
-> For XFS, it results in increased CPU usage because it triggers
-> page-at-a-time allocation (i.e no clustering), which increases
-> overhead in the elveator due to merging requirements of single page
-> bios and increased fragmentation due to small interleaved
-> allocations on concurrent writeback workloads. Effectively it causes
-> accelerated aging of XFS filesystems...
+On Wed, Jun 9, 2010 at 3:27 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>
+> On Wed, 9 Jun 2010, Linus Torvalds wrote:
+>>
+>> Quite possibly. I'd worry about the overflow case a bit, but it's
+>> certainly going to get the right value when base << MAX_INT.
+>
+> Having given it a couple of seconds more thought, I don't think there is
+> an overflow case either. All of a/b/base are guaranteed to be non-negative
+> (or our pid code is in worse trouble anyway), so there is no overflow
+> possible. So yes. Just comparing a-base < b-base should always be safe
 
-Sorry, forgot to address the -stable part of the question.
-
-This series is dependent on the ext4 change to use it's own
-writepage going into -stable first.  (i.e.
-8e48dcfbd7c0892b4cfd064d682cc4c95a29df32 "ext4: Use our own
-write_cache_pages()").
-
-I'd suggest that all 4 patches (the ext4 patch and the three in this
-series) should go back to 2.6.34-stable due to the long term affect
-this writeback bug could have on XFS filesystems, and the sync
-taking too long problem has been fairly widely reported since at
-least .32...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+I don't think this gives the right answer in the a < base < b  case.
+Here a - base < 0 and
+b - base > 0.  But we really want b to be before a, since a has rolled
+over further than b.  I think
+the right solution is comparing (a - base + max_pid) % max_pid with (b
+- base + max_pid) % max_pid.  Am I correct or deluded?
+.
+>
+>                        Linus
+>
+>
+>
