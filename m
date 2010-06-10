@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757374Ab0FJAI7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 20:08:59 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:6982 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041Ab0FJAI5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 20:08:57 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding;
-	b=v/QjJf4JH/qSZmUliDwkyacmVRQSsm8notrrY1ZlVQbRIMEwZ3Ca53coLBrDE6Ffs
-	YsOiqskMQ3R4INmzLTDOw==
+	id S1756976Ab0FJAKJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 20:10:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45751 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753982Ab0FJAKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 20:10:07 -0400
+Date: Thu, 10 Jun 2010 00:09:45 GMT
+From: tip-bot for Dan Carpenter <error27@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       error27@gmail.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
+       hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       error27@gmail.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
+       hpa@linux.intel.com
+In-Reply-To: <20100603100746.GU5483@bicker>
+References: <20100603100746.GU5483@bicker>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, xsave: Cleanup return codes in check_for_xstate()
+Message-ID: <tip-d6d4d4205cf4ce4ba13bc320305afbda25303496@git.kernel.org>
+Git-Commit-ID: d6d4d4205cf4ce4ba13bc320305afbda25303496
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1006091525250.4506@i5.linux-foundation.org>
-References: <20100609210014.7464.92234.stgit@bumblebee1.mtv.corp.google.com>
-	<alpine.LFD.2.00.1006091408430.4506@i5.linux-foundation.org>
-	<1276119207.1745.154.camel@laptop>
-	<alpine.LFD.2.00.1006091517450.4506@i5.linux-foundation.org>
-	<alpine.LFD.2.00.1006091525250.4506@i5.linux-foundation.org>
-Date: Wed, 9 Jun 2010 17:08:52 -0700
-Message-ID: <AANLkTim56xHJM-6ZgFvEO2YetDLCnjaCoOtxYGTqtE0c@mail.gmail.com>
-Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be 
-	reused immediately.
-From: Salman Qazi <sqazi@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
-       mingo@elte.hu, linux-kernel@vger.kernel.org, tytso@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 10 Jun 2010 00:09:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 9, 2010 at 3:27 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
->
-> On Wed, 9 Jun 2010, Linus Torvalds wrote:
->>
->> Quite possibly. I'd worry about the overflow case a bit, but it's
->> certainly going to get the right value when base << MAX_INT.
->
-> Having given it a couple of seconds more thought, I don't think there is
-> an overflow case either. All of a/b/base are guaranteed to be non-negative
-> (or our pid code is in worse trouble anyway), so there is no overflow
-> possible. So yes. Just comparing a-base < b-base should always be safe
+Commit-ID:  d6d4d4205cf4ce4ba13bc320305afbda25303496
+Gitweb:     http://git.kernel.org/tip/d6d4d4205cf4ce4ba13bc320305afbda25303496
+Author:     Dan Carpenter <error27@gmail.com>
+AuthorDate: Thu, 3 Jun 2010 12:07:46 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 9 Jun 2010 15:57:36 -0700
 
-I don't think this gives the right answer in the a < base < b  case.
-Here a - base < 0 and
-b - base > 0.  But we really want b to be before a, since a has rolled
-over further than b.  I think
-the right solution is comparing (a - base + max_pid) % max_pid with (b
-- base + max_pid) % max_pid.  Am I correct or deluded?
-.
->
->                        Linus
->
->
->
+x86, xsave: Cleanup return codes in check_for_xstate()
+
+The places which call check_for_xstate() only care about zero or
+non-zero so this patch doesn't change how the code runs, but it's a
+cleanup.  The main reason for this patch is that I'm looking for places
+which don't return -EFAULT for copy_from_user() failures.
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+LKML-Reference: <20100603100746.GU5483@bicker>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/kernel/xsave.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 37e68fc..9801498 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -36,15 +36,14 @@ int check_for_xstate(struct i387_fxsave_struct __user *buf,
+ 
+ 	err = __copy_from_user(fx_sw_user, &buf->sw_reserved[0],
+ 			       sizeof(struct _fpx_sw_bytes));
+-
+ 	if (err)
+-		return err;
++		return -EFAULT;
+ 
+ 	/*
+ 	 * First Magic check failed.
+ 	 */
+ 	if (fx_sw_user->magic1 != FP_XSTATE_MAGIC1)
+-		return -1;
++		return -EINVAL;
+ 
+ 	/*
+ 	 * Check for error scenarios.
+@@ -52,19 +51,21 @@ int check_for_xstate(struct i387_fxsave_struct __user *buf,
+ 	if (fx_sw_user->xstate_size < min_xstate_size ||
+ 	    fx_sw_user->xstate_size > xstate_size ||
+ 	    fx_sw_user->xstate_size > fx_sw_user->extended_size)
+-		return -1;
++		return -EINVAL;
+ 
+ 	err = __get_user(magic2, (__u32 *) (((void *)fpstate) +
+ 					    fx_sw_user->extended_size -
+ 					    FP_XSTATE_MAGIC2_SIZE));
++	if (err)
++		return err;
+ 	/*
+ 	 * Check for the presence of second magic word at the end of memory
+ 	 * layout. This detects the case where the user just copied the legacy
+ 	 * fpstate layout with out copying the extended state information
+ 	 * in the memory layout.
+ 	 */
+-	if (err || magic2 != FP_XSTATE_MAGIC2)
+-		return -1;
++	if (magic2 != FP_XSTATE_MAGIC2)
++		return -EFAULT;
+ 
+ 	return 0;
+ }
