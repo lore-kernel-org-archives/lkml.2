@@ -1,54 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759504Ab0FJQTe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 12:19:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:26714 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759009Ab0FJQTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 12:19:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,399,1272870000"; 
-   d="scan'208";a="287382359"
-Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some
- accesspoint == hardlock
-From: reinette chatre <reinette.chatre@intel.com>
-To: Nils Radtke <lkml@Think-Future.de>
-Cc: "linville@tuxdriver.com" <linville@tuxdriver.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <20100610142254.GD4452@localhost>
-References: <20100531201225.GA6327@localhost>
-	 <1275501085.2091.28873.camel@rchatre-DESK>
-	 <20100604165732.GB28003@localhost>
-	 <1276019189.1835.11781.camel@rchatre-DESK>
-	 <20100610142254.GD4452@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Jun 2010 09:19:31 -0700
-Message-ID: <1276186771.1835.17513.camel@rchatre-DESK>
+	id S1759515Ab0FJQTz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 12:19:55 -0400
+Received: from grandal2.tranzeo.com ([64.114.87.10]:2718 "EHLO
+	mail2.tranzeo.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751805Ab0FJQTx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 12:19:53 -0400
+X-Greylist: delayed 850 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jun 2010 12:19:53 EDT
+Subject: Re: [ANNOUNCE] 2.6.33.5-rt23
+From: "Darcy L. Watkins" <dwatkins@tranzeo.com>
+To: will_schmidt@vnet.ibm.com
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+       rt-users <linux-rt-users@vger.kernel.org>,
+       John Stultz <johnstul@us.ibm.com>, Nick Piggin <npiggin@suse.de>
+In-Reply-To: <1276185406.15867.390.camel@lexx>
+References: <alpine.LFD.2.00.1002241740410.4245@localhost.localdomain>
+	 <alpine.LFD.2.00.1002262041020.4245@localhost.localdomain>
+	 <alpine.LFD.2.00.1003121124120.22855@localhost.localdomain>
+	 <alpine.LFD.2.00.1003211158130.3147@localhost.localdomain>
+	 <alpine.LFD.2.00.1004071619490.32352@localhost.localdomain>
+	 <alpine.LFD.2.00.1004271744280.2951@localhost.localdomain>
+	 <alpine.LFD.2.00.1004301156590.2951@localhost.localdomain>
+	 <alpine.LFD.2.00.1005022109150.25342@localhost.localdomain>
+	 <alpine.LFD.2.00.1006091837410.2933@localhost.localdomain>
+	 <1276119074.15867.311.camel@lexx>
+	 <alpine.LFD.2.00.1006100800330.2933@localhost.localdomain>
+	 <1276185406.15867.390.camel@lexx>
+Content-Type: text/plain
+Organization: Tranzeo Wireless Technologies Inc.
+Date: Thu, 10 Jun 2010 09:05:42 -0700
+Message-Id: <1276185942.31967.3.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.24.5 (2.24.5-2.fc10) 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Jun 2010 16:00:44.0544 (UTC) FILETIME=[15596000:01CB08B6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-10 at 07:22 -0700, Nils Radtke wrote:
->   For the bug reports to be created it will take me some time.
->   I'll firstly report the main issue, the 2 other ones afterwards.
-
-Sounds great. Thanks
-
->   Would it be ok cross referencing i.e. to the log and such 
->   between the reports?
->   Should I paste all the mail messages in separate report messages 
->   (belonging to one bug report, of course) or should I paste some
->   links to the thread?
-
-I find it most convenient if all information related to the bug is
-contained in the bug report. Links can be used.
-
-Reinette
 
 
+On Thu, 2010-06-10 at 08:56 -0700, Will Schmidt wrote:
+> On Thu, 2010-06-10 at 08:07 +0200, Thomas Gleixner wrote:
+> > On Wed, 9 Jun 2010, Will Schmidt wrote:
+> >
+> > > On Wed, 2010-06-09 at 18:44 +0200, Thomas Gleixner wrote:
+> > > I'm still on 2.6.33.5-rt22 on powerpc, and have run into a couple
+> > > "sleeping function called from invalid context..." BUGs.   The
+> first was
+> > > during system boot, second during a 'make'.
+> > >
+> > > relevant code paths don't seem to have changed between -rt22 and
+> -rt23,
+> > > so I think still valid.. :-) 
+> > >
+> > > This is on a POWER7 system, which may have opened up some timing
+> > > windows, wrt previous runs on POWER6 systems.
+> > >
+> > >
+> > > BUG: sleeping function called from invalid context at
+> > > kernel/rtmutex.c:684
+> >
+> > > [c000000078cf2cf0] [c000000000131a04] .irq_to_desc_alloc_node
+> +0xdc/0x2b8
+> >
+> > Grr. I thought I had the SPARSE_IRQ stuff disabled on -rt, but seems
+> > it came back somehow. Can you disable that, or does you machine
+> depend
+> > on it ?
+> 
+> I'm not sure whether it is required by the architecture.  I do see
+> that
+> SPARSE_IRQ is disabled in arch/x86/Kconfig with a !PREEMPT_RT, but I
+> don't see an equivalent 'disable' in arch/powerpc/Kconfig. 
+> 
 
+I see it as "y" in my .config for a powerpc 405 build.  This appears to
+run on my system (although I haven't loaded up the rt23 build on the
+target yet - last one loaded up was rt22).
+
+What should I expect to see different if SPARSE_IRQ is turned off?
+
+> 
+> > > BUG: sleeping function called from invalid context at
+> kernel/rtmutex.c:684
+> > > pcnt: 0 0 in_atomic(): 0, irqs_disabled(): 1, pid: 4760, name:
+> make
+> > > Call Trace:
+> > > [c0000000792978b0] [c000000000015550] .show_stack+0xd8/0x218
+> (unreliable)
+> > > [c000000079297990] [c0000000006a99c8] .dump_stack+0x28/0x3c
+> > > [c000000079297a10] [c00000000006cea8] .__might_sleep+0x134/0x15c
+> > > [c000000079297ab0] [c0000000006a2f78] .rt_spin_lock+0x4c/0x9c
+> > > [c000000079297b40] [c0000000000a1ff0] .get_signal_to_deliver
+> +0xcc/0x4ec
+> > > [c000000079297c50] [c000000000018604] .do_signal_pending.clone.0
+> +0x6c/0x2e0
+> > > [c000000079297d90] [c0000000000188b0] .do_signal+0x38/0x74
+> > > [c000000079297e30] [c000000000008b40] user_work+0x24/0x28
+> >
+> > Does the patch below fix it ?
+> 
+> Probably.. :-)   I'm running with the patch now, and no repeats of
+> that
+> BUG yet.  
+> 
+> Thanks,
+> -Will
+> 
+> 
+> >
+> > Thanks,
+> >
+> >       tglx
+> > -----
+> > diff --git a/arch/powerpc/kernel/signal.c
+> b/arch/powerpc/kernel/signal.c
+> > index 00b5078..fa580f9 100644
+> > --- a/arch/powerpc/kernel/signal.c
+> > +++ b/arch/powerpc/kernel/signal.c
+> > @@ -120,6 +120,14 @@ static int do_signal_pending(sigset_t *oldset,
+> struct pt_regs *regs)
+> >       int ret;
+> >       int is32 = is_32bit_task();
+> >
+> > +#ifdef CONFIG_PREEMPT_RT
+> > +     /*
+> > +      * Fully-preemptible kernel does not need interrupts disabled:
+> > +      */
+> > +     local_irq_enable();
+> > +     preempt_check_resched();
+> > +#endif
+> > +
+> >       if (current_thread_info()->local_flags & _TLF_RESTORE_SIGMASK)
+> >               oldset = &current->saved_sigmask;
+> >       else if (!oldset)
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
 
