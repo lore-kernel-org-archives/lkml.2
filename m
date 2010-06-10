@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759723Ab0FJXqr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 19:46:47 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39631 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751060Ab0FJXqp (ORCPT
+	id S1759917Ab0FJXyS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 19:54:18 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54744 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab0FJXyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 19:46:45 -0400
-Date: Thu, 10 Jun 2010 16:46:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] Add HW_ERR printk prefix for hardware error logging
-Message-Id: <20100610164607.b2908334.akpm@linux-foundation.org>
-In-Reply-To: <1275978938.3444.667.camel@yhuang-dev.sh.intel.com>
-References: <1275978938.3444.667.camel@yhuang-dev.sh.intel.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 10 Jun 2010 19:54:17 -0400
+Subject: [PATCH] ASoC: Remove unused header
+From: Grant Likely <grant.likely@secretlab.ca>
+Cc: Herb Peyerl <hpeyerl@beer.org>, alsa-devel@alsa-project.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       linux-kernel@vger.kernel.org, Jon Smirl <jonsmirl@gmail.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Date: Thu, 10 Jun 2010 17:54:13 -0600
+Message-ID: <20100610235348.29652.91350.stgit@angua>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Jun 2010 14:35:38 +0800
-Huang Ying <ying.huang@intel.com> wrote:
+The header contains an extern that isn't used by anything.  Remove.
 
-> This makes hardware error related log in printk log more explicit. So
-> that the users can report it to hardware vendor instead of LKML or
-> software vendor.
-> 
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jon Smirl <jonsmirl@gmail.com>
+Cc: Herb Peyerl <hpeyerl@beer.org>
+---
+ sound/soc/fsl/mpc5200_psc_i2s.c |    1 -
+ sound/soc/fsl/mpc5200_psc_i2s.h |   12 ------------
+ 2 files changed, 0 insertions(+), 13 deletions(-)
+ delete mode 100644 sound/soc/fsl/mpc5200_psc_i2s.h
 
-Spose so.  Some additional words explaining why you think this would
-result in an improved kernel would help here.  Are you seeing
-misdirected problem reports?  Are we missing out on opportunities to
-fix hardware?  What is driving for this change?  Will it bring out some
-improvement in something which you're seeing within Intel or was it
-just a random hey-lets-try-this thing?
+diff --git a/sound/soc/fsl/mpc5200_psc_i2s.c b/sound/soc/fsl/mpc5200_psc_i2s.c
+index 4f455bd..676841c 100644
+--- a/sound/soc/fsl/mpc5200_psc_i2s.c
++++ b/sound/soc/fsl/mpc5200_psc_i2s.c
+@@ -16,7 +16,6 @@
+ 
+ #include <asm/mpc52xx_psc.h>
+ 
+-#include "mpc5200_psc_i2s.h"
+ #include "mpc5200_dma.h"
+ 
+ /**
+diff --git a/sound/soc/fsl/mpc5200_psc_i2s.h b/sound/soc/fsl/mpc5200_psc_i2s.h
+deleted file mode 100644
+index ce55e07..0000000
+--- a/sound/soc/fsl/mpc5200_psc_i2s.h
++++ /dev/null
+@@ -1,12 +0,0 @@
+-/*
+- * Freescale MPC5200 PSC in I2S mode
+- * ALSA SoC Digital Audio Interface (DAI) driver
+- *
+- */
+-
+-#ifndef __SOUND_SOC_FSL_MPC52xx_PSC_I2S_H__
+-#define __SOUND_SOC_FSL_MPC52xx_PSC_I2S_H__
+-
+-extern struct snd_soc_dai psc_i2s_dai[];
+-
+-#endif /* __SOUND_SOC_FSL_MPC52xx_PSC_I2S_H__ */
 
-The kernel's whole approach to messaging is pretty haphazard and lame
-and sad.  There have been various proposals to improve the usefulness
-and to rationally categorise things in way which are more useful to
-operators, but nothing seems to ever get over the line.
-
-> ---
->  include/linux/kernel.h |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 8317ec4..3bf740b 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -247,6 +247,13 @@ extern struct pid *session_of_pgrp(struct pid *pgrp);
->  #define FW_WARN		"[Firmware Warn]: "
->  #define FW_INFO		"[Firmware Info]: "
->  
-> +/*
-> + * HW_ERR
-> + * Add this to a message for hardware errors, so that user can report
-> + * it to hardware vendor instead of LKML or software vendor.
-> + */
-> +#define HW_ERR		"[Hardware Error]: "
-
-I'm trying to think of a rational reason for capitalising "Error", and
-failing.
-
-Oh well, that's what the other strings do and the kernel already stands
-as a punctuation/grammar how-not-to guide. ho hum.
