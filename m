@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab0FKNgK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 09:36:10 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39760 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756280Ab0FKNgG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760361Ab0FKNgI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 09:36:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52545 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1760320Ab0FKNgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jun 2010 09:36:06 -0400
-Date: Fri, 11 Jun 2010 15:36:05 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Donggeun Kim <dg77.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com
-Subject: Re: [PATCH] smb380: accelerometer driver
-Message-ID: <20100611133605.GB5197@pengutronix.de>
-References: <4C1216FD.6010107@samsung.com>
+Message-ID: <4C123AF2.80803@cn.fujitsu.com>
+Date: Fri, 11 Jun 2010 21:32:34 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WhfpMioaduB5tiZL"
-Content-Disposition: inline
-In-Reply-To: <4C1216FD.6010107@samsung.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: [PATCH 5/7] KVM: MMU: cleanup for __mmu_unsync_walk()
+References: <4C1239EE.3090904@cn.fujitsu.com> <4C123ABA.3000601@cn.fujitsu.com>
+In-Reply-To: <4C123ABA.3000601@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Decrease sp->unsync_children after clear unsync_child_bitmap bit
 
---WhfpMioaduB5tiZL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-On Fri, Jun 11, 2010 at 07:59:09PM +0900, Donggeun Kim wrote:
-> This patch support driver for BOSCH SMB380 and BMA023.
->=20
-> This driver will read x, y, z coordinate registers from the device and
-> report the values to users through sysfs interface.
->=20
-> Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> drivers/hwmon/Kconfig | 8 +
-> drivers/hwmon/Makefile | 1 +
-> drivers/hwmon/smb380.c | 572
-> ++++++++++++++++++++++++++++++++++++++++++++++++
-> include/linux/smb380.h | 20 ++
-> 4 files changed, 601 insertions(+), 0 deletions(-)
-> create mode 100644 drivers/hwmon/smb380.c
-> create mode 100644 include/linux/smb380.h
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 18c14c5..c4b980a 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1160,9 +1160,11 @@ static int __mmu_unsync_walk(struct kvm_mmu_page *sp,
+ 					return -ENOSPC;
+ 
+ 				ret = __mmu_unsync_walk(child, pvec);
+-				if (!ret)
++				if (!ret) {
+ 					__clear_bit(i, sp->unsync_child_bitmap);
+-				else if (ret > 0)
++					sp->unsync_children--;
++					WARN_ON((int)sp->unsync_children < 0);
++				} else if (ret > 0)
+ 					nr_unsync_leaf += ret;
+ 				else
+ 					return ret;
+@@ -1176,8 +1178,6 @@ static int __mmu_unsync_walk(struct kvm_mmu_page *sp,
+ 		}
+ 	}
+ 
+-	if (find_first_bit(sp->unsync_child_bitmap, 512) == 512)
+-		sp->unsync_children = 0;
+ 
+ 	return nr_unsync_leaf;
+ }
+-- 
+1.6.1.2
 
-Please drop all i2c_set_clientdata(client, NULL).
-The i2c-core does this now...
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---WhfpMioaduB5tiZL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkwSO8QACgkQD27XaX1/VRtBPQCfauBlZ7vRC0hdQpLWsawJJrd1
-D5wAoJ14BAykA5IVknKorXpoPNVt/54Y
-=B8Uw
------END PGP SIGNATURE-----
-
---WhfpMioaduB5tiZL--
