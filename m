@@ -1,202 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760427Ab0FKTUF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 15:20:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58717 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab0FKTUB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 15:20:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=fLrQ2/Q4zO4ySVrimlUwFtlXM7Bszv6hkFbgNhb0+RVZ79E5DEqOpLo2hIxHLcU6ed
-         gtRnVJ8Ifij3VyZNc0iTJ9H7GYZY48qFWZkIeHChRpgTjcAkJRRvF6mPlHI2uTPtmIvx
-         ojawfkVYNe/w05b8DG4GQdzqiQtjBDjtGW/Fs=
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: linux-mmc <linux-mmc@vger.kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Philip Langdale <philipl@overt.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: [PATCH v2] MMC: fix all hangs related to mmc/sd card insert/removal during suspend/resume.
-Date: Fri, 11 Jun 2010 22:19:55 +0300
-Message-Id: <1276283995-10812-1-git-send-email-maximlevitsky@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1276283791.8557.29.camel@maxim-laptop>
-References: <1276283791.8557.29.camel@maxim-laptop>
+	id S1760469Ab0FKTWK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 15:22:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756611Ab0FKTWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 15:22:08 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Josef Bacik <josef@redhat.com>
+Cc: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: make sure to invalidate pages if we fall back on buffered reads
+References: <1276007044-17715-1-git-send-email-josef@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 11 Jun 2010 15:22:01 -0400
+In-Reply-To: <1276007044-17715-1-git-send-email-josef@redhat.com> (Josef
+	Bacik's message of "Tue, 8 Jun 2010 10:24:04 -0400")
+Message-ID: <x4939wtidd2.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you don't use CONFIG_MMC_UNSAFE_RESUME, card will now be removed
-in pm notified while userspace is still running.
-Thus it will be possible to sync it propely.
+Josef Bacik <josef@redhat.com> writes:
 
-Card detect workqueue is now freezeable, therefore a card insert/removal event will
-wait till userspace is unfrozen.
+> Since BTRFS can fallback on buffered reads after having done some direct reads,
+> we need to make sure to invalidate any pages that we may have read by doing
+> buffered IO.  This shouldn't have shown up as a visible user problem, it's just
+> for correctness sake.  Thanks,
 
-Tested with and without CONFIG_MMC_UNSAFE_RESUME with suspend and hibernate.
+This looks right to me.  You definitely don't want to fill up the page
+cache from direct I/O.
 
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
----
- drivers/mmc/core/core.c  |   54 +++++++++++++++++++++++++++------------------
- drivers/mmc/core/host.c  |    6 +++++
- include/linux/mmc/host.h |    3 ++
- 3 files changed, 41 insertions(+), 22 deletions(-)
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 569e94d..0cba53a 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1259,26 +1259,11 @@ int mmc_suspend_host(struct mmc_host *host)
- 
- 	if (host->caps & MMC_CAP_DISABLE)
- 		cancel_delayed_work(&host->disable);
--	cancel_delayed_work(&host->detect);
--	mmc_flush_scheduled_work();
- 
- 	mmc_bus_get(host);
- 	if (host->bus_ops && !host->bus_dead) {
- 		if (host->bus_ops->suspend)
- 			err = host->bus_ops->suspend(host);
--		if (err == -ENOSYS || !host->bus_ops->resume) {
--			/*
--			 * We simply "remove" the card in this case.
--			 * It will be redetected on resume.
--			 */
--			if (host->bus_ops->remove)
--				host->bus_ops->remove(host);
--			mmc_claim_host(host);
--			mmc_detach_bus(host);
--			mmc_release_host(host);
--			host->pm_flags = 0;
--			err = 0;
--		}
- 	}
- 	mmc_bus_put(host);
- 
-@@ -1310,12 +1295,6 @@ int mmc_resume_host(struct mmc_host *host)
- 			printk(KERN_WARNING "%s: error %d during resume "
- 					    "(card was removed?)\n",
- 					    mmc_hostname(host), err);
--			if (host->bus_ops->remove)
--				host->bus_ops->remove(host);
--			mmc_claim_host(host);
--			mmc_detach_bus(host);
--			mmc_release_host(host);
--			/* no need to bother upper layers */
- 			err = 0;
- 		}
- 	}
-@@ -1330,6 +1309,37 @@ int mmc_resume_host(struct mmc_host *host)
- 	return err;
- }
- 
-+/* Do the card removal on suspend if card is assumed removeable
-+ * Do that in pm notifier while userspace isn't yet frozen, so we will be able
-+   to sync the card.
-+*/
-+int mmc_pm_notify(struct notifier_block *notify_block,
-+					unsigned long mode, void *unused)
-+{
-+	struct mmc_host *host = container_of(
-+		notify_block, struct mmc_host, pm_notify);
-+
-+
-+	switch (mode) {
-+	case PM_HIBERNATION_PREPARE:
-+	case PM_SUSPEND_PREPARE:
-+
-+		if (!host->bus_ops || host->bus_ops->suspend)
-+			break;
-+
-+		if (host->bus_ops->remove)
-+			host->bus_ops->remove(host);
-+		mmc_claim_host(host);
-+		mmc_detach_bus(host);
-+		mmc_release_host(host);
-+		host->pm_flags = 0;
-+		break;
-+
-+	}
-+
-+	return 0;
-+}
-+
- EXPORT_SYMBOL(mmc_resume_host);
- 
- #endif
-@@ -1338,7 +1348,7 @@ static int __init mmc_init(void)
- {
- 	int ret;
- 
--	workqueue = create_singlethread_workqueue("kmmcd");
-+	workqueue = create_freezeable_workqueue("kmmcd");
- 	if (!workqueue)
- 		return -ENOMEM;
- 
-diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-index 4735390..53f3406 100644
---- a/drivers/mmc/core/host.c
-+++ b/drivers/mmc/core/host.c
-@@ -17,6 +17,7 @@
- #include <linux/pagemap.h>
- #include <linux/leds.h>
- #include <linux/slab.h>
-+#include <linux/suspend.h>
- 
- #include <linux/mmc/host.h>
- 
-@@ -85,6 +86,8 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
- 	init_waitqueue_head(&host->wq);
- 	INIT_DELAYED_WORK(&host->detect, mmc_rescan);
- 	INIT_DELAYED_WORK_DEFERRABLE(&host->disable, mmc_host_deeper_disable);
-+	host->pm_notify.notifier_call = mmc_pm_notify;
-+
- 
- 	/*
- 	 * By default, hosts do not support SGIO or large requests.
-@@ -132,6 +135,7 @@ int mmc_add_host(struct mmc_host *host)
- 	mmc_add_host_debugfs(host);
- #endif
- 
-+	register_pm_notifier(&host->pm_notify);
- 	mmc_start_host(host);
- 
- 	return 0;
-@@ -158,6 +162,8 @@ void mmc_remove_host(struct mmc_host *host)
- 	device_del(&host->class_dev);
- 
- 	led_trigger_unregister_simple(host->led);
-+
-+	unregister_pm_notifier(&host->pm_notify);
- }
- 
- EXPORT_SYMBOL(mmc_remove_host);
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index f65913c..b45812d 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -124,6 +124,7 @@ struct mmc_host {
- 	unsigned int		f_min;
- 	unsigned int		f_max;
- 	u32			ocr_avail;
-+	struct notifier_block	pm_notify;
- 
- #define MMC_VDD_165_195		0x00000080	/* VDD voltage 1.65 - 1.95 */
- #define MMC_VDD_20_21		0x00000100	/* VDD voltage 2.0 ~ 2.1 */
-@@ -257,6 +258,8 @@ int mmc_card_can_sleep(struct mmc_host *host);
- int mmc_host_enable(struct mmc_host *host);
- int mmc_host_disable(struct mmc_host *host);
- int mmc_host_lazy_disable(struct mmc_host *host);
-+int mmc_pm_notify(struct notifier_block *notify_block, unsigned long, void *);
-+
- 
- static inline void mmc_set_disable_delay(struct mmc_host *host,
- 					 unsigned int disable_delay)
--- 
-1.7.0.4
-
+> Signed-off-by: Josef Bacik <josef@redhat.com>
+> ---
+>  mm/filemap.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+>
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 829ac9c..ca5aba9 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -1266,6 +1266,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  	unsigned long seg = 0;
+>  	size_t count;
+>  	loff_t *ppos = &iocb->ki_pos;
+> +	bool invalidate = false;
+>  
+>  	count = 0;
+>  	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+> @@ -1291,7 +1292,8 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  							iov, pos, nr_segs);
+>  			}
+>  			if (retval > 0) {
+> -				*ppos = pos + retval;
+> +				pos += retval;
+> +				*ppos = pos;
+>  				count -= retval;
+>  			}
+>  
+> @@ -1307,6 +1309,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  				file_accessed(filp);
+>  				goto out;
+>  			}
+> +			invalidate = true;
+>  		}
+>  	}
+>  
+> @@ -1343,6 +1346,10 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  		if (desc.count > 0)
+>  			break;
+>  	}
+> +	if (invalidate && retval > 0)
+> +		invalidate_mapping_pages(filp->f_mapping,
+> +					 pos >> PAGE_CACHE_SHIFT,
+> +					 (*ppos - 1) >> PAGE_CACHE_SHIFT);
+>  out:
+>  	return retval;
+>  }
