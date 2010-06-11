@@ -1,47 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760086Ab0FKCUr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 22:20:47 -0400
-Received: from mail.perches.com ([173.55.12.10]:1040 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754733Ab0FKCUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 22:20:45 -0400
-Subject: [PATCH] drivers/usb/gadget/langwell_udc.c: printk needs a
- (unsigned long long) cast for a dma_t
-From: Joe Perches <joe@perches.com>
-To: Xiaochen Shen <xiaochen.shen@intel.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       linux-usb <linux-usb@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Jun 2010 19:20:43 -0700
-Message-ID: <1276222843.1556.438.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1760066Ab0FKCbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 22:31:39 -0400
+Received: from smtp104.prem.mail.sp1.yahoo.com ([98.136.44.59]:47450 "HELO
+	smtp104.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754733Ab0FKCbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 22:31:36 -0400
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: VrD1KqYVM1kE9jno9L6ODiE2XfRBOe04iAJZGhl9Q_rTf5q5GO4JHJ3Nbl.bX5CfyEM86.4R6xxVelPhTSpQCazrW0zN08QcSlra7aAxI6cnZEvlcwf2FC1h.cVUMLSXMS4TCoH.HNy.PzlteXbYwoqalE9Xis.efgVJ.rtdi7KwhUI9Pnw4GxVTVv18TaaFSrX388WqRhIskHdAJBjRP8sms2wYLIoAkN7ALwteWkugXfBpLeF1a54irvewpmhZXBzRouON64BcSHOc2hKRFvdnis3GvZHkYnzU6WipHAgs.6ZEdWOCNAPQCJ0LaHUKwG.lk49__Nz_fuhTZXgVzyPu0Z7Tb6KkoZhHUP4v
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4C11A006.2070305@schaufler-ca.com>
+Date: Thu, 10 Jun 2010 19:31:34 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+CC: hch@infradead.org, viro@zeniv.linux.org.uk, sds@tycho.nsa.gov,
+       matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
+       bfields@fieldses.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       selinux@tycho.nsa.gov, labeled-nfs@linux-nfs.org
+Subject: Re: [PATCH 01/10] Security: Add hook to calculate context based on
+ a negative dentry.
+References: <1276014176-20315-1-git-send-email-dpquigl@tycho.nsa.gov> <1276014176-20315-2-git-send-email-dpquigl@tycho.nsa.gov>
+In-Reply-To: <1276014176-20315-2-git-send-email-dpquigl@tycho.nsa.gov>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
-index a391351..d41b69c 100644
---- a/drivers/usb/gadget/langwell_udc.c
-+++ b/drivers/usb/gadget/langwell_udc.c
-@@ -842,9 +841,9 @@ static int langwell_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
- 		VDBG(dev, "req->mapped = 0\n");
- 	}
- 
--	DBG(dev, "%s queue req %p, len %u, buf %p, dma 0x%08x\n",
--			_ep->name,
--			_req, _req->length, _req->buf, _req->dma);
-+	DBG(dev, "%s queue req %p, len %u, buf %p, dma 0x%08llx\n",
-+	    _ep->name,
-+	    _req, _req->length, _req->buf, (unsigned long long)_req->dma);
- 
- 	_req->status = -EINPROGRESS;
- 	_req->actual = 0;
+David P. Quigley wrote:
+> There is a time where we need to calculate a context without the
+> inode having been created yet. To do this we take the negative dentry and
+> calculate a context based on the process and the parent directory contexts.
+>
+> Signed-off-by: Matthew N. Dodd <Matthew.Dodd@sparta.com>
+> Signed-off-by: David P. Quigley <dpquigl@tycho.nsa.gov>
+> ---
+>  include/linux/security.h |   22 ++++++++++++++++++++++
+>  security/capability.c    |    6 ++++++
+>  security/security.c      |    7 +++++++
+>  security/selinux/hooks.c |   32 ++++++++++++++++++++++++++++++++
+>  4 files changed, 67 insertions(+), 0 deletions(-)
+>   
 
+You should be able to figure out the Smack hook as well.
+Hint: it's current->security.
+
+> diff --git a/include/linux/security.h b/include/linux/security.h
+> index 3158dd9..4d01784 100644
+> --- a/include/linux/security.h
+> +++ b/include/linux/security.h
+> @@ -322,6 +322,14 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+>   *	Parse a string of security data filling in the opts structure
+>   *	@options string containing all mount options known by the LSM
+>   *	@opts binary data structure usable by the LSM
+> + * @dentry_init_security:
+> + *	Compute a context for a dentry as the inode is not yet available
+> + * 	since NFSv4 has no label backed by an EA anyway.
+> + * 	@dentry dentry to use in calculating the context.
+> + * 	@mode mode used to determine resource type.
+> + * 	@ctx pointer to place the pointer to the resulting context in.
+> + * 	@ctxlen point to place the length of the resulting context.
+> + *
+>   *
+>   * Security hooks for inode operations.
+>   *
+> @@ -1501,6 +1509,9 @@ struct security_operations {
+>  	void (*sb_clone_mnt_opts) (const struct super_block *oldsb,
+>  				   struct super_block *newsb);
+>  	int (*sb_parse_opts_str) (char *options, struct security_mnt_opts *opts);
+> +	int (*dentry_init_security) (struct dentry *dentry, int mode,
+> +				     void **ctx, u32 *ctxlen);
+> +
+>  
+>  #ifdef CONFIG_SECURITY_PATH
+>  	int (*path_unlink) (struct path *dir, struct dentry *dentry);
+> @@ -1795,6 +1806,8 @@ int security_sb_set_mnt_opts(struct super_block *sb, struct security_mnt_opts *o
+>  void security_sb_clone_mnt_opts(const struct super_block *oldsb,
+>  				struct super_block *newsb);
+>  int security_sb_parse_opts_str(char *options, struct security_mnt_opts *opts);
+> +int security_dentry_init_security (struct dentry *dentry, int mode,
+> +				   void **ctx, u32 *ctxlen);
+>  
+>  int security_inode_alloc(struct inode *inode);
+>  void security_inode_free(struct inode *inode);
+> @@ -2157,6 +2170,15 @@ static inline int security_inode_alloc(struct inode *inode)
+>  static inline void security_inode_free(struct inode *inode)
+>  { }
+>  
+> +static inline int security_dentry_init_security (struct dentry *dentry,
+> +						 int mode,
+> +						 void **ctx,
+> +						 u32 *ctxlen)
+> +{
+> +	return -EOPNOTSUPP;
+> +}
+> +
+> +
+>  static inline int security_inode_init_security(struct inode *inode,
+>  						struct inode *dir,
+>  						char **name,
+> diff --git a/security/capability.c b/security/capability.c
+> index 4875142..9ce1c2f 100644
+> --- a/security/capability.c
+> +++ b/security/capability.c
+> @@ -134,6 +134,11 @@ static int cap_sb_parse_opts_str(char *options, struct security_mnt_opts *opts)
+>  	return 0;
+>  }
+>  
+> +static int cap_dentry_init_security(struct dentry *dentry, int mode, void **ctx, u32 *ctxlen)
+> +{
+> +	return 0;
+> +}
+> +
+>  static int cap_inode_alloc_security(struct inode *inode)
+>  {
+>  	return 0;
+> @@ -952,6 +957,7 @@ void security_fixup_ops(struct security_operations *ops)
+>  	set_to_cap_if_null(ops, sb_set_mnt_opts);
+>  	set_to_cap_if_null(ops, sb_clone_mnt_opts);
+>  	set_to_cap_if_null(ops, sb_parse_opts_str);
+> +	set_to_cap_if_null(ops, dentry_init_security);
+>  	set_to_cap_if_null(ops, inode_alloc_security);
+>  	set_to_cap_if_null(ops, inode_free_security);
+>  	set_to_cap_if_null(ops, inode_init_security);
+> diff --git a/security/security.c b/security/security.c
+> index 687c6fd..c1b6847 100644
+> --- a/security/security.c
+> +++ b/security/security.c
+> @@ -386,6 +386,13 @@ void security_inode_free(struct inode *inode)
+>  	security_ops->inode_free_security(inode);
+>  }
+>  
+> +int security_dentry_init_security (struct dentry *dentry, int mode,
+> +				   void **ctx, u32 *ctxlen)
+> +{
+> +	return security_ops->dentry_init_security (dentry, mode, ctx, ctxlen);
+> +}
+> +EXPORT_SYMBOL(security_dentry_init_security);
+> +
+>  int security_inode_init_security(struct inode *inode, struct inode *dir,
+>  				  char **name, void **value, size_t *len)
+>  {
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index 5feecb4..435c51f 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@ -2577,6 +2577,37 @@ static void selinux_inode_free_security(struct inode *inode)
+>  	inode_free_security(inode);
+>  }
+>  
+> +static int selinux_dentry_init_security(struct dentry *dentry, int mode, void **ctx, u32 *ctxlen)
+> +{
+> +	struct cred *cred = current_cred();
+> +	struct task_security_struct *tsec;
+> +	struct inode_security_struct *dsec;
+> +	struct superblock_security_struct *sbsec;
+> +	struct inode *dir = dentry->d_parent->d_inode;
+> +	u32 newsid;
+> +	int rc;
+> +
+> +	tsec = cred->security;
+> +	dsec = dir->i_security;
+> +	sbsec = dir->i_sb->s_security;
+> +
+> +	if (tsec->create_sid && sbsec->behavior != SECURITY_FS_USE_MNTPOINT) {
+> +		newsid = tsec->create_sid;
+> +	} else {
+> +		rc = security_transition_sid(tsec->sid, dsec->sid,
+> +					     inode_mode_to_security_class(mode),
+> +					     &newsid);
+> +		if (rc) {
+> +			printk(KERN_WARNING "%s:  "
+> +			       "security_transition_sid failed, rc=%d\n",
+> +			       __FUNCTION__, -rc);
+> +			return rc;
+> +		}
+> +	}
+> +
+> +	return security_sid_to_context(newsid, (char **)ctx, ctxlen);
+> +}
+> +
+>  static int selinux_inode_init_security(struct inode *inode, struct inode *dir,
+>  				       char **name, void **value,
+>  				       size_t *len)
+> @@ -5484,6 +5515,7 @@ static struct security_operations selinux_ops = {
+>  	.sb_clone_mnt_opts =		selinux_sb_clone_mnt_opts,
+>  	.sb_parse_opts_str = 		selinux_parse_opts_str,
+>  
+> +	.dentry_init_security =		selinux_dentry_init_security,
+>  
+>  	.inode_alloc_security =		selinux_inode_alloc_security,
+>  	.inode_free_security =		selinux_inode_free_security,
+>   
 
