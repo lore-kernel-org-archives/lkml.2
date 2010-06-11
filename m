@@ -1,107 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760501Ab0FKXyR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 19:54:17 -0400
-Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:38938 "EHLO
-	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760264Ab0FKXyP (ORCPT
+	id S1760651Ab0FKXyk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 19:54:40 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34513 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760564Ab0FKXyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 19:54:15 -0400
-Message-ID: <4C12CCA6.8060700@sandeen.net>
-Date: Fri, 11 Jun 2010 18:54:14 -0500
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
-MIME-Version: 1.0
-To: Tao Ma <tao.ma@oracle.com>
-CC: xfs@oss.sgi.com, Christoph Hellwig <hch@lst.de>,
-       linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>
-Subject: Re: [PATCH] xfs: Make fiemap works with sparse file.
-References: <1276236135-12051-1-git-send-email-tao.ma@oracle.com> <4C125C0D.4080600@sandeen.net> <4C12C8BB.50604@oracle.com>
-In-Reply-To: <4C12C8BB.50604@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 11 Jun 2010 19:54:39 -0400
+Date: Fri, 11 Jun 2010 16:54:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+       Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v2 1/2] tmpfs: Quick token library to allow scalable
+ retrieval of tokens from token jar
+Message-Id: <20100611165425.e21697c2.akpm@linux-foundation.org>
+In-Reply-To: <1276298999.2385.71.camel@mudge.jf.intel.com>
+References: <1274902371.31973.9392.camel@mudge.jf.intel.com>
+	<20100601145126.f46572d1.akpm@linux-foundation.org>
+	<87ocftyfnh.fsf@basil.nowhere.org>
+	<20100609153654.0061e9c8.akpm@linux-foundation.org>
+	<1276189574.2385.32.camel@mudge.jf.intel.com>
+	<20100611145219.017a87c0.akpm@linux-foundation.org>
+	<1276294003.2385.48.camel@mudge.jf.intel.com>
+	<20100611152620.97bc3e59.akpm@linux-foundation.org>
+	<1276298999.2385.71.camel@mudge.jf.intel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tao Ma wrote:
-> Eric Sandeen wrote:
->> Tao Ma wrote:
->>  
->>> In xfs_vn_fiemap, we set bvm_count to fi_extent_max + 1 and want
->>> to return fi_extent_max extents, but actually it won't work for
->>> a sparse file. The reason is that in xfs_getbmap we will
->>> calculate holes and set it in 'out', while out is malloced by
->>> bmv_count(fi_extent_max+1) which didn't consider holes. So in the
->>> worst case, if 'out' vector looks like
->>> [hole, extent, hole, extent, hole, ... hole, extent, hole],
->>> we will only return half of fi_extent_max extents.
->>>
->>> So in xfs_vn_fiemap, we should consider this worst case. If the
->>> user wants fi_extent_max extents, we need a 'out' with size of
->>> 2 *fi_extent_max + 1.
->>>     
->>
->> This all seems right to me, though your commit message above (+1)
->> doesn't match the comment and code in the patch (+2)
->>   
-> oh, yes, I will change the commit log and send a v2.
-> and can I add your ack for this patch?
+On Fri, 11 Jun 2010 16:29:59 -0700
+Tim Chen <tim.c.chen@linux.intel.com> wrote:
 
-Sure, it seems right to me.
-
-Thanks,
--Eric
-
-> Regards,
-> Tao
->> -Eric
->>
->>  
->>> Cc: Alex Elder <aelder@sgi.com>
->>> Cc: Christoph Hellwig <hch@lst.de>
->>> Cc: Dave Chinner <david@fromorbit.com>
->>> Signed-off-by: Tao Ma <tao.ma@oracle.com>
->>> ---
->>>  fs/xfs/linux-2.6/xfs_iops.c |   16 ++++++++++++++--
->>>  1 files changed, 14 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
->>> index 9c8019c..1db92e3 100644
->>> --- a/fs/xfs/linux-2.6/xfs_iops.c
->>> +++ b/fs/xfs/linux-2.6/xfs_iops.c
->>> @@ -672,9 +672,21 @@ xfs_vn_fiemap(
->>>      else
->>>          bm.bmv_length = BTOBB(length);
->>>  
->>> -    /* We add one because in getbmap world count includes the header */
->>> +    /*
->>> +     * It is a bit tricky for us to calculate the bmv_count from
->>> +     * fi_extent_max.
->>> +     * If we support to return fi_extent_max extents to the user,
->>> +     * we need at most 2 * fi_extent_max + 1 for bmv_count since
->>> +     * in xfs_getbmap we will calculate holes while fi_extent_max
->>> +     * don't have them. So in the worst case, bmv can looks like
->>> +     * [hole, extent, hole, extent, hole, ... hole, extent, hole].
->>> +     * So there will be 2 *fi_extent_max + 1.
->>> +     * What's more, in getbmap world count have to include the
->>> +     * header, so we need another bmv. So the total number will
->>> +     * be 2 * fieinfo->fi_extents_max + 2.
->>> +     */
->>>      bm.bmv_count = !fieinfo->fi_extents_max ? MAXEXTNUM :
->>> -                    fieinfo->fi_extents_max + 1;
->>> +            2 * fieinfo->fi_extents_max + 2;
->>>      bm.bmv_count = min_t(__s32, bm.bmv_count,
->>>                   (PAGE_SIZE * 16 / sizeof(struct getbmapx)));
->>>      bm.bmv_iflags = BMV_IF_PREALLOC;
->>>     
->>
->> -- 
->> To unsubscribe from this list: send the line "unsubscribe
->> linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>   
+> On Fri, 2010-06-11 at 15:26 -0700, Andrew Morton wrote:
 > 
+> >  	}
+> > @@ -422,11 +423,11 @@ static swp_entry_t *shmem_swp_alloc(stru
+> >  		 */
+> >  		if (sbinfo->max_blocks) {
+> >  			spin_lock(&sbinfo->stat_lock);
+> > -			if (sbinfo->free_blocks <= 1) {
+> > +			if (percpu_counter_read(&sbinfo->free_blocks) <= 1) {
+> >  				spin_unlock(&sbinfo->stat_lock);
+> 
+> Thanks for pointing me to look at this alternative implementation.
+> 
+> However, looking at the percpu counter code, it appears that the
+> percpu_counter_read is imprecise.
 
+Sure, that's inevitable if we want to avoid one-atomic-op-per-operation.
+
+>  The counters in the per cpu counters
+> are not accounted and the value read may be much less than the true
+> amount of free blocks left when used in the patch above.
+
+The comparisons with 0 and 1 are ugly (although not necessarily wrong).
+ The code would be nicer if we replace free_blocks with used_blocks and
+perform comparisons agains max_blocks.
+
+>  We could fail
+> the above test and not allocate pages when we actually have additional
+> pages available.
+
+Yup.  We're assuming here that we can tolerate overshooting max_blocks a bit.
+
+> Using percpu_counter_sum will give the precise count
+> but will cause the acquisition of the spin lock in the percpu_counter
+> and slowed things down in this performance critical path.  If we feel
+> that we could tolerate fuzziness on the size we configured for tmpfs,
+> then this could be the way to go.
+> 
+> However, qtoken library implementation will impose a precise limit and
+> has the per cpu counter's speed advantage.
+
+percpu_counters have a precise limit too!  It's
+percpu_counter_batch*num_online_cpus.  You can implement your own
+tolerance by not using percpu_counter_batch: pass your own batch into
+__percpu_counter_add().
+
+
+
+There's a trick that can be done to improve accuracy.  When checking to
+see if the fs is full, use percpu_counter_read().  If the number that
+percpu_counter_read() returns is "close" to max_blocks, then start
+using the more expensive percpu_counter_sum().  So the kernel will be
+fast, until the disk gets to within (batch*num_online_cpus) blocks of
+being full.
+
+This is not the first time I've seen that requirement, and it would be
+a good idea to implement the concept within an addition to the
+percpu_counter library.  Say, percpu_counter_compare().
+
+percpu_counter_compare(struct percpu_counter *fbc, s64 rhs) would
+compare percpu_counter_read() with `rhs' and if they're within
+num_online_cpus*percpu_counter_batch, call percpu_counter_sum().
+
+__percpu_counter_compare() would take the additional `batch' argument.
+
+I think.  Needs a bit of head-scratching, because callers don't really
+care about num_online_cpus.  The caller only really cares about the
+absolute error.
+
+(Where the heck did the "fbc" name come from?  I forget...)
