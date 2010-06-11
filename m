@@ -1,182 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760142Ab0FKSgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 14:36:00 -0400
-Received: from mail.tpi.com ([70.99.223.143]:2775 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759745Ab0FKSf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 14:35:59 -0400
-Message-ID: <4C128201.8020104@canonical.com>
-Date: Fri, 11 Jun 2010 12:35:45 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1759757Ab0FKS40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 14:56:26 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37482 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752290Ab0FKS4Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 14:56:25 -0400
 MIME-Version: 1.0
-To: Islam Amer <pharon@gmail.com>
-CC: Rezwanul_Kabir@dell.com, mjg59@srcf.ucam.org, linux-kernel@vger.kernel.org,
-       platform-driver-x86@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: Dell Studio 1555 eject key does not work ( small patch to fix
- 	included )
-References: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com> 	<20100602213429.GA14866@srcf.ucam.org> <57DF5FDC2DC0634FA2A310BC5B81A68D01DF4CD01E@AUSX7MCPC108.AMER.DELL.COM> 	<AANLkTimIl6UL0HQT1wxRgXuj_m0O3CwMHQIa1xNE1Ax9@mail.gmail.com> 	<AANLkTin0qht1XR2rUgIXMEeJNU_gb3IZWqSBJb7NXD8K@mail.gmail.com> 	<57DF5FDC2DC0634FA2A310BC5B81A68D01DFD57663@AUSX7MCPC108.AMER.DELL.COM> 	<20100610184023.GA17320@srcf.ucam.org> <AANLkTilT3KCeJUpG-APK0MFh2ChMlZ4qwVPhOJpHnPB9@mail.gmail.com> 	<57DF5FDC2DC0634FA2A310BC5B81A68D01DFD5780A@AUSX7MCPC108.AMER.DELL.COM> 	<AANLkTinoWK4uSL2KOhgF-EVWuBhgCeAqWwL9cJKeGRD1@mail.gmail.com> 	<4C124358.8020007@canonical.com> <AANLkTimxo3CeRR2YZptTL6RoEi8Q5sdnUEMIi9A5-KcA@mail.gmail.com> <AANLkTilaoFJuT8d9iPWqDzyxBC8o4E1Vhh03ufiwLEk-@mail.gmail.com>
-In-Reply-To: <AANLkTilaoFJuT8d9iPWqDzyxBC8o4E1Vhh03ufiwLEk-@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100611103223.799d3ce0@nehalam>
+References: <20100609183449.110905403@vyatta.com>
+	<alpine.LFD.2.00.1006091144120.4506@i5.linux-foundation.org>
+	<20100609115403.75ebb6cb@nehalam>
+	<alpine.LFD.2.00.1006091203190.4506@i5.linux-foundation.org>
+	<20100611103223.799d3ce0@nehalam>
+Date: Fri, 11 Jun 2010 11:56:14 -0700
+Message-ID: <AANLkTim7VHQEqdwfERzsBAuXLES1z4R-jLSGRLfbvoug@mail.gmail.com>
+Subject: Re: [RFC] floppy: use single threaded workqueue
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only difference between 2.6.32.15 and Ubuntu Lucid wrt dell-wmi.c is 
-this:
-
-43,46d42
-< /* Temporary workaround until the WMI sysfs interface goes in.
-<    Borrowed from acer-wmi */
-< MODULE_ALIAS("dmi:*:*Dell*:*:");
-<
-
-I wonder about input event filtering? There are substantial differences 
-in drivers/input/input.c.
-
-rtg
-
-On 06/11/2010 12:02 PM, Islam Amer wrote:
-> Dear Tim,
+On Fri, Jun 11, 2010 at 10:32 AM, Stephen Hemminger
+<shemminger@vyatta.com> wrote:
+> Fix races between timers and bottom half by using delayed work
+> and a single threaded queue.
 >
-> I tried the mainline kernel 2.6.32-0206321505-generic as you suggested
-> and the eject key doesn't work but it also doesn't produce the error
-> message in dmesg.
->
-> I then tried the 2.6.32-22.36-generic from
-> http://packages.ubuntu.com/lucid/linux-image-2.6.32-22-generic and I
-> found the eject key working fine.
->
-> So there is something in the ubuntu patchset that fixes this issue.
->
-> On Fri, Jun 11, 2010 at 5:23 PM, Islam Amer<pharon@gmail.com>  wrote:
->> Tim I am running debian,
->>
->> I think it's the other way round, the mainline kernel is borked (
->> regarding dell-wmi and eject key ) while the lucid patched kernel
->> works ( as reported by dell team ).
->>
->> I guess I could download a Lucid livecd and see if the eject key works
->> there ( event only as it won't eject the lived while it is running :)
->> )
->>
->> On Fri, Jun 11, 2010 at 5:08 PM, Tim Gardner<tim.gardner@canonical.com>  wrote:
->>> Islam Amer,
->>>
->>> You could try a vanilla stable kernel from
->>> http://kernel.ubuntu.com/~kernel-ppa/mainline/v2.6.32.15.5-lucid/ to see if
->>> we've borked the dell-wmi code.
->>>
->>> rtg
->>>
->>> On 06/11/2010 07:28 AM, Islam Amer wrote:
->>>>
->>>> Rezwanul,
->>>>
->>>> I've updated my bios to A11 and installed a new unmodified kernel. The
->>>> issue still persists that the eject key produces "dell-wmi: Unknown
->>>> key 0 pressed" in the dmesg output and it doesn't work.
->>>>
->>>> It is possible that Ubuntu is including patches to fix stuff. The
->>>> latest patch for the Lucid kernel at
->>>>
->>>> http://archive.ubuntu.com/ubuntu/pool/main/l/linux/linux_2.6.32-22.36.diff.gz
->>>> does include patches that touch wmi and dell-wmi code, but I can't
->>>> find a specific change that would fix this issue.
->>>>
->>>> I might try to selectively apply patches from it and see if it gets fixed.
->>>>
->>>> Thanks.
->>>>
->>>>
->>>> On Fri, Jun 11, 2010 at 3:15 AM,<Rezwanul_Kabir@dell.com>    wrote:
->>>>>
->>>>> Islam Amer
->>>>>
->>>>>    Please try the new BIOS A11 and eliminate any potential BIOS issues.
->>>>> The BIOS team confirmed that
->>>>>    they weren't able to reproduce the issue with Ubuntu 10.04 and A11.
->>>>>
->>>>> Thanks..
->>>>>    --rez
->>>>>
->>>>>
->>>>>
->>>>>
->>>>> Rezwanul Kabir
->>>>> Dell Linux Development
->>>>> 512-725-0766
->>>>>
->>>>>
->>>>>> -----Original Message-----
->>>>>> From: Islam Amer [mailto:pharon@gmail.com]
->>>>>> Sent: Thursday, June 10, 2010 6:52 PM
->>>>>> To: Matthew Garrett
->>>>>> Cc: Kabir, Rezwanul; linux-kernel@vger.kernel.org;
->>>>>> platform-driver-x86@vger.kernel.org; akpm@linux-foundation.org
->>>>>> Subject: Re: Dell Studio 1555 eject key does not work ( small
->>>>>> patch to fix included )
->>>>>>
->>>>>> Hello all,
->>>>>>
->>>>>> My bios version is A08 , I see that A11 was recently released
->>>>>> but the changelog doesn't say much.
->>>>>>
->>>>>> Which is better, upgrade and hope the problem goes away, or
->>>>>> wait until we have a fix that is agreed upon ?
->>>>>>
->>>>>> Thanks.
->>>>>>
->>>>>> On Thu, Jun 10, 2010 at 9:40 PM, Matthew Garrett
->>>>>> <mjg59@srcf.ucam.org>    wrote:
->>>>>>>
->>>>>>> On Thu, Jun 10, 2010 at 01:36:56PM -0500,
->>>>>>
->>>>>> Rezwanul_Kabir@Dell.com wrote:
->>>>>>>>
->>>>>>>> Hi Islam Amer
->>>>>>>>
->>>>>>>>     I got report that "Ubuntu 10.04 + BIOS A11" was tested and the
->>>>>>>> "Eject CD" key is working
->>>>>>>>     as expected. Sorry, I couldn't find any Studio 1555 to
->>>>>>
->>>>>> test myself
->>>>>>>>
->>>>>>>> and cannot provide you
->>>>>>>>     with more details.
->>>>>>>>
->>>>>>>>      Also, you may try acpi_osi="Windows 2009" kernel
->>>>>>
->>>>>> parameter and see if there is any difference.
->>>>>>>
->>>>>>> That's the default on any kernel that has this support in dell-wmi.
->>>>>>> Rez, could you let me know if the proposed patch breaks the spec in
->>>>>>> ways that are likely to cause problems?
->>>>>>>
->>>>>>> --
->>>>>>> Matthew Garrett | mjg59@srcf.ucam.org
->>>>>>>
->>>>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>>
->>> --
->>> Tim Gardner tim.gardner@canonical.com
->>>
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Still needs more testing.
 
+Looks simple and straightforward to me. Ack. (And ack on the "needs
+more testing" part too, of course).
 
--- 
-Tim Gardner tim.gardner@canonical.com
+                  Linus
