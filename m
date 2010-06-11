@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757175Ab0FKPuY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 11:50:24 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:41930 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756660Ab0FKPuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 11:50:23 -0400
-Date: Fri, 11 Jun 2010 17:49:54 +0200
-From: Florian Mickler <florian@mickler.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Jonathan Corbet <corbet@lwn.net>, Frederic Weisbecker <fweisbec@gmail.com>,
-       markgross@thegnar.org, linville@tuxdriver.com,
-       linux-kernel@vger.kernel.org,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [linux-pm] [PATCH v4] pm_qos: make update_request non blocking
-Message-ID: <20100611174954.41df0606@schatten.dmk.lab>
-In-Reply-To: <1276266352.2862.70.camel@mulgrave.site>
-References: <1276097381-3982-1-git-send-email-florian@mickler.org>
-	<1276097832.4343.223.camel@mulgrave.site>
-	<20100609180033.39d5b499@schatten.dmk.lab>
-	<1276099645.4343.257.camel@mulgrave.site>
-	<20100609183204.1eeca494@schatten.dmk.lab>
-	<1276103149.4343.350.camel@mulgrave.site>
-	<20100610094525.0449d797@schatten.dmk.lab>
-	<1276177144.27283.37.camel@mulgrave.site>
-	<20100610164118.15ec7a05@schatten.dmk.lab>
-	<1276266352.2862.70.camel@mulgrave.site>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758804Ab0FKPxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 11:53:52 -0400
+Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:39033 "EHLO
+	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758537Ab0FKPxv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 11:53:51 -0400
+Message-ID: <4C125C0D.4080600@sandeen.net>
+Date: Fri, 11 Jun 2010 10:53:49 -0500
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+MIME-Version: 1.0
+To: Tao Ma <tao.ma@oracle.com>
+CC: xfs@oss.sgi.com, Christoph Hellwig <hch@lst.de>,
+       linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>
+Subject: Re: [PATCH] xfs: Make fiemap works with sparse file.
+References: <1276236135-12051-1-git-send-email-tao.ma@oracle.com>
+In-Reply-To: <1276236135-12051-1-git-send-email-tao.ma@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010 09:25:52 -0500
-James Bottomley <James.Bottomley@suse.de> wrote:
-
-> On Thu, 2010-06-10 at 16:41 +0200, Florian Mickler wrote:
-> > > > So the notified value is always the latest or there is another
-> > > > notification underway.
-> > > 
-> > > Well, no ... it's a race, and like all good races the winner is non
-> > > deterministic.
-> > 
-> > Can you point out where I'm wrong?
-> > 
-> > U1. update_request gets called
-> > U2. 	new extreme value gets calculated under spinlock
-> > U3.	notify gets queued if its WORK_PENDING_BIT is not set.
-> > 
-> > run_workqueue() does the following:
-> > R1. clears the WORK_PENDING_BIT
-> > R2. calls update_notify()
-> > R3. 	reads the current extreme value
-> > R4. 	notification gets called with that value		
-> > 
-> > 
-> > If another update_request comes to schedule_work before
-> > run_workqueue() has cleared the WORK_PENDING_BIT, the work will not be
-> > requeued, but R3 isn't yet executed. So the notifiers will get the last
-> > value.
+Tao Ma wrote:
+> In xfs_vn_fiemap, we set bvm_count to fi_extent_max + 1 and want
+> to return fi_extent_max extents, but actually it won't work for
+> a sparse file. The reason is that in xfs_getbmap we will
+> calculate holes and set it in 'out', while out is malloced by
+> bmv_count(fi_extent_max+1) which didn't consider holes. So in the
+> worst case, if 'out' vector looks like
+> [hole, extent, hole, extent, hole, ... hole, extent, hole],
+> we will only return half of fi_extent_max extents.
 > 
-> So the race now only causes lost older notifications ... as long as the
-> consumers are OK with that (it is an API change) then this should work.
-> You're still not taking advantage of the user context passed in, though,
-> so this does needlessly delay notifications for that case.
+> So in xfs_vn_fiemap, we should consider this worst case. If the
+> user wants fi_extent_max extents, we need a 'out' with size of
+> 2 *fi_extent_max + 1.
 
-Right. We can use execute_in_process_context. 
- 
-> Actually, pm_qos_remove now needs a flush_scheduled work since you don't
-> want to return until the list is clear (since the next action may be to
-> free the object).
+This all seems right to me, though your commit message above (+1)
+doesn't match the comment and code in the patch (+2)
 
-Yes. Good point, will fix. 
+-Eric
 
-> James
+> Cc: Alex Elder <aelder@sgi.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Dave Chinner <david@fromorbit.com>
+> Signed-off-by: Tao Ma <tao.ma@oracle.com>
+> ---
+>  fs/xfs/linux-2.6/xfs_iops.c |   16 ++++++++++++++--
+>  1 files changed, 14 insertions(+), 2 deletions(-)
 > 
-
-Cheers,
-Flo
+> diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
+> index 9c8019c..1db92e3 100644
+> --- a/fs/xfs/linux-2.6/xfs_iops.c
+> +++ b/fs/xfs/linux-2.6/xfs_iops.c
+> @@ -672,9 +672,21 @@ xfs_vn_fiemap(
+>  	else
+>  		bm.bmv_length = BTOBB(length);
+>  
+> -	/* We add one because in getbmap world count includes the header */
+> +	/*
+> +	 * It is a bit tricky for us to calculate the bmv_count from
+> +	 * fi_extent_max.
+> +	 * If we support to return fi_extent_max extents to the user,
+> +	 * we need at most 2 * fi_extent_max + 1 for bmv_count since
+> +	 * in xfs_getbmap we will calculate holes while fi_extent_max
+> +	 * don't have them. So in the worst case, bmv can looks like
+> +	 * [hole, extent, hole, extent, hole, ... hole, extent, hole].
+> +	 * So there will be 2 *fi_extent_max + 1.
+> +	 * What's more, in getbmap world count have to include the
+> +	 * header, so we need another bmv. So the total number will
+> +	 * be 2 * fieinfo->fi_extents_max + 2.
+> +	 */
+>  	bm.bmv_count = !fieinfo->fi_extents_max ? MAXEXTNUM :
+> -					fieinfo->fi_extents_max + 1;
+> +			2 * fieinfo->fi_extents_max + 2;
+>  	bm.bmv_count = min_t(__s32, bm.bmv_count,
+>  			     (PAGE_SIZE * 16 / sizeof(struct getbmapx)));
+>  	bm.bmv_iflags = BMV_IF_PREALLOC;
 
