@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab0FKVRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 17:17:50 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:51544 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256Ab0FKVRs convert rfc822-to-8bit (ORCPT
+	id S1760574Ab0FKVXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 17:23:42 -0400
+Received: from sj-iport-1.cisco.com ([171.71.176.70]:39120 "EHLO
+	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab0FKVXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 17:17:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ZVBlSXovaoy7K6qKmpd7a2J7WJjvNKaQnK//6Sk5R0dKLDzNomh8dS88CfryWCrn5F
-         t7cg/Dcmj6OeRhIcY8q6sqgenTU7VOkhZISUEVAzMWHaKaMV2Yb9wM9ZSmVH9TaUiwUe
-         Je5Snxs5QTaQDhc6A/8nzjmA134KkEZe9JU+8=
+	Fri, 11 Jun 2010 17:23:40 -0400
+Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEANdFEkyrRN+K/2dsb2JhbACefHGlFplqhRgEg0w
+X-IronPort-AV: E=Sophos;i="4.53,405,1272844800"; 
+   d="scan'208";a="334299257"
+Date: Fri, 11 Jun 2010 14:23:37 -0700
+From: David VomLehn <dvomlehn@cisco.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: to@dvomlehn-lnx2.corp.sa.net, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org
+Subject: Re: [PATCH 3/4 v3][RFC] Infrastructure for compact call location
+	representation
+Message-ID: <20100611212336.GB30404@dvomlehn-lnx2.corp.sa.net>
+References: <20100611203356.GA28446@dvomlehn-lnx2.corp.sa.net> <20100611134300.4a14c505.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <1276288869-16815-6-git-send-email-justinmattock@gmail.com>
-References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>
-	<1276288869-16815-6-git-send-email-justinmattock@gmail.com>
-Date: Fri, 11 Jun 2010 23:17:44 +0200
-X-Google-Sender-Auth: L7dJjqx82k10aDcb7P3iOtS-fBo
-Message-ID: <AANLkTilZLOGXpZxHUklA8iHMj8HsJap2BvWMrWMmeyu3@mail.gmail.com>
-Subject: Re: [PATCH 5/6]kernel:module.c variable 'nowarn' set but not used
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-       zippel@linux-m68k.org, linux-fsdevel@vger.kernel.org,
-       rusty@rustcorp.com.au
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100611134300.4a14c505.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 22:41, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> The below patch fixes a warning message
-> reported by gcc 4.6.0.
->
->  CC      kernel/module.o
-> kernel/module.c: In function 'add_usage_links':
-> kernel/module.c:1343:6: warning: variable 'nowarn' set but not used
->
->  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
->
-> ---
->  kernel/module.c |    8 ++------
->  1 files changed, 2 insertions(+), 6 deletions(-)
->
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 8c6b428..a71027a 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -1340,13 +1340,9 @@ static void add_usage_links(struct module *mod)
->  {
->  #ifdef CONFIG_MODULE_UNLOAD
->        struct module_use *use;
-> -       int nowarn;
-> -
-> +
->        mutex_lock(&module_mutex);
-> -       list_for_each_entry(use, &mod->target_list, target_list) {
-> -               nowarn = sysfs_create_link(use->target->holders_dir,
-> -                                          &mod->mkobj.kobj, mod->name);
-> -       }
-> +       list_for_each_entry(use, &mod->target_list, target_list);
->        mutex_unlock(&module_mutex);
->  #endif
->  }
+On Fri, Jun 11, 2010 at 01:43:00PM -0700, Randy Dunlap wrote:
+> On Fri, 11 Jun 2010 13:33:56 -0700 David VomLehn wrote:
+> 
+> > This patch allows the location of a call to be recorded as a small integer,
+> > with each call location ("callsite") assigned a new value the first time
+> > the code in that location is executed. Locations can be recorded as a
+> > an address or as a __FILE__/__LINE__ pair. The later is easier to read, but
+> > requires significantly more space.
+> 
+> Did you happen to look at what drivers/base/power/trace.c does for callsite
+> recording?
 
-Also wrong, you removed the creation of the links in sysfs.
+No, but at one point I did have a similar implementation working. I moved
+away from it because I was leery of add yet another section to vmlinux.lds.S
+for such a narrow range of functionality. If adding a section makes sense
+to others, I'll do it since I felt it was overall a better solution.
 
-The assignment to nowarn was there to avoid another compiler warning,
-as sysfs_create_link() is marked __must_check.
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+-- 
+David VL
