@@ -1,87 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab0FKH2e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 03:28:34 -0400
-Received: from mail.free-electrons.com ([88.191.76.200]:41538 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab0FKH2d (ORCPT
+	id S1757006Ab0FKHaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 03:30:18 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41692 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab0FKHaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 03:28:33 -0400
-X-Greylist: delayed 410 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jun 2010 03:28:33 EDT
-Date: Fri, 11 Jun 2010 09:21:35 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Suresh Rajashekara <suresh.raj+linuxomap@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: Timekeeping issue on aggressive suspend/resume
-Message-ID: <20100611092135.415c2155@surf>
-In-Reply-To: <AANLkTinIO5a1EeK6Ej2ljkuyL9zv06OMfbyiZBaxTQTd@mail.gmail.com>
-References: <AANLkTinIO5a1EeK6Ej2ljkuyL9zv06OMfbyiZBaxTQTd@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Fri, 11 Jun 2010 03:30:16 -0400
+Subject: Re: [PATCH] Fix Oops in crash_shrink_memory
+From: Pavan Naregundi <pavan@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Simon Horman <horms@verge.net.au>,
+       =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+       linux-kernel@vger.kernel.org, vgoyal@redhat.com, hbabu@us.ibm.com,
+       kexec@lists.infradead.org
+In-Reply-To: <20100610142622.497061e8.akpm@linux-foundation.org>
+References: <1275895711.4365.18.camel@pavan.naregundi>
+	 <1275980857.2583.15.camel@pavan.naregundi>
+	 <20100608075959.GB7110@cr0.nay.redhat.com>
+	 <1275986405.5015.13.camel@pavan.naregundi>
+	 <20100608085440.GC7110@cr0.nay.redhat.com>
+	 <1275990107.5015.55.camel@pavan.naregundi>
+	 <20100609034452.GA28948@verge.net.au>
+	 <1276064834.2622.7.camel@pavan.naregundi>
+	 <20100610142622.497061e8.akpm@linux-foundation.org>
+Content-Type: multipart/mixed; boundary="=-LHlCRG1LvcuEh6hgenH6"
+Date: Fri, 11 Jun 2010 13:00:09 +0530
+Message-ID: <1276241409.2714.59.camel@pavan.naregundi>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Suresh,
 
-On Wed, 9 Jun 2010 12:50:39 -0700
-Suresh Rajashekara <suresh.raj+linuxomap@gmail.com> wrote:
+--=-LHlCRG1LvcuEh6hgenH6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-> I have an application (running on 2.6.29-omap1) which puts an OMAP1
-> system to suspend aggressively. The system wakes up every 4 seconds
-> and stays awake for about 35 milliseconds and sleeps again for another
-> 4 seconds. This design is to save power on a battery operated device.
+On Thu, 2010-06-10 at 14:26 -0700, Andrew Morton wrote:
+> On Wed, 09 Jun 2010 11:57:14 +0530
+> Pavan Naregundi <pavan@linux.vnet.ibm.com> wrote:
 > 
-> This aggressive suspend resume action seems like creating an issue to
-> other applications in the system waiting for some timeout to happen
-> (especially an application which is waiting using the mq_timedreceive
-> and is supposed to timeout every 30 seconds. It seems to wake up every
-> 90 seconds). Seems like the timekeeping is not happening properly in
-> side the kernel.
+> > Resending the patch with fixed style issues.
+> > 
+> > Signed-off-by: Pavan Naregundi <pavan@linux.vnet.ibm.com>
+> > Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+> > --
+> > 
+> > 
+> > 
+> > 
+> > [fix-kexec.patch  text/x-patch (685B)]
+> > diff -Naur a/kernel/kexec.c b/kernel/kexec.c
+> > --- a/kernel/kexec.c	2010-06-08 21:17:21.850000033 +0530
+> > +++ b/kernel/kexec.c	2010-06-09 18:01:37.590007921 +0530
+> > @@ -1089,9 +1089,10 @@
+> >  
+> >  size_t crash_get_memory_size(void)
+> >  {
+> > -	size_t size;
+> > +	size_t size = 0;
+> >  	mutex_lock(&kexec_mutex);
+> > -	size = crashk_res.end - crashk_res.start + 1;
+> > +	if (crashk_res.end != crashk_res.start)
+> > +		size = crashk_res.end - crashk_res.start + 1;
+> >  	mutex_unlock(&kexec_mutex);
+> >  	return size;
+> >  }
+> > @@ -1134,7 +1135,7 @@
+> >  
+> >  	free_reserved_phys_range(end, crashk_res.end);
+> >  
+> > -	if (start == end)
+> > +	if ((start == end) && (crashk_res.parent != NULL))
+> >  		release_resource(&crashk_res);
+> >  	crashk_res.end = end - 1;
 > 
-> If the suspend duration is changed from 4 second to 1 second, then
-> things work somewhat better. On reducing it to 0.5 second (which was
-> our earlier design on 2.6.16-rc3), the problem seems to disappear.
+> The patch doesn't have a changelog and I'd prefer not to have to crawl
+> through the email thread and write one myself.
+> 
+> Please resend, including a full description of the bug and of its fix.
 
-I've done a relatively similar thing on different CPU architecture: in
-the idle loop, when the CPU is going to be idle for a sufficiently long
-period of time, I power down the CPU completely. Before that, I've
-programmed a RTC (clocked at 32 khz) to wake-up the CPU a little bit
-*before* the expiration of the next timer. When the CPU wakes-up, I
-adjust the clocksource (in this case the CPU cycle counter) to
-compensate the time spent while the CPU was off, and I reprogram the
-clockevents to make sure that the timer will actually expire at the
-correct time, also by compensating the time during which the CPU was
-off (note: when the CPU is off, the cycle counter stops incrementing,
-and the timer used as clockevents stops decrementing). This way, the
-CLOCK_MONOTONIC time continues to go forward even when the CPU is off.
-The goal was to make the "CPU is off" case just another idle state of
-the system, which should just be as transparent to the life of the
-system as other idle states. So an application that uses a periodic
-timer of say, 30 milliseconds, will see its timer actually fired every
-30 milliseconds even though the CPU goes off between each timer
-expiration (we've done measurements with a scope, and the timer rely
-expires every 30 milliseconds as expected).
+Subject: kexec: fix Oops in crash_shrink_memory()
+From: Pavan Naregundi <pavan@linux.vnet.ibm.com>
 
-FWIW, we do not use the normal suspend/resume infrastructure for this,
-because it was way too slow (in the order of ~100ms). On the particular
-hardware we're using, it takes roughly ~1ms to go OFF, and ~2ms to
-completely wake-up, so we can very aggressively put the CPU in the OFF
-state.
+When crashkernel is not enabled, "echo 0 > /sys/kernel/kexec_crash_size"
+OOPSes the kernel in crash_shrink_memory. This happens when
+crash_shrink_memory tries to release the 'crashk_res' resource which are
+not reserved. Also value of "/sys/kernel/kexec_crash_size" shows as 1,
+which should be 0.
 
-However, the way we're doing the "time compensation" is quite hackish,
-and it would be great to hear Thomas Gleixner's ideas on how this
-should be implemented properly at the clocksource/clock_event_device
-level.
+This patch fixes the OOPS in crash_shrink_memory and shows
+"/sys/kernel/kexec_crash_size" as 0 when crash kernel memory is not
+reserved.
 
-Sincerely,
+Signed-off-by: Pavan Naregundi <pavan@linux.vnet.ibm.com>
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+Cc: Simon Horman <horms@verge.net.au>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+
+--=-LHlCRG1LvcuEh6hgenH6
+Content-Disposition: attachment; filename="kexec-fix-oops-in-crash_shrink_memory.patch"
+Content-Type: text/x-patch; name="kexec-fix-oops-in-crash_shrink_memory.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+diff -uprN a/kernel/kexec.c b/kernel/kexec.c
+--- a/kernel/kexec.c	2010-06-08 21:17:21.850000033 +0530
++++ b/kernel/kexec.c	2010-06-09 18:01:37.590007921 +0530
+@@ -1089,9 +1089,10 @@ void crash_kexec(struct pt_regs *regs)
+ 
+ size_t crash_get_memory_size(void)
+ {
+-	size_t size;
++	size_t size = 0;
+ 	mutex_lock(&kexec_mutex);
+-	size = crashk_res.end - crashk_res.start + 1;
++	if (crashk_res.end != crashk_res.start)
++		size = crashk_res.end - crashk_res.start + 1;
+ 	mutex_unlock(&kexec_mutex);
+ 	return size;
+ }
+@@ -1134,7 +1135,7 @@ int crash_shrink_memory(unsigned long ne
+ 
+ 	free_reserved_phys_range(end, crashk_res.end);
+ 
+-	if (start == end)
++	if ((start == end) && (crashk_res.parent != NULL))
+ 		release_resource(&crashk_res);
+ 	crashk_res.end = end - 1;
+ 
+
+--=-LHlCRG1LvcuEh6hgenH6--
+
