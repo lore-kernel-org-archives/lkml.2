@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab0FKPRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 11:17:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753064Ab0FKPRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 11:17:16 -0400
-Date: Fri, 11 Jun 2010 17:15:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] thread_group_cputime: simplify, document the
-	"alive" check
-Message-ID: <20100611151533.GA2867@redhat.com>
-References: <20100610230956.GA25921@redhat.com> <20100611143525.GA2586@dhcp-lab-161.englab.brq.redhat.com>
+	id S1755831Ab0FKP0e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 11:26:34 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:51092 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753369Ab0FKP0d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 11:26:33 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Dan Williams <dan.j.williams@intel.com>,
+       <linux-arm-kernel@lists.infradead.org>, <yuanyabin1978@sina.com>
+Cc: <linux-kernel@vger.kernel.org>,
+       Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH 00/13] PrimeCell DMA API and drivers v6
+Date: Fri, 11 Jun 2010 17:26:15 +0200
+Message-ID: <1276269975-1191-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100611143525.GA2586@dhcp-lab-161.englab.brq.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11, Stanislaw Gruszka wrote:
->
-> On Fri, Jun 11, 2010 at 01:09:56AM +0200, Oleg Nesterov wrote:
-> > thread_group_cputime() looks as if it is rcu-safe, but in fact this
-> > was wrong until ea6d290c which pins task->signal to task_struct.
-> > It checks ->sighand != NULL under rcu, but this can't help if ->signal
-> > can go away. Fortunately the caller either holds ->siglock, or it is
-> > fastpath_timer_check() which uses current and checks exit_state == 0.
->
-> Hmm, I thought we avoided calling thread_group_cputime() from
-> fastpatch_timer_check(), but seems it is still possible when we
-> call run_posix_cpu_timers() on two different cpus simultaneously ...
+This is the sixth iteration of this patch set for PrimeCell
+DMA support, reposting the entire series.
 
-No, we can't. thread_group_cputimer() does test-and-set ->running
-under cputimer->lock.
+Since Russell want this to run on the Versatile boards, I
+have hacked around with Peter Pearse's DMA driver for PL08x
+and now it is starting to look usable. Still it doesn't work
+with the PB1176 (because the DMA hardware is broken) and not
+with the PB11MPCore for anything but memcpy (for unknown
+reason slave DMA fails, possibly my stupidity).
 
-But when I sent these patches, I realized we have another race here
-(with or without these patches). I am already doing the fix.
+I need help to test and try to iron out the final problems
+with the RealView+Versatile DMA. The PL08x driver is long
+due, it's used in Nomadik and SPEAr as well, with more
+platforms waiting in the perimeter.
 
-> > - Since ea6d290c commit tsk->signal is stable, we can read it first
-> >   and avoid the initialization from INIT_CPUTIME.
-> >
-> > - Even if tsk->signal is always valid, we still have to check it
-> >   is safe to use next_thread() under rcu_read_lock(). Currently
-> >   the code checks ->sighand != NULL, change it to use pid_alive()
-> >   which is commonly used to ensure the task wasn't unhashed before
-> >   we take rcu_read_lock().
->
-> I'm not sure how important are values of almost dead task, but
-> perhaps would be better to return times form all threads
-> using as base sig->curr_target in loop.
+This entire series should probably be considered RFC even
+though everything is well tested on U300 and U8500, since
+the Versatile implementation gatekeeps the others.
 
-Could you clarify?
-
-Oleg.
-
+Yours,
+Linus Walleij
