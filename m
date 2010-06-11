@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759952Ab0FKAKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 20:10:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50961 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961Ab0FKAKf convert rfc822-to-8bit (ORCPT
+	id S1760175Ab0FKMIF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 08:08:05 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45497 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754663Ab0FKMID convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 20:10:35 -0400
-MIME-Version: 1.0
-Date: Fri, 11 Jun 2010 02:10:33 +0200
-Message-ID: <AANLkTil0M_2aiRX5IoMzC90O9WgzJPco3arHmDSG_44H@mail.gmail.com>
-Subject: Hardcore trashing without any swap
-From: =?UTF-8?B?TMOhc3psw7MgTW9uZGE=?= <laci@monda.hu>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 11 Jun 2010 08:08:03 -0400
+Date: Fri, 11 Jun 2010 13:16:52 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: =?ISO-8859-14?B?TOFzemzz?= Monda <laci@monda.hu>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Hardcore trashing without any swap
+Message-ID: <20100611131652.053afebd@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTil0M_2aiRX5IoMzC90O9WgzJPco3arHmDSG_44H@mail.gmail.com>
+References: <AANLkTil0M_2aiRX5IoMzC90O9WgzJPco3arHmDSG_44H@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-14
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi List,
+On Fri, 11 Jun 2010 02:10:33 +0200
+László Monda <laci@monda.hu> wrote:
 
-The problem I'm facing with is very simple, yet extremely irritating
-in nature.  I have a laptop with 4G RAM and I don't use any swap.
-Whenever the RAM is full my system keeps trashing.  This makes X and
-SSH completely unresponsive for about a hour then a bunch of processes
-gets killed and it's usable again.
+> Hi List,
+> 
+> The problem I'm facing with is very simple, yet extremely irritating
+> in nature.  I have a laptop with 4G RAM and I don't use any swap.
+> Whenever the RAM is full my system keeps trashing.  This makes X and
+> SSH completely unresponsive for about a hour then a bunch of processes
+> gets killed and it's usable again.
+> 
+> How is possible that my system is trashing even though I don't use any swap?
 
-How is possible that my system is trashing even though I don't use any swap?
+Because you don't have any swap. Its having to dump stuff it doesn't want
+to like bits of applications that it can retrieve back from disk.
 
-I'd expect the kernel to immediately kill the largest process without
-any trashing so I could continue my work right after the event.  How
-is it possible to configure?
+> I'd expect the kernel to immediately kill the largest process without
+> any trashing so I could continue my work right after the event.  How
+> is it possible to configure?
 
-laci@nitehawk:~$ uname -a
-Linux nitehawk 2.6.31-20-generic #58-Ubuntu SMP Fri Mar 12 04:38:19
-UTC 2010 x86_64 GNU/Linux
+It isn't.
 
-I'd gladly provide any more details but I'm not sure what is relevant
-and I guess it's a pretty general problem so you're welcomed to ask
-about any more information.
+However if you want to avoid overcommit and thrashing play with 
 
-Thank you very much for your answer in advance!
-
-PS: Please CC me because I'm not on the list.
-
--- 
-LÃ¡szlÃ³ Monda <http://monda.hu>
+/proc/sys/vm/overcommit*
