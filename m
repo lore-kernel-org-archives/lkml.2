@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab0FKUHF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 16:07:05 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:46705 "EHLO e1.ny.us.ibm.com"
+	id S1757147Ab0FKUHa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 16:07:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:41318 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755077Ab0FKUHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 16:07:03 -0400
-Date: Fri, 11 Jun 2010 13:07:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: sequence lock in Linux
-Message-ID: <20100611200700.GG2394@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100611194016.GA5213@Krystal>
+	id S1753954Ab0FKUH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 16:07:28 -0400
+Message-ID: <4C129778.7040409@suse.cz>
+Date: Fri, 11 Jun 2010 22:07:20 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100611194016.GA5213@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Takeo Tung <kernel@takeo.idv.tw>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>
+Subject: Re: linux-next-20100608 will /bin/sh: scripts/basic/fixdep: Permission
+ denied
+References: <10E8B8D94205471F942B06D2A007832D@TAKEOW7NB1>
+In-Reply-To: <10E8B8D94205471F942B06D2A007832D@TAKEOW7NB1>
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 03:40:16PM -0400, Mathieu Desnoyers wrote:
-> Hi Paul,
+On 11.6.2010 17:13, Takeo Tung wrote:
+> Dear All,
 > 
-> (CCing lkml)
+> I using linux-next-20100608 kernel, but if re-complier the kernel will
+> found
+> this messages.
 > 
-> Is it just me, or the following code:
+> root@kernel-x86:/usr/src/linux# make oldconfig
+>  HOSTCC  scripts/basic/fixdep
+> /bin/sh: scripts/basic/fixdep: Permission denied
+> make[1]: *** [scripts/basic/fixdep] Error 1
+> make: *** [scripts_basic] Error 2
 > 
-> static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
-> {
->         unsigned ret;
+> But if I revert this patch, seems all back to normal, pls help me this is
+> bug patch or need adjust some system config?
 > 
-> repeat:
->         ret = sl->sequence;
->         smp_rmb();
->         if (unlikely(ret & 1)) {
->                 cpu_relax();
->                 goto repeat;
->         }
-> 
->         return ret;
-> }
-> 
-> could use a ACCESS_ONCE() around the sl->sequence read ? I'm concerned about the
-> compiler generating code that reads the sequence number chunkwise.
-> 
-> The same apply to all other reads of the sequence number in seqlock.h (including
-> the retry code).
-> 
-> Thoughts ?
+> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=9d9b938248736826e86db9b16a3b435bdb5d649f
 
-Doesn't gcc guarantee that accesses to aligned basic types that fit into
-a machine word are loaded and stored in one shot?  Now, gcc might choose
-to load twice (or to merge loads) due to things like register pressure,
-but given that ->sequence is an int, gcc should not be accessing it
-(say) bytewise on any platform supporting 32-bit accesses.
+Do I understand it correctly that you can't rebuild your kernel if
+you're running linux-next-20100608 and that the problem goes away if you
+revert the above patch, recompile somewhere else and boot the new
+kernel? I.e. it's unlikely a problem with fixdep itself?
 
-Or am I suffering from wishful thinking here?
+Adding Christoph Hellwig to cc.
 
-							Thanx, Paul
+Michal
