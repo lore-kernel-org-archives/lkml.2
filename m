@@ -1,116 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759745Ab0FKLRm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 07:17:42 -0400
-Received: from lirone.symas.net ([64.71.152.235]:37462 "EHLO lirone.symas.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754073Ab0FKLRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 07:17:40 -0400
-Message-ID: <4C121B4C.2000702@symas.com>
-Date: Fri, 11 Jun 2010 04:17:32 -0700
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; rv:1.9.3a5pre) Gecko/20100607 Firefox 3.6
+	id S1760091Ab0FKLVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 07:21:10 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55270 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986Ab0FKLVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 07:21:07 -0400
+Date: Fri, 11 Jun 2010 12:21:02 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Luotao Fu <l.fu@pengutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] input: STMPE811 touch controller support
+Message-ID: <20100611112102.GE12436@sirena.org.uk>
+References: <1276251195-22981-1-git-send-email-l.fu@pengutronix.de> <1276251195-22981-4-git-send-email-l.fu@pengutronix.de>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: EXTPROC, telnetd LINEMODE, revisited
-References: <4C120D8A.8050207@symas.com> <87631pq2aj.fsf@basil.nowhere.org>
-In-Reply-To: <87631pq2aj.fsf@basil.nowhere.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276251195-22981-4-git-send-email-l.fu@pengutronix.de>
+X-Cookie: Postage will be paid by addressee.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen wrote:
-> Howard Chu<hyc@symas.com>  writes:
->
->> It's been over 10 years since I looked at this last
->>
->> http://lkml.indiana.edu/hypermail/linux/kernel/9911.3/0650.html
->
-> I would suggest you repost the patch.
+On Fri, Jun 11, 2010 at 12:13:15PM +0200, Luotao Fu wrote:
 
-Looks like my email got posted twice already (oops). The updated patch was 
-attached each time, you didn't get it?
+> +/*
+> + * reference source:
+> + *
+> + * Set ref_sel = 0 for internal reference
+> + *     ref_sel = 1 for external reference
+> + */
+> +static int ref_sel;
+> +module_param(ref_sel, int, 0444);
+> +MODULE_PARM_DESC(ref_sel,
+> +	"Set ADC reference source. Default is 0 (internal reference)");
 
->> From a quick look it looks straight forward enough.
-
-The patch I posted still isn't quite right; it lets all of the input fall thru 
-the regular tty input code. If ICANON is set then the tty driver will parse 
-and act on any control characters in the input, but since the input was 
-already fully processed on the client, any control characters remaining in the 
-input should just be passed through literally. That should be an easy thing to 
-fix though.
-
->> Despite the fact that most people today have ready access to high
->> speed broadband networking today, I think the motivation for local
->> character processing is as great now as it was 10 years ago. I
->> regularly use an ssh client on an Android phone to keep tabs on my
->> servers when I'm away from my home base, and sometimes cellphone
->> connectivity can be extremely lossy, networks can be heavily
->> congested, etc... Waiting for character-at-a-time packet turnarounds
->> in these conditions can be pretty aggravating. Also, if you're
->
-> I agree that it would be sometimes useful, I also had these
-> problems.
->
->> unfortunate enough to need to get access to a machine while you're
->> roaming away from your home network, the per-byte roaming fees can be
->> murder. Both of these pain points can be minimized by using local
->> character processing and only sending complete lines to the remote
->> server.
->
-> I have some doubts this really needs to be implemented in the kernel.
-> Back in the old days it was important to save round trips
-> to user space because CPUs were so slow, but these days I don't think
-> that's an issue anymore for mere typing.
->
-> Couldn't you implement it in screen or a similar pty based tool?
-
- From how I see it at the moment, everything still depends on the tty driver. 
-Even if you devise some other mechanism, you still have to be able to 
-intercept any ioctl's issued on the pty slave and Do The Right Thing with them 
-in the daemon on the pty master. I guess, alternatively, you could set an 
-environment variable in the child process that inherits the pty slave, that 
-tells applications how to send commands out of band to the master, but that 
-will require a lot more app-level coordination.
-
->> Another feature with readline is a command history buffer that can be
->> reviewed using Cursor Up/Down. Can/should we define this in the tty
->> driver too? Or perhaps rely on the client to implement its own command
->> buffer, and never mention this aspect on the wire protocol. Again,
->> given the purpose, it makes most sense to me to keep this feature on
->> the client side. But some coordination with the server would still be
->> useful. E.g., different programs can maintain their own persistent
->> command history files. It might be nice to have a way for the app to
->> signal to the client which command context to use for the current
->> history buffer, and keep them all separate. (Or not, I can see other
->> times where you'd just rather have it all as one stack.)
->
-> e.g. history management is definitely something that should not
-> be done in the kernel.
-
-I definitely wasn't trying to suggest that the management occur in the kernel. 
-Only that some mechanism for telling the client to toggle the feature on or 
-off would be useful.
-
->> PS: if anyone knows where to send the patches for telnetd, please
->> email me. Looks like the upstream source hasn't been touched since
->> 2000.
->
-> I think they're defacto maintained by the distributions.
->
-> I would submit them to one of the big distributions and let
-> that maintainer figure it out.
-
-OK. Since it looks like the source code I'm working with came from Debian I'll 
-start there, thanks.
-
-> -Andi
-
--- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+This looks like something that ought to be configured via platform data
+since the value that should be used is going to be determined by the
+board schematic.  Similar comments apply to most of the other module
+parameters, though in some cases sysfs files might be more appropriate
+as well, or in addition.
