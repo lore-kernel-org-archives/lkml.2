@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab0FKQ3P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 12:29:15 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:50707 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab0FKQ3N (ORCPT
+	id S1755456Ab0FKQ3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 12:29:21 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:54182 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756077Ab0FKQ3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 12:29:13 -0400
-Date: Fri, 11 Jun 2010 12:29:12 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-Message-ID: <20100611162912.GC24707@infradead.org>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
- <20100608090811.GA5949@infradead.org>
- <20100608092814.GB27717@csn.ul.ie>
+	Fri, 11 Jun 2010 12:29:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=m1AI00izKoO4KtW0dlW4I5pirtIrihzCAEiC+OTbsVSENkBYAIbfgbpGt4O8BEJXz4
+         NxbOcq5Ktq+C5geB0QDTwbCCrsyTuI1TEZ2GlElQAxcLlHadRMOc7gfy7YaS30QY9YTs
+         OFV7gfNBy4ctp5ff1jJGt+ZXi7mqxeVvv5864=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100608092814.GB27717@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <alpine.LFD.2.00.1006091821060.1402@localhost.localdomain>
+References: <AANLkTil6GGSoc8TpzRacr1LZBZS3ee3H1ejYDSqfdul4@mail.gmail.com>
+	<20100529202253.0bd18bbd.akpm@linux-foundation.org>
+	<alpine.LFD.2.00.1006091821060.1402@localhost.localdomain>
+Date: Fri, 11 Jun 2010 10:29:13 -0600
+Message-ID: <AANLkTilrLYu6H3GtAcP-cHpFvrm3v22uCw2EUeW_ZK0k@mail.gmail.com>
+Subject: Re: Linux 2.6.34 causes system lockup on Compaq Presario 2200 Laptop
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 10:28:14AM +0100, Mel Gorman wrote:
-> >  - we also need to care about ->releasepage.  At least for XFS it
-> >    can end up in the same deep allocator chain as ->writepage because
-> >    it does all the extent state conversions, even if it doesn't
-> >    start I/O. 
-> 
-> Dang.
-> 
-> >    I haven't managed yet to decode the ext4/btrfs codepaths
-> >    for ->releasepage yet to figure out how they release a page that
-> >    covers a delayed allocated or unwritten range.
-> > 
-> 
-> If ext4/btrfs are also very deep call-chains and this series is going more
-> or less the right direction, then avoiding calling ->releasepage from direct
-> reclaim is one, somewhat unfortunate, option. The second is to avoid it on
-> a per-filesystem basis for direct reclaim using PF_MEMALLOC to detect
-> reclaimers and PF_KSWAPD to tell the difference between direct
-> reclaimers and kswapd.
+Len,
 
-I went throught this a bit more and I can't actually hit that code in
-XFS ->releasepage anymore.  I've also audited the caller and can't see
-how we could theoretically hit it anymore.  Do the VM gurus know a case
-where we would call ->releasepage on a page that's actually dirty and
-hasn't been through block_invalidatepage before?
+I am having trouble getting a trace of this because its down hard to
+reproduce.  The reason is the lockup happens before I log into the
+laptop.  i.e. I boot 2.6.34 and if I let the laptop just sit there is
+happens.  If I log in and start doing work on it, it does not seem to
+happen.  It's related to using the laptop on battery mode with the
+charger removed.  I have a 2U appliance setup I am working on today
+and this frees up the laptop to try to reproduce this.  The flaky
+battery power misreporting was in fact accurate.  The battery in that
+laptop is 6 years old and does have low power.  I am certain the
+lockup if related though.  I will try to reproduce today and setup the
+trace to run after boot.  I have had it sitting there for an  hour and
+it has not reoccurred.  Let me try through today and if I cannot
+reproduce, close the bug.
 
+Jeff
+
+On Wed, Jun 9, 2010 at 4:21 PM, Len Brown <lenb@kernel.org> wrote:
+> Jeff,
+> Please attach the output of acpidump here:
+>
+> https://bugzilla.kernel.org/show_bug.cgi?id=16136
+>
+> thanks,
+> Len Brown, Intel Open Source Technology Center
+>
