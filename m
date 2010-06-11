@@ -1,236 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760193Ab0FKTAJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 15:00:09 -0400
-Received: from fg-out-1718.google.com ([72.14.220.156]:48874 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755689Ab0FKTAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 15:00:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=sMRDCZKPchbMnBc4N+OCP3RGUCZmXOVwSTeoTAsIUvlBDsraUdVL9PtXF4iqm/WzF7
-         rglIrPdMlMEE+JxpO2V1QG/XoK5G6Q0sfeiTM3gHyOP3FSH1r/kYjAF7Y6TRIPSjg4nu
-         zPFChA3W77driwfJULrY3Bje6TMGLJSW1+Pgs=
-Subject: [PATCH] Fix the outstanding issue with hangs on insert/removal of
- mmc cards
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: linux-mmc <linux-mmc@vger.kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
+	id S1760250Ab0FKTII (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 15:08:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50546 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756644Ab0FKTIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 15:08:04 -0400
+Date: Fri, 11 Jun 2010 15:07:14 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Carl Worth <cworth@cworth.org>,
+       Eric Anholt <eric@anholt.net>, Divyesh Shah <dpshah@google.com>,
+       guijianfeng@cn.fujitsu.com,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Philip Langdale <philipl@overt.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Jun 2010 22:00:01 +0300
-Message-ID: <1276282801.8557.20.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+       Kernel Testers List <kernel-testers@vger.kernel.org>
+Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
+Message-ID: <20100611190714.GA20837@redhat.com>
+References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
+ <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
+ <4C0F4872.7090909@fusionio.com>
+ <20100611083249.GA11143@elte.hu>
+ <4C11F661.3070604@fusionio.com>
+ <20100611085520.GA20218@elte.hu>
+ <4C11FF77.1000101@fusionio.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C11FF77.1000101@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jun 11, 2010 at 11:18:47AM +0200, Jens Axboe wrote:
+> On 2010-06-11 10:55, Ingo Molnar wrote:
+> >>> Caused by the same blkiocg_update_io_add_stats() function. Bootlog and config 
+> >>> attached. Reproducible on that sha1 and with that config.
+> >>
+> >> I think I see it, the internal CFQ blkg groups are not properly
+> >> initialized... Will send a patch shortly.
+> > 
+> > Cool - can test it with a short turnaround, the bug is easy to reproduce.
+> 
+> Here's a nasty patch that should fix it. Not optimal, since we really
+> just want empty functions for these when cfq group scheduling is not
+> defined.
+> 
+> CC'ing the guilty parties to come up with a better patch that does NOT
+> involve ifdefs in cfq-iosched.c. We want blk-cgroup.[ch] fixed up.
+> And trimming the CC list a bit.
 
-After thinking a lot about how to fix properly the hangs caused by
-insert/removal of mmc card during suspend/resume, and default behavior
-of not trusting the card persistence over suspend, I finally come to
-conclusion that changing the del_gendisk is wrong.
+Jens, Ingo, I am sorry for this mess.
 
-First of all there are 2 types of removal possible. First one happens
-when system detects that some device is gone. At that point there is
-really no point in syncing it.
+Jens,
 
-The other type of removal is controlled removal, usually on user
-request. Surly we must sync the device of this request.
-This type of removal _shouldn't_ happen during suspend/resume
-transaction. The only case when it does is today to protect against user
-carelessness of switching the cards during suspend.
+How about introducing "block/cfq.h" and declaring additional set of wrapper
+functions to update blkiocg stats and make these do nothing if
+CFQ_GROUP_IOSCHED=n.
 
-I think that it is just wrong to sync the device in suspend/resume time.
-At that time userspace is frozen, but also its not known which drivers
-are still running. They might even suspend asynchronously...
-So, such cases should be moved to pm-notifier, thing that my patch does
-for mmc.
-Other users should be fixed as well.
+For example, in linux-2.6/block/cfq.h, we can define functions as follows.
 
-We can, in addition to that, add a temporary hack to del_gendisk with
-loud WARN_ON though.
+#ifdef CONFIG_CFQ_GROUP_IOSCHED
+cfq_blkiocg_update_dequeue_stats () {
+	blkiocg_update_dequeue_stats()
+}
+#else
+cfq_blkiocg_update_dequeue_stats () {}
+#endif
 
-If card is really removed during suspend, then we can just introduce
-del_gendisk_dead or something like that which will be safe to call
-during suspend.
+Fixing it blk-cgroup.[ch] might not be best as BLK_CGROUP is set.
+Secondly, if there are other IO control policies later, they might
+want to make use of BLK_CGROUP while cfq has disabled the group io 
+scheduling.
 
-I didn't do that but rather I made the card detection thread freezeable,
-thus eliminated the whole problem.
-If you remove the card during suspend, system will notice at end of
-resume.
+I will prepare a patch and see how does it look.
 
----
+Thanks
+Vivek
 
-commit 395a40018e09b109811a1fc5b09572f30e7db9d6
-Author: Maxim Levitsky <maximlevitsky@gmail.com>
-Date:   Fri Jun 11 20:14:13 2010 +0300
-
-    MMC: fix all hangs related to mmc/sd card insert/removal during suspend/resume.
-    
-    If you don't use CONFIG_MMC_UNSAFE_RESUME, card will now be removed
-    in pm notifier, while userspace is still running.
-    Thus it will be possible to sync it properly.
-    
-    Card detect workqueue is now freezable, therefore a card insert/removal event will
-    wait till userspace is unfrozen.
-    
-    Tested with and without CONFIG_MMC_UNSAFE_RESUME, with suspend and hibernate.
-    
-    Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 85d15de..0cba53a 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1264,19 +1264,6 @@ int mmc_suspend_host(struct mmc_host *host)
- 	if (host->bus_ops && !host->bus_dead) {
- 		if (host->bus_ops->suspend)
- 			err = host->bus_ops->suspend(host);
--		if (err == -ENOSYS || !host->bus_ops->resume) {
--			/*
--			 * We simply "remove" the card in this case.
--			 * It will be redetected on resume.
--			 */
--			if (host->bus_ops->remove)
--				host->bus_ops->remove(host);
--			mmc_claim_host(host);
--			mmc_detach_bus(host);
--			mmc_release_host(host);
--			host->pm_flags = 0;
--			err = 0;
--		}
- 	}
- 	mmc_bus_put(host);
- 
-@@ -1308,12 +1295,6 @@ int mmc_resume_host(struct mmc_host *host)
- 			printk(KERN_WARNING "%s: error %d during resume "
- 					    "(card was removed?)\n",
- 					    mmc_hostname(host), err);
--			if (host->bus_ops->remove)
--				host->bus_ops->remove(host);
--			mmc_claim_host(host);
--			mmc_detach_bus(host);
--			mmc_release_host(host);
--			/* no need to bother upper layers */
- 			err = 0;
- 		}
- 	}
-@@ -1328,6 +1309,37 @@ int mmc_resume_host(struct mmc_host *host)
- 	return err;
- }
- 
-+/* Do the card removal on suspend if card is assumed removeable
-+ * Do that in pm notifier while userspace isn't yet frozen, so we will be able
-+   to sync the card.
-+*/
-+int mmc_pm_notify(struct notifier_block *notify_block,
-+					unsigned long mode, void *unused)
-+{
-+	struct mmc_host *host = container_of(
-+		notify_block, struct mmc_host, pm_notify);
-+
-+
-+	switch (mode) {
-+	case PM_HIBERNATION_PREPARE:
-+	case PM_SUSPEND_PREPARE:
-+
-+		if (!host->bus_ops || host->bus_ops->suspend)
-+			break;
-+
-+		if (host->bus_ops->remove)
-+			host->bus_ops->remove(host);
-+		mmc_claim_host(host);
-+		mmc_detach_bus(host);
-+		mmc_release_host(host);
-+		host->pm_flags = 0;
-+		break;
-+
-+	}
-+
-+	return 0;
-+}
-+
- EXPORT_SYMBOL(mmc_resume_host);
- 
- #endif
-@@ -1336,7 +1348,7 @@ static int __init mmc_init(void)
- {
- 	int ret;
- 
--	workqueue = create_singlethread_workqueue("kmmcd");
-+	workqueue = create_freezeable_workqueue("kmmcd");
- 	if (!workqueue)
- 		return -ENOMEM;
- 
-diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-index 4735390..53f3406 100644
---- a/drivers/mmc/core/host.c
-+++ b/drivers/mmc/core/host.c
-@@ -17,6 +17,7 @@
- #include <linux/pagemap.h>
- #include <linux/leds.h>
- #include <linux/slab.h>
-+#include <linux/suspend.h>
- 
- #include <linux/mmc/host.h>
- 
-@@ -85,6 +86,8 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
- 	init_waitqueue_head(&host->wq);
- 	INIT_DELAYED_WORK(&host->detect, mmc_rescan);
- 	INIT_DELAYED_WORK_DEFERRABLE(&host->disable, mmc_host_deeper_disable);
-+	host->pm_notify.notifier_call = mmc_pm_notify;
-+
- 
- 	/*
- 	 * By default, hosts do not support SGIO or large requests.
-@@ -132,6 +135,7 @@ int mmc_add_host(struct mmc_host *host)
- 	mmc_add_host_debugfs(host);
- #endif
- 
-+	register_pm_notifier(&host->pm_notify);
- 	mmc_start_host(host);
- 
- 	return 0;
-@@ -158,6 +162,8 @@ void mmc_remove_host(struct mmc_host *host)
- 	device_del(&host->class_dev);
- 
- 	led_trigger_unregister_simple(host->led);
-+
-+	unregister_pm_notifier(&host->pm_notify);
- }
- 
- EXPORT_SYMBOL(mmc_remove_host);
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index f65913c..b45812d 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -124,6 +124,7 @@ struct mmc_host {
- 	unsigned int		f_min;
- 	unsigned int		f_max;
- 	u32			ocr_avail;
-+	struct notifier_block	pm_notify;
- 
- #define MMC_VDD_165_195		0x00000080	/* VDD voltage 1.65 - 1.95 */
- #define MMC_VDD_20_21		0x00000100	/* VDD voltage 2.0 ~ 2.1 */
-@@ -257,6 +258,8 @@ int mmc_card_can_sleep(struct mmc_host *host);
- int mmc_host_enable(struct mmc_host *host);
- int mmc_host_disable(struct mmc_host *host);
- int mmc_host_lazy_disable(struct mmc_host *host);
-+int mmc_pm_notify(struct notifier_block *notify_block, unsigned long, void *);
-+
- 
- static inline void mmc_set_disable_delay(struct mmc_host *host,
- 					 unsigned int disable_delay)
-
-
-
+> 
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 5ff4f48..7067c97 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -879,7 +879,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
+>  		cfq_rb_erase(&cfqg->rb_node, st);
+>  	cfqg->saved_workload_slice = 0;
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+> +#endif
+>  }
+>  
+>  static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+> @@ -939,8 +941,10 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+>  
+>  	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+>  					st->min_vdisktime);
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
+>  	blkiocg_set_start_empty_time(&cfqg->blkg);
+> +#endif
+>  }
+>  
+>  #ifdef CONFIG_CFQ_GROUP_IOSCHED
+> @@ -1421,12 +1425,17 @@ static void cfq_reposition_rq_rb(struct cfq_queue *cfqq, struct request *rq)
+>  {
+>  	elv_rb_del(&cfqq->sort_list, rq);
+>  	cfqq->queued[rq_is_sync(rq)]--;
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(rq),
+>  						rq_is_sync(rq));
+> +#endif
+>  	cfq_add_rq_rb(rq);
+> +
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
+>  			&cfqq->cfqd->serving_group->blkg, rq_data_dir(rq),
+>  			rq_is_sync(rq));
+> +#endif
+>  }
+>  
+>  static struct request *
+> @@ -1482,8 +1491,10 @@ static void cfq_remove_request(struct request *rq)
+>  	cfq_del_rq_rb(rq);
+>  
+>  	cfqq->cfqd->rq_queued--;
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(rq),
+>  						rq_is_sync(rq));
+> +#endif
+>  	if (rq_is_meta(rq)) {
+>  		WARN_ON(!cfqq->meta_pending);
+>  		cfqq->meta_pending--;
+> @@ -1518,8 +1529,10 @@ static void cfq_merged_request(struct request_queue *q, struct request *req,
+>  static void cfq_bio_merged(struct request_queue *q, struct request *req,
+>  				struct bio *bio)
+>  {
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_io_merged_stats(&(RQ_CFQG(req))->blkg, bio_data_dir(bio),
+>  					cfq_bio_sync(bio));
+> +#endif
+>  }
+>  
+>  static void
+> @@ -1539,8 +1552,10 @@ cfq_merged_requests(struct request_queue *q, struct request *rq,
+>  	if (cfqq->next_rq == next)
+>  		cfqq->next_rq = rq;
+>  	cfq_remove_request(next);
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_io_merged_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(next),
+>  					rq_is_sync(next));
+> +#endif
+>  }
+>  
+>  static int cfq_allow_merge(struct request_queue *q, struct request *rq,
+> @@ -1571,7 +1586,9 @@ static int cfq_allow_merge(struct request_queue *q, struct request *rq,
+>  static inline void cfq_del_timer(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+>  {
+>  	del_timer(&cfqd->idle_slice_timer);
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
+> +#endif
+>  }
+>  
+>  static void __cfq_set_active_queue(struct cfq_data *cfqd,
+> @@ -1580,7 +1597,9 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
+>  	if (cfqq) {
+>  		cfq_log_cfqq(cfqd, cfqq, "set_active wl_prio:%d wl_type:%d",
+>  				cfqd->serving_prio, cfqd->serving_type);
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  		blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
+> +#endif
+>  		cfqq->slice_start = 0;
+>  		cfqq->dispatch_start = jiffies;
+>  		cfqq->allocated_slice = 0;
+> @@ -1911,7 +1930,9 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+>  	sl = cfqd->cfq_slice_idle;
+>  
+>  	mod_timer(&cfqd->idle_slice_timer, jiffies + sl);
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
+> +#endif
+>  	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu", sl);
+>  }
+>  
+> @@ -1931,8 +1952,10 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
+>  	elv_dispatch_sort(q, rq);
+>  
+>  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
+>  					rq_data_dir(rq), rq_is_sync(rq));
+> +#endif
+>  }
+>  
+>  /*
+> @@ -3248,8 +3271,10 @@ cfq_rq_enqueued(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+>  				cfq_clear_cfqq_wait_request(cfqq);
+>  				__blk_run_queue(cfqd->queue);
+>  			} else {
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  				blkiocg_update_idle_time_stats(
+>  						&cfqq->cfqg->blkg);
+> +#endif
+>  				cfq_mark_cfqq_must_dispatch(cfqq);
+>  			}
+>  		}
+> @@ -3276,9 +3301,11 @@ static void cfq_insert_request(struct request_queue *q, struct request *rq)
+>  	rq_set_fifo_time(rq, jiffies + cfqd->cfq_fifo_expire[rq_is_sync(rq)]);
+>  	list_add_tail(&rq->queuelist, &cfqq->fifo);
+>  	cfq_add_rq_rb(rq);
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
+>  			&cfqd->serving_group->blkg, rq_data_dir(rq),
+>  			rq_is_sync(rq));
+> +#endif
+>  	cfq_rq_enqueued(cfqd, cfqq, rq);
+>  }
+>  
+> @@ -3364,9 +3391,11 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+>  	WARN_ON(!cfqq->dispatched);
+>  	cfqd->rq_in_driver--;
+>  	cfqq->dispatched--;
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_update_completion_stats(&cfqq->cfqg->blkg, rq_start_time_ns(rq),
+>  			rq_io_start_time_ns(rq), rq_data_dir(rq),
+>  			rq_is_sync(rq));
+> +#endif
+>  
+>  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
+>  
+> @@ -3730,7 +3759,9 @@ static void cfq_exit_queue(struct elevator_queue *e)
+>  
+>  	cfq_put_async_queues(cfqd);
+>  	cfq_release_cfq_groups(cfqd);
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+>  	blkiocg_del_blkio_group(&cfqd->root_group.blkg);
+> +#endif
+>  
+>  	spin_unlock_irq(q->queue_lock);
+>  
+> 
+> -- 
+> Jens Axboe
