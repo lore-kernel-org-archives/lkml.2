@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab0FKUmW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 16:42:22 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:54590 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756917Ab0FKUlV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 16:41:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=wWv+Wq/wttM6B/1gEDZ8LltBxMPgwpifxMOvRm+C/zy8c2idm1DSmugAqTPCNCulG1
-         cwyDe2HiJezUBFBHIz4XGsZrJIWmytx01gTidqr1e0itifTsBT4sGpO/VQo2fSCPVqb6
-         NLhUslZKV4vykdf35KxQLg95LIOHgYW+eTuIM=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-audit@redhat.com, zippel@linux-m68k.org,
-       linux-fsdevel@vger.kernel.org, rusty@rustcorp.com.au,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 3/6]cifs Fix variable not set warnings
-Date: Fri, 11 Jun 2010 13:41:06 -0700
-Message-Id: <1276288869-16815-4-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
-In-Reply-To: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>
-References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>
+	id S932657Ab0FKUm6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 16:42:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55613 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756917Ab0FKUm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 16:42:57 -0400
+Message-ID: <4C129FC7.8070308@zytor.com>
+Date: Fri, 11 Jun 2010 13:42:47 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Krzysztof Halasa <khc@pm.waw.pl>
+CC: Alan <alan@clueserver.org>, Michal Marek <mmarek@suse.cz>,
+       =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: Additional info on modpost segfault
+References: <Pine.LNX.4.64.1006032008220.30918@blackbox.fnordora.org>	<20100604045118.GC5167@cr0.nay.redhat.com> <4C08A9D0.8000505@suse.cz>	<1275929979.2923.0.camel@zowie.clueserver.org> <m37hm6zdsr.fsf@intrepid.localdomain>
+In-Reply-To: <m37hm6zdsr.fsf@intrepid.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below fixes the warning messages from
-gcc 4.6.0 and compiling the kernel.
+Michal, are you sending this to Linus?
 
-  CC [M]  fs/cifs/file.o
-fs/cifs/file.c: In function 'cifs_partialpagewrite':
-fs/cifs/file.c:1315:23: warning: variable 'pTcon' set but not used
-
-  CC [M]  fs/cifs/dir.o
-fs/cifs/dir.c: In function 'cifs_lookup':
-fs/cifs/dir.c:641:15: warning: variable 'filp' set but not used
-
-  CC [M]  fs/cifs/cifssmb.o
-fs/cifs/cifssmb.c: In function 'CIFSSMBSetFileSize':
-fs/cifs/cifssmb.c:4855:8: warning: variable 'data_offset' set but not used
-  CC [M]  fs/cifs/cifs_debug.o
+	-hpa
 
 
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-
----
- fs/cifs/cifssmb.c |    4 +---
- fs/cifs/dir.c     |    4 +---
- fs/cifs/file.c    |    6 +-----
- 3 files changed, 3 insertions(+), 11 deletions(-)
-
-diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
-index c65c341..ca872c3 100644
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -4852,7 +4852,6 @@ CIFSSMBSetFileSize(const int xid, struct cifsTconInfo *tcon, __u64 size,
- 		   __u16 fid, __u32 pid_of_opener, bool SetAllocation)
- {
- 	struct smb_com_transaction2_sfi_req *pSMB  = NULL;
--	char *data_offset;
- 	struct file_end_of_file_info *parm_data;
- 	int rc = 0;
- 	__u16 params, param_offset, offset, byte_count, count;
-@@ -4876,8 +4875,7 @@ CIFSSMBSetFileSize(const int xid, struct cifsTconInfo *tcon, __u64 size,
- 	param_offset = offsetof(struct smb_com_transaction2_sfi_req, Fid) - 4;
- 	offset = param_offset + params;
- 
--	data_offset = (char *) (&pSMB->hdr.Protocol) + offset;
--
-+	
- 	count = sizeof(struct file_end_of_file_info);
- 	pSMB->MaxParameterCount = cpu_to_le16(2);
- 	/* BB find exact max SMB PDU from sess structure BB */
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index 391816b..cd409c0 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -638,8 +638,7 @@ cifs_lookup(struct inode *parent_dir_inode, struct dentry *direntry,
- 	struct cifsTconInfo *pTcon;
- 	struct inode *newInode = NULL;
- 	char *full_path = NULL;
--	struct file *filp;
--
-+	
- 	xid = GetXid();
- 
- 	cFYI(1, "parent inode = 0x%p name is: %s and dentry = 0x%p",
-@@ -734,7 +733,6 @@ cifs_lookup(struct inode *parent_dir_inode, struct dentry *direntry,
- 			direntry->d_op = &cifs_dentry_ops;
- 		d_add(direntry, newInode);
- 		if (posix_open)
--			filp = lookup_instantiate_filp(nd, direntry, NULL);
- 		/* since paths are not looked up by component - the parent
- 		   directories are presumed to be good here */
- 		renew_parental_timestamps(direntry);
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 75541af..bbb66d5 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -1311,8 +1311,6 @@ static int cifs_partialpagewrite(struct page *page, unsigned from, unsigned to)
- 	char *write_data;
- 	int rc = -EFAULT;
- 	int bytes_written = 0;
--	struct cifs_sb_info *cifs_sb;
--	struct cifsTconInfo *pTcon;
- 	struct inode *inode;
- 	struct cifsFileInfo *open_file;
- 
-@@ -1320,9 +1318,7 @@ static int cifs_partialpagewrite(struct page *page, unsigned from, unsigned to)
- 		return -EFAULT;
- 
- 	inode = page->mapping->host;
--	cifs_sb = CIFS_SB(inode->i_sb);
--	pTcon = cifs_sb->tcon;
--
-+		
- 	offset += (loff_t)from;
- 	write_data = kmap(page);
- 	write_data += from;
--- 
-1.7.1.rc1.21.gf3bd6
+On 06/10/2010 04:08 PM, Krzysztof Halasa wrote:
+> Alan <alan@clueserver.org> writes:
+> 
+>> program: /home/alan/GitTrees/linux-2.6-mid-ref/scripts/mod/modpost -o
+>> Module.symvers -S vmlinux.o
+>>
+>> Program received signal SIGSEGV, Segmentation fault.
+> 
+> It just hit me.
+> It's the offset calculation in reloc_location() which overflows:
+>         return (void *)elf->hdr + sechdrs[section].sh_offset +
+>                (r->r_offset - sechdrs[section].sh_addr);
+> 
+> E.g. for the first rodata r entry:
+> r->r_offset < sechdrs[section].sh_addr
+> and the expression in the parenthesis produces 0xFFFFFFE0 or something
+> equally wise.
+> 
+> Does the attached patch fix it?
+> 
+> Signed-off-by: Krzysztof Hałasa <khc@pm.waw.pl>
+> 
+> --- a/scripts/mod/modpost.c
+> +++ b/scripts/mod/modpost.c
+> @@ -1317,8 +1317,8 @@ static unsigned int *reloc_location(struct elf_info *elf,
+>  	Elf_Shdr *sechdrs = elf->sechdrs;
+>  	int section = sechdr->sh_info;
+>  
+>  	return (void *)elf->hdr + sechdrs[section].sh_offset +
+> -		(r->r_offset - sechdrs[section].sh_addr);
+> +		r->r_offset - sechdrs[section].sh_addr;
+>  }
+>  
+>  static int addend_386_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
