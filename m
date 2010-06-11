@@ -1,76 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760204Ab0FKMzR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 08:55:17 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:48639 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754326Ab0FKMzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 08:55:14 -0400
-Date: Fri, 11 Jun 2010 13:54:55 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 6/6] vmscan: Do not writeback pages in direct reclaim
-Message-ID: <20100611125455.GC8798@csn.ul.ie>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie> <1275987745-21708-7-git-send-email-mel@csn.ul.ie> <20100610231706.1d7528f2.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100610231706.1d7528f2.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1760273Ab0FKM4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 08:56:12 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:45949 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755811Ab0FKM4J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 08:56:09 -0400
+Date: Fri, 11 Jun 2010 14:55:07 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH] drivers: regulator: add Maxim 8998 driver
+In-reply-to: <20100611105823.GA17546@rakim.wolfsonmicro.main>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: "'Liam Girdwood'" <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+       kyungmin.park@samsung.com,
+       "'Marek Szyprowski'" <m.szyprowski@samsung.com>
+Message-id: <007201cb0965$542b6cb0$fc824610$%szyprowski@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: AcsJVRY6Ks7hE7bvR6W/4GPNQXcY+QAB6e5A
+References: <1276239765-26234-1-git-send-email-m.szyprowski@samsung.com>
+ <20100611105823.GA17546@rakim.wolfsonmicro.main>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 11:17:06PM -0700, Andrew Morton wrote:
-> On Tue,  8 Jun 2010 10:02:25 +0100 Mel Gorman <mel@csn.ul.ie> wrote:
+Hello,
+
+On Friday, June 11, 2010 12:58 PM Mark Brown wrote:
+
+> On Fri, Jun 11, 2010 at 09:02:45AM +0200, Marek Szyprowski wrote:
 > 
-> > When memory is under enough pressure, a process may enter direct
-> > reclaim to free pages in the same manner kswapd does. If a dirty page is
-> > encountered during the scan, this page is written to backing storage using
-> > mapping->writepage. This can result in very deep call stacks, particularly
-> > if the target storage or filesystem are complex. It has already been observed
-> > on XFS that the stack overflows but the problem is not XFS-specific.
-> > 
-> > This patch prevents direct reclaim writing back pages by not setting
-> > may_writepage in scan_control. Instead, dirty pages are placed back on the
-> > LRU lists for either background writing by the BDI threads or kswapd. If
-> > in direct lumpy reclaim and dirty pages are encountered, the process will
-> > kick the background flushter threads before trying again.
-> > 
+> > This patch adds voltage regulator driver for Maxim 8998 chip. This chip
+> > is used on Samsung Aquila and GONI boards.
 > 
-> This wouldn't have worked at all well back in the days when you could
-> dirty all memory with MAP_SHARED. 
+> Overall this looks pretty good - some comments below, though.
 
-Yes, it would have been a bucket of fail.
+Thanks for comments, we will try to address these issues soon.
 
-> The balance_dirty_pages() calls on
-> the fault path will now save us but if for some reason we were ever to
-> revert those, we'd need to revert this change too, I suspect.
+> A few things in the code make it look like the driver should be using
+> the MFD framework - there's references in here for things like a battery
+> charger which should be being supported via the power subsystem, for
+> example.
+
+You are right, this chip is really complicated and should work with more
+than one kernel subsystem. However in this initial version of the driver
+we tried to make it as simple as possible. It can be converted to MFD
+framework later, but if you want we can prepare this driver as MFD from
+the beginning.
+
+> > +static void max8998_cache_register_init(struct i2c_client *client)
+> > +{
+> > +	u8 value;
+> > +	int ret;
+> > +
+> > +	ret = max8998_i2c_read(client, MAX8998_REG_STATUS1, &value);
+> > +	if (ret)
+> > +		return;
+> > +	ret = max8998_i2c_read(client, MAX8998_REG_STATUS2, &value);
+> > +	if (ret)
+> > +		return;
 > 
-
-Quite likely.
-
-> As it stands, it would be wildly incautious to make a change like
-> this without first working out why we're pulling so many dirty pages
-> off the LRU tail, and fixing that.
+> Should these registers really be cached at all?  They're not used but
+> the name and the fact that you read them dynamically makes
 > 
+> Also, it looks like you're initialising things like the voltage settings
+> and regulator enables from the cache rather than from the chip - this
+> seems like it'll cause problems if the bootloader or similar has done
+> something to the chip prior to the driver taking control.  For PMICs and
+> regulators I'd generally expect to see the driver initialise itself from
+> the chip rather than fixed defaults.
 
-Ok, I have a series prepared for testing that is in three parts.
+ok.
+ 
+> > +static const int ldo23_voltage_map[] = {
+> > +	 800,  850,  900,  950, 1000,
+> > +	1050, 1100, 1150, 1200, 1250,
+> > +	1300,
+> 
+> I may have missed something in these tables but they all look like
+> simple functions of the register value - perhaps they could be replaced
+> with calculations?
 
-Patches 1-4: tracepoints to gather how many dirty pages there really are
-	being written out on the LRU
-Patches 5-10: reduce the stack usage in page reclaim
-Patches 9-10: Avoid writing out pages from direct reclaim and instead
-	kicking background flushers to do the writing
+We thought that this way the code will be easier to read. If you think that
+encoding these tables into the common table of the {min, step, max} values 
+is more appropriate I can change this.
 
-Patches 1-4 on its own should an accurate view of how many dirty pages are
-really being written back and if it's a real problem or not.
+> > +	value = max8998_read_reg(max8998, reg);
+> > +	value |= (1 << shift);
+> > +	ret = max8998_write_reg(max8998, reg, value);
+> 
+> This is racy - there's nothing preventing another thread coming in and
+> running the same code so you get something like:
+> 
+> 	reg_read(1)
+> 	reg_read(2)
+> 	reg_write(1)
+> 	reg_write(2)
+> 
+> You could fix this with an atomic max8998_update_bits() function.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Right, I will fix this.
+ 
+> > +	if (gpio_is_valid(max8998->ono_pin)) {
+> > +		ret = gpio_request(max8998->ono_pin, "MAX8998 nONO");
+> > +		if (ret)
+> > +			goto out_ono;
+> > +		irq = gpio_to_irq(max8998->ono_pin);
+> > +		ret = request_irq(irq, max8998_ono_irq,
+> > +				IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+> > +				"max8998 nPower", max8998);
+> > +		if (ret) {
+> > +			dev_err(&client->dev, "Can't get interrupt pin\n");
+> > +			goto out_ono_irq;
+> > +		}
+> > +
+> > +		/* enable wakeup source for power button */
+> > +		set_irq_wake(irq, 1);
+> > +		max8998->ono_irq = irq;
+> > +	}
+> 
+> Should this not just be specified as an IRQ?  The gpio API doesn't
+> appear to be being used at all by the driver.
+
+I was not sure whether we should use gpio pin or irq number for this.
+I can change it to irq, a in fact gpio functions wouldn't be used for
+it.
+
+Best regards
+--
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
