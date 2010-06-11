@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760526Ab0FKUsS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 16:48:18 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:33234 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753307Ab0FKUsR (ORCPT
+	id S932731Ab0FKUux (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 16:50:53 -0400
+Received: from sj-iport-1.cisco.com ([171.71.176.70]:8955 "EHLO
+	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755495Ab0FKUuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 16:48:17 -0400
-Date: Fri, 11 Jun 2010 16:48:15 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: James Bottomley <James.Bottomley@suse.de>
-cc: David Brownell <david-b@pacbell.net>, <tytso@mit.edu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Neil Brown <neilb@suse.de>,
-       Brian Swetland <swetland@google.com>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-In-Reply-To: <1276268539.2862.92.camel@mulgrave.site>
-Message-ID: <Pine.LNX.4.44L0.1006111638040.19894-100000@netrider.rowland.org>
+	Fri, 11 Jun 2010 16:50:51 -0400
+Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAM4+EkyrRN+K/2dsb2JhbACefHGlG5lshRgEg0w
+X-IronPort-AV: E=Sophos;i="4.53,404,1272844800"; 
+   d="scan'208";a="334289300"
+Date: Fri, 11 Jun 2010 13:50:51 -0700
+From: David VomLehn <dvomlehn@cisco.com>
+To: David Miller <davem@davemloft.net>
+Cc: to@dvomlehn-lnx2.corp.sa.net, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/4][RFC] Introduction to sk_buff state checking
+Message-ID: <20100611205051.GA30404@dvomlehn-lnx2.corp.sa.net>
+References: <20100611203350.GA28383@dvomlehn-lnx2.corp.sa.net> <20100611.133811.52184181.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100611.133811.52184181.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010, Mark Brown wrote:
-
-> On Fri, Jun 11, 2010 at 10:46:27AM -0400, Alan Stern wrote:
-> > On Fri, 11 Jun 2010, James Bottomley wrote:
+On Fri, Jun 11, 2010 at 01:38:11PM -0700, David Miller wrote:
 > 
-> > > The one thing that does look difficult is that these power constraints
-> > > are device (and sometimes SoC) specific.  Expressing them in a generic
-> > > way for the cpu govenors to make sense of might be hard.
+> This is the second time you've submitted this patch set,
+
+There are changes, based on the feedback I got.
+
+> it is also the second time that:
 > 
-> > Doesn't the clock framework already handle this sort of thing?
+> 1) Your email client has emitted these strange
+>    "linux-kernel@vger.kernel.org"@cisco.com
+>    addresses.
 > 
-> The clock framework is implemented independantly for each CPU.
-
-That's not an impediment, since drivers' requirements regarding which 
-clocks remain running in which power states are necessarily 
-platform-dependent also.
-
-
-On Fri, 11 Jun 2010, James Bottomley wrote:
-
-> Well, there are two elements to "this sort of thing":
+>    I saw that you were specifically notified about this
+>    problem during the previous submission.
 > 
->      1. Allow a driver to request that a given clock not be turned off.
->      2. Make the cpuidle governors aware of a pending "don't turn off X
->         clock source" so they can keep the system in a state where the
->         clock doesn't get powered down.
+>    What did you do to try and correct it?
 > 
-> As far as I can tell from the code, neither currently exists at the
-> moment.
+> 2) You are not CC:'ing the networking developer mailing
+>    list "netdev@vger.kernel.org"  Many networking developers
+>    do not read linux-kernel, so by not CC:'ing that list
+>    you are not reaching the folks most capable of reviewing
+>    your patches.
 
-Well then, can (or should) the clock framework interact with the
-pm-qos subsystem so that drivers don't have to worry about it?
+All true, and I apologize. I know there's enough traffic on kernel mailing
+lists as it is.
 
-Alan Stern
+> Please fix this up.
 
+Working on it now.
+
+-- 
+David VL
