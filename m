@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760167Ab0FKL60 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 07:58:26 -0400
-Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:35648 "EHLO
-	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754858Ab0FKL6Z (ORCPT
+	id S1760184Ab0FKMJT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 08:09:19 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:40728 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756052Ab0FKMJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 07:58:25 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C1224AE.6070607@jic23.retrosnub.co.uk>
-Date: Fri, 11 Jun 2010 12:57:34 +0100
-From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
-MIME-Version: 1.0
+	Fri, 11 Jun 2010 08:09:18 -0400
+Date: Fri, 11 Jun 2010 14:09:10 +0200
+From: Daniel Mack <daniel@caiaq.de>
 To: Donggeun Kim <dg77.kim@samsung.com>
-CC: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com
+Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com
 Subject: Re: [PATCH] smb380: accelerometer driver
+Message-ID: <20100611120910.GY17833@buzzloop.caiaq.de>
 References: <4C1216FD.6010107@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 In-Reply-To: <4C1216FD.6010107@samsung.com>
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 7bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/10 11:59, Donggeun Kim wrote:
+On Fri, Jun 11, 2010 at 07:59:09PM +0900, Donggeun Kim wrote:
 > This patch support driver for BOSCH SMB380 and BMA023.
 > 
 > This driver will read x, y, z coordinate registers from the device and
 > report the values to users through sysfs interface.
-Nack. This should not be in hwmon.
 
-Where to put it is a bit use dependent. Dmitry might
-take it into input if you can convince him that its
-primary use is human input. I'm happy to take it
-in IIO or if you prefer not to go in staging, then 
-drivers/misc is the remaining option.  Conversion to 
-misc or IIO would be pretty trivial, though we would
-want to see a few more attributes to allow userspace
-to know what it is getting from the device.
+Hmm, the patch is line-wrapped, and there seems to be something wrong
+with indentation as well. Please consider using 'git send-email' and
+have a look at Documentation/CodingSytle when resubmitting. Thanks :)
 
-Also please consult MAINTAINERS. If you did believe
-this was suitable for hwmon it should have gone to the
-relevant mailing list (lm-sensors).
+Daniel
 
-A few coments inline below, Mostly nice and clean, but
-a few naming changes and additions of documentation would
-make it clearer for future readers.
-
-This is a very basic driver at the moment. I'd personally
-like to see a few of the options you have control functions
-for exposed to userspace (e.g. range). Still that shouldn't
-hold back merging the driver as those who want the can
-add them!
 
 > 
 > Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
@@ -228,7 +208,6 @@ add them!
 > + u8 temp;
 > +};
 > +
-
 > +enum scale_range {
 > + RANGE_2G,
 > + RANGE_4G,
@@ -279,15 +258,11 @@ add them!
 > + int ret = i2c_smbus_read_byte_data(client, reg);
 > +
 > + if (ret < 0)
-Looks like a formatting quirk here, might be an email client
-issue. Have you run this through checkpatch.pl?
 > + dev_err(&client->dev, "%s: reg 0x%x, err %d\n",
 > + __func__, reg, ret);
 > + return ret;
 > +}
 > +
-This has some slightly odd semantics, perhaps a comment 
-explaining the parameters?
 > +static int smb380_xyz_read_reg(struct i2c_client *client,
 > + u8 *buffer, int length)
 > +{
@@ -334,10 +309,6 @@ explaining the parameters?
 > + SMB380_RANGE_BW_REG);
 > +}
 > +
-I'm not personally convince that all of these functions make
-the code easier to read. As things currently stand they are
-only used on init so I would put the content in there rather
-than wrapping it again.
 > +static int smb380_set_new_data_int(struct i2c_client *client, u8 on)
 > +{
 > + return smb380_set_reg_bits(client, on,
@@ -424,8 +395,6 @@ than wrapping it again.
 > + *val >>= (sizeof(s16) * BITS_PER_BYTE - SMB380_ACCEL_BITS);
 > +}
 > +
-The next three look idenitical to me. Why the seperate 
-functions?
 > +static void smb380_read_x(struct i2c_client *client, s16 *x,
 > + u8 *x_lsb, u8 *x_msb)
 > +{
@@ -465,9 +434,6 @@ functions?
 > + buffer[0] = SMB380_X_LSB_REG;
 > + smb380_xyz_read_reg(client, buffer, 6);
 > +
-
-These functions are confusingly named.  They do data
-conversion not reading from the device.  Please rename.
 > + smb380_read_x(client, x, &buffer[0], &buffer[1]);
 > + smb380_read_y(client, y, &buffer[2], &buffer[3]);
 > + smb380_read_z(client, z, &buffer[4], &buffer[5]);
@@ -503,16 +469,6 @@ conversion not reading from the device.  Please rename.
 > + sensor->data.x, sensor->data.y, sensor->data.z);
 > +}
 > +static SENSOR_DEVICE_ATTR(xyz, S_IRUGO, smb380_show_xyz, NULL, 0);
-units?  Please match existing interfaces where possible. 
-whether these 3 things can be grouped is dependent on whether
-they are guaranteed to be from the same 'scan' (e.g. pretty
-close to being taken at the same time.)  If not, then
-should probably be 3 seperate attributes. Again, userspace
-needs to know units or how to convert.  Again IIO has a standard
-interface for this. Please take a look, we spent a fair bit
-of time pinning down what people needed at how to make it as
-general as possible.
-
 > +
 > +static ssize_t smb380_show_temper(struct device *dev,
 > + struct device_attribute *attr, char *buf)
@@ -525,14 +481,6 @@ general as possible.
 > +}
 > +static SENSOR_DEVICE_ATTR(temperature, S_IRUGO, smb380_show_temper,
 > NULL, 0);
-
-units etc?  Please match against a standard interface where
-possible. Actually this is the only thing that can be sensibly
-lifted from hwmon.  Their interfaces definition is sensible and
-pretty general. It's extended in IIO for things it doesn't cover
-but we try to match where we can.  
-
-
 > +
 > +static struct attribute *smb380_attributes[] = {
 > + &sensor_dev_attr_xyz.dev_attr.attr,
@@ -576,9 +524,6 @@ but we try to match where we can.
 > + smb380_set_HG_dur(sensor->client, 0x96);
 > + smb380_set_HG_thres(sensor->client, 0xa0);
 > + smb380_set_HG_hyst(sensor->client, 0x0);
-
-magic numbers.  Please comment on what these mean
-and comment on why the repeats...
 > + smb380_set_LG_dur(sensor->client, 0x96);
 > + smb380_set_LG_thres(sensor->client, 0x14);
 > + smb380_set_LG_hyst(sensor->client, 0x0);
@@ -608,7 +553,6 @@ and comment on why the repeats...
 > + dev_err(&client->dev, "failed to detect device\n");
 > + goto failed_free;
 > + }
-worth checking the result against a known value?
 > +
 > + INIT_WORK(&sensor->work, smb380_work);
 > + mutex_init(&sensor->lock);
@@ -626,7 +570,7 @@ worth checking the result against a known value?
 > + goto failed_remove_sysfs;
 > + }
 > +
-> + if (client->irq > 0){
+> + if (client->irq > 0) {
 > + ret = request_irq(client->irq, smb380_irq, IRQF_TRIGGER_HIGH,
 > + "smb380 accelerometer", sensor);
 > + if (ret) {
@@ -743,4 +687,11 @@ worth checking the result against a known value?
 > +};
 > +
 > +#endif /* _SMB380_H_ */
-
+> -- 
+> 1.6.3.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
