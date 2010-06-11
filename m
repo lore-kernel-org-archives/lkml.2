@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760303Ab0FKUWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 16:22:47 -0400
-Received: from lirone.symas.net ([64.71.152.235]:40014 "EHLO lirone.symas.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756917Ab0FKUWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 16:22:46 -0400
-Message-ID: <4C129B0A.8080809@symas.com>
-Date: Fri, 11 Jun 2010 13:22:34 -0700
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; rv:1.9.3a5pre) Gecko/20100607 Firefox 3.6
+	id S932165Ab0FKU0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 16:26:46 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:59280 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756611Ab0FKU0o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 16:26:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=rhlFUWng07yJSzzZ540c+GQqX4x2fpjPfeb3Ty3Tf3piuPOuFYGUvtCsjcLHUm32mn
+         Aajvz9mUA33bVsVNjl0q6QONWIVvdXxwueUTe5ceclkb6nYAF+i6+vTqAflFRkcjq2uM
+         WkgSR5TtU5tlpz1oaKs6x03v2tVzaUSwhCbJE=
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: EXTPROC, telnetd LINEMODE, revisited
-References: <4C120D8A.8050207@symas.com> <87631pq2aj.fsf@basil.nowhere.org> <4C121B4C.2000702@symas.com>
-In-Reply-To: <4C121B4C.2000702@symas.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1276286993.3918.0.camel@jlt3.sipsolutions.net>
+References: <4c0f4326.0a41df0a.7bde.ffffeef2@mx.google.com> 
+	<AANLkTilrYYHjcMEhhrP7zjcLoo-TNczozxJSNRkDvSZy@mail.gmail.com> 
+	<AANLkTimXqdkQxv_Y1JaleTTWNsDIQHQaPn8HR7efOupb@mail.gmail.com> 
+	<1276286993.3918.0.camel@jlt3.sipsolutions.net>
+From: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Date: Fri, 11 Jun 2010 23:26:23 +0300
+X-Google-Sender-Auth: iqtZiqM4ZpT2c4jBd0rnfvYryHQ
+Message-ID: <AANLkTim90VBfWjp2YPYeYN6ImjIyZzcJ_XnpT5cdgCt4@mail.gmail.com>
+Subject: Re: [ath5k-devel] [PATCH] [ath5k][leds] Ability to disable leds 
+	support. If leds support enabled do not force mac802.11 leds layer selection.
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Bob Copeland <me@bobcopeland.com>, ath5k-devel@venema.h4ckr.net,
+       Kalle Valo <kalle.valo@iki.fi>, linux-wireless@vger.kernel.org,
+       GeunSik Lim <geunsik.lim@samsung.com>, Jiri Slaby <jirislaby@gmail.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Keng-Yu Lin <keng-yu.lin@canonical.com>, netdev@vger.kernel.org,
+       Jiri Kosina <jkosina@suse.cz>, Shahar Or <shahar@shahar-or.co.il>,
+       linux-kernel@vger.kernel.org, Luca Verdesca <magooz@salug.it>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howard Chu wrote:
-> Andi Kleen wrote:
->> e.g. history management is definitely something that should not
->> be done in the kernel.
+Generic LED class is not disabled so it's possible to control leds in sysfs.
 
-I must be going senile or something. You're absolutely right of course. I just 
-dug up my old telnet patches from 1989 that implemented the command history in 
-the client. All that we need today is a patch for GNU readline that makes it 
-mostly do nothing when EXTPROC mode is set on the tty.
+-- Dima
 
-We still need to be able to forward on <TAB> of course. We can define 
-additional forwarding characters using VEOL or VEOL2, but I think they also 
-have the semantic of terminating the input line, which is not what we want 
-here. Since they are so rarely used for their original purpose, would it be a 
-terrible thing to subvert them to this purpose, or can we just add a new VFWD 
-character to the tty driver?
-
-> I definitely wasn't trying to suggest that the management occur in the kernel.
-> Only that some mechanism for telling the client to toggle the feature on or
-> off would be useful.
-
--- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+On Fri, Jun 11, 2010 at 11:09 PM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Wed, 2010-06-09 at 17:43 +0300, Dmytro Milinevskyy wrote:
+>> Hi, Bob.
+>>
+>> For instance I don't use 802.11 leds layer and trigger leds from
+>> userspace according to my purposes.
+>
+> Without the LED stuff in sysfs, how do you do that?
+>
+> johannes
+>
+>
