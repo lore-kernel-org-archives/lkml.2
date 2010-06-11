@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760229Ab0FKNAb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 09:00:31 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:55020 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755682Ab0FKNA3 (ORCPT
+	id S1760268Ab0FKNCk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 09:02:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49886 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756142Ab0FKNCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 09:00:29 -0400
-Date: Fri, 11 Jun 2010 14:00:23 +0100
+	Fri, 11 Jun 2010 09:02:39 -0400
+Date: Fri, 11 Jun 2010 14:02:36 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "'Liam Girdwood'" <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+       kyungmin.park@samsung.com
 Subject: Re: [PATCH] drivers: regulator: add Maxim 8998 driver
-Message-ID: <20100611130022.GF12436@sirena.org.uk>
-References: <1276239765-26234-1-git-send-email-m.szyprowski@samsung.com> <20100611105823.GA17546@rakim.wolfsonmicro.main> <AANLkTikbTtpMe_k97khIS1Mg5m7AaEbX0sa7URrJ2TkS@mail.gmail.com>
+Message-ID: <20100611130236.GA4650@rakim.wolfsonmicro.main>
+References: <1276239765-26234-1-git-send-email-m.szyprowski@samsung.com>
+ <20100611105823.GA17546@rakim.wolfsonmicro.main>
+ <007201cb0965$542b6cb0$fc824610$%szyprowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikbTtpMe_k97khIS1Mg5m7AaEbX0sa7URrJ2TkS@mail.gmail.com>
-X-Cookie: Postage will be paid by addressee.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <007201cb0965$542b6cb0$fc824610$%szyprowski@samsung.com>
+X-Cookie: Don't hit the keys so hard, it hurts.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 09:48:58PM +0900, Kyungmin Park wrote:
-> On Fri, Jun 11, 2010 at 7:58 PM, Mark Brown
-> > On Fri, Jun 11, 2010 at 09:02:45AM +0200, Marek Szyprowski wrote:
+On Fri, Jun 11, 2010 at 02:55:07PM +0200, Marek Szyprowski wrote:
+> On Friday, June 11, 2010 12:58 PM Mark Brown wrote:
 
-> >> +static irqreturn_t max8998_ono_irq(int irq, void *data)
-> >> +{
-> >> + ? ? return IRQ_HANDLED;
-> >> +}
+> > A few things in the code make it look like the driver should be using
+> > the MFD framework - there's references in here for things like a battery
+> > charger which should be being supported via the power subsystem, for
+> > example.
 
-> > This needs at least a comment explaining why you don't need to do
-> > anything for the interrupt.
+> You are right, this chip is really complicated and should work with more
+> than one kernel subsystem. However in this initial version of the driver
+> we tried to make it as simple as possible. It can be converted to MFD
+> framework later, but if you want we can prepare this driver as MFD from
+> the beginning.
 
-> We just remove it. it's unused function actually.
-
-I suspect it may be required for the wake IRQ functionality you're using
-but ICBW.
+It makes life a lot easier to start off with the MFD, even if you only
+add a single function driver initially.  Otherwise you end up with cross
+tree hassle trying to deal with the transiton later on.
