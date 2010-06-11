@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab0FKGDa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 02:03:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31024 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412Ab0FKGD3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 02:03:29 -0400
-From: Tao Ma <tao.ma@oracle.com>
-To: xfs@oss.sgi.com
-Cc: linux-kernel@vger.kernel.org, Tao Ma <tao.ma@oracle.com>,
-       Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@lst.de>,
-       Dave Chinner <david@fromorbit.com>
-Subject: [PATCH] xfs: Make fiemap works with sparse file.
-Date: Fri, 11 Jun 2010 14:02:15 +0800
-Message-Id: <1276236135-12051-1-git-send-email-tao.ma@oracle.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4C11D19E.009E:SCFMA922111,ss=1,fgs=0
+	id S1754837Ab0FKGEE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 02:04:04 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46550 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753320Ab0FKGEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 02:04:00 -0400
+Date: Fri, 11 Jun 2010 06:03:44 GMT
+From: tip-bot for Huang Ying <ying.huang@intel.com>
+Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, hpa@zytor.com,
+       mingo@redhat.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, ying.huang@intel.com,
+       linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <1275977348.3444.659.camel@yhuang-dev.sh.intel.com>
+References: <1275977348.3444.659.camel@yhuang-dev.sh.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mce] x86, mce: Rename MSR_IA32_MCx_CTL2 value
+Message-ID: <tip-1f9a0bd4989fd16842ad71fc89240b48ab191446@git.kernel.org>
+Git-Commit-ID: 1f9a0bd4989fd16842ad71fc89240b48ab191446
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 11 Jun 2010 06:03:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In xfs_vn_fiemap, we set bvm_count to fi_extent_max + 1 and want
-to return fi_extent_max extents, but actually it won't work for
-a sparse file. The reason is that in xfs_getbmap we will
-calculate holes and set it in 'out', while out is malloced by
-bmv_count(fi_extent_max+1) which didn't consider holes. So in the
-worst case, if 'out' vector looks like
-[hole, extent, hole, extent, hole, ... hole, extent, hole],
-we will only return half of fi_extent_max extents.
+Commit-ID:  1f9a0bd4989fd16842ad71fc89240b48ab191446
+Gitweb:     http://git.kernel.org/tip/1f9a0bd4989fd16842ad71fc89240b48ab191446
+Author:     Huang Ying <ying.huang@intel.com>
+AuthorDate: Tue, 8 Jun 2010 14:09:08 +0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 10 Jun 2010 21:27:26 -0700
 
-So in xfs_vn_fiemap, we should consider this worst case. If the
-user wants fi_extent_max extents, we need a 'out' with size of
-2 *fi_extent_max + 1.
+x86, mce: Rename MSR_IA32_MCx_CTL2 value
 
-Cc: Alex Elder <aelder@sgi.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Tao Ma <tao.ma@oracle.com>
+Rename CMCI_EN to MCI_CTL2_CMCI_EN and CMCI_THRESHOLD_MASK to
+MCI_CTL2_CMCI_THRESHOLD_MASK to make naming consistent.
+
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+LKML-Reference: <1275977348.3444.659.camel@yhuang-dev.sh.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- fs/xfs/linux-2.6/xfs_iops.c |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/mce.h             |    4 ++++
+ arch/x86/include/asm/msr-index.h       |    3 ---
+ arch/x86/kernel/cpu/mcheck/mce_intel.c |    8 ++++----
+ 3 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
-index 9c8019c..1db92e3 100644
---- a/fs/xfs/linux-2.6/xfs_iops.c
-+++ b/fs/xfs/linux-2.6/xfs_iops.c
-@@ -672,9 +672,21 @@ xfs_vn_fiemap(
- 	else
- 		bm.bmv_length = BTOBB(length);
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index f32a430..82db1d8 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -38,6 +38,10 @@
+ #define MCM_ADDR_MEM	 3	/* memory address */
+ #define MCM_ADDR_GENERIC 7	/* generic */
  
--	/* We add one because in getbmap world count includes the header */
-+	/*
-+	 * It is a bit tricky for us to calculate the bmv_count from
-+	 * fi_extent_max.
-+	 * If we support to return fi_extent_max extents to the user,
-+	 * we need at most 2 * fi_extent_max + 1 for bmv_count since
-+	 * in xfs_getbmap we will calculate holes while fi_extent_max
-+	 * don't have them. So in the worst case, bmv can looks like
-+	 * [hole, extent, hole, extent, hole, ... hole, extent, hole].
-+	 * So there will be 2 *fi_extent_max + 1.
-+	 * What's more, in getbmap world count have to include the
-+	 * header, so we need another bmv. So the total number will
-+	 * be 2 * fieinfo->fi_extents_max + 2.
-+	 */
- 	bm.bmv_count = !fieinfo->fi_extents_max ? MAXEXTNUM :
--					fieinfo->fi_extents_max + 1;
-+			2 * fieinfo->fi_extents_max + 2;
- 	bm.bmv_count = min_t(__s32, bm.bmv_count,
- 			     (PAGE_SIZE * 16 / sizeof(struct getbmapx)));
- 	bm.bmv_iflags = BMV_IF_PREALLOC;
--- 
-1.5.5
-
++/* CTL2 register defines */
++#define MCI_CTL2_CMCI_EN		(1ULL << 30)
++#define MCI_CTL2_CMCI_THRESHOLD_MASK	0xffffULL
++
+ #define MCJ_CTX_MASK		3
+ #define MCJ_CTX(flags)		((flags) & MCJ_CTX_MASK)
+ #define MCJ_CTX_RANDOM		0    /* inject context: random */
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index b49d8ca..38f66eb 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -94,9 +94,6 @@
+ #define MSR_IA32_MC0_CTL2		0x00000280
+ #define MSR_IA32_MCx_CTL2(x)		(MSR_IA32_MC0_CTL2 + (x))
+ 
+-#define CMCI_EN			(1ULL << 30)
+-#define CMCI_THRESHOLD_MASK		0xffffULL
+-
+ #define MSR_P6_PERFCTR0			0x000000c1
+ #define MSR_P6_PERFCTR1			0x000000c2
+ #define MSR_P6_EVNTSEL0			0x00000186
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+index 62b48e4..faf7b29 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+@@ -95,19 +95,19 @@ static void cmci_discover(int banks, int boot)
+ 		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
+ 
+ 		/* Already owned by someone else? */
+-		if (val & CMCI_EN) {
++		if (val & MCI_CTL2_CMCI_EN) {
+ 			if (test_and_clear_bit(i, owned) && !boot)
+ 				print_update("SHD", &hdr, i);
+ 			__clear_bit(i, __get_cpu_var(mce_poll_banks));
+ 			continue;
+ 		}
+ 
+-		val |= CMCI_EN | CMCI_THRESHOLD;
++		val |= MCI_CTL2_CMCI_EN | CMCI_THRESHOLD;
+ 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
+ 		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
+ 
+ 		/* Did the enable bit stick? -- the bank supports CMCI */
+-		if (val & CMCI_EN) {
++		if (val & MCI_CTL2_CMCI_EN) {
+ 			if (!test_and_set_bit(i, owned) && !boot)
+ 				print_update("CMCI", &hdr, i);
+ 			__clear_bit(i, __get_cpu_var(mce_poll_banks));
+@@ -155,7 +155,7 @@ void cmci_clear(void)
+ 			continue;
+ 		/* Disable CMCI */
+ 		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
+-		val &= ~(CMCI_EN|CMCI_THRESHOLD_MASK);
++		val &= ~(MCI_CTL2_CMCI_EN|MCI_CTL2_CMCI_THRESHOLD_MASK);
+ 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
+ 		__clear_bit(i, __get_cpu_var(mce_banks_owned));
+ 	}
