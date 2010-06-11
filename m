@@ -1,76 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753617Ab0FKFFf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 01:05:35 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:34326 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab0FKFFe (ORCPT
+	id S1753206Ab0FKFGv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 01:06:51 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21427 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab0FKFGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 01:05:34 -0400
-Date: Fri, 11 Jun 2010 13:59:41 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC][PATCH] memcg remove css_get/put per pages v2
-Message-Id: <20100611135941.b4df2e82.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100611135202.c0bc30c3.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100608121901.3cab9bdf.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100609155940.dd121130.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100611133744.e5f14e3d.nishimura@mxp.nes.nec.co.jp>
-	<20100611135202.c0bc30c3.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Jun 2010 01:06:50 -0400
+Message-ID: <4C11C41C.9070000@oracle.com>
+Date: Fri, 11 Jun 2010 13:05:32 +0800
+From: Tao Ma <tao.ma@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Eric Sandeen <sandeen@redhat.com>
+CC: linux-ext4@vger.kernel.org, Theodore Tso <tytso@mit.edu>,
+       linux-kernel@vger.kernel.org
+Subject: Re: fiemap is broken for sparse file in ext4?
+References: <4C119C2E.2090801@oracle.com> <4C11B6D8.8070909@redhat.com>
+In-Reply-To: <4C11B6D8.8070909@redhat.com>
+Content-Type: multipart/mixed;
+ boundary="------------040202060109010804080907"
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090209.4C11C45D.00C7:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010 13:52:02 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Fri, 11 Jun 2010 13:37:44 +0900
-> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> 
-> > > @@ -2432,15 +2463,18 @@ mem_cgroup_uncharge_swapcache(struct pag
-> > >  	if (!swapout) /* this was a swap cache but the swap is unused ! */
-> > >  		ctype = MEM_CGROUP_CHARGE_TYPE_DROP;
-> > >  
-> > > -	memcg = __mem_cgroup_uncharge_common(page, ctype);
-> > > +	memcg = try_get_mem_cgroup_from_page(page);
-> > > +	if (!memcg)
-> > > +		return;
-> > > +
-> > > +	__mem_cgroup_uncharge_common(page, ctype);
-> > >  
-> > >  	/* record memcg information */
-> > > -	if (do_swap_account && swapout && memcg) {
-> > > +	if (do_swap_account && swapout) {
-> > >  		swap_cgroup_record(ent, css_id(&memcg->css));
-> > >  		mem_cgroup_get(memcg);
-> > >  	}
-> > > -	if (swapout && memcg)
-> > > -		css_put(&memcg->css);
-> > > +	css_put(&memcg->css);
-> > >  }
-> > >  #endif
-> > >  
-> > hmm, this change seems to cause a problem.
-> > I can see under flow of mem->memsw and "swap" field in memory.stat. 
-> > 
-> > I think doing swap_cgroup_record() against mem_cgroup which is not returned
-> > by __mem_cgroup_uncharge_common() is a bad behavior.
-> > 
-> > How about doing like this ? We can safely access mem_cgroup while it has
-> > memory.usage, iow, before we call res_counter_uncharge().
-> > After this change, it seems to work well.
-> > 
-> 
-> Thank you!. seems to work. I'll merge your change.
-> Can I add your Signed-off-by ?
-> 
-Sure.
+This is a multi-part message in MIME format.
+--------------040202060109010804080907
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Hi Eric,
+	Thanks for the quick response.
+
+On 06/11/2010 12:08 PM, Eric Sandeen wrote:
+> Tao Ma wrote:
+>> Hi Ted and other ext4 gurus,
+>>      I found fiemap may be broken for sparse files in ext4. Here is a
+>> simple example.
+>>
+>> dd if=/dev/zero of=testfile1 bs=1M count=1
+>> using fiemap shows that it has a delalloc extent.
+>> Logical: 0 Ext length: 1048576    Physical: 0    flags: 7
+>>
+>> flags 7 means FIEMAP_EXTENT_LAST, FIEMAP_EXTENT_UNKNOWN and
+>> FIEMAP_EXTENT_DELALLOC,
+>>
+>> while if we create a sparse file, fiemap will not show the delalloc extent.
+>> dd if=/dev/zero of=testfile1 bs=1M count=1 seek=1
+>> using fiemap shows that it has no extent for the file. while we should
+>> have some output like:
+>> Logical: 1048576 Ext length: 1048576    Physical: 0    flags: 7
+>>
+>> So we have different output with sparse and non-sparse file. Is it a bug
+>> for ext4?
+>
+> What are you using to call fiemap?  Here it seems to be working:
+I just wrote a simple test program by calling ioctl. It is attached. 
+btw, you need to call it immediately after dd so that we have a chance 
+that ext4 don't have time to allocate extents. ;)
+>
+> # dd if=/dev/zero of=testfile1 bs=1M count=1 seek=1;
+>
+> # filefrag -v testfile1
+> Filesystem type is: ef53
+> Filesystem cylinder groups is approximately 119
+> File size of testfile1 is 2097152 (512 blocks, blocksize 4096)
+>   ext logical physical expected length flags
+>     0     256   151946               1 merged
+>     1     257   151951   151946      2 merged
+>     2     259   152434   151952    253 merged,eof
+> testfile1: 4 extents found
+I guess maybe filefrag use the diffrent ioctl flag, maybe 
+FIEMAP_FLAG_SYNC to let ext4 sync first.
+
+Regards,
+Tao
+
+--------------040202060109010804080907
+Content-Type: text/x-csrc;
+ name="fiemap.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="fiemap.c"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <string.h>
+
+#include "fiemap.h"
+
+#define FS_IOC_FIEMAP	_IOWR('f', 11, struct fiemap)
+
+static unsigned int num_extents	= 1024;
+static unsigned int estimate_extents = 1;
+
+static unsigned long long map_start = 0ULL;
+static unsigned long long map_len = FIEMAP_MAX_OFFSET;
+static char *fname;
+static unsigned int blocksize = 4096;
+
+static void usage(void)
+{
+	printf("Usage: fiemap filename\n");
+	exit(1);
+}
+
+static void print_extent(struct fiemap_extent *extent)
+{
+	__u64 val;
+
+	printf("Logical: ###[%8"PRIu64"]\t", extent->fe_logical);
+	printf("Ext length: ###[%8"PRIu64"]\t", extent->fe_length);
+	printf("Physical: ###[%8"PRIu64"]\t", extent->fe_physical);
+	printf("flags: %u\t", extent->fe_flags);
+
+	if (extent->fe_flags & FIEMAP_EXTENT_SHARED)
+		printf("Yeah, found an shared extent\n");
+	if (extent->fe_flags & FIEMAP_EXTENT_UNWRITTEN)
+		printf("Yeah, you are hole?\n");
+
+	printf("\n");
+}
+
+static void show_results(struct fiemap *fiemap)
+{
+	int i;
+
+	printf("Extents returned: %u\n", fiemap->fm_mapped_extents);
+	if (fiemap->fm_extent_count == 0 || fiemap->fm_mapped_extents == 0)
+		return;
+
+	for (i = 0; i < fiemap->fm_mapped_extents; i++)
+		print_extent(&fiemap->fm_extents[i]);
+
+}
+
+static int
+figure_extents(int fd, unsigned int *num)
+{
+	int ret;
+	struct fiemap fiemap = { 0, };
+
+	fiemap.fm_start = map_start;
+	fiemap.fm_length = map_len;
+	fiemap.fm_flags = 0;
+
+	ret = ioctl(fd, FS_IOC_FIEMAP, &fiemap);
+	if (ret == -1) {
+		fprintf(stderr, "fiemap get count error %d: \"%s\"\n", errno,
+			strerror(errno));
+		return -1;
+	}
+
+	*num = fiemap.fm_mapped_extents;
+
+	return 0;
+}
+
+int
+main(int argc, char **argv)
+{
+	int ret, fd;
+	struct fiemap *fiemap;
+
+	fd = open(argv[1], O_RDONLY);
+	if (fd == -1) {
+		fprintf(stderr, "open error %d: \"%s\"\n", errno,
+			strerror(errno));
+		return -1;
+	}
+
+	if (figure_extents(fd, &num_extents))
+		return -1;
+
+	printf("Extents in file \"%s\":    %u\n", argv[1], num_extents);
+
+	fiemap = malloc(sizeof(fiemap) +
+			num_extents * sizeof(struct fiemap_extent));
+	if (fiemap == NULL) {
+		fprintf(stderr, "malloc error %d: \"%s\"\n", errno,
+			strerror(errno));
+		return -1;
+	}
+
+	fiemap->fm_start = map_start;
+	fiemap->fm_length = map_len;
+	fiemap->fm_extent_count = num_extents;
+
+	ret = ioctl(fd, FS_IOC_FIEMAP, fiemap);
+	if (ret == -1) {
+		if (errno == EBADR) {
+			fprintf(stderr, "Kernel does not support the flags: 0x%x\n",
+				fiemap->fm_flags);
+			return -1;
+		}
+		fprintf(stderr, "fiemap error %d: \"%s\"\n", errno,
+			strerror(errno));
+		return -1;
+	}
+
+	show_results(fiemap);
+
+	close(fd);
+
+	return 0;
+}
+
+--------------040202060109010804080907--
