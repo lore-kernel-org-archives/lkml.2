@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760199Ab0FKMU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 08:20:59 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40325 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760114Ab0FKMU4 (ORCPT
+	id S1760204Ab0FKMWB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 08:22:01 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62335 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963Ab0FKMV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 08:20:56 -0400
+	Fri, 11 Jun 2010 08:21:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:mime-version
          :content-type:content-transfer-encoding;
-        b=gb1R+WbRnMHbRXbDxZLLUYRR7doVIKtPxj206hq5/VyZCqCE6a9Fen3pz0yBftBRLA
-         ReXdV9OMtveltAlnJnS9krrvTq+VZfSUZSAXvQ6iQXweUSO+gV5S/2rE5iCZ7puWwlDz
-         sb8h+NIxKCHWlG3DeoxHWwtw/HhRUyGFmIM9g=
+        b=cLf3RVbCQ07e1hB5UUDHGV/KZTTSMv2lCR8L2svNye8sSEQmwuNBGbngOems4rQNdP
+         gPGbebUsuOa+cbNGuKmHZReC4eeENmyOHR6iBTstUuxGmpkHw3gW6KGv3qt7vVRb2WSf
+         IEDcizqwTB/TQ06i2Wlu5oD0rNljo1ksS5ykc=
 From: =?UTF-8?q?Henri=20H=C3=A4kkinen?= <henuxd@gmail.com>
-To: gregkh@suse.de, peterhuewe@gmx.de, jualia@diku.dk, w@1wt.eu,
+To: gregkh@suse.de, peterhuewe@gmx.de, julia@diku.dk, w@1wt.eu,
        sudhakar.raj@ti.com, henuxd@gmail.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
 Subject: [PATCH] staging:panel: Fixed coding conventions.
-Date: Fri, 11 Jun 2010 15:20:47 +0300
-Message-Id: <1276258847-20806-1-git-send-email-henuxd@gmail.com>
+Date: Fri, 11 Jun 2010 15:21:49 +0300
+Message-Id: <1276258909-20838-1-git-send-email-henuxd@gmail.com>
 X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
