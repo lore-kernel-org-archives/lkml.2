@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab0FKFw7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 01:52:59 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49045 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab0FKFw5 convert rfc822-to-8bit (ORCPT
+	id S1754064Ab0FKF6t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 01:58:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55300 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751819Ab0FKF6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 01:52:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=bR053iLg3yr2KCxWACaK/8B1bSKGFP3su9cic0emy5mCyoI50KGvfac58IEnRNiYYk
-         rqz8/nVTiX0RDXjoQrhsHMj/xqJVe1aEzUxMj+hCSuyR4JuddVLNmpx/1UBv7RmGwHXI
-         UDwz5MoFS+NocOGz40j+j4vxgynVO43l6RMUQ=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinpth-JO7pIOWXbnuUWXM3xQ1OnFKkfESwi0cP3@mail.gmail.com>
-References: <1275647794-30634-1-git-send-email-kgene.kim@samsung.com>
-	<1275647794-30634-2-git-send-email-kgene.kim@samsung.com>
-	<AANLkTinpth-JO7pIOWXbnuUWXM3xQ1OnFKkfESwi0cP3@mail.gmail.com>
-Date: Fri, 11 Jun 2010 14:52:56 +0900
-X-Google-Sender-Auth: JYig9RCX7cIUhzcB2-XPQlCLgxU
-Message-ID: <AANLkTikygrbXPkszVvBpH217mOaY8UzJE8zcOGVTGRZo@mail.gmail.com>
-Subject: Re: [PATCH 2/2] MAINTAINERS: add maintainer for SAMSUNG ARM 
-	ARCHITECTURES
-From: Kyungmin Park <kmpark@infradead.org>
-To: ben-linux@fluff.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 11 Jun 2010 01:58:48 -0400
+Date: Thu, 10 Jun 2010 22:57:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
+ and use a_ops->writepages() where possible
+Message-Id: <20100610225749.c8cc3bc3.akpm@linux-foundation.org>
+In-Reply-To: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
+On Tue,  8 Jun 2010 10:02:19 +0100 Mel Gorman <mel@csn.ul.ie> wrote:
 
-On Sat, Jun 5, 2010 at 11:24 AM, Kyungmin Park <kmpark@infradead.org> wrote:
-> Hi Ben,
->
-> I'm waiting your comments.
->
-> Thank you,
-> Kyungmin Park
->
-> On Fri, Jun 4, 2010 at 7:36 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
->> Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
->> ---
->>  MAINTAINERS |    2 ++
->>  1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index 1d41149..f4e4c61 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -896,11 +896,13 @@ S:        Maintained
->>
->>  ARM/SAMSUNG ARM ARCHITECTURES
->>  M:     Ben Dooks <ben-linux@fluff.org>
->> +M:     Kukjin Kim <kgene.kim@samsung.com>
->>  L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->>  W:     http://www.fluff.org/ben/linux/
->>  S:     Maintained
->>  F:     arch/arm/plat-samsung/
->>  F:     arch/arm/plat-s3c24xx/
->> +F:     arch/arm/plat-s5p/
->>
->>  ARM/S3C2410 ARM ARCHITECTURE
->>  M:     Ben Dooks <ben-linux@fluff.org>
->> --
->> 1.6.2.5
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>
->
+> To summarise, there are two big problems with page reclaim right now. The
+> first is that page reclaim uses a_op->writepage to write a back back
+> under the page lock which is inefficient from an IO perspective due to
+> seeky patterns.
+
+No it isn't.  If we have a pile of file-contiguous, disk-contiguous
+dirty pages on the tail of the LRU then the single writepage()s will
+work just fine due to request merging.
+
+
+
+Look.  This is getting very frustrating.  I keep saying the same thing
+and keep getting ignored.  Once more:
+
+	WE BROKE IT!
+
+	PLEASE STOP WRITING CODE!
+
+	FIND OUT HOW WE BROKE IT!
+
+Loud enough yet?
+
+It used to be the case that only very small amounts of IO occurred in
+page reclaim - the vast majority of writeback happened within
+write()->balance_dirty_pages().  Then (and I think it was around 2.6.12)
+we broke it, and page reclaim started doing lots of writeout.
+
+So the thing to do is to either find out how we broke it and see if it
+can be repaired, or change the VM so that it doesn't do so much
+LRU-based writeout.  Rather than fiddling around trying to make the
+we-broke-it code run its brokenness faster.
