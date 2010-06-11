@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759152Ab0FKUdw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 16:33:52 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:3149 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754111Ab0FKUdv (ORCPT
+	id S1760476Ab0FKUd4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 16:33:56 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:46042 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760432Ab0FKUdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 16:33:51 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+	Fri, 11 Jun 2010 16:33:54 -0400
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAKE6EkyrR7Hu/2dsb2JhbACefHGlJ5lqhRgEg0w
+X-IronPort-Anti-Spam-Result: AvsEAA47EkyrR7Ht/2dsb2JhbACefHGlKZlqhRgEg0wh
 X-IronPort-AV: E=Sophos;i="4.53,404,1272844800"; 
-   d="scan'208";a="543431666"
-Date: Fri, 11 Jun 2010 13:33:50 -0700
+   d="scan'208";a="143334460"
+Date: Fri, 11 Jun 2010 13:33:53 -0700
 From: David VomLehn <dvomlehn@cisco.com>
 To: to@dvomlehn-lnx2.corp.sa.net, "linux-kernel@vger.kernel.org"@cisco.com,
        linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4][RFC] Introduction to sk_buff state checking
-Message-ID: <20100611203350.GA28383@dvomlehn-lnx2.corp.sa.net>
+Subject: [PATCH 2/4 v2][RFC] Infrastructure for out-of-band parameter
+	passing
+Message-ID: <20100611203353.GA28412@dvomlehn-lnx2.corp.sa.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,54 +28,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add state checking for sk_buffs
+Infrastructure to support out of band/indirect passing of data to functions.
 
-Several common errors in sk_buff usage can be caught by maintaining and
-checking the sk_buff state. States are: free, allocated, and queued. Simply
-reporting an error is not sufficient; it may be the previous state change
-that was erroneous. Thus, the ability to record the location of the previous
-state change is essential.
+It is useful at times to be able to pass data from one function to another
+nested many stack frames more deeply than the passing function. Doing so
+allows the interfaces in the intervening functions to be simpler, though
+this "hidden" information passing risks increased complexity. In cases
+where this is justified, this simple infrastructure provides the
+functionality.
 
-This patch was previously submitted and David Miller objected to to the
-overhead of recording the previous state change. Specifically, he wrote:
+Out of band data passing is implemented by adding, for each instance,
+an element to the task_struct that serves as the pointer to the top
+of a OOB parameter stack. Data is made available by being pushed
+on the OOB parameter stack by a function, and accessed via the top
+element of the OOB parameter stack.
 
-	The specifics are that if you showed me something that
-	added a "u16", at most, I'd go to bat for you and support
-	your work going upstream.
+History
+v2	Tweak comments to fix documentation errors
+v1	Original version
 
-With only three states, only two bits are required to record the current
-state but recording the location of the call that changed the state in
-no more than 14 bits posed an interesting challenge. This patchset contains
-the infrastructure required to map between a small value, the "callsite ID",
-and the location of the call. 
+Signed-off-by: David VomLehn (dvomlehn@cisco.com)
+---
+ include/linux/oobparam.h |   94 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 94 insertions(+), 0 deletions(-)
 
-There are four patches in this patchset:
-1.	This introduction
-2.	A patch allowing the site of a call to be passed over multiple calls
-	without modifying the intervening functions.
-3.	A patch providing infrastructure that allows the location of a call,
-	the "callsite ID" to be encoded in a small integer.
-4.	Modifications to the sk_buff functions to add the two-bit state
-	and a 14-bit callsite ID, check the state, and report failures.
-	
-Restrictions
-o	Call site IDs are never reused, so it is possible to exceed the
-	maximum number of IDs by having a large number of call locations.
-	In addition, it does not recognize that the same module has been
-	unloaded and reloaded, so calls from the reloaded module will be
-	assigned new IDs. Detection of incorrect operations on an sk_buff
-	is not affected by exhaustion of call site IDs, but it may not be
-	possible to determine the location of the last operation.
-	CONFIG_DEBUG_SKB_ID_SIZE is set to reduce the sk_buff growth to 16
-	bits and should handle most cases. It could be made larger to allow
-	more call site IDs, if necessary.
-o	The callsite structures for a module will be freed when that module
-	is unloaded, even though sk_buffs may be using IDs corresponding to
-	those call sites. To allow useful error reporting, the call site
-	information in a module being unloaded is copied. If a module is
-	unloaded and CONFIG_CALLSITE_TERSE is enabled, the address of
-	the call site is not longer valid, so only the function name and
-	offset are printed. If CONFIG_CALLSITE_TERSE is enabled and the
-	is loaded, the address is also reported.
-
-Signed-off-by: David VomLehn <dvomlehn@cisco.com>
+diff --git a/include/linux/oobparam.h b/include/linux/oobparam.h
+new file mode 100644
+index 0000000..36daa97
+--- /dev/null
++++ b/include/linux/oobparam.h
+@@ -0,0 +1,94 @@
++/*
++ * Definitions used to pass information across multiple stack frames
++ * within a single task.
++ *
++ * Copyright (C) 2010  Cisco Systems, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ *
++ * Author: David VomLehn
++ *
++ * These definitions allow one function to establish a context for another
++ * function without adding parameters to the intervening functions. It can,
++ * for example, supply state information from one function to be used in the
++ * case that some function nested several levels more deeply wants to report
++ * the context from the original function. Since it works in a way invisible
++ * to the intervening functions, passing information this way is less
++ * obvious than simply supplying parameters and it should be used sparingly.
++ *
++ * To use this:
++ * 1.	Define a structure containing a struct oobparam:
++ *		struct ctx {
++ *			const char *name;
++ *			OOBPARAM_FRAME(frame);
++ *			...
++ *		};
++ * 2.	Create an element in the task_struct to serve as the top of the
++ *	oobparam stack:
++ *		OOBPARAM_TOP(my_top);
++ * 3.	Populate the structure in the function that has context to be passed.
++ *		struct ctx ctx;
++ *		ctx.name = __func__;
++ * 4.	Surround the call to the next function with oobparam_push() and
++ *	oobparam_pop():
++ *		oobparam_push(&ctx.frame);
++ *		myfunc();
++ *		oobparam_pop(&ctx.frame);
++ * 5.	In function that wants to use the parameter value, use OOBPARAM_CUR
++ *	to retrieve the value:
++ *		struct ctx *ctx;
++ *		ctx = OOBPARAM_CUR(&my_top, struct ctx, frame);
++ *		pr_info("Indirectly called by %s\n", ctx->name);
++ */
++
++#ifndef	_LINUX_OOBPARAM_H_
++#define _LINUX_OOBPARAM_H_
++
++struct oobparam {
++	struct oobparam *next;
++};
++
++#define OOBPARAM_TOP(name)	struct oobparam name;
++#define OOBPARAM_FRAME(name)	struct oobparam name;
++
++/**
++ * oobparam_push - push an out-of-band parameter frame on the OOB param stack
++ * @top:	Pointer to the OOB parameter stack top, which must be in the
++ *		task structure.
++ * @frame:	Pointer to the OOB parameter frame, generally embedded in
++ *		another structure
++ */
++static inline void oobparam_push(struct oobparam *top, struct oobparam *frame)
++{
++	frame->next = top;
++	/* We need to ensure that the pointer in the frame is set prior to
++	 * the pointer to the top in case we handle an interrupt in between
++	 * the two stores. */
++	wmb();
++	top->next = frame;
++}
++
++/**
++ * oobparam_pop - pop an out-of-band parameter frame from the OOB param stack
++ * @top:	Pointer to the OOB parameter stack top, as passed to
++ *		oobparam_push()
++ */
++static inline void oobparam_pop(struct oobparam *top)
++{
++	top->next = top->next->next;
++}
++
++#define OOBPARAM_CUR(top, type, frame) container_of((top)->next, type, frame)
++#endif
