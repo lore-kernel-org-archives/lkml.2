@@ -1,82 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758804Ab0FKPxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 11:53:52 -0400
-Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:39033 "EHLO
-	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758537Ab0FKPxv (ORCPT
+	id S1754656Ab0FKQCt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 12:02:49 -0400
+Received: from sj-iport-1.cisco.com ([171.71.176.70]:53023 "EHLO
+	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754580Ab0FKQCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 11:53:51 -0400
-Message-ID: <4C125C0D.4080600@sandeen.net>
-Date: Fri, 11 Jun 2010 10:53:49 -0500
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	Fri, 11 Jun 2010 12:02:47 -0400
+Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEANb6EUyrR7H+/2dsb2JhbACee3GlVpoDhRgEg0w
+X-IronPort-AV: E=Sophos;i="4.53,404,1272844800"; 
+   d="scan'208";a="334229602"
+From: Roland Dreier <rdreier@cisco.com>
+To: Alexander Schmidt <alexs@linux.vnet.ibm.com>
+Cc: Linux RDMA <linux-rdma@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Stefan Roscher <stefan.roscher@de.ibm.com>,
+       Joachim Fenkes <fenkes@de.ibm.com>,
+       Christoph Raisch <raisch@de.ibm.com>,
+       Hoang-Nam Nguyen <HNGUYEN@linux.vnet.ibm.com>
+Subject: Re: [PATCH] ib/ehca: bitmask handling for lock_hcalls
+References: <20100610110653.17885a81@alex-laptop>
+X-Message-Flag: Warning: May contain useful information
+Date: Fri, 11 Jun 2010 09:02:43 -0700
+In-Reply-To: <20100610110653.17885a81@alex-laptop> (Alexander Schmidt's
+	message of "Thu, 10 Jun 2010 11:06:53 +0200")
+Message-ID: <adatyp9y2u4.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Tao Ma <tao.ma@oracle.com>
-CC: xfs@oss.sgi.com, Christoph Hellwig <hch@lst.de>,
-       linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>
-Subject: Re: [PATCH] xfs: Make fiemap works with sparse file.
-References: <1276236135-12051-1-git-send-email-tao.ma@oracle.com>
-In-Reply-To: <1276236135-12051-1-git-send-email-tao.ma@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tao Ma wrote:
-> In xfs_vn_fiemap, we set bvm_count to fi_extent_max + 1 and want
-> to return fi_extent_max extents, but actually it won't work for
-> a sparse file. The reason is that in xfs_getbmap we will
-> calculate holes and set it in 'out', while out is malloced by
-> bmv_count(fi_extent_max+1) which didn't consider holes. So in the
-> worst case, if 'out' vector looks like
-> [hole, extent, hole, extent, hole, ... hole, extent, hole],
-> we will only return half of fi_extent_max extents.
-> 
-> So in xfs_vn_fiemap, we should consider this worst case. If the
-> user wants fi_extent_max extents, we need a 'out' with size of
-> 2 *fi_extent_max + 1.
-
-This all seems right to me, though your commit message above (+1)
-doesn't match the comment and code in the patch (+2)
-
--Eric
-
-> Cc: Alex Elder <aelder@sgi.com>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Dave Chinner <david@fromorbit.com>
-> Signed-off-by: Tao Ma <tao.ma@oracle.com>
-> ---
->  fs/xfs/linux-2.6/xfs_iops.c |   16 ++++++++++++++--
->  1 files changed, 14 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
-> index 9c8019c..1db92e3 100644
-> --- a/fs/xfs/linux-2.6/xfs_iops.c
-> +++ b/fs/xfs/linux-2.6/xfs_iops.c
-> @@ -672,9 +672,21 @@ xfs_vn_fiemap(
->  	else
->  		bm.bmv_length = BTOBB(length);
->  
-> -	/* We add one because in getbmap world count includes the header */
-> +	/*
-> +	 * It is a bit tricky for us to calculate the bmv_count from
-> +	 * fi_extent_max.
-> +	 * If we support to return fi_extent_max extents to the user,
-> +	 * we need at most 2 * fi_extent_max + 1 for bmv_count since
-> +	 * in xfs_getbmap we will calculate holes while fi_extent_max
-> +	 * don't have them. So in the worst case, bmv can looks like
-> +	 * [hole, extent, hole, extent, hole, ... hole, extent, hole].
-> +	 * So there will be 2 *fi_extent_max + 1.
-> +	 * What's more, in getbmap world count have to include the
-> +	 * header, so we need another bmv. So the total number will
-> +	 * be 2 * fieinfo->fi_extents_max + 2.
-> +	 */
->  	bm.bmv_count = !fieinfo->fi_extents_max ? MAXEXTNUM :
-> -					fieinfo->fi_extents_max + 1;
-> +			2 * fieinfo->fi_extents_max + 2;
->  	bm.bmv_count = min_t(__s32, bm.bmv_count,
->  			     (PAGE_SIZE * 16 / sizeof(struct getbmapx)));
->  	bm.bmv_iflags = BMV_IF_PREALLOC;
-
+What is the impact of this problem?  ie is this something we need to fix
+for 2.6.35?  I suppose not, since the current code has been there a long time.
+-- 
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
