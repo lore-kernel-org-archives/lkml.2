@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760460Ab0FKVfA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 17:35:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40684 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752021Ab0FKVe6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 17:34:58 -0400
-Date: Fri, 11 Jun 2010 14:33:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 5/6] vmscan: Write out ranges of pages contiguous to the
- inode where possible
-Message-Id: <20100611143337.53a06329.akpm@linux-foundation.org>
-In-Reply-To: <20100611204411.GD9946@csn.ul.ie>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
-	<1275987745-21708-6-git-send-email-mel@csn.ul.ie>
-	<20100610231045.7fcd6f9d.akpm@linux-foundation.org>
-	<20100611124936.GB8798@csn.ul.ie>
-	<20100611120730.26a29366.akpm@linux-foundation.org>
-	<20100611204411.GD9946@csn.ul.ie>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760614Ab0FKVgH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 17:36:07 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44254 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754338Ab0FKVgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 17:36:05 -0400
+Date: Fri, 11 Jun 2010 14:36:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: sequence lock in Linux
+Message-ID: <20100611213602.GI2394@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100611194016.GA5213@Krystal>
+ <AANLkTil84IIgzlPcycNWJFRpZIGRqTFL6FGffzqOaSEx@mail.gmail.com>
+ <20100611203607.GH2394@linux.vnet.ibm.com>
+ <4C12A539.1000709@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C12A539.1000709@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010 21:44:11 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
-
-> > Well.  The main problem is that we're doing too much IO off the LRU of
-> > course.
+On Fri, Jun 11, 2010 at 02:06:01PM -0700, H. Peter Anvin wrote:
+> On 06/11/2010 01:36 PM, Paul E. McKenney wrote:
 > > 
+> > The reason that the C standard permits this is to allow for things like
+> > 8-bit CPUs, which are simply unable to load or store 32-bit quantities
+> > except by doing it chunkwise.  But I don't expect the Linux kernel to
+> > boot on these, and certainly not on any of the ones that I have used!
+> > 
+> > I most definitely remember seeing a gcc guarantee that loads and stores
+> > would be done in one instruction whenever the hardware supported this,
+> > but I am not finding it today.  :-(
 > 
-> What would be considered "too much IO"?
+> What gcc does not -- and should not -- guarantee is that accessing a
+> non-volatile member is done exactly once.  As Mathieu pointed out, it
+> can choose to drop it due to register pressure and load it again.
+> 
+> What is possibly a much bigger risk -- since this is an inline -- is
+> that the value is cached from a previous piece of code, *or* that since
+> the structure is const(!) that the second read in the repeat loop is
+> elided.  Presumably current versions of gcc don't do that across a
+> memory clobber, but that doesn't seem entirely out of the question.
 
-Enough to slow things down ;)
+Memory barriers in the sequence-lock code prevent this, assuming, as
+you point out, that memory clobber works (but if it doesn't, it should
+be fixed):
 
-This problem used to hurt a lot.  Since those times we've decreased the
-default value of /proc/sys/vm/dirty*ratio by a lot, which surely
-papered over this problem a lot.  We shouldn't forget that those ratios
-_are_ tunable, after all.  If we make a change which explodes the
-kernel when someone's tuned to 40% then that's a problem and we'll need
-to scratch our heads over the magnitude of that problem.
+o	write_seqlock() and write_tryseqlock() each have an smp_wmb()
+	following the increment.  Ditto for write_seqcount_begin().
 
-As for a workload which triggers the problem on a large machine which
-is tuned to 20%/10%: dunno.  If we're reliably activating pages when
-dirtying them then perhaps it's no longer a problem with the default
-tuning.  I'd do some testing with mem=256M though - that has a habit of
-triggering weirdnesses.
+o	write_sequnlock() has an smp_wmb() preceding the increment,
+	and ditto for write_seqcount_end().  There are thus two smp_wmb()
+	calls between the increments in the usual code sequence:
 
-btw, I'm trying to work out if zap_pte_range() really needs to run
-set_page_dirty().  Didn't (pte_dirty() && !PageDirty()) pages get
-themselves stamped out?
+		write_seqlock(&l);
+		do_something();
+		write_sequnlock();
 
+o	read_seqbegin() has an smp_rmb() following its read from
+	->sequence.  Ditto for read_seqcount_begin().
 
+o	read_seqretry() has an smp_rmb() preceding its read from
+	->sequence, and ditto for read_seqcount_retry().  There are thus
+	two smp_wmb() calls between the reads in the usual code sequence:
+
+		do {
+			s = read_seqbegin(&l);
+			read_something();
+		} while read_seqretry(&l, s);
+
+So sequence locks should be pretty safe, at least as far as this
+vulnerability is concerned. ;-)
+
+							Thanx, Paul
