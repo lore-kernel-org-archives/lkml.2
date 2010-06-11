@@ -1,41 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757635Ab0FKKuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 06:50:52 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:34838 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab0FKKuv (ORCPT
+	id S1759718Ab0FKKu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 06:50:59 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:37110 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757732Ab0FKKuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 06:50:51 -0400
-Message-ID: <4C1214F8.80005@atmel.com>
-Date: Fri, 11 Jun 2010 12:50:32 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
+	Fri, 11 Jun 2010 06:50:54 -0400
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: Lothar =?iso-8859-1?q?Wa=DFmann?= <LW@karo-electronics.de>
+Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
+Date: Fri, 11 Jun 2010 18:50:30 +0800
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
+Cc: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>,
+       linux-arm-kernel@lists.infradead.org,
+       Ben Herrenchmidt <benh@kernel.crashing.org>,
+       linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
+References: <1275636608.606606.450179637764.0.gpush@pororo> <20100611095839.GC10894@pengutronix.de> <19474.2817.333749.485028@ipc1.ka-ro>
+In-Reply-To: <19474.2817.333749.485028@ipc1.ka-ro>
 MIME-Version: 1.0
-To: avictor.za@gmail.com, linux-arm-kernel@lists.infradead.org
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] AT91: add new at91 chips in at91sam9g45 family
-References: <1273509900-30278-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1273509900-30278-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006111850.32528.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 10/05/2010 18:45, Nicolas Ferre :
-> This is the basic support for at91sam9g46, at91sam9m10 and at91sam9m11. Those
-> are just very basic cpu macros and clock definition.
-> 
-> Signed-off-by: Patrice Vilchez <patrice.vilchez@atmel.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Hi Lothar,
 
-Acked-by Andrew Victor added.
-Submitted as patch 6169/1
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6169/1
+> You may want to disable a clock in the IRQ handler. The VPU driver in
+> the Freescale BSP for i.MX51 does exactly this.
 
-Best regards,
--- 
-Nicolas Ferre
+Is this something we can defer to a sleepable context?
 
+> Anyway I don't see any reason for using a mutex here instead of
+> spin_lock_irq_save() as all other implementations do.
+
+Just that enable/disable may take an arbitrarily long time to complete. Sounds 
+like that hasn't been a problem in the past though.
+
+Cheers,
+
+
+Jeremy
