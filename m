@@ -1,38 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760255Ab0FKMhJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 08:37:09 -0400
-Received: from mail.tnnet.fi ([217.112.240.26]:45983 "EHLO mail.tnnet.fi"
+	id S1760222Ab0FKMo7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 08:44:59 -0400
+Received: from 1wt.eu ([62.212.114.60]:33130 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760228Ab0FKMhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 08:37:06 -0400
-Message-ID: <4C122DEF.7C81ED1C@users.sourceforge.net>
-Date: Fri, 11 Jun 2010 15:37:03 +0300
-From: Jari Ruusu <jariruusu@users.sourceforge.net>
-To: linux-crypto@nl.linux.org
-CC: linux-kernel@vger.kernel.org
-Subject: Announce loop-AES-v3.4a file/swap crypto package
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754789Ab0FKMo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 08:44:57 -0400
+Date: Fri, 11 Jun 2010 14:44:42 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Henri =?iso-8859-1?Q?H=E4kkinen?= <henuxd@gmail.com>
+Cc: gregkh@suse.de, peterhuewe@gmx.de, julia@diku.dk, sudhakar.raj@ti.com,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging:panel: Fixed coding conventions.
+Message-ID: <20100611124442.GF8636@1wt.eu>
+References: <1276258909-20838-1-git-send-email-henuxd@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1276258909-20838-1-git-send-email-henuxd@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-loop-AES changes since previous release:
-- Added faster (single thread) parallelized version Intel AES CBC encrypt,
-  both 32 bit and 64 bit versions.
-- glue.c transfer functions re-write, better optimizations.
-- Added faster (single thread) parallelized version of MD5 for 64 bit amd64.
-- Requests sent to backing device have BIO_RW_NOIDLE bit set if loop driver
-  believes that there won't be more requests anytime soon.
+On Fri, Jun 11, 2010 at 03:21:49PM +0300, Henri Häkkinen wrote:
+> Fixed many coding convention issues as reported by checkpatch.pl tool.
+> Many of the cleanups were hacky due to deeply nasted control structures.
 
+NAK. With such a "cleanup", it becomes even harder to read, understand
+and debug. Enforcing the 80-chars limit on an existing code generally
+involves restructuring it differently. This might be appropriate, but
+pushing all the right chars on the 80th column just for the sake of not 
+crossing the bound is the worst that can be done.
 
-bzip2 compressed tarball is here:
+Also, single-line comments such as below area really boring to read
+when converted to multi-line :
 
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.4a.tar.bz2
-    md5sum fb85d97ea55a54e54c3b4104fe13ad64
+>  #define KEYPAD_BUFFER	64
+>  #define INPUT_POLL_TIME	(HZ/50)	/* poll the keyboard this every second */
+>  #define KEYPAD_REP_START	(10)	/* a key starts to repeat after this times INPUT_POLL_TIME */
+>  #define KEYPAD_REP_DELAY	(2)	/* a key repeats this times INPUT_POLL_TIME */
 
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.4a.tar.bz2.sign
+becomes :
 
--- 
-Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
+> +#define INPUT_POLL_TIME		(HZ/50)	/* poll the keyboard this every
+> +					   second */
+> +#define KEYPAD_REP_START	(10)	/* a key starts to repeat after
+> +					   this times INPUT_POLL_TIME */
+> +#define KEYPAD_REP_DELAY	(2)	/* a key repeats this times
+> +					   INPUT_POLL_TIME */
+
+Better shorten the comments or put them on their own line.
+
+Also, I particularly hate changes as below. Looks, it's counter-productive,
+you added 9 lines of code, which means you reduced a 80x25 terminal by half.
+And the tests and statements are unreadable :
+
+> @@ -1182,12 +1252,21 @@ static ssize_t lcd_write(struct file *file,
+>  						value = 0;
+>  						while (*esc && cgoffset < 8) {
+>  							shift ^= 4;
+> -							if (*esc >= '0' && *esc <= '9')
+> -								value |= (*esc - '0') << shift;
+> -							else if (*esc >= 'A' && *esc <= 'Z')
+> -								value |= (*esc - 'A' + 10) << shift;
+> -							else if (*esc >= 'a' && *esc <= 'z')
+> -								value |= (*esc - 'a' + 10) << shift;
+> +							if (*esc >= '0' &&
+> +							    *esc <= '9')
+> +								value |=
+> +								  (*esc - '0')
+> +								  << shift;
+> +							else if (*esc >= 'A' &&
+> +								 *esc <= 'Z')
+> +								value |=
+> +								  (*esc - 'A' +
+> +								   10) << shift;
+> +							else if (*esc >= 'a' &&
+> +								 *esc <= 'z')
+> +								value |=
+> +								  (*esc - 'a' +
+> +								   10) << shift;
+
+If the line length really cause you trouble, see if you can move that
+to an inline function and keep the code readable.
+
+Thanks,
+Willy
+
