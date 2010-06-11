@@ -1,110 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760467Ab0FKTiz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 15:38:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39832 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756717Ab0FKTiy (ORCPT
+	id S1760493Ab0FKTkU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 15:40:20 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:50618 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1760446Ab0FKTkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 15:38:54 -0400
-Date: Fri, 11 Jun 2010 15:37:31 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       linux-btrfs@vger.kernel.org
-Subject: [GIT PULL] Btrfs updates for 2.6.35
-Message-ID: <20100611193731.GA3018@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-btrfs@vger.kernel.org
+	Fri, 11 Jun 2010 15:40:19 -0400
+Date: Fri, 11 Jun 2010 15:40:16 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org
+Subject: sequence lock in Linux
+Message-ID: <20100611194016.GA5213@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090207.4C1290AB.0152:SCFMA4539811,ss=1,fgs=0
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 15:34:56 up 139 days, 22:12,  7 users,  load average: 0.17, 0.19,
+	0.17
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+Hi Paul,
 
-The master branch of the btrfs-unstable tree is a collection of fixes
-and cleanups, including two btrfs regressions from rc1:
+(CCing lkml)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
+Is it just me, or the following code:
 
-One is an freeing blocks on an FS converted from ext34 to btrfs,
-and the other is a fallocate fix.
+static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
+{
+        unsigned ret;
 
-The rest are the usual small bug fixes.
+repeat:
+        ret = sl->sequence;
+        smp_rmb();
+        if (unlikely(ret & 1)) {
+                cpu_relax();
+                goto repeat;
+        }
 
-Dan Carpenter (11) commits (+24/-17):
-    Btrfs: handle error returns from btrfs_lookup_dir_item() (+2/-0)
-    Btrfs: btrfs_read_fs_root_no_name() returns ERR_PTRs (+4/-0)
-    Btrfs: unwind after btrfs_start_transaction() errors (+1/-1)
-    Btrfs: remove unneeded null check in btrfs_rename() (+1/-3)
-    Btrfs: The file argument for fsync() is never null (+1/-1)
-    Btrfs: handle ERR_PTR from posix_acl_from_xattr() (+2/-0)
-    Btrfs: btrfs_lookup_dir_item() can return ERR_PTR (+1/-1)
-    Btrfs: uninitialized data is check_path_shared() (+1/-1)
-    Btrfs: handle kzalloc() failure in open_ctree() (+5/-2)
-    Btrfs: silence sparse warnings in ioctl.c (+4/-6)
-    Btrfs: btrfs_iget() returns ERR_PTR (+2/-2)
+        return ret;
+}
 
-Zheng Yan (2) commits (+6/-4):
-    Btrfs: Fix BUG_ON for fs converted from extN (+2/-1)
-    Btrfs: Fix null dereference in relocation.c (+4/-3)
+could use a ACCESS_ONCE() around the sl->sequence read ? I'm concerned about the
+compiler generating code that reads the sequence number chunkwise.
 
-Liu Bo (2) commits (+14/-4):
-    Btrfs: Add error check for add_to_page_cache_lru (+13/-3)
-    Btrfs: fix break in btrfs_insert_some_items() (+1/-1)
+The same apply to all other reads of the sequence number in seqlock.h (including
+the retry code).
 
-Julia Lawall (2) commits (+9/-17):
-    Btrfs: Use memdup_user (+6/-14)
-    Btrfs: Use ERR_CAST (+3/-3)
+Thoughts ?
 
-Shi Weihua (2) commits (+6/-0):
-    Btrfs: prohibit a operation of changing acl's mask when noacl mount option used (+3/-0)
-    Btrfs: should add a permission check for setfacl (+3/-0)
+Mathieu
 
-Miao Xie (2) commits (+9/-1):
-    Btrfs: fix loop device on top of btrfs (+1/-0)
-    Btrfs: fix remap_file_pages error (+8/-1)
-
-Sage Weil (1) commits (+0/-3):
-    Btrfs: avoid BUG when dropping root and reference in same transaction
-
-Andi Kleen (1) commits (+2/-94):
-    BTRFS: Clean up unused variables -- nonbugs
-
-Josef Bacik (1) commits (+1/-1):
-    Btrfs: fix fallocate regression
-
-Prarit Bhargava (1) commits (+1/-1):
-    Btrfs: Fix warning in tree_search()
-
-Total: (25) commits (+72/-142)
-
- fs/btrfs/acl.c          |    8 ++++++++
- fs/btrfs/compression.c  |   18 +++++++++++++-----
- fs/btrfs/ctree.c        |   20 +-------------------
- fs/btrfs/disk-io.c      |   22 +++++++++-------------
- fs/btrfs/extent-tree.c  |    5 ++---
- fs/btrfs/extent_io.c    |    9 ---------
- fs/btrfs/extent_map.c   |    4 ++--
- fs/btrfs/file.c         |   12 ++++++++++--
- fs/btrfs/inode.c        |   22 +++-------------------
- fs/btrfs/ioctl.c        |   36 ++++++++++++------------------------
- fs/btrfs/ordered-data.c |    4 +---
- fs/btrfs/relocation.c   |    7 ++++---
- fs/btrfs/root-tree.c    |    5 -----
- fs/btrfs/super.c        |   14 +++++++-------
- fs/btrfs/tree-defrag.c  |    2 --
- fs/btrfs/tree-log.c     |   15 ---------------
- fs/btrfs/volumes.c      |    4 ----
- fs/btrfs/xattr.c        |    2 --
- fs/btrfs/zlib.c         |    5 -----
- 19 files changed, 72 insertions(+), 142 deletions(-)
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
