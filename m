@@ -1,158 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760641Ab0FKWz3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 18:55:29 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49751 "EHLO hera.kernel.org"
+	id S1760673Ab0FKWze (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 18:55:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49756 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758916Ab0FKWz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 18:55:27 -0400
-Date: Fri, 11 Jun 2010 22:54:43 GMT
+	id S1758916Ab0FKWza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 18:55:30 -0400
+Date: Fri, 11 Jun 2010 22:55:02 GMT
 From: tip-bot for Siarhei Liakh <sliakh.lkml@gmail.com>
 Cc: linux-kernel@vger.kernel.org, sliakh.lkml@gmail.com, hpa@zytor.com,
-       mingo@redhat.com, jiang@cs.ncsu.edu, suresh.b.siddha@intel.com,
-       tglx@linutronix.de, hpa@linux.intel.com
+       mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com,
+       jiang@cs.ncsu.edu
 Reply-To: mingo@redhat.com, hpa@zytor.com, sliakh.lkml@gmail.com,
-       linux-kernel@vger.kernel.org, jiang@cs.ncsu.edu,
-       suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <4C0C4491.80708@gmail.com>
-References: <4C0C4491.80708@gmail.com>
+       linux-kernel@vger.kernel.org, tglx@linutronix.de, jiang@cs.ncsu.edu,
+       hpa@linux.intel.com
+In-Reply-To: <4C0C44C9.8060801@gmail.com>
+References: <4C0C44C9.8060801@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, mm: Correcting improper large page preservation
-Message-ID: <tip-b29d530510d41b2d146eae2f427b9ad51f18c6fc@git.kernel.org>
-Git-Commit-ID: b29d530510d41b2d146eae2f427b9ad51f18c6fc
+Subject: [tip:x86/mm] x86, mm: Set first MB as RW+NX
+Message-ID: <tip-c226a2feba210f0ee4a7c5afe08b3ddbcc6990e2@git.kernel.org>
+Git-Commit-ID: c226a2feba210f0ee4a7c5afe08b3ddbcc6990e2
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 11 Jun 2010 22:54:44 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 11 Jun 2010 22:55:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b29d530510d41b2d146eae2f427b9ad51f18c6fc
-Gitweb:     http://git.kernel.org/tip/b29d530510d41b2d146eae2f427b9ad51f18c6fc
+Commit-ID:  c226a2feba210f0ee4a7c5afe08b3ddbcc6990e2
+Gitweb:     http://git.kernel.org/tip/c226a2feba210f0ee4a7c5afe08b3ddbcc6990e2
 Author:     Siarhei Liakh <sliakh.lkml@gmail.com>
-AuthorDate: Sun, 6 Jun 2010 21:00:01 -0400
+AuthorDate: Sun, 6 Jun 2010 21:00:57 -0400
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 11 Jun 2010 15:12:18 -0700
+CommitDate: Fri, 11 Jun 2010 15:12:52 -0700
 
-x86, mm: Correcting improper large page preservation
+x86, mm: Set first MB as RW+NX
 
-This patch fixes a bug in try_preserve_large_page() which may result
-in improper large page preservation and improper application of page
-attributes to the memory area outside of the original change request.
-More specifically, the problem manifests itself when set_memory_*() is
-called for several pages at the beginning of the large page and
-try_preserve_large_page() erroneously concludes that the change can be
-applied to whole large page.
-The fix consists of 3 parts:
-1. addition of "required" protection attributes in
-static_protections(), so .data and .bss can be guaranteed to stay "RW"
-2. static_protections() is now called for every small page within
-large page to determine compatibility of new protection attributes
-(instead of just small pages within the requested range).
-3. large page can be preserved only if attribute change is
-large-page-aligned and covers whole large page.
+This patch ensures that there are no mixed (RW+X) pages mapped within
+first megabyte of kernel space (from PAGE_OFFSET up to beginning of .text).
+This is achieved through introduction of new compile-time option
+CONFIG_DEBUG_SET_1ST_MB_RWNX which controls how is_kernel_text()
+and static_protections() view the memory area in question.
 
-V1:  try_preserve_large_page() patch for Linux 2.6.34-rc2
-V2:  replaced pfn check with address check for kernel rw-data
+Special accommodations have been made for BIOS32/PCI BIOS services:
+according to BIOS32 specification
+(http://members.datafast.net.au/dft0802/specs/bios32.pdf), at most two
+pages per BIOS32 service should be set executable and no pages need to
+be writeable. This patch modifies bios32_service() to set proper page
+access permissions at time of service discovery, as described in the
+specification. Further, hardcoded protection of memory area between 640k
+to 1Mb have been removed from static_protections(), since only pages
+mentioned above need to be executable, not whole BIOS region.
+
+The net result of the patch application is as follows:
+========== BEFORE ==========
+0xc0000000-0xc0100000           1M     RW             GLB x  pte
+0xc0100000-0xc04b6000        3800K     ro             GLB x  pte
+...
+
+=========== AFTER ===========
+0xc0000000-0xc00fb000        1004K     RW             GLB NX pte
+0xc00fb000-0xc00fd000           8K     ro             GLB x  pte
+0xc00fd000-0xc0100000          12K     RW             GLB NX pte
+0xc0100000-0xc04b6000        3800K     ro             GLB x  pte
+...
+
+Note that first MB is now RW+NX, except for 8K of RO+X used by BIOS32.
+
+The patch have been developed for Linux 2.6.33-rc5 x86 by Siarhei Liakh
+<sliakh.lkml@gmail.com> and Xuxian Jiang <jiang@cs.ncsu.edu>.
+
+V1: original patch "Reducing footprint of BIOS32 service mappings"
+V2: Set first MB as RW+NX for linux 2.6.33-rc5
+V3: minor adjustments for -tip
+V4: Replaced "1st" with "first"
 
 Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
-LKML-Reference: <4C0C4491.80708@gmail.com>
+LKML-Reference: <4C0C44C9.8060801@gmail.com>
 Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
-Reviewed-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/mm/pageattr.c |   30 ++++++++++++++++++++----------
- 1 files changed, 20 insertions(+), 10 deletions(-)
+ arch/x86/Kconfig.debug |   11 +++++++++++
+ arch/x86/mm/init_32.c  |    9 ++++++++-
+ arch/x86/mm/pageattr.c |    3 ++-
+ arch/x86/pci/pcbios.c  |   34 +++++++++++++++++++++++++---------
+ 4 files changed, 46 insertions(+), 11 deletions(-)
 
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index 7508508..4567981 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -121,6 +121,17 @@ config DEBUG_NX_TEST
+ 	  and the software setup of this feature.
+ 	  If in doubt, say "N"
+ 
++config DEBUG_SET_1ST_MB_RWNX
++       bool "Set first MB of kernel space mapping as RW+NX"
++       default n
++       depends on X86
++       ---help---
++         This option helps to catch unintended modifications/execution of
++         1st megabyte of kernel address space. Such protection may interfere
++         with run-time code patching and legacy BIOS services residing within
++         the first MB of physical address space.
++         If in doubt, say "N".
++
+ config 4KSTACKS
+ 	bool "Use 4Kb for kernel stacks instead of 8Kb"
+ 	depends on X86_32
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index bca7909..8fb9c3d 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -52,6 +52,12 @@
+ #include <asm/page_types.h>
+ #include <asm/init.h>
+ 
++#ifdef CONFIG_DEBUG_SET_1ST_MB_RWNX
++#define TEXT_START _text
++#else
++#define TEXT_START PAGE_OFFSET
++#endif
++
+ unsigned long highstart_pfn, highend_pfn;
+ 
+ static noinline int do_test_wp_bit(void);
+@@ -225,7 +231,8 @@ page_table_range_init(unsigned long start, unsigned long end, pgd_t *pgd_base)
+ 
+ static inline int is_kernel_text(unsigned long addr)
+ {
+-	if (addr >= PAGE_OFFSET && addr <= (unsigned long)__init_end)
++	if (addr >= (unsigned long)TEXT_START
++		&& addr <= (unsigned long)__init_end)
+ 		return 1;
+ 	return 0;
+ }
 diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index 532e793..91ce756 100644
+index 91ce756..fbae8c1 100644
 --- a/arch/x86/mm/pageattr.c
 +++ b/arch/x86/mm/pageattr.c
-@@ -255,6 +255,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- 				   unsigned long pfn)
- {
+@@ -257,13 +257,14 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
  	pgprot_t forbidden = __pgprot(0);
-+	pgprot_t required = __pgprot(0);
+ 	pgprot_t required = __pgprot(0);
  
++#ifndef CONFIG_DEBUG_SET_1ST_MB_RWNX
  	/*
  	 * The BIOS area between 640k and 1Mb needs to be executable for
-@@ -278,6 +279,13 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- 	if (within(pfn, __pa((unsigned long)__start_rodata) >> PAGE_SHIFT,
- 		   __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
- 		pgprot_val(forbidden) |= _PAGE_RW;
-+	/*
-+	 * .data and .bss should always be writable.
-+	 */
-+	if (within(address, (unsigned long)_sdata, (unsigned long)_edata) ||
-+	    within(address, (unsigned long)__bss_start,
-+			(unsigned long)__bss_stop))
-+		pgprot_val(required) |= _PAGE_RW;
- 
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
+ 	 * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
+ 	 */
+ 	if (within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
+ 		pgprot_val(forbidden) |= _PAGE_NX;
+-
++#endif
  	/*
-@@ -317,6 +325,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- #endif
+ 	 * The kernel text needs to be executable for obvious reasons
+ 	 * Does not cover __inittext since that is gone later on. On
+diff --git a/arch/x86/pci/pcbios.c b/arch/x86/pci/pcbios.c
+index 2492d16..1102096 100644
+--- a/arch/x86/pci/pcbios.c
++++ b/arch/x86/pci/pcbios.c
+@@ -9,6 +9,7 @@
+ #include <linux/uaccess.h>
+ #include <asm/pci_x86.h>
+ #include <asm/pci-functions.h>
++#include <asm/cacheflush.h>
  
- 	prot = __pgprot(pgprot_val(prot) & ~pgprot_val(forbidden));
-+	prot = __pgprot(pgprot_val(prot) | pgprot_val(required));
+ /* BIOS32 signature: "_32_" */
+ #define BIOS32_SIGNATURE	(('_' << 0) + ('3' << 8) + ('2' << 16) + ('_' << 24))
+@@ -59,6 +60,16 @@ static struct {
+ 	unsigned short segment;
+ } bios32_indirect = { 0, __KERNEL_CS };
  
- 	return prot;
++/* Set two consecutive pages as read-only and executable */
++void set_2_pages_rox(unsigned long addr)
++{
++#ifdef CONFIG_DEBUG_SET_1ST_MB_RWNX
++	unsigned long pg_address = PFN_DOWN(addr + PAGE_OFFSET) << PAGE_SHIFT;
++	set_memory_ro(pg_address, 2);
++	set_memory_x(pg_address, 2);
++#endif
++}
++
+ /*
+  * Returns the entry point for the given service, NULL on error
+  */
+@@ -83,15 +94,19 @@ static unsigned long bios32_service(unsigned long service)
+ 	local_irq_restore(flags);
+ 
+ 	switch (return_code) {
+-		case 0:
+-			return address + entry;
+-		case 0x80:	/* Not present */
+-			printk(KERN_WARNING "bios32_service(0x%lx): not present\n", service);
+-			return 0;
+-		default: /* Shouldn't happen */
+-			printk(KERN_WARNING "bios32_service(0x%lx): returned 0x%x -- BIOS bug!\n",
+-				service, return_code);
+-			return 0;
++	case 0:	/* Service present, set proper page access */
++		address += entry;
++		set_2_pages_rox(address);
++		return address;
++	case 0x80: /* Not present */
++		printk(KERN_WARNING "bios32_service(0x%lx): not present\n",
++			service);
++		return 0;
++	default: /* Shouldn't happen */
++		printk(KERN_WARNING "bios32_service(0x%lx): "
++			"returned 0x%x -- BIOS bug!\n",
++			service, return_code);
++		return 0;
+ 	}
  }
-@@ -393,7 +402,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- {
- 	unsigned long nextpage_addr, numpages, pmask, psize, flags, addr, pfn;
- 	pte_t new_pte, old_pte, *tmp;
--	pgprot_t old_prot, new_prot;
-+	pgprot_t old_prot, new_prot, req_prot;
- 	int i, do_split = 1;
- 	unsigned int level;
  
-@@ -438,10 +447,10 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * We are safe now. Check whether the new pgprot is the same:
- 	 */
- 	old_pte = *kpte;
--	old_prot = new_prot = pte_pgprot(old_pte);
-+	old_prot = new_prot = req_prot = pte_pgprot(old_pte);
- 
--	pgprot_val(new_prot) &= ~pgprot_val(cpa->mask_clr);
--	pgprot_val(new_prot) |= pgprot_val(cpa->mask_set);
-+	pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
-+	pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
- 
- 	/*
- 	 * old_pte points to the large page base address. So we need
-@@ -450,17 +459,17 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	pfn = pte_pfn(old_pte) + ((address & (psize - 1)) >> PAGE_SHIFT);
- 	cpa->pfn = pfn;
- 
--	new_prot = static_protections(new_prot, address, pfn);
-+	new_prot = static_protections(req_prot, address, pfn);
- 
- 	/*
- 	 * We need to check the full range, whether
- 	 * static_protection() requires a different pgprot for one of
- 	 * the pages in the range we try to preserve:
- 	 */
--	addr = address + PAGE_SIZE;
--	pfn++;
--	for (i = 1; i < cpa->numpages; i++, addr += PAGE_SIZE, pfn++) {
--		pgprot_t chk_prot = static_protections(new_prot, addr, pfn);
-+	addr = address & pmask;
-+	pfn = pte_pfn(old_pte);
-+	for (i = 0; i < (psize >> PAGE_SHIFT); i++, addr += PAGE_SIZE, pfn++) {
-+		pgprot_t chk_prot = static_protections(req_prot, addr, pfn);
- 
- 		if (pgprot_val(chk_prot) != pgprot_val(new_prot))
- 			goto out_unlock;
-@@ -483,7 +492,8 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * that we limited the number of possible pages already to
- 	 * the number of pages in the large page.
- 	 */
--	if (address == (nextpage_addr - psize) && cpa->numpages == numpages) {
-+	if (address == (address & pmask) &&
-+		cpa->numpages == (psize >> PAGE_SHIFT)) {
- 		/*
- 		 * The address is aligned and the number of pages
- 		 * covers the full page.
+@@ -332,6 +347,7 @@ static struct pci_raw_ops * __devinit pci_find_bios(void)
+ 			DBG("PCI: BIOS32 Service Directory entry at 0x%lx\n",
+ 					bios32_entry);
+ 			bios32_indirect.address = bios32_entry + PAGE_OFFSET;
++			set_2_pages_rox(bios32_entry);
+ 			if (check_pcibios())
+ 				return &pci_bios_access;
+ 		}
