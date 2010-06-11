@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab0FKQby (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 12:31:54 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:50992 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab0FKQbx (ORCPT
+	id S1756976Ab0FKQgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 12:36:50 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:50609 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756157Ab0FKQgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 12:31:53 -0400
-Date: Fri, 11 Jun 2010 12:31:51 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 2/2] AFFS: wait for sb synchronization when needed
-Message-ID: <20100611163151.GE24707@infradead.org>
-References: <1276268720-7398-1-git-send-email-dedekind1@gmail.com>
- <1276268720-7398-3-git-send-email-dedekind1@gmail.com>
+	Fri, 11 Jun 2010 12:36:49 -0400
+Date: Fri, 11 Jun 2010 18:36:44 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, xfs@oss.sgi.com,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [16/23] XFS: Fix gcc 4.6 set but not read and unused
+	statement warnings
+Message-ID: <20100611163644.GH6864@basil.fritz.box>
+References: <20100610110.764742110@firstfloor.org> <20100610111052.3DDC5B1A2B@basil.firstfloor.org> <20100611162007.GC7556@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1276268720-7398-3-git-send-email-dedekind1@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100611162007.GC7556@infradead.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 06:05:20PM +0300, Artem Bityutskiy wrote:
-> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> 
-> AFFS does not ever wait for superblock synchronization in
-> ->put_super(), ->write_super, and ->sync_fs().
-> 
-> However, it should wait for synchronization in ->put_super() because
-> it is about to be unmounted, in ->write_super() because this is
-> periodic SB synchronization performed from a separate kernel thread,
-> and in ->sync_fs() it should respect the 'wait' flag. This patch fixes
-> the situation.
-> 
-> Also, in ->put_super(), do not write the SB if it is not dirty.
+On Fri, Jun 11, 2010 at 12:20:07PM -0400, Christoph Hellwig wrote:
+> Most of this looks good to me, but I really don't like the QASSERT
+> macro.  If you're fine with it I'll split this up into smaller patches
 
-->sync_fs should also wait for the superblock I/O to be completed.
+Why do you not like it? 
 
+The alternative will be likely uglier.
+
+> and resubmit the unmodified parts under your name and redo those bits
+> I don't like.
+
+Fine for me.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
