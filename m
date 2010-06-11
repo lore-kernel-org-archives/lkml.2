@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab0FKGRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 02:17:50 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51741 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754487Ab0FKGRs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 02:17:48 -0400
-Date: Thu, 10 Jun 2010 23:17:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 6/6] vmscan: Do not writeback pages in direct reclaim
-Message-Id: <20100610231706.1d7528f2.akpm@linux-foundation.org>
-In-Reply-To: <1275987745-21708-7-git-send-email-mel@csn.ul.ie>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
-	<1275987745-21708-7-git-send-email-mel@csn.ul.ie>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755332Ab0FKGTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 02:19:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44568 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753161Ab0FKGTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 02:19:33 -0400
+Message-ID: <4C11D51E.3080909@zytor.com>
+Date: Thu, 10 Jun 2010 23:18:06 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@redhat.com>,
+       linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca,
+       tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
+       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+       fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+       vgoyal@redhat.com, sam@ravnborg.org
+Subject: Re: [PATCH 03/13] jump label v9: x86 support
+References: <cover.1276116186.git.jbaron@redhat.com> <c837d1a0a380030a4ea61acbcf0183518675a8ee.1276116186.git.jbaron@redhat.com> <1276171930.2077.200.camel@twins> <20100610121440.GA20130@elte.hu>
+In-Reply-To: <20100610121440.GA20130@elte.hu>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  8 Jun 2010 10:02:25 +0100 Mel Gorman <mel@csn.ul.ie> wrote:
-
-> When memory is under enough pressure, a process may enter direct
-> reclaim to free pages in the same manner kswapd does. If a dirty page is
-> encountered during the scan, this page is written to backing storage using
-> mapping->writepage. This can result in very deep call stacks, particularly
-> if the target storage or filesystem are complex. It has already been observed
-> on XFS that the stack overflows but the problem is not XFS-specific.
+On 06/10/2010 05:14 AM, Ingo Molnar wrote:
 > 
-> This patch prevents direct reclaim writing back pages by not setting
-> may_writepage in scan_control. Instead, dirty pages are placed back on the
-> LRU lists for either background writing by the BDI threads or kswapd. If
-> in direct lumpy reclaim and dirty pages are encountered, the process will
-> kick the background flushter threads before trying again.
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+>> On Wed, 2010-06-09 at 17:39 -0400, Jason Baron wrote:
+>>> +       select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
+>>
+>> That deserves a comment somewhere, it basically makes OPTIMIZE_FOR_SIZE 
+>> useless...
+> 
+> Hm, we need more than a comment for that - distros enable CC_OPTIMIZE_FOR_SIZE 
+> all the time, for the massive kernel image (and hotpath cache footprint) 
+> savings. Is this fixable?
 > 
 
-This wouldn't have worked at all well back in the days when you could
-dirty all memory with MAP_SHARED.  The balance_dirty_pages() calls on
-the fault path will now save us but if for some reason we were ever to
-revert those, we'd need to revert this change too, I suspect.
+Actually the current reports from the gcc community is that gcc 4.5.0 +
+-Os produces a broken kernel even without asm goto:
 
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=44129
 
-As it stands, it would be wildly incautious to make a change like
-this without first working out why we're pulling so many dirty pages
-off the LRU tail, and fixing that.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
