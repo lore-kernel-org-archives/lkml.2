@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760656Ab0FKWGk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 18:06:40 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:43047 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307Ab0FKWGi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 18:06:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=sjiholnhYOP/cSvI+w29yehoml/bZWRV6jp7vISXv8d4H0KIsUck1OEuVlPoGihOPp
-         MfvAvCEPy5R5yC3RIQI1xa3/gODCpKl01e0GTk4hdIiZVSow+Xj/QW+YefVKyQGVrPNy
-         re/V2Ea7aX08inL03tsOlHDA5JXY7M6k0jqqk=
-Message-ID: <4C12B376.4010604@gmail.com>
-Date: Fri, 11 Jun 2010 15:06:46 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	id S1760671Ab0FKWHJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 18:07:09 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54580 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760620Ab0FKWHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 18:07:07 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Len Brown <lenb@kernel.org>
+Subject: [PATCH][Regression fix]  ACPI / ACPICA: Do not attempt to disable GPE when installing handler
+Date: Sat, 12 Jun 2010 00:05:19 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc2-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       Matthew Garrett <mjg@redhat.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       "Moore, Robert" <robert.moore@intel.com>, len.brown@intel.com,
+       LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-       zippel@linux-m68k.org, linux-fsdevel@vger.kernel.org,
-       rusty@rustcorp.com.au
-Subject: Re: [PATCH 5/6]kernel:module.c variable 'nowarn' set but not used
-References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>	<1276288869-16815-6-git-send-email-justinmattock@gmail.com> <AANLkTilZLOGXpZxHUklA8iHMj8HsJap2BvWMrWMmeyu3@mail.gmail.com>
-In-Reply-To: <AANLkTilZLOGXpZxHUklA8iHMj8HsJap2BvWMrWMmeyu3@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006120005.19807.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2010 02:17 PM, Geert Uytterhoeven wrote:
-> On Fri, Jun 11, 2010 at 22:41, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
->> The below patch fixes a warning message
->> reported by gcc 4.6.0.
->>
->>   CC      kernel/module.o
->> kernel/module.c: In function 'add_usage_links':
->> kernel/module.c:1343:6: warning: variable 'nowarn' set but not used
->>
->>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>
->> ---
->>   kernel/module.c |    8 ++------
->>   1 files changed, 2 insertions(+), 6 deletions(-)
->>
->> diff --git a/kernel/module.c b/kernel/module.c
->> index 8c6b428..a71027a 100644
->> --- a/kernel/module.c
->> +++ b/kernel/module.c
->> @@ -1340,13 +1340,9 @@ static void add_usage_links(struct module *mod)
->>   {
->>   #ifdef CONFIG_MODULE_UNLOAD
->>         struct module_use *use;
->> -       int nowarn;
->> -
->> +
->>         mutex_lock(&module_mutex);
->> -       list_for_each_entry(use,&mod->target_list, target_list) {
->> -               nowarn = sysfs_create_link(use->target->holders_dir,
->> -&mod->mkobj.kobj, mod->name);
->> -       }
->> +       list_for_each_entry(use,&mod->target_list, target_list);
->>         mutex_unlock(&module_mutex);
->>   #endif
->>   }
->
-> Also wrong, you removed the creation of the links in sysfs.
->
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-that's not good..
+Commit 0f849d2cc6863c7874889ea60a871fb71399dd3f (ACPICA: Minimize
+the differences between linux GPE code and ACPICA code base)
+introduced a change attempting to disable a GPE before installing
+a handler for it in acpi_install_gpe_handler() which was incorrect.
+First, the GPE disabled by it is never enabled again (except during
+resume) which leads to battery insert/remove events not being
+reported on the Maxim Levitsky's machine.  Second, the disabled
+GPE is still reported as enabled by the sysfs interface that only
+checks its enable register's enable_for_run mask.
 
-> The assignment to nowarn was there to avoid another compiler warning,
-> as sysfs_create_link() is marked __must_check.
->
-> Gr{oetje,eeting}s,
->
-> 						Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
-> 							    -- Linus Torvalds
->
+Revert this change for now, because it causes more damage to happen
+than the bug it was supposed to fix.
 
-alright.. thanks for having a look
-and a response. if somebody has a fix
-for this then let me know, and I can
-test it out over here(I can also try
-fixing this as well, but my knowledge
-of code only goes so far)..
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reported-and-tested-by: Maxim Levitsky <maximlevitsky@gmail.com>
+---
+Hi Len,
 
-Justin P. Mattock
+This will conflict with
+http://git.kernel.org/?p=linux/kernel/git/lenb/linux-acpi-2.6.git;a=commit;h=a771b5f7b5b132fc3e653645405e20abb4da6e8c
+but the conflict is easy to resolve.
+
+Please apply.
+
+Rafael
+---
+ drivers/acpi/acpica/evxface.c |   20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
+
+Index: linux-2.6/drivers/acpi/acpica/evxface.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/acpica/evxface.c
++++ linux-2.6/drivers/acpi/acpica/evxface.c
+@@ -719,13 +720,6 @@ acpi_install_gpe_handler(acpi_handle gpe
+ 	handler->context = context;
+ 	handler->method_node = gpe_event_info->dispatch.method_node;
+ 
+-	/* Disable the GPE before installing the handler */
+-
+-	status = acpi_ev_disable_gpe(gpe_event_info);
+-	if (ACPI_FAILURE (status)) {
+-		goto unlock_and_exit;
+-	}
+-
+ 	/* Install the handler */
+ 
+ 	flags = acpi_os_acquire_lock(acpi_gbl_gpe_lock);
