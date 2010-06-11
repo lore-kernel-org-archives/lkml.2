@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760026Ab0FKBSU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 21:18:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:21536 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754520Ab0FKBST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 21:18:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,400,1272870000"; 
-   d="scan'208";a="575325360"
-Subject: Re: [PATCH 1/2] Add HW_ERR printk prefix for hardware error logging
-From: Huang Ying <ying.huang@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100610164607.b2908334.akpm@linux-foundation.org>
-References: <1275978938.3444.667.camel@yhuang-dev.sh.intel.com>
-	 <20100610164607.b2908334.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Jun 2010 09:18:15 +0800
-Message-ID: <1276219095.3004.36.camel@yhuang-dev.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1760031Ab0FKBdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 21:33:36 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34225 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759990Ab0FKBdf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 21:33:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding;
+	b=klrdhajiG+8n9o4+AKYF7+BsqzEk0gYi2p1ICSE42R9e1lHhcOhSSGUnxPjvBYB+q
+	7hVb1+tdTpb3WepvqZ5Fg==
+MIME-Version: 1.0
+In-Reply-To: <20100602130456.GP3564@kernel.dk>
+References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins> 
+	<20100601064120.GA3407@elte.hu> <20100601064726.GG1660@kernel.dk> 
+	<20100601065500.GA7876@elte.hu> <20100602111653.GA25662@elte.hu> 
+	<20100602130456.GP3564@kernel.dk>
+From: Divyesh Shah <dpshah@google.com>
+Date: Thu, 10 Jun 2010 18:33:08 -0700
+Message-ID: <AANLkTinzd3TDVInveyx1P1ATvV8QaudtTsU0ofzclpuk@mail.gmail.com>
+Subject: Re: blkiocg_update_io_add_stats(): INFO: trying to register 
+	non-static key
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       piotr@hosowicz.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-11 at 07:46 +0800, Andrew Morton wrote:
-> On Tue, 08 Jun 2010 14:35:38 +0800
-> Huang Ying <ying.huang@intel.com> wrote:
-> 
-> > This makes hardware error related log in printk log more explicit. So
-> > that the users can report it to hardware vendor instead of LKML or
-> > software vendor.
-> > 
-> 
-> Spose so.  Some additional words explaining why you think this would
-> result in an improved kernel would help here.  Are you seeing
-> misdirected problem reports?  Are we missing out on opportunities to
-> fix hardware?  What is driving for this change?  Will it bring out some
-> improvement in something which you're seeing within Intel or was it
-> just a random hey-lets-try-this thing?
+On Wed, Jun 2, 2010 at 6:04 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> On Wed, Jun 02 2010, Ingo Molnar wrote:
+>>
+>> btw., there's another warning triggered by the new blk-cgroups stats code:
+>>
+>> sda:INFO: trying to register non-static key.
+>> the code is fine but needs lockdep annotation.
+>> turning off the locking correctness validator.
+>> Pid: 81, comm: async/2 Not tainted 2.6.35-rc1-tip-01073-gd2f7698-dirty #6765
+>> Call Trace:
+>>  [<ffffffff81065d6d>] register_lock_class+0x15f/0x365
+>>  [<ffffffff8105c426>] ? sched_clock_local+0x1d/0x83
+>>  [<ffffffff8105c557>] ? sched_clock_cpu+0xcb/0xd9
+>>  [<ffffffff81067184>] __lock_acquire+0x97/0x481
+>>  [<ffffffff810088d4>] ? native_sched_clock+0x37/0x6d
+>>  [<ffffffff81321b74>] ? blkiocg_update_io_add_stats+0x32/0x12e
+>>  [<ffffffff81067644>] lock_acquire+0xd6/0xfd
+>>  [<ffffffff81321b74>] ? blkiocg_update_io_add_stats+0x32/0x12e
+>>  [<ffffffff81850859>] _raw_spin_lock_irqsave+0x47/0x82
+>>  [<ffffffff81321b74>] ? blkiocg_update_io_add_stats+0x32/0x12e
+>>  [<ffffffff81321b74>] blkiocg_update_io_add_stats+0x32/0x12e
+>
+> So that's blkg->stats_lock - help me out, what is lockdep complaining
+> about? The lock is initialized, what kind of lockdep annotation magic do
+> we need to sprinkle on it?
 
-It is said by Andi Kleen that many users report Machine Check hardware
-error message as software error to him or software vendor instead of as
-hardware error to hardware vendor. This does not help much for the users
-to resolve their problem. So I think it is better to make the kernel
-hardware error log more explicit for these users.
+Jens,
+     Were you able to figure out what annotation magic is needed here.
+I remember we had fixed another similar warning that Gui reported, but
+that was because the root cfqg didn't have the stats_lock initialized
+as expected. I'm not sure what needs to be done here either.
 
-Best Regards,
-Huang Ying
+-Divyesh
 
-
+>
+> --
+> Jens Axboe
+>
+>
