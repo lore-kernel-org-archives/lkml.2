@@ -1,96 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760156Ab0FKSaR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 14:30:17 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36732 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759922Ab0FKSaO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 14:30:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=q6UkoNcYbqsXxpWXZm4w/yO1+JUbjtwxTY+qLf3MTgmiFr9a+n2tsnEEKWzCltUH7x
-         YFwbXrV+taaqwtN7znJOB6Wtv+h69pdwXNvfKwUnS9J1peZ1MSdBvld74fyXcaNwCblW
-         7LRWgkskl5I/QtubP+yCGdA8bRjEDGZv2RuAE=
+	id S1760142Ab0FKSgA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 14:36:00 -0400
+Received: from mail.tpi.com ([70.99.223.143]:2775 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759745Ab0FKSf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 14:35:59 -0400
+Message-ID: <4C128201.8020104@canonical.com>
+Date: Fri, 11 Jun 2010 12:35:45 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Fri, 11 Jun 2010 11:29:53 -0700
-Message-ID: <AANLkTikx7UuxgGRjo1TViZ2ZxU9DVmnErBoef13pKftd@mail.gmail.com>
-Subject: compat-wireless based on 2.6.35-rc2 pushed out
-To: linux-wireless <linux-wireless@vger.kernel.org>,
-       linux-bluetooth <linux-bluetooth@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Islam Amer <pharon@gmail.com>
+CC: Rezwanul_Kabir@dell.com, mjg59@srcf.ucam.org, linux-kernel@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: Dell Studio 1555 eject key does not work ( small patch to fix
+ 	included )
+References: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com> 	<20100602213429.GA14866@srcf.ucam.org> <57DF5FDC2DC0634FA2A310BC5B81A68D01DF4CD01E@AUSX7MCPC108.AMER.DELL.COM> 	<AANLkTimIl6UL0HQT1wxRgXuj_m0O3CwMHQIa1xNE1Ax9@mail.gmail.com> 	<AANLkTin0qht1XR2rUgIXMEeJNU_gb3IZWqSBJb7NXD8K@mail.gmail.com> 	<57DF5FDC2DC0634FA2A310BC5B81A68D01DFD57663@AUSX7MCPC108.AMER.DELL.COM> 	<20100610184023.GA17320@srcf.ucam.org> <AANLkTilT3KCeJUpG-APK0MFh2ChMlZ4qwVPhOJpHnPB9@mail.gmail.com> 	<57DF5FDC2DC0634FA2A310BC5B81A68D01DFD5780A@AUSX7MCPC108.AMER.DELL.COM> 	<AANLkTinoWK4uSL2KOhgF-EVWuBhgCeAqWwL9cJKeGRD1@mail.gmail.com> 	<4C124358.8020007@canonical.com> <AANLkTimxo3CeRR2YZptTL6RoEi8Q5sdnUEMIi9A5-KcA@mail.gmail.com> <AANLkTilaoFJuT8d9iPWqDzyxBC8o4E1Vhh03ufiwLEk-@mail.gmail.com>
+In-Reply-To: <AANLkTilaoFJuT8d9iPWqDzyxBC8o4E1Vhh03ufiwLEk-@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Its on the stable page now:
+The only difference between 2.6.32.15 and Ubuntu Lucid wrt dell-wmi.c is 
+this:
 
-http://wireless.kernel.org/en/users/Download/stable
+43,46d42
+< /* Temporary workaround until the WMI sysfs interface goes in.
+<    Borrowed from acer-wmi */
+< MODULE_ALIAS("dmi:*:*Dell*:*:");
+<
 
-tarball: http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.35/compat-wireless-2.6.35-rc2.tar.bz2
-sha1sum: 6b2f040c965bffd4a659a7f4771832a9b7b568e5
-ChangeLog: http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.35/ChangeLog-2.6.35-rc2-wireless
+I wonder about input event filtering? There are substantial differences 
+in drivers/input/input.c.
 
-This actually has all the changes from Linus' tree as of today so it
-actually has extra stuff on top of rc2, its more like an rc3. I
-spotted these merged already:
+rtg
 
-$ git shortlog  v2.6.35-rc2.. net/mac80211/ net/wireless/ drivers/net/
-drivers/bluetooth/
+On 06/11/2010 12:02 PM, Islam Amer wrote:
+> Dear Tim,
+>
+> I tried the mainline kernel 2.6.32-0206321505-generic as you suggested
+> and the eject key doesn't work but it also doesn't produce the error
+> message in dmesg.
+>
+> I then tried the 2.6.32-22.36-generic from
+> http://packages.ubuntu.com/lucid/linux-image-2.6.32-22-generic and I
+> found the eject key working fine.
+>
+> So there is something in the ubuntu patchset that fixes this issue.
+>
+> On Fri, Jun 11, 2010 at 5:23 PM, Islam Amer<pharon@gmail.com>  wrote:
+>> Tim I am running debian,
+>>
+>> I think it's the other way round, the mainline kernel is borked (
+>> regarding dell-wmi and eject key ) while the lucid patched kernel
+>> works ( as reported by dell team ).
+>>
+>> I guess I could download a Lucid livecd and see if the eject key works
+>> there ( event only as it won't eject the lived while it is running :)
+>> )
+>>
+>> On Fri, Jun 11, 2010 at 5:08 PM, Tim Gardner<tim.gardner@canonical.com>  wrote:
+>>> Islam Amer,
+>>>
+>>> You could try a vanilla stable kernel from
+>>> http://kernel.ubuntu.com/~kernel-ppa/mainline/v2.6.32.15.5-lucid/ to see if
+>>> we've borked the dell-wmi code.
+>>>
+>>> rtg
+>>>
+>>> On 06/11/2010 07:28 AM, Islam Amer wrote:
+>>>>
+>>>> Rezwanul,
+>>>>
+>>>> I've updated my bios to A11 and installed a new unmodified kernel. The
+>>>> issue still persists that the eject key produces "dell-wmi: Unknown
+>>>> key 0 pressed" in the dmesg output and it doesn't work.
+>>>>
+>>>> It is possible that Ubuntu is including patches to fix stuff. The
+>>>> latest patch for the Lucid kernel at
+>>>>
+>>>> http://archive.ubuntu.com/ubuntu/pool/main/l/linux/linux_2.6.32-22.36.diff.gz
+>>>> does include patches that touch wmi and dell-wmi code, but I can't
+>>>> find a specific change that would fix this issue.
+>>>>
+>>>> I might try to selectively apply patches from it and see if it gets fixed.
+>>>>
+>>>> Thanks.
+>>>>
+>>>>
+>>>> On Fri, Jun 11, 2010 at 3:15 AM,<Rezwanul_Kabir@dell.com>    wrote:
+>>>>>
+>>>>> Islam Amer
+>>>>>
+>>>>>    Please try the new BIOS A11 and eliminate any potential BIOS issues.
+>>>>> The BIOS team confirmed that
+>>>>>    they weren't able to reproduce the issue with Ubuntu 10.04 and A11.
+>>>>>
+>>>>> Thanks..
+>>>>>    --rez
+>>>>>
+>>>>>
+>>>>>
+>>>>>
+>>>>> Rezwanul Kabir
+>>>>> Dell Linux Development
+>>>>> 512-725-0766
+>>>>>
+>>>>>
+>>>>>> -----Original Message-----
+>>>>>> From: Islam Amer [mailto:pharon@gmail.com]
+>>>>>> Sent: Thursday, June 10, 2010 6:52 PM
+>>>>>> To: Matthew Garrett
+>>>>>> Cc: Kabir, Rezwanul; linux-kernel@vger.kernel.org;
+>>>>>> platform-driver-x86@vger.kernel.org; akpm@linux-foundation.org
+>>>>>> Subject: Re: Dell Studio 1555 eject key does not work ( small
+>>>>>> patch to fix included )
+>>>>>>
+>>>>>> Hello all,
+>>>>>>
+>>>>>> My bios version is A08 , I see that A11 was recently released
+>>>>>> but the changelog doesn't say much.
+>>>>>>
+>>>>>> Which is better, upgrade and hope the problem goes away, or
+>>>>>> wait until we have a fix that is agreed upon ?
+>>>>>>
+>>>>>> Thanks.
+>>>>>>
+>>>>>> On Thu, Jun 10, 2010 at 9:40 PM, Matthew Garrett
+>>>>>> <mjg59@srcf.ucam.org>    wrote:
+>>>>>>>
+>>>>>>> On Thu, Jun 10, 2010 at 01:36:56PM -0500,
+>>>>>>
+>>>>>> Rezwanul_Kabir@Dell.com wrote:
+>>>>>>>>
+>>>>>>>> Hi Islam Amer
+>>>>>>>>
+>>>>>>>>     I got report that "Ubuntu 10.04 + BIOS A11" was tested and the
+>>>>>>>> "Eject CD" key is working
+>>>>>>>>     as expected. Sorry, I couldn't find any Studio 1555 to
+>>>>>>
+>>>>>> test myself
+>>>>>>>>
+>>>>>>>> and cannot provide you
+>>>>>>>>     with more details.
+>>>>>>>>
+>>>>>>>>      Also, you may try acpi_osi="Windows 2009" kernel
+>>>>>>
+>>>>>> parameter and see if there is any difference.
+>>>>>>>
+>>>>>>> That's the default on any kernel that has this support in dell-wmi.
+>>>>>>> Rez, could you let me know if the proposed patch breaks the spec in
+>>>>>>> ways that are likely to cause problems?
+>>>>>>>
+>>>>>>> --
+>>>>>>> Matthew Garrett | mjg59@srcf.ucam.org
+>>>>>>>
+>>>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>>
+>>> --
+>>> Tim Gardner tim.gardner@canonical.com
+>>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Abhijeet Kolekar (1):
-      iwl3945: fix internal scan
 
-Bob Copeland (1):
-      ath5k: retain promiscuous setting
-
-Bruno Randolf (1):
-      ath5k: fix NULL pointer in antenna configuration
-
-David S. Miller (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
-
-Denis Kirjanov (1):
-      8139too: fix buffer overrun in rtl8139_init_board
-
-Emmanuel Grumbach (1):
-      iwlwifi: move sysfs_create_group to post request firmware
-
-Grazvydas Ignotas (1):
-      wl1251: fix a memory leak in probe
-
-Holger Schurig (1):
-      mac80211: fix function pointer check
-
-Jason Dravet (1):
-      p54usb: Add device ID for Dell WLA3310 USB
-
-Johannes Berg (3):
-      mac80211: process station blockack action frames from work
-      iwlwifi: add missing rcu_read_lock
-      mac80211: fix deauth before assoc
-
-John W. Linville (1):
-      Revert "wireless: hostap, fix oops due to early probing interrupt"
-
-Jussi Kivilinna (1):
-      asix: check packet size against mtu+ETH_HLEN instead of ETH_FRAME_LEN
-
-Linus Torvalds (1):
-      Merge git://git.kernel.org/.../davem/net-2.6
-
-Reinette Chatre (1):
-      iwl3945: enable stuck queue detection on 3945
-
-Timo Teräs (1):
-      r8169: fix random mdio_write failures
-
-Tobias Doerffel (1):
-      ath5k: depend on CONFIG_PM_SLEEP for suspend/resume functions
-
-  Luis
+-- 
+Tim Gardner tim.gardner@canonical.com
