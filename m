@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759999Ab0FKAuV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 20:50:21 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57688 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754138Ab0FKAuU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 20:50:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=L0X6ej+f1zHlGSmD3PnDQZx0IVZny1u4pKVAJ6aGYr1Dts5Ka5y1YCLNN7bwiJxZQe
-         khM7BZ400RjayBl1ns9TZzrcssAdLhWr0QvPaAOPUJHKgG8zzF0B+YBNcohag/qOScTf
-         EriUDnmoi/X58UO04cV/0qH8T4aiyATQ0VLjk=
-Message-ID: <4C118844.2020401@gmail.com>
-Date: Thu, 10 Jun 2010 18:50:12 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1760006Ab0FKAwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 20:52:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19041 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754423Ab0FKAwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 20:52:53 -0400
+Date: Thu, 10 Jun 2010 20:52:07 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       linux-kernel@vger.kernel.org, hpa@zytor.com, tglx@linutronix.de,
+       rostedt@goodmis.org, andi@firstfloor.org, roland@redhat.com,
+       rth@redhat.com, mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+       davem@davemloft.net, vgoyal@redhat.com, sam@ravnborg.org
+Subject: Re: [PATCH 03/13] jump label v9: x86 support
+Message-ID: <20100611005206.GA2379@redhat.com>
+References: <cover.1276116186.git.jbaron@redhat.com>
+ <c837d1a0a380030a4ea61acbcf0183518675a8ee.1276116186.git.jbaron@redhat.com>
+ <1276171930.2077.200.camel@twins>
+ <20100610121440.GA20130@elte.hu>
+ <20100610150422.GA3923@redhat.com>
+ <20100610161339.GA20448@Krystal>
 MIME-Version: 1.0
-To: "Yedire, Sandeep" <syedire@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: O_NONBLOCK with Ext2/3
-References: <AANLkTimVgcnvb-obG4As0jjZQk6rwsHd-ByrfL4KxP0A@mail.gmail.com>
-In-Reply-To: <AANLkTimVgcnvb-obG4As0jjZQk6rwsHd-ByrfL4KxP0A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100610161339.GA20448@Krystal>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2010 06:44 AM, Yedire, Sandeep wrote:
-> Hi All,
-> What is the effect  on filesystem blocks,data blocks if O_NONBLOCK
-> flag is used with a test application doing write to a file(64MB) on
-> NAND Flash.
-> Can any one please let me know
-> Regards,
-> Sandeep.Yedire
+On Thu, Jun 10, 2010 at 12:13:39PM -0400, Mathieu Desnoyers wrote:
+> * Jason Baron (jbaron@redhat.com) wrote:
+> > On Thu, Jun 10, 2010 at 02:14:40PM +0200, Ingo Molnar wrote:
+> > > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > > 
+> > > > On Wed, 2010-06-09 at 17:39 -0400, Jason Baron wrote:
+> > > > > +       select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
+> > > > 
+> > > > That deserves a comment somewhere, it basically makes OPTIMIZE_FOR_SIZE 
+> > > > useless...
+> > > 
+> > > Hm, we need more than a comment for that - distros enable CC_OPTIMIZE_FOR_SIZE 
+> > > all the time, for the massive kernel image (and hotpath cache footprint) 
+> > > savings. Is this fixable?
+> > > 
+> > > Thanks,
+> > > 
+> > > 	Ingo
+> > > 
+> > 
+> > When I tested 'jump label' with CC_OPTIMIZE_FOR_SIZE, I saw a small
+> > performance drop , b/c there is less block re-ordering happening.
+> 
+> Is this a performance drop compared to a jump-label-less kernel or
+> compared to -O2 kernel compiled with jump labels ? Or both ?
+> 
+> Mathieu
+> 
 
-O_NONBLOCK doesn't do anything on regular files, as far as I'm aware. 
-It's only useful on sockets, serial ports/TTYs, etc.
+Hi Mathieu,
+
+So I'm quoting tbench benchmark here. The performance drop was jump
+label vs. all jump label patches backed out on -Os. If we move to -02,
+both the no jump label patches and the jump label patches applied are
+faster than all jump label patches backed out on -Os.
+
+so:
+
+jump labels -02 > no jump labels -02 > no jump labels -0s > jump lables
+-Os
+
+thanks,
+
+-Jason
