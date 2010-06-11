@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab0FKHa4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 03:30:56 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:48882 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757035Ab0FKHaz (ORCPT
+	id S1757130Ab0FKHev (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 03:34:51 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:40184 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752868Ab0FKHeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 03:30:55 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.20.111.250;
-To: "H. Peter Anvin" <hpa@zytor.com>
-From: Milton Miller <miltonm@bga.com>
-CC: Mike Frysinger <vapier.adi@gmail.com>, linux-kernel@vger.kernel.org,
-       Tim Abbott <tabbott@ksplice.com>
-Subject: Re: [PATCH 1/2] vmlinux.lds.h: allow people to set a smaller rootfs
- 	alignment
-References: <1275761686-4996-1-git-send-email-vapier@gentoo.org> 	<1276068030_13535@mail4.comsite.net> <AANLkTin_MR82jafZkkzfv33dO6DqyFnHUiU4g6luXB_0@mail.gmail.com> <4C11CEAA.5020703@zytor.com>
-In-Reply-To: <4C11CEAA.5020703@zytor.com>
-Date: Fri, 11 Jun 2010 02:30:50 -0500
-X-Originating-IP: 71.20.111.250
-Message-ID: <1276241450_14430@mail4.comsite.net>
+	Fri, 11 Jun 2010 03:34:50 -0400
+X-Greylist: delayed 524 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jun 2010 03:34:49 EDT
+From: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>
+To: Joe Perches <joe@perches.com>
+Cc: Christoph Egger <siccegge@cs.fau.de>,
+       "Robert P. J. Day" <rpjday@crashcourse.ca>, linuxppc-dev@ozlabs.org,
+       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 0/5] Removing dead code
+Organization: Uni Erlangen, Informatik 4, Lehrstuhl =?utf-8?Q?f=C3=BCr?=
+ Betriebs- und verteile Systeme
+References: <cover.1275925219.git.siccegge@cs.fau.de>
+	<1276195612.1556.279.camel@Joe-Laptop.home>
+X-Url: http://www4.informatik.uni-erlangen.de/~tartler
+Date: Fri, 11 Jun 2010 09:26:02 +0200
+In-Reply-To: <1276195612.1556.279.camel@Joe-Laptop.home> (Joe Perches's
+	message of "Thu, 10 Jun 2010 11:46:52 -0700")
+Message-ID: <rwutypado8l.fsf@faui48a.informatik.uni-erlangen.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jun 2010 at around 22:50:34 -0700, H. Peter Anvin wrote:
-> On 06/09/2010 12:42 AM, Mike Frysinger wrote:
-> > 
-> > i have no problem changing the default to 4 since it works fine on
-> > Blackfin systems.  your analysis of the source alignment also seems
-> > reasonable ... i assume that the 8 byte fields in the source cpio
-> > arent referenced directly, otherwise it'd cause problems on 64bit
-> > systems that require 64bit values to be naturally aligned.
-> > 
-> > beyond that, i dont see why any larger alignment values would be
-> > required since this source archive isnt executed directly.  it gets
-> > expanded into a ramfs and then freed with the rest of the init stuff.
-> > 
-> 
-> We have talked for a long time about incrementally freeing the initramfs
-> as it is decoded, which might help systems which are using most of their
-> memory for an initramfs image...
+Joe Perches <joe@perches.com> writes:
 
-at which time the author of said theoritcal patch that might possibly
-need page alignment would only need to update vmlinux.lds.h and not all
-the architectures vmlinux.lds.S files.
+> (cc's trimmed and rpjday added)
+>
+> On Wed, 2010-06-09 at 11:58 +0200, Christoph Egger wrote:
+>> I've been running a check on the arch/powerpc sourcetree for
+>> config Items not defined in Kconfig and found5 such chases.
+>
+> Are you aware of
+> http://www.crashcourse.ca/wiki/index.php/Kernel_cleanup_scripts
 
-milton
+Yes, we are. These scripts aim at a very similar goal.  However, we are
+using a more sound approach that actually involves parsing CPP
+statements and the kconfig language and checking the resulting
+constraints with SAT solving tools.  This way, we get way more precise
+results.
+
+You can read about our approach in [1].
+
+[1] http://portal.acm.org/citation.cfm?id=1629732
+
+-- 
+Reinhard Tartler                     Department of Computer Science IV
+Martensstr 1, 91058 Erlangen Germany, University of Erlangen-Nuremberg
+            http://www4.informatik.uni-erlangen.de/~tartler
