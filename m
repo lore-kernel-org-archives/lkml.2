@@ -1,126 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760224Ab0FKMZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 08:25:10 -0400
-Received: from web94914.mail.in2.yahoo.com ([203.104.17.188]:23992 "HELO
-	web94914.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759976Ab0FKMZI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 08:25:08 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.in;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Fu/fBL4xeybZDwBDo+6xROL83bzBAGXV2U3mo7oC06W8QyJtt1+AVDJRI223aptNO9U8xnXlEdIhBi4Y7GB3N5KpHks+/JP8FAXC/vwTRGVpENVg4SMbZ7VfJjH4hp6VwYOE2XInIS64tIQSYDpnaz1DfQD5xZur4CvWJ3iRqlY=;
-Message-ID: <840278.13741.qm@web94914.mail.in2.yahoo.com>
-X-YMail-OSG: cXZZHS8VM1kscD0x1bfl9_AqAXm9bVE5bp6KtvgTi_BjrL2
- cBQA3T7L1BVR9qnpgEq_9yVHI.YjLpEgAwT4O0hYxaGSDOB2gQheD0BS4z8G
- 7H5mjbhjtJ0K0V.UKeC5FtLutquwr1EyZILdM5dxnMAk_al.PA9oCqm2ysel
- TNCRdb2yGr1pEd4nvFvtZ0jjshlEhVXoR3EfPi_Mr_a6gcY7UwKiwWIpXnDp
- FMIXRJrFu7Dsck9Qi5pLDE8oCGfbmn7R7A9MJz7rF5FjsRA--
-X-Mailer: YahooMailClassic/11.1.3 YahooMailWebService/0.8.103.269680
-Date: Fri, 11 Jun 2010 17:55:04 +0530 (IST)
-From: Pavan Savoy <pavan_savoy@yahoo.co.in>
-Subject: RE: [PATCH] drivers: staging: GPS protocol driver for wl128x
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: greg <gregkh@suse.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <141474.48175.qm@web94902.mail.in2.yahoo.com>
+	id S1760226Ab0FKMdl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 08:33:41 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:39178 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756081Ab0FKMdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 08:33:39 -0400
+Date: Fri, 11 Jun 2010 13:33:20 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
+	and use a_ops->writepages() where possible
+Message-ID: <20100611123320.GA8798@csn.ul.ie>
+References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie> <20100610225749.c8cc3bc3.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100610225749.c8cc3bc3.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan, (slightly long mail warning..)
+On Thu, Jun 10, 2010 at 10:57:49PM -0700, Andrew Morton wrote:
+> On Tue,  8 Jun 2010 10:02:19 +0100 Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+> > To summarise, there are two big problems with page reclaim right now. The
+> > first is that page reclaim uses a_op->writepage to write a back back
+> > under the page lock which is inefficient from an IO perspective due to
+> > seeky patterns.
+> 
+> No it isn't.  If we have a pile of file-contiguous, disk-contiguous
+> dirty pages on the tail of the LRU then the single writepage()s will
+> work just fine due to request merging.
+> 
 
-as I mentioned before, the problem is how can I know which platform device's registration caused the tty_open to be called ?
+Ok, I was under the mistaken impression that filesystems wanted to be
+given ranges of pages where possible. Considering that there has been no
+reaction to the patch in question from the filesystem people cc'd, I'll
+drop the problem for now.
 
-Background: [apart from the mail chain below...]
-A platform driver by name ST_0 allows registration of certain protocol driver like BT_0 to be registered onto it, and use it as the transport.
+> 
+> 
+> Look.  This is getting very frustrating.  I keep saying the same thing
+> and keep getting ignored.  Once more:
+> 
+> 	WE BROKE IT!
+> 
+> 	PLEASE STOP WRITING CODE!
+> 
+> 	FIND OUT HOW WE BROKE IT!
+> 
+> Loud enough yet?
+> 
 
-This plat driver ST_O now signals the user-space to open up a TTY device and install the ldisc on top of it. (ldisc being ST_0's registered ldisc during it's plat probe).
+Yep. I've started a new series of tests that capture the trace points
+during each test to get some data on how many dirty pages are really
+being written back. They takes a long time to complete unfortunately.
 
-Now the plat driver's tty_open previously registered is called, but here lies the problem - On what basis do I know that it was because of ST_0 and also How can I send the device number 'x' information in ttySx for user-space application to open/tiocsetd on that device.
+> It used to be the case that only very small amounts of IO occurred in
+> page reclaim - the vast majority of writeback happened within
+> write()->balance_dirty_pages().  Then (and I think it was around 2.6.12)
+> we broke it, and page reclaim started doing lots of writeout.
+> 
 
+Ok, I'll work out exactly how many dirty pages are being  written back
+then. The data I have at the moment covers the whole test, so I cannot
+be certain if all the writeback happened during one stress test or
+whether it's a comment event.
 
-All these problems would be solved, if only we could open/tiocsetd a ldisc from the kernel space - basically the ability to claim/use a TTY interface.
-something like,
+> So the thing to do is to either find out how we broke it and see if it
+> can be repaired, or change the VM so that it doesn't do so much
+> LRU-based writeout.  Rather than fiddling around trying to make the
+> we-broke-it code run its brokenness faster.
+> 
 
-tty_register_ldisc(N_TI_WL, &ldisc_ops, UART_NUM_1);
-tty_set_ldisc(); from ldisc drivers itself.. 
-
-please comment...
-
-
-> Here are the 2 ST platform devices,
-> struct platform_device st_device_0 = {
->         .name = "ST_DEV_0",
->         .id = -1,
->         .dev.platform_data =
-> &array,
->         .dev.release =
-> any_device_release,
-> };
-> struct platform_device st_device_1 = {
->         .name = "ST_DEV_1",
->         .id = -1,
->         .dev.platform_data =
-> &array,
->         .dev.release =
-> any_device_release,
-> };
->
-> BT attaching itself to ST_DEV_0,
-> static struct protocol_platform_data bt_data = {
->         .parent_dev =
-> &st_device_0,
->         .name = "BT",
-> };
->
-> static struct platform_device bt_device = {
->         .name = "BT",
->         .id = -1,
->         .dev.platform_data =
-> &bt_data,
->         .dev.release =
-> bt_device_release,
-> };
->
-> And FM attaching itself to - ST_DEV_1,
-> static struct protocol_platform_data fm_data = {
->         .parent_dev =
-> &st_device_1,
->         .name = "FM",
-> };
-> static struct platform_device fm_device = {
->         .name = "FM",
->         .id = -1,
->         .dev.platform_data =
-> &fm_data,
->         .dev.release =
-> fm_device_release,
-> };
->
-> My "ST_REGISTER" would now look like,
-> int st_register(struct protocol_platform_data *data)
-> {
->         struct st_data_s *st_data;
->         struct platform_device *parent
-> = data->parent_dev;
->
->         st_data =
-> dev_get_drvdata(&parent->dev);
->
->         printk("%s registering into
-> %s\n", data->name, parent->name);
->
->         printk("data got is %s\n",
-> st_data->name);
->         st_data->name = "Changed
-> Name";
->         return 0;
-> }
-> EXPORT_SYMBOL(st_register);
-
-
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
