@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760109Ab0FKCRA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 22:17:00 -0400
-Received: from snt0-omc4-s8.snt0.hotmail.com ([65.55.90.211]:24302 "EHLO
-	snt0-omc4-s8.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760100Ab0FKCQ6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 22:16:58 -0400
-Message-ID: <SNT125-W1729A92F025BE180427F25C3D90@phx.gbl>
-X-Originating-IP: [96.253.143.208]
-From: Yuhong Bao <yuhongbao_386@hotmail.com>
-To: <davidjon@xenontk.org>
-CC: <arjan@infradead.org>, <ch@zeha.at>, <linux-kernel@vger.kernel.org>,
-       <bruce.w.allan@intel.com>, <jpiszcz@lucidpixels.com>,
-       <hpa@linux.intel.com>
-Subject: RE: Linux* is not supported on the Intel(R) Desktop Board DP55KG -
- Kernel still hangs upon reboot.
-Date: Thu, 10 Jun 2010 19:16:57 -0700
-Importance: Normal
-In-Reply-To: <4B420665.4090107@xenontk.org>
-References: <20100103202345.GA20015@percival.namespace.at>
- <alpine.DEB.2.00.1001031637230.17894@p34.internal.lan>,<20100103150300.170dedee@infradead.org>
- <SNT125-W149307D1A737021C150C9CC3740@phx.gbl>,<4B420665.4090107@xenontk.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 11 Jun 2010 02:16:57.0471 (UTC) FILETIME=[2AEE50F0:01CB090C]
+	id S1760086Ab0FKCUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 22:20:47 -0400
+Received: from mail.perches.com ([173.55.12.10]:1040 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754733Ab0FKCUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 22:20:45 -0400
+Subject: [PATCH] drivers/usb/gadget/langwell_udc.c: printk needs a
+ (unsigned long long) cast for a dma_t
+From: Joe Perches <joe@perches.com>
+To: Xiaochen Shen <xiaochen.shen@intel.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       linux-usb <linux-usb@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Jun 2010 19:20:43 -0700
+Message-ID: <1276222843.1556.438.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
+index a391351..d41b69c 100644
+--- a/drivers/usb/gadget/langwell_udc.c
++++ b/drivers/usb/gadget/langwell_udc.c
+@@ -842,9 +841,9 @@ static int langwell_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
+ 		VDBG(dev, "req->mapped = 0\n");
+ 	}
+ 
+-	DBG(dev, "%s queue req %p, len %u, buf %p, dma 0x%08x\n",
+-			_ep->name,
+-			_req, _req->length, _req->buf, _req->dma);
++	DBG(dev, "%s queue req %p, len %u, buf %p, dma 0x%08llx\n",
++	    _ep->name,
++	    _req, _req->length, _req->buf, (unsigned long long)_req->dma);
+ 
+ 	_req->status = -EINPROGRESS;
+ 	_req->actual = 0;
 
->>> btw this can be automated... just needs a DMI quirk.
->>> someone needs to get dmidecode output and add it to the existing
->>> table of reboot= quirks...
->>>
->>> --
->>> Arjan van de Ven Intel Open Source Technology Centre
->>
->> Note BTW that this is one of Intel's own motherboards!
->> In fact, I also have read about Intel's own DG45FC board having EHCI handoff trouble with Linux.
->>
->
-> Yes, but the BIOS is probably not done by Intel.
 
-Except that they are, and what frustrates me is that some of the Linux developers involved in working around these bugs work at Intel in the first place, the same vendor that makes the motherboards with the buggy BIOSes! For example, Arjan from Intel is CCed right there!
-
-Yuhong Bao
- 		 	   		  
-_________________________________________________________________
-The New Busy is not the old busy. Search, chat and e-mail from your inbox.
-http://www.windowslive.com/campaign/thenewbusy?ocid=PID28326::T:WLMTAGL:ON:WL:en-US:WM_HMP:042010_3
