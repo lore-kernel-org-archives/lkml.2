@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab0FKFVW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 01:21:22 -0400
-Received: from ringil.hengli.com.au ([216.59.3.182]:35465 "EHLO
-	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754391Ab0FKFVU (ORCPT
+	id S1754762Ab0FKFYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 01:24:00 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:65405 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753939Ab0FKFX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 01:21:20 -0400
-Date: Fri, 11 Jun 2010 15:21:12 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
-       "davem@davemloft.net" <davem@davemloft.net>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>
-Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
-	external.
-Message-ID: <20100611052112.GA25649@gondor.apana.org.au>
-References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com> <20100606161348.427822fb@nehalam> <20100608052744.GA21547@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 11 Jun 2010 01:23:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=SPJdzmf1RWIpaw96Sy/Gn9meB1m5jm6y+gBNnMarsusPyvYAw4KgfM7V6veFngInrx
+         MXfiDm7WLdc+r1+avv7UbV2L04yoxA5XPpQxYamNJ8HTmUO++uTkPWPzyznUnorAsgV8
+         Q2jML+qk4rJR7vzy9Qs55t7sksEevN+gErQ/4=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: andi@firstfloor.org, "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]script:conf.c Fix warning: variable 'type' set but not used
+Date: Thu, 10 Jun 2010 22:23:52 -0700
+Message-Id: <1276233832-17193-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 09, 2010 at 05:54:02PM +0800, Xin, Xiaohui wrote:
->
-> I'm not sure if I understand your way correctly:
-> 1) Does the way only deal with driver with SG feature? Since packet 
-> is non-linear...
+Not sure if this is correct or not, but with 
+make menuconfig
+  HOSTCC  scripts/kconfig/conf.o
+scripts/kconfig/conf.c: In function 'conf_sym':
+scripts/kconfig/conf.c:159:6: warning: variable 'type' set but not used
+scripts/kconfig/conf.c: In function 'conf_choice':
+scripts/kconfig/conf.c:231:6: warning: variable 'type' set but not used
+  HOSTLD  scripts/kconfig/mconf
 
-No the hardware doesn't have to support SG.  You just need to
-place the entire packet contents in a page instead of skb->head.
+I get this using gcc 4.6.0 the below change fixes this form me.
+(not sure with earlier version of gcc).
+please have a look and let me know.
+ 
+ Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-> 2) Is skb->data still pointing to guest user buffers?
-> If yes, how to avoid the modifications to net core change to skb?
+---
+ scripts/kconfig/conf.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-skb->data would not point to guest user buffers.  In the common
-case the packet is not modified on its way to the guest so this
-is not an issue.
-
-In the rare case where it is modified, you only have to copy the
-bits which are modified and the cost of that is inconsequential
-since you have to write to that memory anyway.
-
-> 3) In our way only parts of drivers need be modified to support zero-copy.
-> and here, need we modify all the drivers?
-
-If you're asking the portion of each driver supporting zero-copy
-that needs to be modified, then AFAICS this doesn't change that
-very much at all.
-
-> I think to make skb->head empty at first will cause more effort to pass the check with 
-> skb header. Have I missed something here? I really make the skb->head NULL
-> just before kfree(skb) in skb_release_data(), it's done by callback we have made for skb.
-
-No I'm not suggesting you set it to NULL.  It should have some
-memory allocated, but skb_headlen(skb) should be zero.
-
-Please have a look at how the napi_gro_frags interface works (e.g.,
-in drivers/net/cxgb3/sge.c).  This is exactly the model that I am
-suggesting.
-
-Cheers,
+diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
+index 9960d1c..d6369e8 100644
+--- a/scripts/kconfig/conf.c
++++ b/scripts/kconfig/conf.c
+@@ -156,14 +156,12 @@ static int conf_string(struct menu *menu)
+ static int conf_sym(struct menu *menu)
+ {
+ 	struct symbol *sym = menu->sym;
+-	int type;
+ 	tristate oldval, newval;
+ 
+ 	while (1) {
+ 		printf("%*s%s ", indent - 1, "", _(menu->prompt->text));
+ 		if (sym->name)
+ 			printf("(%s) ", sym->name);
+-		type = sym_get_type(sym);
+ 		putchar('[');
+ 		oldval = sym_get_tristate_value(sym);
+ 		switch (oldval) {
+@@ -228,11 +226,9 @@ static int conf_choice(struct menu *menu)
+ {
+ 	struct symbol *sym, *def_sym;
+ 	struct menu *child;
+-	int type;
+ 	bool is_new;
+ 
+ 	sym = menu->sym;
+-	type = sym_get_type(sym);
+ 	is_new = !sym_has_value(sym);
+ 	if (sym_is_changable(sym)) {
+ 		conf_sym(menu);
 -- 
-Visit Openswan at http://www.openswan.org/
-Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.1.rc1.21.gf3bd6
+
