@@ -1,100 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab0FKFKZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 01:10:25 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:56288 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab0FKFKX (ORCPT
+	id S1754331Ab0FKFKj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 01:10:39 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:44954 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754064Ab0FKFKe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 01:10:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 11 Jun 2010 14:05:53 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: balbir@linux.vnet.ibm.com
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Avi Kivity <avi@redhat.com>,
-       kvm <kvm@vger.kernel.org>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page
- cache control
-Message-Id: <20100611140553.956f31ab.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100611044632.GD5191@balbir.in.ibm.com>
-References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>
-	<20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>
-	<4C10B3AF.7020908@redhat.com>
-	<20100610142512.GB5191@balbir.in.ibm.com>
-	<1276214852.6437.1427.camel@nimitz>
-	<20100611105441.ee657515.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100611044632.GD5191@balbir.in.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Jun 2010 01:10:34 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding;
+	b=XQF7sDwuGnsMYlGV+VH56FCKhqt6FWouoZBikRazxPZeuYuGxb5U6obTe4XQRMdk1
+	SY9q64LT5wNJ31HlYFEvg==
+MIME-Version: 1.0
+In-Reply-To: <20100525132554.GA3310@redhat.com>
+References: <4BF64712.1070500@cn.fujitsu.com> <20100521131751.GA15302@redhat.com> 
+	<4BF9D265.70008@cn.fujitsu.com> <20100524212207.GC28685@redhat.com> 
+	<4BFB29DB.10507@cn.fujitsu.com> <20100525020339.GA8214@redhat.com> 
+	<4BFB3D66.1080001@cn.fujitsu.com> <20100525132554.GA3310@redhat.com>
+From: Divyesh Shah <dpshah@google.com>
+Date: Thu, 10 Jun 2010 22:10:09 -0700
+Message-ID: <AANLkTikZSgnSqK_JMVqy9ncFse0EbZm8j4WTTcJ00hwL@mail.gmail.com>
+Subject: Re: [PATCH 0/4] io-controller: Add new interfaces to trace backlogged 
+	group status
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       linux kernel mailing list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010 10:16:32 +0530
-Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+On Tue, May 25, 2010 at 6:25 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Tue, May 25, 2010 at 11:00:54AM +0800, Gui Jianfeng wrote:
+>> Vivek Goyal wrote:
+>> > On Tue, May 25, 2010 at 09:37:31AM +0800, Gui Jianfeng wrote:
+>> >> Vivek Goyal wrote:
+>> >>> On Mon, May 24, 2010 at 09:12:05AM +0800, Gui Jianfeng wrote:
+>> >>>> Vivek Goyal wrote:
+>> >>>>> On Fri, May 21, 2010 at 04:40:50PM +0800, Gui Jianfeng wrote:
+>> >>>>>> Hi,
+>> >>>>>>
+>> >>>>>> This series implements three new interfaces to keep track of tranferred bytes,
+>> >>>>>> elapsing time and io rate since group getting backlogged. If the group dequeues
+>> >>>>>> from service tree, these three interfaces will reset and shows zero.
+>> >>>>> Hi Gui,
+>> >>>>>
+>> >>>>> Can you give some details regarding how this functionality is useful? Why
+>> >>>>> would somebody be interested in only in stats of till group was
+>> >>>>> backlogged and not in total stats?
+>> >>>>>
+>> >>>>> Groups can come and go so fast and these stats will reset so many times
+>> >>>>> that I am not able to visualize how these stats will be useful.
+>> >>>> Hi Vivek,
+>> >>>>
+>> >>>> Currently, we assign weight to a group, but user still doesn't know how fast the
+>> >>>> group runs. With io rate interface, users can check the rate of a group at any
+>> >>>> moment, or to determine whether the weight assigned to a group is enough.
+>> >>>> bytes and time interface is just for debug purpose.
+>> >>> Gui,
+>> >>>
+>> >>> I still don't understand that why blkio.sectors or blkio.io_service_bytes
+>> >>> or blkio.io_serviced interfaces are not good enough to determine at what
+>> >>> rate a group is doing IO.
+>> >>>
+>> >>> I think we can very well write something in userspace like "iostat" to
+>> >>> display the per group rate. Utility can read the any of the above files
+>> >>> say at the interfval of 1s, calculate the diff between the values and
+>> >>> display that as group effective rate.
+>> >> Hi Vivek,
+>> >>
+>> >> blkio.io_active_rate reflects the rate since group get backlogged, so the rate is a smooth
+>> >> value. This value represents the actual rate a group runs. IMO, io rate calculated from
+>> >> user space is not accurate in following two scenarios:
+>> >>
+>> >> 1 Userspace app chooses the interval of 1s, if 0.5s is backlogged and 0.5s is not, the
+>> >>   rate calculated in this interval doesn't make sense.
+>> >>
+>> >
+>> > If you are not servicing groups for long time, anyway it is very bad for
+>> > latency. So that's why soft limit of 300ms of CFQ makes sense and
+>> > practically I am not sure you will be blocking groups for .5s.
+>> >
+>> > Even if you do, then user just needs to choose a bigger interval and you
+>> > will see more smooth rates. Reduce the interval and you might see little
+>> > bursty rate.
+>>
+>> Vivek,
+>>
+>> IIUC, the most big problem for user app is the user app doesn't know how long
+>> the group has been dequeued during the interval. For example, user choose
+>> 10s interval, 8s of which is not backlogged, but when user app calculates
+>> io rate, this 8s still include. So this rate isn't what we want. Am i missing
+>> something?
+>
+> Gui,
+>
+> If user application is not doing enough IO and group is getting deleted
+> fast, io_active_rate is not going to give you any meaningful data as it
+> will be lost the moment group gets deleted.
+>
+> Hence one needs to monitor the IO rate when a workload is running and is
+> keeping disk busy more or less all the time.
+>
+> Even in your example, if you monitored IO rate over 10 second interval and
+> group is not doing any IO, you just can't do anything about it. Just that
+> your measurement e method is wrong. Even io_active_rate will not help you
+> here as by the time you read the file, group is gone and there is no data.
+>
+> The very reason you want to monitor rate is that you want to make sure
+> group is getting enough BW. If group is not doing IO then one can look at
+> blkio.dequeue file and see if group is getting deleted too frequently. If
+> yes, that means group is not doing enough IO to keep the disk busy. One
+> can also try increasing the weight of the group but that will not help
+> much if group does not remain backlogged for significant amount of time.
+>
+>> "io_active_rate" will never take un-backlogged time into account when calculating
+>> io rate.
+>>
+>
+> Theoritically blkio.sectors/blkio.time gives the rate excluding the time
+> when group was not backlogged?
 
-> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-06-11 10:54:41]:
-> 
-> > On Thu, 10 Jun 2010 17:07:32 -0700
-> > Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-> > 
-> > > On Thu, 2010-06-10 at 19:55 +0530, Balbir Singh wrote:
-> > > > > I'm not sure victimizing unmapped cache pages is a good idea.
-> > > > > Shouldn't page selection use the LRU for recency information instead
-> > > > > of the cost of guest reclaim?  Dropping a frequently used unmapped
-> > > > > cache page can be more expensive than dropping an unused text page
-> > > > > that was loaded as part of some executable's initialization and
-> > > > > forgotten.
-> > > > 
-> > > > We victimize the unmapped cache only if it is unused (in LRU order).
-> > > > We don't force the issue too much. We also have free slab cache to go
-> > > > after.
-> > > 
-> > > Just to be clear, let's say we have a mapped page (say of /sbin/init)
-> > > that's been unreferenced since _just_ after the system booted.  We also
-> > > have an unmapped page cache page of a file often used at runtime, say
-> > > one from /etc/resolv.conf or /etc/passwd.
-> > > 
-> > 
-> > Hmm. I'm not fan of estimating working set size by calculation
-> > based on some numbers without considering history or feedback.
-> > 
-> > Can't we use some kind of feedback algorithm as hi-low-watermark, random walk
-> > or GA (or somehing more smart) to detect the size ?
-> >
-> 
-> Could you please clarify at what level you are suggesting size
-> detection? I assume it is outside the OS, right? 
-> 
-"OS" includes kernel and system programs ;)
+I agree with Vivek here. We use blkio.time as a source for io rate
+count for each cgroup, knowing that it is not entirely accurate but a
+good enough approximation.
 
-I can think of both way in kernel and in user approarh and they should be
-complement to each other.
+Gui, if you want to find out whether the cgroup has enough weight or
+not, I'd recommend looking at the wait_time stat in addition to
+blkio.time. It has been very useful in identifying jobs that are not
+getting enough IO done due to less weight assigned to them.
 
-An example of kernel-based approach is.
- 1. add a shrinker callback(A) for balloon-driver-for-guest as guest kswapd.
- 2. add a shrinker callback(B) for balloon-driver-for-host as host kswapd.
-(I guess current balloon driver is only for host. Please imagine.)
-
-(A) increases free memory in Guest.
-(B) increases free memory in Host.
-
-This is an example of feedback based memory resizing between host and guest.
-
-I think (B) is necessary at least before considering complecated things.
-
-To implement something clever,  (A) and (B) should take into account that
-how frequently memory reclaim in guest (which requires some I/O) happens.
-
-If doing outside kernel, I think using memcg is better than depends on
-balloon driver. But co-operative balloon and memcg may show us something
-good.
-
-Thanks,
--Kame
-
-
+>
+> But I will not recommend using blkio.time as it is very approximate.
+>
+> I really am not able to see what this interface is really buying you.
+>
+> Thanks
+> Vivek
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
