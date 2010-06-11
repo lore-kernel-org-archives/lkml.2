@@ -1,96 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760518Ab0FKVBk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 17:01:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38451 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab0FKVBi (ORCPT
+	id S1760576Ab0FKVDm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 17:03:42 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47077 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760526Ab0FKVDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 17:01:38 -0400
+	Fri, 11 Jun 2010 17:03:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rMv4DxRpGMF5UcA8b4GN12PqOAu8prU6Sio1D3MsV3/913DqPpv+rHwXsRfri7R8m+
-         WzJTEa2+E64oZwuSv+fECrWC7PuGlRMX5IigTeTdWyZW+APMy0EXNY9VlV1EHglv+B1v
-         AcZGzR9p/u67r4BvHrsNjX1si++V7hYNDo0+o=
-Date: Fri, 11 Jun 2010 23:01:38 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: perf_disable()
-Message-ID: <20100611210137.GB5234@nowhere>
-References: <1276273784.2077.2055.camel@twins> <20100611171732.GA5234@nowhere> <1276288180.2077.2299.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276288180.2077.2299.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=rqA1KnVByeac0ugjhoKRl3YL1Zgf+lGMgF7IHLxBmORGuiuyCOmtWi2VZNTHt4J9Nt
+         3kAe9TtPSHE2YKIZBb5meAuJXgOygaYXTea+MZ4KWLo9s9tqMvhGUuB0GQZLxMYO3KQo
+         ZtOuCHdUPnQ09mibwCi6ciOtQPTP01ZGKgE54=
+Subject: Re: [linux-pm] [PATCH] Fix the outstanding issue with hangs on
+ insert/removal of mmc cards
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-mmc <linux-mmc@vger.kernel.org>,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Philip Langdale <philipl@overt.org>
+In-Reply-To: <Pine.LNX.4.44L0.1006111648590.19894-100000@netrider.rowland.org>
+References: <Pine.LNX.4.44L0.1006111648590.19894-100000@netrider.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 12 Jun 2010 00:03:31 +0300
+Message-ID: <1276290211.2651.6.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 10:29:40PM +0200, Peter Zijlstra wrote:
-> On Fri, 2010-06-11 at 19:17 +0200, Frederic Weisbecker wrote:
-> > I suspect the problem is also on per context integrity. When you adjust
-> > the period, enable or disable a counter, this counter becomes async with
-> > the rest of the group or the rest of the counters in the same context, for
-> > a small bunch of time.
-> > 
-> > The longer you run your events, the higher is going to be this jitter.
-> > 
-> > Take an example, when you adjust a period, you:
-> > 
-> > perf_disable()
-> > perf_event_stop()
-> > left_period = 0
-> > perf_event_start()
-> > perf_enable()
-> > 
-> > During all this time, the given event is paused, but the whole rest of
-> > the events running on the cpu continue to count.
-> > 
-> > The problem is the same on context switch.
-> > 
-> > And I think this high resolution of synchronisation per context is
-> > sensitive, especially with perf start kind of workflows.
+On Fri, 2010-06-11 at 17:00 -0400, Alan Stern wrote: 
+> On Fri, 11 Jun 2010, Maxim Levitsky wrote:
 > 
-> I'm not sure what you're arguing, but the knife cuts on both sides, the
-> above also stops counters that shouldn't be stopped..
-
-
-Hmm, now that I look at it, x86_pmu_*able_all() isn't touching a
-single register to *able everything at once, it's doing a loop
-on every events.
-
-Forget about what I said then.
-
- 
-> > > There is a fun little recursion issue with perf_adjust_period(), where
-> > > if we fully removed perf_disable() we could end up calling pmu::stop()
-> > > twice and such.
-> > > 
-> > > But aside from that it looks to me its mostly about optimizing hardware
-> > > writes.
-> > > 
-> > > If nobody else known about/can find anything, I'm going to mostly remove
-> > > perf_disable() for now and later think about how to optimize the
-> > > hardware writes again.
+> > Hi,
 > > 
+> > After thinking a lot about how to fix properly the hangs caused by
+> > insert/removal of mmc card during suspend/resume, and default behavior
+> > of not trusting the card persistence over suspend, I finally come to
+> > conclusion that changing the del_gendisk is wrong.
 > > 
-> > Not sure that's a good idea IMHO.
+> > First of all there are 2 types of removal possible. First one happens
+> > when system detects that some device is gone. At that point there is
+> > really no point in syncing it.
+> > 
+> > The other type of removal is controlled removal, usually on user
+> > request. Surly we must sync the device of this request.
+> > This type of removal _shouldn't_ happen during suspend/resume
+> > transaction. The only case when it does is today to protect against user
+> > carelessness of switching the cards during suspend.
 > 
-> Well, we need to do something, the current weak mess needs to go, and
-> the alternative is basically a loop over all registerd pmus calling
-> their respective pmu::disable_all, which is utter suckage, so removing
-> as many of this as possible is a good thing.
+> There are other pathological cases which can cause it to happen, but 
+> they are pretty unlikely.
 > 
-> We can always come up with some lazy mode later that tries to batch the
-> hardware writes.
+> > I think that it is just wrong to sync the device in suspend/resume time.
+> > At that time userspace is frozen, but also its not known which drivers
+> > are still running. They might even suspend asynchronously...
+> > So, such cases should be moved to pm-notifier, thing that my patch does
+> > for mmc.
+> > Other users should be fixed as well.
+> > 
+> > We can, in addition to that, add a temporary hack to del_gendisk with
+> > loud WARN_ON though.
+> > 
+> > If card is really removed during suspend, then we can just introduce
+> > del_gendisk_dead or something like that which will be safe to call
+> > during suspend.
+> > 
+> > I didn't do that but rather I made the card detection thread freezeable,
+> > thus eliminated the whole problem.
+> > If you remove the card during suspend, system will notice at end of
+> > resume.
+> 
+> I don't know why the mmc subsystem works differently from USB.  In USB,
+> the equivalent of UNSAFE_RESUME is a per-device flag that can be
+> controlled via sysfs (see Documentation/usb/persist.txt).  And it
+> almost always defaults to ON, i.e., the kernel assumes that if a device
+> is present before suspend and after resume it is the same device --
+> although some checking is done to try to verify this (the descriptors
+> have to remain the same).  We started out being more cautious (the
+> default was OFF), but Linus complained about it being _too_ cautious.
+I will be very happy to see the description and default value of 
+MMC_UNSAFE_RESUME changed.
 
+This patch fixes both cases.
 
-Right.
+> 
+> And like you have done here, in USB the kernel thread that handles
+> registering and unregistering devices is freezable, so things never get
+> added or removed at an unsafe time.
+Very nice!
+
+Best regards,
+Maxim Levitsky
 
