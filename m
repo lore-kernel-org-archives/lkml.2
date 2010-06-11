@@ -1,32 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759218Ab0FKUP6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 16:15:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52293 "EHLO mail.zytor.com"
+	id S1760142Ab0FKUQc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 16:16:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54278 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754740Ab0FKUP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 16:15:57 -0400
-Message-ID: <4C129968.9070502@zytor.com>
-Date: Fri, 11 Jun 2010 13:15:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1758093Ab0FKUQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 16:16:29 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] PM fix for 2.6.35
+Date: Fri, 11 Jun 2010 22:14:40 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc2-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Ondrej Zary <linux@rainbow-software.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       "H. Peter Anvin" <hpa@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+References: <201006112210.25688.rjw@sisk.pl>
+In-Reply-To: <201006112210.25688.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Hans Rosenfeld <hans.rosenfeld@amd.com>
-CC: mingo@redhat.com, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] AMD errata checking framework
-References: <1276262713-26864-1-git-send-email-hans.rosenfeld@amd.com>
-In-Reply-To: <1276262713-26864-1-git-send-email-hans.rosenfeld@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006112214.40440.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2010 06:25 AM, Hans Rosenfeld wrote:
-> +		if (static_cpu_has(X86_FEATURE_OSVW) && 
+[Sorry for the duplicate, forgot to send to the lists.]
 
-static_cpu_has() is only well-defined for code that is only executed
-after alternatives execution; that would not seem to be the case for
-this code.
+Hi Linus,
 
-	-hpa
+Please pull an x86 resume fix from
+
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
+
+This fixes a nasty crash occuring during resume on boxes that
+wake up with MWAIT disabled.
+
+
+ arch/x86/include/asm/suspend_32.h |    2 ++
+ arch/x86/include/asm/suspend_64.h |    2 ++
+ arch/x86/power/cpu.c              |    4 ++++
+ 3 files changed, 8 insertions(+), 0 deletions(-)
+
+---------------
+
+Ondrej Zary (1):
+      PM / x86: Save/restore MISC_ENABLE register
+
