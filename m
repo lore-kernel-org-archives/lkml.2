@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab0FKHmf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 03:42:35 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33049 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075Ab0FKHmd (ORCPT
+	id S1758034Ab0FKHve (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 03:51:34 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35004 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432Ab0FKHvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 03:42:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=tBWjFZ0fU9Z79qS+00Gi032/cZtP9NdG2R7Iw8kwAy0FklFZnoDaauueNoG+9/fFSU
-         6tu10tI8KtPsvPiJxZWwfcIjG/dVNZ+pRv9/CmH3JTldG1+IsNumi8wqad9giYgB3dkJ
-         amzP2ZO91nBFM3/qHldkDjUTpJryZhuwdMNMM=
+	Fri, 11 Jun 2010 03:51:32 -0400
+Date: Fri, 11 Jun 2010 00:50:20 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Tao Ma <tao.ma@oracle.com>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH v4] ocfs2: Let ocfs2_setattr use new truncate sequence.
+Message-ID: <20100611075020.GC23946@mail.oracle.com>
+Mail-Followup-To: Christoph Hellwig <hch@lst.de>,
+	Tao Ma <tao.ma@oracle.com>, linux-fsdevel@vger.kernel.org,
+	linux-kernel@vger.kernel.org, Nick Piggin <npiggin@suse.de>
+References: <1276226869-11123-1-git-send-email-tao.ma@oracle.com>
+ <20100611065635.GA19692@lst.de>
+ <4C11E2BD.2020207@oracle.com>
+ <20100611071945.GA20496@lst.de>
 MIME-Version: 1.0
-In-Reply-To: <20100608143514.740f8095@virtuousgeek.org>
-References: <AANLkTimTm57fvumRXo9pegOY2M78mduBsClwYlmAOzpo@mail.gmail.com> 
-	<20100608143514.740f8095@virtuousgeek.org>
-From: Frank Pan <frankpzh@gmail.com>
-Date: Fri, 11 Jun 2010 15:42:12 +0800
-Message-ID: <AANLkTil74rKaddoYKj-zuEjfl0cKT8uyofjH9wZ0zFOf@mail.gmail.com>
-Subject: Re: Add a helper function in PCI IOV to get VF device
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-       Yu Zhao <yu.zhao@intel.com>, Chris Wright <chrisw@sous-sol.org>,
-       Mitch Williams <mitch.a.williams@intel.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       "David S. Miller" <davem@davemloft.net>,
-       Matt Carlson <mcarlson@broadcom.com>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100611071945.GA20496@lst.de>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090202.4C11EAF9.0196:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Per the discussion in this thread it sounds like this really has
-> nothing to do with sysfs and more to do with being a convenient API for
-> drivers.
-Yes.
+On Fri, Jun 11, 2010 at 09:19:45AM +0200, Christoph Hellwig wrote:
+> On Fri, Jun 11, 2010 at 03:16:13PM +0800, Tao Ma wrote:
+> > oh, that would be much work for ocfs2 to do from my perspective. So I 
+> > would really want to leave it as-is and I have add it to my to-do list.
+> 
+> Oh right, you start a new transaction there.  Sorry, ignore my request
+> and keep it as it is for now.  I don't think doing truncatate in separate
+> transactions actually is correct, though but that's no change with this
+> patch.
 
-> Is that correct?  If so, and assuming there's not some other way of
-> getting this info from a driver, I'm ok with it, but it should be
-> submitted as part of a patchset including driver code that uses it.
-Yes, I may submit them all after the driver hack is complete. I put the
-issue here to get response of some thing like, is this change possible?
-or is there a better way to do it?
+Christoph,
+	You're missing the part where actual truncate (reduce i_size)
+sets i_size in ocfs2_truncate_file().  So this later code doesn't get
+triggered for the truncate case.  It exists for the extend case, where
+we extend the allocation in multiple clean transactions, then finally
+set i_size in a final transaction.
 
-Thanks for reply.
+Joel
 
 -- 
-Frank Pan
 
-Computer Science and Technology
-Tsinghua University
+"When choosing between two evils, I always like to try the one
+ I've never tried before."
+        - Mae West
+
+Joel Becker
+Principal Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
