@@ -1,92 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab0FKU35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 16:29:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44482 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932303Ab0FKU3z convert rfc822-to-8bit (ORCPT
+	id S932434Ab0FKUag (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 16:30:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31616 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932137Ab0FKUaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 16:29:55 -0400
-Subject: Re: perf_disable()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100611171732.GA5234@nowhere>
-References: <1276273784.2077.2055.camel@twins>
-	 <20100611171732.GA5234@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 11 Jun 2010 22:29:40 +0200
-Message-ID: <1276288180.2077.2299.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 11 Jun 2010 16:30:35 -0400
+Date: Fri, 11 Jun 2010 16:28:33 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Subject: Re: [GIT PULL] Btrfs updates for 2.6.35
+Message-ID: <20100611202833.GG3018@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	linux-btrfs@vger.kernel.org
+References: <20100611193731.GA3018@think>
+ <AANLkTim6K6x3trUJLSUpoqsCWEpWuhxyN1zVRDUXH3BQ@mail.gmail.com>
+ <20100611194812.GD3018@think>
+ <AANLkTilRCWlM5ZklGOb26Xj9XAmBdY1S702WyQGuaK_l@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTilRCWlM5ZklGOb26Xj9XAmBdY1S702WyQGuaK_l@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4C129CC3.006C:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-11 at 19:17 +0200, Frederic Weisbecker wrote:
-> On Fri, Jun 11, 2010 at 06:29:44PM +0200, Peter Zijlstra wrote:
-> > Hi,
-> > 
-> > I've been going over perf_disable() usage in kernel/perf_event.c and
-> > wondered if we actually need it at all.
-> > 
-> > Currently the only thing we seem to require it for is around pmu::enable
-> > calls (and for that powerpc at least does it itself, on x86 we rely on
-> > it to call ->enable_all and reprogram the pmu state).
-> > 
-> > But I can't really find any NMI races wrt data structures or the like as
-> > seems implied by some comments. 
+On Fri, Jun 11, 2010 at 01:00:02PM -0700, Linus Torvalds wrote:
+> On Fri, Jun 11, 2010 at 12:48 PM, Chris Mason <chris.mason@oracle.com> wrote:
+> >
+> > The others all fix oopsen or big problems, and I think fixing warnings
+> > helps avoid false negatives as others look for real problems?
+> >
+> > I'm happy to rebase out the 3 non-criticals.
 > 
-> 
-> 
-> I suspect the problem is also on per context integrity. When you adjust
-> the period, enable or disable a counter, this counter becomes async with
-> the rest of the group or the rest of the counters in the same context, for
-> a small bunch of time.
-> 
-> The longer you run your events, the higher is going to be this jitter.
-> 
-> Take an example, when you adjust a period, you:
-> 
-> perf_disable()
-> perf_event_stop()
-> left_period = 0
-> perf_event_start()
-> perf_enable()
-> 
-> During all this time, the given event is paused, but the whole rest of
-> the events running on the cpu continue to count.
-> 
-> The problem is the same on context switch.
-> 
-> And I think this high resolution of synchronisation per context is
-> sensitive, especially with perf start kind of workflows.
+> There seems to be more than three non-criticals. There's the warning
+> fixes, the "unused variables" thing, the "memdup_user()" thing, a
+> couple of unnecessary NULL checks removed etc. On the whole, I do not
+> get the feeling that the pull request was actively trying to be
+> minimal, and that's what I really want to see.
 
-I'm not sure what you're arguing, but the knife cuts on both sides, the
-above also stops counters that shouldn't be stopped..
+The for-linus branch (note the change in branch name) has everything
+that doesn't fix a bug removed.
 
-> > There is a fun little recursion issue with perf_adjust_period(), where
-> > if we fully removed perf_disable() we could end up calling pmu::stop()
-> > twice and such.
-> > 
-> > But aside from that it looks to me its mostly about optimizing hardware
-> > writes.
-> > 
-> > If nobody else known about/can find anything, I'm going to mostly remove
-> > perf_disable() for now and later think about how to optimize the
-> > hardware writes again.
-> 
-> 
-> Not sure that's a good idea IMHO.
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git for-linus
 
-Well, we need to do something, the current weak mess needs to go, and
-the alternative is basically a loop over all registerd pmus calling
-their respective pmu::disable_all, which is utter suckage, so removing
-as many of this as possible is a good thing.
+I'll update the master branch to reflect any pulls you do.
 
-We can always come up with some lazy mode later that tries to batch the
-hardware writes.
+Dan Carpenter (9) commits (+19/-8):
+    Btrfs: handle error returns from btrfs_lookup_dir_item() (+2/-0)
+    Btrfs: btrfs_read_fs_root_no_name() returns ERR_PTRs (+4/-0)
+    Btrfs: unwind after btrfs_start_transaction() errors (+1/-1)
+    Btrfs: The file argument for fsync() is never null (+1/-1)
+    Btrfs: handle ERR_PTR from posix_acl_from_xattr() (+2/-0)
+    Btrfs: btrfs_lookup_dir_item() can return ERR_PTR (+1/-1)
+    Btrfs: uninitialized data is check_path_shared() (+1/-1)
+    Btrfs: handle kzalloc() failure in open_ctree() (+5/-2)
+    Btrfs: btrfs_iget() returns ERR_PTR (+2/-2)
+
+Zheng Yan (2) commits (+6/-4):
+    Btrfs: Fix BUG_ON for fs converted from extN (+2/-1)
+    Btrfs: Fix null dereference in relocation.c (+4/-3)
+
+Shi Weihua (2) commits (+6/-0):
+    Btrfs: prohibit a operation of changing acl's mask when noacl mount option used (+3/-0)
+    Btrfs: should add a permission check for setfacl (+3/-0)
+
+Miao Xie (2) commits (+9/-1):
+    Btrfs: fix loop device on top of btrfs (+1/-0)
+    Btrfs: fix remap_file_pages error (+8/-1)
+
+Sage Weil (1) commits (+0/-3):
+    Btrfs: avoid BUG when dropping root and reference in same transaction
+
+Josef Bacik (1) commits (+1/-1):
+    Btrfs: fix fallocate regression
+
+Total: (17) commits (+41/-17)
+ fs/btrfs/acl.c         |    8 ++++++++
+ fs/btrfs/disk-io.c     |   11 +++++++++--
+ fs/btrfs/extent-tree.c |    3 ++-
+ fs/btrfs/file.c        |   12 ++++++++++--
+ fs/btrfs/inode.c       |    4 ++--
+ fs/btrfs/ioctl.c       |    4 ++--
+ fs/btrfs/relocation.c  |    7 ++++---
+ fs/btrfs/root-tree.c   |    3 ---
+ fs/btrfs/super.c       |    6 ++++--
+ 9 files changed, 41 insertions(+), 17 deletions(-)
