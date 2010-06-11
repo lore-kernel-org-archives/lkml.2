@@ -1,91 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024Ab0FKRRg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 13:17:36 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37683 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755837Ab0FKRRf (ORCPT
+	id S1758184Ab0FKRSS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 13:18:18 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:16112 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755837Ab0FKRSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 13:17:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=s+Bho+OLgrUeBrkuILJ1mwCzuaxPszLp6SUyAH5Q3zYAkoLBmurfhzEKoRrVWx1fWw
-         a9+VCUdn3MYerDsZlhCDKXbepAAsklfMuOy7/l9YVqzV49QuRZr+afYiqDec+kwgcIqq
-         OyTrIAq2Jy6Ur1ylCS3BbUjrDWEuYioCo1/v4=
-Date: Fri, 11 Jun 2010 19:17:34 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: perf_disable()
-Message-ID: <20100611171732.GA5234@nowhere>
-References: <1276273784.2077.2055.camel@twins>
+	Fri, 11 Jun 2010 13:18:16 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:date:message-id:user-agent:mime-version:
+	content-type:content-transfer-encoding;
+	b=wumKQtftaIWMzJvZLoXkzzRdr/DXzvet0yoVA1q29TTFeoWDjr03Gq3hdtUfEijFN
+	ntUyhW9HzNe7XAiNomU6w==
+Subject: [PATCH] Fix a race in pid generation that causes pids to be reused
+	immediately.
+To: peterz@infradead.org, linux-kernel@vger.kernel.org, tytso@google.com,
+       akpm@linux-foundation.org, walken@google.com,
+       torvalds@linux-foundation.org, mingo@elte.hu
+From: Salman <sqazi@google.com>
+Date: Fri, 11 Jun 2010 10:17:40 -0700
+Message-ID: <20100611171603.23510.58768.stgit@bumblebee1.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276273784.2077.2055.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 06:29:44PM +0200, Peter Zijlstra wrote:
-> Hi,
-> 
-> I've been going over perf_disable() usage in kernel/perf_event.c and
-> wondered if we actually need it at all.
-> 
-> Currently the only thing we seem to require it for is around pmu::enable
-> calls (and for that powerpc at least does it itself, on x86 we rely on
-> it to call ->enable_all and reprogram the pmu state).
-> 
-> But I can't really find any NMI races wrt data structures or the like as
-> seems implied by some comments. 
+Fixed the whitespace issue that Michel pointed out.
+
+Btw., who is responsible for ACKing this?
+
+--
+
+A program that repeatedly forks and waits is susceptible to having the
+same pid repeated, especially when it competes with another instance of the
+same program.  This is really bad for bash implementation.  Furthermore,
+many shell scripts assume that pid numbers will not be used for some length
+of time.
+
+Race Description:
+
+A                                    B
+
+// pid == offset == n                // pid == offset == n + 1
+test_and_set_bit(offset, map->page)
+                                     test_and_set_bit(offset, map->page);
+                                     pid_ns->last_pid = pid;
+pid_ns->last_pid = pid;
+                                     // pid == n + 1 is freed (wait())
+
+                                     // Next fork()...
+                                     last = pid_ns->last_pid; // == n
+                                     pid = last + 1;
+
+Code to reproduce it (Running multiple instances is more effective):
+
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+// The distance mod 32768 between two pids, where the first pid is expected
+// to be smaller than the second.
+int PidDistance(pid_t first, pid_t second) {
+  return (second + 32768 - first) % 32768;
+}
+
+int main(int argc, char* argv[]) {
+  int failed = 0;
+  pid_t last_pid = 0;
+  int i;
+  printf("%d\n", sizeof(pid_t));
+  for (i = 0; i < 10000000; ++i) {
+    if (i % 32786 == 0)
+      printf("Iter: %d\n", i/32768);
+    int child_exit_code = i % 256;
+    pid_t pid = fork();
+    if (pid == -1) {
+      fprintf(stderr, "fork failed, iteration %d, errno=%d", i, errno);
+      exit(1);
+    }
+    if (pid == 0) {
+      // Child
+      exit(child_exit_code);
+    } else {
+      // Parent
+      if (i > 0) {
+        int distance = PidDistance(last_pid, pid);
+        if (distance == 0 || distance > 30000) {
+          fprintf(stderr,
+                  "Unexpected pid sequence: previous fork: pid=%d, "
+                  "current fork: pid=%d for iteration=%d.\n",
+                  last_pid, pid, i);
+          failed = 1;
+        }
+      }
+      last_pid = pid;
+      int status;
+      int reaped = wait(&status);
+      if (reaped != pid) {
+        fprintf(stderr,
+                "Wait return value: expected pid=%d, "
+                "got %d, iteration %d\n",
+                pid, reaped, i);
+        failed = 1;
+      } else if (WEXITSTATUS(status) != child_exit_code) {
+        fprintf(stderr,
+                "Unexpected exit status %x, iteration %d\n",
+                WEXITSTATUS(status), i);
+        failed = 1;
+      }
+    }
+  }
+  exit(failed);
+}
 
 
+Thanks to Ted Tso for the key ideas of this implementation.
 
-I suspect the problem is also on per context integrity. When you adjust
-the period, enable or disable a counter, this counter becomes async with
-the rest of the group or the rest of the counters in the same context, for
-a small bunch of time.
+Signed-off-by: Salman Qazi <sqazi@google.com>
+---
+ kernel/pid.c |   40 +++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 39 insertions(+), 1 deletions(-)
 
-The longer you run your events, the higher is going to be this jitter.
-
-Take an example, when you adjust a period, you:
-
-perf_disable()
-perf_event_stop()
-left_period = 0
-perf_event_start()
-perf_enable()
-
-During all this time, the given event is paused, but the whole rest of
-the events running on the cpu continue to count.
-
-The problem is the same on context switch.
-
-And I think this high resolution of synchronisation per context is
-sensitive, especially with perf start kind of workflows.
-
-(Although software events are not touched by perf_enable()/perf_disable().
-
-
-> 
-> There is a fun little recursion issue with perf_adjust_period(), where
-> if we fully removed perf_disable() we could end up calling pmu::stop()
-> twice and such.
-> 
-> But aside from that it looks to me its mostly about optimizing hardware
-> writes.
-> 
-> If nobody else known about/can find anything, I'm going to mostly remove
-> perf_disable() for now and later think about how to optimize the
-> hardware writes again.
-
-
-Not sure that's a good idea IMHO.
+diff --git a/kernel/pid.c b/kernel/pid.c
+index e9fd8c1..8e9067c 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -122,6 +122,20 @@ static void free_pidmap(struct upid *upid)
+ 	atomic_inc(&map->nr_free);
+ }
+ 
++/*
++ * If we started walking pids at 'base', is 'a' seen before 'b'?
++ */
++static int pid_before(int base, int a, int b)
++{
++	/*
++	 * This is the same as saying
++	 *
++	 * (a - base + MAXUINT) % MAXUINT < (b - base + MAXUINT) % MAXUINT
++	 * and that mapping orders 'a' and 'b' with respect to 'base'.
++	 */
++	return (unsigned)(a - base) < (unsigned)(b - base);
++}
++
+ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ {
+ 	int i, offset, max_scan, pid, last = pid_ns->last_pid;
+@@ -153,8 +167,32 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ 		if (likely(atomic_read(&map->nr_free))) {
+ 			do {
+ 				if (!test_and_set_bit(offset, map->page)) {
++					int prev;
++					int last_write = last;
+ 					atomic_dec(&map->nr_free);
+-					pid_ns->last_pid = pid;
++
++					/*
++					 * We might be racing with someone else
++					 * trying to set pid_ns->last_pid.
++					 * We want the winner to have the
++					 * "later" value, because if the
++					 * "earlier" value prevails, then
++					 * a pid may get reused immediately.
++					 *
++					 * Since pids rollover, it is not
++					 * sufficent to just pick the bigger
++					 * value.  We have to consider
++					 * where we started counting from.
++					 */
++					do {
++						prev = last_write;
++						last_write = cmpxchg(
++							&pid_ns->last_pid,
++							prev, pid);
++					} while ((prev != last_write) &&
++						 (pid_before(last, last_write,
++						  pid)));
++
+ 					return pid;
+ 				}
+ 				offset = find_next_offset(map, offset);
 
