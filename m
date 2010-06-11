@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab0FKF6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 01:58:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55300 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751819Ab0FKF6s (ORCPT
+	id S1754397Ab0FKGDa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 02:03:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31024 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab0FKGD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 01:58:48 -0400
-Date: Thu, 10 Jun 2010 22:57:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-Message-Id: <20100610225749.c8cc3bc3.akpm@linux-foundation.org>
-In-Reply-To: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Jun 2010 02:03:29 -0400
+From: Tao Ma <tao.ma@oracle.com>
+To: xfs@oss.sgi.com
+Cc: linux-kernel@vger.kernel.org, Tao Ma <tao.ma@oracle.com>,
+       Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@lst.de>,
+       Dave Chinner <david@fromorbit.com>
+Subject: [PATCH] xfs: Make fiemap works with sparse file.
+Date: Fri, 11 Jun 2010 14:02:15 +0800
+Message-Id: <1276236135-12051-1-git-send-email-tao.ma@oracle.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090204.4C11D19E.009E:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  8 Jun 2010 10:02:19 +0100 Mel Gorman <mel@csn.ul.ie> wrote:
+In xfs_vn_fiemap, we set bvm_count to fi_extent_max + 1 and want
+to return fi_extent_max extents, but actually it won't work for
+a sparse file. The reason is that in xfs_getbmap we will
+calculate holes and set it in 'out', while out is malloced by
+bmv_count(fi_extent_max+1) which didn't consider holes. So in the
+worst case, if 'out' vector looks like
+[hole, extent, hole, extent, hole, ... hole, extent, hole],
+we will only return half of fi_extent_max extents.
 
-> To summarise, there are two big problems with page reclaim right now. The
-> first is that page reclaim uses a_op->writepage to write a back back
-> under the page lock which is inefficient from an IO perspective due to
-> seeky patterns.
+So in xfs_vn_fiemap, we should consider this worst case. If the
+user wants fi_extent_max extents, we need a 'out' with size of
+2 *fi_extent_max + 1.
 
-No it isn't.  If we have a pile of file-contiguous, disk-contiguous
-dirty pages on the tail of the LRU then the single writepage()s will
-work just fine due to request merging.
+Cc: Alex Elder <aelder@sgi.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Tao Ma <tao.ma@oracle.com>
+---
+ fs/xfs/linux-2.6/xfs_iops.c |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
 
+diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
+index 9c8019c..1db92e3 100644
+--- a/fs/xfs/linux-2.6/xfs_iops.c
++++ b/fs/xfs/linux-2.6/xfs_iops.c
+@@ -672,9 +672,21 @@ xfs_vn_fiemap(
+ 	else
+ 		bm.bmv_length = BTOBB(length);
+ 
+-	/* We add one because in getbmap world count includes the header */
++	/*
++	 * It is a bit tricky for us to calculate the bmv_count from
++	 * fi_extent_max.
++	 * If we support to return fi_extent_max extents to the user,
++	 * we need at most 2 * fi_extent_max + 1 for bmv_count since
++	 * in xfs_getbmap we will calculate holes while fi_extent_max
++	 * don't have them. So in the worst case, bmv can looks like
++	 * [hole, extent, hole, extent, hole, ... hole, extent, hole].
++	 * So there will be 2 *fi_extent_max + 1.
++	 * What's more, in getbmap world count have to include the
++	 * header, so we need another bmv. So the total number will
++	 * be 2 * fieinfo->fi_extents_max + 2.
++	 */
+ 	bm.bmv_count = !fieinfo->fi_extents_max ? MAXEXTNUM :
+-					fieinfo->fi_extents_max + 1;
++			2 * fieinfo->fi_extents_max + 2;
+ 	bm.bmv_count = min_t(__s32, bm.bmv_count,
+ 			     (PAGE_SIZE * 16 / sizeof(struct getbmapx)));
+ 	bm.bmv_iflags = BMV_IF_PREALLOC;
+-- 
+1.5.5
 
-
-Look.  This is getting very frustrating.  I keep saying the same thing
-and keep getting ignored.  Once more:
-
-	WE BROKE IT!
-
-	PLEASE STOP WRITING CODE!
-
-	FIND OUT HOW WE BROKE IT!
-
-Loud enough yet?
-
-It used to be the case that only very small amounts of IO occurred in
-page reclaim - the vast majority of writeback happened within
-write()->balance_dirty_pages().  Then (and I think it was around 2.6.12)
-we broke it, and page reclaim started doing lots of writeout.
-
-So the thing to do is to either find out how we broke it and see if it
-can be repaired, or change the VM so that it doesn't do so much
-LRU-based writeout.  Rather than fiddling around trying to make the
-we-broke-it code run its brokenness faster.
