@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758076Ab0FKRIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 13:08:06 -0400
-Received: from vms173001pub.verizon.net ([206.46.173.1]:43992 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757919Ab0FKRHz (ORCPT
+	id S1758024Ab0FKRRg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 13:17:36 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37683 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755837Ab0FKRRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 13:07:55 -0400
-Date: Fri, 11 Jun 2010 13:07:35 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Jeffrey Merkey <jeffmerkey@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-acpi@vger.kernel.org
-Subject: Re: Linux 2.6.34 causes system lockup on Compaq Presario 2200 Laptop
-In-reply-to: <AANLkTilrLYu6H3GtAcP-cHpFvrm3v22uCw2EUeW_ZK0k@mail.gmail.com>
-Message-id: <alpine.LFD.2.00.1006111258430.6282@localhost.localdomain>
-References: <AANLkTil6GGSoc8TpzRacr1LZBZS3ee3H1ejYDSqfdul4@mail.gmail.com>
- <20100529202253.0bd18bbd.akpm@linux-foundation.org>
- <alpine.LFD.2.00.1006091821060.1402@localhost.localdomain>
- <AANLkTilrLYu6H3GtAcP-cHpFvrm3v22uCw2EUeW_ZK0k@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 11 Jun 2010 13:17:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=s+Bho+OLgrUeBrkuILJ1mwCzuaxPszLp6SUyAH5Q3zYAkoLBmurfhzEKoRrVWx1fWw
+         a9+VCUdn3MYerDsZlhCDKXbepAAsklfMuOy7/l9YVqzV49QuRZr+afYiqDec+kwgcIqq
+         OyTrIAq2Jy6Ur1ylCS3BbUjrDWEuYioCo1/v4=
+Date: Fri, 11 Jun 2010 19:17:34 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf_disable()
+Message-ID: <20100611171732.GA5234@nowhere>
+References: <1276273784.2077.2055.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276273784.2077.2055.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010, Jeffrey Merkey wrote:
-
-> Len,
+On Fri, Jun 11, 2010 at 06:29:44PM +0200, Peter Zijlstra wrote:
+> Hi,
 > 
-> I am having trouble getting a trace of this because its down hard to
-> reproduce.  The reason is the lockup happens before I log into the
-> laptop.  i.e. I boot 2.6.34 and if I let the laptop just sit there is
-> happens.  If I log in and start doing work on it, it does not seem to
-> happen.  It's related to using the laptop on battery mode with the
-> charger removed.  I have a 2U appliance setup I am working on today
-> and this frees up the laptop to try to reproduce this.  The flaky
-> battery power misreporting was in fact accurate.  The battery in that
-> laptop is 6 years old and does have low power.  I am certain the
-> lockup if related though.  I will try to reproduce today and setup the
-> trace to run after boot.  I have had it sitting there for an  hour and
-> it has not reoccurred.  Let me try through today and if I cannot
-> reproduce, close the bug.
+> I've been going over perf_disable() usage in kernel/perf_event.c and
+> wondered if we actually need it at all.
+> 
+> Currently the only thing we seem to require it for is around pmu::enable
+> calls (and for that powerpc at least does it itself, on x86 we rely on
+> it to call ->enable_all and reprogram the pmu state).
+> 
+> But I can't really find any NMI races wrt data structures or the like as
+> seems implied by some comments. 
 
-Good to know, Jeff.
 
-One possibility is that the old battery is confusing
-the embedded controller -- possibly exposing a firmware bug.
-The EC, in turn, is fully capable of hanging the OS.
 
-If you *can* reproduce it, it may be interesting to bisect
-recent changes to drivers/acpi/ec.c
+I suspect the problem is also on per context integrity. When you adjust
+the period, enable or disable a counter, this counter becomes async with
+the rest of the group or the rest of the counters in the same context, for
+a small bunch of time.
 
-Also, if you can reproduce it, it would be good to verify
-that the problem occurs only when the battery driver is loaded.
+The longer you run your events, the higher is going to be this jitter.
 
-thanks,
--Len
+Take an example, when you adjust a period, you:
 
-> > Please attach the output of acpidump here:
-> >
-> > https://bugzilla.kernel.org/show_bug.cgi?id=16136
+perf_disable()
+perf_event_stop()
+left_period = 0
+perf_event_start()
+perf_enable()
 
-We could still use this output -- note that you can
-capture it at any time, independent of the failure,
-and independent of the kernel -- as it is simply
-a copy of the tables that the BIOS is exporting to Linux.
+During all this time, the given event is paused, but the whole rest of
+the events running on the cpu continue to count.
 
-thanks,
--Len Brown, Intel Open Source Technology Center
+The problem is the same on context switch.
+
+And I think this high resolution of synchronisation per context is
+sensitive, especially with perf start kind of workflows.
+
+(Although software events are not touched by perf_enable()/perf_disable().
+
+
+> 
+> There is a fun little recursion issue with perf_adjust_period(), where
+> if we fully removed perf_disable() we could end up calling pmu::stop()
+> twice and such.
+> 
+> But aside from that it looks to me its mostly about optimizing hardware
+> writes.
+> 
+> If nobody else known about/can find anything, I'm going to mostly remove
+> perf_disable() for now and later think about how to optimize the
+> hardware writes again.
+
+
+Not sure that's a good idea IMHO.
+
