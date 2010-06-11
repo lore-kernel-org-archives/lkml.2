@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758706Ab0FKP2Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 11:28:16 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:59075 "EHLO
+	id S1756918Ab0FKP2Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 11:28:25 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:59112 "EHLO
 	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758220Ab0FKP2H (ORCPT
+	by vger.kernel.org with ESMTP id S1757270Ab0FKP2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 11:28:07 -0400
+	Fri, 11 Jun 2010 11:28:08 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Dan Williams <dan.j.williams@intel.com>,
        <linux-arm-kernel@lists.infradead.org>, <yuanyabin1978@sina.com>
 Cc: <linux-kernel@vger.kernel.org>,
        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 10/13] ARM: config U300 PL180 PL011 PL022 for DMA v5
-Date: Fri, 11 Jun 2010 17:27:47 +0200
-Message-ID: <1276270067-1820-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 11/13] ARM: config Ux500 PL011 PL022 for DMA v2
+Date: Fri, 11 Jun 2010 17:27:55 +0200
+Message-ID: <1276270075-1874-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,412 +22,338 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will configure the platform data for the PL180, PL011 and
-PL022 PrimeCells found in the U300 to use DMA with the generic
+This will configure the platform data for the PL011 and PL022
+PrimeCells found in the Ux500 to use DMA with the generic
 PrimeCell DMA engine.
 
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- arch/arm/mach-u300/core.c |  173 ++++++++++++++++++++++++++++++++++++++++-----
- arch/arm/mach-u300/mmc.c  |   13 +++-
- arch/arm/mach-u300/spi.c  |   21 ++++--
- 3 files changed, 181 insertions(+), 26 deletions(-)
+ arch/arm/mach-ux500/board-mop500.c   |   12 ---
+ arch/arm/mach-ux500/devices-db8500.c |   92 ++++++++++++++++++++++-
+ arch/arm/mach-ux500/devices.c        |  134 +++++++++++++++++++++++++++++++++-
+ 3 files changed, 220 insertions(+), 18 deletions(-)
 
-diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-index 5f34eb6..7f7e738 100644
---- a/arch/arm/mach-u300/core.c
-+++ b/arch/arm/mach-u300/core.c
-@@ -3,7 +3,7 @@
-  * arch/arm/mach-u300/core.c
-  *
-  *
-- * Copyright (C) 2007-2010 ST-Ericsson AB
-+ * Copyright (C) 2007-2010 ST-Ericsson SA
-  * License terms: GNU General Public License (GPL) version 2
-  * Core platform support, IRQ handling and device definitions.
-  * Author: Linus Walleij <linus.walleij@stericsson.com>
-@@ -16,7 +16,9 @@
- #include <linux/device.h>
- #include <linux/mm.h>
- #include <linux/termios.h>
-+#include <linux/dmaengine.h>
- #include <linux/amba/bus.h>
-+#include <linux/amba/serial.h>
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
- #include <mach/coh901318.h>
-@@ -92,10 +94,20 @@ void __init u300_map_io(void)
-  * Declaration of devices found on the U300 board and
-  * their respective memory locations.
-  */
-+
-+static struct amba_pl011_data uart0_plat_data = {
-+#ifdef CONFIG_COH901318
-+	.dma_filter = coh901318_filter_id,
-+	.dma_rx_param = (void *) U300_DMA_UART0_RX,
-+	.dma_tx_param = (void *) U300_DMA_UART0_TX,
-+#endif
-+};
-+
- static struct amba_device uart0_device = {
- 	.dev = {
-+		.coherent_dma_mask = ~0,
- 		.init_name = "uart0", /* Slow device at 0x3000 offset */
--		.platform_data = NULL,
-+		.platform_data = &uart0_plat_data,
+diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+index bb8d7b7..526b2e2 100644
+--- a/arch/arm/mach-ux500/board-mop500.c
++++ b/arch/arm/mach-ux500/board-mop500.c
+@@ -60,16 +60,6 @@ static struct spi_board_info u8500_spi_devices[] = {
  	},
- 	.res = {
- 		.start = U300_UART0_BASE,
-@@ -107,10 +119,19 @@ static struct amba_device uart0_device = {
+ };
  
- /* The U335 have an additional UART1 on the APP CPU */
- #ifdef CONFIG_MACH_U300_BS335
-+static struct amba_pl011_data uart1_plat_data = {
-+#ifdef CONFIG_COH901318
-+	.dma_filter = coh901318_filter_id,
-+	.dma_rx_param = (void *) U300_DMA_UART1_RX,
-+	.dma_tx_param = (void *) U300_DMA_UART1_TX,
-+#endif
-+};
-+
- static struct amba_device uart1_device = {
- 	.dev = {
-+		.coherent_dma_mask = ~0,
- 		.init_name = "uart1", /* Fast device at 0x7000 offset */
--		.platform_data = NULL,
-+		.platform_data = &uart1_plat_data,
- 	},
- 	.res = {
- 		.start = U300_UART1_BASE,
-@@ -949,20 +970,21 @@ const struct coh_dma_channel chan_config[U300_DMA_CHANNELS] = {
- 		.priority_high = 0,
- 		.dev_addr = U300_MSL_BASE + 6 * 0x40 + 0x220,
- 	},
-+	/*
-+	 * Don't set up device address, burst count or size of src
-+	 * or dst bus for this peripheral - handled by PrimeCell
-+	 * DMA extension.
-+	 */
- 	{
- 		.number = U300_DMA_MMCSD_RX_TX,
- 		.name = "MMCSD RX TX",
- 		.priority_high = 0,
--		.dev_addr =  U300_MMCSD_BASE + 0x080,
- 		.param.config = COH901318_CX_CFG_CH_DISABLE |
- 				COH901318_CX_CFG_LCR_DISABLE |
- 				COH901318_CX_CFG_TC_IRQ_ENABLE |
- 				COH901318_CX_CFG_BE_IRQ_ENABLE,
- 		.param.ctrl_lli_chained = 0 |
- 				COH901318_CX_CTRL_TC_ENABLE |
--				COH901318_CX_CTRL_BURST_COUNT_32_BYTES |
--				COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS |
--				COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS |
- 				COH901318_CX_CTRL_MASTER_MODE_M1RW |
- 				COH901318_CX_CTRL_TCP_ENABLE |
- 				COH901318_CX_CTRL_TC_IRQ_ENABLE |
-@@ -971,9 +993,6 @@ const struct coh_dma_channel chan_config[U300_DMA_CHANNELS] = {
- 				COH901318_CX_CTRL_DDMA_LEGACY,
- 		.param.ctrl_lli = 0 |
- 				COH901318_CX_CTRL_TC_ENABLE |
--				COH901318_CX_CTRL_BURST_COUNT_32_BYTES |
--				COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS |
--				COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS |
- 				COH901318_CX_CTRL_MASTER_MODE_M1RW |
- 				COH901318_CX_CTRL_TCP_ENABLE |
- 				COH901318_CX_CTRL_TC_IRQ_ENABLE |
-@@ -982,9 +1001,6 @@ const struct coh_dma_channel chan_config[U300_DMA_CHANNELS] = {
- 				COH901318_CX_CTRL_DDMA_LEGACY,
- 		.param.ctrl_lli_last = 0 |
- 				COH901318_CX_CTRL_TC_ENABLE |
--				COH901318_CX_CTRL_BURST_COUNT_32_BYTES |
--				COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS |
--				COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS |
- 				COH901318_CX_CTRL_MASTER_MODE_M1RW |
- 				COH901318_CX_CTRL_TCP_DISABLE |
- 				COH901318_CX_CTRL_TC_IRQ_ENABLE |
-@@ -1003,15 +1019,76 @@ const struct coh_dma_channel chan_config[U300_DMA_CHANNELS] = {
- 		.name = "MSPRO RX",
- 		.priority_high = 0,
- 	},
-+	/*
-+	 * Don't set up device address, burst count or size of src
-+	 * or dst bus for this peripheral - handled by PrimeCell
-+	 * DMA extension.
-+	 */
- 	{
- 		.number = U300_DMA_UART0_TX,
- 		.name = "UART0 TX",
- 		.priority_high = 0,
-+		.param.config = COH901318_CX_CFG_CH_DISABLE |
-+				COH901318_CX_CFG_LCR_DISABLE |
-+				COH901318_CX_CFG_TC_IRQ_ENABLE |
-+				COH901318_CX_CFG_BE_IRQ_ENABLE,
-+		.param.ctrl_lli_chained = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_ENABLE |
-+				COH901318_CX_CTRL_TC_IRQ_DISABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
-+		.param.ctrl_lli = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_ENABLE |
-+				COH901318_CX_CTRL_TC_IRQ_ENABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
-+		.param.ctrl_lli_last = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_ENABLE |
-+				COH901318_CX_CTRL_TC_IRQ_ENABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
- 	},
- 	{
- 		.number = U300_DMA_UART0_RX,
- 		.name = "UART0 RX",
- 		.priority_high = 0,
-+		.param.config = COH901318_CX_CFG_CH_DISABLE |
-+				COH901318_CX_CFG_LCR_DISABLE |
-+				COH901318_CX_CFG_TC_IRQ_ENABLE |
-+				COH901318_CX_CFG_BE_IRQ_ENABLE,
-+		.param.ctrl_lli_chained = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_ENABLE |
-+				COH901318_CX_CTRL_TC_IRQ_DISABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
-+		.param.ctrl_lli = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_ENABLE |
-+				COH901318_CX_CTRL_TC_IRQ_ENABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
-+		.param.ctrl_lli_last = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_ENABLE |
-+				COH901318_CX_CTRL_TC_IRQ_ENABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
- 	},
- 	{
- 		.number = U300_DMA_APEX_TX,
-@@ -1241,15 +1318,77 @@ const struct coh_dma_channel chan_config[U300_DMA_CHANNELS] = {
- 		.name = "XGAM PDI",
- 		.priority_high = 0,
- 	},
-+	/*
-+	 * Don't set up device address, burst count or size of src
-+	 * or dst bus for this peripheral - handled by PrimeCell
-+	 * DMA extension.
-+	 */
- 	{
- 		.number = U300_DMA_SPI_TX,
- 		.name = "SPI TX",
- 		.priority_high = 0,
-+		.param.config = COH901318_CX_CFG_CH_DISABLE |
-+				COH901318_CX_CFG_LCR_DISABLE |
-+				COH901318_CX_CFG_TC_IRQ_ENABLE |
-+				COH901318_CX_CFG_BE_IRQ_ENABLE,
-+		.param.ctrl_lli_chained = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_DISABLE |
-+				COH901318_CX_CTRL_TC_IRQ_DISABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
-+		.param.ctrl_lli = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_DISABLE |
-+				COH901318_CX_CTRL_TC_IRQ_ENABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
-+		.param.ctrl_lli_last = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_DISABLE |
-+				COH901318_CX_CTRL_TC_IRQ_ENABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
- 	},
- 	{
- 		.number = U300_DMA_SPI_RX,
- 		.name = "SPI RX",
- 		.priority_high = 0,
-+		.param.config = COH901318_CX_CFG_CH_DISABLE |
-+				COH901318_CX_CFG_LCR_DISABLE |
-+				COH901318_CX_CFG_TC_IRQ_ENABLE |
-+				COH901318_CX_CFG_BE_IRQ_ENABLE,
-+		.param.ctrl_lli_chained = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_DISABLE |
-+				COH901318_CX_CTRL_TC_IRQ_DISABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
-+		.param.ctrl_lli = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_DISABLE |
-+				COH901318_CX_CTRL_TC_IRQ_ENABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
-+		.param.ctrl_lli_last = 0 |
-+				COH901318_CX_CTRL_TC_ENABLE |
-+				COH901318_CX_CTRL_MASTER_MODE_M1RW |
-+				COH901318_CX_CTRL_TCP_DISABLE |
-+				COH901318_CX_CTRL_TC_IRQ_ENABLE |
-+				COH901318_CX_CTRL_HSP_ENABLE |
-+				COH901318_CX_CTRL_HSS_DISABLE |
-+				COH901318_CX_CTRL_DDMA_LEGACY,
-+
- 	},
- 	{
- 		.number = U300_DMA_GENERAL_PURPOSE_0,
-@@ -1577,7 +1716,7 @@ static void __init u300_init_check_chip(void)
- #endif
- #ifdef CONFIG_MACH_U300_BS335
- 	if ((val & 0xFF00U) != 0xf000 && (val & 0xFF00U) != 0xf100) {
--		printk(KERN_ERR "Platform configured for BS365 " \
-+		printk(KERN_ERR "Platform configured for BS335 " \
- 		       " with DB3350 but %s detected, expect problems!",
- 		       chipname);
- 	}
-@@ -1654,12 +1793,12 @@ void __init u300_init_devices(void)
- 	/* Register subdevices on the I2C buses */
- 	u300_i2c_register_board_devices();
- 
--	/* Register subdevices on the SPI bus */
--	u300_spi_register_board_devices();
--
- 	/* Register the platform devices */
- 	platform_add_devices(platform_devs, ARRAY_SIZE(platform_devs));
- 
-+	/* Register subdevices on the SPI bus */
-+	u300_spi_register_board_devices();
-+
- #ifndef CONFIG_MACH_U300_SEMI_IS_SHARED
- 	/*
- 	 * Enable SEMI self refresh. Self-refresh of the SDRAM is entered when
-diff --git a/arch/arm/mach-u300/mmc.c b/arch/arm/mach-u300/mmc.c
-index 88506d0..3acb710 100644
---- a/arch/arm/mach-u300/mmc.c
-+++ b/arch/arm/mach-u300/mmc.c
-@@ -3,11 +3,11 @@
-  * arch/arm/mach-u300/mmc.c
-  *
-  *
-- * Copyright (C) 2009 ST-Ericsson AB
-+ * Copyright (C) 2009 ST-Ericsson SA
-  * License terms: GNU General Public License (GPL) version 2
-  *
-  * Author: Linus Walleij <linus.walleij@stericsson.com>
-- * Author: Johan Lundin <johan.lundin@stericsson.com>
-+ * Author: Johan Lundin
-  * Author: Jonas Aaberg <jonas.aberg@stericsson.com>
-  */
- #include <linux/device.h>
-@@ -19,8 +19,11 @@
- #include <linux/regulator/consumer.h>
- #include <linux/regulator/machine.h>
- #include <linux/gpio.h>
-+#include <linux/dmaengine.h>
- #include <linux/amba/mmci.h>
- #include <linux/slab.h>
-+#include <mach/coh901318.h>
-+#include <mach/dma_channels.h>
- 
- #include "mmc.h"
- #include "padmux.h"
-@@ -108,6 +111,12 @@ int __devinit mmc_init(struct amba_device *adev)
- 	mmci_card->mmc0_plat_data.gpio_cd = -1;
- 	mmci_card->mmc0_plat_data.capabilities = MMC_CAP_MMC_HIGHSPEED |
- 		MMC_CAP_SD_HIGHSPEED | MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
-+#ifdef CONFIG_COH901318
-+	mmci_card->mmc0_plat_data.dma_filter = coh901318_filter_id;
-+	mmci_card->mmc0_plat_data.dma_rx_param =
-+		(void *) U300_DMA_MMCSD_RX_TX;
-+	/* Don't specify a TX channel, this RX channel is bidirectional */
-+#endif
- 
- 	mmcsd_device->platform_data = (void *) &mmci_card->mmc0_plat_data;
- 
-diff --git a/arch/arm/mach-u300/spi.c b/arch/arm/mach-u300/spi.c
-index f0e887b..243c999 100644
---- a/arch/arm/mach-u300/spi.c
-+++ b/arch/arm/mach-u300/spi.c
-@@ -11,6 +11,9 @@
- #include <linux/spi/spi.h>
- #include <linux/amba/pl022.h>
- #include <linux/err.h>
-+#include <mach/coh901318.h>
-+#include <mach/dma_channels.h>
-+
- #include "padmux.h"
- 
- /*
-@@ -32,11 +35,8 @@ static void select_dummy_chip(u32 chipselect)
- struct pl022_config_chip dummy_chip_info = {
- 	/* Nominally this is LOOPBACK_DISABLED, but this is our dummy chip! */
- 	.lbm = LOOPBACK_ENABLED,
--	/*
--	 * available POLLING_TRANSFER and INTERRUPT_TRANSFER,
--	 * DMA_TRANSFER does not work
--	 */
--	.com_mode = INTERRUPT_TRANSFER,
-+	/* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
-+	.com_mode = DMA_TRANSFER,
- 	.iface = SSP_INTERFACE_MOTOROLA_SPI,
- 	/* We can only act as master but SSP_SLAVE is possible in theory */
- 	.hierarchy = SSP_MASTER,
-@@ -83,8 +83,6 @@ static struct spi_board_info u300_spi_devices[] = {
- static struct pl022_ssp_controller ssp_platform_data = {
- 	/* If you have several SPI buses this varies, we have only bus 0 */
- 	.bus_id = 0,
--	/* Set this to 1 when we think we got DMA working */
+-static struct pl022_ssp_controller ssp0_platform_data = {
+-	.bus_id = 0,
+-	/* pl022 not yet supports dma */
 -	.enable_dma = 0,
- 	/*
- 	 * On the APP CPU GPIO 4, 5 and 6 are connected as generic
- 	 * chip selects for SPI. (Same on U330, U335 and U365.)
-@@ -92,6 +90,14 @@ static struct pl022_ssp_controller ssp_platform_data = {
- 	 * and do padmuxing accordingly too.
- 	 */
- 	.num_chipselect = 3,
-+#ifdef CONFIG_COH901318
+-	/* on this platform, gpio 31,142,144,214 &
+-	 * 224 are connected as chip selects
+-	 */
+-	.num_chipselect = 5,
+-};
+-
+ #define U8500_I2C_CONTROLLER(id, _slsu, _tft, _rft, clk, _sm) \
+ static struct nmk_i2c_controller u8500_i2c##id##_data = { \
+ 	/*				\
+@@ -123,8 +113,6 @@ static void __init u8500_init_machine(void)
+ 	ux500_i2c2_device.dev.platform_data = &u8500_i2c2_data;
+ 	ux500_i2c3_device.dev.platform_data = &u8500_i2c3_data;
+ 
+-	u8500_ssp0_device.dev.platform_data = &ssp0_platform_data;
+-
+ 	/* Register the active AMBA devices on this board */
+ 	for (i = 0; i < ARRAY_SIZE(amba_devs); i++)
+ 		amba_device_register(amba_devs[i], &iomem_resource);
+diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
+index 8229034..a5c2aee 100644
+--- a/arch/arm/mach-ux500/devices-db8500.c
++++ b/arch/arm/mach-ux500/devices-db8500.c
+@@ -11,6 +11,7 @@
+ #include <linux/io.h>
+ #include <linux/gpio.h>
+ #include <linux/amba/bus.h>
++#include <linux/amba/pl022.h>
+ 
+ #include <plat/ste_dma40.h>
+ 
+@@ -55,10 +56,55 @@ struct platform_device u8500_gpio_devs[] = {
+ 	GPIO_DEVICE(8),
+ };
+ 
++#ifdef CONFIG_STE_DMA40
++static struct stedma40_chan_cfg ssp0_dma_cfg_rx = {
++	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
++			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
++			 STEDMA40_LOW_PRIORITY_CHANNEL),
++	.dir = STEDMA40_PERIPH_TO_MEM,
++	.src_dev_type =  STEDMA40_DEV_SSP0_RX,
++	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
++	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.src_info.data_width = STEDMA40_BYTE_WIDTH,
++	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
++};
++
++static struct stedma40_chan_cfg ssp0_dma_cfg_tx = {
++	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
++			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
++			 STEDMA40_LOW_PRIORITY_CHANNEL),
++	.dir = STEDMA40_MEM_TO_PERIPH,
++	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
++	.dst_dev_type = STEDMA40_DEV_SSP0_TX,
++	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.src_info.data_width = STEDMA40_BYTE_WIDTH,
++	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
++};
++#endif
++
++static struct pl022_ssp_controller ssp0_platform_data = {
++	.bus_id = 0,
++#ifdef CONFIG_STE_DMA40
 +	.enable_dma = 1,
-+	.dma_filter = coh901318_filter_id,
-+	.dma_rx_param = (void *) U300_DMA_SPI_RX,
-+	.dma_tx_param = (void *) U300_DMA_SPI_TX,
++	.dma_filter = stedma40_filter,
++	.dma_rx_param = &ssp0_dma_cfg_rx,
++	.dma_tx_param = &ssp0_dma_cfg_tx,
 +#else
 +	.enable_dma = 0,
 +#endif
++	/* on this platform, gpio 31,142,144,214 &
++	 * 224 are connected as chip selects
++	 */
++	.num_chipselect = 5,
++};
++
+ struct amba_device u8500_ssp0_device = {
+ 	.dev = {
+ 		.coherent_dma_mask = ~0,
+ 		.init_name = "ssp0",
++		.platform_data = &ssp0_platform_data,
+ 	},
+ 	.res = {
+ 		.start = U8500_SSP0_BASE,
+@@ -171,12 +217,52 @@ struct stedma40_chan_cfg dma40_memcpy_conf_log = {
+ 
+ /*
+  * Mapping between destination event lines and physical device address.
+- * The event line is tied to a device and therefor the address is constant.
++ * The event line is tied to a device and therefore the address is constant.
++ * When the address comes from a primecell it will be configured in runtime
++ * and we set the address to -1 as a placeholder.
+  */
+-static const dma_addr_t dma40_tx_map[STEDMA40_NR_DEV];
++static const dma_addr_t dma40_tx_map[STEDMA40_NR_DEV] = {
++	[STEDMA40_DEV_SPI0_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MMC0_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MMC1_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MMC2_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SSP0_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SSP1_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_UART2_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_UART1_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_UART0_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM2_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM0_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM1_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SPI2_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SPI1_TX] = -1,  /* PrimeCell DMA */
++	[STEDMA40_DEV_SPI3_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM3_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM4_TX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM5_TX] = -1, /* PrimeCell DMA */
++};
+ 
+ /* Mapping between source event lines and physical device address */
+-static const dma_addr_t dma40_rx_map[STEDMA40_NR_DEV];
++static const dma_addr_t dma40_rx_map[STEDMA40_NR_DEV] = {
++	[STEDMA40_DEV_SPI0_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MMC0_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MMC1_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MMC2_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SSP0_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SSP1_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_UART2_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_UART1_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_UART0_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM2_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM0_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM1_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SPI2_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SPI1_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SPI3_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM3_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM4_RX] = -1, /* PrimeCell DMA */
++	[STEDMA40_DEV_SD_MM5_RX] = -1, /* PrimeCell DMA */
++};
+ 
+ /* Reserved event lines for memcpy only */
+ static int dma40_memcpy_event[] = {
+diff --git a/arch/arm/mach-ux500/devices.c b/arch/arm/mach-ux500/devices.c
+index 8a26889..f234461 100644
+--- a/arch/arm/mach-ux500/devices.c
++++ b/arch/arm/mach-ux500/devices.c
+@@ -10,10 +10,22 @@
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/amba/bus.h>
++#include <linux/amba/dma.h>
++#include <linux/amba/serial.h>
++
++#include <plat/ste_dma40.h>
+ 
+ #include <mach/hardware.h>
+ #include <mach/setup.h>
+ 
++/* Channel assignments are per-SoC */
++#ifdef CONFIG_UX500_SOC_DB8500
++#include "ste-dma40-db8500.h"
++#endif
++#if defined(CONFIG_UX500_SOC_DB5500) && defined(CONFIG_STE_DMA40)
++#error "You need to define the DMA channels for DB5500!"
++#endif
++
+ #define __MEM_4K_RESOURCE(x) \
+ 	.res = {.start = (x), .end = (x) + SZ_4K - 1, .flags = IORESOURCE_MEM}
+ 
+@@ -29,20 +41,136 @@ struct amba_device ux500_pl031_device = {
+ 	.irq = {IRQ_RTC_RTT, NO_IRQ},
  };
  
- 
-@@ -117,6 +123,7 @@ void __init u300_spi_init(struct amba_device *adev)
- 	}
- 
- }
++#ifdef CONFIG_STE_DMA40
++static struct stedma40_chan_cfg uart0_dma_cfg_rx = {
++	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
++			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
++			 STEDMA40_LOW_PRIORITY_CHANNEL),
++	.dir = STEDMA40_PERIPH_TO_MEM,
++	.src_dev_type =  STEDMA40_DEV_UART0_RX,
++	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
++	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.src_info.data_width = STEDMA40_BYTE_WIDTH,
++	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
++};
 +
- void __init u300_spi_register_board_devices(void)
- {
- 	/* Register any SPI devices */
++static struct stedma40_chan_cfg uart0_dma_cfg_tx = {
++	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
++			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
++			 STEDMA40_LOW_PRIORITY_CHANNEL),
++	.dir = STEDMA40_MEM_TO_PERIPH,
++	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
++	.dst_dev_type = STEDMA40_DEV_UART0_TX,
++	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.src_info.data_width = STEDMA40_BYTE_WIDTH,
++	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
++};
++
++static struct stedma40_chan_cfg uart1_dma_cfg_rx = {
++	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
++			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
++			 STEDMA40_LOW_PRIORITY_CHANNEL),
++	.dir = STEDMA40_PERIPH_TO_MEM,
++	.src_dev_type =  STEDMA40_DEV_UART1_RX,
++	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
++	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.src_info.data_width = STEDMA40_BYTE_WIDTH,
++	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
++};
++
++static struct stedma40_chan_cfg uart1_dma_cfg_tx = {
++	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
++			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
++			 STEDMA40_LOW_PRIORITY_CHANNEL),
++	.dir = STEDMA40_MEM_TO_PERIPH,
++	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
++	.dst_dev_type = STEDMA40_DEV_UART1_TX,
++	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.src_info.data_width = STEDMA40_BYTE_WIDTH,
++	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
++};
++
++static struct stedma40_chan_cfg uart2_dma_cfg_rx = {
++	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
++			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
++			 STEDMA40_LOW_PRIORITY_CHANNEL),
++	.dir = STEDMA40_PERIPH_TO_MEM,
++	.src_dev_type =  STEDMA40_DEV_UART2_RX,
++	.dst_dev_type = STEDMA40_DEV_DST_MEMORY,
++	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.src_info.data_width = STEDMA40_BYTE_WIDTH,
++	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
++};
++
++static struct stedma40_chan_cfg uart2_dma_cfg_tx = {
++	.channel_type = (STEDMA40_CHANNEL_IN_LOG_MODE|
++			 STEDMA40_LCHAN_SRC_LOG_DST_LOG|STEDMA40_NO_TIM_FOR_LINK|
++			 STEDMA40_LOW_PRIORITY_CHANNEL),
++	.dir = STEDMA40_MEM_TO_PERIPH,
++	.src_dev_type = STEDMA40_DEV_SRC_MEMORY,
++	.dst_dev_type = STEDMA40_DEV_UART2_TX,
++	.src_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.src_info.data_width = STEDMA40_BYTE_WIDTH,
++	.dst_info.endianess = STEDMA40_LITTLE_ENDIAN,
++	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
++};
++#endif
++
++static struct amba_pl011_data uart0_plat = {
++#ifdef CONFIG_STE_DMA40
++	.dma_filter = stedma40_filter,
++	.dma_rx_param = &uart0_dma_cfg_rx,
++	.dma_tx_param = &uart0_dma_cfg_tx,
++#endif
++};
++
++static struct amba_pl011_data uart1_plat = {
++#ifdef CONFIG_STE_DMA40
++	.dma_filter = stedma40_filter,
++	.dma_rx_param = &uart1_dma_cfg_rx,
++	.dma_tx_param = &uart1_dma_cfg_tx,
++#endif
++};
++
++static struct amba_pl011_data uart2_plat = {
++#ifdef CONFIG_STE_DMA40
++	.dma_filter = stedma40_filter,
++	.dma_rx_param = &uart2_dma_cfg_rx,
++	.dma_tx_param = &uart2_dma_cfg_tx,
++#endif
++};
++
+ struct amba_device ux500_uart0_device = {
+-	.dev = { .init_name = "uart0" },
++	.dev =  {
++		.coherent_dma_mask = ~0,
++		.init_name = "uart0",
++		.platform_data = &uart0_plat,
++	},
+ 	__MEM_4K_RESOURCE(UX500_UART0_BASE),
+ 	.irq = {IRQ_UART0, NO_IRQ},
+ };
+ 
+ struct amba_device ux500_uart1_device = {
+-	.dev = { .init_name = "uart1" },
++	.dev =  {
++		.coherent_dma_mask = ~0,
++		.init_name = "uart1",
++		.platform_data = &uart1_plat,
++	},
+ 	__MEM_4K_RESOURCE(UX500_UART1_BASE),
+ 	.irq = {IRQ_UART1, NO_IRQ},
+ };
+ 
+ struct amba_device ux500_uart2_device = {
+-	.dev = { .init_name = "uart2" },
++	.dev =  {
++		.coherent_dma_mask = ~0,
++		.init_name = "uart2",
++		.platform_data = &uart2_plat,
++	},
+ 	__MEM_4K_RESOURCE(UX500_UART2_BASE),
+ 	.irq = {IRQ_UART2, NO_IRQ},
+ };
 -- 
 1.6.3.3
 
