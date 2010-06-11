@@ -1,104 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab0FKVJx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 17:09:53 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:53860 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753307Ab0FKVJw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 17:09:52 -0400
-Date: Fri, 11 Jun 2010 17:09:50 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: sequence lock in Linux
-Message-ID: <20100611210950.GB20360@Krystal>
-References: <20100611194016.GA5213@Krystal> <AANLkTil84IIgzlPcycNWJFRpZIGRqTFL6FGffzqOaSEx@mail.gmail.com>
+	id S932461Ab0FKVOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 17:14:51 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50081 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753256Ab0FKVOt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 17:14:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=I/3VyqVm1K49pqd8RMPgh2QSF01p3FFYR+/jhvSlFBczi1dcX8cWT+wGnTthRI+0Mz
+         djj9mtBC+74mBkiXZ048fGZtx7Gl4ItDNXTOSzYDJS+p4LYGG6IlXbfSnP4ZgczoF7Li
+         bsdZ6V464PSbp776G01NXrR1c2TrfWvHAlgFk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+In-Reply-To: <1276288869-16815-3-git-send-email-justinmattock@gmail.com>
+References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>
+	<1276288869-16815-3-git-send-email-justinmattock@gmail.com>
+Date: Fri, 11 Jun 2010 23:14:48 +0200
+X-Google-Sender-Auth: b2r1RCUlCV2S_ZEm3rxUqctmS9M
+Message-ID: <AANLkTildzUcfd6GghHbO53ebPAc4m4BahJrXUr8B7SQF@mail.gmail.com>
+Subject: Re: [PATCH 2/6]kernel:audit.c Fix warning: variable 'nlh' set but not 
+	used
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+       zippel@linux-m68k.org, linux-fsdevel@vger.kernel.org,
+       rusty@rustcorp.com.au
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-In-Reply-To: <AANLkTil84IIgzlPcycNWJFRpZIGRqTFL6FGffzqOaSEx@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 16:52:55 up 139 days, 23:30,  7 users,  load average: 0.26, 0.23,
-	0.19
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> On Fri, Jun 11, 2010 at 12:40 PM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> >
-> > Is it just me, or the following code:
-> >
-> > static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
-> > {
-> >        unsigned ret;
-> >
-> > repeat:
-> >        ret = sl->sequence;
-> >        smp_rmb();
-> >        if (unlikely(ret & 1)) {
-> >                cpu_relax();
-> >                goto repeat;
-> >        }
-> >
-> >        return ret;
-> > }
-> >
-> > could use a ACCESS_ONCE() around the sl->sequence read ? I'm concerned about the
-> > compiler generating code that reads the sequence number chunkwise.
-> 
-> What compiler would do that? That would seem to be a compiler bug, or
-> a compiler that is just completely crazy.
-> 
-> But it wouldn't be _wrong_ to make it do ACCESS_ONCE(). I just suspect
-> that any compiler that cares is not a compiler worth worrying about,
-> and the compiler should be shot in the head rather than us necessarily
-> worrying about it.
-> 
-> There is no way a sane compiler can do anything but one read anyway.
-> We do end up using all the bits (for the "return ret") part, so a
-> compiler that reads the low bit separately is just being a totally
-> moronic one - we wouldn't want to touch such a stupid compiler with a
-> ten-foot pole.
+On Fri, Jun 11, 2010 at 22:41, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+> Removing dead code(hopefully), fixes a warning
 
-If for some reason it is better (faster for -O2, smaller code for -Os) on a
-given architecture to read the low bits separately from the rest and populate
-two different registers, one for the test and the other for the return value,
-then a not-so-moronic compiler might actually do this. One reason I could see
-for generating this kind of code is compiling with -Os, if the kind of behavior
-I describe above generates smaller code.
+This is not dead code. NLMSG_NEW() sets up an nlmsg in ab->skb.
+If you remove the code, it's no longer initialized.
 
-> 
-> But at the same time, ACCESS_ONCE() ends up being a reasonable hint to
-> programmers, so I wouldn't object to it. I just don't think we should
-> pander to "compilers can be crazy". If compilers are crazy, we
-> shouldn't use them.
+> when compiling the kernel.
+>
+> Â CC Â  Â  Â kernel/audit.o
+> kernel/audit.c: In function 'audit_buffer_alloc':
+> kernel/audit.c:1044:19: warning: variable 'nlh' set but not used
+> Â CC Â  Â  Â kernel/auditfilter.o
+>
+> Â Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+>
+> ---
+> Â kernel/audit.c | Â  Â 6 ++----
+> Â 1 files changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index c71bd26..783d958 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -1041,8 +1041,7 @@ static struct audit_buffer * audit_buffer_alloc(struct audit_context *ctx,
+> Â {
+> Â  Â  Â  Â unsigned long flags;
+> Â  Â  Â  Â struct audit_buffer *ab = NULL;
+> - Â  Â  Â  struct nlmsghdr *nlh;
+> -
+> +
+> Â  Â  Â  Â spin_lock_irqsave(&audit_freelist_lock, flags);
+> Â  Â  Â  Â if (!list_empty(&audit_freelist)) {
+> Â  Â  Â  Â  Â  Â  Â  Â ab = list_entry(audit_freelist.next,
+> @@ -1065,8 +1064,7 @@ static struct audit_buffer * audit_buffer_alloc(struct audit_context *ctx,
+> Â  Â  Â  Â if (!ab->skb)
+> Â  Â  Â  Â  Â  Â  Â  Â goto nlmsg_failure;
+>
+> - Â  Â  Â  nlh = NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
+> -
+> +
+> Â  Â  Â  Â return ab;
+>
+> Â nlmsg_failure: Â  Â  Â  Â  Â  Â  Â  Â  Â /* Used by NLMSG_NEW */
 
-I'm just afraid about the possibility that non-crazy compilers might actually
-have a good reason to do this we haven't thought of yet.
+Gr{oetje,eeting}s,
 
-FWIW, in the userspace RCU library, I wrapped all non-protected accesses to
-shared word-sized aligned variables (e.g.  rcu_assign_pointer(),
-rcu_dereference_pointer(), ..) with LOAD_SHARED() and STORE_SHARED() accessors,
-which are basically just volatile loads and stores.
+						Geert
 
-That's just me making absolutely sure the compiler won't perform anything
-chunkwise nor perform multiple loads. It also ensures we are somewhat ready for
-upcoming architectures with non-coherent caches. Having all these accesses in a
-convenient macro makes it much easier to insert cache flushes whenever needed.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
