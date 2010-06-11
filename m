@@ -1,225 +1,430 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760673Ab0FKWze (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 18:55:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49756 "EHLO hera.kernel.org"
+	id S1760684Ab0FKWzz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 18:55:55 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53404 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758916Ab0FKWza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 18:55:30 -0400
-Date: Fri, 11 Jun 2010 22:55:02 GMT
+	id S1752596Ab0FKWzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 18:55:53 -0400
+Date: Fri, 11 Jun 2010 22:55:38 GMT
 From: tip-bot for Siarhei Liakh <sliakh.lkml@gmail.com>
-Cc: linux-kernel@vger.kernel.org, sliakh.lkml@gmail.com, hpa@zytor.com,
-       mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com,
-       jiang@cs.ncsu.edu
+Cc: jmorris@namei.org, linux-kernel@vger.kernel.org, sliakh.lkml@gmail.com,
+       hpa@zytor.com, mingo@redhat.com, arjan@linux.intel.com,
+       jiang@cs.ncsu.edu, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, sliakh.lkml@gmail.com,
-       linux-kernel@vger.kernel.org, tglx@linutronix.de, jiang@cs.ncsu.edu,
-       hpa@linux.intel.com
-In-Reply-To: <4C0C44C9.8060801@gmail.com>
-References: <4C0C44C9.8060801@gmail.com>
+       linux-kernel@vger.kernel.org, jmorris@namei.org, arjan@linux.intel.com,
+       jiang@cs.ncsu.edu, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <4C0C44F0.3050105@gmail.com>
+References: <4C0C44F0.3050105@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, mm: Set first MB as RW+NX
-Message-ID: <tip-c226a2feba210f0ee4a7c5afe08b3ddbcc6990e2@git.kernel.org>
-Git-Commit-ID: c226a2feba210f0ee4a7c5afe08b3ddbcc6990e2
+Subject: [tip:x86/mm] x86, mm: RO/NX protection for loadable kernel modules
+Message-ID: <tip-1e858c081af56a5d86597ff8e03abc9131eea750@git.kernel.org>
+Git-Commit-ID: 1e858c081af56a5d86597ff8e03abc9131eea750
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 11 Jun 2010 22:55:03 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 11 Jun 2010 22:55:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c226a2feba210f0ee4a7c5afe08b3ddbcc6990e2
-Gitweb:     http://git.kernel.org/tip/c226a2feba210f0ee4a7c5afe08b3ddbcc6990e2
+Commit-ID:  1e858c081af56a5d86597ff8e03abc9131eea750
+Gitweb:     http://git.kernel.org/tip/1e858c081af56a5d86597ff8e03abc9131eea750
 Author:     Siarhei Liakh <sliakh.lkml@gmail.com>
-AuthorDate: Sun, 6 Jun 2010 21:00:57 -0400
+AuthorDate: Sun, 6 Jun 2010 21:01:36 -0400
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 11 Jun 2010 15:12:52 -0700
+CommitDate: Fri, 11 Jun 2010 15:14:02 -0700
 
-x86, mm: Set first MB as RW+NX
+x86, mm: RO/NX protection for loadable kernel modules
 
-This patch ensures that there are no mixed (RW+X) pages mapped within
-first megabyte of kernel space (from PAGE_OFFSET up to beginning of .text).
-This is achieved through introduction of new compile-time option
-CONFIG_DEBUG_SET_1ST_MB_RWNX which controls how is_kernel_text()
-and static_protections() view the memory area in question.
+This patch is a logical extension of the protection provided by
+CONFIG_DEBUG_RODATA to LKMs. The protection is provided by splitting
+module_core and module_init into three logical parts each and setting
+appropriate page access permissions for each individual section:
 
-Special accommodations have been made for BIOS32/PCI BIOS services:
-according to BIOS32 specification
-(http://members.datafast.net.au/dft0802/specs/bios32.pdf), at most two
-pages per BIOS32 service should be set executable and no pages need to
-be writeable. This patch modifies bios32_service() to set proper page
-access permissions at time of service discovery, as described in the
-specification. Further, hardcoded protection of memory area between 640k
-to 1Mb have been removed from static_protections(), since only pages
-mentioned above need to be executable, not whole BIOS region.
+ 1. Code: RO+X
+ 2. RO data: RO+NX
+ 3. RW data: RW+NX
 
-The net result of the patch application is as follows:
-========== BEFORE ==========
-0xc0000000-0xc0100000           1M     RW             GLB x  pte
-0xc0100000-0xc04b6000        3800K     ro             GLB x  pte
-...
+In order to achieve proper protection, layout_sections() have been
+modified to align each of the three parts mentioned above onto page
+boundary. Next, the corresponding page access permissions are set
+right before successful exit from load_module(). Further, free_module()
+and sys_init_module have been modified to set module_core and
+module_init as RW+NX right before calling module_free().
 
-=========== AFTER ===========
-0xc0000000-0xc00fb000        1004K     RW             GLB NX pte
-0xc00fb000-0xc00fd000           8K     ro             GLB x  pte
-0xc00fd000-0xc0100000          12K     RW             GLB NX pte
-0xc0100000-0xc04b6000        3800K     ro             GLB x  pte
-...
+By default, the original section layout and access flags are preserved.
+When compiled with CONFIG_DEBUG_SET_MODULE_RONX=y, the patch
+will page-align each group of sections to ensure that each page contains
+only one type of content and will enforce RO/NX for each group of pages.
 
-Note that first MB is now RW+NX, except for 8K of RO+X used by BIOS32.
-
-The patch have been developed for Linux 2.6.33-rc5 x86 by Siarhei Liakh
-<sliakh.lkml@gmail.com> and Xuxian Jiang <jiang@cs.ncsu.edu>.
-
-V1: original patch "Reducing footprint of BIOS32 service mappings"
-V2: Set first MB as RW+NX for linux 2.6.33-rc5
-V3: minor adjustments for -tip
-V4: Replaced "1st" with "first"
+V1: Initial proof-of-concept patch.
+V2: The patch have been re-written to reduce the number of #ifdefs and
+to make it architecture-agnostic. Code formatting have been corrected also.
+V3: Opportunistic RO/NX protectiuon is now unconditional. Section
+page-alignment is enabled when CONFIG_DEBUG_RODATA=y.
+V4: Removed most macros and improved coding style.
+V5: Changed page-alignment and RO/NX section size calculation
+V6: Fixed comments. Restricted RO/NX enforcement to x86 only
+V7: Introduced CONFIG_DEBUG_SET_MODULE_RONX, added calls to
+set_all_modules_text_rw() and set_all_modules_text_ro() in ftrace
+V8: updated for compatibility with linux 2.6.33-rc5
+V9: coding style fixes
+V10: more coding style fixes
+V11: minor adjutments for -tip
+V12: minor adjutments for v2.6.35-rc2-tip
 
 Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
-LKML-Reference: <4C0C44C9.8060801@gmail.com>
+LKML-Reference: <4C0C44F0.3050105@gmail.com>
 Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+Reviewed-by: James Morris <jmorris@namei.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/Kconfig.debug |   11 +++++++++++
- arch/x86/mm/init_32.c  |    9 ++++++++-
- arch/x86/mm/pageattr.c |    3 ++-
- arch/x86/pci/pcbios.c  |   34 +++++++++++++++++++++++++---------
- 4 files changed, 46 insertions(+), 11 deletions(-)
+ arch/x86/Kconfig.debug   |   11 +++
+ arch/x86/kernel/ftrace.c |    3 +
+ include/linux/module.h   |   13 +++
+ kernel/module.c          |  182 +++++++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 207 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index 7508508..4567981 100644
+index 4567981..f92e31e 100644
 --- a/arch/x86/Kconfig.debug
 +++ b/arch/x86/Kconfig.debug
-@@ -121,6 +121,17 @@ config DEBUG_NX_TEST
- 	  and the software setup of this feature.
+@@ -113,6 +113,17 @@ config DEBUG_RODATA_TEST
+ 	  feature as well as for the change_page_attr() infrastructure.
  	  If in doubt, say "N"
  
-+config DEBUG_SET_1ST_MB_RWNX
-+       bool "Set first MB of kernel space mapping as RW+NX"
-+       default n
-+       depends on X86
-+       ---help---
-+         This option helps to catch unintended modifications/execution of
-+         1st megabyte of kernel address space. Such protection may interfere
-+         with run-time code patching and legacy BIOS services residing within
-+         the first MB of physical address space.
-+         If in doubt, say "N".
++config DEBUG_SET_MODULE_RONX
++	bool "Set loadable kernel module data as NX and text as RO"
++	default n
++	depends on X86 && MODULES
++	---help---
++	  This option helps to catch unintended modifications to loadable
++	  kernel module's text and read-only data. It also prevents execution
++	  of LKM's data. Such protection may interfere with run-time code
++	  patching and dynamic kernel tracing.
++	  If in doubt, say "N".
 +
- config 4KSTACKS
- 	bool "Use 4Kb for kernel stacks instead of 8Kb"
- 	depends on X86_32
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index bca7909..8fb9c3d 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -52,6 +52,12 @@
- #include <asm/page_types.h>
- #include <asm/init.h>
+ config DEBUG_NX_TEST
+ 	tristate "Testcase for the NX non-executable stack feature"
+ 	depends on DEBUG_KERNEL && m
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index cd37469..fa9f170 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -19,6 +19,7 @@
+ #include <linux/sched.h>
+ #include <linux/init.h>
+ #include <linux/list.h>
++#include <linux/module.h>
  
-+#ifdef CONFIG_DEBUG_SET_1ST_MB_RWNX
-+#define TEXT_START _text
-+#else
-+#define TEXT_START PAGE_OFFSET
-+#endif
-+
- unsigned long highstart_pfn, highend_pfn;
+ #include <trace/syscall.h>
  
- static noinline int do_test_wp_bit(void);
-@@ -225,7 +231,8 @@ page_table_range_init(unsigned long start, unsigned long end, pgd_t *pgd_base)
- 
- static inline int is_kernel_text(unsigned long addr)
+@@ -49,6 +50,7 @@ static DEFINE_PER_CPU(int, save_modifying_code);
+ int ftrace_arch_code_modify_prepare(void)
  {
--	if (addr >= PAGE_OFFSET && addr <= (unsigned long)__init_end)
-+	if (addr >= (unsigned long)TEXT_START
-+		&& addr <= (unsigned long)__init_end)
- 		return 1;
+ 	set_kernel_text_rw();
++	set_all_modules_text_rw();
+ 	modifying_code = 1;
  	return 0;
  }
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index 91ce756..fbae8c1 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -257,13 +257,14 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- 	pgprot_t forbidden = __pgprot(0);
- 	pgprot_t required = __pgprot(0);
+@@ -56,6 +58,7 @@ int ftrace_arch_code_modify_prepare(void)
+ int ftrace_arch_code_modify_post_process(void)
+ {
+ 	modifying_code = 0;
++	set_all_modules_text_ro();
+ 	set_kernel_text_ro();
+ 	return 0;
+ }
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 8a6b9fd..89094de 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -308,6 +308,9 @@ struct module
+ 	/* The size of the executable code in each section.  */
+ 	unsigned int init_text_size, core_text_size;
  
-+#ifndef CONFIG_DEBUG_SET_1ST_MB_RWNX
- 	/*
- 	 * The BIOS area between 640k and 1Mb needs to be executable for
- 	 * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
- 	 */
- 	if (within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
- 		pgprot_val(forbidden) |= _PAGE_NX;
--
-+#endif
- 	/*
- 	 * The kernel text needs to be executable for obvious reasons
- 	 * Does not cover __inittext since that is gone later on. On
-diff --git a/arch/x86/pci/pcbios.c b/arch/x86/pci/pcbios.c
-index 2492d16..1102096 100644
---- a/arch/x86/pci/pcbios.c
-+++ b/arch/x86/pci/pcbios.c
-@@ -9,6 +9,7 @@
- #include <linux/uaccess.h>
- #include <asm/pci_x86.h>
- #include <asm/pci-functions.h>
-+#include <asm/cacheflush.h>
++	/* Size of RO sections of the module (text+rodata) */
++	unsigned int init_ro_size, core_ro_size;
++
+ 	/* Arch-specific module values */
+ 	struct mod_arch_specific arch;
  
- /* BIOS32 signature: "_32_" */
- #define BIOS32_SIGNATURE	(('_' << 0) + ('3' << 8) + ('2' << 16) + ('_' << 24))
-@@ -59,6 +60,16 @@ static struct {
- 	unsigned short segment;
- } bios32_indirect = { 0, __KERNEL_CS };
+@@ -545,6 +548,9 @@ extern void print_modules(void);
+ extern void module_update_tracepoints(void);
+ extern int module_get_iter_tracepoints(struct tracepoint_iter *iter);
  
-+/* Set two consecutive pages as read-only and executable */
-+void set_2_pages_rox(unsigned long addr)
++void set_all_modules_text_rw(void);
++void set_all_modules_text_ro(void);
++
+ #else /* !CONFIG_MODULES... */
+ #define EXPORT_SYMBOL(sym)
+ #define EXPORT_SYMBOL_GPL(sym)
+@@ -670,6 +676,13 @@ static inline int module_get_iter_tracepoints(struct tracepoint_iter *iter)
+ 	return 0;
+ }
+ 
++static inline void set_all_modules_text_rw(void)
 +{
-+#ifdef CONFIG_DEBUG_SET_1ST_MB_RWNX
-+	unsigned long pg_address = PFN_DOWN(addr + PAGE_OFFSET) << PAGE_SHIFT;
-+	set_memory_ro(pg_address, 2);
-+	set_memory_x(pg_address, 2);
-+#endif
 +}
 +
- /*
-  * Returns the entry point for the given service, NULL on error
-  */
-@@ -83,15 +94,19 @@ static unsigned long bios32_service(unsigned long service)
- 	local_irq_restore(flags);
++static inline void set_all_modules_text_ro(void)
++{
++}
+ #endif /* CONFIG_MODULES */
  
- 	switch (return_code) {
--		case 0:
--			return address + entry;
--		case 0x80:	/* Not present */
--			printk(KERN_WARNING "bios32_service(0x%lx): not present\n", service);
--			return 0;
--		default: /* Shouldn't happen */
--			printk(KERN_WARNING "bios32_service(0x%lx): returned 0x%x -- BIOS bug!\n",
--				service, return_code);
--			return 0;
-+	case 0:	/* Service present, set proper page access */
-+		address += entry;
-+		set_2_pages_rox(address);
-+		return address;
-+	case 0x80: /* Not present */
-+		printk(KERN_WARNING "bios32_service(0x%lx): not present\n",
-+			service);
-+		return 0;
-+	default: /* Shouldn't happen */
-+		printk(KERN_WARNING "bios32_service(0x%lx): "
-+			"returned 0x%x -- BIOS bug!\n",
-+			service, return_code);
-+		return 0;
+ #ifdef CONFIG_SYSFS
+diff --git a/kernel/module.c b/kernel/module.c
+index 8c6b428..ae373e7 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -55,6 +55,7 @@
+ #include <linux/async.h>
+ #include <linux/percpu.h>
+ #include <linux/kmemleak.h>
++#include <linux/pfn.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/module.h>
+@@ -69,6 +70,26 @@
+ #define ARCH_SHF_SMALL 0
+ #endif
+ 
++/*
++ * Modules' sections will be aligned on page boundaries
++ * to ensure complete separation of code and data, but
++ * only when CONFIG_DEBUG_SET_MODULE_RONX=y
++ */
++#ifdef CONFIG_DEBUG_SET_MODULE_RONX
++#define debug_align(X) ALIGN(X, PAGE_SIZE)
++#else
++#define debug_align(X) (X)
++#endif
++
++/*
++ * Given BASE and SIZE this macro calculates the number of pages the
++ * memory regions occupies
++ */
++#define NUMBER_OF_PAGES(BASE, SIZE) (((SIZE) > 0) ?		\
++		(PFN_DOWN((unsigned long)(BASE) + (SIZE) - 1) -	\
++			 PFN_DOWN((unsigned long)BASE) + 1)	\
++		: (0UL))
++
+ /* If this is set, the section belongs in the init part of the module */
+ #define INIT_OFFSET_MASK (1UL << (BITS_PER_LONG-1))
+ 
+@@ -1537,6 +1558,126 @@ static int __unlink_module(void *_mod)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_DEBUG_SET_MODULE_RONX
++/*
++ * LKM RO/NX protection: protect module's text/ro-data
++ * from modification and any data from execution.
++ */
++void set_page_attributes(void *start, void *end,
++		int (*set)(unsigned long start, int num_pages))
++{
++	unsigned long begin_pfn = PFN_DOWN((unsigned long)start);
++	unsigned long end_pfn = PFN_DOWN((unsigned long)end);
++	if (end_pfn > begin_pfn)
++		set(begin_pfn << PAGE_SHIFT, end_pfn - begin_pfn);
++}
++
++static void set_section_ro_nx(void *base,
++			unsigned long text_size,
++			unsigned long ro_size,
++			unsigned long total_size)
++{
++	/* begin and end PFNs of the current subsection */
++	unsigned long begin_pfn;
++	unsigned long end_pfn;
++
++	/*
++	 * Set RO for module text and RO-data:
++	 * - Always protect first page.
++	 * - Do not protect last partial page.
++	 */
++	if (ro_size > 0)
++		set_page_attributes(base, base + ro_size, set_memory_ro);
++
++	/*
++	 * Set NX permissions for module data:
++	 * - Do not protect first partial page.
++	 * - Always protect last page.
++	 */
++	if (total_size > text_size) {
++		begin_pfn = PFN_UP((unsigned long)base + text_size);
++		end_pfn = PFN_UP((unsigned long)base + total_size);
++		if (end_pfn > begin_pfn)
++			set_memory_nx(begin_pfn << PAGE_SHIFT,
++						end_pfn - begin_pfn);
++	}
++}
++
++/* Setting memory back to RW+NX before releasing it */
++void unset_section_ro_nx(struct module *mod, void *module_region)
++{
++	unsigned long total_pages;
++
++	if (mod->module_core == module_region) {
++		/* Set core as NX+RW */
++		total_pages = NUMBER_OF_PAGES(mod->module_core, mod->core_size);
++		set_memory_nx((unsigned long)mod->module_core, total_pages);
++		set_memory_rw((unsigned long)mod->module_core, total_pages);
++
++	} else if (mod->module_init == module_region) {
++		/* Set init as NX+RW */
++		total_pages = NUMBER_OF_PAGES(mod->module_init, mod->init_size);
++		set_memory_nx((unsigned long)mod->module_init, total_pages);
++		set_memory_rw((unsigned long)mod->module_init, total_pages);
++	}
++}
++
++/* Iterate through all modules and set each module's text as RW */
++void set_all_modules_text_rw()
++{
++	struct module *mod;
++
++	mutex_lock(&module_mutex);
++	list_for_each_entry_rcu(mod, &modules, list) {
++		if ((mod->module_core) && (mod->core_text_size)) {
++			set_page_attributes(mod->module_core,
++						mod->module_core
++							+ mod->core_text_size,
++						set_memory_rw);
++		}
++		if ((mod->module_init) && (mod->init_text_size)) {
++			set_page_attributes(mod->module_init,
++						mod->module_init
++							+ mod->init_text_size,
++						set_memory_rw);
++		}
++	}
++	mutex_unlock(&module_mutex);
++}
++
++/* Iterate through all modules and set each module's text as RO */
++void set_all_modules_text_ro()
++{
++	struct module *mod;
++
++	mutex_lock(&module_mutex);
++	list_for_each_entry_rcu(mod, &modules, list) {
++		if ((mod->module_core) && (mod->core_text_size)) {
++			set_page_attributes(mod->module_core,
++						mod->module_core
++							+ mod->core_text_size,
++						set_memory_ro);
++		}
++		if ((mod->module_init) && (mod->init_text_size)) {
++			set_page_attributes(mod->module_init,
++						mod->module_init
++							+ mod->init_text_size,
++						set_memory_ro);
++		}
++	}
++	mutex_unlock(&module_mutex);
++}
++#else
++static void set_section_ro_nx(void *base,
++			unsigned long text_size,
++			unsigned long ro_size,
++			unsigned long total_size) { }
++
++void unset_section_ro_nx(struct module *mod, void *module_region) { }
++void set_all_modules_text_rw() { }
++void set_all_modules_text_ro() { }
++#endif
++
+ /* Free a module, remove from lists, etc. */
+ static void free_module(struct module *mod)
+ {
+@@ -1560,6 +1701,7 @@ static void free_module(struct module *mod)
+ 	destroy_params(mod->kp, mod->num_kp);
+ 
+ 	/* This may be NULL, but that's OK */
++	unset_section_ro_nx(mod, mod->module_init);
+ 	module_free(mod, mod->module_init);
+ 	kfree(mod->args);
+ 	percpu_modfree(mod);
+@@ -1571,6 +1713,7 @@ static void free_module(struct module *mod)
+ 	lockdep_free_key_range(mod->module_core, mod->core_size);
+ 
+ 	/* Finally, free the core (containing the module structure) */
++	unset_section_ro_nx(mod, mod->module_core);
+ 	module_free(mod, mod->module_core);
+ 
+ #ifdef CONFIG_MPU
+@@ -1752,8 +1895,19 @@ static void layout_sections(struct module *mod,
+ 			s->sh_entsize = get_offset(mod, &mod->core_size, s, i);
+ 			DEBUGP("\t%s\n", secstrings + s->sh_name);
+ 		}
+-		if (m == 0)
++		switch (m) {
++		case 0: /* executable */
++			mod->core_size = debug_align(mod->core_size);
+ 			mod->core_text_size = mod->core_size;
++			break;
++		case 1: /* RO: text and ro-data */
++			mod->core_size = debug_align(mod->core_size);
++			mod->core_ro_size = mod->core_size;
++			break;
++		case 3: /* whole core */
++			mod->core_size = debug_align(mod->core_size);
++			break;
++		}
+ 	}
+ 
+ 	DEBUGP("Init section allocation order:\n");
+@@ -1770,8 +1924,19 @@ static void layout_sections(struct module *mod,
+ 					 | INIT_OFFSET_MASK);
+ 			DEBUGP("\t%s\n", secstrings + s->sh_name);
+ 		}
+-		if (m == 0)
++		switch (m) {
++		case 0: /* executable */
++			mod->init_size = debug_align(mod->init_size);
+ 			mod->init_text_size = mod->init_size;
++			break;
++		case 1: /* RO: text and ro-data */
++			mod->init_size = debug_align(mod->init_size);
++			mod->init_ro_size = mod->init_size;
++			break;
++		case 3: /* whole init */
++			mod->init_size = debug_align(mod->init_size);
++			break;
++		}
  	}
  }
  
-@@ -332,6 +347,7 @@ static struct pci_raw_ops * __devinit pci_find_bios(void)
- 			DBG("PCI: BIOS32 Service Directory entry at 0x%lx\n",
- 					bios32_entry);
- 			bios32_indirect.address = bios32_entry + PAGE_OFFSET;
-+			set_2_pages_rox(bios32_entry);
- 			if (check_pcibios())
- 				return &pci_bios_access;
- 		}
+@@ -2550,6 +2715,18 @@ static noinline struct module *load_module(void __user *umod,
+ 
+ 	trace_module_load(mod);
+ 
++	/* Set RO and NX regions for core */
++	set_section_ro_nx(mod->module_core,
++				mod->core_text_size,
++				mod->core_ro_size,
++				mod->core_size);
++
++	/* Set RO and NX regions for init */
++	set_section_ro_nx(mod->module_init,
++				mod->init_text_size,
++				mod->init_ro_size,
++				mod->init_size);
++
+ 	/* Done! */
+ 	return mod;
+ 
+@@ -2660,6 +2837,7 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+ 	mod->symtab = mod->core_symtab;
+ 	mod->strtab = mod->core_strtab;
+ #endif
++	unset_section_ro_nx(mod, mod->module_init);
+ 	module_free(mod, mod->module_init);
+ 	mod->module_init = NULL;
+ 	mod->init_size = 0;
