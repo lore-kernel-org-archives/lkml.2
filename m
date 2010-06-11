@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760091Ab0FKKIK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 06:08:10 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:50417 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903Ab0FKKII (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 06:08:08 -0400
-Message-ID: <19474.2817.333749.485028@ipc1.ka-ro>
-Date: Fri, 11 Jun 2010 12:08:01 +0200
-From: =?iso-8859-15?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>
-To: Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
-       linux-arm-kernel@lists.infradead.org,
-       Ben Herrenchmidt <benh@kernel.crashing.org>,
-       linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
-In-Reply-To: <20100611095839.GC10894@pengutronix.de>
-References: <1275636608.606606.450179637764.0.gpush@pororo>
-	<201006111557.12249.jeremy.kerr@canonical.com>
-	<19473.61547.684572.647641@ipc1.ka-ro>
-	<201006111718.47426.jeremy.kerr@canonical.com>
-	<19474.172.742782.972629@ipc1.ka-ro>
-	<20100611095839.GC10894@pengutronix.de>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+	id S1760096Ab0FKKLX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 06:11:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49516 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755841Ab0FKKLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 06:11:21 -0400
+Date: Fri, 11 Jun 2010 20:11:17 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Robert Hancock <hancockrwd@gmail.com>, Tejun Heo <tj@kernel.org>,
+       linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Colin Tuckley <colin.tuckley@arm.com>, Jeff Garzik <jeff@garzik.org>,
+       linux-arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH v2] sata_sil24: Use memory barriers before issuing
+ commands
+Message-ID: <20100611101117.GD16436@laptop>
+References: <20100611013829.GB16436@laptop>
+ <1276249306.12258.38.camel@e102109-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276249306.12258.38.camel@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jun 11, 2010 at 10:41:46AM +0100, Catalin Marinas wrote:
+> On Fri, 2010-06-11 at 02:38 +0100, Nick Piggin wrote:
+> > On Thu, Jun 10, 2010 at 06:43:03PM -0600, Robert Hancock wrote:
+> > > IMHO, it would be better for the platform code to ensure that MMIO
+> > > access was strongly ordered with respect to each other and to RAM
+> > > access. Drivers are just too likely to get this wrong, especially
+> > > when x86, the most tested platform, doesn't have such issues.
+> > 
+> > The plan is to make all platforms do this. writes should be
+> > strongly ordered with memory. That serves to keep them inside
+> > critical sections as well.
+> 
+> Are there any public references to this discussion? Maybe a
+> Documentation/ file (or update the memory-barriers.txt one would be
+> useful).
 
-> > > > Using a mutex in clk_enable()/clk_disable() is a bad idea, since that
-> > > > makes it impossible to call those functions in interrupt context.
-> IMHO if a device generates an irq its clock should already be on.  This
-> way you don't need to enable or disable a clock in irq context.
->  
-You may want to disable a clock in the IRQ handler. The VPU driver in
-the Freescale BSP for i.MX51 does exactly this.
-Anyway I don't see any reason for using a mutex here instead of
-spin_lock_irq_save() as all other implementations do.
+It was on the mailing list, don't have a ref off the top of my
+head. Primarily between the ia64 and powerpc people and myself
+IIRC.
+
+They thought it would also be too expensive to do, but it turned
+out not to be noticable with a few simple tests. It will obviously
+depend on a lot of factors...
+
+Also I think most high performance drivers tend to have just a few
+critical mmios so they should be able to be identified and improved
+relatively easily (relatively, as in: much  more easily than trying to
+find all the obscure ordering problems).
+
+So anyway powerpc were reluctant because they try to fix it in their
+spinlocks, but I demonstrated that there were drivers using mutexes
+and other synchronization and found one or two broken ones in the
+first place I looked.
+
+ 
+> I guess correctness takes precedence here but on ARM, the only way to
+> ensure relative ordering between non-cacheable writes and I/O writes is
+> by flushing the write buffer (and an L2 write buffer if external cache
+> is present). Hence the expensive mb().
+
+Default IO accessors would be a little more expensive, yes.
+
+ 
+> The only reference of DMA buffers vs I/O I found in the DMA-API.txt
+> file:
+> 
+>         Consistent memory is memory for which a write by either the
+>         device or the processor can immediately be read by the processor
+>         or device without having to worry about caching effects. (You
+>         may however need to make sure to flush the processor's write
+>         buffers before telling devices to read that memory.)
+> 
+> But there is no API for "flushing the processor's write buffers". Does
+> it mean that this should be taken care of in writel()? We would make the
+> I/O accessors pretty expensive on some architectures.
+
+The APIs for that are mb/wmb/rmb ones.
 
 
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
