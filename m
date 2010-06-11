@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760068Ab0FKJ6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 05:58:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60447 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942Ab0FKJ6t (ORCPT
+	id S1759986Ab0FKKGq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 06:06:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48316 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755841Ab0FKKGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 05:58:49 -0400
-Date: Fri, 11 Jun 2010 11:58:39 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
-       linux-arm-kernel@lists.infradead.org,
-       Ben Herrenchmidt <benh@kernel.crashing.org>,
-       linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
-Message-ID: <20100611095839.GC10894@pengutronix.de>
-References: <1275636608.606606.450179637764.0.gpush@pororo> <201006111557.12249.jeremy.kerr@canonical.com> <19473.61547.684572.647641@ipc1.ka-ro> <201006111718.47426.jeremy.kerr@canonical.com> <19474.172.742782.972629@ipc1.ka-ro>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <19474.172.742782.972629@ipc1.ka-ro>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 11 Jun 2010 06:06:45 -0400
+Subject: Re: [PATCH -mm] only drop root anon_vma if not self
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-mm@kvack.org
+In-Reply-To: <AANLkTiktcGrj-tcMspzR3sXplKk-PFB7M4q7rb-WiwYP@mail.gmail.com>
+References: <AANLkTiktcGrj-tcMspzR3sXplKk-PFB7M4q7rb-WiwYP@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Fri, 11 Jun 2010 11:06:12 +0100
+Message-ID: <1276250772.12258.57.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Jun 2010 10:06:13.0447 (UTC) FILETIME=[B9334D70:01CB094D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 11:23:56AM +0200, Lothar Waßmann wrote:
-> Hi,
-> 
-> > > Using a mutex in clk_enable()/clk_disable() is a bad idea, since that
-> > > makes it impossible to call those functions in interrupt context.
-IMHO if a device generates an irq its clock should already be on.  This
-way you don't need to enable or disable a clock in irq context.
- 
-> > Do we do this at the moment? I know at least one implementation of clk_enable 
-> > uses a mutex for locking.
-> > 
-> You are probably talking about the Freescale i.MX51 kernel, that won't
-> even boot, if you enable CONFIG_DEBUG_KERNEL, CONFIG_DEBUG_SPINLOCK,
-> CONFIG_DEBUG_LOCKDEP and CONFIG_DEBUG_SPINLOCK_SLEEP.
-> The mutex in the clock implementation is one of the reasons.
-I will have a look into this later today.
+On Fri, 2010-06-11 at 10:48 +0100, Dave Young wrote:
+> I got an oops when shutdown kvm guest with rik's patch applied, but
+> without your bootmem patch, is it kmemleak problem?
 
-Best regards
-Uwe
+It could be, though I've never got it before.
+
+Can you run this on your vmlinux file?
+
+addr2line -i -f -e vmlinux c10c5c88
+
+Thanks.
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Catalin
+
