@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760199Ab0FKKSj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 06:18:39 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37012 "EHLO
+	id S1760206Ab0FKKSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 06:18:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37013 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760013Ab0FKKRP (ORCPT
+	with ESMTP id S1758044Ab0FKKRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jun 2010 06:17:15 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 07/10] trivial: fix typos concerning "management"
-Date: Fri, 11 Jun 2010 12:17:01 +0200
-Message-Id: <1276251424-12806-7-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 08/10] trivial: fix typos concerning "precedence"
+Date: Fri, 11 Jun 2010 12:17:02 +0200
+Message-Id: <1276251424-12806-8-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100611101624.GD10894@pengutronix.de>
 References: <20100611101624.GD10894@pengutronix.de>
@@ -30,180 +30,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_resource.c |    2 +-
- drivers/media/dvb/siano/smscoreapi.c     |    2 +-
- drivers/net/benet/be_hw.h                |    2 +-
- drivers/scsi/fcoe/fcoe.c                 |    4 ++--
- drivers/scsi/mpt2sas/mpt2sas_base.h      |    2 +-
- drivers/scsi/mpt2sas/mpt2sas_scsih.c     |    4 ++--
- drivers/scsi/pm8001/pm8001_hwi.c         |    2 +-
- drivers/scsi/qla2xxx/qla_iocb.c          |    2 +-
- drivers/scsi/qla2xxx/qla_nx.h            |    2 +-
- include/linux/ide.h                      |    2 +-
- include/linux/if_link.h                  |    2 +-
- 11 files changed, 13 insertions(+), 13 deletions(-)
+ arch/sh/kernel/clkdev.c                  |    2 +-
+ drivers/staging/comedi/drivers/usbdux.c  |    2 +-
+ drivers/staging/octeon/cvmx-cmd-queue.c  |    6 +++---
+ drivers/staging/pohmelfs/inode.c         |    2 +-
+ drivers/staging/rt2860/common/cmm_wpa.c  |    4 ++--
+ drivers/staging/rtl8192e/r8190_rtl8256.c |    6 +++---
+ 6 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-index 8612378..5f2d5df 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-@@ -1017,7 +1017,7 @@ int vmw_gmr_id_alloc(struct vmw_private *dev_priv, uint32_t *p_id)
+diff --git a/arch/sh/kernel/clkdev.c b/arch/sh/kernel/clkdev.c
+index defdd6e..befc255 100644
+--- a/arch/sh/kernel/clkdev.c
++++ b/arch/sh/kernel/clkdev.c
+@@ -36,7 +36,7 @@ static DEFINE_MUTEX(clocks_mutex);
+  *  If an entry has a device ID, it must match
+  *  If an entry has a connection ID, it must match
+  * Then we take the most specific entry - with the following
+- * order of precidence: dev+con > dev only > con only.
++ * order of precedence: dev+con > dev only > con only.
+  */
+ static struct clk *clk_find(const char *dev_id, const char *con_id)
+ {
+diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
+index 7b8a2da..27b4cb2 100644
+--- a/drivers/staging/comedi/drivers/usbdux.c
++++ b/drivers/staging/comedi/drivers/usbdux.c
+@@ -2085,7 +2085,7 @@ static int usbdux_pwm_start(struct comedi_device *dev,
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	/* initialise the buffer */
++	/* initalise the buffer */
+ 	for (i = 0; i < this_usbduxsub->sizePwmBuf; i++)
+ 		((char *)(this_usbduxsub->urbPwm->transfer_buffer))[i] = 0;
+ 
+diff --git a/drivers/staging/octeon/cvmx-cmd-queue.c b/drivers/staging/octeon/cvmx-cmd-queue.c
+index e9809d3..976227b 100644
+--- a/drivers/staging/octeon/cvmx-cmd-queue.c
++++ b/drivers/staging/octeon/cvmx-cmd-queue.c
+@@ -140,21 +140,21 @@ cvmx_cmd_queue_result_t cvmx_cmd_queue_initialize(cvmx_cmd_queue_id_t queue_id,
+ 	if (qstate->base_ptr_div128) {
+ 		if (max_depth != (int)qstate->max_depth) {
+ 			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
+-				"Queue already initialized with different "
++				"Queue already initalized with different "
+ 				"max_depth (%d).\n",
+ 			     (int)qstate->max_depth);
+ 			return CVMX_CMD_QUEUE_INVALID_PARAM;
+ 		}
+ 		if (fpa_pool != qstate->fpa_pool) {
+ 			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
+-				"Queue already initialized with different "
++				"Queue already initalized with different "
+ 				"FPA pool (%u).\n",
+ 			     qstate->fpa_pool);
+ 			return CVMX_CMD_QUEUE_INVALID_PARAM;
+ 		}
+ 		if ((pool_size >> 3) - 1 != qstate->pool_size_m1) {
+ 			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
+-				"Queue already initialized with different "
++				"Queue already initalized with different "
+ 				"FPA pool size (%u).\n",
+ 			     (qstate->pool_size_m1 + 1) << 3);
+ 			return CVMX_CMD_QUEUE_INVALID_PARAM;
+diff --git a/drivers/staging/pohmelfs/inode.c b/drivers/staging/pohmelfs/inode.c
+index e3f95f7..643b413 100644
+--- a/drivers/staging/pohmelfs/inode.c
++++ b/drivers/staging/pohmelfs/inode.c
+@@ -847,7 +847,7 @@ static void pohmelfs_destroy_inode(struct inode *inode)
  }
  
  /*
-- * Stream managment
-+ * Stream management
+- * ->alloc_inode() callback. Allocates inode and initializes private data.
++ * ->alloc_inode() callback. Allocates inode and initilizes private data.
   */
- 
- static void vmw_stream_destroy(struct vmw_resource *res)
-diff --git a/drivers/media/dvb/siano/smscoreapi.c b/drivers/media/dvb/siano/smscoreapi.c
-index 0c87a3c..a19f649 100644
---- a/drivers/media/dvb/siano/smscoreapi.c
-+++ b/drivers/media/dvb/siano/smscoreapi.c
-@@ -1297,7 +1297,7 @@ int smsclient_sendrequest(struct smscore_client_t *client,
- EXPORT_SYMBOL_GPL(smsclient_sendrequest);
- 
- 
--/* old GPIO managments implementation */
-+/* old GPIO managements implementation */
- int smscore_configure_gpio(struct smscore_device_t *coredev, u32 pin,
- 			   struct smscore_config_gpio *pinconfig)
+ static struct inode *pohmelfs_alloc_inode(struct super_block *sb)
  {
-diff --git a/drivers/net/benet/be_hw.h b/drivers/net/benet/be_hw.h
-index 063026d..3f1b7c3 100644
---- a/drivers/net/benet/be_hw.h
-+++ b/drivers/net/benet/be_hw.h
-@@ -52,7 +52,7 @@
-  */
- #define MEMBAR_CTRL_INT_CTRL_HOSTINTR_MASK	(1 << 29) /* bit 29 */
+diff --git a/drivers/staging/rt2860/common/cmm_wpa.c b/drivers/staging/rt2860/common/cmm_wpa.c
+index 9414aa3..c16f376 100644
+--- a/drivers/staging/rt2860/common/cmm_wpa.c
++++ b/drivers/staging/rt2860/common/cmm_wpa.c
+@@ -427,7 +427,7 @@ void RTMPToWirelessSta(struct rt_rtmp_adapter *pAd,
+ /*
+     ==========================================================================
+     Description:
+-        This is a function to initialize 4-way handshake
++        This is a function to initilize 4-way handshake
  
--/********* Power managment (WOL) **********/
-+/********* Power management (WOL) **********/
- #define PCICFG_PM_CONTROL_OFFSET		0x44
- #define PCICFG_PM_CONTROL_MASK			0x108	/* bits 3 & 8 */
+     Return:
  
-diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
-index 44a0759..fe568ef 100644
---- a/drivers/scsi/fcoe/fcoe.c
-+++ b/drivers/scsi/fcoe/fcoe.c
-@@ -2452,7 +2452,7 @@ module_exit(fcoe_exit);
-  * @fp: response frame, or error encoded in a pointer (timeout)
-  * @arg: pointer the the fcoe_ctlr structure
-  *
-- * This handles MAC address managment for FCoE, then passes control on to
-+ * This handles MAC address management for FCoE, then passes control on to
-  * the libfc FLOGI response handler.
-  */
- static void fcoe_flogi_resp(struct fc_seq *seq, struct fc_frame *fp, void *arg)
-@@ -2484,7 +2484,7 @@ done:
-  * @fp: response frame, or error encoded in a pointer (timeout)
-  * @arg: pointer the the fcoe_ctlr structure
-  *
-- * This handles MAC address managment for FCoE, then passes control on to
-+ * This handles MAC address management for FCoE, then passes control on to
-  * the libfc LOGO response handler.
-  */
- static void fcoe_logo_resp(struct fc_seq *seq, struct fc_frame *fp, void *arg)
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
-index b4afe43..41c29a8 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -474,7 +474,7 @@ typedef void (*MPT_ADD_SGE)(void *paddr, u32 flags_length, dma_addr_t dma_addr);
-  * @shost_recovery: host reset in progress
-  * @ioc_reset_in_progress_lock:
-  * @ioc_link_reset_in_progress: phy/hard reset in progress
-- * @ignore_loginfos: ignore loginfos during task managment
-+ * @ignore_loginfos: ignore loginfos during task management
-  * @remove_host: flag for when driver unloads, to avoid sending dev resets
-  * @wait_for_port_enable_to_complete:
-  * @msix_enable: flag indicating msix is enabled
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index c5ff26a..06d645a 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -2979,7 +2979,7 @@ _scsih_qcmd(struct scsi_cmnd *scmd, void (*done)(struct scsi_cmnd *))
- 	/* host recovery or link resets sent via IOCTLs */
- 	if (ioc->shost_recovery || ioc->ioc_link_reset_in_progress)
- 		return SCSI_MLQUEUE_HOST_BUSY;
--	/* device busy with task managment */
-+	/* device busy with task management */
- 	else if (sas_device_priv_data->block || sas_target_priv_data->tm_busy)
- 		return SCSI_MLQUEUE_DEVICE_BUSY;
- 	/* device has been deleted */
-@@ -6845,7 +6845,7 @@ _scsih_init(void)
- 	 /* queuecommand callback hander */
- 	scsi_io_cb_idx = mpt2sas_base_register_callback_handler(_scsih_io_done);
+@@ -867,7 +867,7 @@ void PeerPairMsg3Action(struct rt_rtmp_adapter *pAd,
+     ==========================================================================
+     Description:
+         When receiving the last packet of 4-way pairwisekey handshake.
+-        Initialize 2-way groupkey handshake following.
++        Initilize 2-way groupkey handshake following.
+     Return:
+     ==========================================================================
+ */
+diff --git a/drivers/staging/rtl8192e/r8190_rtl8256.c b/drivers/staging/rtl8192e/r8190_rtl8256.c
+index 8bd5b17..7391f5f 100644
+--- a/drivers/staging/rtl8192e/r8190_rtl8256.c
++++ b/drivers/staging/rtl8192e/r8190_rtl8256.c
+@@ -501,13 +501,13 @@ SetRFPowerState8190(
+ 				if((priv->ieee80211->eRFPowerState == eRfOff) && RT_IN_PS_LEVEL(pPSC, RT_RF_OFF_LEVL_HALT_NIC))
+ 				{ // The current RF state is OFF and the RF OFF level is halting the NIC, re-initialize the NIC.
+ 					bool rtstatus = true;
+-					u32 InitializeCount = 3;
++					u32 InitilizeCount = 3;
+ 					do
+ 					{
+-						InitializeCount--;
++						InitilizeCount--;
+ 						priv->RegRfOff = false;
+ 						rtstatus = NicIFEnableNIC(dev);
+-					}while( (rtstatus != true) &&(InitializeCount >0) );
++					}while( (rtstatus != true) &&(InitilizeCount >0) );
  
--	/* task managment callback handler */
-+	/* task management callback handler */
- 	tm_cb_idx = mpt2sas_base_register_callback_handler(_scsih_tm_done);
- 
- 	/* base internal commands callback handler */
-diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
-index 3b11fd8..e81efac 100644
---- a/drivers/scsi/pm8001/pm8001_hwi.c
-+++ b/drivers/scsi/pm8001/pm8001_hwi.c
-@@ -4152,7 +4152,7 @@ static int pm8001_chip_abort_task(struct pm8001_hba_info *pm8001_ha,
- }
- 
- /**
-- * pm8001_chip_ssp_tm_req - built the task managment command.
-+ * pm8001_chip_ssp_tm_req - built the task management command.
-  * @pm8001_ha: our hba card information.
-  * @ccb: the ccb information.
-  * @tmf: task management function.
-diff --git a/drivers/scsi/qla2xxx/qla_iocb.c b/drivers/scsi/qla2xxx/qla_iocb.c
-index 8ef9453..782b30d 100644
---- a/drivers/scsi/qla2xxx/qla_iocb.c
-+++ b/drivers/scsi/qla2xxx/qla_iocb.c
-@@ -1129,7 +1129,7 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp, struct cmd_type_crc_2 *cmd_pkt,
- 	cmd_pkt->fcp_cmnd_dseg_address[1] = cpu_to_le32(
- 	    MSD(crc_ctx_dma + CRC_CONTEXT_FCPCMND_OFF));
- 	fcp_cmnd->task_attribute = 0;
--	fcp_cmnd->task_managment = 0;
-+	fcp_cmnd->task_management = 0;
- 
- 	cmd_pkt->fcp_rsp_dseg_len = 0; /* Let response come in status iocb */
- 
-diff --git a/drivers/scsi/qla2xxx/qla_nx.h b/drivers/scsi/qla2xxx/qla_nx.h
-index f8f99a5..1b44d01 100644
---- a/drivers/scsi/qla2xxx/qla_nx.h
-+++ b/drivers/scsi/qla2xxx/qla_nx.h
-@@ -832,7 +832,7 @@ struct fcp_cmnd {
- 	struct scsi_lun lun;
- 	uint8_t crn;
- 	uint8_t task_attribute;
--	uint8_t task_managment;
-+	uint8_t task_management;
- 	uint8_t additional_cdb_len;
- 	uint8_t cdb[260]; /* 256 for CDB len and 4 for FCP_DL */
- };
-diff --git a/include/linux/ide.h b/include/linux/ide.h
-index 7b02aa5..072fe8c 100644
---- a/include/linux/ide.h
-+++ b/include/linux/ide.h
-@@ -458,7 +458,7 @@ enum {
- 	IDE_DFLAG_DOORLOCKING		= (1 << 15),
- 	/* disallow DMA */
- 	IDE_DFLAG_NODMA			= (1 << 16),
--	/* powermanagment told us not to do anything, so sleep nicely */
-+	/* powermanagement told us not to do anything, so sleep nicely */
- 	IDE_DFLAG_BLOCKED		= (1 << 17),
- 	/* sleeping & sleep field valid */
- 	IDE_DFLAG_SLEEPING		= (1 << 18),
-diff --git a/include/linux/if_link.h b/include/linux/if_link.h
-index 85c812d..9d8f080 100644
---- a/include/linux/if_link.h
-+++ b/include/linux/if_link.h
-@@ -233,7 +233,7 @@ enum macvlan_mode {
- 	MACVLAN_MODE_BRIDGE  = 4, /* talk to bridge ports directly */
- };
- 
--/* SR-IOV virtual function managment section */
-+/* SR-IOV virtual function management section */
- 
- enum {
- 	IFLA_VF_INFO_UNSPEC,
+ 					if(rtstatus != true)
+ 					{
 -- 
 1.7.1
 
