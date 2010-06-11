@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760513Ab0FKUqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 16:46:47 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19851 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203Ab0FKUqp (ORCPT
+	id S932698Ab0FKUqx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 16:46:53 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:45204 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932621Ab0FKUqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 16:46:45 -0400
-Date: Fri, 11 Jun 2010 13:46:17 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: David Miller <davem@davemloft.net>
-Cc: dvomlehn@cisco.com, to@dvomlehn-lnx2.corp.sa.net,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       netdev@vger.kernel.org
-Subject: Re: [PATCH 1/4][RFC] Introduction to sk_buff state checking
-Message-Id: <20100611134617.b2c93c1b.randy.dunlap@oracle.com>
-In-Reply-To: <20100611.133811.52184181.davem@davemloft.net>
-References: <20100611203350.GA28383@dvomlehn-lnx2.corp.sa.net>
-	<20100611.133811.52184181.davem@davemloft.net>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090201.4C12A0AC.0088:SCFMA4539811,ss=1,fgs=0
+	Fri, 11 Jun 2010 16:46:51 -0400
+Date: Fri, 11 Jun 2010 16:46:48 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: sequence lock in Linux
+Message-ID: <20100611204648.GA20360@Krystal>
+References: <20100611194016.GA5213@Krystal> <20100611200700.GG2394@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100611200700.GG2394@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 16:46:06 up 139 days, 23:23,  7 users,  load average: 0.07, 0.14,
+	0.16
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010 13:38:11 -0700 (PDT) David Miller wrote:
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Fri, Jun 11, 2010 at 03:40:16PM -0400, Mathieu Desnoyers wrote:
+> > Hi Paul,
+> > 
+> > (CCing lkml)
+> > 
+> > Is it just me, or the following code:
+> > 
+> > static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
+> > {
+> >         unsigned ret;
+> > 
+> > repeat:
+> >         ret = sl->sequence;
+> >         smp_rmb();
+> >         if (unlikely(ret & 1)) {
+> >                 cpu_relax();
+> >                 goto repeat;
+> >         }
+> > 
+> >         return ret;
+> > }
+> > 
+> > could use a ACCESS_ONCE() around the sl->sequence read ? I'm concerned about the
+> > compiler generating code that reads the sequence number chunkwise.
+> > 
+> > The same apply to all other reads of the sequence number in seqlock.h (including
+> > the retry code).
+> > 
+> > Thoughts ?
+> 
+> Doesn't gcc guarantee that accesses to aligned basic types that fit into
+> a machine word are loaded and stored in one shot?  Now, gcc might choose
+> to load twice (or to merge loads) due to things like register pressure,
+> but given that ->sequence is an int, gcc should not be accessing it
+> (say) bytewise on any platform supporting 32-bit accesses.
+> 
+> Or am I suffering from wishful thinking here?
+
+Hopefully not. I might be the one suffering from extreme compiler distrust here.
+;-)
+
+Mathieu
 
 > 
-> This is the second time you've submitted this patch set,
-> it is also the second time that:
-> 
-> 1) Your email client has emitted these strange
->    "linux-kernel@vger.kernel.org"@cisco.com
->    addresses.
-> 
->    I saw that you were specifically notified about this
->    problem during the previous submission.
-> 
->    What did you do to try and correct it?
-> 
-> 2) You are not CC:'ing the networking developer mailing
->    list "netdev@vger.kernel.org"  Many networking developers
->    do not read linux-kernel, so by not CC:'ing that list
->    you are not reaching the folks most capable of reviewing
->    your patches.
-> 
-> Please fix this up.
-> --
+> 							Thanx, Paul
 
-Ack.  Also this one:
-
-   ----- The following addresses had permanent fatal errors -----
-<to@dvomlehn-lnx2.corp.sa.net>
-    (reason: 550 Host unknown)
-
-   ----- Transcript of session follows -----
-550 5.1.2 <to@dvomlehn-lnx2.corp.sa.net>... Host unknown (Name server: dvomlehn-lnx2.corp.sa.net: host not found)
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
