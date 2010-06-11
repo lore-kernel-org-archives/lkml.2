@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759847Ab0FKJT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 05:19:28 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46558 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757706Ab0FKJT0 (ORCPT
+	id S1759866Ab0FKJUj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 05:20:39 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:39263 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755121Ab0FKJUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 05:19:26 -0400
+	Fri, 11 Jun 2010 05:20:37 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C11FF70.5080909@jp.fujitsu.com>
-Date: Fri, 11 Jun 2010 18:18:40 +0900
+Message-ID: <4C11FFC0.1030006@jp.fujitsu.com>
+Date: Fri, 11 Jun 2010 18:20:00 +0900
 From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
 CC: linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org
-Subject: [PATCH 1/4] x86: ioremap: fix wrong address masking
+Subject: [PATCH 2/4] x86: ioremap: fix physical address check
 References: <4C11FF10.4060203@jp.fujitsu.com>
 In-Reply-To: <4C11FF10.4060203@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-2022-JP
@@ -25,58 +25,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current x86 ioremap() doesn't handle physical address higher than
-32-bit properly in X86_32 PAE mode. When physical address higher than
-32-bit is passed to ioremap(), higher 32-bits in physical address is
-cleared wrongly. Due to this bug, ioremap() can map wrong address to
-linear address space.
+If the physical address is too high to be handled by ioremap() in
+x86_32 PAE (e.g. more than 36-bit physical address), ioremap() must
+return error (NULL). However, current x86 ioremap try to map this too
+high physical address, and it causes unexpected behavior.
 
-In my case, 64-bit MMIO region was assigned to a PCI device (ioat
-device) on my system. Because of the ioremap()'s bug, wrong physical
-address (instead of MMIO region) was mapped to linear address space.
-Because of this, loading ioatdma driver caused unexpected behavior
-(kernel panic, kernel hangup, ...).
+The ioremap() seems to check the specified physical address using
+phys_addr_valid(). But current phys_addr_valid() returns true even if
+more than 36-bit address range is specified because
+boot_cpu_data.x86_phys_bits can have more than 36 even in X86_32 PAE
+mode (boot_cpu_data.x86_phys_bits seems to hold maximum capability of
+the processor).
+
+To fix the problem, this patch changes phys_addr_valid() function to
+return false when more than 36-bit address range is specified in PAE.
+The phys_addr_valid() function is used only by ioremap() in X86_32 PAE
+mode. So this change only affects ioremap() in X86_32 PAE mode.
 
 Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 
 ---
- arch/x86/mm/ioremap.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ arch/x86/mm/physaddr.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Index: linux-2.6.34/arch/x86/mm/ioremap.c
+Index: linux-2.6.34/arch/x86/mm/physaddr.h
 ===================================================================
---- linux-2.6.34.orig/arch/x86/mm/ioremap.c	2010-06-10 07:28:28.222386973 +0900
-+++ linux-2.6.34/arch/x86/mm/ioremap.c	2010-06-10 07:28:31.966187993 +0900
-@@ -62,7 +62,7 @@
- static void __iomem *__ioremap_caller(resource_size_t phys_addr,
- 		unsigned long size, unsigned long prot_val, void *caller)
+--- linux-2.6.34.orig/arch/x86/mm/physaddr.h	2010-06-10 07:28:28.177229689 +0900
++++ linux-2.6.34/arch/x86/mm/physaddr.h	2010-06-10 07:28:32.587190857 +0900
+@@ -3,8 +3,12 @@
+ static inline int phys_addr_valid(resource_size_t addr)
  {
--	unsigned long pfn, offset, vaddr;
-+	unsigned long pfn, last_pfn, offset, vaddr;
- 	resource_size_t last_addr;
- 	const resource_size_t unaligned_phys_addr = phys_addr;
- 	const unsigned long unaligned_size = size;
-@@ -100,10 +100,8 @@
- 	/*
- 	 * Don't allow anybody to remap normal RAM that we're using..
- 	 */
--	for (pfn = phys_addr >> PAGE_SHIFT;
--				(pfn << PAGE_SHIFT) < (last_addr & PAGE_MASK);
--				pfn++) {
--
-+	last_pfn = last_addr >> PAGE_SHIFT;
-+	for (pfn = phys_addr >> PAGE_SHIFT; pfn < last_pfn; pfn++) {
- 		int is_ram = page_is_ram(pfn);
- 
- 		if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
-@@ -115,7 +113,7 @@
- 	 * Mappings have to be page-aligned
- 	 */
- 	offset = phys_addr & ~PAGE_MASK;
--	phys_addr &= PAGE_MASK;
-+	phys_addr &= PHYSICAL_PAGE_MASK;
- 	size = PAGE_ALIGN(last_addr+1) - phys_addr;
- 
- 	retval = reserve_memtype(phys_addr, (u64)phys_addr + size,
+ #ifdef CONFIG_PHYS_ADDR_T_64BIT
++#ifdef CONFIG_X86_64
+ 	return !(addr >> boot_cpu_data.x86_phys_bits);
+ #else
++	return !(addr >> 36);
++#endif
++#else
+ 	return 1;
+ #endif
+ }
 
 
