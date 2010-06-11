@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab0FKVOv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 17:14:51 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50081 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256Ab0FKVOt convert rfc822-to-8bit (ORCPT
+	id S932564Ab0FKVRu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 17:17:50 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:51544 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753256Ab0FKVRs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 17:14:49 -0400
+	Fri, 11 Jun 2010 17:17:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
          :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=I/3VyqVm1K49pqd8RMPgh2QSF01p3FFYR+/jhvSlFBczi1dcX8cWT+wGnTthRI+0Mz
-         djj9mtBC+74mBkiXZ048fGZtx7Gl4ItDNXTOSzYDJS+p4LYGG6IlXbfSnP4ZgczoF7Li
-         bsdZ6V464PSbp776G01NXrR1c2TrfWvHAlgFk=
+        b=ZVBlSXovaoy7K6qKmpd7a2J7WJjvNKaQnK//6Sk5R0dKLDzNomh8dS88CfryWCrn5F
+         t7cg/Dcmj6OeRhIcY8q6sqgenTU7VOkhZISUEVAzMWHaKaMV2Yb9wM9ZSmVH9TaUiwUe
+         Je5Snxs5QTaQDhc6A/8nzjmA134KkEZe9JU+8=
 MIME-Version: 1.0
-In-Reply-To: <1276288869-16815-3-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1276288869-16815-6-git-send-email-justinmattock@gmail.com>
 References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>
-	<1276288869-16815-3-git-send-email-justinmattock@gmail.com>
-Date: Fri, 11 Jun 2010 23:14:48 +0200
-X-Google-Sender-Auth: b2r1RCUlCV2S_ZEm3rxUqctmS9M
-Message-ID: <AANLkTildzUcfd6GghHbO53ebPAc4m4BahJrXUr8B7SQF@mail.gmail.com>
-Subject: Re: [PATCH 2/6]kernel:audit.c Fix warning: variable 'nlh' set but not 
-	used
+	<1276288869-16815-6-git-send-email-justinmattock@gmail.com>
+Date: Fri, 11 Jun 2010 23:17:44 +0200
+X-Google-Sender-Auth: L7dJjqx82k10aDcb7P3iOtS-fBo
+Message-ID: <AANLkTilZLOGXpZxHUklA8iHMj8HsJap2BvWMrWMmeyu3@mail.gmail.com>
+Subject: Re: [PATCH 5/6]kernel:module.c variable 'nowarn' set but not used
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: "Justin P. Mattock" <justinmattock@gmail.com>
 Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
@@ -37,48 +36,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Jun 11, 2010 at 22:41, Justin P. Mattock
 <justinmattock@gmail.com> wrote:
-> Removing dead code(hopefully), fixes a warning
-
-This is not dead code. NLMSG_NEW() sets up an nlmsg in ab->skb.
-If you remove the code, it's no longer initialized.
-
-> when compiling the kernel.
+> The below patch fixes a warning message
+> reported by gcc 4.6.0.
 >
->  CC      kernel/audit.o
-> kernel/audit.c: In function 'audit_buffer_alloc':
-> kernel/audit.c:1044:19: warning: variable 'nlh' set but not used
->  CC      kernel/auditfilter.o
+>  CC      kernel/module.o
+> kernel/module.c: In function 'add_usage_links':
+> kernel/module.c:1343:6: warning: variable 'nowarn' set but not used
 >
 >  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 >
 > ---
->  kernel/audit.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
+>  kernel/module.c |    8 ++------
+>  1 files changed, 2 insertions(+), 6 deletions(-)
 >
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index c71bd26..783d958 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -1041,8 +1041,7 @@ static struct audit_buffer * audit_buffer_alloc(struct audit_context *ctx,
+> diff --git a/kernel/module.c b/kernel/module.c
+> index 8c6b428..a71027a 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -1340,13 +1340,9 @@ static void add_usage_links(struct module *mod)
 >  {
->        unsigned long flags;
->        struct audit_buffer *ab = NULL;
-> -       struct nlmsghdr *nlh;
+>  #ifdef CONFIG_MODULE_UNLOAD
+>        struct module_use *use;
+> -       int nowarn;
 > -
 > +
->        spin_lock_irqsave(&audit_freelist_lock, flags);
->        if (!list_empty(&audit_freelist)) {
->                ab = list_entry(audit_freelist.next,
-> @@ -1065,8 +1064,7 @@ static struct audit_buffer * audit_buffer_alloc(struct audit_context *ctx,
->        if (!ab->skb)
->                goto nlmsg_failure;
->
-> -       nlh = NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
-> -
-> +
->        return ab;
->
->  nlmsg_failure:                  /* Used by NLMSG_NEW */
+>        mutex_lock(&module_mutex);
+> -       list_for_each_entry(use, &mod->target_list, target_list) {
+> -               nowarn = sysfs_create_link(use->target->holders_dir,
+> -                                          &mod->mkobj.kobj, mod->name);
+> -       }
+> +       list_for_each_entry(use, &mod->target_list, target_list);
+>        mutex_unlock(&module_mutex);
+>  #endif
+>  }
+
+Also wrong, you removed the creation of the links in sysfs.
+
+The assignment to nowarn was there to avoid another compiler warning,
+as sysfs_create_link() is marked __must_check.
 
 Gr{oetje,eeting}s,
 
