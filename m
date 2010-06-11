@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698Ab0FKUqx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 16:46:53 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:45204 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932621Ab0FKUqv (ORCPT
+	id S1760526Ab0FKUsS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 16:48:18 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:33234 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753307Ab0FKUsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 16:46:51 -0400
-Date: Fri, 11 Jun 2010 16:46:48 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: sequence lock in Linux
-Message-ID: <20100611204648.GA20360@Krystal>
-References: <20100611194016.GA5213@Krystal> <20100611200700.GG2394@linux.vnet.ibm.com>
+	Fri, 11 Jun 2010 16:48:17 -0400
+Date: Fri, 11 Jun 2010 16:48:15 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: James Bottomley <James.Bottomley@suse.de>
+cc: David Brownell <david-b@pacbell.net>, <tytso@mit.edu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Neil Brown <neilb@suse.de>,
+       Brian Swetland <swetland@google.com>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] suspend blockers & Android integration
+In-Reply-To: <1276268539.2862.92.camel@mulgrave.site>
+Message-ID: <Pine.LNX.4.44L0.1006111638040.19894-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100611200700.GG2394@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 16:46:06 up 139 days, 23:23,  7 users,  load average: 0.07, 0.14,
-	0.16
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Fri, Jun 11, 2010 at 03:40:16PM -0400, Mathieu Desnoyers wrote:
-> > Hi Paul,
-> > 
-> > (CCing lkml)
-> > 
-> > Is it just me, or the following code:
-> > 
-> > static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
-> > {
-> >         unsigned ret;
-> > 
-> > repeat:
-> >         ret = sl->sequence;
-> >         smp_rmb();
-> >         if (unlikely(ret & 1)) {
-> >                 cpu_relax();
-> >                 goto repeat;
-> >         }
-> > 
-> >         return ret;
-> > }
-> > 
-> > could use a ACCESS_ONCE() around the sl->sequence read ? I'm concerned about the
-> > compiler generating code that reads the sequence number chunkwise.
-> > 
-> > The same apply to all other reads of the sequence number in seqlock.h (including
-> > the retry code).
-> > 
-> > Thoughts ?
+On Fri, 11 Jun 2010, Mark Brown wrote:
+
+> On Fri, Jun 11, 2010 at 10:46:27AM -0400, Alan Stern wrote:
+> > On Fri, 11 Jun 2010, James Bottomley wrote:
 > 
-> Doesn't gcc guarantee that accesses to aligned basic types that fit into
-> a machine word are loaded and stored in one shot?  Now, gcc might choose
-> to load twice (or to merge loads) due to things like register pressure,
-> but given that ->sequence is an int, gcc should not be accessing it
-> (say) bytewise on any platform supporting 32-bit accesses.
+> > > The one thing that does look difficult is that these power constraints
+> > > are device (and sometimes SoC) specific.  Expressing them in a generic
+> > > way for the cpu govenors to make sense of might be hard.
 > 
-> Or am I suffering from wishful thinking here?
-
-Hopefully not. I might be the one suffering from extreme compiler distrust here.
-;-)
-
-Mathieu
-
+> > Doesn't the clock framework already handle this sort of thing?
 > 
-> 							Thanx, Paul
+> The clock framework is implemented independantly for each CPU.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+That's not an impediment, since drivers' requirements regarding which 
+clocks remain running in which power states are necessarily 
+platform-dependent also.
+
+
+On Fri, 11 Jun 2010, James Bottomley wrote:
+
+> Well, there are two elements to "this sort of thing":
+> 
+>      1. Allow a driver to request that a given clock not be turned off.
+>      2. Make the cpuidle governors aware of a pending "don't turn off X
+>         clock source" so they can keep the system in a state where the
+>         clock doesn't get powered down.
+> 
+> As far as I can tell from the code, neither currently exists at the
+> moment.
+
+Well then, can (or should) the clock framework interact with the
+pm-qos subsystem so that drivers don't have to worry about it?
+
+Alan Stern
+
