@@ -1,199 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759710Ab0FKSY7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 14:24:59 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35707 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755689Ab0FKSY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 14:24:58 -0400
-Date: Fri, 11 Jun 2010 18:24:39 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org>
-References: <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/alternatives] x86, alternatives: Use 16-bit numbers for cpufeature index
-Message-ID: <tip-884c4f15783495e42a628b7f31d2dff60ec9cd17@git.kernel.org>
-Git-Commit-ID: 884c4f15783495e42a628b7f31d2dff60ec9cd17
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 11 Jun 2010 18:24:41 +0000 (UTC)
+	id S1759884Ab0FKSZs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 14:25:48 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:4960 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756338Ab0FKSZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 14:25:47 -0400
+Subject: [PATCH] Alternate fix for ia64 tiger_defconfig build breakage
+From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+To: Tony Luck <tony.luck@gmail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinSRHyxGFKRnIlfUGbnLqIpZWLtq7ipYFH25wGW@mail.gmail.com>
+References: <20100528105719.a356ba4f.sfr@canb.auug.org.au>
+	 <alpine.LFD.2.00.1005271807470.11382@i5.linux-foundation.org>
+	 <20100530104303.15864d35.sfr@canb.auug.org.au>
+	 <AANLkTinSRHyxGFKRnIlfUGbnLqIpZWLtq7ipYFH25wGW@mail.gmail.com>
+Content-Type: text/plain
+Organization: HP/LKTT
+Date: Fri, 11 Jun 2010 14:25:44 -0400
+Message-Id: <1276280744.5581.13.camel@useless.americas.hpqcorp.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  884c4f15783495e42a628b7f31d2dff60ec9cd17
-Gitweb:     http://git.kernel.org/tip/884c4f15783495e42a628b7f31d2dff60ec9cd17
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Wed, 9 Jun 2010 16:03:09 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 11 Jun 2010 11:22:39 -0700
+Offered as an alternative to Tony's in-line #ifdefs to address the ia64
+non-numa build breakage.  
 
-x86, alternatives: Use 16-bit numbers for cpufeature index
+Lee
+-----------------------------------
 
-We already have cpufeature indicies above 255, so use a 16-bit number
-for the alternatives index.  This consumes a padding field and so
-doesn't add any size, but it means that abusing the padding field to
-create assembly errors on overflow no longer works.  We can retain the
-test simply by redirecting it to the .discard section, however.
+Define stubs for the numa_*_id() generic percpu related functions
+for non-NUMA configurations in <asm-generic/topology.h> where the
+other non-numa stubs live.
 
-[ v2: fix open-coded alternatives sites ]
+Fixes ia64 !NUMA build breakage -- e.g., tiger_defconfig
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-LKML-Reference: <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org>
----
- arch/x86/include/asm/alternative.h |    7 ++++---
- arch/x86/include/asm/cpufeature.h  |   10 ++++++----
- arch/x86/kernel/entry_32.S         |    2 +-
- arch/x86/lib/clear_page_64.S       |    2 +-
- arch/x86/lib/copy_page_64.S        |    2 +-
- arch/x86/lib/copy_user_64.S        |    2 +-
- arch/x86/lib/memcpy_64.S           |    2 +-
- arch/x86/lib/memset_64.S           |    2 +-
- 8 files changed, 16 insertions(+), 13 deletions(-)
+Back out now unneeded '#ifndef CONFIG_NUMA' guards from ia64
+smpboot.c
 
-diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index 03b6bb5..bc6abb7 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -45,10 +45,9 @@
- struct alt_instr {
- 	u8 *instr;		/* original instruction */
- 	u8 *replacement;
--	u8  cpuid;		/* cpuid bit set for replacement */
-+	u16 cpuid;		/* cpuid bit set for replacement */
- 	u8  instrlen;		/* length of original instruction */
- 	u8  replacementlen;	/* length of new instruction, <= instrlen */
--	u8  pad1;
- #ifdef CONFIG_X86_64
- 	u32 pad2;
+Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+
+ arch/ia64/Kconfig              |    3 +--
+ arch/ia64/kernel/smpboot.c     |    4 ----
+ include/asm-generic/topology.h |   20 +++++++++++++++++++-
+ include/linux/topology.h       |    4 ----
+ 4 files changed, 20 insertions(+), 11 deletions(-)
+
+Index: linux-2.6.35-rc2/include/asm-generic/topology.h
+===================================================================
+--- linux-2.6.35-rc2.orig/include/asm-generic/topology.h
++++ linux-2.6.35-rc2/include/asm-generic/topology.h
+@@ -5,7 +5,7 @@
+  *
+  * Copyright (C) 2002, IBM Corp.
+  *
+- * All rights reserved.          
++ * All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -34,9 +34,16 @@
+ #ifndef cpu_to_node
+ #define cpu_to_node(cpu)	((void)(cpu),0)
  #endif
-@@ -86,9 +85,11 @@ static inline int alternatives_text_reserved(void *start, void *end)
-       _ASM_ALIGN "\n"							\
-       _ASM_PTR "661b\n"				/* label           */	\
-       _ASM_PTR "663f\n"				/* new instruction */	\
--      "	 .byte " __stringify(feature) "\n"	/* feature bit     */	\
-+      "	 .word " __stringify(feature) "\n"	/* feature bit     */	\
-       "	 .byte 662b-661b\n"			/* sourcelen       */	\
-       "	 .byte 664f-663f\n"			/* replacementlen  */	\
-+      ".previous\n"							\
-+      ".section .discard,\"aw\",@progbits\n"				\
-       "	 .byte 0xff + (664f-663f) - (662b-661b)\n" /* rlen <= slen */	\
-       ".previous\n"							\
-       ".section .altinstr_replacement, \"ax\"\n"			\
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 4681459..66878c5 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -300,11 +300,11 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
- 			 _ASM_ALIGN "\n"
- 			 _ASM_PTR "1b\n"
- 			 _ASM_PTR "0\n" 	/* no replacement */
--			 " .byte %P0\n"		/* feature bit */
-+			 " .word %P0\n"		/* feature bit */
- 			 " .byte 2b - 1b\n"	/* source len */
- 			 " .byte 0\n"		/* replacement len */
--			 " .byte 0xff + 0 - (2b-1b)\n"	/* padding */
- 			 ".previous\n"
-+			 /* skipping size check since replacement size = 0 */
- 			 : : "i" (bit) : : t_no);
- 		return true;
- 	t_no:
-@@ -318,10 +318,12 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
- 			     _ASM_ALIGN "\n"
- 			     _ASM_PTR "1b\n"
- 			     _ASM_PTR "3f\n"
--			     " .byte %P1\n"		/* feature bit */
-+			     " .word %P1\n"		/* feature bit */
- 			     " .byte 2b - 1b\n"		/* source len */
- 			     " .byte 4f - 3f\n"		/* replacement len */
--			     " .byte 0xff + (4f-3f) - (2b-1b)\n" /* padding */
-+			     ".previous\n"
-+			     ".section .discard,\"aw\",@progbits\n"
-+			     " .byte 0xff + (4f-3f) - (2b-1b)\n" /* size check */
- 			     ".previous\n"
- 			     ".section .altinstr_replacement,\"ax\"\n"
- 			     "3: movb $1,%0\n"
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index cd49141..7862cf5 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -914,7 +914,7 @@ ENTRY(simd_coprocessor_error)
- 	.balign 4
- 	.long 661b
- 	.long 663f
--	.byte X86_FEATURE_XMM
-+	.word X86_FEATURE_XMM
- 	.byte 662b-661b
- 	.byte 664f-663f
- .previous
-diff --git a/arch/x86/lib/clear_page_64.S b/arch/x86/lib/clear_page_64.S
-index ebeafcc..aa4326b 100644
---- a/arch/x86/lib/clear_page_64.S
-+++ b/arch/x86/lib/clear_page_64.S
-@@ -52,7 +52,7 @@ ENDPROC(clear_page)
- 	.align 8
- 	.quad clear_page
- 	.quad 1b
--	.byte X86_FEATURE_REP_GOOD
-+	.word X86_FEATURE_REP_GOOD
- 	.byte .Lclear_page_end - clear_page
- 	.byte 2b - 1b
- 	.previous
-diff --git a/arch/x86/lib/copy_page_64.S b/arch/x86/lib/copy_page_64.S
-index 727a5d4..6fec2d1 100644
---- a/arch/x86/lib/copy_page_64.S
-+++ b/arch/x86/lib/copy_page_64.S
-@@ -113,7 +113,7 @@ ENDPROC(copy_page)
- 	.align 8
- 	.quad copy_page
- 	.quad 1b
--	.byte X86_FEATURE_REP_GOOD
-+	.word X86_FEATURE_REP_GOOD
- 	.byte .Lcopy_page_end - copy_page
- 	.byte 2b - 1b
- 	.previous
-diff --git a/arch/x86/lib/copy_user_64.S b/arch/x86/lib/copy_user_64.S
-index 71100c9..a460158 100644
---- a/arch/x86/lib/copy_user_64.S
-+++ b/arch/x86/lib/copy_user_64.S
-@@ -29,7 +29,7 @@
- 	.align 8
- 	.quad  0b
- 	.quad  2b
--	.byte  \feature			/* when feature is set */
-+	.word  \feature			/* when feature is set */
- 	.byte  5
- 	.byte  5
- 	.previous
-diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
-index f82e884..bcbcd1e 100644
---- a/arch/x86/lib/memcpy_64.S
-+++ b/arch/x86/lib/memcpy_64.S
-@@ -131,7 +131,7 @@ ENDPROC(__memcpy)
- 	.align 8
- 	.quad memcpy
- 	.quad .Lmemcpy_c
--	.byte X86_FEATURE_REP_GOOD
-+	.word X86_FEATURE_REP_GOOD
++#ifndef set_numa_node
++#define set_numa_node(node)
++#endif
++#ifndef set_cpu_numa_node
++#define set_cpu_numa_node(cpu, node)
++#endif
+ #ifndef cpu_to_mem
+ #define cpu_to_mem(cpu)		((void)(cpu),0)
+ #endif
++
+ #ifndef parent_node
+ #define parent_node(node)	((void)(node),0)
+ #endif
+@@ -55,4 +62,15 @@
  
+ #endif	/* CONFIG_NUMA */
+ 
++#if !defined(CONFIG_NUMA) || !defined(CONFIG_HAVE_MEMORYLESS_NODES)
++
++#ifndef set_numa_mem
++#define set_numa_mem(node)
++#endif
++#ifndef set_cpu_numa_mem
++#define set_cpu_numa_mem(cpu, node)
++#endif
++
++#endif	/* !CONFIG_NUMA || !CONFIG_HAVE_MEMORYLESS_NODES */
++
+ #endif /* _ASM_GENERIC_TOPOLOGY_H */
+Index: linux-2.6.35-rc2/arch/ia64/Kconfig
+===================================================================
+--- linux-2.6.35-rc2.orig/arch/ia64/Kconfig
++++ linux-2.6.35-rc2/arch/ia64/Kconfig
+@@ -503,8 +503,7 @@ config USE_PERCPU_NUMA_NODE_ID
+ 	depends on NUMA
+ 
+ config HAVE_MEMORYLESS_NODES
+-	def_bool y
+-	depends on NUMA
++	def_bool NUMA
+ 
+ config ARCH_PROC_KCORE_TEXT
+ 	def_bool y
+Index: linux-2.6.35-rc2/include/linux/topology.h
+===================================================================
+--- linux-2.6.35-rc2.orig/include/linux/topology.h
++++ linux-2.6.35-rc2/include/linux/topology.h
+@@ -291,10 +291,6 @@ static inline void set_cpu_numa_mem(int
+ 
+ #else	/* !CONFIG_HAVE_MEMORYLESS_NODES */
+ 
+-static inline void set_numa_mem(int node) {}
+-
+-static inline void set_cpu_numa_mem(int cpu, int node) {}
+-
+ #ifndef numa_mem_id
+ /* Returns the number of the nearest Node with memory */
+ static inline int numa_mem_id(void)
+Index: linux-2.6.35-rc2/arch/ia64/kernel/smpboot.c
+===================================================================
+--- linux-2.6.35-rc2.orig/arch/ia64/kernel/smpboot.c
++++ linux-2.6.35-rc2/arch/ia64/kernel/smpboot.c
+@@ -390,13 +390,11 @@ smp_callin (void)
+ 
+ 	fix_b0_for_bsp();
+ 
+-#ifdef CONFIG_NUMA
  	/*
- 	 * Replace only beginning, memcpy is used to apply alternatives,
-diff --git a/arch/x86/lib/memset_64.S b/arch/x86/lib/memset_64.S
-index e88d3b8..09d3442 100644
---- a/arch/x86/lib/memset_64.S
-+++ b/arch/x86/lib/memset_64.S
-@@ -121,7 +121,7 @@ ENDPROC(__memset)
- 	.align 8
- 	.quad memset
- 	.quad .Lmemset_c
--	.byte X86_FEATURE_REP_GOOD
-+	.word X86_FEATURE_REP_GOOD
- 	.byte .Lfinal - memset
- 	.byte .Lmemset_e - .Lmemset_c
- 	.previous
+ 	 * numa_node_id() works after this.
+ 	 */
+ 	set_numa_node(cpu_to_node_map[cpuid]);
+ 	set_numa_mem(local_memory_node(cpu_to_node_map[cpuid]));
+-#endif
+ 
+ 	ipi_call_lock_irq();
+ 	spin_lock(&vector_lock);
+@@ -640,9 +638,7 @@ void __devinit smp_prepare_boot_cpu(void
+ {
+ 	cpu_set(smp_processor_id(), cpu_online_map);
+ 	cpu_set(smp_processor_id(), cpu_callin_map);
+-#ifdef CONFIG_NUMA
+ 	set_numa_node(cpu_to_node_map[smp_processor_id()]);
+-#endif
+ 	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
+ 	paravirt_post_smp_prepare_boot_cpu();
+ }
+
+
