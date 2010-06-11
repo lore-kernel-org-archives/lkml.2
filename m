@@ -1,101 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759976Ab0FKLpd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 07:45:33 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51484 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab0FKLpb (ORCPT
+	id S1760171Ab0FKLrM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 07:47:12 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:45125 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858Ab0FKLrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 07:45:31 -0400
-Date: Fri, 11 Jun 2010 13:45:28 +0200
-From: Luotao Fu <l.fu@pengutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Luotao Fu <l.fu@pengutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] input: STMPE811 touch controller support
-Message-ID: <20100611114527.GC4078@pengutronix.de>
-Mail-Followup-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-	Luotao Fu <l.fu@pengutronix.de>,
-	Samuel Ortiz <sameo@linux.intel.com>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1276251195-22981-1-git-send-email-l.fu@pengutronix.de>
- <1276251195-22981-4-git-send-email-l.fu@pengutronix.de>
- <20100611112102.GE12436@sirena.org.uk>
+	Fri, 11 Jun 2010 07:47:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ZNlAde/JZm9i+CvU3asSBIhGs80epFyNRKP+SUs9BneVkjBUewvfYG8beinb0YP1S6
+         Td2INLet2MWcNbv68gmxSwhqAeC8qhskb5TLlfuL8NI4JkkAZup5gtvdX+m6VgRvKYBd
+         4OaY2hV6BEiLywMJpnzEY1aOtr+OLLnEfXYVA=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iFRdW5/EC4oqxDHL"
-Content-Disposition: inline
-In-Reply-To: <20100611112102.GE12436@sirena.org.uk>
-X-PGP-Key-ID: 0xE5325261
-X-URL: http://www.pengutronix.de/
-X-Sent-From: Pengutronix Hildesheim
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 13:43:51 up  5:40, 12 users,  load average: 0.12, 0.04, 0.01
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:250:baff:feac:3723
-X-SA-Exim-Mail-From: l.fu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTinfoyhEyFjxReR6Oza7r_AQhcyMlpaXYB4ZjjlU@mail.gmail.com>
+References: <AANLkTik_7rxDBc0TKlAfoYyM5S6Cf_Hyxbr4W5ORnTsq@mail.gmail.com>
+	<1274726029.2091.15160.camel@rchatre-DESK>
+	<1274738896.2091.15438.camel@rchatre-DESK>
+	<1274830187.2091.17034.camel@rchatre-DESK>
+	<1275600737.2091.32332.camel@rchatre-DESK>
+	<AANLkTinfoyhEyFjxReR6Oza7r_AQhcyMlpaXYB4ZjjlU@mail.gmail.com>
+Date: Fri, 11 Jun 2010 17:09:17 +0530
+Message-ID: <AANLkTillaEGISTjW4iqpsNsJbaE6ZW7pqYvAzoBrkI69@mail.gmail.com>
+Subject: Re: iwl3945 bug in 2.6.34
+From: Satish Eerpini <eerpini@gmail.com>
+To: reinette chatre <reinette.chatre@intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The 2.6.34 vanilla kernel with the above patches applied crashed again
+today, I was amidst a conference on webex when this happened, still
+not able to figure out what is the kind of traffic that causes the
+driver to give up ... here is output from dmesg :
 
---iFRdW5/EC4oqxDHL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+cfg80211: Calling CRDA to update world regulatory domain
+cfg80211: Calling CRDA for country: IN
+cfg80211: Regulatory domain changed to country: IN
+    (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp)
+    (2402000 KHz - 2482000 KHz @ 40000 KHz), (N/A, 2000 mBm)
+    (5170000 KHz - 5250000 KHz @ 20000 KHz), (N/A, 2000 mBm)
+    (5250000 KHz - 5330000 KHz @ 20000 KHz), (N/A, 2000 mBm)
+    (5735000 KHz - 5835000 KHz @ 20000 KHz), (N/A, 2000 mBm)
+wlan0: authenticate with 00:1b:da:2a:a1:53 (try 1)
+wlan0: authenticated
+wlan0: associate with 00:1b:da:2a:a1:53 (try 1)
+wlan0: RX AssocResp from 00:1b:da:2a:a1:53 (capab=0x411 status=0 aid=1)
+wlan0: associated
+usb 4-2: USB disconnect, address 4
+iwl3945 0000:10:00.0: queue 2 stuck 3 time. Fw reload.
+iwl3945 0000:10:00.0: On demand firmware reload
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:10:00.0: BSM uCode verification failed at addr
+0x00003800+0 (of 900), is 0xffffffff, s/b 0xf802020
+iwl3945 0000:10:00.0: Wait for START_ALIVE timeout after 2000ms.
+No probe response from AP 00:1b:da:2a:a1:53 after 500ms, disconnecting.
+cfg80211: Calling CRDA to update world regulatory domain
+cfg80211: Calling CRDA for country: IN
+cfg80211: Regulatory domain changed to country: IN
+    (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp)
+    (2402000 KHz - 2482000 KHz @ 40000 KHz), (N/A, 2000 mBm)
+    (5170000 KHz - 5250000 KHz @ 20000 KHz), (N/A, 2000 mBm)
+    (5250000 KHz - 5330000 KHz @ 20000 KHz), (N/A, 2000 mBm)
+    (5735000 KHz - 5835000 KHz @ 20000 KHz), (N/A, 2000 mBm)
 
-On Fri, Jun 11, 2010 at 12:21:02PM +0100, Mark Brown wrote:
-> On Fri, Jun 11, 2010 at 12:13:15PM +0200, Luotao Fu wrote:
->=20
-> > +/*
-> > + * reference source:
-> > + *
-> > + * Set ref_sel =3D 0 for internal reference
-> > + *     ref_sel =3D 1 for external reference
-> > + */
-> > +static int ref_sel;
-> > +module_param(ref_sel, int, 0444);
-> > +MODULE_PARM_DESC(ref_sel,
-> > +	"Set ADC reference source. Default is 0 (internal reference)");
->=20
-> This looks like something that ought to be configured via platform data
-> since the value that should be used is going to be determined by the
-> board schematic.  Similar comments apply to most of the other module
-> parameters, though in some cases sysfs files might be more appropriate
-> as well, or in addition.
+is there anything else that can be done ??
 
-OK. These stuffs are indeed platform dependent. I'll create a platform
-data for it than.
+Cheers
+Satish
 
-Thanks
-Luotao Fu
---=20
-Pengutronix e.K.                           | Dipl.-Ing. Luotao Fu        |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+On Fri, Jun 11, 2010 at 12:19 AM, Satish Eerpini <eerpini@gmail.com> wrote:
+> I have applied the patches to the 2.6.34 kernel, my machine has been
+> up for 20 hours now, there is nothing in the dmesg either, dmesg |
+> grep wlan0 just gives this :
+>
+> ADDRCONF(NETDEV_UP): wlan0: link is not ready
+> wlan0: deauthenticating from 00:1b:da:2a:a1:53 by local choice (reason=3)
+> wlan0: authenticate with 00:1b:da:2a:a1:53 (try 1)
+> wlan0: authenticated
+> wlan0: associate with 00:1b:da:2a:a1:53 (try 1)
+> wlan0: RX AssocResp from 00:1b:da:2a:a1:53 (capab=0x411 status=0 aid=1)
+> wlan0: associated
+> ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
+> wlan0: no IPv6 routers present
+> wlan0: deauthenticating from 00:1b:da:2a:a1:53 by local choice (reason=3)
+> ADDRCONF(NETDEV_UP): wlan0: link is not ready
+> wlan0: deauthenticating from 00:1b:da:2a:a1:53 by local choice (reason=3)
+> wlan0: authenticate with 00:1b:da:2a:a1:53 (try 1)
+> wlan0: authenticated
+> wlan0: associate with 00:1b:da:2a:a1:53 (try 1)
+> wlan0: RX AssocResp from 00:1b:da:2a:a1:53 (capab=0x411 status=0 aid=1)
+> wlan0: associated
+> ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
+> wlan0: no IPv6 routers present
+> wlan0: authenticate with 00:1b:da:2a:a1:53 (try 1)
+> wlan0: authenticated
+> wlan0: associate with 00:1b:da:2a:a1:53 (try 1)
+> wlan0: RX AssocResp from 00:1b:da:2a:a1:53 (capab=0x411 status=0 aid=1)
+> wlan0: associated
+> wlan0: authenticate with 00:1b:da:2a:a1:53 (try 1)
+> wlan0: authenticated
+> wlan0: associate with 00:1b:da:2a:a1:53 (try 1)
+> wlan0: RX AssocResp from 00:1b:da:2a:a1:53 (capab=0x411 status=0 aid=1)
+> wlan0: associated
+>
+> so I think after applying the patches, things have been working fine.
+>
+> Cheers
+> Satish
+>
+> --
+> http://satisheerpini.net
+>
 
---iFRdW5/EC4oqxDHL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAkwSIdcACgkQkLuxfMCkDTZHzwCeIHO03VV1vYIEHQPbP89A89kK
-vFUAn3q2Jdw+rW1sUP76h8q7L6u3s6c4
-=M0O+
------END PGP SIGNATURE-----
-
---iFRdW5/EC4oqxDHL--
+-- 
+http://satisheerpini.net
