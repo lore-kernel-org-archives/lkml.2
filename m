@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760112Ab0FKD2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 23:28:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34502 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301Ab0FKD2v (ORCPT
+	id S1750874Ab0FKEBb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 00:01:31 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42714 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab0FKEBa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 23:28:51 -0400
-From: Tao Ma <tao.ma@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tao Ma <tao.ma@oracle.com>,
-       Joel Becker <joel.becker@oracle.com>, Christoph Hellwig <hch@lst.de>,
-       Nick Piggin <npiggin@suse.de>
-Subject: [PATCH v4] ocfs2: Let ocfs2_setattr use new truncate sequence.
-Date: Fri, 11 Jun 2010 11:27:49 +0800
-Message-Id: <1276226869-11123-1-git-send-email-tao.ma@oracle.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4C11AD6A.0076:SCFMA922111,ss=1,fgs=0
+	Fri, 11 Jun 2010 00:01:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qeHYNEfAP4Sozh8VXsX3dd4RUt9ErDsc0RSz9U9N4Y3Zqrt1XCiZBOOrk68YCwMOnN
+         ejmW5tmKLFbhm/trdvUR1UJB91JPYDrmX39vWzq1eXkvE0GNDk/+dfFpH5Pd+j/SM2q0
+         xoEoZ87siacraf7qLcrx7O0SGD/uzM+cWG6Ok=
+MIME-Version: 1.0
+In-Reply-To: <20100610.173716.35035195.davem@davemloft.net>
+References: <AANLkTimw2Hzv1WIJXehqMo4450ftRJWwefQipDM9Zxb4@mail.gmail.com>
+	<20100610.173716.35035195.davem@davemloft.net>
+Date: Thu, 10 Jun 2010 21:01:28 -0700
+Message-ID: <AANLkTimrIOLiX3m3rFsdakHn8PRhkfSHCCmYUlw6rkFz@mail.gmail.com>
+Subject: Re: PROBLEM: Off-by-one bug on sun4u SMP
+From: Ryan Davis <iconoclasmandheresy@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let ocfs2 use the new truncate sequence. The changes include:
-1. Move inode_change_ok into cluster lock and remove inode_newsize_ok.
-2. Use truncate_setsize directly since we don't implement our
-   own ->truncate and what we need is "update i_size and
-   truncate_pagecache" which truncate_setsize now does.
-3. Change some i_size_read to inode->i_size in ocfs2_setattr
-   since we have i_muext held.
-4. For direct write, ocfs2 actually don't allow write to pass
-   i_size(see ocfs2_prepare_inode_for_write), so we don't have
-   a chance to increase i_size. So remove the bogus check.
+On Thu, Jun 10, 2010 at 5:37 PM, David Miller <davem@davemloft.net> wrote:
+> From: Ryan Davis <iconoclasmandheresy@gmail.com>
+> Date: Thu, 10 Jun 2010 11:05:09 -0700
+>
+>> On at least some sun4u machines, the CPU numbering starts at one not 0.
+>> This causes an off-by-one bug as other parts of the code assume
+>> zero-based numbering.
+>>
+>> If you set max-cpus in the kernel config to the actual number of CPUs,
+>> the last CPU will be ignored and unused.
+>> This is because the CPU numbering starts at 1 but the code to check
+>> against max-cpus assumes a zero-based numbering.
+>>
+>> On my computer: Sun Ultra 60 2x450mhz Ultrasparc.
+>> Building with max-cpus of 2 ignores the second cpu because 2 (one
+>> based cpu number) >= 2 (zero based max cpus)
+>> Rebuilding with a larger max-cpus is a workaround but non optimal.
+>
+> max-cpus means "one larger than the maximum PHYSICAL cpu number", not
+> the number of cpus.  That's what this setting means, at least on
+> sparc64.
+>
 
-Cc: Joel Becker <joel.becker@oracle.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Nick Piggin <npiggin@suse.de>
-Signed-off-by: Tao Ma <tao.ma@oracle.com>
+OK... so there are no kernel data structures allocated for CPU #0
+which is not present? It is my understanding that this is not the case
+but I could be wrong. If this is true, then a chunk of kernel memory
+is wasted tor the phantom CPU #0.
+
+If this is the desired behavior then the semantics of the setting are
+questionable, since a kernel compiled for 2 cpus will only run on 1...
+
+A quick search was unable to find documentation on this quirk. Perhaps
+you could point me at some?
+
+
 ---
- fs/ocfs2/file.c |   45 ++++++++++-----------------------------------
- 1 files changed, 10 insertions(+), 35 deletions(-)
-
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 1fb0985..6e4685e 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -960,10 +960,6 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
- 		return 0;
- 	}
- 
--	status = inode_change_ok(inode, attr);
--	if (status)
--		return status;
--
- 	if (is_quota_modification(inode, attr))
- 		dquot_initialize(inode);
- 	size_change = S_ISREG(inode->i_mode) && attr->ia_valid & ATTR_SIZE;
-@@ -982,12 +978,12 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
- 		goto bail_unlock_rw;
- 	}
- 
--	if (size_change && attr->ia_size != i_size_read(inode)) {
--		status = inode_newsize_ok(inode, attr->ia_size);
--		if (status)
--			goto bail_unlock;
-+	status = inode_change_ok(inode, attr);
-+	if (status)
-+		goto bail_unlock;
- 
--		if (i_size_read(inode) > attr->ia_size) {
-+	if (size_change && attr->ia_size != inode->i_size) {
-+		if (inode->i_size > attr->ia_size) {
- 			if (ocfs2_should_order_data(inode)) {
- 				status = ocfs2_begin_ordered_truncate(inode,
- 								      attr->ia_size);
-@@ -1052,22 +1048,12 @@ int ocfs2_setattr(struct dentry *dentry, struct iattr *attr)
- 	}
- 
- 	/*
--	 * This will intentionally not wind up calling truncate_setsize(),
--	 * since all the work for a size change has been done above.
--	 * Otherwise, we could get into problems with truncate as
--	 * ip_alloc_sem is used there to protect against i_size
--	 * changes.
--	 *
--	 * XXX: this means the conditional below can probably be removed.
-+	 * Since all the work for a size change has been done above.
-+	 * Call truncate_setsize directly to change size and truncate
-+	 * pagecache.
- 	 */
--	if ((attr->ia_valid & ATTR_SIZE) &&
--	    attr->ia_size != i_size_read(inode)) {
--		status = vmtruncate(inode, attr->ia_size);
--		if (status) {
--			mlog_errno(status);
--			goto bail_commit;
--		}
--	}
-+	if ((attr->ia_valid & ATTR_SIZE) && attr->ia_size != inode->i_size)
-+		truncate_setsize(inode, attr->ia_size);
- 
- 	setattr_copy(inode, attr);
- 	mark_inode_dirty(inode);
-@@ -2122,17 +2108,6 @@ relock:
- 		written = generic_file_direct_write(iocb, iov, &nr_segs, *ppos,
- 						    ppos, count, ocount);
- 		if (written < 0) {
--			/*
--			 * direct write may have instantiated a few
--			 * blocks outside i_size. Trim these off again.
--			 * Don't need i_size_read because we hold i_mutex.
--			 *
--			 * XXX(truncate): this looks buggy because ocfs2 did not
--			 * actually implement ->truncate.  Take a look at
--			 * the new truncate sequence and update this accordingly
--			 */
--			if (*ppos + count > inode->i_size)
--				truncate_setsize(inode, inode->i_size);
- 			ret = written;
- 			goto out_dio;
- 		}
--- 
-1.5.5
-
+Those who will not reason, are bigots, those who cannot, are fools,
+and those who dare not, are slaves.
+  -- Lord Byron
