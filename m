@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760403Ab0FKOpZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 10:45:25 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:33968 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1760287Ab0FKOpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 10:45:24 -0400
-Date: Fri, 11 Jun 2010 16:43:59 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: torvalds@osdl.org, akpm@osdl.org
-Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [git pull] PCMCIA bugfixes for 2.6.35-rc3
-Message-ID: <20100611144359.GA9572@comet.dominikbrodowski.net>
-Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org,
-	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+	id S1760437Ab0FKOqc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 10:46:32 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:51719 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1760384Ab0FKOqb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 10:46:31 -0400
+Date: Fri, 11 Jun 2010 10:46:27 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: James Bottomley <James.Bottomley@suse.de>
+cc: David Brownell <david-b@pacbell.net>, <tytso@mit.edu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Neil Brown <neilb@suse.de>,
+       Brian Swetland <swetland@google.com>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] suspend blockers & Android integration
+In-Reply-To: <1276266502.2862.74.camel@mulgrave.site>
+Message-ID: <Pine.LNX.4.44L0.1006111045340.12006-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, 11 Jun 2010, James Bottomley wrote:
 
-in order to solve a few bugs -- among them most probably bug 16138, even
-though the bug reporter hasn't verified the bugfix so far -- please pull
-from
+> On Thu, 2010-06-10 at 21:21 -0700, David Brownell wrote:
+> > Do we at least have a clean way that a driver can
+> > reject a system suspend?  I've lost track of many
+> > issues, but maybe this could be phrased as a QOS
+> > constraint:  the current config of driver X needs
+> > clock Y active to enter the  target system suspend
+> > state, driver's suspend() method reports as much.  Then the entry to
+> > that system state gets blocked
+> > if the clock isn't enabled.
+> 
+> So in QoS modifications to android patches, the answer is "yes" ...
+> except that the current android patch set didn't actually have this type
+> of wakelock in it.
+> 
+> Android wants an idleness suspend block (or pm qos constraint) that a
+> driver can set to prevent the system idleness power govenor from
+> dropping into a power state too low for the driver, so in USB terms this
+> would prevent the states that shut down the clock.  For android, it
+> prevented shutdown of an internal i2c bus.
+> 
+> The one thing that does look difficult is that these power constraints
+> are device (and sometimes SoC) specific.  Expressing them in a generic
+> way for the cpu govenors to make sense of might be hard.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
+Doesn't the clock framework already handle this sort of thing?
 
-The diffstat and list of changes follows; the patches are sent to the PCMCIA
-list.
+Alan Stern
 
-Thanks,
-	Dominik
-
-----
-
-Dominik Brodowski (3):
-      pcmcia: only keep saved I365_CSCINT flag if there is no PCI irq
-      pcmcia: dev_node removal bugfix
-      pcmcia: avoid validate_cis failure on CIS override
-
-Justin P. Mattock (1):
-      pcmcia: yenta_socket.c Remove extra #ifdef CONFIG_YENTA_TI
-
- drivers/net/pcmcia/smc91c92_cs.c |    1 +
- drivers/pcmcia/ds.c              |    1 +
- drivers/pcmcia/yenta_socket.c    |   19 +++++++++----------
- 3 files changed, 11 insertions(+), 10 deletions(-)
