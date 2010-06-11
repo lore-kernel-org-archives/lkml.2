@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab0FKKTF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 06:19:05 -0400
-Received: from lirone.symas.net ([64.71.152.235]:38001 "EHLO lirone.symas.net"
+	id S1760169Ab0FKKUF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 06:20:05 -0400
+Received: from lirone.symas.net ([64.71.152.235]:38012 "EHLO lirone.symas.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760112Ab0FKKS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 06:18:57 -0400
-X-Greylist: delayed 1489 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Jun 2010 06:18:57 EDT
-Message-ID: <4C120D8A.8050207@symas.com>
-Date: Fri, 11 Jun 2010 03:18:50 -0700
+	id S1756055Ab0FKKUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 06:20:01 -0400
+Message-ID: <4C1207B9.10305@symas.com>
+Date: Fri, 11 Jun 2010 02:54:01 -0700
 From: Howard Chu <hyc@symas.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; rv:1.9.3a5pre) Gecko/20100607 Firefox 3.6
 MIME-Version: 1.0
 To: linux-kernel <linux-kernel@vger.kernel.org>
 Subject: EXTPROC, telnetd LINEMODE, revisited
 Content-Type: multipart/mixed;
- boundary="------------020709030009040802060405"
+ boundary="------------080608050109010403070209"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a multi-part message in MIME format.
---------------020709030009040802060405
+--------------080608050109010403070209
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 
@@ -73,13 +72,13 @@ The telnet Linemode spec serves as a pretty good starting point for adapting
 to ssh, but these details still need to be addressed - can/should we add 
 additional command characters to the tty driver? The telnet spec defines these 
 commands that the tty driver is missing:
-    Move cursor one character left, right
-    Move cursor one word left, right
-    Move cursor to beginning/end of line
-    Enter insert/overstrike mode
-    Erase character to the right
-    Erase word to the right
-    Erase to beginning/end of line
+   Move cursor one character left, right
+   Move cursor one word left, right
+   Move cursor to beginning/end of line
+   Enter insert/overstrike mode
+   Erase character to the right
+   Erase word to the right
+   Erase to beginning/end of line
 
 Also it would be nice to be able to define other forwarding characters, which 
 don't necessarily have an edit function. E.g., <TAB> for word completion.
@@ -101,13 +100,12 @@ Looks like the upstream source hasn't been touched since 2000.
 ftp://ftp.uk.linux.org/pub/linux/Networking/netkit/
 
 -- 
-    -- Howard Chu
-    CTO, Symas Corp.           http://www.symas.com
-    Director, Highland Sun     http://highlandsun.com/hyc/
-    Chief Architect, OpenLDAP  http://www.openldap.org/project/
+   -- Howard Chu
+   CTO, Symas Corp.           http://www.symas.com
+   Director, Highland Sun     http://highlandsun.com/hyc/
+   Chief Architect, OpenLDAP  http://www.openldap.org/project/
 
-
---------------020709030009040802060405
+--------------080608050109010403070209
 Content-Type: text/plain;
  name="linemode.txt"
 Content-Transfer-Encoding: 7bit
@@ -257,5 +255,4 @@ index 4409967..3cfe448 100644
  struct device;
  struct signal_struct;
 
-
---------------020709030009040802060405--
+--------------080608050109010403070209--
