@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760096Ab0FKCQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 22:16:52 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:29400 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760036Ab0FKCQu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 22:16:50 -0400
-Message-ID: <4C119C2E.2090801@oracle.com>
-Date: Fri, 11 Jun 2010 10:15:10 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1760109Ab0FKCRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 22:17:00 -0400
+Received: from snt0-omc4-s8.snt0.hotmail.com ([65.55.90.211]:24302 "EHLO
+	snt0-omc4-s8.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760100Ab0FKCQ6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 22:16:58 -0400
+Message-ID: <SNT125-W1729A92F025BE180427F25C3D90@phx.gbl>
+X-Originating-IP: [96.253.143.208]
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: <davidjon@xenontk.org>
+CC: <arjan@infradead.org>, <ch@zeha.at>, <linux-kernel@vger.kernel.org>,
+       <bruce.w.allan@intel.com>, <jpiszcz@lucidpixels.com>,
+       <hpa@linux.intel.com>
+Subject: RE: Linux* is not supported on the Intel(R) Desktop Board DP55KG -
+ Kernel still hangs upon reboot.
+Date: Thu, 10 Jun 2010 19:16:57 -0700
+Importance: Normal
+In-Reply-To: <4B420665.4090107@xenontk.org>
+References: <20100103202345.GA20015@percival.namespace.at>
+ <alpine.DEB.2.00.1001031637230.17894@p34.internal.lan>,<20100103150300.170dedee@infradead.org>
+ <SNT125-W149307D1A737021C150C9CC3740@phx.gbl>,<4B420665.4090107@xenontk.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: linux-ext4@vger.kernel.org, Theodore Tso <tytso@mit.edu>,
-       linux-kernel@vger.kernel.org
-Subject: fiemap is broken for sparse file in ext4?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4C119C91.011E:SCFMA922111,ss=1,fgs=0
+X-OriginalArrivalTime: 11 Jun 2010 02:16:57.0471 (UTC) FILETIME=[2AEE50F0:01CB090C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted and other ext4 gurus,
-	I found fiemap may be broken for sparse files in ext4. Here is a simple 
-example.
 
-dd if=/dev/zero of=testfile1 bs=1M count=1
-using fiemap shows that it has a delalloc extent.
-Logical: 0 Ext length: 1048576	Physical: 0	flags: 7
+>>> btw this can be automated... just needs a DMI quirk.
+>>> someone needs to get dmidecode output and add it to the existing
+>>> table of reboot= quirks...
+>>>
+>>> --
+>>> Arjan van de Ven Intel Open Source Technology Centre
+>>
+>> Note BTW that this is one of Intel's own motherboards!
+>> In fact, I also have read about Intel's own DG45FC board having EHCI handoff trouble with Linux.
+>>
+>
+> Yes, but the BIOS is probably not done by Intel.
 
-flags 7 means FIEMAP_EXTENT_LAST, FIEMAP_EXTENT_UNKNOWN and 
-FIEMAP_EXTENT_DELALLOC,
+Except that they are, and what frustrates me is that some of the Linux developers involved in working around these bugs work at Intel in the first place, the same vendor that makes the motherboards with the buggy BIOSes! For example, Arjan from Intel is CCed right there!
 
-while if we create a sparse file, fiemap will not show the delalloc extent.
-dd if=/dev/zero of=testfile1 bs=1M count=1 seek=1
-using fiemap shows that it has no extent for the file. while we should 
-have some output like:
-Logical: 1048576 Ext length: 1048576	Physical: 0	flags: 7
-
-So we have different output with sparse and non-sparse file. Is it a bug 
-for ext4?
-
-Regards,
-Tao
+Yuhong Bao
+ 		 	   		  
+_________________________________________________________________
+The New Busy is not the old busy. Search, chat and e-mail from your inbox.
+http://www.windowslive.com/campaign/thenewbusy?ocid=PID28326::T:WLMTAGL:ON:WL:en-US:WM_HMP:042010_3
