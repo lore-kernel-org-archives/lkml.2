@@ -1,57 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab0FKIRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 04:17:47 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39154 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755506Ab0FKIRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 04:17:46 -0400
-Date: Fri, 11 Jun 2010 10:17:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH][GIT PULL][v2.6.35] perf/tracing: Fix regression of perf
- losing kprobe events
-Message-ID: <20100611081732.GA4611@elte.hu>
-References: <1276217919.28329.6.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276217919.28329.6.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0452]
+	id S1759050Ab0FKI2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 04:28:32 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:45955 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755703Ab0FKI2a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 04:28:30 -0400
+Message-ID: <001201cb0940$11c32630$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Arnd Bergmann" <arnd@arndb.de>,
+       "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+       <andrew.chih.howe.khor@intel.com>,
+       "LKML" <linux-kernel@vger.kernel.org>,
+       "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] Topcliff PHUB: Add The Packet Hub driver [1/2]
+Date: Fri, 11 Jun 2010 17:28:25 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arnd
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+I have found the following my english includes mistake.
+> Usermode application doesn't only set HW register offset value but also set function.
 
-> Ingo,
-> 
-> Please pull the latest tip/perf/urgent tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/urgent
-> 
-> 
-> Steven Rostedt (1):
->       perf/tracing: Fix regression of perf losing kprobe events
-> 
-> ----
->  kernel/trace/trace_event_perf.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+I show corrected sentence.
+ Usermode application doesn't set HW register offset value but set function.
 
-Pulled, thanks Steve!
+Thanks,
+Ohtake
 
-	Ingo
+----- Original Message ----- 
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Alan Cox" <alan@lxorguk.ukuu.org.uk>; "LKML" <linux-kernel@vger.kernel.org>; <andrew.chih.howe.khor@intel.com>;
+"Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y" <yong.y.wang@intel.com>
+Sent: Friday, June 11, 2010 12:18 PM
+Subject: Re: [PATCH] Topcliff PHUB: Add The Packet Hub driver [1/2]
+
+
+> Hi Arnd
+>
+> Thank you for your comment.
+> Please refer the following mail in line.
+> ----- Original Message ----- 
+> From: "Arnd Bergmann" <arnd@arndb.de>
+> To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+> Cc: "Wang, Yong Y" <yong.y.wang@intel.com>; "Wang, Qi" <qi.wang@intel.com>; <andrew.chih.howe.khor@intel.com>; "LKML"
+> <linux-kernel@vger.kernel.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+> Sent: Wednesday, June 09, 2010 10:16 PM
+> Subject: Re: [PATCH] Topcliff PHUB: Add The Packet Hub driver [1/2]
+>
+>
+> > On Wednesday 09 June 2010, Masayuki Ohtake wrote:
+> >
+> > > We have added our comment for your email in line.
+> >
+> > ok, thanks for the update
+> >
+> > > If you have any question, let me know.
+> >
+> > One small comment from me, plus more background on the ioctl:
+> >
+> > > > The definition of struct pch_phub_reqt is problematic because
+> > > > it contains members of type 'unsigned long'. This means that
+> > > > a 32 bit user process uses a different data structure than a
+> > > > 64 bit kernel.
+> > > >
+> > > > Ideally, you only pass a single integer as an ioctl argument.
+> > > > There are cases where it needs to be a data structure, but
+> > > > if that happens, you should only use members types like __u32
+> > > > or __u64, not long or pointer.
+> > > We have defined as u32 type.
+> >
+> > Note that public data headers should use '__u32' instead of 'u32',
+> > because the 'u32' type is not available in the exported version
+> > of linux/types.h.
+>
+> We will replace like below.
+> u32 --> __u32
+> s32 --> __s32
+> s8 --> __s8
+>
+> >
+> > > > My feeling is that this ioctl interface is too
+> > > > low-level in general. You only export access to specific
+> > > > registers, not to functionality exposed by them.
+> > > > The best kernel interfaces are defined in a way that
+> > > > is independent of the underlying hardware and
+> > > > convert generic commands into device specific commands.
+> > > >
+> > > > If you really want to allow direct register access,
+> > > > a simpler way would be to map the memory into the user
+> > > > address space using the mmap() operation and not
+> > > > provide any ioctl commands.
+> > > Packet Hub has function accessing many resisters.
+> > > Thus, we think current spec is better.
+> >
+> > Getting the interface right is by far the most important
+> > part in a driver submission, and often the hardest part.
+> >
+> > Giving register-level hardware access to random user space
+> > applications for the PHUB essentially means that you
+> > are forcing the hardware design to become stable for all
+> > eternity because all tools that use this interface (whether
+> > written by you or by other people) need to keep working on
+> > future generations of the hardware as well.
+> >
+> > This is generally considered a very bad idea, so I think
+> > you should drop the IOCTL_PHUB_{READ,WRITE,MODIFY}_REG
+> > ioctl commands for now if you want to get your driver
+> > merged quickly, and then we can find a way to do what
+> > it's meant for in a better way.
+> >
+> > Regarding the other ioctl commands, I still have a few
+> > comments that I did not mention at first:
+> >
+> > >+int pch_phub_ioctl(struct inode *inode, struct file *file,
+> > >+ unsigned int cmd, unsigned long arg)
+> > >+{
+> > >+ int ret_value = 0;
+> > >+ struct pch_phub_reqt *p_pch_phub_reqt;
+> > >+ unsigned long addr_offset;
+> > >+ unsigned long data;
+> > >+ unsigned long mask;
+> > >+
+> > >+ if (pch_phub_suspended == true) {
+> > >+ dev_dbg(dev_dbg, "pch_phub_ioctl : "
+> > >+ "suspend initiated returning =%d\n", -EPERM);
+> > >+ ret_value = -EPERM;
+> > >+ goto return_ioctrl;
+> > >+ }
+> > >+
+> > >+ p_pch_phub_reqt = (struct pch_phub_reqt *)arg;
+> > >+ ret_value = copy_from_user((void *)&addr_offset,
+> > >+ (void *)&p_pch_phub_reqt->addr_offset,
+> > >+ sizeof(addr_offset));
+> > >+ if (ret_value) {
+> > >+ dev_dbg(dev_dbg, "pch_phub_ioctl : "
+> > >+ "copy_from_user fail returning =%d\n", -EFAULT);
+> > >+ ret_value = -EFAULT;
+> > >+ goto return_ioctrl;
+> > >+ }
+> >
+> > The pch_phub_reqt data structure does not really make sense for
+> > commands other than IOCTL_PHUB_READ_MODIFY_WRITE_REG and causes
+> > more problems, see below.
+> We will delete almost ioctl functions.
+> Phub ioctl has only MAC Address access.
+> (OROM access will be moved to read/write method.)
+>
+> And we will change ioctl I/F like below.
+> Usermode application doesn't only set HW register offset value but also set function.
+>
+> >
+> > Moreover, the type casts are incorrect because they are
+> > missing the __user address space modifier. The casts can
+> > simply be removed, and the variable declared as
+> > e.g. 'struct pch_phub_reqt __user *p_pch_phub_reqt;'.
+> We will add '__user'
+>
+> >
+> > I'd recommend using the 'sparse' tool to check your
+> > source code to find problems like this. Simply install
+> > sparse and run
+> >
+> > make C=1 drivers/char/pch_phub/
+> >
+> > >+ dev_dbg(dev_dbg, "pch_phub_ioctl : "
+> > >+ "copy_from_user returns =%d\n", ret_value);
+> We will use  'sparse' tool .
+>
+> >
+> > The 'dev_dbg' variable does not seem to get initialized anywhere
+> > in the code. In a clean driver, it should not be a global variable
+> > anyway but refer to the object that you are operating on, e.g.
+> > the pci device that has been opened.
+> We will modify 'dev_dbg' is passed as a function parameter.
+>
+> >
+> > >+ switch (cmd) {
+> > >+ case IOCTL_PHUB_READ_REG:
+> >
+> > >+ case IOCTL_PHUB_WRITE_REG:
+> >
+> > >+ case IOCTL_PHUB_READ_MODIFY_WRITE_REG:
+> >
+> >
+> > As mentioned, I'd just remove these commands for now. When a specific
+> > functionality is needed, you can always add another ioctl command
+> > or find another way to do it.
+> Yes, we will delete the above.
+>
+> >
+> > >+ case IOCTL_PHUB_READ_OROM:
+> > >+ ret_value = pch_phub_read_serial_rom(addr_offset,
+> > >+ (unsigned char *)&data);
+> > >+ if (ret_value) {
+> > >+ dev_dbg(dev_dbg, "pch_phub_ioctl : Invoked "
+> > >+ "pch_phub_read_serial_rom =%d\n", -EFAULT);
+> > >+ ret_value = -EFAULT;
+> > >+ break;
+> > >+ } else {
+> > >+ dev_dbg(dev_dbg, "pch_phub_ioctl : Invoked "
+> > >+ "pch_phub_read_serial_rom successfully\n");
+> > >+ }
+> > >+ ret_value = copy_to_user((void *)&p_pch_phub_reqt->data,
+> > >+ (void *)&data, sizeof(data));
+> > >+ if (ret_value) {
+> > >+ dev_dbg(dev_dbg, "pch_phub_ioctl : "
+> > >+ "copy_to_user fail returning =%d\n", -EFAULT);
+> > >+ ret_value = -EFAULT;
+> > >+ break;
+> > >+ }
+> > >+ break;
+> >
+> > This is a very indirect way to access a rom. I'd recommend doing
+> > read and write file operations for this instead of going through the
+> > ioctl. When you do that, you can simply do 'cat /dev/topcliff-phub > romdump'
+> > to read the entire contents, or have other code access the contents
+> > bytewise. If teh OROM contents are specific to the ethernet function,
+> > you may also just implement the ethtool operations for it, as shown below.
+> We will try implement as read/write method.
+>
+> >
+> > >+ case IOCTL_PHUB_READ_MAC_ADDR:
+> > >+ pch_phub_read_gbe_mac_addr(addr_offset, (unsigned char *)&data);
+> > >+ dev_dbg(dev_dbg, "pch_phub_ioctl : Invoked "
+> > >+ "pch_phub_read_gbe_mac_addr successfully\n");
+> > >+
+> > >+ ret_value = copy_to_user((void *)&p_pch_phub_reqt->data,
+> > >+ (void *)&data, sizeof(data));
+> > >+ if (ret_value) {
+> > >+ dev_dbg(dev_dbg, "pch_phub_ioctl : copy_to_user fail "
+> > >+ "returning =%d\n", -EFAULT);
+> > >+ ret_value = -EFAULT;
+> > >+ break;
+> > >+ }
+> > >+ break;
+> >
+> > I believe this really belongs into the ethernet driver, using the
+> > ethtool_ops->get_eeprom operation as other ethernet drivers do the
+> > same thing.
+> MAC address is under Phub HW.
+> To keep driver dependency, I think, Phub should take charge of MAC address access.
+>
+> Thanks,
+> Ohtake
+>
+>
+
+
