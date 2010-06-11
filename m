@@ -1,138 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab0FKHaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 03:30:18 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41692 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab0FKHaQ (ORCPT
+	id S1757188Ab0FKHa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 03:30:56 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:48882 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757035Ab0FKHaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 03:30:16 -0400
-Subject: Re: [PATCH] Fix Oops in crash_shrink_memory
-From: Pavan Naregundi <pavan@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Simon Horman <horms@verge.net.au>,
-       =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-       linux-kernel@vger.kernel.org, vgoyal@redhat.com, hbabu@us.ibm.com,
-       kexec@lists.infradead.org
-In-Reply-To: <20100610142622.497061e8.akpm@linux-foundation.org>
-References: <1275895711.4365.18.camel@pavan.naregundi>
-	 <1275980857.2583.15.camel@pavan.naregundi>
-	 <20100608075959.GB7110@cr0.nay.redhat.com>
-	 <1275986405.5015.13.camel@pavan.naregundi>
-	 <20100608085440.GC7110@cr0.nay.redhat.com>
-	 <1275990107.5015.55.camel@pavan.naregundi>
-	 <20100609034452.GA28948@verge.net.au>
-	 <1276064834.2622.7.camel@pavan.naregundi>
-	 <20100610142622.497061e8.akpm@linux-foundation.org>
-Content-Type: multipart/mixed; boundary="=-LHlCRG1LvcuEh6hgenH6"
-Date: Fri, 11 Jun 2010 13:00:09 +0530
-Message-ID: <1276241409.2714.59.camel@pavan.naregundi>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Fri, 11 Jun 2010 03:30:55 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.20.111.250;
+To: "H. Peter Anvin" <hpa@zytor.com>
+From: Milton Miller <miltonm@bga.com>
+CC: Mike Frysinger <vapier.adi@gmail.com>, linux-kernel@vger.kernel.org,
+       Tim Abbott <tabbott@ksplice.com>
+Subject: Re: [PATCH 1/2] vmlinux.lds.h: allow people to set a smaller rootfs
+ 	alignment
+References: <1275761686-4996-1-git-send-email-vapier@gentoo.org> 	<1276068030_13535@mail4.comsite.net> <AANLkTin_MR82jafZkkzfv33dO6DqyFnHUiU4g6luXB_0@mail.gmail.com> <4C11CEAA.5020703@zytor.com>
+In-Reply-To: <4C11CEAA.5020703@zytor.com>
+Date: Fri, 11 Jun 2010 02:30:50 -0500
+X-Originating-IP: 71.20.111.250
+Message-ID: <1276241450_14430@mail4.comsite.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-LHlCRG1LvcuEh6hgenH6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-On Thu, 2010-06-10 at 14:26 -0700, Andrew Morton wrote:
-> On Wed, 09 Jun 2010 11:57:14 +0530
-> Pavan Naregundi <pavan@linux.vnet.ibm.com> wrote:
+On Thu, 10 Jun 2010 at around 22:50:34 -0700, H. Peter Anvin wrote:
+> On 06/09/2010 12:42 AM, Mike Frysinger wrote:
+> > 
+> > i have no problem changing the default to 4 since it works fine on
+> > Blackfin systems.  your analysis of the source alignment also seems
+> > reasonable ... i assume that the 8 byte fields in the source cpio
+> > arent referenced directly, otherwise it'd cause problems on 64bit
+> > systems that require 64bit values to be naturally aligned.
+> > 
+> > beyond that, i dont see why any larger alignment values would be
+> > required since this source archive isnt executed directly.  it gets
+> > expanded into a ramfs and then freed with the rest of the init stuff.
+> > 
 > 
-> > Resending the patch with fixed style issues.
-> > 
-> > Signed-off-by: Pavan Naregundi <pavan@linux.vnet.ibm.com>
-> > Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-> > --
-> > 
-> > 
-> > 
-> > 
-> > [fix-kexec.patch  text/x-patch (685B)]
-> > diff -Naur a/kernel/kexec.c b/kernel/kexec.c
-> > --- a/kernel/kexec.c	2010-06-08 21:17:21.850000033 +0530
-> > +++ b/kernel/kexec.c	2010-06-09 18:01:37.590007921 +0530
-> > @@ -1089,9 +1089,10 @@
-> >  
-> >  size_t crash_get_memory_size(void)
-> >  {
-> > -	size_t size;
-> > +	size_t size = 0;
-> >  	mutex_lock(&kexec_mutex);
-> > -	size = crashk_res.end - crashk_res.start + 1;
-> > +	if (crashk_res.end != crashk_res.start)
-> > +		size = crashk_res.end - crashk_res.start + 1;
-> >  	mutex_unlock(&kexec_mutex);
-> >  	return size;
-> >  }
-> > @@ -1134,7 +1135,7 @@
-> >  
-> >  	free_reserved_phys_range(end, crashk_res.end);
-> >  
-> > -	if (start == end)
-> > +	if ((start == end) && (crashk_res.parent != NULL))
-> >  		release_resource(&crashk_res);
-> >  	crashk_res.end = end - 1;
-> 
-> The patch doesn't have a changelog and I'd prefer not to have to crawl
-> through the email thread and write one myself.
-> 
-> Please resend, including a full description of the bug and of its fix.
+> We have talked for a long time about incrementally freeing the initramfs
+> as it is decoded, which might help systems which are using most of their
+> memory for an initramfs image...
 
-Subject: kexec: fix Oops in crash_shrink_memory()
-From: Pavan Naregundi <pavan@linux.vnet.ibm.com>
+at which time the author of said theoritcal patch that might possibly
+need page alignment would only need to update vmlinux.lds.h and not all
+the architectures vmlinux.lds.S files.
 
-When crashkernel is not enabled, "echo 0 > /sys/kernel/kexec_crash_size"
-OOPSes the kernel in crash_shrink_memory. This happens when
-crash_shrink_memory tries to release the 'crashk_res' resource which are
-not reserved. Also value of "/sys/kernel/kexec_crash_size" shows as 1,
-which should be 0.
-
-This patch fixes the OOPS in crash_shrink_memory and shows
-"/sys/kernel/kexec_crash_size" as 0 when crash kernel memory is not
-reserved.
-
-Signed-off-by: Pavan Naregundi <pavan@linux.vnet.ibm.com>
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-Cc: Simon Horman <horms@verge.net.au>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
-
---=-LHlCRG1LvcuEh6hgenH6
-Content-Disposition: attachment; filename="kexec-fix-oops-in-crash_shrink_memory.patch"
-Content-Type: text/x-patch; name="kexec-fix-oops-in-crash_shrink_memory.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-diff -uprN a/kernel/kexec.c b/kernel/kexec.c
---- a/kernel/kexec.c	2010-06-08 21:17:21.850000033 +0530
-+++ b/kernel/kexec.c	2010-06-09 18:01:37.590007921 +0530
-@@ -1089,9 +1089,10 @@ void crash_kexec(struct pt_regs *regs)
- 
- size_t crash_get_memory_size(void)
- {
--	size_t size;
-+	size_t size = 0;
- 	mutex_lock(&kexec_mutex);
--	size = crashk_res.end - crashk_res.start + 1;
-+	if (crashk_res.end != crashk_res.start)
-+		size = crashk_res.end - crashk_res.start + 1;
- 	mutex_unlock(&kexec_mutex);
- 	return size;
- }
-@@ -1134,7 +1135,7 @@ int crash_shrink_memory(unsigned long ne
- 
- 	free_reserved_phys_range(end, crashk_res.end);
- 
--	if (start == end)
-+	if ((start == end) && (crashk_res.parent != NULL))
- 		release_resource(&crashk_res);
- 	crashk_res.end = end - 1;
- 
-
---=-LHlCRG1LvcuEh6hgenH6--
-
+milton
