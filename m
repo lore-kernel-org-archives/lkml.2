@@ -1,90 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759133Ab0FKWpP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 18:45:15 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:29795 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab0FKWpM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 18:45:12 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yannick Roehlly <yannick.roehlly@free.fr>
-Subject: Re: [PATCH -v2] pci: clear bridge resource size if BIOS assign bad one
-Date: Fri, 11 Jun 2010 16:45:09 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
-Cc: Yinghai Lu <yinghai.lu@oracle.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <bug-16009-13546@https.bugzilla.kernel.org/> <201006091730.32724.bjorn.helgaas@hp.com> <201006111044.42520.yannick.roehlly@free.fr>
-In-Reply-To: <201006111044.42520.yannick.roehlly@free.fr>
+	id S1760576Ab0FKWty (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 18:49:54 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45631 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755801Ab0FKWtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 18:49:52 -0400
+Date: Sat, 12 Jun 2010 00:49:47 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Krzysztof Halasa <khc@pm.waw.pl>, Alan <alan@clueserver.org>,
+       =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: Additional info on modpost segfault
+Message-ID: <20100611224947.GA17453@sepie.suse.cz>
+References: <Pine.LNX.4.64.1006032008220.30918@blackbox.fnordora.org>
+ <20100604045118.GC5167@cr0.nay.redhat.com>
+ <4C08A9D0.8000505@suse.cz>
+ <1275929979.2923.0.camel@zowie.clueserver.org>
+ <m37hm6zdsr.fsf@intrepid.localdomain>
+ <4C129FC7.8070308@zytor.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201006111645.10091.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C129FC7.8070308@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 11, 2010 02:44:42 am Yannick Roehlly wrote:
-> Le Thursday 10 June 2010 01:30:31 Bjorn Helgaas, vous avez écrit :
-> > On Tuesday, June 08, 2010 05:36:33 pm Yinghai Lu wrote:
-> > > On 06/08/2010 03:48 PM, Bjorn Helgaas wrote:
-> > > > On Tuesday, June 08, 2010 03:43:50 pm Jesse Barnes wrote:
-> > > > 
-> > > > In this case, the aperture *size* from the BIOS is actually OK, but
-> > > > the beginning of the aperture overlaps system memory.  With Yinghai's
-> > > > patch, we reduce the size and move the start.  Windows was able to
-> > > > just move the start of the aperture and preserve the original
-> > > > 0x20000000 size (but I think it had to move something else out of
-> > > > the way).
-> > > 
-> > > are you sure? that looks more aggressive.
-> > 
-> > I don't have the machine and can't be 100% sure, but based on what
-> > Yannic reported here:
-> > https://bugzilla.kernel.org/show_bug.cgi?id=16009#c11, it looks like
-> > Windows moved that aperture.
-> > 
-> > I haven't used it myself, but possibly a program like SIV
-> > (http://rh-software.com/) would give more detailed information
-> > about what Windows is doing.
+On Fri, Jun 11, 2010 at 01:42:47PM -0700, H. Peter Anvin wrote:
+> Michal, are you sending this to Linus?
+
+I'll, once Linus takes another pull request I sent a couple of hours
+ago. Thanks for the patch Krzysztof!
+
+Michal
+
 > 
-> Hi Bjorn,
+> 	-hpa
 > 
-> I don't know if it's useful, but here some output of SIV concerning PCI and 
-> the Radeon card.
-
-Can SIV generate a big dump of similar output for all devices at once?
-Then I could avoid bugging you for "look at this, look at that," etc :-)
-
-I'm particularly interested in the bridges (the PCIe root ports, in
-this case).  I think Windows moved the 00:01.0 prefetchable aperture.
-We know from the Linux dmesg that the 00:01.0 bridge was initially
-configured like this:
-
-  pci 0000:00:01.0: PCI bridge to [bus 01-01]
-  pci 0000:00:01.0:   bridge window [io  0x7000-0x9fff]
-  pci 0000:00:01.0:   bridge window [mem 0xfdd00000-0xfddfffff]
-  pci 0000:00:01.0:   bridge window [mem 0xbdf00000-0xddefffff 64bit pref]
-
-Based on https://bugzilla.kernel.org/show_bug.cgi?id=16009#c11, I think
-Windows moved the prefetchable aperture:
-
-  Plage mémoire: 00000000FDD00000 - 00000000FDDFFFFF
-  Plage mémoire: 00000000C0000000 - 00000000DFFFFFFF   <== moved
-  Plage d'E/S:   7000 - 9FFF
-
-Note that the aperture size is still 0x20000000.
-
-Since this new [mem 0xc0000000-0xdfffffff] aperture would conflict
-with this 00:1c.4 aperture:
-
-  pci 0000:00:1c.4:   bridge window [mem 0xddf00000-0xdfefffff 64bit pref]
-
-I think it's likely that Windows moved the 1c.4 aperture as well (or
-maybe even disabled it, since it leads to buses 06-07, and there are
-no devices on those buses).
-
-Bjorn
+> 
+> On 06/10/2010 04:08 PM, Krzysztof Halasa wrote:
+> > Alan <alan@clueserver.org> writes:
+> > 
+> >> program: /home/alan/GitTrees/linux-2.6-mid-ref/scripts/mod/modpost -o
+> >> Module.symvers -S vmlinux.o
+> >>
+> >> Program received signal SIGSEGV, Segmentation fault.
+> > 
+> > It just hit me.
+> > It's the offset calculation in reloc_location() which overflows:
+> >         return (void *)elf->hdr + sechdrs[section].sh_offset +
+> >                (r->r_offset - sechdrs[section].sh_addr);
+> > 
+> > E.g. for the first rodata r entry:
+> > r->r_offset < sechdrs[section].sh_addr
+> > and the expression in the parenthesis produces 0xFFFFFFE0 or something
+> > equally wise.
+> > 
+> > Does the attached patch fix it?
+> > 
+> > Signed-off-by: Krzysztof HaÅ‚asa <khc@pm.waw.pl>
+> > 
+> > --- a/scripts/mod/modpost.c
+> > +++ b/scripts/mod/modpost.c
+> > @@ -1317,8 +1317,8 @@ static unsigned int *reloc_location(struct elf_info *elf,
+> >  	Elf_Shdr *sechdrs = elf->sechdrs;
+> >  	int section = sechdr->sh_info;
+> >  
+> >  	return (void *)elf->hdr + sechdrs[section].sh_offset +
+> > -		(r->r_offset - sechdrs[section].sh_addr);
+> > +		r->r_offset - sechdrs[section].sh_addr;
+> >  }
+> >  
+> >  static int addend_386_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
