@@ -1,201 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760303Ab0FKTIS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 15:08:18 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44958 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760253Ab0FKTIO (ORCPT
+	id S1760432Ab0FKTIa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 15:08:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57885 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760384Ab0FKTI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 15:08:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Y1MMW/fF5Z6UYjiwzxyoVvFKvLEprqUzT4sOs2tZj7PkNaMdp4hWrLWeiE/noXHI3x
-         C5al6FH3IQdVswGp+xUmmblf9kp1RpzrhfhQ7lx4Vxr55i76ZPfdVk/vRUPryEcGHNBQ
-         oYNHPq0pIV+j/mzm0xQTCdacrNcWnqbfdDxbY=
-Subject: [PATCH v3] mmc: make sdhci work with ricoh mmc controller
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Philip Langdale <philipl@overt.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-       Andrew de Quincey <adq_dvb@lidskialf.net>
-In-Reply-To: <20100606184139.5505d2a5@fido5>
-References: <1275859475.3151.4.camel@maxim-laptop>
-	 <1275859731-2898-1-git-send-email-maximlevitsky@gmail.com>
-	 <b99ba230e4a7f8b2174d7f52f1e7324c@localhost>
-	 <1275871052.24091.7.camel@maxim-laptop>  <20100606184139.5505d2a5@fido5>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Jun 2010 22:08:06 +0300
-Message-ID: <1276283286.8557.28.camel@maxim-laptop>
+	Fri, 11 Jun 2010 15:08:28 -0400
+Date: Fri, 11 Jun 2010 12:07:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 5/6] vmscan: Write out ranges of pages contiguous to the
+ inode where possible
+Message-Id: <20100611120730.26a29366.akpm@linux-foundation.org>
+In-Reply-To: <20100611124936.GB8798@csn.ul.ie>
+References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+	<1275987745-21708-6-git-send-email-mel@csn.ul.ie>
+	<20100610231045.7fcd6f9d.akpm@linux-foundation.org>
+	<20100611124936.GB8798@csn.ul.ie>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, now I tested it well, and sdhci + mmc controller finally work well.
+On Fri, 11 Jun 2010 13:49:36 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-I found out that small delay is all needed to make the mmc work fine
-after resume with or without card.
+> > It takes a large number of high-level
+> > VFS locks.  Locks which cannot be taken from deep within page reclaim
+> > without causing various deadlocks.
+> > 
+> 
+> Can you explain this a bit more please? I can see the inode_lock is very
+> important in this path for example but am not seeing how page reclaim taking
+> it would cause a deadlock.
 
-Its not that pretty solution as it might increase the resume time (I use
-a delay of 1/2sec, while around 300 ms is enough)
-With parallel resume it probably be unnoticeable.
+iput_final() takes a lot more locks than inode_lock.  It can get down
+into truncate_inode_pages() and can run journal commits and does
+lock_page() and presumably takes i_mutex somewhere.  We'd need to check
+all the fs-specific ->clear_inode, ->delete_inode, maybe others.  It
+can do a synchronous write_inode_now() in generic_detach_inode().  We
+seem to run about half the kernel code under iput_final() :(
 
-It might be not enough for other mmc cards (slower?) but then the
-problem isn't that big deal, you just reinsert the card after resume or
-don't suspend with it if first place.
+I don't recall specifically what deadlock was hitting, and being eight
+years ago it's not necessarily still there.
 
-I will at future do some reverse engineering.
-Maybe I find a bit to that will tell that controller is currently busy
-checking if card is mmc or not.
+> > I did solve that problem before reverting it all but I forget how.  By
+> > holding a page lock to pin the address_space rather than igrab(),
+> > perhaps. 
+> 
+> But this is what I did. That function has a list of locked pages. When I
+> call igrab(), the page is locked so the address_space should be pinned. I
+> unlock the page after I call igrab.
 
-I did quite a lot of testing, and it works. 
-commit bd9596e86d2321f3f97a90ec157371c366925357
-Author: Maxim Levitsky <maximlevitsky@gmail.com>
-Date:   Mon Jun 7 02:04:40 2010 +0300
+Right, so you end up with an inode/address_space which has no locked
+pages and on which you hold a refcount.  When that refcount gets
+dropped with iput(), the code can run iput_final().
 
----
+<grovels around for a while>
 
-    mmc: make sdhci work with ricoh mmc controller
-    
-    The current way of disabling it is not well tested by vendor
-    and has all kinds of bugs that show up on resume from ram/disk.
-    
-    Old way of disabling is still supported by
-    continuing to use CONFIG_MMC_RICOH_MMC.
-    
-    Based on 'http://list.drzeus.cx/pipermail/sdhci-devel/2007-December/002085.html'
-    Most of the credit for this goes to Andrew de Quincey
-    
-    
-    Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-    CC: Andrew de Quincey <adq_dvb@lidskialf.net>
-    CC: linux-mmc@vger.kernel.org <linux-mmc@vger.kernel.org>
+OK, 2.5.48's mm/page-writeback.c has:
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 569e94d..85d15de 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1259,8 +1259,6 @@ int mmc_suspend_host(struct mmc_host *host)
- 
- 	if (host->caps & MMC_CAP_DISABLE)
- 		cancel_delayed_work(&host->disable);
--	cancel_delayed_work(&host->detect);
--	mmc_flush_scheduled_work();
- 
- 	mmc_bus_get(host);
- 	if (host->bus_ops && !host->bus_dead) {
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 65483fd..e021431 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -17,6 +17,7 @@
- #include <linux/pci.h>
- #include <linux/dma-mapping.h>
- #include <linux/slab.h>
-+#include <linux/device.h>
- 
- #include <linux/mmc/host.h>
- 
-@@ -84,7 +85,30 @@ static int ricoh_probe(struct sdhci_pci_chip *chip)
- 	if (chip->pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG ||
- 	    chip->pdev->subsystem_vendor == PCI_VENDOR_ID_SONY)
- 		chip->quirks |= SDHCI_QUIRK_NO_CARD_NO_RESET;
-+	return 0;
-+}
-+
-+static int ricoh_mmc_probe_slot(struct sdhci_pci_slot *slot)
-+{
-+	slot->host->caps =
-+		((0x21 << SDHCI_TIMEOUT_CLK_SHIFT)
-+			& SDHCI_TIMEOUT_CLK_MASK) |
-+
-+		((0x21 << SDHCI_CLOCK_BASE_SHIFT)
-+			& SDHCI_CLOCK_BASE_MASK) |
- 
-+		SDHCI_TIMEOUT_CLK_UNIT |
-+		SDHCI_CAN_VDD_330 |
-+		SDHCI_CAN_DO_SDMA;
-+	return 0;
-+}
-+
-+static int ricoh_mmc_resume(struct sdhci_pci_chip *chip)
-+{
-+	/* Apply a delay to allow controller to settle */
-+	/* Otherwise it becomes confused if card state changed
-+		during suspend */
-+	msleep(500);
- 	return 0;
- }
- 
-@@ -95,6 +119,15 @@ static const struct sdhci_pci_fixes sdhci_ricoh = {
- 			  SDHCI_QUIRK_CLOCK_BEFORE_RESET,
- };
- 
-+static const struct sdhci_pci_fixes sdhci_ricoh_mmc = {
-+	.probe_slot	= ricoh_mmc_probe_slot,
-+	.resume		= ricoh_mmc_resume,
-+	.quirks		= SDHCI_QUIRK_32BIT_DMA_ADDR |
-+			  SDHCI_QUIRK_CLOCK_BEFORE_RESET |
-+			  SDHCI_QUIRK_NO_CARD_NO_RESET |
-+			  SDHCI_QUIRK_MISSING_CAPS
-+};
-+
- static const struct sdhci_pci_fixes sdhci_ene_712 = {
- 	.quirks		= SDHCI_QUIRK_SINGLE_POWER_WRITE |
- 			  SDHCI_QUIRK_BROKEN_DMA,
-@@ -374,6 +407,14 @@ static const struct pci_device_id pci_ids[] __devinitdata = {
- 	},
- 
- 	{
-+		.vendor         = PCI_VENDOR_ID_RICOH,
-+		.device         = 0x843,
-+		.subvendor      = PCI_ANY_ID,
-+		.subdevice      = PCI_ANY_ID,
-+		.driver_data    = (kernel_ulong_t)&sdhci_ricoh_mmc,
-+	},
-+
-+	{
- 		.vendor		= PCI_VENDOR_ID_ENE,
- 		.device		= PCI_DEVICE_ID_ENE_CB712_SD,
- 		.subvendor	= PCI_ANY_ID,
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index c6d1bd8..483b78e 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1687,7 +1687,8 @@ int sdhci_add_host(struct sdhci_host *host)
- 			host->version);
- 	}
- 
--	caps = sdhci_readl(host, SDHCI_CAPABILITIES);
-+	caps = (host->quirks & SDHCI_QUIRK_MISSING_CAPS) ? host->caps :
-+		sdhci_readl(host, SDHCI_CAPABILITIES);
- 
- 	if (host->quirks & SDHCI_QUIRK_FORCE_DMA)
- 		host->flags |= SDHCI_USE_SDMA;
-diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
-index c846813..b1839a3 100644
---- a/drivers/mmc/host/sdhci.h
-+++ b/drivers/mmc/host/sdhci.h
-@@ -240,6 +240,8 @@ struct sdhci_host {
- #define SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN		(1<<25)
- /* Controller cannot support End Attribute in NOP ADMA descriptor */
- #define SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC		(1<<26)
-+/* Controller is missing device caps. Use caps provided by host */
-+#define SDHCI_QUIRK_MISSING_CAPS			(1<<27)
- 
- 	int			irq;		/* Device IRQ */
- 	void __iomem *		ioaddr;		/* Mapped address */
-@@ -292,6 +294,8 @@ struct sdhci_host {
- 
- 	struct timer_list	timer;		/* Timer for timeouts */
- 
-+	unsigned int		caps;		/* Alternative capabilities */
-+
- 	unsigned long		private[0] ____cacheline_aligned;
- };
- 
+/*
+ * A library function, which implements the vm_writeback a_op.  It's fairly
+ * lame at this time.  The idea is: the VM wants to liberate this page,
+ * so we pass the page to the address_space and give the fs the opportunity
+ * to write out lots of pages around this one.  It allows extent-based
+ * filesytems to do intelligent things.  It lets delayed-allocate filesystems
+ * perform better file layout.  It lets the address_space opportunistically
+ * write back disk-contiguous pages which are in other zones.
+ *
+ * FIXME: the VM wants to start I/O against *this* page.  Because its zone
+ * is under pressure.  But this function may start writeout against a
+ * totally different set of pages.  Unlikely to be a huge problem, but if it
+ * is, we could just writepage the page if it is still (PageDirty &&
+ * !PageWriteback) (See below).
+ *
+ * Another option is to just reposition page->mapping->dirty_pages so we
+ * *know* that the page will be written.  That will work fine, but seems
+ * unpleasant.  (If the page is not for-sure on ->dirty_pages we're dead).
+ * Plus it assumes that the address_space is performing writeback in
+ * ->dirty_pages order.
+ *
+ * So.  The proper fix is to leave the page locked-and-dirty and to pass
+ * it all the way down.
+ */
+int generic_vm_writeback(struct page *page, struct writeback_control *wbc)
+{
+	struct inode *inode = page->mapping->host;
 
+	/*
+	 * We don't own this inode, and we don't want the address_space
+	 * vanishing while writeback is walking its pages.
+	 */
+	inode = igrab(inode);
+	unlock_page(page);
+
+	if (inode) {
+		do_writepages(inode->i_mapping, wbc);
+
+		/*
+		 * This iput() will internally call ext2_discard_prealloc(),
+		 * which is rather bogus.  But there is no other way of
+		 * dropping our ref to the inode.  However, there's no harm
+		 * in dropping the prealloc, because there probably isn't any.
+		 * Just a waste of cycles.
+		 */
+		iput(inode);
+#if 0
+		if (!PageWriteback(page) && PageDirty(page)) {
+			lock_page(page);
+			if (!PageWriteback(page)&&test_clear_page_dirty(page)) {
+				int ret;
+
+				ret = page->mapping->a_ops->writepage(page);
+				if (ret == -EAGAIN)
+					__set_page_dirty_nobuffers(page);
+			} else {
+				unlock_page(page);
+			}
+		}
+#endif
+	}
+	return 0;
+}
+
+and that still uses igrab :(
+
+I'm pretty sure I did fix this at some stage in some tree, don't recall
+where or how, but I think the fix involved not using igrab/iput, but
+instead ensuring that the code retained at least one locked page until
+it had finished touching the address_space.
+
+> > Go take a look - it was somewhere between 2.5.1 and 2.5.10 if
+> > I vaguely recall correctly.
+> > 
+> > Or don't take a look - we shouldn't need to do any of this anyway.
+> > 
+> 
+> I'll take a closer look if there is real interest in having the VM use
+> writepages() but it sounds like it's a waste of time.
+
+Well.  The main problem is that we're doing too much IO off the LRU of
+course.
+
+But a secondary problem is that the pages which are coming off the LRU
+may not be well-ordered wrt their on-disk layout.  Seeky writes to a
+database will do this, as may seeky writes from /usr/bin/ld, etc.  And
+seeky metadata writes to /dev/sda1!  So writing in LRU-based ordering
+can generate crappy IO patterns.
+
+Doing a pgoff_t-based writearound around the target page was an attempt
+to straighten all that out.  And in some circumstances it really should
+provide large reductions in seek traffic, and would still be a good
+area of investigation.  But if we continue to submit IO in the order in
+which pages fall off the tail of the LRU, I don't think there's much to
+be gained in the area of improved IO patterns.  There might be CPU
+consumption benefits, doing less merging work in the block layer.
+
+> I'll focus on
+> 
+> a) identifying how many dirty pages the VM is really writing back with
+>    tracepoints
+> b) not using writepage from direct reclaim because it overflows the
+>    stack
+
+OK.
+
+This stuff takes a lot of time.  You see a blob of 1000 dirty pages
+fall off the tail of the LRU and then need to work out how the heck
+they got there and what could be done to prevent that, and to improve
+the clean-to-dirty ratio of those pages.
+
+Obviously another appropach would be just to bisect the thing - write a
+little patch to backport /proc/vmstat:nr_vmscan_write into old kernels,
+pick a simple workload which causes "excessive" increments in
+nr_vmscan_write then go for it.  Bit of a PITA.
 
