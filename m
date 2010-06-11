@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab0FKGM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 02:12:26 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:39648 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752522Ab0FKGMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 02:12:25 -0400
-Date: Fri, 11 Jun 2010 11:41:02 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] memcg remove css_get/put per pages v2
-Message-ID: <20100611061102.GF5191@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100608121901.3cab9bdf.kamezawa.hiroyu@jp.fujitsu.com>
- <20100609155940.dd121130.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754762Ab0FKGQQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 02:16:16 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:43818 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab0FKGQP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 02:16:15 -0400
+Date: Fri, 11 Jun 2010 08:16:10 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>
+Subject: Re: warning from gcc version 4.6.0 20100416
+Message-ID: <20100611061610.GA6864@basil.fritz.box>
+References: <4C11A598.8090504@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100609155940.dd121130.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4C11A598.8090504@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-06-09 15:59:40]:
+On Thu, Jun 10, 2010 at 07:55:20PM -0700, Justin P. Mattock wrote:
+> o.k. andi,
+>
+> here is the rest of the warnings that
+> I see when compiling the kernel
+>
+> I can try and create some patches for
+> this(hopefully!!)
 
-> +		if (consume_stock(mem)) {
-> +			/*
-> +			 * It seems dagerous to access memcg without css_get().
-> +			 * But considering how consume_stok works, it's not
-> +			 * necessary. If consume_stock success, some charges
-> +			 * from this memcg are cached on this cpu. So, we
-> +			 * don't need to call css_get()/css_tryget() before
-> +			 * calling consume_stock().
-> +			 */
-> +			rcu_read_unlock();
-> +			goto done;
-> +		}
-> +		if (!css_tryget(&mem->css)) {
+The key point is that you need to review
+each warning if it's a real bug or just a false
+positive.
 
-If tryget fails, can one assume that this due to a race and the mem is
-about to be freed?
+This is not always trivial, I got at least one
+wrong in the earlier series (shut up one real bug)
 
-
--- 
-	Three Cheers,
-	Balbir
+-Andi
