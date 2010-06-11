@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab0FKFbV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 01:31:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56123 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751311Ab0FKFbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 01:31:20 -0400
-Message-ID: <4C11CA1C.3010102@zytor.com>
-Date: Thu, 10 Jun 2010 22:31:08 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1754905Ab0FKFcn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 01:32:43 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:37233 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476Ab0FKFcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 01:32:42 -0400
+Message-ID: <4C11CA71.9010606@in.ibm.com>
+Date: Fri, 11 Jun 2010 11:02:33 +0530
+From: Sachin Sant <sachinp@in.ibm.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Panic on boot on today's tip/master
-References: <20100610112839.GK5878@linux.vnet.ibm.com>
-In-Reply-To: <20100610112839.GK5878@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Mel Gorman <mel@csn.ul.ie>
+CC: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: 2.6.35-rc2: GPF while executing libhugetlbfs tests on x86_64
+References: <4C0BC7F0.8030109@in.ibm.com> <20100608091817.GA27717@csn.ul.ie> <4C0E2E84.6060605@in.ibm.com> <20100608123622.GE27717@csn.ul.ie>
+In-Reply-To: <20100608123622.GE27717@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2010 04:28 AM, Srikar Dronamraju wrote:
-> When I updated my tip/master and rebooted into it, I am seeing a panic on boot.
-> 
-> 
-> Here is the ooops message. (x86_64 box)
-> 
-> 
-> previously it booted well with commit
-> a2e42da15c9c72bc7caf9e494d409819babbc9c8
-> 
+Mel Gorman wrote:
+> If the problem has gone away since 2.6.35-rc2, the most likely candidate fix
+> patch is commit [386f40: Revert "tty: fix a little bug in scrup, vt.c"] which
+> reverts the patch you previously identified as being a problem.  The commit
+> message also matches roughly what you are seeing with the 0x0720 patterns.
+>
+> Can you retest with 2.6.35-rc2 with commit 386f40 applied and see if it
+> also fixes up your problem please?
+>   
+I could not recreate this problem against 2.6.35-rc2 + commit 386f40.
 
-Any way you could run a bisect between these commits?
-
-	-hpa
-
+Thanks
+-Sachin
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+
+---------------------------------
+Sachin Sant
+IBM Linux Technology Center
+India Systems and Technology Labs
+Bangalore, India
+---------------------------------
 
