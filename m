@@ -1,50 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab0FKOLv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 10:11:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37276 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab0FKOLu (ORCPT
+	id S1757188Ab0FKOXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 10:23:39 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35331 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756353Ab0FKOXi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 10:11:50 -0400
-Date: Fri, 11 Jun 2010 16:11:41 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
-       linux-arm-kernel@lists.infradead.org,
-       Ben Herrenchmidt <benh@kernel.crashing.org>,
-       linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
-Message-ID: <20100611141141.GE10894@pengutronix.de>
-References: <1275636608.606606.450179637764.0.gpush@pororo> <201006111557.12249.jeremy.kerr@canonical.com> <19473.61547.684572.647641@ipc1.ka-ro> <201006111718.47426.jeremy.kerr@canonical.com> <19474.172.742782.972629@ipc1.ka-ro> <20100611095839.GC10894@pengutronix.de>
+	Fri, 11 Jun 2010 10:23:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=EGXTPVLZ9AF7Q+5IbVH+wuGnL+cHp+JlZKVYzgrX3QIcWvx38RTX760tGwrObrC2tt
+         af9htpl4QvlhyvHS8oeEsuRQ5NnvFQu9SfXki9fTf/uOoncxX7BjHE32IqytUT76SMiC
+         I3T3Lu8I4lIKbH49bImJj8E5WdAxZzH8pKkAA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100611095839.GC10894@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <4C124358.8020007@canonical.com>
+References: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com> 
+	<20100602213429.GA14866@srcf.ucam.org> <57DF5FDC2DC0634FA2A310BC5B81A68D01DF4CD01E@AUSX7MCPC108.AMER.DELL.COM> 
+	<AANLkTimIl6UL0HQT1wxRgXuj_m0O3CwMHQIa1xNE1Ax9@mail.gmail.com> 
+	<AANLkTin0qht1XR2rUgIXMEeJNU_gb3IZWqSBJb7NXD8K@mail.gmail.com> 
+	<57DF5FDC2DC0634FA2A310BC5B81A68D01DFD57663@AUSX7MCPC108.AMER.DELL.COM> 
+	<20100610184023.GA17320@srcf.ucam.org> <AANLkTilT3KCeJUpG-APK0MFh2ChMlZ4qwVPhOJpHnPB9@mail.gmail.com> 
+	<57DF5FDC2DC0634FA2A310BC5B81A68D01DFD5780A@AUSX7MCPC108.AMER.DELL.COM> 
+	<AANLkTinoWK4uSL2KOhgF-EVWuBhgCeAqWwL9cJKeGRD1@mail.gmail.com> 
+	<4C124358.8020007@canonical.com>
+From: Islam Amer <pharon@gmail.com>
+Date: Fri, 11 Jun 2010 17:23:15 +0300
+Message-ID: <AANLkTimxo3CeRR2YZptTL6RoEi8Q5sdnUEMIi9A5-KcA@mail.gmail.com>
+Subject: Re: Dell Studio 1555 eject key does not work ( small patch to fix 
+	included )
+To: tim.gardner@canonical.com
+Cc: Rezwanul_Kabir@dell.com, mjg59@srcf.ucam.org, linux-kernel@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lothar,
+Tim I am running debian,
 
-On Fri, Jun 11, 2010 at 11:58:39AM +0200, Uwe Kleine-König wrote:
-> > You are probably talking about the Freescale i.MX51 kernel, that won't
-> > even boot, if you enable CONFIG_DEBUG_KERNEL, CONFIG_DEBUG_SPINLOCK,
-> > CONFIG_DEBUG_LOCKDEP and CONFIG_DEBUG_SPINLOCK_SLEEP.
-> > The mutex in the clock implementation is one of the reasons.
-> I will have a look into this later today.
-I take this back as this is not a mainline problem.
- 
-Best regards
-Uwe
+I think it's the other way round, the mainline kernel is borked (
+regarding dell-wmi and eject key ) while the lucid patched kernel
+works ( as reported by dell team ).
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+I guess I could download a Lucid livecd and see if the eject key works
+there ( event only as it won't eject the lived while it is running :)
+)
+
+On Fri, Jun 11, 2010 at 5:08 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
+> Islam Amer,
+>
+> You could try a vanilla stable kernel from
+> http://kernel.ubuntu.com/~kernel-ppa/mainline/v2.6.32.15.5-lucid/ to see if
+> we've borked the dell-wmi code.
+>
+> rtg
+>
+> On 06/11/2010 07:28 AM, Islam Amer wrote:
+>>
+>> Rezwanul,
+>>
+>> I've updated my bios to A11 and installed a new unmodified kernel. The
+>> issue still persists that the eject key produces "dell-wmi: Unknown
+>> key 0 pressed" in the dmesg output and it doesn't work.
+>>
+>> It is possible that Ubuntu is including patches to fix stuff. The
+>> latest patch for the Lucid kernel at
+>>
+>> http://archive.ubuntu.com/ubuntu/pool/main/l/linux/linux_2.6.32-22.36.diff.gz
+>> does include patches that touch wmi and dell-wmi code, but I can't
+>> find a specific change that would fix this issue.
+>>
+>> I might try to selectively apply patches from it and see if it gets fixed.
+>>
+>> Thanks.
+>>
+>>
+>> On Fri, Jun 11, 2010 at 3:15 AM,<Rezwanul_Kabir@dell.com>  wrote:
+>>>
+>>> Islam Amer
+>>>
+>>>   Please try the new BIOS A11 and eliminate any potential BIOS issues.
+>>> The BIOS team confirmed that
+>>>   they weren't able to reproduce the issue with Ubuntu 10.04 and A11.
+>>>
+>>> Thanks..
+>>>   --rez
+>>>
+>>>
+>>>
+>>>
+>>> Rezwanul Kabir
+>>> Dell Linux Development
+>>> 512-725-0766
+>>>
+>>>
+>>>> -----Original Message-----
+>>>> From: Islam Amer [mailto:pharon@gmail.com]
+>>>> Sent: Thursday, June 10, 2010 6:52 PM
+>>>> To: Matthew Garrett
+>>>> Cc: Kabir, Rezwanul; linux-kernel@vger.kernel.org;
+>>>> platform-driver-x86@vger.kernel.org; akpm@linux-foundation.org
+>>>> Subject: Re: Dell Studio 1555 eject key does not work ( small
+>>>> patch to fix included )
+>>>>
+>>>> Hello all,
+>>>>
+>>>> My bios version is A08 , I see that A11 was recently released
+>>>> but the changelog doesn't say much.
+>>>>
+>>>> Which is better, upgrade and hope the problem goes away, or
+>>>> wait until we have a fix that is agreed upon ?
+>>>>
+>>>> Thanks.
+>>>>
+>>>> On Thu, Jun 10, 2010 at 9:40 PM, Matthew Garrett
+>>>> <mjg59@srcf.ucam.org>  wrote:
+>>>>>
+>>>>> On Thu, Jun 10, 2010 at 01:36:56PM -0500,
+>>>>
+>>>> Rezwanul_Kabir@Dell.com wrote:
+>>>>>>
+>>>>>> Hi Islam Amer
+>>>>>>
+>>>>>>    I got report that "Ubuntu 10.04 + BIOS A11" was tested and the
+>>>>>> "Eject CD" key is working
+>>>>>>    as expected. Sorry, I couldn't find any Studio 1555 to
+>>>>
+>>>> test myself
+>>>>>>
+>>>>>> and cannot provide you
+>>>>>>    with more details.
+>>>>>>
+>>>>>>     Also, you may try acpi_osi="Windows 2009" kernel
+>>>>
+>>>> parameter and see if there is any difference.
+>>>>>
+>>>>> That's the default on any kernel that has this support in dell-wmi.
+>>>>> Rez, could you let me know if the proposed patch breaks the spec in
+>>>>> ways that are likely to cause problems?
+>>>>>
+>>>>> --
+>>>>> Matthew Garrett | mjg59@srcf.ucam.org
+>>>>>
+>>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+> --
+> Tim Gardner tim.gardner@canonical.com
+>
