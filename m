@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab0FKPNv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 11:13:51 -0400
-Received: from tpa-qmail.dyxnet.com ([152.104.96.30]:39583 "HELO
-	tpa-qmailr1.dyxnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753391Ab0FKPNu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 11:13:50 -0400
-X-DYX-POP3-Checked-Auth: 114.32.100.136:kernel@takeo.idv.tw
-Message-ID: <10E8B8D94205471F942B06D2A007832D@TAKEOW7NB1>
-From: "Takeo Tung" <kernel@takeo.idv.tw>
-To: <linux-kernel@vger.kernel.org>
-Subject: linux-next-20100608 will /bin/sh: scripts/basic/fixdep: Permission denied
-Date: Fri, 11 Jun 2010 23:13:49 +0800
+	id S1754856Ab0FKPRR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 11:17:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753064Ab0FKPRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 11:17:16 -0400
+Date: Fri, 11 Jun 2010 17:15:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] thread_group_cputime: simplify, document the
+	"alive" check
+Message-ID: <20100611151533.GA2867@redhat.com>
+References: <20100610230956.GA25921@redhat.com> <20100611143525.GA2586@dhcp-lab-161.englab.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="big5";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8089.726
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8089.726
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100611143525.GA2586@dhcp-lab-161.englab.brq.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear All,
+On 06/11, Stanislaw Gruszka wrote:
+>
+> On Fri, Jun 11, 2010 at 01:09:56AM +0200, Oleg Nesterov wrote:
+> > thread_group_cputime() looks as if it is rcu-safe, but in fact this
+> > was wrong until ea6d290c which pins task->signal to task_struct.
+> > It checks ->sighand != NULL under rcu, but this can't help if ->signal
+> > can go away. Fortunately the caller either holds ->siglock, or it is
+> > fastpath_timer_check() which uses current and checks exit_state == 0.
+>
+> Hmm, I thought we avoided calling thread_group_cputime() from
+> fastpatch_timer_check(), but seems it is still possible when we
+> call run_posix_cpu_timers() on two different cpus simultaneously ...
 
-I using linux-next-20100608 kernel, but if re-complier the kernel will found
-this messages.
+No, we can't. thread_group_cputimer() does test-and-set ->running
+under cputimer->lock.
 
-root@kernel-x86:/usr/src/linux# make oldconfig
-  HOSTCC  scripts/basic/fixdep
-/bin/sh: scripts/basic/fixdep: Permission denied
-make[1]: *** [scripts/basic/fixdep] Error 1
-make: *** [scripts_basic] Error 2
+But when I sent these patches, I realized we have another race here
+(with or without these patches). I am already doing the fix.
 
-But if I revert this patch, seems all back to normal, pls help me this is
-bug patch or need adjust some system config?
+> > - Since ea6d290c commit tsk->signal is stable, we can read it first
+> >   and avoid the initialization from INIT_CPUTIME.
+> >
+> > - Even if tsk->signal is always valid, we still have to check it
+> >   is safe to use next_thread() under rcu_read_lock(). Currently
+> >   the code checks ->sighand != NULL, change it to use pid_alive()
+> >   which is commonly used to ensure the task wasn't unhashed before
+> >   we take rcu_read_lock().
+>
+> I'm not sure how important are values of almost dead task, but
+> perhaps would be better to return times form all threads
+> using as base sig->curr_target in loop.
 
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=9d9b938248736826e86db9b16a3b435bdb5d649f
+Could you clarify?
 
-Thanks,
-Takeo Tung
+Oleg.
 
