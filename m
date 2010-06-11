@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab0FKFum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 01:50:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34402 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751537Ab0FKFul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 01:50:41 -0400
-Message-ID: <4C11CEAA.5020703@zytor.com>
-Date: Thu, 10 Jun 2010 22:50:34 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1754203Ab0FKFw7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 01:52:59 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49045 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab0FKFw5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 01:52:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=bR053iLg3yr2KCxWACaK/8B1bSKGFP3su9cic0emy5mCyoI50KGvfac58IEnRNiYYk
+         rqz8/nVTiX0RDXjoQrhsHMj/xqJVe1aEzUxMj+hCSuyR4JuddVLNmpx/1UBv7RmGwHXI
+         UDwz5MoFS+NocOGz40j+j4vxgynVO43l6RMUQ=
 MIME-Version: 1.0
-To: Mike Frysinger <vapier.adi@gmail.com>
-CC: Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-       Tim Abbott <tabbott@ksplice.com>
-Subject: Re: [PATCH 1/2] vmlinux.lds.h: allow people to set a smaller rootfs
- 	alignment
-References: <1275761686-4996-1-git-send-email-vapier@gentoo.org> 	<1276068030_13535@mail4.comsite.net> <AANLkTin_MR82jafZkkzfv33dO6DqyFnHUiU4g6luXB_0@mail.gmail.com>
-In-Reply-To: <AANLkTin_MR82jafZkkzfv33dO6DqyFnHUiU4g6luXB_0@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTinpth-JO7pIOWXbnuUWXM3xQ1OnFKkfESwi0cP3@mail.gmail.com>
+References: <1275647794-30634-1-git-send-email-kgene.kim@samsung.com>
+	<1275647794-30634-2-git-send-email-kgene.kim@samsung.com>
+	<AANLkTinpth-JO7pIOWXbnuUWXM3xQ1OnFKkfESwi0cP3@mail.gmail.com>
+Date: Fri, 11 Jun 2010 14:52:56 +0900
+X-Google-Sender-Auth: JYig9RCX7cIUhzcB2-XPQlCLgxU
+Message-ID: <AANLkTikygrbXPkszVvBpH217mOaY8UzJE8zcOGVTGRZo@mail.gmail.com>
+Subject: Re: [PATCH 2/2] MAINTAINERS: add maintainer for SAMSUNG ARM 
+	ARCHITECTURES
+From: Kyungmin Park <kmpark@infradead.org>
+To: ben-linux@fluff.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/09/2010 12:42 AM, Mike Frysinger wrote:
-> 
-> i have no problem changing the default to 4 since it works fine on
-> Blackfin systems.  your analysis of the source alignment also seems
-> reasonable ... i assume that the 8 byte fields in the source cpio
-> arent referenced directly, otherwise it'd cause problems on 64bit
-> systems that require 64bit values to be naturally aligned.
-> 
-> beyond that, i dont see why any larger alignment values would be
-> required since this source archive isnt executed directly.  it gets
-> expanded into a ramfs and then freed with the rest of the init stuff.
-> 
+Ping.
 
-We have talked for a long time about incrementally freeing the initramfs
-as it is decoded, which might help systems which are using most of their
-memory for an initramfs image...
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+On Sat, Jun 5, 2010 at 11:24 AM, Kyungmin Park <kmpark@infradead.org> wrote:
+> Hi Ben,
+>
+> I'm waiting your comments.
+>
+> Thank you,
+> Kyungmin Park
+>
+> On Fri, Jun 4, 2010 at 7:36 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+>> Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+>> ---
+>>  MAINTAINERS |    2 ++
+>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index 1d41149..f4e4c61 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -896,11 +896,13 @@ S:        Maintained
+>>
+>>  ARM/SAMSUNG ARM ARCHITECTURES
+>>  M:     Ben Dooks <ben-linux@fluff.org>
+>> +M:     Kukjin Kim <kgene.kim@samsung.com>
+>>  L:     linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>>  W:     http://www.fluff.org/ben/linux/
+>>  S:     Maintained
+>>  F:     arch/arm/plat-samsung/
+>>  F:     arch/arm/plat-s3c24xx/
+>> +F:     arch/arm/plat-s5p/
+>>
+>>  ARM/S3C2410 ARM ARCHITECTURE
+>>  M:     Ben Dooks <ben-linux@fluff.org>
+>> --
+>> 1.6.2.5
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>
+>
