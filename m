@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab0FKUI3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 16:08:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35115 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755134Ab0FKUI2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 16:08:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100611194016.GA5213@Krystal>
-References: <20100611194016.GA5213@Krystal>
-Date: Fri, 11 Jun 2010 13:07:55 -0700
-Message-ID: <AANLkTil84IIgzlPcycNWJFRpZIGRqTFL6FGffzqOaSEx@mail.gmail.com>
-Subject: Re: sequence lock in Linux
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757745Ab0FKUKh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 16:10:37 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:47693 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134Ab0FKUKg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 16:10:36 -0400
+Subject: Re: [ath5k-devel] [PATCH] [ath5k][leds] Ability to disable leds 
+ support. If leds support enabled do not force mac802.11 leds layer
+ selection.
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Cc: Bob Copeland <me@bobcopeland.com>, ath5k-devel@venema.h4ckr.net,
+       Kalle Valo <kalle.valo@iki.fi>, linux-wireless@vger.kernel.org,
+       GeunSik Lim <geunsik.lim@samsung.com>, Jiri Slaby <jirislaby@gmail.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Keng-Yu Lin <keng-yu.lin@canonical.com>, netdev@vger.kernel.org,
+       Jiri Kosina <jkosina@suse.cz>, Shahar Or <shahar@shahar-or.co.il>,
+       linux-kernel@vger.kernel.org, Luca Verdesca <magooz@salug.it>
+In-Reply-To: <AANLkTimXqdkQxv_Y1JaleTTWNsDIQHQaPn8HR7efOupb@mail.gmail.com>
+References: <4c0f4326.0a41df0a.7bde.ffffeef2@mx.google.com>
+	 <AANLkTilrYYHjcMEhhrP7zjcLoo-TNczozxJSNRkDvSZy@mail.gmail.com>
+	 <AANLkTimXqdkQxv_Y1JaleTTWNsDIQHQaPn8HR7efOupb@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Jun 2010 22:09:53 +0200
+Message-ID: <1276286993.3918.0.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 12:40 PM, Mathieu Desnoyers
-<mathieu.desnoyers@efficios.com> wrote:
->
-> Is it just me, or the following code:
->
-> static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
-> {
->        unsigned ret;
->
-> repeat:
->        ret = sl->sequence;
->        smp_rmb();
->        if (unlikely(ret & 1)) {
->                cpu_relax();
->                goto repeat;
->        }
->
->        return ret;
-> }
->
-> could use a ACCESS_ONCE() around the sl->sequence read ? I'm concerned about the
-> compiler generating code that reads the sequence number chunkwise.
+On Wed, 2010-06-09 at 17:43 +0300, Dmytro Milinevskyy wrote:
+> Hi, Bob.
+> 
+> For instance I don't use 802.11 leds layer and trigger leds from
+> userspace according to my purposes.
 
-What compiler would do that? That would seem to be a compiler bug, or
-a compiler that is just completely crazy.
+Without the LED stuff in sysfs, how do you do that?
 
-But it wouldn't be _wrong_ to make it do ACCESS_ONCE(). I just suspect
-that any compiler that cares is not a compiler worth worrying about,
-and the compiler should be shot in the head rather than us necessarily
-worrying about it.
+johannes
 
-There is no way a sane compiler can do anything but one read anyway.
-We do end up using all the bits (for the "return ret") part, so a
-compiler that reads the low bit separately is just being a totally
-moronic one - we wouldn't want to touch such a stupid compiler with a
-ten-foot pole.
-
-But at the same time, ACCESS_ONCE() ends up being a reasonable hint to
-programmers, so I wouldn't object to it. I just don't think we should
-pander to "compilers can be crazy". If compilers are crazy, we
-shouldn't use them.
-
-                 Linus
