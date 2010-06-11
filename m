@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760206Ab0FKKSm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 06:18:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37013 "EHLO
+	id S1760214Ab0FKKSo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 06:18:44 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37009 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758044Ab0FKKRP (ORCPT
+	with ESMTP id S1756153Ab0FKKRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jun 2010 06:17:15 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 08/10] trivial: fix typos concerning "precedence"
-Date: Fri, 11 Jun 2010 12:17:02 +0200
-Message-Id: <1276251424-12806-8-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 05/10] trivial: fix typos concerning "hierarchy"
+Date: Fri, 11 Jun 2010 12:16:59 +0200
+Message-Id: <1276251424-12806-5-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100611101624.GD10894@pengutronix.de>
 References: <20100611101624.GD10894@pengutronix.de>
@@ -30,125 +30,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- arch/sh/kernel/clkdev.c                  |    2 +-
- drivers/staging/comedi/drivers/usbdux.c  |    2 +-
- drivers/staging/octeon/cvmx-cmd-queue.c  |    6 +++---
- drivers/staging/pohmelfs/inode.c         |    2 +-
- drivers/staging/rt2860/common/cmm_wpa.c  |    4 ++--
- drivers/staging/rtl8192e/r8190_rtl8256.c |    6 +++---
- 6 files changed, 11 insertions(+), 11 deletions(-)
+ arch/arm/mach-omap2/dpll3xxx.c        |    2 +-
+ arch/microblaze/Makefile              |    2 +-
+ drivers/infiniband/hw/cxgb3/iwch_qp.c |    4 ++--
+ drivers/infiniband/hw/cxgb4/qp.c      |    4 ++--
+ drivers/scsi/libfc/fc_lport.c         |    6 +++---
+ drivers/scsi/libfc/fc_rport.c         |    2 +-
+ drivers/scsi/scsi_transport_fc.c      |    2 +-
+ kernel/cpuset.c                       |    2 +-
+ 8 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/arch/sh/kernel/clkdev.c b/arch/sh/kernel/clkdev.c
-index defdd6e..befc255 100644
---- a/arch/sh/kernel/clkdev.c
-+++ b/arch/sh/kernel/clkdev.c
-@@ -36,7 +36,7 @@ static DEFINE_MUTEX(clocks_mutex);
-  *  If an entry has a device ID, it must match
-  *  If an entry has a connection ID, it must match
-  * Then we take the most specific entry - with the following
-- * order of precidence: dev+con > dev only > con only.
-+ * order of precedence: dev+con > dev only > con only.
-  */
- static struct clk *clk_find(const char *dev_id, const char *con_id)
- {
-diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
-index 7b8a2da..27b4cb2 100644
---- a/drivers/staging/comedi/drivers/usbdux.c
-+++ b/drivers/staging/comedi/drivers/usbdux.c
-@@ -2085,7 +2085,7 @@ static int usbdux_pwm_start(struct comedi_device *dev,
- 	if (ret < 0)
- 		return ret;
+diff --git a/arch/arm/mach-omap2/dpll3xxx.c b/arch/arm/mach-omap2/dpll3xxx.c
+index b32ccd9..ed8d330 100644
+--- a/arch/arm/mach-omap2/dpll3xxx.c
++++ b/arch/arm/mach-omap2/dpll3xxx.c
+@@ -463,7 +463,7 @@ int omap3_noncore_dpll_set_rate(struct clk *clk, unsigned long rate)
+ 	}
+ 	if (!ret) {
+ 		/*
+-		 * Switch the parent clock in the heirarchy, and make sure
++		 * Switch the parent clock in the hierarchy, and make sure
+ 		 * that the new parent's usecount is correct.  Note: we
+ 		 * enable the new parent before disabling the old to avoid
+ 		 * any unnecessary hardware disable->enable transitions.
+diff --git a/arch/microblaze/Makefile b/arch/microblaze/Makefile
+index 72f6e85..592c707 100644
+--- a/arch/microblaze/Makefile
++++ b/arch/microblaze/Makefile
+@@ -25,7 +25,7 @@ ifeq (,$(findstring spartan2,$(CONFIG_XILINX_MICROBLAZE0_FAMILY)))
+   ifeq ($(CPU_MAJOR),3)
+     CPUFLAGS-1 += -mno-xl-soft-mul
+   else
+-    # USE_HW_MUL can be 0, 1, or 2, defining a heirarchy of HW Mul support.
++    # USE_HW_MUL can be 0, 1, or 2, defining a hierarchy of HW Mul support.
+     CPUFLAGS-$(subst 1,,$(CONFIG_XILINX_MICROBLAZE0_USE_HW_MUL)) += -mxl-multiply-high
+     CPUFLAGS-$(CONFIG_XILINX_MICROBLAZE0_USE_HW_MUL) += -mno-xl-soft-mul
+   endif
+diff --git a/drivers/infiniband/hw/cxgb3/iwch_qp.c b/drivers/infiniband/hw/cxgb3/iwch_qp.c
+index ae47bfd..9bbb65b 100644
+--- a/drivers/infiniband/hw/cxgb3/iwch_qp.c
++++ b/drivers/infiniband/hw/cxgb3/iwch_qp.c
+@@ -816,7 +816,7 @@ static void __flush_qp(struct iwch_qp *qhp, unsigned long *flag)
+ 	atomic_inc(&qhp->refcnt);
+ 	spin_unlock_irqrestore(&qhp->lock, *flag);
  
--	/* initialise the buffer */
-+	/* initalise the buffer */
- 	for (i = 0; i < this_usbduxsub->sizePwmBuf; i++)
- 		((char *)(this_usbduxsub->urbPwm->transfer_buffer))[i] = 0;
+-	/* locking heirarchy: cq lock first, then qp lock. */
++	/* locking hierarchy: cq lock first, then qp lock. */
+ 	spin_lock_irqsave(&rchp->lock, *flag);
+ 	spin_lock(&qhp->lock);
+ 	cxio_flush_hw_cq(&rchp->cq);
+@@ -827,7 +827,7 @@ static void __flush_qp(struct iwch_qp *qhp, unsigned long *flag)
+ 	if (flushed)
+ 		(*rchp->ibcq.comp_handler)(&rchp->ibcq, rchp->ibcq.cq_context);
  
-diff --git a/drivers/staging/octeon/cvmx-cmd-queue.c b/drivers/staging/octeon/cvmx-cmd-queue.c
-index e9809d3..976227b 100644
---- a/drivers/staging/octeon/cvmx-cmd-queue.c
-+++ b/drivers/staging/octeon/cvmx-cmd-queue.c
-@@ -140,21 +140,21 @@ cvmx_cmd_queue_result_t cvmx_cmd_queue_initialize(cvmx_cmd_queue_id_t queue_id,
- 	if (qstate->base_ptr_div128) {
- 		if (max_depth != (int)qstate->max_depth) {
- 			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
--				"Queue already initialized with different "
-+				"Queue already initalized with different "
- 				"max_depth (%d).\n",
- 			     (int)qstate->max_depth);
- 			return CVMX_CMD_QUEUE_INVALID_PARAM;
- 		}
- 		if (fpa_pool != qstate->fpa_pool) {
- 			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
--				"Queue already initialized with different "
-+				"Queue already initalized with different "
- 				"FPA pool (%u).\n",
- 			     qstate->fpa_pool);
- 			return CVMX_CMD_QUEUE_INVALID_PARAM;
- 		}
- 		if ((pool_size >> 3) - 1 != qstate->pool_size_m1) {
- 			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
--				"Queue already initialized with different "
-+				"Queue already initalized with different "
- 				"FPA pool size (%u).\n",
- 			     (qstate->pool_size_m1 + 1) << 3);
- 			return CVMX_CMD_QUEUE_INVALID_PARAM;
-diff --git a/drivers/staging/pohmelfs/inode.c b/drivers/staging/pohmelfs/inode.c
-index e3f95f7..643b413 100644
---- a/drivers/staging/pohmelfs/inode.c
-+++ b/drivers/staging/pohmelfs/inode.c
-@@ -847,7 +847,7 @@ static void pohmelfs_destroy_inode(struct inode *inode)
- }
+-	/* locking heirarchy: cq lock first, then qp lock. */
++	/* locking hierarchy: cq lock first, then qp lock. */
+ 	spin_lock_irqsave(&schp->lock, *flag);
+ 	spin_lock(&qhp->lock);
+ 	cxio_flush_hw_cq(&schp->cq);
+diff --git a/drivers/infiniband/hw/cxgb4/qp.c b/drivers/infiniband/hw/cxgb4/qp.c
+index 0c28ed1..646a2a5 100644
+--- a/drivers/infiniband/hw/cxgb4/qp.c
++++ b/drivers/infiniband/hw/cxgb4/qp.c
+@@ -905,7 +905,7 @@ static void __flush_qp(struct c4iw_qp *qhp, struct c4iw_cq *rchp,
+ 	atomic_inc(&qhp->refcnt);
+ 	spin_unlock_irqrestore(&qhp->lock, *flag);
+ 
+-	/* locking heirarchy: cq lock first, then qp lock. */
++	/* locking hierarchy: cq lock first, then qp lock. */
+ 	spin_lock_irqsave(&rchp->lock, *flag);
+ 	spin_lock(&qhp->lock);
+ 	c4iw_flush_hw_cq(&rchp->cq);
+@@ -916,7 +916,7 @@ static void __flush_qp(struct c4iw_qp *qhp, struct c4iw_cq *rchp,
+ 	if (flushed)
+ 		(*rchp->ibcq.comp_handler)(&rchp->ibcq, rchp->ibcq.cq_context);
+ 
+-	/* locking heirarchy: cq lock first, then qp lock. */
++	/* locking hierarchy: cq lock first, then qp lock. */
+ 	spin_lock_irqsave(&schp->lock, *flag);
+ 	spin_lock(&qhp->lock);
+ 	c4iw_flush_hw_cq(&schp->cq);
+diff --git a/drivers/scsi/libfc/fc_lport.c b/drivers/scsi/libfc/fc_lport.c
+index 79c9e3c..ef32b06 100644
+--- a/drivers/scsi/libfc/fc_lport.c
++++ b/drivers/scsi/libfc/fc_lport.c
+@@ -32,11 +32,11 @@
+  * invalid SID. We also need to ensure that states don't change unexpectedly
+  * while processing another state.
+  *
+- * HEIRARCHY
++ * HIERARCHY
+  *
+- * The following heirarchy defines the locking rules. A greater lock
++ * The following hierarchy defines the locking rules. A greater lock
+  * may be held before acquiring a lesser lock, but a lesser lock should never
+- * be held while attempting to acquire a greater lock. Here is the heirarchy-
++ * be held while attempting to acquire a greater lock. Here is the hierarchy-
+  *
+  * lport > disc, lport > rport, disc > rport
+  *
+diff --git a/drivers/scsi/libfc/fc_rport.c b/drivers/scsi/libfc/fc_rport.c
+index 39e440f..2aa5993 100644
+--- a/drivers/scsi/libfc/fc_rport.c
++++ b/drivers/scsi/libfc/fc_rport.c
+@@ -34,7 +34,7 @@
+  * The rport should never hold the rport mutex and then attempt to acquire
+  * either the lport or disc mutexes. The rport's mutex is considered lesser
+  * than both the lport's mutex and the disc mutex. Refer to fc_lport.c for
+- * more comments on the heirarchy.
++ * more comments on the hierarchy.
+  *
+  * The locking strategy is similar to the lport's strategy. The lock protects
+  * the rport's states and is held and released by the entry points to the rport
+diff --git a/drivers/scsi/scsi_transport_fc.c b/drivers/scsi/scsi_transport_fc.c
+index 0681378..edb6b36 100644
+--- a/drivers/scsi/scsi_transport_fc.c
++++ b/drivers/scsi/scsi_transport_fc.c
+@@ -965,7 +965,7 @@ static FC_DEVICE_ATTR(rport, fast_io_fail_tmo, S_IRUGO | S_IWUSR,
  
  /*
-- * ->alloc_inode() callback. Allocates inode and initializes private data.
-+ * ->alloc_inode() callback. Allocates inode and initilizes private data.
+  * Note: in the target show function we recognize when the remote
+- *  port is in the heirarchy and do not allow the driver to get
++ *  port is in the hierarchy and do not allow the driver to get
+  *  involved in sysfs functions. The driver only gets involved if
+  *  it's the "old" style that doesn't use rports.
   */
- static struct inode *pohmelfs_alloc_inode(struct super_block *sb)
- {
-diff --git a/drivers/staging/rt2860/common/cmm_wpa.c b/drivers/staging/rt2860/common/cmm_wpa.c
-index 9414aa3..c16f376 100644
---- a/drivers/staging/rt2860/common/cmm_wpa.c
-+++ b/drivers/staging/rt2860/common/cmm_wpa.c
-@@ -427,7 +427,7 @@ void RTMPToWirelessSta(struct rt_rtmp_adapter *pAd,
- /*
-     ==========================================================================
-     Description:
--        This is a function to initialize 4-way handshake
-+        This is a function to initilize 4-way handshake
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 02b9611..7cb37d8 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -105,7 +105,7 @@ struct cpuset {
+ 	/* for custom sched domain */
+ 	int relax_domain_level;
  
-     Return:
+-	/* used for walking a cpuset heirarchy */
++	/* used for walking a cpuset hierarchy */
+ 	struct list_head stack_list;
+ };
  
-@@ -867,7 +867,7 @@ void PeerPairMsg3Action(struct rt_rtmp_adapter *pAd,
-     ==========================================================================
-     Description:
-         When receiving the last packet of 4-way pairwisekey handshake.
--        Initialize 2-way groupkey handshake following.
-+        Initilize 2-way groupkey handshake following.
-     Return:
-     ==========================================================================
- */
-diff --git a/drivers/staging/rtl8192e/r8190_rtl8256.c b/drivers/staging/rtl8192e/r8190_rtl8256.c
-index 8bd5b17..7391f5f 100644
---- a/drivers/staging/rtl8192e/r8190_rtl8256.c
-+++ b/drivers/staging/rtl8192e/r8190_rtl8256.c
-@@ -501,13 +501,13 @@ SetRFPowerState8190(
- 				if((priv->ieee80211->eRFPowerState == eRfOff) && RT_IN_PS_LEVEL(pPSC, RT_RF_OFF_LEVL_HALT_NIC))
- 				{ // The current RF state is OFF and the RF OFF level is halting the NIC, re-initialize the NIC.
- 					bool rtstatus = true;
--					u32 InitializeCount = 3;
-+					u32 InitilizeCount = 3;
- 					do
- 					{
--						InitializeCount--;
-+						InitilizeCount--;
- 						priv->RegRfOff = false;
- 						rtstatus = NicIFEnableNIC(dev);
--					}while( (rtstatus != true) &&(InitializeCount >0) );
-+					}while( (rtstatus != true) &&(InitilizeCount >0) );
- 
- 					if(rtstatus != true)
- 					{
 -- 
 1.7.1
 
