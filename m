@@ -1,250 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760250Ab0FKTII (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 15:08:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50546 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756644Ab0FKTIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 15:08:04 -0400
-Date: Fri, 11 Jun 2010 15:07:14 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Carl Worth <cworth@cworth.org>,
-       Eric Anholt <eric@anholt.net>, Divyesh Shah <dpshah@google.com>,
-       guijianfeng@cn.fujitsu.com,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>
-Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
-Message-ID: <20100611190714.GA20837@redhat.com>
-References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
- <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
- <4C0F4872.7090909@fusionio.com>
- <20100611083249.GA11143@elte.hu>
- <4C11F661.3070604@fusionio.com>
- <20100611085520.GA20218@elte.hu>
- <4C11FF77.1000101@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C11FF77.1000101@fusionio.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1760303Ab0FKTIS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 15:08:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44958 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760253Ab0FKTIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 15:08:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Y1MMW/fF5Z6UYjiwzxyoVvFKvLEprqUzT4sOs2tZj7PkNaMdp4hWrLWeiE/noXHI3x
+         C5al6FH3IQdVswGp+xUmmblf9kp1RpzrhfhQ7lx4Vxr55i76ZPfdVk/vRUPryEcGHNBQ
+         oYNHPq0pIV+j/mzm0xQTCdacrNcWnqbfdDxbY=
+Subject: [PATCH v3] mmc: make sdhci work with ricoh mmc controller
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Philip Langdale <philipl@overt.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+       Andrew de Quincey <adq_dvb@lidskialf.net>
+In-Reply-To: <20100606184139.5505d2a5@fido5>
+References: <1275859475.3151.4.camel@maxim-laptop>
+	 <1275859731-2898-1-git-send-email-maximlevitsky@gmail.com>
+	 <b99ba230e4a7f8b2174d7f52f1e7324c@localhost>
+	 <1275871052.24091.7.camel@maxim-laptop>  <20100606184139.5505d2a5@fido5>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Jun 2010 22:08:06 +0300
+Message-ID: <1276283286.8557.28.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 11:18:47AM +0200, Jens Axboe wrote:
-> On 2010-06-11 10:55, Ingo Molnar wrote:
-> >>> Caused by the same blkiocg_update_io_add_stats() function. Bootlog and config 
-> >>> attached. Reproducible on that sha1 and with that config.
-> >>
-> >> I think I see it, the internal CFQ blkg groups are not properly
-> >> initialized... Will send a patch shortly.
-> > 
-> > Cool - can test it with a short turnaround, the bug is easy to reproduce.
-> 
-> Here's a nasty patch that should fix it. Not optimal, since we really
-> just want empty functions for these when cfq group scheduling is not
-> defined.
-> 
-> CC'ing the guilty parties to come up with a better patch that does NOT
-> involve ifdefs in cfq-iosched.c. We want blk-cgroup.[ch] fixed up.
-> And trimming the CC list a bit.
+Ok, now I tested it well, and sdhci + mmc controller finally work well.
 
-Jens, Ingo, I am sorry for this mess.
+I found out that small delay is all needed to make the mmc work fine
+after resume with or without card.
 
-Jens,
+Its not that pretty solution as it might increase the resume time (I use
+a delay of 1/2sec, while around 300 ms is enough)
+With parallel resume it probably be unnoticeable.
 
-How about introducing "block/cfq.h" and declaring additional set of wrapper
-functions to update blkiocg stats and make these do nothing if
-CFQ_GROUP_IOSCHED=n.
+It might be not enough for other mmc cards (slower?) but then the
+problem isn't that big deal, you just reinsert the card after resume or
+don't suspend with it if first place.
 
-For example, in linux-2.6/block/cfq.h, we can define functions as follows.
+I will at future do some reverse engineering.
+Maybe I find a bit to that will tell that controller is currently busy
+checking if card is mmc or not.
 
-#ifdef CONFIG_CFQ_GROUP_IOSCHED
-cfq_blkiocg_update_dequeue_stats () {
-	blkiocg_update_dequeue_stats()
-}
-#else
-cfq_blkiocg_update_dequeue_stats () {}
-#endif
+I did quite a lot of testing, and it works. 
+commit bd9596e86d2321f3f97a90ec157371c366925357
+Author: Maxim Levitsky <maximlevitsky@gmail.com>
+Date:   Mon Jun 7 02:04:40 2010 +0300
 
-Fixing it blk-cgroup.[ch] might not be best as BLK_CGROUP is set.
-Secondly, if there are other IO control policies later, they might
-want to make use of BLK_CGROUP while cfq has disabled the group io 
-scheduling.
+---
 
-I will prepare a patch and see how does it look.
+    mmc: make sdhci work with ricoh mmc controller
+    
+    The current way of disabling it is not well tested by vendor
+    and has all kinds of bugs that show up on resume from ram/disk.
+    
+    Old way of disabling is still supported by
+    continuing to use CONFIG_MMC_RICOH_MMC.
+    
+    Based on 'http://list.drzeus.cx/pipermail/sdhci-devel/2007-December/002085.html'
+    Most of the credit for this goes to Andrew de Quincey
+    
+    
+    Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+    CC: Andrew de Quincey <adq_dvb@lidskialf.net>
+    CC: linux-mmc@vger.kernel.org <linux-mmc@vger.kernel.org>
 
-Thanks
-Vivek
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 569e94d..85d15de 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1259,8 +1259,6 @@ int mmc_suspend_host(struct mmc_host *host)
+ 
+ 	if (host->caps & MMC_CAP_DISABLE)
+ 		cancel_delayed_work(&host->disable);
+-	cancel_delayed_work(&host->detect);
+-	mmc_flush_scheduled_work();
+ 
+ 	mmc_bus_get(host);
+ 	if (host->bus_ops && !host->bus_dead) {
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index 65483fd..e021431 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -17,6 +17,7 @@
+ #include <linux/pci.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/slab.h>
++#include <linux/device.h>
+ 
+ #include <linux/mmc/host.h>
+ 
+@@ -84,7 +85,30 @@ static int ricoh_probe(struct sdhci_pci_chip *chip)
+ 	if (chip->pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG ||
+ 	    chip->pdev->subsystem_vendor == PCI_VENDOR_ID_SONY)
+ 		chip->quirks |= SDHCI_QUIRK_NO_CARD_NO_RESET;
++	return 0;
++}
++
++static int ricoh_mmc_probe_slot(struct sdhci_pci_slot *slot)
++{
++	slot->host->caps =
++		((0x21 << SDHCI_TIMEOUT_CLK_SHIFT)
++			& SDHCI_TIMEOUT_CLK_MASK) |
++
++		((0x21 << SDHCI_CLOCK_BASE_SHIFT)
++			& SDHCI_CLOCK_BASE_MASK) |
+ 
++		SDHCI_TIMEOUT_CLK_UNIT |
++		SDHCI_CAN_VDD_330 |
++		SDHCI_CAN_DO_SDMA;
++	return 0;
++}
++
++static int ricoh_mmc_resume(struct sdhci_pci_chip *chip)
++{
++	/* Apply a delay to allow controller to settle */
++	/* Otherwise it becomes confused if card state changed
++		during suspend */
++	msleep(500);
+ 	return 0;
+ }
+ 
+@@ -95,6 +119,15 @@ static const struct sdhci_pci_fixes sdhci_ricoh = {
+ 			  SDHCI_QUIRK_CLOCK_BEFORE_RESET,
+ };
+ 
++static const struct sdhci_pci_fixes sdhci_ricoh_mmc = {
++	.probe_slot	= ricoh_mmc_probe_slot,
++	.resume		= ricoh_mmc_resume,
++	.quirks		= SDHCI_QUIRK_32BIT_DMA_ADDR |
++			  SDHCI_QUIRK_CLOCK_BEFORE_RESET |
++			  SDHCI_QUIRK_NO_CARD_NO_RESET |
++			  SDHCI_QUIRK_MISSING_CAPS
++};
++
+ static const struct sdhci_pci_fixes sdhci_ene_712 = {
+ 	.quirks		= SDHCI_QUIRK_SINGLE_POWER_WRITE |
+ 			  SDHCI_QUIRK_BROKEN_DMA,
+@@ -374,6 +407,14 @@ static const struct pci_device_id pci_ids[] __devinitdata = {
+ 	},
+ 
+ 	{
++		.vendor         = PCI_VENDOR_ID_RICOH,
++		.device         = 0x843,
++		.subvendor      = PCI_ANY_ID,
++		.subdevice      = PCI_ANY_ID,
++		.driver_data    = (kernel_ulong_t)&sdhci_ricoh_mmc,
++	},
++
++	{
+ 		.vendor		= PCI_VENDOR_ID_ENE,
+ 		.device		= PCI_DEVICE_ID_ENE_CB712_SD,
+ 		.subvendor	= PCI_ANY_ID,
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index c6d1bd8..483b78e 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1687,7 +1687,8 @@ int sdhci_add_host(struct sdhci_host *host)
+ 			host->version);
+ 	}
+ 
+-	caps = sdhci_readl(host, SDHCI_CAPABILITIES);
++	caps = (host->quirks & SDHCI_QUIRK_MISSING_CAPS) ? host->caps :
++		sdhci_readl(host, SDHCI_CAPABILITIES);
+ 
+ 	if (host->quirks & SDHCI_QUIRK_FORCE_DMA)
+ 		host->flags |= SDHCI_USE_SDMA;
+diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
+index c846813..b1839a3 100644
+--- a/drivers/mmc/host/sdhci.h
++++ b/drivers/mmc/host/sdhci.h
+@@ -240,6 +240,8 @@ struct sdhci_host {
+ #define SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN		(1<<25)
+ /* Controller cannot support End Attribute in NOP ADMA descriptor */
+ #define SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC		(1<<26)
++/* Controller is missing device caps. Use caps provided by host */
++#define SDHCI_QUIRK_MISSING_CAPS			(1<<27)
+ 
+ 	int			irq;		/* Device IRQ */
+ 	void __iomem *		ioaddr;		/* Mapped address */
+@@ -292,6 +294,8 @@ struct sdhci_host {
+ 
+ 	struct timer_list	timer;		/* Timer for timeouts */
+ 
++	unsigned int		caps;		/* Alternative capabilities */
++
+ 	unsigned long		private[0] ____cacheline_aligned;
+ };
+ 
 
-> 
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 5ff4f48..7067c97 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -879,7 +879,9 @@ cfq_group_service_tree_del(struct cfq_data *cfqd, struct cfq_group *cfqg)
->  	if (!RB_EMPTY_NODE(&cfqg->rb_node))
->  		cfq_rb_erase(&cfqg->rb_node, st);
->  	cfqg->saved_workload_slice = 0;
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
-> +#endif
->  }
->  
->  static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
-> @@ -939,8 +941,10 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
->  
->  	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
->  					st->min_vdisktime);
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
->  	blkiocg_set_start_empty_time(&cfqg->blkg);
-> +#endif
->  }
->  
->  #ifdef CONFIG_CFQ_GROUP_IOSCHED
-> @@ -1421,12 +1425,17 @@ static void cfq_reposition_rq_rb(struct cfq_queue *cfqq, struct request *rq)
->  {
->  	elv_rb_del(&cfqq->sort_list, rq);
->  	cfqq->queued[rq_is_sync(rq)]--;
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(rq),
->  						rq_is_sync(rq));
-> +#endif
->  	cfq_add_rq_rb(rq);
-> +
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
->  			&cfqq->cfqd->serving_group->blkg, rq_data_dir(rq),
->  			rq_is_sync(rq));
-> +#endif
->  }
->  
->  static struct request *
-> @@ -1482,8 +1491,10 @@ static void cfq_remove_request(struct request *rq)
->  	cfq_del_rq_rb(rq);
->  
->  	cfqq->cfqd->rq_queued--;
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(rq),
->  						rq_is_sync(rq));
-> +#endif
->  	if (rq_is_meta(rq)) {
->  		WARN_ON(!cfqq->meta_pending);
->  		cfqq->meta_pending--;
-> @@ -1518,8 +1529,10 @@ static void cfq_merged_request(struct request_queue *q, struct request *req,
->  static void cfq_bio_merged(struct request_queue *q, struct request *req,
->  				struct bio *bio)
->  {
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_io_merged_stats(&(RQ_CFQG(req))->blkg, bio_data_dir(bio),
->  					cfq_bio_sync(bio));
-> +#endif
->  }
->  
->  static void
-> @@ -1539,8 +1552,10 @@ cfq_merged_requests(struct request_queue *q, struct request *rq,
->  	if (cfqq->next_rq == next)
->  		cfqq->next_rq = rq;
->  	cfq_remove_request(next);
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_io_merged_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(next),
->  					rq_is_sync(next));
-> +#endif
->  }
->  
->  static int cfq_allow_merge(struct request_queue *q, struct request *rq,
-> @@ -1571,7 +1586,9 @@ static int cfq_allow_merge(struct request_queue *q, struct request *rq,
->  static inline void cfq_del_timer(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  {
->  	del_timer(&cfqd->idle_slice_timer);
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
-> +#endif
->  }
->  
->  static void __cfq_set_active_queue(struct cfq_data *cfqd,
-> @@ -1580,7 +1597,9 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
->  	if (cfqq) {
->  		cfq_log_cfqq(cfqd, cfqq, "set_active wl_prio:%d wl_type:%d",
->  				cfqd->serving_prio, cfqd->serving_type);
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  		blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
-> +#endif
->  		cfqq->slice_start = 0;
->  		cfqq->dispatch_start = jiffies;
->  		cfqq->allocated_slice = 0;
-> @@ -1911,7 +1930,9 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
->  	sl = cfqd->cfq_slice_idle;
->  
->  	mod_timer(&cfqd->idle_slice_timer, jiffies + sl);
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
-> +#endif
->  	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu", sl);
->  }
->  
-> @@ -1931,8 +1952,10 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
->  	elv_dispatch_sort(q, rq);
->  
->  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
->  					rq_data_dir(rq), rq_is_sync(rq));
-> +#endif
->  }
->  
->  /*
-> @@ -3248,8 +3271,10 @@ cfq_rq_enqueued(struct cfq_data *cfqd, struct cfq_queue *cfqq,
->  				cfq_clear_cfqq_wait_request(cfqq);
->  				__blk_run_queue(cfqd->queue);
->  			} else {
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  				blkiocg_update_idle_time_stats(
->  						&cfqq->cfqg->blkg);
-> +#endif
->  				cfq_mark_cfqq_must_dispatch(cfqq);
->  			}
->  		}
-> @@ -3276,9 +3301,11 @@ static void cfq_insert_request(struct request_queue *q, struct request *rq)
->  	rq_set_fifo_time(rq, jiffies + cfqd->cfq_fifo_expire[rq_is_sync(rq)]);
->  	list_add_tail(&rq->queuelist, &cfqq->fifo);
->  	cfq_add_rq_rb(rq);
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
->  			&cfqd->serving_group->blkg, rq_data_dir(rq),
->  			rq_is_sync(rq));
-> +#endif
->  	cfq_rq_enqueued(cfqd, cfqq, rq);
->  }
->  
-> @@ -3364,9 +3391,11 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
->  	WARN_ON(!cfqq->dispatched);
->  	cfqd->rq_in_driver--;
->  	cfqq->dispatched--;
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_update_completion_stats(&cfqq->cfqg->blkg, rq_start_time_ns(rq),
->  			rq_io_start_time_ns(rq), rq_data_dir(rq),
->  			rq_is_sync(rq));
-> +#endif
->  
->  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
->  
-> @@ -3730,7 +3759,9 @@ static void cfq_exit_queue(struct elevator_queue *e)
->  
->  	cfq_put_async_queues(cfqd);
->  	cfq_release_cfq_groups(cfqd);
-> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
->  	blkiocg_del_blkio_group(&cfqd->root_group.blkg);
-> +#endif
->  
->  	spin_unlock_irq(q->queue_lock);
->  
-> 
-> -- 
-> Jens Axboe
+
