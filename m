@@ -1,118 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760101Ab0FKDQs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 23:16:48 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:40373 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab0FKDQr convert rfc822-to-8bit (ORCPT
+	id S1760103Ab0FKDSR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 23:18:17 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:35385 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752902Ab0FKDSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 23:16:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1006102126220.2585-100000@netrider.rowland.org>
-References: <AANLkTiniGxuHLeTyxBe7zZxOdYJEkFcl3akR2E_aLDi3@mail.gmail.com>
-	<Pine.LNX.4.44L0.1006102126220.2585-100000@netrider.rowland.org>
-Date: Thu, 10 Jun 2010 20:16:46 -0700
-Message-ID: <AANLkTik9xMxx8IdYkUhd-oa_ik_MjGFOff_siUztls-9@mail.gmail.com>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: tytso@mit.edu, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Florian Mickler <florian@mickler.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Brian Swetland <swetland@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Felipe Balbi <felipe.balbi@nokia.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 Jun 2010 23:18:15 -0400
+Message-ID: <001a01cb0914$ba4ee680$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
+       "LKML" <linux-kernel@vger.kernel.org>,
+       <andrew.chih.howe.khor@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>
+References: <000501cae2eb$de97e950$66f8800a@maildom.okisemi.com> <201004231657.57466.arnd@arndb.de> <000901cb07ad$234e6cf0$66f8800a@maildom.okisemi.com> <201006091516.13246.arnd@arndb.de>
+Subject: Re: [PATCH] Topcliff PHUB: Add The Packet Hub driver [1/2]
+Date: Fri, 11 Jun 2010 12:18:10 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/10 Alan Stern <stern@rowland.harvard.edu>:
-> On Thu, 10 Jun 2010, Arve Hjønnevåg wrote:
->
->> >> For that to work the wakeup events would have to be reported to the
->> >> power manager in a reliable way in the first place. Passing the file
->> >> descriptor that the app uses to the power manager does not work for
->> >> this, since the app could read the event while the power manager was
->> >> not in the poll call and the power manager would never see it.
->> >
->> > If the app activates a suspend blocker before reading the event, this
->> > doesn't matter.  If the app doesn't activate a suspend blocker then it
->> > risks being suspended after it has read the event but before it has
->> > handled the event.  This is equally true with wakelocks.
->> >
->>
->> It is not the same. Using a wakelock with a timeout only has a problem
->> if the app did not get a change to run and block suspend before the
->> timeout expires. With the timeout values we use there is only a
->> problem if the system is already unresponsive. If the driver does not
->> block suspend but instead a power manager calls select or poll on a
->> file descriptor while the app does a blocking read, the power manager
->> can easily miss the event and suspend before the app blocks suspend.
->
-> You've lost me.  If the power manager is sitting inside a select/poll,
-> how can it miss the event (given that the event will make data
-> available to be read on one of the descriptors being polled)?
->
+Hi Arnd
 
-It cannot sit inside of select/poll all the time.
+Thank you for your comment.
+Please refer the following mail in line.
+----- Original Message ----- 
+From: "Arnd Bergmann" <arnd@arndb.de>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Wang, Yong Y" <yong.y.wang@intel.com>; "Wang, Qi" <qi.wang@intel.com>; <andrew.chih.howe.khor@intel.com>; "LKML"
+<linux-kernel@vger.kernel.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+Sent: Wednesday, June 09, 2010 10:16 PM
+Subject: Re: [PATCH] Topcliff PHUB: Add The Packet Hub driver [1/2]
 
-> Or put it another way: With wakelocks, if the app doesn't use a suspend
-> blocker then once it reads the event data and the timed wakelock is
-> deactivated, there is nothing to prevent the system from immediately
-> going into opportunistic suspend.  My scheme can fail in the same way.
-> Is that what you meant?
->
 
-No, if an app reads from a file descriptor and block suspend when the
-read call returns, then suspend is blocked while processing the data.
-If the driver uses a wakelock with a timeout this will fail if the
-thread does not get to the suspend block call before the timeout
-expires, but unrelated events that don't prevent the app from running
-will not cause any problems. In your scheme the user-space power
-manager may miss events on this file descriptor since select/poll will
-not see an event if the app read that event right before the power
-manager called select/poll.
+> On Wednesday 09 June 2010, Masayuki Ohtake wrote:
+>
+> > We have added our comment for your email in line.
+>
+> ok, thanks for the update
+>
+> > If you have any question, let me know.
+>
+> One small comment from me, plus more background on the ioctl:
+>
+> > > The definition of struct pch_phub_reqt is problematic because
+> > > it contains members of type 'unsigned long'. This means that
+> > > a 32 bit user process uses a different data structure than a
+> > > 64 bit kernel.
+> > >
+> > > Ideally, you only pass a single integer as an ioctl argument.
+> > > There are cases where it needs to be a data structure, but
+> > > if that happens, you should only use members types like __u32
+> > > or __u64, not long or pointer.
+> > We have defined as u32 type.
+>
+> Note that public data headers should use '__u32' instead of 'u32',
+> because the 'u32' type is not available in the exported version
+> of linux/types.h.
 
->> >> The suspend blocker approach is more generally useful since it
->> >> supports hardware where suspend is needed. Why this argument is being
->> >> ignored is very puzzling.
->> >
->> > Probably because people doesn't envision system suspend being used for
->> > dynamic power management on that kind of hardware.
->> >
->>
->> I'm not sure what you mean by dynamic power management here (frequency
->> of suspends?), but auto suspend is already in use on x86 desktops and
->> laptops. Suspend blockers can fix the race with some wakeup events
->> there.
->
-> You should stress this point more strongly when conversing with others.
-> I doubt it will be enough to change anybody's mind, but it can't hurt.
-> Indeed, if you propose suspend blockers as a way to fix a lost-wakeup
-> bug in existing distributions, rather than as something needed to
-> support Android, people might view it more favorably.
->
->
-> There's one question that I don't remember ever seeing answered.  To
-> which kernel drivers do you intend to add suspend blockers?
->
+We will replace like below.
+u32 --> __u32
+s32 --> __s32
+s8 --> __s8
 
-All drivers that generate wakeup events need to either use suspend
-blockers directly or call into something else that does. For instance,
-with the patch to block suspend while input events are queued to
-user-space, an input driver that fully handles its events in its
-interrupt handler does not need any additional suspend blockers, but
-if the driver needs a work function or a timer to run before it
-reports the event it needs to block suspend until it has reported the
-event.
+>
+> > > My feeling is that this ioctl interface is too
+> > > low-level in general. You only export access to specific
+> > > registers, not to functionality exposed by them.
+> > > The best kernel interfaces are defined in a way that
+> > > is independent of the underlying hardware and
+> > > convert generic commands into device specific commands.
+> > >
+> > > If you really want to allow direct register access,
+> > > a simpler way would be to map the memory into the user
+> > > address space using the mmap() operation and not
+> > > provide any ioctl commands.
+> > Packet Hub has function accessing many resisters.
+> > Thus, we think current spec is better.
+>
+> Getting the interface right is by far the most important
+> part in a driver submission, and often the hardest part.
+>
+> Giving register-level hardware access to random user space
+> applications for the PHUB essentially means that you
+> are forcing the hardware design to become stable for all
+> eternity because all tools that use this interface (whether
+> written by you or by other people) need to keep working on
+> future generations of the hardware as well.
+>
+> This is generally considered a very bad idea, so I think
+> you should drop the IOCTL_PHUB_{READ,WRITE,MODIFY}_REG
+> ioctl commands for now if you want to get your driver
+> merged quickly, and then we can find a way to do what
+> it's meant for in a better way.
+>
+> Regarding the other ioctl commands, I still have a few
+> comments that I did not mention at first:
+>
+> >+int pch_phub_ioctl(struct inode *inode, struct file *file,
+> >+ unsigned int cmd, unsigned long arg)
+> >+{
+> >+ int ret_value = 0;
+> >+ struct pch_phub_reqt *p_pch_phub_reqt;
+> >+ unsigned long addr_offset;
+> >+ unsigned long data;
+> >+ unsigned long mask;
+> >+
+> >+ if (pch_phub_suspended == true) {
+> >+ dev_dbg(dev_dbg, "pch_phub_ioctl : "
+> >+ "suspend initiated returning =%d\n", -EPERM);
+> >+ ret_value = -EPERM;
+> >+ goto return_ioctrl;
+> >+ }
+> >+
+> >+ p_pch_phub_reqt = (struct pch_phub_reqt *)arg;
+> >+ ret_value = copy_from_user((void *)&addr_offset,
+> >+ (void *)&p_pch_phub_reqt->addr_offset,
+> >+ sizeof(addr_offset));
+> >+ if (ret_value) {
+> >+ dev_dbg(dev_dbg, "pch_phub_ioctl : "
+> >+ "copy_from_user fail returning =%d\n", -EFAULT);
+> >+ ret_value = -EFAULT;
+> >+ goto return_ioctrl;
+> >+ }
+>
+> The pch_phub_reqt data structure does not really make sense for
+> commands other than IOCTL_PHUB_READ_MODIFY_WRITE_REG and causes
+> more problems, see below.
+We will delete almost ioctl functions.
+Phub ioctl has only MAC Address access.
+(OROM access will be moved to read/write method.)
 
--- 
-Arve Hjønnevåg
+And we will change ioctl I/F like below.
+Usermode application doesn't only set HW register offset value but also set function.
+
+>
+> Moreover, the type casts are incorrect because they are
+> missing the __user address space modifier. The casts can
+> simply be removed, and the variable declared as
+> e.g. 'struct pch_phub_reqt __user *p_pch_phub_reqt;'.
+We will add '__user'
+
+>
+> I'd recommend using the 'sparse' tool to check your
+> source code to find problems like this. Simply install
+> sparse and run
+>
+> make C=1 drivers/char/pch_phub/
+>
+> >+ dev_dbg(dev_dbg, "pch_phub_ioctl : "
+> >+ "copy_from_user returns =%d\n", ret_value);
+We will use  'sparse' tool .
+
+>
+> The 'dev_dbg' variable does not seem to get initialized anywhere
+> in the code. In a clean driver, it should not be a global variable
+> anyway but refer to the object that you are operating on, e.g.
+> the pci device that has been opened.
+We will modify 'dev_dbg' is passed as a function parameter.
+
+>
+> >+ switch (cmd) {
+> >+ case IOCTL_PHUB_READ_REG:
+>
+> >+ case IOCTL_PHUB_WRITE_REG:
+>
+> >+ case IOCTL_PHUB_READ_MODIFY_WRITE_REG:
+>
+>
+> As mentioned, I'd just remove these commands for now. When a specific
+> functionality is needed, you can always add another ioctl command
+> or find another way to do it.
+Yes, we will delete the above.
+
+>
+> >+ case IOCTL_PHUB_READ_OROM:
+> >+ ret_value = pch_phub_read_serial_rom(addr_offset,
+> >+ (unsigned char *)&data);
+> >+ if (ret_value) {
+> >+ dev_dbg(dev_dbg, "pch_phub_ioctl : Invoked "
+> >+ "pch_phub_read_serial_rom =%d\n", -EFAULT);
+> >+ ret_value = -EFAULT;
+> >+ break;
+> >+ } else {
+> >+ dev_dbg(dev_dbg, "pch_phub_ioctl : Invoked "
+> >+ "pch_phub_read_serial_rom successfully\n");
+> >+ }
+> >+ ret_value = copy_to_user((void *)&p_pch_phub_reqt->data,
+> >+ (void *)&data, sizeof(data));
+> >+ if (ret_value) {
+> >+ dev_dbg(dev_dbg, "pch_phub_ioctl : "
+> >+ "copy_to_user fail returning =%d\n", -EFAULT);
+> >+ ret_value = -EFAULT;
+> >+ break;
+> >+ }
+> >+ break;
+>
+> This is a very indirect way to access a rom. I'd recommend doing
+> read and write file operations for this instead of going through the
+> ioctl. When you do that, you can simply do 'cat /dev/topcliff-phub > romdump'
+> to read the entire contents, or have other code access the contents
+> bytewise. If teh OROM contents are specific to the ethernet function,
+> you may also just implement the ethtool operations for it, as shown below.
+We will try implement as read/write method.
+
+>
+> >+ case IOCTL_PHUB_READ_MAC_ADDR:
+> >+ pch_phub_read_gbe_mac_addr(addr_offset, (unsigned char *)&data);
+> >+ dev_dbg(dev_dbg, "pch_phub_ioctl : Invoked "
+> >+ "pch_phub_read_gbe_mac_addr successfully\n");
+> >+
+> >+ ret_value = copy_to_user((void *)&p_pch_phub_reqt->data,
+> >+ (void *)&data, sizeof(data));
+> >+ if (ret_value) {
+> >+ dev_dbg(dev_dbg, "pch_phub_ioctl : copy_to_user fail "
+> >+ "returning =%d\n", -EFAULT);
+> >+ ret_value = -EFAULT;
+> >+ break;
+> >+ }
+> >+ break;
+>
+> I believe this really belongs into the ethernet driver, using the
+> ethtool_ops->get_eeprom operation as other ethernet drivers do the
+> same thing.
+MAC address is under Phub HW.
+To keep driver dependency, I think, Phub should take charge of MAC address access.
+
+Thanks,
+Ohtake
+
+
