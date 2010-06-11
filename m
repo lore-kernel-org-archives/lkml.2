@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822Ab0FKGer (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 02:34:47 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:49808 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab0FKGeq (ORCPT
+	id S1756002Ab0FKGgC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 02:36:02 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41569 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab0FKGgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 02:34:46 -0400
+	Fri, 11 Jun 2010 02:36:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=EGdHNzvVGTFBmo6epOazEMEEU1ebL6PDNEBQfu28cLsgxxmW4F2kB7+R0JXrkqMRVN
-         lQnY3MNlB2+ALqQafMjGRhOM5g7L5cGancXpHojbPAMBC9O9OZJzFdtjN+m5WI69mzbA
-         JdVAdPkiLwUsx+BBBGeXqkNoNrtDcBqE+D5hE=
-Message-ID: <4C11D90C.9010005@gmail.com>
-Date: Thu, 10 Jun 2010 23:34:52 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: warning from gcc version 4.6.0 20100416
-References: <4C11A598.8090504@gmail.com> <20100611061610.GA6864@basil.fritz.box>
-In-Reply-To: <20100611061610.GA6864@basil.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=K9AvTeKT8xteMlzrVwcxydWqmYDauKWocIZ3Yq2hWzaNuEv0kdLzEq2rpbHbCJNVUm
+         BZhY3PPehNz0NLX6qHuUsSFHKWSdsTgrQnUQYDwmLLP08ntejQ8fyKLd3gheYEB19UmZ
+         crHzeTjM4k7mtfkDr6cokwhVefOaLp1xDxTqE=
+Subject: [PATCH] staging/wlags49_hs: Fix build error when CONFIG_SYSFS is
+ not set
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Henk de Groot <pe1dnn@amsat.org>,
+       linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+       kernel-janitors <kernel-janitors@vger.kernel.org>
+Content-Type: text/plain; charset="ISO-8859-9"
+Date: Fri, 11 Jun 2010 02:35:48 -0400
+Message-ID: <1276238148.22216.30.camel@lenovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/2010 11:16 PM, Andi Kleen wrote:
-> On Thu, Jun 10, 2010 at 07:55:20PM -0700, Justin P. Mattock wrote:
->> o.k. andi,
->>
->> here is the rest of the warnings that
->> I see when compiling the kernel
->>
->> I can try and create some patches for
->> this(hopefully!!)
->
-> The key point is that you need to review
-> each warning if it's a real bug or just a false
-> positive.
->
-> This is not always trivial, I got at least one
-> wrong in the earlier series (shut up one real bug)
->
-> -Andi
->
+With current linux-next I got a build error with wlags49_h2 driver when CONFIG_SYSFS is not set.
 
-Some are trivial, but then
-some require changes i.g.
-the variable is removed but the function
-requires more than two variables kind of error..
-leaving me in a whirlwind with what to put there..
+This patch solves the issue.
 
-I'll go and try for the easy ones,
-first, then(try) and tackle hard ones.
+Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+---
+ drivers/staging/wlags49_h2/wl_sysfs.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Justin P. Mattock
+diff --git a/drivers/staging/wlags49_h2/wl_sysfs.h b/drivers/staging/wlags49_h2/wl_sysfs.h
+index 6d96d03..7d5895d 100644
+--- a/drivers/staging/wlags49_h2/wl_sysfs.h
++++ b/drivers/staging/wlags49_h2/wl_sysfs.h
+@@ -2,6 +2,6 @@
+ extern void register_wlags_sysfs(struct net_device *);
+ extern void unregister_wlags_sysfs(struct net_device *);
+ #else
+-static void register_wlags_sysfs(struct net_device *) { return; };
+-static void unregister_wlags_sysfs(struct net_device *) { return; };
++#define register_wlags_sysfs(net_device) { }
++#define unregister_wlags_sysfs(net_device) { }
+ #endif
+-- 
+1.7.0.4
+
+
+
+
+
