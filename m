@@ -1,87 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760114Ab0FKKlq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 06:41:46 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:38697 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab0FKKlp (ORCPT
+	id S1757635Ab0FKKuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 06:50:52 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:34838 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab0FKKuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 06:41:45 -0400
-To: Howard Chu <hyc@symas.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: EXTPROC, telnetd LINEMODE, revisited
-From: Andi Kleen <andi@firstfloor.org>
-References: <4C120D8A.8050207@symas.com>
-Date: Fri, 11 Jun 2010 12:41:40 +0200
-In-Reply-To: <4C120D8A.8050207@symas.com> (Howard Chu's message of "Fri\, 11 Jun 2010 03\:18\:50 -0700")
-Message-ID: <87631pq2aj.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
+	Fri, 11 Jun 2010 06:50:51 -0400
+Message-ID: <4C1214F8.80005@atmel.com>
+Date: Fri, 11 Jun 2010 12:50:32 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: avictor.za@gmail.com, linux-arm-kernel@lists.infradead.org
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] AT91: add new at91 chips in at91sam9g45 family
+References: <1273509900-30278-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1273509900-30278-1-git-send-email-nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howard Chu <hyc@symas.com> writes:
+Le 10/05/2010 18:45, Nicolas Ferre :
+> This is the basic support for at91sam9g46, at91sam9m10 and at91sam9m11. Those
+> are just very basic cpu macros and clock definition.
+> 
+> Signed-off-by: Patrice Vilchez <patrice.vilchez@atmel.com>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-> It's been over 10 years since I looked at this last
->
-> http://lkml.indiana.edu/hypermail/linux/kernel/9911.3/0650.html
+Acked-by Andrew Victor added.
+Submitted as patch 6169/1
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6169/1
 
-I would suggest you repost the patch.
-
->From a quick look it looks straight forward enough.
-
-> Despite the fact that most people today have ready access to high
-> speed broadband networking today, I think the motivation for local
-> character processing is as great now as it was 10 years ago. I
-> regularly use an ssh client on an Android phone to keep tabs on my
-> servers when I'm away from my home base, and sometimes cellphone
-> connectivity can be extremely lossy, networks can be heavily
-> congested, etc... Waiting for character-at-a-time packet turnarounds
-> in these conditions can be pretty aggravating. Also, if you're
-
-I agree that it would be sometimes useful, I also had these
-problems.
-
-> unfortunate enough to need to get access to a machine while you're
-> roaming away from your home network, the per-byte roaming fees can be
-> murder. Both of these pain points can be minimized by using local
-> character processing and only sending complete lines to the remote
-> server.
-
-I have some doubts this really needs to be implemented in the kernel.
-Back in the old days it was important to save round trips
-to user space because CPUs were so slow, but these days I don't think 
-that's an issue anymore for mere typing.
-
-Couldn't you implement it in screen or a similar pty based tool?
-
->
-> Another feature with readline is a command history buffer that can be
-> reviewed using Cursor Up/Down. Can/should we define this in the tty
-> driver too? Or perhaps rely on the client to implement its own command
-> buffer, and never mention this aspect on the wire protocol. Again,
-> given the purpose, it makes most sense to me to keep this feature on
-> the client side. But some coordination with the server would still be
-> useful. E.g., different programs can maintain their own persistent
-> command history files. It might be nice to have a way for the app to
-> signal to the client which command context to use for the current
-> history buffer, and keep them all separate. (Or not, I can see other
-> times where you'd just rather have it all as one stack.)
-
-e.g. history management is definitely something that should not
-be done in the kernel.
-
-> PS: if anyone knows where to send the patches for telnetd, please
-> email me. Looks like the upstream source hasn't been touched since
-> 2000.
-
-I think they're defacto maintained by the distributions.
-
-I would submit them to one of the big distributions and let
-that maintainer figure it out.
-
--Andi
+Best regards,
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Nicolas Ferre
+
