@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760068Ab0FKCLm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 22:11:42 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48695 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499Ab0FKCLj convert rfc822-to-8bit (ORCPT
+	id S1760096Ab0FKCQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 22:16:52 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29400 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760036Ab0FKCQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 22:11:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Qyn9qcL6gjE+d5F7x/j4E7N4zMrx/QtWRsIfSFH+HSEVwfKUyrBre0697p1IoZYjSc
-         ls5U8k21wYtGn3wgDQ1kyWjAH03LGehUKm0YIM4QVJJlrkFyZXIeD9TamCwIDEKueBO5
-         APEFViIAp1RebTDv5N3n2ki+MLgTZqCtGXQSg=
+	Thu, 10 Jun 2010 22:16:50 -0400
+Message-ID: <4C119C2E.2090801@oracle.com>
+Date: Fri, 11 Jun 2010 10:15:10 +0800
+From: Tao Ma <tao.ma@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <4C0C4491.80708@gmail.com>
-References: <4C0C4491.80708@gmail.com>
-Date: Thu, 10 Jun 2010 22:11:38 -0400
-Message-ID: <AANLkTinkhXQfE9Ejcb3dJeMZWl6gxbO3-gzqPUBxei4N@mail.gmail.com>
-Subject: Re: [PATCH 1/4 V2] [tip:x86/mm] Correcting improper large page 
-	preservation
-From: Siarhei Liakh <sliakh.lkml@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       linux-next@vger.kernel.org
-Cc: Arjan van de Ven <arjan@infradead.org>, James Morris <jmorris@namei.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-       Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: linux-ext4@vger.kernel.org, Theodore Tso <tytso@mit.edu>,
+       linux-kernel@vger.kernel.org
+Subject: fiemap is broken for sparse file in ext4?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4C119C91.011E:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 6, 2010 at 9:00 PM, Siarhei Liakh <sliakh.lkml@gmail.com> wrote:
-> This patch fixes a bug in try_preserve_large_page() which may result
-> in improper large page preservation and improper application of page
-> attributes to the memory area outside of the original change request.
-> More specifically, the problem manifests itself when set_memory_*() is
-> called for several pages at the beginning of the large page and
-> try_preserve_large_page() erroneously concludes that the change can be
-> applied to whole large page.
-> The fix consists of 3 parts:
-> 1. addition of "required" protection attributes in
-> static_protections(), so .data and .bss can be guaranteed to stay "RW"
-> 2. static_protections() is now called for every small page within
-> large page to determine compatibility of new protection attributes
-> (instead of just small pages within the requested range).
-> 3. large page can be preserved only if attribute change is
-> large-page-aligned and covers whole large page.
->
-> V1:  try_preserve_large_page() patch for Linux 2.6.34-rc2
-> V2:  replaced pfn check with address check for kernel rw-data
->
-> Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
-> Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
-> Reviewed-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> ---
+Hi Ted and other ext4 gurus,
+	I found fiemap may be broken for sparse files in ext4. Here is a simple 
+example.
 
-Does anyone have any feedback on this patch set?
+dd if=/dev/zero of=testfile1 bs=1M count=1
+using fiemap shows that it has a delalloc extent.
+Logical: 0 Ext length: 1048576	Physical: 0	flags: 7
 
-Thank you.
+flags 7 means FIEMAP_EXTENT_LAST, FIEMAP_EXTENT_UNKNOWN and 
+FIEMAP_EXTENT_DELALLOC,
+
+while if we create a sparse file, fiemap will not show the delalloc extent.
+dd if=/dev/zero of=testfile1 bs=1M count=1 seek=1
+using fiemap shows that it has no extent for the file. while we should 
+have some output like:
+Logical: 1048576 Ext length: 1048576	Physical: 0	flags: 7
+
+So we have different output with sparse and non-sparse file. Is it a bug 
+for ext4?
+
+Regards,
+Tao
