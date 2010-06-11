@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758248Ab0FKP2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 11:28:05 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:33449 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757128Ab0FKP17 (ORCPT
+	id S1758706Ab0FKP2Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 11:28:16 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:59075 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758220Ab0FKP2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 11:27:59 -0400
+	Fri, 11 Jun 2010 11:28:07 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Dan Williams <dan.j.williams@intel.com>,
        <linux-arm-kernel@lists.infradead.org>, <yuanyabin1978@sina.com>
 Cc: <linux-kernel@vger.kernel.org>,
        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 09/13] ARM: add PrimeCell generic DMA to MMCI/PL180 v7
-Date: Fri, 11 Jun 2010 17:27:39 +0200
-Message-ID: <1276270059-1768-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 10/13] ARM: config U300 PL180 PL011 PL022 for DMA v5
+Date: Fri, 11 Jun 2010 17:27:47 +0200
+Message-ID: <1276270067-1820-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,512 +22,412 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This extends the MMCI/PL180 driver with generic DMA engine support
-using the PrimeCell DMA engine interface.
+This will configure the platform data for the PL180, PL011 and
+PL022 PrimeCells found in the U300 to use DMA with the generic
+PrimeCell DMA engine.
 
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/mmc/host/mmci.c   |  310 ++++++++++++++++++++++++++++++++++++++-------
- drivers/mmc/host/mmci.h   |   13 ++-
- include/linux/amba/mmci.h |   16 +++
- 3 files changed, 294 insertions(+), 45 deletions(-)
+ arch/arm/mach-u300/core.c |  173 ++++++++++++++++++++++++++++++++++++++++-----
+ arch/arm/mach-u300/mmc.c  |   13 +++-
+ arch/arm/mach-u300/spi.c  |   21 ++++--
+ 3 files changed, 181 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 4917af9..42f2048 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -2,7 +2,7 @@
-  *  linux/drivers/mmc/host/mmci.c - ARM PrimeCell MMCI PL180/1 driver
+diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
+index 5f34eb6..7f7e738 100644
+--- a/arch/arm/mach-u300/core.c
++++ b/arch/arm/mach-u300/core.c
+@@ -3,7 +3,7 @@
+  * arch/arm/mach-u300/core.c
   *
-  *  Copyright (C) 2003 Deep Blue Solutions, Ltd, All Rights Reserved.
-- *  Copyright (C) 2010 ST-Ericsson AB.
-+ *  Copyright (C) 2010 ST-Ericsson SA
   *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -23,8 +23,11 @@
- #include <linux/clk.h>
- #include <linux/scatterlist.h>
- #include <linux/gpio.h>
--#include <linux/amba/mmci.h>
- #include <linux/regulator/consumer.h>
+- * Copyright (C) 2007-2010 ST-Ericsson AB
++ * Copyright (C) 2007-2010 ST-Ericsson SA
+  * License terms: GNU General Public License (GPL) version 2
+  * Core platform support, IRQ handling and device definitions.
+  * Author: Linus Walleij <linus.walleij@stericsson.com>
+@@ -16,7 +16,9 @@
+ #include <linux/device.h>
+ #include <linux/mm.h>
+ #include <linux/termios.h>
 +#include <linux/dmaengine.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/amba/dma.h>
-+#include <linux/amba/mmci.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/div64.h>
-@@ -98,12 +101,232 @@ static void mmci_stop_data(struct mmci_host *host)
- 	host->data = NULL;
- }
- 
-+static void
-+mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
-+{
-+	void __iomem *base = host->base;
-+
-+	dev_dbg(mmc_dev(host->mmc), "op %02x arg %08x flags %08x\n",
-+		cmd->opcode, cmd->arg, cmd->flags);
-+
-+	if (readl(base + MMCICOMMAND) & MCI_CPSM_ENABLE) {
-+		writel(0, base + MMCICOMMAND);
-+		udelay(1);
-+	}
-+
-+	c |= cmd->opcode | MCI_CPSM_ENABLE;
-+	if (cmd->flags & MMC_RSP_PRESENT) {
-+		if (cmd->flags & MMC_RSP_136)
-+			c |= MCI_CPSM_LONGRSP;
-+		c |= MCI_CPSM_RESPONSE;
-+	}
-+	if (/*interrupt*/0)
-+		c |= MCI_CPSM_INTERRUPT;
-+
-+	host->cmd = cmd;
-+
-+	writel(cmd->arg, base + MMCIARGUMENT);
-+	writel(c, base + MMCICOMMAND);
-+}
-+
-+/*
-+ * All the DMA operation mode stuff goes inside this ifdef.
-+ * This assumes that you have a generic DMA device interface,
-+ * no custom DMA interfaces are supported.
-+ */
-+#ifdef CONFIG_DMADEVICES
-+static void __devinit mmci_setup_dma(struct mmci_host *host)
-+{
-+	struct mmci_platform_data *plat = host->plat;
-+	dma_cap_mask_t mask;
-+
-+	if (!plat || !plat->dma_filter) {
-+		dev_err(mmc_dev(host->mmc), "no DMA platform data!\n");
-+		return;
-+	}
-+
-+	/* Try to acquire a generic DMA engine slave channel */
-+	dma_cap_zero(mask);
-+	dma_cap_set(DMA_SLAVE, mask);
-+	/*
-+	 * If only an RX channel is specified, the driver will
-+	 * attempt to use it bidirectionally, however if it is
-+	 * is specified but cannot be located, DMA will be disabled.
-+	 */
-+	host->dma_rx_channel = dma_request_channel(mask,
-+						plat->dma_filter,
-+						plat->dma_rx_param);
-+	/* E.g if no DMA hardware is present */
-+	if (!host->dma_rx_channel) {
-+		dev_err(mmc_dev(host->mmc), "no RX DMA channel!\n");
-+		return;
-+	}
-+	if (plat->dma_tx_param) {
-+		host->dma_tx_channel = dma_request_channel(mask,
-+							   plat->dma_filter,
-+							   plat->dma_tx_param);
-+		if (!host->dma_tx_channel) {
-+			dma_release_channel(host->dma_rx_channel);
-+			host->dma_rx_channel = NULL;
-+		}
-+	} else {
-+		host->dma_tx_channel = host->dma_rx_channel;
-+	}
-+	host->enable_dma = true;
-+	dev_info(mmc_dev(host->mmc), "use DMA channels DMA RX %s, DMA TX %s\n",
-+		 dma_chan_name(host->dma_rx_channel),
-+		 dma_chan_name(host->dma_tx_channel));
-+}
-+
-+static void __devexit mmci_disable_dma(struct mmci_host *host)
-+{
-+	if (host->dma_rx_channel)
-+		dma_release_channel(host->dma_rx_channel);
-+	if (host->dma_tx_channel)
-+		dma_release_channel(host->dma_tx_channel);
-+	host->enable_dma = false;
-+}
-+
-+static void mmci_dma_data_end(struct mmci_host *host)
-+{
-+	struct mmc_data *data = host->data;
-+
-+	dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
-+		     (data->flags & MMC_DATA_WRITE)
-+		     ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
-+}
-+
-+static void mmci_dma_data_error(struct mmci_host *host)
-+{
-+	struct mmc_data *data = host->data;
-+	struct dma_chan *chan;
-+
-+	dev_err(mmc_dev(host->mmc), "error during DMA transfer!\n");
-+	if (data->flags & MMC_DATA_READ)
-+		chan = host->dma_rx_channel;
-+	else
-+		chan = host->dma_tx_channel;
-+	dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
-+		     (data->flags & MMC_DATA_WRITE)
-+		     ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
-+	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
-+}
-+
-+/*
-+ * This one gets called repeatedly to copy data using
-+ * DMA until there is no more data left to copy.
-+ */
-+static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
-+{
-+	struct amba_dma_channel_config rx_conf = {
-+		.addr = host->phybase + MMCIFIFO,
-+		.addr_width = 4,
-+		.direction = DMA_FROM_DEVICE,
-+		.maxburst = 8,
-+	};
-+	struct amba_dma_channel_config tx_conf = {
-+		.addr = host->phybase + MMCIFIFO,
-+		.addr_width = 4,
-+		.direction = DMA_TO_DEVICE,
-+		.maxburst = 8,
-+	};
-+	struct mmc_data *data = host->data;
-+	enum dma_data_direction direction;
-+	struct dma_chan *chan;
-+	struct dma_async_tx_descriptor *desc;
-+	struct scatterlist *sg;
-+	unsigned int sglen;
-+	dma_cookie_t cookie;
-+	int i;
-+
-+	datactrl |= MCI_DPSM_DMAENABLE;
-+	if (data->flags & MMC_DATA_READ) {
-+		direction = DMA_FROM_DEVICE;
-+		chan = host->dma_rx_channel;
-+		chan->device->device_control(chan, DMA_CONFIG_AMBA,
-+					     (unsigned long) &rx_conf);
-+	} else {
-+		direction = DMA_TO_DEVICE;
-+		chan = host->dma_tx_channel;
-+		chan->device->device_control(chan, DMA_CONFIG_AMBA,
-+					     (unsigned long) &tx_conf);
-+	}
-+
-+	/* Check for weird stuff in the sg list */
-+	for_each_sg(data->sg, sg, data->sg_len, i) {
-+		if (sg->offset & 3 || sg->length & 3)
-+			return -EINVAL;
-+	}
-+
-+	sglen = dma_map_sg(mmc_dev(host->mmc), data->sg,
-+			   data->sg_len, direction);
-+	if (sglen != data->sg_len)
-+		goto unmap_exit;
-+
-+	desc = chan->device->device_prep_slave_sg(chan,
-+					data->sg, data->sg_len, direction,
-+					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-+	if (!desc)
-+		goto unmap_exit;
-+
-+	host->dma_desc = desc;
-+	dev_vdbg(mmc_dev(host->mmc), "Submit MMCI DMA job, sglen %d "
-+		 "blksz %04x blks %04x flags %08x\n",
-+		 sglen, data->blksz, data->blocks, data->flags);
-+	cookie = desc->tx_submit(desc);
-+
-+	/* Here overloaded DMA controllers may fail */
-+	if (dma_submit_error(cookie))
-+		goto unmap_exit;
-+	chan->device->device_issue_pending(chan);
-+
-+	/* Trigger the DMA transfer */
-+	writel(datactrl, host->base + MMCIDATACTRL);
-+	/*
-+	 * Let the MMCI say when the data is ended and it's time
-+	 * to fire next DMA request. When that happens, MMCI will
-+	 * call mmci_data_end()
-+	 */
-+	writel(readl(host->base + MMCIMASK0) | MCI_DATAENDMASK,
-+	       host->base + MMCIMASK0);
-+	return 0;
-+
-+unmap_exit:
-+	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
-+	dma_unmap_sg(mmc_dev(host->mmc), data->sg, sglen, direction);
-+	return -ENOMEM;
-+}
-+#else
-+/* Blank functions if the DMA engine is not available */
-+static inline void mmci_setup_dma(struct mmci_host *host)
-+{
-+}
-+
-+static inline void mmci_disable_dma(struct mmci_host *host)
-+{
-+}
-+
-+static inline void mmci_dma_data_end(struct mmci_host *host)
-+{
-+}
-+
-+static inline void mmci_dma_data_error(struct mmci_host *host)
-+{
-+}
-+
-+static inline int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
-+{
-+	return -ENOSYS;
-+}
-+#endif
-+
- static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
- {
- 	unsigned int datactrl, timeout, irqmask;
- 	unsigned long long clks;
- 	void __iomem *base;
- 	int blksz_bits;
-+	int ret;
- 
- 	dev_dbg(mmc_dev(host->mmc), "blksz %04x blks %04x flags %08x\n",
- 		data->blksz, data->blocks, data->flags);
-@@ -112,8 +335,6 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
- 	host->size = data->blksz;
- 	host->data_xfered = 0;
- 
--	mmci_init_sg(host, data);
--
- 	clks = (unsigned long long)data->timeout_ns * host->cclk;
- 	do_div(clks, 1000000000UL);
- 
-@@ -127,13 +348,30 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
- 	BUG_ON(1 << blksz_bits != data->blksz);
- 
- 	datactrl = MCI_DPSM_ENABLE | blksz_bits << 4;
--	if (data->flags & MMC_DATA_READ) {
-+
-+	if (data->flags & MMC_DATA_READ)
- 		datactrl |= MCI_DPSM_DIRECTION;
-+
-+	if (host->enable_dma) {
-+		/*
-+		 * Attempt to use DMA operation mode, if this
-+		 * should fail, fall back to PIO mode
-+		 */
-+		ret = mmci_dma_start_data(host, datactrl);
-+		if (!ret)
-+			return;
-+	}
-+
-+	/* IRQ mode, map the SG list for CPU reading/writing */
-+	mmci_init_sg(host, data);
-+
-+	if (data->flags & MMC_DATA_READ) {
- 		irqmask = MCI_RXFIFOHALFFULLMASK;
- 
- 		/*
--		 * If we have less than a FIFOSIZE of bytes to transfer,
--		 * trigger a PIO interrupt as soon as any data is available.
-+		 * If we have less than a FIFOSIZE of bytes to
-+		 * transfer, trigger a PIO interrupt as soon as any
-+		 * data is available.
- 		 */
- 		if (host->size < MCI_FIFOSIZE)
- 			irqmask |= MCI_RXDATAAVLBLMASK;
-@@ -146,39 +384,12 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
- 	}
- 
- 	writel(datactrl, base + MMCIDATACTRL);
-+	/* No interrupt when data ends */
- 	writel(readl(base + MMCIMASK0) & ~MCI_DATAENDMASK, base + MMCIMASK0);
- 	writel(irqmask, base + MMCIMASK1);
- }
- 
- static void
--mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
--{
--	void __iomem *base = host->base;
--
--	dev_dbg(mmc_dev(host->mmc), "op %02x arg %08x flags %08x\n",
--	    cmd->opcode, cmd->arg, cmd->flags);
--
--	if (readl(base + MMCICOMMAND) & MCI_CPSM_ENABLE) {
--		writel(0, base + MMCICOMMAND);
--		udelay(1);
--	}
--
--	c |= cmd->opcode | MCI_CPSM_ENABLE;
--	if (cmd->flags & MMC_RSP_PRESENT) {
--		if (cmd->flags & MMC_RSP_136)
--			c |= MCI_CPSM_LONGRSP;
--		c |= MCI_CPSM_RESPONSE;
--	}
--	if (/*interrupt*/0)
--		c |= MCI_CPSM_INTERRUPT;
--
--	host->cmd = cmd;
--
--	writel(cmd->arg, base + MMCIARGUMENT);
--	writel(c, base + MMCICOMMAND);
--}
--
--static void
- mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
- 	      unsigned int status)
- {
-@@ -206,14 +417,19 @@ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
- 			data->error = -EIO;
- 		status |= MCI_DATAEND;
- 
--		/*
--		 * We hit an error condition.  Ensure that any data
--		 * partially written to a page is properly coherent.
--		 */
--		if (host->sg_len && data->flags & MMC_DATA_READ)
--			flush_dcache_page(sg_page(host->sg_ptr));
-+		if (host->enable_dma) {
-+			mmci_dma_data_error(host);
-+		} else {
-+			/*
-+			 * We hit an error condition.  Ensure that any data
-+			 * partially written to a page is properly coherent.
-+			 */
-+			if (host->sg_len && data->flags & MMC_DATA_READ)
-+				flush_dcache_page(sg_page(host->sg_ptr));
-+		}
- 	}
- 	if (status & MCI_DATAEND) {
-+		mmci_dma_data_end(host);
- 		mmci_stop_data(host);
- 
- 		if (!data->stop) {
-@@ -623,6 +839,7 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
- 		dev_dbg(mmc_dev(mmc), "eventual mclk rate: %u Hz\n",
- 			host->mclk);
- 	}
-+	host->phybase = dev->res.start;
- 	host->base = ioremap(dev->res.start, resource_size(&dev->res));
- 	if (!host->base) {
- 		ret = -ENOMEM;
-@@ -723,6 +940,8 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
- 			goto err_gpio_wp;
- 	}
- 
-+	mmci_setup_dma(host);
-+
- 	ret = request_irq(dev->irq[0], mmci_irq, IRQF_SHARED, DRIVER_NAME " (cmd)", host);
- 	if (ret)
- 		goto unmap;
-@@ -738,9 +957,10 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
- 
- 	mmc_add_host(mmc);
- 
--	dev_info(&dev->dev, "%s: MMCI rev %x cfg %02x at 0x%016llx irq %d,%d\n",
--		mmc_hostname(mmc), amba_rev(dev), amba_config(dev),
--		(unsigned long long)dev->res.start, dev->irq[0], dev->irq[1]);
-+	dev_info(&dev->dev, "%s: MMCI/PL180 manf %x rev %x cfg %02x at 0x%016llx\n",
-+		 mmc_hostname(mmc), amba_manf(dev), amba_rev(dev), amba_config(dev),
-+		 (unsigned long long)dev->res.start);
-+	dev_info(&dev->dev, "IRQ %d, %d (pio)\n", dev->irq[0], dev->irq[1]);
- 
- 	init_timer(&host->timer);
- 	host->timer.data = (unsigned long)host;
-@@ -751,6 +971,7 @@ static int __devinit mmci_probe(struct amba_device *dev, struct amba_id *id)
- 	return 0;
- 
-  irq0_free:
-+	mmci_disable_dma(host);
- 	free_irq(dev->irq[0], host);
-  unmap:
- 	if (host->gpio_wp != -ENOSYS)
-@@ -791,6 +1012,7 @@ static int __devexit mmci_remove(struct amba_device *dev)
- 		writel(0, host->base + MMCICOMMAND);
- 		writel(0, host->base + MMCIDATACTRL);
- 
-+		mmci_disable_dma(host);
- 		free_irq(dev->irq[0], host);
- 		free_irq(dev->irq[1], host);
- 
-diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
-index d77062e..b45b286 100644
---- a/drivers/mmc/host/mmci.h
-+++ b/drivers/mmc/host/mmci.h
-@@ -139,14 +139,16 @@
-  * The size of the FIFO in bytes.
+ #include <linux/amba/bus.h>
++#include <linux/amba/serial.h>
+ #include <linux/platform_device.h>
+ #include <linux/gpio.h>
+ #include <mach/coh901318.h>
+@@ -92,10 +94,20 @@ void __init u300_map_io(void)
+  * Declaration of devices found on the U300 board and
+  * their respective memory locations.
   */
- #define MCI_FIFOSIZE	(16*4)
--	
- #define MCI_FIFOHALFSIZE (MCI_FIFOSIZE / 2)
- 
- #define NR_SG		16
- 
- struct clk;
-+struct dma_chan;
-+struct dma_async_tx_descriptor;
- 
- struct mmci_host {
-+	phys_addr_t		phybase;
- 	void __iomem		*base;
- 	struct mmc_request	*mrq;
- 	struct mmc_command	*cmd;
-@@ -177,7 +179,16 @@ struct mmci_host {
- 	struct scatterlist	*sg_ptr;
- 	unsigned int		sg_off;
- 	unsigned int		size;
 +
- 	struct regulator	*vcc;
-+
-+	/* DMA stuff */
-+	bool			enable_dma;
-+#ifdef CONFIG_DMADEVICES
-+	struct dma_chan		*dma_rx_channel;
-+	struct dma_chan		*dma_tx_channel;
-+	struct dma_async_tx_descriptor *dma_desc;
++static struct amba_pl011_data uart0_plat_data = {
++#ifdef CONFIG_COH901318
++	.dma_filter = coh901318_filter_id,
++	.dma_rx_param = (void *) U300_DMA_UART0_RX,
++	.dma_tx_param = (void *) U300_DMA_UART0_TX,
 +#endif
- };
++};
++
+ static struct amba_device uart0_device = {
+ 	.dev = {
++		.coherent_dma_mask = ~0,
+ 		.init_name = "uart0", /* Slow device at 0x3000 offset */
+-		.platform_data = NULL,
++		.platform_data = &uart0_plat_data,
+ 	},
+ 	.res = {
+ 		.start = U300_UART0_BASE,
+@@ -107,10 +119,19 @@ static struct amba_device uart0_device = {
  
- static inline void mmci_init_sg(struct mmci_host *host, struct mmc_data *data)
-diff --git a/include/linux/amba/mmci.h b/include/linux/amba/mmci.h
-index 7e466fe..f2ca60f 100644
---- a/include/linux/amba/mmci.h
-+++ b/include/linux/amba/mmci.h
-@@ -6,6 +6,8 @@
- 
- #include <linux/mmc/host.h>
- 
-+/* Just some dummy forwarding */
-+struct dma_chan;
- /**
-  * struct mmci_platform_data - platform configuration for the MMCI
-  * (also known as PL180) block.
-@@ -25,6 +27,17 @@
-  * @gpio_cd: read this GPIO pin to detect card insertion
-  * @capabilities: the capabilities of the block as implemented in
-  * this platform, signify anything MMC_CAP_* from mmc/host.h
-+ * @dma_filter: function used to select an apropriate RX and TX
-+ * DMA channel to be used for DMA, if and only if you're deploying the
-+ * generic DMA engine
-+ * @dma_rx_param: parameter passed to the DMA allocation
-+ * filter in order to select an apropriate RX channel. If
-+ * there is a bidirectional RX+TX channel, then just specify
-+ * this and leave dma_tx_param set to NULL
-+ * @dma_tx_param: parameter passed to the DMA allocation
-+ * filter in order to select an apropriate TX channel. If this
-+ * is NULL the driver will attempt to use the RX channel as a
-+ * bidirectional channel
-  */
- struct mmci_platform_data {
- 	unsigned int f_max;
-@@ -34,6 +47,9 @@ struct mmci_platform_data {
- 	int	gpio_wp;
- 	int	gpio_cd;
- 	unsigned long capabilities;
-+	bool (*dma_filter)(struct dma_chan *chan, void *filter_param);
-+	void *dma_rx_param;
-+	void *dma_tx_param;
- };
- 
+ /* The U335 have an additional UART1 on the APP CPU */
+ #ifdef CONFIG_MACH_U300_BS335
++static struct amba_pl011_data uart1_plat_data = {
++#ifdef CONFIG_COH901318
++	.dma_filter = coh901318_filter_id,
++	.dma_rx_param = (void *) U300_DMA_UART1_RX,
++	.dma_tx_param = (void *) U300_DMA_UART1_TX,
++#endif
++};
++
+ static struct amba_device uart1_device = {
+ 	.dev = {
++		.coherent_dma_mask = ~0,
+ 		.init_name = "uart1", /* Fast device at 0x7000 offset */
+-		.platform_data = NULL,
++		.platform_data = &uart1_plat_data,
+ 	},
+ 	.res = {
+ 		.start = U300_UART1_BASE,
+@@ -949,20 +970,21 @@ const struct coh_dma_channel chan_config[U300_DMA_CHANNELS] = {
+ 		.priority_high = 0,
+ 		.dev_addr = U300_MSL_BASE + 6 * 0x40 + 0x220,
+ 	},
++	/*
++	 * Don't set up device address, burst count or size of src
++	 * or dst bus for this peripheral - handled by PrimeCell
++	 * DMA extension.
++	 */
+ 	{
+ 		.number = U300_DMA_MMCSD_RX_TX,
+ 		.name = "MMCSD RX TX",
+ 		.priority_high = 0,
+-		.dev_addr =  U300_MMCSD_BASE + 0x080,
+ 		.param.config = COH901318_CX_CFG_CH_DISABLE |
+ 				COH901318_CX_CFG_LCR_DISABLE |
+ 				COH901318_CX_CFG_TC_IRQ_ENABLE |
+ 				COH901318_CX_CFG_BE_IRQ_ENABLE,
+ 		.param.ctrl_lli_chained = 0 |
+ 				COH901318_CX_CTRL_TC_ENABLE |
+-				COH901318_CX_CTRL_BURST_COUNT_32_BYTES |
+-				COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS |
+-				COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS |
+ 				COH901318_CX_CTRL_MASTER_MODE_M1RW |
+ 				COH901318_CX_CTRL_TCP_ENABLE |
+ 				COH901318_CX_CTRL_TC_IRQ_ENABLE |
+@@ -971,9 +993,6 @@ const struct coh_dma_channel chan_config[U300_DMA_CHANNELS] = {
+ 				COH901318_CX_CTRL_DDMA_LEGACY,
+ 		.param.ctrl_lli = 0 |
+ 				COH901318_CX_CTRL_TC_ENABLE |
+-				COH901318_CX_CTRL_BURST_COUNT_32_BYTES |
+-				COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS |
+-				COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS |
+ 				COH901318_CX_CTRL_MASTER_MODE_M1RW |
+ 				COH901318_CX_CTRL_TCP_ENABLE |
+ 				COH901318_CX_CTRL_TC_IRQ_ENABLE |
+@@ -982,9 +1001,6 @@ const struct coh_dma_channel chan_config[U300_DMA_CHANNELS] = {
+ 				COH901318_CX_CTRL_DDMA_LEGACY,
+ 		.param.ctrl_lli_last = 0 |
+ 				COH901318_CX_CTRL_TC_ENABLE |
+-				COH901318_CX_CTRL_BURST_COUNT_32_BYTES |
+-				COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS |
+-				COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS |
+ 				COH901318_CX_CTRL_MASTER_MODE_M1RW |
+ 				COH901318_CX_CTRL_TCP_DISABLE |
+ 				COH901318_CX_CTRL_TC_IRQ_ENABLE |
+@@ -1003,15 +1019,76 @@ const struct coh_dma_channel chan_config[U300_DMA_CHANNELS] = {
+ 		.name = "MSPRO RX",
+ 		.priority_high = 0,
+ 	},
++	/*
++	 * Don't set up device address, burst count or size of src
++	 * or dst bus for this peripheral - handled by PrimeCell
++	 * DMA extension.
++	 */
+ 	{
+ 		.number = U300_DMA_UART0_TX,
+ 		.name = "UART0 TX",
+ 		.priority_high = 0,
++		.param.config = COH901318_CX_CFG_CH_DISABLE |
++				COH901318_CX_CFG_LCR_DISABLE |
++				COH901318_CX_CFG_TC_IRQ_ENABLE |
++				COH901318_CX_CFG_BE_IRQ_ENABLE,
++		.param.ctrl_lli_chained = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_ENABLE |
++				COH901318_CX_CTRL_TC_IRQ_DISABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
++		.param.ctrl_lli = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_ENABLE |
++				COH901318_CX_CTRL_TC_IRQ_ENABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
++		.param.ctrl_lli_last = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_ENABLE |
++				COH901318_CX_CTRL_TC_IRQ_ENABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
+ 	},
+ 	{
+ 		.number = U300_DMA_UART0_RX,
+ 		.name = "UART0 RX",
+ 		.priority_high = 0,
++		.param.config = COH901318_CX_CFG_CH_DISABLE |
++				COH901318_CX_CFG_LCR_DISABLE |
++				COH901318_CX_CFG_TC_IRQ_ENABLE |
++				COH901318_CX_CFG_BE_IRQ_ENABLE,
++		.param.ctrl_lli_chained = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_ENABLE |
++				COH901318_CX_CTRL_TC_IRQ_DISABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
++		.param.ctrl_lli = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_ENABLE |
++				COH901318_CX_CTRL_TC_IRQ_ENABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
++		.param.ctrl_lli_last = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_ENABLE |
++				COH901318_CX_CTRL_TC_IRQ_ENABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
+ 	},
+ 	{
+ 		.number = U300_DMA_APEX_TX,
+@@ -1241,15 +1318,77 @@ const struct coh_dma_channel chan_config[U300_DMA_CHANNELS] = {
+ 		.name = "XGAM PDI",
+ 		.priority_high = 0,
+ 	},
++	/*
++	 * Don't set up device address, burst count or size of src
++	 * or dst bus for this peripheral - handled by PrimeCell
++	 * DMA extension.
++	 */
+ 	{
+ 		.number = U300_DMA_SPI_TX,
+ 		.name = "SPI TX",
+ 		.priority_high = 0,
++		.param.config = COH901318_CX_CFG_CH_DISABLE |
++				COH901318_CX_CFG_LCR_DISABLE |
++				COH901318_CX_CFG_TC_IRQ_ENABLE |
++				COH901318_CX_CFG_BE_IRQ_ENABLE,
++		.param.ctrl_lli_chained = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_DISABLE |
++				COH901318_CX_CTRL_TC_IRQ_DISABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
++		.param.ctrl_lli = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_DISABLE |
++				COH901318_CX_CTRL_TC_IRQ_ENABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
++		.param.ctrl_lli_last = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_DISABLE |
++				COH901318_CX_CTRL_TC_IRQ_ENABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
+ 	},
+ 	{
+ 		.number = U300_DMA_SPI_RX,
+ 		.name = "SPI RX",
+ 		.priority_high = 0,
++		.param.config = COH901318_CX_CFG_CH_DISABLE |
++				COH901318_CX_CFG_LCR_DISABLE |
++				COH901318_CX_CFG_TC_IRQ_ENABLE |
++				COH901318_CX_CFG_BE_IRQ_ENABLE,
++		.param.ctrl_lli_chained = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_DISABLE |
++				COH901318_CX_CTRL_TC_IRQ_DISABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
++		.param.ctrl_lli = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_DISABLE |
++				COH901318_CX_CTRL_TC_IRQ_ENABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
++		.param.ctrl_lli_last = 0 |
++				COH901318_CX_CTRL_TC_ENABLE |
++				COH901318_CX_CTRL_MASTER_MODE_M1RW |
++				COH901318_CX_CTRL_TCP_DISABLE |
++				COH901318_CX_CTRL_TC_IRQ_ENABLE |
++				COH901318_CX_CTRL_HSP_ENABLE |
++				COH901318_CX_CTRL_HSS_DISABLE |
++				COH901318_CX_CTRL_DDMA_LEGACY,
++
+ 	},
+ 	{
+ 		.number = U300_DMA_GENERAL_PURPOSE_0,
+@@ -1577,7 +1716,7 @@ static void __init u300_init_check_chip(void)
  #endif
+ #ifdef CONFIG_MACH_U300_BS335
+ 	if ((val & 0xFF00U) != 0xf000 && (val & 0xFF00U) != 0xf100) {
+-		printk(KERN_ERR "Platform configured for BS365 " \
++		printk(KERN_ERR "Platform configured for BS335 " \
+ 		       " with DB3350 but %s detected, expect problems!",
+ 		       chipname);
+ 	}
+@@ -1654,12 +1793,12 @@ void __init u300_init_devices(void)
+ 	/* Register subdevices on the I2C buses */
+ 	u300_i2c_register_board_devices();
+ 
+-	/* Register subdevices on the SPI bus */
+-	u300_spi_register_board_devices();
+-
+ 	/* Register the platform devices */
+ 	platform_add_devices(platform_devs, ARRAY_SIZE(platform_devs));
+ 
++	/* Register subdevices on the SPI bus */
++	u300_spi_register_board_devices();
++
+ #ifndef CONFIG_MACH_U300_SEMI_IS_SHARED
+ 	/*
+ 	 * Enable SEMI self refresh. Self-refresh of the SDRAM is entered when
+diff --git a/arch/arm/mach-u300/mmc.c b/arch/arm/mach-u300/mmc.c
+index 88506d0..3acb710 100644
+--- a/arch/arm/mach-u300/mmc.c
++++ b/arch/arm/mach-u300/mmc.c
+@@ -3,11 +3,11 @@
+  * arch/arm/mach-u300/mmc.c
+  *
+  *
+- * Copyright (C) 2009 ST-Ericsson AB
++ * Copyright (C) 2009 ST-Ericsson SA
+  * License terms: GNU General Public License (GPL) version 2
+  *
+  * Author: Linus Walleij <linus.walleij@stericsson.com>
+- * Author: Johan Lundin <johan.lundin@stericsson.com>
++ * Author: Johan Lundin
+  * Author: Jonas Aaberg <jonas.aberg@stericsson.com>
+  */
+ #include <linux/device.h>
+@@ -19,8 +19,11 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/gpio.h>
++#include <linux/dmaengine.h>
+ #include <linux/amba/mmci.h>
+ #include <linux/slab.h>
++#include <mach/coh901318.h>
++#include <mach/dma_channels.h>
+ 
+ #include "mmc.h"
+ #include "padmux.h"
+@@ -108,6 +111,12 @@ int __devinit mmc_init(struct amba_device *adev)
+ 	mmci_card->mmc0_plat_data.gpio_cd = -1;
+ 	mmci_card->mmc0_plat_data.capabilities = MMC_CAP_MMC_HIGHSPEED |
+ 		MMC_CAP_SD_HIGHSPEED | MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
++#ifdef CONFIG_COH901318
++	mmci_card->mmc0_plat_data.dma_filter = coh901318_filter_id;
++	mmci_card->mmc0_plat_data.dma_rx_param =
++		(void *) U300_DMA_MMCSD_RX_TX;
++	/* Don't specify a TX channel, this RX channel is bidirectional */
++#endif
+ 
+ 	mmcsd_device->platform_data = (void *) &mmci_card->mmc0_plat_data;
+ 
+diff --git a/arch/arm/mach-u300/spi.c b/arch/arm/mach-u300/spi.c
+index f0e887b..243c999 100644
+--- a/arch/arm/mach-u300/spi.c
++++ b/arch/arm/mach-u300/spi.c
+@@ -11,6 +11,9 @@
+ #include <linux/spi/spi.h>
+ #include <linux/amba/pl022.h>
+ #include <linux/err.h>
++#include <mach/coh901318.h>
++#include <mach/dma_channels.h>
++
+ #include "padmux.h"
+ 
+ /*
+@@ -32,11 +35,8 @@ static void select_dummy_chip(u32 chipselect)
+ struct pl022_config_chip dummy_chip_info = {
+ 	/* Nominally this is LOOPBACK_DISABLED, but this is our dummy chip! */
+ 	.lbm = LOOPBACK_ENABLED,
+-	/*
+-	 * available POLLING_TRANSFER and INTERRUPT_TRANSFER,
+-	 * DMA_TRANSFER does not work
+-	 */
+-	.com_mode = INTERRUPT_TRANSFER,
++	/* available POLLING_TRANSFER, INTERRUPT_TRANSFER, DMA_TRANSFER */
++	.com_mode = DMA_TRANSFER,
+ 	.iface = SSP_INTERFACE_MOTOROLA_SPI,
+ 	/* We can only act as master but SSP_SLAVE is possible in theory */
+ 	.hierarchy = SSP_MASTER,
+@@ -83,8 +83,6 @@ static struct spi_board_info u300_spi_devices[] = {
+ static struct pl022_ssp_controller ssp_platform_data = {
+ 	/* If you have several SPI buses this varies, we have only bus 0 */
+ 	.bus_id = 0,
+-	/* Set this to 1 when we think we got DMA working */
+-	.enable_dma = 0,
+ 	/*
+ 	 * On the APP CPU GPIO 4, 5 and 6 are connected as generic
+ 	 * chip selects for SPI. (Same on U330, U335 and U365.)
+@@ -92,6 +90,14 @@ static struct pl022_ssp_controller ssp_platform_data = {
+ 	 * and do padmuxing accordingly too.
+ 	 */
+ 	.num_chipselect = 3,
++#ifdef CONFIG_COH901318
++	.enable_dma = 1,
++	.dma_filter = coh901318_filter_id,
++	.dma_rx_param = (void *) U300_DMA_SPI_RX,
++	.dma_tx_param = (void *) U300_DMA_SPI_TX,
++#else
++	.enable_dma = 0,
++#endif
+ };
+ 
+ 
+@@ -117,6 +123,7 @@ void __init u300_spi_init(struct amba_device *adev)
+ 	}
+ 
+ }
++
+ void __init u300_spi_register_board_devices(void)
+ {
+ 	/* Register any SPI devices */
 -- 
 1.6.3.3
 
