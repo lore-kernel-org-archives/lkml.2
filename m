@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760579Ab0FKTwY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 15:52:24 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42106 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759689Ab0FKTwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 15:52:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=QHoyAWZS1IsIgERCaZWWOakbW4E3gNQaP0oL0Wqlxqq9w87lgzIqSuktdmB9WDUAmh
-         LcazAIAYZ1S6JA9E9mqWnXa7+oYgIgGUgYD68kovJkSrj1G7GVcZA+KoLSeJHN3225B4
-         XPF7JUhBq79pPStReyfsYnOoJ0YFAz+S2WtUc=
+	id S1760588Ab0FKTxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 15:53:11 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:59340 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760497Ab0FKTxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 15:53:09 -0400
+Message-ID: <4C129422.1010900@fusionio.com>
+Date: Fri, 11 Jun 2010 21:53:06 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimUW58T19GOkRk3oCC9huLDQLgLj4W3RjiQ9n53@mail.gmail.com>
-References: <4c0f4326.0a41df0a.7bde.ffffeef2@mx.google.com> 
-	<AANLkTilrYYHjcMEhhrP7zjcLoo-TNczozxJSNRkDvSZy@mail.gmail.com> 
-	<AANLkTimXqdkQxv_Y1JaleTTWNsDIQHQaPn8HR7efOupb@mail.gmail.com> 
-	<AANLkTimUW58T19GOkRk3oCC9huLDQLgLj4W3RjiQ9n53@mail.gmail.com>
-From: Dmytro Milinevskyy <milinevskyy@gmail.com>
-Date: Fri, 11 Jun 2010 22:52:00 +0300
-X-Google-Sender-Auth: Xz__Z1FVQtV-2x9V-aX0j-iLg5k
-Message-ID: <AANLkTilECEFWIxXTfykAagSaZUv20Btrz-Fmq3IA8Dap@mail.gmail.com>
-Subject: Re: [ath5k-devel] [PATCH] [ath5k][leds] Ability to disable leds 
-	support. If leds support enabled do not force mac802.11 leds layer selection.
-To: Bob Copeland <me@bobcopeland.com>
-Cc: Kalle Valo <kalle.valo@iki.fi>, GeunSik Lim <geunsik.lim@samsung.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>,
-       netdev@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
-       linux-wireless@vger.kernel.org,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Keng-Yu Lin <keng-yu.lin@canonical.com>, Jiri Kosina <jkosina@suse.cz>,
-       Shahar Or <shahar@shahar-or.co.il>, linux-kernel@vger.kernel.org,
-       Luca Verdesca <magooz@salug.it>
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Carl Worth <cworth@cworth.org>,
+       Eric Anholt <eric@anholt.net>, Divyesh Shah <dpshah@google.com>,
+       "guijianfeng@cn.fujitsu.com" <guijianfeng@cn.fujitsu.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>
+Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
+References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera> <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org> <4C0F4872.7090909@fusionio.com> <20100611083249.GA11143@elte.hu> <4C11F661.3070604@fusionio.com> <20100611085520.GA20218@elte.hu> <4C11FF77.1000101@fusionio.com> <20100611190714.GA20837@redhat.com> <4C128A75.3030501@fusionio.com> <20100611194849.GB20837@redhat.com>
+In-Reply-To: <20100611194849.GB20837@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I didn't know. Thank you for noting that.
-However I think it's better to give a chance to disable 802.11 leds.
-
--- Dima
-
-On Fri, Jun 11, 2010 at 8:07 PM, Bob Copeland <me@bobcopeland.com> wrote:
-> On Wed, Jun 9, 2010 at 10:43 AM, Dmytro Milinevskyy
-> <milinevskyy@gmail.com> wrote:
->> Hi, Bob.
+On 11/06/10 21.48, Vivek Goyal wrote:
+> On Fri, Jun 11, 2010 at 09:11:49PM +0200, Jens Axboe wrote:
+>> On 11/06/10 21.07, Vivek Goyal wrote:
+>>> On Fri, Jun 11, 2010 at 11:18:47AM +0200, Jens Axboe wrote:
+>>>> On 2010-06-11 10:55, Ingo Molnar wrote:
+>>>>>>> Caused by the same blkiocg_update_io_add_stats() function. Bootlog and config 
+>>>>>>> attached. Reproducible on that sha1 and with that config.
+>>>>>>
+>>>>>> I think I see it, the internal CFQ blkg groups are not properly
+>>>>>> initialized... Will send a patch shortly.
+>>>>>
+>>>>> Cool - can test it with a short turnaround, the bug is easy to reproduce.
+>>>>
+>>>> Here's a nasty patch that should fix it. Not optimal, since we really
+>>>> just want empty functions for these when cfq group scheduling is not
+>>>> defined.
+>>>>
+>>>> CC'ing the guilty parties to come up with a better patch that does NOT
+>>>> involve ifdefs in cfq-iosched.c. We want blk-cgroup.[ch] fixed up.
+>>>> And trimming the CC list a bit.
+>>>
+>>> Jens, Ingo, I am sorry for this mess.
+>>>
+>>> Jens,
+>>>
+>>> How about introducing "block/cfq.h" and declaring additional set of wrapper
+>>> functions to update blkiocg stats and make these do nothing if
+>>> CFQ_GROUP_IOSCHED=n.
+>>>
+>>> For example, in linux-2.6/block/cfq.h, we can define functions as follows.
+>>>
+>>> #ifdef CONFIG_CFQ_GROUP_IOSCHED
+>>> cfq_blkiocg_update_dequeue_stats () {
+>>> 	blkiocg_update_dequeue_stats()
+>>> }
+>>> #else
+>>> cfq_blkiocg_update_dequeue_stats () {}
+>>> #endif
+>>>
+>>> Fixing it blk-cgroup.[ch] might not be best as BLK_CGROUP is set.
+>>> Secondly, if there are other IO control policies later, they might
+>>> want to make use of BLK_CGROUP while cfq has disabled the group io 
+>>> scheduling.
 >>
->> For instance I don't use 802.11 leds layer and trigger leds from
->> userspace according to my purposes.
->
-> FWIW you can disable mac80211 triggers from userspace as well.
-> But, I guess hooking up null triggers will work too.
->
-> --
-> Bob Copeland %% www.bobcopeland.com
->
+>> I already tried such a patch, but it's not exactly pretty. How about
+>> splitting blk-cgroup.c into two parts, one that is built for
+>> BLK_CGROUP and an additional one that is also built for
+>> CFQ_GROUP_SCHED? Lets try and improve on the ifdef mess, not extend
+>> it.
+> 
+> Sorry, I did not understand your suggestion. Can you please throw some more
+> light on it.
+> 
+> blk-cgroup.c does not have any cfq specific parts. So I can't split it
+> out and build part of it based on CFQ_GROUP_SCHED.
+
+I know they are not cfq specific, but cfq is the only one that calls
+them currently. If others depend on them later on, then let that other
+blk-cgroup-iosched.o be built for them as well.
+
+-- 
+Jens Axboe
+
