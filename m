@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757840Ab0FKJSA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 05:18:00 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37047 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757723Ab0FKJR6 (ORCPT
+	id S1759150Ab0FKJSe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 05:18:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43627 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757726Ab0FKJSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 05:17:58 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C11FF10.4060203@jp.fujitsu.com>
-Date: Fri, 11 Jun 2010 18:17:04 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Fri, 11 Jun 2010 05:18:33 -0400
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mm] only drop root anon_vma if not self
+References: <AANLkTin1OS3LohKBvWyS81BoAk15Y-riCiEdcevSA7ye@mail.gmail.com>
+	<1275929000.3021.56.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTilsCkBiGtfEKkNXYclsRKhfuq4yI_1mrxMa8yJG@mail.gmail.com>
+	<AANLkTik-cwrabXH_bQRPFtTo3C9r30B83jMf4IwJKCms@mail.gmail.com>
+	<20100609211617.3e7e41bd@annuminas.surriel.com>
+	<AANLkTin9UTy3qSWJ8u3b1hwhnsX5NHCZNzkFbH9_-vIZ@mail.gmail.com>
+	<1276168866.24535.25.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTikl2Lp6dhDIN2NpyZHJne_vhOYJrwwBGebkslCf@mail.gmail.com>
+Date: Fri, 11 Jun 2010 10:17:36 +0100
+In-Reply-To: <AANLkTikl2Lp6dhDIN2NpyZHJne_vhOYJrwwBGebkslCf@mail.gmail.com>
+	(Dave Young's message of "Fri, 11 Jun 2010 16:08:08 +0800")
+Message-ID: <tnxaar2c4i7.fsf@e102109-lin.cambridge.arm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-CC: linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org
-Subject: [RFC][PATCH 0/4] x86: ioremap() problem in X86_32 PAE
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-OriginalArrivalTime: 11 Jun 2010 09:17:41.0322 (UTC) FILETIME=[F1704AA0:01CB0946]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Dave Young <hidave.darkstar@gmail.com> wrote:
+> On Thu, Jun 10, 2010 at 7:21 PM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+>> On Thu, 2010-06-10 at 02:30 +0100, Dave Young wrote:
+>>> On Thu, Jun 10, 2010 at 9:16 AM, Rik van Riel <riel@redhat.com> wrote:
+>>> > On Wed, 9 Jun 2010 17:19:02 +0800
+>>> > Dave Young <hidave.darkstar@gmail.com> wrote:
+>>> >
+>>> >> > Manually bisected mm patches, the memleak caused by following patch:
+>>> >> >
+>>> >> > mm-extend-ksm-refcounts-to-the-anon_vma-root.patch
+>>> >>
+>>> >>
+>>> >> So I guess the refcount break, either drop-without-get or over-drop
+>>> >
+>>> > I'm guessing I did not run the kernel with enough debug options enabled
+>>> > when I tested my patches...
+>>> >
+>>> > Dave & Catalin, thank you for tracking this down.
+>>> >
+>>> > Dave, does the below patch fix your issue?
+>>>
+>>> Yes, it fixed the issue. Thanks.
+>>
+>> Thanks for investigating this issue.
+>>
+>> BTW, without my kmemleak nobootmem patch (and CONFIG_NOBOOTMEM enabled),
+>> do you get other leaks (false positives).
+>
+> I didn't see difference before/after apply your patch, how to test
+> specific to bootmem?
 
-I encountered the problem that loading ioatdma driver causes kernel
-hangup or kernel panic in X86_32 PAE environment. I found that this
-was caused by NOT ioatdma driver but x86's ioremap() behavior in
-X86_32 PAE environment. On my environment, 64-bit MMIO region is
-assigned to ioatdma PCI devices, and those high physical address are
-passed to ioremap() when ioatdma driver calls pcim_iomap_regions().
-Current x86's ioremap() seems to not handle those high physical
-addresses properly. The major problems are
+With Rik's patch applied and CONFIG_NOBOOTMEM enabled, do you get any
+false postives if my kmemleak patch isn't applied?
 
-- When the physical address higher than 32-bit is passed to ioremap(),
-  ioremap() maps wrong address. The ioremap() uses PAGE_MASK to align
-  the specified address. This makes higher 32-bit of the physical
-  address cleared unexpectedly. I think ioremap() must use
-  PHYSICAL_PAGE_MASK instead.
+Thanks.
 
-- When too high physical address for X86_32 PAE (higher than 36-bit)
-  is specified, ioremap() needs to return error (NULL). The ioremap()
-  seems to check it by using phys_addr_valid(), but it doesn't work
-  actually. The phys_addr_valid() checks the physical address by using
-  boot_cpu_data.x86_phys_bits. The boot_cpu_data.x86_phys_bits holds
-  maximum physical address range of the CPU including 64-bit mode. As
-  a result, the phys_addr_valid() returns true even if the physical
-  address higher than 36-bit is specified.
-
-The following patch fixes the problem.
-
-- [PATCH 1/4] x86: ioremap: fix wrong address masking
-- [PATCH 2/4] x86: ioremap: fix physical address check
-- [PATCH 3/4] x86: ioremap: remove physical address warning message
-- [PATCH 4/4] x86: ioremap: fix normal ram range check
-
-  Note: the last one (PATCH 4/4) is not related to this problem. I
-        found it when I was making PATCH 1, 2, 3.
-
-I made and tested those patches against 2.6.34, and confirmed it can
-also be applied to 2.6.35-rc2.
-
-By the way, I'm wondering some change might be needed also in PCI side.
-For example, current PCI subsystem disables 64-bit BAR with address
-higher than 32-bit assigned if sizeof(resource_size_t) is less than 8.
-But it doesn't care the case sizeof(resource_size_t) is equal to 8 on
-the system that cannot handle whole 64-bit physical address, like
-X86_32 PAE. In relation to this, my system is doing the following
-interesting behavior.
-
-- On x86_32 without PAE, ioatdma works because 64-bit BAR is once
-  cleared and then lower address is assigned again.
-
-- On x86_32 with PAE, ioatdma doesn' work even with my patch set.
-  Without my patch, kernel hangup or panic happens. With my patch,
-  ioatdma driver fails to initialize the device because ioremap()
-  returns NULL.
-
-Anyway, I think ioremap() problem needs to be fixed first.
-
-Thanks,
-Kenji Kaneshige
-
+-- 
+Catalin
