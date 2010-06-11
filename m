@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932599Ab0FKUfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 16:35:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36966 "EHLO mx1.redhat.com"
+	id S932586Ab0FKUgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 16:36:13 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:48214 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722Ab0FKUfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 16:35:18 -0400
-Date: Fri, 11 Jun 2010 16:50:53 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] kvm, ept: remove the default write bit
-Message-ID: <20100611195052.GC12317@amt.cnet>
-References: <4C121E6A.9000009@cn.fujitsu.com>
+	id S932312Ab0FKUgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 16:36:10 -0400
+Date: Fri, 11 Jun 2010 13:36:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: sequence lock in Linux
+Message-ID: <20100611203607.GH2394@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100611194016.GA5213@Krystal>
+ <AANLkTil84IIgzlPcycNWJFRpZIGRqTFL6FGffzqOaSEx@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4C121E6A.9000009@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTil84IIgzlPcycNWJFRpZIGRqTFL6FGffzqOaSEx@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 07:30:50PM +0800, Lai Jiangshan wrote:
-> When ept enabled, current code set shadow_base_present_pte
-> including the write bit, thus all pte entries have
-> writabe bit, and it means guest os can always
-> write to any mapped page (even VMM maps RO pages for
-> the guest.)
+On Fri, Jun 11, 2010 at 01:07:55PM -0700, Linus Torvalds wrote:
+> On Fri, Jun 11, 2010 at 12:40 PM, Mathieu Desnoyers
+> <mathieu.desnoyers@efficios.com> wrote:
+> >
+> > Is it just me, or the following code:
+> >
+> > static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
+> > {
+> >        unsigned ret;
+> >
+> > repeat:
+> >        ret = sl->sequence;
+> >        smp_rmb();
+> >        if (unlikely(ret & 1)) {
+> >                cpu_relax();
+> >                goto repeat;
+> >        }
+> >
+> >        return ret;
+> > }
+> >
+> > could use a ACCESS_ONCE() around the sl->sequence read ? I'm concerned about the
+> > compiler generating code that reads the sequence number chunkwise.
 > 
-> We always use get_user_pages(write=1), so this bad code does not
-> cause any bad result currently.
-> 
-> But it is really bad, so fix it, and we will use RO pages future.
-> 
-> We will set writabe bit when it is really writable (determined by
-> the parameters of the set_spte())
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index fdb18cf..c7565ea 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -4365,8 +4365,7 @@ static int __init vmx_init(void)
->  
->  	if (enable_ept) {
->  		bypass_guest_pf = 0;
-> -		kvm_mmu_set_base_ptes(VMX_EPT_READABLE_MASK |
-> -			VMX_EPT_WRITABLE_MASK);
-> +		kvm_mmu_set_base_ptes(VMX_EPT_READABLE_MASK);
->  		kvm_mmu_set_mask_ptes(0ull, 0ull, 0ull, 0ull,
->  				VMX_EPT_EXECUTABLE_MASK);
->  		kvm_enable_tdp();
+> What compiler would do that? That would seem to be a compiler bug, or
+> a compiler that is just completely crazy.
 
-You can remove the call to kvm_mmu_set_base_ptes entirely, because
-VMX_EPT_READABLE_MASK == PT_PRESENT_MASK.
+The reason that the C standard permits this is to allow for things like
+8-bit CPUs, which are simply unable to load or store 32-bit quantities
+except by doing it chunkwise.  But I don't expect the Linux kernel to
+boot on these, and certainly not on any of the ones that I have used!
 
+I most definitely remember seeing a gcc guarantee that loads and stores
+would be done in one instruction whenever the hardware supported this,
+but I am not finding it today.  :-(
+
+							Thanx, Paul
+
+> But it wouldn't be _wrong_ to make it do ACCESS_ONCE(). I just suspect
+> that any compiler that cares is not a compiler worth worrying about,
+> and the compiler should be shot in the head rather than us necessarily
+> worrying about it.
+> 
+> There is no way a sane compiler can do anything but one read anyway.
+> We do end up using all the bits (for the "return ret") part, so a
+> compiler that reads the low bit separately is just being a totally
+> moronic one - we wouldn't want to touch such a stupid compiler with a
+> ten-foot pole.
+> 
+> But at the same time, ACCESS_ONCE() ends up being a reasonable hint to
+> programmers, so I wouldn't object to it. I just don't think we should
+> pander to "compilers can be crazy". If compilers are crazy, we
+> shouldn't use them.
+> 
+>                  Linus
