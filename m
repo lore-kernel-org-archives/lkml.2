@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab0FKHPl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 03:15:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38702 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628Ab0FKHPk convert rfc822-to-8bit (ORCPT
+	id S1755523Ab0FKHQk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 03:16:40 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22721 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab0FKHQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 03:15:40 -0400
-Subject: Re: blkiocg_update_io_add_stats(): INFO: trying to register
- non-static  key
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Ingo Molnar <mingo@elte.hu>, piotr@hosowicz.com,
-       linux-kernel@vger.kernel.org, Divyesh Shah <dpshah@google.com>
-In-Reply-To: <20100602130456.GP3564@kernel.dk>
-References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>
-	 <20100601064120.GA3407@elte.hu> <20100601064726.GG1660@kernel.dk>
-	 <20100601065500.GA7876@elte.hu> <20100602111653.GA25662@elte.hu>
-	 <20100602130456.GP3564@kernel.dk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 11 Jun 2010 09:15:27 +0200
-Message-ID: <1276240527.2077.1467.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 11 Jun 2010 03:16:39 -0400
+Message-ID: <4C11E2BD.2020207@oracle.com>
+Date: Fri, 11 Jun 2010 15:16:13 +0800
+From: Tao Ma <tao.ma@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@lst.de>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Joel Becker <joel.becker@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       "tao.ma" <tao.ma@oracle.com>
+Subject: Re: [PATCH v4] ocfs2: Let ocfs2_setattr use new truncate sequence.
+References: <1276226869-11123-1-git-send-email-tao.ma@oracle.com> <20100611065635.GA19692@lst.de>
+In-Reply-To: <20100611065635.GA19692@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090206.4C11E2CD.0018:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-02 at 15:04 +0200, Jens Axboe wrote:
-> On Wed, Jun 02 2010, Ingo Molnar wrote:
-> > 
-> > btw., there's another warning triggered by the new blk-cgroups stats code:
-> > 
-> > sda:INFO: trying to register non-static key.
-> > the code is fine but needs lockdep annotation.
-> > turning off the locking correctness validator.
-> > Pid: 81, comm: async/2 Not tainted 2.6.35-rc1-tip-01073-gd2f7698-dirty #6765
-> > Call Trace:
-> >  [<ffffffff81065d6d>] register_lock_class+0x15f/0x365
-> >  [<ffffffff8105c426>] ? sched_clock_local+0x1d/0x83
-> >  [<ffffffff8105c557>] ? sched_clock_cpu+0xcb/0xd9
-> >  [<ffffffff81067184>] __lock_acquire+0x97/0x481
-> >  [<ffffffff810088d4>] ? native_sched_clock+0x37/0x6d
-> >  [<ffffffff81321b74>] ? blkiocg_update_io_add_stats+0x32/0x12e
-> >  [<ffffffff81067644>] lock_acquire+0xd6/0xfd
-> >  [<ffffffff81321b74>] ? blkiocg_update_io_add_stats+0x32/0x12e
-> >  [<ffffffff81850859>] _raw_spin_lock_irqsave+0x47/0x82
-> >  [<ffffffff81321b74>] ? blkiocg_update_io_add_stats+0x32/0x12e
-> >  [<ffffffff81321b74>] blkiocg_update_io_add_stats+0x32/0x12e
-> 
-> So that's blkg->stats_lock - help me out, what is lockdep complaining
-> about? The lock is initialized, what kind of lockdep annotation magic do
-> we need to sprinkle on it?
+Hi Christoph,
 
-It basically says its lock instance isn't properly initialised. Usually
-spin_lock_init() will set lock->dep_map->key, for static locks,
-initialised with __SPIN_LOCK_UNLOCKED() ->key doesn't get set and we use
-the lock's address as key.
+On 06/11/2010 02:56 PM, Christoph Hellwig wrote:
+> This looks correct, but still has the second if ATTR_SIZE block that
+> I commented on last time.  I'd really prefer if the filesystems could
+> move the truncate handling into a single conditional to simplify
+> auditing for it and possibly splitting it out into a separate method
+> later.
+oh, that would be much work for ocfs2 to do from my perspective. So I 
+would really want to leave it as-is and I have add it to my to-do list.
+>
+> And btw, the S_ISREG check which you only have on the first ATTR_SIZE
+> check is superflous, the VFS only does ATTR_SIZE calls on regular files.
+yeah, I can remove it.
 
-Now lockdep requires the key to be in static storage, so if you try to
-used __SPIN_LOCK_UNLOCKED() on dynamically allocated locks (the most
-common form is using static forms like DEFINE_foo() on stack variables),
-things go bang.
-
-That said, the block_cgroup.c code seems to use spin_lock_init() so it
-_should_ all work out. Use before init/after free perhaps?
+Regards,
+Tao
