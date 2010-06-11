@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab0FKQwo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 12:52:44 -0400
-Received: from mail.perches.com ([173.55.12.10]:1057 "EHLO mail.perches.com"
+	id S1757789Ab0FKQ40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 12:56:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58510 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757765Ab0FKQwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 12:52:39 -0400
-Subject: Re: [PATCH] staging/wlags49_hs: Fix build error when CONFIG_SYSFS
- is  not set
-From: Joe Perches <joe@perches.com>
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-Cc: Henk de Groot <pe1dnn@amsat.org>, devel@driverdev.osuosl.org,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       kernel-janitors <kernel-janitors@vger.kernel.org>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTikH_CAVo7sblakUfhI-ysIXk2z1KZz0YkjCDL3m@mail.gmail.com>
-References: <1276238148.22216.30.camel@lenovo>
-	 <1276238502.1556.512.camel@Joe-Laptop.home>
-	 <AANLkTikH_CAVo7sblakUfhI-ysIXk2z1KZz0YkjCDL3m@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Jun 2010 09:52:36 -0700
-Message-ID: <1276275156.1637.52.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757508Ab0FKQ4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 12:56:25 -0400
+Message-ID: <4C126AAB.4040802@redhat.com>
+Date: Fri, 11 Jun 2010 11:56:11 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+MIME-Version: 1.0
+To: Greg Freemyer <greg.freemyer@gmail.com>
+CC: Tao Ma <tao.ma@oracle.com>, linux-ext4@vger.kernel.org,
+       Theodore Tso <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Subject: Re: fiemap is broken for sparse file in ext4?
+References: <4C119C2E.2090801@oracle.com>	<4C11B6D8.8070909@redhat.com>	<4C11C41C.9070000@oracle.com>	<4C125A6C.2090805@redhat.com> <AANLkTim9xIyL842wapccPIwEPVgd3BY8_r0tBGfGgvOt@mail.gmail.com>
+In-Reply-To: <AANLkTim9xIyL842wapccPIwEPVgd3BY8_r0tBGfGgvOt@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-11 at 08:46 -0400, Javier Martinez Canillas wrote:
-> >>  extern void register_wlags_sysfs(struct net_device *);
-> >>  extern void unregister_wlags_sysfs(struct net_device *);
-> >>  #else
-> >> -static void register_wlags_sysfs(struct net_device *) { return; };
-> >> -static void unregister_wlags_sysfs(struct net_device *) { return; };
-> >> +#define register_wlags_sysfs(net_device) { }
-> >> +#define unregister_wlags_sysfs(net_device) { }
-> >>  #endif
-> > Yes, that works, but a better fix would be to remove the
-> > semicolons after the function close braces.
-> > ---
-> Why would it be better? With a macro you avoid the overhead of a
-> function call that does nothing.
+Greg Freemyer wrote:
+> On Fri, Jun 11, 2010 at 11:46 AM, Eric Sandeen <sandeen@redhat.com> wrote:
+>> Tao Ma wrote:
+>>
+>>>> What are you using to call fiemap?  Here it seems to be working:
+>>> I just wrote a simple test program by calling ioctl. It is attached.
+>>> btw, you need to call it immediately after dd so that we have a chance
+>>> that ext4 don't have time to allocate extents. ;)
+>> OK I take it back, I do see it.  *cough* too many different filesystems
+>> on this box ... ;)
+>>
+>> Yes, it does look like a bug.
+>>
+>> -Eric
+> 
+> I'm not clear how this is supposed to work.
+> 
+> Is this just a userspace bug in that FIEMAP_FLAG_SYNC is needed in the
+> fiemap call, or is there a kernel bug as well?
 
-Check the generated code.
-$ make drivers/staging/wlags49_h2/wl_sysfs.lst
+The flag is optional, though maybe filefrag should use it.
 
-> I personally think a macro fit better in this case.
+Without it, we should get the proper logical offset and a delalloc-flagged
+extent returned
 
-Check the general kernel use of macros vs functions.
-Functions verify proper arguments, macros do not.
+> If fiemap is called with the FIEMAP_FLAG_SYNC flag is there currently a problem?
 
+yep, we should get one delalloc extent in the results and we don't.
+
+-Eric
+
+> Thanks
+> Greg
 
