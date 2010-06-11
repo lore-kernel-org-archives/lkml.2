@@ -1,117 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab0FKEuF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 00:50:05 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:53267 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978Ab0FKEuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 00:50:03 -0400
-Date: Fri, 11 Jun 2010 13:37:44 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC][PATCH] memcg remove css_get/put per pages v2
-Message-Id: <20100611133744.e5f14e3d.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100609155940.dd121130.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100608121901.3cab9bdf.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100609155940.dd121130.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753023Ab0FKEuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 00:50:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42988 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752896Ab0FKEuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 00:50:13 -0400
+Date: Fri, 11 Jun 2010 14:50:07 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Joel Becker <joel.becker@oracle.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH v4] ocfs2: Let ocfs2_setattr use new truncate sequence.
+Message-ID: <20100611045007.GC16436@laptop>
+References: <1276226869-11123-1-git-send-email-tao.ma@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276226869-11123-1-git-send-email-tao.ma@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @@ -2432,15 +2463,18 @@ mem_cgroup_uncharge_swapcache(struct pag
->  	if (!swapout) /* this was a swap cache but the swap is unused ! */
->  		ctype = MEM_CGROUP_CHARGE_TYPE_DROP;
->  
-> -	memcg = __mem_cgroup_uncharge_common(page, ctype);
-> +	memcg = try_get_mem_cgroup_from_page(page);
-> +	if (!memcg)
-> +		return;
-> +
-> +	__mem_cgroup_uncharge_common(page, ctype);
->  
->  	/* record memcg information */
-> -	if (do_swap_account && swapout && memcg) {
-> +	if (do_swap_account && swapout) {
->  		swap_cgroup_record(ent, css_id(&memcg->css));
->  		mem_cgroup_get(memcg);
->  	}
-> -	if (swapout && memcg)
-> -		css_put(&memcg->css);
-> +	css_put(&memcg->css);
->  }
->  #endif
->  
-hmm, this change seems to cause a problem.
-I can see under flow of mem->memsw and "swap" field in memory.stat. 
+On Fri, Jun 11, 2010 at 11:27:49AM +0800, Tao Ma wrote:
+> Let ocfs2 use the new truncate sequence. The changes include:
+> 1. Move inode_change_ok into cluster lock and remove inode_newsize_ok.
+> 2. Use truncate_setsize directly since we don't implement our
+>    own ->truncate and what we need is "update i_size and
+>    truncate_pagecache" which truncate_setsize now does.
+> 3. Change some i_size_read to inode->i_size in ocfs2_setattr
+>    since we have i_muext held.
+> 4. For direct write, ocfs2 actually don't allow write to pass
+>    i_size(see ocfs2_prepare_inode_for_write), so we don't have
+>    a chance to increase i_size. So remove the bogus check.
+> 
+> Cc: Joel Becker <joel.becker@oracle.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Nick Piggin <npiggin@suse.de>
 
-I think doing swap_cgroup_record() against mem_cgroup which is not returned
-by __mem_cgroup_uncharge_common() is a bad behavior.
+The patch looks fine to me. I really appreciate you working on truncate,
+thanks.
 
-How about doing like this ? We can safely access mem_cgroup while it has
-memory.usage, iow, before we call res_counter_uncharge().
-After this change, it seems to work well.
-
----
- mm/memcontrol.c |   22 +++++++++-------------
- 1 files changed, 9 insertions(+), 13 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6e7c1c9..2fae26f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2362,10 +2362,6 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
- 		break;
- 	}
- 
--	if (!mem_cgroup_is_root(mem))
--		__do_uncharge(mem, ctype);
--	if (ctype == MEM_CGROUP_CHARGE_TYPE_SWAPOUT)
--		mem_cgroup_swap_statistics(mem, true);
- 	mem_cgroup_charge_statistics(mem, pc, false);
- 
- 	ClearPageCgroupUsed(pc);
-@@ -2379,6 +2375,12 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
- 	unlock_page_cgroup(pc);
- 
- 	memcg_check_events(mem, page);
-+	if (ctype == MEM_CGROUP_CHARGE_TYPE_SWAPOUT) {
-+		mem_cgroup_swap_statistics(mem, true);
-+		mem_cgroup_get(mem);
-+	}
-+	if (!mem_cgroup_is_root(mem))
-+		__do_uncharge(mem, ctype);
- 
- 	return mem;
- 
-@@ -2463,18 +2465,12 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
- 	if (!swapout) /* this was a swap cache but the swap is unused ! */
- 		ctype = MEM_CGROUP_CHARGE_TYPE_DROP;
- 
--	memcg = try_get_mem_cgroup_from_page(page);
--	if (!memcg)
--		return;
--
--	__mem_cgroup_uncharge_common(page, ctype);
-+	memcg = __mem_cgroup_uncharge_common(page, ctype);
- 
- 	/* record memcg information */
--	if (do_swap_account && swapout) {
-+	if (do_swap_account && swapout && memcg)
-+		/* We've already done mem_cgroup_get() in uncharge_common(). */
- 		swap_cgroup_record(ent, css_id(&memcg->css));
--		mem_cgroup_get(memcg);
--	}
--	css_put(&memcg->css);
- }
- #endif
- 
