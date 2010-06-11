@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759806Ab0FKS35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 14:29:57 -0400
-Received: from science.horizon.com ([71.41.210.146]:36627 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756338Ab0FKS34 (ORCPT
+	id S1760156Ab0FKSaR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 14:30:17 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:36732 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759922Ab0FKSaO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 14:29:56 -0400
-Date: 11 Jun 2010 14:29:54 -0400
-Message-ID: <20100611182954.20294.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux-kernel@vger.kernel.org, sqazi@google.com
-Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be reused
-Cc: allan.stephens@windriver.com, linux@horizon.com, peterz@infradead.org,
-       torvalds@linux-foundation.org
+	Fri, 11 Jun 2010 14:30:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=q6UkoNcYbqsXxpWXZm4w/yO1+JUbjtwxTY+qLf3MTgmiFr9a+n2tsnEEKWzCltUH7x
+         YFwbXrV+taaqwtN7znJOB6Wtv+h69pdwXNvfKwUnS9J1peZ1MSdBvld74fyXcaNwCblW
+         7LRWgkskl5I/QtubP+yCGdA8bRjEDGZv2RuAE=
+MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Fri, 11 Jun 2010 11:29:53 -0700
+Message-ID: <AANLkTikx7UuxgGRjo1TViZ2ZxU9DVmnErBoef13pKftd@mail.gmail.com>
+Subject: compat-wireless based on 2.6.35-rc2 pushed out
+To: linux-wireless <linux-wireless@vger.kernel.org>,
+       linux-bluetooth <linux-bluetooth@vger.kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Isn't: return a - base < b - base, the natural way to express this?
+Its on the stable page now:
 
-Quite right.
+http://wireless.kernel.org/en/users/Download/stable
 
-I see people managed to figure it out, but my, what a lot of angst
-over something so familiar to any network hacker trying to figure out
-if a received sequence number is in the receive window or not.
+tarball: http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.35/compat-wireless-2.6.35-rc2.tar.bz2
+sha1sum: 6b2f040c965bffd4a659a7f4771832a9b7b568e5
+ChangeLog: http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.35/ChangeLog-2.6.35-rc2-wireless
 
-See include/net/tcp.h:
-265: /* is s2<=s1<=s3 ? */
-266: static inline int between(__u32 seq1, __u32 seq2, __u32 seq3)
-267: {
-268: 	return seq3 - seq2 >= seq1 - seq2;
-269: }
+This actually has all the changes from Linus' tree as of today so it
+actually has extra stuff on top of rc2, its more like an rc3. I
+spotted these merged already:
 
-(If someone wants to fix the far uglier version in net/tipc/link.h...
-Allan, Cc: to you.)
+$ git shortlog  v2.6.35-rc2.. net/mac80211/ net/wireless/ drivers/net/
+drivers/bluetooth/
 
-If you want to handle strictly conforming ANSI C, then you have to
-cast everything to unsigned before the subtraction, but in practice,
-casting afterward works just as well:
+Abhijeet Kolekar (1):
+      iwl3945: fix internal scan
 
-	return (unsigned)a - (unsigned)base < (unsigned)b - (unsigned)base;
-	return (unsigned)(a - base) < (unsigned)(b - base)
+Bob Copeland (1):
+      ath5k: retain promiscuous setting
 
-Conceptually, it's "is the distance forward from base to a less than
-the distance forward from base to b"?  The "forward" is enforced by the
-unsigned cast.
+Bruno Randolf (1):
+      ath5k: fix NULL pointer in antenna configuration
 
-If the numbers wrap before UINT_MAX, the logic still works; it doesn't
-care if values between PID_MAX_LIMIT and UINT_MAX are "illegal and may not
-be assigned" or "by merest chance happen to not be assigned".
+David S. Miller (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
+
+Denis Kirjanov (1):
+      8139too: fix buffer overrun in rtl8139_init_board
+
+Emmanuel Grumbach (1):
+      iwlwifi: move sysfs_create_group to post request firmware
+
+Grazvydas Ignotas (1):
+      wl1251: fix a memory leak in probe
+
+Holger Schurig (1):
+      mac80211: fix function pointer check
+
+Jason Dravet (1):
+      p54usb: Add device ID for Dell WLA3310 USB
+
+Johannes Berg (3):
+      mac80211: process station blockack action frames from work
+      iwlwifi: add missing rcu_read_lock
+      mac80211: fix deauth before assoc
+
+John W. Linville (1):
+      Revert "wireless: hostap, fix oops due to early probing interrupt"
+
+Jussi Kivilinna (1):
+      asix: check packet size against mtu+ETH_HLEN instead of ETH_FRAME_LEN
+
+Linus Torvalds (1):
+      Merge git://git.kernel.org/.../davem/net-2.6
+
+Reinette Chatre (1):
+      iwl3945: enable stuck queue detection on 3945
+
+Timo Teräs (1):
+      r8169: fix random mdio_write failures
+
+Tobias Doerffel (1):
+      ath5k: depend on CONFIG_PM_SLEEP for suspend/resume functions
+
+  Luis
