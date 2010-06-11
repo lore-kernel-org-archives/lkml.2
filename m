@@ -1,73 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760031Ab0FKBdg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Jun 2010 21:33:36 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:34225 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759990Ab0FKBdf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Jun 2010 21:33:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding;
-	b=klrdhajiG+8n9o4+AKYF7+BsqzEk0gYi2p1ICSE42R9e1lHhcOhSSGUnxPjvBYB+q
-	7hVb1+tdTpb3WepvqZ5Fg==
+	id S1760029Ab0FKBii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Jun 2010 21:38:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39829 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754052Ab0FKBie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 21:38:34 -0400
+Date: Fri, 11 Jun 2010 11:38:29 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, Tejun Heo <tj@kernel.org>,
+       linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Colin Tuckley <colin.tuckley@arm.com>, Jeff Garzik <jeff@garzik.org>,
+       linux-arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH v2] sata_sil24: Use memory barriers before issuing
+ commands
+Message-ID: <20100611013829.GB16436@laptop>
+References: <20100610160212.18091.29856.stgit@e102109-lin.cambridge.arm.com>
+ <4C110EDD.2010409@kernel.org>
+ <1276187002.24535.88.camel@e102109-lin.cambridge.arm.com>
+ <4C118697.9090305@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20100602130456.GP3564@kernel.dk>
-References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins> 
-	<20100601064120.GA3407@elte.hu> <20100601064726.GG1660@kernel.dk> 
-	<20100601065500.GA7876@elte.hu> <20100602111653.GA25662@elte.hu> 
-	<20100602130456.GP3564@kernel.dk>
-From: Divyesh Shah <dpshah@google.com>
-Date: Thu, 10 Jun 2010 18:33:08 -0700
-Message-ID: <AANLkTinzd3TDVInveyx1P1ATvV8QaudtTsU0ofzclpuk@mail.gmail.com>
-Subject: Re: blkiocg_update_io_add_stats(): INFO: trying to register 
-	non-static key
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       piotr@hosowicz.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C118697.9090305@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 6:04 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
-> On Wed, Jun 02 2010, Ingo Molnar wrote:
->>
->> btw., there's another warning triggered by the new blk-cgroups stats code:
->>
->> sda:INFO: trying to register non-static key.
->> the code is fine but needs lockdep annotation.
->> turning off the locking correctness validator.
->> Pid: 81, comm: async/2 Not tainted 2.6.35-rc1-tip-01073-gd2f7698-dirty #6765
->> Call Trace:
->>  [<ffffffff81065d6d>] register_lock_class+0x15f/0x365
->>  [<ffffffff8105c426>] ? sched_clock_local+0x1d/0x83
->>  [<ffffffff8105c557>] ? sched_clock_cpu+0xcb/0xd9
->>  [<ffffffff81067184>] __lock_acquire+0x97/0x481
->>  [<ffffffff810088d4>] ? native_sched_clock+0x37/0x6d
->>  [<ffffffff81321b74>] ? blkiocg_update_io_add_stats+0x32/0x12e
->>  [<ffffffff81067644>] lock_acquire+0xd6/0xfd
->>  [<ffffffff81321b74>] ? blkiocg_update_io_add_stats+0x32/0x12e
->>  [<ffffffff81850859>] _raw_spin_lock_irqsave+0x47/0x82
->>  [<ffffffff81321b74>] ? blkiocg_update_io_add_stats+0x32/0x12e
->>  [<ffffffff81321b74>] blkiocg_update_io_add_stats+0x32/0x12e
->
-> So that's blkg->stats_lock - help me out, what is lockdep complaining
-> about? The lock is initialized, what kind of lockdep annotation magic do
-> we need to sprinkle on it?
+On Thu, Jun 10, 2010 at 06:43:03PM -0600, Robert Hancock wrote:
+> On 06/10/2010 10:23 AM, Catalin Marinas wrote:
+> >On Thu, 2010-06-10 at 17:12 +0100, Tejun Heo wrote:
+> >>On 06/10/2010 06:02 PM, Catalin Marinas wrote:
+> >>>The data in the cmd_block buffers may reach the main memory after the
+> >>>writel() to the device ports. This patch introduces two calls to wmb()
+> >>>to ensure the relative ordering.
+> >>>
+> >>>Signed-off-by: Catalin Marinas<catalin.marinas@arm.com>
+> >>>Tested-by: Colin Tuckley<colin.tuckley@arm.com>
+> >>>Cc: Tejun Heo<tj@kernel.org>
+> >>>Cc: Jeff Garzik<jeff@garzik.org>
+> >>
+> >>I suppose you have tested and verified that this is actually
+> >>necessary, right?
+> >
+> >Yes, otherwise we get random failures with this device on ARM.
+> >
+> >>I've been looking through the docs but couldn't
+> >>find anything which described the ordering between writes to main
+> >>memory and write[bwl]()'s.  One thing that kind of bothers me is that
+> >>r/wmb()'s are for ordering memory accesses among CPUs which
+> >>participate in cache coherency protocol and although it may work right
+> >>in the above case I'm not really sure whether this is the right thing
+> >>to do.  Do you have more information on the subject?
+> >
+> >The mb() are not for ordering accesses among CPUs (though they would
+> >cover this case as well). For inter-CPU ordering, we have smp_mb() and
+> >friends. For all other cases, we have the mandatory barriers mb() and
+> >friends and DMA is one of them.
+> >
+> >Apart from the memory-barriers.txt document, there is the Device I/O
+> >docbook which mentions something about DMA buffers, though not very
+> >clear on which barriers to use (something like just make sure that the
+> >writes to the buffer reached the memory).
+> >
+> >There were some past discussions on linux-arch before and I'm cc'ing
+> >this list again (ARM is not the only architecture with a weakly memory
+> >ordering model).
+> >
+> >I'm copying the patch below again for the linux-arch people that haven't
+> >seen the beginning of the thread:
+> 
+> My memory is fuzzy but I thought this came up before on PPC and I
+> also thought the conclusion was that the platform code (for writel,
+> etc.) should enforce ordering of MMIO accesses with respect to
+> normal RAM accesses. (Or maybe it was just MMIO accesses with
+> respect to each other?) I don't think the answer to that question
+> has been clearly documented anywhere, which is somewhat unfortunate.
+> 
+> If the answer is that this is needed then there are likely a lot of
+> other drivers in libata and elsewhere which need to be fixed as
+> well. For example, I don't see any such barriers in libahci.c when I
+> presume it would need them.
+> 
+> IMHO, it would be better for the platform code to ensure that MMIO
+> access was strongly ordered with respect to each other and to RAM
+> access. Drivers are just too likely to get this wrong, especially
+> when x86, the most tested platform, doesn't have such issues.
 
-Jens,
-     Were you able to figure out what annotation magic is needed here.
-I remember we had fixed another similar warning that Gui reported, but
-that was because the root cfqg didn't have the stats_lock initialized
-as expected. I'm not sure what needs to be done here either.
+The plan is to make all platforms do this. writes should be
+strongly ordered with memory. That serves to keep them inside
+critical sections as well.
 
--Divyesh
+Then write?_relaxed, and memory barriers can be added if performance
+is required.
 
->
-> --
-> Jens Axboe
->
->
