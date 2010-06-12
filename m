@@ -1,99 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab0FLF7n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 01:59:43 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:54503 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951Ab0FLF7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 01:59:42 -0400
-Date: Sat, 12 Jun 2010 01:59:37 -0400
-From: Andres Salomon <dilinger@queued.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Young <hidave.darkstar@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2010-06-11-16-40 uploaded
-Message-ID: <20100612015937.1981f1b6@dev.queued.net>
-In-Reply-To: <20100611195421.6b723910.akpm@linux-foundation.org>
-References: <201006120008.o5C08gC3027843@imap1.linux-foundation.org>
-	<AANLkTin1cUkn_Cw5P0AR8NTx5prNF34bajZD0bPoavP2@mail.gmail.com>
-	<20100611195421.6b723910.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.12.12; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752720Ab0FLG1f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 02:27:35 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:38875 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964Ab0FLG1d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 02:27:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=lo7N1fwW/kFTHaCHE8vMxvYSpplZdZLvn4rfUEj43y3/vlMFK701RGSJEIUMlZAi64
+         G+9//uE/gYwWjOnmbDT5BWDHhtg6D2SwsH9X3IvXQomf4JYxbO4la9T5qQjELjKcZf2j
+         0Qrsf492Uekzz0bREkBIiVoD30GGDKg10Aiak=
+MIME-Version: 1.0
+In-Reply-To: <20090818214622.GA22651@oksana.dev.rtsoft.ru>
+References: <20090818214449.GA12848@oksana.dev.rtsoft.ru> <20090818214622.GA22651@oksana.dev.rtsoft.ru>
+From: Barry Song <21cnbao@gmail.com>
+Date: Sat, 12 Jun 2010 14:27:12 +0800
+Message-ID: <AANLkTikg60s6ZRSEDCq9PQK1z7hJtBDk6t4VE1lYDv8u@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mtd: m25p80: Rework probing/JEDEC code
+To: Anton Vorontsov <avorontsov@ru.mvista.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5C6Rqim019391
 
-On Fri, 11 Jun 2010 19:54:21 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Sat, 12 Jun 2010 10:43:31 +0800 Dave Young
-> <hidave.darkstar@gmail.com> wrote:
-> 
-> > On Sat, Jun 12, 2010 at 7:40 AM,  <akpm@linux-foundation.org> wrote:
-> > > The mm-of-the-moment snapshot 2010-06-11-16-40 has been uploaded
-> > > to
-> > >
-> > > __ http://userweb.kernel.org/~akpm/mmotm/
-> > >
-> > > and will soon be available at
-> > >
-> > > __ git://zen-kernel.org/kernel/mmotm.git
-> > >
-> > 
-> > Hi, andrew
-> > 
-> > building failed with:
-> >   AS      arch/x86/kernel/entry_32.o
-> > /home/dave/src/linux-2.6.35/arch/x86/include/asm/olpc_ofw.h:
-> > Assembler
-> > messages: /home/dave/src/linux-2.6.35/arch/x86/include/asm/olpc_ofw.h:29:
-> > Error: no such instruction: `static inline void
-> > olpc_ofw_detect_range(void){}' make[2]: ***
-> > [arch/x86/kernel/entry_32.o] Error 1 make[1]: *** [arch/x86/kernel]
-> > Error 2 make: *** [arch/x86] Error 2
-> > 
-> > Attached a patch to fix it (I have not appropriate email client now,
-> > sorry for the inconvenience )
-> 
-> Thanks.
-> 
-> We can simplify things a bit I think...
-> 
-> #ifndef _ASM_X86_OLPC_OFW_H
-> #define _ASM_X86_OLPC_OFW_H
-> 
-> /* hardcode addresses to make life easier dealing w/ VMALLOC_END and
-> others */ #define OLPC_OFW_START 0xff800000UL
-> #define OLPC_OFW_SIZE (PGDIR_SIZE)
-> #define OLPC_OFW_END (OLPC_OFW_START + OLPC_OFW_SIZE)
-> 
-> #ifndef __ASSEMBLER__
-> 
-> #ifdef CONFIG_OLPC_OPENFIRMWARE
-> 
-> /* address of OFW callback interface; will be NULL if OFW isn't found
-> */ extern int (*olpc_ofw_cif)(int *);
-> 
-> /* page dir entry containing OFW's current memory */
-> extern pgdval_t olpc_ofw_pgd;
-> 
-> /* run an OFW command by calling into the firmware */
-> extern int olpc_ofw(const char *name, int nr_args, int nr_res, ...);
-> 
-> /* determine/ensure OFW lives in the proper place in (virtual) memory
-> */ void olpc_ofw_detect_range(void);
-> 
-> #else	/* CONFIG_OLPC_OPENFIRMWARE */
-> 
-> static inline void olpc_ofw_detect_range(void) { }
-> 
-> #endif	/* CONFIG_OLPC_OPENFIRMWARE */
-> 
-> #endif	/* __ASSEMBLER__ */
-> 
-> #endif
->
-
-Thanks, I've changed it to something similar in my git tree.  It'll be
-in the next patch (once I've addressed hpa's concerns).
+On Wed, Aug 19, 2009 at 5:46 AM, Anton Vorontsov<avorontsov@ru.mvista.com> wrote:>> Previosly the driver always tried JEDEC probing, assuming that non-JEDEC> chips will return '0'. But truly non-JEDEC chips (like CAT25) won't do> that, their behaviour on RDID command is undefined, so the driver should> not call jedec_probe() for these chips.>> Also, be less strict on error conditions, don't fail to probe if JEDEC> found a chip that is different from what platform code told, instead> just print some warnings and use an information obtained via JEDEC. InThis patch caused a problem:even though the external flash doesn't exist, it will still pass theprobe() and be registerred into kernel and given the partition table.You may refer to this bug report:http://blackfin.uclinux.org/gf/project/uclinux-dist/tracker/?action=TrackerItemEdit&tracker_item_id=5975&start=0
+> that case we should not trust partitions any longer, but they might be> still useful (i.e. they could protect some parts of the chip).>> Signed-off-by: Anton Vorontsov <avorontsov@ru.mvista.com>> --->  drivers/mtd/devices/m25p80.c |   69 ++++++++++++++++++++++++----------------->  1 files changed, 40 insertions(+), 29 deletions(-)>> diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c> index 0d74b38..b75e319 100644> --- a/drivers/mtd/devices/m25p80.c> +++ b/drivers/mtd/devices/m25p80.c> @@ -581,6 +581,14 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)>        jedec = jedec << 8;>        jedec |= id[2];>> +       /*> +        * Some chips (like Numonyx M25P80) have JEDEC and non-JEDEC variants,> +        * which depend on technology process. Officially RDID command doesn't> +        * exist for non-JEDEC chips, but for compatibility they return ID 0.> +        */> +       if (jedec == 0)> +               return NULL;> +>        ext_jedec = id[3] << 8 | id[4];>>        for (tmp = 0; tmp < ARRAY_SIZE(m25p_ids) - 1; tmp++) {> @@ -602,7 +610,7 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)>  */>  static int __devinit m25p_probe(struct spi_device *spi)>  {> -       const struct spi_device_id      *id;> +       const struct spi_device_id      *id = spi_get_device_id(spi);>        struct flash_platform_data      *data;>        struct m25p                     *flash;>        struct flash_info               *info;> @@ -615,41 +623,44 @@ static int __devinit m25p_probe(struct spi_device *spi)>         */>        data = spi->dev.platform_data;>        if (data && data->type) {> +               const struct spi_device_id *plat_id;> +>                for (i = 0; i < ARRAY_SIZE(m25p_ids) - 1; i++) {> -                       id = &m25p_ids[i];> -                       info = (void *)m25p_ids[i].driver_data;> -                       if (strcmp(data->type, id->name))> +                       plat_id = &m25p_ids[i];> +                       if (strcmp(data->type, plat_id->name))>                                continue;>                        break;>                }>> -               /* unrecognized chip? */> -               if (i == ARRAY_SIZE(m25p_ids) - 1) {> -                       DEBUG(MTD_DEBUG_LEVEL0, "%s: unrecognized id %s\n",> -                                       dev_name(&spi->dev), data->type);> -                       info = NULL;> -> -               /* recognized; is that chip really what's there? */> -               } else if (info->jedec_id) {> -                       id = jedec_probe(spi);> -> -                       if (id != &m25p_ids[i]) {> -                               dev_warn(&spi->dev, "found %s, expected %s\n",> -                                               id ? id->name : "UNKNOWN",> -                                               m25p_ids[i].name);> -                               info = NULL;> -                       }> -               }> -       } else {> -               id = jedec_probe(spi);> -               if (!id)> -                       id = spi_get_device_id(spi);> -> -               info = (void *)id->driver_data;> +               if (plat_id)> +                       id = plat_id;> +               else> +                       dev_warn(&spi->dev, "unrecognized id %s\n", data->type);>        }>> -       if (!info)> -               return -ENODEV;> +       info = (void *)id->driver_data;> +> +       if (info->jedec_id) {> +               const struct spi_device_id *jid;> +> +               jid = jedec_probe(spi);> +               if (!jid) {> +                       dev_info(&spi->dev, "non-JEDEC variant of %s\n",> +                                id->name);> +               } else if (jid != id) {> +                       /*> +                        * JEDEC knows better, so overwrite platform ID. We> +                        * can't trust partitions any longer, but we'll let> +                        * mtd apply them anyway, since some partitions may be> +                        * marked read-only, and we don't want to lose that> +                        * information, even if it's not 100% accurate.> +                        */> +                       dev_warn(&spi->dev, "found %s, expected %s\n",> +                                jid->name, id->name);> +                       id = jid;> +                       info = (void *)jid->driver_data;> +               }> +       }>>        flash = kzalloc(sizeof *flash, GFP_KERNEL);>        if (!flash)> --> 1.6.3.3>> --> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in> the body of a message to majordomo@vger.kernel.org> More majordomo info at  http://vger.kernel.org/majordomo-info.html> Please read the FAQ at  http://www.tux.org/lkml/���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
