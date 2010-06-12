@@ -1,38 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab0FLG1f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 02:27:35 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:38875 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964Ab0FLG1d (ORCPT
+	id S1752825Ab0FLGyU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 02:54:20 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:42493 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752699Ab0FLGyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 02:27:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=lo7N1fwW/kFTHaCHE8vMxvYSpplZdZLvn4rfUEj43y3/vlMFK701RGSJEIUMlZAi64
-         G+9//uE/gYwWjOnmbDT5BWDHhtg6D2SwsH9X3IvXQomf4JYxbO4la9T5qQjELjKcZf2j
-         0Qrsf492Uekzz0bREkBIiVoD30GGDKg10Aiak=
+	Sat, 12 Jun 2010 02:54:18 -0400
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+Organization: IBM
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>, Avi Kivity <avi@redhat.com>
+Subject: Re: next June 10: S390 build failure [arch/s390/kvm/kvm.ko]
+Date: Sat, 12 Jun 2010 08:54:13 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc2-self-00089-g63a07cb; KDE/4.4.3; x86_64; ; )
+Cc: Sachin Sant <sachinp@in.ibm.com>, Carsten Otte <cotte@de.ibm.com>,
+       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       linux-s390@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>
+References: <20100610160012.30ea7606.sfr@canb.auug.org.au> <4C10DCB7.7090903@in.ibm.com> <20100610154848.616aff99@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <20100610154848.616aff99@mschwide.boeblingen.de.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20090818214622.GA22651@oksana.dev.rtsoft.ru>
-References: <20090818214449.GA12848@oksana.dev.rtsoft.ru> <20090818214622.GA22651@oksana.dev.rtsoft.ru>
-From: Barry Song <21cnbao@gmail.com>
-Date: Sat, 12 Jun 2010 14:27:12 +0800
-Message-ID: <AANLkTikg60s6ZRSEDCq9PQK1z7hJtBDk6t4VE1lYDv8u@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mtd: m25p80: Rework probing/JEDEC code
-To: Anton Vorontsov <avorontsov@ru.mvista.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006120854.14259.borntraeger@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5C6Rqim019391
 
-On Wed, Aug 19, 2009 at 5:46 AM, Anton Vorontsov<avorontsov@ru.mvista.com> wrote:>> Previosly the driver always tried JEDEC probing, assuming that non-JEDEC> chips will return '0'. But truly non-JEDEC chips (like CAT25) won't do> that, their behaviour on RDID command is undefined, so the driver should> not call jedec_probe() for these chips.>> Also, be less strict on error conditions, don't fail to probe if JEDEC> found a chip that is different from what platform code told, instead> just print some warnings and use an information obtained via JEDEC. InThis patch caused a problem:even though the external flash doesn't exist, it will still pass theprobe() and be registerred into kernel and given the partition table.You may refer to this bug report:http://blackfin.uclinux.org/gf/project/uclinux-dist/tracker/?action=TrackerItemEdit&tracker_item_id=5975&start=0
-> that case we should not trust partitions any longer, but they might be> still useful (i.e. they could protect some parts of the chip).>> Signed-off-by: Anton Vorontsov <avorontsov@ru.mvista.com>> --->  drivers/mtd/devices/m25p80.c |   69 ++++++++++++++++++++++++----------------->  1 files changed, 40 insertions(+), 29 deletions(-)>> diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c> index 0d74b38..b75e319 100644> --- a/drivers/mtd/devices/m25p80.c> +++ b/drivers/mtd/devices/m25p80.c> @@ -581,6 +581,14 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)>        jedec = jedec << 8;>        jedec |= id[2];>> +       /*> +        * Some chips (like Numonyx M25P80) have JEDEC and non-JEDEC variants,> +        * which depend on technology process. Officially RDID command doesn't> +        * exist for non-JEDEC chips, but for compatibility they return ID 0.> +        */> +       if (jedec == 0)> +               return NULL;> +>        ext_jedec = id[3] << 8 | id[4];>>        for (tmp = 0; tmp < ARRAY_SIZE(m25p_ids) - 1; tmp++) {> @@ -602,7 +610,7 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)>  */>  static int __devinit m25p_probe(struct spi_device *spi)>  {> -       const struct spi_device_id      *id;> +       const struct spi_device_id      *id = spi_get_device_id(spi);>        struct flash_platform_data      *data;>        struct m25p                     *flash;>        struct flash_info               *info;> @@ -615,41 +623,44 @@ static int __devinit m25p_probe(struct spi_device *spi)>         */>        data = spi->dev.platform_data;>        if (data && data->type) {> +               const struct spi_device_id *plat_id;> +>                for (i = 0; i < ARRAY_SIZE(m25p_ids) - 1; i++) {> -                       id = &m25p_ids[i];> -                       info = (void *)m25p_ids[i].driver_data;> -                       if (strcmp(data->type, id->name))> +                       plat_id = &m25p_ids[i];> +                       if (strcmp(data->type, plat_id->name))>                                continue;>                        break;>                }>> -               /* unrecognized chip? */> -               if (i == ARRAY_SIZE(m25p_ids) - 1) {> -                       DEBUG(MTD_DEBUG_LEVEL0, "%s: unrecognized id %s\n",> -                                       dev_name(&spi->dev), data->type);> -                       info = NULL;> -> -               /* recognized; is that chip really what's there? */> -               } else if (info->jedec_id) {> -                       id = jedec_probe(spi);> -> -                       if (id != &m25p_ids[i]) {> -                               dev_warn(&spi->dev, "found %s, expected %s\n",> -                                               id ? id->name : "UNKNOWN",> -                                               m25p_ids[i].name);> -                               info = NULL;> -                       }> -               }> -       } else {> -               id = jedec_probe(spi);> -               if (!id)> -                       id = spi_get_device_id(spi);> -> -               info = (void *)id->driver_data;> +               if (plat_id)> +                       id = plat_id;> +               else> +                       dev_warn(&spi->dev, "unrecognized id %s\n", data->type);>        }>> -       if (!info)> -               return -ENODEV;> +       info = (void *)id->driver_data;> +> +       if (info->jedec_id) {> +               const struct spi_device_id *jid;> +> +               jid = jedec_probe(spi);> +               if (!jid) {> +                       dev_info(&spi->dev, "non-JEDEC variant of %s\n",> +                                id->name);> +               } else if (jid != id) {> +                       /*> +                        * JEDEC knows better, so overwrite platform ID. We> +                        * can't trust partitions any longer, but we'll let> +                        * mtd apply them anyway, since some partitions may be> +                        * marked read-only, and we don't want to lose that> +                        * information, even if it's not 100% accurate.> +                        */> +                       dev_warn(&spi->dev, "found %s, expected %s\n",> +                                jid->name, id->name);> +                       id = jid;> +                       info = (void *)jid->driver_data;> +               }> +       }>>        flash = kzalloc(sizeof *flash, GFP_KERNEL);>        if (!flash)> --> 1.6.3.3>> --> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in> the body of a message to majordomo@vger.kernel.org> More majordomo info at  http://vger.kernel.org/majordomo-info.html> Please read the FAQ at  http://www.tux.org/lkml/���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Am Donnerstag 10 Juni 2010, 15:48:48 schrieb Martin Schwidefsky:
+> On Thu, 10 Jun 2010 18:08:15 +0530
+> Sachin Sant <sachinp@in.ibm.com> wrote:
+> 
+> > Today's next fails to build on a s390 box with
+> > 
+> > ERROR: "__kvm_s390_vcpu_store_status" [arch/s390/kvm/kvm.ko] undefined!
+> > 
+> > Yesterday's next was good.
+> 
+> That is caused by git commit fbc5eec58e652339e9df1332cd5e10e8d8250aaf
+> which fails to take git commit 5288fbf0ef041ba0e8b4dcb2df4536b5e3a48b32
+> into account. There is a second caller of __kvm_s390_vcpu_store_status
+> in arch/s390/kvm/intercept.c. As far as I understand the code you could
+> just drop the 'static' from kvm_s390_vcpu_store_status and call it from
+> handle_stop instead of the old __kvm_s390_vcpu_store_status.
+> 
+> Carsten, Christian: could one of you have a look please?
+
+that patch should do the trick. Avi can you add that to kvm.git?
+
+kvm-s390: Fix build failure 
+
+This patch fixes 
+ERROR: "__kvm_s390_vcpu_store_status" [arch/s390/kvm/kvm.ko] undefined!
+
+triggered by
+commit 3268c56840dcee78c3e928336550f4e1861504c4 (kvm.git)
+Author: Avi Kivity <avi@redhat.com>
+Date:   Thu May 13 12:21:46 2010 +0300
+    KVM: s390: Centrally lock arch specific vcpu ioctls
+    
+Reported-by: Sachin Sant <sachinp@in.ibm.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+
+---
+ arch/s390/kvm/intercept.c |    2 +-
+ arch/s390/kvm/kvm-s390.c  |    2 +-
+ arch/s390/kvm/kvm-s390.h  |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+Index: kvm/arch/s390/kvm/intercept.c
+===================================================================
+--- kvm.orig/arch/s390/kvm/intercept.c
++++ kvm/arch/s390/kvm/intercept.c
+@@ -135,7 +135,7 @@ static int handle_stop(struct kvm_vcpu *
+ 	spin_lock_bh(&vcpu->arch.local_int.lock);
+ 	if (vcpu->arch.local_int.action_bits & ACTION_STORE_ON_STOP) {
+ 		vcpu->arch.local_int.action_bits &= ~ACTION_STORE_ON_STOP;
+-		rc = __kvm_s390_vcpu_store_status(vcpu,
++		rc = kvm_s390_vcpu_store_status(vcpu,
+ 						  KVM_S390_STORE_STATUS_NOADDR);
+ 		if (rc >= 0)
+ 			rc = -EOPNOTSUPP;
+Index: kvm/arch/s390/kvm/kvm-s390.c
+===================================================================
+--- kvm.orig/arch/s390/kvm/kvm-s390.c
++++ kvm/arch/s390/kvm/kvm-s390.c
+@@ -569,7 +569,7 @@ static int __guestcopy(struct kvm_vcpu *
+  * KVM_S390_STORE_STATUS_NOADDR: -> 0x1200 on 64 bit
+  * KVM_S390_STORE_STATUS_PREFIXED: -> prefix
+  */
+-static int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu, unsigned long addr)
++int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu, unsigned long addr)
+ {
+ 	const unsigned char archmode = 1;
+ 	int prefix;
+Index: kvm/arch/s390/kvm/kvm-s390.h
+===================================================================
+--- kvm.orig/arch/s390/kvm/kvm-s390.h
++++ kvm/arch/s390/kvm/kvm-s390.h
+@@ -92,7 +92,7 @@ int kvm_s390_handle_b2(struct kvm_vcpu *
+ int kvm_s390_handle_sigp(struct kvm_vcpu *vcpu);
+ 
+ /* implemented in kvm-s390.c */
+-int __kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu,
++int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu,
+ 				 unsigned long addr);
+ /* implemented in diag.c */
+ int kvm_s390_handle_diag(struct kvm_vcpu *vcpu);
