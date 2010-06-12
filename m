@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960Ab0FLBHK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 21:07:10 -0400
-Received: from mail.perches.com ([173.55.12.10]:1082 "EHLO mail.perches.com"
+	id S1756607Ab0FLBHJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 21:07:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:1084 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383Ab0FLBHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755658Ab0FLBHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Jun 2010 21:07:01 -0400
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] MAINTAINERS: Remove section PROMISE DC4030
-Date: Fri, 11 Jun 2010 18:06:54 -0700
-Message-Id: <10943c19888cb6d2e7eb76b1ba45b9b6407a5bd9.1276304638.git.joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Jim Paris <jim@jtan.com>
+Subject: [PATCH 6/7] MAINTAINERS: Add patterns to PS3VRAM DRIVER
+Date: Fri, 11 Jun 2010 18:06:55 -0700
+Message-Id: <b7827ffb5b2d11dbd708bb41de850be6dd05513d.1276304638.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1.244.gbdc4
 In-Reply-To: <cover.1276304638.git.joe@perches.com>
 References: <cover.1276304638.git.joe@perches.com>
@@ -20,26 +20,23 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
+Cc: Jim Paris <jim@jtan.com>
 ---
- MAINTAINERS |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+ MAINTAINERS |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 468c26c..a5310a8 100644
+index a5310a8..4cf783b 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -4535,11 +4535,6 @@ W:	http://prism54.org
+@@ -4567,6 +4567,7 @@ PS3VRAM DRIVER
+ M:	Jim Paris <jim@jtan.com>
+ L:	cbe-oss-dev@ozlabs.org
  S:	Maintained
- F:	drivers/net/wireless/prism54/
++F:	drivers/block/ps3vram.c
  
--PROMISE DC4030 CACHING DISK CONTROLLER DRIVER
--M:	Peter Denison <promise@pnd-pc.demon.co.uk>
--W:	http://www.pnd-pc.demon.co.uk/promise/
--S:	Maintained
--
- PROMISE SATA TX2/TX4 CONTROLLER LIBATA DRIVER
- M:	Mikael Pettersson <mikpe@it.uu.se>
- L:	linux-ide@vger.kernel.org
+ PTRACE SUPPORT
+ M:	Roland McGrath <roland@redhat.com>
 -- 
 1.7.1.244.gbdc4
 
