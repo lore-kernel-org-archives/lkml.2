@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab0FLEOa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 00:14:30 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45284 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725Ab0FLEO3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 00:14:29 -0400
-Date: Sat, 12 Jun 2010 06:15:04 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH] x86, AMD: Extend support to future families
-Message-ID: <20100612041504.GB14077@aftab>
-References: <20100602182921.GA21557@aftab>
- <4C101B58.2090208@zytor.com>
+	id S1752889Ab0FLEuE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 00:50:04 -0400
+Received: from 1wt.eu ([62.212.114.60]:33154 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751895Ab0FLEuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 00:50:03 -0400
+Date: Sat, 12 Jun 2010 06:49:51 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Henri =?iso-8859-1?Q?H=E4kkinen?= <henuxd@gmail.com>
+Cc: gregkh@suse.de, peterhuewe@gmx.de, julia@diku.dk, sudhakar.raj@ti.com,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging:panel: Fixed coding conventions.
+Message-ID: <20100612044951.GB15336@1wt.eu>
+References: <1276291656-2898-1-git-send-email-henuxd@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4C101B58.2090208@zytor.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_bei_M=FCnchen=2C_Gesc?=
-	=?iso-8859-1?Q?h=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuliano_Meroni=2C?=
-	=?iso-8859-1?Q?_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_Aschheim=2C_La?=
-	=?iso-8859-1?Q?ndkreis_M=FCnchen=2C_Registergericht_M=FCnchen?=
-	=?iso-8859-1?Q?=2C?= HRB Nr. 43632
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1276291656-2898-1-git-send-email-henuxd@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, Jun 09, 2010 at 06:53:12PM -0400
-
-> On 06/02/2010 11:29 AM, Borislav Petkov wrote:
-> > Extend support to future families, and in particular:
-> > 
-> > * extend direct mapping split of Tseg SMM area.
-> > * extend K8 flavored alternatives (NOPS).
-> > * rep movs* prefix is fast in ucode.
-> > 
-> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+On Sat, Jun 12, 2010 at 12:27:36AM +0300, Henri Häkkinen wrote:
+> Fixed coding convention issues as reported by checkpatch.pl tool
+> on the file `panel.c'. Moved LCD special code handling from the
+> function `lcd_write' into function `handle_lcd_special_code'. Also
+> moved the handling of INPUT_ST_HIGH and INPUT_ST_FALLING states from
+> the function `panel_process_input' into functions `input_state_high'
+> and `input_state_falling'.
 > 
-> This doesn't reflect any currently shipping hardware, right?
+> Signed-off-by: Henri Häkkinen <henuxd@gmail.com>
 
-Not yet. And I'm assuming you're driving at tagging it for -stable?
-If yes, I think a stable tag makes sense since this way the distros
-will pick it up more easily and we most definitely will need to do the
-backport later otherwise.
+Acked-by: Willy Tarreau <w@1wt.eu>
 
-Do you need another version with the stable tag resent or is it easier
-for you to edit the commit message of the one you have already?
+Thank you Henri, this version is *a lot* better than previous one,
+and the result is overall cleaner than the original.
 
-Thanks.
+Regards,
+Willy
 
--- 
-Regards/Gruss,
-Boris.
-
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
