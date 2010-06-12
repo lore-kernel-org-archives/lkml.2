@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab0FLQCw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 12:02:52 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:28522 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab0FLQCr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 12:02:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding;
-	b=ef1L6Xru2tX1T66RiLiaopBcMPMNEzE/BI1T9vI99OGHclM6+vILGi2GWPpmk5y1I
-	9+q+kUflo3CZofrnlkGlw==
+	id S1751837Ab0FLQPU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 12:15:20 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:64228 "EHLO fanny.its.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751323Ab0FLQPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 12:15:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <20100612071847.GA29751@elte.hu>
-References: <20100612023409.14850.76309.stgit@austin.mtv.corp.google.com> 
-	<20100612023457.14850.50439.stgit@austin.mtv.corp.google.com> 
-	<20100612071847.GA29751@elte.hu>
-From: Divyesh Shah <dpshah@google.com>
-Date: Sat, 12 Jun 2010 08:51:54 -0700
-Message-ID: <AANLkTinXZ3lHxTcusKxcPG-FWvykcfiDB9lcpZIPLEKx@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Use ktime_get() instead of sched_clock() for blkio 
-	cgroup stats.
-To: Ingo Molnar <mingo@elte.hu>
-Cc: jaxboe@fusionio.com, peterz@infradead.org, piotr@hosowicz.com,
-       linux-kernel@vger.kernel.org, vgoyal@redhat.com,
-       Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19475.45707.157935.788004@pilspetsen.it.uu.se>
+Date: Sat, 12 Jun 2010 18:15:07 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [Bug #16161] [2.6.35-rc1 regression] sysfs: cannot create duplicate filename ... XVR-600 related?
+In-Reply-To: <19472.47559.578732.941291@pilspetsen.it.uu.se>
+References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
+	<C9Q3XEnHPeG.A.fIG.P8rDMB@chimera>
+	<19471.35731.889910.990185@pilspetsen.it.uu.se>
+	<201006100026.44762.rjw@sisk.pl>
+	<19472.47559.578732.941291@pilspetsen.it.uu.se>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 12, 2010 at 12:18 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Divyesh Shah <dpshah@google.com> wrote:
->
->> This will take care of the pre-emptive kernel issue and the unbounded
->> TSC drift problem. We will lose resolution though in some cases.
->
->> -     blkg->stats.start_group_wait_time = sched_clock();
->> +     blkg->stats.start_group_wait_time = ktime_to_ns(ktime_get());
->
-> Ugh!
->
-> ktime_get() can have insanely high overhead. Peter has added local_clock(), if
-> then you should use that and apply checks to make sure the result isnt
-> negative.
+Mikael Pettersson writes:
+ > Rafael J. Wysocki writes:
+ >  > On Wednesday, June 09, 2010, Mikael Pettersson wrote:
+ >  > > Rafael J. Wysocki wrote:
+ >  > > > This message has been generated automatically as a part of a summary report
+ >  > > > of recent regressions.
+ >  > > > 
+ >  > > > The following bug entry is on the current list of known regressions
+ >  > > > from 2.6.34.  Please verify if it still should be listed and let the tracking team
+ >  > > > know (either way).
+ >  > > > 
+ >  > > > 
+ >  > > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D16161
+ >  > > > Subject		: [2.6.35-rc1 regression] sysfs: cannot create duplicate filename =
+ >  > > > ... XVR-600 related?
+ >  > > > Submitter	: Mikael Pettersson <mikpe@it.uu.se>
+ >  > > > Date		: 2010-06-01 19:57 (8 days old)
+ >  > > > Message-ID	: <19461.26166.427857.612983@pilspetsen.it.uu.se>
+ >  > > > References	: http://marc.info/?l=3Dlinux-kernel&m=3D127542227511925&w=3D2
+ >  > > 
+ >  > > The bug is still there in 2.6.35-rc2. I haven't checked post-rc2 git snapshots.
+ >  > 
+ >  > Please test post-rc2 too.
+ > 
+ > The bug is still there in 2.6.35-rc2-git4.
 
-Ok. The negative checks are already in the code.
-
->
->        Ingo
->
+The bug appears to be gone in 2.6.35-rc3.  I don't know which
+commit actually fixed it.
