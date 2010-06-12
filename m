@@ -1,38 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab0FLK2M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 06:28:12 -0400
-Received: from smtp-out-223.synserver.de ([212.40.180.223]:1039 "HELO
-	smtp-out-222.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1752320Ab0FLK2H (ORCPT
+	id S1753788Ab0FLKde (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 06:33:34 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:60202 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753626Ab0FLKdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 06:28:07 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 22066
-Date: Sat, 12 Jun 2010 12:28:02 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: john.r.fastabend@intel.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net
-Subject: mpd client timeouts (bisected) 2.6.35-rc3
-Message-ID: <20100612102802.GA1782@arch.tripp.de>
+	Sat, 12 Jun 2010 06:33:32 -0400
+Date: Sat, 12 Jun 2010 12:33:22 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: kernel list <linux-kernel@vger.kernel.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: 2.6.35-rc{12} regression: inactive console corrupted
+Message-ID: <20100612103321.GA1458@ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837:
-»net: deliver skbs on inactive slaves to exact matches«
+Hi!
 
-causes large timeouts when mpd clients try to connect to a locally
-running mpd (music player demon) on my machine. This makes it 
-impossible to control mpd.
+When something happens on inactive  console (using fbcon), display is
+corrupted -- lines at end of screen are not erased properly.
 
-I bisected this down to the commit mentioned above.
-Reverting the commit from 2.6.35-rc3 also solves the problem.
-
+I see it on zaurus, but I suspect problem is generic.
 -- 
-Markus
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
