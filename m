@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab0FLV61 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 17:58:27 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58994
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752589Ab0FLV60 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 17:58:26 -0400
-Date: Sat, 12 Jun 2010 14:58:35 -0700 (PDT)
-Message-Id: <20100612.145835.123986343.davem@davemloft.net>
-To: markus@trippelsdorf.de
-Cc: john.r.fastabend@intel.com, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: Re: mpd client timeouts (bisected) 2.6.35-rc3
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100612102802.GA1782@arch.tripp.de>
-References: <20100612102802.GA1782@arch.tripp.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752689Ab0FLV7k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 17:59:40 -0400
+Received: from keil-draco.com ([216.193.185.50]:60170 "EHLO
+	mail.keil-draco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab0FLV7j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 17:59:39 -0400
+From: Daniel Hazelton <dhazelton@enter.net>
+To: "R.F. Burns" <burnsrf@gmail.com>
+Subject: Re: PC speaker
+Date: Sat, 12 Jun 2010 17:50:50 -0400
+User-Agent: KMail/1.13.3 (Linux/2.6.34-sabayon; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <AANLkTim2QHHztN6Nyg8VEsd-vkpg5Sk4TajBT7Bt-ga4@mail.gmail.com>
+In-Reply-To: <AANLkTim2QHHztN6Nyg8VEsd-vkpg5Sk4TajBT7Bt-ga4@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006121750.52052.dhazelton@enter.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-Date: Sat, 12 Jun 2010 12:28:02 +0200
+On Saturday, June 12, 2010 05:32:09 pm R.F. Burns wrote:
+> Is it possible to write a kernel module which, when loaded, will blow
+> the PC speaker?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> Commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837:
-> »net: deliver skbs on inactive slaves to exact matches«
-> 
-> causes large timeouts when mpd clients try to connect to a locally
-> running mpd (music player demon) on my machine. This makes it 
-> impossible to control mpd.
-> 
-> I bisected this down to the commit mentioned above.
-> Reverting the commit from 2.6.35-rc3 also solves the problem.
+This question was covered a very long time ago and the answer is "it might be 
+possible, but in the attempt you could very well fry the PC" - see 
+http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg169244.html for 
+the full answer.
 
-John, find an easy and fast way to fix this or else I am
-going to revert.
-
-Thanks.
+DRH
