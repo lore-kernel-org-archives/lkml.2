@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab0FLVqI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 17:46:08 -0400
-Received: from slow3-v.mail.gandi.net ([217.70.178.89]:54877 "EHLO
-	slow3-v.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab0FLVqG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 17:46:06 -0400
-X-WhiteListed: mail was accepted with no delay
-X-WhiteListed: mail was accepted with no delay
-X-Originating-IP: 217.70.178.42
-X-Originating-IP: 74.107.143.84
-Date: Sat, 12 Jun 2010 14:45:22 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, x86@kernel.org,
-       584846@bugs.debian.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Bug#584846: Detects only 64MB and fails to boot on Intel Green
- City board if e820 hooked by GRUB2
-Message-ID: <20100612214522.GA4994@feather>
-References: <20100612060322.29053.94187.reportbug@feather>
- <1276351120.14011.194.camel@localhost>
- <4C13D1E7.7060604@zytor.com>
- <20100612185538.GA4511@feather>
- <4C13F102.7000509@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C13F102.7000509@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752659Ab0FLV61 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 17:58:27 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58994
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752589Ab0FLV60 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 17:58:26 -0400
+Date: Sat, 12 Jun 2010 14:58:35 -0700 (PDT)
+Message-Id: <20100612.145835.123986343.davem@davemloft.net>
+To: markus@trippelsdorf.de
+Cc: john.r.fastabend@intel.com, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org
+Subject: Re: mpd client timeouts (bisected) 2.6.35-rc3
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100612102802.GA1782@arch.tripp.de>
+References: <20100612102802.GA1782@arch.tripp.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 12, 2010 at 01:41:38PM -0700, H. Peter Anvin wrote:
-> On 06/12/2010 11:55 AM, Josh Triplett wrote:
-> >>
-> >> It's kind of hard to know what is involved, since clearly it relates to
-> >> Grub2, which -- how do I say this politely -- seems to excel at doing
-> >> things in the most inferior way possible.  This is a great example of that.
-> >>
-> >> The most likely reason it fails is because Grub2 uses ACPI 3-style reads
-> >> of the board memory map, gets wrong results for the same reasons the
-> >> kernel do, and then pass then downstream to the kernel.  As such, there
-> >> is absolutely nothing the kernel can do about it.
-> > 
-> > grub2 doesn't do ACPI 3 reads; it always asks for 20 bytes, not 24.
-> > 
-> > Also, note that it works with older Linux kernels (before the commit in
-> > question) and fails with newer ones.  That doesn't rule out the
-> > possibility of a grub bug instead of a Linux bug, but since older Linux
-> > somehow coped with the situation, it seems like a regression that newer
-> > Linux cannot cope.
-> > 
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+Date: Sat, 12 Jun 2010 12:28:02 +0200
+
+> Commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837:
+> »net: deliver skbs on inactive slaves to exact matches«
 > 
-> It's a regression of sorts, sure; but the new Linux code also boots on
-> real hardware which it didn't boot before.  Since this requires Grub2
-> plus specific hardware, it is hard for me to track down what the problem
-> might be, but a good step on the way might be to use the Grub2 boot
-> procedure (with the drive remapping) to chainboot Syslinux, and run
-> meminfo.c32 which is a memory report debugging tool; it might be able to
-> give some answers at least.
+> causes large timeouts when mpd clients try to connect to a locally
+> running mpd (music player demon) on my machine. This makes it 
+> impossible to control mpd.
+> 
+> I bisected this down to the commit mentioned above.
+> Reverting the commit from 2.6.35-rc3 also solves the problem.
 
-Will do.
+John, find an easy and fast way to fix this or else I am
+going to revert.
 
-- Josh Triplett
+Thanks.
