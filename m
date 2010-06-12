@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab0FLR6e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 13:58:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:56533 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab0FLR6c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 13:58:32 -0400
-Date: Sat, 12 Jun 2010 10:58:30 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: linux-btrfs@vger.kernel.org
-cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Remove EXPERIMENTAL flag from Btrfs
-Message-ID: <alpine.DEB.2.01.1006121027480.3964@bogon.housecafe.de>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1752161Ab0FLSHj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 14:07:39 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38673 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751995Ab0FLSHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 14:07:37 -0400
+Date: Sat, 12 Jun 2010 20:07:35 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: khc@pm.waw.pl, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild modpost fix
+Message-ID: <20100612180735.GA31404@sepie.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V01U2FsdGVkX19dMX9+/nHN88OpOPQsLMXXJwc8txmxT/FWDhk
- phgoy8hYxRTWw3Cq/80aTYqIuMUoD4i6sG8kLegrTNnFL546v7
- BL0+6CmI5pGFdX5d5p0kg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-Resubmitting, as it doesn't seem to be upstream yet.
+Please pull another kbuild fix. This time it's a pointer arithmetics
+overflow in modpost that started to show up with newer gcc.
 
------------------
-  Remove EXPERIMENTAL flag from btrfs and also state that the disk format 
-  has indeed been finalized.
+Thanks,
+Michal
 
-  Signed-off-by: Christian Kujau <lists@nerdbynature.de>
+The following changes since commit 607b30fcf20c6e5339591692db6ffa0b15e041a0:
 
-diff --git a/Documentation/filesystems/btrfs.txt b/Documentation/filesystems/btrfs.txt
-index 64087c3..da67070 100644
---- a/Documentation/filesystems/btrfs.txt
-+++ b/Documentation/filesystems/btrfs.txt
-@@ -12,9 +12,9 @@ number of challenges with scaling to the large storage subsystems that
- are becoming common in today's data centers. Filesystems need to scale
- in their ability to address and manage large storage, and also in
- their ability to detect, repair and tolerate errors in the data stored
--on disk.  Btrfs is under heavy development, and is not suitable for
--any uses other than benchmarking and review. The Btrfs disk format is
--not yet finalized.
-+on disk.  Btrfs is under heavy development, but with Linux 2.6.31 the
-+Btrfs disk format has been finalized and is not considered experimental
-+any more.
- 
- The main Btrfs features include:
- 
-@@ -33,6 +33,7 @@ The main Btrfs features include:
-     * Efficient incremental backup and FS mirroring (not yet implemented)
-     * Online filesystem defragmentation
- 
-+Please see https://btrfs.wiki.kernel.org for details on these features.
- 
- 
- 	MAILING LIST
-diff --git a/fs/btrfs/Kconfig b/fs/btrfs/Kconfig
-index 7bb3c02..cebb197 100644
---- a/fs/btrfs/Kconfig
-+++ b/fs/btrfs/Kconfig
-@@ -1,16 +1,12 @@
- config BTRFS_FS
--	tristate "Btrfs filesystem (EXPERIMENTAL) Unstable disk format"
--	depends on EXPERIMENTAL
-+	tristate "Btrfs filesystem"
- 	select LIBCRC32C
- 	select ZLIB_INFLATE
- 	select ZLIB_DEFLATE
- 	help
- 	  Btrfs is a new filesystem with extents, writable snapshotting,
--	  support for multiple devices and many more features.
--
--	  Btrfs is highly experimental, and THE DISK FORMAT IS NOT YET
--	  FINALIZED.  You should say N here unless you are interested in
--	  testing Btrfs with non-critical data.
-+	  support for multiple devices and many more features. For more
-+	  information, please see https://btrfs.wiki.kernel.org.
- 
- 	  To compile this file system support as a module, choose M here. The
- 	  module will be called btrfs.
--- 
-BOFH excuse #186:
+  kbuild: Create output directory in Makefile.modbuiltin (2010-06-10 12:23:08 +0200)
 
-permission denied
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git rc-fixes
+
+Krzysztof Halasa (1):
+      kbuild: Fix modpost segfault
+
+ scripts/mod/modpost.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
