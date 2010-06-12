@@ -1,105 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054Ab0FLRQe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 13:16:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50986 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab0FLRQc (ORCPT
+	id S1752117Ab0FLRvu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 13:51:50 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:57573 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab0FLRvs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 13:16:32 -0400
+	Sat, 12 Jun 2010 13:51:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=dAX9sS8CgPoZtF4elv5CSJN768dC9utm56WY6M8q/fYip4UJUJPLw3xihDtARfZ4UW
-         yY9I+gZDtQUw0bgCsMwmuIKtdfbo+I5DXV2nNfAChH5hH05Xjs1E+eFv10nueIm2pN1i
-         ahdKNQbYbAQ/+A/hTcxbFcLYKD6xKH2vzzM8M=
-Date: Sat, 12 Jun 2010 19:09:44 +0200
-From: Fredrik Gustafsson <iveqy@iveqy.com>
-To: apw@canonical.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] checkpatch.pl skip long lines
-Message-ID: <20100612170944.GA9121@iveqy.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=SudmZLhep1a48y221k2ZtrmnR48siz7mgF630qzfNCr6Ygb8qrqlUqUSC1d0wdey3w
+         78dDhjUUQMA7LEzI3Kq0fQfk6GqSDoGQhrRVcaTEuwKdlMxEPLosiPP7GnBF0Eb0Nx1u
+         u7omIdTfVP+8QX0CKSbZ9ZKjzHYj/9YgLY7pQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimYYAD3hKRi9IXPSn428YqeGnR1Ig02FpVIbVgL@mail.gmail.com>
+References: <AANLkTil6GGSoc8TpzRacr1LZBZS3ee3H1ejYDSqfdul4@mail.gmail.com>
+	<20100529202253.0bd18bbd.akpm@linux-foundation.org>
+	<alpine.LFD.2.00.1006091821060.1402@localhost.localdomain>
+	<AANLkTilrLYu6H3GtAcP-cHpFvrm3v22uCw2EUeW_ZK0k@mail.gmail.com>
+	<alpine.LFD.2.00.1006111258430.6282@localhost.localdomain>
+	<AANLkTimYYAD3hKRi9IXPSn428YqeGnR1Ig02FpVIbVgL@mail.gmail.com>
+Date: Sat, 12 Jun 2010 11:51:47 -0600
+Message-ID: <AANLkTiliyQD2D--mDw_FREq3dqJO-WRDCMsKVixSqvMQ@mail.gmail.com>
+Subject: Re: Linux 2.6.34 causes system lockup on Compaq Presario 2200 Laptop
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+       linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-since the number of long lines in the linux kernel is huge and since
-Greg Kroah Hartman in his google tech talk about the kernel
-(http://www.youtube.com/watch?v=L2SED6sewRw) talked about probably
-ignore that criteria in the future, I thought the checkpatch.pl script
-should have an option to ignore checking for long lines.
+Not Reliably Reproducable.  Looks like a firmware/hardware problem
+with an old laptop.
 
-This would help finding the real errors and warnings, because they don't
-drown in line length warnings.
+Jeff
 
---
-Regards
-iveqy
-
-
->From ce6f2138969a56f5cbde2948f239c5204f0cafe1 Mon Sep 17 00:00:00 2001
-From: iveqy <iveqy@iveqy.com>
-Date: Sat, 12 Jun 2010 18:57:51 +0200
-Subject: [PATCH] Add skiplinelength parameter
-
----
- scripts/checkpatch.pl |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index bd88f11..e0683f4 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -29,6 +29,7 @@ my $summary_file = 0;
- my $root;
- my %debug;
- my $help = 0;
-+my $skip_line_length = 0;
- 
- sub help {
- 	my ($exitcode) = @_;
-@@ -49,6 +50,7 @@ Options:
-   --root=PATH                PATH to the kernel tree root
-   --no-summary               suppress the per-file summary
-   --mailback                 only produce a report in case of warnings/errors
-+  --skiplinelength           skip check for long lines
-   --summary-file             include the filename in summary
-   --debug KEY=[0|1]          turn on/off debugging of KEY, where KEY is one of
-                              'values', 'possible', 'type', and 'attr' (default
-@@ -81,6 +83,7 @@ GetOptions(
- 	'debug=s'	=> \%debug,
- 	'test-only=s'	=> \$tst_only,
- 	'h|help'	=> \$help,
-+	'skiplinelength!'	=> \$skip_line_length,
- 	'version'	=> \$help
- ) or help(1);
- 
-@@ -1401,12 +1404,13 @@ sub process {
- 		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
- 
- #80 column limit
--		if ($line =~ /^\+/ && $prevrawline !~ /\/\*\*/ &&
--		    $rawline !~ /^.\s*\*\s*\@$Ident\s/ &&
--		    $line !~ /^\+\s*$logFunctions\s*\(\s*(?:KERN_\S+\s*)?"[X\t]*"\s*(?:,|\)\s*;)\s*$/ &&
--		    $length > 80)
--		{
--			WARN("line over 80 characters\n" . $herecurr);
-+		if(!$skip_line_length) {
-+			if ($line =~ /^\+/ && $prevrawline !~ /\/\*\*/ &&
-+				$rawline !~ /^.\s*\*\s*\@$Ident\s/ &&
-+				$line !~ /^\+\s*$logFunctions\s*\(\s*(?:KERN_\S+\s*)?"[X\t]*"\s*(?:,|\)\s*;)\s*$/ &&
-+				$length > 80) {
-+				WARN("line over 80 characters\n" . $herecurr);
-+			}
- 		}
- 
- # check for spaces before a quoted newline
--- 
-1.6.4.4
-
+On Fri, Jun 11, 2010 at 3:19 PM, Jeffrey Merkey <jeffmerkey@gmail.com> wrote:
+> On Fri, Jun 11, 2010 at 11:07 AM, Len Brown <lenb@kernel.org> wrote:
+>> On Fri, 11 Jun 2010, Jeffrey Merkey wrote:
+>>
+>>> Len,
+>>>
+>>> I am having trouble getting a trace of this because its down hard to
+>>> reproduce.  The reason is the lockup happens before I log into the
+>>> laptop.  i.e. I boot 2.6.34 and if I let the laptop just sit there is
+>>> happens.  If I log in and start doing work on it, it does not seem to
+>>> happen.  It's related to using the laptop on battery mode with the
+>>> charger removed.  I have a 2U appliance setup I am working on today
+>>> and this frees up the laptop to try to reproduce this.  The flaky
+>>> battery power misreporting was in fact accurate.  The battery in that
+>>> laptop is 6 years old and does have low power.  I am certain the
+>>> lockup if related though.  I will try to reproduce today and setup the
+>>> trace to run after boot.  I have had it sitting there for an  hour and
+>>> it has not reoccurred.  Let me try through today and if I cannot
+>>> reproduce, close the bug.
+>>
+>> Good to know, Jeff.
+>>
+>> One possibility is that the old battery is confusing
+>> the embedded controller -- possibly exposing a firmware bug.
+>> The EC, in turn, is fully capable of hanging the OS.
+>>
+>> If you *can* reproduce it, it may be interesting to bisect
+>> recent changes to drivers/acpi/ec.c
+>>
+>> Also, if you can reproduce it, it would be good to verify
+>> that the problem occurs only when the battery driver is loaded.
+>>
+>> thanks,
+>> -Len
+>>
+>>> > Please attach the output of acpidump here:
+>>> >
+>>> > https://bugzilla.kernel.org/show_bug.cgi?id=16136
+>>
+>> We could still use this output -- note that you can
+>> capture it at any time, independent of the failure,
+>> and independent of the kernel -- as it is simply
+>> a copy of the tables that the BIOS is exporting to Linux.
+>>
+>> thanks,
+>> -Len Brown, Intel Open Source Technology Center
+>>
+>
+> I can tell you for certain it does only happen when the battery driver
+> is loaded.  Still has not ocurred.  Just rebooted it 15 minutes ago --
+> trying again.
+>
+> Jeff
+>
