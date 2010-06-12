@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab0FLHgq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 03:36:46 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:38922 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab0FLHgo (ORCPT
+	id S1753045Ab0FLHjf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 03:39:35 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:57280 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab0FLHje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 03:36:44 -0400
-Date: Sat, 12 Jun 2010 09:36:39 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-       linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-       Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH v2 1/2] tmpfs: Quick token library to allow scalable
-	retrieval of tokens from token jar
-Message-ID: <20100612073639.GA15974@basil.fritz.box>
-References: <1274902371.31973.9392.camel@mudge.jf.intel.com> <20100601145126.f46572d1.akpm@linux-foundation.org> <87ocftyfnh.fsf@basil.nowhere.org> <20100609153654.0061e9c8.akpm@linux-foundation.org> <1276189574.2385.32.camel@mudge.jf.intel.com> <20100611145219.017a87c0.akpm@linux-foundation.org> <1276294003.2385.48.camel@mudge.jf.intel.com> <20100611152620.97bc3e59.akpm@linux-foundation.org> <1276298999.2385.71.camel@mudge.jf.intel.com> <20100611165425.e21697c2.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100611165425.e21697c2.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	Sat, 12 Jun 2010 03:39:34 -0400
+Subject: Re: [PATCHv5 09/16] btrfs: remove junk sb_mark_dirty call
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reply-To: Artem.Bityutskiy@nokia.com
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+       Chris Mason <chris.mason@oracle.com>, Al Viro <viro@ZenIV.linux.org.uk>
+In-Reply-To: <1275835829-1478-10-git-send-email-dedekind1@gmail.com>
+References: <1275835829-1478-1-git-send-email-dedekind1@gmail.com>
+	 <1275835829-1478-10-git-send-email-dedekind1@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia
+Date: Sat, 12 Jun 2010 10:36:47 +0300
+Message-ID: <1276328207.19028.56.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-8.fc13) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 12 Jun 2010 07:39:06.0802 (UTC) FILETIME=[5685E920:01CB0A02]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 04:54:25PM -0700, Andrew Morton wrote:
-> > >  			spin_lock(&sbinfo->stat_lock);
-> > > -			if (sbinfo->free_blocks <= 1) {
-> > > +			if (percpu_counter_read(&sbinfo->free_blocks) <= 1) {
-> > >  				spin_unlock(&sbinfo->stat_lock);
-> > 
-> > Thanks for pointing me to look at this alternative implementation.
-> > 
-> > However, looking at the percpu counter code, it appears that the
-> > percpu_counter_read is imprecise.
+Chris,
+
+could you please ack or nack this patch?
+
+On Sun, 2010-06-06 at 17:50 +0300, Artem Bityutskiy wrote:
+> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 > 
-> Sure, that's inevitable if we want to avoid one-atomic-op-per-operation.
-
-Only if you use the wrong primitive.
-It's not inevitable as qtoken has proven.
-
-> percpu_counters have a precise limit too!  It's
-> percpu_counter_batch*num_online_cpus.  You can implement your own
-> tolerance by not using percpu_counter_batch: pass your own batch into
-> __percpu_counter_add().
-
-Such a batch could be rather large on a large system.
-
-e.g. on a 32 CPU system with batch 16 it's already 2MB.
-
-> There's a trick that can be done to improve accuracy.  When checking to
-> see if the fs is full, use percpu_counter_read().  If the number that
-> percpu_counter_read() returns is "close" to max_blocks, then start
-> using the more expensive percpu_counter_sum().  So the kernel will be
-> fast, until the disk gets to within (batch*num_online_cpus) blocks of
-> being full.
-
-Ok it would work, but you would get a big dip in performance
-once you're near the limit.
-
-And the more CPUs you have the larger this window of slowness becomes.
-
+> BTRFS does not define '->write_super()' method, so it should not
+> mark its superblock as dirty. This looks like some left-over.
 > 
-> This is not the first time I've seen that requirement, and it would be
-> a good idea to implement the concept within an addition to the
-> percpu_counter library.  Say, percpu_counter_compare().
+> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> Cc: Chris Mason <chris.mason@oracle.com>
+> ---
+>  fs/btrfs/inode.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+> index caa4ed9..1419d90 100644
+> --- a/fs/btrfs/inode.c
+> +++ b/fs/btrfs/inode.c
+> @@ -2938,7 +2938,6 @@ int btrfs_unlink_subvol(struct btrfs_trans_handle *trans,
+>  	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
+>  	ret = btrfs_update_inode(trans, root, dir);
+>  	BUG_ON(ret);
+> -	sb_mark_dirty(dir->i_sb);
+>  
+>  	btrfs_free_path(path);
+>  	return 0;
 
-But why not just use qtoken which solves this without any hacks?
-
-I still think qtoken is a better proposal. Even if it's a bit more
-code, but at least it solves this all cleanly without hacks and
-arbitary limits.
-
-Given perhaps it needs other users to really pay of its code weight.
-I'll see if I can find any others. 
-
--Andi
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
