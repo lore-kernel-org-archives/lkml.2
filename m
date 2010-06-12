@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab0FLHHF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 03:07:05 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40427 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab0FLHHD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 03:07:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=R5HNxPHy+kRyeZM4Uruy41+iyUkscvXAcDjgsP4c8jbuVyLgrn83uCJ+4M7EFaBDFi
-         ha47IGLpsk9uga54knGauFt56HJa2NebEfiwlfzi6tgo3NuIG1Q+xIFFnwqY6D1rZvA4
-         PYo91/k4deeCfVfB8JuHrzfJrF1kyWT2pvHMI=
+	id S1752708Ab0FLHTP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 03:19:15 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59837 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751481Ab0FLHTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 03:19:13 -0400
+Date: Sat, 12 Jun 2010 09:18:47 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Divyesh Shah <dpshah@google.com>
+Cc: jaxboe@fusionio.com, peterz@infradead.org, piotr@hosowicz.com,
+       linux-kernel@vger.kernel.org, vgoyal@redhat.com,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/2] Use ktime_get() instead of sched_clock() for blkio
+ cgroup stats.
+Message-ID: <20100612071847.GA29751@elte.hu>
+References: <20100612023409.14850.76309.stgit@austin.mtv.corp.google.com>
+ <20100612023457.14850.50439.stgit@austin.mtv.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <x498w6liejl.fsf@segfault.boston.devel.redhat.com>
-References: <AANLkTilXU8paNWNUSQIjcQ7xaaWgB1bEyd70d5P_nWf2@mail.gmail.com>
-	<x498w6liejl.fsf@segfault.boston.devel.redhat.com>
-Date: Sat, 12 Jun 2010 12:37:02 +0530
-Message-ID: <AANLkTimBxuQC4-Pm2OAl2mBb1h_rP1b-V9q2G7jEvfTv@mail.gmail.com>
-Subject: Re: O_NONBLOCK with Ext3
-From: "Yedire, Sandeep" <syedire@gmail.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100612023457.14850.50439.stgit@austin.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 1.0
+X-ELTE-SpamLevel: s
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
+	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
+	[score: 0.4984]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 June 2010 00:26, Jeff Moyer <jmoyer@redhat.com> wrote:
-> "Yedire, Sandeep" <syedire@gmail.com> writes:
->
->> Hi ALL,
->> I am currently using o_nonblock flag for writing a file of 64MB over a
->> flash device. Flash is formatted with ext3 filesystem with default
->> options.
->> When instrumented the driver code for collecting the erase/write count
->> at sector level. I noticed that o_nonblock has no effect on this
->> count. There is no difference in erase/write count with o_nonblock
->> flag or without this flag.
->> When selected Ext2 as filesystem I noticed a significant difference in
->> the erase/write count.
->> There were more updates with o_nonblock and test application was
->> faster. I could confirm this by checking the Dirty page limit in the
->> background. It was updating faster in case of Ext2 not incase of Ext3.
->>
->> Can any one explain on o_nonblock flag in case of  Ext3 filesystem?
->
-> The O_NONBLOCK flag should be ignored when opening files on a file
-> system.  I'm not sure how to explain your observations.
->
-> What exactly were you trying to accomplish?
->
-> Cheers,
-> Jeff
->
---
-[Sandeep]
-> What exactly were you trying to accomplish?
->
-I am only trying to observe the difference with O_NONBLOCK flag in the
-updates to filesystem blocks and data blocks in Ext2 and Ext3
-filesystem.
 
-It was observed that with O_NONBLOCK flag in Ext2 there were less
-updates to Filesystem block at sector 0, and frequent updates to data
-blocks. This is not the case with Ext3.
+* Divyesh Shah <dpshah@google.com> wrote:
 
-Sandeep
+> This will take care of the pre-emptive kernel issue and the unbounded
+> TSC drift problem. We will lose resolution though in some cases.
+
+> -	blkg->stats.start_group_wait_time = sched_clock();
+> +	blkg->stats.start_group_wait_time = ktime_to_ns(ktime_get());
+
+Ugh!
+
+ktime_get() can have insanely high overhead. Peter has added local_clock(), if 
+then you should use that and apply checks to make sure the result isnt 
+negative.
+
+	Ingo
