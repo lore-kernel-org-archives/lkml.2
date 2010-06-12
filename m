@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab0FLCeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 22:34:04 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:18166 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab0FLCeB (ORCPT
+	id S1752258Ab0FLCfd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 22:35:33 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:16677 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab0FLCfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 22:34:01 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6010"; a="44219426"
-Message-ID: <4C12F218.9010808@codeaurora.org>
-Date: Fri, 11 Jun 2010 19:34:00 -0700
-From: Bryan Huntsman <bryanh@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Fri, 11 Jun 2010 22:35:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding;
+	b=S49l1KsB0+Idl3Bx8Y+lYB/wp77EE4xt7aImfn9n/j4w/PBIwyz9984k1LQi9FGN5
+	wDa32+kt0ZV1zqa8LZP+g==
+Subject: [PATCH 1/2] Remove preempt_enable/disable calls around sched_clock()
+To: jaxboe@fusionio.com
+From: Divyesh Shah <dpshah@google.com>
+Cc: peterz@infradead.org, mingo@elte.hu, piotr@hosowicz.com,
+       linux-kernel@vger.kernel.org, vgoyal@redhat.com
+Date: Fri, 11 Jun 2010 19:34:52 -0700
+Message-ID: <20100612023409.14850.76309.stgit@austin.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Ben Dooks <ben-linux@fluff.org>
-CC: Gregory Bean <gbean@codeaurora.org>, akpm@linux-foundation.org,
-       linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Michael Hennerich <michael.hennerich@analog.com>,
-       Mike Frysinger <vapier@gentoo.org>, David Brown <davidb@codeaurora.org>,
-       Daniel Walker <dwalker@codeaurora.org>
-Subject: Re: [PATCH 1/2] gpio: msm7200a: Add gpiolib support for MSM chips.
-References: <1276286332-13515-1-git-send-email-gbean@codeaurora.org> <1276286332-13515-2-git-send-email-gbean@codeaurora.org> <20100612021252.GB31045@fluff.org.uk>
-In-Reply-To: <20100612021252.GB31045@fluff.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Dooks wrote:
-> On Fri, Jun 11, 2010 at 12:58:51PM -0700, Gregory Bean wrote:
+calls in the block layer. This was a temporary fix added.
 
-...snip...
+Signed-off-by: Divyesh Shah <dpshah@google.com>
+---
+ include/linux/blkdev.h |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
->> +MODULE_DESCRIPTION("Driver for Qualcomm MSM 7200a-family SoC GPIOs");
->> +MODULE_LICENSE("GPLv2");
-> 
-> you left out a MODULE_ALIAS() for your platform device.
-> you could also do with a MODULE_AUTHOUR() line as well
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 09a8402..ebe788e 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1218,16 +1218,12 @@ int kblockd_schedule_work(struct request_queue *q, struct work_struct *work);
+  */
+ static inline void set_start_time_ns(struct request *req)
+ {
+-	preempt_disable();
+ 	req->start_time_ns = sched_clock();
+-	preempt_enable();
+ }
+ 
+ static inline void set_io_start_time_ns(struct request *req)
+ {
+-	preempt_disable();
+ 	req->io_start_time_ns = sched_clock();
+-	preempt_enable();
+ }
+ 
+ static inline uint64_t rq_start_time_ns(struct request *req)
 
-Also, the string is "GPL v2".  See include/linux/license.h.
-
->> diff --git a/include/linux/msm7200a-gpio.h b/include/linux/msm7200a-gpio.h
->> new file mode 100644
->> index 0000000..3f1ef38
->> --- /dev/null
->> +++ b/include/linux/msm7200a-gpio.h
->> @@ -0,0 +1,44 @@
->> +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
->> + *
->> + * Redistribution and use in source and binary forms, with or without
->> + * modification, are permitted provided that the following conditions are
->> + * met:
->> + *     * Redistributions of source code must retain the above copyright
->> diff --git a/include/linux/msm7200a-gpio.h b/include/linux/msm7200a-gpio.h
->> new file mode 100644
->> index 0000000..3f1ef38
->> --- /dev/null
->> +++ b/include/linux/msm7200a-gpio.h
->> @@ -0,0 +1,44 @@
->> +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
->> + *
->> + * Redistribution and use in source and binary forms, with or without
-> ;5B> + * modification, are permitted provided that the following conditions are
->> + * met:
->> + *     * Redistributions of source code must retain the above copyright
->> + *       notice, this list of conditions and the following disclaimer.
->> + *     * Redistributions in binary form must reproduce the above
->> + *       copyright notice, this list of conditions and the following
->> + *       disclaimer in the documentation and/or other materials provided
->> + *       with the distribution.
->> + *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
->> + *       contributors may be used to endorse or promote products derived
->> + *       from this software without specific prior written permission.
->> + *
->> + * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
->> + * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
->> + * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
->> + * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
->> + * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
->> + * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
->> + * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
->> + * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
->> + * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
->> + * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
->> + * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
->> + *
->> + */
-> 
-> Is this really GPL compatible?
-
-It's BSD-style, so yes.
-
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
