@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760689Ab0FKX42 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 19:56:28 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52661 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755839Ab0FKX40 convert rfc822-to-8bit (ORCPT
+	id S1752225Ab0FLAFd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 20:05:33 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:40620 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab0FLAFb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 19:56:26 -0400
+	Fri, 11 Jun 2010 20:05:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=BTDkWYewBIVfbdMve21euT7PD5CrqhGDSdE4elOGqmbmDwAgN0I6VSBTZ9rOLqqHU3
-         X36uhlvGRpN7HzX5FDFb/A5J1br8xZ3qFxYBqp/c5vCRSPFk+i5AOmWEsJOTyMXjuKay
-         HQPwd/fL248vlL8uC9XZqocAbHIUvBOFU35k4=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=t/bsh64yebcBU+cweIUMCXCD37Auzje0QBMLY/GwTBAh80y9p6pInFIQnymzjKPMYU
+         PmqNNvvJrikOq/y1H1Z/Y+4C6uK+0deSPIo6t15jba7Eg9dx43czyO784msiD/EIViYl
+         X+BXY4WpAIPoyXbjtMG1JAsNe0pax77GIfr4Y=
 MIME-Version: 1.0
-In-Reply-To: <201006111052.29187.goretux@gmail.com>
-References: <201006111052.29187.goretux@gmail.com>
-From: Younes Manton <younes.m@gmail.com>
-Date: Fri, 11 Jun 2010 19:56:05 -0400
-Message-ID: <AANLkTilGym6lbGnSKuahBvIAT7a2Wt405i_XZtd7FFwd@mail.gmail.com>
-Subject: Re: [Nouveau] [BUG ?] Nouveau driver on 330M GT
-To: Eric Lacombe <goretux@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>, nouveau@lists.freedesktop.org,
-       linux-kernel@vger.kernel.org
+In-Reply-To: <1275394921-26633-1-git-send-email-linus.walleij@stericsson.com>
+References: <1275394921-26633-1-git-send-email-linus.walleij@stericsson.com>
+Date: Fri, 11 Jun 2010 17:05:31 -0700
+X-Google-Sender-Auth: X05gQzGZsmMTX1jP6IMjDdqXZnU
+Message-ID: <AANLkTikY8bV1DbMEspUNivD2zTiZOyNKL4ydHttLrFKk@mail.gmail.com>
+Subject: Re: [PATCH 12/18] DMAENGINE: ste_dma40: allocate LCLA dynamically
+From: Dan Williams <dan.j.williams@intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Jonas Aaberg <jonas.aberg@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 4:52 AM, Eric Lacombe <goretux@gmail.com> wrote:
-> Hi,
+On Tue, Jun 1, 2010 at 5:22 AM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
+> Switch to allocating LCLA in memory instead of having a fixed
+> address.
 >
-> I tested Nouveau with 2.6.34, and now with 2.6.35-rc2 and It does not work
-> with my laptop (chip NVIDIA GeForce 330M GT). (I give more information of the
-> nvidia chip below). I've seen an error message related to my nvidia chip that
-> may also be related to my problem :
+> Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+> ---
+>  drivers/dma/ste_dma40.c    |  246 +++++++++++++++++++++++++++-----------------
+>  drivers/dma/ste_dma40_ll.c |    5 +-
+>  drivers/dma/ste_dma40_ll.h |   12 +-
+>  3 files changed, 161 insertions(+), 102 deletions(-)
 >
-> pci 0000:01:00.0: no compatible bridge window for [mem 0xfff80000-0xffffffff pref]
+> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+> index 5579401..ec092fa 100644
+> --- a/drivers/dma/ste_dma40.c
+> +++ b/drivers/dma/ste_dma40.c
+[..]
+> @@ -2482,6 +2501,71 @@ static void __init d40_hw_init(struct d40_base *base)
 >
-> Thanks in advance for your response.
+>  }
 >
-> Best regards
->
->        Eric
->
-> Here more information :
->
-> # dmesg |grep "01\:00\.0"
-> [    0.933105] pci 0000:01:00.0: reg 10: [mem 0xd0000000-0xd0ffffff]
-> [    0.933122] pci 0000:01:00.0: reg 14: [mem 0xa0000000-0xafffffff 64bit pref]
-> [    0.933139] pci 0000:01:00.0: reg 1c: [mem 0xb0000000-0xb1ffffff 64bit pref]
-> [    0.933151] pci 0000:01:00.0: reg 24: [io  0x6000-0x607f]
-> [    0.933166] pci 0000:01:00.0: reg 30: [mem 0xfff80000-0xffffffff pref]
-> [    0.957777] vgaarb: device added:
-> PCI:0000:01:00.0,decodes=io+mem,owns=none,locks=none
-> [    0.973672] pci 0000:01:00.0: no compatible bridge window for [mem
-> 0xfff80000-0xffffffff pref]
-> [    0.973800] pci 0000:01:00.0: BAR 6: assigned [mem 0xd1080000-0xd10fffff
-> pref]
-> [   13.092806] vgaarb: transferring owner from PCI:0000:00:02.0 to
-> PCI:0000:01:00.0
+> +static int __init d40_lcla_allocate(struct d40_base *base)
+> +{
+> +       unsigned long *page_list;
+> +       int i, j;
+> +       int ret = 0;
+> +
+> +       /*
+> +        * This is somewhat ugly. We need 8192 bytes that are 18 bit aligned,
+> +        * To full fill this hardware requirement without wasting 256 kb
+> +        * we allocate pages until we get an aligned one.
+> +        */
+> +       page_list = kmalloc(sizeof(unsigned long) * MAX_LCLA_ALLOC_ATTEMPTS,
+> +                           GFP_KERNEL);
+> +
+> +       if (!page_list) {
+> +               ret = -ENOMEM;
+> +               goto failure;
+> +       }
+> +
+> +       /* Calculating how many pages that are required */
+> +       base->lcla_pool.pages = SZ_1K * (base->num_phy_chans + PAGE_SIZE /
+> +                                        SZ_1K - 1) / PAGE_SIZE + 3;
+> +
 
-This is not enough information. Most of the useful information is
-prefixed with [drm], but generally a full log from boot to fail is
-best.
+What?
 
->
-> # sudo lspci -v -s 0000:01:00.0
-> 01:00.0 VGA compatible controller: nVidia Corporation Device 0a2b (rev a2)
->        Subsystem: Sony Corporation Device 905a
->        Flags: fast devsel, IRQ 5
->        Memory at d0000000 (32-bit, non-prefetchable) [disabled] [size=16M]
->        Memory at a0000000 (64-bit, prefetchable) [disabled] [size=256M]
->        Memory at b0000000 (64-bit, prefetchable) [disabled] [size=32M]
->        I/O ports at 6000 [disabled] [size=128]
->        Expansion ROM at d1080000 [disabled] [size=512K]
->        Capabilities: [60] Power Management version 3
->        Capabilities: [68] Message Signalled Interrupts: Mask- 64bit+
-> Queue=0/0 Enable-
->        Capabilities: [78] Express Endpoint, MSI 00
->        Capabilities: [b4] Vendor Specific Information <?>
->        Capabilities: [100] Virtual Channel <?>
->        Capabilities: [128] Power Budgeting <?>
->        Capabilities: [600] Vendor Specific Information <?>
->        Kernel modules: nouveau, nvidiafb
+> +       for (i = 0; i < MAX_LCLA_ALLOC_ATTEMPTS; i++) {
+> +               page_list[i] = __get_free_pages(GFP_KERNEL,
+> +                                               base->lcla_pool.pages);
+> +
+> +               if ((virt_to_phys((void *)page_list[i]) &
+> +                    (LCLA_ALIGNMENT - 1)) == 0 && page_list[i] != 0)
+> +                       break;
 
-Please make sure nvidiafb is not loaded. If you still have issues
-after making sure that nouveau is the only kernel module running for
-this device please attach a full log.
+It looks odd to test for page_list[i] being null after determining if
+this is the desired alignment.
+
+--
+Dan
