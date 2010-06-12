@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab0FLJ2u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 05:28:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:30757 "EHLO mga01.intel.com"
+	id S1753523Ab0FLJ2x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 05:28:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:30032 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753356Ab0FLJ2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 05:28:36 -0400
+	id S1753381Ab0FLJ2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 05:28:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,407,1272870000"; 
-   d="scan'208";a="807276937"
+   d="scan'208";a="807276941"
 From: Huang Ying <ying.huang@intel.com>
 To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
        Huang Ying <ying.huang@intel.com>
-Subject: [RFC 2/3] Use unified NMI delayed call mechanism in MCE handler
-Date: Sat, 12 Jun 2010 17:28:15 +0800
-Message-Id: <1276334896-7075-2-git-send-email-ying.huang@intel.com>
+Subject: [RFC 3/3] Use unified NMI delayed call mechanism in perf event NMI handler
+Date: Sat, 12 Jun 2010 17:28:16 +0800
+Message-Id: <1276334896-7075-3-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
 References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
@@ -23,147 +23,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original self interrupt mechanism in MCE handler is replaced by
-the unified delayed call mechanism.
+The original self interrupt mechanism in perf event NMI handler is
+replaced by the unified delayed call mechanism.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- arch/x86/include/asm/entry_arch.h  |    4 --
- arch/x86/include/asm/irq_vectors.h |    5 ---
- arch/x86/kernel/cpu/mcheck/mce.c   |   53 ++++++-------------------------------
- arch/x86/kernel/entry_64.S         |    5 ---
- arch/x86/kernel/irqinit.c          |    3 --
- 5 files changed, 10 insertions(+), 60 deletions(-)
+ arch/x86/include/asm/entry_arch.h  |    4 ----
+ arch/x86/include/asm/irq_vectors.h |    5 -----
+ arch/x86/kernel/cpu/perf_event.c   |   13 ++++++++-----
+ arch/x86/kernel/entry_64.S         |    5 -----
+ arch/x86/kernel/irqinit.c          |    6 ------
+ 5 files changed, 8 insertions(+), 25 deletions(-)
 
 --- a/arch/x86/include/asm/entry_arch.h
 +++ b/arch/x86/include/asm/entry_arch.h
-@@ -61,9 +61,5 @@ BUILD_INTERRUPT(thermal_interrupt,THERMA
- BUILD_INTERRUPT(threshold_interrupt,THRESHOLD_APIC_VECTOR)
- #endif
+@@ -49,10 +49,6 @@ BUILD_INTERRUPT(apic_timer_interrupt,LOC
+ BUILD_INTERRUPT(error_interrupt,ERROR_APIC_VECTOR)
+ BUILD_INTERRUPT(spurious_interrupt,SPURIOUS_APIC_VECTOR)
  
--#ifdef CONFIG_X86_MCE
--BUILD_INTERRUPT(mce_self_interrupt,MCE_SELF_VECTOR)
+-#ifdef CONFIG_PERF_EVENTS
+-BUILD_INTERRUPT(perf_pending_interrupt, LOCAL_PENDING_VECTOR)
 -#endif
 -
- BUILD_INTERRUPT(nmi_delayed_call_interrupt,NMI_DELAYED_CALL_VECTOR)
+ #ifdef CONFIG_X86_THERMAL_VECTOR
+ BUILD_INTERRUPT(thermal_interrupt,THERMAL_APIC_VECTOR)
  #endif
 --- a/arch/x86/include/asm/irq_vectors.h
 +++ b/arch/x86/include/asm/irq_vectors.h
-@@ -121,11 +121,6 @@
+@@ -113,11 +113,6 @@
+  */
+ #define X86_PLATFORM_IPI_VECTOR		0xed
+ 
+-/*
+- * Performance monitoring pending work vector:
+- */
+-#define LOCAL_PENDING_VECTOR		0xec
+-
  #define UV_BAU_MESSAGE			0xea
  
  /*
-- * Self IPI vector for machine checks
-- */
--#define MCE_SELF_VECTOR			0xeb
--
--/*
-  * Self IPI vector for NMI delayed call
-  */
- #define NMI_DELAYED_CALL_VECTOR		0xe9
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -480,60 +480,22 @@ static inline void mce_get_rip(struct mc
- 		m->ip = mce_rdmsrl(rip_msr);
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1160,13 +1160,12 @@ static int x86_pmu_handle_irq(struct pt_
+ 	return handled;
  }
  
--#ifdef CONFIG_X86_LOCAL_APIC
--/*
-- * Called after interrupts have been reenabled again
-- * when a MCE happened during an interrupts off region
-- * in the kernel.
-- */
--asmlinkage void smp_mce_self_interrupt(struct pt_regs *regs)
-+static int mce_delayed_call_id = NMI_DELAYED_CALL_ID_INVALID;
+-void smp_perf_pending_interrupt(struct pt_regs *regs)
++static int perf_delayed_call_id = NMI_DELAYED_CALL_ID_INVALID;
 +
-+static void __mce_report_event(void)
++void perf_do_pending(void)
  {
--	ack_APIC_irq();
--	exit_idle();
 -	irq_enter();
- 	mce_notify_irq();
- 	mce_schedule_work();
+-	ack_APIC_irq();
+ 	inc_irq_stat(apic_pending_irqs);
+ 	perf_event_do_pending();
 -	irq_exit();
  }
--#endif
  
- static void mce_report_event(struct pt_regs *regs)
- {
- 	if (regs->flags & (X86_VM_MASK|X86_EFLAGS_IF)) {
--		mce_notify_irq();
--		/*
--		 * Triggering the work queue here is just an insurance
--		 * policy in case the syscall exit notify handler
--		 * doesn't run soon enough or ends up running on the
--		 * wrong CPU (can happen when audit sleeps)
--		 */
--		mce_schedule_work();
-+		__mce_report_event();
+ void set_perf_event_pending(void)
+@@ -1175,7 +1174,7 @@ void set_perf_event_pending(void)
+ 	if (!x86_pmu.apic || !x86_pmu_initialized())
  		return;
- 	}
  
--#ifdef CONFIG_X86_LOCAL_APIC
--	/*
--	 * Without APIC do not notify. The event will be picked
--	 * up eventually.
--	 */
--	if (!cpu_has_apic)
--		return;
--
--	/*
--	 * When interrupts are disabled we cannot use
--	 * kernel services safely. Trigger an self interrupt
--	 * through the APIC to instead do the notification
--	 * after interrupts are reenabled again.
--	 */
--	apic->send_IPI_self(MCE_SELF_VECTOR);
--
--	/*
--	 * Wait for idle afterwards again so that we don't leave the
--	 * APIC in a non idle state because the normal APIC writes
--	 * cannot exclude us.
--	 */
--	apic_wait_icr_idle();
--#endif
-+	nmi_delayed_call_schedule(mce_delayed_call_id);
+-	apic->send_IPI_self(LOCAL_PENDING_VECTOR);
++	nmi_delayed_call_schedule(perf_delayed_call_id);
+ #endif
  }
  
- DEFINE_PER_CPU(unsigned, mce_poll_count);
-@@ -1731,6 +1693,11 @@ __setup("mce", mcheck_enable);
+@@ -1363,6 +1362,10 @@ void __init init_hw_perf_events(void)
+ 		}
+ 	}
  
- int __init mcheck_init(void)
- {
-+	mce_delayed_call_id = nmi_delayed_call_register(__mce_report_event);
-+	if (mce_delayed_call_id == NMI_DELAYED_CALL_ID_INVALID)
-+		pr_err(
-+		"Failed to register mce delayed event reporting function!\n");
++	perf_delayed_call_id = nmi_delayed_call_register(perf_do_pending);
++	if (perf_delayed_call_id == NMI_DELAYED_CALL_ID_INVALID)
++		pr_err("Failed to register NMI delayed call for perf.\n");
 +
- 	atomic_notifier_chain_register(&x86_mce_decoder_chain, &mce_dec_nb);
- 
- 	mcheck_intel_therm_init();
+ 	pr_info("... version:                %d\n",     x86_pmu.version);
+ 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
+ 	pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -1004,11 +1004,6 @@ apicinterrupt THRESHOLD_APIC_VECTOR \
- apicinterrupt THERMAL_APIC_VECTOR \
- 	thermal_interrupt smp_thermal_interrupt
+@@ -1021,11 +1021,6 @@ apicinterrupt ERROR_APIC_VECTOR \
+ apicinterrupt SPURIOUS_APIC_VECTOR \
+ 	spurious_interrupt smp_spurious_interrupt
  
--#ifdef CONFIG_X86_MCE
--apicinterrupt MCE_SELF_VECTOR \
--	mce_self_interrupt smp_mce_self_interrupt
+-#ifdef CONFIG_PERF_EVENTS
+-apicinterrupt LOCAL_PENDING_VECTOR \
+-	perf_pending_interrupt smp_perf_pending_interrupt
 -#endif
 -
- apicinterrupt NMI_DELAYED_CALL_VECTOR \
- 	nmi_delayed_call_interrupt smp_nmi_delayed_call_interrupt
- 
+ /*
+  * Exception entry points.
+  */
 --- a/arch/x86/kernel/irqinit.c
 +++ b/arch/x86/kernel/irqinit.c
-@@ -209,9 +209,6 @@ static void __init apic_intr_init(void)
- #ifdef CONFIG_X86_MCE_THRESHOLD
- 	alloc_intr_gate(THRESHOLD_APIC_VECTOR, threshold_interrupt);
+@@ -223,12 +223,6 @@ static void __init apic_intr_init(void)
+ 	/* IPI vectors for APIC spurious and error interrupts */
+ 	alloc_intr_gate(SPURIOUS_APIC_VECTOR, spurious_interrupt);
+ 	alloc_intr_gate(ERROR_APIC_VECTOR, error_interrupt);
+-
+-	/* Performance monitoring interrupts: */
+-# ifdef CONFIG_PERF_EVENTS
+-	alloc_intr_gate(LOCAL_PENDING_VECTOR, perf_pending_interrupt);
+-# endif
+-
  #endif
--#if defined(CONFIG_X86_MCE) && defined(CONFIG_X86_LOCAL_APIC)
--	alloc_intr_gate(MCE_SELF_VECTOR, mce_self_interrupt);
--#endif
- #if defined(CONFIG_X86_LOCAL_APIC)
- 	alloc_intr_gate(NMI_DELAYED_CALL_VECTOR, nmi_delayed_call_interrupt);
- #endif
+ }
+ 
