@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab0FLRvu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 13:51:50 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57573 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab0FLRvs convert rfc822-to-8bit (ORCPT
+	id S1752167Ab0FLR6e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 13:58:34 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:56533 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107Ab0FLR6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 13:51:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=SudmZLhep1a48y221k2ZtrmnR48siz7mgF630qzfNCr6Ygb8qrqlUqUSC1d0wdey3w
-         78dDhjUUQMA7LEzI3Kq0fQfk6GqSDoGQhrRVcaTEuwKdlMxEPLosiPP7GnBF0Eb0Nx1u
-         u7omIdTfVP+8QX0CKSbZ9ZKjzHYj/9YgLY7pQ=
+	Sat, 12 Jun 2010 13:58:32 -0400
+Date: Sat, 12 Jun 2010 10:58:30 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: linux-btrfs@vger.kernel.org
+cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Remove EXPERIMENTAL flag from Btrfs
+Message-ID: <alpine.DEB.2.01.1006121027480.3964@bogon.housecafe.de>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimYYAD3hKRi9IXPSn428YqeGnR1Ig02FpVIbVgL@mail.gmail.com>
-References: <AANLkTil6GGSoc8TpzRacr1LZBZS3ee3H1ejYDSqfdul4@mail.gmail.com>
-	<20100529202253.0bd18bbd.akpm@linux-foundation.org>
-	<alpine.LFD.2.00.1006091821060.1402@localhost.localdomain>
-	<AANLkTilrLYu6H3GtAcP-cHpFvrm3v22uCw2EUeW_ZK0k@mail.gmail.com>
-	<alpine.LFD.2.00.1006111258430.6282@localhost.localdomain>
-	<AANLkTimYYAD3hKRi9IXPSn428YqeGnR1Ig02FpVIbVgL@mail.gmail.com>
-Date: Sat, 12 Jun 2010 11:51:47 -0600
-Message-ID: <AANLkTiliyQD2D--mDw_FREq3dqJO-WRDCMsKVixSqvMQ@mail.gmail.com>
-Subject: Re: Linux 2.6.34 causes system lockup on Compaq Presario 2200 Laptop
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-       linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V01U2FsdGVkX19dMX9+/nHN88OpOPQsLMXXJwc8txmxT/FWDhk
+ phgoy8hYxRTWw3Cq/80aTYqIuMUoD4i6sG8kLegrTNnFL546v7
+ BL0+6CmI5pGFdX5d5p0kg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not Reliably Reproducable.  Looks like a firmware/hardware problem
-with an old laptop.
 
-Jeff
+Resubmitting, as it doesn't seem to be upstream yet.
 
-On Fri, Jun 11, 2010 at 3:19 PM, Jeffrey Merkey <jeffmerkey@gmail.com> wrote:
-> On Fri, Jun 11, 2010 at 11:07 AM, Len Brown <lenb@kernel.org> wrote:
->> On Fri, 11 Jun 2010, Jeffrey Merkey wrote:
->>
->>> Len,
->>>
->>> I am having trouble getting a trace of this because its down hard to
->>> reproduce.  The reason is the lockup happens before I log into the
->>> laptop.  i.e. I boot 2.6.34 and if I let the laptop just sit there is
->>> happens.  If I log in and start doing work on it, it does not seem to
->>> happen.  It's related to using the laptop on battery mode with the
->>> charger removed.  I have a 2U appliance setup I am working on today
->>> and this frees up the laptop to try to reproduce this.  The flaky
->>> battery power misreporting was in fact accurate.  The battery in that
->>> laptop is 6 years old and does have low power.  I am certain the
->>> lockup if related though.  I will try to reproduce today and setup the
->>> trace to run after boot.  I have had it sitting there for an  hour and
->>> it has not reoccurred.  Let me try through today and if I cannot
->>> reproduce, close the bug.
->>
->> Good to know, Jeff.
->>
->> One possibility is that the old battery is confusing
->> the embedded controller -- possibly exposing a firmware bug.
->> The EC, in turn, is fully capable of hanging the OS.
->>
->> If you *can* reproduce it, it may be interesting to bisect
->> recent changes to drivers/acpi/ec.c
->>
->> Also, if you can reproduce it, it would be good to verify
->> that the problem occurs only when the battery driver is loaded.
->>
->> thanks,
->> -Len
->>
->>> > Please attach the output of acpidump here:
->>> >
->>> > https://bugzilla.kernel.org/show_bug.cgi?id=16136
->>
->> We could still use this output -- note that you can
->> capture it at any time, independent of the failure,
->> and independent of the kernel -- as it is simply
->> a copy of the tables that the BIOS is exporting to Linux.
->>
->> thanks,
->> -Len Brown, Intel Open Source Technology Center
->>
->
-> I can tell you for certain it does only happen when the battery driver
-> is loaded.  Still has not ocurred.  Just rebooted it 15 minutes ago --
-> trying again.
->
-> Jeff
->
+-----------------
+  Remove EXPERIMENTAL flag from btrfs and also state that the disk format 
+  has indeed been finalized.
+
+  Signed-off-by: Christian Kujau <lists@nerdbynature.de>
+
+diff --git a/Documentation/filesystems/btrfs.txt b/Documentation/filesystems/btrfs.txt
+index 64087c3..da67070 100644
+--- a/Documentation/filesystems/btrfs.txt
++++ b/Documentation/filesystems/btrfs.txt
+@@ -12,9 +12,9 @@ number of challenges with scaling to the large storage subsystems that
+ are becoming common in today's data centers. Filesystems need to scale
+ in their ability to address and manage large storage, and also in
+ their ability to detect, repair and tolerate errors in the data stored
+-on disk.  Btrfs is under heavy development, and is not suitable for
+-any uses other than benchmarking and review. The Btrfs disk format is
+-not yet finalized.
++on disk.  Btrfs is under heavy development, but with Linux 2.6.31 the
++Btrfs disk format has been finalized and is not considered experimental
++any more.
+ 
+ The main Btrfs features include:
+ 
+@@ -33,6 +33,7 @@ The main Btrfs features include:
+     * Efficient incremental backup and FS mirroring (not yet implemented)
+     * Online filesystem defragmentation
+ 
++Please see https://btrfs.wiki.kernel.org for details on these features.
+ 
+ 
+ 	MAILING LIST
+diff --git a/fs/btrfs/Kconfig b/fs/btrfs/Kconfig
+index 7bb3c02..cebb197 100644
+--- a/fs/btrfs/Kconfig
++++ b/fs/btrfs/Kconfig
+@@ -1,16 +1,12 @@
+ config BTRFS_FS
+-	tristate "Btrfs filesystem (EXPERIMENTAL) Unstable disk format"
+-	depends on EXPERIMENTAL
++	tristate "Btrfs filesystem"
+ 	select LIBCRC32C
+ 	select ZLIB_INFLATE
+ 	select ZLIB_DEFLATE
+ 	help
+ 	  Btrfs is a new filesystem with extents, writable snapshotting,
+-	  support for multiple devices and many more features.
+-
+-	  Btrfs is highly experimental, and THE DISK FORMAT IS NOT YET
+-	  FINALIZED.  You should say N here unless you are interested in
+-	  testing Btrfs with non-critical data.
++	  support for multiple devices and many more features. For more
++	  information, please see https://btrfs.wiki.kernel.org.
+ 
+ 	  To compile this file system support as a module, choose M here. The
+ 	  module will be called btrfs.
+-- 
+BOFH excuse #186:
+
+permission denied
