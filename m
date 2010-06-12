@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab0FLIov (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 04:44:51 -0400
-Received: from tpa-qmail.dyxnet.com ([152.104.96.30]:45103 "HELO
-	tpa-qmailr1.dyxnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753190Ab0FLIot (ORCPT
+	id S1753308Ab0FLIu4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 04:50:56 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:51941 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190Ab0FLIuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 04:44:49 -0400
-X-DYX-POP3-Checked-Auth: 114.32.100.136:kernel@takeo.idv.tw
-Message-ID: <F8C0125B8F424A279E9679EAC24AC983@TAKEOW7NB1>
-From: "Takeo Tung" <kernel@takeo.idv.tw>
-To: "Michal Marek" <mmarek@suse.cz>
-Cc: <linux-kernel@vger.kernel.org>, "Christoph Hellwig" <hch@lst.de>,
-       <kernel@takeo.idv.tw>
-References: <10E8B8D94205471F942B06D2A007832D@TAKEOW7NB1> <4C129778.7040409@suse.cz>
-In-Reply-To: <4C129778.7040409@suse.cz>
-Subject: Re: linux-next-20100608 will /bin/sh: scripts/basic/fixdep: Permission denied
-Date: Sat, 12 Jun 2010 16:44:48 +0800
-MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="big5";
-	reply-type=original
+	Sat, 12 Jun 2010 04:50:51 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2010-06-11-16-40 uploaded - busticated patch?
+In-Reply-To: Your message of "Fri, 11 Jun 2010 16:40:13 PDT."
+             <201006120008.o5C08gC3027843@imap1.linux-foundation.org>
+From: Valdis.Kletnieks@vt.edu
+References: <201006120008.o5C08gC3027843@imap1.linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1276332636_49244P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-Importance: Normal
-X-Mailer: Microsoft Windows Live Mail 14.0.8089.726
-X-MimeOLE: Produced By Microsoft MimeOLE V14.0.8089.726
+Date: Sat, 12 Jun 2010 04:50:36 -0400
+Message-ID: <52510.1276332636@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020208.4C134A5D.0185,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--==_Exmh_1276332636_49244P
+Content-Type: text/plain; charset=us-ascii
 
-yes.
-
-1. I complier liux-next-20100608 kernel, and boot the linux-next-20100608 
-kernel, and try re-complier kernel, will found this message.
-    /bin/sh: scripts/basic/fixdep: Permission denied
-
-2. reboot other safe kernel, and revert the above patch, and complier it, 
-and boot the new kernel, seems no this error.
-    but I don't know why, bcoz seems code is ok.
-
-Thanks,
-Takeo Tung
-
---------------------------------------------------
-From: "Michal Marek" <mmarek@suse.cz>
-Sent: Saturday, June 12, 2010 4:07 AM
-To: "Takeo Tung" <kernel@takeo.idv.tw>
-Cc: <linux-kernel@vger.kernel.org>; "Christoph Hellwig" <hch@lst.de>
-Subject: Re: linux-next-20100608 will /bin/sh: scripts/basic/fixdep: 
-Permission denied
-
-> On 11.6.2010 17:13, Takeo Tung wrote:
->> Dear All,
->>
->> I using linux-next-20100608 kernel, but if re-complier the kernel will
->> found
->> this messages.
->>
->> root@kernel-x86:/usr/src/linux# make oldconfig
->>  HOSTCC  scripts/basic/fixdep
->> /bin/sh: scripts/basic/fixdep: Permission denied
->> make[1]: *** [scripts/basic/fixdep] Error 1
->> make: *** [scripts_basic] Error 2
->>
->> But if I revert this patch, seems all back to normal, pls help me this is
->> bug patch or need adjust some system config?
->>
->> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=9d9b938248736826e86db9b16a3b435bdb5d649f
->
-> Do I understand it correctly that you can't rebuild your kernel if
-> you're running linux-next-20100608 and that the problem goes away if you
-> revert the above patch, recompile somewhere else and boot the new
-> kernel? I.e. it's unlikely a problem with fixdep itself?
->
-> Adding Christoph Hellwig to cc.
->
-> Michal
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+On Fri, 11 Jun 2010 16:40:13 PDT, akpm@linux-foundation.org said:
+> The mm-of-the-moment snapshot 2010-06-11-16-40 has been uploaded to
 > 
+>    http://userweb.kernel.org/~akpm/mmotm/
+
+mm-extend-ksm-refcounts-to-the-anon_vma-root-fix.patch contains this
+hunk:
+
+diff -puN mm/rmap.c.orig~mm-extend-ksm-refcounts-to-the-anon_vma-root-fix mm/rmap.c.orig
+--- a/mm/rmap.c.orig~mm-extend-ksm-refcounts-to-the-anon_vma-root-fix
++++ a/mm/rmap.c.orig
+
+which blows chunks because there's no rmap.c.orig in the tree.  Not sure what
+that section was supposed to do, or what it was supposed to apply to.
+
+--==_Exmh_1276332636_49244P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFME0pccC3lWbTT17ARAu/FAKCPMmlN2onQvlQbyJ1Ho1PtYRYtwgCbBh8j
+FlJV/yP6dH5lPZf0i0+aESE=
+=qiok
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1276332636_49244P--
+
