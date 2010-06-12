@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab0FLXBr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 19:01:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59367 "EHLO mail.zytor.com"
+	id S1752809Ab0FLXC4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 19:02:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59374 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613Ab0FLXBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 19:01:46 -0400
-Message-ID: <4C1411BD.5070308@zytor.com>
-Date: Sat, 12 Jun 2010 16:01:17 -0700
+	id S1751997Ab0FLXCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 19:02:55 -0400
+Message-ID: <4C141214.5050601@zytor.com>
+Date: Sat, 12 Jun 2010 16:02:44 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
@@ -26,10 +26,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 06/12/2010 03:26 PM, Josh Triplett wrote:
 > 
-> Done.  I've attached the output of meminfo with the e820 hook as
-> meminfo-grub-hooked.jpg, and without the e820 hook as
-> meminfo-unhooked.jpg.
-> 
 > Everything looks identical except for the region GRUB hooked right below
 > the first reserved region; the unhooked version has available memory
 > from 0-0x9cbf0, and the hooked version has available memory from
@@ -37,19 +33,11 @@ On 06/12/2010 03:26 PM, Josh Triplett wrote:
 > memory, and then the same reserved region as before.
 > 
 
-The new reserved area that Grub hooks is located inside a FBM ("DOS
-RAM") reserved area, so Grub is somehow using memory that someone else
-has already reserved!  The normal thing is to reserve something in FBM
-and not in INT 15h if it is to be reserved only until the protected-mode
-operating system starts, but in this case Grub puts something in there
-which is a real-mode hook.  It *will* have overwritten something at this
-point, the question is just what (and I have no idea how to find that out.)
+Actually... are both these done by chainloading Grub (with and without
+mapping), or is the unhooked done without chainloading Grub at all?
 
-Note that the unmodified entry conditions (unhooked) has FBM quite a bit
-lower than the reserved area.  Something else that really confuses me is
-that although the memory map has changed, the INT 15h vector itself is
-still the same, so I'm really confused about how the actual hooking
-happens in the first place...
+To me it looks like something is chaining INT 15h even in the
+"unchained" case...
 
 	-hpa
 
