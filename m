@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab0FLClv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 22:41:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61038 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982Ab0FLClt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 22:41:49 -0400
-Message-ID: <4C12F319.6010401@cn.fujitsu.com>
-Date: Sat, 12 Jun 2010 10:38:17 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752530Ab0FLCne (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 22:43:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35747 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198Ab0FLCnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Jun 2010 22:43:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=q0X7OT8UXsz/ubUpc0Cr0kkI1lp7txUrAQ0HwzE8Xx+bAkx5ZmSQCuryE9uaNbRFeJ
+         wU5velvQNK0QvKa0TglX2/e/V0x0H5CDU1dwf5Gyn7AP/h5ACDUx8JaWetURxwOS2swH
+         7c1DQ+3TewvSJTOEsNX/NhLtNOfpdgBkhpyJA=
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 4/7] KVM: MMU: don't mark pte notrap if it's just sync
- transient
-References: <4C1239EE.3090904@cn.fujitsu.com> <4C123ABA.3000601@cn.fujitsu.com> <20100611201420.GD12317@amt.cnet>
-In-Reply-To: <20100611201420.GD12317@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201006120008.o5C08gC3027843@imap1.linux-foundation.org>
+References: <201006120008.o5C08gC3027843@imap1.linux-foundation.org>
+Date: Sat, 12 Jun 2010 10:43:31 +0800
+Message-ID: <AANLkTin1cUkn_Cw5P0AR8NTx5prNF34bajZD0bPoavP2@mail.gmail.com>
+Subject: Re: mmotm 2010-06-11-16-40 uploaded
+From: Dave Young <hidave.darkstar@gmail.com>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=0015174ff314a1375f0488cc38d5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--0015174ff314a1375f0488cc38d5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
+On Sat, Jun 12, 2010 at 7:40 AM,  <akpm@linux-foundation.org> wrote:
+> The mm-of-the-moment snapshot 2010-06-11-16-40 has been uploaded to
+>
+> =C2=A0 http://userweb.kernel.org/~akpm/mmotm/
+>
+> and will soon be available at
+>
+> =C2=A0 git://zen-kernel.org/kernel/mmotm.git
+>
 
-Marcelo Tosatti wrote:
-> On Fri, Jun 11, 2010 at 09:31:38PM +0800, Xiao Guangrong wrote:
->> If the sync-sp just sync transient, don't mark its pte notrap
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
->> ---
->>  arch/x86/include/asm/kvm_host.h |    2 +-
->>  arch/x86/kvm/mmu.c              |   11 ++++-------
->>  arch/x86/kvm/paging_tmpl.h      |    5 +++--
->>  3 files changed, 8 insertions(+), 10 deletions(-)
-> 
-> Xiao,
-> 
-> Can you explain the reasoning for this? 
-> 
+Hi, andrew
 
-Marcelo,
+building failed with:
+  AS      arch/x86/kernel/entry_32.o
+/home/dave/src/linux-2.6.35/arch/x86/include/asm/olpc_ofw.h: Assembler mess=
+ages:
+/home/dave/src/linux-2.6.35/arch/x86/include/asm/olpc_ofw.h:29: Error:
+no such instruction: `static inline void
+olpc_ofw_detect_range(void){}'
+make[2]: *** [arch/x86/kernel/entry_32.o] Error 1
+make[1]: *** [arch/x86/kernel] Error 2
+make: *** [arch/x86] Error 2
 
-In the kvm_sync_page_transient() path, the sp is keep unsync and sp->gfn is not
-write protected, we can't set 'spte == shadow_notrap_nonpresent_pte' if the 
-'gpte.p == 0' in this case.
+Attached a patch to fix it (I have not appropriate email client now,
+sorry for the inconvenience )
 
-It's because if 'gpte.p == 0', when guest change the gpte's mapping, it's no need
-to flush tlb(p == 0 means the mapping is not in tlb), if we set spte to
-'shadow_notrap_nonpresent_pte', we will miss the chance to update the mapping, also
-a incorrect #PF will pass to guest directly, may cause guest crash.
+--0015174ff314a1375f0488cc38d5
+Content-Type: application/octet-stream; name="hidave_build_fix.patch"
+Content-Disposition: attachment; filename="hidave_build_fix.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gabuaisu0
 
-And, this is the reasoning we do mmu_convert_notrap() in kvm_sync_page_transient()
-before, this patch just avoid this unnecessary workload. :-)
-
+YWRkICJpZm5kZWYgX19BU1NFTUJMRVJfXyIgdG8gZml4IGJ1aWxkIHdhcm5pbmdzCkZpeCBidWls
+ZCBmYWlsaW5nIG9mIG9scGNfb2Z3LmgKCkFkZCBpZm5kZWYgX19BU1NFTUJMRVJfXyBhcm91bmQg
+dGhlIGZ1bmN0aW9uIGRlY2xhcmF0aW9uCgpTaWduZWQtb2ZmLWJ5OiBEYXZlIFlvdW5nIDxoaWRh
+dmUuZGFya3N0YXJAZ21haWwuY29tPgotLS0KIGFyY2gveDg2L2luY2x1ZGUvYXNtL29scGNfb2Z3
+LmggfCAgICAyICsrCiAxIGZpbGUgY2hhbmdlZCwgMiBpbnNlcnRpb25zKCspCgotLS0gbGludXgt
+Mi42LjM1Lm9yaWcvYXJjaC94ODYvaW5jbHVkZS9hc20vb2xwY19vZncuaAkyMDEwLTA2LTEyIDA5
+OjU3OjUyLjAwMDAwMDAwMCArMDgwMAorKysgbGludXgtMi42LjM1L2FyY2gveDg2L2luY2x1ZGUv
+YXNtL29scGNfb2Z3LmgJMjAxMC0wNi0xMiAxMDoxNTo1OC40ODAwMDAzNDkgKzA4MDAKQEAgLTI2
+LDcgKzI2LDkgQEAgdm9pZCBvbHBjX29md19kZXRlY3RfcmFuZ2Uodm9pZCk7CiAKICNlbHNlCiAK
+KyNpZm5kZWYgX19BU1NFTUJMRVJfXwogc3RhdGljIGlubGluZSB2b2lkIG9scGNfb2Z3X2RldGVj
+dF9yYW5nZSh2b2lkKSB7IH0KKyNlbmRpZgogCiAjZW5kaWYKIAo=
+--0015174ff314a1375f0488cc38d5--
