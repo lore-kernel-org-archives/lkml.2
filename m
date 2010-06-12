@@ -1,370 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab0FLCYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Jun 2010 22:24:06 -0400
-Received: from aeryn.fluff.org.uk ([87.194.8.8]:29445 "EHLO
-	kira.home.fluff.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751903Ab0FLCYD (ORCPT
+	id S1752177Ab0FLCeE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Jun 2010 22:34:04 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:18166 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab0FLCeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Jun 2010 22:24:03 -0400
-Date: Sat, 12 Jun 2010 03:24:01 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-To: Gregory Bean <gbean@codeaurora.org>
-Cc: akpm@linux-foundation.org, linux-arm-msm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-       Daniel Walker <dwalker@codeaurora.org>,
-       Bryan Huntsman <bryanh@codeaurora.org>
-Subject: Re: [PATCH 2/2] gpio: msm7200a: Add irq support to msm-gpiolib.
-Message-ID: <20100612022401.GC31045@fluff.org.uk>
-References: <1276286332-13515-1-git-send-email-gbean@codeaurora.org>
- <1276286332-13515-3-git-send-email-gbean@codeaurora.org>
+	Fri, 11 Jun 2010 22:34:01 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6010"; a="44219426"
+Message-ID: <4C12F218.9010808@codeaurora.org>
+Date: Fri, 11 Jun 2010 19:34:00 -0700
+From: Bryan Huntsman <bryanh@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276286332-13515-3-git-send-email-gbean@codeaurora.org>
-X-Disclaimer: These are my own opinions, so there!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ben Dooks <ben-linux@fluff.org>
+CC: Gregory Bean <gbean@codeaurora.org>, akpm@linux-foundation.org,
+       linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Michael Hennerich <michael.hennerich@analog.com>,
+       Mike Frysinger <vapier@gentoo.org>, David Brown <davidb@codeaurora.org>,
+       Daniel Walker <dwalker@codeaurora.org>
+Subject: Re: [PATCH 1/2] gpio: msm7200a: Add gpiolib support for MSM chips.
+References: <1276286332-13515-1-git-send-email-gbean@codeaurora.org> <1276286332-13515-2-git-send-email-gbean@codeaurora.org> <20100612021252.GB31045@fluff.org.uk>
+In-Reply-To: <20100612021252.GB31045@fluff.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 12:58:52PM -0700, Gregory Bean wrote:
-> Change-Id: Ib7f7dd05246c87096aabab12eb6cc260551c67cf
-> Signed-off-by: Gregory Bean <gbean@codeaurora.org>
-> ---
-~>  drivers/gpio/msm7200a-gpio.c  |  218 +++++++++++++++++++++++++++++++++++++++--
->  include/linux/msm7200a-gpio.h |    7 ++
->  2 files changed, 218 insertions(+), 7 deletions(-)
+Ben Dooks wrote:
+> On Fri, Jun 11, 2010 at 12:58:51PM -0700, Gregory Bean wrote:
+
+...snip...
+
+>> +MODULE_DESCRIPTION("Driver for Qualcomm MSM 7200a-family SoC GPIOs");
+>> +MODULE_LICENSE("GPLv2");
 > 
-> diff --git a/drivers/gpio/msm7200a-gpio.c b/drivers/gpio/msm7200a-gpio.c
-> index b31c25e..a9ea869 100644
-> --- a/drivers/gpio/msm7200a-gpio.c
-> +++ b/drivers/gpio/msm7200a-gpio.c
-> @@ -23,13 +23,25 @@
->  #include <linux/kernel.h>
->  #include <linux/gpio.h>
->  #include <linux/io.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
->  #include <linux/module.h>
->  #include <linux/platform_device.h>
->  #include <linux/msm7200a-gpio.h>
->  
-> +/*
-> + * The INT_STATUS register latches both edge- and level-detection events,
-> + * which is atypical.  Turning on DONT_LATCH_LEVEL_IRQS causes level irq
-> + * triggers to be forgotten across mask/unmask calls, emulating a more
-> + * traditional setup.
-> + */
-> +#define MSM_GPIO_DONT_LATCH_LEVEL_IRQS 1
-> +
->  struct msm_gpio_dev {
->  	struct gpio_chip		gpio_chip;
->  	spinlock_t			lock;
-> +	unsigned			irq_base;
-> +	unsigned			irq_summary;
->  	struct msm7200a_gpio_regs	regs;
->  };
->  
-> @@ -119,12 +131,160 @@ static void gpio_chip_set(struct gpio_chip *chip, unsigned offset, int value)
->  	spin_unlock_irqrestore(&msm_gpio->lock, irq_flags);
->  }
->  
-> +static int gpio_chip_to_irq(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	struct msm_gpio_dev *msm_gpio = TO_MSM_GPIO_DEV(chip);
-> +	return msm_gpio->irq_base + offset;
-> +}
-> +
-> +#if MSM_GPIO_DONT_LATCH_LEVEL_IRQS
-> +static inline void forget_level_irq(struct msm_gpio_dev *msm_gpio,
-> +				unsigned offset)
-> +{
-> +	unsigned v = readl(msm_gpio->regs.int_edge);
-> +	unsigned b = bit(offset);
-> +
-> +	if (!(v & b))
-> +		writel(b, msm_gpio->regs.int_clear);
-> +
-> +}
-> +#else
-> +static inline void forget_level_irq(struct msm_gpio_dev *msm, unsigned off)
-> +{
-> +}
-> +#endif
+> you left out a MODULE_ALIAS() for your platform device.
+> you could also do with a MODULE_AUTHOUR() line as well
 
-Hmm, that's a bit yucky, either Kconfig it or have it definable
-in the platform data.
+Also, the string is "GPL v2".  See include/linux/license.h.
 
-> +static void msm_gpio_irq_mask(unsigned int irq)
-> +{
-> +	unsigned long irq_flags;
-> +	struct msm_gpio_dev *msm_gpio = get_irq_chip_data(irq);
-> +	unsigned offset = irq - msm_gpio->irq_base;
-> +
-> +	spin_lock_irqsave(&msm_gpio->lock, irq_flags);
-> +	forget_level_irq(msm_gpio, offset);
-> +	clr_gpio_bit(offset, msm_gpio->regs.int_en);
-> +	spin_unlock_irqrestore(&msm_gpio->lock, irq_flags);
-> +}
-> +
-> +static void msm_gpio_irq_unmask(unsigned int irq)
-> +{
-> +	unsigned long irq_flags;
-> +	struct msm_gpio_dev *msm_gpio = get_irq_chip_data(irq);
-> +	unsigned offset = irq - msm_gpio->irq_base;
-> +
-> +	spin_lock_irqsave(&msm_gpio->lock, irq_flags);
-> +	forget_level_irq(msm_gpio, offset);
-> +	set_gpio_bit(offset, msm_gpio->regs.int_en);
-> +	spin_unlock_irqrestore(&msm_gpio->lock, irq_flags);
-> +}
-> +
-> +static int msm_gpio_irq_set_type(unsigned int irq, unsigned int flow_type)
-> +{
-> +	unsigned long irq_flags;
-> +	struct msm_gpio_dev *msm_gpio = get_irq_chip_data(irq);
-> +	unsigned offset = irq - msm_gpio->irq_base;
-> +
-> +	if ((flow_type & (IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING)) ==
-> +		(IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING))
-> +		return -ENOTSUPP;
-
-Hmm, thought there was a BOTHEDGE for this, maybe worth adding
-to the irq.h file at somepoint.
-
-> +	if ((flow_type & (IRQF_TRIGGER_HIGH | IRQF_TRIGGER_LOW)) ==
-> +		(IRQF_TRIGGER_HIGH | IRQF_TRIGGER_LOW))
-> +		return -ENOTSUPP;
-> +
-> +	spin_lock_irqsave(&msm_gpio->lock, irq_flags);
-> +
-> +	if (flow_type & (IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING)) {
-> +		set_gpio_bit(offset, msm_gpio->regs.int_edge);
-> +		irq_desc[irq].handle_irq = handle_edge_irq;
-> +	} else {
-> +		clr_gpio_bit(offset, msm_gpio->regs.int_edge);
-> +		irq_desc[irq].handle_irq = handle_level_irq;
-> +	}
-> +
-> +	if (flow_type & (IRQF_TRIGGER_HIGH | IRQF_TRIGGER_RISING))
-> +		set_gpio_bit(offset, msm_gpio->regs.int_pos);
-> +	else
-> +		clr_gpio_bit(offset, msm_gpio->regs.int_pos);
-> +
-> +	spin_unlock_irqrestore(&msm_gpio->lock, irq_flags);
-> +
-> +	return 0;
-> +}
-> +
-> +static void msm_gpio_irq_mask_ack(unsigned int irq)
-> +{
-> +	msm_gpio_irq_mask(irq);
-> +}
-> +
-> +static int msm_gpio_irq_set_affinity(unsigned int irq,
-> +				const struct cpumask *dest)
-> +{
-> +	return -ENOTSUPP;
-> +}
-> +
-> +static int msm_gpio_irq_retrigger(unsigned int irq)
-> +{
-> +	return -ENOTSUPP;
-> +}
-> +
-> +static int msm_gpio_irq_set_wake(unsigned int irq, unsigned int on)
-> +{
-> +	return -ENOTSUPP;
-> +}
-
-do you really need to define these, surely the irq layer will
-do the right thing if there's no handler defined?
-
-> +static irqreturn_t msm_gpio_irq_handler(int irq, void *dev)
-> +{
-> +	unsigned long irq_flags;
-> +	int b, m;
-> +	unsigned e, s, v;
-> +
-> +	struct msm_gpio_dev *msm_gpio = (struct msm_gpio_dev *)dev;
-
-see prev. comment about casting void *, plus you seem to have a blank
-line in here by accident.
-
-would be worth organising the longest lines first.
-
- +	/*
-> +	 * The int_status register latches trigger events whether or not
-> +	 * the gpio line is enabled as an interrupt source.  Therefore,
-> +	 * the set of pins which defines the interrupts which need to fire
-> +	 * is the intersection of int_status and int_en - int_status
-> +	 * alone provides an incomplete picture.
-> +	 */
-> +	spin_lock_irqsave(&msm_gpio->lock, irq_flags);
-> +	s = readl(msm_gpio->regs.int_status);
-> +	e = readl(msm_gpio->regs.int_en);
-> +	v = s & e;
-
-how about slightly less terse interrupts.
-
-> +	if (v)
-> +		writel(v, msm_gpio->regs.int_clear);
-> +	spin_unlock_irqrestore(&msm_gpio->lock, irq_flags);
-> +	if (!v)
-> +		return IRQ_NONE;
-> +
-> +	while (v) {
-> +		m = v & -v;
-> +		b = fls(m) - 1;
-> +		v &= ~m;
-
-i'm not entirely sure what you'e doing here, how aout a comment
-on the m line to say what ti is up to.
-
-> +		generic_handle_irq(msm_gpio->irq_base + b);
-> +	}
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static struct irq_chip msm_gpio_irq_chip = {
-> +	.name			= "msm_gpio",
-> +	.mask			= msm_gpio_irq_mask,
-> +	.mask_ack		= msm_gpio_irq_mask_ack,
-> +	.unmask			= msm_gpio_irq_unmask,
-> +	.set_affinity		= msm_gpio_irq_set_affinity,
-> +	.retrigger		= msm_gpio_irq_retrigger,
-> +	.set_type		= msm_gpio_irq_set_type,
-> +	.set_wake		= msm_gpio_irq_set_wake,
-> +};
-> +
->  static int msm_gpio_probe(struct platform_device *dev)
->  {
->  	struct msm_gpio_dev *msm_gpio;
->  	struct msm7200a_gpio_platform_data *pdata =
->  		(struct msm7200a_gpio_platform_data *)dev->dev.platform_data;
-> -	int ret;
-> +	int i, irq, ret;
->  
->  	if (!pdata)
->  		return -EINVAL;
-> @@ -146,13 +306,53 @@ static int msm_gpio_probe(struct platform_device *dev)
->  	msm_gpio->gpio_chip.direction_output = gpio_chip_direction_output;
->  	msm_gpio->gpio_chip.get              = gpio_chip_get;
->  	msm_gpio->gpio_chip.set              = gpio_chip_set;
-> +	msm_gpio->gpio_chip.to_irq           = gpio_chip_to_irq;
-> +	msm_gpio->irq_base                   = pdata->irq_base;
-> +	msm_gpio->irq_summary                = pdata->irq_summary;
->  
->  	ret = gpiochip_add(&msm_gpio->gpio_chip);
->  	if (ret < 0)
-> -		goto err;
-> +		goto err_post_malloc;
-> +
-> +	for (i = 0; i < msm_gpio->gpio_chip.ngpio; ++i) {
-> +		irq = msm_gpio->irq_base + i;
-> +		set_irq_chip_data(irq, msm_gpio);
-> +		set_irq_chip(irq, &msm_gpio_irq_chip);
-> +		set_irq_handler(irq, handle_level_irq);
-> +		set_irq_flags(irq, IRQF_VALID);
-> +	}
-> +
-> +	/*
-> +	 * We use a level-triggered interrupt because of the nature
-> +	 * of the shared GPIO-group interrupt.
-> +	 *
-> +	 * Many GPIO chips may be sharing the same group IRQ line, and
-> +	 * it is possible for GPIO interrupt to re-occur while the system
-> +	 * is still servicing the group interrupt associated with it.
-> +	 * The group IRQ line would not de-assert and re-assert, and
-> +	 * we'd get no second edge to cause the group IRQ to be handled again.
-> +	 *
-> +	 * Using a level interrupt guarantees that the group IRQ handlers
-> +	 * will continue to be called as long as any GPIO chip in the group
-> +	 * is asserting, even if the condition began while the group
-> +	 * handler was in mid-pass.
-> +	 */
-> +	ret = request_irq(msm_gpio->irq_summary,
-> +			  msm_gpio_irq_handler,
-> +			  IRQF_SHARED | IRQF_TRIGGER_HIGH,
-> +			  dev->name,
-iirc, dev_name() is the correct thing to use herre.
-
-> +			  msm_gpio);
-> +	if (ret < 0)
-> +		goto err_post_gpiochip_add;
->  
->  	return ret;
-> -err:
-> +err_post_gpiochip_add:
-> +	/*
-> +	 * Under no circumstances should a line be held on a gpiochip
-> +	 * which hasn't finished probing.
-> +	 */
-> +	BUG_ON(gpiochip_remove(&msm_gpio->gpio_chip) < 0);
-> +err_post_malloc:
->  	kfree(msm_gpio);
->  	return ret;
->  }
-> @@ -160,12 +360,16 @@ err:
->  static int msm_gpio_remove(struct platform_device *dev)
->  {
->  	struct msm_gpio_dev *msm_gpio = platform_get_drvdata(dev);
-> -	int ret = gpiochip_remove(&msm_gpio->gpio_chip);
-> +	int ret;
->  
-> -	if (ret == 0)
-> -		kfree(msm_gpio);
-> +	ret = gpiochip_remove(&msm_gpio->gpio_chip);
-> +	if (ret < 0)
-> +		return ret;
->  
-> -	return ret;
-> +	free_irq(msm_gpio->irq_summary, msm_gpio);
-> +	kfree(msm_gpio);
-> +
-> +	return 0;
->  }
->  
->  static struct platform_driver msm_gpio_driver = {
-> diff --git a/include/linux/msm7200a-gpio.h b/include/linux/msm7200a-gpio.h
-> index 3f1ef38..7af4dd6 100644
-> --- a/include/linux/msm7200a-gpio.h
-> +++ b/include/linux/msm7200a-gpio.h
-> @@ -33,11 +33,18 @@ struct msm7200a_gpio_regs {
->  	void __iomem *in;
->  	void __iomem *out;
->  	void __iomem *oe;
-> +	void __iomem *int_status;
-> +	void __iomem *int_clear;
-> +	void __iomem *int_en;
-> +	void __iomem *int_edge;
-> +	void __iomem *int_pos;
->  };
-
-see prev. comment on could we have single base and offsets?
-  
->  struct msm7200a_gpio_platform_data {
->  	unsigned gpio_base;~~
->  	unsigned ngpio;
-> +	unsigned irq_base;
-> +	unsigned irq_summary;
->  	struct msm7200a_gpio_regs regs;
->  };
->  
-> -- 
-> 1.7.0.4
+>> diff --git a/include/linux/msm7200a-gpio.h b/include/linux/msm7200a-gpio.h
+>> new file mode 100644
+>> index 0000000..3f1ef38
+>> --- /dev/null
+>> +++ b/include/linux/msm7200a-gpio.h
+>> @@ -0,0 +1,44 @@
+>> +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+>> + *
+>> + * Redistribution and use in source and binary forms, with or without
+>> + * modification, are permitted provided that the following conditions are
+>> + * met:
+>> + *     * Redistributions of source code must retain the above copyright
+>> diff --git a/include/linux/msm7200a-gpio.h b/include/linux/msm7200a-gpio.h
+>> new file mode 100644
+>> index 0000000..3f1ef38
+>> --- /dev/null
+>> +++ b/include/linux/msm7200a-gpio.h
+>> @@ -0,0 +1,44 @@
+>> +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+>> + *
+>> + * Redistribution and use in source and binary forms, with or without
+> ;5B> + * modification, are permitted provided that the following conditions are
+>> + * met:
+>> + *     * Redistributions of source code must retain the above copyright
+>> + *       notice, this list of conditions and the following disclaimer.
+>> + *     * Redistributions in binary form must reproduce the above
+>> + *       copyright notice, this list of conditions and the following
+>> + *       disclaimer in the documentation and/or other materials provided
+>> + *       with the distribution.
+>> + *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
+>> + *       contributors may be used to endorse or promote products derived
+>> + *       from this software without specific prior written permission.
+>> + *
+>> + * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+>> + * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+>> + * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+>> + * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+>> + * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+>> + * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+>> + * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+>> + * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+>> + * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+>> + * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+>> + * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+>> + *
+>> + */
 > 
-> ---
-> Employee of Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Is this really GPL compatible?
+
+It's BSD-style, so yes.
+
 
 -- 
-Ben (ben@fluff.org, http://www.fluff.org/)
-
-  'a smiley only costs 4 bytes'
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
