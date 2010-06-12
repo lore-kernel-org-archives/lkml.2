@@ -1,248 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab0FMNlf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 09:41:35 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61593 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601Ab0FMNle convert rfc822-to-8bit (ORCPT
+	id S1753764Ab0FMN4M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 09:56:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34251 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630Ab0FMN4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 09:41:34 -0400
+	Sun, 13 Jun 2010 09:56:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ghT+ej/2AQsveBlJf+AJ1+LVjVmA1t6oZfjPkk8Kv0heqcuAoCsaiUUvoufzY/M+ss
-         tvWneCU31uGhrknx5gdew1KBzrRu8DdSleMyTJ1UZApc4XavLIkTOCFSIkg5FaD4EY2n
-         NsFNPyetujScnH0tIMkOOFKxAkYgyChYML++c=
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=OY7Shi5qPvpDSHhj5KRtkPOYrJWiIZgLYhFDo9Lpl1m2NYRCDh19LGQ0Usyn0XanE2
+         PtX8Dpze3wbsc619FpWLV6F4vYagUNEEBmiI23b03jnsIObuCtnZ94w6IsKXc8I7Tmyo
+         Et1JmbhgFQm8g+SE3SWhMJpaA4Kg2sKQBIAvY=
+From: =?UTF-8?q?Henri=20H=C3=A4kkinen?= <henuxd@gmail.com>
+To: gregkh@suse.de, mithlesh@linsyssoft.com, wfp5p@virginia.edu,
+       reodge@gmail.com, andrea.gelmini@gelma.net, henuxd@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging:comedi: Fixed coding convention issues.
+Date: Sat, 12 Jun 2010 14:04:04 +0300
+Message-Id: <1276340644-5211-1-git-send-email-henuxd@gmail.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1006131208470.18415@ayla.of.borg>
-References: <alpine.DEB.2.00.1006131208470.18415@ayla.of.borg>
-Date: Sun, 13 Jun 2010 21:41:33 +0800
-Message-ID: <AANLkTikc_aHiRhPds-_CEMma_J9thmbai2nkcYFZPp9h@mail.gmail.com>
-Subject: Re: [rtc-linux] [PATCH] rtc: rp5c01 - Add NVRAM support
-From: Wan ZongShun <mcuos.com@gmail.com>
-To: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-       "Linux/m68k" <linux-m68k@vger.kernel.org>,
-       Linux Kernel Development <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert ,
+Cleaned up and fixed coding convention issues as reporteed by
+checkpatch.pl tool on the file `drivers.c'. Added logging macros
+to `comedidev.h'.
 
-Minior comment below:
+Signed-off-by: Henri Häkkinen <henuxd@gmail.com>
+---
+ drivers/staging/comedi/comedidev.h |   54 ++++++++++++++++++++-
+ drivers/staging/comedi/drivers.c   |   89 ++++++++++++++++++------------------
+ 2 files changed, 95 insertions(+), 48 deletions(-)
 
-2010/6/13 Geert Uytterhoeven <geert@linux-m68k.org>:
-> The Ricoh RP5C01 RTC contains 26 x 4 bits of NVRAM.
-> Provide access to it via a sysfs "nvram" attribute file.
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> --
-> Question: Is a spinlock in priv the right kind of locking?
->          Should I use e.g. rtc-device.ops_lock instead?
-
-Firstly, this 'Question' text should not put here, please put all
-texts in front of '---'.
-Secondly, You can not use rtc-device.ops_lock here, if so, it would
-arouse dead lock,
-before the ' rp5c01_read_time()' was called by RTC subsystem upper
-API, rtc-device.ops_lock
-has been required sucessfully, If continue to require the
-rtc-device.ops_lock in ' rp5c01_read_time()',
-the 'lock' will cannot be get, dead lock occurs.
-
->
-> diff --git a/drivers/rtc/rtc-rp5c01.c b/drivers/rtc/rtc-rp5c01.c
-> index a95f733..36eb661 100644
-> --- a/drivers/rtc/rtc-rp5c01.c
-> +++ b/drivers/rtc/rtc-rp5c01.c
-> @@ -63,6 +63,8 @@ enum {
->  struct rp5c01_priv {
->        u32 __iomem *regs;
->        struct rtc_device *rtc;
-> +       spinlock_t lock;        /* against concurrent RTC/NVRAM access */
-> +       struct bin_attribute nvram_attr;
->  };
->
->  static inline unsigned int rp5c01_read(struct rp5c01_priv *priv,
-> @@ -92,6 +94,7 @@ static int rp5c01_read_time(struct device *dev, struct rtc_time *tm)
->  {
->        struct rp5c01_priv *priv = dev_get_drvdata(dev);
->
-> +       spin_lock_irq(&priv->lock);
->        rp5c01_lock(priv);
->
->        tm->tm_sec  = rp5c01_read(priv, RP5C01_10_SECOND) * 10 +
-> @@ -111,6 +114,7 @@ static int rp5c01_read_time(struct device *dev, struct rtc_time *tm)
->                tm->tm_year += 100;
->
->        rp5c01_unlock(priv);
-> +       spin_unlock_irq(&priv->lock);
->
->        return rtc_valid_tm(tm);
->  }
-> @@ -119,6 +123,7 @@ static int rp5c01_set_time(struct device *dev, struct rtc_time *tm)
->  {
->        struct rp5c01_priv *priv = dev_get_drvdata(dev);
->
-> +       spin_lock_irq(&priv->lock);
->        rp5c01_lock(priv);
->
->        rp5c01_write(priv, tm->tm_sec / 10, RP5C01_10_SECOND);
-> @@ -139,6 +144,7 @@ static int rp5c01_set_time(struct device *dev, struct rtc_time *tm)
->        rp5c01_write(priv, tm->tm_year % 10, RP5C01_1_YEAR);
->
->        rp5c01_unlock(priv);
-> +       spin_unlock_irq(&priv->lock);
->        return 0;
->  }
->
-> @@ -147,6 +153,72 @@ static const struct rtc_class_ops rp5c01_rtc_ops = {
->        .set_time       = rp5c01_set_time,
->  };
->
-> +
-> +/*
-> + * The NVRAM is organized as 2 blocks of 13 nibbles of 4 bits.
-> + * We provide access to them like AmigaOS does: the high nibble of each 8-bit
-> + * byte is stored in BLOCK10, the low nibble in BLOCK11.
-> + */
-> +
-> +static ssize_t rp5c01_nvram_read(struct file *filp, struct kobject *kobj,
-> +                                struct bin_attribute *bin_attr,
-> +                                char *buf, loff_t pos, size_t size)
-> +{
-> +       struct device *dev = container_of(kobj, struct device, kobj);
-> +       struct rp5c01_priv *priv = dev_get_drvdata(dev);
-> +       ssize_t count;
-> +
-> +       spin_lock_irq(&priv->lock);
-> +
-> +       for (count = 0; size > 0 && pos < RP5C01_MODE; count++, size--) {
-> +               u8 data;
-> +
-> +               rp5c01_write(priv,
-> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK10,
-> +                            RP5C01_MODE);
-> +               data = rp5c01_read(priv, pos) << 4;
-> +               rp5c01_write(priv,
-> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK11,
-> +                            RP5C01_MODE);
-> +               data |= rp5c01_read(priv, pos++);
-> +               rp5c01_write(priv, RP5C01_MODE_TIMER_EN | RP5C01_MODE_MODE01,
-> +                            RP5C01_MODE);
-> +               *buf++ = data;
-> +       }
-> +
-> +       spin_unlock_irq(&priv->lock);
-> +       return count;
-> +}
-> +
-> +static ssize_t rp5c01_nvram_write(struct file *filp, struct kobject *kobj,
-> +                                 struct bin_attribute *bin_attr,
-> +                                 char *buf, loff_t pos, size_t size)
-> +{
-> +       struct device *dev = container_of(kobj, struct device, kobj);
-> +       struct rp5c01_priv *priv = dev_get_drvdata(dev);
-> +       ssize_t count;
-> +
-> +       spin_lock_irq(&priv->lock);
-> +
-> +       for (count = 0; size > 0 && pos < RP5C01_MODE; count++, size--) {
-> +               u8 data = *buf++;
-> +
-> +               rp5c01_write(priv,
-> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK10,
-> +                            RP5C01_MODE);
-> +               rp5c01_write(priv, data >> 4, pos);
-> +               rp5c01_write(priv,
-> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK11,
-> +                            RP5C01_MODE);
-> +               rp5c01_write(priv, data & 0xf, pos++);
-> +               rp5c01_write(priv, RP5C01_MODE_TIMER_EN | RP5C01_MODE_MODE01,
-> +                            RP5C01_MODE);
-> +       }
-> +
-> +       spin_unlock_irq(&priv->lock);
-> +       return count;
-> +}
-> +
->  static int __init rp5c01_rtc_probe(struct platform_device *dev)
->  {
->        struct resource *res;
-> @@ -168,6 +240,15 @@ static int __init rp5c01_rtc_probe(struct platform_device *dev)
->                goto out_free_priv;
->        }
->
-> +       sysfs_bin_attr_init(&priv->nvram_attr);
-> +       priv->nvram_attr.attr.name = "nvram";
-> +       priv->nvram_attr.attr.mode = S_IRUGO | S_IWUSR;
-> +       priv->nvram_attr.read = rp5c01_nvram_read;
-> +       priv->nvram_attr.write = rp5c01_nvram_write;
-> +       priv->nvram_attr.size = RP5C01_MODE;
-> +
-> +       spin_lock_init(&priv->lock);
-> +
->        rtc = rtc_device_register("rtc-rp5c01", &dev->dev, &rp5c01_rtc_ops,
->                                  THIS_MODULE);
->        if (IS_ERR(rtc)) {
-> @@ -177,8 +258,15 @@ static int __init rp5c01_rtc_probe(struct platform_device *dev)
->
->        priv->rtc = rtc;
->        platform_set_drvdata(dev, priv);
-> +
-> +       error = sysfs_create_bin_file(&dev->dev.kobj, &priv->nvram_attr);
-> +       if (error)
-> +               goto out_unregister;
-> +
->        return 0;
->
-> +out_unregister:
-> +       rtc_device_unregister(rtc);
->  out_unmap:
->        iounmap(priv->regs);
->  out_free_priv:
-> @@ -190,6 +278,7 @@ static int __exit rp5c01_rtc_remove(struct platform_device *dev)
->  {
->        struct rp5c01_priv *priv = platform_get_drvdata(dev);
->
-> +       sysfs_remove_bin_file(&dev->dev.kobj, &priv->nvram_attr);
->        rtc_device_unregister(priv->rtc);
->        iounmap(priv->regs);
->        kfree(priv);
-> --
-> 1.7.0.4
->
-> Gr{oetje,eeting}s,
->
->                                                Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                                            -- Linus Torvalds
->
-> --
-> You received this message because you are subscribed to "rtc-linux".
-> Membership options at http://groups.google.com/group/rtc-linux .
-> Please read http://groups.google.com/group/rtc-linux/web/checklist
-> before submitting a driver.
-
-
-
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index 4eb2b77..5c78564 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -43,11 +43,59 @@
+ 
+ #include "comedi.h"
+ 
+-#define DPRINTK(format, args...)	do {		\
+-	if (comedi_debug)				\
+-		printk(KERN_DEBUG "comedi: " format , ## args);	\
++#define comedi_printk(level, fmt, args...) \
++	printk(level "comedi: " pr_fmt(fmt), ##args)
++
++#define DPRINTK(format, args...) \
++do { \
++	if (comedi_debug) \
++		comedi_printk(KERN_DEBUG, fmt, ##args); \
+ } while (0)
+ 
++#define comedi_emerg(fmt, ...) \
++	comedi_printk(KERN_EMERG, fmt, ##__VA_ARGS__)
++#define comedi_alert(fmt, ...) \
++	comedi_printk(KERN_ALERT, fmt, ##__VA_ARGS__)
++#define comedi_crit(fmt, ...) \
++	comedi_printk(KERN_CRIT, fmt, ##__VA_ARGS__)
++#define comedi_err(fmt, ...) \
++	comedi_printk(KERN_ERR, fmt, ##__VA_ARGS__)
++#define comedi_warn(fmt, ...) \
++	comedi_printk(KERN_WARN, fmt, ##__VA_ARGS__)
++#define comedi_notice(fmt, ...) \
++	comedi_printk(KERN_NOTICE, fmt, ##__VA_ARGS__)
++#define comedi_info(fmt, ...) \
++	comedi_printk(KERN_INFO, fmt, ##__VA_ARGS__)
++
++/* comedi_devel() should produce zero code unless DEBUG is defined */
++#ifdef DEBUG
++#define comedi_devel(fmt, ...) \
++	comedi_printk(KERN_DEBUG, fmt, ##__VA_ARGS__)
++#else
++#define comedi_devel(fmt, ...) \
++({ \
++	if (0) \
++		comedi_printk(KERN_DEBUG, fmt, ##__VA_ARGS_); \
++	0; \
++})
++#endif
++
++#if defined(DEBUG)
++#define comedi_debug(fmt, ..) \
++	comedi_printk(KERN_DEBUG, fmt, ##__VA_ARGS__)
++#elif defined(CONFIG_DYNAMIC_DEBUG)
++/* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
++#define comedi_debug(fmt, ...) \
++	dynamic_pr_debug(fmt, ##__VA_ARGS__)
++#else
++#define comedi_debug(fmt, ...) \
++({ \
++	if (0) \
++		comedi_printk(KERN_DEBUG, fmt, ##__VA_ARGS__); \
++	0; \
++})
++#endif
++
+ #define COMEDI_VERSION(a, b, c) (((a) << 16) + ((b) << 8) + (c))
+ #define COMEDI_VERSION_CODE COMEDI_VERSION(COMEDI_MAJORVERSION, \
+ 	COMEDI_MINORVERSION, COMEDI_MICROVERSION)
+diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+index 4a29ed7..a649e7f 100644
+--- a/drivers/staging/comedi/drivers.c
++++ b/drivers/staging/comedi/drivers.c
+@@ -117,8 +117,7 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	for (driv = comedi_drivers; driv; driv = driv->next) {
+ 		if (!try_module_get(driv->module)) {
+-			printk
+-			    (KERN_INFO "comedi: failed to increment module count, skipping\n");
++			comedi_info("failed to increment module count, skipping\n");
+ 			continue;
+ 		}
+ 		if (driv->num_names) {
+@@ -149,8 +148,7 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/*  report valid board names before returning error */
+ 	for (driv = comedi_drivers; driv; driv = driv->next) {
+ 		if (!try_module_get(driv->module)) {
+-			printk(KERN_INFO
+-			       "comedi: failed to increment module count\n");
++			comedi_info("failed to increment module count\n");
+ 			continue;
+ 		}
+ 		comedi_report_boards(driv);
+@@ -205,9 +203,8 @@ int comedi_driver_unregister(struct comedi_driver *driver)
+ 		mutex_lock(&dev->mutex);
+ 		if (dev->attached && dev->driver == driver) {
+ 			if (dev->use_count)
+-				printk
+-				    (KERN_WARNING "BUG! detaching device with use_count=%d\n",
+-				     dev->use_count);
++				printk(KERN_WARNING
++				       "BUG! detaching device with use_count=%d\n", dev->use_count);
+ 			comedi_device_detach(dev);
+ 		}
+ 		mutex_unlock(&dev->mutex);
+@@ -325,8 +322,8 @@ static void comedi_report_boards(struct comedi_driver *driv)
+ 	unsigned int i;
+ 	const char *const *name_ptr;
+ 
+-	printk(KERN_INFO "comedi: valid board names for %s driver are:\n",
+-	       driv->driver_name);
++	comedi_info("valid board names for %s driver are:\n",
++		    driv->driver_name);
+ 
+ 	name_ptr = driv->board_name;
+ 	for (i = 0; i < driv->num_names; i++) {
+@@ -441,21 +438,19 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
+ 	if (async->buf_page_list) {
+ 		unsigned i;
+ 		for (i = 0; i < async->n_buf_pages; ++i) {
+-			if (async->buf_page_list[i].virt_addr) {
+-				clear_bit(PG_reserved, &(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
++			void *virt_addr = async->buf_page_list[i].virt_addr;
++			dma_addr_t dma_addr = async->buf_page_list[i].dma_addr;
++
++			if (virt_addr) {
++				struct page *page = virt_to_page(virt_addr);
++				clear_bit(PG_reserved, &page->flags);
+ 				if (s->async_dma_dir != DMA_NONE) {
+ 					dma_free_coherent(dev->hw_dev,
+ 							  PAGE_SIZE,
+-							  async->
+-							  buf_page_list
+-							  [i].virt_addr,
+-							  async->
+-							  buf_page_list
+-							  [i].dma_addr);
++							  virt_addr,
++							  dma_addr);
+ 				} else {
+-					free_page((unsigned long)
+-						  async->buf_page_list[i].
+-						  virt_addr);
++					free_page((unsigned long) virt_addr);
+ 				}
+ 			}
+ 		}
+@@ -478,26 +473,29 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		}
+ 		if (pages) {
+ 			for (i = 0; i < n_pages; i++) {
++				struct comedi_buf_page *buf_page =
++					&async->buf_page_list[i];
++				dma_addr_t dma_addr = buf_page->dma_addr;
++				struct page *page;
++
+ 				if (s->async_dma_dir != DMA_NONE) {
+-					async->buf_page_list[i].virt_addr =
++					buf_page->virt_addr =
+ 					    dma_alloc_coherent(dev->hw_dev,
+ 							       PAGE_SIZE,
+-							       &async->
+-							       buf_page_list
+-							       [i].dma_addr,
++							       &dma_addr,
+ 							       GFP_KERNEL |
+ 							       __GFP_COMP);
+ 				} else {
+-					async->buf_page_list[i].virt_addr =
++					buf_page->virt_addr =
+ 					    (void *)
+ 					    get_zeroed_page(GFP_KERNEL);
+ 				}
+-				if (async->buf_page_list[i].virt_addr == NULL)
++				if (buf_page->virt_addr == NULL)
+ 					break;
+ 
+-				set_bit(PG_reserved,
+-					&(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
+-				pages[i] = virt_to_page(async->buf_page_list[i].virt_addr);
++				page = virt_to_page(buf_page->virt_addr);
++				set_bit(PG_reserved, &page->flags);
++				pages[i] = page;
+ 			}
+ 		}
+ 		if (i == n_pages) {
+@@ -510,24 +508,27 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
+ 			/* Some allocation failed above. */
+ 			if (async->buf_page_list) {
+ 				for (i = 0; i < n_pages; i++) {
+-					if (async->buf_page_list[i].virt_addr ==
+-					    NULL) {
++					struct comedi_buf_page *buf_page =
++						&async->buf_page_list[i];
++					void *virt_addr =
++						buf_page->virt_addr;
++					dma_addr_t dma_addr =
++						buf_page->dma_addr;
++					struct page *page =
++						virt_to_page(virt_addr);
++
++					if (virt_addr == NULL)
+ 						break;
+-					}
+-					clear_bit(PG_reserved, &(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
++
++					clear_bit(PG_reserved, &page->flags);
+ 					if (s->async_dma_dir != DMA_NONE) {
+ 						dma_free_coherent(dev->hw_dev,
+ 								  PAGE_SIZE,
+-								  async->
+-								  buf_page_list
+-								  [i].virt_addr,
+-								  async->
+-								  buf_page_list
+-								  [i].dma_addr);
++								  virt_addr,
++								  dma_addr);
+ 					} else {
+ 						free_page((unsigned long)
+-							  async->buf_page_list
+-							  [i].virt_addr);
++							  virt_addr);
+ 					}
+ 				}
+ 				vfree(async->buf_page_list);
+@@ -646,8 +647,7 @@ unsigned comedi_buf_write_free(struct comedi_async *async, unsigned int nbytes)
+ {
+ 	if ((int)(async->buf_write_count + nbytes -
+ 		  async->buf_write_alloc_count) > 0) {
+-		printk
+-		    (KERN_INFO "comedi: attempted to write-free more bytes than have been write-allocated.\n");
++		comedi_info("attempted to write-free more bytes than have been write-allocated.\n");
+ 		nbytes = async->buf_write_alloc_count - async->buf_write_count;
+ 	}
+ 	async->buf_write_count += nbytes;
+@@ -683,8 +683,7 @@ unsigned comedi_buf_read_free(struct comedi_async *async, unsigned int nbytes)
+ 	smp_mb();
+ 	if ((int)(async->buf_read_count + nbytes -
+ 		  async->buf_read_alloc_count) > 0) {
+-		printk(KERN_INFO
+-		       "comedi: attempted to read-free more bytes than have been read-allocated.\n");
++		comedi_info("attempted to read-free more bytes than have been read-allocated.\n");
+ 		nbytes = async->buf_read_alloc_count - async->buf_read_count;
+ 	}
+ 	async->buf_read_count += nbytes;
 -- 
-*linux-arm-kernel mailing list
-mail addr:linux-arm-kernel@lists.infradead.org
-you can subscribe by:
-http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+1.7.1
 
-* linux-arm-NUC900 mailing list
-mail addr:NUC900@googlegroups.com
-main web: https://groups.google.com/group/NUC900
-you can subscribe it by sending me mail:
-mcuos.com@gmail.com
