@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab0FMTXd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 15:23:33 -0400
-Received: from www17.your-server.de ([213.133.104.17]:42607 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab0FMTXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 15:23:32 -0400
-Message-ID: <DC0C730083854824867BF062E17E7FAA@hugo>
-From: "Thomas Meyer" <thomas@m3y3r.de>
-To: "Stephen Hemminger" <shemminger@vyatta.com>
-Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
-       <linux-kernel@vger.kernel.org>
-References: <20100609183449.110905403@vyatta.com><1276152212.13438.4.camel@localhost> <20100611103053.26b6954e@nehalam>
-In-Reply-To: <20100611103053.26b6954e@nehalam>
-Subject: Re: [PATCH 0/8] floppy: cleanup patches
-Date: Sun, 13 Jun 2010 19:23:28 +0200
+	id S1754309Ab0FMTeb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 15:34:31 -0400
+Received: from mx.ij.cx ([212.13.201.15]:61951 "EHLO wes.ijneb.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752341Ab0FMTe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 15:34:29 -0400
+X-Greylist: delayed 1980 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Jun 2010 15:34:29 EDT
+Date: Sun, 13 Jun 2010 20:01:26 +0100 (BST)
+From: Mark Hills <mark@pogo.org.uk>
+To: linux-kernel@vger.kernel.org
+cc: David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>
+Subject: Appending '+' to version, since 2.6.35-rc2
+Message-ID: <alpine.NEB.2.01.1006131729430.2991@jrf.vwaro.pbz>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Windows Mail 6.0.6002.18197
-X-MimeOLE: Produced By Microsoft MimeOLE V6.0.6002.18197
-X-Authenticated-Sender: thomas@m3y3r.de
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mark@pogo.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message ----- 
-From: "Stephen Hemminger" <shemminger@vyatta.com>
-> On Thu, 10 Jun 2010 08:43:32 +0200
-> Thomas Meyer <thomas@m3y3r.de> wrote:
-> 
->> Am Mittwoch, den 09.06.2010, 11:34 -0700 schrieb Stephen Hemminger:
->> > When going through floppy driver addressing some of the timing
->> > bugs, I also saw these leftover things that ought to be cleaned up.
->> >   
->> 
->> With your patches applied on top of 2.6.34 I still get this timeout
->> while resuming from ram:
-> 
-> Not clear, did the problem occur before my patches?
+Commit 85a256d adds a new feature:
 
-Yes, the timeout occured before your patches, i.e. plain 2.6.34.
+  [...] When CONFIG_LOCALVERSION_AUTO is not enabled, a `+' is appended
+  to the kernel version to represent that the kernel has been revised
+  since the last release unless "make LOCALVERSION=" was used to uniquely
+  identify the build.
 
-> The posted set
-> of patches should not change visible functionalty or fix any observable
-> bug. Floppy driver would be bug for bug the same.
+I'm finding this inconvenient for 'casual' kernel development.
 
-I guess, it's okay then.
+For example, my usual workflow goes something like:
 
-kind regards
-thomas
+1) find something I suspect is a bug
+2) upgrade to the latest stable or -rc kernel, to confirm
+3) experiment with patch to fix it
+
+Since 2.6.35-rc2, going from step 2 to 3 causes the version of the kernel 
+to change: forcing time-consuming rebuilds, installing modules, and manual 
+changes associated with a new version number; eg. updating the lilo/grub 
+config, or the distribution's initrd.
+
+Whilst I can understand the motivation for the '+' being mandatory, the 
+added stages above unnecessarily raise the bar for casual developers, or 
+other people who need to 'dip' into the kernel and test patches. These 
+people are least likely to be aware of using LOCALVERSION to override it 
+too.
+
+May I suggest that this particular part of the commit be reverted (example 
+below)? In favour of a user, if they wish, explicitly setting LOCALVERSION 
+or using CONFIG_LOCALVERSION_AUTO.
+
+-- 
+Mark
 
 
+From: Mark Hills <mark@pogo.org.uk>
+Date: Sun, 13 Jun 2010 19:16:55 +0100
+Subject: [PATCH] kbuild: Do not append mandatory '+' to kernel release
+
+
+Signed-off-by: Mark Hills <mark@pogo.org.uk>
+---
+ Makefile |   14 --------------
+ 1 files changed, 0 insertions(+), 14 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index d49d96c..6870f6f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -909,14 +909,6 @@ $(vmlinux-dirs): prepare scripts
+ #	    $(scm-identifier)		(unique SCM tag, if one exists)
+ #	      ./scripts/setlocalversion	(only with CONFIG_LOCALVERSION_AUTO)
+ #	      .scmversion		(only with CONFIG_LOCALVERSION_AUTO)
+-#	    +				(only without CONFIG_LOCALVERSION_AUTO
+-#					 and without LOCALVERSION= and
+-#					 repository is at non-tagged commit)
+-#
+-# For kernels without CONFIG_LOCALVERSION_AUTO compiled from an SCM that has
+-# been revised beyond a tagged commit, `+' is appended to the version string
+-# when not overridden by using "make LOCALVERSION=".  This indicates that the
+-# kernel is not a vanilla release version and has been modified.
+ 
+ pattern = ".*/localversion[^~]*"
+ string  = $(shell cat /dev/null \
+@@ -942,12 +934,6 @@ endif
+ 
+ ifdef CONFIG_LOCALVERSION_AUTO
+ 	localver-extra = $(scm-identifier)
+-else
+-	ifneq ($(scm-identifier),)
+-		ifeq ($(LOCALVERSION),)
+-			localver-extra = +
+-		endif
+-	endif
+ endif
+ 
+ localver-full = $(localver)$(LOCALVERSION)$(localver-extra)
+-- 
+1.7.1
