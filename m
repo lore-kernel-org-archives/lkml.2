@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab0FMOyf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 10:54:35 -0400
-Received: from lo.gmane.org ([80.91.229.12]:48438 "EHLO lo.gmane.org"
+	id S1754040Ab0FMO4t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 10:56:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58795 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753938Ab0FMOye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 10:54:34 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-connect(): No such file or directory
-From: Jindrich Makovicka <makovick@gmail.com>
-Subject: Re: [REGRESSION]linux-2.6.35-rc3 in net/core/dev.c
-Date: Sun, 13 Jun 2010 16:54:21 +0200
-Message-ID: <20100613165421.7e8dda79@holly>
-References: <201006131625.55481.mitov@issp.bas.bg>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: rb5cl87.net.upc.cz
-In-Reply-To: <201006131625.55481.mitov@issp.bas.bg>
-X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Cc: netdev@vger.kernel.org
+	id S1753948Ab0FMO4r convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 10:56:47 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "Thomas Meyer" <thomas@m3y3r.de>
+References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
+In-Reply-To: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <YPGdyfWGvNK.A.nVB.m8OFMB@chimera>
+Subject: [Bug #15673] 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 13 Jun 2010 16:48:56 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Jun 2010 16:25:54 +0300
-Marin Mitov <mitov@issp.bas.bg> wrote:
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.33 and 2.6.34.
 
-> Hi all,
-> 
-> I am using ssh with port redirection to log on host_at_work:
-> 
-> ssh -L20110:mail:110 host_at_work
-> 
-> With linux-2.6.35-rc3, when I telnet to localhost I get:
-> 
-> telnet localhost 20110
-> Trying 127.0.0.1...
-> telnet: connect to address 127.0.0.1: Connection timed out
-[...]
-> 
-> I have seen the posting on LKML:
-> 
-> http://lkml.org/lkml/2010/6/13/11
-> 
-> and decided to revert the patch mentioned their (see bellow).
-> The revert solves the problem for me.
+The following bug entry is on the current list of known regressions
+introduced between 2.6.33 and 2.6.34.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
-I can confirm this. Reverting of this patch fixes a regression with
-Privoxy running on localhost, where most of the connections
-(browser->proxy) stall and don't return anything.
 
--- 
-Jindrich Makovicka
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15673
+Subject		: 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
+Submitter	: Thomas Meyer <thomas@m3y3r.de>
+Date		: 2010-03-28 11:31 (78 days old)
+Message-ID	: <1269775909.5301.4.camel@localhost.localdomain>
+References	: http://marc.info/?l=linux-kernel&m=126977593326800&w=2
 
 
