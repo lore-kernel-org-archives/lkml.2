@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab0FMLZn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 07:25:43 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48168 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab0FMLYy (ORCPT
+	id S1753957Ab0FML1f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 07:27:35 -0400
+Received: from fg-out-1718.google.com ([72.14.220.153]:36762 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753925Ab0FML1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 07:24:54 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] oom: Make coredump interruptible
-Cc: kosaki.motohiro@jp.fujitsu.com, Roland McGrath <roland@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       David Rientjes <rientjes@google.com>,
+	Sun, 13 Jun 2010 07:27:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=TG08GYGawjYeLPj6BphIx7Fxwy2L2wjpBml5O3+/CmnatMO+ENIMrWuHVcE3kyfDSO
+         5Y34VtGKnXbnWHDBJdXYWJadW+5tib3Q+54LYpgLZVnJwaH4GAS0XOaHgZhZaLdtrlMg
+         VIatv9JMCjAzbO9HWgLExTDARjDc1ofbOSWf4=
+Subject: Re: [PATCH v2] MMC: fix all hangs related to mmc/sd card
+ insert/removal during suspend/resume.
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: linux-mmc <linux-mmc@vger.kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100609195309.GA6899@redhat.com>
-References: <20100604112721.GA12582@redhat.com> <20100609195309.GA6899@redhat.com>
-Message-Id: <20100613175547.616F.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-2022-JP"
+       Philip Langdale <philipl@overt.org>
+In-Reply-To: <1276283995-10812-1-git-send-email-maximlevitsky@gmail.com>
+References: <1276283791.8557.29.camel@maxim-laptop>
+	 <1276283995-10812-1-git-send-email-maximlevitsky@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 13 Jun 2010 14:27:29 +0300
+Message-ID: <1276428449.16701.0.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Sun, 13 Jun 2010 20:24:51 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the delay.
-
-> On 06/04, Oleg Nesterov wrote:
-> >
-> > On 06/04, KOSAKI Motohiro wrote:
-> > >
-> > > In multi threaded OOM case, we have two problematic routine, coredump
-> > > and vmscan. Roland's idea can only solve the former.
-> > >
-> > > But I also interest vmscan quickly exit if OOM received.
-> >
-> > Yes, agreed. See another email from me, MMF_ flags looks "obviously
-> > useful" to me.
+On Fri, 2010-06-11 at 22:19 +0300, Maxim Levitsky wrote: 
+> If you don't use CONFIG_MMC_UNSAFE_RESUME, card will now be removed
+> in pm notified while userspace is still running.
+> Thus it will be possible to sync it propely.
 > 
-> Well. But somehow we forgot about the !coredumping case... Suppose
-> that select_bad_process() chooses the process P to kill and we have
-> other processes (not sub-threads) which share the same ->mm.
-
-Ah, yes. I think you are correct.
-
-
-> In that case I am not sure we should blindly set MMF_OOMKILL. Suppose
-> that we kill P and after that the "out-of-memory" condition goes away.
-> But its ->mm still has MMF_OOMKILL set, and it is used. Who/when will
-> clear this flag?
+> Card detect workqueue is now freezeable, therefore a card insert/removal event will
+> wait till userspace is unfrozen.
 > 
-> Perhaps something like below makes sense for now.
+> Tested with and without CONFIG_MMC_UNSAFE_RESUME with suspend and hibernate.
+And I say it is now well tested.
+All attempts to hang the system failed.
 
-Probably, this works. at least I don't find any problems.
-But umm... Do you mean we can't implement per-process oom flags?
-
-example,
-	1) back to implement signal->oom_victim
-	   because We are using SIGKILL for OOM and struct signal
-	   naturally represent signal target.
-	2) mm->nr_oom_killed_task
-	   just avoid simple flag. instead counting number of tasks of
-	   oom-killed.
-
-I think both avoid your explained problem. Am I missing something?
-
-But, again, I have no objection to your patch. because I really hope to
-fix coredump vs oom issue.
-
-
+Best regards,
+Maxim Levitsky
 
