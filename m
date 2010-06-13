@@ -1,202 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377Ab0FMKMm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 06:12:42 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:55335 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab0FMKMk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 06:12:40 -0400
-Date: Sun, 13 Jun 2010 12:12:38 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alessandro Zummo <a.zummo@towertech.it>
-cc: Linux/m68k <linux-m68k@vger.kernel.org>, rtc-linux@googlegroups.com,
-       Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [PATCH] rtc: rp5c01 - Add NVRAM support
-Message-ID: <alpine.DEB.2.00.1006131208470.18415@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753412Ab0FMK2o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 06:28:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50623 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753308Ab0FMK2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 06:28:42 -0400
+Date: Sun, 13 Jun 2010 13:23:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tom Lyon <pugs@lyon-about.com>
+Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       chrisw@sous-sol.org, joro@8bytes.org, hjk@linutronix.de, avi@redhat.com,
+       gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
+Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100613102339.GB4191@redhat.com>
+References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com> <201006081654.43967.pugs@lyon-about.com> <20100609054557.GB4940@redhat.com> <201006111515.53562.pugs@lyon-about.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006111515.53562.pugs@lyon-about.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Ricoh RP5C01 RTC contains 26 x 4 bits of NVRAM.
-Provide access to it via a sysfs "nvram" attribute file.
+On Fri, Jun 11, 2010 at 03:15:53PM -0700, Tom Lyon wrote:
+> [ bunch of stuff about MSI-X checking and IOMMUs and config registers...]
+> 
+> OK, here's the thing.  The IOMMU API today does not do squat about
+> dealing with interrupts. Interrupts are special because the APIC
+> addresses are not each in their own page.  Yes, the IOMMU hardware
+> supports it (at least Intel), and there's some Intel intr remapping
+> code (not AMD), but it doesn't look like it is enough.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
---
-Question: Is a spinlock in priv the right kind of locking?
-	  Should I use e.g. rtc-device.ops_lock instead?
+The iommu book from AMD seems to say that interrupt remapping table
+address is taken from the device table entry.  So hardware support seems
+to be there, and to me it looks like it should be enough.
+Need to look at the iommu/msi code some more to figure out
+whether what linux does is handling this correctly -
+if it doesn't we need to fix that.
 
-diff --git a/drivers/rtc/rtc-rp5c01.c b/drivers/rtc/rtc-rp5c01.c
-index a95f733..36eb661 100644
---- a/drivers/rtc/rtc-rp5c01.c
-+++ b/drivers/rtc/rtc-rp5c01.c
-@@ -63,6 +63,8 @@ enum {
- struct rp5c01_priv {
- 	u32 __iomem *regs;
- 	struct rtc_device *rtc;
-+	spinlock_t lock;	/* against concurrent RTC/NVRAM access */
-+	struct bin_attribute nvram_attr;
- };
- 
- static inline unsigned int rp5c01_read(struct rp5c01_priv *priv,
-@@ -92,6 +94,7 @@ static int rp5c01_read_time(struct device *dev, struct rtc_time *tm)
- {
- 	struct rp5c01_priv *priv = dev_get_drvdata(dev);
- 
-+	spin_lock_irq(&priv->lock);
- 	rp5c01_lock(priv);
- 
- 	tm->tm_sec  = rp5c01_read(priv, RP5C01_10_SECOND) * 10 +
-@@ -111,6 +114,7 @@ static int rp5c01_read_time(struct device *dev, struct rtc_time *tm)
- 		tm->tm_year += 100;
- 
- 	rp5c01_unlock(priv);
-+	spin_unlock_irq(&priv->lock);
- 
- 	return rtc_valid_tm(tm);
- }
-@@ -119,6 +123,7 @@ static int rp5c01_set_time(struct device *dev, struct rtc_time *tm)
- {
- 	struct rp5c01_priv *priv = dev_get_drvdata(dev);
- 
-+	spin_lock_irq(&priv->lock);
- 	rp5c01_lock(priv);
- 
- 	rp5c01_write(priv, tm->tm_sec / 10, RP5C01_10_SECOND);
-@@ -139,6 +144,7 @@ static int rp5c01_set_time(struct device *dev, struct rtc_time *tm)
- 	rp5c01_write(priv, tm->tm_year % 10, RP5C01_1_YEAR);
- 
- 	rp5c01_unlock(priv);
-+	spin_unlock_irq(&priv->lock);
- 	return 0;
- }
- 
-@@ -147,6 +153,72 @@ static const struct rtc_class_ops rp5c01_rtc_ops = {
- 	.set_time	= rp5c01_set_time,
- };
- 
-+
-+/*
-+ * The NVRAM is organized as 2 blocks of 13 nibbles of 4 bits.
-+ * We provide access to them like AmigaOS does: the high nibble of each 8-bit
-+ * byte is stored in BLOCK10, the low nibble in BLOCK11.
-+ */
-+
-+static ssize_t rp5c01_nvram_read(struct file *filp, struct kobject *kobj,
-+				 struct bin_attribute *bin_attr,
-+				 char *buf, loff_t pos, size_t size)
-+{
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct rp5c01_priv *priv = dev_get_drvdata(dev);
-+	ssize_t count;
-+
-+	spin_lock_irq(&priv->lock);
-+
-+	for (count = 0; size > 0 && pos < RP5C01_MODE; count++, size--) {
-+		u8 data;
-+
-+		rp5c01_write(priv,
-+			     RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK10,
-+			     RP5C01_MODE);
-+		data = rp5c01_read(priv, pos) << 4;
-+		rp5c01_write(priv,
-+			     RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK11,
-+			     RP5C01_MODE);
-+		data |= rp5c01_read(priv, pos++);
-+		rp5c01_write(priv, RP5C01_MODE_TIMER_EN | RP5C01_MODE_MODE01,
-+			     RP5C01_MODE);
-+		*buf++ = data;
-+	}
-+
-+	spin_unlock_irq(&priv->lock);
-+	return count;
-+}
-+
-+static ssize_t rp5c01_nvram_write(struct file *filp, struct kobject *kobj,
-+				  struct bin_attribute *bin_attr,
-+				  char *buf, loff_t pos, size_t size)
-+{
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct rp5c01_priv *priv = dev_get_drvdata(dev);
-+	ssize_t count;
-+
-+	spin_lock_irq(&priv->lock);
-+
-+	for (count = 0; size > 0 && pos < RP5C01_MODE; count++, size--) {
-+		u8 data = *buf++;
-+
-+		rp5c01_write(priv,
-+			     RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK10,
-+			     RP5C01_MODE);
-+		rp5c01_write(priv, data >> 4, pos);
-+		rp5c01_write(priv,
-+			     RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK11,
-+			     RP5C01_MODE);
-+		rp5c01_write(priv, data & 0xf, pos++);
-+		rp5c01_write(priv, RP5C01_MODE_TIMER_EN | RP5C01_MODE_MODE01,
-+			     RP5C01_MODE);
-+	}
-+
-+	spin_unlock_irq(&priv->lock);
-+	return count;
-+}
-+
- static int __init rp5c01_rtc_probe(struct platform_device *dev)
- {
- 	struct resource *res;
-@@ -168,6 +240,15 @@ static int __init rp5c01_rtc_probe(struct platform_device *dev)
- 		goto out_free_priv;
- 	}
- 
-+	sysfs_bin_attr_init(&priv->nvram_attr);
-+	priv->nvram_attr.attr.name = "nvram";
-+	priv->nvram_attr.attr.mode = S_IRUGO | S_IWUSR;
-+	priv->nvram_attr.read = rp5c01_nvram_read;
-+	priv->nvram_attr.write = rp5c01_nvram_write;
-+	priv->nvram_attr.size = RP5C01_MODE;
-+
-+	spin_lock_init(&priv->lock);
-+
- 	rtc = rtc_device_register("rtc-rp5c01", &dev->dev, &rp5c01_rtc_ops,
- 				  THIS_MODULE);
- 	if (IS_ERR(rtc)) {
-@@ -177,8 +258,15 @@ static int __init rp5c01_rtc_probe(struct platform_device *dev)
- 
- 	priv->rtc = rtc;
- 	platform_set_drvdata(dev, priv);
-+
-+	error = sysfs_create_bin_file(&dev->dev.kobj, &priv->nvram_attr);
-+	if (error)
-+		goto out_unregister;
-+
- 	return 0;
- 
-+out_unregister:
-+	rtc_device_unregister(rtc);
- out_unmap:
- 	iounmap(priv->regs);
- out_free_priv:
-@@ -190,6 +278,7 @@ static int __exit rp5c01_rtc_remove(struct platform_device *dev)
- {
- 	struct rp5c01_priv *priv = platform_get_drvdata(dev);
- 
-+	sysfs_remove_bin_file(&dev->dev.kobj, &priv->nvram_attr);
- 	rtc_device_unregister(priv->rtc);
- 	iounmap(priv->regs);
- 	kfree(priv);
+> Therefore, we must not allow the user level driver to diddle the MSI
+> or MSI-X areas - either in config space or in the device memory space.
+
+It won't help.
+Consider that you want to let a userspace driver control
+the device with DMA capabilities.
+
+So if there is a range of addresses that device
+can write into that can break host, these writes
+can be triggered by userspace. Limiting
+userspace access to MSI registers won't help:
+you need a way to protect host from the device.
+
+>  If the device doesn't have its MSI-X registers in nice page aligned
+>  areas, then it is not "well-behaved" and it is S.O.L. The SR-IOV spec
+>  recommends that devices be designed the well-behaved way.
+> 
+> When the code in vfio_pci_config speaks of "virtualization" it means
+> that there are fake registers which the user driver can read or write,
+> but do not affect the real registers. BARs are one case, MSI regs
+> another. The PCI vendor and device ID are virtual because SR-IOV
+> doesn't supply them but I wanted the user driver to find them in the
+> same old place.
+
+Sorry, I still don't understand why do we bother.  All this is already
+implemented in userspace.  Why can't we just use this existing userspace
+implementation?  It seems that all kernel needs to do is prevent
+userspace from writing BARs.
+
+Why can't we replace all this complexity with basically:
+
+if (addr <= PCI_BASE_ADDRESS_5 && addr + len >= PCI_BASE_ADDRESS_0)
+	return -ENOPERM;
+
+And maybe another register or two. Most registers should be fine.
+
+> [ Re: Hotplug and Suspend/Resume]
+> There are *plenty* of real drivers - brand new ones - which don't
+> bother with these today.  Yeah, I can see adding them to the framework
+> someday - but if there's no urgent need then it is way down the
+> priority list.
+
+Well, for kernel drivers everything mostly works out of the box, it is
+handled by the PCI subsystem.  So some kind of framework will need to be
+added for userspace drivers as well.  And I suspect this issue won't be
+fixable later without breaking applications.
+
+> Meanwhile, the other uses beckon.
+
+Which other uses? I thought the whole point was fixing
+what's broken with current kvm implementation.
+So it seems to be we should not rush it ignoring existing issues such as
+hotplug.
+
+> And I never heard
+> the Infiniband users complaining about not having these things.
+
+I did.
+
 -- 
-1.7.0.4
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+MST
