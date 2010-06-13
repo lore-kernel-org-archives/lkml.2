@@ -1,96 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab0FMDiy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 23:38:54 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34267 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753077Ab0FMDix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 23:38:53 -0400
-Date: Sun, 13 Jun 2010 13:38:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2010-06-11-16-40 uploaded
-Message-Id: <20100613133846.41669e3b.sfr@canb.auug.org.au>
-In-Reply-To: <20100612101014.8dfd2843.akpm@linux-foundation.org>
-References: <201006120008.o5C08gC3027843@imap1.linux-foundation.org>
-	<20100613013718.e724d5e0.sfr@canb.auug.org.au>
-	<20100612101014.8dfd2843.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sun__13_Jun_2010_13_38_46_+1000_OSHbYi/=_d3L=gpS"
+	id S1753191Ab0FMDxt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 23:53:49 -0400
+Received: from cnshjsmin03.alcatel-sbell.com.cn ([211.144.215.47]:48242 "EHLO
+	cnshjsmin03.alcatel-sbell.com.cn" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753045Ab0FMDxs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 23:53:48 -0400
+X-AuditID: ac189297-b7bddae000004530-a0-4c1456185864
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+Subject: mq_receive failed with errno=512 (ERESTARTSYS)
+Date: Sun, 13 Jun 2010 11:53:45 +0800
+Message-ID: <80366F5EAAE27640A7221E6EF6AB54E5E8907D@CNSHGSMBS04.ad4.ad.alcatel.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: mq_receive failed with errno=512 (ERESTARTSYS)
+Thread-Index: AcsKkcRbMbV1HuZAS8675QukyLoKaQAGilug
+From: "WANG Jerry J" <Jerry.j.Wang@alcatel-lucent.com>
+To: <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 13 Jun 2010 03:53:46.0675 (UTC) FILETIME=[06500030:01CB0AAC]
+X-CFilter-Loop: Reflected
+X-Brightmail-Tracker: AAAAAQAAAZE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__13_Jun_2010_13_38_46_+1000_OSHbYi/=_d3L=gpS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+In the user space, Can we see ERESTARTSYS? I assume we should see EINTR.
+Am I right?
+How to reproduce this case?
 
-On Sat, 12 Jun 2010 10:10:14 -0700 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
->
-> On Sun, 13 Jun 2010 01:37:18 +1000 Stephen Rothwell <sfr@canb.auug.org.au=
-> wrote:
->=20
-> > On Fri, 11 Jun 2010 16:40:13 -0700 akpm@linux-foundation.org wrote:
-> > >
-> > > The mm-of-the-moment snapshot 2010-06-11-16-40 has been uploaded to
-> > >=20
-> > >    http://userweb.kernel.org/~akpm/mmotm/
-> > >=20
-> > > and will soon be available at
-> > >=20
-> > >    git://zen-kernel.org/kernel/mmotm.git
-> >=20
-> > The version in this git tree stops just before patch
-> > scsi-remove-private-bit-macros.patch.  I suspect that is because "git a=
-m"
-> > doe not like that patch (it has "a/./drivers..." as the file names).
->=20
-> git bug.  I fixed the patch.
+Thanks,
+Jerry
 
-Yeah, these comments were more reflections on the "import to git"
-procedures than on the patches themselves.
-
-> >, no From: line,
->=20
-> Well.  What From: line do I put on origin.patch and linux-next.patch??
-
-They were not the problem (for me at least).
-
-> I fixed the others.
-
-Thanks.
-
-> > or do not apply
-> > without some fuzz.
->=20
-> That's a bit silly.  Oh well, I can try to remember to rediff
-> everything before uploading.
-
-Not really necessary, git am is a but anal in that regard (for good
-reason usually).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sun__13_Jun_2010_13_38_46_+1000_OSHbYi/=_d3L=gpS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwUUsYACgkQjjKRsyhoI8ypUQCfexrwH9nWrBHqdXkEGKoGzsuq
-bQsAnihRFqNN1i7t2wWOBbZ7gALR48mU
-=dYuV
------END PGP SIGNATURE-----
-
---Signature=_Sun__13_Jun_2010_13_38_46_+1000_OSHbYi/=_d3L=gpS--
