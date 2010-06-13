@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab0FMKBj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 06:01:39 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42703 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752548Ab0FMKBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 06:01:38 -0400
-Date: Sun, 13 Jun 2010 12:01:21 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Divyesh Shah <dpshah@google.com>
-Cc: jaxboe@fusionio.com, peterz@infradead.org, piotr@hosowicz.com,
-       linux-kernel@vger.kernel.org, vgoyal@redhat.com,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] Remove preempt_enable/disable calls around
- sched_clock()
-Message-ID: <20100613100121.GC12322@elte.hu>
-References: <20100612023409.14850.76309.stgit@austin.mtv.corp.google.com>
- <20100612071950.GB29751@elte.hu>
- <AANLkTimcB3Jzb0b9pw5YOs5qmeznlcNFOqm64TBqOEdr@mail.gmail.com>
+	id S1753366Ab0FMKB7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 06:01:59 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:55271 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab0FMKB4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 06:01:56 -0400
+Message-ID: <4C14AC7E.6030308@nokia.com>
+Date: Sun, 13 Jun 2010 13:01:34 +0300
+From: Adrian Hunter <adrian.hunter@nokia.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimcB3Jzb0b9pw5YOs5qmeznlcNFOqm64TBqOEdr@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.3007]
+To: jens.axboe@oracle.com
+CC: hch@lst.de, Andrew Morton <akpm@linux-foundation.org>,
+       Kyungmin Park <kmpark@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+       Madhusudhan Chikkature <madhu.cr@ti.com>
+Subject: [PATCH V2 0/4] Add MMC erase and secure erase
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Jun 2010 10:01:35.0438 (UTC) FILETIME=[6851FEE0:01CB0ADF]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
-* Divyesh Shah <dpshah@google.com> wrote:
+Add ability to do MMC erase and secure erase operations from userspace,
+using the BLKDISCARD ioctl and a newly created BLKSECDISCARD ioctl.
 
-> On Sat, Jun 12, 2010 at 12:19 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Divyesh Shah <dpshah@google.com> wrote:
-> >
-> >> calls in the block layer. This was a temporary fix added.
-> >
-> > Not good, this commit reintroduces those ugly warnings, if someone happens to
-> > bisect straight into this commit.
-> 
-> You're right. In the next version, I'll merge both patches into one so
-> this cannot happen.
+Changes from V1
 
-Yeah - or if you really want to make a point of doing the two things in two 
-separate patches you can first fix the API, _then_ remove the preemption 
-enable/disable.
+- use discard I/O requests instead of implementing BLKDISCARD in mmc_block
+- do not validate erase size for MMC erases, instead round to erase size
+- rename MMC max_erase to pref_erase and expose it through sysfs as
+"preferred_erase_size"
 
-Thanks,
+Adrian Hunter (4):
+      block: Add BLKSECDISCARD
+      mmc: Add erase, secure erase, trim and secure trim operations
+      mmc_block: Add discard and secure discard support
+      omap_hsmmc: Add erase capability
 
-	Ingo
+ block/compat_ioctl.c          |    1 +
+ block/ioctl.c                 |    5 +
+ drivers/mmc/card/block.c      |  125 +++++++++++++++-
+ drivers/mmc/card/queue.c      |   16 ++-
+ drivers/mmc/core/core.c       |  346 +++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/core/core.h       |    2 +
+ drivers/mmc/core/mmc.c        |   47 ++++++-
+ drivers/mmc/core/sd.c         |   82 ++++++++++
+ drivers/mmc/core/sd_ops.c     |   48 ++++++
+ drivers/mmc/core/sd_ops.h     |    1 +
+ drivers/mmc/host/omap_hsmmc.c |   13 ++-
+ include/linux/fs.h            |    1 +
+ include/linux/mmc/card.h      |   19 +++
+ include/linux/mmc/core.h      |   19 +++
+ include/linux/mmc/host.h      |    1 +
+ include/linux/mmc/mmc.h       |   24 ++-
+ include/linux/mmc/sd.h        |    5 +
+ 17 files changed, 742 insertions(+), 13 deletions(-)
+
+
+Regards
+Adrian
