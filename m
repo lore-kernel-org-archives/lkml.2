@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab0FMUxK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 16:53:10 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:43605 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab0FMUxG (ORCPT
+	id S1754857Ab0FMU63 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 16:58:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41703 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754771Ab0FMU62 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 16:53:06 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] trace-cmd: prevent print_graph_duration buffer overflow
-In-Reply-To: Your message of "Sun, 13 Jun 2010 13:11:48 EDT."
-             <1276449108-21328-2-git-send-email-chase.douglas@canonical.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1276449108-21328-1-git-send-email-chase.douglas@canonical.com>
-            <1276449108-21328-2-git-send-email-chase.douglas@canonical.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1276462373_18203P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sun, 13 Jun 2010 16:52:53 -0400
-Message-ID: <40245.1276462373@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020208.4C154526.014D,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Sun, 13 Jun 2010 16:58:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=LkI4Gxn5uLbbcB9xjithEpn0IOxsnTazAzfCUZYavmS8IARTJ+m3SEh0STzvgXjOVS
+         0CSjZloCiJVQm/iRAqLE7C9nKHyLisIRTigIwmWrddUK0eRG4CvD4NjDZAQEiVvdHPas
+         Gi/Pb1MqUvO85fnd1KFRiFaw+ZN2BHGRg26AE=
+From: Chris Clayton <chris2553@googlemail.com>
+To: =?iso-8859-1?q?Fran=E7ois_Valenduc?= 
+	<francois.valenduc@tvcablenet.be>
+Subject: Re: Noticeable slow-down in 2.6.35-rc3
+Date: Sun, 13 Jun 2010 21:58:09 +0100
+User-Agent: KMail/1.9.10
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <AANLkTimDUf0N6b5PBy2wTGeAWEIY-lUvQPHQ7D7Gyrq4@mail.gmail.com> <4C15410D.4080107@tvcablenet.be>
+In-Reply-To: <4C15410D.4080107@tvcablenet.be>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-Id: <201006132158.09216.chris2553@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1276462373_18203P
-Content-Type: text/plain; charset=us-ascii
+On Sunday 13 June 2010 21:35:25 François Valenduc wrote:
+> Le 13/06/10 22:15, Chris Clayton a écrit :
+<snip>
+> >
+> > I've bisected it and arrived at:
+> >
+> > 597a264b1a9c7e36d1728f677c66c5c1f7e3b837 is the first bad commit
+> > commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837
+> > Author: John Fastabend <john.r.fastabend@intel.com>
+> > Date:   Thu Jun 3 09:30:11 2010 +0000
+> >
 
-On Sun, 13 Jun 2010 13:11:48 EDT, Chase Douglas said:
-> Passing n > sizeof(string) to snprintf can cause a glibc buffer overflow
-> condition. We know the exact size of nsecs_str, so use it instead of
-> math that may overflow.
+<snip>
 
->  	/* Print nsecs (we don't want to exceed 7 numbers) */
->  	if ((s->len - len) < 7) {
-> -		snprintf(nsecs_str, 8 - (s->len - len), "%03lu", nsecs_rem);
-> +		snprintf(nsecs_str, sizeof(nsecs_str), "%03lu", nsecs_rem);
+> This commit also makes nfsd hangs at startup on my computer (see
+> https://bugzilla.kernel.org/show_bug.cgi?id=16195). This problem doesn't
+> occur if it's reverted.
+>
 
-We only get into this code after we've checked that the length is under 7
-characters.  How much overflow can happen as long as the sizeof(nsecs_str) is a
-sane size (like at least 8 chars)?  Probably a better bet would be doing the
-right thing and 'BUILD_BUG_ON(sizeof(nsecs_str) < 8);'?
+I've just found John Fastabend's easy and fast fix 
+(http://marc.info/?l=linux-kernel&m=127646140827821) and am about to apply it 
+and test the new kernel. back soon!
+
+> François Valenduc
 
 
---==_Exmh_1276462373_18203P
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMFUUlcC3lWbTT17ARAvAhAJ4yDVB6vRNKCM+yvRPYg/G16JnGIwCgvO3N
-S8T7K3cOvIZqlWSX+/nFmgI=
-=ol4x
------END PGP SIGNATURE-----
-
---==_Exmh_1276462373_18203P--
-
+-- 
+The more I see, the more I know. The more I know, the less I understand. 
+Changing Man - Paul Weller
