@@ -1,242 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab0FMRpA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 13:45:00 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54830 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126Ab0FMRo6 convert rfc822-to-8bit (ORCPT
+	id S1754621Ab0FMSLJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 14:11:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61922 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451Ab0FMSLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 13:44:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=u5c/3ozL9dvmBe4d2iYJq9AYRIj/nV7B484Ltd0QOHNJgxC4L+BFWCcmKoT2eDtEZM
-         2+uTR25vb3KHJYz6YOoexQndIds89h5AtSX/PRY/EN3nMRZGNx1eXCL6V3kR1BmXkTV7
-         z3UKUhA5eesxSd49ZE1Lo4RW01CIzQuqkyDI0=
+	Sun, 13 Jun 2010 14:11:07 -0400
+Date: Sun, 13 Jun 2010 11:10:59 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Michael Ellerman <michael@ellerman.id.au>, linux-media@vger.kernel.org,
+       mchehab@infradead.org
+Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
+In-Reply-To: <201006131722.44062.s.L-H@gmx.de>
+Message-ID: <alpine.DEB.2.01.1006131103590.3964@bogon.housecafe.de>
+References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera> <YPGdyfWGvNK.A.C8B.d9OFMB@chimera> <201006131722.44062.s.L-H@gmx.de>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikc_aHiRhPds-_CEMma_J9thmbai2nkcYFZPp9h@mail.gmail.com>
-References: <alpine.DEB.2.00.1006131208470.18415@ayla.of.borg>
-	<AANLkTikc_aHiRhPds-_CEMma_J9thmbai2nkcYFZPp9h@mail.gmail.com>
-Date: Sun, 13 Jun 2010 19:44:56 +0200
-X-Google-Sender-Auth: DrcS4_m6HnYhAd_plO7ku41Md0c
-Message-ID: <AANLkTimDQ45rsnYwzf2HQSh7uX1Lwz87BrLCJJEwV38r@mail.gmail.com>
-Subject: Re: [rtc-linux] [PATCH] rtc: rp5c01 - Add NVRAM support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Wan ZongShun <mcuos.com@gmail.com>
-Cc: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       "Linux/m68k" <linux-m68k@vger.kernel.org>,
-       Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V01U2FsdGVkX1+SwS8+jxxhpU7P+Huh2Ex5zJ3QzaQrwYyAyjH
+ uC0C6i1FXzK/n0DRtghv4z+GTNChCDwnjGUu9ZRV/meXYyX3SE
+ dp11vlzVqOcIzsTJ1KZdQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 13, 2010 at 15:41, Wan ZongShun <mcuos.com@gmail.com> wrote:
-> Minior comment below:
->
-> 2010/6/13 Geert Uytterhoeven <geert@linux-m68k.org>:
->> The Ricoh RP5C01 RTC contains 26 x 4 bits of NVRAM.
->> Provide access to it via a sysfs "nvram" attribute file.
->>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> --
->> Question: Is a spinlock in priv the right kind of locking?
->>          Should I use e.g. rtc-device.ops_lock instead?
->
-> Firstly, this 'Question' text should not put here, please put all
-> texts in front of '---'.
+On Sun, 13 Jun 2010 at 17:22, Stefan Lippers-Hollmann wrote:
+> Still existing in 2.6.34 and 2.6.35 HEAD, however a patch fixing the issue 
+> for b2c2-flexcop/ flexcop-pci has been posted last week:
 
-I explicitly put it there, as the question was meant for the reviewers only,
-and I don't want it to be part of the final checkin comment.
+So, now we have two patches for slightly different issues?
 
-> Secondly, You can not use rtc-device.ops_lock here, if so, it would
-> arouse dead lock,
-> before the ' rp5c01_read_time()' was called by RTC subsystem upper
-> API, rtc-device.ops_lock
-> has been required sucessfully, If continue to require the
-> rtc-device.ops_lock in ' rp5c01_read_time()',
-> the 'lock' will cannot be get, dead lock occurs.
+* http://lkml.indiana.edu/hypermail/linux/kernel/1006.0/00137.html
+  ...fixes the flexcop-pci.c driver.
 
-Sorry, my question was not that correctly formulated...
-I meant whether it's better to take rtc_device.ops_lock in the nvram
-access functions
-to synchronize with the RTC access functions (which already take that mutex),
-instead of adding a spinlock to priv.
+* http://patchwork.ozlabs.org/patch/52978/
+  ...fixes "some bogus firmwares include properties with "/" in their
+  name". I'm not sure if this would make the flexcop-pci.c badness go 
+  away too. 
 
-Thanks for your comments!
+Anyway, both patches are not upstream yet, but Michael mentioned that 
+Grant Likely or Ben might push it eventually.
 
->> diff --git a/drivers/rtc/rtc-rp5c01.c b/drivers/rtc/rtc-rp5c01.c
->> index a95f733..36eb661 100644
->> --- a/drivers/rtc/rtc-rp5c01.c
->> +++ b/drivers/rtc/rtc-rp5c01.c
->> @@ -63,6 +63,8 @@ enum {
->>  struct rp5c01_priv {
->>        u32 __iomem *regs;
->>        struct rtc_device *rtc;
->> +       spinlock_t lock;        /* against concurrent RTC/NVRAM access */
->> +       struct bin_attribute nvram_attr;
->>  };
->>
->>  static inline unsigned int rp5c01_read(struct rp5c01_priv *priv,
->> @@ -92,6 +94,7 @@ static int rp5c01_read_time(struct device *dev, struct rtc_time *tm)
->>  {
->>        struct rp5c01_priv *priv = dev_get_drvdata(dev);
->>
->> +       spin_lock_irq(&priv->lock);
->>        rp5c01_lock(priv);
->>
->>        tm->tm_sec  = rp5c01_read(priv, RP5C01_10_SECOND) * 10 +
->> @@ -111,6 +114,7 @@ static int rp5c01_read_time(struct device *dev, struct rtc_time *tm)
->>                tm->tm_year += 100;
->>
->>        rp5c01_unlock(priv);
->> +       spin_unlock_irq(&priv->lock);
->>
->>        return rtc_valid_tm(tm);
->>  }
->> @@ -119,6 +123,7 @@ static int rp5c01_set_time(struct device *dev, struct rtc_time *tm)
->>  {
->>        struct rp5c01_priv *priv = dev_get_drvdata(dev);
->>
->> +       spin_lock_irq(&priv->lock);
->>        rp5c01_lock(priv);
->>
->>        rp5c01_write(priv, tm->tm_sec / 10, RP5C01_10_SECOND);
->> @@ -139,6 +144,7 @@ static int rp5c01_set_time(struct device *dev, struct rtc_time *tm)
->>        rp5c01_write(priv, tm->tm_year % 10, RP5C01_1_YEAR);
->>
->>        rp5c01_unlock(priv);
->> +       spin_unlock_irq(&priv->lock);
->>        return 0;
->>  }
->>
->> @@ -147,6 +153,72 @@ static const struct rtc_class_ops rp5c01_rtc_ops = {
->>        .set_time       = rp5c01_set_time,
->>  };
->>
->> +
->> +/*
->> + * The NVRAM is organized as 2 blocks of 13 nibbles of 4 bits.
->> + * We provide access to them like AmigaOS does: the high nibble of each 8-bit
->> + * byte is stored in BLOCK10, the low nibble in BLOCK11.
->> + */
->> +
->> +static ssize_t rp5c01_nvram_read(struct file *filp, struct kobject *kobj,
->> +                                struct bin_attribute *bin_attr,
->> +                                char *buf, loff_t pos, size_t size)
->> +{
->> +       struct device *dev = container_of(kobj, struct device, kobj);
->> +       struct rp5c01_priv *priv = dev_get_drvdata(dev);
->> +       ssize_t count;
->> +
->> +       spin_lock_irq(&priv->lock);
->> +
->> +       for (count = 0; size > 0 && pos < RP5C01_MODE; count++, size--) {
->> +               u8 data;
->> +
->> +               rp5c01_write(priv,
->> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK10,
->> +                            RP5C01_MODE);
->> +               data = rp5c01_read(priv, pos) << 4;
->> +               rp5c01_write(priv,
->> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK11,
->> +                            RP5C01_MODE);
->> +               data |= rp5c01_read(priv, pos++);
->> +               rp5c01_write(priv, RP5C01_MODE_TIMER_EN | RP5C01_MODE_MODE01,
->> +                            RP5C01_MODE);
->> +               *buf++ = data;
->> +       }
->> +
->> +       spin_unlock_irq(&priv->lock);
->> +       return count;
->> +}
->> +
->> +static ssize_t rp5c01_nvram_write(struct file *filp, struct kobject *kobj,
->> +                                 struct bin_attribute *bin_attr,
->> +                                 char *buf, loff_t pos, size_t size)
->> +{
->> +       struct device *dev = container_of(kobj, struct device, kobj);
->> +       struct rp5c01_priv *priv = dev_get_drvdata(dev);
->> +       ssize_t count;
->> +
->> +       spin_lock_irq(&priv->lock);
->> +
->> +       for (count = 0; size > 0 && pos < RP5C01_MODE; count++, size--) {
->> +               u8 data = *buf++;
->> +
->> +               rp5c01_write(priv,
->> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK10,
->> +                            RP5C01_MODE);
->> +               rp5c01_write(priv, data >> 4, pos);
->> +               rp5c01_write(priv,
->> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK11,
->> +                            RP5C01_MODE);
->> +               rp5c01_write(priv, data & 0xf, pos++);
->> +               rp5c01_write(priv, RP5C01_MODE_TIMER_EN | RP5C01_MODE_MODE01,
->> +                            RP5C01_MODE);
->> +       }
->> +
->> +       spin_unlock_irq(&priv->lock);
->> +       return count;
->> +}
->> +
->>  static int __init rp5c01_rtc_probe(struct platform_device *dev)
->>  {
->>        struct resource *res;
->> @@ -168,6 +240,15 @@ static int __init rp5c01_rtc_probe(struct platform_device *dev)
->>                goto out_free_priv;
->>        }
->>
->> +       sysfs_bin_attr_init(&priv->nvram_attr);
->> +       priv->nvram_attr.attr.name = "nvram";
->> +       priv->nvram_attr.attr.mode = S_IRUGO | S_IWUSR;
->> +       priv->nvram_attr.read = rp5c01_nvram_read;
->> +       priv->nvram_attr.write = rp5c01_nvram_write;
->> +       priv->nvram_attr.size = RP5C01_MODE;
->> +
->> +       spin_lock_init(&priv->lock);
->> +
->>        rtc = rtc_device_register("rtc-rp5c01", &dev->dev, &rp5c01_rtc_ops,
->>                                  THIS_MODULE);
->>        if (IS_ERR(rtc)) {
->> @@ -177,8 +258,15 @@ static int __init rp5c01_rtc_probe(struct platform_device *dev)
->>
->>        priv->rtc = rtc;
->>        platform_set_drvdata(dev, priv);
->> +
->> +       error = sysfs_create_bin_file(&dev->dev.kobj, &priv->nvram_attr);
->> +       if (error)
->> +               goto out_unregister;
->> +
->>        return 0;
->>
->> +out_unregister:
->> +       rtc_device_unregister(rtc);
->>  out_unmap:
->>        iounmap(priv->regs);
->>  out_free_priv:
->> @@ -190,6 +278,7 @@ static int __exit rp5c01_rtc_remove(struct platform_device *dev)
->>  {
->>        struct rp5c01_priv *priv = platform_get_drvdata(dev);
->>
->> +       sysfs_remove_bin_file(&dev->dev.kobj, &priv->nvram_attr);
->>        rtc_device_unregister(priv->rtc);
->>        iounmap(priv->regs);
->>        kfree(priv);
->> --
->> 1.7.0.4
+Thanks,
+Christian.
+-- 
+BOFH excuse #363:
 
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Out of cards on drive D:
