@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab0FMU63 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 16:58:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41703 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771Ab0FMU62 convert rfc822-to-8bit (ORCPT
+	id S1754867Ab0FMU72 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 16:59:28 -0400
+Received: from smtp-out-231.synserver.de ([212.40.180.231]:1047 "HELO
+	smtp-out-231.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754733Ab0FMU71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 16:58:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=LkI4Gxn5uLbbcB9xjithEpn0IOxsnTazAzfCUZYavmS8IARTJ+m3SEh0STzvgXjOVS
-         0CSjZloCiJVQm/iRAqLE7C9nKHyLisIRTigIwmWrddUK0eRG4CvD4NjDZAQEiVvdHPas
-         Gi/Pb1MqUvO85fnd1KFRiFaw+ZN2BHGRg26AE=
-From: Chris Clayton <chris2553@googlemail.com>
-To: =?iso-8859-1?q?Fran=E7ois_Valenduc?= 
-	<francois.valenduc@tvcablenet.be>
-Subject: Re: Noticeable slow-down in 2.6.35-rc3
-Date: Sun, 13 Jun 2010 21:58:09 +0100
-User-Agent: KMail/1.9.10
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <AANLkTimDUf0N6b5PBy2wTGeAWEIY-lUvQPHQ7D7Gyrq4@mail.gmail.com> <4C15410D.4080107@tvcablenet.be>
-In-Reply-To: <4C15410D.4080107@tvcablenet.be>
+	Sun, 13 Jun 2010 16:59:27 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 11989
+Date: Sun, 13 Jun 2010 22:59:22 +0200
+From: "markus@trippelsdorf.de" <markus@trippelsdorf.de>
+To: John Fastabend <john.r.fastabend@intel.com>
+Cc: David Miller <davem@davemloft.net>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       yanmin_zhang@linux.intel.com, alex.shi@intel.com, tim.c.chen@intel.com
+Subject: Re: mpd client timeouts (bisected) 2.6.35-rc3
+Message-ID: <20100613205922.GA1806@arch.tripp.de>
+References: <20100612102802.GA1782@arch.tripp.de>
+ <20100612.145835.123986343.davem@davemloft.net>
+ <4C149147.3080808@intel.com>
+ <4C15414E.5090201@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-Message-Id: <201006132158.09216.chris2553@googlemail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C15414E.5090201@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 13 June 2010 21:35:25 François Valenduc wrote:
-> Le 13/06/10 22:15, Chris Clayton a écrit :
-<snip>
+On Sun, Jun 13, 2010 at 01:36:30PM -0700, John Fastabend wrote:
+> John Fastabend wrote:
+> >David Miller wrote:
+> >>From: Markus Trippelsdorf <markus@trippelsdorf.de>
+> >>Date: Sat, 12 Jun 2010 12:28:02 +0200
+> >>
+> >>>Commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837:
+> >>>»net: deliver skbs on inactive slaves to exact matches«
+> >>>
+> >>>causes large timeouts when mpd clients try to connect to a locally
+> >>>running mpd (music player demon) on my machine. This makes it
+> >>>impossible to control mpd.
+> >>>
+> >>>I bisected this down to the commit mentioned above.
+> >>>Reverting the commit from 2.6.35-rc3 also solves the problem.
+> >>John, find an easy and fast way to fix this or else I am
+> >>going to revert.
+> >>
+> >>Thanks.
 > >
-> > I've bisected it and arrived at:
+> >Looks like skbs are hitting loopback_xmit() with deliver_no_wcard
+> >set.  Then in the receive path these skbs are only delivered to
+> >exact matches.  Not sure why this bit is set here, I'll track this
+> >down first thing tomorrow.
 > >
-> > 597a264b1a9c7e36d1728f677c66c5c1f7e3b837 is the first bad commit
-> > commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837
-> > Author: John Fastabend <john.r.fastabend@intel.com>
-> > Date:   Thu Jun 3 09:30:11 2010 +0000
-> >
+> >Thanks,
+> >John.
+> >--
+> 
+> Needed to set the wcard bit in copy_skb_header otherwise it will not
+> be cleared when called from skb_clone.  Which then hits the loopback
+> device gets pushed into the rx path and is eventually dropped. The
+> following patch fixes this. Hopefully, this is easy and fast enough
+> for you Dave.
+> 
+> 
+> [PATCH] net: fix deliver_no_wcard regression on loopback device
 
-<snip>
+This solves the problem here. Thanks.
 
-> This commit also makes nfsd hangs at startup on my computer (see
-> https://bugzilla.kernel.org/show_bug.cgi?id=16195). This problem doesn't
-> occur if it's reverted.
->
-
-I've just found John Fastabend's easy and fast fix 
-(http://marc.info/?l=linux-kernel&m=127646140827821) and am about to apply it 
-and test the new kernel. back soon!
-
-> François Valenduc
-
-
-
+Tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 -- 
-The more I see, the more I know. The more I know, the less I understand. 
-Changing Man - Paul Weller
+Markus
