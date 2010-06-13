@@ -1,607 +1,501 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab0FMH0G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 03:26:06 -0400
+	id S1752694Ab0FMH0J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 03:26:09 -0400
 Received: from outbound-mail01.westnet.com.au ([203.10.1.242]:31406 "EHLO
 	outbound-mail01.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752146Ab0FMHZq (ORCPT
+	by vger.kernel.org with ESMTP id S1751922Ab0FMHZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 03:25:46 -0400
+	Sun, 13 Jun 2010 03:25:49 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ama+AMYUFEw6B0zXPGdsb2JhbACHbpE7BoVQDAEBAQE1LbBrjE6FGgSDSw
+X-IronPort-Anti-Spam-Result: AsBBAMYUFEw6B0zXPGdsb2JhbACHbpcRDAEBAQE1LbBrjE6FGgSDSw
 X-IronPort-AV: E=Sophos;i="4.53,410,1272816000"; 
-   d="scan'208";a="84157943"
+   d="scan'208";a="84157947"
 From: Mike Gilks <mike.kernel@gilksonline.com>
 To: gregkh@suse.de, mchehab@redhat.com, julia@diku.dk, joe@perches.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
        Mike Gilks <mike.kernel@gilksonline.com>
-Subject: [PATCH 1/4] staging: rtl8192u: fix checkpatch.pl issues to line 4000 Fix most problems pointed out by checkpatch.pl in file r8192U_core.c up to line 4000
-Date: Sun, 13 Jun 2010 14:16:48 +0800
-Message-Id: <1276409811-16682-2-git-send-email-mike.kernel@gilksonline.com>
+Subject: [PATCH 3/4] staging: rtl8192u: fix checkpatch.pl issues to line 5500 Fix most problems pointed out by checkpatch.pl in file r8192U_core.c up to line 5500
+Date: Sun, 13 Jun 2010 14:16:50 +0800
+Message-Id: <1276409811-16682-4-git-send-email-mike.kernel@gilksonline.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1276409811-16682-1-git-send-email-mike.kernel@gilksonline.com>
+In-Reply-To: <1276409811-16682-3-git-send-email-mike.kernel@gilksonline.com>
 References: <1276409811-16682-1-git-send-email-mike.kernel@gilksonline.com>
+ <1276409811-16682-2-git-send-email-mike.kernel@gilksonline.com>
+ <1276409811-16682-3-git-send-email-mike.kernel@gilksonline.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mike Gilks <mike.kernel@gilksonline.com>
 ---
- drivers/staging/rtl8192u/r8192U_core.c |  343 ++++++++++++++++----------------
- 1 files changed, 173 insertions(+), 170 deletions(-)
+ drivers/staging/rtl8192u/r8192U_core.c |  265 +++++++++++++++-----------------
+ 1 files changed, 124 insertions(+), 141 deletions(-)
 
 diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index 6f20518..21e3ac3 100644
+index 1a89b20..8dcf542 100644
 --- a/drivers/staging/rtl8192u/r8192U_core.c
 +++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -3524,9 +3524,7 @@ void rtl8192_hwconfig(struct net_device *dev)
- 		u32 ratr_value = 0;
- 		ratr_value = regRATR;
- 		if (priv->rf_type == RF_1T2R)
+@@ -5012,85 +5012,93 @@ void rtl8192_process_phyinfo(struct r8192_priv *priv, u8 *buffer,
+ 		 *			pPreviousRfd->Status.RxPWDBAll);
+ 		 */
+ 		slide_beacon_adc_pwdb_index++;
+-		if(slide_beacon_adc_pwdb_index >= PHY_Beacon_RSSI_SLID_WIN_MAX)
++		if (slide_beacon_adc_pwdb_index >=
++					PHY_Beacon_RSSI_SLID_WIN_MAX)
+ 			slide_beacon_adc_pwdb_index = 0;
+-		pprevious_stats->RxPWDBAll = priv->stats.Slide_Beacon_Total/slide_beacon_adc_pwdb_statistics;
+-		if(pprevious_stats->RxPWDBAll >= 3)
++		pprevious_stats->RxPWDBAll = priv->stats.Slide_Beacon_Total /
++					slide_beacon_adc_pwdb_statistics;
++		if (pprevious_stats->RxPWDBAll >= 3)
+ 			pprevious_stats->RxPWDBAll -= 3;
+ 	}
+ 
+ 	RT_TRACE(COMP_RXDESC, "Smooth %s PWDB = %d\n",
+-				pprevious_stats->bIsCCK? "CCK": "OFDM",
++				pprevious_stats->bIsCCK ? "CCK" : "OFDM",
+ 				pprevious_stats->RxPWDBAll);
+ 
+ 
+-	if(pprevious_stats->bPacketToSelf || pprevious_stats->bPacketBeacon || pprevious_stats->bToSelfBA)
+-	{
+-		if(priv->undecorated_smoothed_pwdb < 0)	/* initialize */
 -		{
- 			ratr_value &= ~(RATE_ALL_OFDM_2SS);
+-			priv->undecorated_smoothed_pwdb = pprevious_stats->RxPWDBAll;
+-			/* DbgPrint("First pwdb initialize \n"); */
 -		}
- 		write_nic_dword(dev, RATR0, ratr_value);
- 		write_nic_byte(dev, UFWP, 1);
- 	}
-@@ -3570,7 +3568,9 @@ bool rtl8192_adapter_start(struct net_device *dev)
- 	else if (priv->pFirmware->firmware_status == FW_STATUS_5_READY)
- 		dwRegRead |= CPU_GEN_FIRMWARE_RESET;
- 	else
--		RT_TRACE(COMP_ERR, "ERROR in %s(): undefined firmware state(%d)\n", __func__,   priv->pFirmware->firmware_status);
-+		RT_TRACE(COMP_ERR, "ERROR in %s(): undefined firmware "
-+			"state(%d)\n", __func__,
-+			priv->pFirmware->firmware_status);
- 
- 	write_nic_dword(dev, CPU_GEN, dwRegRead);
- 	/* mdelay(30); */
-@@ -3583,11 +3583,13 @@ bool rtl8192_adapter_start(struct net_device *dev)
- 
- 	dwRegRead = read_nic_dword(dev, CPU_GEN);
- 	if (priv->LoopbackMode == RTL819xU_NO_LOOPBACK)
--		dwRegRead = ((dwRegRead & CPU_GEN_NO_LOOPBACK_MSK) | CPU_GEN_NO_LOOPBACK_SET);
-+		dwRegRead = ((dwRegRead & CPU_GEN_NO_LOOPBACK_MSK) |
-+					CPU_GEN_NO_LOOPBACK_SET);
- 	else if (priv->LoopbackMode == RTL819xU_MAC_LOOPBACK)
- 		dwRegRead |= CPU_CCK_LOOPBACK;
- 	else
--		RT_TRACE(COMP_ERR, "Serious error in %s(): wrong loopback mode setting(%d)\n", __func__,  priv->LoopbackMode);
-+		RT_TRACE(COMP_ERR, "Serious error in %s(): wrong loopback"
-+			" mode setting(%d)\n", __func__,  priv->LoopbackMode);
- 
- 	write_nic_dword(dev, CPU_GEN, dwRegRead);
- 
-@@ -3606,27 +3608,34 @@ bool rtl8192_adapter_start(struct net_device *dev)
- 	write_nic_byte(dev, CMDR, CR_RE|CR_TE);
- 
- 	/* set IDR0 here */
--	write_nic_dword(dev, MAC0, ((u32*)dev->dev_addr)[0]);
--	write_nic_word(dev, MAC4, ((u16*)(dev->dev_addr + 4))[0]);
-+	write_nic_dword(dev, MAC0, ((u32 *)dev->dev_addr)[0]);
-+	write_nic_word(dev, MAC4, ((u16 *)(dev->dev_addr + 4))[0]);
- 
- 	/* set RCR */
- 	write_nic_dword(dev, RCR, priv->ReceiveConfig);
- 
- 	/* Initialize Number of Reserved Pages in Firmware Queue */
--	write_nic_dword(dev, RQPN1,  NUM_OF_PAGE_IN_FW_QUEUE_BK << RSVD_FW_QUEUE_PAGE_BK_SHIFT |\
--						NUM_OF_PAGE_IN_FW_QUEUE_BE << RSVD_FW_QUEUE_PAGE_BE_SHIFT | \
--						NUM_OF_PAGE_IN_FW_QUEUE_VI << RSVD_FW_QUEUE_PAGE_VI_SHIFT | \
--						NUM_OF_PAGE_IN_FW_QUEUE_VO <<RSVD_FW_QUEUE_PAGE_VO_SHIFT);
--	write_nic_dword(dev, RQPN2, NUM_OF_PAGE_IN_FW_QUEUE_MGNT << RSVD_FW_QUEUE_PAGE_MGNT_SHIFT |\
--						NUM_OF_PAGE_IN_FW_QUEUE_CMD << RSVD_FW_QUEUE_PAGE_CMD_SHIFT);
--	write_nic_dword(dev, RQPN3, APPLIED_RESERVED_QUEUE_IN_FW| \
--						NUM_OF_PAGE_IN_FW_QUEUE_BCN<<RSVD_FW_QUEUE_PAGE_BCN_SHIFT
-+	write_nic_dword(dev, RQPN1,  NUM_OF_PAGE_IN_FW_QUEUE_BK <<
-+					RSVD_FW_QUEUE_PAGE_BK_SHIFT |
-+					NUM_OF_PAGE_IN_FW_QUEUE_BE <<
-+						RSVD_FW_QUEUE_PAGE_BE_SHIFT |
-+					NUM_OF_PAGE_IN_FW_QUEUE_VI <<
-+						RSVD_FW_QUEUE_PAGE_VI_SHIFT |
-+					NUM_OF_PAGE_IN_FW_QUEUE_VO <<
-+						RSVD_FW_QUEUE_PAGE_VO_SHIFT);
-+	write_nic_dword(dev, RQPN2, NUM_OF_PAGE_IN_FW_QUEUE_MGNT <<
-+				RSVD_FW_QUEUE_PAGE_MGNT_SHIFT |
-+				NUM_OF_PAGE_IN_FW_QUEUE_CMD <<
-+				RSVD_FW_QUEUE_PAGE_CMD_SHIFT);
-+	write_nic_dword(dev, RQPN3, APPLIED_RESERVED_QUEUE_IN_FW|
-+						NUM_OF_PAGE_IN_FW_QUEUE_BCN <<
-+						RSVD_FW_QUEUE_PAGE_BCN_SHIFT
- 						/* | NUM_OF_PAGE_IN_FW_QUEUE_
- 						 *PUB<<RSVD_FW_QUEUE_PAGE_
- 						 *PUB_SHIFT
- 						 */
- 						);
--	write_nic_dword(dev, RATR0+4*7, (RATE_ALL_OFDM_AG | RATE_ALL_CCK));
-+	write_nic_dword(dev, RATR0 + 4 * 7, (RATE_ALL_OFDM_AG | RATE_ALL_CCK));
- 
- 	/* Set AckTimeout */
- 	/* TODO: (it value is only for FPGA version).
-@@ -3637,17 +3646,17 @@ bool rtl8192_adapter_start(struct net_device *dev)
- 	/* RT_TRACE(COMP_INIT, "%s():priv->ResetProgress is %d\n", __func__,
- 	 *priv->ResetProgress);
- 	 */
--	if(priv->ResetProgress == RESET_TYPE_NORESET)
--	rtl8192_SetWirelessMode(dev, priv->ieee80211->mode);
--	if(priv->ResetProgress == RESET_TYPE_NORESET){
--	CamResetAllEntry(dev);
--	{
--		u8 SECR_value = 0x0;
--		SECR_value |= SCR_TxEncEnable;
--		SECR_value |= SCR_RxDecEnable;
--		SECR_value |= SCR_NoSKMC;
--		write_nic_byte(dev, SECR, SECR_value);
--	}
-+	if (priv->ResetProgress == RESET_TYPE_NORESET)
-+		rtl8192_SetWirelessMode(dev, priv->ieee80211->mode);
-+	if (priv->ResetProgress == RESET_TYPE_NORESET) {
-+		CamResetAllEntry(dev);
-+		{
-+			u8 SECR_value = 0x0;
-+			SECR_value |= SCR_TxEncEnable;
-+			SECR_value |= SCR_RxDecEnable;
-+			SECR_value |= SCR_NoSKMC;
-+			write_nic_byte(dev, SECR, SECR_value);
-+		}
- 	}
- 
- 	/* Beacon related */
-@@ -3657,17 +3666,18 @@ bool rtl8192_adapter_start(struct net_device *dev)
- 	{
- #define DEFAULT_EDCA 0x005e4332
- 		int i;
--		for (i=0; i<QOS_QUEUE_NUM; i++)
--		write_nic_dword(dev, WDCAPARA_ADD[i], DEFAULT_EDCA);
-+		for (i = 0; i < QOS_QUEUE_NUM; i++)
-+			write_nic_dword(dev, WDCAPARA_ADD[i], DEFAULT_EDCA);
- 	}
- #ifdef USB_RX_AGGREGATION_SUPPORT
- 	/* 3 For usb rx firmware aggregation control */
--	if(priv->ResetProgress == RESET_TYPE_NORESET)
--	{
-+	if (priv->ResetProgress == RESET_TYPE_NORESET) {
- 		u32 ulValue;
- 		PRT_HIGH_THROUGHPUT	pHTInfo = priv->ieee80211->pHTInfo;
--		ulValue = (pHTInfo->UsbRxFwAggrEn<<24) | (pHTInfo->UsbRxFwAggrPageNum<<16) |
--					(pHTInfo->UsbRxFwAggrPacketNum<<8) | (pHTInfo->UsbRxFwAggrTimeout);
-+		ulValue = (pHTInfo->UsbRxFwAggrEn<<24) |
-+				(pHTInfo->UsbRxFwAggrPageNum<<16) |
-+				(pHTInfo->UsbRxFwAggrPacketNum<<8) |
-+				pHTInfo->UsbRxFwAggrTimeout);
- 		/*
- 		 * If usb rx firmware aggregation is enabled,
- 		 * when anyone of three threshold conditions above is reached,
-@@ -3680,67 +3690,72 @@ bool rtl8192_adapter_start(struct net_device *dev)
- 
- 	rtl8192_phy_configmac(dev);
- 
--	if (priv->card_8192_version == (u8) VERSION_819xU_A)
--	{
-+	if (priv->card_8192_version == (u8) VERSION_819xU_A) {
- 		rtl8192_phy_getTxPower(dev);
- 		rtl8192_phy_setTxPower(dev, priv->chan);
- 	}
- 
- 	/* Firmware download */
- 	init_status = init_firmware(dev);
--	if(!init_status)
--	{
--		RT_TRACE(COMP_ERR,"ERR!!! %s(): Firmware download is failed\n", __func__);
-+	if (!init_status) {
-+		RT_TRACE(COMP_ERR, "ERR!!! %s(): Firmware download is failed\n",
-+			__func__);
- 		return init_status;
- 	}
- 	RT_TRACE(COMP_INIT, "%s():after firmware download\n", __func__);
- 
- #ifdef TO_DO_LIST
--if(Adapter->ResetProgress == RESET_TYPE_NORESET)
--	{
--		if(pMgntInfo->RegRfOff == TRUE) {
--			/* User disable RF via registry. */
--			RT_TRACE((COMP_INIT|COMP_RF), DBG_LOUD, ("InitializeAdapter819xUsb(): Turn off RF for RegRfOff ----------\n"));
--			MgntActSet_RF_State(Adapter, eRfOff, RF_CHANGE_BY_SW);
--			/* Those action will be discard in MgntActSet_RF_State
--			 * because off the same state
--			 */
--			for(eRFPath = 0; eRFPath <pHalData->NumTotalRFPath; eRFPath++)
--				PHY_SetRFReg(Adapter, (RF90_RADIO_PATH_E)eRFPath, 0x4, 0xC00, 0x0);
--		}
--		else if(pMgntInfo->RfOffReason > RF_CHANGE_BY_PS) {
-+if (Adapter->ResetProgress == RESET_TYPE_NORESET) {
-+	if (pMgntInfo->RegRfOff == TRUE) {
-+		/* User disable RF via registry. */
-+		RT_TRACE((COMP_INIT | COMP_RF), DBG_LOUD,
-+			("InitializeAdapter819xUsb(): Turn off RF for RegRfOff"
-+			" ----------\n"));
-+		MgntActSet_RF_State(Adapter, eRfOff, RF_CHANGE_BY_SW);
-+		/* Those action will be discard in MgntActSet_RF_State
-+		 * because off the same state
-+		 */
-+		for (eRFPath = 0; eRFPath < pHalData->NumTotalRFPath; eRFPath++)
-+			PHY_SetRFReg(Adapter, (RF90_RADIO_PATH_E)eRFPath,
-+					0x4, 0xC00, 0x0);
-+		} else if (pMgntInfo->RfOffReason > RF_CHANGE_BY_PS) {
- 			/* H/W or S/W RF OFF before sleep. */
--			RT_TRACE((COMP_INIT|COMP_RF), DBG_LOUD, ("InitializeAdapter819xUsb(): Turn off RF for RfOffReason(%d) ----------\n", pMgntInfo->RfOffReason));
--			MgntActSet_RF_State(Adapter, eRfOff, pMgntInfo->RfOffReason);
--		}
+-		if(pprevious_stats->RxPWDBAll > (u32)priv->undecorated_smoothed_pwdb)
+-		{
++	if (pprevious_stats->bPacketToSelf || pprevious_stats->bPacketBeacon ||
++					pprevious_stats->bToSelfBA) {
++		if (priv->undecorated_smoothed_pwdb < 0) /* initialize */ {
+ 			priv->undecorated_smoothed_pwdb =
+-					( ((priv->undecorated_smoothed_pwdb)*(Rx_Smooth_Factor-1)) +
+-					(pprevious_stats->RxPWDBAll)) /(Rx_Smooth_Factor);
+-			priv->undecorated_smoothed_pwdb = priv->undecorated_smoothed_pwdb + 1;
++					pprevious_stats->RxPWDBAll;
++			/* DbgPrint("First pwdb initialize\n"); */
+ 		}
 -		else
 -		{
-+			RT_TRACE((COMP_INIT|COMP_RF), DBG_LOUD,
-+				("InitializeAdapter819xUsb(): Turn off RF for"
-+				" RfOffReason(%d) ----------\n",
-+				pMgntInfo->RfOffReason));
-+			MgntActSet_RF_State(Adapter, eRfOff,
-+					pMgntInfo->RfOffReason);
++		if (pprevious_stats->RxPWDBAll >
++					(u32)priv->undecorated_smoothed_pwdb) {
+ 			priv->undecorated_smoothed_pwdb =
+-					( ((priv->undecorated_smoothed_pwdb)*(Rx_Smooth_Factor-1)) +
+-					(pprevious_stats->RxPWDBAll)) /(Rx_Smooth_Factor);
++					(((priv->undecorated_smoothed_pwdb) *
++					(Rx_Smooth_Factor - 1)) +
++					(pprevious_stats->RxPWDBAll)) /
++					(Rx_Smooth_Factor);
++			priv->undecorated_smoothed_pwdb =
++					priv->undecorated_smoothed_pwdb + 1;
 +		} else {
- 			pHalData->eRFPowerState = eRfOn;
- 			pMgntInfo->RfOffReason = 0;
--			RT_TRACE((COMP_INIT|COMP_RF), DBG_LOUD, ("InitializeAdapter819xUsb(): RF is on ----------\n"));
-+			RT_TRACE((COMP_INIT|COMP_RF), DBG_LOUD,
-+				("InitializeAdapter819xUsb(): RF is on"
-+				" ----------\n"));
++			priv->undecorated_smoothed_pwdb =
++					(((priv->undecorated_smoothed_pwdb) *
++					(Rx_Smooth_Factor-1)) +
++					(pprevious_stats->RxPWDBAll)) /
++					(Rx_Smooth_Factor);
  		}
+-
+ 	}
+ 
+-
+ 	/* Check EVM */
+ 	/* record the general EVM to the sliding window. */
+-	if(pprevious_stats->SignalQuality == 0)
+-	{
 -	}
 -	else
 -	{
--		if(pHalData->eRFPowerState == eRfOff)
--		{
--			MgntActSet_RF_State(Adapter, eRfOff, pMgntInfo->RfOffReason);
+-		if(pprevious_stats->bPacketToSelf || pprevious_stats->bPacketBeacon || pprevious_stats->bToSelfBA){
+-			if(slide_evm_statistics++ >= PHY_RSSI_SLID_WIN_MAX){
++	if (pprevious_stats->SignalQuality == 0) {
 +	} else {
-+		if (pHalData->eRFPowerState == eRfOff) {
-+			MgntActSet_RF_State(Adapter, eRfOff,
-+						pMgntInfo->RfOffReason);
- 			/* Those action will be discard in MgntActSet_RF_State
- 			 * because off the same state
- 			 */
--			for(eRFPath = 0; eRFPath <pHalData->NumTotalRFPath; eRFPath++)
--				PHY_SetRFReg(Adapter, (RF90_RADIO_PATH_E)eRFPath, 0x4, 0xC00, 0x0);
-+			for (eRFPath = 0; eRFPath < pHalData->NumTotalRFPath;
-+								eRFPath++)
-+				PHY_SetRFReg(Adapter,
-+					(RF90_RADIO_PATH_E)eRFPath,
-+					0x4, 0xC00, 0x0);
- 		}
- 	}
- #endif
- 	/* config RF. */
--	if(priv->ResetProgress == RESET_TYPE_NORESET){
--	rtl8192_phy_RFConfig(dev);
-+	if (priv->ResetProgress == RESET_TYPE_NORESET) {
-+		rtl8192_phy_RFConfig(dev);
- 	RT_TRACE(COMP_INIT, "%s():after phy RF config\n", __func__);
- 	}
- 
- 
--	if(priv->ieee80211->FwRWRF)
-+	if (priv->ieee80211->FwRWRF)
- 		/* We can force firmware to do RF-R/W */
- 		priv->Rf_Mode = RF_OP_By_FW;
- 	else
-@@ -3752,54 +3767,49 @@ if(Adapter->ResetProgress == RESET_TYPE_NORESET)
- 	rtl8192_setBBreg(dev, rFPGA0_RFMOD, bCCKEn, 0x1);
- 	rtl8192_setBBreg(dev, rFPGA0_RFMOD, bOFDMEn, 0x1);
- 
--	if(priv->ResetProgress == RESET_TYPE_NORESET)
--	{
-+	if (priv->ResetProgress == RESET_TYPE_NORESET) {
- 		/* if D or C cut */
- 		u8 tmpvalue = read_nic_byte(dev, 0x301);
--		if(tmpvalue ==0x03)
--		{
-+		if (tmpvalue == 0x03) {
- 			priv->bDcut = TRUE;
- 			RT_TRACE(COMP_POWER_TRACKING, "D-cut\n");
--		}
--		else
--		{
-+		} else {
- 			priv->bDcut = FALSE;
- 			RT_TRACE(COMP_POWER_TRACKING, "C-cut\n");
- 		}
- 		dm_initialize_txpower_tracking(dev);
- 
--		if(priv->bDcut == TRUE)
--		{
-+		if (priv->bDcut == TRUE) {
- 			u32 i, TempCCk;
--			u32 tmpRegA= rtl8192_QueryBBReg(dev,rOFDM0_XATxIQImbalance,bMaskDWord);
-+			u32 tmpRegA = rtl8192_QueryBBReg(dev,
-+					rOFDM0_XATxIQImbalance, bMaskDWord);
- 			/* u32 tmpRegC= rtl8192_QueryBBReg(dev,
- 			 * rOFDM0_XCTxIQImbalance,bMaskDWord);
- 			 */
--			for(i = 0; i<TxBBGainTableLength; i++)
--			{
--				if(tmpRegA == priv->txbbgain_table[i].txbbgain_value)
--				{
--					priv->rfa_txpowertrackingindex= (u8)i;
--					priv->rfa_txpowertrackingindex_real= (u8)i;
--					priv->rfa_txpowertracking_default= priv->rfa_txpowertrackingindex;
-+			for (i = 0; i < TxBBGainTableLength; i++) {
-+				if (tmpRegA == priv->txbbgain_table[i].txbbgain_value) {
-+					priv->rfa_txpowertrackingindex = (u8)i;
-+					priv->rfa_txpowertrackingindex_real =
-+									(u8)i;
-+					priv->rfa_txpowertracking_default =
-+						priv->rfa_txpowertrackingindex;
- 					break;
- 				}
++		if (pprevious_stats->bPacketToSelf ||
++				pprevious_stats->bPacketBeacon ||
++				pprevious_stats->bToSelfBA){
++			if (slide_evm_statistics++ >= PHY_RSSI_SLID_WIN_MAX) {
+ 				slide_evm_statistics = PHY_RSSI_SLID_WIN_MAX;
+-				last_evm = priv->stats.slide_evm[slide_evm_index];
++				last_evm =
++				priv->stats.slide_evm[slide_evm_index];
+ 				priv->stats.slide_evm_total -= last_evm;
  			}
- 
--			TempCCk = rtl8192_QueryBBReg(dev, rCCK0_TxFilter1, bMaskByte2);
 -
--			for(i=0 ; i<CCKTxBBGainTableLength ; i++)
--			{
-+			TempCCk = rtl8192_QueryBBReg(dev, rCCK0_TxFilter1,
-+							bMaskByte2);
+-			priv->stats.slide_evm_total += pprevious_stats->SignalQuality;
+-
+-			priv->stats.slide_evm[slide_evm_index++] = pprevious_stats->SignalQuality;
+-			if(slide_evm_index >= PHY_RSSI_SLID_WIN_MAX)
++			priv->stats.slide_evm_total +=
++					pprevious_stats->SignalQuality;
++			priv->stats.slide_evm[slide_evm_index++] =
++					pprevious_stats->SignalQuality;
++			if (slide_evm_index >= PHY_RSSI_SLID_WIN_MAX)
+ 				slide_evm_index = 0;
  
--				if(TempCCk == priv->cck_txbbgain_table[i].ccktxbb_valuearray[0])
+ 			/* <1> Showed on UI for user, in percentage. */
+-			tmp_val = priv->stats.slide_evm_total/slide_evm_statistics;
++			tmp_val = priv->stats.slide_evm_total /
++						slide_evm_statistics;
+ 			priv->stats.signal_quality = tmp_val;
+-			/* cosa add 10/11/2007, Showed on UI for user in Windows Vista, for Link quality. */
++			/* cosa add 10/11/2007, Showed on UI for user in
++			 * Windows Vista, for Link quality.
++			 */
+ 			priv->stats.last_signal_strength_inpercent = tmp_val;
+ 		}
+ 
+ 		/* <2> Showed on UI for engineering */
+-		if(pprevious_stats->bPacketToSelf || pprevious_stats->bPacketBeacon || pprevious_stats->bToSelfBA)
+-		{
+-			for(nspatial_stream = 0; nspatial_stream<2 ; nspatial_stream++)
+-				/* 2 spatial stream */
+-			{
+-				if(pprevious_stats->RxMIMOSignalQuality[nspatial_stream] != -1)
 -				{
--					priv->cck_present_attentuation_20Mdefault=(u8) i;
-+			for (i = 0 ; i < CCKTxBBGainTableLength ; i++) {
-+				if (TempCCk == priv->cck_txbbgain_table[i].ccktxbb_valuearray[0]) {
-+					priv->cck_present_attentuation_20Mdefault = (u8) i;
- 					break;
+-					if(priv->stats.rx_evm_percentage[nspatial_stream] == 0)
+-						/* initialize */
+-					{
+-						priv->stats.rx_evm_percentage[nspatial_stream] = pprevious_stats->RxMIMOSignalQuality[nspatial_stream];
++		if (pprevious_stats->bPacketToSelf ||
++				pprevious_stats->bPacketBeacon ||
++				pprevious_stats->bToSelfBA) {
++			for (nspatial_stream = 0; nspatial_stream < 2;
++						nspatial_stream++)
++						/* 2 spatial stream */{
++				if (pprevious_stats->RxMIMOSignalQuality[nspatial_stream] != -1) {
++					if (priv->stats.rx_evm_percentage[nspatial_stream] == 0)
++						/* initialize */{
++						priv->stats.rx_evm_percentage[nspatial_stream] =
++						pprevious_stats->RxMIMOSignalQuality[nspatial_stream];
+ 					}
+ 					priv->stats.rx_evm_percentage[nspatial_stream] =
+-						( (priv->stats.rx_evm_percentage[nspatial_stream]* (Rx_Smooth_Factor-1)) +
+-						(pprevious_stats->RxMIMOSignalQuality[nspatial_stream]* 1)) / (Rx_Smooth_Factor);
++						((priv->stats.rx_evm_percentage[nspatial_stream] *
++						(Rx_Smooth_Factor-1)) +
++						(pprevious_stats->RxMIMOSignalQuality[nspatial_stream] * 1)) /
++						(Rx_Smooth_Factor);
  				}
  			}
--			priv->cck_present_attentuation_40Mdefault= 0;
--			priv->cck_present_attentuation_difference= 0;
--			priv->cck_present_attentuation = priv->cck_present_attentuation_20Mdefault;
-+			priv->cck_present_attentuation_40Mdefault = 0;
-+			priv->cck_present_attentuation_difference = 0;
-+			priv->cck_present_attentuation =
-+				priv->cck_present_attentuation_20Mdefault;
- 
- 			/* pMgntInfo->bTXPowerTracking = FALSE; */
- 			/* TEMPLY DISABLE */
-@@ -3833,14 +3843,13 @@ HalTxCheckStuck819xUsb(
+ 		}
+@@ -5112,7 +5120,8 @@ void rtl8192_process_phyinfo(struct r8192_priv *priv, u8 *buffer,
+  *
+  * Revised History:
+  *	When		Who		Remark
+- *	05/26/2008	amy		Create Version 0 porting from windows code.
++ *	05/26/2008	amy		Create Version 0 porting from
++ *					 windows code.
+  *
+  *---------------------------------------------------------------------------*/
+ static u8 rtl819x_query_rxpwrpercentage(
+@@ -5120,18 +5129,11 @@ static u8 rtl819x_query_rxpwrpercentage(
  	)
  {
- 	struct r8192_priv *priv = ieee80211_priv(dev);
--	u16 		RegTxCounter = read_nic_word(dev, 0x128);
-+	u16		RegTxCounter = read_nic_word(dev, 0x128);
- 	bool		bStuck = FALSE;
--	RT_TRACE(COMP_RESET,"%s():RegTxCounter is %d,TxCounter is %d\n",__func__,RegTxCounter,priv->TxCounter);
--	if(priv->TxCounter==RegTxCounter)
-+	RT_TRACE(COMP_RESET, "%s():RegTxCounter is %d, TxCounter is %d\n",
-+				__func__, RegTxCounter, priv->TxCounter);
-+	if (priv->TxCounter == RegTxCounter)
- 		bStuck = TRUE;
+ 	if ((antpower <= -100) || (antpower >= 20))
+-	{
+ 		return	0;
+-	}
+ 	else if (antpower >= 0)
+-	{
+ 		return	100;
+-	}
+ 	else
+-	{
+-		return	(100+antpower);
+-	}
 -
- 	priv->TxCounter = RegTxCounter;
--
- 	return bStuck;
++		return	100 + antpower;
+ }	/* QueryRxPwrPercentage */
+ 
+ static u8
+@@ -5143,15 +5145,15 @@ rtl819x_evm_dbtopercentage(
+ 
+     ret_val = value;
+ 
+-    if(ret_val >= 0)
+-        ret_val = 0;
+-    if(ret_val <= -33)
+-        ret_val = -33;
+-    ret_val = 0 - ret_val;
+-    ret_val*=3;
+-	if(ret_val == 99)
++	if (ret_val >= 0)
++		ret_val = 0;
++	if (ret_val <= -33)
++		ret_val = -33;
++	ret_val = 0 - ret_val;
++	ret_val *= 3;
++	if (ret_val == 99)
+ 		ret_val = 100;
+-    return(ret_val);
++	return ret_val;
  }
  
-@@ -3863,27 +3872,28 @@ TxCheckStuck(struct net_device *dev)
- 	/* RT_TRACE(COMP_RESET, " ==> TxCheckStuck()\n"); */
- 	/* PlatformAcquireSpinLock(Adapter, RT_TX_SPINLOCK); */
- 	/* spin_lock_irqsave(&priv->ieee80211->lock,flags); */
--	     for (QueueID = 0; QueueID<=BEACON_QUEUE;QueueID ++)
--	     {
--	     		if(QueueID == TXCMD_QUEUE)
--		         continue;
-+	for (QueueID = 0; QueueID <= BEACON_QUEUE; QueueID++) {
-+		if (QueueID == TXCMD_QUEUE)
-+			continue;
- #ifdef USB_TX_DRIVER_AGGREGATION_ENABLE
--			if((skb_queue_len(&priv->ieee80211->skb_waitQ[QueueID]) == 0) && (skb_queue_len(&priv->ieee80211->skb_aggQ[QueueID]) == 0) && (skb_queue_len(&priv->ieee80211->skb_drv_aggQ[QueueID]) == 0))
-+			if ((skb_queue_len(&priv->ieee80211->skb_waitQ[QueueID]) == 0)
-+					&& (skb_queue_len(&priv->ieee80211->skb_aggQ[QueueID]) == 0)
-+					&& (skb_queue_len(&priv->ieee80211->skb_drv_aggQ[QueueID]) == 0))
- #else
--		     	if((skb_queue_len(&priv->ieee80211->skb_waitQ[QueueID]) == 0)  && (skb_queue_len(&priv->ieee80211->skb_aggQ[QueueID]) == 0))
-+			if ((skb_queue_len(&priv->ieee80211->skb_waitQ[QueueID]) == 0)
-+					&& (skb_queue_len(&priv->ieee80211->skb_aggQ[QueueID]) == 0))
- #endif
--			 	continue;
-+				continue;
+ 	/* Description:
+@@ -5166,55 +5168,35 @@ rtl819x_signal_scale_mapping(
+ 	long retsig;
  
--	             bCheckFwTxCnt = true;
-+			bCheckFwTxCnt = true;
- 	     }
- 	/* PlatformReleaseSpinLock(Adapter, RT_TX_SPINLOCK); */
- 	/* spin_unlock_irqrestore(&priv->ieee80211->lock,flags); */
- 	/* RT_TRACE(COMP_RESET,"bCheckFwTxCnt is %d\n",bCheckFwTxCnt); */
--	if(bCheckFwTxCnt)
+ 	/* Step 1. Scale mapping. */
+-	if(currsig >= 61 && currsig <= 100)
 -	{
--		if(HalTxCheckStuck819xUsb(dev))
--		{
--			RT_TRACE(COMP_RESET, "TxCheckStuck(): Fw indicates no Tx condition! \n");
-+	if (bCheckFwTxCnt) {
-+		if (HalTxCheckStuck819xUsb(dev)) {
-+			RT_TRACE(COMP_RESET, "TxCheckStuck(): Fw indicates no"
-+					" Tx condition!\n");
- 			return RESET_TYPE_SILENT;
- 		}
- 	}
-@@ -3893,73 +3903,62 @@ TxCheckStuck(struct net_device *dev)
- bool
- HalRxCheckStuck819xUsb(struct net_device *dev)
++	if (currsig >= 61 && currsig <= 100)
+ 		retsig = 90 + ((currsig - 60) / 4);
+-	}
+-	else if(currsig >= 41 && currsig <= 60)
+-	{
++	else if (currsig >= 41 && currsig <= 60)
+ 		retsig = 78 + ((currsig - 40) / 2);
+-	}
+-	else if(currsig >= 31 && currsig <= 40)
+-	{
++	else if (currsig >= 31 && currsig <= 40)
+ 		retsig = 66 + (currsig - 30);
+-	}
+-	else if(currsig >= 21 && currsig <= 30)
+-	{
++	else if (currsig >= 21 && currsig <= 30)
+ 		retsig = 54 + (currsig - 20);
+-	}
+-	else if(currsig >= 5 && currsig <= 20)
+-	{
++	else if (currsig >= 5 && currsig <= 20)
+ 		retsig = 42 + (((currsig - 5) * 2) / 3);
+-	}
+-	else if(currsig == 4)
+-	{
++	else if (currsig == 4)
+ 		retsig = 36;
+-	}
+-	else if(currsig == 3)
+-	{
++	else if (currsig == 3)
+ 		retsig = 27;
+-	}
+-	else if(currsig == 2)
+-	{
++	else if (currsig == 2)
+ 		retsig = 18;
+-	}
+-	else if(currsig == 1)
+-	{
++	else if (currsig == 1)
+ 		retsig = 9;
+-	}
+ 	else
+-	{
+ 		retsig = currsig;
+-	}
+ 
+ 	return retsig;
+ }
+ 
+ static void rtl8192_query_rxphystatus(
+-	struct r8192_priv * priv,
+-	struct ieee80211_rx_stats * pstats,
+-	rx_drvinfo_819x_usb  * pdrvinfo,
+-	struct ieee80211_rx_stats * precord_stats,
++	struct r8192_priv *priv,
++	struct ieee80211_rx_stats *pstats,
++	rx_drvinfo_819x_usb  *pdrvinfo,
++	struct ieee80211_rx_stats *precord_stats,
+ 	bool bpacket_match_bssid,
+ 	bool bpacket_toself,
+ 	bool bPacketBeacon,
+@@ -5222,19 +5204,20 @@ static void rtl8192_query_rxphystatus(
+ 	)
  {
--	u16 	RegRxCounter = read_nic_word(dev, 0x130);
-+	u16	RegRxCounter = read_nic_word(dev, 0x130);
- 	struct r8192_priv *priv = ieee80211_priv(dev);
- 	bool bStuck = FALSE;
--	static u8	rx_chk_cnt = 0;
--	RT_TRACE(COMP_RESET,"%s(): RegRxCounter is %d,RxCounter is %d\n",__func__,RegRxCounter,priv->RxCounter);
-+	static u8	rx_chk_cnt;
-+	RT_TRACE(COMP_RESET, "%s(): RegRxCounter is %d, RxCounter is %d\n",
-+				__func__, RegRxCounter, priv->RxCounter);
- 	/* If rssi is small, we should check rx for long time because of bad rx.
- 	 * or maybe it will continuous silent reset every 2 seconds.
- 	 */
- 	rx_chk_cnt++;
--	if(priv->undecorated_smoothed_pwdb >= (RateAdaptiveTH_High+5))
--	{
-+	if (priv->undecorated_smoothed_pwdb >= (RateAdaptiveTH_High + 5))
- 		rx_chk_cnt = 0;	/* high rssi, check rx stuck right now. */
--	}
--	else if(priv->undecorated_smoothed_pwdb < (RateAdaptiveTH_High+5) &&
--		((priv->CurrentChannelBW!=HT_CHANNEL_WIDTH_20&&priv->undecorated_smoothed_pwdb>=RateAdaptiveTH_Low_40M) ||
--		(priv->CurrentChannelBW==HT_CHANNEL_WIDTH_20&&priv->undecorated_smoothed_pwdb>=RateAdaptiveTH_Low_20M)) )
--	{
--		if(rx_chk_cnt < 2)
--		{
-+	else if (priv->undecorated_smoothed_pwdb < (RateAdaptiveTH_High + 5) &&
-+			((priv->CurrentChannelBW != HT_CHANNEL_WIDTH_20 &&
-+			priv->undecorated_smoothed_pwdb >=
-+			RateAdaptiveTH_Low_40M) ||
-+			(priv->CurrentChannelBW == HT_CHANNEL_WIDTH_20 &&
-+			priv->undecorated_smoothed_pwdb >=
-+			RateAdaptiveTH_Low_20M))) {
-+		if (rx_chk_cnt < 2)
- 			return bStuck;
--		}
- 		else
--		{
- 			rx_chk_cnt = 0;
--		}
--	}
--	else if(((priv->CurrentChannelBW!=HT_CHANNEL_WIDTH_20&&priv->undecorated_smoothed_pwdb<RateAdaptiveTH_Low_40M) ||
--		(priv->CurrentChannelBW==HT_CHANNEL_WIDTH_20&&priv->undecorated_smoothed_pwdb<RateAdaptiveTH_Low_20M)) &&
--		priv->undecorated_smoothed_pwdb >= VeryLowRSSI)
--	{
--		if(rx_chk_cnt < 4)
--		{
-+	} else if (((priv->CurrentChannelBW != HT_CHANNEL_WIDTH_20 &&
-+			priv->undecorated_smoothed_pwdb <
-+			RateAdaptiveTH_Low_40M) ||
-+			(priv->CurrentChannelBW == HT_CHANNEL_WIDTH_20 &&
-+			priv->undecorated_smoothed_pwdb <
-+			RateAdaptiveTH_Low_20M)) &&
-+			priv->undecorated_smoothed_pwdb >= VeryLowRSSI) {
-+		if (rx_chk_cnt < 4)
- 			/* DbgPrint("RSSI < %d && RSSI >= %d,"
--			 *	" no check this time \n", RateAdaptiveTH_Low,
-+			 *	" no check this time\n", RateAdaptiveTH_Low,
- 			 *					 VeryLowRSSI);
- 			 */
- 			return bStuck;
--		}
- 		else
--		{
- 			rx_chk_cnt = 0;
- 			/* DbgPrint("RSSI < %d && RSSI >= %d, check this time"
- 			 *		"\n", RateAdaptiveTH_Low, VeryLowRSSI);
- 			 */
--		}
+ 	/* PRT_RFD_STATUS		pRtRfdStatus = &(pRfd->Status); */
+-	phy_sts_ofdm_819xusb_t*	pofdm_buf;
+-	phy_sts_cck_819xusb_t	*	pcck_buf;
+-	phy_ofdm_rx_status_rxsc_sgien_exintfflag* prxsc;
++	phy_sts_ofdm_819xusb_t *pofdm_buf;
++	phy_sts_cck_819xusb_t *pcck_buf;
++	phy_ofdm_rx_status_rxsc_sgien_exintfflag *prxsc;
+ 	u8				*prxpkt;
+-	u8				i, max_spatial_stream, tmp_rxsnr, tmp_rxevm, rxsc_sgien_exflg;
+-	char				rx_pwr[4], rx_pwr_all=0;
++	u8				i, max_spatial_stream, tmp_rxsnr;
++	u8				tmp_rxevm, rxsc_sgien_exflg;
++	char				rx_pwr[4], rx_pwr_all = 0;
+ 	/* long				rx_avg_pwr = 0; */
+ 	char				rx_snrX, rx_evmX;
+ 	u8				evm, pwdb_all;
+-	u32				RSSI, total_rssi=0;
+-						/* , total_evm=0; */
++	u32				RSSI, total_rssi = 0;
++						/* , total_evm = 0; */
+ 	/* long				signal_strength_index = 0; */
+-	u8				is_cck_rate=0;
++	u8				is_cck_rate = 0;
+ 	u8				rf_rx_num = 0;
+ 
+ 
+@@ -5244,14 +5227,15 @@ static void rtl8192_query_rxphystatus(
+ 
+ 	/* Record it for next packet processing */
+ 	memset(precord_stats, 0, sizeof(struct ieee80211_rx_stats));
+-	pstats->bPacketMatchBSSID = precord_stats->bPacketMatchBSSID = bpacket_match_bssid;
++	pstats->bPacketMatchBSSID = precord_stats->bPacketMatchBSSID =
++						bpacket_match_bssid;
+ 	pstats->bPacketToSelf = precord_stats->bPacketToSelf = bpacket_toself;
+ 	pstats->bIsCCK = precord_stats->bIsCCK = is_cck_rate;
+ 					/* RX_HAL_IS_CCK_RATE(pDrvInfo); */
+ 	pstats->bPacketBeacon = precord_stats->bPacketBeacon = bPacketBeacon;
+ 	pstats->bToSelfBA = precord_stats->bToSelfBA = bToSelfBA;
+ 
+-	prxpkt = (u8*)pdrvinfo;
++	prxpkt = (u8 *)pdrvinfo;
+ 
+ 	/* Move pointer to the 16th bytes. Phy status start address. */
+ 	prxpkt += sizeof(rx_drvinfo_819x_usb);
+@@ -5347,7 +5331,7 @@ static void rtl8192_query_rxphystatus(
+ 			}
+ 			pstats->SignalQuality =
+ 					precord_stats->SignalQuality = sq;
+-			pstats->RxMIMOSignalQuality[0] = 
++			pstats->RxMIMOSignalQuality[0] =
+ 				precord_stats->RxMIMOSignalQuality[0] = sq;
+ 			pstats->RxMIMOSignalQuality[1] =
+ 				precord_stats->RxMIMOSignalQuality[1] = -1;
+@@ -5355,7 +5339,7 @@ static void rtl8192_query_rxphystatus(
+ 	} else {
+ 		priv->stats.numqry_phystatusHT++;
+ 		/* (1)Get RSSI for HT rate */
+-		for (i = RF90_PATH_A; i<priv->NumTotalRFPath; i++) {
++		for (i = RF90_PATH_A; i < priv->NumTotalRFPath; i++) {
+ 			/* 2008/01/30 MH we will judge RF RX path now. */
+ 			if (priv->brfpath_rxenable[i])
+ 				rf_rx_num++;
+@@ -5384,8 +5368,8 @@ static void rtl8192_query_rxphystatus(
+ 			/* Record Signal Strength for next packet */
+ 			/* if(bpacket_match_bssid) */
+ 			{
+-				pstats->RxMIMOSignalStrength[i] =(u8) RSSI;
+-				precord_stats->RxMIMOSignalStrength[i] =(u8)
++				pstats->RxMIMOSignalStrength[i] = (u8) RSSI;
++				precord_stats->RxMIMOSignalStrength[i] = (u8)
+ 									RSSI;
+ 			}
+ 		}
+@@ -5396,7 +5380,7 @@ static void rtl8192_query_rxphystatus(
+ 
+ 		/* Fixed by Jacken from Bryant 2008-03-20 */
+ 		/* Original value is 106 */
+-		rx_pwr_all = (((pofdm_buf->pwdb_all ) >> 1 )& 0x7f) -106;
++		rx_pwr_all = (((pofdm_buf->pwdb_all) >> 1) & 0x7f) - 106;
+ 		pwdb_all = rtl819x_query_rxpwrpercentage(rx_pwr_all);
+ 
+ 		pstats->RxPWDBAll = precord_stats->RxPWDBAll = pwdb_all;
+@@ -5431,7 +5415,7 @@ static void rtl8192_query_rxphystatus(
+ 				if (i == 0)
+ 					/*  Fill value in RFD,
+ 					 * Get the first spatial stream only */
+-					pstats->SignalQuality = 
++					pstats->SignalQuality =
+ 						precord_stats->SignalQuality =
+ 							(u8)(evm & 0xff);
+ 				pstats->RxMIMOSignalQuality[i] =
+@@ -5459,10 +5443,7 @@ static void rtl8192_query_rxphystatus(
+ 		pstats->SignalStrength = precord_stats->SignalStrength =
+ 			(u8)(rtl819x_signal_scale_mapping((long)pwdb_all));
+ 		/* PWDB_ALL; */
+-
 -	}
 -	else
 -	{
--		if(rx_chk_cnt < 8)
--		{
--			/* DbgPrint("RSSI <= %d, no check this time \n",
 +	} else {
-+		if (rx_chk_cnt < 8)
-+			/* DbgPrint("RSSI <= %d, no check this time\n",
- 			 *					 VeryLowRSSI);
- 			 */
- 			return bStuck;
--		}
- 		else
--		{
- 			rx_chk_cnt = 0;
--			/* DbgPrint("RSSI <= %d, check this time \n",
-+			/* DbgPrint("RSSI <= %d, check this time\n",
- 			 *					 VeryLowRSSI);
- 			 */
--		}
+ 		/* pRfd->Status.SignalStrength =
+ 		 * pRecordRfd->Status.SignalStrength =
+ 		 * (u8)(SignalScaleMapping(total_rssi/=RF90_PATH_MAX));
+@@ -5472,14 +5453,14 @@ static void rtl8192_query_rxphystatus(
+ 		if (rf_rx_num != 0)
+ 			pstats->SignalStrength = precord_stats->SignalStrength
+ 				= (u8)(rtl819x_signal_scale_mapping(
+-					(long)(total_rssi/=rf_rx_num)));
++					(long)(total_rssi /= rf_rx_num)));
  	}
+ }	/* QueryRxPhyStatus8190Pci */
  
--	if(priv->RxCounter==RegRxCounter)
-+	if (priv->RxCounter == RegRxCounter)
- 		bStuck = TRUE;
--
- 	priv->RxCounter = RegRxCounter;
- 
- 	return bStuck;
-@@ -3975,15 +3974,13 @@ RxCheckStuck(struct net_device *dev)
- 	/* RT_TRACE(COMP_RESET," ==> RxCheckStuck()\n"); */
- 	/* PlatformAcquireSpinLock(Adapter, RT_RX_SPINLOCK); */
- 
--	 if(priv->IrpPendingCount > 1)
-+	 if (priv->IrpPendingCount > 1)
- 		bRxCheck = TRUE;
- 	/* PlatformReleaseSpinLock(Adapter, RT_RX_SPINLOCK); */
- 
--	/* RT_TRACE(COMP_RESET,"bRxCheck is %d \n",bRxCheck); */
--	if(bRxCheck)
--	{
--		if(HalRxCheckStuck819xUsb(dev))
--		{
-+	/* RT_TRACE(COMP_RESET,"bRxCheck is %d\n",bRxCheck); */
-+	if (bRxCheck) {
-+		if (HalRxCheckStuck819xUsb(dev)) {
- 			RT_TRACE(COMP_RESET, "RxStuck Condition\n");
- 			return RESET_TYPE_SILENT;
- 		}
-@@ -3991,30 +3988,35 @@ RxCheckStuck(struct net_device *dev)
- 	return RESET_TYPE_NORESET;
- }
- 
--/*	This function is called by Checkforhang to check whether we should ask OS to reset driver
-+/*	This function is called by Checkforhang to check whether we should
-+ *	 ask OS to reset driver
-  *
-  *	\param pAdapter	The adapter context for this miniport
-  *
-- *	Note:NIC with USB interface sholud not call this function because we cannot scan descriptor
-+ *	Note:NIC with USB interface sholud not call this function because we
-+ *	 cannot scan descriptor
-  *	to judge whether there is tx stuck.
-  *	Note: This function may be required to be rewrite for Vista OS.
-  *	<<<Assumption: Tx spinlock has been acquired >>>
-  *
-- *	8185 and 8185b does not implement this function. This is added by Emily at 2006.11.24
-+ *	8185 and 8185b does not implement this function.
-+ *	 This is added by Emily at 2006.11.24
-  */
- RESET_TYPE
- rtl819x_ifcheck_resetornot(struct net_device *dev)
+ void
+ rtl8192_record_rxdesc_forlateruse(
+-	struct ieee80211_rx_stats *	psrc_stats,
+-	struct ieee80211_rx_stats *	ptarget_stats
++	struct ieee80211_rx_stats *psrc_stats,
++	struct ieee80211_rx_stats *ptarget_stats
+ )
  {
- 	struct r8192_priv *priv = ieee80211_priv(dev);
--	RESET_TYPE	TxResetType = RESET_TYPE_NORESET;
--	RESET_TYPE	RxResetType = RESET_TYPE_NORESET;
--	RT_RF_POWER_STATE 	rfState;
-+	RESET_TYPE		TxResetType = RESET_TYPE_NORESET;
-+	RESET_TYPE		RxResetType = RESET_TYPE_NORESET;
-+	RT_RF_POWER_STATE	rfState;
+ 	ptarget_stats->bIsAMPDU = psrc_stats->bIsAMPDU;
+@@ -5489,28 +5470,28 @@ rtl8192_record_rxdesc_forlateruse(
  
- 	rfState = priv->ieee80211->eRFPowerState;
  
- 	TxResetType = TxCheckStuck(dev);
--	if( rfState != eRfOff ||
--		/* ADAPTER_TEST_STATUS_FLAG(Adapter, ADAPTER_STATUS_FW_DOWNLOAD_FAILURE)) && */
-+	if (rfState != eRfOff ||
-+		/* ADAPTER_TEST_STATUS_FLAG(Adapter,
-+		 * ADAPTER_STATUS_FW_DOWNLOAD_FAILURE)) &&
-+		 */
- 		(priv->ieee80211->iw_mode != IW_MODE_ADHOC))
- 	{
- 		/* If driver is in the status of firmware download failure,
-@@ -4032,13 +4034,14 @@ rtl819x_ifcheck_resetornot(struct net_device *dev)
- 		 */
- 		RxResetType = RxCheckStuck(dev);
- 	}
--	if(TxResetType==RESET_TYPE_NORMAL || RxResetType==RESET_TYPE_NORMAL)
-+	if (TxResetType == RESET_TYPE_NORMAL ||
-+				RxResetType == RESET_TYPE_NORMAL)
- 		return RESET_TYPE_NORMAL;
--	else if(TxResetType==RESET_TYPE_SILENT || RxResetType==RESET_TYPE_SILENT){
--		RT_TRACE(COMP_RESET,"%s():silent reset\n",__func__);
-+	else if(TxResetType == RESET_TYPE_SILENT ||
-+				RxResetType==RESET_TYPE_SILENT){
-+		RT_TRACE(COMP_RESET, "%s():silent reset\n", __func__);
- 		return RESET_TYPE_SILENT;
--	}
--	else
-+	} else
- 		return RESET_TYPE_NORESET;
+ void TranslateRxSignalStuff819xUsb(struct sk_buff *skb,
+-				   struct ieee80211_rx_stats * pstats,
++				   struct ieee80211_rx_stats *pstats,
+ 				   rx_drvinfo_819x_usb  *pdrvinfo)
+ {
+ 	/* TODO: We must only check packet for current MAC address.
+ 	 * Not finish */
+ 	rtl8192_rx_info *info = (struct rtl8192_rx_info *)skb->cb;
+-	struct net_device *dev=info->dev;
++	struct net_device *dev = info->dev;
+ 	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
+ 	bool bpacket_match_bssid, bpacket_toself;
+-	bool bPacketBeacon=FALSE, bToSelfBA=FALSE;
++	bool bPacketBeacon = FALSE, bToSelfBA = FALSE;
+ 	static struct ieee80211_rx_stats  previous_stats;
+ 	struct ieee80211_hdr_3addr *hdr;	/* by amy */
+-	u16 fc,type;
++	u16 fc, type;
  
- }
+ 	/* Get Signal Quality for only RX data queue (but not command queue) */
+ 
+-	u8* tmp_buf;
++	u8 *tmp_buf;
+ 	/* u16 tmp_buf_len = 0; */
+-	u8  *praddr;
++	u8 *praddr;
+ 
+ 	/* Get MAC frame start address. */
+-	tmp_buf = (u8*)skb->data;
++	tmp_buf = (u8 *)skb->data;
+ 	/* + get_rxpacket_shiftbytes_819xusb(pstats); */
+ 
+ 	hdr = (struct ieee80211_hdr_3addr *)tmp_buf;
+@@ -5520,19 +5501,21 @@ void TranslateRxSignalStuff819xUsb(struct sk_buff *skb,
+ 
+ 	/* Check if the received packet is acceptabe. */
+ 	bpacket_match_bssid = ((IEEE80211_FTYPE_CTL != type) &&
+-							(eqMacAddr(priv->ieee80211->current_network.bssid,  (fc & IEEE80211_FCTL_TODS)? hdr->addr1 : (fc & IEEE80211_FCTL_FROMDS )? hdr->addr2 : hdr->addr3))
+-								 && (!pstats->bHwError) && (!pstats->bCRC)&& (!pstats->bICV));
+-	bpacket_toself =  bpacket_match_bssid & (eqMacAddr(praddr, priv->ieee80211->dev->dev_addr));
+-
+-		if(WLAN_FC_GET_FRAMETYPE(fc)== IEEE80211_STYPE_BEACON)
+-		{
++			(eqMacAddr(priv->ieee80211->current_network.bssid,
++			(fc & IEEE80211_FCTL_TODS) ? hdr->addr1 :
++			(fc & IEEE80211_FCTL_FROMDS) ? hdr->addr2 :
++			hdr->addr3)) && (!pstats->bHwError) &&
++			(!pstats->bCRC) && (!pstats->bICV));
++	bpacket_toself =  bpacket_match_bssid & (eqMacAddr(praddr,
++					priv->ieee80211->dev->dev_addr));
++
++		if (WLAN_FC_GET_FRAMETYPE(fc)== IEEE80211_STYPE_BEACON)
+ 			bPacketBeacon = true;
+ 			/* DbgPrint("Beacon 2, MatchBSSID = %d, ToSelf = %d \n"
+-			 *		, bPacketMatchBSSID, bPacketToSelf); */
+-		}
+-		if(WLAN_FC_GET_FRAMETYPE(fc) == IEEE80211_STYPE_BLOCKACK)
+-		{
+-			if((eqMacAddr(praddr,dev->dev_addr)))
++			 *		, bPacketMatchBSSID, bPacketToSelf);
++			 */
++		if (WLAN_FC_GET_FRAMETYPE(fc) == IEEE80211_STYPE_BLOCKACK) {
++			if ((eqMacAddr(praddr, dev->dev_addr)))
+ 				bToSelfBA = true;
+ 				/* DbgPrint("BlockAck, MatchBSSID = %d,
+ 				 *	 ToSelf = %d \n", bPacketMatchBSSID,
 -- 
 1.6.3.3
 
