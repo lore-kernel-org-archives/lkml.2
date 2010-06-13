@@ -1,124 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab0FMUuz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 16:50:55 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49919 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab0FMUux (ORCPT
+	id S1754840Ab0FMUxK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 16:53:10 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:43605 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754506Ab0FMUxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 16:50:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Ty4+jXBwUuH/WcMpbeQbGAGpZs9lPIDAoLZnevMwUeuMtv8JFofBgVYkBWaC9CuzA8
-         IjDT1jopd5gzUHPLdPSPiLTrQ5yQ1m5QSvQRF1EqjTGdUNQrJN4h7R3Mznpq5LUokJfU
-         Q+pJ3W5WjTtICG1nuMpsILrvNUaaooPOupbTY=
-Subject: Re: mpd client timeouts (bisected) 2.6.35-rc3
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: John Fastabend <john.r.fastabend@intel.com>
-Cc: David Miller <davem@davemloft.net>,
-       "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       yanmin_zhang@linux.intel.com, alex.shi@intel.com, tim.c.chen@intel.com
-In-Reply-To: <4C15414E.5090201@intel.com>
-References: <20100612102802.GA1782@arch.tripp.de>
-	 <20100612.145835.123986343.davem@davemloft.net>
-	 <4C149147.3080808@intel.com>  <4C15414E.5090201@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 13 Jun 2010 22:50:46 +0200
-Message-ID: <1276462246.2448.17.camel@edumazet-laptop>
+	Sun, 13 Jun 2010 16:53:06 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trace-cmd: prevent print_graph_duration buffer overflow
+In-Reply-To: Your message of "Sun, 13 Jun 2010 13:11:48 EDT."
+             <1276449108-21328-2-git-send-email-chase.douglas@canonical.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1276449108-21328-1-git-send-email-chase.douglas@canonical.com>
+            <1276449108-21328-2-git-send-email-chase.douglas@canonical.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; boundary="==_Exmh_1276462373_18203P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sun, 13 Jun 2010 16:52:53 -0400
+Message-ID: <40245.1276462373@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020208.4C154526.014D,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 13 juin 2010 à 13:36 -0700, John Fastabend a écrit :
-> John Fastabend wrote:
-> > David Miller wrote:
-> >> From: Markus Trippelsdorf <markus@trippelsdorf.de>
-> >> Date: Sat, 12 Jun 2010 12:28:02 +0200
-> >>
-> >>> Commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837:
-> >>> »net: deliver skbs on inactive slaves to exact matches«
-> >>>
-> >>> causes large timeouts when mpd clients try to connect to a locally
-> >>> running mpd (music player demon) on my machine. This makes it 
-> >>> impossible to control mpd.
-> >>>
-> >>> I bisected this down to the commit mentioned above.
-> >>> Reverting the commit from 2.6.35-rc3 also solves the problem.
-> >> John, find an easy and fast way to fix this or else I am
-> >> going to revert.
-> >>
-> >> Thanks.
-> > 
-> > Looks like skbs are hitting loopback_xmit() with deliver_no_wcard set.  Then in 
-> > the receive path these skbs are only delivered to exact matches.  Not sure why 
-> > this bit is set here, I'll track this down first thing tomorrow.
-> > 
-> > Thanks,
-> > John.
-> > --
-> 
-> Needed to set the wcard bit in copy_skb_header otherwise it will not be cleared 
-> when called from skb_clone.  Which then hits the loopback device gets pushed 
-> into the rx path and is eventually dropped. The following patch fixes this. 
-> Hopefully, this is easy and fast enough for you Dave.
-> 
-> 
-> [PATCH] net: fix deliver_no_wcard regression on loopback device
-> 
-> deliver_no_wcard is not being set in skb_copy_header.
-> In the skb_cloned case it is not being cleared and
-> may cause the skb to be dropped when the loopback device
-> pushes it back up the stack.
-> 
-> Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
-> ---
-> 
->   net/core/skbuff.c |    1 +
->   1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index 9f07e74..bcf2fa3 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -532,6 +532,7 @@ static void __copy_skb_header(struct sk_buff *new, const 
-> struct sk_buff *old)
->   	new->ip_summed		= old->ip_summed;
->   	skb_copy_queue_mapping(new, old);
->   	new->priority		= old->priority;
-> +	new->deliver_no_wcard	= old->deliver_no_wcard;
->   #if defined(CONFIG_IP_VS) || defined(CONFIG_IP_VS_MODULE)
->   	new->ipvs_property	= old->ipvs_property;
->   #endif
-> --
+--==_Exmh_1276462373_18203P
+Content-Type: text/plain; charset=us-ascii
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+On Sun, 13 Jun 2010 13:11:48 EDT, Chase Douglas said:
+> Passing n > sizeof(string) to snprintf can cause a glibc buffer overflow
+> condition. We know the exact size of nsecs_str, so use it instead of
+> math that may overflow.
 
-BTW, David, it seems there is a double rxhash copy...
+>  	/* Print nsecs (we don't want to exceed 7 numbers) */
+>  	if ((s->len - len) < 7) {
+> -		snprintf(nsecs_str, 8 - (s->len - len), "%03lu", nsecs_rem);
+> +		snprintf(nsecs_str, sizeof(nsecs_str), "%03lu", nsecs_rem);
 
-[PATCH] net: rxhash already set in __copy_skb_header
+We only get into this code after we've checked that the length is under 7
+characters.  How much overflow can happen as long as the sizeof(nsecs_str) is a
+sane size (like at least 8 chars)?  Probably a better bet would be doing the
+right thing and 'BUILD_BUG_ON(sizeof(nsecs_str) < 8);'?
 
-No need to copy rxhash again in __skb_clone()
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 9f07e74..a58e63b 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -569,7 +569,6 @@ static struct sk_buff *__skb_clone(struct sk_buff *n, struct sk_buff *skb)
- 	C(len);
- 	C(data_len);
- 	C(mac_len);
--	C(rxhash);
- 	n->hdr_len = skb->nohdr ? skb_headroom(skb) : skb->hdr_len;
- 	n->cloned = 1;
- 	n->nohdr = 0;
+--==_Exmh_1276462373_18203P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMFUUlcC3lWbTT17ARAvAhAJ4yDVB6vRNKCM+yvRPYg/G16JnGIwCgvO3N
+S8T7K3cOvIZqlWSX+/nFmgI=
+=ol4x
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1276462373_18203P--
 
