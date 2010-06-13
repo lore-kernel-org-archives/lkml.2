@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab0FMSLJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 14:11:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61922 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451Ab0FMSLH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 14:11:07 -0400
-Date: Sun, 13 Jun 2010 11:10:59 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Michael Ellerman <michael@ellerman.id.au>, linux-media@vger.kernel.org,
-       mchehab@infradead.org
-Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
-In-Reply-To: <201006131722.44062.s.L-H@gmx.de>
-Message-ID: <alpine.DEB.2.01.1006131103590.3964@bogon.housecafe.de>
-References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera> <YPGdyfWGvNK.A.C8B.d9OFMB@chimera> <201006131722.44062.s.L-H@gmx.de>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V01U2FsdGVkX1+SwS8+jxxhpU7P+Huh2Ex5zJ3QzaQrwYyAyjH
- uC0C6i1FXzK/n0DRtghv4z+GTNChCDwnjGUu9ZRV/meXYyX3SE
- dp11vlzVqOcIzsTJ1KZdQ==
+	id S1754637Ab0FMSMA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 14:12:00 -0400
+Received: from mail.perches.com ([173.55.12.10]:1114 "EHLO mail.perches.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754315Ab0FMSL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 14:11:59 -0400
+Subject: Re: [PATCH] staging:comedi: Fixed coding convention issues.
+From: Joe Perches <joe@perches.com>
+To: Henri =?ISO-8859-1?Q?H=E4kkinen?= <henrih81@gmail.com>
+Cc: Mark Rankilor <reodge@gmail.com>, devel@driverdev.osuosl.org,
+       gregkh@suse.de, andrea.gelmini@gelma.net, linux-kernel@vger.kernel.org
+In-Reply-To: <EC683E5B-0C90-4C16-B493-7BFAEC675BDA@gmail.com>
+References: <1276337681-4327-1-git-send-email-henuxd@gmail.com>
+	 <AANLkTimUt_Lhk6lG9spM9qjRT8T6PhEDVyOhh745lJhW@mail.gmail.com>
+	 <1276405626.1449.26.camel@Joe-Laptop.home>
+	 <1276407050.1449.28.camel@Joe-Laptop.home>
+	 <EC683E5B-0C90-4C16-B493-7BFAEC675BDA@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 13 Jun 2010 11:11:18 -0700
+Message-ID: <1276452678.1449.73.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Jun 2010 at 17:22, Stefan Lippers-Hollmann wrote:
-> Still existing in 2.6.34 and 2.6.35 HEAD, however a patch fixing the issue 
-> for b2c2-flexcop/ flexcop-pci has been posted last week:
+On Sun, 2010-06-13 at 14:27 +0300, Henri Häkkinen wrote:
+> There are several printk statements without the "comedi:" prefix.
+> Do you think it is better to leave these as they are, or should they
+> be changed to use comedi_xxx macros (which will print the "comedi:"
+> prefix)?
+> 
+> printk(KERN_WARNING "BUG: dev->driver=NULL in comedi_device_detach()\n");
 
-So, now we have two patches for slightly different issues?
+I think it's better to convert them.
 
-* http://lkml.indiana.edu/hypermail/linux/kernel/1006.0/00137.html
-  ...fixes the flexcop-pci.c driver.
+Anything with "BUG" in the format
+maybe should be converted to BUG_ON.
 
-* http://patchwork.ozlabs.org/patch/52978/
-  ...fixes "some bogus firmwares include properties with "/" in their
-  name". I'm not sure if this would make the flexcop-pci.c badness go 
-  away too. 
+> Also even with logging macros, there will be few lines which go beyond
+> the 80 character boundary.
 
-Anyway, both patches are not upstream yet, but Michael mentioned that 
-Grant Likely or Ben might push it eventually.
+I'd ignore printk related long line warnings.
 
-Thanks,
-Christian.
--- 
-BOFH excuse #363:
+I suggest coalescing the format string to a single line
+where reasonable.  If a single printk has non trailing
+'\n's in a format, it may be better to split them up.
 
-Out of cards on drive D:
+comedi_info("some incredibly long output line with error: %d\n"
+	    "Another line with some other information: %d\n",
+	    err, info);
+
+
