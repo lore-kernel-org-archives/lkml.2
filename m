@@ -1,112 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab0FMWz5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 18:55:57 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:47897 "EHLO
+	id S1754881Ab0FMXKc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 19:10:32 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:57556 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab0FMWzz convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754711Ab0FMXKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 18:55:55 -0400
+	Sun, 13 Jun 2010 19:10:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=Evo/xXdAIqlCdYqvj6YC4HFuNtVvz079JiulgDMpFRl6hU13bTBmkgq473E1BQJ6TU
-         IO3LGI4gPVhLOyGR0bSk4x1Z266VPzytV1wajHi9nSOWS4eAsV4Z6+ZfIg/tTAcIC3F4
-         Yf5/Q1rDyVW8SQEobO4R/Bm5QOOrzOGZsEH2g=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=A1y73tOdKamrBU7R0GG6Zc5KRf3TNN+uCYucVQhtq90tCTgB0iGorzgMk4mqsI1uV1
+         dluIA7mb21dE0sl0hEObzmYBGavKlMA6mtb6anP10Kg9Pf6uxFLh/OALzu0GLjRMTlIz
+         VQYsj0dKXQtFOc8KU28KgRU2FzWUNrLCflNW8=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin_xSdx-Zasxx0xnlbjaITgMTw1s7JUbq8MCX2s@mail.gmail.com>
-References: <AANLkTimmhzbgddTZBoaSy4iXpjB4Gdy6zTab0EjCM1IK@mail.gmail.com>
-	<AANLkTinwQ5tUDyHIObolQrd0jESH5PGEBKqwk6a_jHWK@mail.gmail.com>
-	<AANLkTilbMPLfd415EV32or8FZCM1sWi-RzeWtPAX95-o@mail.gmail.com>
-	<AANLkTilzq64CPECxFb77PEdjv1Pcj72622rmhPchz9L8@mail.gmail.com>
-	<20766.1276435765@localhost>
-	<AANLkTin_xSdx-Zasxx0xnlbjaITgMTw1s7JUbq8MCX2s@mail.gmail.com>
-Date: Sun, 13 Jun 2010 18:47:38 -0400
-Message-ID: <AANLkTimmiUZ7sBhM1Rdn0MUbUceEz-qRQqWcTrmsERtF@mail.gmail.com>
-Subject: Re: Help for a newbie
-From: Someone Something <fordhaivat@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <20100613224752.GA2069@dastard>
+References: <20100523002023.41f5a5c8@aaa.pulp.binarylife.net>
+	<20100523101856.GL2150@dastard>
+	<20100523092344.0fcaab42@aaa.pulp.binarylife.net>
+	<20100524011907.GC12087@dastard>
+	<AANLkTinyt6V9phjXrzrxm67THdRwTiN6pOim3uBUbo1Z@mail.gmail.com>
+	<20100613224752.GA2069@dastard>
+Date: Sun, 13 Jun 2010 19:10:30 -0400
+X-Google-Sender-Auth: sTsrjJNEjS2_Cw_TtywoeesLZPs
+Message-ID: <AANLkTikA2d44tZF1TWZAjCqXkhsw0mzsAIaeCosZLqVq@mail.gmail.com>
+Subject: Re: WARNING in xfs_lwr.c, xfs_write()
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Roman Kononov <roman@binarylife.net>, xfs@oss.sgi.com,
+       linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, Jun 13, 2010 at 6:47 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Sat, Jun 12, 2010 at 01:00:52AM -0400, Ilia Mirkin wrote:
+>> Sorry to pick up an old-ish thread, but I have a similar situation:
+>>
+>> On Sun, May 23, 2010 at 9:19 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> > On Sun, May 23, 2010 at 09:23:44AM -0500, Roman Kononov wrote:
+>> >> On 2010-05-23, 20:18:56 +1000, Dave Chinner <david@fromorbit.com> wrote:
+>> >> > Can you find out what the application is triggering this?
+>>
+>> I noticed this happening with mysql and xtrabackup -- the latter opens
+>> up mysql's files while mysql is still running (and modifying its own
+>> files) and backs them up in a (hopefully) safe way.
+>
+> That's not safe at all - there's no guarantee you'll end up with a
+> consistent database image doing backups like this. Have you ever
+> tried to restore and use one of these backups?
 
-I looked through kernelnewbies.org, read some more of robert love, but
-two questions still stand.
+Yep, works great. [Used it to initialize a slave, did the full
+checksums, so it's unlikely to have randomly corrupt data.] It's the
+only credible way to backup a sizeable mysql db, since it works online
+with InnoDB; the other options involve either only using MyISAM
+(non-transactional) or locking the db for the duration (we couldn't
+wait that long, but attempting to do it on a backup machine looked
+like it was going to take somewhere between 3 and 7 days, although we
+gave up after 24 hours... not something we can afford to do with any
+kind of regularity).
 
-Where are the syscalls implemented and where are the header files with
-their prototypes?
+>>
+>> Would it be safe to remove the warning at
+>> fs/xfs/linux-2.6/xfs_lrw.c:651 (which looks like it has moved to
+>> xfs_file.c in 2.6.34)? It seems undesirable to get a long stream of
+>> these (51 in this particular instance) every time we run a backup...
+>
+> You can if you want, but then you won't know when your backup or
+> database might have been corrupted, right?
 
-On Sun, Jun 13, 2010 at 1:03 PM, Someone Something <fordhaivat@gmail.com> wrote:
-> Thanks for the very thorough reply. As for the syscalls, I just wanted
-> to add one that gave you the task descriptor struct for the init
-> process, just for fun. I would also like to start writing kernel
-> modules. I'm not exactly experienced with hardware so I'll probably
-> put off device drivers for a while.
+No, but I wouldn't know that without the warnings either -- for all I
+know xtrabackup could be buggy in all kinds of ways. The only real way
+to check is to use the backup data in some way.
+
 >
-> Thanks a lot,
+>> IOW, is the warning purely something along the lines of "Userspace is
+>> doing something wonky, but the underlying FS will still be fine no
+>> matter what" kind of deal, or could there be an actual problem with
+>> the XFS metadata itself?
 >
-> Dhaivat
->
-> On Sun, Jun 13, 2010 at 9:29 AM,  <Valdis.Kletnieks@vt.edu> wrote:
->> On Sat, 12 Jun 2010 23:32:36 EDT, Someone Something said:
->>
->>> 1) when you write userland apps, you usually include stuff like :
->>> sys/types.h or errono.h where are all these defined in the linux
->>> kernel because I would like to add a few syscalls of my own?
->>
->> Look at any source files already in the kernel, they'll give you a good
->> hint of where the .h files are.  Keep in mind that in the kernel, we
->> tend to #include a lot of header files, depending on what exactly is needed.
->>
->> Regarding adding syscalls - step 0 is doing a proper design and making sure
->> that in fact you need a new syscall.  What features do you want to add, and
->> why do they need syscalls?
->>
->> It's usually a bad idea to add syscalls unless you *really* need to - most
->> of the time creating a loadable kernel module is a better idea (among other
->> things, you can compile a module against a distro kernel without rebuilding
->> the entire kernel, you can't do that with a syscall).
->>
->>> 2) what are some bugs in the kernel that a beginner can fix?
->>
->> Unfortunately, we're victims of our own sucess here.  There really aren't many
->> long-standing bugs left that a beginner can fix.  If you follow the linux-next
->> or Andrew Morton's -mm kernel, you'll find the occasional typo or messed up
->> code that has an #ifdef backwards so it doesn't build for all configs, and so
->> on.  But in general, if the bug has been there more than 12 hours or so, it
->> usually means that it's a nasty ugly mess and will require some real work to
->> fix.
->>
->> That isn't to say that the developers don't appreciate all those little
->> one-line patches to make stuff work in your config that they didn't test.
->> They appreciate those a *lot*.  I just can't point you at any because the list
->> will be different by the time you read this mail.
->>
->>> 3) is there any definitive guide to the kernel that you guys refer
->>> most newbies to? (like Programming Perl for perl)?
->>
->> Robert Love's book and "Linux Device Drivers, 3rd ed" are both pretty good
->> overviews, although somewhat dated because the code is a moving target.
->> Once you got a handle on the major data structures, it's really "Use The
->> Source, Luke" time.
->>
->>> 4) Where's the linux kernel headed to next? What higher level features
->>> (i.e. real features, not bug fixes) are going to implemented?
->>
->> Well, I really can't say anything definite other than "read LKML or at least a
->> weekly scan of the Subject: lines to see what's new".  It's going to be the
->> same as it has for the last few years - code will be merged when it's written
->> by somebody who's scratching an itch.  We'll eventually merge *something* for
->> the Android power-management issue (because we really *do* need a solution in
->> that area), new file systems will be merged, device drivers will be written,
->> and so on. What will go in for 2.6.36 and later releases pretty much depends on
->> what code people feel motivated to write for submission.
->>
->>
->>
->
+> Nothing wrong with the filesystem metadata will occur - as I said
+> eariler in the thread that this is a warning to tell us that data
+> corruption is possible due to userspace doing something stupid, not
+> a filesystem bug.
+
+OK, thanks for the clarification. Ideally these wouldn't taint the
+kernel either -- perhaps these can be downgraded to a message that
+explicitly suggests that nothing is wrong with kernel-space things,
+only user-space? The backtrace doesn't really get you much, so really
+all you want to show is the offending process...
+
+Thanks,
+
+Ilia Mirkin
+imirkin@alum.mit.edu
