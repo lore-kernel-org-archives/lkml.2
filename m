@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab0FMByM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 21:54:12 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47582 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016Ab0FMByL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 21:54:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,409,1272870000"; 
-   d="scan'208";a="288238572"
-Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
-From: Huang Ying <ying.huang@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Don Zickus <dzickus@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100612102558.GA4000@elte.hu>
-References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
-	 <20100612102558.GA4000@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 13 Jun 2010 09:54:08 +0800
-Message-ID: <1276394048.3004.82.camel@yhuang-dev.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753016Ab0FMCOn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 22:14:43 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34134 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306Ab0FMCOm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 22:14:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=m1ZxB/zvSHuq012y+DFgqmrOgrTm2DuATFDKMzQrFwMFIPp1eeuSKIoYgiybs53VwW
+         xRhVzPer7JBKdo3+Dtv1CerPyYvoN9gCtKhcq/ZarKrzeuwdti2Fc29doN0ZAX2MF2nO
+         pLJLnzAJn0TBFCkcyAhBivFNJU+MHqIF01FjM=
+MIME-Version: 1.0
+In-Reply-To: <1276337681-4327-1-git-send-email-henuxd@gmail.com>
+References: <1276337681-4327-1-git-send-email-henuxd@gmail.com>
+Date: Sun, 13 Jun 2010 10:14:41 +0800
+Message-ID: <AANLkTimUt_Lhk6lG9spM9qjRT8T6PhEDVyOhh745lJhW@mail.gmail.com>
+Subject: Re: [PATCH] staging:comedi: Fixed coding convention issues.
+From: Mark Rankilor <reodge@gmail.com>
+To: =?ISO-8859-1?Q?Henri_H=E4kkinen?= <henuxd@gmail.com>
+Cc: gregkh@suse.de, mithlesh@linsyssoft.com, wfp5p@virginia.edu,
+       andrea.gelmini@gelma.net, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-06-12 at 18:25 +0800, Ingo Molnar wrote:
-> * Huang Ying <ying.huang@intel.com> wrote:
-> 
-> > NMI can be triggered even when IRQ is masked. So it is not safe for NMI 
-> > handler to call some functions. One solution is to delay the call via self 
-> > interrupt, so that the delayed call can be done once the interrupt is 
-> > enabled again. This has been implemented in MCE and perf event. This patch 
-> > provides a unified version and make it easier for other NMI semantic handler 
-> > to take use of the delayed call.
-> > 
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > ---
-> >  arch/x86/include/asm/entry_arch.h  |    1 
-> >  arch/x86/include/asm/hw_irq.h      |    1 
-> >  arch/x86/include/asm/irq_vectors.h |    5 +
-> >  arch/x86/include/asm/nmi.h         |    7 ++
-> >  arch/x86/kernel/entry_64.S         |    3 +
-> >  arch/x86/kernel/irqinit.c          |    3 +
-> >  arch/x86/kernel/traps.c            |  104 +++++++++++++++++++++++++++++++++++++
-> >  7 files changed, 124 insertions(+)
-> 
-> Instead of introducing this extra intermediate facility please use the same 
-> approach the unified NMI watchdog is using (see latest -tip): a perf event 
-> callback gives all the extra functionality needed.
+2010/6/12 Henri Häkkinen <henuxd@gmail.com>:
+> -                       printk
+> -                           (KERN_INFO "comedi: failed to increment module count, skipping\n");
+> +                       printk(KERN_INFO "comedi: failed to increment module "
+> +                              "count, skipping\n");
 
-Sorry, if my understanding is correct, the perf event overflow callback
-should be run in NMI context instead of a delayed context (such as IRQ,
-soft_irq, process context). That is, the backtrace of
-watchdog_overflow_callback should be something as follow:
+Hi Henri,
 
-x86_pmu_handle_irq
-  perf_event_overflow
-    __perf_event_overflow
-      watchdog_overflow_callback
+Regarding your breaking up of printk statements, although some of
+those lines do go over 80 characters, it is preferable to keep the
+strings together since then those are searchable within the code.
 
-I do not find the delayed mechanism here.
+I figure it is quite acceptable to break the string after "comedi: ",
+so maybe that will fix the line length issue, otherwise it is
+preferable to keep the checkpatch warning in this case.
 
-> The MCE code needs to be updated to use that - and then it will be integrated
-> into the events framework.
-
-MCE is NMI-like, and there are other NMI users too. I think some of them
-will need some kind of delayed call mechanism. In fact, perf itself uses
-self-made NMI delayed call mechanism too, I just want to generalize it
-for other users too.
-
-Best Regards,
-Huang Ying
-
-
+Mark
