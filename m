@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab0FMO6e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 10:58:34 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58852 "EHLO ogre.sisk.pl"
+	id S1754461Ab0FMO7G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 10:59:06 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58885 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754120Ab0FMO6T convert rfc822-to-8bit (ORCPT
+	id S1754368Ab0FMO7B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 10:58:19 -0400
+	Sun, 13 Jun 2010 10:59:01 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Zdenek Kabelac" <zdenek.kabelac@gmail.com>
+       "Shirish Pargaonkar" <shirishpargaonkar@gmail.com>
 References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
 In-Reply-To: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <YPGdyfWGvNK.A.jeH.c6OFMB@chimera>
-Subject: [Bug #15977] WARNING: at lib/dma-debug.c:866 check_for_stack
+Message-ID: <YPGdyfWGvNK.A.oKG.k5OFMB@chimera>
+Subject: [Bug #16139] wait_even_interruptible_timeout(), signal, spin_lock() = system hang
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 13 Jun 2010 16:49:00 +0200 (CEST)
+Date: Sun, 13 Jun 2010 16:49:05 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,11 +33,11 @@ introduced between 2.6.33 and 2.6.34.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15977
-Subject		: WARNING: at lib/dma-debug.c:866 check_for_stack
-Submitter	: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-Date		: 2010-05-14 8:56 (31 days old)
-Message-ID	: <AANLkTikyx2eaxaiUCFDSfpmn1UG0t2GOxArz6F4wp1LJ@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=127382742729825&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16139
+Subject		: wait_even_interruptible_timeout(), signal, spin_lock() = system hang
+Submitter	: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Date		: 2010-05-28 16:44 (17 days old)
+Message-ID	: <AANLkTiliRFydAhxH2-Dp1RKuz6sq7vgWIcMvLMi68ftg@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127506510328758&w=2
 
 
