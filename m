@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab0FMUdM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 16:33:12 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61938 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab0FMUdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 16:33:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=oPcetnluXOyfAb0N+PKYJA6dARgqF6OTaxlXdYghamYSybN8rSX7BuIicGKPAsS8gV
-         ZbrKI1i0i4jGBdjO2yxUObQvS1r+m0d2g7npo1F9X59xul2s9A3LgNXEEAkx1xL0vjkU
-         nGMh6xyfrFgaMnRDuHCfmEcVfJPXqvbaoxGkI=
-Subject: Re: BUG: using smp_processor_id() in preemptible code: s2disk
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Jiri Slaby <jslaby@suse.cz>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100613203352.GA3577@swordfish>
-References: <20100613203352.GA3577@swordfish>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 13 Jun 2010 23:33:03 +0300
-Message-ID: <1276461183.2659.4.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754772Ab0FMUgd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 16:36:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2723 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753430Ab0FMUgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 16:36:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,411,1272870000"; 
+   d="scan'208";a="526487118"
+Message-ID: <4C15414E.5090201@intel.com>
+Date: Sun, 13 Jun 2010 13:36:30 -0700
+From: John Fastabend <john.r.fastabend@intel.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>,
+       "markus@trippelsdorf.de" <markus@trippelsdorf.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       yanmin_zhang@linux.intel.com, alex.shi@intel.com, tim.c.chen@intel.com
+Subject: Re: mpd client timeouts (bisected) 2.6.35-rc3
+References: <20100612102802.GA1782@arch.tripp.de> <20100612.145835.123986343.davem@davemloft.net> <4C149147.3080808@intel.com>
+In-Reply-To: <4C149147.3080808@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-06-13 at 23:33 +0300, Sergey Senozhatsky wrote: 
-> Hello,
+John Fastabend wrote:
+> David Miller wrote:
+>> From: Markus Trippelsdorf <markus@trippelsdorf.de>
+>> Date: Sat, 12 Jun 2010 12:28:02 +0200
+>>
+>>> Commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837:
+>>> »net: deliver skbs on inactive slaves to exact matches«
+>>>
+>>> causes large timeouts when mpd clients try to connect to a locally
+>>> running mpd (music player demon) on my machine. This makes it 
+>>> impossible to control mpd.
+>>>
+>>> I bisected this down to the commit mentioned above.
+>>> Reverting the commit from 2.6.35-rc3 also solves the problem.
+>> John, find an easy and fast way to fix this or else I am
+>> going to revert.
+>>
+>> Thanks.
 > 
-> .35-rc3, x86
+> Looks like skbs are hitting loopback_xmit() with deliver_no_wcard set.  Then in 
+> the receive path these skbs are only delivered to exact matches.  Not sure why 
+> this bit is set here, I'll track this down first thing tomorrow.
 > 
-> Hit the following error today:
+> Thanks,
+> John.
+> --
 
-I confirm the same issue. Sorry for not reporting it earlier.
+Needed to set the wcard bit in copy_skb_header otherwise it will not be cleared 
+when called from skb_clone.  Which then hits the loopback device gets pushed 
+into the rx path and is eventually dropped. The following patch fixes this. 
+Hopefully, this is easy and fast enough for you Dave.
 
 
-Best regards,
-Maxim Levitsky
+[PATCH] net: fix deliver_no_wcard regression on loopback device
 
+deliver_no_wcard is not being set in skb_copy_header.
+In the skb_cloned case it is not being cleared and
+may cause the skb to be dropped when the loopback device
+pushes it back up the stack.
+
+Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
+---
+
+  net/core/skbuff.c |    1 +
+  1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 9f07e74..bcf2fa3 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -532,6 +532,7 @@ static void __copy_skb_header(struct sk_buff *new, const 
+struct sk_buff *old)
+  	new->ip_summed		= old->ip_summed;
+  	skb_copy_queue_mapping(new, old);
+  	new->priority		= old->priority;
++	new->deliver_no_wcard	= old->deliver_no_wcard;
+  #if defined(CONFIG_IP_VS) || defined(CONFIG_IP_VS_MODULE)
+  	new->ipvs_property	= old->ipvs_property;
+  #endif
