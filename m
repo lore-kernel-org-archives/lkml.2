@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab0FMSUZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 14:20:25 -0400
-Received: from isrv.corpit.ru ([81.13.33.159]:42343 "EHLO isrv.corpit.ru"
+	id S1754657Ab0FMSbv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 14:31:51 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:57740 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754451Ab0FMSUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 14:20:24 -0400
-Message-ID: <4C152166.4070106@msgid.tls.msk.ru>
-Date: Sun, 13 Jun 2010 22:20:22 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
+	id S1754495Ab0FMSbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 14:31:50 -0400
+Date: Mon, 14 Jun 2010 00:01:45 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: kvm <kvm@vger.kernel.org>
+Cc: Avi Kivity <avi@redhat.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 1/2] Linux/Guest unmapped page cache control
+Message-ID: <20100613183145.GM5191@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>
+ <20100608155146.3749.67837.sendpatchset@L34Z31A.ibm.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Ollie Wild <aaw@google.com>
-Subject: Re: personality(ADDR_LIMIT_3GB) results in EFAULT
-References: <4BFEA911.40600@msgid.tls.msk.ru> <874oht197o.fsf@basil.nowhere.org>
-In-Reply-To: <874oht197o.fsf@basil.nowhere.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100608155146.3749.67837.sendpatchset@L34Z31A.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[replying to somewhat old email...]
+* Balbir Singh <balbir@linux.vnet.ibm.com> [2010-06-08 21:21:46]:
 
-27.05.2010 22:38, Andi Kleen wrote:
-> Michael Tokarev<mjt@tls.msk.ru>  writes:
+> Selectively control Unmapped Page Cache (nospam version)
+> 
+> From: Balbir Singh <balbir@linux.vnet.ibm.com>
+> 
+> This patch implements unmapped page cache control via preferred
+> page cache reclaim. The current patch hooks into kswapd and reclaims
+> page cache if the user has requested for unmapped page control.
+> This is useful in the following scenario
+> 
+> - In a virtualized environment with cache=writethrough, we see
+>   double caching - (one in the host and one in the guest). As
+>   we try to scale guests, cache usage across the system grows.
+>   The goal of this patch is to reclaim page cache when Linux is running
+>   as a guest and get the host to hold the page cache and manage it.
+>   There might be temporary duplication, but in the long run, memory
+>   in the guests would be used for mapped pages.
+> - The option is controlled via a boot option and the administrator
+>   can selectively turn it on, on a need to use basis.
+> 
+> A lot of the code is borrowed from zone_reclaim_mode logic for
+> __zone_reclaim(). One might argue that the with ballooning and
+> KSM this feature is not very useful, but even with ballooning,
+> we need extra logic to balloon multiple VM machines and it is hard
+> to figure out the correct amount of memory to balloon. With these
+> patches applied, each guest has a sufficient amount of free memory
+> available, that can be easily seen and reclaimed by the balloon driver.
+> The additional memory in the guest can be reused for additional
+> applications or used to start additional guests/balance memory in
+> the host.
+> 
+> KSM currently does not de-duplicate host and guest page cache. The goal
+> of this patch is to help automatically balance unmapped page cache when
+> instructed to do so.
+> 
+> There are some magic numbers in use in the code, UNMAPPED_PAGE_RATIO
+> and the number of pages to reclaim when unmapped_page_control argument
+> is supplied. These numbers were chosen to avoid aggressiveness in
+> reaping page cache ever so frequently, at the same time providing control.
+> 
+> The sysctl for min_unmapped_ratio provides further control from
+> within the guest on the amount of unmapped pages to reclaim.
 >
->> I noticed an.. interesting issue here.
->>
->> Running a 32bit executable on a 64bit kernel,
->> and doing
->>
->>    personality(ADDR_LIMIT_3GB);
->>
->> That call succedes, but any further execve()
->> and friends results in EFAULT, unless whole
->> argv[] and envp[] are copied to a malloc'ed
->> space.  alloca sometimes helps and sometimes
->> not.
->
-> It worked when I wrote it originally.
->
-> Sounds like a regression, perhaps related to
-> b6a2fea39318e43fee84fa7b0b90d68bed92d2ba
 
-This is this commit:
-
-commit b6a2fea39318e43fee84fa7b0b90d68bed92d2ba
-Author: Ollie Wild <aaw@google.com>
-Date:   Thu Jul 19 01:48:16 2007 -0700
-
-     mm: variable length argument support
-
-     Remove the arg+env limit of MAX_ARG_PAGES by copying the strings directly from
-     the old mm into the new mm.
-
-     We create the new mm before the binfmt code runs, and place the new stack at
-     the very top of the address space.  Once the binfmt code runs and figures out
-     where the stack should be, we move it downwards.
-
-     It is a bit peculiar in that we have one task with two mm's, one of which is
-     inactive.
-
-     [a.p.zijlstra@chello.nl: limit stack size]
-     Signed-off-by: Ollie Wild <aaw@google.com>
-     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-     Cc: <linux-arch@vger.kernel.org>
-     Cc: Hugh Dickins <hugh@veritas.com>
-     [bunk@stusta.de: unexport bprm_mm_init]
-     Signed-off-by: Adrian Bunk <bunk@stusta.de>
-     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-(Author of this commit CC'ed).
-
-
-Folks, I really need some advise here.
-
-Right now I've a 64 wrapper executable to run the legacy
-database (which we didn't finish migrating from yet, it's
-always long process).  It sets the necessary personality
-and executes the real binary.  But the problem is that after
-a recompile (I added something else to it), the whole thing
-stopped working on a machine with 4Gb memory: the execve()
-call, now when made from 64bit binary, immediately fails
-with EFAULT.  Before, this were happening only when the
-wrapper is 32bit code (try `setarch i686 -3 any_32bit_exe' --
-it will fail if setarch itself is 32bit executable).  Now
-it fails from 64bits too, even just recompiling the old
-.c code (with single personality() call in it) now results
-in non-working thing - apparently due to some gcc diff.
-
-Can we restore this personality thing, please?.. :)
-I'm not good at all this code, so I need someone who is
-able to understand what's going on.... ;)
-
-Thanks!
-
-/mjt
+Are there any major objections to this patch?
+ 
+-- 
+	Three Cheers,
+	Balbir
