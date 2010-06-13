@@ -1,90 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab0FMN27 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 09:28:59 -0400
-Received: from mail.issp.bas.bg ([195.96.236.10]:55665 "EHLO mail.issp.bas.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab0FMN25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 09:28:57 -0400
-From: Marin Mitov <mitov@issp.bas.bg>
-Organization: Institute of Solid State Physics
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [REGRESSION]linux-2.6.35-rc3 in net/core/dev.c
-Date: Sun, 13 Jun 2010 16:25:54 +0300
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3; KDE/4.4.3; x86_64; ; )
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1753765Ab0FMN33 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 09:29:29 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:38752 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602Ab0FMN32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 09:29:28 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Someone Something <fordhaivat@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Help for a newbie
+In-Reply-To: Your message of "Sat, 12 Jun 2010 23:32:36 EDT."
+             <AANLkTilzq64CPECxFb77PEdjv1Pcj72622rmhPchz9L8@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <AANLkTimmhzbgddTZBoaSy4iXpjB4Gdy6zTab0EjCM1IK@mail.gmail.com> <AANLkTinwQ5tUDyHIObolQrd0jESH5PGEBKqwk6a_jHWK@mail.gmail.com> <AANLkTilbMPLfd415EV32or8FZCM1sWi-RzeWtPAX95-o@mail.gmail.com>
+            <AANLkTilzq64CPECxFb77PEdjv1Pcj72622rmhPchz9L8@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1276435765_18203P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006131625.55481.mitov@issp.bas.bg>
+Date: Sun, 13 Jun 2010 09:29:25 -0400
+Message-ID: <20766.1276435765@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020208.4C14DD36.0186,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+--==_Exmh_1276435765_18203P
+Content-Type: text/plain; charset=us-ascii
 
-I am using ssh with port redirection to log on host_at_work:
+On Sat, 12 Jun 2010 23:32:36 EDT, Someone Something said:
 
-ssh -L20110:mail:110 host_at_work
+> 1) when you write userland apps, you usually include stuff like :
+> sys/types.h or errono.h where are all these defined in the linux
+> kernel because I would like to add a few syscalls of my own?
 
-With linux-2.6.35-rc3, when I telnet to localhost I get:
+Look at any source files already in the kernel, they'll give you a good
+hint of where the .h files are.  Keep in mind that in the kernel, we
+tend to #include a lot of header files, depending on what exactly is needed.
 
-telnet localhost 20110
-Trying 127.0.0.1...
-telnet: connect to address 127.0.0.1: Connection timed out
+Regarding adding syscalls - step 0 is doing a proper design and making sure
+that in fact you need a new syscall.  What features do you want to add, and
+why do they need syscalls?
 
-but the connection at host_at_work stays ESTABLISHED
+It's usually a bad idea to add syscalls unless you *really* need to - most
+of the time creating a loadable kernel module is a better idea (among other
+things, you can compile a module against a distro kernel without rebuilding
+the entire kernel, you can't do that with a syscall).
 
-With older kernels at home (linux-2.6.33.4) when I telnet I have:
+> 2) what are some bugs in the kernel that a beginner can fix?
 
-telnet localhost 20110
-Trying 127.0.0.1...
-Connected to localhost.
-Escape character is '^]'.
-+OK
-quit
-+OK
-Connection closed by foreign host.
+Unfortunately, we're victims of our own sucess here.  There really aren't many
+long-standing bugs left that a beginner can fix.  If you follow the linux-next
+or Andrew Morton's -mm kernel, you'll find the occasional typo or messed up
+code that has an #ifdef backwards so it doesn't build for all configs, and so
+on.  But in general, if the bug has been there more than 12 hours or so, it
+usually means that it's a nasty ugly mess and will require some real work to
+fix.
 
-I have seen the posting on LKML:
+That isn't to say that the developers don't appreciate all those little
+one-line patches to make stuff work in your config that they didn't test.
+They appreciate those a *lot*.  I just can't point you at any because the list
+will be different by the time you read this mail.
 
-http://lkml.org/lkml/2010/6/13/11
+> 3) is there any definitive guide to the kernel that you guys refer
+> most newbies to? (like Programming Perl for perl)?
 
-and decided to revert the patch mentioned their (see bellow).
-The revert solves the problem for me.
+Robert Love's book and "Linux Device Drivers, 3rd ed" are both pretty good
+overviews, although somewhat dated because the code is a moving target.
+Once you got a handle on the major data structures, it's really "Use The
+Source, Luke" time.
 
-Regards
+> 4) Where's the linux kernel headed to next? What higher level features
+> (i.e. real features, not bug fixes) are going to implemented?
 
-Marin Mitov
+Well, I really can't say anything definite other than "read LKML or at least a
+weekly scan of the Subject: lines to see what's new".  It's going to be the
+same as it has for the last few years - code will be merged when it's written
+by somebody who's scratching an itch.  We'll eventually merge *something* for
+the Android power-management issue (because we really *do* need a solution in
+that area), new file systems will be merged, device drivers will be written,
+and so on. What will go in for 2.6.36 and later releases pretty much depends on
+what code people feel motivated to write for submission.
 
-===========================================================
---- a/net/core/dev.c	2010-06-13 13:21:36.000000000 +0300
-+++ b/net/core/dev.c	2010-06-13 12:39:31.000000000 +0300
-@@ -2810,13 +2810,24 @@
- 	if (!skb->skb_iif)
- 		skb->skb_iif = skb->dev->ifindex;
- 
-+	/*
-+	 * bonding note: skbs received on inactive slaves should only
-+	 * be delivered to pkt handlers that are exact matches.  Also
-+	 * the deliver_no_wcard flag will be set.  If packet handlers
-+	 * are sensitive to duplicate packets these skbs will need to
-+	 * be dropped at the handler.  The vlan accel path may have
-+	 * already set the deliver_no_wcard flag.
-+	 */
- 	null_or_orig = NULL;
- 	orig_dev = skb->dev;
- 	master = ACCESS_ONCE(orig_dev->master);
--	if (master) {
--		if (skb_bond_should_drop(skb, master))
-+	if (skb->deliver_no_wcard)
-+		null_or_orig = orig_dev;
-+	else if (master) {
-+		if (skb_bond_should_drop(skb, master)) {
-+			skb->deliver_no_wcard = 1;
- 			null_or_orig = orig_dev; /* deliver only exact match */
--		else
-+		} else
- 			skb->dev = master;
- 	}
- 
+
+
+--==_Exmh_1276435765_18203P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMFN01cC3lWbTT17ARAjnLAJ9y1aYAWnxkwRWF9jnDNixB96MjIQCg0iNM
+fwaDfSlzscGBejc7FC3iapI=
+=GmcK
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1276435765_18203P--
+
