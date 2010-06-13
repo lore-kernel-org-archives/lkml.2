@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab0FMHrk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 03:47:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52265 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab0FMHrj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 03:47:39 -0400
-Date: Sun, 13 Jun 2010 00:47:20 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Michael Ellerman <michael@ellerman.id.au>
-cc: linuxppc-dev@ozlabs.org, monstr@monstr.eu,
-       microblaze-uclinux@itee.uq.edu.au, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] device-tree: Drop properties with "/" in their name
-In-Reply-To: <0958c243b32f5f77028a794a9ce0d55f9a12121e.1274272289.git.michael@ellerman.id.au>
-Message-ID: <alpine.DEB.2.01.1006130045230.3964@bogon.housecafe.de>
-References: <0958c243b32f5f77028a794a9ce0d55f9a12121e.1274272289.git.michael@ellerman.id.au>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1752512Ab0FMIFo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 04:05:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23922 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751704Ab0FMIF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 04:05:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,410,1272870000"; 
+   d="scan'208";a="807448469"
+Message-ID: <4C149147.3080808@intel.com>
+Date: Sun, 13 Jun 2010 01:05:27 -0700
+From: John Fastabend <john.r.fastabend@intel.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V01U2FsdGVkX1+O13xEdrTb9jSxoHCVhsyvHGbTP7cF4LZ8lzC
- GiZBMKfmPY8f+byoz7DSpLHCmcNG5EM4Ev2apBnfYUMjuub5Js
- Rp1y6Dpei7MvqhvEOHIUw==
+To: David Miller <davem@davemloft.net>
+CC: "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: mpd client timeouts (bisected) 2.6.35-rc3
+References: <20100612102802.GA1782@arch.tripp.de> <20100612.145835.123986343.davem@davemloft.net>
+In-Reply-To: <20100612.145835.123986343.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 May 2010 at 22:32, Michael Ellerman wrote:
-> Some bogus firmwares include properties with "/" in their name. This
-> causes problems when creating the /proc/device-tree file system,
-> because the slash is taken to indicate a directory.
+David Miller wrote:
+> From: Markus Trippelsdorf <markus@trippelsdorf.de>
+> Date: Sat, 12 Jun 2010 12:28:02 +0200
 > 
-> We don't care about those properties, and we don't want to encourage
-> them, so just throw them away when creating /proc/device-tree.
+>> Commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837:
+>> »net: deliver skbs on inactive slaves to exact matches«
+>>
+>> causes large timeouts when mpd clients try to connect to a locally
+>> running mpd (music player demon) on my machine. This makes it 
+>> impossible to control mpd.
+>>
+>> I bisected this down to the commit mentioned above.
+>> Reverting the commit from 2.6.35-rc3 also solves the problem.
 > 
-> Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-> ---
+> John, find an easy and fast way to fix this or else I am
+> going to revert.
 > 
-> Hi Christian, if you could test this new patch that'd be great, thanks!
+> Thanks.
 
-I've tested the patch, the Badness is gone and the system is stable as 
-ever. Will this be pushed to 2.6.35?
+Looks like skbs are hitting loopback_xmit() with deliver_no_wcard set.  Then in 
+the receive path these skbs are only delivered to exact matches.  Not sure why 
+this bit is set here, I'll track this down first thing tomorrow.
 
 Thanks,
-Christian.
-
->  fs/proc/proc_devtree.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
-> index ce94801..d9396a4 100644
-> --- a/fs/proc/proc_devtree.c
-> +++ b/fs/proc/proc_devtree.c
-> @@ -209,6 +209,9 @@ void proc_device_tree_add_node(struct device_node *np,
->  	for (pp = np->properties; pp != NULL; pp = pp->next) {
->  		p = pp->name;
->  
-> +		if (strchr(p, '/'))
-> +			continue;
-> +
->  		if (duplicate_name(de, p))
->  			p = fixup_name(np, de, p);
->  
-> -- 
-> 1.7.0.4
-> 
-> 
-> 
-
--- 
-BOFH excuse #334:
-
-50% of the manual is in .pdf readme files
+John.
