@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab0FMPee (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 11:34:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37718 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753992Ab0FMPcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 11:32:10 -0400
-From: Tejun Heo <tj@kernel.org>
-To: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, jeff@garzik.org,
-       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
-       khali@linux-fr.org
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/12] irq: implement irq_schedule_poll()
-Date: Sun, 13 Jun 2010 17:31:32 +0200
-Message-Id: <1276443098-20653-7-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1276443098-20653-1-git-send-email-tj@kernel.org>
-References: <1276443098-20653-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 13 Jun 2010 15:31:41 +0000 (UTC)
+	id S1754249Ab0FMPfh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 11:35:37 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48895 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754016Ab0FMPff convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 11:35:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nBoSNKgPW62BOFeugOfn2TQgZI4D7I6hXS/nc7tESh7MF/2Rqf24ZQ7y4GMtC89L+8
+         scLsmYvkkJ76sUgz6Caku/+9imH/aubOI9F44gvQZCL9xWuIWlJvHeHSflsvv1OlSO00
+         71t3Upve/ioru0WWlPFLx+LDJqg4MIDqYtGIA=
+MIME-Version: 1.0
+In-Reply-To: <YPGdyfWGvNK.A.KHH.75OFMB@chimera>
+References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
+	<YPGdyfWGvNK.A.KHH.75OFMB@chimera>
+Date: Sun, 13 Jun 2010 11:35:34 -0400
+Message-ID: <AANLkTikKQBrH6rvsj-6chzYqd8NUsmEQBGD2jvTvpJVf@mail.gmail.com>
+Subject: Re: [Bug #16054] UML broken for CONFIG_SLAB
+From: Parag Warudkar <parag.lkml@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement and use irq_schedule_poll() to schedule desc->poll_timer
-instead of calling mod_timer directly.  irq_schedule_poll() is called
-with desc->lock held and schedules the timer iff necessary - ie. if
-the timer is offline or scheduled to expire later than requested.
-This will be used to share desc->poll_timer.
+On Sun, Jun 13, 2010 at 10:49 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16054
+> Subject         : UML broken for CONFIG_SLAB
+> Submitter       : Parag Warudkar <parag.lkml@gmail.com>
+> Date            : 2010-05-23 21:40 (22 days old)
+> Message-ID      : <alpine.DEB.2.00.1005231149100.605@parag-laptop>
+> References      : http://marc.info/?l=linux-kernel&m=127465083806617&w=2
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/irq/spurious.c |   47 +++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 41 insertions(+), 6 deletions(-)
+Borislav,
 
-diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
-index 0bce0e3..0b8fd0a 100644
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -23,6 +23,8 @@ enum {
- 
- 	/* IRQ polling common parameters */
- 	IRQ_POLL_INTV			= HZ / 100,	/* from the good ol' 100HZ tick */
-+
-+	IRQ_POLL_SLACK			= HZ / 1000,	/* 10% slack */
- };
- 
- int noirqdebug __read_mostly;
-@@ -43,6 +45,38 @@ static void print_irq_handlers(struct irq_desc *desc)
- 	}
- }
- 
-+static unsigned long irq_poll_slack(unsigned long intv)
-+{
-+	return IRQ_POLL_SLACK;
-+}
-+
-+/**
-+ * irq_schedule_poll - schedule IRQ poll
-+ * @desc: IRQ desc to schedule poll for
-+ * @intv: poll interval
-+ *
-+ * Schedules @desc->poll_timer.  If the timer is already scheduled,
-+ * it's modified iff jiffies + @intv + slack is before the timer's
-+ * expires.  poll_timers aren't taken offline behind this function's
-+ * back and the users of this function are guaranteed that poll_irq()
-+ * will be called at or before jiffies + @intv + slack.
-+ *
-+ * CONTEXT:
-+ * desc->lock
-+ */
-+static void irq_schedule_poll(struct irq_desc *desc, unsigned long intv)
-+{
-+	unsigned long expires = jiffies + intv;
-+	int slack = irq_poll_slack(intv);
-+
-+	if (timer_pending(&desc->poll_timer) &&
-+	    time_before_eq(desc->poll_timer.expires, expires + slack))
-+		return;
-+
-+	set_timer_slack(&desc->poll_timer, slack);
-+	mod_timer(&desc->poll_timer, expires);
-+}
-+
- /*
-  * Recovery handler for misrouted interrupts.
-  */
-@@ -207,7 +241,9 @@ void __note_interrupt(unsigned int irq, struct irq_desc *desc,
- 		desc->depth++;
- 		desc->chip->disable(irq);
- 
--		mod_timer(&desc->poll_timer, jiffies + IRQ_POLL_INTV);
-+		raw_spin_lock(&desc->lock);
-+		irq_schedule_poll(desc, IRQ_POLL_INTV);
-+		raw_spin_unlock(&desc->lock);
- 	}
- 	desc->irqs_unhandled = 0;
- }
-@@ -221,9 +257,8 @@ void poll_irq(unsigned long arg)
- 
- 	raw_spin_lock_irq(&desc->lock);
- 	try_one_irq(desc->irq, desc);
-+	irq_schedule_poll(desc, IRQ_POLL_INTV);
- 	raw_spin_unlock_irq(&desc->lock);
--
--	mod_timer(&desc->poll_timer, jiffies + IRQ_POLL_INTV);
- }
- 
- void irq_poll_action_added(struct irq_desc *desc, struct irqaction *action)
-@@ -238,10 +273,10 @@ void irq_poll_action_added(struct irq_desc *desc, struct irqaction *action)
- 		__enable_irq(desc, desc->irq, false);
- 	}
- 
--	raw_spin_unlock_irqrestore(&desc->lock, flags);
--
- 	if ((action->flags & IRQF_SHARED) && irqfixup >= IRQFIXUP_POLL)
--		mod_timer(&desc->poll_timer, jiffies + IRQ_POLL_INTV);
-+		irq_schedule_poll(desc, IRQ_POLL_INTV);
-+
-+	raw_spin_unlock_irqrestore(&desc->lock, flags);
- }
- 
- void irq_poll_action_removed(struct irq_desc *desc, struct irqaction *action)
--- 
-1.6.4.2
+I believe both of the issues I encountered that are part of this bug
+entry (missing/superfluous slab inclusion issues and cfq related boot
+crash due to popcnt/hweight stuff) have a known fix [1] but I am not
+sure if any of it actually landed in -git. Quick search through
+git.kernel.org log doesn't show anything relevant.
 
+I think there was ongoing discussion on the hweight include fix - so
+keeping this open until fixes are in may be what we should do as of
+now.
+
+
+[1] http://marc.info/?l=linux-kernel&m=127522065202435&w=2
+
+
+Thanks.
+
+Parag
