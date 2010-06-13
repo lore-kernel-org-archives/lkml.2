@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab0FMP1S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 11:27:18 -0400
-Received: from hosting.visp.net.lb ([194.146.153.11]:59059 "EHLO
-	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab0FMP1Q (ORCPT
+	id S1754064Ab0FMP2u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 11:28:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61735 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab0FMP2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 11:27:16 -0400
-From: Denys Fedorysychenko <nuclearcat@nuclearcat.com>
-To: legerde@gmail.com, linux-kernel@vger.kernel.org
-Subject: Aerospace and linux
-Date: Sun, 13 Jun 2010 18:26:58 +0300
-User-Agent: KMail/1.12.4 (Linux/2.6.33-rc8-home1; KDE/4.3.5; x86_64; ; )
+	Sun, 13 Jun 2010 11:28:48 -0400
+Date: Sun, 13 Jun 2010 17:28:45 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Subject: Re: [REGRESSION]linux-2.6.35-rc3 in net/core/dev.c
+Message-ID: <20100613152845.GA6683@fancy-poultry.org>
+References: <201006131625.55481.mitov@issp.bas.bg>
+ <20100613165421.7e8dda79@holly>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="koi8-r"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006131826.58146.nuclearcat@nuclearcat.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100613165421.7e8dda79@holly>
+X-Accept-Language: no,dk,se,en,de
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.20+20100519 (GNU/Linux)
+X-Provags-ID: V01U2FsdGVkX18wlmu+QH78oDUglyIvrGc+CFYdP7lNLwA4yob
+ csPbjxLDuXQdrLZNmLZ4z+bZ0AIg0wsJa2mwL2oFvuyVcDFjbQ
+ siiXaAkC52qn53uLfz+EA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Storage will probably be something really cheap.  So I assume flash.
->But, possibly a USB stick type device.   Maybe an IDE based solid
->state storage device.
+On 13.06.2010, Jindrich Makovicka wrote: 
 
-Most of commercial controllers (USB and IDE) use intermediate cache/buffer 
-memory, that will be vulnerable to byte flipping (as i know even SRAM 
-vulnerable to that).	Some of them have their own firmware, storing somewhere 
-chip wearing information, and if bit flipping happen there - they just will 
-fail (common issue: USB flash not recognized anymore or have 0 bytes 
-capacity).
+> I can confirm this. Reverting of this patch fixes a regression with
+> Privoxy running on localhost, where most of the connections
+> (browser->proxy) stall and don't return anything.
 
-	I guess you need truly embedded device, including PCB design, and operate 
-with storage chips directly (RAM, flash chips). Also flash (NOR and NAND) 
-vulnerable to bit-flipping too, and it is prefferable to use hardened IC's (i 
-doubt there is hardened USB/IDE controllers), protected bus design, strong 
-error recovery algo's, system and parts redundancy and etc.
+This does also fix this bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=16188
+
