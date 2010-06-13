@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab0FMLnJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 07:43:09 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:42587 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab0FMLnH (ORCPT
+	id S1753546Ab0FMM4k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 08:56:40 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53446 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753499Ab0FMM4i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 07:43:07 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Nikanth Karthikesan <knikanth@novell.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Christoph Hellwig <hch@lst.de>, Chris Mason <chris.mason@oracle.com>,
-       linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH][RFC] Complex filesystem operations: split and join
-References: <201006092035.46481.knikanth@novell.com>
-Date: Sun, 13 Jun 2010 20:42:57 +0900
-In-Reply-To: <201006092035.46481.knikanth@novell.com> (Nikanth Karthikesan's
-	message of "Wed, 9 Jun 2010 20:35:46 +0530")
-Message-ID: <87aaqzp39a.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	Sun, 13 Jun 2010 08:56:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=q/uzTdnlfmhwRnU7b14AO2nVNcfVXQ89tdeXIk1mq9CVoOzcu70Jm7aBsdnmTinLtN
+         AjpGBh23Nh1VNCT41dV07qpeu3s4bjCMAe+4+a3X1h9sNPPfCDrhaOkh/BBKTsEJ+FfI
+         8U57QRxMphp8v56+RI0ar93arGerxwcRNzNuw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <4C149194.2060507@redhat.com>
+References: <AANLkTinUhfVvK7UOC6FiW9nG6xXRwCpDlAaedbSwFo7d@mail.gmail.com>
+	<4C149194.2060507@redhat.com>
+Date: Sun, 13 Jun 2010 14:56:36 +0200
+X-Google-Sender-Auth: SR-8Pcr6BhUfZK8tPARHubV9jVY
+Message-ID: <AANLkTilXDyHpBA5xZGTBQwl3s7A0zSYcRNKuykBhOOyY@mail.gmail.com>
+Subject: Re: [PATCH] These are my first patches to the kernel
+From: "K.de Jong" <k.dejong@undifined.nl>
+To: Avi Kivity <avi@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nikanth Karthikesan <knikanth@novell.com> writes:
+2010/6/13 Avi Kivity <avi@redhat.com>:
+> On 06/12/2010 03:17 PM, K.de Jong wrote:
+>>
+>>  From 6b9ac8708d856a425a9aaa598acdea3d89485bde Mon Sep 17 00:00:00 2001
+>> From: UndiFineD<k.dejong@undifined.nl>
+>> Date: Sat, 12 Jun 2010 00:24:28 +0200
+>> Subject: [PATCH] These are my first patches to the kernel
+>> Janitor patches to kvm
+>> Linus2.6: virt/kvm/
+>>
+>>
+>
+> Most of the patch is just whitespace changes, which don't improve the code
+> in any way.  I much prefer patches that fix bugs or add features.
+>
+Ofcourse everyone prefers bug fixes and new features :-)
+I simply looked at greg's "submit a patch" video.
+And thought, hey I could do this, and help clean up code.
+Cleaner code makes it more accessible
+and I get to know where everything is located.
+So I am going to continue making patches like these
+and become more familiar with the whole kernel.
 
-> I had a need to split a file into smaller files on a thumb drive with no
-> free space on it or anywhere else in the system. When the filesystem
-> supports sparse files(truncate_range), I could create files, while
-> punching holes in the original file. But when the underlying fs is FAT,
-> I couldn't. Also why should we do needless I/O, when all I want is to
-> split/join files. i.e., all the data are already on the disk, under the
-> same filesystem. I just want to do some metadata changes.
->
-> So, I added two inode operations, namely split and join, that lets me
-> tell the OS, that all I want is meta-data changes. And the file-system
-> can avoid doing lots of I/O, when only metadata changes are needed.
->
-> sys_split(fd1, n, fd2)
-> 1. Attach the data of file after n bytes in fd1 to fd2.
-> 2. Truncate fd1 to n bytes.
->
-> Roughly can be thought of as equivalent of following commands:
-> 1. dd if=file1 of=file2 skip=n
-> 2. truncate -c -s n file1
->
-> sys_join(fd1, fd2)
-> 1. Extend fd1 with data of fd2
-> 2. Truncate fd2 to 0.
->
-> Roughly can be thought of as equivalent of following commands:
-> 1. dd if=file2 of=file1 seek=`filesize file1`
-> 2. truncate -c -s 0 file2
->
-> Attached is the patch that adds these new syscalls and support for them
-> to the FAT filesystem.
->
-> I guess, this approach can be extended to splice() kind of call, between
-> files, instead of pipes. On a COW fs, splice could simply setup blocks
-> as shared between files, instead of doing I/O. It would be a kind of
-> explicit online data-deduplication. Later when a file modifies any of
-> those blocks, we copy blocks. i.e., COW.
-
-[I'll just ignore implementation for now.., because the patch is totally
-ignoring cache management.]
-
-I have no objections to such those operations (likewise make hole,
-truncate any range, etc. etc.). However, only if someone have enough
-motivation to implement/maintain those operations, AND there are real
-users (i.e. real sane usecase).
-
-Otherwise, IMO it would be bad than nothing. Because, of course, if
-there are such codes, we can't ignore those anymore until remove
-codes completely for e.g. security reasons. And IMHO, those cache
-managements to such operations are not so easy.
-
-Thanks.
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Keimpe de Jong
