@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab0FMKB7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 06:01:59 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:55271 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab0FMKB4 (ORCPT
+	id S1753393Ab0FMKCI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 06:02:08 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:25462 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753197Ab0FMKCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 06:01:56 -0400
-Message-ID: <4C14AC7E.6030308@nokia.com>
-Date: Sun, 13 Jun 2010 13:01:34 +0300
+	Sun, 13 Jun 2010 06:02:05 -0400
+Message-ID: <4C14AC91.6020202@nokia.com>
+Date: Sun, 13 Jun 2010 13:01:53 +0300
 From: Adrian Hunter <adrian.hunter@nokia.com>
 User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-To: jens.axboe@oracle.com
-CC: hch@lst.de, Andrew Morton <akpm@linux-foundation.org>,
-       Kyungmin Park <kmpark@infradead.org>,
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Kyungmin Park <kmpark@infradead.org>,
+       Madhusudhan Chikkature <madhu.cr@ti.com>,
        LKML <linux-kernel@vger.kernel.org>,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       Madhusudhan Chikkature <madhu.cr@ti.com>
-Subject: [PATCH V2 0/4] Add MMC erase and secure erase
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Subject: [PATCH V2 4/4] omap_hsmmc: Add erase capability
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Jun 2010 10:01:35.0438 (UTC) FILETIME=[6851FEE0:01CB0ADF]
+X-OriginalArrivalTime: 13 Jun 2010 10:01:53.0876 (UTC) FILETIME=[734F6940:01CB0ADF]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+>From 101ce0365d6ce1abc8518f4776ea723038eeb5ae Mon Sep 17 00:00:00 2001
+From: Adrian Hunter <adrian.hunter@nokia.com>
+Date: Tue, 18 May 2010 17:33:13 +0300
+Subject: [PATCH 4/4] omap_hsmmc: Add erase capability
 
-Add ability to do MMC erase and secure erase operations from userspace,
-using the BLKDISCARD ioctl and a newly created BLKSECDISCARD ioctl.
+Disable the data (busy) timeout for erases and set the
+MMC_CAP_ERASE capability.
 
-Changes from V1
+Signed-off-by: Adrian Hunter <adrian.hunter@nokia.com>
+---
+ drivers/mmc/host/omap_hsmmc.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
 
-- use discard I/O requests instead of implementing BLKDISCARD in mmc_block
-- do not validate erase size for MMC erases, instead round to erase size
-- rename MMC max_erase to pref_erase and expose it through sysfs as
-"preferred_erase_size"
-
-Adrian Hunter (4):
-      block: Add BLKSECDISCARD
-      mmc: Add erase, secure erase, trim and secure trim operations
-      mmc_block: Add discard and secure discard support
-      omap_hsmmc: Add erase capability
-
- block/compat_ioctl.c          |    1 +
- block/ioctl.c                 |    5 +
- drivers/mmc/card/block.c      |  125 +++++++++++++++-
- drivers/mmc/card/queue.c      |   16 ++-
- drivers/mmc/core/core.c       |  346 +++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/core.h       |    2 +
- drivers/mmc/core/mmc.c        |   47 ++++++-
- drivers/mmc/core/sd.c         |   82 ++++++++++
- drivers/mmc/core/sd_ops.c     |   48 ++++++
- drivers/mmc/core/sd_ops.h     |    1 +
- drivers/mmc/host/omap_hsmmc.c |   13 ++-
- include/linux/fs.h            |    1 +
- include/linux/mmc/card.h      |   19 +++
- include/linux/mmc/core.h      |   19 +++
- include/linux/mmc/host.h      |    1 +
- include/linux/mmc/mmc.h       |   24 ++-
- include/linux/mmc/sd.h        |    5 +
- 17 files changed, 742 insertions(+), 13 deletions(-)
-
-
-Regards
-Adrian
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index b032828..5cbbe09 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -28,6 +28,7 @@
+ #include <linux/clk.h>
+ #include <linux/mmc/host.h>
+ #include <linux/mmc/core.h>
++#include <linux/mmc/mmc.h>
+ #include <linux/io.h>
+ #include <linux/semaphore.h>
+ #include <linux/gpio.h>
+@@ -78,6 +79,7 @@
+ #define INT_EN_MASK		0x307F0033
+ #define BWR_ENABLE		(1 << 4)
+ #define BRR_ENABLE		(1 << 5)
++#define DTO_ENABLE		(1 << 20)
+ #define INIT_STREAM		(1 << 1)
+ #define DP_SELECT		(1 << 21)
+ #define DDIR			(1 << 4)
+@@ -523,7 +525,8 @@ static void omap_hsmmc_stop_clock(struct omap_hsmmc_host *host)
+ 		dev_dbg(mmc_dev(host->mmc), "MMC Clock is not stoped\n");
+ }
+ 
+-static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host)
++static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host,
++				  struct mmc_command *cmd)
+ {
+ 	unsigned int irq_mask;
+ 
+@@ -532,6 +535,10 @@ static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host)
+ 	else
+ 		irq_mask = INT_EN_MASK;
+ 
++	/* Disable timeout for erases */
++	if (cmd->opcode == MMC_ERASE)
++		irq_mask &= ~DTO_ENABLE;
++
+ 	OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
+ 	OMAP_HSMMC_WRITE(host->base, ISE, irq_mask);
+ 	OMAP_HSMMC_WRITE(host->base, IE, irq_mask);
+@@ -782,7 +789,7 @@ omap_hsmmc_start_command(struct omap_hsmmc_host *host, struct mmc_command *cmd,
+ 		mmc_hostname(host->mmc), cmd->opcode, cmd->arg);
+ 	host->cmd = cmd;
+ 
+-	omap_hsmmc_enable_irq(host);
++	omap_hsmmc_enable_irq(host, cmd);
+ 
+ 	host->response_busy = 0;
+ 	if (cmd->flags & MMC_RSP_PRESENT) {
+@@ -2094,7 +2101,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
+ 	mmc->max_seg_size = mmc->max_req_size;
+ 
+ 	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
+-		     MMC_CAP_WAIT_WHILE_BUSY;
++		     MMC_CAP_WAIT_WHILE_BUSY | MMC_CAP_ERASE;
+ 
+ 	if (mmc_slot(host).wires >= 8)
+ 		mmc->caps |= MMC_CAP_8_BIT_DATA;
+-- 
+1.6.3.3
