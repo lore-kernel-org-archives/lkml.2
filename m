@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab0FMKig (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 06:38:36 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:56471 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab0FMKif (ORCPT
+	id S1753507Ab0FMKlc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 06:41:32 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:26723 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab0FMKla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 06:38:35 -0400
-Message-ID: <4C14B514.4040405@nokia.com>
-Date: Sun, 13 Jun 2010 13:38:12 +0300
+	Sun, 13 Jun 2010 06:41:30 -0400
+Message-ID: <4C14B5C1.4040005@nokia.com>
+Date: Sun, 13 Jun 2010 13:41:05 +0300
 From: Adrian Hunter <adrian.hunter@nokia.com>
 User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
@@ -18,58 +18,73 @@ CC: "hch@lst.de" <hch@lst.de>, Andrew Morton <akpm@linux-foundation.org>,
        LKML <linux-kernel@vger.kernel.org>,
        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
        Madhusudhan Chikkature <madhu.cr@ti.com>
-Subject: [PATCH V2 0/4] Add MMC erase and secure erase
-References: <4C14AC7E.6030308@nokia.com>
-In-Reply-To: <4C14AC7E.6030308@nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Subject: [PATCH V2 1/4] block: Add BLKSECDISCARD
+References: <4C14AC83.8070305@nokia.com>
+In-Reply-To: <4C14AC83.8070305@nokia.com>
+Content-Type: text/plain; charset=iso-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Jun 2010 10:38:13.0605 (UTC) FILETIME=[8687A950:01CB0AE4]
+X-OriginalArrivalTime: 13 Jun 2010 10:41:05.0671 (UTC) FILETIME=[ED16D970:01CB0AE4]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<Now with Jens Axboe correct email address>
+>From 2bca77333187190bacb3e8b6f79a51ee11be62b5 Mon Sep 17 00:00:00 2001
+From: Adrian Hunter <adrian.hunter@nokia.com>
+Date: Thu, 3 Jun 2010 10:46:04 +0300
+Subject: [PATCH 1/4] block: Add BLKSECDISCARD
 
-Hi
+eMMC v4.4 cards can provide a secure erase operation
+which guarantees that all copies of the discarded sectors (for
+example created by garbage collection) will also be erased.  For
+this a new ioctl BLKSECDISCARD is added.
 
-Add ability to do MMC erase and secure erase operations from userspace,
-using the BLKDISCARD ioctl and a newly created BLKSECDISCARD ioctl.
+Signed-off-by: Adrian Hunter <adrian.hunter@nokia.com>
+---
+ block/compat_ioctl.c |    1 +
+ block/ioctl.c        |    5 +++++
+ include/linux/fs.h   |    1 +
+ 3 files changed, 7 insertions(+), 0 deletions(-)
 
-Changes from V1
-
-- use discard I/O requests instead of implementing BLKDISCARD in mmc_block
-- do not validate erase size for MMC erases, instead round to erase size
-- rename MMC max_erase to pref_erase and expose it through sysfs as
-"preferred_erase_size"
-
-Adrian Hunter (4):
-      block: Add BLKSECDISCARD
-      mmc: Add erase, secure erase, trim and secure trim operations
-      mmc_block: Add discard and secure discard support
-      omap_hsmmc: Add erase capability
-
- block/compat_ioctl.c          |    1 +
- block/ioctl.c                 |    5 +
- drivers/mmc/card/block.c      |  125 +++++++++++++++-
- drivers/mmc/card/queue.c      |   16 ++-
- drivers/mmc/core/core.c       |  346 +++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/core.h       |    2 +
- drivers/mmc/core/mmc.c        |   47 ++++++-
- drivers/mmc/core/sd.c         |   82 ++++++++++
- drivers/mmc/core/sd_ops.c     |   48 ++++++
- drivers/mmc/core/sd_ops.h     |    1 +
- drivers/mmc/host/omap_hsmmc.c |   13 ++-
- include/linux/fs.h            |    1 +
- include/linux/mmc/card.h      |   19 +++
- include/linux/mmc/core.h      |   19 +++
- include/linux/mmc/host.h      |    1 +
- include/linux/mmc/mmc.h       |   24 ++-
- include/linux/mmc/sd.h        |    5 +
- 17 files changed, 742 insertions(+), 13 deletions(-)
-
-
-Regards
-Adrian
-
-
+diff --git a/block/compat_ioctl.c b/block/compat_ioctl.c
+index f26051f..24a146d 100644
+--- a/block/compat_ioctl.c
++++ b/block/compat_ioctl.c
+@@ -753,6 +753,7 @@ long compat_blkdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
+ 	case BLKFLSBUF:
+ 	case BLKROSET:
+ 	case BLKDISCARD:
++	case BLKSECDISCARD:
+ 	/*
+ 	 * the ones below are implemented in blkdev_locked_ioctl,
+ 	 * but we call blkdev_ioctl, which gets the lock for us
+diff --git a/block/ioctl.c b/block/ioctl.c
+index e8eb679..bc5c19c 100644
+--- a/block/ioctl.c
++++ b/block/ioctl.c
+@@ -238,6 +238,11 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+ 		return blk_ioctl_discard(bdev, range[0], range[1]);
+ 	}
+ 
++	case BLKSECDISCARD:
++		if (!(mode & FMODE_WRITE))
++			return -EBADF;
++		return __blkdev_driver_ioctl(bdev, mode, cmd, arg);
++
+ 	case HDIO_GETGEO: {
+ 		struct hd_geometry geo;
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 471e1ff..ed06568 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -309,6 +309,7 @@ struct inodes_stat_t {
+ #define BLKALIGNOFF _IO(0x12,122)
+ #define BLKPBSZGET _IO(0x12,123)
+ #define BLKDISCARDZEROES _IO(0x12,124)
++#define BLKSECDISCARD _IO(0x12,125)
+ 
+ #define BMAP_IOCTL 1		/* obsolete - kept for compatibility */
+ #define FIBMAP	   _IO(0x00,1)	/* bmap access */
+-- 
+1.6.3.3
