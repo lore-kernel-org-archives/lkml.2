@@ -1,47 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab0FMRVQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 13:21:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38633 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab0FMRVP (ORCPT
+	id S1754512Ab0FMRpA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 13:45:00 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54830 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126Ab0FMRo6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 13:21:15 -0400
+	Sun, 13 Jun 2010 13:44:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=FcrVUPNzl9jL32OUWl58HycCjX2bGL6WhC7dYYso1ZIf9LAzqWxOpARS3INskGtNDh
-         IO58Oa9RfrDJWX+a3on0/JsU/WsZTvYfYVOiOMQTuwsskmSxKwT+8H3Y98deV1EfmD3M
-         +3n3HB58BGot2ThuIK4g0Nh9tEkJoZDRnASSM=
-Message-ID: <4C151387.5040209@gmail.com>
-Date: Sun, 13 Jun 2010 19:21:11 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1rc2-2.2 Thunderbird/3.1
+        b=u5c/3ozL9dvmBe4d2iYJq9AYRIj/nV7B484Ltd0QOHNJgxC4L+BFWCcmKoT2eDtEZM
+         2+uTR25vb3KHJYz6YOoexQndIds89h5AtSX/PRY/EN3nMRZGNx1eXCL6V3kR1BmXkTV7
+         z3UKUhA5eesxSd49ZE1Lo4RW01CIzQuqkyDI0=
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: kernel list <linux-kernel@vger.kernel.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: 2.6.35-rc{12} regression: inactive console corrupted
-References: <20100612103321.GA1458@ucw.cz>
-In-Reply-To: <20100612103321.GA1458@ucw.cz>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTikc_aHiRhPds-_CEMma_J9thmbai2nkcYFZPp9h@mail.gmail.com>
+References: <alpine.DEB.2.00.1006131208470.18415@ayla.of.borg>
+	<AANLkTikc_aHiRhPds-_CEMma_J9thmbai2nkcYFZPp9h@mail.gmail.com>
+Date: Sun, 13 Jun 2010 19:44:56 +0200
+X-Google-Sender-Auth: DrcS4_m6HnYhAd_plO7ku41Md0c
+Message-ID: <AANLkTimDQ45rsnYwzf2HQSh7uX1Lwz87BrLCJJEwV38r@mail.gmail.com>
+Subject: Re: [rtc-linux] [PATCH] rtc: rp5c01 - Add NVRAM support
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Wan ZongShun <mcuos.com@gmail.com>
+Cc: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       "Linux/m68k" <linux-m68k@vger.kernel.org>,
+       Linux Kernel Development <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2010 12:33 PM, Pavel Machek wrote:
-> When something happens on inactive  console (using fbcon), display is
-> corrupted -- lines at end of screen are not erased properly.
-> 
-> I see it on zaurus, but I suspect problem is generic.
+On Sun, Jun 13, 2010 at 15:41, Wan ZongShun <mcuos.com@gmail.com> wrote:
+> Minior comment below:
+>
+> 2010/6/13 Geert Uytterhoeven <geert@linux-m68k.org>:
+>> The Ricoh RP5C01 RTC contains 26 x 4 bits of NVRAM.
+>> Provide access to it via a sysfs "nvram" attribute file.
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> --
+>> Question: Is a spinlock in priv the right kind of locking?
+>>          Should I use e.g. rtc-device.ops_lock instead?
+>
+> Firstly, this 'Question' text should not put here, please put all
+> texts in front of '---'.
 
-Hi,
+I explicitly put it there, as the question was meant for the reviewers only,
+and I don't want it to be part of the final checkin comment.
 
-does revert of 962400e8f or update to -rc3 help?
+> Secondly, You can not use rtc-device.ops_lock here, if so, it would
+> arouse dead lock,
+> before the ' rp5c01_read_time()' was called by RTC subsystem upper
+> API, rtc-device.ops_lock
+> has been required sucessfully, If continue to require the
+> rtc-device.ops_lock in ' rp5c01_read_time()',
+> the 'lock' will cannot be get, dead lock occurs.
 
--- 
-js
+Sorry, my question was not that correctly formulated...
+I meant whether it's better to take rtc_device.ops_lock in the nvram
+access functions
+to synchronize with the RTC access functions (which already take that mutex),
+instead of adding a spinlock to priv.
+
+Thanks for your comments!
+
+>> diff --git a/drivers/rtc/rtc-rp5c01.c b/drivers/rtc/rtc-rp5c01.c
+>> index a95f733..36eb661 100644
+>> --- a/drivers/rtc/rtc-rp5c01.c
+>> +++ b/drivers/rtc/rtc-rp5c01.c
+>> @@ -63,6 +63,8 @@ enum {
+>>  struct rp5c01_priv {
+>>        u32 __iomem *regs;
+>>        struct rtc_device *rtc;
+>> +       spinlock_t lock;        /* against concurrent RTC/NVRAM access */
+>> +       struct bin_attribute nvram_attr;
+>>  };
+>>
+>>  static inline unsigned int rp5c01_read(struct rp5c01_priv *priv,
+>> @@ -92,6 +94,7 @@ static int rp5c01_read_time(struct device *dev, struct rtc_time *tm)
+>>  {
+>>        struct rp5c01_priv *priv = dev_get_drvdata(dev);
+>>
+>> +       spin_lock_irq(&priv->lock);
+>>        rp5c01_lock(priv);
+>>
+>>        tm->tm_sec  = rp5c01_read(priv, RP5C01_10_SECOND) * 10 +
+>> @@ -111,6 +114,7 @@ static int rp5c01_read_time(struct device *dev, struct rtc_time *tm)
+>>                tm->tm_year += 100;
+>>
+>>        rp5c01_unlock(priv);
+>> +       spin_unlock_irq(&priv->lock);
+>>
+>>        return rtc_valid_tm(tm);
+>>  }
+>> @@ -119,6 +123,7 @@ static int rp5c01_set_time(struct device *dev, struct rtc_time *tm)
+>>  {
+>>        struct rp5c01_priv *priv = dev_get_drvdata(dev);
+>>
+>> +       spin_lock_irq(&priv->lock);
+>>        rp5c01_lock(priv);
+>>
+>>        rp5c01_write(priv, tm->tm_sec / 10, RP5C01_10_SECOND);
+>> @@ -139,6 +144,7 @@ static int rp5c01_set_time(struct device *dev, struct rtc_time *tm)
+>>        rp5c01_write(priv, tm->tm_year % 10, RP5C01_1_YEAR);
+>>
+>>        rp5c01_unlock(priv);
+>> +       spin_unlock_irq(&priv->lock);
+>>        return 0;
+>>  }
+>>
+>> @@ -147,6 +153,72 @@ static const struct rtc_class_ops rp5c01_rtc_ops = {
+>>        .set_time       = rp5c01_set_time,
+>>  };
+>>
+>> +
+>> +/*
+>> + * The NVRAM is organized as 2 blocks of 13 nibbles of 4 bits.
+>> + * We provide access to them like AmigaOS does: the high nibble of each 8-bit
+>> + * byte is stored in BLOCK10, the low nibble in BLOCK11.
+>> + */
+>> +
+>> +static ssize_t rp5c01_nvram_read(struct file *filp, struct kobject *kobj,
+>> +                                struct bin_attribute *bin_attr,
+>> +                                char *buf, loff_t pos, size_t size)
+>> +{
+>> +       struct device *dev = container_of(kobj, struct device, kobj);
+>> +       struct rp5c01_priv *priv = dev_get_drvdata(dev);
+>> +       ssize_t count;
+>> +
+>> +       spin_lock_irq(&priv->lock);
+>> +
+>> +       for (count = 0; size > 0 && pos < RP5C01_MODE; count++, size--) {
+>> +               u8 data;
+>> +
+>> +               rp5c01_write(priv,
+>> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK10,
+>> +                            RP5C01_MODE);
+>> +               data = rp5c01_read(priv, pos) << 4;
+>> +               rp5c01_write(priv,
+>> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK11,
+>> +                            RP5C01_MODE);
+>> +               data |= rp5c01_read(priv, pos++);
+>> +               rp5c01_write(priv, RP5C01_MODE_TIMER_EN | RP5C01_MODE_MODE01,
+>> +                            RP5C01_MODE);
+>> +               *buf++ = data;
+>> +       }
+>> +
+>> +       spin_unlock_irq(&priv->lock);
+>> +       return count;
+>> +}
+>> +
+>> +static ssize_t rp5c01_nvram_write(struct file *filp, struct kobject *kobj,
+>> +                                 struct bin_attribute *bin_attr,
+>> +                                 char *buf, loff_t pos, size_t size)
+>> +{
+>> +       struct device *dev = container_of(kobj, struct device, kobj);
+>> +       struct rp5c01_priv *priv = dev_get_drvdata(dev);
+>> +       ssize_t count;
+>> +
+>> +       spin_lock_irq(&priv->lock);
+>> +
+>> +       for (count = 0; size > 0 && pos < RP5C01_MODE; count++, size--) {
+>> +               u8 data = *buf++;
+>> +
+>> +               rp5c01_write(priv,
+>> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK10,
+>> +                            RP5C01_MODE);
+>> +               rp5c01_write(priv, data >> 4, pos);
+>> +               rp5c01_write(priv,
+>> +                            RP5C01_MODE_TIMER_EN | RP5C01_MODE_RAM_BLOCK11,
+>> +                            RP5C01_MODE);
+>> +               rp5c01_write(priv, data & 0xf, pos++);
+>> +               rp5c01_write(priv, RP5C01_MODE_TIMER_EN | RP5C01_MODE_MODE01,
+>> +                            RP5C01_MODE);
+>> +       }
+>> +
+>> +       spin_unlock_irq(&priv->lock);
+>> +       return count;
+>> +}
+>> +
+>>  static int __init rp5c01_rtc_probe(struct platform_device *dev)
+>>  {
+>>        struct resource *res;
+>> @@ -168,6 +240,15 @@ static int __init rp5c01_rtc_probe(struct platform_device *dev)
+>>                goto out_free_priv;
+>>        }
+>>
+>> +       sysfs_bin_attr_init(&priv->nvram_attr);
+>> +       priv->nvram_attr.attr.name = "nvram";
+>> +       priv->nvram_attr.attr.mode = S_IRUGO | S_IWUSR;
+>> +       priv->nvram_attr.read = rp5c01_nvram_read;
+>> +       priv->nvram_attr.write = rp5c01_nvram_write;
+>> +       priv->nvram_attr.size = RP5C01_MODE;
+>> +
+>> +       spin_lock_init(&priv->lock);
+>> +
+>>        rtc = rtc_device_register("rtc-rp5c01", &dev->dev, &rp5c01_rtc_ops,
+>>                                  THIS_MODULE);
+>>        if (IS_ERR(rtc)) {
+>> @@ -177,8 +258,15 @@ static int __init rp5c01_rtc_probe(struct platform_device *dev)
+>>
+>>        priv->rtc = rtc;
+>>        platform_set_drvdata(dev, priv);
+>> +
+>> +       error = sysfs_create_bin_file(&dev->dev.kobj, &priv->nvram_attr);
+>> +       if (error)
+>> +               goto out_unregister;
+>> +
+>>        return 0;
+>>
+>> +out_unregister:
+>> +       rtc_device_unregister(rtc);
+>>  out_unmap:
+>>        iounmap(priv->regs);
+>>  out_free_priv:
+>> @@ -190,6 +278,7 @@ static int __exit rp5c01_rtc_remove(struct platform_device *dev)
+>>  {
+>>        struct rp5c01_priv *priv = platform_get_drvdata(dev);
+>>
+>> +       sysfs_remove_bin_file(&dev->dev.kobj, &priv->nvram_attr);
+>>        rtc_device_unregister(priv->rtc);
+>>        iounmap(priv->regs);
+>>        kfree(priv);
+>> --
+>> 1.7.0.4
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
