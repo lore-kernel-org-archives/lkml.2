@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab0FMDcj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 23:32:39 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43993 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040Ab0FMDci (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 23:32:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=tt+j1yJidujxpsqUCwR3BplyrZHOfckbfwdZ/u5GZVSdmockXjb/u4E8Wr7tLyLo/v
-         ac6W0fnW5nIw05rH09aAYzed7ZzFG3VplXYZSyg/ML8J71aFvXN4h/k1NG4ZJDuxsQvY
-         4L4ViHQKt2lykrOES4ExOKrxIfPfeWcMQX3iA=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTilbMPLfd415EV32or8FZCM1sWi-RzeWtPAX95-o@mail.gmail.com>
-References: <AANLkTimmhzbgddTZBoaSy4iXpjB4Gdy6zTab0EjCM1IK@mail.gmail.com>
-	<AANLkTinwQ5tUDyHIObolQrd0jESH5PGEBKqwk6a_jHWK@mail.gmail.com>
-	<AANLkTilbMPLfd415EV32or8FZCM1sWi-RzeWtPAX95-o@mail.gmail.com>
-Date: Sat, 12 Jun 2010 23:32:36 -0400
-Message-ID: <AANLkTilzq64CPECxFb77PEdjv1Pcj72622rmhPchz9L8@mail.gmail.com>
-Subject: Help for a newbie
-From: Someone Something <fordhaivat@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753198Ab0FMDcw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 23:32:52 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:52930 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753153Ab0FMDcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 23:32:51 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-kernel@vger.kernel.org, Tim Abbott <tabbott@ksplice.com>
+Cc: Milton Miller <miltonm@bga.com>
+Subject: [PATCH] vmlinux.lds.h: lower init ramfs alignment to 4
+Date: Sat, 12 Jun 2010 23:33:01 -0400
+Message-Id: <1276399981-27524-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello. I am pretty new to the world of kernel hacking and I have a few
-questions. I have gotten myself a copy of Linux Kernel Development by
-robert love and I am also reading parts of the source code. Here are
-my current questions:
+The new init ramfs format (cpio based) requires an alignment of 4 (per the
+documentation and per the source files themselves).  As for compressed
+sources, the decompressors can all deal with unaligned buffers.
 
-1) when you write userland apps, you usually include stuff like :
-sys/types.h or errono.h where are all these defined in the linux
-kernel because I would like to add a few syscalls of my own?
+The cpio source is also found in the __init sections of the kernel, so
+once they are read and expanded into a tmpfs, the source is freed.  That
+means there is no need to force page alignment here either.
 
-2) what are some bugs in the kernel that a beginner can fix?
+This has been used on Blackfin systems for many releases without issue.
 
-3) is there any definitive guide to the kernel that you guys refer
-most newbies to? (like Programming Perl for perl)?
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ include/asm-generic/vmlinux.lds.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-4) Where's the linux kernel headed to next? What higher level features
-(i.e. real features, not bug fixes) are going to implemented?
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 48c5299..14a01b6 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -620,7 +620,7 @@
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ #define INIT_RAM_FS							\
+-	. = ALIGN(PAGE_SIZE);						\
++	. = ALIGN(4);							\
+ 	VMLINUX_SYMBOL(__initramfs_start) = .;				\
+ 	*(.init.ramfs)							\
+ 	VMLINUX_SYMBOL(__initramfs_end) = .;
+-- 
+1.7.1
 
-Thanks a bunch.
-
-PS it'd be nice if you could CC me in the reply cause I don't think
-I've registered properly
