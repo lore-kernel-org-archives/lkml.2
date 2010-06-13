@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab0FMG77 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 02:59:59 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:46257 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab0FMG75 (ORCPT
+	id S1751704Ab0FMHCq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 03:02:46 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53666 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263Ab0FMHCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 02:59:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=aaglsKGgqzXinVG593eGALHI7O9jNM8Gq3P1Mqv0uvPbRDHD7eyY6Iml4n9OBmeJmU
-         az3jfZli1beVqLw1tVFJO8S1Be5asZtm0Z0uElEnbWMQB4/f75LxBReWdA7coysDbuC4
-         SIbSSGj4lQVza8S/KT4keNi9BwG/6SGb6ltew=
+	Sun, 13 Jun 2010 03:02:45 -0400
+Date: Sun, 13 Jun 2010 08:52:43 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH] x86, AMD: Extend support to future families
+Message-ID: <20100613065243.GA21493@aftab>
+References: <20100602182921.GA21557@aftab>
+ <4C101B58.2090208@zytor.com>
+ <20100612041504.GB14077@aftab>
+ <4C13D051.4060903@zytor.com>
 MIME-Version: 1.0
-Date: Sun, 13 Jun 2010 02:36:03 -0400
-Message-ID: <AANLkTikBziddf8Z88WnMiuIk2AEeHxI6k6K9tiisSyLc@mail.gmail.com>
-Subject: 2.6.35-rc3 - include/linux/fdtable.h:85 invoked rcu_dereference_check() 
-	without protection!
-From: Miles Lane <miles.lane@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C13D051.4060903@zytor.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_bei_M=FCnchen=2C_Gesc?=
+	=?iso-8859-1?Q?h=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuliano_Meroni=2C?=
+	=?iso-8859-1?Q?_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_Aschheim=2C_La?=
+	=?iso-8859-1?Q?ndkreis_M=FCnchen=2C_Registergericht_M=FCnchen?=
+	=?iso-8859-1?Q?=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ 2074.377176] [ INFO: suspicious rcu_dereference_check() usage. ]
-[ 2074.377180] ---------------------------------------------------
-[ 2074.377185] include/linux/fdtable.h:85 invoked
-rcu_dereference_check() without protection!
-[ 2074.377189]
-[ 2074.377190] other info that might help us debug this:
-[ 2074.377191]
-[ 2074.377195]
-[ 2074.377196] rcu_scheduler_active = 1, debug_locks = 1
-[ 2074.377200] no locks held by gvfsd/4402.
-[ 2074.377203]
-[ 2074.377204] stack backtrace:
-[ 2074.377209] Pid: 4402, comm: gvfsd Not tainted 2.6.35-rc3 #1
-[ 2074.377213] Call Trace:
-[ 2074.377226]  [<ffffffff8106f2c5>] lockdep_rcu_dereference+0x9d/0xa5
-[ 2074.377235]  [<ffffffff810e9104>] fcheck_files+0x5c/0xc9
-[ 2074.377242]  [<ffffffff810e91c9>] fget_light+0x35/0x96
-[ 2074.377250]  [<ffffffff810f77b0>] do_sys_poll+0x1ff/0x3e5
-[ 2074.377257]  [<ffffffff810f6eb2>] ? __pollwait+0x0/0xc7
-[ 2074.377264]  [<ffffffff810f6f79>] ? pollwake+0x0/0x4f
-[ 2074.377271]  [<ffffffff810f6f79>] ? pollwake+0x0/0x4f
-[ 2074.377277]  [<ffffffff810f6f79>] ? pollwake+0x0/0x4f
-[ 2074.377285]  [<ffffffff812d2f18>] ? __sock_recvmsg_nosec+0x65/0x6e
-[ 2074.377292]  [<ffffffff812d4401>] ? __sock_recvmsg+0x49/0x54
-[ 2074.377299]  [<ffffffff812d6842>] ? sock_aio_read+0xc2/0xd6
-[ 2074.377307]  [<ffffffff810e7faf>] ? do_sync_read+0xc6/0x103
-[ 2074.377316]  [<ffffffff8119ec0c>] ? security_file_permission+0x11/0x13
-[ 2074.377324]  [<ffffffff8100877a>] ? sysret_check+0x2e/0x69
-[ 2074.377331]  [<ffffffff810f7b2a>] sys_poll+0x50/0xbb
-[ 2074.377338]  [<ffffffff81008742>] system_call_fastpath+0x16/0x1b
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, Jun 12, 2010 at 02:22:09PM -0400
+
+> On 06/11/2010 09:15 PM, Borislav Petkov wrote:
+> > 
+> > Not yet. And I'm assuming you're driving at tagging it for -stable?
+> > If yes, I think a stable tag makes sense since this way the distros
+> > will pick it up more easily and we most definitely will need to do the
+> > backport later otherwise.
+> > 
+> > Do you need another version with the stable tag resent or is it easier
+> > for you to edit the commit message of the one you have already?
+> > 
+> 
+> No, I'm not -- Linus is being really snippy about wanting regressions
+> only this cycle, which this is not.
+
+Yeah, so I heard :)
+
+> Once .35 is out you can talk to Greg about -stable.
+
+Right, so this is clearly .36 merge window material - I just thought I
+should get it out as early as possible so that it gets tested.
+
+And by the way, how about a tag which says which kernel is the patch
+aimed at so that maintainers know what should go where. I mean, with
+those gazillion patches on lkml one doesn't always know which is
+regression, which is a new feature but should go in earlier so that it
+catches the next merge window etc? I.e., something like:
+
+Aimed-at: 2.6.36+
+
+or for regressions
+
+Aimed-at: 2.6.35-rc3
+
+and maybe even a bug info
+
+Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=....
+
+I'm afraid this is starting to sound like Ingo's Impact: tag, at least
+semantically, which didn't get accepted. Hmm, anyway, I'll try adding
+such an information in later patches.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Operating Systems Research Center
+Advanced Micro Devices, Inc.
