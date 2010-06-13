@@ -1,37 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab0FMOxD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 10:53:03 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58754 "EHLO ogre.sisk.pl"
+	id S1754024Ab0FMOxX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 10:53:23 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58756 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753821Ab0FMOxA convert rfc822-to-8bit (ORCPT
+	id S1753953Ab0FMOxC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 10:53:00 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Christian Kujau" <lists@nerdbynature.de>,
-       "Michael Ellerman" <michael@ellerman.id.au>
-References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
-In-Reply-To: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
+	Sun, 13 Jun 2010 10:53:02 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 2.6.35-rc3: Reported regressions 2.6.33 -> 2.6.34
+Cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>
 MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <YPGdyfWGvNK.A.C8B.d9OFMB@chimera>
-Subject: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 13 Jun 2010 16:45:09 +0200 (CEST)
+Message-ID: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
+Date: Sun, 13 Jun 2010 16:45:00 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a report
-of regressions introduced between 2.6.33 and 2.6.34.
+[NOTES:
+ * This report has been delayed, because I had to go through all of the
+   entries and filter out the fixed ones, invalid ones etc.  Of course, I might
+   have missed some, but hopefully not too many.
+ * E-mail reports from the last 7 days are not included.]
 
-The following bug entry is on the current list of known regressions
-introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-be listed and let the tracking team know (either way).
+This message contains a list of some post-2.6.33 regressions introduced before
+2.6.34, for which there are no fixes in the mainline known to the tracking team.
+If any of them have been fixed already, please let us know.
+
+If you know of any other unresolved post-2.6.33 regressions, please let us know
+either and we'll add them to the list.  Also, please let us know if any
+of the entries below are invalid.
+
+Each entry from the list will be sent additionally in an automatic reply to
+this message with CCs to the people involved in reporting and handling the
+issue.
+
+
+Listed regressions statistics:
+
+  Date          Total  Pending  Unresolved
+  ----------------------------------------
+  2010-06-13      111       40          34
+  2010-05-09       80       27          24
+  2010-05-04       76       26          22
+  2010-04-20       64       35          34
+  2010-04-07       48       35          33
+  2010-03-21       15       13          10
+
+
+Unresolved regressions
+----------------------
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16170
+Subject		: Leadtek Winfast DTV Dongle (STK7700P based) is not working in 2.6.34
+Submitter	: macjariel <macjariel@gmail.com>
+Date		: 2010-06-09 11:11 (5 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16162
+Subject		: SSD + sata_nv + btrfs oops
+Submitter	: Dave Airlie <airlied@gmail.com>
+Date		: 2010-06-01 3:04 (13 days old)
+Message-ID	: <AANLkTilqsIdlzZgUf7TMLHYKqHDZoVkcs42vcG8wXKEr@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127536149022333&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16158
+Subject		: winxp guest hangs after idle for ~30 minutes
+Submitter	: brimhall <brimhall@pobox.com>
+Date		: 2010-06-08 17:52 (6 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16139
+Subject		: wait_even_interruptible_timeout(), signal, spin_lock() = system hang
+Submitter	: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Date		: 2010-05-28 16:44 (17 days old)
+Message-ID	: <AANLkTiliRFydAhxH2-Dp1RKuz6sq7vgWIcMvLMi68ftg@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127506510328758&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16137
+Subject		: Ooops in BTRFS in 2.6.34 / x86_64 when mounting subvolume by name
+Submitter	: armin walland <a.walland@focusmr.com>
+Date		: 2010-05-27 12:27 (18 days old)
+Message-ID	: <201005271428.01239.a.walland@focusmr.com>
+References	: http://marc.info/?l=linux-kernel&m=127496434110736&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16136
+Subject		: Linux 2.6.34 causes system lockup on Compaq Presario 2200 Laptop
+Submitter	: Jeffrey Merkey <jeffmerkey@gmail.com>
+Date		: 2010-05-27 18:08 (18 days old)
+Message-ID	: <AANLkTil6GGSoc8TpzRacr1LZBZS3ee3H1ejYDSqfdul4@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127498375415689&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16135
+Subject		: [BUG] kacpi_notify goes into an infinite loop (luckly it calls cond_resched)
+Submitter	: Steven Rostedt <rostedt@goodmis.org>
+Date		: 2010-05-29 1:01 (16 days old)
+First-Bad-Commit: http://git.kernel.org/linus/fa80945269f312bc609e8384302f58b03c916e12
+Message-ID	: <1275094882.22648.607.camel@gandalf.stny.rr.com>
+References	: http://marc.info/?l=linux-kernel&m=127509490405845&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16134
+Subject		: 2.6.34 hard lock ppp/do_tty_hangup, regression
+Submitter	: Richard Zidlicky <rz@linux-m68k.org>
+Date		: 2010-05-26 8:48 (19 days old)
+Message-ID	: <20100526084811.GA5890@linux-m68k.org>
+References	: http://marc.info/?l=linux-kernel&m=127486354023473&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16111
+Subject		: hostap_pci: infinite registered netdevice wifi0
+Submitter	: Petr Pisar <petr.pisar@atlas.cz>
+Date		: 2010-06-02 20:55 (12 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16097
+Subject		: 2.6.34 on Samsung P460: reset after "Waiting for /dev to be fully populated"
+Submitter	: Harald Dunkel <harald.dunkel@aixigo.de>
+Date		: 2010-05-25 9:12 (20 days old)
+Message-ID	: <4BFB947E.9080509@aixigo.de>
+References	: http://marc.info/?l=linux-kernel&m=127477877432254&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16084
+Subject		: iwl3945 bug in 2.6.34
+Submitter	: Satish Eerpini <eerpini@gmail.com>
+Date		: 2010-05-23 6:37 (22 days old)
+Message-ID	: <AANLkTik_7rxDBc0TKlAfoYyM5S6Cf_Hyxbr4W5ORnTsq@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127459596015626&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16082
+Subject		: host panic on kernel 2.6.34
+Submitter	: Hao, Xudong <xudong.hao@intel.com>
+Date		: 2010-05-24 8:23 (21 days old)
+Message-ID	: <BC00F5384FCFC9499AF06F92E8B78A9E04DCCCE242@shsmsx502.ccr.corp.intel.com>
+References	: http://marc.info/?l=linux-kernel&m=127468951208864&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16054
+Subject		: UML broken for CONFIG_SLAB
+Submitter	: Parag Warudkar <parag.lkml@gmail.com>
+Date		: 2010-05-23 21:40 (22 days old)
+Message-ID	: <alpine.DEB.2.00.1005231149100.605@parag-laptop>
+References	: http://marc.info/?l=linux-kernel&m=127465083806617&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16050
+Subject		: The ibmcam driver is not working
+Submitter	: Bill Davidsen <davidsen@tmr.com>
+Date		: 2010-05-25 23:02 (20 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16040
+Subject		: kacpid consumes ~40% of cpu all the time beginning with 2.6.34
+Submitter	: Mehmet Giritli <mehmet@giritli.eu>
+Date		: 2010-05-24 07:32 (21 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16035
+Subject		: Incorrect initial resolution of (external) vga monitor with KMS
+Submitter	: andreas.eckstein <andreas.eckstein@gmx.net>
+Date		: 2010-05-23 12:28 (22 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16034
+Subject		: 2.6.34: dlm: possible circular locking dependency detected
+Submitter	: CaT <cat@zip.com.au>
+Date		: 2010-05-21 6:59 (24 days old)
+Message-ID	: <20100521065933.GH2657@zip.com.au>
+References	: http://marc.info/?l=linux-kernel&m=127442519608471&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15977
+Subject		: WARNING: at lib/dma-debug.c:866 check_for_stack
+Submitter	: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+Date		: 2010-05-14 8:56 (31 days old)
+Message-ID	: <AANLkTikyx2eaxaiUCFDSfpmn1UG0t2GOxArz6F4wp1LJ@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127382742729825&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15970
+Subject		: BUG: amd64-agp (2.6.34-rc7)
+Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
+Date		: 2010-05-11 20:56 (34 days old)
+Message-ID	: <4BE9C469.2020901@oracle.com>
+References	: http://marc.info/?l=linux-kernel&m=127361149610881&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15951
+Subject		: commit 9630bdd9 changes behavior of the poweroff
+Submitter	: Michal Hocko <mhocko@suse.cz>
+Date		: 2010-04-01 13:39 (74 days old)
+First-Bad-Commit: http://git.kernel.org/linus/9630bdd9b15d2f489c646d8bc04b60e53eb5ec78
+Message-ID	: <20100401133923.GA4104@tiehlicka.suse.cz>
+References	: http://marc.info/?l=linux-kernel&m=127012918316305&w=4
+Handled-By	: Rafael J. Wysocki <rjw@sisk.pl>
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15936
+Subject		: Suspicious rcu_dereference_check() usage detected during 2.6.34-rc6 boot on PPC64/p5 processor
+Submitter	: Subrata Modak <subrata@linux.vnet.ibm.com>
+Date		: 2010-05-06 7:29 (39 days old)
+Message-ID	: <1273130279.4898.5.camel@subratamodak.linux.ibm.com>
+References	: http://marc.info/?l=linux-kernel&m=127313031922395&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15924
+Subject		: kacpid consumes ~100% CPU, system freezes randomly
+Submitter	: Jaroslav Kameník <jaroslav@kamenik.cz>
+Date		: 2010-05-06 21:12 (39 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15862
+Subject		: 2.6.34-rc4/5: iwlagn unusable until reload
+Submitter	: Nico Schottelius <nico-linux-20100427@schottelius.org>
+Date		: 2010-04-27 7:49 (48 days old)
+Message-ID	: <20100427074934.GB3261@ikn.schottelius.org>
+References	: http://marc.info/?l=linux-kernel&m=127235784004839&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15858
+Subject		: [2.6.34-rc5] bad page state copying to/from HFS+ filesystem...
+Submitter	: Daniel J Blueman <daniel.blueman@gmail.com>
+Date		: 2010-04-25 21:14 (50 days old)
+Message-ID	: <v2k6278d2221004251414kbbcc41baw78b86120d81dce7d@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127223008621881&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15805
+Subject		: reiserfs locking
+Submitter	: Alexander Beregalov <a.beregalov@gmail.com>
+Date		: 2010-04-15 21:02 (60 days old)
+Message-ID	: <t2ka4423d671004151402n7b2dc425mdc9c6bb9640d63fb@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127136535323933&w=2
+Handled-By	: Frederic Weisbecker <fweisbec@gmail.com>
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15717
+Subject		: bluetooth oops
+Submitter	: Pavel Machek <pavel@ucw.cz>
+Date		: 2010-03-14 20:14 (92 days old)
+Message-ID	: <20100314201434.GE22059@elf.ucw.cz>
+References	: http://marc.info/?l=linux-kernel&m=126859771528426&w=4
+Handled-By	: Marcel Holtmann <marcel@holtmann.org>
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15713
+Subject		: hackbench regression due to commit 9dfc6e68bfe6e
+Submitter	: Alex Shi <alex.shi@intel.com>
+Date		: 2010-03-25 8:40 (81 days old)
+First-Bad-Commit: http://git.kernel.org/linus/9dfc6e68bfe6ee452efb1a4e9ca26a9007f2b864
+Message-ID	: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
+References	: http://marc.info/?l=linux-kernel&m=126950632920682&w=4
+Handled-By	: Christoph Lameter <cl@linux-foundation.org>
+		  Pekka Enberg <penberg@cs.helsinki.fi>
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15712
+Subject		: [regression] 2.6.34-rc1 to -rc3 on zaurus: no longer boots
+Submitter	: Pavel Machek <pavel@ucw.cz>
+Date		: 2010-04-01 6:06 (74 days old)
+Message-ID	: <20100401060624.GA1329@ucw.cz>
+References	: http://marc.info/?l=linux-kernel&m=127010200817402&w=2
+Handled-By	: Eric Miao <eric.y.miao@gmail.com>
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15704
+Subject		: [r8169] WARNING: at net/sched/sch_generic.c
+Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Date		: 2010-03-31 10:21 (75 days old)
+Message-ID	: <20100331102142.GA3294@swordfish.minsk.epam.com>
+References	: http://marc.info/?l=linux-kernel&m=127003090406108&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15673
+Subject		: 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
+Submitter	: Thomas Meyer <thomas@m3y3r.de>
+Date		: 2010-03-28 11:31 (78 days old)
+Message-ID	: <1269775909.5301.4.camel@localhost.localdomain>
+References	: http://marc.info/?l=linux-kernel&m=126977593326800&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15671
+Subject		: intel graphic card hanging (Hangcheck timer elapsed... GPU hung)
+Submitter	: Norbert Preining <preining@logic.at>
+Date		: 2010-03-27 16:11 (79 days old)
+Message-ID	: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
+References	: http://marc.info/?l=linux-kernel&m=126970883105262&w=2
+Handled-By	: Jesse Barnes <jbarnes@virtuousgeek.org>
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15669
+Subject		: INFO: suspicious rcu_dereference_check()
+Submitter	: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+Date		: 2010-03-08 1:26 (98 days old)
+Message-ID	: <c4e36d111003250348q678eb2e6w4f3e8133e7fd6e58@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=126801163107713&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15664
+Subject		: Graphics hang and kernel backtrace when starting Azureus with Compiz enabled
+Submitter	: Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
+Date		: 2010-04-01 01:09 (74 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15659
+Subject		: [Regresion] [2.6.34-rc1] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+Submitter	: Maciej Rutecki <maciej.rutecki@gmail.com>
+Date		: 2010-03-25 20:04 (81 days old)
+Message-ID	: <201003252104.24965.maciej.rutecki@gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=126954749618319&w=2
+Handled-By	: Chris Wilson <chris@chris-wilson.co.uk>
+
+
+Regressions with patches
+------------------------
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16147
+Subject		: ksoftirq hogs the CPU
+Submitter	: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Date		: 2010-06-07 15:17 (7 days old)
+First-Bad-Commit: http://git.kernel.org/linus/ae74e823cb7d4cd476f623fce9a38f625f6c09a8
+Handled-By	: Martin Wilck <martin.wilck@ts.fujitsu.com>
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=26732
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16138
+Subject		: PCMCIA regression
+Submitter	: Mikulas Patocka <mpatocka@redhat.com>
+Date		: 2010-05-25 20:25 (20 days old)
+Message-ID	: <Pine.LNX.4.64.1005251619020.12278@hs20-bc2-1.build.redhat.com>
+References	: http://marc.info/?l=linux-kernel&m=127481913909672&w=2
+Handled-By	: Dominik Brodowski <linux@brodo.de>
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=26685
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16007
+Subject		: x86/pci Oops with CONFIG_SND_HDA_INTEL
+Submitter	: Graham Ramsey <ramsey.graham@ntlworld.com>
+Date		: 2010-05-19 17:09 (26 days old)
+Handled-By	: Yinghai Lu <yinghai@kernel.org>
+Patch		: https://patchwork.kernel.org/patch/105662/
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15909
+Subject		: open("a/",O_NOFOLLOW) fails with ELOOP if "a" is a symbolic link to a directory.
+Submitter	: Marius Tolzmann <tolzmann@molgen.mpg.de>
+Date		: 2010-05-05 13:01 (40 days old)
+Handled-By	: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+		  Jan Kara <jack@suse.cz>
+Patch		: https://patchwork.kernel.org/patch/99291/
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15863
+Subject		: 2.6.34-rc5-git7 (plus all patches) -- another suspicious rcu_dereference_check() usage.
+Submitter	: Miles Lane <miles.lane@gmail.com>
+Date		: 2010-04-27 0:51 (48 days old)
+Message-ID	: <h2ya44ae5cd1004261751waa5cb65ei3d139cbcfa2cc5cf@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127232949104878&w=2
+Handled-By	: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Patch		: https://patchwork.kernel.org/patch/96096/
 
 
 Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15589
@@ -43,4 +389,18 @@ References	: http://marc.info/?l=linux-kernel&m=126852442903680&w=2
 Handled-By	: Michael Ellerman <michael@ellerman.id.au>
 Patch		: http://patchwork.ozlabs.org/patch/52978/
 
+
+For details, please visit the bug entries and follow the links given in
+references.
+
+As you can see, there is a Bugzilla entry for each of the listed regressions.
+There also is a Bugzilla entry used for tracking the regressions introduced
+between 2.6.33 and 2.6.34, unresolved as well as resolved, at:
+
+http://bugzilla.kernel.org/show_bug.cgi?id=15310
+
+Please let the tracking teak know if there are any Bugzilla entries that
+should be added to the list in there.
+
+Thanks!
 
