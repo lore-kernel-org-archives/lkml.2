@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab0FMRLz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 13:11:55 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:57898 "EHLO
+	id S1754222Ab0FMRLy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 13:11:54 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:57893 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab0FMRLx (ORCPT
+	with ESMTP id S1753835Ab0FMRLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 13:11:53 -0400
+	Sun, 13 Jun 2010 13:11:52 -0400
 From: Chase Douglas <chase.douglas@canonical.com>
 To: Steven Rostedt <srostedt@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] trace-cmd: prevent print_graph_duration buffer overflow
-Date: Sun, 13 Jun 2010 13:11:48 -0400
-Message-Id: <1276449108-21328-2-git-send-email-chase.douglas@canonical.com>
+Subject: [PATCH] trace-cmd: append to CFLAGS instead of being overriden
+Date: Sun, 13 Jun 2010 13:11:47 -0400
+Message-Id: <1276449108-21328-1-git-send-email-chase.douglas@canonical.com>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1276449108-21328-1-git-send-email-chase.douglas@canonical.com>
-References: <1276449108-21328-1-git-send-email-chase.douglas@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Passing n > sizeof(string) to snprintf can cause a glibc buffer overflow
-condition. We know the exact size of nsecs_str, so use it instead of
-math that may overflow.
+Most package builders apply their own CFLAGS, often set during the make
+invocation. The trace-cmd internal CFLAGS is overriden in this case.
+Make sure the important flags are appended.
 
 Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
 ---
- trace-ftrace.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ Makefile |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/trace-ftrace.c b/trace-ftrace.c
-index af9ac8d..ee7c6dc 100644
---- a/trace-ftrace.c
-+++ b/trace-ftrace.c
-@@ -148,7 +148,7 @@ static void print_graph_duration(struct trace_seq *s, unsigned long long duratio
+diff --git a/Makefile b/Makefile
+index a278510..08fc4ca 100644
+--- a/Makefile
++++ b/Makefile
+@@ -183,7 +183,11 @@ KERNELSHARK_VERSION = $(KS_VERSION).$(KS_PATCHLEVEL).$(KS_EXTRAVERSION)
  
- 	/* Print nsecs (we don't want to exceed 7 numbers) */
- 	if ((s->len - len) < 7) {
--		snprintf(nsecs_str, 8 - (s->len - len), "%03lu", nsecs_rem);
-+		snprintf(nsecs_str, sizeof(nsecs_str), "%03lu", nsecs_rem);
- 		trace_seq_printf(s, ".%s", nsecs_str);
- 	}
+ INCLUDES = -I. -I/usr/local/include $(CONFIG_INCLUDES)
  
+-CFLAGS = -g -Wall $(CONFIG_FLAGS) $(INCLUDES) $(PLUGIN_DIR_SQ)
++# Set compile option CFLAGS if not set elsewhere
++CFLAGS ?= -g -Wall
++
++# Append required CFLAGS
++override CFLAGS += $(CONFIG_FLAGS) $(INCLUDES) $(PLUGIN_DIR_SQ)
+ 
+ ifeq ($(VERBOSE),1)
+   Q =
 -- 
 1.7.0.4
 
