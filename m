@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab0FMVL3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 17:11:29 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48163 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754380Ab0FMVLW convert rfc822-to-8bit (ORCPT
+	id S1754874Ab0FMVLV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 17:11:21 -0400
+Received: from r11na27.net.upc.cz ([94.113.108.27]:49721 "EHLO
+	bimbo.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754380Ab0FMVLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 17:11:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=ed0D1ijpbWjT8jaNOzcPhNDAoL6Nxn3Dh3kTbR5M5LVz9fJvF57iVnMQjyvAcPVmqI
-         Ngaf8uYERtEgj7llOVRxPSKCYlEz5yg2O6JWq3EAML/r38+RBZSPnl981OsZC1TtrkT/
-         COkyasJMxy8Ak0GDQnjjji6GPA4QsyMwogYOs=
-From: Chris Clayton <chris2553@googlemail.com>
-To: =?iso-8859-1?q?Fran=E7ois_Valenduc?= 
-	<francois.valenduc@tvcablenet.be>
-Subject: Re: Noticeable slow-down in 2.6.35-rc3
-Date: Sun, 13 Jun 2010 22:11:03 +0100
-User-Agent: KMail/1.9.10
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <AANLkTimDUf0N6b5PBy2wTGeAWEIY-lUvQPHQ7D7Gyrq4@mail.gmail.com> <4C15410D.4080107@tvcablenet.be> <201006132158.09216.chris2553@googlemail.com>
-In-Reply-To: <201006132158.09216.chris2553@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201006132211.03744.chris2553@googlemail.com>
+	Sun, 13 Jun 2010 17:11:20 -0400
+X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Jun 2010 17:11:20 EDT
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org
+Cc: Lubomir Rintel <lkundrak@v3.sk>
+Subject: [PATCH] [fs/sysv] Fix NULL deref. when allocating new inode
+Date: Sun, 13 Jun 2010 21:01:43 +0200
+Message-Id: <1276455703-5981-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 13 June 2010 21:58:09 Chris Clayton wrote:
-> On Sunday 13 June 2010 21:35:25 François Valenduc wrote:
-> > Le 13/06/10 22:15, Chris Clayton a écrit :
->
-> <snip>
->
-> > > I've bisected it and arrived at:
-> > >
-> > > 597a264b1a9c7e36d1728f677c66c5c1f7e3b837 is the first bad commit
-> > > commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837
-> > > Author: John Fastabend <john.r.fastabend@intel.com>
-> > > Date:   Thu Jun 3 09:30:11 2010 +0000
->
-> <snip>
->
-> > This commit also makes nfsd hangs at startup on my computer (see
-> > https://bugzilla.kernel.org/show_bug.cgi?id=16195). This problem doesn't
-> > occur if it's reverted.
->
-> I've just found John Fastabend's easy and fast fix
-> (http://marc.info/?l=linux-kernel&m=127646140827821) and am about to apply
-> it and test the new kernel. back soon!
->
+A call to sysv_write_inode() in sysv_new_inode() to its new interface
+that replaced wait flag with writeback structure. This was broken by
+a9185b41a4f84971b930c519f0c63bd450c4810d.
 
-Yes, that's fixed the problem I reported.
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+---
+ fs/sysv/ialloc.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-Thanks.
-
-Chris
-
-> > François Valenduc
-
-
-
+diff --git a/fs/sysv/ialloc.c b/fs/sysv/ialloc.c
+index 241e976..f2764e2 100644
+--- a/fs/sysv/ialloc.c
++++ b/fs/sysv/ialloc.c
+@@ -25,6 +25,7 @@
+ #include <linux/stat.h>
+ #include <linux/string.h>
+ #include <linux/buffer_head.h>
++#include <linux/writeback.h>
+ #include "sysv.h"
+ 
+ /* We don't trust the value of
+@@ -139,6 +140,9 @@ struct inode * sysv_new_inode(const struct inode * dir, mode_t mode)
+ 	struct inode *inode;
+ 	sysv_ino_t ino;
+ 	unsigned count;
++	struct writeback_control wbc = {
++		.sync_mode = WB_SYNC_NONE
++	};
+ 
+ 	inode = new_inode(sb);
+ 	if (!inode)
+@@ -177,7 +181,7 @@ struct inode * sysv_new_inode(const struct inode * dir, mode_t mode)
+ 	mark_inode_dirty(inode);
+ 
+ 	inode->i_mode = mode;		/* for sysv_write_inode() */
+-	sysv_write_inode(inode, 0);	/* ensure inode not allocated again */
++	sysv_write_inode(inode, &wbc);	/* ensure inode not allocated again */
+ 	mark_inode_dirty(inode);	/* cleared by sysv_write_inode() */
+ 	/* That's it. */
+ 	unlock_super(sb);
 -- 
-The more I see, the more I know. The more I know, the less I understand. 
-Changing Man - Paul Weller
+1.7.1
+
