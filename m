@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab0FMIOn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 04:14:43 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46367 "EHLO mail.skyhub.de"
+	id S1753075Ab0FMIOp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 04:14:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:11100 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751820Ab0FMIOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 04:14:39 -0400
-Date: Sun, 13 Jun 2010 10:14:33 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Someone Something <fordhaivat@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Help for a newbie
-Message-ID: <20100613081433.GA6428@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Someone Something <fordhaivat@gmail.com>,
-	linux-kernel@vger.kernel.org
-References: <AANLkTimmhzbgddTZBoaSy4iXpjB4Gdy6zTab0EjCM1IK@mail.gmail.com>
- <AANLkTinwQ5tUDyHIObolQrd0jESH5PGEBKqwk6a_jHWK@mail.gmail.com>
- <AANLkTilbMPLfd415EV32or8FZCM1sWi-RzeWtPAX95-o@mail.gmail.com>
- <AANLkTilzq64CPECxFb77PEdjv1Pcj72622rmhPchz9L8@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <AANLkTilzq64CPECxFb77PEdjv1Pcj72622rmhPchz9L8@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752738Ab0FMIOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 04:14:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,410,1272870000"; 
+   d="scan'208";a="807449570"
+Subject: Re: BUG: aim7/specjbb2005/fio hang due to commit:
+ 597a264b1a9c7e36d1728f
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: "Alex,Shi" <alex.shi@intel.com>
+Cc: john.r.fastabend@intel.com, davem@davemloft.net, yanmin.zhang@intel.com,
+       tim.c.chen@intel.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1276409640.9452.49.camel@debian>
+References: <1276409640.9452.49.camel@debian>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Sun, 13 Jun 2010 16:16:56 +0800
+Message-Id: <1276417016.2096.467.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Someone Something <fordhaivat@gmail.com>
-Date: Sat, Jun 12, 2010 at 11:32:36PM -0400
+On Sun, 2010-06-13 at 14:14 +0800, Alex,Shi wrote:
+> The listed benchmark using loopback mode netio and all hang in 35-rc3
+> testing. Yanmin and I found it is due to the commit
+> 597a264b1a9c7e36d1728f677c66c5c1f7e3b837.
+All these benchmark stops at network io reading to wait for data.
 
-> Hello. I am pretty new to the world of kernel hacking and I have a few
-> questions. I have gotten myself a copy of Linux Kernel Development by
-> robert love and I am also reading parts of the source code. Here are
-> my current questions:
+>  
+> After revert this patch, all benchmarks can be recovered. Seems the
+> following line is the suspicious. 
 > 
-> 1) when you write userland apps, you usually include stuff like :
-> sys/types.h or errono.h where are all these defined in the linux
-> kernel because I would like to add a few syscalls of my own?
 > 
-> 2) what are some bugs in the kernel that a beginner can fix?
 > 
-> 3) is there any definitive guide to the kernel that you guys refer
-> most newbies to? (like Programming Perl for perl)?
+> +       /*
+> +        * bonding note: skbs received on inactive slaves should only
+> +        * be delivered to pkt handlers that are exact matches.  Also
+> +        * the deliver_no_wcard flag will be set.  If packet handlers
+> +        * are sensitive to duplicate packets these skbs will need to
+> +        * be dropped at the handler.  The vlan accel path may have
+> +        * already set the deliver_no_wcard flag.
+> +        */
+>         null_or_orig = NULL;
+>         orig_dev = skb->dev;
+>         master = ACCESS_ONCE(orig_dev->master);
+> -       if (master) {
+> -               if (skb_bond_should_drop(skb, master))
+> +       if (skb->deliver_no_wcard)
+> +               null_or_orig = orig_dev;
+> +       else if (master) {
+> +               if (skb_bond_should_drop(skb, master)) {
+> +                       skb->deliver_no_wcard = 1;
+>                         null_or_orig = orig_dev; /* deliver only exact
+> match */
+> -               else
+> +               } else
+>                         skb->dev = master;
+>         }
 > 
-> 4) Where's the linux kernel headed to next? What higher level features
-> (i.e. real features, not bug fixes) are going to implemented?
+> Thanks
+> Alex 
 > 
-> Thanks a bunch.
-> 
-> PS it'd be nice if you could CC me in the reply cause I don't think
-> I've registered properly
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-http://kernelnewbies.org/ is the place you want to start - simply read
-it all, cover to cover :)
 
--- 
-Regards/Gruss,
-    Boris.
