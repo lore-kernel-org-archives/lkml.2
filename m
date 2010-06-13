@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab0FMHIH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 03:08:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36671 "EHLO mail.skyhub.de"
+	id S1752218Ab0FMHI0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 03:08:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64763 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458Ab0FMHIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 03:08:05 -0400
-Date: Sun, 13 Jun 2010 08:58:37 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Paolo Giarrusso <p.giarrusso@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-       user-mode-linux-devel@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>
-Subject: Re: [uml-devel] [PATCH] x86, hweight: Fix UML boot crash
-Message-ID: <20100613065837.GA5623@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Geert Uytterhoeven <geert@linux-m68k.org>,
-	Paolo Giarrusso <p.giarrusso@gmail.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Borislav Petkov <borislav.petkov@amd.com>,
-	Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-	user-mode-linux-devel@lists.sourceforge.net,
-	linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>
-References: <20100530170346.GC1565@liondog.tnic>
- <4C02B020.2040103@zytor.com>
- <20100530193956.GA2498@liondog.tnic>
- <20100530201738.GB2498@liondog.tnic>
- <4C02D408.1030306@zytor.com>
- <AANLkTimPSQ3K6ulqGV243w__IbMaJTG71VckB8gl701u@mail.gmail.com>
- <20100612141837.GA28572@liondog.tnic>
- <AANLkTimcocYzWrP_5Dv3PxwxMZMq-AtDLfDkYpayuPzG@mail.gmail.com>
- <20100612163444.GC28572@liondog.tnic>
- <AANLkTinMHWI0xGRW-clKm5O91c0QdMG5tDNf3jvUB8Ij@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <AANLkTinMHWI0xGRW-clKm5O91c0QdMG5tDNf3jvUB8Ij@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751832Ab0FMHIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 03:08:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,410,1272870000"; 
+   d="scan'208";a="526372962"
+Subject: BUG: aim7/specjbb2005/fio hang due to commit:
+ 597a264b1a9c7e36d1728f
+From: "Alex,Shi" <alex.shi@intel.com>
+To: john.r.fastabend@intel.com
+Cc: davem@davemloft.net, yanmin.zhang@intel.com, tim.c.chen@intel.com,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 13 Jun 2010 14:14:00 +0800
+Message-ID: <1276409640.9452.49.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Sat, Jun 12, 2010 at 08:37:39PM +0200
+The listed benchmark using loopback mode netio and all hang in 35-rc3
+testing. Yanmin and I found it is due to the commit
+597a264b1a9c7e36d1728f677c66c5c1f7e3b837. 
+After revert this patch, all benchmarks can be recovered. Seems the
+following line is the suspicious. 
 
-> > Cool :). However, according to Geert, this doesn't fix it:
-> >
-> > http://marc.info/?l=linux-kernel&m=127522065202435&w=2
-> >
-> > It could be related to the -mregparm being broken on 32-bit UML since
-> > Geert's UML "guest" is 32-bit. However, even if we fix this, it won't
-> 
-> No, guest and host are both x86_64.
 
-Ok, maybe I don't understand UML - it's just that all address values in
-the backtrace are 32-bit (e.g. RDX: 00000000ffff8aed, with the upper
-8 bytes zeroed out) and I assumed that this is a 32-bit "guest" on a
-64-bit host.
 
--- 
-Regards/Gruss,
-    Boris.
++       /*
++        * bonding note: skbs received on inactive slaves should only
++        * be delivered to pkt handlers that are exact matches.  Also
++        * the deliver_no_wcard flag will be set.  If packet handlers
++        * are sensitive to duplicate packets these skbs will need to
++        * be dropped at the handler.  The vlan accel path may have
++        * already set the deliver_no_wcard flag.
++        */
+        null_or_orig = NULL;
+        orig_dev = skb->dev;
+        master = ACCESS_ONCE(orig_dev->master);
+-       if (master) {
+-               if (skb_bond_should_drop(skb, master))
++       if (skb->deliver_no_wcard)
++               null_or_orig = orig_dev;
++       else if (master) {
++               if (skb_bond_should_drop(skb, master)) {
++                       skb->deliver_no_wcard = 1;
+                        null_or_orig = orig_dev; /* deliver only exact
+match */
+-               else
++               } else
+                        skb->dev = master;
+        }
+
+Thanks
+Alex 
+
