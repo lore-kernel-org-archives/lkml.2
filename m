@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab0FMPfh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 11:35:37 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48895 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab0FMPff convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 11:35:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nBoSNKgPW62BOFeugOfn2TQgZI4D7I6hXS/nc7tESh7MF/2Rqf24ZQ7y4GMtC89L+8
-         scLsmYvkkJ76sUgz6Caku/+9imH/aubOI9F44gvQZCL9xWuIWlJvHeHSflsvv1OlSO00
-         71t3Upve/ioru0WWlPFLx+LDJqg4MIDqYtGIA=
+	id S1754283Ab0FMPzk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 11:55:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754079Ab0FMPzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 11:55:38 -0400
+Date: Sun, 13 Jun 2010 17:53:54 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Roland McGrath <roland@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>, David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH] oom: Make coredump interruptible
+Message-ID: <20100613155354.GA8428@redhat.com>
+References: <20100604112721.GA12582@redhat.com> <20100609195309.GA6899@redhat.com> <20100613175547.616F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <YPGdyfWGvNK.A.KHH.75OFMB@chimera>
-References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
-	<YPGdyfWGvNK.A.KHH.75OFMB@chimera>
-Date: Sun, 13 Jun 2010 11:35:34 -0400
-Message-ID: <AANLkTikKQBrH6rvsj-6chzYqd8NUsmEQBGD2jvTvpJVf@mail.gmail.com>
-Subject: Re: [Bug #16054] UML broken for CONFIG_SLAB
-From: Parag Warudkar <parag.lkml@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100613175547.616F.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 13, 2010 at 10:49 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+On 06/13, KOSAKI Motohiro wrote:
 >
+> > On 06/04, Oleg Nesterov wrote:
+> > >
+> > Perhaps something like below makes sense for now.
 >
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16054
-> Subject         : UML broken for CONFIG_SLAB
-> Submitter       : Parag Warudkar <parag.lkml@gmail.com>
-> Date            : 2010-05-23 21:40 (22 days old)
-> Message-ID      : <alpine.DEB.2.00.1005231149100.605@parag-laptop>
-> References      : http://marc.info/?l=linux-kernel&m=127465083806617&w=2
+> Probably, this works. at least I don't find any problems.
+> But umm... Do you mean we can't implement per-process oom flags?
 
-Borislav,
+Sorry, can't understand what you mean.
 
-I believe both of the issues I encountered that are part of this bug
-entry (missing/superfluous slab inclusion issues and cfq related boot
-crash due to popcnt/hweight stuff) have a known fix [1] but I am not
-sure if any of it actually landed in -git. Quick search through
-git.kernel.org log doesn't show anything relevant.
+> example,
+> 	1) back to implement signal->oom_victim
+> 	   because We are using SIGKILL for OOM and struct signal
+> 	   naturally represent signal target.
 
-I think there was ongoing discussion on the hweight include fix - so
-keeping this open until fixes are in may be what we should do as of
-now.
+Yes, but if this process participates in the coredump, we should find
+the right thread, or mark mm or mm->core_state.
 
+In fact, I was never sure that oom-kill should kill the single process.
+Perhaps it should kill all tasks using the same ->mm instead. But this
+is another story.
 
-[1] http://marc.info/?l=linux-kernel&m=127522065202435&w=2
+> 	2) mm->nr_oom_killed_task
+> 	   just avoid simple flag. instead counting number of tasks of
+> 	   oom-killed.
 
+again, can't understand.
 
-Thanks.
+> I think both avoid your explained problem. Am I missing something?
 
-Parag
+I guess that I am missing something ;) Please clarify?
+
+> But, again, I have no objection to your patch. because I really hope to
+> fix coredump vs oom issue.
+
+Yes, I think this is important. And if we keep the PF_EXITING check in
+select_bad_process(), it should be fixed so that at least the coredump
+can't fool it. And the "p != current" is obviously not right too.
+
+I'll try to do something next week, the patches should be simple.
+
+Oleg.
+
