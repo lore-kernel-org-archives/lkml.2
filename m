@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab0FMLCs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 07:02:48 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58146 "EHLO ogre.sisk.pl"
+	id S1752737Ab0FMLUF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 07:20:05 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:48510 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753283Ab0FMLCq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 07:02:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Subject: Re: Suspend hangs since 2.6.34
-Date: Sun, 13 Jun 2010 13:00:49 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Tino Keitel <tino.keitel+xorg@tikei.de>, intel-gfx@lists.freedesktop.org,
-       linux-kernel@vger.kernel.org,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <20100609175356.GA17332@x61.home> <201006100142.13131.rjw@sisk.pl> <4C108091.3060204@msgid.tls.msk.ru>
-In-Reply-To: <4C108091.3060204@msgid.tls.msk.ru>
+	id S1751043Ab0FMLUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 07:20:03 -0400
+Date: Sun, 13 Jun 2010 12:19:44 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Sachin Sant <sachinp@in.ibm.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: 2.6.35-rc2: GPF while executing libhugetlbfs tests on x86_64
+Message-ID: <20100613111944.GA22015@csn.ul.ie>
+References: <4C0BC7F0.8030109@in.ibm.com> <20100608091817.GA27717@csn.ul.ie> <4C0E2E84.6060605@in.ibm.com> <20100608123622.GE27717@csn.ul.ie> <4C11CA71.9010606@in.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201006131300.49997.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4C11CA71.9010606@in.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 10, 2010, Michael Tokarev wrote:
-> 10.06.2010 03:42, Rafael J. Wysocki пишет:
-> > On Wednesday, June 09, 2010, Tino Keitel wrote:
-> >> Hi,
-> >>
-> >> as of kernel 2.6.34 I sometimes get a strange hang during suspend to
-> >> RAM. After echo mem>  /sys/power/state, the suspend script hangs, Xorg
-> >> eats 100% CPU, and the desktop is frozen. I can kill the script and the
-> >> computer will then suspend and resume fine. The kernel log shows
-> >> nothing interesting when the hang happens:
-> >>
-> >> usblp0: removed
-> >> usbcore: deregistering interface driver dvb_usb_vp7045
-> >> dvb-usb: Twinhan USB2.0 DVB-T receiver (TwinhanDTV Alpha/MagicBox II)
-> >> successfully deinitialized and disconnected.
-> >> PM: Syncing filesystems ... done.
-> 
-> Sounds very much like the problem I have with 2.6.34 final.  Did not
-> happen with 2.6.34-rc7 which suspended just fine, but happens quite
-> regularly on 2.6.34 final - not every suspend but each 2nd or 3rd
-> attempt.  I stopped doing suspend-to-ram due to this, because it's
-> unreliable.  Suspend-to-disk works just fine.
+On Fri, Jun 11, 2010 at 11:02:33AM +0530, Sachin Sant wrote:
+> Mel Gorman wrote:
+>> If the problem has gone away since 2.6.35-rc2, the most likely candidate fix
+>> patch is commit [386f40: Revert "tty: fix a little bug in scrup, vt.c"] which
+>> reverts the patch you previously identified as being a problem.  The commit
+>> message also matches roughly what you are seeing with the 0x0720 patterns.
+>>
+>> Can you retest with 2.6.35-rc2 with commit 386f40 applied and see if it
+>> also fixes up your problem please?
+>>   
+> I could not recreate this problem against 2.6.35-rc2 + commit 386f40.
+>
 
-Can you both try to do "echo 0 > /sys/power/pm_async" and check if suspend
-works with that?
+Great, I will consider this bug resolved so. Thanks for testing.
 
-Rafael
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
