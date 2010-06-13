@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab0FMBEh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Jun 2010 21:04:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44278 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744Ab0FMBEf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 21:04:35 -0400
-Date: Sun, 13 Jun 2010 03:04:29 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Fredrik Gustafsson <iveqy@iveqy.com>
-Cc: apw@canonical.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch.pl skip long lines
-Message-ID: <20100613010429.GA31692@pengutronix.de>
-References: <20100612170944.GA9121@iveqy.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
-Content-Disposition: inline
-In-Reply-To: <20100612170944.GA9121@iveqy.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752914Ab0FMByM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Jun 2010 21:54:12 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47582 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752016Ab0FMByL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Jun 2010 21:54:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,409,1272870000"; 
+   d="scan'208";a="288238572"
+Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
+From: Huang Ying <ying.huang@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Don Zickus <dzickus@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20100612102558.GA4000@elte.hu>
+References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
+	 <20100612102558.GA4000@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 13 Jun 2010 09:54:08 +0800
+Message-ID: <1276394048.3004.82.camel@yhuang-dev.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2010-06-12 at 18:25 +0800, Ingo Molnar wrote:
+> * Huang Ying <ying.huang@intel.com> wrote:
+> 
+> > NMI can be triggered even when IRQ is masked. So it is not safe for NMI 
+> > handler to call some functions. One solution is to delay the call via self 
+> > interrupt, so that the delayed call can be done once the interrupt is 
+> > enabled again. This has been implemented in MCE and perf event. This patch 
+> > provides a unified version and make it easier for other NMI semantic handler 
+> > to take use of the delayed call.
+> > 
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > ---
+> >  arch/x86/include/asm/entry_arch.h  |    1 
+> >  arch/x86/include/asm/hw_irq.h      |    1 
+> >  arch/x86/include/asm/irq_vectors.h |    5 +
+> >  arch/x86/include/asm/nmi.h         |    7 ++
+> >  arch/x86/kernel/entry_64.S         |    3 +
+> >  arch/x86/kernel/irqinit.c          |    3 +
+> >  arch/x86/kernel/traps.c            |  104 +++++++++++++++++++++++++++++++++++++
+> >  7 files changed, 124 insertions(+)
+> 
+> Instead of introducing this extra intermediate facility please use the same 
+> approach the unified NMI watchdog is using (see latest -tip): a perf event 
+> callback gives all the extra functionality needed.
 
---Nq2Wo0NMKNjxTN9z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry, if my understanding is correct, the perf event overflow callback
+should be run in NMI context instead of a delayed context (such as IRQ,
+soft_irq, process context). That is, the backtrace of
+watchdog_overflow_callback should be something as follow:
 
-On Sat, Jun 12, 2010 at 07:09:44PM +0200, Fredrik Gustafsson wrote:
+x86_pmu_handle_irq
+  perf_event_overflow
+    __perf_event_overflow
+      watchdog_overflow_callback
 
-> since the number of long lines in the linux kernel is huge and since
-> Greg Kroah Hartman in his google tech talk about the kernel
-> (http://www.youtube.com/watch?v=3DL2SED6sewRw) talked about probably
-> ignore that criteria in the future, I thought the checkpatch.pl script
-> should have an option to ignore checking for long lines.
->=20
-> This would help finding the real errors and warnings, because they don't
-> drown in line length warnings.
+I do not find the delayed mechanism here.
 
-Instead of adding another command-line option, I'd suggest to just use CHK
-instead of WARN, so this check will be enabled with --strict. I wonder if t=
-here
-is already consensus on deprecating the 80-char-rule?
+> The MCE code needs to be updated to use that - and then it will be integrated
+> into the events framework.
 
-Regards,
+MCE is NMI-like, and there are other NMI users too. I think some of them
+will need some kind of delayed call mechanism. In fact, perf itself uses
+self-made NMI delayed call mechanism too, I just want to generalize it
+for other users too.
 
-   Wolfram
+Best Regards,
+Huang Ying
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
---Nq2Wo0NMKNjxTN9z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkwULp0ACgkQD27XaX1/VRsywwCfWu+ysis5+ymvVOprD6nVB1oC
-VrYAoK14AQUSiEdnWEPj5ypwQKPjDpdP
-=oV0h
------END PGP SIGNATURE-----
-
---Nq2Wo0NMKNjxTN9z--
