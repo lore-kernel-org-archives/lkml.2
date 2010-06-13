@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab0FMSMA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 14:12:00 -0400
-Received: from mail.perches.com ([173.55.12.10]:1114 "EHLO mail.perches.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754315Ab0FMSL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 14:11:59 -0400
-Subject: Re: [PATCH] staging:comedi: Fixed coding convention issues.
-From: Joe Perches <joe@perches.com>
-To: Henri =?ISO-8859-1?Q?H=E4kkinen?= <henrih81@gmail.com>
-Cc: Mark Rankilor <reodge@gmail.com>, devel@driverdev.osuosl.org,
-       gregkh@suse.de, andrea.gelmini@gelma.net, linux-kernel@vger.kernel.org
-In-Reply-To: <EC683E5B-0C90-4C16-B493-7BFAEC675BDA@gmail.com>
-References: <1276337681-4327-1-git-send-email-henuxd@gmail.com>
-	 <AANLkTimUt_Lhk6lG9spM9qjRT8T6PhEDVyOhh745lJhW@mail.gmail.com>
-	 <1276405626.1449.26.camel@Joe-Laptop.home>
-	 <1276407050.1449.28.camel@Joe-Laptop.home>
-	 <EC683E5B-0C90-4C16-B493-7BFAEC675BDA@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 13 Jun 2010 11:11:18 -0700
-Message-ID: <1276452678.1449.73.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1754663Ab0FMSUZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 14:20:25 -0400
+Received: from isrv.corpit.ru ([81.13.33.159]:42343 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754451Ab0FMSUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 14:20:24 -0400
+Message-ID: <4C152166.4070106@msgid.tls.msk.ru>
+Date: Sun, 13 Jun 2010 22:20:22 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Ollie Wild <aaw@google.com>
+Subject: Re: personality(ADDR_LIMIT_3GB) results in EFAULT
+References: <4BFEA911.40600@msgid.tls.msk.ru> <874oht197o.fsf@basil.nowhere.org>
+In-Reply-To: <874oht197o.fsf@basil.nowhere.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-06-13 at 14:27 +0300, Henri Häkkinen wrote:
-> There are several printk statements without the "comedi:" prefix.
-> Do you think it is better to leave these as they are, or should they
-> be changed to use comedi_xxx macros (which will print the "comedi:"
-> prefix)?
-> 
-> printk(KERN_WARNING "BUG: dev->driver=NULL in comedi_device_detach()\n");
+[replying to somewhat old email...]
 
-I think it's better to convert them.
+27.05.2010 22:38, Andi Kleen wrote:
+> Michael Tokarev<mjt@tls.msk.ru>  writes:
+>
+>> I noticed an.. interesting issue here.
+>>
+>> Running a 32bit executable on a 64bit kernel,
+>> and doing
+>>
+>>    personality(ADDR_LIMIT_3GB);
+>>
+>> That call succedes, but any further execve()
+>> and friends results in EFAULT, unless whole
+>> argv[] and envp[] are copied to a malloc'ed
+>> space.  alloca sometimes helps and sometimes
+>> not.
+>
+> It worked when I wrote it originally.
+>
+> Sounds like a regression, perhaps related to
+> b6a2fea39318e43fee84fa7b0b90d68bed92d2ba
 
-Anything with "BUG" in the format
-maybe should be converted to BUG_ON.
+This is this commit:
 
-> Also even with logging macros, there will be few lines which go beyond
-> the 80 character boundary.
+commit b6a2fea39318e43fee84fa7b0b90d68bed92d2ba
+Author: Ollie Wild <aaw@google.com>
+Date:   Thu Jul 19 01:48:16 2007 -0700
 
-I'd ignore printk related long line warnings.
+     mm: variable length argument support
 
-I suggest coalescing the format string to a single line
-where reasonable.  If a single printk has non trailing
-'\n's in a format, it may be better to split them up.
+     Remove the arg+env limit of MAX_ARG_PAGES by copying the strings directly from
+     the old mm into the new mm.
 
-comedi_info("some incredibly long output line with error: %d\n"
-	    "Another line with some other information: %d\n",
-	    err, info);
+     We create the new mm before the binfmt code runs, and place the new stack at
+     the very top of the address space.  Once the binfmt code runs and figures out
+     where the stack should be, we move it downwards.
+
+     It is a bit peculiar in that we have one task with two mm's, one of which is
+     inactive.
+
+     [a.p.zijlstra@chello.nl: limit stack size]
+     Signed-off-by: Ollie Wild <aaw@google.com>
+     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+     Cc: <linux-arch@vger.kernel.org>
+     Cc: Hugh Dickins <hugh@veritas.com>
+     [bunk@stusta.de: unexport bprm_mm_init]
+     Signed-off-by: Adrian Bunk <bunk@stusta.de>
+     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+(Author of this commit CC'ed).
 
 
+Folks, I really need some advise here.
+
+Right now I've a 64 wrapper executable to run the legacy
+database (which we didn't finish migrating from yet, it's
+always long process).  It sets the necessary personality
+and executes the real binary.  But the problem is that after
+a recompile (I added something else to it), the whole thing
+stopped working on a machine with 4Gb memory: the execve()
+call, now when made from 64bit binary, immediately fails
+with EFAULT.  Before, this were happening only when the
+wrapper is 32bit code (try `setarch i686 -3 any_32bit_exe' --
+it will fail if setarch itself is 32bit executable).  Now
+it fails from 64bits too, even just recompiling the old
+.c code (with single personality() call in it) now results
+in non-working thing - apparently due to some gcc diff.
+
+Can we restore this personality thing, please?.. :)
+I'm not good at all this code, so I need someone who is
+able to understand what's going on.... ;)
+
+Thanks!
+
+/mjt
