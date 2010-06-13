@@ -1,60 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab0FMPbG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 11:31:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47826 "EHLO mx1.redhat.com"
+	id S1754234Ab0FMPcR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 11:32:17 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37723 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab0FMPbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 11:31:03 -0400
-Date: Sun, 13 Jun 2010 17:29:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Roland McGrath <roland@redhat.com>
-Cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 1/1] signals: introduce send_sigkill() helper
-Message-ID: <20100613152918.GA8024@redhat.com>
-References: <20100608204621.767A.A69D9226@jp.fujitsu.com> <20100608210000.7692.A69D9226@jp.fujitsu.com> <20100608184144.GA5914@redhat.com> <20100610005937.GA4727@redhat.com> <20100610010023.GB4727@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100610010023.GB4727@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754073Ab0FMPcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 11:32:10 -0400
+From: Tejun Heo <tj@kernel.org>
+To: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, jeff@garzik.org,
+       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
+       khali@linux-fr.org
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 05/12] irq: misc preparations for further changes
+Date: Sun, 13 Jun 2010 17:31:31 +0200
+Message-Id: <1276443098-20653-6-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1276443098-20653-1-git-send-email-tj@kernel.org>
+References: <1276443098-20653-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 13 Jun 2010 15:31:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew, please drop
+* properly indent irqaction fields.
 
-	signals-introduce-send_sigkill-helper.patch
+* factor out print_irq_handler()
 
-I am stupid.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/interrupt.h |   20 ++++++++++----------
+ kernel/irq/spurious.c     |   28 ++++++++++++++++------------
+ 2 files changed, 26 insertions(+), 22 deletions(-)
 
-On 06/10, Oleg Nesterov wrote:
->
-> Cleanup, no functional changes.
->
-> There are a lot of buggy SIGKILL users in kernel. For example, almost
-> every force_sig(SIGKILL) is wrong. force_sig() is not safe, it assumes
-> that the task has the valid ->sighand, and in general it should be used
-> only for synchronous signals. send_sig(SIGKILL, p, 1) or
-> send_xxx(SEND_SIG_FORCED/SEND_SIG_PRIV) is not right too but this is not
-> immediately obvious.
->
-> The only way to correctly send SIGKILL is send_sig_info(SEND_SIG_NOINFO)
-
-No, SEND_SIG_NOINFO doesn't work too. Oh, can't understand what I was
-thinking about. current is the random task, but send_signal() checks
-if the caller is from-parent-ns.
-
-> Note: we need more cleanups here, this is only the first change.
-
-We need the cleanups first. Until then oom-killer has to use force_sig()
-if we want to kill the SIGNAL_UNKILLABLE tasks too.
-
-Oleg.
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 61857f1..b20bd65 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -102,16 +102,16 @@ typedef irqreturn_t (*irq_handler_t)(int, void *);
+  * @thread_flags:	flags related to @thread
+  */
+ struct irqaction {
+-	irq_handler_t handler;
+-	unsigned long flags;
+-	const char *name;
+-	void *dev_id;
+-	struct irqaction *next;
+-	int irq;
+-	struct proc_dir_entry *dir;
+-	irq_handler_t thread_fn;
+-	struct task_struct *thread;
+-	unsigned long thread_flags;
++	irq_handler_t		handler;
++	unsigned long		flags;
++	const char		*name;
++	void			*dev_id;
++	struct irqaction	*next;
++	int			irq;
++	struct proc_dir_entry	*dir;
++	irq_handler_t		thread_fn;
++	struct task_struct	*thread;
++	unsigned long		thread_flags;
+ };
+ 
+ extern irqreturn_t no_action(int cpl, void *dev_id);
+diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
+index fc18a13..0bce0e3 100644
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -28,6 +28,21 @@ enum {
+ int noirqdebug __read_mostly;
+ static int irqfixup __read_mostly = IRQFIXUP_SPURIOUS;
+ 
++static void print_irq_handlers(struct irq_desc *desc)
++{
++	struct irqaction *action;
++
++	printk(KERN_ERR "handlers:\n");
++
++	action = desc->action;
++	while (action) {
++		printk(KERN_ERR "[<%p>]", action->handler);
++		print_symbol(" (%s)", (unsigned long)action->handler);
++		printk("\n");
++		action = action->next;
++	}
++}
++
+ /*
+  * Recovery handler for misrouted interrupts.
+  */
+@@ -126,8 +141,6 @@ static void
+ __report_bad_irq(unsigned int irq, struct irq_desc *desc,
+ 		 irqreturn_t action_ret)
+ {
+-	struct irqaction *action;
+-
+ 	if (action_ret != IRQ_HANDLED && action_ret != IRQ_NONE) {
+ 		printk(KERN_ERR "irq event %d: bogus return value %x\n",
+ 				irq, action_ret);
+@@ -136,16 +149,7 @@ __report_bad_irq(unsigned int irq, struct irq_desc *desc,
+ 				"the \"irqpoll\" option)\n", irq);
+ 	}
+ 	dump_stack();
+-	printk(KERN_ERR "handlers:\n");
+-
+-	action = desc->action;
+-	while (action) {
+-		printk(KERN_ERR "[<%p>]", action->handler);
+-		print_symbol(" (%s)",
+-			(unsigned long)action->handler);
+-		printk("\n");
+-		action = action->next;
+-	}
++	print_irq_handlers(desc);
+ }
+ 
+ static void
+-- 
+1.6.4.2
 
