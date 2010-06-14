@@ -1,115 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab0FNMu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 08:50:27 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:56892 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab0FNMuZ (ORCPT
+	id S1753260Ab0FNMu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 08:50:59 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57558 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714Ab0FNMu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 08:50:25 -0400
-Date: Mon, 14 Jun 2010 18:20:10 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, kvm <kvm@vger.kernel.org>,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
- control
-Message-ID: <20100614125010.GU5191@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>
- <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>
- <4C10B3AF.7020908@redhat.com>
- <20100610142512.GB5191@balbir.in.ibm.com>
- <1276214852.6437.1427.camel@nimitz>
- <20100611045600.GE5191@balbir.in.ibm.com>
- <4C15E3C8.20407@redhat.com>
- <20100614084810.GT5191@balbir.in.ibm.com>
- <4C16233C.1040108@redhat.com>
+	Mon, 14 Jun 2010 08:50:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+Date: Mon, 14 Jun 2010 14:50:53 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+       Andrew <andrew.chih.howe.khor@intel.com>,
+       Intel OTC <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>
+References: <4C0CE88C.9050708@dsn.okisemi.com> <4C161BE7.4080805@dsn.okisemi.com>
+In-Reply-To: <4C161BE7.4080805@dsn.okisemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4C16233C.1040108@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: Text/Plain;
+  charset="iso-2022-jp"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006141450.53572.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1+2t0GfQem9lahOed2K+XgRK9j0nIVHiB1RBg3
+ KJqpiMagCkp+BsF0zTk7K/6gbDSX3RzK1xz0p1OhUMFGw7pb8S
+ eZwglEfASTJc1U58/yDbQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Avi Kivity <avi@redhat.com> [2010-06-14 15:40:28]:
+On Monday 14 June 2010, Masayuki Ohtak wrote:
+> Hi we have modified for your comments.
+> Please Confirm below.
 
-> On 06/14/2010 11:48 AM, Balbir Singh wrote:
-> >>>
-> >>>In this case the order is as follows
-> >>>
-> >>>1. First we pick free pages if any
-> >>>2. If we don't have free pages, we go after unmapped page cache and
-> >>>slab cache
-> >>>3. If that fails as well, we go after regularly memory
-> >>>
-> >>>In the scenario that you describe, we'll not be able to easily free up
-> >>>the frequently referenced page from /etc/*. The code will move on to
-> >>>step 3 and do its regular reclaim.
-> >>Still it seems to me you are subverting the normal order of reclaim.
-> >>I don't see why an unmapped page cache or slab cache item should be
-> >>evicted before a mapped page.  Certainly the cost of rebuilding a
-> >>dentry compared to the gain from evicting it, is much higher than
-> >>that of reestablishing a mapped page.
-> >>
-> >Subverting to aviod memory duplication, the word subverting is
-> >overloaded,
-> 
-> Right, should have used a different one.
-> 
-> >let me try to reason a bit. First let me explain the
-> >problem
-> >
-> >Memory is a precious resource in a consolidated environment.
-> >We don't want to waste memory via page cache duplication
-> >(cache=writethrough and cache=writeback mode).
-> >
-> >Now here is what we are trying to do
-> >
-> >1. A slab page will not be freed until the entire page is free (all
-> >slabs have been kfree'd so to speak). Normal reclaim will definitely
-> >free this page, but a lot of it depends on how frequently we are
-> >scanning the LRU list and when this page got added.
-> >2. In the case of page cache (specifically unmapped page cache), there
-> >is duplication already, so why not go after unmapped page caches when
-> >the system is under memory pressure?
-> >
-> >In the case of 1, we don't force a dentry to be freed, but rather a
-> >freed page in the slab cache to be reclaimed ahead of forcing reclaim
-> >of mapped pages.
-> 
-> Sounds like this should be done unconditionally, then.  An empty
-> slab page is worth less than an unmapped pagecache page at all
-> times, no?
->
+Looks much better. A few more comments about the new code:
 
-In a consolidated environment, even at the cost of some CPU to run
-shrinkers, I think potentially yes.
- 
-> >Does the problem statement make sense? If so, do you agree with 1 and
-> >2? Is there major concern about subverting regular reclaim? Does
-> >subverting it make sense in the duplicated scenario?
-> >
-> 
-> In the case of 2, how do you know there is duplication?  You know
-> the guest caches the page, but you have no information about the
-> host.  Since the page is cached in the guest, the host doesn't see
-> it referenced, and is likely to drop it.
+> +#to set CAN clock to 50Mhz
+> +ifdef CONFIG_PCH_CAN_PCLK_50MHZ
+> +EXTRA_CFLAGS +=-DPCH_CAN_PCLK_50MHZ
+> +endif
 
-True, that is why the first patch is controlled via a boot parameter
-that the host can pass. For the second patch, I think we'll need
-something like a balloon <size> <cache?> with the cache argument being
-optional. 
+This should not be necessary. Just use CONFIG_PCH_CAN_PCLK_50MHZ directly
+in the code instead of the extra PCH_CAN_PCLK_50MHZ macro.
+> +
+> +DEFINE_MUTEX(pch_phub_ioctl_mutex);
 
-> 
-> If there is no duplication, then you may have dropped a
-> recently-used page and will likely cause a major fault soon.
->
+This should probable be 'static DEFINE_MUTEX', since the symbol does not
+need to be visible in the entire kernel.
 
-Yes, agreed. 
 
--- 
-	Three Cheers,
-	Balbir
+> +/*--------------------------------------------
+> +	internal function prototypes
+> +--------------------------------------------*/
+> +static __s32 __devinit pch_phub_probe(struct pci_dev *pdev, const
+> +				       struct pci_device_id *id);
+> +static void __devexit pch_phub_remove(struct pci_dev *pdev);
+> +static __s32 pch_phub_suspend(struct pci_dev *pdev, pm_message_t state);
+> +static __s32 pch_phub_resume(struct pci_dev *pdev);
+> +static __s32 pch_phub_open(struct inode *inode, struct file *file);
+> +static __s32 pch_phub_release(struct inode *inode, struct file *file);
+> +static long pch_phub_ioctl(struct file *file, unsigned int cmd,
+> +							 unsigned long arg);
+> +static ssize_t pch_phub_read(struct file *, char __user *, size_t, loff_t *);
+> +static ssize_t pch_phub_write(struct file *, const char __user *,
+> +							 size_t, loff_t *);
+
+My general recommendation would be to reorder all the function
+definitions so that you don't need any of these forward declarations.
+That is the order used in most parts of the kernel (so you start reading
+at the bottom), and it makes it easier to understand the structure of
+the code IMHO.
+
+> +/** pch_phub_open - Implements the Initializing and opening of the Packet Hub
+> +									 module.
+> + *  @inode: Contains the reference of the inode structure
+> + *  @file: Contains the reference of the file structure
+> + */
+> +static __s32 pch_phub_open(struct inode *inode, struct file *file)
+> +{
+> +	__s32 ret;
+> +
+> +	spin_lock(&pch_phub_lock);
+> +	if (pch_phub_reg.pch_phub_opencount) {
+> +		ret = -EBUSY;
+> +	} else {
+> +		pch_phub_reg.pch_phub_opencount++;
+> +		ret = 0;
+> +	}
+> +	spin_unlock(&pch_phub_lock);
+> +
+> +	return ret;
+> +}
+
+As far as I can tell, there is no longer a reason to prevent multiple
+openers. Besides, even if there is only a single user, you might still
+have concurrency problems, so the lock does not help and you could remove
+the open function entirely.
+
+> +/** pch_phub_read - Implements the read functionality of the Packet Hub module.
+> + *  @file: Contains the reference of the file structure
+> + *  @buf: Usermode buffer pointer
+> + *  @size: Usermode buffer size
+> + *  @pos: Contains the reference of the file structure
+> + */
+> +
+> +static ssize_t pch_phub_read(struct file *file, char __user *buf, size_t size,
+> +								 loff_t *pos)
+> +{
+> +	__u32 rom_signature = 0;
+> +	__u8 rom_length;
+> +	__s32 ret_value;
+> +	__u32 tmp;
+> +	__u8 data;
+> +	__u32 addr_offset = 0;
+> +
+> +	/*Get Rom signature*/
+> +	pch_phub_read_serial_rom(0x80, (__u8 *)&rom_signature);
+> +	pch_phub_read_serial_rom(0x81, (__u8 *)&tmp);
+> +	rom_signature |= (tmp & 0xff) << 8;
+> +	if (rom_signature == 0xAA55) {
+> +		pch_phub_read_serial_rom(0x82, &rom_length);
+> +		if (size > (rom_length * 512)+1)
+> +			return -ENOMEM;
+> +
+> +		for (addr_offset = 0;
+> +			addr_offset <= ((__u32)rom_length * 512);
+> +						 addr_offset++) {
+> +			pch_phub_read_serial_rom(0x80 + addr_offset, &data);
+> +			ret_value = copy_to_user((void *)&buf[addr_offset],
+> +							(void *)&data, 1);
+> +			if (ret_value)
+> +				return -EFAULT;
+> +		}
+> +	} else {
+> +		return -ENOEXEC;
+> +	}
+> +
+> +	return rom_length * 512 + 1;
+> +}
+
+This function has multiple problems:
+
+- If the size argument is less than rom_length*512, you access past the
+  user-provided buffer.
+- When the user does an llseek or pread, the *pos argument is not zero,
+  so you should return data from the middle, but you still return data
+  from the beginning.
+- You don't update the *pos argument with the new position, so you cannot
+  continue the read where the first call left.
+- Instead of returning -ENOMEM, you should just the data you have (or
+  0 for end-of-file).
+- ENOEXEC does not seem appropriate either: The user can just check
+  these buffer for the signature here, so you just as well return
+  whatever you find in the ROM.
+
+> +
+> +/** pch_phub_write - Implements the write functionality of the Packet Hub
+> + *  									 module.
+> + *  @file: Contains the reference of the file structure
+> + *  @buf: Usermode buffer pointer
+> + *  @size: Usermode buffer size
+> + *  @pos: Contains the reference of the file structure
+> + */
+> +static ssize_t pch_phub_write(struct file *file, const char __user *buf,
+> +						 size_t size, loff_t *pos)
+> +{
+> +	static __u8 data[PCH_PHUB_OROM_SIZE];
+> +	__s32 ret_value;
+> +	__u32 addr_offset = 0;
+> +
+> +	if (size > PCH_PHUB_OROM_SIZE)
+> +		size = PCH_PHUB_OROM_SIZE;
+> +
+> +	ret_value = copy_from_user(data, buf, size);
+> +	if (ret_value)
+> +		return -EFAULT;
+> +
+> +	for (addr_offset = 0; addr_offset < size; addr_offset++) {
+> +		ret_value = pch_phub_write_serial_rom(0x80 + addr_offset,
+> +							 data[addr_offset]);
+> +	}
+> +
+> +	return size;
+> +}
+
+This has the same problems, plus a buffer overflow: You must never have an
+array of multiple kilobytes on the stack (data[PCH_PHUB_OROM_SIZE]), because
+the stack itself is only a few kilobytes in the kernel. Better use a loop
+with copy_from_user like the read function does.
+
+> +/** pch_phub_release - Implements the release functionality of the Packet Hub
+> + *  									 module.
+> + *  @inode: Contains the reference of the inode structure
+> + *  @file: Contains the reference of the file structure
+> + */
+> +static __s32 pch_phub_release(struct inode *inode, struct file *file)
+> +{
+> +	spin_lock(&pch_phub_lock);
+> +
+> +	if (pch_phub_reg.pch_phub_opencount > 0)
+> +		pch_phub_reg.pch_phub_opencount--;
+> +	spin_unlock(&pch_phub_lock);
+> +
+> +	return 0;
+> +}
+
+When you remove the open function, this one can go away as well.
+
+> +/** pch_phub_ioctl - Implements the various ioctl functionalities of the Packet
+> + *  								 Hub module.
+> + *  @inode: Contains the reference of the inode structure
+> + *  @file: Contains the reference of the file structure
+> + *  @cmd: Contains the command value
+> + *  @arg: Contains the command argument value
+> + */
+> +
+> +
+> +static long pch_phub_ioctl(struct file *file, unsigned int cmd,
+> +							 unsigned long arg)
+> +{
+> +	__s32 ret_value = 0;
+> +	struct pch_phub_reqt __user *p_pch_phub_reqt;
+> +	__u32 data;
+> +	__u32 mac_addr[2];
+> +	__s32 ret;
+> +	__u32 i;
+> +	void __user *varg = (void __user *)arg;
+> +
+> +	ret = mutex_trylock(&pch_phub_ioctl_mutex);
+> +	if (ret == 0)
+> +		goto return_ioctrl;/*Can't get mutex lock*/
+
+mutex_trylock is probably not what you want, it returns immediately
+when there is another function in the kernel.
+mutex_lock_interruptible seems more appropriate, it will block
+until the mutex is free or the process gets sent a signal,
+which you should handle by returning -ERESTARTSYS.
+
+In either case, you must not jump to return_ioctrl here, because
+that will try to release the mutex that you do not hold here,
+causing a hang the next time you enter the function.
+
+> +	if (pch_phub_reg.pch_phub_suspended == true) {
+> +		ret_value = -EPERM;
+> +		goto return_ioctrl;
+> +	}
+> +
+> +	p_pch_phub_reqt = (struct pch_phub_reqt *)varg;
+> +
+> +	if (ret_value)
+> +		goto return_ioctrl;
+
+is always zero here.
+
+> +	/* End of Access area check */
+> +
+> +
+> +	switch (cmd) {
+> +
+> +	case IOCTL_PHUB_READ_MAC_ADDR:
+> +		mac_addr[0] = 0;
+> +		mac_addr[1] = 0;
+> +		for (i = 0; i < 4; i++) {
+> +			pch_phub_read_gbe_mac_addr(i, (__u8 *)&data);
+> +			mac_addr[0] |= data << i*8;
+> +		}
+> +		for (; i < 6; i++) {
+> +			pch_phub_read_gbe_mac_addr(i, (__u8 *)&data);
+> +			mac_addr[1] |= data << (i-4)*8;
+> +		}
+> +
+> +		ret_value = copy_to_user((void *)&p_pch_phub_reqt->data,
+> +					 (void *)mac_addr, sizeof(mac_addr));
+
+p_pch_phub_reqt->data has multiple problems:
+
+- You have the typecast to (void *), which is wrong and unneeded.
+- The data structure has no point at all any more when you use only one
+  field.
+
+Just make this
+
+	u8 mac_addr[6];
+	for (i = 0; i < 4; i++)
+		pch_phub_read_gbe_mac_addr(i, &mac_addr[i]);
+	ret_value = copy_to_user(varg, mac_addr, sizeof(mac_addr));
+
+> +#define PHUB_IOCTL_MAGIC 		(0xf7)
+> +
+> +/*Outlines the read register function signature.  */
+> +#define IOCTL_PHUB_READ_REG (_IOW(PHUB_IOCTL_MAGIC, 1, __u32))
+> +
+> +/*Outlines the write register function signature. */
+> +#define IOCTL_PHUB_WRITE_REG (_IOW(PHUB_IOCTL_MAGIC, 2, __u32))
+> +
+> +/*Outlines the read, modify and write register function signature. */
+> +#define IOCTL_PHUB_READ_MODIFY_WRITE_REG (_IOW(PHUB_IOCTL_MAGIC, 3,\
+> +								 __u32))
+> +
+> +/*Outlines the read option rom function signature. */
+> +#define IOCTL_PHUB_READ_OROM (_IOW(PHUB_IOCTL_MAGIC, 4, __u32))
+> +
+> +/*Outlines the write option rom function signature. */
+> +#define IOCTL_PHUB_WRITE_OROM (_IOW(PHUB_IOCTL_MAGIC, 5, __u32))
+
+These should all get removed now.
+
+> +/*Outlines the read mac address function signature. */
+> +#define IOCTL_PHUB_READ_MAC_ADDR (_IOW(PHUB_IOCTL_MAGIC, 6, __u32))
+> +
+> +/*brief Outlines the write mac address function signature. */
+> +#define IOCTL_PHUB_WRITE_MAC_ADDR (_IOW(PHUB_IOCTL_MAGIC, 7, __u32))
+
+IOCTL_PHUB_READ_MAC_ADDR needs _IOR instead of _IOW, and the type
+is still wrong here. Your code currently has struct pch_phub_reqt
+instead of __u32, and if you change the ioctl function as I explained
+above, it should become 
+
+#define IOCTL_PHUB_READ_MAC_ADDR (_IOR(PHUB_IOCTL_MAGIC, 6, __u8[6]))
+#define IOCTL_PHUB_WRITE_MAC_ADDR (_IOW(PHUB_IOCTL_MAGIC, 7, __u8[6]))
+
+	Arnd
