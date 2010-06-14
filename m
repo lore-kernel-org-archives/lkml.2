@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab0FNOSB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 10:18:01 -0400
-Received: from thunk.org ([69.25.196.29]:40218 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab0FNOR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 10:17:59 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@ZenIV.linux.org.uk>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-       Johannes Stezenbach <js@sig21.net>
-Subject: [PATCH -v3] Only honor the FIGETBSZ ioctl for regular files and directories
-Date: Mon, 14 Jun 2010 10:17:57 -0400
-Message-Id: <1276525077-26347-1-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1276524911-26177-1-git-send-email-tytso@mit.edu>
-References: <1276524911-26177-1-git-send-email-tytso@mit.edu>
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1754666Ab0FNOSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 10:18:42 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:20301 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168Ab0FNOSk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 10:18:40 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Subject: Re: [Bug 16007] x86/pci Oops with CONFIG_SND_HDA_INTEL
+Date: Mon, 14 Jun 2010 08:18:39 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Graham Ramsey <ramsey.graham@ntlworld.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+       linux-pci@vger.kernel.org, bugzilla-daemon@bugzilla.kernel.org,
+       Myron Stowe <myron.stowe@hp.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Harald Welte <HaraldWelte@viatech.com>,
+       Joseph Chan <JosephChan@via.com.tw>
+References: <4BF40014.30303@ntlworld.com> <201006111549.05164.bjorn.helgaas@hp.com> <4C12C189.50201@oracle.com>
+In-Reply-To: <4C12C189.50201@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006140818.39599.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FIGETBSZ has an ioctl number of _IO(0x00,2) == 2, which can conflict
-with device driver ioctls.  Let's avoid the potential for problems by
-only honoring the ioctl number for files where this ioctl is likely
-going to be useful: for regular files and directories
+On Friday, June 11, 2010 05:06:49 pm Yinghai Lu wrote:
+> 
+> please check if this one workaround the problem
+> 
+> Thanks
+> 
+> Yinghai Lu
+> 
+> [PATCH] x86, pci: handle fallout pci devices with peer root bus
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Thanks to Johannes Stezenbach for pointing this consequence of commit
-19ba0559.
+This patch apparently does cover up the problem, but it fails on
+so many levels:
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Johannes Stezenbach <js@sig21.net>
----
+  - incomprehensible summary
+  - no changelog
+  - no bugzilla pointer
+  - unrelated junk in patch ("tmp")
+  - completely unexplained change to generic resource.c
+  - no indication that we understand the root cause
 
-Fixed up commit description
-
- fs/compat_ioctl.c |    6 +++++-
- fs/ioctl.c        |    5 ++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
-index 641640d..b8607fe 100644
---- a/fs/compat_ioctl.c
-+++ b/fs/compat_ioctl.c
-@@ -1715,8 +1715,12 @@ asmlinkage long compat_sys_ioctl(unsigned int fd, unsigned int cmd,
- 		goto out_fput;
- #endif
- 
--	case FIBMAP:
- 	case FIGETBSZ:
-+		if (S_ISDIR(filp->f_path.dentry->d_inode->i_mode))
-+			break;
-+		/*FALL THROUGH */
-+
-+	case FIBMAP:
- 	case FIONREAD:
- 		if (S_ISREG(filp->f_path.dentry->d_inode->i_mode))
- 			break;
-diff --git a/fs/ioctl.c b/fs/ioctl.c
-index 2d140a7..e578dab 100644
---- a/fs/ioctl.c
-+++ b/fs/ioctl.c
-@@ -597,7 +597,10 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
- 	{
- 		struct inode *inode = filp->f_path.dentry->d_inode;
- 		int __user *p = (int __user *)arg;
--		return put_user(inode->i_sb->s_blocksize, p);
-+
-+		if (S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode))
-+			return put_user(inode->i_sb->s_blocksize, p);
-+		/* FALL THROUGH */
- 	}
- 
- 	default:
--- 
-1.7.0.4
-
+> ---
+>  arch/x86/pci/bus_numa.c |    4 +++-
+>  kernel/resource.c       |    2 +-
+>  2 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/pci/bus_numa.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/pci/bus_numa.c
+> +++ linux-2.6/arch/x86/pci/bus_numa.c
+> @@ -22,7 +22,8 @@ void x86_pci_root_bus_res_quirks(struct
+>  		return;
+>  
+>  	for (i = 0; i < pci_root_num; i++) {
+> -		if (pci_root_info[i].bus_min == b->number)
+> +		if (pci_root_info[i].bus_min <= b->number &&
+> +		    pci_root_info[i].bus_max >= b->number)
+>  			break;
+>  	}
+>  
+> @@ -37,6 +38,7 @@ void x86_pci_root_bus_res_quirks(struct
+>  	for (j = 0; j < info->res_num; j++) {
+>  		struct resource *res;
+>  		struct resource *root;
+> +		struct resource *tmp;
+>  
+>  		res = &info->res[j];
+>  		pci_bus_add_resource(b, res, 0);
+> Index: linux-2.6/kernel/resource.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/resource.c
+> +++ linux-2.6/kernel/resource.c
+> @@ -451,7 +451,7 @@ static struct resource * __insert_resour
+>  		if (!first)
+>  			return first;
+>  
+> -		if (first == parent)
+> +		if (first == parent || first == new)
+>  			return first;
+>  
+>  		if ((first->start > new->start) || (first->end < new->end))
+> 
