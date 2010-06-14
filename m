@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab0FNSnJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 14:43:09 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:35253 "EHLO
-	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750850Ab0FNSnH (ORCPT
+	id S1751420Ab0FNSvq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 14:51:46 -0400
+Received: from mail-yw0-f204.google.com ([209.85.211.204]:44420 "EHLO
+	mail-yw0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab0FNSvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 14:43:07 -0400
-Date: Mon, 14 Jun 2010 14:42:44 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: tytso@mit.edu, Dave Airlie <airlied@redhat.com>,
-       David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Why is kslowd accumulating so much CPU time?
-Message-ID: <20100614184244.GA11480@elliptictech.com>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>, tytso@mit.edu,
-	Dave Airlie <airlied@redhat.com>,
-	David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
-References: <E1OMQ88-0002a1-Gb@closure.thunk.org>
- <AANLkTilqc0jpwnIwe3OIQvB9avaXXzrBK4Hz0huESygy@mail.gmail.com>
- <20100613194949.GC8055@thunk.org>
- <AANLkTilQLk7ofSJBm9KIa2g1KQ35GC1D1vOZlPrv1VRv@mail.gmail.com>
+	Mon, 14 Jun 2010 14:51:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=khv9k/ZAb0wErBxsC+OAOxGM5MfEfSaldreF6FK7duHUMZK6uRBiWK+afcbhQKlTng
+         XdJs11SzWD+d9v5xKPvSrv3h/3gSfIHPDmqB+/VQKYvvXEP1ux4IbxRf+pQerrjQM8n3
+         AXPqe3vd0cB2pq2mjnRcI+iALExNlFrr4G/OY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTilQLk7ofSJBm9KIa2g1KQ35GC1D1vOZlPrv1VRv@mail.gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100614162002.GA13902@kroah.com>
+References: <AANLkTimnqVSom2qHetXMBPiCNTYd-yc8Tl6a64n0zTSk@mail.gmail.com>
+	<20100614162002.GA13902@kroah.com>
+Date: Tue, 15 Jun 2010 02:44:36 +0800
+Message-ID: <AANLkTinwaYy5Z528PraVuWUsU2pJBLoq0c2hgIGirTNn@mail.gmail.com>
+Subject: Re: e-SATA ExpressCard - OOPS plus incrementing "ataX" on 
+	Linux-2.6.xx
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: kristen.c.accardi@intel.com, Dely Sy <dely.l.sy@intel.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Takayoshi Kochi <t-kochi@bq.jp.nec.com>, Matthew Wilcox <willy@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06:00 Mon 14 Jun     , Dave Airlie wrote:
-> On Mon, Jun 14, 2010 at 5:49 AM,  <tytso@mit.edu> wrote:
-> > It's a Lenovo T400, with an Intel GPU:
-> >
-[...]
-> > Why does KMS need to poll so frequently?  40 minutes of CPU time
-> > accumulated in 4 hours of uptime translates to 16% of the CPU being
-> > consumed by kslowd daemons, which seems... excessive.
-> >
-[...]
-> > I have the following patch which I'm going to install later tonight to
-> > see if I can figure out if it really is drm_crtc_helper.c which is
-> > really responsible for all of the kslowd time being burned, but an
-> > examination of the source doesn't seem to show any other that I'm
-> > using that would likely be using the slow workqueue.
-> 
-> It most likely is, but polling shouldn't really be taking huge amounts
-> of CPU, unless there are some u/mdelays in there which would be bad.
-> 
-> In theory on Intel with hotplug irqs we shouldn't be poilling at all,
-> I must check why, the other thing is you could be suffering from the
-> hotplug irq problem that others have reported, this would cause slow
-> work triggers which aren't part of the normal poll cycle.
+On Tue, Jun 15, 2010 at 12:20 AM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Jun 14, 2010 at 11:16:29PM +0800, Jeff Chua wrote:
 
-This sounds exactly like the issue I've been seeing on a T500 laptop, as
-well (GM45 board).  The slowdowns render the system essentially
-unusable, as it can spend a loooong time just moving the mouse cursor a
-few pixels on the screen.  During this time, nothing else on the display
-is updating (glxgears drops to 0fps).  Things generally seem to be
-working fine if I am not moving the mouse, or if I'm not running X.
 
-I do not have this issue on a desktop machine with a G45.
+> This is a warning that you can ignore, it's been fixed in the latest
+> tree (2.6.35-rc3).
+>
+> try that and see.
 
-Unfortunately, bisection is proving difficult because the exact set of
-conditions to trigger the problems seem to be eluding me: sometimes the
-kernel will work perfectly fine for quite some time, and then go
-downhill from there.  However, this is definitely a regression
-introduced after 2.6.35-rc1.
+Greg,
 
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Ok, just tried rc3 and it's fixed the 1st OOPS.
+
+But I'm still seeing the "ataX" incrementing from ata7 to ata8, ata9
+... after taking out and putting back the card. It seems the interface
+is still not shutting down properly. ... Any command to shutdown it
+down gracefully?
+
+ata9.00: disabled
+2010-06-15T02:32:04.531177+08:00 boston kernel: ata9.00: disabled
+sd 8:0:0:0: [sdb] Synchronizing SCSI cache
+sd 8:0:0:0: [sdb] Result: hostbyte=0x04 driverbyte=0x00
+sd 8:0:0:0: [sdb] Stopping disk
+sd 8:0:0:0: [sdb] START_STOP FAILED
+sd 8:0:0:0: [sdb] Result: hostbyte=0x04 driverbyte=0x00
+2010-06-15T02:32:04.568687+08:00 boston kernel: sd 8:0:0:0: [sdb]
+Synchronizing SCSI cache
+2010-06-15T02:32:04.568715+08:00 boston kernel: sd 8:0:0:0: [sdb]
+Result: hostbyte=0x04 driverbyte=0x00
+2010-06-15T02:32:04.568719+08:00 boston kernel: sd 8:0:0:0: [sdb] Stopping disk
+2010-06-15T02:32:04.568731+08:00 boston kernel: sd 8:0:0:0: [sdb]
+START_STOP FAILED
+2010-06-15T02:32:04.568735+08:00 boston kernel: sd 8:0:0:0: [sdb]
+Result: hostbyte=0x04 driverbyte=0x00
+ata9: failed to stop engine (-5)
+ahci 0000:05:00.0: PCI INT A disabled
+2010-06-15T02:32:05.068765+08:00 boston kernel: ata9: failed to stop engine (-5)
+2010-06-15T02:32:05.068797+08:00 boston kernel: ahci 0000:05:00.0: PCI
+INT A disabled
+
+
+
+Thanks,
+Jeff
