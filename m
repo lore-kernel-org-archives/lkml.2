@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab0FNOR4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 10:17:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41101 "EHLO mx1.redhat.com"
+	id S1754602Ab0FNOSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 10:18:01 -0400
+Received: from thunk.org ([69.25.196.29]:40218 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754451Ab0FNORz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 10:17:55 -0400
-Date: Mon, 14 Jun 2010 17:13:13 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: john.r.fastabend@intel.com, markus@trippelsdorf.de,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       yanmin_zhang@linux.intel.com, alex.shi@intel.com, tim.c.chen@intel.com
-Subject: Re: mpd client timeouts (bisected) 2.6.35-rc3
-Message-ID: <20100614141313.GB25547@redhat.com>
-References: <20100612.145835.123986343.davem@davemloft.net> <4C149147.3080808@intel.com> <4C15414E.5090201@intel.com> <20100613.171318.193707256.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100613.171318.193707256.davem@davemloft.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754456Ab0FNOR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 10:17:59 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linux Kernel Developers List <linux-kernel@vger.kernel.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@ZenIV.linux.org.uk>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Johannes Stezenbach <js@sig21.net>
+Subject: [PATCH -v3] Only honor the FIGETBSZ ioctl for regular files and directories
+Date: Mon, 14 Jun 2010 10:17:57 -0400
+Message-Id: <1276525077-26347-1-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1276524911-26177-1-git-send-email-tytso@mit.edu>
+References: <1276524911-26177-1-git-send-email-tytso@mit.edu>
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 13, 2010 at 05:13:18PM -0700, David Miller wrote:
-> From: John Fastabend <john.r.fastabend@intel.com>
-> Date: Sun, 13 Jun 2010 13:36:30 -0700
-> 
-> > Needed to set the wcard bit in copy_skb_header otherwise it will not
-> > be cleared when called from skb_clone.  Which then hits the loopback
-> > device gets pushed into the rx path and is eventually dropped. The
-> > following patch fixes this. Hopefully, this is easy and fast enough
-> > for you Dave.
-> > 
-> > 
-> > [PATCH] net: fix deliver_no_wcard regression on loopback device
-> > 
-> > deliver_no_wcard is not being set in skb_copy_header.
-> > In the skb_cloned case it is not being cleared and
-> > may cause the skb to be dropped when the loopback device
-> > pushes it back up the stack.
-> > 
-> > Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
-> 
-> Applied, but your email client corrupted this patch in many
-> ways.  Please correct this for next time, thanks.
+FIGETBSZ has an ioctl number of _IO(0x00,2) == 2, which can conflict
+with device driver ioctls.  Let's avoid the potential for problems by
+only honoring the ioctl number for files where this ioctl is likely
+going to be useful: for regular files and directories
 
-FWIW:
+Thanks to Johannes Stezenbach for pointing this consequence of commit
+19ba0559.
 
-Tested-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Johannes Stezenbach <js@sig21.net>
+---
 
+Fixed up commit description
+
+ fs/compat_ioctl.c |    6 +++++-
+ fs/ioctl.c        |    5 ++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index 641640d..b8607fe 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -1715,8 +1715,12 @@ asmlinkage long compat_sys_ioctl(unsigned int fd, unsigned int cmd,
+ 		goto out_fput;
+ #endif
+ 
+-	case FIBMAP:
+ 	case FIGETBSZ:
++		if (S_ISDIR(filp->f_path.dentry->d_inode->i_mode))
++			break;
++		/*FALL THROUGH */
++
++	case FIBMAP:
+ 	case FIONREAD:
+ 		if (S_ISREG(filp->f_path.dentry->d_inode->i_mode))
+ 			break;
+diff --git a/fs/ioctl.c b/fs/ioctl.c
+index 2d140a7..e578dab 100644
+--- a/fs/ioctl.c
++++ b/fs/ioctl.c
+@@ -597,7 +597,10 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
+ 	{
+ 		struct inode *inode = filp->f_path.dentry->d_inode;
+ 		int __user *p = (int __user *)arg;
+-		return put_user(inode->i_sb->s_blocksize, p);
++
++		if (S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode))
++			return put_user(inode->i_sb->s_blocksize, p);
++		/* FALL THROUGH */
+ 	}
+ 
+ 	default:
 -- 
-MST
+1.7.0.4
+
