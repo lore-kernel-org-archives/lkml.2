@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754326Ab0FNTjJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 15:39:09 -0400
-Received: from kroah.org ([198.145.64.141]:43736 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753319Ab0FNTjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 15:39:08 -0400
-Date: Mon, 14 Jun 2010 12:35:54 -0700
-From: Greg KH <greg@kroah.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: kristen.c.accardi@intel.com, Dely Sy <dely.l.sy@intel.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Takayoshi Kochi <t-kochi@bq.jp.nec.com>, Matthew Wilcox <willy@hp.com>
-Subject: Re: e-SATA ExpressCard - OOPS plus incrementing "ataX" on
- Linux-2.6.xx
-Message-ID: <20100614193554.GB19411@kroah.com>
-References: <AANLkTimnqVSom2qHetXMBPiCNTYd-yc8Tl6a64n0zTSk@mail.gmail.com>
- <20100614162002.GA13902@kroah.com>
- <AANLkTinwaYy5Z528PraVuWUsU2pJBLoq0c2hgIGirTNn@mail.gmail.com>
+	id S1751991Ab0FNTmv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 15:42:51 -0400
+Received: from n3-vm0.bullet.mail.gq1.yahoo.com ([67.195.23.156]:39552 "HELO
+	n3-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751050Ab0FNTmt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 15:42:49 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 801276.42686.bm@omp130.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=WCKZLoD0gnKRxg5a1xHBxehKG+OhYy+sNxz6A4SymzejDsSLcYiPj3lm6lufq4Us/5R0kMUMZDgQmQdzRKVcR4CyIyq0z3oSaZx2ZHWLQGtfsKHLGrXbts7v6ss5U5KkjWGvIsfVgXT1jEvaVmk0cPxvaCgC8N/aEhLAp6U8cuc=;
+Message-ID: <126481.74374.qm@web180312.mail.gq1.yahoo.com>
+X-YMail-OSG: 394Dz.8VM1k36c.k7TnVBZ6vhYFx0w9XeriMuQkrIc_9AFy
+ M9yTBd4x7CN5N9Ici9VwNNex.9Q9Pf8vNzDHINUSYla0OuXNYrZAXKcWDKEF
+ Cpn_ZssV7nb.kMdOIIOwOtYMBZEqbtp64LgSeJg9BwEAPw5FQxBvJx0BDksK
+ KGk1LnGtCSy3lL0YdCRkaPIipVQtwW3lnxCyiAmE7GhxyJKr2nxWavH26yOH
+ 3wnRW8AtLQBylpuAVeggzw5FDQsIG7t1ZH6PVsAGQchFgA1opaENus5sHNhB
+ KWiZ9YEu0TJgAthiYDA--
+X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.103.269680
+Date: Mon, 14 Jun 2010 12:42:46 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCHv4.1 07/13] USB: gadget: g_ether: updated INF file
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>,
+       Xiaofan Chen <xiaofanc@gmail.com>
+Cc: linux-usb@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+In-Reply-To: <AANLkTind4hJcY6vUiAWwZncdB3TuW76951m-3CaLwBzx@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinwaYy5Z528PraVuWUsU2pJBLoq0c2hgIGirTNn@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 02:44:36AM +0800, Jeff Chua wrote:
-> On Tue, Jun 15, 2010 at 12:20 AM, Greg KH <greg@kroah.com> wrote:
-> > On Mon, Jun 14, 2010 at 11:16:29PM +0800, Jeff Chua wrote:
-> 
-> 
-> > This is a warning that you can ignore, it's been fixed in the latest
-> > tree (2.6.35-rc3).
-> >
-> > try that and see.
-> 
-> Greg,
-> 
-> Ok, just tried rc3 and it's fixed the 1st OOPS.
+The updated copyright note
+Looks OK to me ...  (Though it seems wrong to
+reference so many folk yet omit the original
+author (me)
+ 
 
-Note, it was not an oops, just a warning, and would not cause any
-problems.
+However, I don't see a version
+of the patch with the cleaner copyright notice.
 
-> But I'm still seeing the "ataX" incrementing from ata7 to ata8, ata9
-> ... after taking out and putting back the card. It seems the interface
-> is still not shutting down properly. ... Any command to shutdown it
-> down gracefully?
+Also, please don't rename the file without
+updating all the references to the original
+name.  Since thoses refs are in docs all over
+the web ... I think it's best to just
+not rename it.
 
-I don't know, maybe the libata developers can help you out here.
 
-good luck,
 
-greg k-h
