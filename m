@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341Ab0FNQ6o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 12:58:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:36431 "EHLO mga01.intel.com"
+	id S1756378Ab0FNQ7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 12:59:04 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:58058 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756320Ab0FNQ6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 12:58:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,415,1272870000"; 
-   d="scan'208";a="576254113"
-Subject: Re: iwlagn completely unusable with some AP since 2.6.31
-From: reinette chatre <reinette.chatre@intel.com>
-To: Norbert Preining <preining@logic.at>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100614160910.GA10738@gandalf.dynalias.org>
-References: <20100614160910.GA10738@gandalf.dynalias.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Jun 2010 09:58:42 -0700
-Message-ID: <1276534722.25793.1425.camel@rchatre-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754113Ab0FNQ7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 12:59:01 -0400
+Date: Mon, 14 Jun 2010 22:28:53 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm <kvm@vger.kernel.org>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
+ control
+Message-ID: <20100614165853.GW5191@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>
+ <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>
+ <4C10B3AF.7020908@redhat.com>
+ <20100610142512.GB5191@balbir.in.ibm.com>
+ <1276214852.6437.1427.camel@nimitz>
+ <20100611045600.GE5191@balbir.in.ibm.com>
+ <4C15E3C8.20407@redhat.com>
+ <20100614084810.GT5191@balbir.in.ibm.com>
+ <1276528376.6437.7176.camel@nimitz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1276528376.6437.7176.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Norbert,
+* Dave Hansen <dave@linux.vnet.ibm.com> [2010-06-14 08:12:56]:
 
-On Mon, 2010-06-14 at 09:09 -0700, Norbert Preining wrote:
-> Dear all,
+> On Mon, 2010-06-14 at 14:18 +0530, Balbir Singh wrote:
+> > 1. A slab page will not be freed until the entire page is free (all
+> > slabs have been kfree'd so to speak). Normal reclaim will definitely
+> > free this page, but a lot of it depends on how frequently we are
+> > scanning the LRU list and when this page got added.
 > 
-> (please cc)
-
-Since you are a regular poster to the wireless lists and you also
-submitted a bug report
-(http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2214 ) for this
-issue it does not seem as though you need help in sending this to the
-appropriate people. 
-
-> [13341.695599] iwlagn 0000:06:00.0: iwlagn_tx_agg_start on ra = 00:0a:79:eb:56:10 tid = 0
-> [13733.621786] iwlagn 0000:06:00.0: Received BA when not expected
-> [13733.621800] iwlagn 0000:06:00.0: Read index for DMA queue txq id (0), index 15, is out of range [0-256] 17 17.
-> [13734.188691] iwlagn 0000:06:00.0: Received BA when not expected
-> [13734.188704] iwlagn 0000:06:00.0: Read index for DMA queue txq id (0), index 16, is out of range [0-256] 18 18.
+> You don't have to be freeing entire slab pages for the reclaim to have
+> been useful.  You could just be making space so that _future_
+> allocations fill in the slab holes you just created.  You may not be
+> freeing pages, but you're reducing future system pressure.
 > 
-> and here it continues with many many many of those two lines. The only
-> way to resurrect the wifi card is unloading iwlagn and reloading it.
+> If unmapped page cache is the easiest thing to evict, then it should be
+> the first thing that goes when a balloon request comes in, which is the
+> case this patch is trying to handle.  If it isn't the easiest thing to
+> evict, then we _shouldn't_ evict it.
+>
 
-... as I mention above you already submitted a bug report for this issue
-and we directed you to a patch that addresses this. You have not replied
-to that suggestion with any testing, instead you posted this message on
-lkml. 
+Like I said earlier, a lot of that works correctly as you said, but it
+is also an idealization. If you've got duplicate pages and you know
+that they are duplicated and can be retrieved at a lower cost, why
+wouldn't we go after them first?
 
-> 
-> I have no idea where to go from here,
-
-How about you test the patch we proposed and work with the developers
-working on your bug report?
-
-Reinette
-
-
+-- 
+	Three Cheers,
+	Balbir
