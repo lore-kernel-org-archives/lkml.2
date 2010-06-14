@@ -1,51 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab0FNVRe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 17:17:34 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:48290 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756468Ab0FNVRd convert rfc822-to-8bit (ORCPT
+	id S1756639Ab0FNVVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 17:21:43 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:62584 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576Ab0FNVVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 17:17:33 -0400
-From: "Altobelli, David" <david.altobelli@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Prarit Bhargava <prarit@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "stable@kernel.org" <stable@kernel.org>,
-       "Camuso, Tony" <Tony.Camuso@hp.com>,
-       "dzickus@redhat.com" <dzickus@redhat.com>
-Date: Mon, 14 Jun 2010 21:16:34 +0000
-Subject: RE: [PATCH]: hpilo: fix pointer warning in ilo_ccb_setup [v2]
-Thread-Topic: [PATCH]: hpilo: fix pointer warning in ilo_ccb_setup [v2]
-Thread-Index: AcsL91Se1nwD0XcDS2++Qt24hntw1AAClIGg
-Message-ID: <92D64232F2316045B18937D5C9996B152CD7EDAE9F@GVW1144EXB.americas.hpqcorp.net>
-References: <20100608151923.10554.57721.sendpatchset@prarit.bos.redhat.com>
- <20100614122517.775fc67c.akpm@linux-foundation.org>
-In-Reply-To: <20100614122517.775fc67c.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Jun 2010 17:21:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=r3YZ39s6PfPMqOc8lwj1doAe8wutSgXIG8LrbUErSz7qwX1whIukXhWa2MKYtq6y1z
+         xwqD+M5sKR8pCR+39SMBKmr2i+3cvAtgDqJt61gOGWmE1GILLzC0hyApdU6rlq4XpVGt
+         U5HaG+oGkYyCX58vBHdx9NASiDKnkdBHg2LDY=
+Message-ID: <4C169D71.90800@gmail.com>
+Date: Mon, 14 Jun 2010 14:21:53 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
+To: Edward Shishkin <edward.shishkin@gmail.com>
+CC: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+       linux-bluetooth@vger.kernel.org, clemens@ladisch.de,
+       debora@linux.vnet.ibm.com, dri-devel@lists.freedesktop.org,
+       linux-i2c@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+       linux-media@vger.kernel.org
+Subject: Re: [PATCH 1/8]reiserfs:stree.c Fix variable set but not used.
+References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com> <1276547208-26569-2-git-send-email-justinmattock@gmail.com> <4C1699AA.3000900@gmail.com>
+In-Reply-To: <4C1699AA.3000900@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From Andrew Morton:
-> So what's happening here.  As send_fifobar_pa, send_desc_pa,
-> recv_fifobar_pa and recv_desc_pa are only ever written to, I assume
-> that we're writing a 64-bit value and then reading it back via the
-> 32-bit value which shares the same storage.
+On 06/14/2010 02:05 PM, Edward Shishkin wrote:
+> Justin P. Mattock wrote:
+>> Not sure if this is correct or not.
+>> the below patch gets rid of this warning message
+>> produced by gcc 4.6.0
+>>
+>> fs/reiserfs/stree.c: In function 'search_by_key':
+>> fs/reiserfs/stree.c:602:6: warning: variable
+>> 'right_neighbor_of_leaf_node' set but not used
+>>
+>> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+>
+> Acked-by: Edward Shishkin <edward.shishkin@gmail.com>
+>
 
-The physical addresses are used to fill out a structure defined 
-by iLO firmware that has 64 bit fields for the various queues or descriptors.
-A copy with physical addrs is copied to device memory.  The size of the 
-structure matters for the physical copy, which is why those fields need to be u64,
-not a variable type like dma_addr_t, or a pointer.
-We keep a copy with virtual addresses for use by the kernel.  The size of the 
-kernel pointer doesn't really matter, it just tells the driver where to write 
-in the shared memory.  Does that answer your question, maybe I missed 
-what concerned you?
+o.k.!!
+what about the whitespace issue?
+from what I remember I did notice the "+"
+that git does when making patches like this
+but given some many of these warnings I just
+did a quick workaround or however then figured
+to worry later on that.
+
+>> ---
+>> fs/reiserfs/stree.c | 7 ++-----
+>> 1 files changed, 2 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/fs/reiserfs/stree.c b/fs/reiserfs/stree.c
+>> index 313d39d..73086ad 100644
+>> --- a/fs/reiserfs/stree.c
+>> +++ b/fs/reiserfs/stree.c
+>> @@ -599,7 +599,6 @@ int search_by_key(struct super_block *sb, const
+>> struct cpu_key *key, /* Key to s
+>> struct buffer_head *bh;
+>> struct path_element *last_element;
+>> int node_level, retval;
+>> - int right_neighbor_of_leaf_node;
+>> int fs_gen;
+>> struct buffer_head *reada_bh[SEARCH_BY_KEY_READA];
+>> b_blocknr_t reada_blocks[SEARCH_BY_KEY_READA];
+>> @@ -617,8 +616,7 @@ int search_by_key(struct super_block *sb, const
+>> struct cpu_key *key, /* Key to s
+>>
+>> pathrelse(search_path);
+>>
+>> - right_neighbor_of_leaf_node = 0;
+>> -
+>> +
+>> /* With each iteration of this loop we search through the items in the
+>> current node, and calculate the next current node(next path element)
+>> for the next iteration of this loop.. */
+>> @@ -695,8 +693,7 @@ int search_by_key(struct super_block *sb, const
+>> struct cpu_key *key, /* Key to s
+>> starting from the root. */
+>> block_number = SB_ROOT_BLOCK(sb);
+>> expected_level = -1;
+>> - right_neighbor_of_leaf_node = 0;
+>> -
+>> +
+>> /* repeat search from the root */
+>> continue;
+>> }
+>
+>
+
