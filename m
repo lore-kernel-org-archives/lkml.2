@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab0FNUAY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 16:00:24 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:16096 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150Ab0FNUAW (ORCPT
+	id S1754885Ab0FNUDx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 16:03:53 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:55489 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791Ab0FNUDw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 16:00:22 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai Lu <yinghai.lu@oracle.com>
-Subject: Re: [PATCH -v2] x86, pci: Handle fallout pci devices with peer root bus
-Date: Mon, 14 Jun 2010 14:00:22 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Graham Ramsey <ramsey.graham@ntlworld.com>,
-       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-       Robert Richter <robert.richter@amd.com>,
-       Harald Welte <HaraldWelte@viatech.com>,
-       Joseph Chan <JosephChan@via.com.tw>, Jiri Slaby <jslaby@suse.cz>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dominik Brodowski <linux@dominikbrodowski.net>
-References: <4BF40014.30303@ntlworld.com> <4C16777A.7060600@zytor.com> <4C167B30.2080307@oracle.com>
-In-Reply-To: <4C167B30.2080307@oracle.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006141400.22653.bjorn.helgaas@hp.com>
+	Mon, 14 Jun 2010 16:03:52 -0400
+Date: Mon, 14 Jun 2010 22:04:41 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv4.1 07/13] USB: gadget: g_ether: updated INF file
+In-reply-to: <126481.74374.qm@web180312.mail.gq1.yahoo.com>
+To: Xiaofan Chen <xiaofanc@gmail.com>, David Brownell <david-b@pacbell.net>
+Cc: linux-usb@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Message-id: <op.vea3d3ld7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <126481.74374.qm@web180312.mail.gq1.yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 14, 2010 12:55:44 pm Yinghai Lu wrote:
-> On 06/14/2010 11:39 AM, H. Peter Anvin wrote:
-> > On 06/14/2010 11:34 AM, Bjorn Helgaas wrote:
-> >>
-> >> I made the point there that an HT chain may contain multiple HT/PCI
-> >> host bridges, but you are stuck on the idea that "one HT chain == one
-> >> PCI root bus."
-> 
-> should be.
-> 
-> >> I have not found the "one PCI host bridge per HT chain" requirement
-> >> in the HT spec (if you find it, please point me to it).
-> 
-> according to my experience with LinuxBIOS. AMD chipset, nvidia and serverworks (broadcom)
+On Mon, 14 Jun 2010 21:42:46 +0200, David Brownell <david-b@pacbell.net> wrote:
 
-I'm afraid I'm still not convinced.
+> The updated copyright note
+> Looks OK to me ...  (Though it seems wrong to
+> reference so many folk yet omit the original
+> author (me)
 
-> >> If an HT chain may contain multiple HT/PCI host bridges, then it's
-> >> obvious that the HT host bridge registers read by amd_bus.c don't
-> >> contain enough information to correctly assign address space to the
-> >> PCI root buses.
-> 
-> the host bridges is on AMD CPUs, 
+Uh... I basically took what Xiaofan provided and changed IDs and that's why.
+But true enough, as I think about it now, I took some parts from the original
+linux.inf file so there's probably *at* *least* as much your work as mine in
+there.
 
-Don't confuse the HT host bridge with the PCI host bridge.  The HT I/O spec
-is quite clear that it uses "host bridge" to refer to the HT host bridge,
-i.e., the interface between CPUs and a HyperTransport link.
+I'll add you in the next version.  Or should I remove the notices all
+together? Personally I feel they serve two purposes: give credit and let
+others know who might be a good person to ask question.  I'm fine either
+way...
 
-I agree that the *HT host bridge* is indeed on the AMD CPU.  But that is
-certainly not the same as the PCI host bridge that bridges between an HT
-link and a PCI bus.
+> However, I don't see a version
+> of the patch with the cleaner copyright notice.
+>
+> Also, please don't rename the file without
+> updating all the references to the original
+> name.  Since thoses refs are in docs all over
+> the web ... I think it's best to just
+> not rename it.
 
-See sections 4.9.4 (HT host bridge) and 7.4 (HT/PCI host bridge), for
-example.
+Ah, haven't thought about that.  I grepped Documentation/ but forgot
+about grepping my personal copy of the Internet I keep in my basement. ;)
 
-Bjorn
+I intended a consistent naming and that's why the rename.  In any way,
+I'll get the old name in the next version of the patch.
+
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
