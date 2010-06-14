@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550Ab0FNVOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 17:14:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34278 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756300Ab0FNVOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 17:14:31 -0400
-Message-ID: <4C169B81.8010707@redhat.com>
-Date: Mon, 14 Jun 2010 17:13:37 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
-In-Reply-To: <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1756570Ab0FNVPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 17:15:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47403 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756468Ab0FNVPs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 17:15:48 -0400
+Date: Mon, 14 Jun 2010 14:14:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: TAMUKI Shoichi <tamuki@linet.gr.jp>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Blanchard <anton@samba.org>,
+       Andi Kleen <andi@firstfloor.org>, Andy Green <andy@warmcat.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] panic: keep blinking in spite of long spin timer
+ mode
+Message-Id: <20100614141447.d11c5dac.akpm@linux-foundation.org>
+In-Reply-To: <201006102231.AA00429@tamuki.linet.gr.jp>
+References: <20100609151552.d1a8ca8d.akpm@linux-foundation.org>
+	<201006102231.AA00429@tamuki.linet.gr.jp>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 07:17 AM, Mel Gorman wrote:
-> Page reclaim cleans individual pages using a_ops->writepage() because from
-> the VM perspective, it is known that pages in a particular zone must be freed
-> soon, it considers the target page to be the oldest and it does not want
-> to wait while background flushers cleans other pages. From a filesystem
-> perspective this is extremely inefficient as it generates a very seeky
-> IO pattern leading to the perverse situation where it can take longer to
-> clean all dirty pages than it would have otherwise.
+On Fri, 11 Jun 2010 07:31:13 +0900
+TAMUKI Shoichi <tamuki@linet.gr.jp> wrote:
 
-Reclaiming clean pages should be fast enough that this should
-make little, if any, difference.
+> Hello,
+> 
+> On Wed, 9 Jun 2010 15:15:52 -0700 Andrew Morton wrote:
+> 
+> > Morse code?  Kidding?
+> 
+> I'm sorry, I'm confusing you.
+> 
+> > Sorry, no.  Nobody who uses this feature will know what what
+> > "words per minute" means.  It's nutty!
+> 
+> That is just a strained interpretation where the measure of the
+> blinking speed comes from.  The description of "words per minute"
+> has already disappeared in the latest patch.
+> 
+> > Please remind me why we're making this configurable at all.  Can't we
+> > just hardwire the thing to 1Hz or something?  Add an
+> > im_using_a_hypervisor boot option or something, if necessary?
+> 
+> For now, gta02_panic_blink(), one of panic_blink() users, expects a
+> 10Hz call rate.  IOW, it blinks at 5Hz (i.e. panicblink=36).  I think
+> that the desirable blinking speed is different according to devices.
+> 
 
-> This patch queues all dirty pages at once to maximise the chances that
-> the write requests get merged efficiently. It also makes the next patch
-> that avoids writeout from direct reclaim more straight-forward.
+gta02_panic_blink() simply toggles a gpio output.  It's trivial to
+convert that function to implement whatever behaviour we decide upon. 
+Err, in fact your patch already does that.
 
-However, this is a convincing argument :)
+I still don't think we should have a kernel boot option for this - it
+just doesn't seem useful enough.  Can we please just hard-wire the
+blinking frequency?  And once we've done that, we don't have to jump
+through hoops with this "wpm" thing.  We can use Hz.
 
-> Signed-off-by: Mel Gorman<mel@csn.ul.ie>
-
-Reviewed-by: Rik van Riel <riel@redhat.com>
-
--- 
-All rights reversed
