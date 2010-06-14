@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab0FNNCH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 09:02:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32287 "EHLO mx1.redhat.com"
+	id S1753566Ab0FNNNo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 09:13:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63326 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753141Ab0FNNCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 09:02:04 -0400
-Message-ID: <4C162846.7030303@redhat.com>
-Date: Mon, 14 Jun 2010 16:01:58 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1751826Ab0FNNNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 09:13:42 -0400
+Date: Mon, 14 Jun 2010 09:13:36 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Josef Bacik <josef@redhat.com>, linux-btrfs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: make sure to invalidate pages if we fall back on
+	buffered reads
+Message-ID: <20100614131336.GB2322@localhost.localdomain>
+References: <1276007044-17715-1-git-send-email-josef@redhat.com> <20100614081736.GA29239@infradead.org>
 MIME-Version: 1.0
-To: balbir@linux.vnet.ibm.com
-CC: Dave Hansen <dave@linux.vnet.ibm.com>, kvm <kvm@vger.kernel.org>,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
- control
-References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com> <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com> <4C10B3AF.7020908@redhat.com> <20100610142512.GB5191@balbir.in.ibm.com> <1276214852.6437.1427.camel@nimitz> <20100611045600.GE5191@balbir.in.ibm.com> <4C15E3C8.20407@redhat.com> <20100614084810.GT5191@balbir.in.ibm.com> <4C16233C.1040108@redhat.com> <20100614125010.GU5191@balbir.in.ibm.com>
-In-Reply-To: <20100614125010.GU5191@balbir.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100614081736.GA29239@infradead.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 03:50 PM, Balbir Singh wrote:
+On Mon, Jun 14, 2010 at 04:17:36AM -0400, Christoph Hellwig wrote:
+> On Tue, Jun 08, 2010 at 10:24:04AM -0400, Josef Bacik wrote:
+> > Since BTRFS can fallback on buffered reads after having done some direct reads,
+> > we need to make sure to invalidate any pages that we may have read by doing
+> > buffered IO.  This shouldn't have shown up as a visible user problem, it's just
+> > for correctness sake.  Thanks,
+> 
+> Everything else in direct I/O land uses invalidate_inode_pages2(_range),
+> why not this one?
 >
->>
->>> let me try to reason a bit. First let me explain the
->>> problem
->>>
->>> Memory is a precious resource in a consolidated environment.
->>> We don't want to waste memory via page cache duplication
->>> (cache=writethrough and cache=writeback mode).
->>>
->>> Now here is what we are trying to do
->>>
->>> 1. A slab page will not be freed until the entire page is free (all
->>> slabs have been kfree'd so to speak). Normal reclaim will definitely
->>> free this page, but a lot of it depends on how frequently we are
->>> scanning the LRU list and when this page got added.
->>> 2. In the case of page cache (specifically unmapped page cache), there
->>> is duplication already, so why not go after unmapped page caches when
->>> the system is under memory pressure?
->>>
->>> In the case of 1, we don't force a dentry to be freed, but rather a
->>> freed page in the slab cache to be reclaimed ahead of forcing reclaim
->>> of mapped pages.
->>>        
->> Sounds like this should be done unconditionally, then.  An empty
->> slab page is worth less than an unmapped pagecache page at all
->> times, no?
->>
->>      
-> In a consolidated environment, even at the cost of some CPU to run
-> shrinkers, I think potentially yes.
->    
 
-I don't understand.  If you're running the shrinkers then you're 
-evicting live entries, which could cost you an I/O each.  That's 
-expensive, consolidated or not.
+In __generic_file_aio_write if we fall back on buffered writes we call
+invalidate_mapping_pages to invalidate the buffered range, so I just did that
+here, is that acceptable?
+ 
+> >  	loff_t *ppos = &iocb->ki_pos;
+> > +	bool invalidate = false;
+> >  
+> >  	count = 0;
+> >  	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+> > @@ -1291,7 +1292,8 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+> >  							iov, pos, nr_segs);
+> >  			}
+> >  			if (retval > 0) {
+> > -				*ppos = pos + retval;
+> > +				pos += retval;
+> > +				*ppos = pos;
+> >  				count -= retval;
+> >  			}
+> >  
+> > @@ -1307,6 +1309,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+> >  				file_accessed(filp);
+> >  				goto out;
+> >  			}
+> > +			invalidate = true;
+> >  		}
+> >  	}
+> >  
+> > @@ -1343,6 +1346,10 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+> >  		if (desc.count > 0)
+> >  			break;
+> >  	}
+> > +	if (invalidate && retval > 0)
+> > +		invalidate_mapping_pages(filp->f_mapping,
+> > +					 pos >> PAGE_CACHE_SHIFT,
+> > +					 (*ppos - 1) >> PAGE_CACHE_SHIFT);
+> 
+> A little comment here would be surely useful.  Telling that we want to
+> get rid of the pages again if we were falling through from an attempted
+> direct I/O read.
+> 
 
-If you're not running the shrinkers, why does it matter if you're 
-consolidated or not?  Drop that age unconditionally.
+Will do.  I'll send an updated patch when you answer my above question.  Thanks
+for the review.
 
->>> Does the problem statement make sense? If so, do you agree with 1 and
->>> 2? Is there major concern about subverting regular reclaim? Does
->>> subverting it make sense in the duplicated scenario?
->>>
->>>        
->> In the case of 2, how do you know there is duplication?  You know
->> the guest caches the page, but you have no information about the
->> host.  Since the page is cached in the guest, the host doesn't see
->> it referenced, and is likely to drop it.
->>      
-> True, that is why the first patch is controlled via a boot parameter
-> that the host can pass. For the second patch, I think we'll need
-> something like a balloon<size>  <cache?>  with the cache argument being
-> optional.
->    
-
-Whether a page is duplicated on the host or not is per-page, it cannot 
-be a boot parameter.
-
-If we drop unmapped pagecache pages, we need to be sure they can be 
-backed by the host, and that depends on the amount of sharing.
-
-Overall, I don't see how a user can tune this.  If I were a guest admin, 
-I'd play it safe by not assuming the host will back me, and disabling 
-the feature.
-
-To get something like this to work, we need to reward cooperating guests 
-somehow.
-
->> If there is no duplication, then you may have dropped a
->> recently-used page and will likely cause a major fault soon.
->>      
-> Yes, agreed.
->    
-
-So how do we deal with this?
-
-
-
--- 
-error compiling committee.c: too many arguments to function
-
+Josef
