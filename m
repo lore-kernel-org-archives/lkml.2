@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab0FNPVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 11:21:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53985 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753166Ab0FNPVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 11:21:32 -0400
-Message-ID: <4C1648AD.5020607@zytor.com>
-Date: Mon, 14 Jun 2010 08:20:13 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1751672Ab0FNPWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 11:22:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:60122 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab0FNPWU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 11:22:20 -0400
+Date: Mon, 14 Jun 2010 11:22:19 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       viro@ZenIV.linux.org.uk, josef@redhat.com, jeffmerkey@gmail.com
+Subject: Re: [PATCH 3/5] fsfreeze: freeze_super and thaw_bdev don't play well
+ together
+Message-ID: <20100614152219.GC32354@infradead.org>
+References: <1276154395-24766-1-git-send-email-david@fromorbit.com>
+ <1276154395-24766-4-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, Borislav Petkov <bp@amd64.org>,
-       Borislav Petkov <bp@alien8.de>,
-       "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
-References: <201005271944.09541.toralf.foerster@gmx.de> <201006141544.59500.toralf.foerster@gmx.de> <AANLkTik7aQPVl2OsOIhAtMzRHDNw6jkZYzcRNtfi7QSh@mail.gmail.com> <201006141711.26975.toralf.foerster@gmx.de>
-In-Reply-To: <201006141711.26975.toralf.foerster@gmx.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276154395-24766-4-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 08:11 AM, Toralf Förster wrote:
-> 
-> Geert Uytterhoeven wrote at 16:39:00
->> I assume you did a `make clean' in between?
-> ...
->> BTW, I'm also using ccache. Always. Ever. All my (cross)compilers are
-> Well, I'm unsure - might be I made that mistake, especially b/c I use ccache 
-> too since years and didn't experienced any fault so far.
+This breaks the "feature" that we can freeze a block device that doesn't
+have a filesystem mounted yet.  For filesystems using get_sb_bdev that
+prevents a new filesystem to be mounted on them.
 
-I have certainly seen a number of cases where ccache doesn't pick up
-sublte differences, for reasons unknown.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+I'm not sure it's a particularly useful feature, but it's been there
+since day 1 of the freeze support.  The easiest way to not break it
+would be to keep the per-sb freeze count only for that case and only
+check it during mount.
