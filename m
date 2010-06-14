@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab0FNSFz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 14:05:55 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36731 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab0FNSFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 14:05:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Drbfxcszktyu0KWwLBSE4+vkIK+BX799KO9XYuKmxDD6iFI3KdDxVjE9y1fz7mknOX
-         brZBnBMDa+QNzsxq8Cvykrq+GqLg/iH6K0Ewu25+K3XQp85234Wnc+Az+nByxz/O2RWE
-         mPV7R6lMly8g9obgYU4cZIUzwrs8Nb8/MozIw=
+	id S1754194Ab0FNSGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 14:06:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23510 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753269Ab0FNSGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 14:06:19 -0400
+Message-ID: <4C166F2E.4030606@redhat.com>
+Date: Mon, 14 Jun 2010 14:04:30 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Date: Mon, 14 Jun 2010 11:05:53 -0700
-Message-ID: <AANLkTilgdKWWHaN1VUX349rbuuB6156v6TOJTPZN3iv_@mail.gmail.com>
-Subject: core dumping on NFS mounted directory
-From: Lei Sun <leisun124@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mel Gorman <mel@csn.ul.ie>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 05/12] vmscan: kill prev_priority completely
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-6-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <1276514273-27693-6-git-send-email-mel@csn.ul.ie>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi :
-   In 2.6.3x, I am logging in as a root and running app from NFS
-mounted directory. The app crashed with 0 bytes core file (I have set
-"ulimit -c unlimited", so it's not an issue).
-The following code in fs/exec.c is causing this:
+On 06/14/2010 07:17 AM, Mel Gorman wrote:
+> From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+>
+> Since 2.6.28 zone->prev_priority is unused. Then it can be removed
+> safely. It reduce stack usage slightly.
+>
+> Now I have to say that I'm sorry. 2 years ago, I thought prev_priority
+> can be integrate again, it's useful. but four (or more) times trying
+> haven't got good performance number. Thus I give up such approach.
+>
+> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+> Reviewed-by: Johannes Weiner<hannes@cmpxchg.org>
+> Signed-off-by: Mel Gorman<mel@csn.ul.ie>
 
-    /*
-     * Dont allow local users get cute and trick others to coredump
-     * into their pre-created files:
-     * Note, this is not relevant for pipes
-     */
-    if (!ispipe && (inode->i_uid != current_fsuid()))
-        goto close_fail;
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-What is the intention of above piece of code?  If it's security
-concern,  it clearly break the NFS mounted (different uid) core
-dumping logic.
-
-Thanks
-lei
+-- 
+All rights reversed
