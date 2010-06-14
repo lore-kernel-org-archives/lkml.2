@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370Ab0FNQgd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 12:36:33 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:32987 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab0FNQg3 (ORCPT
+	id S1755835Ab0FNQjd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 12:39:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61235 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab0FNQjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 12:36:29 -0400
-Date: Mon, 14 Jun 2010 17:36:24 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Ozan =?utf-8?B?w4dhxJ9sYXlhbg==?= <ozan@pardus.org.tr>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] ACPI: video: DMI workaround broken Acer 5710 BIOS
-	enabling display brightness
-Message-ID: <20100614163624.GA27141@srcf.ucam.org>
-References: <1276499864-7609-1-git-send-email-ozan@pardus.org.tr> <20100614142554.GA22158@srcf.ucam.org> <4C165684.1060609@pardus.org.tr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C165684.1060609@pardus.org.tr>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 14 Jun 2010 12:39:32 -0400
+Subject: Re: [PATCH] mtd: Fix bug using smp_processor_id() in preemptible
+ ubi_bgt1d kthread
+From: Philby John <pjohn@mvista.com>
+Reply-To: pjohn@mvista.com
+To: Jamie Lokier <jamie@shareable.org>
+Cc: linux-mtd@lists.infradead.org, linux-mips@linux-mips.org,
+       David Daney <ddaney@caviumnetworks.com>, linux-kernel@vger.kernel.org,
+       Artem Bityutskiy <dedekind1@gmail.com>
+In-Reply-To: <20100614150425.GC9550@shareable.org>
+References: <1276513457.16642.3.camel@localhost.localdomain>
+	 <20100614150425.GC9550@shareable.org>
+Content-Type: text/plain
+Date: Mon, 14 Jun 2010 22:10:18 +0530
+Message-Id: <1276533618.17818.8.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.5 (2.24.5-2.fc10) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 07:19:16PM +0300, Ozan Çağlayan wrote:
+On Mon, 2010-06-14 at 16:04 +0100, Jamie Lokier wrote:
+> Philby John wrote:
+> > mtd: Fix bug using smp_processor_id() in preemptible ubi_bgt1d kthread
+> > 
+> > On a MIPS Cavium Octeon CN5020 when trying to create a UBI volume,
+> > on the NOR flash, the kernel thread ubi_bgt1d calls
+> > cfi_amdstd_write_buffers() --> do_write_buffer() -->
+> > INVALIDATE_CACHE_UDELAY --> __udelay(). Its __udelay() that calls
+> > smp_processor_id() in preemptible code, which you are not supposed to.
+> > Fix the problem by disabling preemption.
+> 
+> The MTD code just calls udelay().
+> Are you sure it isn't permitted to call udelay() from preemptible code?
+> I think it is fine.
 
-> By *this* do you mean the specific quirk that I sent or the whole offset workaround
-> suggested and upstreamed in the bug report?
+It isn't really udelay() but smp_processor_id() that you are not to call
+from a preemptible thread. Now I also see Ed Swierk has done a similar
+thing https://patchwork.kernel.org/patch/4049/ and he comments "..which
+calls smp_processor_id(), which is not supposed to be called from a
+preemptible thread."
 
-Sorry, yeah, the entire workaround. I'll look into producing something 
-more generic. Right now the quirk is the only thing that'll work.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+So perhaps I can use preempt_disable() around just this call in function
+__udelay()?
+
+Regards,
+Philby
+
