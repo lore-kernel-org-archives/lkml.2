@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077Ab0FNXBT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 19:01:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52005 "EHLO
+	id S932072Ab0FNXHh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 19:07:37 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41226 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752094Ab0FNXBR (ORCPT
+	by vger.kernel.org with ESMTP id S1752764Ab0FNXHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 19:01:17 -0400
-Date: Mon, 14 Jun 2010 16:01:06 -0700
+	Mon, 14 Jun 2010 19:07:36 -0400
+Date: Mon, 14 Jun 2010 16:06:10 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: linux-mmc <linux-mmc@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Philip Langdale <philipl@overt.org>
-Subject: Re: [PATCH v2] MMC: fix all hangs related to mmc/sd card
- insert/removal during suspend/resume.
-Message-Id: <20100614160106.bcd92997.akpm@linux-foundation.org>
-In-Reply-To: <1276283995-10812-1-git-send-email-maximlevitsky@gmail.com>
-References: <1276283791.8557.29.camel@maxim-laptop>
-	<1276283995-10812-1-git-send-email-maximlevitsky@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, rusty@rustcorp.com.au, cl@linux-foundation.org,
+       dhowells@redhat.com, arjan@linux.intel.com, johannes@sipsolutions.net,
+       oleg@redhat.com, axboe@kernel.dk
+Subject: Re: [PATCHSET] workqueue: concurrency managed workqueue, take#5
+Message-Id: <20100614160610.3992e6cb.akpm@linux-foundation.org>
+In-Reply-To: <4C16B085.3030707@kernel.org>
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>
+	<20100614145839.8ac7687a.akpm@linux-foundation.org>
+	<4C16AA75.8030303@kernel.org>
+	<20100614153545.51fe0338.akpm@linux-foundation.org>
+	<4C16B085.3030707@kernel.org>
 X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -28,58 +30,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010 22:19:55 +0300
-Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+On Tue, 15 Jun 2010 00:43:17 +0200
+Tejun Heo <tj@kernel.org> wrote:
 
-> If you don't use CONFIG_MMC_UNSAFE_RESUME, card will now be removed
-> in pm notified while userspace is still running.
-> Thus it will be possible to sync it propely.
+> Hello,
 > 
-> Card detect workqueue is now freezeable, therefore a card insert/removal event will
-> wait till userspace is unfrozen.
+> On 06/15/2010 12:35 AM, Andrew Morton wrote:
+> > Nobody's going to remember all that stuff except yourself, and the info
+> > might be out of date.  So please update and maintain that information
+> > and retain it with the patchset.
+> > 
+> > eg: "<NEED SOME BACKING NUMBERS>".  And "Please read the patch
+> > description of the last patch for more details" is out of date.
+> > 
+> > Because right now I have a bunch of code in my inbox and little
+> > (actually "no") idea why anyone might want to merge it into anything.
+> >
+> > Trying to review a large patchset when you don't have an overall
+> > picture of what it's trying to do and how it's trying to do it is
+> > rather painful - you have to work all that stuff out from the
+> > implementation.  It's also error-prone if the implementation doesn't
+> > implement that which the author thinks it implements (ie: if it has
+> > design bugs).
 > 
-> Tested with and without CONFIG_MMC_UNSAFE_RESUME with suspend and hibernate.
+> Well, basics of the whole thing didn't change all that much since the
+> first take and most people on cc list were cc'd on each take.  The
+> biggest reason I'm still carrying the whole patchset is due to the
+> scheduler changes.  The numbers are in the third take (which you can
+> follow the links to find out).  Anyways, I'll write up another summary
+> tomorrow.
 > 
->
-> ...
->
-> @@ -158,6 +162,8 @@ void mmc_remove_host(struct mmc_host *host)
->  	device_del(&host->class_dev);
->  
->  	led_trigger_unregister_simple(host->led);
-> +
-> +	unregister_pm_notifier(&host->pm_notify);
->  }
 
-This looks a little risky.  There's a window where the pm notifier
-remains registered after we've done the device_del() and the
-led_trigger_unregister_simple().
-
-I don't know if the code's really buggy, nor if it might become buggy
-in the future as things evolve.  But as register_pm_notifier() is the
-last thing we do before mmc_start_host(), I'd have though that
-unregister_pm_notifier() should be the first thing we do after
-mmc_stop_host()?
-
->
-> ...
->
-> --- a/include/linux/mmc/host.h
-> +++ b/include/linux/mmc/host.h
-> @@ -124,6 +124,7 @@ struct mmc_host {
->  	unsigned int		f_min;
->  	unsigned int		f_max;
->  	u32			ocr_avail;
-> +	struct notifier_block	pm_notify;
->  
->  #define MMC_VDD_165_195		0x00000080	/* VDD voltage 1.65 - 1.95 */
->  #define MMC_VDD_20_21		0x00000100	/* VDD voltage 2.0 ~ 2.1 */
-> @@ -257,6 +258,8 @@ int mmc_card_can_sleep(struct mmc_host *host);
->  int mmc_host_enable(struct mmc_host *host);
->  int mmc_host_disable(struct mmc_host *host);
->  int mmc_host_lazy_disable(struct mmc_host *host);
-> +int mmc_pm_notify(struct notifier_block *notify_block, unsigned long, void *);
-
-It's unusual to provide names for some of the arguments and to leave
-them out for others.
-
+Thanks.  I don't think I've looked at these patches at all since the
+first version, and I'd like to.  That was many many thousands of
+patches ago and I don't remember anything useful at all about them.  
