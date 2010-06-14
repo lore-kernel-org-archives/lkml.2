@@ -1,123 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab0FNRqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 13:46:09 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:43884 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab0FNRqF (ORCPT
+	id S1756574Ab0FNRsa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 13:48:30 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:35502 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755806Ab0FNRs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 13:46:05 -0400
-Date: Mon, 14 Jun 2010 23:15:48 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, kvm <kvm@vger.kernel.org>,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
- control
-Message-ID: <20100614174548.GB5191@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100611045600.GE5191@balbir.in.ibm.com>
- <4C15E3C8.20407@redhat.com>
- <20100614084810.GT5191@balbir.in.ibm.com>
- <4C16233C.1040108@redhat.com>
- <20100614125010.GU5191@balbir.in.ibm.com>
- <4C162846.7030303@redhat.com>
- <1276529596.6437.7216.camel@nimitz>
- <4C164E63.2020204@redhat.com>
- <1276530932.6437.7259.camel@nimitz>
- <4C1659F8.3090300@redhat.com>
+	Mon, 14 Jun 2010 13:48:29 -0400
+Date: Mon, 14 Jun 2010 13:47:57 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 8/14] samples: Uprobes samples
+Message-ID: <20100614174757.GD23754@infradead.org>
+References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
+ <20100614082923.29068.80447.sendpatchset@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C1659F8.3090300@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100614082923.29068.80447.sendpatchset@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Avi Kivity <avi@redhat.com> [2010-06-14 19:34:00]:
-
-> On 06/14/2010 06:55 PM, Dave Hansen wrote:
-> >On Mon, 2010-06-14 at 18:44 +0300, Avi Kivity wrote:
-> >>On 06/14/2010 06:33 PM, Dave Hansen wrote:
-> >>>At the same time, I see what you're trying to do with this.  It really
-> >>>can be an alternative to ballooning if we do it right, since ballooning
-> >>>would probably evict similar pages.  Although it would only work in idle
-> >>>guests, what about a knob that the host can turn to just get the guest
-> >>>to start running reclaim?
-> >>Isn't the knob in this proposal the balloon?  AFAICT, the idea here is
-> >>to change how the guest reacts to being ballooned, but the trigger
-> >>itself would not change.
-> >I think the patch was made on the following assumptions:
-> >1. Guests will keep filling their memory with relatively worthless page
-> >    cache that they don't really need.
-> >2. When they do this, it hurts the overall system with no real gain for
-> >    anyone.
-> >
-> >In the case of a ballooned guest, they _won't_ keep filling memory.  The
-> >balloon will prevent them.  So, I guess I was just going down the path
-> >of considering if this would be useful without ballooning in place.  To
-> >me, it's really hard to justify _with_ ballooning in place.
+On Mon, Jun 14, 2010 at 01:59:23PM +0530, Srikar Dronamraju wrote:
+> samples.patch
 > 
-> There are two decisions that need to be made:
+> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 > 
-> - how much memory a guest should be given
-> - given some guest memory, what's the best use for it
+> Uprobes Samples
 > 
-> The first question can perhaps be answered by looking at guest I/O
-> rates and giving more memory to more active guests.  The second
-> question is hard, but not any different than running non-virtualized
-> - except if we can detect sharing or duplication.  In this case,
-> dropping a duplicated page is worthwhile, while dropping a shared
-> page provides no benefit.
-
-I think there is another way of looking at it, give some free memory
-
-1. Can the guest run more applications or run faster
-2. Can the host potentially get this memory via ballooning or some
-other means to start newer guest instances
-
-I think the answer to 1 and 2 is yes.
-
+> This provides an example uprobes module in the samples directory.
 > 
-> How the patch helps answer either question, I'm not sure.  I don't
-> think preferential dropping of unmapped page cache is the answer.
->
+> To run this module run (as root)
+>  insmod uprobe_example.ko vaddr=<vaddr> pid=<pid>
+> 	 Where <vaddr> is the address where we want to place the probe.
+> 		<pid> is the pid of the process we are interested to probe.
 
-Preferential dropping as selected by the host, that knows about the
-setup and if there is duplication involved. While we use the term
-preferential dropping, remember it is still via LRU and we don't
-always succeed. It is a best effort (if you can and the unmapped pages
-are not highly referenced) scenario.
- 
-> >>My issue is that changing the type of object being preferentially
-> >>reclaimed just changes the type of workload that would prematurely
-> >>suffer from reclaim.  In this case, workloads that use a lot of unmapped
-> >>pagecache would suffer.
-> >>
-> >>btw, aren't /proc/sys/vm/swapiness and vfs_cache_pressure similar knobs?
-> >Those tell you how to balance going after the different classes of
-> >things that we can reclaim.
-> >
-> >Again, this is useless when ballooning is being used.  But, I'm thinking
-> >of a more general mechanism to force the system to both have MemFree
-> >_and_ be acting as if it is under memory pressure.
-> 
-> If there is no memory pressure on the host, there is no reason for
-> the guest to pretend it is under pressure.  If there is memory
-> pressure on the host, it should share the pain among its guests by
-> applying the balloon.  So I don't think voluntarily dropping cache
-> is a good direction.
->
+What's the point of this sample?  It's a sub-set of what the perf
+uprobes inteface supports, and writing kernel modules to probe userspace
+code is braindead to start with.  So if you remove this example of what
+people should not do we can also get rid of all the exports.
 
-There are two situations
-
-1. Voluntarily drop cache, if it was setup to do so (the host knows
-that it caches that information anyway)
-2. Drop the cache on either a special balloon option, again the host
-knows it caches that very same information, so it prefers to free that
-up first. 
-
--- 
-	Three Cheers,
-	Balbir
