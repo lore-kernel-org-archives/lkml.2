@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab0FNM3G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 08:29:06 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53192 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab0FNM3E (ORCPT
+	id S1752265Ab0FNM3i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 08:29:38 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:52624 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752146Ab0FNM3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 08:29:04 -0400
-Date: Mon, 14 Jun 2010 14:28:53 +0200
-From: Luotao Fu <l.fu@pengutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Luotao Fu <l.fu@pengutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3 V2] gpio: add STMPE811 gpio controller support
-Message-ID: <20100614122853.GC12027@pengutronix.de>
-Mail-Followup-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-	Luotao Fu <l.fu@pengutronix.de>,
-	Samuel Ortiz <sameo@linux.intel.com>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1276251195-22981-1-git-send-email-l.fu@pengutronix.de> <1276511558-27121-3-git-send-email-l.fu@pengutronix.de> <20100614115123.GB14604@rakim.wolfsonmicro.main> <20100614120943.GB12027@pengutronix.de> <20100614121349.GC14604@rakim.wolfsonmicro.main>
+	Mon, 14 Jun 2010 08:29:36 -0400
+Date: Mon, 14 Jun 2010 22:29:12 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, sandeen@sandeen.net,
+       Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH v2] xfs: Make fiemap works with sparse file.
+Message-ID: <20100614122912.GD6590@dastard>
+References: <1276308495-14267-1-git-send-email-tao.ma@oracle.com>
+ <20100614002705.GA6590@dastard>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5G06lTa6Jq83wMTw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100614121349.GC14604@rakim.wolfsonmicro.main>
-X-PGP-Key-ID: 0xE5325261
-X-URL: http://www.pengutronix.de/
-X-Sent-From: Pengutronix Hildesheim
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 14:23:04 up 7 days,  4:51, 53 users,  load average: 0.68, 0.42,
-	0.25
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: l.fu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20100614002705.GA6590@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 14, 2010 at 10:27:06AM +1000, Dave Chinner wrote:
+> On Sat, Jun 12, 2010 at 10:08:15AM +0800, Tao Ma wrote:
+> > The reason is that in xfs_getbmap we will
+> > calculate holes and set it in 'out', while out is malloced by
+> > bmv_count(fi_extent_max+1) which didn't consider holes. So in the
+> > worst case, if 'out' vector looks like
+> > [hole, extent, hole, extent, hole, ... hole, extent, hole],
+> > we will only return half of fi_extent_max extents.
+> 
+> Right, it's not broken, we simply return less than fi_extent_mex
+> extents when there are holes. I don't see that as a problem as
+> applications have to handle that case anyway, and....
+> 
+> > So in xfs_vn_fiemap, we should consider this worst case. If the
+> > user wants fi_extent_max extents, we need a 'out' with size of
+> > 2 *fi_extent_max + 2(one more the header).
+> 
+> That's rather dangerous, I think. It relies on other code to catch
+> the buffer overrun that this sets up for fragmented, non-sparse
+> files. Personally I'd much prefer to return fewer extents for sparse
+> files than to add a landmine like this into the kernel code....
 
---5G06lTa6Jq83wMTw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I just had a thought - if you want to avoid holes being reported to
+fiemap, then add a BMV_IF_NO_HOLES flag to xfs_getbmap() and skip
+holes in the mappin gloop when this flag is set. That will make
+fiemap fill in the full number of extents without hacking the
+extent count...
 
-Hi Mark,
-On Mon, Jun 14, 2010 at 01:13:49PM +0100, Mark Brown wrote:
-> On Mon, Jun 14, 2010 at 02:09:43PM +0200, Luotao Fu wrote:
-> > On Mon, Jun 14, 2010 at 12:51:23PM +0100, Mark Brown wrote:
->=20
-> > > Assuming you're able to do interrupts on the GPIOs you should now be
-> > > able to implement to_irq() as well.
->=20
-> > The chip can indeed generate irqs on the GPIO line. I, however, kept out
-> > the irq stuff for now because i want to get the core functionalies done
-> > for this turn. I'd like to add the irq stuff with a separate patch late=
-r.
->=20
-> It should be a trivial function - it just does a mapping from a GPIO
-> number to an IRQ number.
+Cheers,
 
-right, to_irq is simple. However, there're some more stuff necessary for
-gpio irq on this chip, since it has separate registers for GPIO
-interrupt control and status. A further gpio chip might be needed
-needed to get the stuff done. Hence I'd like to push out the most
-importatn core funcationalities out for the first turn before I take a
-deeper look into other stuffs.
-
-thanks
-
-cheers
-Luotao Fu
-
---=20
-Pengutronix e.K.                           | Dipl.-Ing. Luotao Fu        |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
---5G06lTa6Jq83wMTw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkwWIIUACgkQkLuxfMCkDTYMzgCeP1B2mifNmw+2BZXSxYGvScIB
-CFoAnjtz7Vy7u36qYJXIrfH0fVZHrO9X
-=LpwK
------END PGP SIGNATURE-----
-
---5G06lTa6Jq83wMTw--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
