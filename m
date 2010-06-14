@@ -1,98 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab0FNTM2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 15:12:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43158 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750882Ab0FNTM1 (ORCPT
+	id S1753895Ab0FNTNx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 15:13:53 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:46753 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753378Ab0FNTNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 15:12:27 -0400
-Date: Mon, 14 Jun 2010 12:12:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: ygeorgie@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] serial: mcf: Don't take spinlocks in already
- protected functions
-Message-Id: <20100614121225.a03c9203.akpm@linux-foundation.org>
-In-Reply-To: <1276070186-11393-1-git-send-email-ygeorgie@gmail.com>
-References: <1276070186-11393-1-git-send-email-ygeorgie@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Jun 2010 15:13:51 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-arch@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>,
+       linux-kernel@vger.kernel.org,
+       Parisc List <linux-parisc@vger.kernel.org>
+Subject: Re: [PATCH 4/5] parisc: Remove *(.text.*) pattern from the linker script
+In-Reply-To: <1276528859.5374.29.camel@mulgrave.site>
+References: <1276519112-11649-1-git-send-email-matt@console-pimps.org> <1276519112-11649-4-git-send-email-matt@console-pimps.org> <1276528859.5374.29.camel@mulgrave.site>
+User-Agent: Notmuch/0.3.1-61-g3f63bb6 (http://notmuchmail.org) Emacs/23.1.90.2 (x86_64-unknown-linux-gnu)
+Date: Mon, 14 Jun 2010 20:13:50 +0100
+Message-ID: <877hm1zatt.fsf@linux-g6p1.site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  9 Jun 2010 09:56:26 +0200
-ygeorgie@gmail.com wrote:
-
-> From: Yury Georgievskiy <ygeorgie@gmail.com>
+On Mon, 14 Jun 2010 10:20:59 -0500, James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
 > 
-> Don't take the port spinlock in uart functions where the serial core
-> already takes care of locking/unlocking them.
-> 
-> The code would actually lock up on architectures where spinlocks are
-> implemented.
-> 
-> Also protect calling mcf_rx_chars/mcf_tx_chars in the
-> interrupt handler by the port spinlock and use IRQ_RETVAL
-> to return from isr.
-> 
+> This would destroy all of the named parisc text ordering we do above the
+> removed line because now you'd have swept up all the function sections
+> before we get to them, won't it?
 
-Thanks.  Did you runtime test this?
+Argh, sorry, you're completely right. I was a bit overzealous with this
+change. I'll drop it. In fact, given the very specific things that
+parisc does with the .text.* sections, this entire series makes no sense
+- it doesn't make sense to change TEXT_TEXT in a way that means parisc
+can no longer use it.
 
-> @@ -368,11 +354,15 @@ static irqreturn_t mcf_interrupt(int irq, void *data)
->  	unsigned int isr;
->  
->  	isr = readb(port->membase + MCFUART_UISR) & pp->imr;
-> +
-> +	spin_lock(&port->lock);
->  	if (isr & MCFUART_UIR_RXREADY)
->  		mcf_rx_chars(pp);
->  	if (isr & MCFUART_UIR_TXREADY)
->  		mcf_tx_chars(pp);
-> -	return IRQ_HANDLED;
-> +	spin_unlock(&port->lock);
-> +
-> +	return IRQ_RETVAL(isr);
->  }
-
-I think this is a little abusive of IRQ_RETVAL.  If there are some bits
-set in `isr' other than MCFUART_UIR_RXREADY and MCFUART_UIR_TXREADY, we
-claim we handled it, only we didn't.
-
-Probably the code works OK, but it all seems a bit uncomfortable. 
-Perhaps make it more explicit?
-
-
---- a/drivers/serial/mcf.c~serial-mcf-dont-take-spinlocks-in-already-protected-functions-fix
-+++ a/drivers/serial/mcf.c
-@@ -352,17 +352,22 @@ static irqreturn_t mcf_interrupt(int irq
- 	struct uart_port *port = data;
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
- 	unsigned int isr;
-+	irqreturn_t ret = IRQ_NONE;
- 
- 	isr = readb(port->membase + MCFUART_UISR) & pp->imr;
- 
- 	spin_lock(&port->lock);
--	if (isr & MCFUART_UIR_RXREADY)
-+	if (isr & MCFUART_UIR_RXREADY) {
- 		mcf_rx_chars(pp);
--	if (isr & MCFUART_UIR_TXREADY)
-+		ret = IRQ_HANDLED;
-+	}
-+	if (isr & MCFUART_UIR_TXREADY) {
- 		mcf_tx_chars(pp);
-+		ret = IRQ_HANDLED;
-+	}
- 	spin_unlock(&port->lock);
- 
--	return IRQ_RETVAL(isr);
-+	return ret;
- }
- 
- /****************************************************************************/
-_
-
+Thanks for the review, James.
