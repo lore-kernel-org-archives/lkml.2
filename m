@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab0FNPUN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 11:20:13 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60553 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832Ab0FNPUL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 11:20:11 -0400
-Date: Mon, 14 Jun 2010 11:20:11 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       viro@ZenIV.linux.org.uk, josef@redhat.com, jeffmerkey@gmail.com
-Subject: Re: [PATCH 2/5] fsfreeze: emergency thaw will deadlock on s_umount
-Message-ID: <20100614152011.GB32354@infradead.org>
-References: <1276154395-24766-1-git-send-email-david@fromorbit.com>
- <1276154395-24766-3-git-send-email-david@fromorbit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276154395-24766-3-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752527Ab0FNPV1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 11:21:27 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:33691 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253Ab0FNPV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 11:21:26 -0400
+Date: Mon, 14 Jun 2010 17:20:57 +0200
+From: Florian Mickler <florian@mickler.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Jonathan Corbet <corbet@lwn.net>, Frederic Weisbecker <fweisbec@gmail.com>,
+       markgross@thegnar.org, linville@tuxdriver.com,
+       linux-kernel@vger.kernel.org,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [linux-pm] [PATCH v4] pm_qos: make update_request non blocking
+Message-ID: <20100614172057.778a49d0@schatten.dmk.lab>
+In-Reply-To: <1276528206.5374.24.camel@mulgrave.site>
+References: <1276097381-3982-1-git-send-email-florian@mickler.org>
+	<1276097832.4343.223.camel@mulgrave.site>
+	<20100609180033.39d5b499@schatten.dmk.lab>
+	<1276099645.4343.257.camel@mulgrave.site>
+	<20100609183204.1eeca494@schatten.dmk.lab>
+	<1276103149.4343.350.camel@mulgrave.site>
+	<20100610094525.0449d797@schatten.dmk.lab>
+	<1276177144.27283.37.camel@mulgrave.site>
+	<20100610164118.15ec7a05@schatten.dmk.lab>
+	<1276266352.2862.70.camel@mulgrave.site>
+	<20100614163339.755a2b5b@schatten.dmk.lab>
+	<1276526646.5374.8.camel@mulgrave.site>
+	<20100614164948.3b39d550@schatten.dmk.lab>
+	<1276528206.5374.24.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 05:19:51PM +1000, Dave Chinner wrote:
-> The emergency thaw process uses iterate_super() which holds the
-> sb->s_umount lock in read mode. The current thaw_super() code takes
-> the sb->s_umount lock in write mode, hence leading to an instant
-> deadlock.
+On Mon, 14 Jun 2010 10:10:06 -0500
+James Bottomley <James.Bottomley@suse.de> wrote:
+ 
+> On closer inspection, it looks like the
+> notifier mutexes are sufficient to make sure it doesn't return running
+> the notifier to be removed ... but that does mean that add and remove
+> require user context.
 > 
-> Pass the emergency state into the thaw_bdev/thaw_super code to avoid
-> taking the s_umount lock in this case. We are running under the bdev
-> freeze mutex, so this is still serialised against freeze despite
-> only having a read lock on the sb->s_umount. Hence it should be safe
-> to execute in this manner, especially given that emergency thaw is a
-> rarely executed "get-out-of-jail" feature.
+> James
+> 
 
-This is correct as long as no one calls thaw_super directly, which
-is not the case currently.
+Yes. I don't think we need to make the add and remove callable from
+interrupt context?
 
+Cheers,
+Flo
