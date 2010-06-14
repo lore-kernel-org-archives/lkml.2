@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570Ab0FNVPt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 17:15:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47403 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756468Ab0FNVPs (ORCPT
+	id S1756594Ab0FNVRe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 17:17:34 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:48290 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756468Ab0FNVRd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 17:15:48 -0400
-Date: Mon, 14 Jun 2010 14:14:47 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: TAMUKI Shoichi <tamuki@linet.gr.jp>
-Cc: Ingo Molnar <mingo@elte.hu>, Anton Blanchard <anton@samba.org>,
-       Andi Kleen <andi@firstfloor.org>, Andy Green <andy@warmcat.com>,
-       Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] panic: keep blinking in spite of long spin timer
- mode
-Message-Id: <20100614141447.d11c5dac.akpm@linux-foundation.org>
-In-Reply-To: <201006102231.AA00429@tamuki.linet.gr.jp>
-References: <20100609151552.d1a8ca8d.akpm@linux-foundation.org>
-	<201006102231.AA00429@tamuki.linet.gr.jp>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Jun 2010 17:17:33 -0400
+From: "Altobelli, David" <david.altobelli@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Prarit Bhargava <prarit@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "stable@kernel.org" <stable@kernel.org>,
+       "Camuso, Tony" <Tony.Camuso@hp.com>,
+       "dzickus@redhat.com" <dzickus@redhat.com>
+Date: Mon, 14 Jun 2010 21:16:34 +0000
+Subject: RE: [PATCH]: hpilo: fix pointer warning in ilo_ccb_setup [v2]
+Thread-Topic: [PATCH]: hpilo: fix pointer warning in ilo_ccb_setup [v2]
+Thread-Index: AcsL91Se1nwD0XcDS2++Qt24hntw1AAClIGg
+Message-ID: <92D64232F2316045B18937D5C9996B152CD7EDAE9F@GVW1144EXB.americas.hpqcorp.net>
+References: <20100608151923.10554.57721.sendpatchset@prarit.bos.redhat.com>
+ <20100614122517.775fc67c.akpm@linux-foundation.org>
+In-Reply-To: <20100614122517.775fc67c.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010 07:31:13 +0900
-TAMUKI Shoichi <tamuki@linet.gr.jp> wrote:
+> From Andrew Morton:
+> So what's happening here.  As send_fifobar_pa, send_desc_pa,
+> recv_fifobar_pa and recv_desc_pa are only ever written to, I assume
+> that we're writing a 64-bit value and then reading it back via the
+> 32-bit value which shares the same storage.
 
-> Hello,
-> 
-> On Wed, 9 Jun 2010 15:15:52 -0700 Andrew Morton wrote:
-> 
-> > Morse code?  Kidding?
-> 
-> I'm sorry, I'm confusing you.
-> 
-> > Sorry, no.  Nobody who uses this feature will know what what
-> > "words per minute" means.  It's nutty!
-> 
-> That is just a strained interpretation where the measure of the
-> blinking speed comes from.  The description of "words per minute"
-> has already disappeared in the latest patch.
-> 
-> > Please remind me why we're making this configurable at all.  Can't we
-> > just hardwire the thing to 1Hz or something?  Add an
-> > im_using_a_hypervisor boot option or something, if necessary?
-> 
-> For now, gta02_panic_blink(), one of panic_blink() users, expects a
-> 10Hz call rate.  IOW, it blinks at 5Hz (i.e. panicblink=36).  I think
-> that the desirable blinking speed is different according to devices.
-> 
-
-gta02_panic_blink() simply toggles a gpio output.  It's trivial to
-convert that function to implement whatever behaviour we decide upon. 
-Err, in fact your patch already does that.
-
-I still don't think we should have a kernel boot option for this - it
-just doesn't seem useful enough.  Can we please just hard-wire the
-blinking frequency?  And once we've done that, we don't have to jump
-through hoops with this "wpm" thing.  We can use Hz.
-
+The physical addresses are used to fill out a structure defined 
+by iLO firmware that has 64 bit fields for the various queues or descriptors.
+A copy with physical addrs is copied to device memory.  The size of the 
+structure matters for the physical copy, which is why those fields need to be u64,
+not a variable type like dma_addr_t, or a pointer.
+We keep a copy with virtual addresses for use by the kernel.  The size of the 
+kernel pointer doesn't really matter, it just tells the driver where to write 
+in the shared memory.  Does that answer your question, maybe I missed 
+what concerned you?
