@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755852Ab0FNJfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 05:35:10 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60290 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753932Ab0FNJfI (ORCPT
+	id S1755900Ab0FNJlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 05:41:15 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:53751 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab0FNJlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 05:35:08 -0400
-Date: Mon, 14 Jun 2010 11:34:59 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Jeremy Kerr <jeremy.kerr@canonical.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
-Message-ID: <20100614093459.GD12159@pengutronix.de>
-References: <201006111557.12249.jeremy.kerr@canonical.com> <19473.61547.684572.647641@ipc1.ka-ro> <201006111718.47426.jeremy.kerr@canonical.com> <19474.172.742782.972629@ipc1.ka-ro> <20100611095839.GC10894@pengutronix.de> <19474.2817.333749.485028@ipc1.ka-ro> <1276319643.1962.181.camel@pasglop> <19477.52889.982995.407051@ipc1.ka-ro> <20100614064028.GA12159@pengutronix.de> <19477.53673.644128.558827@ipc1.ka-ro>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <19477.53673.644128.558827@ipc1.ka-ro>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 14 Jun 2010 05:41:14 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: Andy Whitcroft <apw@canonical.com>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>
+Subject: [PATCH 1/1] kbuild: fix LOCALVERSION handling to match description
+Date: Mon, 14 Jun 2010 10:41:10 +0100
+Message-Id: <1276508470-21731-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+In the commit below the version string handling was modified, adding
+a '+' where no other version information was supplied:
 
-> And arch/arm/plat-s3c/clock.c has the following comment:
-> |/* We originally used an mutex here, but some contexts (see resume)
-> | * are calling functions such as clk_set_parent() with IRQs disabled
-> | * causing an BUG to be triggered.
-> | */
-> |DEFINE_SPINLOCK(clocks_lock);
-I wonder why it's needed to reparent clocks during resume.  And where
-exactly IRQs are disabled.  Hmm, this comment was initially introduced
-by v2.6.28-rc7-180-gc3391e3, its commit log talks about cpufreq, not
-resume.
+    commit 85a256d8e0116c8f5ad276730830f5d4d473344d
+    Author: David Rientjes <rientjes@google.com>
+    Date:   Wed Jan 13 13:01:05 2010 -0800
 
-Ben (Dooks): Is this still relevant?
+>From the commit the intent was as below:
 
-Best regards
-Uwe
+     - when CONFIG_LOCALVERSION_AUTO is disabled, a `+' is appended if the
+       repository has been revised beyond a tagged commit and LOCALVERSION=
+       was not passed to "make".
 
+However if the user supplies an empty LOCALVERSION on the command line
+the plus suffix is still added.  This form is useful in the case where
+the build environment knows that the version as specified is correct and
+complete but does not correspond to a specific tag.
+
+This patch changes the implementation to match the documentation
+such that specifying LOCALVERSION= on the build line is sufficient
+to suppress any suffix.
+
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index d49d96c..662e820 100644
+--- a/Makefile
++++ b/Makefile
+@@ -944,7 +944,7 @@ ifdef CONFIG_LOCALVERSION_AUTO
+ 	localver-extra = $(scm-identifier)
+ else
+ 	ifneq ($(scm-identifier),)
+-		ifeq ($(LOCALVERSION),)
++		ifeq ("$(origin LOCALVERSION)", "undefined")
+ 			localver-extra = +
+ 		endif
+ 	endif
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.0.4
+
