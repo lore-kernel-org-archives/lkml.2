@@ -1,943 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab0FNJtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 05:49:32 -0400
-Received: from mail.gmx.net ([213.165.64.20]:45916 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753295Ab0FNJt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 05:49:29 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX18Kjcpwcl4KuZTE7jJkZk4q3F25h1sCljqHTN1AjL
-	K/lYy9IEzA3ccU
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
-Date: Mon, 14 Jun 2010 11:49:24 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.4; i686; ; )
-Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <201005271944.09541.toralf.foerster@gmx.de> <201005311555.56791.toralf.foerster@gmx.de> <20100531141058.GB4915@aftab>
-In-Reply-To: <20100531141058.GB4915@aftab>
+	id S1755995Ab0FNJ6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 05:58:23 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33284 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755915Ab0FNJ6V convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 05:58:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=iurEpk3vFiizvRfeEg0loWmAvmE75AoI/UQGI7+p2WwvQn9J+ew7AjaSJnWswp3U9T
+         5xsdKgH8h5ZVBtEd7Qwnq6saCqEFxJNyiqgrgUysGsS4d375GtE5tad/9AAXNgknX911
+         1kwjfToidAKdxSPLZ1/Td3H6B64inf7fd+C0Y=
 MIME-Version: 1.0
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_ksfFMvrUrzbq9VI"
-Message-Id: <201006141149.24647.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+In-Reply-To: <4C14B5FB.1000909@nokia.com>
+References: <4C14AC8D.50702@nokia.com>
+	<4C14B5FB.1000909@nokia.com>
+Date: Mon, 14 Jun 2010 18:58:20 +0900
+X-Google-Sender-Auth: Djz58vgDN9gxFwC-xPpy7C9eWoA
+Message-ID: <AANLkTin3YFhsi_2nsOKqweOIcBYeBXHuJDJsXjD1o8mS@mail.gmail.com>
+Subject: Re: [PATCH V2 3/4] mmc_block: Add discard and secure discard support
+From: Kyungmin Park <kmpark@infradead.org>
+To: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+       "hch@lst.de" <hch@lst.de>, Madhusudhan Chikkature <madhu.cr@ti.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_ksfFMvrUrzbq9VI
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
+Hi,
 
+I tested it and get the same result from my implementation. at current
+time no performance improvement.
 
-Borislav Petkov wrote at 16:10:58
-> Did you do 'make mrproper' before rebuilding UML with it?
+Thank you,
+Kyungmin Park
 
-Today I started with a clean git tree (cloned Linus tree) and got this :
-
-foerste@n22 ~ $ start_uml.sh 
-Locating the bottom of the address space ... 0x1000
-Locating the top of the address space ... 0xc0000000
-Core dump limits :
-        soft - NONE
-        hard - NONE
-Checking that ptrace can change system call numbers...OK
-Checking syscall emulation patch for ptrace...OK
-Checking advanced syscall emulation patch for ptrace...OK
-Checking for tmpfs mount on /dev/shm...OK
-Checking PROT_EXEC mmap in /dev/shm/...OK
-Checking for the skas3 patch in the host:
-  - /proc/mm...not found: No such file or directory
-  - PTRACE_FAULTINFO...not found
-  - PTRACE_LDT...not found
-UML running in SKAS0 mode
-Adding 23175168 bytes to physical memory to account for exec-shield gap
-Linux version 2.6.35-rc3 (tfoerste@n22) (gcc version 4.4.3 (Gentoo 4.4.3-r2 
-p1.2) ) #1 Mon Jun 14 11:45:10 CEST 2010
-Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 70637
-Kernel command line: ubda=/home/tfoerste/virtual/uml/gentoo_root_fs 
-ubdb=/home/tfoerste/virtual/uml/swap_fs eth0=tuntap,,,192.168.0.253 mem=256M 
-root=98:0
-PID hash table entries: 2048 (order: 1, 8192 bytes)
-Dentry cache hash table entries: 65536 (order: 6, 262144 bytes)
-Inode-cache hash table entries: 32768 (order: 5, 131072 bytes)
-Memory: 254232k available
-Hierarchical RCU implementation.
-        RCU-based detection of stalled CPUs is disabled.
-        Verbose stalled-CPUs detection is disabled.
-NR_IRQS:15
-Calibrating delay loop... 4692.37 BogoMIPS (lpj=23461888)
-pid_max: default: 32768 minimum: 301
-Mount-cache hash table entries: 512
-Checking for host processor cmov support...Yes
-Checking that host ptys support output SIGIO...Yes
-Checking that host ptys support SIGIO on close...No, enabling workaround
-Using 2.6 host AIO
-NET: Registered protocol family 16
-bio: create slab <bio-0> at 0
-Switching to clocksource itimer
-NET: Registered protocol family 2
-IP route cache hash table entries: 4096 (order: 2, 16384 bytes)
-TCP established hash table entries: 16384 (order: 5, 131072 bytes)
-TCP bind hash table entries: 16384 (order: 4, 65536 bytes)
-TCP: Hash tables configured (established 16384 bind 16384)
-TCP reno registered
-UDP hash table entries: 256 (order: 0, 4096 bytes)
-UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
-NET: Registered protocol family 1
-RPC: Registered udp transport module.
-RPC: Registered tcp transport module.
-RPC: Registered tcp NFSv4.1 backchannel transport module.
-mconsole (version 2) initialized on /home/tfoerste/.uml/tfoerste/mconsole
-Checking host MADV_REMOVE support...OK
-UML Audio Relay (host dsp = /dev/sound/dsp, host mixer = /dev/sound/mixer)
-Host TLS support detected
-Detected host type: i386 (GDT indexes 6 to 9)
-Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
-msgmni has been set to 496
-alg: No test for stdrng (krng)
-io scheduler noop registered
-io scheduler cfq registered (default)
-tun: Universal TUN/TAP device driver, 1.6
-tun: (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>
-TCP cubic registered
-NET: Registered protocol family 17
-Initialized stdio console driver
-Console initialized on /dev/tty0
-console [tty0] enabled
-Initializing software serial port version 1
-console [mc-1] enabled
- ubda:
-EIP: 0073:[<081c4fcb>] CPU: 0 Not tainted ESP: 007b:08300b40 EFLAGS: 00010297
-    Not tainted
-EAX: 00000000 EBX: 190d2000 ECX: ffff8aea EDX: 00000000
-ESI: 191f4930 EDI: 191ef900 EBP: 191f4930 DS: 007b ES: 007b
-08300794:  [<0805e65f>] segv_handler+0x3f/0x60
-083007a4:  [<081c4fcb>] cfq_close_cooperator+0x4b/0x180
-083007b0:  [<0806eec5>] sig_handler_common+0x55/0xa0
-083007f0:  [<081c4fcb>] cfq_close_cooperator+0x4b/0x180
-08300828:  [<0806f063>] sig_handler+0x23/0x40
-08300830:  [<0806f2bd>] handle_signal+0x5d/0xa0
-08300850:  [<080715f7>] hard_handler+0x17/0x20
-0830089c:  [<081c4fcb>] cfq_close_cooperator+0x4b/0x180
-08300a4c:  [<0807a3eb>] T.696+0x9b/0xc0
-08300a74:  [<08079425>] enqueue_task+0x45/0x60
-08300a94:  [<0807945f>] activate_task+0x1f/0x30
-08300aa0:  [<080794d8>] try_to_wake_up+0x68/0xa0
-08300acc:  [<0809369f>] autoremove_wake_function+0x2f/0x60
-08300ae8:  [<0807754f>] __wake_up_common+0x4f/0x80
-08300b18:  [<08077837>] __wake_up+0x47/0x60
-08300b3c:  [<081c4fc6>] cfq_close_cooperator+0x46/0x180
-08300b58:  [<081c5440>] cfq_completed_request+0x2a0/0x560
-08300b90:  [<081b7fce>] elv_completed_request+0x7e/0xf0
-08300ba8:  [<081b98f6>] __blk_put_request+0x36/0xf0
-08300bc0:  [<081b9b26>] blk_finish_request+0x176/0x1d0
-08300be0:  [<081b9ea1>] blk_end_bidi_request+0x41/0x60
-08300bf4:  [<08068e8d>] ubd_intr+0x2d/0xf0
-08300c14:  [<080a6b32>] handle_IRQ_event+0x32/0xc0
-08300c34:  [<080a6c1b>] __do_IRQ+0x5b/0xb0
-08300c50:  [<0805b364>] do_IRQ+0x24/0x40
-08300c5c:  [<0805b59b>] sigio_handler+0x5b/0x80
-08300c70:  [<0806eec5>] sig_handler_common+0x55/0xa0
-08300c80:  [<0806efb5>] real_alarm_handler+0x35/0x40
-08300cbc:  [<080739f0>] __delay+0x20/0x30
-08300ce8:  [<0806f063>] sig_handler+0x23/0x40
-08300cf0:  [<0806f2bd>] handle_signal+0x5d/0xa0
-08300d10:  [<080715f7>] hard_handler+0x17/0x20
-
-Kernel panic - not syncing: Segfault with no mm
-083006c8:  [<0827feff>] panic+0x60/0xd0
-083006e0:  [<0805e5dc>] segv+0x2ac/0x2f0
-08300794:  [<0805e65f>] segv_handler+0x3f/0x60
-083007a4:  [<081c4fcb>] cfq_close_cooperator+0x4b/0x180
-083007b0:  [<0806eec5>] sig_handler_common+0x55/0xa0
-083007f0:  [<081c4fcb>] cfq_close_cooperator+0x4b/0x180
-08300828:  [<0806f063>] sig_handler+0x23/0x40
-08300830:  [<0806f2bd>] handle_signal+0x5d/0xa0
-08300850:  [<080715f7>] hard_handler+0x17/0x20
-0830089c:  [<081c4fcb>] cfq_close_cooperator+0x4b/0x180
-08300a4c:  [<0807a3eb>] T.696+0x9b/0xc0
-08300a74:  [<08079425>] enqueue_task+0x45/0x60
-08300a94:  [<0807945f>] activate_task+0x1f/0x30
-08300aa0:  [<080794d8>] try_to_wake_up+0x68/0xa0
-08300acc:  [<0809369f>] autoremove_wake_function+0x2f/0x60
-08300ae8:  [<0807754f>] __wake_up_common+0x4f/0x80
-08300b18:  [<08077837>] __wake_up+0x47/0x60
-08300b3c:  [<081c4fc6>] cfq_close_cooperator+0x46/0x180
-08300b58:  [<081c5440>] cfq_completed_request+0x2a0/0x560
-08300b90:  [<081b7fce>] elv_completed_request+0x7e/0xf0
-08300ba8:  [<081b98f6>] __blk_put_request+0x36/0xf0
-08300bc0:  [<081b9b26>] blk_finish_request+0x176/0x1d0
-08300be0:  [<081b9ea1>] blk_end_bidi_request+0x41/0x60
-08300bf4:  [<08068e8d>] ubd_intr+0x2d/0xf0
-08300c14:  [<080a6b32>] handle_IRQ_event+0x32/0xc0
-08300c34:  [<080a6c1b>] __do_IRQ+0x5b/0xb0
-08300c50:  [<0805b364>] do_IRQ+0x24/0x40
-08300c5c:  [<0805b59b>] sigio_handler+0x5b/0x80
-08300c70:  [<0806eec5>] sig_handler_common+0x55/0xa0
-08300c80:  [<0806efb5>] real_alarm_handler+0x35/0x40
-08300cbc:  [<080739f0>] __delay+0x20/0x30
-08300ce8:  [<0806f063>] sig_handler+0x23/0x40
-08300cf0:  [<0806f2bd>] handle_signal+0x5d/0xa0
-08300d10:  [<080715f7>] hard_handler+0x17/0x20
-
-
-EIP: 0000:[<00000000>] CPU: 0 Not tainted EFLAGS: 00000000
-    Not tainted
-EAX: 00000000 EBX: 00000000 ECX: 00000000 EDX: 00000000
-ESI: 00000000 EDI: 00000000 EBP: 00000000 DS: 0000 ES: 0000
-083006a4:  [<080986ac>] notifier_call_chain+0x3c/0x70
-083006c8:  [<0827ff27>] panic+0x88/0xd0
-083006e0:  [<0805e5dc>] segv+0x2ac/0x2f0
-08300794:  [<0805e65f>] segv_handler+0x3f/0x60
-083007a4:  [<081c4fcb>] cfq_close_cooperator+0x4b/0x180
-083007b0:  [<0806eec5>] sig_handler_common+0x55/0xa0
-083007f0:  [<081c4fcb>] cfq_close_cooperator+0x4b/0x180
-08300828:  [<0806f063>] sig_handler+0x23/0x40
-08300830:  [<0806f2bd>] handle_signal+0x5d/0xa0
-08300850:  [<080715f7>] hard_handler+0x17/0x20
-0830089c:  [<081c4fcb>] cfq_close_cooperator+0x4b/0x180
-08300a4c:  [<0807a3eb>] T.696+0x9b/0xc0
-08300a74:  [<08079425>] enqueue_task+0x45/0x60
-08300a94:  [<0807945f>] activate_task+0x1f/0x30
-08300aa0:  [<080794d8>] try_to_wake_up+0x68/0xa0
-08300acc:  [<0809369f>] autoremove_wake_function+0x2f/0x60
-08300ae8:  [<0807754f>] __wake_up_common+0x4f/0x80
-08300b18:  [<08077837>] __wake_up+0x47/0x60
-08300b3c:  [<081c4fc6>] cfq_close_cooperator+0x46/0x180
-08300b58:  [<081c5440>] cfq_completed_request+0x2a0/0x560
-08300b90:  [<081b7fce>] elv_completed_request+0x7e/0xf0
-08300ba8:  [<081b98f6>] __blk_put_request+0x36/0xf0
-08300bc0:  [<081b9b26>] blk_finish_request+0x176/0x1d0
-08300be0:  [<081b9ea1>] blk_end_bidi_request+0x41/0x60
-08300bf4:  [<08068e8d>] ubd_intr+0x2d/0xf0
-08300c14:  [<080a6b32>] handle_IRQ_event+0x32/0xc0
-08300c34:  [<080a6c1b>] __do_IRQ+0x5b/0xb0
-08300c50:  [<0805b364>] do_IRQ+0x24/0x40
-08300c5c:  [<0805b59b>] sigio_handler+0x5b/0x80
-08300c70:  [<0806eec5>] sig_handler_common+0x55/0xa0
-08300c80:  [<0806efb5>] real_alarm_handler+0x35/0x40
-08300cbc:  [<080739f0>] __delay+0x20/0x30
-08300ce8:  [<0806f063>] sig_handler+0x23/0x40
-08300cf0:  [<0806f2bd>] handle_signal+0x5d/0xa0
-08300d10:  [<080715f7>] hard_handler+0x17/0x20
-
-Terminated
-
-
--- 
-MfG/Kind regards
-Toralf Förster
-
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
-
-
---Boundary-00=_ksfFMvrUrzbq9VI
-Content-Type: text/plain;
-  charset="UTF-8";
-  name="config"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="config"
-
-#
-# Automatically generated make config: don't edit
-# Linux kernel version: 2.6.35-rc3
-# Mon Jun 14 11:44:11 2010
-#
-CONFIG_DEFCONFIG_LIST="arch/$ARCH/defconfig"
-CONFIG_GENERIC_HARDIRQS=y
-CONFIG_UML=y
-CONFIG_MMU=y
-CONFIG_NO_IOMEM=y
-# CONFIG_TRACE_IRQFLAGS_SUPPORT is not set
-CONFIG_LOCKDEP_SUPPORT=y
-# CONFIG_STACKTRACE_SUPPORT is not set
-CONFIG_GENERIC_CALIBRATE_DELAY=y
-CONFIG_GENERIC_BUG=y
-CONFIG_GENERIC_TIME=y
-CONFIG_GENERIC_CLOCKEVENTS=y
-CONFIG_IRQ_RELEASE_METHOD=y
-CONFIG_HZ=100
-
-#
-# UML-specific options
-#
-
-#
-# Host processor type and features
-#
-# CONFIG_M386 is not set
-# CONFIG_M486 is not set
-# CONFIG_M586 is not set
-# CONFIG_M586TSC is not set
-# CONFIG_M586MMX is not set
-# CONFIG_M686 is not set
-# CONFIG_MPENTIUMII is not set
-# CONFIG_MPENTIUMIII is not set
-# CONFIG_MPENTIUMM is not set
-# CONFIG_MPENTIUM4 is not set
-# CONFIG_MK6 is not set
-# CONFIG_MK7 is not set
-# CONFIG_MK8 is not set
-# CONFIG_MCRUSOE is not set
-# CONFIG_MEFFICEON is not set
-# CONFIG_MWINCHIPC6 is not set
-# CONFIG_MWINCHIP3D is not set
-# CONFIG_MGEODEGX1 is not set
-# CONFIG_MGEODE_LX is not set
-# CONFIG_MCYRIXIII is not set
-# CONFIG_MVIAC3_2 is not set
-# CONFIG_MVIAC7 is not set
-# CONFIG_MPSC is not set
-CONFIG_MCORE2=y
-# CONFIG_MATOM is not set
-# CONFIG_GENERIC_CPU is not set
-# CONFIG_X86_GENERIC is not set
-CONFIG_X86_CPU=y
-CONFIG_X86_INTERNODE_CACHE_SHIFT=6
-CONFIG_X86_CMPXCHG=y
-CONFIG_X86_L1_CACHE_SHIFT=6
-CONFIG_X86_XADD=y
-CONFIG_X86_WP_WORKS_OK=y
-CONFIG_X86_INVLPG=y
-CONFIG_X86_BSWAP=y
-CONFIG_X86_POPAD_OK=y
-CONFIG_X86_INTEL_USERCOPY=y
-CONFIG_X86_USE_PPRO_CHECKSUM=y
-CONFIG_X86_TSC=y
-CONFIG_X86_CMPXCHG64=y
-CONFIG_X86_CMOV=y
-CONFIG_X86_MINIMUM_CPU_FAMILY=5
-CONFIG_CPU_SUP_INTEL=y
-CONFIG_CPU_SUP_CYRIX_32=y
-CONFIG_CPU_SUP_AMD=y
-CONFIG_CPU_SUP_CENTAUR=y
-CONFIG_CPU_SUP_TRANSMETA_32=y
-CONFIG_CPU_SUP_UMC_32=y
-CONFIG_UML_X86=y
-# CONFIG_64BIT is not set
-CONFIG_X86_32=y
-CONFIG_RWSEM_XCHGADD_ALGORITHM=y
-# CONFIG_RWSEM_GENERIC_SPINLOCK is not set
-# CONFIG_3_LEVEL_PGTABLES is not set
-CONFIG_ARCH_HAS_SC_SIGNALS=y
-CONFIG_ARCH_REUSE_HOST_VSYSCALL_AREA=y
-# CONFIG_SMP_BROKEN is not set
-CONFIG_GENERIC_HWEIGHT=y
-# CONFIG_STATIC_LINK is not set
-CONFIG_SELECT_MEMORY_MODEL=y
-CONFIG_FLATMEM_MANUAL=y
-# CONFIG_DISCONTIGMEM_MANUAL is not set
-# CONFIG_SPARSEMEM_MANUAL is not set
-CONFIG_FLATMEM=y
-CONFIG_FLAT_NODE_MEM_MAP=y
-CONFIG_PAGEFLAGS_EXTENDED=y
-CONFIG_SPLIT_PTLOCK_CPUS=4
-# CONFIG_PHYS_ADDR_T_64BIT is not set
-CONFIG_ZONE_DMA_FLAG=0
-CONFIG_VIRT_TO_BUS=y
-# CONFIG_KSM is not set
-CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
-CONFIG_TICK_ONESHOT=y
-CONFIG_NO_HZ=y
-CONFIG_HIGH_RES_TIMERS=y
-CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
-CONFIG_LD_SCRIPT_DYN=y
-CONFIG_BINFMT_ELF=y
-# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-CONFIG_HAVE_AOUT=y
-# CONFIG_BINFMT_AOUT is not set
-CONFIG_BINFMT_MISC=y
-CONFIG_HOSTFS=y
-# CONFIG_HPPFS is not set
-CONFIG_MCONSOLE=y
-CONFIG_MAGIC_SYSRQ=y
-# CONFIG_HIGHMEM is not set
-CONFIG_KERNEL_STACK_ORDER=0
-
-#
-# General setup
-#
-CONFIG_EXPERIMENTAL=y
-CONFIG_BROKEN_ON_SMP=y
-CONFIG_INIT_ENV_ARG_LIMIT=128
-CONFIG_CROSS_COMPILE=""
-CONFIG_LOCALVERSION=""
-CONFIG_LOCALVERSION_AUTO=y
-CONFIG_SWAP=y
-CONFIG_SYSVIPC=y
-CONFIG_SYSVIPC_SYSCTL=y
-# CONFIG_POSIX_MQUEUE is not set
-# CONFIG_BSD_PROCESS_ACCT is not set
-# CONFIG_TASKSTATS is not set
-# CONFIG_AUDIT is not set
-
-#
-# RCU Subsystem
-#
-CONFIG_TREE_RCU=y
-# CONFIG_TREE_PREEMPT_RCU is not set
-# CONFIG_TINY_RCU is not set
-# CONFIG_RCU_TRACE is not set
-CONFIG_RCU_FANOUT=32
-# CONFIG_RCU_FANOUT_EXACT is not set
-# CONFIG_TREE_RCU_TRACE is not set
-CONFIG_IKCONFIG=y
-CONFIG_IKCONFIG_PROC=y
-CONFIG_LOG_BUF_SHIFT=14
-# CONFIG_CGROUPS is not set
-# CONFIG_SYSFS_DEPRECATED_V2 is not set
-# CONFIG_RELAY is not set
-CONFIG_NAMESPACES=y
-# CONFIG_UTS_NS is not set
-# CONFIG_IPC_NS is not set
-# CONFIG_USER_NS is not set
-# CONFIG_PID_NS is not set
-# CONFIG_NET_NS is not set
-# CONFIG_BLK_DEV_INITRD is not set
-# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
-CONFIG_SYSCTL=y
-CONFIG_ANON_INODES=y
-# CONFIG_EMBEDDED is not set
-CONFIG_UID16=y
-CONFIG_SYSCTL_SYSCALL=y
-CONFIG_KALLSYMS=y
-CONFIG_KALLSYMS_EXTRA_PASS=y
-CONFIG_HOTPLUG=y
-CONFIG_PRINTK=y
-CONFIG_BUG=y
-CONFIG_ELF_CORE=y
-CONFIG_BASE_FULL=y
-CONFIG_FUTEX=y
-CONFIG_EPOLL=y
-CONFIG_SIGNALFD=y
-CONFIG_TIMERFD=y
-CONFIG_EVENTFD=y
-CONFIG_SHMEM=y
-CONFIG_AIO=y
-
-#
-# Kernel Performance Events And Counters
-#
-CONFIG_VM_EVENT_COUNTERS=y
-# CONFIG_COMPAT_BRK is not set
-CONFIG_SLAB=y
-# CONFIG_SLUB is not set
-# CONFIG_SLOB is not set
-# CONFIG_PROFILING is not set
-
-#
-# GCOV-based kernel profiling
-#
-# CONFIG_SLOW_WORK is not set
-# CONFIG_HAVE_GENERIC_DMA_COHERENT is not set
-CONFIG_SLABINFO=y
-CONFIG_RT_MUTEXES=y
-CONFIG_BASE_SMALL=0
-# CONFIG_MODULES is not set
-CONFIG_BLOCK=y
-# CONFIG_LBDAF is not set
-# CONFIG_BLK_DEV_BSG is not set
-# CONFIG_BLK_DEV_INTEGRITY is not set
-
-#
-# IO Schedulers
-#
-CONFIG_IOSCHED_NOOP=y
-# CONFIG_IOSCHED_DEADLINE is not set
-CONFIG_IOSCHED_CFQ=y
-# CONFIG_DEFAULT_DEADLINE is not set
-CONFIG_DEFAULT_CFQ=y
-# CONFIG_DEFAULT_NOOP is not set
-CONFIG_DEFAULT_IOSCHED="cfq"
-# CONFIG_INLINE_SPIN_TRYLOCK is not set
-# CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
-# CONFIG_INLINE_SPIN_LOCK is not set
-# CONFIG_INLINE_SPIN_LOCK_BH is not set
-# CONFIG_INLINE_SPIN_LOCK_IRQ is not set
-# CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
-CONFIG_INLINE_SPIN_UNLOCK=y
-# CONFIG_INLINE_SPIN_UNLOCK_BH is not set
-CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
-# CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
-# CONFIG_INLINE_READ_TRYLOCK is not set
-# CONFIG_INLINE_READ_LOCK is not set
-# CONFIG_INLINE_READ_LOCK_BH is not set
-# CONFIG_INLINE_READ_LOCK_IRQ is not set
-# CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
-CONFIG_INLINE_READ_UNLOCK=y
-# CONFIG_INLINE_READ_UNLOCK_BH is not set
-CONFIG_INLINE_READ_UNLOCK_IRQ=y
-# CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
-# CONFIG_INLINE_WRITE_TRYLOCK is not set
-# CONFIG_INLINE_WRITE_LOCK is not set
-# CONFIG_INLINE_WRITE_LOCK_BH is not set
-# CONFIG_INLINE_WRITE_LOCK_IRQ is not set
-# CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
-CONFIG_INLINE_WRITE_UNLOCK=y
-# CONFIG_INLINE_WRITE_UNLOCK_BH is not set
-CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
-# CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
-# CONFIG_MUTEX_SPIN_ON_OWNER is not set
-# CONFIG_FREEZER is not set
-CONFIG_BLK_DEV=y
-CONFIG_BLK_DEV_UBD=y
-# CONFIG_BLK_DEV_UBD_SYNC is not set
-CONFIG_BLK_DEV_COW_COMMON=y
-# CONFIG_BLK_DEV_LOOP is not set
-
-#
-# DRBD disabled because PROC_FS, INET or CONNECTOR not selected
-#
-# CONFIG_BLK_DEV_NBD is not set
-# CONFIG_BLK_DEV_RAM is not set
-# CONFIG_ATA_OVER_ETH is not set
-
-#
-# Character Devices
-#
-CONFIG_STDERR_CONSOLE=y
-CONFIG_STDIO_CONSOLE=y
-CONFIG_SSL=y
-CONFIG_NULL_CHAN=y
-CONFIG_PORT_CHAN=y
-CONFIG_PTY_CHAN=y
-CONFIG_TTY_CHAN=y
-CONFIG_XTERM_CHAN=y
-# CONFIG_NOCONFIG_CHAN is not set
-CONFIG_CON_ZERO_CHAN="fd:0,fd:1"
-CONFIG_CON_CHAN="xterm"
-CONFIG_SSL_CHAN="pts"
-CONFIG_UNIX98_PTYS=y
-# CONFIG_LEGACY_PTYS is not set
-# CONFIG_RAW_DRIVER is not set
-# CONFIG_WATCHDOG is not set
-CONFIG_UML_SOUND=y
-CONFIG_SOUND=y
-CONFIG_SOUND_OSS_CORE=y
-CONFIG_HOSTAUDIO=y
-# CONFIG_HW_RANDOM is not set
-# CONFIG_UML_RANDOM is not set
-# CONFIG_MMAPPER is not set
-
-#
-# Generic Driver Options
-#
-CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-# CONFIG_DEVTMPFS is not set
-CONFIG_STANDALONE=y
-CONFIG_PREVENT_FIRMWARE_BUILD=y
-CONFIG_FW_LOADER=y
-CONFIG_FIRMWARE_IN_KERNEL=y
-CONFIG_EXTRA_FIRMWARE=""
-# CONFIG_SYS_HYPERVISOR is not set
-CONFIG_NET=y
-
-#
-# Networking options
-#
-CONFIG_PACKET=y
-CONFIG_UNIX=y
-CONFIG_XFRM=y
-# CONFIG_XFRM_USER is not set
-# CONFIG_XFRM_SUB_POLICY is not set
-# CONFIG_XFRM_MIGRATE is not set
-# CONFIG_XFRM_STATISTICS is not set
-# CONFIG_NET_KEY is not set
-CONFIG_INET=y
-# CONFIG_IP_MULTICAST is not set
-# CONFIG_IP_ADVANCED_ROUTER is not set
-CONFIG_IP_FIB_HASH=y
-# CONFIG_IP_PNP is not set
-# CONFIG_NET_IPIP is not set
-# CONFIG_NET_IPGRE is not set
-# CONFIG_ARPD is not set
-# CONFIG_SYN_COOKIES is not set
-# CONFIG_INET_AH is not set
-# CONFIG_INET_ESP is not set
-# CONFIG_INET_IPCOMP is not set
-# CONFIG_INET_XFRM_TUNNEL is not set
-# CONFIG_INET_TUNNEL is not set
-CONFIG_INET_XFRM_MODE_TRANSPORT=y
-CONFIG_INET_XFRM_MODE_TUNNEL=y
-CONFIG_INET_XFRM_MODE_BEET=y
-# CONFIG_INET_LRO is not set
-CONFIG_INET_DIAG=y
-CONFIG_INET_TCP_DIAG=y
-# CONFIG_TCP_CONG_ADVANCED is not set
-CONFIG_TCP_CONG_CUBIC=y
-CONFIG_DEFAULT_TCP_CONG="cubic"
-# CONFIG_TCP_MD5SIG is not set
-# CONFIG_IPV6 is not set
-# CONFIG_NETWORK_SECMARK is not set
-# CONFIG_NETFILTER is not set
-# CONFIG_IP_DCCP is not set
-# CONFIG_IP_SCTP is not set
-# CONFIG_RDS is not set
-# CONFIG_TIPC is not set
-# CONFIG_ATM is not set
-# CONFIG_L2TP is not set
-# CONFIG_BRIDGE is not set
-# CONFIG_NET_DSA is not set
-# CONFIG_VLAN_8021Q is not set
-# CONFIG_DECNET is not set
-# CONFIG_LLC2 is not set
-# CONFIG_IPX is not set
-# CONFIG_ATALK is not set
-# CONFIG_X25 is not set
-# CONFIG_LAPB is not set
-# CONFIG_ECONET is not set
-# CONFIG_WAN_ROUTER is not set
-# CONFIG_PHONET is not set
-# CONFIG_IEEE802154 is not set
-# CONFIG_NET_SCHED is not set
-# CONFIG_DCB is not set
-
-#
-# Network testing
-#
-# CONFIG_NET_PKTGEN is not set
-# CONFIG_HAMRADIO is not set
-# CONFIG_CAN is not set
-# CONFIG_IRDA is not set
-# CONFIG_BT is not set
-# CONFIG_AF_RXRPC is not set
-# CONFIG_WIRELESS is not set
-# CONFIG_WIMAX is not set
-# CONFIG_RFKILL is not set
-# CONFIG_NET_9P is not set
-# CONFIG_CAIF is not set
-
-#
-# UML Network Devices
-#
-CONFIG_UML_NET=y
-CONFIG_UML_NET_ETHERTAP=y
-CONFIG_UML_NET_TUNTAP=y
-CONFIG_UML_NET_SLIP=y
-CONFIG_UML_NET_DAEMON=y
-# CONFIG_UML_NET_VDE is not set
-CONFIG_UML_NET_MCAST=y
-# CONFIG_UML_NET_PCAP is not set
-CONFIG_UML_NET_SLIRP=y
-CONFIG_NETDEVICES=y
-# CONFIG_DUMMY is not set
-# CONFIG_BONDING is not set
-# CONFIG_MACVLAN is not set
-# CONFIG_EQUALIZER is not set
-CONFIG_TUN=y
-# CONFIG_VETH is not set
-# CONFIG_WLAN is not set
-
-#
-# Enable WiMAX (Networking options) to see the WiMAX drivers
-#
-# CONFIG_WAN is not set
-# CONFIG_PPP is not set
-# CONFIG_SLIP is not set
-# CONFIG_NETCONSOLE is not set
-# CONFIG_NETPOLL is not set
-# CONFIG_NET_POLL_CONTROLLER is not set
-# CONFIG_CONNECTOR is not set
-
-#
-# File systems
-#
-CONFIG_EXT2_FS=y
-# CONFIG_EXT2_FS_XATTR is not set
-# CONFIG_EXT2_FS_XIP is not set
-CONFIG_EXT3_FS=y
-# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-# CONFIG_EXT3_FS_XATTR is not set
-# CONFIG_EXT4_FS is not set
-CONFIG_JBD=y
-# CONFIG_REISERFS_FS is not set
-# CONFIG_JFS_FS is not set
-CONFIG_FS_POSIX_ACL=y
-# CONFIG_XFS_FS is not set
-# CONFIG_OCFS2_FS is not set
-# CONFIG_BTRFS_FS is not set
-# CONFIG_NILFS2_FS is not set
-CONFIG_FILE_LOCKING=y
-CONFIG_FSNOTIFY=y
-CONFIG_DNOTIFY=y
-CONFIG_INOTIFY=y
-CONFIG_INOTIFY_USER=y
-# CONFIG_QUOTA is not set
-# CONFIG_AUTOFS_FS is not set
-# CONFIG_AUTOFS4_FS is not set
-# CONFIG_FUSE_FS is not set
-
-#
-# Caches
-#
-# CONFIG_FSCACHE is not set
-
-#
-# CD-ROM/DVD Filesystems
-#
-CONFIG_ISO9660_FS=y
-CONFIG_JOLIET=y
-# CONFIG_ZISOFS is not set
-# CONFIG_UDF_FS is not set
-
-#
-# DOS/FAT/NT Filesystems
-#
-# CONFIG_MSDOS_FS is not set
-# CONFIG_VFAT_FS is not set
-# CONFIG_NTFS_FS is not set
-
-#
-# Pseudo filesystems
-#
-CONFIG_PROC_FS=y
-CONFIG_PROC_KCORE=y
-CONFIG_PROC_SYSCTL=y
-CONFIG_PROC_PAGE_MONITOR=y
-CONFIG_SYSFS=y
-CONFIG_TMPFS=y
-# CONFIG_TMPFS_POSIX_ACL is not set
-# CONFIG_HUGETLB_PAGE is not set
-# CONFIG_CONFIGFS_FS is not set
-# CONFIG_MISC_FILESYSTEMS is not set
-CONFIG_NETWORK_FILESYSTEMS=y
-CONFIG_NFS_FS=y
-CONFIG_NFS_V3=y
-# CONFIG_NFS_V3_ACL is not set
-CONFIG_NFS_V4=y
-# CONFIG_NFS_V4_1 is not set
-CONFIG_NFSD=y
-CONFIG_NFSD_V3=y
-# CONFIG_NFSD_V3_ACL is not set
-CONFIG_NFSD_V4=y
-CONFIG_LOCKD=y
-CONFIG_LOCKD_V4=y
-CONFIG_EXPORTFS=y
-CONFIG_NFS_COMMON=y
-CONFIG_SUNRPC=y
-CONFIG_SUNRPC_GSS=y
-CONFIG_RPCSEC_GSS_KRB5=y
-# CONFIG_RPCSEC_GSS_SPKM3 is not set
-# CONFIG_SMB_FS is not set
-# CONFIG_CEPH_FS is not set
-# CONFIG_CIFS is not set
-# CONFIG_NCP_FS is not set
-# CONFIG_CODA_FS is not set
-# CONFIG_AFS_FS is not set
-
-#
-# Partition Types
-#
-# CONFIG_PARTITION_ADVANCED is not set
-CONFIG_MSDOS_PARTITION=y
-CONFIG_NLS=y
-CONFIG_NLS_DEFAULT="iso8859-1"
-# CONFIG_NLS_CODEPAGE_437 is not set
-# CONFIG_NLS_CODEPAGE_737 is not set
-# CONFIG_NLS_CODEPAGE_775 is not set
-# CONFIG_NLS_CODEPAGE_850 is not set
-# CONFIG_NLS_CODEPAGE_852 is not set
-# CONFIG_NLS_CODEPAGE_855 is not set
-# CONFIG_NLS_CODEPAGE_857 is not set
-# CONFIG_NLS_CODEPAGE_860 is not set
-# CONFIG_NLS_CODEPAGE_861 is not set
-# CONFIG_NLS_CODEPAGE_862 is not set
-# CONFIG_NLS_CODEPAGE_863 is not set
-# CONFIG_NLS_CODEPAGE_864 is not set
-# CONFIG_NLS_CODEPAGE_865 is not set
-# CONFIG_NLS_CODEPAGE_866 is not set
-# CONFIG_NLS_CODEPAGE_869 is not set
-# CONFIG_NLS_CODEPAGE_936 is not set
-# CONFIG_NLS_CODEPAGE_950 is not set
-# CONFIG_NLS_CODEPAGE_932 is not set
-# CONFIG_NLS_CODEPAGE_949 is not set
-# CONFIG_NLS_CODEPAGE_874 is not set
-# CONFIG_NLS_ISO8859_8 is not set
-# CONFIG_NLS_CODEPAGE_1250 is not set
-# CONFIG_NLS_CODEPAGE_1251 is not set
-# CONFIG_NLS_ASCII is not set
-# CONFIG_NLS_ISO8859_1 is not set
-# CONFIG_NLS_ISO8859_2 is not set
-# CONFIG_NLS_ISO8859_3 is not set
-# CONFIG_NLS_ISO8859_4 is not set
-# CONFIG_NLS_ISO8859_5 is not set
-# CONFIG_NLS_ISO8859_6 is not set
-# CONFIG_NLS_ISO8859_7 is not set
-# CONFIG_NLS_ISO8859_9 is not set
-# CONFIG_NLS_ISO8859_13 is not set
-# CONFIG_NLS_ISO8859_14 is not set
-# CONFIG_NLS_ISO8859_15 is not set
-# CONFIG_NLS_KOI8_R is not set
-# CONFIG_NLS_KOI8_U is not set
-# CONFIG_NLS_UTF8 is not set
-# CONFIG_DLM is not set
-
-#
-# Security options
-#
-# CONFIG_KEYS is not set
-# CONFIG_SECURITY is not set
-# CONFIG_SECURITYFS is not set
-# CONFIG_DEFAULT_SECURITY_SELINUX is not set
-# CONFIG_DEFAULT_SECURITY_SMACK is not set
-# CONFIG_DEFAULT_SECURITY_TOMOYO is not set
-CONFIG_DEFAULT_SECURITY_DAC=y
-CONFIG_DEFAULT_SECURITY=""
-CONFIG_CRYPTO=y
-
-#
-# Crypto core or helper
-#
-CONFIG_CRYPTO_ALGAPI=y
-CONFIG_CRYPTO_ALGAPI2=y
-CONFIG_CRYPTO_AEAD2=y
-CONFIG_CRYPTO_BLKCIPHER=y
-CONFIG_CRYPTO_BLKCIPHER2=y
-CONFIG_CRYPTO_HASH=y
-CONFIG_CRYPTO_HASH2=y
-CONFIG_CRYPTO_RNG2=y
-CONFIG_CRYPTO_PCOMP=y
-CONFIG_CRYPTO_MANAGER=y
-CONFIG_CRYPTO_MANAGER2=y
-# CONFIG_CRYPTO_GF128MUL is not set
-# CONFIG_CRYPTO_NULL is not set
-CONFIG_CRYPTO_WORKQUEUE=y
-# CONFIG_CRYPTO_CRYPTD is not set
-# CONFIG_CRYPTO_AUTHENC is not set
-
-#
-# Authenticated Encryption with Associated Data
-#
-# CONFIG_CRYPTO_CCM is not set
-# CONFIG_CRYPTO_GCM is not set
-# CONFIG_CRYPTO_SEQIV is not set
-
-#
-# Block modes
-#
-CONFIG_CRYPTO_CBC=y
-# CONFIG_CRYPTO_CTR is not set
-# CONFIG_CRYPTO_CTS is not set
-# CONFIG_CRYPTO_ECB is not set
-# CONFIG_CRYPTO_LRW is not set
-# CONFIG_CRYPTO_PCBC is not set
-# CONFIG_CRYPTO_XTS is not set
-
-#
-# Hash modes
-#
-# CONFIG_CRYPTO_HMAC is not set
-# CONFIG_CRYPTO_XCBC is not set
-# CONFIG_CRYPTO_VMAC is not set
-
-#
-# Digest
-#
-# CONFIG_CRYPTO_CRC32C is not set
-# CONFIG_CRYPTO_GHASH is not set
-# CONFIG_CRYPTO_MD4 is not set
-CONFIG_CRYPTO_MD5=y
-# CONFIG_CRYPTO_MICHAEL_MIC is not set
-# CONFIG_CRYPTO_RMD128 is not set
-# CONFIG_CRYPTO_RMD160 is not set
-# CONFIG_CRYPTO_RMD256 is not set
-# CONFIG_CRYPTO_RMD320 is not set
-# CONFIG_CRYPTO_SHA1 is not set
-# CONFIG_CRYPTO_SHA256 is not set
-# CONFIG_CRYPTO_SHA512 is not set
-# CONFIG_CRYPTO_TGR192 is not set
-# CONFIG_CRYPTO_WP512 is not set
-
-#
-# Ciphers
-#
-# CONFIG_CRYPTO_AES is not set
-# CONFIG_CRYPTO_AES_586 is not set
-# CONFIG_CRYPTO_ANUBIS is not set
-# CONFIG_CRYPTO_ARC4 is not set
-# CONFIG_CRYPTO_BLOWFISH is not set
-# CONFIG_CRYPTO_CAMELLIA is not set
-# CONFIG_CRYPTO_CAST5 is not set
-# CONFIG_CRYPTO_CAST6 is not set
-CONFIG_CRYPTO_DES=y
-# CONFIG_CRYPTO_FCRYPT is not set
-# CONFIG_CRYPTO_KHAZAD is not set
-# CONFIG_CRYPTO_SALSA20 is not set
-# CONFIG_CRYPTO_SALSA20_586 is not set
-# CONFIG_CRYPTO_SEED is not set
-# CONFIG_CRYPTO_SERPENT is not set
-# CONFIG_CRYPTO_TEA is not set
-# CONFIG_CRYPTO_TWOFISH is not set
-# CONFIG_CRYPTO_TWOFISH_586 is not set
-
-#
-# Compression
-#
-# CONFIG_CRYPTO_DEFLATE is not set
-# CONFIG_CRYPTO_ZLIB is not set
-# CONFIG_CRYPTO_LZO is not set
-
-#
-# Random Number Generation
-#
-# CONFIG_CRYPTO_ANSI_CPRNG is not set
-# CONFIG_CRYPTO_HW is not set
-# CONFIG_BINARY_PRINTF is not set
-
-#
-# Library routines
-#
-CONFIG_BITREVERSE=y
-CONFIG_GENERIC_FIND_FIRST_BIT=y
-CONFIG_GENERIC_FIND_NEXT_BIT=y
-CONFIG_GENERIC_FIND_LAST_BIT=y
-# CONFIG_CRC_CCITT is not set
-# CONFIG_CRC16 is not set
-# CONFIG_CRC_T10DIF is not set
-# CONFIG_CRC_ITU_T is not set
-CONFIG_CRC32=y
-# CONFIG_CRC7 is not set
-# CONFIG_LIBCRC32C is not set
-CONFIG_HAS_DMA=y
-CONFIG_NLATTR=y
-
-#
-# SCSI device support
-#
-CONFIG_SCSI_MOD=y
-# CONFIG_RAID_ATTRS is not set
-# CONFIG_SCSI is not set
-# CONFIG_SCSI_DMA is not set
-# CONFIG_SCSI_NETLINK is not set
-# CONFIG_MD is not set
-# CONFIG_NEW_LEDS is not set
-# CONFIG_INPUT is not set
-
-#
-# Kernel hacking
-#
-# CONFIG_PRINTK_TIME is not set
-CONFIG_ENABLE_WARN_DEPRECATED=y
-CONFIG_ENABLE_MUST_CHECK=y
-CONFIG_FRAME_WARN=1024
-# CONFIG_STRIP_ASM_SYMS is not set
-# CONFIG_UNUSED_SYMBOLS is not set
-# CONFIG_DEBUG_FS is not set
-# CONFIG_DEBUG_KERNEL is not set
-CONFIG_DEBUG_BUGVERBOSE=y
-CONFIG_DEBUG_MEMORY_INIT=y
-# CONFIG_RCU_CPU_STALL_DETECTOR is not set
-# CONFIG_SYSCTL_SYSCALL_CHECK is not set
-# CONFIG_ATOMIC64_SELFTEST is not set
-# CONFIG_SAMPLES is not set
-# CONFIG_DEBUG_STACK_USAGE is not set
-
---Boundary-00=_ksfFMvrUrzbq9VI--
+On Sun, Jun 13, 2010 at 7:42 PM, Adrian Hunter <adrian.hunter@nokia.com> wrote:
+> From a86fc83da7c3d4f9f39a267841b8cb73c30ad7ac Mon Sep 17 00:00:00 2001
+> From: Adrian Hunter <adrian.hunter@nokia.com>
+> Date: Thu, 3 Jun 2010 10:47:12 +0300
+> Subject: [PATCH 3/4] mmc_block: Add discard and secure discard support
+>
+> Enable MMC to service discard requests.  In the case of SD
+> and MMC cards that do not support trim, discards become
+> erases.  In the case of cards (MMC) that only allow erases
+> in multiples of erase group size, round to the nearest
+> completely discarded erase group.
+>
+> Also implement BLKSECDISCARD using MMC secure erase and
+> trim operations.
+>
+> Signed-off-by: Adrian Hunter <adrian.hunter@nokia.com>
+> ---
+> drivers/mmc/card/block.c |  125
+> +++++++++++++++++++++++++++++++++++++++++++++-
+> drivers/mmc/card/queue.c |   16 +++++-
+> 2 files changed, 138 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index cb9fbc8..f7129b3 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -31,6 +31,7 @@
+> #include <linux/mutex.h>
+> #include <linux/scatterlist.h>
+> #include <linux/string_helpers.h>
+> +#include <linux/delay.h>
+>
+> #include <linux/mmc/card.h>
+> #include <linux/mmc/host.h>
+> @@ -138,9 +139,91 @@ mmc_blk_getgeo(struct block_device *bdev, struct
+> hd_geometry *geo)
+>        return 0;
+> }
+>
+> +static int mmc_blk_check_eod(struct block_device *bdev, unsigned int from,
+> +                            unsigned int nr)
+> +{
+> +       unsigned int maxsector;
+> +
+> +       if (!nr)
+> +               return 0;
+> +
+> +       maxsector = bdev->bd_inode->i_size >> 9;
+> +       if (maxsector && (maxsector < nr || maxsector - nr < from))
+> +               return 1;
+> +
+> +       return 0;
+> +}
+> +
+> +static int mmc_blk_secure_erase(struct mmc_blk_data *md, unsigned int from,
+> +                               unsigned int nr)
+> +{
+> +       struct mmc_card *card = md->queue.card;
+> +       unsigned int arg;
+> +       int err;
+> +
+> +       if (!mmc_can_secure_erase_trim(card))
+> +               return -EOPNOTSUPP;
+> +
+> +       if (mmc_can_trim(card) && !mmc_erase_group_aligned(card, from, nr))
+> +               arg = MMC_SECURE_TRIM1_ARG;
+> +       else
+> +               arg = MMC_SECURE_ERASE_ARG;
+> +
+> +       mmc_claim_host(card->host);
+> +       err = mmc_erase(card, from, nr, arg);
+> +       if (!err && arg == MMC_SECURE_TRIM1_ARG)
+> +               err = mmc_erase(card, from, nr, MMC_SECURE_TRIM2_ARG);
+> +       mmc_release_host(card->host);
+> +
+> +       return err;
+> +}
+> +
+> +static int mmc_blk_ioctl_secdiscard(struct block_device *bdev, uint64_t
+> start,
+> +                                uint64_t len)
+> +{
+> +       struct mmc_blk_data *md = bdev->bd_disk->private_data;
+> +       unsigned int from, nr;
+> +
+> +       if ((start & 511) || (len & 511))
+> +               return -EINVAL;
+> +
+> +       start >>= 9;
+> +       len >>= 9;
+> +
+> +       if (start > UINT_MAX || len > UINT_MAX)
+> +               return -EINVAL;
+> +
+> +       from = start;
+> +       nr = len;
+> +
+> +       if (mmc_blk_check_eod(bdev, from, nr))
+> +               return -EINVAL;
+> +
+> +       if (bdev != bdev->bd_contains)
+> +               from += bdev->bd_part->start_sect;
+> +
+> +       return mmc_blk_secure_erase(md, from, nr);
+> +}
+> +
+> +static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,
+> +                        unsigned cmd, unsigned long arg)
+> +{
+> +       uint64_t range[2];
+> +
+> +       switch (cmd) {
+> +       case BLKSECDISCARD:
+> +               if (copy_from_user(range, (void __user *)arg,
+> sizeof(range)))
+> +                       return -EFAULT;
+> +
+> +               return mmc_blk_ioctl_secdiscard(bdev, range[0], range[1]);
+> +       }
+> +       return -ENOTTY;
+> +}
+> +
+> static const struct block_device_operations mmc_bdops = {
+>        .open                   = mmc_blk_open,
+>        .release                = mmc_blk_release,
+> +       .ioctl                  = mmc_blk_ioctl,
+>        .getgeo                 = mmc_blk_getgeo,
+>        .owner                  = THIS_MODULE,
+> };
+> @@ -242,7 +325,40 @@ static u32 get_card_status(struct mmc_card *card,
+> struct request *req)
+>        return cmd.resp[0];
+> }
+>
+> -static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+> +static int mmc_blk_issue_discard_rq(struct mmc_queue *mq, struct request
+> *req)
+> +{
+> +       struct mmc_blk_data *md = mq->data;
+> +       struct mmc_card *card = md->queue.card;
+> +       unsigned int from, nr, arg;
+> +       int err = 0;
+> +
+> +       mmc_claim_host(card->host);
+> +
+> +       if (!mmc_can_erase(card)) {
+> +               err = -EOPNOTSUPP;
+> +               goto out;
+> +       }
+> +
+> +       from = blk_rq_pos(req);
+> +       nr = blk_rq_sectors(req);
+> +
+> +       if (mmc_can_trim(card))
+> +               arg = MMC_TRIM_ARG;
+> +       else
+> +               arg = MMC_ERASE_ARG;
+> +
+> +       err = mmc_erase(card, from, nr, arg);
+> +out:
+> +       spin_lock_irq(&md->lock);
+> +       __blk_end_request(req, err, blk_rq_bytes(req));
+> +       spin_unlock_irq(&md->lock);
+> +
+> +       mmc_release_host(card->host);
+> +
+> +       return err ? 0 : 1;
+> +}
+> +
+> +static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
+> {
+>        struct mmc_blk_data *md = mq->data;
+>        struct mmc_card *card = md->queue.card;
+> @@ -470,6 +586,13 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq,
+> struct request *req)
+>        return 0;
+> }
+>
+> +static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+> +{
+> +       if (blk_discard_rq(req))
+> +               return mmc_blk_issue_discard_rq(mq, req);
+> +       else
+> +               return mmc_blk_issue_rw_rq(mq, req);
+> +}
+>
+> static inline int mmc_blk_readonly(struct mmc_card *card)
+> {
+> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> index d6ded24..37f648f 100644
+> --- a/drivers/mmc/card/queue.c
+> +++ b/drivers/mmc/card/queue.c
+> @@ -30,9 +30,9 @@
+> static int mmc_prep_request(struct request_queue *q, struct request *req)
+> {
+>        /*
+> -        * We only like normal block requests.
+> +        * We only like normal block requests and discards.
+>         */
+> -       if (!blk_fs_request(req)) {
+> +       if (!blk_fs_request(req) && !blk_discard_rq(req)) {
+>                blk_dump_rq_flags(req, "MMC bad request");
+>                return BLKPREP_KILL;
+>        }
+> @@ -130,6 +130,18 @@ int mmc_init_queue(struct mmc_queue *mq, struct
+> mmc_card *card, spinlock_t *lock
+>        blk_queue_prep_rq(mq->queue, mmc_prep_request);
+>        blk_queue_ordered(mq->queue, QUEUE_ORDERED_DRAIN, NULL);
+>        queue_flag_set_unlocked(QUEUE_FLAG_NONROT, mq->queue);
+> +       if (mmc_can_erase(card)) {
+> +               queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, mq->queue);
+> +               mq->queue->limits.max_discard_sectors = UINT_MAX;
+> +               if (card->erased_byte == 0)
+> +                       mq->queue->limits.discard_zeroes_data = 1;
+> +               if (!mmc_can_trim(card) && is_power_of_2(card->erase_size))
+> {
+> +                       mq->queue->limits.discard_granularity =
+> +                                                       card->erase_size <<
+> 9;
+> +                       mq->queue->limits.discard_alignment =
+> +                                                       card->erase_size <<
+> 9;
+> +               }
+> +       }
+>
+> #ifdef CONFIG_MMC_BLOCK_BOUNCE
+>        if (host->max_hw_segs == 1) {
+> --
+> 1.6.3.3
+>
+>
