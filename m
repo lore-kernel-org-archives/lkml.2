@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757011Ab0FNVwM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 17:52:12 -0400
-Received: from xenotime.net ([72.52.115.56]:57210 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756667Ab0FNVwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 17:52:10 -0400
-Date: Mon, 14 Jun 2010 14:52:04 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Bug #15970] BUG: amd64-agp (2.6.34-rc7)
-Message-Id: <20100614145204.af3fd160.rdunlap@xenotime.net>
-In-Reply-To: <YPGdyfWGvNK.A.ykH.g6OFMB@chimera>
-References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
-	<YPGdyfWGvNK.A.ykH.g6OFMB@chimera>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757014Ab0FNVxL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 17:53:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47737 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755714Ab0FNVxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 17:53:07 -0400
+Message-ID: <4C16A48A.2070404@kernel.org>
+Date: Mon, 14 Jun 2010 23:52:10 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, jeff@garzik.org,
+       linux-ide@vger.kernel.org, stern@rowland.harvard.edu,
+       khali@linux-fr.org
+Subject: Re: [PATCH 12/12] usb: use IRQ watching
+References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-13-git-send-email-tj@kernel.org> <20100614214122.GA21064@suse.de>
+In-Reply-To: <20100614214122.GA21064@suse.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Jun 2010 21:52:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Jun 2010 16:48:59 +0200 (CEST) Rafael J. Wysocki wrote:
+Hello,
 
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.33 and 2.6.34.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15970
-> Subject		: BUG: amd64-agp (2.6.34-rc7)
-> Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
-> Date		: 2010-05-11 20:56 (34 days old)
-> Message-ID	: <4BE9C469.2020901@oracle.com>
-> References	: http://marc.info/?l=linux-kernel&m=127361149610881&w=2
+On 06/14/2010 11:41 PM, Greg KH wrote:
+> So if there's a routing problem, it turns into a polled interrupt?  Do
+> we really want that?
 
+Oh yeah, I really want that for libata.  Routing is only part of the
+problem and flaky IRQ is something we have to learn to cope with.
 
-This bug does not happen in 2.6.35-rc3; it appears that some patch has
-fixed this one.  Please close it as fixed.
+> I wonder how long people will run without realizing that there are
+> problems with their system if their devices still work.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I think things would be better this way.  If the drives (both cd and
+hard) / input devices are not accessible, most people would simply
+give up rather than reporting, and many cases are transient problems
+which happen only once in the blue moon.
+
+It would be great if some kind of automatic reporting can be used
+(similar to kerneloops?).  Hmm... maybe make the warnings scarier?
+
+Thanks.
+
+-- 
+tejun
