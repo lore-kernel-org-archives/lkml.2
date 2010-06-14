@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab0FNIn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 04:43:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48334 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755544Ab0FNInx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 04:43:53 -0400
-Date: Mon, 14 Jun 2010 10:43:32 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>, Jan Kara <jack@suse.cz>,
-       Marius Tolzmann <tolzmann@molgen.mpg.de>,
-       Miklos Szeredi <mszeredi@suse.cz>,
-       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Subject: Re: [Bug #15909] open("a/",O_NOFOLLOW) fails with ELOOP if "a" is
- a symbolic link to a directory.
-Message-ID: <20100614084331.GB3903@quack.suse.cz>
-References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
- <YPGdyfWGvNK.A.KL.C7OFMB@chimera>
+	id S1755564Ab0FNIsS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 04:48:18 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:49619 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755094Ab0FNIsR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 04:48:17 -0400
+Date: Mon, 14 Jun 2010 14:18:10 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, kvm <kvm@vger.kernel.org>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
+ control
+Message-ID: <20100614084810.GT5191@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>
+ <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>
+ <4C10B3AF.7020908@redhat.com>
+ <20100610142512.GB5191@balbir.in.ibm.com>
+ <1276214852.6437.1427.camel@nimitz>
+ <20100611045600.GE5191@balbir.in.ibm.com>
+ <4C15E3C8.20407@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <YPGdyfWGvNK.A.KL.C7OFMB@chimera>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C15E3C8.20407@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 13-06-10 16:48:58, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.33 and 2.6.34.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15909
-> Subject		: open("a/",O_NOFOLLOW) fails with ELOOP if "a" is a symbolic link to a directory.
-> Submitter	: Marius Tolzmann <tolzmann@molgen.mpg.de>
-> Date		: 2010-05-05 13:01 (40 days old)
-> Handled-By	: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-> 		  Jan Kara <jack@suse.cz>
-> Patch		: https://patchwork.kernel.org/patch/99291/
-  The fix went in shortly before 2.6.34 was released (commit
-002baeecf53677d2034113e34197ec221f42e037). So everything should be fine.
+* Avi Kivity <avi@redhat.com> [2010-06-14 11:09:44]:
 
-								Honza
+> On 06/11/2010 07:56 AM, Balbir Singh wrote:
+> >
+> >>Just to be clear, let's say we have a mapped page (say of /sbin/init)
+> >>that's been unreferenced since _just_ after the system booted.  We also
+> >>have an unmapped page cache page of a file often used at runtime, say
+> >>one from /etc/resolv.conf or /etc/passwd.
+> >>
+> >>Which page will be preferred for eviction with this patch set?
+> >>
+> >In this case the order is as follows
+> >
+> >1. First we pick free pages if any
+> >2. If we don't have free pages, we go after unmapped page cache and
+> >slab cache
+> >3. If that fails as well, we go after regularly memory
+> >
+> >In the scenario that you describe, we'll not be able to easily free up
+> >the frequently referenced page from /etc/*. The code will move on to
+> >step 3 and do its regular reclaim.
+> 
+> Still it seems to me you are subverting the normal order of reclaim.
+> I don't see why an unmapped page cache or slab cache item should be
+> evicted before a mapped page.  Certainly the cost of rebuilding a
+> dentry compared to the gain from evicting it, is much higher than
+> that of reestablishing a mapped page.
+>
+
+Subverting to aviod memory duplication, the word subverting is
+overloaded, let me try to reason a bit. First let me explain the
+problem
+
+Memory is a precious resource in a consolidated environment.
+We don't want to waste memory via page cache duplication
+(cache=writethrough and cache=writeback mode).
+
+Now here is what we are trying to do
+
+1. A slab page will not be freed until the entire page is free (all
+slabs have been kfree'd so to speak). Normal reclaim will definitely
+free this page, but a lot of it depends on how frequently we are
+scanning the LRU list and when this page got added.
+2. In the case of page cache (specifically unmapped page cache), there
+is duplication already, so why not go after unmapped page caches when
+the system is under memory pressure?
+
+In the case of 1, we don't force a dentry to be freed, but rather a
+freed page in the slab cache to be reclaimed ahead of forcing reclaim
+of mapped pages.
+
+Does the problem statement make sense? If so, do you agree with 1 and
+2? Is there major concern about subverting regular reclaim? Does
+subverting it make sense in the duplicated scenario?
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+	Three Cheers,
+	Balbir
