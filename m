@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab0FNLSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 07:18:08 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47658 "EHLO gir.skynet.ie"
+	id S1755849Ab0FNLSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 07:18:10 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47668 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752936Ab0FNLR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753243Ab0FNLR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Jun 2010 07:17:59 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
        Christoph Hellwig <hch@infradead.org>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 06/12] vmscan: simplify shrink_inactive_list()
-Date: Mon, 14 Jun 2010 12:17:47 +0100
-Message-Id: <1276514273-27693-7-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 07/12] vmscan: Remove unnecessary temporary vars in do_try_to_free_pages
+Date: Mon, 14 Jun 2010 12:17:48 +0100
+Message-Id: <1276514273-27693-8-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
 References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
@@ -25,275 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Remove temporary variable that is only used once and does not help
+clarify code.
 
-Now, max_scan of shrink_inactive_list() is always passed less than
-SWAP_CLUSTER_MAX. then, we can remove scanning pages loop in it.
-This patch also help stack diet.
-
-detail
- - remove "while (nr_scanned < max_scan)" loop
- - remove nr_freed (now, we use nr_reclaimed directly)
- - remove nr_scan (now, we use nr_scanned directly)
- - rename max_scan to nr_to_scan
- - pass nr_to_scan into isolate_pages() directly instead
-   using SWAP_CLUSTER_MAX
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 ---
- mm/vmscan.c |  211 ++++++++++++++++++++++++++++-------------------------------
- 1 files changed, 100 insertions(+), 111 deletions(-)
+ mm/vmscan.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 29e1ecd..6a42ebc 100644
+index 6a42ebc..246e084 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1132,15 +1132,21 @@ static int too_many_isolated(struct zone *zone, int file,
-  * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
-  * of reclaimed pages
-  */
--static unsigned long shrink_inactive_list(unsigned long max_scan,
-+static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
- 			struct zone *zone, struct scan_control *sc,
- 			int priority, int file)
+@@ -1721,13 +1721,12 @@ static void shrink_zone(int priority, struct zone *zone,
+ static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 					struct scan_control *sc)
  {
- 	LIST_HEAD(page_list);
- 	struct pagevec pvec;
--	unsigned long nr_scanned = 0;
-+	unsigned long nr_scanned;
- 	unsigned long nr_reclaimed = 0;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
-+	struct page *page;
-+	unsigned long nr_taken;
-+	unsigned long nr_active;
-+	unsigned int count[NR_LRU_LISTS] = { 0, };
-+	unsigned long nr_anon;
-+	unsigned long nr_file;
+-	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	bool all_unreclaimable = true;
  
- 	while (unlikely(too_many_isolated(zone, file, sc))) {
- 		congestion_wait(BLK_RW_ASYNC, HZ/10);
-@@ -1155,129 +1161,112 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
- 
- 	lru_add_drain();
- 	spin_lock_irq(&zone->lru_lock);
--	do {
--		struct page *page;
--		unsigned long nr_taken;
--		unsigned long nr_scan;
--		unsigned long nr_freed;
--		unsigned long nr_active;
--		unsigned int count[NR_LRU_LISTS] = { 0, };
--		int mode = sc->lumpy_reclaim_mode ? ISOLATE_BOTH : ISOLATE_INACTIVE;
--		unsigned long nr_anon;
--		unsigned long nr_file;
- 
--		if (scanning_global_lru(sc)) {
--			nr_taken = isolate_pages_global(SWAP_CLUSTER_MAX,
--							&page_list, &nr_scan,
--							sc->order, mode,
--							zone, 0, file);
--			zone->pages_scanned += nr_scan;
--			if (current_is_kswapd())
--				__count_zone_vm_events(PGSCAN_KSWAPD, zone,
--						       nr_scan);
--			else
--				__count_zone_vm_events(PGSCAN_DIRECT, zone,
--						       nr_scan);
--		} else {
--			nr_taken = mem_cgroup_isolate_pages(SWAP_CLUSTER_MAX,
--							&page_list, &nr_scan,
--							sc->order, mode,
--							zone, sc->mem_cgroup,
--							0, file);
--			/*
--			 * mem_cgroup_isolate_pages() keeps track of
--			 * scanned pages on its own.
--			 */
--		}
-+	if (scanning_global_lru(sc)) {
-+		nr_taken = isolate_pages_global(nr_to_scan,
-+			&page_list, &nr_scanned, sc->order,
-+			sc->lumpy_reclaim_mode ? ISOLATE_BOTH : ISOLATE_INACTIVE,
-+			zone, 0, file);
-+		zone->pages_scanned += nr_scanned;
-+		if (current_is_kswapd())
-+			__count_zone_vm_events(PGSCAN_KSWAPD, zone,
-+					       nr_scanned);
-+		else
-+			__count_zone_vm_events(PGSCAN_DIRECT, zone,
-+					       nr_scanned);
-+	} else {
-+		nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
-+			&page_list, &nr_scanned, sc->order,
-+			sc->lumpy_reclaim_mode ? ISOLATE_BOTH : ISOLATE_INACTIVE,
-+			zone, sc->mem_cgroup,
-+			0, file);
-+		/*
-+		 * mem_cgroup_isolate_pages() keeps track of
-+		 * scanned pages on its own.
-+		 */
-+	}
- 
--		if (nr_taken == 0)
--			goto done;
-+	if (nr_taken == 0)
-+		goto done;
- 
--		nr_active = clear_active_flags(&page_list, count);
--		__count_vm_events(PGDEACTIVATE, nr_active);
-+	nr_active = clear_active_flags(&page_list, count);
-+	__count_vm_events(PGDEACTIVATE, nr_active);
- 
--		__mod_zone_page_state(zone, NR_ACTIVE_FILE,
--						-count[LRU_ACTIVE_FILE]);
--		__mod_zone_page_state(zone, NR_INACTIVE_FILE,
--						-count[LRU_INACTIVE_FILE]);
--		__mod_zone_page_state(zone, NR_ACTIVE_ANON,
--						-count[LRU_ACTIVE_ANON]);
--		__mod_zone_page_state(zone, NR_INACTIVE_ANON,
--						-count[LRU_INACTIVE_ANON]);
-+	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
-+					-count[LRU_ACTIVE_FILE]);
-+	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
-+					-count[LRU_INACTIVE_FILE]);
-+	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
-+					-count[LRU_ACTIVE_ANON]);
-+	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
-+					-count[LRU_INACTIVE_ANON]);
- 
--		nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
--		nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
--		__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
--		__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
-+	nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-+	nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-+	__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
-+	__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
- 
--		reclaim_stat->recent_scanned[0] += nr_anon;
--		reclaim_stat->recent_scanned[1] += nr_file;
-+	reclaim_stat->recent_scanned[0] += nr_anon;
-+	reclaim_stat->recent_scanned[1] += nr_file;
- 
--		spin_unlock_irq(&zone->lru_lock);
-+	spin_unlock_irq(&zone->lru_lock);
- 
--		nr_scanned += nr_scan;
--		nr_freed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
-+	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
-+
-+	/*
-+	 * If we are direct reclaiming for contiguous pages and we do
-+	 * not reclaim everything in the list, try again and wait
-+	 * for IO to complete. This will stall high-order allocations
-+	 * but that should be acceptable to the caller
-+	 */
-+	if (nr_reclaimed < nr_taken && !current_is_kswapd() && sc->lumpy_reclaim_mode) {
-+		congestion_wait(BLK_RW_ASYNC, HZ/10);
- 
+-	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+-					sc->nodemask) {
++	for_each_zone_zonelist_nodemask(zone, z, zonelist,
++					gfp_zone(sc->gfp_mask), sc->nodemask) {
+ 		if (!populated_zone(zone))
+ 			continue;
  		/*
--		 * If we are direct reclaiming for contiguous pages and we do
--		 * not reclaim everything in the list, try again and wait
--		 * for IO to complete. This will stall high-order allocations
--		 * but that should be acceptable to the caller
-+		 * The attempt at page out may have made some
-+		 * of the pages active, mark them inactive again.
- 		 */
--		if (nr_freed < nr_taken && !current_is_kswapd() &&
--		    sc->lumpy_reclaim_mode) {
--			congestion_wait(BLK_RW_ASYNC, HZ/10);
--
--			/*
--			 * The attempt at page out may have made some
--			 * of the pages active, mark them inactive again.
--			 */
--			nr_active = clear_active_flags(&page_list, count);
--			count_vm_events(PGDEACTIVATE, nr_active);
--
--			nr_freed += shrink_page_list(&page_list, sc,
--							PAGEOUT_IO_SYNC);
--		}
-+		nr_active = clear_active_flags(&page_list, count);
-+		count_vm_events(PGDEACTIVATE, nr_active);
+@@ -1773,7 +1772,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 	unsigned long lru_pages = 0;
+ 	struct zoneref *z;
+ 	struct zone *zone;
+-	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
+ 	unsigned long writeback_threshold;
  
--		nr_reclaimed += nr_freed;
-+		nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
-+	}
+ 	get_mems_allowed();
+@@ -1785,7 +1783,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 	 * mem_cgroup will not do shrink_slab.
+ 	 */
+ 	if (scanning_global_lru(sc)) {
+-		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
++		for_each_zone_zonelist(zone, z, zonelist, gfp_zone(sc->gfp_mask)) {
  
--		local_irq_disable();
--		if (current_is_kswapd())
--			__count_vm_events(KSWAPD_STEAL, nr_freed);
--		__count_zone_vm_events(PGSTEAL, zone, nr_freed);
-+	local_irq_disable();
-+	if (current_is_kswapd())
-+		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
-+	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
- 
--		spin_lock(&zone->lru_lock);
--		/*
--		 * Put back any unfreeable pages.
--		 */
--		while (!list_empty(&page_list)) {
--			int lru;
--			page = lru_to_page(&page_list);
--			VM_BUG_ON(PageLRU(page));
--			list_del(&page->lru);
--			if (unlikely(!page_evictable(page, NULL))) {
--				spin_unlock_irq(&zone->lru_lock);
--				putback_lru_page(page);
--				spin_lock_irq(&zone->lru_lock);
--				continue;
--			}
--			SetPageLRU(page);
--			lru = page_lru(page);
--			add_page_to_lru_list(zone, page, lru);
--			if (is_active_lru(lru)) {
--				int file = is_file_lru(lru);
--				reclaim_stat->recent_rotated[file]++;
--			}
--			if (!pagevec_add(&pvec, page)) {
--				spin_unlock_irq(&zone->lru_lock);
--				__pagevec_release(&pvec);
--				spin_lock_irq(&zone->lru_lock);
--			}
-+	spin_lock(&zone->lru_lock);
-+	/*
-+	 * Put back any unfreeable pages.
-+	 */
-+	while (!list_empty(&page_list)) {
-+		int lru;
-+		page = lru_to_page(&page_list);
-+		VM_BUG_ON(PageLRU(page));
-+		list_del(&page->lru);
-+		if (unlikely(!page_evictable(page, NULL))) {
-+			spin_unlock_irq(&zone->lru_lock);
-+			putback_lru_page(page);
-+			spin_lock_irq(&zone->lru_lock);
-+			continue;
- 		}
--		__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
--		__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
--
--  	} while (nr_scanned < max_scan);
-+		SetPageLRU(page);
-+		lru = page_lru(page);
-+		add_page_to_lru_list(zone, page, lru);
-+		if (is_active_lru(lru)) {
-+			int file = is_file_lru(lru);
-+			reclaim_stat->recent_rotated[file]++;
-+		}
-+		if (!pagevec_add(&pvec, page)) {
-+			spin_unlock_irq(&zone->lru_lock);
-+			__pagevec_release(&pvec);
-+			spin_lock_irq(&zone->lru_lock);
-+		}
-+	}
-+	__mod_zone_page_state(zone, NR_ISOLATED_ANON, -nr_anon);
-+	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -nr_file);
- 
- done:
- 	spin_unlock_irq(&zone->lru_lock);
+ 			if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+ 				continue;
 -- 
 1.7.1
 
