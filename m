@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884Ab0FNQn0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 12:43:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51740 "EHLO mail.skyhub.de"
+	id S1756247Ab0FNQoJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 12:44:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47653 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005Ab0FNQnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 12:43:25 -0400
-Date: Mon, 14 Jun 2010 18:43:20 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Nico Schottelius <nico-linux-20100614@schottelius.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-Subject: Re: New issues in 2.6.35-rc{1,2}
-Message-ID: <20100614164320.GA4392@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Nico Schottelius <nico-linux-20100614@schottelius.org>,
-	LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-References: <20100614161904.GE31910@schottelius.org>
+	id S1752901Ab0FNQoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 12:44:07 -0400
+Message-ID: <4C165BCF.4030507@zytor.com>
+Date: Mon, 14 Jun 2010 09:41:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100614161904.GE31910@schottelius.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, Borislav Petkov <bp@alien8.de>,
+       =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
+       uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Jeff Dike <jdike@addtoit.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [uml-devel] [PATCH resend] um, hweight: Fix UML boot crash
+References: <4C0F4B00.4090307@panasas.com>	<4C0F4C40.5020207@panasas.com> <AANLkTinwQmWP-rFu9e-ns5twsZwZjuSLi5vcll55ZZhx@mail.gmail.com> <4C0FDD8C.2020704@zytor.com> <4C1653FF.3080108@panasas.com>
+In-Reply-To: <4C1653FF.3080108@panasas.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nico Schottelius <nico-linux-20100614@schottelius.org>
-Date: Mon, Jun 14, 2010 at 06:19:04PM +0200
+On 06/14/2010 09:08 AM, Boaz Harrosh wrote:
+> On 06/09/2010 09:29 PM, H. Peter Anvin wrote:
+>> On 06/09/2010 01:46 AM, Geert Uytterhoeven wrote:
+>>>
+>>> Peter, are you happy with this?
+>>> Although we still don't know why UML cannot grok it, it does fix a
+>>> regression in post-2.6.34.
+>>>
+>>
+>> Yes, I'll push it.
+>>
+>> 	-hpa
+> 
+> Peter hi.
+> 
+> Why have we missed that patch from -rc3. This is so *not fun* to keep
+> out-of-tree patches. Specially when working with lots of other people's
+> trees.
+> 
+> Please push it ASAP
+> Boaz
 
-Ccing netdev.
+We made the decision of not pushing our queue for -rc3 because Linus
+specifically wanted only critical fixes for -rc3.  We will push it for
+-rc4 for when Linus returns.
 
-> Hey devs!
-> 
-> In both of these versions, the update of the carrier flag seems
-> to be "different" than before (linux-2.6.34-08528-gb3f2f6c):
-> 
-> wlan0 (iwlagn) does not recognize it's disconnected
-> and eth0 (e1000e) does only react correctly after I restarted
-> dhcpcd (isc):
-> 
-> [11:20] kr:pm# dhcpcd eth0 
-> dhcpcd: version 5.2.2 starting
-> dhcpcd: eth0: waiting for carrier
-> ^Cdhcpcd: received SIGINT, stopping
-> dhcpcd: eth0: removing interface
-> [11:20] kr:pm# dhcpcd eth0
-> dhcpcd: version 5.2.2 starting
-> dhcpcd: eth0: broadcasting for a lease
-> dhcpcd: eth0: offered 129.132.102.115 from 129.132.65.12
-> dhcpcd: eth0: ignoring offer of 129.132.102.115 from 129.132.57.97
-> dhcpcd: eth0: acknowledged 129.132.102.115 from 129.132.65.12
-> dhcpcd: eth0: checking for 129.132.102.115
-> dhcpcd: eth0: leased 129.132.102.115 for 86400 seconds
-> dhcpcd: forking to background
-> 
-> It's known that iwlagn has problems after suspend/resume,
-> but new is that both nics do not notify dhcpcd that the link
-> has gone. I'm not sure what / where broke here, just see that
-> dhcpcd noticed it before and now doesn't anymore.
+Also, you may want to consider moderating your tone.
 
-Had the same dhcpcd issue here both with e1000e and bnx2 and definitely
-after the .35 merge window. dhclient doesn't seem affected.
+	-hpa
 
 -- 
-Regards/Gruss,
-Boris.
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
