@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab0FNWWp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 18:22:45 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48133 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756922Ab0FNWVf (ORCPT
+	id S1757058Ab0FNWZF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 18:25:05 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:41301 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756917Ab0FNWZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 18:21:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=TNteOcrR6y+MxeE679CIJkFkxDRfq+pP2Gigg7EdIzA6n/FTC4L5ENL1tKTjvKzG9G
-         nrFVbcym3wx2oue3D93MiR/3OS/k21OfL8Bv6KAOyAx/sElD4Sk92w10bhEWu4oFIckk
-         JVLJgR7GzCEFGF4x7mYV622461hjnp4j2aFjQ=
-From: John Kacur <jkacur@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Clark Williams <williams@redhat.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 2/6: v4] lockdep: Make MAX_STACK_TRACE_ENTRIES configurable.
-Date: Tue, 15 Jun 2010 00:21:23 +0200
-Message-Id: <1276554087-3632-3-git-send-email-jkacur@redhat.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1276554087-3632-1-git-send-email-jkacur@redhat.com>
-References: <1276554087-3632-1-git-send-email-jkacur@redhat.com>
+	Mon, 14 Jun 2010 18:25:03 -0400
+Date: Tue, 15 Jun 2010 08:24:58 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: xfs@oss.sgi.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [16/23] XFS: Fix gcc 4.6 set but not read and unused
+ statement warnings
+Message-ID: <20100614222458.GF6590@dastard>
+References: <20100610110.764742110@firstfloor.org>
+ <20100610111052.3DDC5B1A2B@basil.firstfloor.org>
+ <20100614042700.GC6590@dastard>
+ <20100614074309.GA17092@basil.fritz.box>
+ <20100614133755.GE6590@dastard>
+ <20100614143720.GI17092@basil.fritz.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100614143720.GI17092@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Certain debug configurations that have LOCKDEP turned on, run into the limit
-where the MAX_STACK_TRACE_ENTRIES are too small. Rather than simply turning
-off the locking correctness validator, let the user configure this value
-to something reasonable for their system.
+On Mon, Jun 14, 2010 at 04:37:20PM +0200, Andi Kleen wrote:
+> > > > function head comment during development.  Anyway, if we do get an
+> > > > error here, we cannot handle it anyway - it's too late to do
+> > > > anything short of a complete shutdown as we've already written the
+> > > > transaction to the log.
+> > > 
+> > > Well I guess it should be unconditional BUG_ON then.
+> > 
+> > Don't be silly. A filesystem shutdown is all that is necessary,
+> 
+> Without BUG_ON it will not end up in kerneloops.org and you will
+> never know about it. 
 
-This patch was generated against 2.6.33.5-rt23 but is also intended to be
-picked-up for mainline.
+We find out about corrupted filesystems all the time from users
+sending mail to the list. Even if we did panic by default on
+corruption events, kerneloops.org is *useless* for reporting them
+because finding out about a corruption is only the very first step
+of what is usually a long and involved process that requires user
+interaction to gather information necessary to find the cause of the
+corruption.
 
-Message-ID: <alpine.LFD.2.00.1004161329030.11320@localhost.localdomain>
-Signed-off-by: John Kacur <jkacur@redhat.com>
----
- kernel/lockdep_internals.h |    2 +-
- lib/Kconfig.debug          |   10 ++++++++++
- 2 files changed, 11 insertions(+), 1 deletions(-)
+Besides, if we _really_ want the machine to panic on corruption,
+then we configure the machine specifically for it via setting the
+relevant corruption type bit in /proc/sys/fs/xfs/panic_mask. This is
+generally only used when a developer asks a user to set it to get
+kernel crash dumps triggered when a corruption event occurs so we
+can do remote, offline analysis of the failure.
 
-diff --git a/kernel/lockdep_internals.h b/kernel/lockdep_internals.h
-index a2ee95a..d0797bc 100644
---- a/kernel/lockdep_internals.h
-+++ b/kernel/lockdep_internals.h
-@@ -65,7 +65,7 @@ enum {
-  * Stack-trace: tightly packed array of stack backtrace
-  * addresses. Protected by the hash_lock.
-  */
--#define MAX_STACK_TRACE_ENTRIES	262144UL
-+#define MAX_STACK_TRACE_ENTRIES	(CONFIG_MAX_STACK_ENTRIES_KIB*1024UL)
- 
- extern struct list_head all_lock_classes;
- extern struct lock_chain lock_chains[];
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index cbf6e02..6087fb0 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -509,6 +509,16 @@ config LOCKDEP
- 	select KALLSYMS
- 	select KALLSYMS_ALL
- 
-+config MAX_STACK_ENTRIES_KIB
-+	int "MAX_STACK_ENTRIES_KIB for LOCKDEP"
-+	depends on LOCKDEP
-+	default 256
-+	help
-+	   This option allows you to change the default MAX_STACK_TRACE_ENTRIES
-+	   used by LOCKDEP. The default is 256*1024 = 262144.
-+	   Warning: increasing this will increase the size of stack_trace_array
-+	   and therefore the kernel size too.
-+
- config LOCK_STAT
- 	bool "Lock usage statistics"
- 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
+> That's standard Linux kernel development
+> practice.  Maybe XFS should catch up on that.
+
+I find this really amusing because linux filesystems have, over the
+last few years, implemented a simpler version of XFS's way of
+dealing with corruption events(*). Perhaps you should catch up
+with the state of the art before throwing rocks, Andi....
+
+Cheers,
+
+Dave.
+
+(*) extN, fat, hpfs, jfs, nilfs2, ntfs, ocfs2 and logfs all have
+configurable corruption event behaviour that default to remount-ro
+and can be configured to panic the machine.
 -- 
-1.6.6.1
-
+Dave Chinner
+david@fromorbit.com
