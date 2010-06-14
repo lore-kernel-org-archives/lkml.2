@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab0FNOot (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 10:44:49 -0400
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:36650 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754443Ab0FNOor (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 10:44:47 -0400
-Subject: Re: [RFC PATCH] mm: let the bdi_writeout fraction respond more
- quickly
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-In-Reply-To: <1276523894.1980.85.camel@castor.rsk>
-References: <1276523894.1980.85.camel@castor.rsk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Jun 2010 15:44:41 +0100
-Message-ID: <1276526681.1980.89.camel@castor.rsk>
+	id S1754916Ab0FNOuT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 10:50:19 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:48097 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752258Ab0FNOuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 10:50:17 -0400
+Date: Mon, 14 Jun 2010 16:49:48 +0200
+From: Florian Mickler <florian@mickler.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Jonathan Corbet <corbet@lwn.net>, Frederic Weisbecker <fweisbec@gmail.com>,
+       markgross@thegnar.org, linville@tuxdriver.com,
+       linux-kernel@vger.kernel.org,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [linux-pm] [PATCH v4] pm_qos: make update_request non blocking
+Message-ID: <20100614164948.3b39d550@schatten.dmk.lab>
+In-Reply-To: <1276526646.5374.8.camel@mulgrave.site>
+References: <1276097381-3982-1-git-send-email-florian@mickler.org>
+	<1276097832.4343.223.camel@mulgrave.site>
+	<20100609180033.39d5b499@schatten.dmk.lab>
+	<1276099645.4343.257.camel@mulgrave.site>
+	<20100609183204.1eeca494@schatten.dmk.lab>
+	<1276103149.4343.350.camel@mulgrave.site>
+	<20100610094525.0449d797@schatten.dmk.lab>
+	<1276177144.27283.37.camel@mulgrave.site>
+	<20100610164118.15ec7a05@schatten.dmk.lab>
+	<1276266352.2862.70.camel@mulgrave.site>
+	<20100614163339.755a2b5b@schatten.dmk.lab>
+	<1276526646.5374.8.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-8.fc13) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-14 at 14:58 +0100, Richard Kennedy wrote:
-> Hi all,
-> The fraction of vm cache allowed to each BDI as calculated by
-> get_dirty_limits (mm/page-writeback.c) respond very slowly to changes in
-> workload.
-> 
-> Running a simple test that alternately writes 1Gb to sda then sdb,
-> twice, shows the bdi_threshold taking approximately 15 seconds to reach
-> a steady state value. This prevents a application from using all of the
-> available cache and forces it to write to the physical disk earlier than
-> strictly necessary.  
-> As you can see from the attached graph, bdi_thresh_before.png, our
-> current control system responds to this kind of workload very slowly.
-> 
-> The below patch speeds up the recalculation and lets it reach a steady
-> state value in a couple of seconds. see bdi_thresh_after.png.
-> 
-> I get better throughput with this patch applied and have been running
-> some variation of this on and off for some months without any obvious
-> problems.
-> 
-> (These tests were all run on 2.6.35-rc3,
-> where dm-2 is a sata drive lvm/ext4 and sdb is ide ext4.
-> I've got lots more results and graphs but won't bore you all with
-> them ;) )
-> 
-> I see this as a considerable improvement but I have found the magic
-> number of -4 empirically so it may just be tuned to my system. I'm not
-> sure how to decide on a value that is suitable for everyone. 
-> 
-> Does anyone have any suggestions or thoughts?
-> 
-> Unfortunately I don't have any other hardware to try this on, so I would
-> be very interest to hear if anyone tries this on their favourite
-> workload.
-> 
-> regards
-> Richard
->  
-> patch against 2.6.35-rc3
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 2fdda90..315dd04 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -144,7 +144,7 @@ static int calc_period_shift(void)
->  	else
->  		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
->  				100;
-> -	return 2 + ilog2(dirty_total - 1);
-> +	return ilog2(dirty_total - 1) - 4;
->  }
->  
->  /*
-> 
-Fixed Jens email address. I can send you the graphs privately if you
-haven't already got them.
+On Mon, 14 Jun 2010 09:44:06 -0500
+James Bottomley <James.Bottomley@suse.de> wrote:
 
-regards
-Richard
+> On Mon, 2010-06-14 at 16:33 +0200, Florian Mickler wrote:
+> > On Fri, 11 Jun 2010 09:25:52 -0500
+> > James Bottomley <James.Bottomley@suse.de> wrote:
+> > 
+> > > 
+> > > Actually, pm_qos_remove now needs a flush_scheduled work since you don't
+> > > want to return until the list is clear (since the next action may be to
+> > > free the object).
+> > 
+> > The work-items are allocated in the pm_qos objects (which get never
+> > freed), so we should be fine there.
+> 
+> That's not a safe assumption.  Once we get into drivers, timers and cpu
+> ilde states, I can see these things being in modules.
+> 
+> Regardless, it's bad programming practise to be using something after
+> the final remove is called, it certainly violates the principle of least
+> surprise and would usually eventually cause problems.
+> 
+> James
+> 
 
+I absolutely defer to you in this question. But there is no
+pm_qos_remove at the moment, as far as I see? Should I add one? When
+and how would it be called?
 
+Maybe I'm not understanding you right at the moment. 
+
+Cheers,
+Flo
