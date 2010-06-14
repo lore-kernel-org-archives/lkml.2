@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab0FNNAb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 09:00:31 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54986 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab0FNNAa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 09:00:30 -0400
-Date: Mon, 14 Jun 2010 15:00:39 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
-Message-ID: <20100614130039.GA4618@kryptos.osrc.amd.com>
-References: <201005271944.09541.toralf.foerster@gmx.de>
- <201005311555.56791.toralf.foerster@gmx.de>
- <20100531141058.GB4915@aftab>
- <201006141149.24647.toralf.foerster@gmx.de>
+	id S1753482Ab0FNNCH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 09:02:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32287 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753141Ab0FNNCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 09:02:04 -0400
+Message-ID: <4C162846.7030303@redhat.com>
+Date: Mon, 14 Jun 2010 16:01:58 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201006141149.24647.toralf.foerster@gmx.de>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: balbir@linux.vnet.ibm.com
+CC: Dave Hansen <dave@linux.vnet.ibm.com>, kvm <kvm@vger.kernel.org>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
+ control
+References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com> <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com> <4C10B3AF.7020908@redhat.com> <20100610142512.GB5191@balbir.in.ibm.com> <1276214852.6437.1427.camel@nimitz> <20100611045600.GE5191@balbir.in.ibm.com> <4C15E3C8.20407@redhat.com> <20100614084810.GT5191@balbir.in.ibm.com> <4C16233C.1040108@redhat.com> <20100614125010.GU5191@balbir.in.ibm.com>
+In-Reply-To: <20100614125010.GU5191@balbir.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Toralf Förster <toralf.foerster@gmx.de>
-Date: Mon, Jun 14, 2010 at 11:49:24AM +0200
+On 06/14/2010 03:50 PM, Balbir Singh wrote:
+>
+>>
+>>> let me try to reason a bit. First let me explain the
+>>> problem
+>>>
+>>> Memory is a precious resource in a consolidated environment.
+>>> We don't want to waste memory via page cache duplication
+>>> (cache=writethrough and cache=writeback mode).
+>>>
+>>> Now here is what we are trying to do
+>>>
+>>> 1. A slab page will not be freed until the entire page is free (all
+>>> slabs have been kfree'd so to speak). Normal reclaim will definitely
+>>> free this page, but a lot of it depends on how frequently we are
+>>> scanning the LRU list and when this page got added.
+>>> 2. In the case of page cache (specifically unmapped page cache), there
+>>> is duplication already, so why not go after unmapped page caches when
+>>> the system is under memory pressure?
+>>>
+>>> In the case of 1, we don't force a dentry to be freed, but rather a
+>>> freed page in the slab cache to be reclaimed ahead of forcing reclaim
+>>> of mapped pages.
+>>>        
+>> Sounds like this should be done unconditionally, then.  An empty
+>> slab page is worth less than an unmapped pagecache page at all
+>> times, no?
+>>
+>>      
+> In a consolidated environment, even at the cost of some CPU to run
+> shrinkers, I think potentially yes.
+>    
 
-> Borislav Petkov wrote at 16:10:58
-> > Did you do 'make mrproper' before rebuilding UML with it?
-> 
-> Today I started with a clean git tree (cloned Linus tree) and got this :
+I don't understand.  If you're running the shrinkers then you're 
+evicting live entries, which could cost you an I/O each.  That's 
+expensive, consolidated or not.
 
-Right, I kinda missed that line, now it makes sense.
+If you're not running the shrinkers, why does it matter if you're 
+consolidated or not?  Drop that age unconditionally.
 
-Linus' tree doesn't contain the fix yet - rather it is in -tip:
-http://git.kernel.org/tip/055c47272b8f5679d08ccc57efea3cb4aaeb5fc6
+>>> Does the problem statement make sense? If so, do you agree with 1 and
+>>> 2? Is there major concern about subverting regular reclaim? Does
+>>> subverting it make sense in the duplicated scenario?
+>>>
+>>>        
+>> In the case of 2, how do you know there is duplication?  You know
+>> the guest caches the page, but you have no information about the
+>> host.  Since the page is cached in the guest, the host doesn't see
+>> it referenced, and is likely to drop it.
+>>      
+> True, that is why the first patch is controlled via a boot parameter
+> that the host can pass. For the second patch, I think we'll need
+> something like a balloon<size>  <cache?>  with the cache argument being
+> optional.
+>    
 
-You can easily cherry-pick it from there and retest.
+Whether a page is duplicated on the host or not is per-page, it cannot 
+be a boot parameter.
 
-Thanks.
+If we drop unmapped pagecache pages, we need to be sure they can be 
+backed by the host, and that depends on the amount of sharing.
+
+Overall, I don't see how a user can tune this.  If I were a guest admin, 
+I'd play it safe by not assuming the host will back me, and disabling 
+the feature.
+
+To get something like this to work, we need to reward cooperating guests 
+somehow.
+
+>> If there is no duplication, then you may have dropped a
+>> recently-used page and will likely cause a major fault soon.
+>>      
+> Yes, agreed.
+>    
+
+So how do we deal with this?
+
+
 
 -- 
-Regards/Gruss,
-Boris.
+error compiling committee.c: too many arguments to function
 
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
