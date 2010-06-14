@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab0FNLOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 07:14:32 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:43495 "EHLO
+	id S1756231Ab0FNLPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 07:15:47 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:44862 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756162Ab0FNLOb (ORCPT
+	with ESMTP id S1756162Ab0FNLPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 07:14:31 -0400
+	Mon, 14 Jun 2010 07:15:46 -0400
 From: Andy Whitcroft <apw@canonical.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
 Cc: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] UBUNTU: SAUCE: khubd -- switch USB product/manufacturer/serial handling to RCU
-Date: Mon, 14 Jun 2010 12:14:28 +0100
-Message-Id: <1276514068-23668-1-git-send-email-apw@canonical.com>
+Subject: [PATCH 1/1] khubd -- switch USB product/manufacturer/serial handling to RCU
+Date: Mon, 14 Jun 2010 12:15:41 +0100
+Message-Id: <1276514141-23725-1-git-send-email-apw@canonical.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
