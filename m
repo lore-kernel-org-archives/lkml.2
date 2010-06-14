@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab0FNMif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 08:38:35 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:58025 "EHLO
+	id S1752895Ab0FNMik (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 08:38:40 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:58031 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750784Ab0FNMie (ORCPT
+	by vger.kernel.org with ESMTP id S1751997Ab0FNMif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 08:38:34 -0400
+	Mon, 14 Jun 2010 08:38:35 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: linux-arch@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Tim Abbott <tabbott@ksplice.com>,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
-Date: Mon, 14 Jun 2010 13:38:28 +0100
-Message-Id: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
+Cc: Kyle McMartin <kyle@mcmartin.ca>, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/5] parisc: Remove *(.text.*) pattern from the linker script
+Date: Mon, 14 Jun 2010 13:38:31 +0100
+Message-Id: <1276519112-11649-4-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.6.4.rc0
+In-Reply-To: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
+References: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matthew.fleming@imgtec.com>
 
-Many architectures collect text sections beginning with '.text.' in
-their .text section, so move this pattern into TEXT_TEXT to stop them
-all having to duplicate the pattern in their arch/ linker scripts.
+Drop the pattern from the linker script because the pattern is now
+provided by TEXT_TEXT.
 
 Signed-off-by: Matt Fleming <matthew.fleming@imgtec.com>
 ---
- include/asm-generic/vmlinux.lds.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/parisc/kernel/vmlinux.lds.S |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 48c5299..08f4680 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -369,6 +369,7 @@
- 		ALIGN_FUNCTION();					\
- 		*(.text.hot)						\
- 		*(.text)						\
-+		*(.text.*)						\
- 		*(.ref.text)						\
- 	DEV_KEEP(init.text)						\
- 	DEV_KEEP(exit.text)						\
+diff --git a/arch/parisc/kernel/vmlinux.lds.S b/arch/parisc/kernel/vmlinux.lds.S
+index d64a6bb..6784e39 100644
+--- a/arch/parisc/kernel/vmlinux.lds.S
++++ b/arch/parisc/kernel/vmlinux.lds.S
+@@ -61,7 +61,6 @@ SECTIONS
+ 		*(.text.sys_exit)
+ 		*(.text.do_sigaltstack)
+ 		*(.text.do_fork)
+-		*(.text.*)
+ 		*(.fixup)
+ 		*(.lock.text)		/* out-of-line lock text */
+ 		*(.gnu.warning)
 -- 
 1.6.6.1
 
