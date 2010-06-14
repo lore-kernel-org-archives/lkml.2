@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab0FNXW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 19:22:57 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:44503 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab0FNXW4 (ORCPT
+	id S1757314Ab0FNXXS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 19:23:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47949 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753764Ab0FNXXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 19:22:56 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 15 Jun 2010 01:22:45 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-In-Reply-To: <4C16AECD.50506@gmail.com>
-Message-ID: <tkrat.5070b3a06affdcfa@s5r6.in-berlin.de>
-References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com>
- <1276547208-26569-8-git-send-email-justinmattock@gmail.com>
- <tkrat.6f2ad8e8a9e281c2@s5r6.in-berlin.de> <4C16AECD.50506@gmail.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+	Mon, 14 Jun 2010 19:23:17 -0400
+Date: Mon, 14 Jun 2010 16:21:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
+Message-Id: <20100614162143.04783749.akpm@linux-foundation.org>
+In-Reply-To: <20100614231144.GG6590@dastard>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
+	<1276514273-27693-12-git-send-email-mel@csn.ul.ie>
+	<20100614231144.GG6590@dastard>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-which caused gcc 4.6 to warn about
-    variable 'destination' set but not used.
+On Tue, 15 Jun 2010 09:11:44 +1000
+Dave Chinner <david@fromorbit.com> wrote:
 
-Reported-by: Justin P. Mattock <justinmattock@gmail.com>
+> On Mon, Jun 14, 2010 at 12:17:52PM +0100, Mel Gorman wrote:
+> > Page reclaim cleans individual pages using a_ops->writepage() because from
+> > the VM perspective, it is known that pages in a particular zone must be freed
+> > soon, it considers the target page to be the oldest and it does not want
+> > to wait while background flushers cleans other pages. From a filesystem
+> > perspective this is extremely inefficient as it generates a very seeky
+> > IO pattern leading to the perverse situation where it can take longer to
+> > clean all dirty pages than it would have otherwise.
+> > 
+> > This patch queues all dirty pages at once to maximise the chances that
+> > the write requests get merged efficiently. It also makes the next patch
+> > that avoids writeout from direct reclaim more straight-forward.
+> 
+> Seeing as you have a list of pages for IO, perhaps they could be sorted
+> before issuing ->writepage on them.
+> 
+> That is, while this patch issues all the IO in one hit, it doesn't
+> change the order in which the IO is issued - it is still issued in
+> LRU order. Given that they are issued in a short period of time now,
+> rather than across a longer scan period, it is likely that it will
+> not be any faster as:
+> 
+> 	a) IO will not be started as soon, and
+> 	b) the IO scheduler still only has a small re-ordering
+> 	   window and will choke just as much on random IO patterns.
+> 
+> However, there is a list_sort() function that could be used to sort
+> the list; sorting the list of pages by mapping and page->index
+> within the mapping would result in all the pages on each mapping
+> being sent down in ascending offset order at once - exactly how the
+> filesystems want IO to be sent to it.  Perhaps this is a simple
+> improvement that can be made to this code that will make a big
+> difference to worst case performance.
+> 
+> FWIW, I did this for delayed metadata buffer writeback in XFS
+> recently (i.e. sort the queue of (potentially tens of thousands of)
+> buffers in ascending block order before dispatch) and that showed a
+> 10-15% reduction in seeks on simple kernel compile workloads. This
+> shows that if we optimise IO patterns at higher layers where the
+> sort window is much, much larger than in the IO scheduler, then
+> overall system performance improves....
 
-Since the hardware ensures that we receive only response packets with
-proper destination node ID (in a given bus generation), we have no use
-for destination here in the core as well as in upper layers.
+Yup.
 
-(This is different with request packets.  There we pass destination node
-ID to upper layers because they may for example need to check whether
-this was an unicast or broadcast request.)
+But then, this all really should be done at the block layer so other
+io-submitting-paths can benefit from it.
 
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/firewire/core-transaction.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
-
-Index: b/drivers/firewire/core-transaction.c
-===================================================================
---- a/drivers/firewire/core-transaction.c
-+++ b/drivers/firewire/core-transaction.c
-@@ -881,13 +881,12 @@ void fw_core_handle_response(struct fw_c
- 	unsigned long flags;
- 	u32 *data;
- 	size_t data_length;
--	int tcode, tlabel, destination, source, rcode;
-+	int tcode, tlabel, source, rcode;
- 
--	tcode       = HEADER_GET_TCODE(p->header[0]);
--	tlabel      = HEADER_GET_TLABEL(p->header[0]);
--	destination = HEADER_GET_DESTINATION(p->header[0]);
--	source      = HEADER_GET_SOURCE(p->header[1]);
--	rcode       = HEADER_GET_RCODE(p->header[1]);
-+	tcode	= HEADER_GET_TCODE(p->header[0]);
-+	tlabel	= HEADER_GET_TLABEL(p->header[0]);
-+	source	= HEADER_GET_SOURCE(p->header[1]);
-+	rcode	= HEADER_GET_RCODE(p->header[1]);
- 
- 	spin_lock_irqsave(&card->lock, flags);
- 	list_for_each_entry(t, &card->transaction_list, link) {
-
--- 
-Stefan Richter
--=====-==-=- -==- -====
-http://arcgraph.de/sr/
+IOW, maybe "the sort queue is the submission queue" wasn't a good idea.
 
