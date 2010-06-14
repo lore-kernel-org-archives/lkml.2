@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab0FNVLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 17:11:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60234 "EHLO mail.zytor.com"
+	id S1756550Ab0FNVOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 17:14:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34278 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756418Ab0FNVLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 17:11:03 -0400
-Message-ID: <4C169ABC.1090406@zytor.com>
-Date: Mon, 14 Jun 2010 14:10:20 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1756300Ab0FNVOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 17:14:31 -0400
+Message-ID: <4C169B81.8010707@redhat.com>
+Date: Mon, 14 Jun 2010 17:13:37 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Yinghai Lu <yinghai.lu@oracle.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Graham Ramsey <ramsey.graham@ntlworld.com>,
-       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-       Robert Richter <robert.richter@amd.com>,
-       Harald Welte <HaraldWelte@viatech.com>,
-       Joseph Chan <JosephChan@via.com.tw>, Jiri Slaby <jslaby@suse.cz>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: Re: [PATCH -v2] x86, pci: Handle fallout pci devices with peer root
- bus
-References: <4BF40014.30303@ntlworld.com> <201006141400.22653.bjorn.helgaas@hp.com> <4C168C45.8060106@zytor.com> <201006141420.15799.bjorn.helgaas@hp.com>
-In-Reply-To: <201006141420.15799.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mel Gorman <mel@csn.ul.ie>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 01:20 PM, Bjorn Helgaas wrote:
-> 
-> OK, but Graham's system doesn't have anything resembling a PCI-to-PCI
-> bridge leading to bus 80.  So while I agree that in an ideal world,
-> HT/PCI host bridges might always look like PCI-to-PCI bridges, it
-> seems this is not the case in practice.
-> 
+On 06/14/2010 07:17 AM, Mel Gorman wrote:
+> Page reclaim cleans individual pages using a_ops->writepage() because from
+> the VM perspective, it is known that pages in a particular zone must be freed
+> soon, it considers the target page to be the oldest and it does not want
+> to wait while background flushers cleans other pages. From a filesystem
+> perspective this is extremely inefficient as it generates a very seeky
+> IO pattern leading to the perverse situation where it can take longer to
+> clean all dirty pages than it would have otherwise.
 
-Invisible PCI bridges have been known to occur in pure PCI space, too.
+Reclaiming clean pages should be fast enough that this should
+make little, if any, difference.
 
-> Yes, absolutely.  My point is that what the HT spec means by "host bridge"
-> is not the same as what the PCI spec and Linux mean by "PCI host bridge".
+> This patch queues all dirty pages at once to maximise the chances that
+> the write requests get merged efficiently. It also makes the next patch
+> that avoids writeout from direct reclaim more straight-forward.
 
-Actually, they're *exactly* the same thing.
+However, this is a convincing argument :)
 
-	-hpa
+> Signed-off-by: Mel Gorman<mel@csn.ul.ie>
+
+Reviewed-by: Rik van Riel <riel@redhat.com>
+
+-- 
+All rights reversed
