@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab0FNXM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 19:12:57 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:54964 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750784Ab0FNXMz (ORCPT
+	id S1757255Ab0FNXPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 19:15:06 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34185 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751201Ab0FNXPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 19:12:55 -0400
-Date: Tue, 15 Jun 2010 09:11:44 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Chris Mason <chris.mason@oracle.com>,
-       Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
-Message-ID: <20100614231144.GG6590@dastard>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
- <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 14 Jun 2010 19:15:02 -0400
+Subject: Re: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tim Abbott <tabbott@ksplice.com>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-arch@vger.kernel.org,
+       Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+       Denys Vlasenko <vda.linux@googlemail.com>, linux-parisc@vger.kernel.org
+In-Reply-To: <alpine.DEB.1.10.1006141534490.1248@dr-wily.mit.edu>
+References: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
+	 <alpine.DEB.1.10.1006141014360.1432@dr-wily.mit.edu>
+	 <87y6ehxvby.fsf@linux-g6p1.site>
+	 <alpine.DEB.1.10.1006141534490.1248@dr-wily.mit.edu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Jun 2010 18:14:59 -0500
+Message-ID: <1276557299.5374.847.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 12:17:52PM +0100, Mel Gorman wrote:
-> Page reclaim cleans individual pages using a_ops->writepage() because from
-> the VM perspective, it is known that pages in a particular zone must be freed
-> soon, it considers the target page to be the oldest and it does not want
-> to wait while background flushers cleans other pages. From a filesystem
-> perspective this is extremely inefficient as it generates a very seeky
-> IO pattern leading to the perverse situation where it can take longer to
-> clean all dirty pages than it would have otherwise.
+On Mon, 2010-06-14 at 18:21 -0400, Tim Abbott wrote:
+> On Mon, 14 Jun 2010, Matt Fleming wrote:
 > 
-> This patch queues all dirty pages at once to maximise the chances that
-> the write requests get merged efficiently. It also makes the next patch
-> that avoids writeout from direct reclaim more straight-forward.
+> > Do these special kernel sections include things like the parisc
+> > .text.do_softirq, .text.sys_exit, etc? James raised a good objection to
+> > the parisc patch of this series. I'm guessing most people saw it already
+> > but I'll paste it here for reference,
+> > 
+> >     This would destroy all of the named parisc text ordering we do above the
+> >     removed line because now you'd have swept up all the function sections
+> >     before we get to them, won't it?
+> > 
+> >     The ordering is an execution speed up on 32 bit systems because our
+> >     relative jump is so short.
+> > 
+> > Will you changes handle this OK?
+> 
+> I think I addressed this in my reply to James just now, but to be super 
+> clear, this -ffunction-sections plan involves renaming .text.do_softirq to 
+> .text..do_softirq (etc.) first.
 
-Seeing as you have a list of pages for IO, perhaps they could be sorted
-before issuing ->writepage on them.
+OK, so that doesn't make a lot of sense to me; I suspect because you
+don't understand what parisc is doing.  These aren't names of linux
+special sections ... they're names of function sections.  For
+efficiency, we take specific hot functions and place them together in
+the linker script so the jumps between them are small enough to be coded
+as relative on the 32 bit architecture.  It's really just a more
+efficient way of laying out the binary.
 
-That is, while this patch issues all the IO in one hit, it doesn't
-change the order in which the IO is issued - it is still issued in
-LRU order. Given that they are issued in a short period of time now,
-rather than across a longer scan period, it is likely that it will
-not be any faster as:
+James
 
-	a) IO will not be started as soon, and
-	b) the IO scheduler still only has a small re-ordering
-	   window and will choke just as much on random IO patterns.
 
-However, there is a list_sort() function that could be used to sort
-the list; sorting the list of pages by mapping and page->index
-within the mapping would result in all the pages on each mapping
-being sent down in ascending offset order at once - exactly how the
-filesystems want IO to be sent to it.  Perhaps this is a simple
-improvement that can be made to this code that will make a big
-difference to worst case performance.
-
-FWIW, I did this for delayed metadata buffer writeback in XFS
-recently (i.e. sort the queue of (potentially tens of thousands of)
-buffers in ascending block order before dispatch) and that showed a
-10-15% reduction in seeks on simple kernel compile workloads. This
-shows that if we optimise IO patterns at higher layers where the
-sort window is much, much larger than in the IO scheduler, then
-overall system performance improves....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
