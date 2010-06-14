@@ -1,38 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab0FNWe0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 18:34:26 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34506 "EHLO hera.kernel.org"
+	id S1757196Ab0FNWfh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 18:35:37 -0400
+Received: from kroah.org ([198.145.64.141]:38118 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757114Ab0FNWeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 18:34:25 -0400
-Message-ID: <4C16AE4B.609@kernel.org>
-Date: Tue, 15 Jun 2010 00:33:47 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1757127Ab0FNWff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 18:35:35 -0400
+Date: Mon, 14 Jun 2010 15:33:04 -0700
+From: Greg KH <greg@kroah.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Matthew Garrett <mjg@redhat.com>,
+       Anssi Hannula <anssi.hannula@gmail.com>,
+       Bernhard Rosenkraenzer <bero@arklinux.org>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH] qcserial: fix a memory leak in qcprobe error path
+Message-ID: <20100614223304.GB31069@kroah.com>
+References: <1275982163.17060.3.camel@mola>
 MIME-Version: 1.0
-To: Daniel Walker <dwalker@codeaurora.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu, awalls@radix.net,
-       linux-kernel@vger.kernel.org, jeff@garzik.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-Subject: Re: [PATCHSET] workqueue: concurrency managed workqueue, take#5
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>	 <20100614145839.8ac7687a.akpm@linux-foundation.org>	 <4C16AA75.8030303@kernel.org> <1276554672.3505.199.camel@c-dwalke-linux.qualcomm.com>
-In-Reply-To: <1276554672.3505.199.camel@c-dwalke-linux.qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Jun 2010 22:33:51 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275982163.17060.3.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 12:31 AM, Daniel Walker wrote:
-> Could you explain how you view "concurrency" w.r.t this patchset?
+On Tue, Jun 08, 2010 at 03:29:23PM +0800, Axel Lin wrote:
+> In current implemtation, the "data" is not kfreed in qcprobe error path.
+> This patch moves the memory allocation a little bit latter and only
+> allocate memory when no error is detected in previous checking.
 
-Hmm... can you be a bit more specific?  I don't understand what the
-question is.
+Yeah, but it's now pretty messy.
 
-Thanks.
+> --- a/drivers/usb/serial/qcserial.c
+> +++ b/drivers/usb/serial/qcserial.c
+> @@ -109,13 +109,6 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+>  	ifnum = intf->desc.bInterfaceNumber;
+>  	dbg("This Interface = %d", ifnum);
+>  
+> -	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private),
+> -					 GFP_KERNEL);
+> -	if (!data)
+> -		return -ENOMEM;
+> -
+> -	spin_lock_init(&data->susp_lock);
+> -
 
--- 
-tejun
+Moving this to the end is fine.
+
+> @@ -140,7 +135,7 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+>  					retval);
+>  				retval = -ENODEV;
+>  			}
+> -			return retval;
+> +			goto out;
+
+But this doesn't need to be changed, right?
+Or this.
+
+>  		}
+>  		break;
+>  
+> @@ -156,17 +151,26 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+>  					retval);
+>  				retval = -ENODEV;
+>  			}
+> -			return retval;
+> +			goto out;
+
+Or this?
+
+>  		}
+>  		break;
+>  
+>  	default:
+>  		dev_err(&serial->dev->dev,
+>  			"unknown number of interfaces: %d\n", nintf);
+> -		return -ENODEV;
+
+Hm. maybe.
+
+>  	}
+>  
+> -	return retval;
+> +out:
+> +	if (retval)
+> +		return retval;
+> +
+> +	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private),
+> +					 GFP_KERNEL);
+> +	if (!data)
+> +		return -ENOMEM;
+> +
+> +	spin_lock_init(&data->susp_lock);
+> +	return 0;
+
+I guess it's ok, I just don't like doing data initialization on the
+"out" path, it's messy.
+
+Care to neaten this up a bit more and resend it?  Perhaps just free the
+memory on the error path instead of moving it later on?
+
+thanks,
+
+greg k-h
