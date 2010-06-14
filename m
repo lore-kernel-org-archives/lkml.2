@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab0FNOuT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 10:50:19 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:48097 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752258Ab0FNOuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 10:50:17 -0400
-Date: Mon, 14 Jun 2010 16:49:48 +0200
-From: Florian Mickler <florian@mickler.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Jonathan Corbet <corbet@lwn.net>, Frederic Weisbecker <fweisbec@gmail.com>,
-       markgross@thegnar.org, linville@tuxdriver.com,
-       linux-kernel@vger.kernel.org,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [linux-pm] [PATCH v4] pm_qos: make update_request non blocking
-Message-ID: <20100614164948.3b39d550@schatten.dmk.lab>
-In-Reply-To: <1276526646.5374.8.camel@mulgrave.site>
-References: <1276097381-3982-1-git-send-email-florian@mickler.org>
-	<1276097832.4343.223.camel@mulgrave.site>
-	<20100609180033.39d5b499@schatten.dmk.lab>
-	<1276099645.4343.257.camel@mulgrave.site>
-	<20100609183204.1eeca494@schatten.dmk.lab>
-	<1276103149.4343.350.camel@mulgrave.site>
-	<20100610094525.0449d797@schatten.dmk.lab>
-	<1276177144.27283.37.camel@mulgrave.site>
-	<20100610164118.15ec7a05@schatten.dmk.lab>
-	<1276266352.2862.70.camel@mulgrave.site>
-	<20100614163339.755a2b5b@schatten.dmk.lab>
-	<1276526646.5374.8.camel@mulgrave.site>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755181Ab0FNOvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 10:51:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45857 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754424Ab0FNOvP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 10:51:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RtJkLh3LTk/prZ9RWO5KAAtv3+dxMBLrHQDoxArH1lGywQ9HRzfuV2x/e1Xn9DKb0D
+         26610asMNt2bi8QsHXqGoi5VkQYZah47wUmEVfS+QgTptO+Ogc0HiCzStfCeLWIzo5Ur
+         ZJMgD2NW+GLBG5boqdwVu8dyApdl9nC9LI+1w=
+Date: Mon, 14 Jun 2010 17:54:40 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: BUG: using smp_processor_id() in preemptible code: s2disk
+Message-ID: <20100614145439.GA3448@swordfish.minsk.epam.com>
+References: <20100613203352.GA3577@swordfish>
+ <1276461183.2659.4.camel@maxim-laptop>
+ <201006140136.18652.rjw@sisk.pl>
+ <20100614140941.GA3581@swordfish.minsk.epam.com>
+ <20100614073853.6fa2f91f@infradead.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
+Content-Disposition: inline
+In-Reply-To: <20100614073853.6fa2f91f@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jun 2010 09:44:06 -0500
-James Bottomley <James.Bottomley@suse.de> wrote:
 
-> On Mon, 2010-06-14 at 16:33 +0200, Florian Mickler wrote:
-> > On Fri, 11 Jun 2010 09:25:52 -0500
-> > James Bottomley <James.Bottomley@suse.de> wrote:
-> > 
-> > > 
-> > > Actually, pm_qos_remove now needs a flush_scheduled work since you don't
-> > > want to return until the list is clear (since the next action may be to
-> > > free the object).
-> > 
-> > The work-items are allocated in the pm_qos objects (which get never
-> > freed), so we should be fine there.
-> 
-> That's not a safe assumption.  Once we get into drivers, timers and cpu
-> ilde states, I can see these things being in modules.
-> 
-> Regardless, it's bad programming practise to be using something after
-> the final remove is called, it certainly violates the principle of least
-> surprise and would usually eventually cause problems.
-> 
-> James
-> 
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I absolutely defer to you in this question. But there is no
-pm_qos_remove at the moment, as far as I see? Should I add one? When
-and how would it be called?
+On (06/14/10 07:38), Arjan van de Ven wrote:
+> > Hello,
+> > Not sure if this simple solution is the correct one.
+>=20
+> it's not; the caller needs to pass in the cpu number I suspect for this
+> to be really correct....
+>=20
+> I just returned from family emergency travel and will take a look today
+>=20
 
-Maybe I'm not understanding you right at the moment. 
+I thought about patching
 
-Cheers,
-Flo
+=2E/drivers/cpuidle/governors/menu.c:	if (nr_iowait_cpu())
+=2E/drivers/cpuidle/governors/menu.c:	mult +=3D 10 * nr_iowait_cpu();
+=2E/kernel/time/tick-sched.c:		if (nr_iowait_cpu() > 0)
+
+
+decided to patch nr_iowait_cpu instead.
+
+
+	Sergey
+
+--DocE+STaALJfprDB
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iJwEAQECAAYFAkwWQq8ACgkQfKHnntdSXjR/awP+O5HdRDq12VkRDxQV6l971hZP
+PD2Cc9wZJAcGYi3TZ0KsbwmwPB9KCJwci8NnYAPcXRJ8+NCAGko8EA4JJnliTSRg
+xBdVfNfpSyG+nE7G+qSRkTNw3jLTiuCh9ds1wKdH0xKIdU/KU/ZDgdwwdx9sGUl9
+Gfk3Ei8162pIvm38Ofo=
+=/SOs
+-----END PGP SIGNATURE-----
+
+--DocE+STaALJfprDB--
