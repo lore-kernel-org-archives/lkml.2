@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab0FNSUJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 14:20:09 -0400
-Received: from gerolde.archlinux.org ([66.211.214.132]:53322 "EHLO
-	archlinux.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751595Ab0FNSUH (ORCPT
+	id S1752427Ab0FNSWQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 14:22:16 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:53912 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab0FNSWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 14:20:07 -0400
-X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jun 2010 14:20:06 EDT
-Message-ID: <4C167093.2030308@archlinux.org>
-Date: Mon, 14 Jun 2010 20:10:27 +0200
-From: =?ISO-8859-15?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	Mon, 14 Jun 2010 14:22:15 -0400
+Date: Mon, 14 Jun 2010 20:22:12 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+       Tim Abbott <tabbott@ksplice.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
+Message-ID: <20100614182212.GA14747@merkur.ravnborg.org>
+References: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>,
-       John Fastabend <john.r.fastabend@intel.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [2.6.35-rc3 regression] TCP connections on 'lo' interface randomly
- stall
-X-Enigmail-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="------------enig0E745B6FA7B0E9915C32A877"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig0E745B6FA7B0E9915C32A877
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 14, 2010 at 01:38:28PM +0100, Matt Fleming wrote:
+> From: Matt Fleming <matthew.fleming@imgtec.com>
+> 
+> Many architectures collect text sections beginning with '.text.' in
+> their .text section, so move this pattern into TEXT_TEXT to stop them
+> all having to duplicate the pattern in their arch/ linker scripts.
+> 
+> Signed-off-by: Matt Fleming <matthew.fleming@imgtec.com>
+> ---
+>  include/asm-generic/vmlinux.lds.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+> index 48c5299..08f4680 100644
+> --- a/include/asm-generic/vmlinux.lds.h
+> +++ b/include/asm-generic/vmlinux.lds.h
+> @@ -369,6 +369,7 @@
+>  		ALIGN_FUNCTION();					\
+>  		*(.text.hot)						\
+>  		*(.text)						\
+> +		*(.text.*)						\
+>  		*(.ref.text)						\
+>  	DEV_KEEP(init.text)						\
+>  	DEV_KEEP(exit.text)						\
 
-With 2.6.35-rc3, I cannot use TCP over the 'lo' interface any more. This
-is reproduced easily by running 'ssh localhost' and executing a few
-commands inside the ssh session (if you are able to log in, 'ls -lhFR /'
-does a good job) - the connection will stall completely after a very
-short time. As far as I can see, all applications are affected.
+This will break ia64.
+>From their vmlinux.lds.h:
 
-It also seems that once a service is "stalled", I cannot open a new
-connection to the same TCP port anymore. However, I can open a
-connection to a different port until that one is stalled, too.
+        TEXT_TEXT
+        SCHED_TEXT
+        LOCK_TEXT
+        KPROBES_TEXT
+        *(.gnu.linkonce.t*)
+    }
+  .text2 : AT(ADDR(.text2) - LOAD_OFFSET)
+        { *(.text2) }
+#ifdef CONFIG_SMP
+  .text..lock : AT(ADDR(.text..lock) - LOAD_OFFSET)
+        { *(.text..lock) }
+#endif
 
-Running wireshark, I can see that TCP retransmissions are sent, but
-never acknowledged.
+The patch above we would match the section ".text.*" too soon and
+add the .text..lock section at the wrong place.
 
-Bisection (starting with 7908a9e as good and v2.6.35-rc3 as bad) leads
-to the following commit. Please CC me on replies to this issue. Thanks
-for your help.
+Browsing the vmlinux.lds files other archs will be impacted too.
 
-commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837
-Author: John Fastabend <john.r.fastabend@intel.com>
-Date:   Thu Jun 3 09:30:11 2010 +0000
+If you feel tempted to clean up the linker script one place to start
+would be to introduce consistent indention / layout.
+If you use arch/sparc/kernel/vmlinux.lds.h as a template then you
+have a good start.
 
-    net: deliver skbs on inactive slaves to exact matches
+The above mentioned ia64 vmlinux.lds.h would be a good place to start.
 
-    Currently, the accelerated receive path for VLAN's will
-    drop packets if the real device is an inactive slave and
-    is not one of the special pkts tested for in
-    skb_bond_should_drop().  This behavior is different then
-    the non-accelerated path and for pkts over a bonded vlan.
-
-    For example,
-
-    vlanx -> bond0 -> ethx
-
-    will be dropped in the vlan path and not delivered to any
-    packet handlers at all.  However,
-
-    bond0 -> vlanx -> ethx
-
-    and
-
-    bond0 -> ethx
-
-    will be delivered to handlers that match the exact dev,
-    because the VLAN path checks the real_dev which is not a
-    slave and netif_recv_skb() doesn't drop frames but only
-    delivers them to exact matches.
-
-    This patch adds a sk_buff flag which is used for tagging
-    skbs that would previously been dropped and allows the
-    skb to continue to skb_netif_recv().  Here we add
-    logic to check for the deliver_no_wcard flag and if it
-    is set only deliver to handlers that match exactly.  This
-    makes both paths above consistent and gives pkt handlers
-    a way to identify skbs that come from inactive slaves.
-    Without this patch in some configurations skbs will be
-    delivered to handlers with exact matches and in others
-    be dropped out right in the vlan path.
-
-    I have tested the following 4 configurations in failover modes
-    and load balancing modes.
-
-    # bond0 -> ethx
-
-    # vlanx -> bond0 -> ethx
-
-    # bond0 -> vlanx -> ethx
-
-    # bond0 -> ethx
-                |
-      vlanx -> --
-
-    Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-
---------------enig0E745B6FA7B0E9915C32A877
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEAREIAAYFAkwWcJQACgkQEda5KzHP/VDWtgCgt20soZcPEd8dPAENrBhrPZoI
-bbgAn1FSKH9tiLjPxPODpVCN1iDhuOsL
-=mJ5g
------END PGP SIGNATURE-----
-
---------------enig0E745B6FA7B0E9915C32A877--
+	Sam
