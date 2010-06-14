@@ -1,84 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab0FNQge (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 12:36:34 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:17927 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475Ab0FNQg3 (ORCPT
+	id S1755370Ab0FNQgd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 12:36:33 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:32987 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856Ab0FNQg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Jun 2010 12:36:29 -0400
-Message-ID: <4C165A8B.1060008@hp.com>
-Date: Mon, 14 Jun 2010 12:36:27 -0400
-From: Vlad Yasevich <vladislav.yasevich@hp.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+Date: Mon, 14 Jun 2010 17:36:24 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Ozan =?utf-8?B?w4dhxJ9sYXlhbg==?= <ozan@pardus.org.tr>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] ACPI: video: DMI workaround broken Acer 5710 BIOS
+	enabling display brightness
+Message-ID: <20100614163624.GA27141@srcf.ucam.org>
+References: <1276499864-7609-1-git-send-email-ozan@pardus.org.tr> <20100614142554.GA22158@srcf.ucam.org> <4C165684.1060609@pardus.org.tr>
 MIME-Version: 1.0
-To: Yaogong Wang <ywang15@ncsu.edu>
-CC: linux-sctp@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] sctp multistream scheduling: extend socket API
-References: <AANLkTilW6Ym_vL02rVk4QFPIC3Dr0BC12oAxdjE9RXpf@mail.gmail.com>	<4C07C927.4090901@hp.com> <AANLkTilGROAVnKE5odR6qy6LrVjPSHxkqCrPhAtHtjlQ@mail.gmail.com>
-In-Reply-To: <AANLkTilGROAVnKE5odR6qy6LrVjPSHxkqCrPhAtHtjlQ@mail.gmail.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C165684.1060609@pardus.org.tr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 14, 2010 at 07:19:16PM +0300, Ozan Çağlayan wrote:
 
+> By *this* do you mean the specific quirk that I sent or the whole offset workaround
+> suggested and upstreamed in the bug report?
 
-Yaogong Wang wrote:
+Sorry, yeah, the entire workaround. I'll look into producing something 
+more generic. Right now the quirk is the only thing that'll work.
 
-> There is an important design issue here: when should the user set this
-> socket option?
-> 
-> My current assumption is that the user choose the scheduling algorithm
-> after declaring the socket but before the establishment of any
-> association. Therefore, the granularity of control is socket-based
-> rather than association-based. In one-to-many style socket case, all
-> associations inherit the scheduling algorithm of the socket. The
-> problems with this approach are:
-> 1. Cannot specify different scheduling algorithm for each association
-> under the same socket
-> 2. Since the option is set before the establishment of any
-> association, it doesn't know how many streams would be negotiated. It
-> could only consult initmsg for the intended number of outgoing
-> streams.
-> 
-> If we go with the association-based approach, the above problems can
-> be solved. But the question is: in this case, when should the user set
-> this option? In one-to-many style socket, associations are implicitly
-> established. There isn't a point where association is established but
-> data transfer hasn't started yet so that the user can choose the
-> scheduling algorithm. Any suggestion on this dilemma?
-
-I've been thinking about this and trying to come up with scenarios of
-when performing this function at association level may be useful.
-
-The most compelling example is really in a 1-1 or peeled off case.  Currently,
-one can not change the scheduling on a peeled off association and that
-might be a rather useful feature.  Typically, associations are peeled
-off just so that they can provide additional performance.  Such association
-may wants the additional benefit of stream prioritization.
-
-I can however see the issues on both side of this.  A good counter argument is
-that if a server should provide the same level of service for a given port.
-In the end, I think I'll leave it up to you.  My initial question was from the
-API perspective.
-
-Now there are some technical challenges in allowing per-association option.
-a)How do we deal with changing algorithms that require additional storage?
-b)What do we do with DATA that's been queued before algorithm is chosen?
-There may be others ones I haven't though off yet.
-
-The simplest answer to a) is that such operations are forbidden until the
-queue is drained.  That's the simplest to implement and may not be that
-bad for the application, considering we have a SENDER_DRY event that can
-allow the application to control when the call is made.
-
-As for b), we might have to go with a lobby or a 2 level queue approach.
-For this, we can probably re-use the socket send queue, that can be drained
-when association can send DATA.  This might be a good thing to have anyway
-so that we do not waste space for streams that haven't been negotiated.
-
--vlad
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
