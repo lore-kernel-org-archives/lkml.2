@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab0FNXsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 19:48:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39988 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916Ab0FNXsj (ORCPT
+	id S1754335Ab0FNXtQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 19:49:16 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60324 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab0FNXtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 19:48:39 -0400
+	Mon, 14 Jun 2010 19:49:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=och6UqdLlZR9tPFz9cCt6rkmwSj2UBBvhDsbEH4I7oEIvgtPOHyUqkpgEGJRhdXtV/
-         yXgJcqn/FQdz23jHrSoepfCFl+ScR87+I9Pg4hwtGQu1CJGKH+kidTkC959aMQAAdTLN
-         ds6/SMw1RqandPOgtlv8Lkp871mbpE3llMGkY=
-Subject: Re: [PATCH v2] MMC: fix all hangs related to mmc/sd card
- insert/removal during suspend/resume.
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mmc <linux-mmc@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Philip Langdale <philipl@overt.org>
-In-Reply-To: <20100614155157.dca38e09.akpm@linux-foundation.org>
-References: <1276283791.8557.29.camel@maxim-laptop>
-	 <1276283995-10812-1-git-send-email-maximlevitsky@gmail.com>
-	 <20100614155157.dca38e09.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Jun 2010 02:48:33 +0300
-Message-ID: <1276559313.7837.41.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=R5Irj/hk6TTgWd2D2PWL2jj8fXwG4ofDeL1x0ywSVIHEL22l1sEukFZYrZK7tbgEM2
+         O8GRYQrH+gOrpH9iYk/hpWGJMGDkxBTGDXy/SmzBZOJz57yZjNEhCnMRuLR1jsGvyC4m
+         qpUyGhXFToMFrI67O/CB5mg+DbNEVgCTU7KEY=
+Message-ID: <4C16BFF5.7070308@gmail.com>
+Date: Mon, 14 Jun 2010 17:49:09 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+CC: Greg KH <greg@kroah.com>, kristen.c.accardi@intel.com,
+       Dely Sy <dely.l.sy@intel.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Takayoshi Kochi <t-kochi@bq.jp.nec.com>, Matthew Wilcox <willy@hp.com>
+Subject: Re: e-SATA ExpressCard - OOPS plus incrementing "ataX" on  Linux-2.6.xx
+References: <AANLkTimnqVSom2qHetXMBPiCNTYd-yc8Tl6a64n0zTSk@mail.gmail.com>	<20100614162002.GA13902@kroah.com> <AANLkTinwaYy5Z528PraVuWUsU2pJBLoq0c2hgIGirTNn@mail.gmail.com>
+In-Reply-To: <AANLkTinwaYy5Z528PraVuWUsU2pJBLoq0c2hgIGirTNn@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-14 at 15:51 -0700, Andrew Morton wrote: 
-> On Fri, 11 Jun 2010 22:19:55 +0300
-> Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> 
-> > If you don't use CONFIG_MMC_UNSAFE_RESUME, card will now be removed
-> > in pm notified while userspace is still running.
-> > Thus it will be possible to sync it propely.
-> 
-> That paragraph is a disaster and I'm not sure that I understand it well
-> enough to repair it.  I think you wanted s/now/not/ and s/in/if/ and
-> s/it will be/it will not be/.  Or perhaps you didn't.
-> 
-> Please send a comprehensible replacement.
-> 
+On 06/14/2010 12:44 PM, Jeff Chua wrote:
+> On Tue, Jun 15, 2010 at 12:20 AM, Greg KH<greg@kroah.com>  wrote:
+>> On Mon, Jun 14, 2010 at 11:16:29PM +0800, Jeff Chua wrote:
+>
+>
+>> This is a warning that you can ignore, it's been fixed in the latest
+>> tree (2.6.35-rc3).
+>>
+>> try that and see.
+>
+> Greg,
+>
+> Ok, just tried rc3 and it's fixed the 1st OOPS.
+>
+> But I'm still seeing the "ataX" incrementing from ata7 to ata8, ata9
+> ... after taking out and putting back the card. It seems the interface
+> is still not shutting down properly. ... Any command to shutdown it
+> down gracefully?
 
-Sure.
+The ataX number incrementing is normal (it always increments when an ATA 
+host is initialized, it doesn't appear the numbers get reused). The 
+other messages are the expected result when you surprise-remove the 
+card. I think there should be a way to trigger the hotplug code to 
+disable the device before you eject it, but I'm not sure what that is 
+supposed to be - maybe echo 1 to /sys/device/pci_somethingorother/remove ?
 
-
-
-If you don't use CONFIG_MMC_UNSAFE_RESUME, as soon as you attempt to
-suspend, the card will be removed, therefore this patch doesn't change
-the behavior of this option.
-
-However the removal will be done by pm notifier, which runs while
-userspace is still not frozen and thus can freely use del_gendisk,
-without the risk of deadlock which would happen otherwise.
-
-If you do use 
-
-
-Best regards,
-Maxim Levitsky
+>
+> ata9.00: disabled
+> 2010-06-15T02:32:04.531177+08:00 boston kernel: ata9.00: disabled
+> sd 8:0:0:0: [sdb] Synchronizing SCSI cache
+> sd 8:0:0:0: [sdb] Result: hostbyte=0x04 driverbyte=0x00
+> sd 8:0:0:0: [sdb] Stopping disk
+> sd 8:0:0:0: [sdb] START_STOP FAILED
+> sd 8:0:0:0: [sdb] Result: hostbyte=0x04 driverbyte=0x00
+> 2010-06-15T02:32:04.568687+08:00 boston kernel: sd 8:0:0:0: [sdb]
+> Synchronizing SCSI cache
+> 2010-06-15T02:32:04.568715+08:00 boston kernel: sd 8:0:0:0: [sdb]
+> Result: hostbyte=0x04 driverbyte=0x00
+> 2010-06-15T02:32:04.568719+08:00 boston kernel: sd 8:0:0:0: [sdb] Stopping disk
+> 2010-06-15T02:32:04.568731+08:00 boston kernel: sd 8:0:0:0: [sdb]
+> START_STOP FAILED
+> 2010-06-15T02:32:04.568735+08:00 boston kernel: sd 8:0:0:0: [sdb]
+> Result: hostbyte=0x04 driverbyte=0x00
+> ata9: failed to stop engine (-5)
+> ahci 0000:05:00.0: PCI INT A disabled
+> 2010-06-15T02:32:05.068765+08:00 boston kernel: ata9: failed to stop engine (-5)
+> 2010-06-15T02:32:05.068797+08:00 boston kernel: ahci 0000:05:00.0: PCI
+> INT A disabled
+>
+>
+>
+> Thanks,
+> Jeff
 
