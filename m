@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab0FNAOp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 20:14:45 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41736
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754892Ab0FNAOm (ORCPT
+	id S1755013Ab0FNAWw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 20:22:52 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44260 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934Ab0FNAWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 20:14:42 -0400
-Date: Sun, 13 Jun 2010 17:14:54 -0700 (PDT)
-Message-Id: <20100613.171454.71112161.davem@davemloft.net>
-To: markus@trippelsdorf.de
-Cc: john.r.fastabend@intel.com, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, yanmin_zhang@linux.intel.com,
-       alex.shi@intel.com, tim.c.chen@intel.com
-Subject: Re: mpd client timeouts (bisected) 2.6.35-rc3
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100613205922.GA1806@arch.tripp.de>
-References: <4C149147.3080808@intel.com>
-	<4C15414E.5090201@intel.com>
-	<20100613205922.GA1806@arch.tripp.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Sun, 13 Jun 2010 20:22:50 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 14 Jun 2010 09:18:23 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+       jbarnes@virtuousgeek.org
+Subject: Re: [PATCH 2/4] x86: ioremap: fix physical address check
+Message-Id: <20100614091823.34fac7a6.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C1275BF.3070605@zytor.com>
+References: <4C11FF10.4060203@jp.fujitsu.com>
+	<4C11FFC0.1030006@jp.fujitsu.com>
+	<4C1275BF.3070605@zytor.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "markus@trippelsdorf.de" <markus@trippelsdorf.de>
-Date: Sun, 13 Jun 2010 22:59:22 +0200
+On Fri, 11 Jun 2010 10:43:27 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-> On Sun, Jun 13, 2010 at 01:36:30PM -0700, John Fastabend wrote:
->> [PATCH] net: fix deliver_no_wcard regression on loopback device
+> On 06/11/2010 02:20 AM, Kenji Kaneshige wrote:
+> > If the physical address is too high to be handled by ioremap() in
+> > x86_32 PAE (e.g. more than 36-bit physical address), ioremap() must
+> > return error (NULL). However, current x86 ioremap try to map this too
+> > high physical address, and it causes unexpected behavior.
 > 
-> This solves the problem here. Thanks.
+> What unexpected behavior?  It is perfectly legitimately to map such a
+> high address in PAE mode.  We have a 36-bit kernel-imposed limit on
+> *RAM* in 32-bit mode (because we can't manage more than that), but there
+> is no reason it should apply to I/O.
 > 
-> Tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 
-Thanks for testing.
+I'm sorry for lack of study. 
+How to access it via mapped area by ioremap() ?
+
+Thanks,
+-Kame
+
