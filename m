@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab0FNNeg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 09:34:36 -0400
-Received: from www.tglx.de ([62.245.132.106]:56870 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753937Ab0FNNee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 09:34:34 -0400
-Date: Mon, 14 Jun 2010 15:34:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Will Schmidt <will_schmidt@vnet.ibm.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       John Stultz <johnstul@us.ibm.com>, Nick Piggin <npiggin@suse.de>
-Subject: Re: [ANNOUNCE] 2.6.33.5-rt23
-In-Reply-To: <1276185406.15867.390.camel@lexx>
-Message-ID: <alpine.LFD.2.00.1006141534050.3026@localhost.localdomain>
-References: <alpine.LFD.2.00.1002241740410.4245@localhost.localdomain>  <alpine.LFD.2.00.1002262041020.4245@localhost.localdomain>  <alpine.LFD.2.00.1003121124120.22855@localhost.localdomain>  <alpine.LFD.2.00.1003211158130.3147@localhost.localdomain> 
- <alpine.LFD.2.00.1004071619490.32352@localhost.localdomain>  <alpine.LFD.2.00.1004271744280.2951@localhost.localdomain>  <alpine.LFD.2.00.1004301156590.2951@localhost.localdomain>  <alpine.LFD.2.00.1005022109150.25342@localhost.localdomain> 
- <alpine.LFD.2.00.1006091837410.2933@localhost.localdomain>  <1276119074.15867.311.camel@lexx>  <alpine.LFD.2.00.1006100800330.2933@localhost.localdomain> <1276185406.15867.390.camel@lexx>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754008Ab0FNNiD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 09:38:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31281 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753888Ab0FNNiA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 09:38:00 -0400
+Message-ID: <4C16308E.1030305@oracle.com>
+Date: Mon, 14 Jun 2010 21:37:18 +0800
+From: Tao Ma <tao.ma@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Dave Chinner <david@fromorbit.com>
+CC: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, sandeen@sandeen.net,
+       Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH v2] xfs: Make fiemap works with sparse file.
+References: <1276308495-14267-1-git-send-email-tao.ma@oracle.com> <20100614002705.GA6590@dastard> <20100614122912.GD6590@dastard>
+In-Reply-To: <20100614122912.GD6590@dastard>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4C1630A7.00B5:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jun 2010, Will Schmidt wrote:
+Hi Dave,
 
-> On Thu, 2010-06-10 at 08:07 +0200, Thomas Gleixner wrote:
-> > On Wed, 9 Jun 2010, Will Schmidt wrote:
-> > 
-> > > On Wed, 2010-06-09 at 18:44 +0200, Thomas Gleixner wrote:
-> > > I'm still on 2.6.33.5-rt22 on powerpc, and have run into a couple
-> > > "sleeping function called from invalid context..." BUGs.   The first was
-> > > during system boot, second during a 'make'.
-> > > 
-> > > relevant code paths don't seem to have changed between -rt22 and -rt23,
-> > > so I think still valid.. :-)  
-> > > 
-> > > This is on a POWER7 system, which may have opened up some timing
-> > > windows, wrt previous runs on POWER6 systems.
-> > > 
-> > > 
-> > > BUG: sleeping function called from invalid context at
-> > > kernel/rtmutex.c:684
-> > 
-> > > [c000000078cf2cf0] [c000000000131a04] .irq_to_desc_alloc_node+0xdc/0x2b8
-> > 
-> > Grr. I thought I had the SPARSE_IRQ stuff disabled on -rt, but seems
-> > it came back somehow. Can you disable that, or does you machine depend
-> > on it ?
-> 
-> I'm not sure whether it is required by the architecture.  I do see that
-> SPARSE_IRQ is disabled in arch/x86/Kconfig with a !PREEMPT_RT, but I
-> don't see an equivalent 'disable' in arch/powerpc/Kconfig.  
+Dave Chinner wrote:
+> On Mon, Jun 14, 2010 at 10:27:06AM +1000, Dave Chinner wrote:
+>   
+>> On Sat, Jun 12, 2010 at 10:08:15AM +0800, Tao Ma wrote:
+>>     
+>>> The reason is that in xfs_getbmap we will
+>>> calculate holes and set it in 'out', while out is malloced by
+>>> bmv_count(fi_extent_max+1) which didn't consider holes. So in the
+>>> worst case, if 'out' vector looks like
+>>> [hole, extent, hole, extent, hole, ... hole, extent, hole],
+>>> we will only return half of fi_extent_max extents.
+>>>       
+>> Right, it's not broken, we simply return less than fi_extent_mex
+>> extents when there are holes. I don't see that as a problem as
+>> applications have to handle that case anyway, and....
+>>
+>>     
+>>> So in xfs_vn_fiemap, we should consider this worst case. If the
+>>> user wants fi_extent_max extents, we need a 'out' with size of
+>>> 2 *fi_extent_max + 2(one more the header).
+>>>       
+>> That's rather dangerous, I think. It relies on other code to catch
+>> the buffer overrun that this sets up for fragmented, non-sparse
+>> files. Personally I'd much prefer to return fewer extents for sparse
+>> files than to add a landmine like this into the kernel code....
+>>     
+>
+> I just had a thought - if you want to avoid holes being reported to
+> fiemap, then add a BMV_IF_NO_HOLES flag to xfs_getbmap() and skip
+> holes in the mappin gloop when this flag is set. That will make
+> fiemap fill in the full number of extents without hacking the
+> extent count...
+>   
+yeah, that should work and I will try to generate a patch for it.
+I am not quite familiar with xfs, so please be kind to me if I make some 
+stupid mistake in the patch. ;)
 
-Can you disable it ?
-
-Thanks,
-
-	tglx
+Regards,
+Tao
