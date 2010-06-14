@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab0FNQ2w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 12:28:52 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:41951 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab0FNQ2v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 12:28:51 -0400
-X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jun 2010 12:28:51 EDT
-Date: Mon, 14 Jun 2010 18:19:04 +0200
-From: Nico Schottelius <nico-linux-20100614@schottelius.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: New issues in 2.6.35-rc{1,2}
-Message-ID: <20100614161904.GE31910@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20100614@schottelius.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	id S1755949Ab0FNQ3c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 12:29:32 -0400
+Received: from kroah.org ([198.145.64.141]:56631 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752856Ab0FNQ3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 12:29:31 -0400
+Date: Mon, 14 Jun 2010 09:20:02 -0700
+From: Greg KH <greg@kroah.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: kristen.c.accardi@intel.com, Dely Sy <dely.l.sy@intel.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Takayoshi Kochi <t-kochi@bq.jp.nec.com>, Matthew Wilcox <willy@hp.com>
+Subject: Re: e-SATA ExpressCard - OOPS plus incrementing "ataX" on
+ Linux-2.6.xx
+Message-ID: <20100614162002.GA13902@kroah.com>
+References: <AANLkTimnqVSom2qHetXMBPiCNTYd-yc8Tl6a64n0zTSk@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u5E4XgoOPWr4PD9E"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: kr (Linux 2.6.35-rc2 x86_64)
+In-Reply-To: <AANLkTimnqVSom2qHetXMBPiCNTYd-yc8Tl6a64n0zTSk@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 14, 2010 at 11:16:29PM +0800, Jeff Chua wrote:
+> Hi,
+> 
+> I just buy an e-SATA ExpressCard and trying on my notebook. It's able
+> to see the external SATA harddisk. On initial boot, I'm seeing the
+> following OOPS.
+> 
+> 
+> 2010-06-14T16:43:21.077256+08:00 boston kernel: scsi 6:0:0:0:
+> Direct-Access     ATA      SAMSUNG MCCOE64G PS10 PQ: 0 ANSI: 5
+> 2010-06-14T16:43:21.077258+08:00 boston kernel: sd 6:0:0:0: [sdb]
+> 125045424 512-byte logical blocks: (64.0 GB/59.6 GiB)
+> 2010-06-14T16:43:21.077260+08:00 boston kernel: sd 6:0:0:0: Attached
+> scsi generic sg1 type 0
+> 2010-06-14T16:43:21.077261+08:00 boston kernel: sd 6:0:0:0: [sdb]
+> Write Protect is off
+> 2010-06-14T16:43:21.077264+08:00 boston kernel: sd 6:0:0:0: [sdb] Mode
+> Sense: 00 3a 00 00
+> 2010-06-14T16:43:21.077266+08:00 boston kernel: sd 6:0:0:0: [sdb]
+> Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+> 2010-06-14T16:43:21.077267+08:00 boston kernel: sdb: sdb1
+> 2010-06-14T16:43:21.077268+08:00 boston kernel: sd 6:0:0:0: [sdb]
+> Attached SCSI disk
+> 2010-06-14T16:43:21.077270+08:00 boston kernel: ------------[ cut here
+> ]------------
+> 2010-06-14T16:43:21.077272+08:00 boston kernel: WARNING: at
+> fs/sysfs/dir.c:451 sysfs_add_one+0x82/0x95()
+> 2010-06-14T16:43:21.077273+08:00 boston kernel: Hardware name: 5413FGA
+> 2010-06-14T16:43:21.077276+08:00 boston kernel: sysfs: cannot create
+> duplicate filename
+> '/devices/pci0000:00/0000:00:1c.3/0000:05:00.0/slot'
 
---u5E4XgoOPWr4PD9E
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a warning that you can ignore, it's been fixed in the latest
+tree (2.6.35-rc3).
 
-Hey devs!
+try that and see.
 
-In both of these versions, the update of the carrier flag seems
-to be "different" than before (linux-2.6.34-08528-gb3f2f6c):
+thanks,
 
-wlan0 (iwlagn) does not recognize it's disconnected
-and eth0 (e1000e) does only react correctly after I restarted
-dhcpcd (isc):
-
-[11:20] kr:pm# dhcpcd eth0=20
-dhcpcd: version 5.2.2 starting
-dhcpcd: eth0: waiting for carrier
-^Cdhcpcd: received SIGINT, stopping
-dhcpcd: eth0: removing interface
-[11:20] kr:pm# dhcpcd eth0
-dhcpcd: version 5.2.2 starting
-dhcpcd: eth0: broadcasting for a lease
-dhcpcd: eth0: offered 129.132.102.115 from 129.132.65.12
-dhcpcd: eth0: ignoring offer of 129.132.102.115 from 129.132.57.97
-dhcpcd: eth0: acknowledged 129.132.102.115 from 129.132.65.12
-dhcpcd: eth0: checking for 129.132.102.115
-dhcpcd: eth0: leased 129.132.102.115 for 86400 seconds
-dhcpcd: forking to background
-
-It's known that iwlagn has problems after suspend/resume,
-but new is that both nics do not notify dhcpcd that the link
-has gone. I'm not sure what / where broke here, just see that
-dhcpcd noticed it before and now doesn't anymore.
-
-Nico
-
---=20
-New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
-Please resign, if you signed 9885188C or 8D0E27A4.
-
-Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
-
---u5E4XgoOPWr4PD9E
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwWVngACgkQ19zI5DGHffAURgCgxt+B8Q2OK4fYEXaqnoTeeXmV
-qrIAnRJldjxynFGP/R3k+9j/+yHVclhb
-=Jf1e
------END PGP SIGNATURE-----
-
---u5E4XgoOPWr4PD9E--
+greg k-h
