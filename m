@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755819Ab0FNJXb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 05:23:31 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52131 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755822Ab0FNJXa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 05:23:30 -0400
-Subject: Re: perf_disable()
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Paul Mundt <lethal@linux-sh.org>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1276273784.2077.2055.camel@twins>
-References: <1276273784.2077.2055.camel@twins>
+	id S1755856Ab0FNJXg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 05:23:36 -0400
+Received: from gate.crashing.org ([63.228.1.57]:35307 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755841Ab0FNJXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 05:23:34 -0400
+Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Lothar =?ISO-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, Ben Dooks <ben-linux@fluff.org>,
+       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+In-Reply-To: <19477.52889.982995.407051@ipc1.ka-ro>
+References: <1275636608.606606.450179637764.0.gpush@pororo>
+	 <201006111557.12249.jeremy.kerr@canonical.com>
+	 <19473.61547.684572.647641@ipc1.ka-ro>
+	 <201006111718.47426.jeremy.kerr@canonical.com>
+	 <19474.172.742782.972629@ipc1.ka-ro>
+	 <20100611095839.GC10894@pengutronix.de>
+	 <19474.2817.333749.485028@ipc1.ka-ro> <1276319643.1962.181.camel@pasglop>
+	 <19477.52889.982995.407051@ipc1.ka-ro>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Jun 2010 10:23:11 +0100
-Message-ID: <1276507391.5601.2.camel@e102144-lin.cambridge.arm.com>
+Date: Mon, 14 Jun 2010 19:22:58 +1000
+Message-ID: <1276507378.2552.39.camel@pasglop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Jun 2010 09:23:16.0081 (UTC) FILETIME=[3835B610:01CB0BA3]
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Mon, 2010-06-14 at 08:39 +0200, Lothar Waßmann wrote:
+> All implementations so far use spin_lock_irq_save()!
 
-On Fri, 2010-06-11 at 17:29 +0100, Peter Zijlstra wrote:
-> Hi,
-> 
-> I've been going over perf_disable() usage in kernel/perf_event.c and
-> wondered if we actually need it at all.
+Nothing prevents your implementation to be a tad smarter.
 
--------->8--------
+> How would you be able to sleep with a mutex held?
+> If you hold a lock you must not sleep, no matter what sort of lock it
+> is. 
 
-> If nobody else known about/can find anything, I'm going to mostly remove
-> perf_disable() for now and later think about how to optimize the
-> hardware writes again.
+You can perfectly sleep with a mutex held. You -do- have to be careful
+of course to ensure you aren't going to do silly thing like re-enter and
+try to take it twice, or A->B B->A deadlocks, but in the typical case of
+wanting to use a msleep rather than udelay, it works very well :-)
 
-No objections from the ARM camp as we don't use perf_disable() for
-anything anyway.
-
-Will
+Cheers,
+Ben.
 
 
