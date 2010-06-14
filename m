@@ -1,129 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab0FNHnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 03:43:16 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:41743 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923Ab0FNHnO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 03:43:14 -0400
-Date: Mon, 14 Jun 2010 09:43:09 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andi Kleen <andi@firstfloor.org>, xfs@oss.sgi.com,
-       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [16/23] XFS: Fix gcc 4.6 set but not read and unused
-	statement warnings
-Message-ID: <20100614074309.GA17092@basil.fritz.box>
-References: <20100610110.764742110@firstfloor.org> <20100610111052.3DDC5B1A2B@basil.firstfloor.org> <20100614042700.GC6590@dastard>
+	id S1753393Ab0FNHpJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 03:45:09 -0400
+Received: from mailout2.zih.tu-dresden.de ([141.30.67.73]:38643 "EHLO
+	mailout2.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752851Ab0FNHpH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 03:45:07 -0400
+Message-ID: <4C15DDF5.5040202@tu-dresden.de>
+Date: Mon, 14 Jun 2010 09:44:53 +0200
+From: =?UTF-8?B?Um9ubnkgVHNjaMO8dGVy?= <Ronny.Tschueter@tu-dresden.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100614042700.GC6590@dastard>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: sched:sched_migrate_task event tracing returns incorrect
+ events
+References: <4C10FD1C.7080200@tu-dresden.de> <1276182701.2077.462.camel@twins>
+In-Reply-To: <1276182701.2077.462.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-TUD-Virus-Scanned: mailout2.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 02:27:00PM +1000, Dave Chinner wrote:
-> > Unused statements were mostly related to stub macros for disabled
-> > features like QUOTA or RT ALLOC. I replace those with
-> > inlines.
-> 
-> Did you compile with/without XFS_DEBUG (I don't think so)? when
-
-No.
-
-I merely made my own config work with relatively little warnings.
-
-> changing code that affects ASSERT statements, CONFIG_XFS_DEBUG needs to
-> be selected to test that this code compiles. Most XFs developers
-> build with XFS_CONFIG_DEBUG for everything other than performance
-> testing, so ensuring this builds is definitely required. ;)
-
-Ok fair enough.
-
-> 
-> I'd also be interested if any fixes are needed with all options
-> enabled. Seems silly just to fix a few warnings in just one
-> particular configuration rather than all of them...
-
-There are tons more warnings with allyesconfig I'm sure,
-not only in xfs.  They will need time to work out.
-
-This will happen over time as people eventually move
-to gcc 4.6 (after it's released)
-
-Some of the warnings are also related
-to not enabling everything (e.g. no quota)
-
-> 
-> > There were also some problems with variables used in ASSERT()
-> > I partly moved those into the ASSERT itself and partly
-> > used a new QASSERT that always evaluates.
-> 
-> That's a pretty ugly hack for a single occurrence of a warning.
-> Re-arrnaging the code is a much better idea than introducing a new
-> ASSERT type. e.g:
-
-I originally planned to use it for more, but then ended up
-changing other code in other ways.
-
-I still don't think it's a ugly hack, it's a relatively
-simple way to handle this. But I can change this single occurrence.
-
-> FWIW, we've now got a situation where external static code checkers
-> will tell us that we are not handling an error case (which is where
-> this code and comment came from), and now the compiler will warn us
-> we are assigning but not using the return value. It's a bit of a
-> Catch-22 situation. Hence my question is this - how are we supposed
-> to "safely" ignore a return value seeing as the compiler is now
-> making the current method rather noisy?
-
-Fix the problem?  
-
-Otherwise you can use a (void) cast, but that's a bad way
-if there's a real problem.
-
-> >  	dp->i_d.di_size = 0;
-> >  	xfs_trans_log_inode(tp, dp, XFS_ILOG_CORE);
-> >  	/*
-> 
-> Just remove the buf_len variable in this case.
-
-I think the code looks cleaner when using buf_len
-
-> These are all "unused" because they are used in debug code only. i.e.
-> in XFS_FILESTREAMS_TRACE configs. This is manual debug code that
-> needs to be converted to the trace infrastructure - the compiler may
-
-I have no plans to do that.
-
-> say it is unused, but it is not dead code, so shoul dnot be removed.
-
-I did not remove anything.
-
-> >  			(uint)(msbp - msb), rsvd);
-> >  		ASSERT(error == 0);
-> > +		/* FIXME: need real error handling here, error can be ENOSPC */
-> 
-> That comment is wrong and hence is not needed.  By design, we should
-> never, ever get an error here because we've already reserved all the
-> space we need and this is just an accounting call.  That's what the
-> ASSERT(error == 0) is documenting. It's ben placed there to catch
-
-Ok. But I must say ASSERT() is not really a good way to 
-document things like that. Whoever wrote this gets
-what he deserves now ...
-
-> function head comment during development.  Anyway, if we do get an
-> error here, we cannot handle it anyway - it's too late to do
-> anything short of a complete shutdown as we've already written the
-> transaction to the log.
-
-Well I guess it should be unconditional BUG_ON then.
+Am 10.06.2010 17:11, schrieb Peter Zijlstra:
+> On Thu, 2010-06-10 at 16:56 +0200, Ronny Tschüter wrote:
+>    
+>> Hi,
+>>
+>> I want to know a little bit more about the execution of my program.
+>> Especially I'm interested in cpu migrations of my process. Therefore I
+>> use the Linux performance counter infrastructure, set appropriate
+>> perf_event attributes and setup the sched:sched_migrate_task event with
+>> a system call:
+>> ...
+>> attr.type = PERF_TYPE_TRACEPOINT;
+>> attr.size = sizeof( struct perf_event_attr );
+>> attr.config = event_id; // id of sched:sched_migrate_task event
+>> attr.sample_type = PERF_SAMPLE_TIME|PERF_SAMPLE_CPU|PERF_SAMPLE_RAW;
+>> attr.freq = 0;
+>> attr.sample_freq = 1;
+>> fd = syscall( __NR_perf_counter_open,&attr, getpid(), -1, -1, 0 );
+>> ...
+>> Finally to read the events I map the kernel event buffer via mmap and
+>> process every event in this buffer. However I run into two problems:
+>>
+>> (1) I need root privileges to open the counter successfully. Without
+>> root privileges syscall returns -1. I think that is not OK because users
+>> should be allowed to create per task counters.
+>>      
+> It is, because you specify PERF_SAMPLE_RAW, which is considered a data
+> leak for unpriv users.
+>
+>    
+>> (2) The buffer contains events that aren't caused by my process (i.e.
+>> the COMM field does not contain the name of my process and the PID field
+>> is not equal to the pid of my process).
+>>      
+> I think that could happen if the migration happens from interrupt
+> context while your task is running. Also wakeups your process does can
+> result in migrations of the woken task from the context of your task.
+>    
+What I need is a counter that trace every scheduling event (at least 
+every cpu migration event) of a given process. Is there such a counter 
+in the perf_events or does all counters come with this weakness? At the 
+moment I open one counter per cpu, trace all scheduling events on this 
+cpu and filter the events manually. But this approach is not feasible 
+for MPI programs, because the number of required counters will increase 
+enormously ( #processes * #cpus counters are needed ).
 
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
