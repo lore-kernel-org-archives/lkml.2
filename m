@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab0FNVJs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 17:09:48 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33720 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab0FNVJp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 17:09:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject:references
-         :in-reply-to:content-type:content-transfer-encoding;
-        b=qKvwRtOxSSyrQHoTqSqzBDA+FTAU6WopacY89lrPjYxkM7sPiAA22caytR/7txJndY
-         MPcfd4Q5qk4j+7bCGnnxL0al9CbMOXXIDigxLVbQZTgUf19njjPECIOYYyIIo74MfJdn
-         EB+Pcn39HHm/JxThjXprx1ss27ErK2cHC5oqg=
-Message-ID: <4C169AA6.6030809@gmail.com>
-Date: Mon, 14 Jun 2010 14:09:58 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	id S1756560Ab0FNVLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 17:11:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60234 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756418Ab0FNVLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 17:11:03 -0400
+Message-ID: <4C169ABC.1090406@zytor.com>
+Date: Mon, 14 Jun 2010 14:10:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-       linux-bluetooth@vger.kernel.org, clemens@ladisch.de,
-       debora@linux.vnet.ibm.com, dri-devel@lists.freedesktop.org,
-       linux-i2c@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH 1/8]reiserfs:stree.c Fix variable set but not used.
-References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com> <1276547208-26569-2-git-send-email-justinmattock@gmail.com> <20100614204805.GA12589@elliptictech.com>
-In-Reply-To: <20100614204805.GA12589@elliptictech.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: Yinghai Lu <yinghai.lu@oracle.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Graham Ramsey <ramsey.graham@ntlworld.com>,
+       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+       Robert Richter <robert.richter@amd.com>,
+       Harald Welte <HaraldWelte@viatech.com>,
+       Joseph Chan <JosephChan@via.com.tw>, Jiri Slaby <jslaby@suse.cz>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: Re: [PATCH -v2] x86, pci: Handle fallout pci devices with peer root
+ bus
+References: <4BF40014.30303@ntlworld.com> <201006141400.22653.bjorn.helgaas@hp.com> <4C168C45.8060106@zytor.com> <201006141420.15799.bjorn.helgaas@hp.com>
+In-Reply-To: <201006141420.15799.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 01:48 PM, Nick Bowler wrote:
-> On 13:26 Mon 14 Jun     , Justin P. Mattock wrote:
->> @@ -617,8 +616,7 @@ int search_by_key(struct super_block *sb, const struct cpu_key *key,	/* Key to s
->>
->>   	pathrelse(search_path);
->>
->> -	right_neighbor_of_leaf_node = 0;
->> -
->> +	
->
-> This hunk introduces whitespace on the empty line, which is not cool.
+On 06/14/2010 01:20 PM, Bjorn Helgaas wrote:
+> 
+> OK, but Graham's system doesn't have anything resembling a PCI-to-PCI
+> bridge leading to bus 80.  So while I agree that in an ideal world,
+> HT/PCI host bridges might always look like PCI-to-PCI bridges, it
+> seems this is not the case in practice.
+> 
 
-I can resend!!(biggest problem is working
-through these warnings)
+Invisible PCI bridges have been known to occur in pure PCI space, too.
 
->
->>   	/* With each iteration of this loop we search through the items in the
->>   	   current node, and calculate the next current node(next path element)
->>   	   for the next iteration of this loop.. */
->> @@ -695,8 +693,7 @@ int search_by_key(struct super_block *sb, const struct cpu_key *key,	/* Key to s
->>   			   starting from the root. */
->>   			block_number = SB_ROOT_BLOCK(sb);
->>   			expected_level = -1;
->> -			right_neighbor_of_leaf_node = 0;
->> -
->> +			
->
-> Here, too.
->
-> Most of the patches in this series have similar issues.
->
+> Yes, absolutely.  My point is that what the HT spec means by "host bridge"
+> is not the same as what the PCI spec and Linux mean by "PCI host bridge".
 
-main thing now(for me atleast)is,
-is this actual dead code or what?
-if not then something else needs to
-be done, if yes then I guess I can
-resend this, with out the whitespace
-issue.
+Actually, they're *exactly* the same thing.
 
-Justin P. Mattock
+	-hpa
