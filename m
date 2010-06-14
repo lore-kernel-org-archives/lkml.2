@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab0FNIK1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 04:10:27 -0400
-Received: from verein.lst.de ([213.95.11.210]:51311 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753861Ab0FNIKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 04:10:24 -0400
-Date: Mon, 14 Jun 2010 10:09:21 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Adrian Hunter <adrian.hunter@nokia.com>
-Cc: jens.axboe@oracle.com, hch@lst.de,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Kyungmin Park <kmpark@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       Madhusudhan Chikkature <madhu.cr@ti.com>
-Subject: Re: [PATCH V2 0/4] Add MMC erase and secure erase
-Message-ID: <20100614080921.GA28316@lst.de>
-References: <4C14AC7E.6030308@nokia.com>
-Mime-Version: 1.0
+	id S1754651Ab0FNIRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 04:17:39 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:35520 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754366Ab0FNIRh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 04:17:37 -0400
+Date: Mon, 14 Jun 2010 04:17:36 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Josef Bacik <josef@redhat.com>
+Cc: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: make sure to invalidate pages if we fall back on
+ buffered reads
+Message-ID: <20100614081736.GA29239@infradead.org>
+References: <1276007044-17715-1-git-send-email-josef@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C14AC7E.6030308@nokia.com>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+In-Reply-To: <1276007044-17715-1-git-send-email-josef@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 13, 2010 at 01:01:34PM +0300, Adrian Hunter wrote:
-> Hi
-> 
-> Add ability to do MMC erase and secure erase operations from userspace,
-> using the BLKDISCARD ioctl and a newly created BLKSECDISCARD ioctl.
+On Tue, Jun 08, 2010 at 10:24:04AM -0400, Josef Bacik wrote:
+> Since BTRFS can fallback on buffered reads after having done some direct reads,
+> we need to make sure to invalidate any pages that we may have read by doing
+> buffered IO.  This shouldn't have shown up as a visible user problem, it's just
+> for correctness sake.  Thanks,
 
-Have you done any measurement if the use of the block layer changes
-performance of the discard requests for you?  I'd really prefer to
-send down the secure erase that way, too.  This could easily be done
-by having a DISCARD_SECURE rw flag, which just ORs another flag into
-the request type field.
+Everything else in direct I/O land uses invalidate_inode_pages2(_range),
+why not this one?
+
+>  	loff_t *ppos = &iocb->ki_pos;
+> +	bool invalidate = false;
+>  
+>  	count = 0;
+>  	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+> @@ -1291,7 +1292,8 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  							iov, pos, nr_segs);
+>  			}
+>  			if (retval > 0) {
+> -				*ppos = pos + retval;
+> +				pos += retval;
+> +				*ppos = pos;
+>  				count -= retval;
+>  			}
+>  
+> @@ -1307,6 +1309,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  				file_accessed(filp);
+>  				goto out;
+>  			}
+> +			invalidate = true;
+>  		}
+>  	}
+>  
+> @@ -1343,6 +1346,10 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+>  		if (desc.count > 0)
+>  			break;
+>  	}
+> +	if (invalidate && retval > 0)
+> +		invalidate_mapping_pages(filp->f_mapping,
+> +					 pos >> PAGE_CACHE_SHIFT,
+> +					 (*ppos - 1) >> PAGE_CACHE_SHIFT);
+
+A little comment here would be surely useful.  Telling that we want to
+get rid of the pages again if we were falling through from an attempted
+direct I/O read.
 
