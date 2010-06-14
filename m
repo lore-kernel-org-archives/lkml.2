@@ -1,109 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab0FNDKg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 23:10:36 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:53707 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297Ab0FNDKe (ORCPT
+	id S1755391Ab0FND2B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 23:28:01 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64365 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab0FND2A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 23:10:34 -0400
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
-Date: Mon, 14 Jun 2010 11:10:25 +0800
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       Ben Herrenchmidt <benh@kernel.crashing.org>
-References: <1275636608.606606.450179637764.0.gpush@pororo> <201006111557.12249.jeremy.kerr@canonical.com> <20100613222349.GD31045@fluff.org.uk>
-In-Reply-To: <20100613222349.GD31045@fluff.org.uk>
+	Sun, 13 Jun 2010 23:28:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=UM7qZbeXd912Fi0XGXNKFV5F4Ur+Wikxu8uGDRLsShTAy0t8W/xDJIj9bdCvxOfL82
+         5z1o3BoOWRppyVqUISsTCXEO9oWI9ms/EvbGeNFxOG0rsJfopcENg3M/ZvamdzZjrCQ8
+         f2/tPZvhgCix+SREnmInmBO5m0vUclw4RAP+g=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006141110.26440.jeremy.kerr@canonical.com>
+In-Reply-To: <20100614012933.GB6590@dastard>
+References: <20100523002023.41f5a5c8@aaa.pulp.binarylife.net>
+	<20100523101856.GL2150@dastard>
+	<20100523092344.0fcaab42@aaa.pulp.binarylife.net>
+	<20100524011907.GC12087@dastard>
+	<AANLkTinyt6V9phjXrzrxm67THdRwTiN6pOim3uBUbo1Z@mail.gmail.com>
+	<20100613224752.GA2069@dastard>
+	<AANLkTikA2d44tZF1TWZAjCqXkhsw0mzsAIaeCosZLqVq@mail.gmail.com>
+	<20100614012933.GB6590@dastard>
+Date: Sun, 13 Jun 2010 23:27:59 -0400
+X-Google-Sender-Auth: 5mJr9-OUf7xUK9yLZLA4q3U9Dm0
+Message-ID: <AANLkTilqrYxnRzB3FNNE3k3hX2Sp1U63gyTo3T4CIzWV@mail.gmail.com>
+Subject: Re: WARNING in xfs_lwr.c, xfs_write()
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Roman Kononov <roman@binarylife.net>, xfs@oss.sgi.com,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On Sun, Jun 13, 2010 at 9:29 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Sun, Jun 13, 2010 at 07:10:30PM -0400, Ilia Mirkin wrote:
+>> On Sun, Jun 13, 2010 at 6:47 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> > On Sat, Jun 12, 2010 at 01:00:52AM -0400, Ilia Mirkin wrote:
+>> >> Sorry to pick up an old-ish thread, but I have a similar situation:
+>> >>
+>> >> On Sun, May 23, 2010 at 9:19 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> >> > On Sun, May 23, 2010 at 09:23:44AM -0500, Roman Kononov wrote:
+>> >> >> On 2010-05-23, 20:18:56 +1000, Dave Chinner <david@fromorbit.com> wrote:
+>> >> >> > Can you find out what the application is triggering this?
+>> >>
+>> >> I noticed this happening with mysql and xtrabackup -- the latter opens
+>> >> up mysql's files while mysql is still running (and modifying its own
+>> >> files) and backs them up in a (hopefully) safe way.
+>> >
+>> > That's not safe at all - there's no guarantee you'll end up with a
+>> > consistent database image doing backups like this. Have you ever
+>> > tried to restore and use one of these backups?
+>>
+>> Yep, works great. [Used it to initialize a slave, did the full
+>> checksums, so it's unlikely to have randomly corrupt data.]
+>
+> You were lucky, I'd say.  xtrabackup is supposed to be tightly
+> integrated with mysql, so perhaps it should be using the same IO
+> methods that the admin has selected for their database. Maybe you
+> need to talk to the xtrabackup folks to get them to add a "backup
+> via direct IO" method if the mysql database is using direct IO so
+> that other uses don't have the same issues.
 
-> You also need a warning that even if it protects the clock, it may not
-> protect any access to the hardware implementing it.
+Maybe. We've been using this technique, although on a different
+physical machine and with ext3, for quite some time (and we verify all
+backups). I did notice that there is a minor difference in
+configuration, esp wrt direct IO, so I'll check it out in more detail.
+[We're now setting innodb_flush_method to O_DIRECT whereas we weren't
+before... although based on the documentation and a cursory
+understanding of how xtrabackup works, this shouldn't be harmful.]
 
-Yep, agreed. HW clock implementations are free to acquire the mutex in their 
-ops.
+> And from a "I read it on the interwebs so it must be true"
+> perspective, without a loud obnoxious warning we'll never hear about
+> problems until someone flames us about silent data corruption on a
+> random blog that gets slashdotted and then referenced for the next
+> 10 years as the next canonical "XFS eats my data!" reference for the
+> clueless....
 
-> > I believe we need to ensure that clocks are enabled when clk_enable
-> > returns, so we'll need some mechanism for waiting on the thread doing
-> > the enable/disable. Since (as you say) some clocks may take 100s of
-> > microseconds to enable, we'll need a lock that we can hold while
-> > sleeping.
-> 
-> Well, mutexes give us that, whilst enabling we hold the mutex.
+Instead it will be "mysql works fine on ext3, but with xfs it spams
+the logs with warnings, therefore xfs must be broken". I don't think
+there's anything realistically that you can do about uninformed users
+and FUD. Although I wasn't suggesting to get rid of the warning,
+rather to make it more explicit as to what it's warning about. I
+interpret a WARN as a BUG that can be recovered but where the
+underlying system needs a careful look; my first inclination after
+seeing a fs-related WARN would be to take the system down and run an
+fsck. What's happening here seems more akin to getting a WARN when
+calling an ioctl with invalid parameters.
 
-Exactly, that's why I think the mutex option is the best way to go.
-
-> > I've just yesterday added the following to my tree, to allow dynamic
-> > initialisation:
-> > 
-> > static inline void clk_init(struct clk *clk, const struct clk_ops *ops)
-> > {
-> > 
-> > 	clk->ops = ops;
-> > 	clk->enable_count = 0;
-> > 	mutex_init(&clk->mutex);
-> > 
-> > }
-> > 
-> > So we can do this either way.
-> 
-> the above is in my view better.
-
-By 'the above' do you mean doing the mutex init at registration time, or the 
-clk_init code above?
-
-Either way should be fine; delaying the mutex_init until registration will has 
-the nice property of not requiring the clock name to be passed to INIT_CLK.
-
-> > I've been debating dropping the get_parent and set_parent ops entirely,
-> > actually; setting a parent seems to be quite specific to hardware (you
-> > have to know that a particular clock can be a parent of another clock),
-> > so it seems like something that we shouldn't expose to drivers through
-> > this API. For the code that knows the hardware, it can probably access
-> > the underlying clock types directly.
-> 
-> Not really, and it is in use with extant drivers, so not easily
-> removable either.
-
-OK, is set_parent used much? I can see the use of get_parent, but calls 
-set_parent need to know specifics of the clock hardware.
-
-> > Checking for the ops first allows us to skip the mutex acquire, but I'm
-> > happy either way.
-> 
-> erm, sorry, yes, you can check for them before mutex. any chages
-> should be done with mutex held.
-
-Yep.
-
-> > Using default ops would mean a couple of things:
-> > 
-> > 1) we can no longer mark the real ops as const; and
-> > 2) we can no longer avoid the hard-to-predict indirect branch
-> 
-> ok, how about people have to mark these as a default non op in their
-> clock structure, and then error if they try and register a clock with
-> null ops. anyone changing these to NULL later deserves all the pain and
-> agony they get.
-
-That addresses the first point, but still means we have an unnecessary 
-indirect branch to a function that does nothing. Since I've unlined the code 
-where this happens, the checks for null ops are pretty unobtrusive. If we 
-require all ops to be not-null, then we'll need much larger chunks of code 
-where the ops are defined. I like that you can just set the ops callbacks that 
-you need, and the rest "just works".
-
-Cheers,
-
-
-Jeremy
+---
+Ilia Mirkin
+imirkin@alum.mit.edu
