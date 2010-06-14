@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab0FNMe2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 08:34:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42958 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752021Ab0FNMe1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 08:34:27 -0400
-Date: Mon, 14 Jun 2010 13:34:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Luotao Fu <l.fu@pengutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3 V2] gpio: add STMPE811 gpio controller support
-Message-ID: <20100614123420.GD14604@rakim.wolfsonmicro.main>
-References: <1276251195-22981-1-git-send-email-l.fu@pengutronix.de>
- <1276511558-27121-3-git-send-email-l.fu@pengutronix.de>
- <20100614115123.GB14604@rakim.wolfsonmicro.main>
- <20100614120943.GB12027@pengutronix.de>
- <20100614121349.GC14604@rakim.wolfsonmicro.main>
- <20100614122853.GC12027@pengutronix.de>
+	id S1752526Ab0FNMhE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 08:37:04 -0400
+Received: from bar.sig21.net ([80.81.252.164]:34900 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750847Ab0FNMhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 08:37:02 -0400
+Date: Mon, 14 Jun 2010 14:36:52 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Subject: Re: FIGETBSZ ioctl conflict
+Message-ID: <20100614123652.GA312@sig21.net>
+References: <20100614110252.GB32224@sig21.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100614122853.GC12027@pengutronix.de>
-X-Cookie: I brake for chezlogs!
+In-Reply-To: <20100614110252.GB32224@sig21.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.7 (---)
+X-Spam-21-Report: No, score=-3.7 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.713,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 02:28:53PM +0200, Luotao Fu wrote:
+(forgot to add lkml to Cc)
 
-> right, to_irq is simple. However, there're some more stuff necessary for
-> gpio irq on this chip, since it has separate registers for GPIO
-> interrupt control and status. A further gpio chip might be needed
-> needed to get the stuff done. Hence I'd like to push out the most
-> importatn core funcationalities out for the first turn before I take a
-> deeper look into other stuffs.
-
-Ah, right - that makes sense.  I'd have expected it to have just flopped
-out of haiving working IRQ support in the core.
+On Mon, Jun 14, 2010 at 01:02:52PM +0200, Johannes Stezenbach wrote:
+> Hi,
+> 
+> in commit 19ba0559 the FIGETBSZ (and FS_IOC_FIEMAP) ioctl was moved
+> from file_ioctl() to do_vfs_ioctl(), so it also works for directories.
+> The problem I'm seeing is that FIGETBSZ is defined as _IO(0x00,2)
+> which is simply 2.  so there is some potential for conflicts
+> with character devices which do not use the _IO macros for numbering
+> their ioctls.
+> Just doing a web search for "FIGETBSZ ioctl conflict" shows
+> that a few people already ran into this problem.
+> 
+> Would you mind adding a check for S_ISDIR | S_ISREG,
+> or maybe !S_ISCHR?
+> 
+> 
+> Thanks,
+> Johannes
