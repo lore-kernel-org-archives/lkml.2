@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab0FNTFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 15:05:42 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34988 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752469Ab0FNTFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 15:05:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [Regression, post-2.6.34] Hibernation broken on machines with radeon/KMS and r300
-Date: Mon, 14 Jun 2010 21:03:54 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Dave Airlie <airlied@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "dri-devel" <dri-devel@lists.freedesktop.org>
-References: <201006141653.03879.rjw@sisk.pl> <AANLkTimQ_yCV5Xdwd_D1zFM1oom2D3ZIBeSczJh4LN1T@mail.gmail.com>
-In-Reply-To: <AANLkTimQ_yCV5Xdwd_D1zFM1oom2D3ZIBeSczJh4LN1T@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753614Ab0FNTM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 15:12:28 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43158 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750882Ab0FNTM1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 15:12:27 -0400
+Date: Mon, 14 Jun 2010 12:12:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: ygeorgie@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] serial: mcf: Don't take spinlocks in already
+ protected functions
+Message-Id: <20100614121225.a03c9203.akpm@linux-foundation.org>
+In-Reply-To: <1276070186-11393-1-git-send-email-ygeorgie@gmail.com>
+References: <1276070186-11393-1-git-send-email-ygeorgie@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006142103.54616.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 14, 2010, Alex Deucher wrote:
-> On Mon, Jun 14, 2010 at 10:53 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Alex, Dave,
-> >
-> > I'm afraid hibernation is broken on all machines using radeon/KMS with r300
-> > after commit ce8f53709bf440100cb9d31b1303291551cf517f
-> > (drm/radeon/kms/pm: rework power management).  At least, I'm able to reproduce
-> > the symptom, which is that the machine hangs hard around the point where an
-> > image is created (probably during the device thaw phase), on two different
-> > boxes with r300 (the output of lspci from one of them is attached for
-> > reference, the other one is HP nx6325).
-> >
-> > Suspend to RAM appears to work fine at least on one of the affected boxes.
-> >
-> > Unfortunately, the commit above changes a lot of code and it's not too easy to
-> > figure out what's wrong with it and I didn't have the time to look more into
-> > details of this failure.  However, it looks like you use .suspend() and
-> > .resume() callbacks as .freeze() and .thaw() which may not be 100% correct
-> > (in fact it looks like the "legacy" PCI suspend/resume is used, which is not
-> > recommended any more).
-> >
+On Wed,  9 Jun 2010 09:56:26 +0200
+ygeorgie@gmail.com wrote:
+
+> From: Yury Georgievskiy <ygeorgie@gmail.com>
 > 
-> Does it work any better after Dave's last drm pull request?
+> Don't take the port spinlock in uart functions where the serial core
+> already takes care of locking/unlocking them.
+> 
+> The code would actually lock up on architectures where spinlocks are
+> implemented.
+> 
+> Also protect calling mcf_rx_chars/mcf_tx_chars in the
+> interrupt handler by the port spinlock and use IRQ_RETVAL
+> to return from isr.
+> 
 
-Nope.  The symptom is slightly different, though, because now it hangs after
-turning off the screen.
+Thanks.  Did you runtime test this?
 
-> With the latest changes, pm should not be a factor unless it's explicitly
-> enabled via sysfs.
+> @@ -368,11 +354,15 @@ static irqreturn_t mcf_interrupt(int irq, void *data)
+>  	unsigned int isr;
+>  
+>  	isr = readb(port->membase + MCFUART_UISR) & pp->imr;
+> +
+> +	spin_lock(&port->lock);
+>  	if (isr & MCFUART_UIR_RXREADY)
+>  		mcf_rx_chars(pp);
+>  	if (isr & MCFUART_UIR_TXREADY)
+>  		mcf_tx_chars(pp);
+> -	return IRQ_HANDLED;
+> +	spin_unlock(&port->lock);
+> +
+> +	return IRQ_RETVAL(isr);
+>  }
 
-Well, I guess the first pm patch changed more than just pm, then.
+I think this is a little abusive of IRQ_RETVAL.  If there are some bits
+set in `isr' other than MCFUART_UIR_RXREADY and MCFUART_UIR_TXREADY, we
+claim we handled it, only we didn't.
 
-Rafael
+Probably the code works OK, but it all seems a bit uncomfortable. 
+Perhaps make it more explicit?
+
+
+--- a/drivers/serial/mcf.c~serial-mcf-dont-take-spinlocks-in-already-protected-functions-fix
++++ a/drivers/serial/mcf.c
+@@ -352,17 +352,22 @@ static irqreturn_t mcf_interrupt(int irq
+ 	struct uart_port *port = data;
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+ 	unsigned int isr;
++	irqreturn_t ret = IRQ_NONE;
+ 
+ 	isr = readb(port->membase + MCFUART_UISR) & pp->imr;
+ 
+ 	spin_lock(&port->lock);
+-	if (isr & MCFUART_UIR_RXREADY)
++	if (isr & MCFUART_UIR_RXREADY) {
+ 		mcf_rx_chars(pp);
+-	if (isr & MCFUART_UIR_TXREADY)
++		ret = IRQ_HANDLED;
++	}
++	if (isr & MCFUART_UIR_TXREADY) {
+ 		mcf_tx_chars(pp);
++		ret = IRQ_HANDLED;
++	}
+ 	spin_unlock(&port->lock);
+ 
+-	return IRQ_RETVAL(isr);
++	return ret;
+ }
+ 
+ /****************************************************************************/
+_
+
