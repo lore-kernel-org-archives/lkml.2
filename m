@@ -1,83 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab0FNQRx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 12:17:53 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:44666 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753956Ab0FNQRv convert rfc822-to-8bit (ORCPT
+	id S1755888Ab0FNQTU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 12:19:20 -0400
+Received: from lider.pardus.org.tr ([193.140.100.216]:35191 "EHLO
+	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab0FNQTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 12:17:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Gpj59EBHe2mbheWhIKyazifq58o94UEVzcQPHE4KmfQml00lg4bZ/7KGswky/H52PN
-         ULpICoVAc6I9qATfe8AsoyVbvP8LthtHZJ/voLdn2ib9tJBUVsEXvZ9AZzTH+jLWjscI
-         E1tgvis45AiHkh1jv9ayMmTd5Bc+w95nt6A3k=
+	Mon, 14 Jun 2010 12:19:19 -0400
+Message-ID: <4C165684.1060609@pardus.org.tr>
+Date: Mon, 14 Jun 2010 19:19:16 +0300
+From: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <1276516181-4519-1-git-send-email-rydberg@euromail.se>
-References: <1276516181-4519-1-git-send-email-rydberg@euromail.se>
-Date: Mon, 14 Jun 2010 09:17:49 -0700
-Message-ID: <AANLkTinI8w5vCi-VOf_IybZmOBDe8gjlJymZNSmmpkpk@mail.gmail.com>
-Subject: Re: [PATCH] hid-input: Use a larger event buffer for MT devices
-From: Ping Cheng <pinglinux@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Stephane Chatty <chatty@enac.fr>, Rafi Rubin <rafi@seas.upenn.edu>,
-       Michael Poole <mdpoole@troilus.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] ACPI: video: DMI workaround broken Acer 5710 BIOS	enabling
+ display brightness
+References: <1276499864-7609-1-git-send-email-ozan@pardus.org.tr> <20100614142554.GA22158@srcf.ucam.org>
+In-Reply-To: <20100614142554.GA22158@srcf.ucam.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 4:49 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> The MT devices produce a lot of data. Tell the underlying input device
-> approximately how many events will be sent per synchronization, to allow
-> for better buffering. The number is a template based on continuously
-> reporting details for each finger on a single hand.
->
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
-> Hi Jiri,
->
-> This patch goes together with the evdev buffer patchset, which Dmitry
-> is going to queue for 2.6.36.
->
-> Cheers,
-> Henrik
->
->  drivers/hid/hid-input.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index 7a0d2e4..69d152e 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -534,6 +534,9 @@ mapped:
->                        input_set_abs_params(input, usage->code, a, b, (b - a) >> 8, (b - a) >> 4);
->                else    input_set_abs_params(input, usage->code, a, b, 0, 0);
->
-> +               /* use a larger default input buffer for MT devices */
-> +               if (usage->code == ABS_MT_POSITION_X && input->hint_events_per_packet == 0)
-> +                       input_set_events_per_packet(input, 60);
+Matthew Garrett wrote:
+> On Mon, Jun 14, 2010 at 10:17:44AM +0300, Ozan Ã‡aÄŸlayan wrote:
+>> Acer Aspire 5710 suffers from a similar ACPI problem reported at:
+>>  http://bugzilla.kernel.org/show_bug.cgi?id=13121
+> 
+> Bleah. Is this really necessary? If we set maximum brightness and then 
+> read back something other than maximum brightness, then that gives us 
+> the offset.
 
-Do we really want to use a hardcoded number here? Considering you have
-used the same value in your "input: bcm5974" patch, adding it as an
-ifdef in linux/input.h should not be an overkill in design and offers
-the other drivers a chance to use it.
+By *this* do you mean the specific quirk that I sent or the whole offset workaround
+suggested and upstreamed in the bug report?
 
-Ping
+Actually I sync'ed the video driver from linux-2.6 on top of 2.6.31.13 and applied this patch.
+The user reported that it fixed the issue but it is possible that this quirk
+is NOOP and the bug is already fixed with what I've backported.
 
->        }
->
->        if (usage->type == EV_ABS &&
-> --
-> 1.6.3.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+I'll let him try without the patch, and report back.
+
+Thanks,
+Regards.
