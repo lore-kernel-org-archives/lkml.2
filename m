@@ -1,114 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705Ab0FNUhV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 16:37:21 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52951 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755295Ab0FNUhU (ORCPT
+	id S1755480Ab0FNUp7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 16:45:59 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:58241 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755193Ab0FNUp6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 16:37:20 -0400
-Date: Mon, 14 Jun 2010 13:36:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: minyard@acm.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipmi: Make sure drivers were registered before
- unregistering them
-Message-Id: <20100614133608.b343cb84.akpm@linux-foundation.org>
-In-Reply-To: <1276192406-3612-1-git-send-email-mjg@redhat.com>
-References: <1276192406-3612-1-git-send-email-mjg@redhat.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Jun 2010 16:45:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=bWg6IqU9JVa+ScgeIgCQedthc/ILfzGT+NI6ISp3SzRs8wXPa8p0Ez18qWEpxMDmV9
+         NPPzJAJDXViyby9ZsGIg7wJEl5WMd8pGPXcc7aLYd75DOYuQcsmGZtdceoe/7qKqoXrN
+         l33yVev4gy0naoDMVlIM38+pd1CbyvNS/duxg=
+MIME-Version: 1.0
+Date: Mon, 14 Jun 2010 13:45:57 -0700
+Message-ID: <AANLkTila2rrYcBUZKwywHTP6g8rsj7Z1ck6LSoC9GaUY@mail.gmail.com>
+Subject: fs/exec.c core dumping on NFS mounted directory
+From: Lei Sun <leisun124@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jun 2010 13:53:26 -0400
-Matthew Garrett <mjg@redhat.com> wrote:
+Hi :
+  In 2.6.3x, I am logging in as a root and running app from NFS
+mounted directory. The app crashed with 0 bytes core file (I have set
+"ulimit -c unlimited", so it's not an issue).
+The following code in fs/exec.c is causing this:
 
-> The ipmi code will never register a PCI or Open Firmware driver if
-> a hardcoded device is provided by the user.
+   /*
+    * Dont allow local users get cute and trick others to coredump
+    * into their pre-created files:
+    * Note, this is not relevant for pipes
+    */
+   if (!ispipe && (inode->i_uid != current_fsuid()))
+       goto close_fail;
 
-How does a user "provide a hardcoded device"?
+What is the intention of above piece of code?  If it's security
+concern,  it clearly break the NFS mounted (different uid) core
+dumping logic.
 
-> This can cause us to attempt
-> to unregister a driver that was never registered, resulting in an oops.
-> Keep track of registration in order to avoid this.
-> 
+P.S. CC to my email, i am not on the list.
 
-I tried to work out from the above whether we want to backport this fix
-into -stable and failed.  And I reckon that if I can't work this out
-from a changelog, the changelog is inadequate.
-
-> --- a/drivers/char/ipmi/ipmi_si_intf.c
-> +++ b/drivers/char/ipmi/ipmi_si_intf.c
-> @@ -302,6 +302,12 @@ struct smi_info {
->  
->  static int force_kipmid[SI_MAX_PARMS];
->  static int num_force_kipmid;
-> +#ifdef CONFIG_PCI
-> +static int pci_registered;
-> +#endif
-> +#ifdef CONFIG_PPC_OF
-> +static int of_registered;
-> +#endif
->  
->  static unsigned int kipmid_max_busy_us[SI_MAX_PARMS];
->  static int num_max_busy_us;
-> @@ -3314,6 +3320,8 @@ static __devinit int init_ipmi_si(void)
->  	rv = pci_register_driver(&ipmi_pci_driver);
->  	if (rv)
->  		printk(KERN_ERR PFX "Unable to register PCI driver: %d\n", rv);
-> +	else
-> +		pci_registered = 1;
->  #endif
->  
->  #ifdef CONFIG_ACPI
-> @@ -3330,6 +3338,7 @@ static __devinit int init_ipmi_si(void)
->  
->  #ifdef CONFIG_PPC_OF
->  	of_register_platform_driver(&ipmi_of_platform_driver);
-> +	of_registered = 1;
-
-I assume the code will still oops if of_register_platform_driver() failed.
-
->  #endif
->  
->  	/* We prefer devices with interrupts, but in the case of a machine
-> @@ -3383,11 +3392,13 @@ static __devinit int init_ipmi_si(void)
->  	if (unload_when_empty && list_empty(&smi_infos)) {
->  		mutex_unlock(&smi_infos_lock);
->  #ifdef CONFIG_PCI
-> -		pci_unregister_driver(&ipmi_pci_driver);
-> +		if (pci_registered)
-> +			pci_unregister_driver(&ipmi_pci_driver);
->  #endif
->  
->  #ifdef CONFIG_PPC_OF
-> -		of_unregister_platform_driver(&ipmi_of_platform_driver);
-> +		if (of_registered)
-> +			of_unregister_platform_driver(&ipmi_of_platform_driver);
->  #endif
->  		driver_unregister(&ipmi_driver.driver);
->  		printk(KERN_WARNING PFX
-> @@ -3478,14 +3489,16 @@ static __exit void cleanup_ipmi_si(void)
->  		return;
->  
->  #ifdef CONFIG_PCI
-> -	pci_unregister_driver(&ipmi_pci_driver);
-> +	if (pci_registered)
-> +		pci_unregister_driver(&ipmi_pci_driver);
->  #endif
->  #ifdef CONFIG_ACPI
->  	pnp_unregister_driver(&ipmi_pnp_driver);
->  #endif
->  
->  #ifdef CONFIG_PPC_OF
-> -	of_unregister_platform_driver(&ipmi_of_platform_driver);
-> +	if (of_registered)
-> +		of_unregister_platform_driver(&ipmi_of_platform_driver);
->  #endif
->  
->  	mutex_lock(&smi_infos_lock);
-
+Thanks
+lei
