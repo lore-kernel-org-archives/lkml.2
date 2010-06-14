@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab0FNNNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 09:13:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63326 "EHLO mx1.redhat.com"
+	id S1753863Ab0FNNeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 09:34:20 -0400
+Received: from www.tglx.de ([62.245.132.106]:56854 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751826Ab0FNNNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 09:13:42 -0400
-Date: Mon, 14 Jun 2010 09:13:36 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Josef Bacik <josef@redhat.com>, linux-btrfs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: make sure to invalidate pages if we fall back on
-	buffered reads
-Message-ID: <20100614131336.GB2322@localhost.localdomain>
-References: <1276007044-17715-1-git-send-email-josef@redhat.com> <20100614081736.GA29239@infradead.org>
+	id S1753546Ab0FNNeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 09:34:18 -0400
+Date: Mon, 14 Jun 2010 15:33:54 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Darcy L. Watkins" <dwatkins@tranzeo.com>
+cc: will_schmidt@vnet.ibm.com, LKML <linux-kernel@vger.kernel.org>,
+       rt-users <linux-rt-users@vger.kernel.org>,
+       John Stultz <johnstul@us.ibm.com>, Nick Piggin <npiggin@suse.de>
+Subject: Re: [ANNOUNCE] 2.6.33.5-rt23
+In-Reply-To: <1276185942.31967.3.camel@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1006141532210.3026@localhost.localdomain>
+References: <alpine.LFD.2.00.1002241740410.4245@localhost.localdomain>  <alpine.LFD.2.00.1002262041020.4245@localhost.localdomain>  <alpine.LFD.2.00.1003121124120.22855@localhost.localdomain>  <alpine.LFD.2.00.1003211158130.3147@localhost.localdomain> 
+ <alpine.LFD.2.00.1004071619490.32352@localhost.localdomain>  <alpine.LFD.2.00.1004271744280.2951@localhost.localdomain>  <alpine.LFD.2.00.1004301156590.2951@localhost.localdomain>  <alpine.LFD.2.00.1005022109150.25342@localhost.localdomain> 
+ <alpine.LFD.2.00.1006091837410.2933@localhost.localdomain>  <1276119074.15867.311.camel@lexx>  <alpine.LFD.2.00.1006100800330.2933@localhost.localdomain>  <1276185406.15867.390.camel@lexx> <1276185942.31967.3.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100614081736.GA29239@infradead.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 04:17:36AM -0400, Christoph Hellwig wrote:
-> On Tue, Jun 08, 2010 at 10:24:04AM -0400, Josef Bacik wrote:
-> > Since BTRFS can fallback on buffered reads after having done some direct reads,
-> > we need to make sure to invalidate any pages that we may have read by doing
-> > buffered IO.  This shouldn't have shown up as a visible user problem, it's just
-> > for correctness sake.  Thanks,
+On Thu, 10 Jun 2010, Darcy L. Watkins wrote:
 > 
-> Everything else in direct I/O land uses invalidate_inode_pages2(_range),
-> why not this one?
+> 
+> On Thu, 2010-06-10 at 08:56 -0700, Will Schmidt wrote:
+> > On Thu, 2010-06-10 at 08:07 +0200, Thomas Gleixner wrote:
+> > > On Wed, 9 Jun 2010, Will Schmidt wrote:
+> > >
+> > > > On Wed, 2010-06-09 at 18:44 +0200, Thomas Gleixner wrote:
+> > > > I'm still on 2.6.33.5-rt22 on powerpc, and have run into a couple
+> > > > "sleeping function called from invalid context..." BUGs.   The
+> > first was
+> > > > during system boot, second during a 'make'.
+> > > >
+> > > > relevant code paths don't seem to have changed between -rt22 and
+> > -rt23,
+> > > > so I think still valid.. :-) 
+> > > >
+> > > > This is on a POWER7 system, which may have opened up some timing
+> > > > windows, wrt previous runs on POWER6 systems.
+> > > >
+> > > >
+> > > > BUG: sleeping function called from invalid context at
+> > > > kernel/rtmutex.c:684
+> > >
+> > > > [c000000078cf2cf0] [c000000000131a04] .irq_to_desc_alloc_node
+> > +0xdc/0x2b8
+> > >
+> > > Grr. I thought I had the SPARSE_IRQ stuff disabled on -rt, but seems
+> > > it came back somehow. Can you disable that, or does you machine
+> > depend
+> > > on it ?
+> > 
+> > I'm not sure whether it is required by the architecture.  I do see
+> > that
+> > SPARSE_IRQ is disabled in arch/x86/Kconfig with a !PREEMPT_RT, but I
+> > don't see an equivalent 'disable' in arch/powerpc/Kconfig. 
+> > 
 >
-
-In __generic_file_aio_write if we fall back on buffered writes we call
-invalidate_mapping_pages to invalidate the buffered range, so I just did that
-here, is that acceptable?
- 
-> >  	loff_t *ppos = &iocb->ki_pos;
-> > +	bool invalidate = false;
-> >  
-> >  	count = 0;
-> >  	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
-> > @@ -1291,7 +1292,8 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
-> >  							iov, pos, nr_segs);
-> >  			}
-> >  			if (retval > 0) {
-> > -				*ppos = pos + retval;
-> > +				pos += retval;
-> > +				*ppos = pos;
-> >  				count -= retval;
-> >  			}
-> >  
-> > @@ -1307,6 +1309,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
-> >  				file_accessed(filp);
-> >  				goto out;
-> >  			}
-> > +			invalidate = true;
-> >  		}
-> >  	}
-> >  
-> > @@ -1343,6 +1346,10 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
-> >  		if (desc.count > 0)
-> >  			break;
-> >  	}
-> > +	if (invalidate && retval > 0)
-> > +		invalidate_mapping_pages(filp->f_mapping,
-> > +					 pos >> PAGE_CACHE_SHIFT,
-> > +					 (*ppos - 1) >> PAGE_CACHE_SHIFT);
+> I see it as "y" in my .config for a powerpc 405 build.  This appears to
+> run on my system (although I haven't loaded up the rt23 build on the
+> target yet - last one loaded up was rt22).
 > 
-> A little comment here would be surely useful.  Telling that we want to
-> get rid of the pages again if we were falling through from an attempted
-> direct I/O read.
-> 
+> What should I expect to see different if SPARSE_IRQ is turned off?
 
-Will do.  I'll send an updated patch when you answer my above question.  Thanks
-for the review.
+The difference is that you can trigger "scheduling while atomic". The
+warning Will has seen depends on debug options.
 
-Josef
+Thanks,
+
+	tglx
