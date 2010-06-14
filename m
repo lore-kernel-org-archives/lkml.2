@@ -1,156 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab0FNVkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 17:40:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46949 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756732Ab0FNVjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 17:39:25 -0400
-From: Tejun Heo <tj@kernel.org>
-To: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/30] workqueue: merge feature parameters into flags
-Date: Mon, 14 Jun 2010 23:37:22 +0200
-Message-Id: <1276551467-21246-6-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1276551467-21246-1-git-send-email-tj@kernel.org>
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Jun 2010 21:37:53 +0000 (UTC)
+	id S1756801Ab0FNVkv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 17:40:51 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:44730 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756677Ab0FNVks (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 17:40:48 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Steven Rostedt <srostedt@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trace-cmd: prevent print_graph_duration buffer overflow
+In-Reply-To: Your message of "Sun, 13 Jun 2010 17:01:34 EDT."
+             <1276462894.2356.6.camel@cndougla-ubuntu>
+From: Valdis.Kletnieks@vt.edu
+References: <1276449108-21328-1-git-send-email-chase.douglas@canonical.com> <1276449108-21328-2-git-send-email-chase.douglas@canonical.com> <40245.1276462373@localhost>
+            <1276462894.2356.6.camel@cndougla-ubuntu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1276551633_4535P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 14 Jun 2010 17:40:33 -0400
+Message-ID: <15749.1276551633@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020202.4C16A1D3.0108,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, __create_workqueue_key() takes @singlethread and
-@freezeable paramters and store them separately in workqueue_struct.
-Merge them into a single flags parameter and field and use
-WQ_FREEZEABLE and WQ_SINGLE_THREAD.
+--==_Exmh_1276551633_4535P
+Content-Type: text/plain; charset=us-ascii
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/workqueue.h |   25 +++++++++++++++----------
- kernel/workqueue.c        |   17 +++++++----------
- 2 files changed, 22 insertions(+), 20 deletions(-)
+On Sun, 13 Jun 2010 17:01:34 EDT, Chase Douglas said:
+> On Sun, 2010-06-13 at 16:52 -0400, Valdis.Kletnieks@vt.edu wrote:
+> > On Sun, 13 Jun 2010 13:11:48 EDT, Chase Douglas said:
+> > > Passing n > sizeof(string) to snprintf can cause a glibc buffer overflow
+> > > condition. We know the exact size of nsecs_str, so use it instead of
+> > > math that may overflow.
+> > 
+> > >  	/* Print nsecs (we don't want to exceed 7 numbers) */
+> > >  	if ((s->len - len) < 7) {
+> > > -		snprintf(nsecs_str, 8 - (s->len - len), "%03lu", nsecs_rem);
+> > > +		snprintf(nsecs_str, sizeof(nsecs_str), "%03lu", nsecs_rem);
+> > 
+> > We only get into this code after we've checked that the length is under 7
+> > characters.  How much overflow can happen as long as the sizeof(nsecs_str) is a
+> > sane size (like at least 8 chars)?  Probably a better bet would be doing the
+> > right thing and 'BUILD_BUG_ON(sizeof(nsecs_str) < 8);'?
+> 
+> nsecs_str is a local variable defined just above this block of code as:
+> 
+> 	char nsecs_str[5];
+> 
+> I was hitting cases where s->len == 64 and len == 63, leading to the
+> size argument of snprintf being 7 on a 5 byte string. I didn't delve too
+> much into the reasoning for the if statement, but I think it's math is
+> not actually related to the size of nsecs_rem but to some other string
+> length.
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index e724daf..d89cfc1 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -184,13 +184,17 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
- #define work_clear_pending(work) \
- 	clear_bit(WORK_STRUCT_PENDING, work_data_bits(work))
- 
-+enum {
-+	WQ_FREEZEABLE		= 1 << 0, /* freeze during suspend */
-+	WQ_SINGLE_THREAD	= 1 << 1, /* no per-cpu worker */
-+};
- 
- extern struct workqueue_struct *
--__create_workqueue_key(const char *name, int singlethread, int freezeable,
-+__create_workqueue_key(const char *name, unsigned int flags,
- 		       struct lock_class_key *key, const char *lock_name);
- 
- #ifdef CONFIG_LOCKDEP
--#define __create_workqueue(name, singlethread, freezeable)	\
-+#define __create_workqueue(name, flags)				\
- ({								\
- 	static struct lock_class_key __key;			\
- 	const char *__lock_name;				\
-@@ -200,19 +204,20 @@ __create_workqueue_key(const char *name, int singlethread, int freezeable,
- 	else							\
- 		__lock_name = #name;				\
- 								\
--	__create_workqueue_key((name), (singlethread),		\
--			       (freezeable), &__key,		\
-+	__create_workqueue_key((name), (flags), &__key,		\
- 			       __lock_name);			\
- })
- #else
--#define __create_workqueue(name, singlethread, freezeable)	\
--	__create_workqueue_key((name), (singlethread), (freezeable), \
--			       NULL, NULL)
-+#define __create_workqueue(name, flags)				\
-+	__create_workqueue_key((name), (flags), NULL, NULL)
- #endif
- 
--#define create_workqueue(name) __create_workqueue((name), 0, 0)
--#define create_freezeable_workqueue(name) __create_workqueue((name), 1, 1)
--#define create_singlethread_workqueue(name) __create_workqueue((name), 1, 0)
-+#define create_workqueue(name)					\
-+	__create_workqueue((name), 0)
-+#define create_freezeable_workqueue(name)			\
-+	__create_workqueue((name), WQ_FREEZEABLE | WQ_SINGLE_THREAD)
-+#define create_singlethread_workqueue(name)			\
-+	__create_workqueue((name), WQ_SINGLE_THREAD)
- 
- extern void destroy_workqueue(struct workqueue_struct *wq);
- 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index c56146a..68e4dd8 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -67,11 +67,10 @@ struct cpu_workqueue_struct {
-  * per-CPU workqueues:
-  */
- struct workqueue_struct {
-+	unsigned int		flags;		/* I: WQ_* flags */
- 	struct cpu_workqueue_struct *cpu_wq;	/* I: cwq's */
- 	struct list_head	list;		/* W: list of all workqueues */
- 	const char		*name;		/* I: workqueue name */
--	int singlethread;
--	int freezeable;		/* Freeze threads during suspend */
- #ifdef CONFIG_LOCKDEP
- 	struct lockdep_map	lockdep_map;
- #endif
-@@ -203,9 +202,9 @@ static const struct cpumask *cpu_singlethread_map __read_mostly;
- static cpumask_var_t cpu_populated_map __read_mostly;
- 
- /* If it's single threaded, it isn't in the list of workqueues. */
--static inline int is_wq_single_threaded(struct workqueue_struct *wq)
-+static inline bool is_wq_single_threaded(struct workqueue_struct *wq)
- {
--	return wq->singlethread;
-+	return wq->flags & WQ_SINGLE_THREAD;
- }
- 
- static const struct cpumask *wq_cpu_map(struct workqueue_struct *wq)
-@@ -463,7 +462,7 @@ static int worker_thread(void *__cwq)
- 	struct cpu_workqueue_struct *cwq = __cwq;
- 	DEFINE_WAIT(wait);
- 
--	if (cwq->wq->freezeable)
-+	if (cwq->wq->flags & WQ_FREEZEABLE)
- 		set_freezable();
- 
- 	for (;;) {
-@@ -1013,8 +1012,7 @@ static void start_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
- }
- 
- struct workqueue_struct *__create_workqueue_key(const char *name,
--						int singlethread,
--						int freezeable,
-+						unsigned int flags,
- 						struct lock_class_key *key,
- 						const char *lock_name)
- {
-@@ -1030,13 +1028,12 @@ struct workqueue_struct *__create_workqueue_key(const char *name,
- 	if (!wq->cpu_wq)
- 		goto err;
- 
-+	wq->flags = flags;
- 	wq->name = name;
- 	lockdep_init_map(&wq->lockdep_map, lock_name, key, 0);
--	wq->singlethread = singlethread;
--	wq->freezeable = freezeable;
- 	INIT_LIST_HEAD(&wq->list);
- 
--	if (singlethread) {
-+	if (flags & WQ_SINGLE_THREAD) {
- 		cwq = init_cpu_workqueue(wq, singlethread_cpu);
- 		err = create_workqueue_thread(cwq, singlethread_cpu);
- 		start_workqueue_thread(cwq, -1);
--- 
-1.6.4.2
+This is starting to smell like that patch is just papering over a bug...
+
+I saw that '8 -' and made the rash assumption that was the size of the array.
+Is 5 in fact big enough and the  's->len - len' calculation is broken, or
+should it be bigger?  As you noted, that length calculation is looking a tad
+sketchy.  (And if we're stuck with '5' because it's a magic number for
+somebody's formatting purposes, maybe it needs to be a #define?)
+
+
+--==_Exmh_1276551633_4535P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMFqHRcC3lWbTT17ARApA8AJ9CfCXXt7RI5tPV04WGkDakNWtyhwCfdT3/
+NbmtT5a9rFl1gjG7tIKWhGA=
+=ZuBY
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1276551633_4535P--
 
