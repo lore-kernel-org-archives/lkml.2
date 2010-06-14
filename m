@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab0FNRkW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 13:40:22 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:37474 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753829Ab0FNRkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 13:40:20 -0400
-Date: Mon, 14 Jun 2010 23:10:08 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, kvm <kvm@vger.kernel.org>,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
- control
-Message-ID: <20100614174008.GA5191@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>
- <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>
- <4C10B3AF.7020908@redhat.com>
- <20100610142512.GB5191@balbir.in.ibm.com>
- <1276214852.6437.1427.camel@nimitz>
- <20100611045600.GE5191@balbir.in.ibm.com>
- <4C15E3C8.20407@redhat.com>
- <20100614084810.GT5191@balbir.in.ibm.com>
- <1276528376.6437.7176.camel@nimitz>
- <4C164C22.1050503@redhat.com>
+	id S1756590Ab0FNRk3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 13:40:29 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49103 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753829Ab0FNRkZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 13:40:25 -0400
+Date: Mon, 14 Jun 2010 13:39:26 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Roland McGrath <roland@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 1/14] X86 instruction analysis: Move Macro W to insn.h
+Message-ID: <20100614173926.GA23754@infradead.org>
+References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
+ <20100614082803.29068.41025.sendpatchset@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C164C22.1050503@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100614082803.29068.41025.sendpatchset@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Avi Kivity <avi@redhat.com> [2010-06-14 18:34:58]:
-
-> On 06/14/2010 06:12 PM, Dave Hansen wrote:
-> >On Mon, 2010-06-14 at 14:18 +0530, Balbir Singh wrote:
-> >>1. A slab page will not be freed until the entire page is free (all
-> >>slabs have been kfree'd so to speak). Normal reclaim will definitely
-> >>free this page, but a lot of it depends on how frequently we are
-> >>scanning the LRU list and when this page got added.
-> >You don't have to be freeing entire slab pages for the reclaim to have
-> >been useful.  You could just be making space so that _future_
-> >allocations fill in the slab holes you just created.  You may not be
-> >freeing pages, but you're reducing future system pressure.
+On Mon, Jun 14, 2010 at 01:58:03PM +0530, Srikar Dronamraju wrote:
+> move_W_to_insn.patch
 > 
-> Depends.  If you've evicted something that will be referenced soon,
-> you're increasing system pressure.
->
+> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> 
+> Move Macro W to asm/insn.h
+> 
+> Macro W used to know if the instructions are valid for
+> user-space/kernel space.  This macro is used by kprobes and
+> user_bkpt. (i.e user space breakpoint assistance layer.) So moving it
+> to a common header file asm/insn.h.
 
-I don't think slab pages care about being referenced soon, they are
-either allocated or freed. A page is just a storage unit for the data
-structure. A new one can be allocated on demand.
- 
- 
+I don't think W is a good name for a macro in a header file.
 
--- 
-	Three Cheers,
-	Balbir
