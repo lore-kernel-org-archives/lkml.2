@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab0FNNyi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 09:54:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10620 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750765Ab0FNNyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 09:54:37 -0400
-Date: Mon, 14 Jun 2010 09:54:03 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Huang Ying <ying.huang@intel.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-       Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
-Message-ID: <20100614135403.GH4894@redhat.com>
-References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
- <20100612102558.GA4000@elte.hu>
- <4C15A5D1.1040104@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C15A5D1.1040104@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1752798Ab0FNN4q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 09:56:46 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:34100 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab0FNN4p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 09:56:45 -0400
+From: Eric B Munson <ebmunson@us.ibm.com>
+To: mingo@elte.hu
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org, Eric B Munson <ebmunson@us.ibm.com>,
+       Anton Blanchard <anton@samba.org>
+Subject: [PATCH] perf lookup of ppc64 symbols
+Date: Mon, 14 Jun 2010 14:56:33 +0100
+Message-Id: <1276523793-15422-1-git-send-email-ebmunson@us.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 12:45:21PM +0900, Hidetoshi Seto wrote:
-> (2010/06/12 19:25), Ingo Molnar wrote:
-> > 
-> > * Huang Ying <ying.huang@intel.com> wrote:
-> > 
-> >> NMI can be triggered even when IRQ is masked. So it is not safe for NMI 
-> >> handler to call some functions. One solution is to delay the call via self 
-> >> interrupt, so that the delayed call can be done once the interrupt is 
-> >> enabled again. This has been implemented in MCE and perf event. This patch 
-> >> provides a unified version and make it easier for other NMI semantic handler 
-> >> to take use of the delayed call.
-> > 
-> > Instead of introducing this extra intermediate facility please use the same 
-> > approach the unified NMI watchdog is using (see latest -tip): a perf event 
-> > callback gives all the extra functionality needed.
-> > 
-> > The MCE code needs to be updated to use that - and then it will be integrated 
-> > into the events framework.
-> 
-> Hi Ingo,
-> 
-> I think this "NMI delayed call mechanism" could be a part of "the events
-> framework" that we are planning to get in kernel soon.  At least APEI will
-> use NMI to report some hardware events (likely error) to kernel.  So I
-> suppose we will go to have a delayed call as an event handler for APEI.
-> 
-> Generally speaking "event" can occur independently of the situation.
-> NMI can tell us some of external events, expecting urgent reaction for
-> the event, but we cannot do everything in NMI context.  Or we might have
-> a sudden urge to generate an internal event while interrupts are disabled.
-> 
-> I agree that generating a self interrupt is reasonable solution.
-> Note that it could be said that both of "MCE handled (=event log should
-> be delivered to userland asap)" and "perf events pending (=pending events
-> should be handled asap)" are kind of internal event that requires urgent
-> handling in non-NMI kernel context.  One question here is why we should
-> have different vectors for these events that uses same mechanism.
+Currently symbol resolution does not work for 64-bit programs
+using perf.  For this to work perf needs to lookup symbol names in
+the OPD.  This patch adds this functionality.  The OPD data is
+used to find symbol names when available.
 
-I think the perf event subsytem can log events in NMI context already and
-deliver them to userspace when the NMI is done.  This is why I think Ingo
-wants MCE to be updated to sit on top of the perf event subsytem to avoid
-re-invent everything again.
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Eric B Munson <ebmunson@us.ibm.com>
+---
+ tools/perf/util/symbol.c |   37 ++++++++++++++++++++++++++++++++++---
+ 1 files changed, 34 insertions(+), 3 deletions(-)
 
-Then again I do not know enough about the MCE stuff to understand what you
-mean when an event comes in but you can't handle it in an NMI-safe
-context.  An example would be helpful.
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index b63e571..971d0a0 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -933,6 +933,25 @@ static bool elf_sec__is_a(GElf_Shdr *self, Elf_Data *secstrs, enum map_type type
+ 	}
+ }
+ 
++static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
++{
++	Elf_Scn *sec = NULL;
++	GElf_Shdr shdr;
++	size_t cnt = 1;
++
++	while ((sec = elf_nextscn(elf, sec)) != NULL) {
++		gelf_getshdr(sec, &shdr);
++
++		if ((addr >= shdr.sh_addr) &&
++		    (addr < (shdr.sh_addr + shdr.sh_size)))
++			return cnt;
++
++		++cnt;
++	}
++
++	return -1;
++}
++
+ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 			 int fd, symbol_filter_t filter, int kmodule)
+ {
+@@ -944,12 +963,13 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 	int err = -1;
+ 	uint32_t idx;
+ 	GElf_Ehdr ehdr;
+-	GElf_Shdr shdr;
+-	Elf_Data *syms;
++	GElf_Shdr shdr, opdshdr;
++	Elf_Data *syms, *opddata = NULL;
+ 	GElf_Sym sym;
+-	Elf_Scn *sec, *sec_strndx;
++	Elf_Scn *sec, *sec_strndx, *opdsec;
+ 	Elf *elf;
+ 	int nr = 0;
++	size_t opdidx = 0;
+ 
+ 	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+ 	if (elf == NULL) {
+@@ -969,6 +989,10 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 			goto out_elf_end;
+ 	}
+ 
++	opdsec = elf_section_by_name(elf, &ehdr, &opdshdr, ".opd", &opdidx);
++	if (opdsec)
++		opddata = elf_rawdata(opdsec, NULL);
++
+ 	syms = elf_getdata(sec, NULL);
+ 	if (syms == NULL)
+ 		goto out_elf_end;
+@@ -1013,6 +1037,13 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 		if (!is_label && !elf_sym__is_a(&sym, map->type))
+ 			continue;
+ 
++		if (opdsec && sym.st_shndx == opdidx) {
++			u32 offset = sym.st_value - opdshdr.sh_addr;
++			u64 *opd = opddata->d_buf + offset;
++			sym.st_value = *opd;
++			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
++		}
++
+ 		sec = elf_getscn(elf, sym.st_shndx);
+ 		if (!sec)
+ 			goto out_elf_end;
+-- 
+1.7.0.4
 
-Cheers,
-Don
