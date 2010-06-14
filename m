@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab0FNOgi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 10:36:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33257 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754100Ab0FNOgh (ORCPT
+	id S1753610Ab0FNOh1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 10:37:27 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:52702 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760Ab0FNOh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 10:36:37 -0400
-Date: Mon, 14 Jun 2010 07:38:53 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: BUG: using smp_processor_id() in preemptible code: s2disk
-Message-ID: <20100614073853.6fa2f91f@infradead.org>
-In-Reply-To: <20100614140941.GA3581@swordfish.minsk.epam.com>
-References: <20100613203352.GA3577@swordfish>
-	<1276461183.2659.4.camel@maxim-laptop>
-	<201006140136.18652.rjw@sisk.pl>
-	<20100614140941.GA3581@swordfish.minsk.epam.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 14 Jun 2010 10:37:26 -0400
+Date: Mon, 14 Jun 2010 16:37:20 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andi Kleen <andi@firstfloor.org>, xfs@oss.sgi.com,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [16/23] XFS: Fix gcc 4.6 set but not read and unused
+	statement warnings
+Message-ID: <20100614143720.GI17092@basil.fritz.box>
+References: <20100610110.764742110@firstfloor.org> <20100610111052.3DDC5B1A2B@basil.firstfloor.org> <20100614042700.GC6590@dastard> <20100614074309.GA17092@basil.fritz.box> <20100614133755.GE6590@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100614133755.GE6590@dastard>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jun 2010 17:09:41 +0300
-Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
+> > > function head comment during development.  Anyway, if we do get an
+> > > error here, we cannot handle it anyway - it's too late to do
+> > > anything short of a complete shutdown as we've already written the
+> > > transaction to the log.
+> > 
+> > Well I guess it should be unconditional BUG_ON then.
+> 
+> Don't be silly. A filesystem shutdown is all that is necessary,
 
-> Hello,
-> Not sure if this simple solution is the correct one.
+Without BUG_ON it will not end up in kerneloops.org and you will
+never know about it.  That's standard Linux kernel development
+practice.
 
-it's not; the caller needs to pass in the cpu number I suspect for this
-to be really correct....
+Maybe XFS should catch up on that.
 
-I just returned from family emergency travel and will take a look today
+Ok in principle you could make the shutdown a WARN()
 
+Anyways I'm out of this.
 
+-Andi
 -- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+ak@linux.intel.com -- Speaking for myself only.
