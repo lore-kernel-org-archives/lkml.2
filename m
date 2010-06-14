@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756967Ab0FNVqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 17:46:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46903 "EHLO hera.kernel.org"
+	id S1756834Ab0FNVqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 17:46:51 -0400
+Received: from THUNK.ORG ([69.25.196.29]:51920 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754814Ab0FNVjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 17:39:15 -0400
-From: Tejun Heo <tj@kernel.org>
-To: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 22/30] workqueue: implement WQ_NON_REENTRANT
-Date: Mon, 14 Jun 2010 23:37:39 +0200
-Message-Id: <1276551467-21246-23-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1276551467-21246-1-git-send-email-tj@kernel.org>
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Jun 2010 21:37:55 +0000 (UTC)
+	id S1755295Ab0FNVqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 17:46:49 -0400
+Date: Mon, 14 Jun 2010 17:46:46 -0400
+From: tytso@mit.edu
+To: Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@redhat.com>,
+       David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Why is kslowd accumulating so much CPU time?
+Message-ID: <20100614214646.GF6666@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Dave Airlie <airlied@gmail.com>,
+	Dave Airlie <airlied@redhat.com>,
+	David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
+References: <E1OMQ88-0002a1-Gb@closure.thunk.org>
+ <AANLkTilqc0jpwnIwe3OIQvB9avaXXzrBK4Hz0huESygy@mail.gmail.com>
+ <20100613194949.GC8055@thunk.org>
+ <AANLkTilQLk7ofSJBm9KIa2g1KQ35GC1D1vOZlPrv1VRv@mail.gmail.com>
+ <20100614184244.GA11480@elliptictech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100614184244.GA11480@elliptictech.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With gcwq managing all the workers and work->data pointing to the last
-gcwq it was on, non-reentrance can be easily implemented by checking
-whether the work is still running on the previous gcwq on queueing.
-Implement it.
+On Mon, Jun 14, 2010 at 02:42:44PM -0400, Nick Bowler wrote:
+> 
+> This sounds exactly like the issue I've been seeing on a T500 laptop, as
+> well (GM45 board).  The slowdowns render the system essentially
+> unusable, as it can spend a loooong time just moving the mouse cursor a
+> few pixels on the screen.  During this time, nothing else on the display
+> is updating (glxgears drops to 0fps).  Things generally seem to be
+> working fine if I am not moving the mouse, or if I'm not running X.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/workqueue.h |    1 +
- kernel/workqueue.c        |   32 +++++++++++++++++++++++++++++---
- 2 files changed, 30 insertions(+), 3 deletions(-)
+I saw exactly the same behaviour when using the Ubuntu Karmic
+userspace.  Basically, using a 2.6.35-rc2 (+ vt memory corrupter fix)
+kernel, the system was essentially unusable.  Interestingly, the
+problem went away (with the same kernel) once I updated to Ubuntu
+Lucid.  I was going to mention that so that hopefully someone with far
+more X.org-fu than I could figure out how much of this is a X server
+bug, and how much of this was a kernel bug, but things worked just
+*fine* with 2.6.34 kernel.
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 0a78141..07cf5e5 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -225,6 +225,7 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
- enum {
- 	WQ_FREEZEABLE		= 1 << 0, /* freeze during suspend */
- 	WQ_SINGLE_CPU		= 1 << 1, /* only single cpu at a time */
-+	WQ_NON_REENTRANT	= 1 << 2, /* guarantee non-reentrance */
- };
- 
- extern struct workqueue_struct *
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index f606c44..7994edb 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -534,11 +534,37 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
- 
- 	debug_work_activate(work);
- 
--	/* determine gcwq to use */
-+	/*
-+	 * Determine gcwq to use.  SINGLE_CPU is inherently
-+	 * NON_REENTRANT, so test it first.
-+	 */
- 	if (!(wq->flags & WQ_SINGLE_CPU)) {
--		/* just use the requested cpu for multicpu workqueues */
-+		struct global_cwq *last_gcwq;
-+
-+		/*
-+		 * It's multi cpu.  If @wq is non-reentrant and @work
-+		 * was previously on a different cpu, it might still
-+		 * be running there, in which case the work needs to
-+		 * be queued on that cpu to guarantee non-reentrance.
-+		 */
- 		gcwq = get_gcwq(cpu);
--		spin_lock_irqsave(&gcwq->lock, flags);
-+		if (wq->flags & WQ_NON_REENTRANT &&
-+		    (last_gcwq = get_work_gcwq(work)) && last_gcwq != gcwq) {
-+			struct worker *worker;
-+
-+			spin_lock_irqsave(&last_gcwq->lock, flags);
-+
-+			worker = find_worker_executing_work(last_gcwq, work);
-+
-+			if (worker && worker->current_cwq->wq == wq)
-+				gcwq = last_gcwq;
-+			else {
-+				/* meh... not running there, queue here */
-+				spin_unlock_irqrestore(&last_gcwq->lock, flags);
-+				spin_lock_irqsave(&gcwq->lock, flags);
-+			}
-+		} else
-+			spin_lock_irqsave(&gcwq->lock, flags);
- 	} else {
- 		unsigned int req_cpu = cpu;
- 
--- 
-1.6.4.2
+Occasionally it will happen that the mouse stops tracking, and then I
+grumble and curse, and a few seconds later it resolves itself.  I
+haven't had time to track it down; but the problem was breathtakingly
+easy to reproduce with an Ubuntu Karmic userspace.  :-)
 
+     		       	  	 		    - Ted
