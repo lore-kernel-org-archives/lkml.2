@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab0FNRsa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 13:48:30 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:35502 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806Ab0FNRs3 (ORCPT
+	id S1756596Ab0FNRty (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 13:49:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36330 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab0FNRtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 13:48:29 -0400
-Date: Mon, 14 Jun 2010 13:47:57 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5 8/14] samples: Uprobes samples
-Message-ID: <20100614174757.GD23754@infradead.org>
-References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
- <20100614082923.29068.80447.sendpatchset@localhost6.localdomain6>
+	Mon, 14 Jun 2010 13:49:53 -0400
+Message-ID: <4C166B4F.90308@oracle.com>
+Date: Mon, 14 Jun 2010 10:47:59 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100614082923.29068.80447.sendpatchset@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Graham Ramsey <ramsey.graham@ntlworld.com>,
+       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+       Robert Richter <robert.richter@amd.com>,
+       Harald Welte <HaraldWelte@viatech.com>,
+       Joseph Chan <JosephChan@via.com.tw>, Jiri Slaby <jslaby@suse.cz>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: [PATCH -v2] x86, pci: Handle fallout pci devices with peer root bus
+References: <4BF40014.30303@ntlworld.com> <201005201108.07040.bjorn.helgaas@hp.com> <201006021058.57361.bjorn.helgaas@hp.com> <201006111549.05164.bjorn.helgaas@hp.com> <4C12C189.50201@oracle.com>
+In-Reply-To: <4C12C189.50201@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4C166B79.00DD:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 01:59:23PM +0530, Srikar Dronamraju wrote:
-> samples.patch
-> 
-> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> 
-> Uprobes Samples
-> 
-> This provides an example uprobes module in the samples directory.
-> 
-> To run this module run (as root)
->  insmod uprobe_example.ko vaddr=<vaddr> pid=<pid>
-> 	 Where <vaddr> is the address where we want to place the probe.
-> 		<pid> is the pid of the process we are interested to probe.
 
-What's the point of this sample?  It's a sub-set of what the perf
-uprobes inteface supports, and writing kernel modules to probe userspace
-code is braindead to start with.  So if you remove this example of what
-people should not do we can also get rid of all the exports.
+Graham bisected
+|    commit 3e3da00c01d050307e753fb7b3e84aefc16da0d0
+|    x86/pci: AMD one chain system to use pci read out res
 
+cause the SND_HDA_INTEL doesn't work anymore.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=16007
+
+It turns out that his system with via chipset only have one hypertransport
+chain, but does have one extra orphan device 80:01.0
+
+ PCI: Probing PCI hardware (bus 00)
+ PCI: Discovered primary peer bus 80 [IRQ]
+
+ node 0 link 0: io port [1000, ffffff]
+ TOM: 0000000080000000 aka 2048M
+ node 0 link 0: mmio [e0000000, efffffff]
+ node 0 link 0: mmio [a0000, bffff]
+ node 0 link 0: mmio [80000000, ffffffff]
+ bus: [00, ff] on node 0 link 0
+
+Try to make peer root buses to share same mmio/io resources if those peer root
+buses fall into the same bus range.
+
+Also need to update insert_resource to avoid insert same resource two times.
+
+We need this patch for 2.6.34 stable.
+
+Reported-by: Graham Ramsey <ramsey.graham@ntlworld.com>
+Bisected-by: Graham Ramsey <ramsey.graham@ntlworld.com>
+Tested-by: Graham Ramsey <ramsey.graham@ntlworld.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@kernel.org
+
+---
+ arch/x86/pci/bus_numa.c |    3 ++-
+ kernel/resource.c       |    2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/arch/x86/pci/bus_numa.c
+===================================================================
+--- linux-2.6.orig/arch/x86/pci/bus_numa.c
++++ linux-2.6/arch/x86/pci/bus_numa.c
+@@ -22,7 +22,8 @@ void x86_pci_root_bus_res_quirks(struct
+ 		return;
+ 
+ 	for (i = 0; i < pci_root_num; i++) {
+-		if (pci_root_info[i].bus_min == b->number)
++		if (pci_root_info[i].bus_min <= b->number &&
++		    pci_root_info[i].bus_max >= b->number)
+ 			break;
+ 	}
+ 
+Index: linux-2.6/kernel/resource.c
+===================================================================
+--- linux-2.6.orig/kernel/resource.c
++++ linux-2.6/kernel/resource.c
+@@ -451,7 +451,7 @@ static struct resource * __insert_resour
+ 		if (!first)
+ 			return first;
+ 
+-		if (first == parent)
++		if (first == parent || first == new)
+ 			return first;
+ 
+ 		if ((first->start > new->start) || (first->end < new->end))
