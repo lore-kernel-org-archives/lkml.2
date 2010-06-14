@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab0FNQlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 12:41:22 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:38349 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752005Ab0FNQlU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 12:41:20 -0400
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Jonas ABERG <jonas.aberg@stericsson.com>
-Date: Mon, 14 Jun 2010 18:41:06 +0200
-Subject: RE: [PATCH 08/18] DMAENGINE: ste_dma40: lock fix
-Thread-Topic: [PATCH 08/18] DMAENGINE: ste_dma40: lock fix
-Thread-Index: AcsJts587s/iHnMAS0600BbxHxvWpACKV61Q
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A025E5ADB79@EXDCVYMBSTM006.EQ1STM.local>
-References: <1275394887-26445-1-git-send-email-linus.walleij@stericsson.com>
- <AANLkTil_NK2tuk4m6o8r4LIG0DsToC2O7jJ605nZMMtT@mail.gmail.com>
-In-Reply-To: <AANLkTil_NK2tuk4m6o8r4LIG0DsToC2O7jJ605nZMMtT@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755884Ab0FNQn0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 12:43:26 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51740 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752005Ab0FNQnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 12:43:25 -0400
+Date: Mon, 14 Jun 2010 18:43:20 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Nico Schottelius <nico-linux-20100614@schottelius.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: New issues in 2.6.35-rc{1,2}
+Message-ID: <20100614164320.GA4392@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Nico Schottelius <nico-linux-20100614@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+References: <20100614161904.GE31910@schottelius.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100614161904.GE31910@schottelius.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2010 12:38 AM, Dan Williams wrote:
+From: Nico Schottelius <nico-linux-20100614@schottelius.org>
+Date: Mon, Jun 14, 2010 at 06:19:04PM +0200
 
-> On Tue, Jun 1, 2010 at 5:21 AM, Linus Walleij 
-> <linus.walleij@stericsson.com> wrote:
->> From: Jonas Aaberg <jonas.aberg@stericsson.com>
->>
->> Fix up some locking issues found by enabling lock debugging.
->>
->> Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
->> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
->> ---
->>  drivers/dma/ste_dma40.c |   14 +++++++-------
->>  1 files changed, 7 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c index 
->> aba86bb..c4b0d37 100644
->> --- a/drivers/dma/ste_dma40.c
->> +++ b/drivers/dma/ste_dma40.c
-> [..]
->>  static int d40_channel_execute_command(struct d40_chan *d40c, @@ 
->> -1990,8 +1992,6 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
->>        if (d40d == NULL)
->>                return NULL;
->>
->> -       memset(d40d, 0, sizeof(struct d40_desc));
->> -
+Ccing netdev.
+
+> Hey devs!
 > 
-> This one isn't a locking bug fix.
+> In both of these versions, the update of the carrier flag seems
+> to be "different" than before (linux-2.6.34-08528-gb3f2f6c):
+> 
+> wlan0 (iwlagn) does not recognize it's disconnected
+> and eth0 (e1000e) does only react correctly after I restarted
+> dhcpcd (isc):
+> 
+> [11:20] kr:pm# dhcpcd eth0 
+> dhcpcd: version 5.2.2 starting
+> dhcpcd: eth0: waiting for carrier
+> ^Cdhcpcd: received SIGINT, stopping
+> dhcpcd: eth0: removing interface
+> [11:20] kr:pm# dhcpcd eth0
+> dhcpcd: version 5.2.2 starting
+> dhcpcd: eth0: broadcasting for a lease
+> dhcpcd: eth0: offered 129.132.102.115 from 129.132.65.12
+> dhcpcd: eth0: ignoring offer of 129.132.102.115 from 129.132.57.97
+> dhcpcd: eth0: acknowledged 129.132.102.115 from 129.132.65.12
+> dhcpcd: eth0: checking for 129.132.102.115
+> dhcpcd: eth0: leased 129.132.102.115 for 86400 seconds
+> dhcpcd: forking to background
+> 
+> It's known that iwlagn has problems after suspend/resume,
+> but new is that both nics do not notify dhcpcd that the link
+> has gone. I'm not sure what / where broke here, just see that
+> dhcpcd noticed it before and now doesn't anymore.
 
-Well, actually it was overwriting a spinlock, so I would considering
-a locking bug area atleast.
+Had the same dhcpcd issue here both with e1000e and bnx2 and definitely
+after the .35 merge window. dhclient doesn't seem affected.
 
-But if you prefer we split this one-liner into a separate patch.
-
-Yours,
-Linus Walleij
+-- 
+Regards/Gruss,
+Boris.
