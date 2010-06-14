@@ -1,157 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583Ab0FNIcf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 04:32:35 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54072 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755525Ab0FNIcc (ORCPT
+	id S1755321Ab0FNIeh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 04:34:37 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:49751 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab0FNIef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 04:32:32 -0400
-Date: Mon, 14 Jun 2010 10:32:14 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Daniel Walker <dwalker@codeaurora.org>,
-       Russell King <rmk@arm.linux.org.uk>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: ARM defconfig files
-Message-ID: <20100614083214.GA2104@pengutronix.de>
-References: <20100603074548.GA12104@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org> <20100603181010.GA25779@flint.arm.linux.org.uk> <1275589230.23384.19.camel@c-dwalke-linux.qualcomm.com> <alpine.LFD.2.00.1006031119440.8175@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.00.1006031119440.8175@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 14 Jun 2010 04:34:35 -0400
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Roland McGrath <roland@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Mon, 14 Jun 2010 13:58:18 +0530
+Message-Id: <20100614082818.29068.35191.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
+References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
+Subject: [PATCH v5 2/14] mm: Move replace_page to mm/memory.c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+move_replace_page.patch
 
-[Added linux-arm-kernel ML to Cc, note that it's moderated for
-non-subscribers.]
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-On Thu, Jun 03, 2010 at 11:21:59AM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Thu, 3 Jun 2010, Daniel Walker wrote:
-> > 
-> > I don't see how we can do without defconfigs altogether tho. I mean , if
-> > you want to run a Beagle board or a Nexus one we can't just give the
-> > users a slim ARM config and let them troll through 1000's of drivers
-> > trying to find just those ones that work on their given board.
-> 
-> Well, you also don't need the full defconfig's with the kernel.
-> 
-> Right now they are just noise. They actually _hide_ things, because 
-> diffstat (and dirstat) information becomes pointless, and the diffs become 
-> totally unreadable by any human (trust me - when the choice is between 
-> "search for next relevant diff" or "blast it, I can't be bothered with 
-> walking through this crap", quite often the choice is the latter).
-I wrote a script that throws out all unneeded lines in all arm
-defconfigs that don't influence the resulting .config for .34 and
-.35-rc1 and compared .34<->.35-rc with .34-reduced<->.35-rc1-reduced.
+Move replace_page() and write_protect_page() to mm/memory.c
 
-Here are the results:
+User bkpt will use background page replacement approach to insert/delete
+breakpoints. Background page replacement approach will be based on
+replace_page and write_protect_page.
+Now replace_page() loses its static attribute.
 
-	$ git diff --dirstat v2.6.34 v2.6.35-rc1 arch/arm
-	  11.8% arch/arm/configs/
-	  10.0% arch/arm/mach-msm/
-	  10.8% arch/arm/mach-omap2/
-	   4.8% arch/arm/mach-pxa/
-	   4.5% arch/arm/mach-s5pc100/
-	   3.3% arch/arm/mach-s5pv210/
-	   4.4% arch/arm/mach-spear3xx/
-	   3.1% arch/arm/mach-ux500/
-	   5.1% arch/arm/plat-s5pc1xx/
-	   3.1% arch/arm/plat-samsung/
-	  38.2% arch/arm/
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+---
 
-	$ git diff --dirstat arm/defconfig/reduced-v2.6.34 arm/defconfig/reduced-v2.6.35-rc1 arch/arm
-	   3.1% arch/arm/mach-davinci/
-	  11.3% arch/arm/mach-msm/
-	  12.2% arch/arm/mach-omap2/
-	   5.4% arch/arm/mach-pxa/
-	   5.1% arch/arm/mach-s5pc100/
-	   3.7% arch/arm/mach-s5pv210/
-	   5.0% arch/arm/mach-spear3xx/
-	   3.5% arch/arm/mach-ux500/
-	   5.8% arch/arm/plat-s5pc1xx/
-	   3.5% arch/arm/plat-samsung/
-	  40.9% arch/arm/
+ include/linux/mm.h |    4 ++
+ mm/ksm.c           |  112 -------------------------------------------------
+ mm/memory.c        |  120 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 124 insertions(+), 112 deletions(-)
 
-	$ git diff --dirstat=0 arm/defconfig/reduced-v2.6.34 arm/defconfig/reduced-v2.6.35-rc1 arch/arm | grep config
-	   1.1% arch/arm/configs/
 
-	$ git diff --shortstat v2.6.35-rc1 arm/defconfig/reduced-v2.6.35-rc1
-	 177 files changed, 652 insertions(+), 194157 deletions(-)
-
-(The insertions above are only moved lines I think, I didn't check them
-all.)
-
-The branches arm/defconfig/reduced-v2.6.34 and
-arm/defconfig/reduced-v2.6.35-rc1 are available at my repo at
-git://git.pengutronix.de/git/ukl/linux-2.6.git .  (There is a gitweb at
-http://git.pengutronix.de/?p=ukl/linux-2.6.git)
-
-So maintaining these minimal defconfigs would have reduced the defconfig
-noise from 11.8% down to 1.1%.  And probably it could be considerably
-reduced further with constructs like:
-
-	config HAVE_MTD_NAND_MXC
-		bool
-
-	config MTD_NAND_MXC
-		tristate "MXC NAND support"
-		...
-		default m if HAVE_MTD_NAND_MXC
-		help
-		  ...
-
-	...
-	config MACH_MX27ADS
-		...
-		select HAVE_MTD_NAND_MXC
-
-.  Compared with selecting everything in Kconfig files this approach
-allows further tweaking of a config.  (E.g. "I have a mx27ads machine,
-but I don't need nand support.")  Compared with the SAT-Solver it's an
-idea that works today.
-
-One downside of this approach (when done with my script only) is that
-too much is removed.  E.g. in mx3_defconfig CONFIG_ARCH_MX3 is removed.
-This is OK from a logical POV but then changing the default of the
-corresponding choice (and I intend to do that in the near future) would
-break this defconfig.
-
-I can share my script and I'm willing to support maintaining the
-minimality of the defconfig files if they are an acceptable (maybe
-intermediate) step for Linus.
-
-Together with the efforts to reduce the number of defconfigs as thought
-about in other mails of this thread the situation should become quite
-better for Linus.  (I'm currently working on merging support for all
-Freescale SoCs into a single mach- directory and so merge mx1_defconfig,
-mx21_defconfig, mx27_defconfig, mx31pdk_defconfig, mx3_defconfig and
-mx51_defconfig.)
-
-Linus: I would really appreciate if you wouldn't remove all (or nearly
-all) defconfig files.  I think you would force a quicker solution to
-this problem, but during that time the ARM community would loose compile
-coverage.
-
-Thoughts on this?
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b969efb..206008e 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -858,6 +858,10 @@ void account_page_dirtied(struct page *page, struct address_space *mapping);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
++int replace_page(struct vm_area_struct *vma, struct page *page,
++					struct page *kpage, pte_t orig_pte);
++int write_protect_page(struct vm_area_struct *vma, struct page *page,
++						      pte_t *orig_pte);
+ 
+ extern unsigned long move_page_tables(struct vm_area_struct *vma,
+ 		unsigned long old_addr, struct vm_area_struct *new_vma,
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 6c3e99b..ce432e1 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -713,118 +713,6 @@ static inline int pages_identical(struct page *page1, struct page *page2)
+ 	return !memcmp_pages(page1, page2);
+ }
+ 
+-static int write_protect_page(struct vm_area_struct *vma, struct page *page,
+-			      pte_t *orig_pte)
+-{
+-	struct mm_struct *mm = vma->vm_mm;
+-	unsigned long addr;
+-	pte_t *ptep;
+-	spinlock_t *ptl;
+-	int swapped;
+-	int err = -EFAULT;
+-
+-	addr = page_address_in_vma(page, vma);
+-	if (addr == -EFAULT)
+-		goto out;
+-
+-	ptep = page_check_address(page, mm, addr, &ptl, 0);
+-	if (!ptep)
+-		goto out;
+-
+-	if (pte_write(*ptep)) {
+-		pte_t entry;
+-
+-		swapped = PageSwapCache(page);
+-		flush_cache_page(vma, addr, page_to_pfn(page));
+-		/*
+-		 * Ok this is tricky, when get_user_pages_fast() run it doesnt
+-		 * take any lock, therefore the check that we are going to make
+-		 * with the pagecount against the mapcount is racey and
+-		 * O_DIRECT can happen right after the check.
+-		 * So we clear the pte and flush the tlb before the check
+-		 * this assure us that no O_DIRECT can happen after the check
+-		 * or in the middle of the check.
+-		 */
+-		entry = ptep_clear_flush(vma, addr, ptep);
+-		/*
+-		 * Check that no O_DIRECT or similar I/O is in progress on the
+-		 * page
+-		 */
+-		if (page_mapcount(page) + 1 + swapped != page_count(page)) {
+-			set_pte_at(mm, addr, ptep, entry);
+-			goto out_unlock;
+-		}
+-		entry = pte_wrprotect(entry);
+-		set_pte_at_notify(mm, addr, ptep, entry);
+-	}
+-	*orig_pte = *ptep;
+-	err = 0;
+-
+-out_unlock:
+-	pte_unmap_unlock(ptep, ptl);
+-out:
+-	return err;
+-}
+-
+-/**
+- * replace_page - replace page in vma by new ksm page
+- * @vma:      vma that holds the pte pointing to page
+- * @page:     the page we are replacing by kpage
+- * @kpage:    the ksm page we replace page by
+- * @orig_pte: the original value of the pte
+- *
+- * Returns 0 on success, -EFAULT on failure.
+- */
+-static int replace_page(struct vm_area_struct *vma, struct page *page,
+-			struct page *kpage, pte_t orig_pte)
+-{
+-	struct mm_struct *mm = vma->vm_mm;
+-	pgd_t *pgd;
+-	pud_t *pud;
+-	pmd_t *pmd;
+-	pte_t *ptep;
+-	spinlock_t *ptl;
+-	unsigned long addr;
+-	int err = -EFAULT;
+-
+-	addr = page_address_in_vma(page, vma);
+-	if (addr == -EFAULT)
+-		goto out;
+-
+-	pgd = pgd_offset(mm, addr);
+-	if (!pgd_present(*pgd))
+-		goto out;
+-
+-	pud = pud_offset(pgd, addr);
+-	if (!pud_present(*pud))
+-		goto out;
+-
+-	pmd = pmd_offset(pud, addr);
+-	if (!pmd_present(*pmd))
+-		goto out;
+-
+-	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
+-	if (!pte_same(*ptep, orig_pte)) {
+-		pte_unmap_unlock(ptep, ptl);
+-		goto out;
+-	}
+-
+-	get_page(kpage);
+-	page_add_anon_rmap(kpage, vma, addr);
+-
+-	flush_cache_page(vma, addr, pte_pfn(*ptep));
+-	ptep_clear_flush(vma, addr, ptep);
+-	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
+-
+-	page_remove_rmap(page);
+-	put_page(page);
+-
+-	pte_unmap_unlock(ptep, ptl);
+-	err = 0;
+-out:
+-	return err;
+-}
+-
+ /*
+  * try_to_merge_one_page - take two pages and merge them into one
+  * @vma: the vma that holds the pte pointing to page
+diff --git a/mm/memory.c b/mm/memory.c
+index 119b7cc..3fb2b9d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2582,6 +2582,126 @@ void unmap_mapping_range(struct address_space *mapping,
+ }
+ EXPORT_SYMBOL(unmap_mapping_range);
+ 
++/**
++ * replace_page - replace page in vma by new ksm page
++ * @vma:      vma that holds the pte pointing to page
++ * @page:     the page we are replacing by kpage
++ * @kpage:    the ksm page we replace page by
++ * @orig_pte: the original value of the pte
++ *
++ * Returns 0 on success, -EFAULT on failure.
++ */
++int replace_page(struct vm_area_struct *vma, struct page *page,
++			struct page *kpage, pte_t orig_pte)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++	pte_t *ptep;
++	spinlock_t *ptl;
++	unsigned long addr;
++	int err = -EFAULT;
++
++	addr = page_address_in_vma(page, vma);
++	if (addr == -EFAULT)
++		goto out;
++
++	pgd = pgd_offset(mm, addr);
++	if (!pgd_present(*pgd))
++		goto out;
++
++	pud = pud_offset(pgd, addr);
++	if (!pud_present(*pud))
++		goto out;
++
++	pmd = pmd_offset(pud, addr);
++	if (!pmd_present(*pmd))
++		goto out;
++
++	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
++	if (!pte_same(*ptep, orig_pte)) {
++		pte_unmap_unlock(ptep, ptl);
++		goto out;
++	}
++
++	get_page(kpage);
++	page_add_anon_rmap(kpage, vma, addr);
++
++	flush_cache_page(vma, addr, pte_pfn(*ptep));
++	ptep_clear_flush(vma, addr, ptep);
++	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
++
++	page_remove_rmap(page);
++	put_page(page);
++
++	pte_unmap_unlock(ptep, ptl);
++	err = 0;
++out:
++	return err;
++}
++
++/**
++ * write_protect_page - mark the page readonly
++ * @vma:      vma that holds the page we want to mark
++ * @page:     page that needs to be marked readonly
++ * @orig_pte: pte for the protected page.
++ *
++ * Returns 0 on success, -EFAULT on failure.
++ */
++int write_protect_page(struct vm_area_struct *vma, struct page *page,
++						      pte_t *orig_pte)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	unsigned long addr;
++	pte_t *ptep;
++	spinlock_t *ptl;
++	int swapped;
++	int err = -EFAULT;
++
++	addr = page_address_in_vma(page, vma);
++	if (addr == -EFAULT)
++		goto out;
++
++	ptep = page_check_address(page, mm, addr, &ptl, 0);
++	if (!ptep)
++		goto out;
++
++	if (pte_write(*ptep)) {
++		pte_t entry;
++
++		swapped = PageSwapCache(page);
++		flush_cache_page(vma, addr, page_to_pfn(page));
++		/*
++		 * Ok this is tricky, when get_user_pages_fast() run it doesnt
++		 * take any lock, therefore the check that we are going to make
++		 * with the pagecount against the mapcount is racey and
++		 * O_DIRECT can happen right after the check.
++		 * So we clear the pte and flush the tlb before the check
++		 * this assure us that no O_DIRECT can happen after the check
++		 * or in the middle of the check.
++		 */
++		entry = ptep_clear_flush(vma, addr, ptep);
++		/*
++		 * Check that no O_DIRECT or similar I/O is in progress on the
++		 * page
++		 */
++		if (page_mapcount(page) + 1 + swapped != page_count(page)) {
++			set_pte_at(mm, addr, ptep, entry);
++			goto out_unlock;
++		}
++		entry = pte_wrprotect(entry);
++		set_pte_at_notify(mm, addr, ptep, entry);
++	}
++	*orig_pte = *ptep;
++	err = 0;
++
++out_unlock:
++	pte_unmap_unlock(ptep, ptl);
++out:
++	return err;
++}
++
+ int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
