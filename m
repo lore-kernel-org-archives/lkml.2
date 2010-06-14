@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab0FNUp7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 16:45:59 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:58241 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755193Ab0FNUp6 convert rfc822-to-8bit (ORCPT
+	id S1755592Ab0FNUrL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 16:47:11 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54065 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754350Ab0FNUrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 16:45:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=bWg6IqU9JVa+ScgeIgCQedthc/ILfzGT+NI6ISp3SzRs8wXPa8p0Ez18qWEpxMDmV9
-         NPPzJAJDXViyby9ZsGIg7wJEl5WMd8pGPXcc7aLYd75DOYuQcsmGZtdceoe/7qKqoXrN
-         l33yVev4gy0naoDMVlIM38+pd1CbyvNS/duxg=
+	Mon, 14 Jun 2010 16:47:10 -0400
+Date: Mon, 14 Jun 2010 21:47:01 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: minyard@acm.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipmi: Make sure drivers were registered before
+	unregistering them
+Message-ID: <20100614204701.GA32612@srcf.ucam.org>
+References: <1276192406-3612-1-git-send-email-mjg@redhat.com> <20100614133608.b343cb84.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Date: Mon, 14 Jun 2010 13:45:57 -0700
-Message-ID: <AANLkTila2rrYcBUZKwywHTP6g8rsj7Z1ck6LSoC9GaUY@mail.gmail.com>
-Subject: fs/exec.c core dumping on NFS mounted directory
-From: Lei Sun <leisun124@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100614133608.b343cb84.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi :
-  In 2.6.3x, I am logging in as a root and running app from NFS
-mounted directory. The app crashed with 0 bytes core file (I have set
-"ulimit -c unlimited", so it's not an issue).
-The following code in fs/exec.c is causing this:
+On Mon, Jun 14, 2010 at 01:36:08PM -0700, Andrew Morton wrote:
+> On Thu, 10 Jun 2010 13:53:26 -0400
+> Matthew Garrett <mjg@redhat.com> wrote:
+> 
+> > The ipmi code will never register a PCI or Open Firmware driver if
+> > a hardcoded device is provided by the user.
+> 
+> How does a user "provide a hardcoded device"?
 
-   /*
-    * Dont allow local users get cute and trick others to coredump
-    * into their pre-created files:
-    * Note, this is not relevant for pipes
-    */
-   if (!ispipe && (inode->i_uid != current_fsuid()))
-       goto close_fail;
+By providing device addresses via the module parameters. This is the 
+terminology used in the driver.
 
-What is the intention of above piece of code?  If it's security
-concern,  it clearly break the NFS mounted (different uid) core
-dumping logic.
+> I tried to work out from the above whether we want to backport this fix
+> into -stable and failed.  And I reckon that if I can't work this out
+> from a changelog, the changelog is inadequate.
 
-P.S. CC to my email, i am not on the list.
+We don't. The change that caused this bug was merged post-.34.
 
-Thanks
-lei
+> >  #ifdef CONFIG_ACPI
+> > @@ -3330,6 +3338,7 @@ static __devinit int init_ipmi_si(void)
+> >  
+> >  #ifdef CONFIG_PPC_OF
+> >  	of_register_platform_driver(&ipmi_of_platform_driver);
+> > +	of_registered = 1;
+> 
+> I assume the code will still oops if of_register_platform_driver() failed.
+
+Indeed. I should fix that.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
