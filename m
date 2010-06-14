@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab0FNRty (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 13:49:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36330 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab0FNRtx (ORCPT
+	id S1756620Ab0FNRvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 13:51:09 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:60870 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753227Ab0FNRvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 13:49:53 -0400
-Message-ID: <4C166B4F.90308@oracle.com>
-Date: Mon, 14 Jun 2010 10:47:59 -0700
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Mon, 14 Jun 2010 13:51:07 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: David Airlie <airlied@linux.ie>
+Subject: [PATCH] intel_agp: Don't oops with zero stolen memory
+Date: Mon, 14 Jun 2010 19:50:57 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Graham Ramsey <ramsey.graham@ntlworld.com>,
-       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-       Robert Richter <robert.richter@amd.com>,
-       Harald Welte <HaraldWelte@viatech.com>,
-       Joseph Chan <JosephChan@via.com.tw>, Jiri Slaby <jslaby@suse.cz>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: [PATCH -v2] x86, pci: Handle fallout pci devices with peer root bus
-References: <4BF40014.30303@ntlworld.com> <201005201108.07040.bjorn.helgaas@hp.com> <201006021058.57361.bjorn.helgaas@hp.com> <201006111549.05164.bjorn.helgaas@hp.com> <4C12C189.50201@oracle.com>
-In-Reply-To: <4C12C189.50201@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090209.4C166B79.00DD:SCFMA922111,ss=1,fgs=0
+Content-Disposition: inline
+Message-Id: <201006141950.59409.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When "onboard video memory" is set do "disabled" in BIOS on Asus P4P800-VM
+board (i865G), kernel oopses with memory corruption:
+https://bugs.freedesktop.org/show_bug.cgi?id=28430
 
-Graham bisected
-|    commit 3e3da00c01d050307e753fb7b3e84aefc16da0d0
-|    x86/pci: AMD one chain system to use pci read out res
+Fix that by cleanly aborting the initialization.
 
-cause the SND_HDA_INTEL doesn't work anymore.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-https://bugzilla.kernel.org/show_bug.cgi?id=16007
-
-It turns out that his system with via chipset only have one hypertransport
-chain, but does have one extra orphan device 80:01.0
-
- PCI: Probing PCI hardware (bus 00)
- PCI: Discovered primary peer bus 80 [IRQ]
-
- node 0 link 0: io port [1000, ffffff]
- TOM: 0000000080000000 aka 2048M
- node 0 link 0: mmio [e0000000, efffffff]
- node 0 link 0: mmio [a0000, bffff]
- node 0 link 0: mmio [80000000, ffffffff]
- bus: [00, ff] on node 0 link 0
-
-Try to make peer root buses to share same mmio/io resources if those peer root
-buses fall into the same bus range.
-
-Also need to update insert_resource to avoid insert same resource two times.
-
-We need this patch for 2.6.34 stable.
-
-Reported-by: Graham Ramsey <ramsey.graham@ntlworld.com>
-Bisected-by: Graham Ramsey <ramsey.graham@ntlworld.com>
-Tested-by: Graham Ramsey <ramsey.graham@ntlworld.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: stable@kernel.org
-
----
- arch/x86/pci/bus_numa.c |    3 ++-
- kernel/resource.c       |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/arch/x86/pci/bus_numa.c
-===================================================================
---- linux-2.6.orig/arch/x86/pci/bus_numa.c
-+++ linux-2.6/arch/x86/pci/bus_numa.c
-@@ -22,7 +22,8 @@ void x86_pci_root_bus_res_quirks(struct
- 		return;
+diff -urp linux-2.6.35-rc2-orig/drivers/char/agp/intel-gtt.c linux-2.6.35-rc2/drivers/char/agp/intel-gtt.c
+--- linux-2.6.35-rc2-orig/drivers/char/agp/intel-gtt.c	2010-06-06 05:43:24.000000000 +0200
++++ linux-2.6.35-rc2/drivers/char/agp/intel-gtt.c	2010-06-14 19:14:05.000000000 +0200
+@@ -797,6 +797,10 @@ static int intel_i830_create_gatt_table(
  
- 	for (i = 0; i < pci_root_num; i++) {
--		if (pci_root_info[i].bus_min == b->number)
-+		if (pci_root_info[i].bus_min <= b->number &&
-+		    pci_root_info[i].bus_max >= b->number)
- 			break;
- 	}
+ 	/* we have to call this as early as possible after the MMIO base address is known */
+ 	intel_i830_init_gtt_entries();
++	if (intel_private.gtt_entries == 0) {
++		iounmap(intel_private.registers);
++		return -ENOMEM;
++	}
  
-Index: linux-2.6/kernel/resource.c
-===================================================================
---- linux-2.6.orig/kernel/resource.c
-+++ linux-2.6/kernel/resource.c
-@@ -451,7 +451,7 @@ static struct resource * __insert_resour
- 		if (!first)
- 			return first;
+ 	agp_bridge->gatt_table = NULL;
  
--		if (first == parent)
-+		if (first == parent || first == new)
- 			return first;
+@@ -1279,6 +1283,11 @@ static int intel_i915_create_gatt_table(
  
- 		if ((first->start > new->start) || (first->end < new->end))
+ 	/* we have to call this as early as possible after the MMIO base address is known */
+ 	intel_i830_init_gtt_entries();
++	if (intel_private.gtt_entries == 0) {
++		iounmap(intel_private.gtt);
++		iounmap(intel_private.registers);
++		return -ENOMEM;
++	}
+ 
+ 	agp_bridge->gatt_table = NULL;
+ 
+@@ -1387,6 +1396,11 @@ static int intel_i965_create_gatt_table(
+ 
+ 	/* we have to call this as early as possible after the MMIO base address is known */
+ 	intel_i830_init_gtt_entries();
++	if (intel_private.gtt_entries == 0) {
++		iounmap(intel_private.gtt);
++		iounmap(intel_private.registers);
++		return -ENOMEM;
++	}
+ 
+ 	agp_bridge->gatt_table = NULL;
+ 
+
+-- 
+Ondrej Zary
