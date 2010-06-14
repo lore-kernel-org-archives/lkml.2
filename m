@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755770Ab0FNJnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 05:43:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33343 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab0FNJnU (ORCPT
+	id S1755917Ab0FNJnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 05:43:50 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:44198 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755797Ab0FNJns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 05:43:20 -0400
-Date: Mon, 14 Jun 2010 11:43:10 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Jeremy Kerr <jeremy.kerr@canonical.com>,
-       Ben Dooks <ben-linux@fluff.org>, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
-Message-ID: <20100614094310.GE12159@pengutronix.de>
-References: <201006111557.12249.jeremy.kerr@canonical.com> <19473.61547.684572.647641@ipc1.ka-ro> <201006111718.47426.jeremy.kerr@canonical.com> <19474.172.742782.972629@ipc1.ka-ro> <20100611095839.GC10894@pengutronix.de> <19474.2817.333749.485028@ipc1.ka-ro> <1276319643.1962.181.camel@pasglop> <19477.52889.982995.407051@ipc1.ka-ro> <1276507378.2552.39.camel@pasglop> <19477.63136.664249.167207@ipc1.ka-ro>
+	Mon, 14 Jun 2010 05:43:48 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+Organization: LINBIT
+To: Jens Axboe <axboe@kernel.dk>
+Subject: Re: linux-next: manual merge of the drbd tree with the block trees
+Date: Mon, 14 Jun 2010 11:43:42 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, drbd-dev@lists.linbit.com,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100610135203.4649453a.sfr@canb.auug.org.au> <20100614112639.ef45a777.sfr@canb.auug.org.au> <4C15F18C.3050905@kernel.dk>
+In-Reply-To: <4C15F18C.3050905@kernel.dk>
+X-OTRS-FollowUp-SenderType: agent
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <19477.63136.664249.167207@ipc1.ka-ro>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006141143.42783.philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 11:30:08AM +0200, Lothar Waßmann wrote:
-> Benjamin Herrenschmidt writes:
-> > On Mon, 2010-06-14 at 08:39 +0200, Lothar Waßmann wrote:
-> > > All implementations so far use spin_lock_irq_save()!
+Am Montag, 14. Juni 2010, um 11:08:28 schrieb Jens Axboe:
+> On 2010-06-14 03:26, Stephen Rothwell wrote:
+> > Hi Jens, Philipp,
 > > 
-> > Nothing prevents your implementation to be a tad smarter.
+> > On Thu, 10 Jun 2010 08:01:35 +0200 Jens Axboe <axboe@kernel.dk> wrote:
+> >> I'm starting to think that it would be a little easier if you did not
+> >> pull the drbd tree, I really should be pulling that into my -next branch
+> >> instead.
 > > 
-> I vote for consistency, so that device drivers can be kept arch
-> independent instead of having to care about implentation details of
-> each arch.
-Back when I implemented clock support for ns9xxx (unfortunately not in
-mainline) I tried with a spinlock first and later switched to a mutex.
-IIRC the reason was that on ns9215 enabling the rtc clock took long
-(don't remember a number) and successfull enabling was signaled by an
-irq.  So I would have had to implement irq polling in the clock code.
+> > Given that the drbd tree has not been updated to match the increasingly
+> > different block tree, I have dropped it for today.
+> > 
+> > There a a few possibilities here:
+> > 	- I just drop the drbd tree completely and it only gets merged
+> > 
+> > into the block tree.
+> > 
+> > 	- if the drbd tree doesn't actually depend on any of the features
+> > 
+> > in the block tree then it could be rebased onto Linus tree (and I would
+> > cope with any merge fixups - as I do with many other trees).
+> > 
+> > 	- if it does depend on things in the block tree, those particular
+> > 
+> > features in the block tree could be put in a separate branch that is
+> > never rebased and then that branch could be merged into both the block
+> > and drbd trees (this has been done before e.g. stuff in the vfs tree.
+> > 
+> > 	- the drbd tree could be rebased on tom of the current block tree
+> > 
+> > (but then it must be kept up to date if the block tree is rebased).
+> 
+> The thing with the dependencies is that sometimes they are true,
+> sometimes they are not. What I suggested to the drbd team is that they
+> always just base off Linus and then ask me to pull their changes, then I
+> will resolve any potential conflicts when that happens. The consequence
+> would be that you stop pulling the drbd tree separately.
 
-I think you can find different examples that make both possiblities bad.
-All in all I think that a sleeping clock implementation is preferable as
-it improves (general) latencies.
+Ok, from now on I will use Linus most recent -rc as base and put DRBD
+patches on top of that. -- I will do this today (CEST timezone).
 
-Best regards
-Uwe
-
+Best,
+ Phil
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+: Dipl-Ing Philipp Reisner
+: LINBIT | Your Way to High Availability
+: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
+: http://www.linbit.com
+
+DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
