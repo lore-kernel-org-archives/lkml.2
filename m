@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab0FNRvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 13:51:19 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:35551 "EHLO
+	id S1756547Ab0FNRw6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 13:52:58 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:39907 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756367Ab0FNRvQ (ORCPT
+	with ESMTP id S1752647Ab0FNRw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 13:51:16 -0400
-Date: Mon, 14 Jun 2010 13:50:48 -0400
+	Mon, 14 Jun 2010 13:52:57 -0400
+Date: Mon, 14 Jun 2010 13:52:27 -0400
 From: Christoph Hellwig <hch@infradead.org>
 To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
@@ -27,14 +27,14 @@ Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
        LKML <linux-kernel@vger.kernel.org>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5 3/14] User Space Breakpoint Assistance Layer
-Message-ID: <20100614175048.GE23754@infradead.org>
+Subject: Re: [PATCH v5 5/14] Slot allocation for execution out of line (XOL)
+Message-ID: <20100614175227.GF23754@infradead.org>
 References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
- <20100614082832.29068.53628.sendpatchset@localhost6.localdomain6>
+ <20100614082852.29068.57866.sendpatchset@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100614082832.29068.53628.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20100614082852.29068.57866.sendpatchset@localhost6.localdomain6>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -42,18 +42,6 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 01:58:32PM +0530, Srikar Dronamraju wrote:
-> TODO: Merge user_bkpt layer with uprobes.
-
-Yes, I don't think there's any point in that split.  What's the
-timeframe for you to finish that merge?
-
-> +	depends on MODULES
-
-This doesn't make too much sense - the only real user of this is not
-modular at all.
-
-> +	depends on HAVE_USER_BKPT
-
-Should this be ARCH_HAVE_USER_BKPT or similar?
+What's the point of adding another header for a few prototypes when
+all users include user_bkpt.h anyway?
 
