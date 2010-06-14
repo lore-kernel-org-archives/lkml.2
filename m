@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab0FNGj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 02:39:58 -0400
-Received: from fg-out-1718.google.com ([72.14.220.159]:23218 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab0FNGjz (ORCPT
+	id S1755113Ab0FNGly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 02:41:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37180 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754752Ab0FNGlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 02:39:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=C/7Z5WykoQjeDOHBFRNv5gNx3/VxzLv+guubVcXm4u/FI9Eb5CX/EIhyWGrFKcke6n
-         EvdlcOaiIZWP0y3f3vQmYLvri6O9qqzDgyyFUF1ik51F4YXdncq8/obTV8zkp5w8Cnqz
-         iSS6Dw0JQwEtIKGY86AntNol9aYaI/WP0Jh80=
-Date: Mon, 14 Jun 2010 09:39:48 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Christian Kujau <lists@nerdbynature.de>,
-       Stefan Lippers-Hollmann <s.L-H@gmx.de>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Michael Ellerman <michael@ellerman.id.au>, linux-media@vger.kernel.org,
-       mchehab@infradead.org
-Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
-Message-ID: <20100614063948.GA3999@x200>
-References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
- <YPGdyfWGvNK.A.C8B.d9OFMB@chimera>
- <201006131722.44062.s.L-H@gmx.de>
- <alpine.DEB.2.01.1006131103590.3964@bogon.housecafe.de>
- <AANLkTily7ZDG16uE2vSsq8t3mssuATwtHnr8OajX8oga@mail.gmail.com>
+	Mon, 14 Jun 2010 02:41:53 -0400
+Date: Mon, 14 Jun 2010 08:40:28 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Jeremy Kerr <jeremy.kerr@canonical.com>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
+Message-ID: <20100614064028.GA12159@pengutronix.de>
+References: <1275636608.606606.450179637764.0.gpush@pororo> <201006111557.12249.jeremy.kerr@canonical.com> <19473.61547.684572.647641@ipc1.ka-ro> <201006111718.47426.jeremy.kerr@canonical.com> <19474.172.742782.972629@ipc1.ka-ro> <20100611095839.GC10894@pengutronix.de> <19474.2817.333749.485028@ipc1.ka-ro> <1276319643.1962.181.camel@pasglop> <19477.52889.982995.407051@ipc1.ka-ro>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <AANLkTily7ZDG16uE2vSsq8t3mssuATwtHnr8OajX8oga@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <19477.52889.982995.407051@ipc1.ka-ro>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 13, 2010 at 01:57:40PM -0600, Grant Likely wrote:
-> On brief review, they look like completely different issues.  I doubt
-> the second patch will fix the flexcop-pci issue.
+Hello Lothar,
 
-It will, see how name wht slashes propagated by request_irq()
+On Mon, Jun 14, 2010 at 08:39:21AM +0200, Lothar Waßmann wrote:
+> Hi,
+> 
+> Benjamin Herrenschmidt writes:
+> > On Fri, 2010-06-11 at 12:08 +0200, Lothar Waßmann wrote:
+> > > Hi,
+> > > 
+> > > > > > > Using a mutex in clk_enable()/clk_disable() is a bad idea, since that
+> > > > > > > makes it impossible to call those functions in interrupt context.
+> > > > IMHO if a device generates an irq its clock should already be on.  This
+> > > > way you don't need to enable or disable a clock in irq context.
+> > > >  
+> > > You may want to disable a clock in the IRQ handler. The VPU driver in
+> > > the Freescale BSP for i.MX51 does exactly this.
+> > > Anyway I don't see any reason for using a mutex here instead of
+> > > spin_lock_irq_save() as all other implementations do.
+> > 
+> > Because you suddenly make it impossible to sleep inside enable/disable
+>               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> ???
+> All implementations so far use spin_lock_irq_save()!
+> 
+> How would you be able to sleep with a mutex held?
+> If you hold a lock you must not sleep, no matter what sort of lock it
+> is.
+That's wrong.  With a mutex hold you may sleep.
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
