@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab0FNO7Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 10:59:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60123 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369Ab0FNO7Y (ORCPT
+	id S1754673Ab0FNPEf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 11:04:35 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:43665 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277Ab0FNPEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 10:59:24 -0400
-Date: Mon, 14 Jun 2010 08:01:54 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: BUG: using smp_processor_id() in preemptible code: s2disk
-Message-ID: <20100614080154.7d6a71fc@infradead.org>
-In-Reply-To: <20100614145439.GA3448@swordfish.minsk.epam.com>
-References: <20100613203352.GA3577@swordfish>
-	<1276461183.2659.4.camel@maxim-laptop>
-	<201006140136.18652.rjw@sisk.pl>
-	<20100614140941.GA3581@swordfish.minsk.epam.com>
-	<20100614073853.6fa2f91f@infradead.org>
-	<20100614145439.GA3448@swordfish.minsk.epam.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 14 Jun 2010 11:04:34 -0400
+Date: Mon, 14 Jun 2010 16:04:25 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Philby John <pjohn@mvista.com>
+Cc: linux-mtd@lists.infradead.org, linux-mips@linux-mips.org,
+       David Daney <ddaney@caviumnetworks.com>, linux-kernel@vger.kernel.org,
+       Artem Bityutskiy <dedekind1@gmail.com>
+Subject: Re: [PATCH] mtd: Fix bug using smp_processor_id() in preemptible ubi_bgt1d kthread
+Message-ID: <20100614150425.GC9550@shareable.org>
+References: <1276513457.16642.3.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276513457.16642.3.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jun 2010 17:54:40 +0300
-Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
-
-> On (06/14/10 07:38), Arjan van de Ven wrote:
-> > > Hello,
-> > > Not sure if this simple solution is the correct one.
-> > 
-> > it's not; the caller needs to pass in the cpu number I suspect for
-> > this to be really correct....
-> > 
-> > I just returned from family emergency travel and will take a look
-> > today
-> > 
+Philby John wrote:
+> mtd: Fix bug using smp_processor_id() in preemptible ubi_bgt1d kthread
 > 
-> I thought about patching
-> 
-> ./drivers/cpuidle/governors/menu.c:	if (nr_iowait_cpu())
-> ./drivers/cpuidle/governors/menu.c:	mult += 10 *
-> nr_iowait_cpu(); ./kernel/time/tick-sched.c:		if
-> (nr_iowait_cpu() > 0)
-> 
-> 
-> decided to patch nr_iowait_cpu instead.
+> On a MIPS Cavium Octeon CN5020 when trying to create a UBI volume,
+> on the NOR flash, the kernel thread ubi_bgt1d calls
+> cfi_amdstd_write_buffers() --> do_write_buffer() -->
+> INVALIDATE_CACHE_UDELAY --> __udelay(). Its __udelay() that calls
+> smp_processor_id() in preemptible code, which you are not supposed to.
+> Fix the problem by disabling preemption.
 
-the bug is that it needs to be
+The MTD code just calls udelay().
+Are you sure it isn't permitted to call udelay() from preemptible code?
+I think it is fine.
 
-nr_iowait_cpu(int cpu)
+Perhaps MIPS udelay() should be disabling preemption itself, or
+(as x86 does) using raw_smp_processor_id() instead?  Or perhaps the x86
+version is a bug because the current CPU might change during the delay loop?
 
+See git commit 5c1ea08215f1f830dfaf4819a5f22efca41c3832
+"x86: enable preemption in delay"
 
+I don't think it makes sense to disable preemption in all udelay()
+calls in drivers, so my NAK to this MTD patch.  To workaround,
+consider putting the preempt_disable in MIPS udelay(), or using
+raw_smp_processor_id() in it, after reading the above git commit's
+message.  A proper fix would accept a context switch during the delay
+and rescale the remaining count, but even on x86 they haven't done
+that yet :-)
 
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+Regards,
+-- Jamie
