@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab0FNT5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 15:57:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50136 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab0FNT5J convert rfc822-to-8bit (ORCPT
+	id S1754472Ab0FNT5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 15:57:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44006 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751100Ab0FNT5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 15:57:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Atbyj8hc+LTMWrQjCFDQ6ZVyl+eZFigz2NpAsmlon2+c1ObfjrLwyVBKb0I59+YEhF
-         YUZSSAaDsx4D2H/LdyL1iv79/YrX7oI2CZrs4zHMa/lk8pdHZiq5UeNJ9Qi5PA01xZQk
-         OCQ3ZrmP4o2aWoXLmKw5H/f+BR94pBzccyCxQ=
-MIME-Version: 1.0
-In-Reply-To: <201006142103.54616.rjw@sisk.pl>
-References: <201006141653.03879.rjw@sisk.pl>
-	<AANLkTimQ_yCV5Xdwd_D1zFM1oom2D3ZIBeSczJh4LN1T@mail.gmail.com>
-	<201006142103.54616.rjw@sisk.pl>
-Date: Mon, 14 Jun 2010 15:57:07 -0400
-Message-ID: <AANLkTimgktYZiepVvbOssbYk7oLAOcWbT5X8uvtifxgC@mail.gmail.com>
-Subject: Re: [Regression, post-2.6.34] Hibernation broken on machines with 
-	radeon/KMS and r300
-From: Alex Deucher <alexdeucher@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Dave Airlie <airlied@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 14 Jun 2010 15:57:32 -0400
+Date: Mon, 14 Jun 2010 12:57:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+Cc: Dmitry Monakhov <dmonakhov@openvz.org>,
+       Frantisek Hanzlik <franta@hanzlici.cz>, linux-kernel@vger.kernel.org,
+       Jens Axboe <axboe@kernel.dk>
+Subject: Re: fs/fs-writeback oopses in kernel 2.6.33.4-95.fc13.i686.PAE
+Message-Id: <20100614125716.b04fcd28.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTimPwbOga_gEMajfciD8ZokBaz99c2ty9R6q_cs5@mail.gmail.com>
+References: <4BFA730C.1010906@hanzlici.cz>
+	<20100524230512.8cc7dfc1.akpm@linux-foundation.org>
+	<87vdacl15j.fsf@openvz.org>
+	<AANLkTimPwbOga_gEMajfciD8ZokBaz99c2ty9R6q_cs5@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 3:03 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, June 14, 2010, Alex Deucher wrote:
->> On Mon, Jun 14, 2010 at 10:53 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > Alex, Dave,
->> >
->> > I'm afraid hibernation is broken on all machines using radeon/KMS with r300
->> > after commit ce8f53709bf440100cb9d31b1303291551cf517f
->> > (drm/radeon/kms/pm: rework power management).  At least, I'm able to reproduce
->> > the symptom, which is that the machine hangs hard around the point where an
->> > image is created (probably during the device thaw phase), on two different
->> > boxes with r300 (the output of lspci from one of them is attached for
->> > reference, the other one is HP nx6325).
->> >
->> > Suspend to RAM appears to work fine at least on one of the affected boxes.
->> >
->> > Unfortunately, the commit above changes a lot of code and it's not too easy to
->> > figure out what's wrong with it and I didn't have the time to look more into
->> > details of this failure.  However, it looks like you use .suspend() and
->> > .resume() callbacks as .freeze() and .thaw() which may not be 100% correct
->> > (in fact it looks like the "legacy" PCI suspend/resume is used, which is not
->> > recommended any more).
->> >
->>
->> Does it work any better after Dave's last drm pull request?
->
-> Nope.  The symptom is slightly different, though, because now it hangs after
-> turning off the screen.
->
->> With the latest changes, pm should not be a factor unless it's explicitly
->> enabled via sysfs.
->
-> Well, I guess the first pm patch changed more than just pm, then.
+On Thu, 10 Jun 2010 11:06:17 +0200
+Bastien ROUCARIES <roucaries.bastien@gmail.com> wrote:
 
-Does this patch help?
-http://lists.freedesktop.org/archives/dri-devel/2010-June/001314.html
+> > > I don't see anything which would generate this warning in 2.6.33.4's
+> > > fs/fs-writeback.c:597. __RH must have mucked with it.
+> > Already fixed in mainstream by
+> > commit 7c8a3554c683f512dbcee26faedb42e4c05f12fa
+> > Author: Jens Axboe <jens.axboe@oracle.com>
+> > Date: __ Tue May 18 14:29:29 2010 +0200
+> 
+> Do you send it to stable ? I am hitting the same bug and count is high
+> on kerneloops (http://www.kerneloops.org/searchweek.php?search=writeback_inodes_wb)
+> 
 
-Alex
+The commit didn't have a cc:stable in the changelog so no, it probably
+wasn't backported.
+
+But that commit was later reverted anyway.  Hopefully when the real fix
+gets merged, it will be backported.
+
