@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab0FNLTA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 07:19:00 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47668 "EHLO gir.skynet.ie"
+	id S1755434Ab0FNLTU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 07:19:20 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47658 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753938Ab0FNLSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753724Ab0FNLSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Jun 2010 07:18:01 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
        Christoph Hellwig <hch@infradead.org>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 11/12] vmscan: Write out dirty pages in batch
-Date: Mon, 14 Jun 2010 12:17:52 +0100
-Message-Id: <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 10/12] vmscan: Update isolated page counters outside of main path in shrink_inactive_list()
+Date: Mon, 14 Jun 2010 12:17:51 +0100
+Message-Id: <1276514273-27693-11-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
 References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
@@ -25,253 +25,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page reclaim cleans individual pages using a_ops->writepage() because from
-the VM perspective, it is known that pages in a particular zone must be freed
-soon, it considers the target page to be the oldest and it does not want
-to wait while background flushers cleans other pages. From a filesystem
-perspective this is extremely inefficient as it generates a very seeky
-IO pattern leading to the perverse situation where it can take longer to
-clean all dirty pages than it would have otherwise.
-
-This patch queues all dirty pages at once to maximise the chances that
-the write requests get merged efficiently. It also makes the next patch
-that avoids writeout from direct reclaim more straight-forward.
+When shrink_inactive_list() isolates pages, it updates a number of
+counters using temporary variables to gather them. These consume stack
+and it's in the main path that calls ->writepage(). This patch moves the
+accounting updates outside of the main path to reduce stack usage.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/vmscan.c |  175 ++++++++++++++++++++++++++++++++++++++++++++---------------
- 1 files changed, 131 insertions(+), 44 deletions(-)
+ mm/vmscan.c |   63 +++++++++++++++++++++++++++++++++++-----------------------
+ 1 files changed, 38 insertions(+), 25 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 019f0af..4856a2a 100644
+index 165c2f5..019f0af 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -323,6 +323,55 @@ typedef enum {
- 	PAGE_CLEAN,
- } pageout_t;
- 
-+int write_reclaim_page(struct page *page, struct address_space *mapping,
-+						enum pageout_io sync_writeback)
-+{
-+	int res;
-+	struct writeback_control wbc = {
-+		.sync_mode = WB_SYNC_NONE,
-+		.nr_to_write = SWAP_CLUSTER_MAX,
-+		.range_start = 0,
-+		.range_end = LLONG_MAX,
-+		.nonblocking = 1,
-+		.for_reclaim = 1,
-+	};
-+
-+	if (!clear_page_dirty_for_io(page))
-+		return PAGE_CLEAN;
-+
-+	SetPageReclaim(page);
-+	res = mapping->a_ops->writepage(page, &wbc);
-+	/*
-+	 * XXX: This is the Holy Hand Grenade of PotentiallyInvalidMapping. As
-+	 * the page lock has been dropped by ->writepage, that mapping could
-+	 * be anything
-+	 */
-+	if (res < 0)
-+		handle_write_error(mapping, page, res);
-+	if (res == AOP_WRITEPAGE_ACTIVATE) {
-+		ClearPageReclaim(page);
-+		return PAGE_ACTIVATE;
-+	}
-+
-+	/*
-+	 * Wait on writeback if requested to. This happens when
-+	 * direct reclaiming a large contiguous area and the
-+	 * first attempt to free a range of pages fails.
-+	 */
-+	if (PageWriteback(page) && sync_writeback == PAGEOUT_IO_SYNC)
-+		wait_on_page_writeback(page);
-+
-+	if (!PageWriteback(page)) {
-+		/* synchronous write or broken a_ops? */
-+		ClearPageReclaim(page);
-+	}
-+	trace_mm_vmscan_writepage(page,
-+		sync_writeback == PAGEOUT_IO_SYNC);
-+	inc_zone_page_state(page, NR_VMSCAN_WRITE);
-+
-+	return PAGE_SUCCESS;
-+}
-+
- /*
-  * pageout is called by shrink_page_list() for each dirty page.
-  * Calls ->writepage().
-@@ -367,45 +416,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
- 	if (!may_write_to_queue(mapping->backing_dev_info))
- 		return PAGE_KEEP;
- 
--	if (clear_page_dirty_for_io(page)) {
--		int res;
--		struct writeback_control wbc = {
--			.sync_mode = WB_SYNC_NONE,
--			.nr_to_write = SWAP_CLUSTER_MAX,
--			.range_start = 0,
--			.range_end = LLONG_MAX,
--			.nonblocking = 1,
--			.for_reclaim = 1,
--		};
--
--		SetPageReclaim(page);
--		res = mapping->a_ops->writepage(page, &wbc);
--		if (res < 0)
--			handle_write_error(mapping, page, res);
--		if (res == AOP_WRITEPAGE_ACTIVATE) {
--			ClearPageReclaim(page);
--			return PAGE_ACTIVATE;
--		}
--
--		/*
--		 * Wait on writeback if requested to. This happens when
--		 * direct reclaiming a large contiguous area and the
--		 * first attempt to free a range of pages fails.
--		 */
--		if (PageWriteback(page) && sync_writeback == PAGEOUT_IO_SYNC)
--			wait_on_page_writeback(page);
--
--		if (!PageWriteback(page)) {
--			/* synchronous write or broken a_ops? */
--			ClearPageReclaim(page);
--		}
--		trace_mm_vmscan_writepage(page,
--			sync_writeback == PAGEOUT_IO_SYNC);
--		inc_zone_page_state(page, NR_VMSCAN_WRITE);
--		return PAGE_SUCCESS;
--	}
--
--	return PAGE_CLEAN;
-+	return write_reclaim_page(page, mapping, sync_writeback);
- }
- 
- /*
-@@ -640,19 +651,75 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
- }
- 
- /*
-+ * Clean a list of pages. It is expected that all the pages on page_list have been
-+ * locked as part of isolation from the LRU.
-+ *
-+ * XXX: Is there a problem with holding multiple page locks like this?
-+ */
-+static noinline_for_stack void clean_page_list(struct list_head *page_list,
-+				struct scan_control *sc)
-+{
-+	LIST_HEAD(ret_pages);
-+	struct page *page;
-+
-+	if (!sc->may_writepage)
-+		return;
-+
-+	/* Write the pages out to disk in ranges where possible */
-+	while (!list_empty(page_list)) {
-+		struct address_space *mapping;
-+		bool may_enter_fs;
-+
-+		page = lru_to_page(page_list);
-+		list_del(&page->lru);
-+		list_add(&page->lru, &ret_pages);
-+
-+		mapping = page_mapping(page);
-+		if (!mapping || !may_write_to_queue(mapping->backing_dev_info)) {
-+			unlock_page(page);
-+			continue;
-+		}
-+
-+		may_enter_fs = (sc->gfp_mask & __GFP_FS) ||
-+			(PageSwapCache(page) && (sc->gfp_mask & __GFP_IO));
-+		if (!may_enter_fs) {
-+			unlock_page(page);
-+			continue;
-+		}
-+
-+		/* Write single page */
-+		switch (write_reclaim_page(page, mapping, PAGEOUT_IO_ASYNC)) {
-+		case PAGE_KEEP:
-+		case PAGE_ACTIVATE:
-+		case PAGE_CLEAN:
-+			unlock_page(page);
-+			break;
-+		case PAGE_SUCCESS:
-+			break;
-+		}
-+	}
-+	list_splice(&ret_pages, page_list);
-+}
-+
-+/*
-  * shrink_page_list() returns the number of reclaimed pages
-  */
- static unsigned long shrink_page_list(struct list_head *page_list,
- 					struct scan_control *sc,
- 					enum pageout_io sync_writeback)
- {
--	LIST_HEAD(ret_pages);
- 	LIST_HEAD(free_pages);
--	int pgactivate = 0;
-+	LIST_HEAD(putback_pages);
-+	LIST_HEAD(dirty_pages);
-+	struct list_head *ret_list = page_list;
-+	int pgactivate;
-+	bool cleaned = false;
- 	unsigned long nr_reclaimed = 0;
- 
-+	pgactivate = 0;
- 	cond_resched();
- 
-+restart_dirty:
- 	while (!list_empty(page_list)) {
- 		enum page_references references;
- 		struct address_space *mapping;
-@@ -741,7 +808,18 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			}
+@@ -1073,7 +1073,8 @@ static unsigned long clear_active_flags(struct list_head *page_list,
+ 			ClearPageActive(page);
+ 			nr_active++;
  		}
- 
--		if (PageDirty(page)) {
-+		if (PageDirty(page))  {
-+			/*
-+			 * On the first pass, dirty pages are put on a separate
-+			 * list. IO is then queued based on ranges of pages for
-+			 * each unique mapping in the list
-+			 */
-+			if (!cleaned) {
-+				/* Keep locked for clean_page_list */
-+				list_add(&page->lru, &dirty_pages);
-+				goto keep_dirty;
-+			}
-+
- 			if (references == PAGEREF_RECLAIM_CLEAN)
- 				goto keep_locked;
- 			if (!may_enter_fs)
-@@ -852,13 +930,22 @@ activate_locked:
- keep_locked:
- 		unlock_page(page);
- keep:
--		list_add(&page->lru, &ret_pages);
-+		list_add(&page->lru, &putback_pages);
-+keep_dirty:
- 		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+-		count[lru]++;
++		if (count)
++			count[lru]++;
  	}
  
-+	if (!cleaned && !list_empty(&dirty_pages)) {
-+		clean_page_list(&dirty_pages, sc);
-+		page_list = &dirty_pages;
-+		cleaned = true;
-+		goto restart_dirty;
-+	}
-+	BUG_ON(!list_empty(&dirty_pages));
-+
- 	free_page_list(&free_pages);
+ 	return nr_active;
+@@ -1153,12 +1154,13 @@ static int too_many_isolated(struct zone *zone, int file,
+  * TODO: Try merging with migrations version of putback_lru_pages
+  */
+ static noinline_for_stack void putback_lru_pages(struct zone *zone,
+-				struct zone_reclaim_stat *reclaim_stat,
++				struct scan_control *sc,
+ 				unsigned long nr_anon, unsigned long nr_file,
+  				struct list_head *page_list)
+ {
+ 	struct page *page;
+ 	struct pagevec pvec;
++	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
  
--	list_splice(&ret_pages, page_list);
-+	list_splice(&putback_pages, ret_list);
- 	count_vm_events(PGACTIVATE, pgactivate);
+ 	pagevec_init(&pvec, 1);
+ 
+@@ -1197,6 +1199,37 @@ static noinline_for_stack void putback_lru_pages(struct zone *zone,
+ 	pagevec_release(&pvec);
+ }
+ 
++static noinline_for_stack void update_isolated_counts(struct zone *zone, 
++					struct scan_control *sc,
++					unsigned long *nr_anon,
++					unsigned long *nr_file,
++					struct list_head *isolated_list)
++{
++	unsigned long nr_active;
++	unsigned int count[NR_LRU_LISTS] = { 0, };
++	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
++
++	nr_active = clear_active_flags(isolated_list, count);
++	__count_vm_events(PGDEACTIVATE, nr_active);
++
++	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
++			      -count[LRU_ACTIVE_FILE]);
++	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
++			      -count[LRU_INACTIVE_FILE]);
++	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
++			      -count[LRU_ACTIVE_ANON]);
++	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
++			      -count[LRU_INACTIVE_ANON]);
++
++	*nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
++	*nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
++	__mod_zone_page_state(zone, NR_ISOLATED_ANON, *nr_anon);
++	__mod_zone_page_state(zone, NR_ISOLATED_FILE, *nr_file);
++
++	reclaim_stat->recent_scanned[0] += *nr_anon;
++	reclaim_stat->recent_scanned[1] += *nr_file;
++}
++
+ /*
+  * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
+  * of reclaimed pages
+@@ -1208,10 +1241,8 @@ static noinline_for_stack unsigned long shrink_inactive_list(unsigned long nr_to
+ 	LIST_HEAD(page_list);
+ 	unsigned long nr_scanned;
+ 	unsigned long nr_reclaimed = 0;
+-	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+ 	unsigned long nr_taken;
+ 	unsigned long nr_active;
+-	unsigned int count[NR_LRU_LISTS] = { 0, };
+ 	unsigned long nr_anon;
+ 	unsigned long nr_file;
+ 
+@@ -1256,25 +1287,7 @@ static noinline_for_stack unsigned long shrink_inactive_list(unsigned long nr_to
+ 		return 0;
+ 	}
+ 
+-	nr_active = clear_active_flags(&page_list, count);
+-	__count_vm_events(PGDEACTIVATE, nr_active);
+-
+-	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
+-					-count[LRU_ACTIVE_FILE]);
+-	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
+-					-count[LRU_INACTIVE_FILE]);
+-	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
+-					-count[LRU_ACTIVE_ANON]);
+-	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
+-					-count[LRU_INACTIVE_ANON]);
+-
+-	nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
+-	nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
+-	__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
+-	__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
+-
+-	reclaim_stat->recent_scanned[0] += nr_anon;
+-	reclaim_stat->recent_scanned[1] += nr_file;
++	update_isolated_counts(zone, sc, &nr_anon, &nr_file, &page_list);
+ 
+ 	spin_unlock_irq(&zone->lru_lock);
+ 
+@@ -1293,7 +1306,7 @@ static noinline_for_stack unsigned long shrink_inactive_list(unsigned long nr_to
+ 		 * The attempt at page out may have made some
+ 		 * of the pages active, mark them inactive again.
+ 		 */
+-		nr_active = clear_active_flags(&page_list, count);
++		nr_active = clear_active_flags(&page_list, NULL);
+ 		count_vm_events(PGDEACTIVATE, nr_active);
+ 
+ 		nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
+@@ -1304,7 +1317,7 @@ static noinline_for_stack unsigned long shrink_inactive_list(unsigned long nr_to
+ 		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
+ 	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
+ 
+-	putback_lru_pages(zone, reclaim_stat, nr_anon, nr_file, &page_list);
++	putback_lru_pages(zone, sc, nr_anon, nr_file, &page_list);
  	return nr_reclaimed;
  }
+ 
 -- 
 1.7.1
 
