@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab0FNUXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 16:23:30 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:50466 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755055Ab0FNUX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 16:23:29 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jun 2010 16:23:29 EDT
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Subject: Re: [PATCH 2/4] x86: ioremap: fix physical address check
-Date: Mon, 14 Jun 2010 22:16:36 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.85; i686; ; )
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org
-References: <4C11FF10.4060203@jp.fujitsu.com> <4C15F2BD.9020904@jp.fujitsu.com> <4C160D27.1050809@jp.fujitsu.com>
-In-Reply-To: <4C160D27.1050809@jp.fujitsu.com>
+	id S1755554Ab0FNU0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 16:26:24 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:20829 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753963Ab0FNU0W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 16:26:22 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type;
+	b=mHG2mdGeFH0sSZ8WLkmw7o53F+yQU1y0EpRZP1R71GS+FRNpG8RfmFNhXL8B12vEu
+	un+mI73GjSKUyy++OHu2A==
+Date: Mon, 14 Jun 2010 13:26:16 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andy Whitcroft <apw@canonical.com>
+cc: Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
+       linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] kbuild: fix LOCALVERSION handling to match
+ description
+In-Reply-To: <1276508470-21731-1-git-send-email-apw@canonical.com>
+Message-ID: <alpine.DEB.2.00.1006141325080.25461@chino.kir.corp.google.com>
+References: <1276508470-21731-1-git-send-email-apw@canonical.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart5256271.Xt28rHopTh";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006142216.42864.eike-kernel@sf-tec.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart5256271.Xt28rHopTh
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Mon, 14 Jun 2010, Andy Whitcroft wrote:
 
-Kenji Kaneshige wrote:
-> (2010/06/14 18:13), Kenji Kaneshige wrote:
-> > Thank you Hiroyuki.
-> >=20
-> > So many bugs in ioremap()...
-> >=20
-> > Will try with those bugs fixed.
-> >=20
-> > Thanks,
-> > Kenji Kaneshige
->=20
-> The problem seems to be fixed by the following patch. This is still
-> under testing. I will post the patch as v2 after testing.
->=20
-> Thanks,
-> Kenji Kaneshige
->=20
->=20
-> Current x86 ioremap() doesn't handle physical address higher than
-> 32-bit properly in X86_32 PAE mode. When physical address higher than
-> 32-bit is passed to ioremap(), higher 32-bits in physical address is
-> cleared wrongly. Due to this bug, ioremap() can map wrong address to
-> linear address space.
->=20
-> In my case, 64-bit MMIO region was assigned to a PCI device (ioat
-> device) on my system. Because of the ioremap()'s bug, wrong physical
-> address (instead of MMIO region) was mapped to linear address space.
-> Because of this, loading ioatdma driver caused unexpected behavior
-> (kernel panic, kernel hangup, ...).
->=20
-> Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
->=20
-> ---
->  arch/x86/mm/ioremap.c   |   11 +++++------
->  include/linux/io.h      |    4 ++--
->  include/linux/vmalloc.h |    2 +-
->  lib/ioremap.c           |   10 +++++-----
->  4 files changed, 13 insertions(+), 14 deletions(-)
->=20
-> Index: linux-2.6.34/arch/x86/mm/ioremap.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux-2.6.34.orig/arch/x86/mm/ioremap.c
-> +++ linux-2.6.34/arch/x86/mm/ioremap.c
-> @@ -62,7 +62,8 @@ int ioremap_change_attr(unsigned long va
->  static void __iomem *__ioremap_caller(resource_size_t phys_addr,
->  		unsigned long size, unsigned long prot_val, void *caller)
->  {
-> -	unsigned long pfn, offset, vaddr;
-> +	u64 pfn, last_pfn;
-> +	unsigned long offset, vaddr;
->  	resource_size_t last_addr;
->  	const resource_size_t unaligned_phys_addr =3D phys_addr;
->  	const unsigned long unaligned_size =3D size;
+> In the commit below the version string handling was modified, adding
+> a '+' where no other version information was supplied:
+> 
+>     commit 85a256d8e0116c8f5ad276730830f5d4d473344d
+>     Author: David Rientjes <rientjes@google.com>
+>     Date:   Wed Jan 13 13:01:05 2010 -0800
+> 
+> From the commit the intent was as below:
+> 
+>      - when CONFIG_LOCALVERSION_AUTO is disabled, a `+' is appended if the
+>        repository has been revised beyond a tagged commit and LOCALVERSION=
+>        was not passed to "make".
+> 
+> However if the user supplies an empty LOCALVERSION on the command line
+> the plus suffix is still added.  This form is useful in the case where
+> the build environment knows that the version as specified is correct and
+> complete but does not correspond to a specific tag.
+> 
+> This patch changes the implementation to match the documentation
+> such that specifying LOCALVERSION= on the build line is sufficient
+> to suppress any suffix.
+> 
+> Signed-off-by: Andy Whitcroft <apw@canonical.com>
 
-Why do you use u64 and not resource_size_t for those? That way this would n=
-ot=20
-be needlessly big for "real" 32 bit platforms.
+Acked-by: David Rientjes <rientjes@google.com>
 
-Eike
-
---nextPart5256271.Xt28rHopTh
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.12 (GNU/Linux)
-
-iEYEABECAAYFAkwWjioACgkQXKSJPmm5/E4WxQCeIQVB08zbJZO2EI5dzzfqqwan
-HBUAoJ0zuGwtdJmexBVRqxVPkA6NJ5qA
-=WAgj
------END PGP SIGNATURE-----
-
---nextPart5256271.Xt28rHopTh--
+This should be pushed for rc4.
