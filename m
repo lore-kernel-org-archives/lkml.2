@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613Ab0FNPMh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 11:12:37 -0400
-Received: from mail.gmx.net ([213.165.64.20]:56806 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755143Ab0FNPM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 11:12:27 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19CNiEil95CZnfc5UMxWqeL4eyFA9f+91HGJWl5as
-	0AOfcA7hUNLo9M
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: Mike Rapoport <mike@compulab.co.il>
-Subject: Re: [PATCH] power: Rename get_current to fix build failure / name conflict
-Date: Mon, 14 Jun 2010 17:12:22 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-       Wolfram Sang <w.sang@pengutronix.de>, Tejun Heo <tj@kernel.org>,
-       Ryan Mallon <ryan@bluewatersys.com>, linux-kernel@vger.kernel.org,
-       linux-sh@vger.kernel.org, sfr@canb.auug.org.au,
-       Linus Torvalds <torvalds@linux-foundation.org>
-References: <201005130154.58459.PeterHuewe@gmx.de> <4BEB8DC0.4060808@compulab.co.il>
-In-Reply-To: <4BEB8DC0.4060808@compulab.co.il>
+	id S1755687Ab0FNPM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 11:12:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43187 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754533Ab0FNPMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 11:12:55 -0400
+Date: Mon, 14 Jun 2010 11:12:32 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Huang Ying <ying.huang@intel.com>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
+Message-ID: <20100614151232.GQ4894@redhat.com>
+References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
+ <20100612102558.GA4000@elte.hu>
+ <4C15A5D1.1040104@jp.fujitsu.com>
+ <20100614135403.GH4894@redhat.com>
+ <20100614144403.GA369@basil.fritz.box>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006141712.22248.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100614144403.GA369@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag 13 Mai 2010 07:27:28 schrieb Mike Rapoport:
-> Peter Huewe wrote:
-> > From: Peter Huewe <peterhuewe@gmx.de>
-> >
-> > This patch changes the name of get_current function pointer to
-> > get_battery_current to resolve a name conflict with the get_current
-> > macro defined in current.h.
-> >
-> > This conflict resulted in a build-failure[1] for the sh4 arch
-> > allyesconfig which is resolved by this patch.
-> >
-> > To be consistent the other function pointers (_voltage,_capacity) were
-> > renamed too.
-> >
-> > Signed-off-by: Peter Huewe <peterhuewe@gmx.de> 
-> Acked-by: Ryan Mallon <ryan@bluewatersys.com>
-> Acked-by: Mike Rapoport <mike@compulab.co.il>
+On Mon, Jun 14, 2010 at 04:44:03PM +0200, Andi Kleen wrote:
+> > I think the perf event subsytem can log events in NMI context already and
+> > deliver them to userspace when the NMI is done.  This is why I think Ingo
+> > wants MCE to be updated to sit on top of the perf event subsytem to avoid
+> > re-invent everything again.
+> 
+> perf is not solving the problem this is trying to solve.
+> 
+> > Then again I do not know enough about the MCE stuff to understand what you
+> > mean when an event comes in but you can't handle it in an NMI-safe
+> > context.  An example would be helpful.
+> 
+> At least for MCE hwpoison recovery needs to sleep and you obviously cannot sleep in
+> NMI like context. The way it's done is to first do a self interrupt, then do a work queue
+> wakeup and finally the sleeping operations. 
+> 
+> perf does not fit into this because it has no way to process such an event
+> inside the kernel.
 
-Unfortunately this build-failure still exists, in Linux-next and hit Linus' 
-Tree :/
+Ah, makes sense.  Thanks for the example.
 
-References:
-http://kisskb.ellerman.id.au/kisskb/buildresult/2709436/
-http://kisskb.ellerman.id.au/kisskb/buildresult/2687686/
-
-Thanks,
-Peter
-
-
+Cheers,
+Don
