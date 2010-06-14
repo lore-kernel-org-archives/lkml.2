@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab0FNUJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 16:09:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53712 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752341Ab0FNUJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 16:09:13 -0400
-Message-ID: <4C168C45.8060106@zytor.com>
-Date: Mon, 14 Jun 2010 13:08:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1755346Ab0FNURl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 16:17:41 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:44809 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755285Ab0FNURk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 16:17:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=UAkNXHk9nHfktgQs8SZ8Hv1shsV4lXw2KuZCPruJe3DM9NB9YTy3MDESGcpSvJIP5K
+         JUBawx72FgHOqT0UnbMBWrEFdJIxC4inh6oW2JNuo1cpMIr8fmfUH7vpRaH7pESk4cu0
+         L1cZd9ThrkCaQLkKKNMb8aCSTNNED73h7BSjA=
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Yinghai Lu <yinghai.lu@oracle.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Graham Ramsey <ramsey.graham@ntlworld.com>,
-       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-       Robert Richter <robert.richter@amd.com>,
-       Harald Welte <HaraldWelte@viatech.com>,
-       Joseph Chan <JosephChan@via.com.tw>, Jiri Slaby <jslaby@suse.cz>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: Re: [PATCH -v2] x86, pci: Handle fallout pci devices with peer root
- bus
-References: <4BF40014.30303@ntlworld.com> <4C16777A.7060600@zytor.com> <4C167B30.2080307@oracle.com> <201006141400.22653.bjorn.helgaas@hp.com>
-In-Reply-To: <201006141400.22653.bjorn.helgaas@hp.com>
+In-Reply-To: <20100614193554.GB19411@kroah.com>
+References: <AANLkTimnqVSom2qHetXMBPiCNTYd-yc8Tl6a64n0zTSk@mail.gmail.com>
+	<20100614162002.GA13902@kroah.com>
+	<AANLkTinwaYy5Z528PraVuWUsU2pJBLoq0c2hgIGirTNn@mail.gmail.com>
+	<20100614193554.GB19411@kroah.com>
+Date: Tue, 15 Jun 2010 04:17:32 +0800
+Message-ID: <AANLkTik7x3Sk5aNYqspLRt6nI3n_ME22XdasuA-K4Wcs@mail.gmail.com>
+Subject: Re: e-SATA ExpressCard - OOPS plus incrementing "ataX" on 
+	Linux-2.6.xx
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: kristen.c.accardi@intel.com, Dely Sy <dely.l.sy@intel.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Takayoshi Kochi <t-kochi@bq.jp.nec.com>, Matthew Wilcox <willy@hp.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 01:00 PM, Bjorn Helgaas wrote:
+On Tue, Jun 15, 2010 at 3:35 AM, Greg KH <greg@kroah.com> wrote:
+> On Tue, Jun 15, 2010 at 02:44:36AM +0800, Jeff Chua wrote:
+>> On Tue, Jun 15, 2010 at 12:20 AM, Greg KH <greg@kroah.com> wrote:
+>> > On Mon, Jun 14, 2010 at 11:16:29PM +0800, Jeff Chua wrote:
 >>
->> the host bridges is on AMD CPUs, 
-> 
-> Don't confuse the HT host bridge with the PCI host bridge.  The HT I/O spec
-> is quite clear that it uses "host bridge" to refer to the HT host bridge,
-> i.e., the interface between CPUs and a HyperTransport link.
-> 
-> I agree that the *HT host bridge* is indeed on the AMD CPU.  But that is
-> certainly not the same as the PCI host bridge that bridges between an HT
-> link and a PCI bus.
-> 
-> See sections 4.9.4 (HT host bridge) and 7.4 (HT/PCI host bridge), for
-> example.
-> 
+>>
+>> > This is a warning that you can ignore, it's been fixed in the latest
+>> > tree (2.6.35-rc3).
+>> >
+>> > try that and see.
+>>
+>> Greg,
+>>
+>> Ok, just tried rc3 and it's fixed the 1st OOPS.
+>
+> Note, it was not an oops, just a warning, and would not cause any
+> problems.
 
->From a software point of view the latter is [largely] a PCI-to-PCI
-bridge, though; it's not a root-level host bridge in the classical sense
-(as noted in section 7.4).
+Ok, understood.
 
-Incidentally, in my copy of HT 3.10b, section 7.4 is marked
-"HyperTransport Bridge Headers", and does not use the term "host bridge"
-to refer to a secondary PCI bus.  Section 4.9.4 is simply marked "Host
-Bridge".  As such, I think the HT spec is pretty consistent about
-unambiguously referring to the HT host bridge when using the term "host
-bridge".
 
-	-hpa
+>> But I'm still seeing the "ataX" incrementing from ata7 to ata8, ata9
+>> ... after taking out and putting back the card. It seems the interface
+>> is still not shutting down properly. ... Any command to shutdown it
+>> down gracefully?
+> I don't know, maybe the libata developers can help you out here.
+> good luck,
 
+Cool.  Hopefully someone has the solution.
+
+Thanks!
+
+Jeff
