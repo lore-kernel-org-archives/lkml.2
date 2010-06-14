@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab0FNXyA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 19:54:00 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50884 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab0FNXx7 (ORCPT
+	id S1754468Ab0FNX4O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 19:56:14 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:32948 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab0FNX4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 19:53:59 -0400
+	Mon, 14 Jun 2010 19:56:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=kP9tIyzSDnEvW53bAP5UHxKPuOmqIFnFOSPoXRCwPG2dBGGiNmxnrZgQPrsckyXiKm
-         QFhT48YpFIvQUbbq3WFE85b3/cVnSDrjcXH/EGgIDBtG70HoMCTt2WvQmbFCeqNJKKmP
-         baA/x5gUim+Hl9NSxaHVjZoPGULpJqp2uBnP8=
-Message-ID: <4C16C0F9.8090402@gmail.com>
-Date: Mon, 14 Jun 2010 17:53:29 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Robert Emanuele <rob@emanuele.us>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Testing to see if a driver is loaded
-References: <AANLkTilZkfvBiwliJ6JKXfvS0V3cvO_AAIj6quegvYgq@mail.gmail.com>
-In-Reply-To: <AANLkTilZkfvBiwliJ6JKXfvS0V3cvO_AAIj6quegvYgq@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=AqILXn+uI3tVb1fTvr92YOSWH31zg2wbGvfde8jJ5VLWPfZUi8z4SvwtnnEBkrzV3h
+         CxYnUihJgKvAeF7VzHWzKjQXM8poxxZoBuC7ePqE1lzZRqQRFgPR9TdHeEEG2Lqb1s1G
+         Gfw6oQSDA+/4fv4H9OJzNWeKHoJBtvm3pmRqk=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: reiserfs-devel@vger.kernel.org
+Cc: edward.shishkin@gmail.com, linux-kernel@vger.kernel.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 1/8 v3]reiserfs:stree.c Fix variable set but not used.
+Date: Mon, 14 Jun 2010 16:56:17 -0700
+Message-Id: <1276559777-3017-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/2010 10:33 PM, Robert Emanuele wrote:
-> Greetings once again,
->
-> I was wondering if there is a simple way to test if a driver is loaded
-> from within another driver's probe?  I have one driver that depends on
-> another.  I see several *_find_device functions in
-> include/linux/device.h.  I haven't found a "find driver" nor an
-> arbitrary way of doing that.
->
-> Thanks for any guidance,
+Resend of this patch due to previous whitespace issues and a messup
+with v2.
+The below fixes this warning:
+fs/reiserfs/stree.c: In function 'search_by_key':
+fs/reiserfs/stree.c:602:6: warning: variable 'right_neighbor_of_leaf_node' set but not used
 
-There's not a simple answer, it depends what you are trying to achieve 
-(i.e. in what way is the driver dependent on the other one..)
+ Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+ Acked-by: Edward Shishkin <edward.shishkin@gmail.com>
+---
+ fs/reiserfs/stree.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/fs/reiserfs/stree.c b/fs/reiserfs/stree.c
+index 313d39d..1d901c3 100644
+--- a/fs/reiserfs/stree.c
++++ b/fs/reiserfs/stree.c
+@@ -599,7 +599,6 @@ int search_by_key(struct super_block *sb, const struct cpu_key *key,	/* Key to s
+ 	struct buffer_head *bh;
+ 	struct path_element *last_element;
+ 	int node_level, retval;
+-	int right_neighbor_of_leaf_node;
+ 	int fs_gen;
+ 	struct buffer_head *reada_bh[SEARCH_BY_KEY_READA];
+ 	b_blocknr_t reada_blocks[SEARCH_BY_KEY_READA];
+@@ -617,8 +616,6 @@ int search_by_key(struct super_block *sb, const struct cpu_key *key,	/* Key to s
+ 
+ 	pathrelse(search_path);
+ 
+-	right_neighbor_of_leaf_node = 0;
+-
+ 	/* With each iteration of this loop we search through the items in the
+ 	   current node, and calculate the next current node(next path element)
+ 	   for the next iteration of this loop.. */
+@@ -695,7 +692,6 @@ int search_by_key(struct super_block *sb, const struct cpu_key *key,	/* Key to s
+ 			   starting from the root. */
+ 			block_number = SB_ROOT_BLOCK(sb);
+ 			expected_level = -1;
+-			right_neighbor_of_leaf_node = 0;
+ 
+ 			/* repeat search from the root */
+ 			continue;
+-- 
+1.7.1.rc1.21.gf3bd6
+
