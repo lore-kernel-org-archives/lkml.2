@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047Ab0FNWVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 18:21:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55901 "EHLO
+	id S1757162Ab0FNWWc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 18:22:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46343 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab0FNWVd (ORCPT
+	with ESMTP id S1756987Ab0FNWVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 18:21:33 -0400
+	Mon, 14 Jun 2010 18:21:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=aGLNcJcTh3me1BPFcBjQdB5Retj4nwvKW+rQzVbpEPF9rJQRb0LyKeJiaYvVg+6GQ3
-         uridcYXjNzkXFcsUPuqhvBhOWIJ7hYcaAF+wANWiofTyjJOOqIKQ2sASCzhPEhaMKici
-         GqfIQuxXEVx1CmEofqaCmdbODcbnYAXJlEyBI=
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=rxXOgoF9uoSNUY9tjZ1KyVh3rXE1d9yrhNm4DwMAazs/cn8Tk8FrWgZWi9Ij2uwNqq
+         VHB6BzkXjxxGPiqKoMTs0+o3KMbBwYkVuhtkYq8idGiGy/W/jWKRj/afnqJFjeUda4QT
+         +5qMVS+zH2awAXr6JVgmWoKivVoGQPjDkGrQg=
 From: John Kacur <jkacur@redhat.com>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: lkml <linux-kernel@vger.kernel.org>,
@@ -20,47 +21,67 @@ Cc: lkml <linux-kernel@vger.kernel.org>,
        Clark Williams <williams@redhat.com>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 0/6] Potential rt patches for tip/rt/2.6.33
-Date: Tue, 15 Jun 2010 00:21:21 +0200
-Message-Id: <1276554087-3632-1-git-send-email-jkacur@redhat.com>
+Subject: [PATCH 1/6] tracing: Update the comm field in the right variable in update_max_tr
+Date: Tue, 15 Jun 2010 00:21:22 +0200
+Message-Id: <1276554087-3632-2-git-send-email-jkacur@redhat.com>
 X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <1276554087-3632-1-git-send-email-jkacur@redhat.com>
+References: <1276554087-3632-1-git-send-email-jkacur@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas:
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-This is a small collection of patches that I have in my -rt tree on-top
-of 2.6.33.5-rt23
+The latency output showed:
 
-Please consider them for the next version of tip/rt/2.6.33
+ #    | task: -3 (uid:0 nice:0 policy:1 rt_prio:99)
 
-They can be pulled from
-git://git.kernel.org/pub/scm/linux/kernel/git/jkacur/jk-2.6.git tip-rt-2.6.33-jk
+The comm is missing in the "task:" and it looks like a minus 3 is
+the output. The correct display should be:
 
-Amit Shah (1):
-  hvc_console: Fix race between hvc_close and hvc_remove
+ #    | task: migration/0-3 (uid:0 nice:0 policy:1 rt_prio:99)
 
-Anton Blanchard (1):
-  hvc_console: Fix race between hvc_close and hvc_remove
+The problem is that the comm is being stored in the wrong data
+structure. The max_tr.data[cpu] is what stores the comm, not the
+tr->data[cpu].
 
-Arnaldo Carvalho de Melo (1):
-  tracing: Update the comm field in the right variable in update_max_tr
+Before this patch the max_tr.data[cpu]->comm was zeroed and the /debug/trace
+ended up showing just the '-' sign followed by the pid.
 
-John Kacur (1):
-  lockdep: Make MAX_STACK_TRACE_ENTRIES configurable.
+Also remove a needless initialization of max_data.
 
-Stephane Eranian (1):
-  perf: Fix errors path in perf_output_begin()
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+LKML-Reference: <1267824230-23861-1-git-send-email-acme@infradead.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Upstream commit: 1acaa1b2d9b5904c9cce06122990a2d71046ce16
+Signed-off-by: John Kacur <jkacur@redhat.com>
+---
+ kernel/trace/trace.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Toshiyuki Okajima (1):
-  KEYS: find_keyring_by_name() can gain access to a freed keyring
-
- drivers/char/hvc_console.c |   27 +++++++++++++++++----------
- kernel/lockdep_internals.h |    2 +-
- kernel/perf_event.c        |    2 +-
- kernel/trace/trace.c       |    4 ++--
- lib/Kconfig.debug          |   10 ++++++++++
- security/keys/keyring.c    |   18 +++++++++---------
- 6 files changed, 40 insertions(+), 23 deletions(-)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 9b66ee1..a1cf0ad 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -520,7 +520,7 @@ static void
+ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ {
+ 	struct trace_array_cpu *data = tr->data[cpu];
+-	struct trace_array_cpu *max_data = tr->data[cpu];
++	struct trace_array_cpu *max_data;
+ 
+ 	max_tr.cpu = cpu;
+ 	max_tr.time_start = data->preempt_timestamp;
+@@ -530,7 +530,7 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ 	max_data->critical_start = data->critical_start;
+ 	max_data->critical_end = data->critical_end;
+ 
+-	memcpy(data->comm, tsk->comm, TASK_COMM_LEN);
++	memcpy(max_data->comm, tsk->comm, TASK_COMM_LEN);
+ 	max_data->pid = tsk->pid;
+ 	max_data->uid = task_uid(tsk);
+ 	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
+-- 
+1.6.6.1
 
