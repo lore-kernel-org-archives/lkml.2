@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427Ab0FNSWQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 14:22:16 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:53912 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab0FNSWP (ORCPT
+	id S1752711Ab0FNSXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 14:23:33 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53891 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837Ab0FNSXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 14:22:15 -0400
-Date: Mon, 14 Jun 2010 20:22:12 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-       Tim Abbott <tabbott@ksplice.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
-Message-ID: <20100614182212.GA14747@merkur.ravnborg.org>
-References: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
+	Mon, 14 Jun 2010 14:23:30 -0400
+Message-ID: <4C167357.6040901@oracle.com>
+Date: Mon, 14 Jun 2010 11:22:15 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Graham Ramsey <ramsey.graham@ntlworld.com>,
+       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+       Robert Richter <robert.richter@amd.com>,
+       Harald Welte <HaraldWelte@viatech.com>,
+       Joseph Chan <JosephChan@via.com.tw>, Jiri Slaby <jslaby@suse.cz>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: Re: [PATCH -v2] x86, pci: Handle fallout pci devices with peer root
+ bus
+References: <4BF40014.30303@ntlworld.com>	<201005201108.07040.bjorn.helgaas@hp.com>	<201006021058.57361.bjorn.helgaas@hp.com>	<201006111549.05164.bjorn.helgaas@hp.com>	<4C12C189.50201@oracle.com>	<4C166B4F.90308@oracle.com> <20100614111425.7fb143f9@virtuousgeek.org>
+In-Reply-To: <20100614111425.7fb143f9@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4C167385.00F4:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 01:38:28PM +0100, Matt Fleming wrote:
-> From: Matt Fleming <matthew.fleming@imgtec.com>
+On 06/14/2010 11:14 AM, Jesse Barnes wrote:
+> On Mon, 14 Jun 2010 10:47:59 -0700
+> Yinghai Lu <yinghai.lu@oracle.com> wrote:
 > 
-> Many architectures collect text sections beginning with '.text.' in
-> their .text section, so move this pattern into TEXT_TEXT to stop them
-> all having to duplicate the pattern in their arch/ linker scripts.
+>>
+>> Graham bisected
+>> |    commit 3e3da00c01d050307e753fb7b3e84aefc16da0d0
+>> |    x86/pci: AMD one chain system to use pci read out res
+>>
+>> cause the SND_HDA_INTEL doesn't work anymore.
+>>
+>> https://bugzilla.kernel.org/show_bug.cgi?id=16007
+>>
+>> It turns out that his system with via chipset only have one hypertransport
+>> chain, but does have one extra orphan device 80:01.0
+>>
+>>  PCI: Probing PCI hardware (bus 00)
+>>  PCI: Discovered primary peer bus 80 [IRQ]
+>>
+>>  node 0 link 0: io port [1000, ffffff]
+>>  TOM: 0000000080000000 aka 2048M
+>>  node 0 link 0: mmio [e0000000, efffffff]
+>>  node 0 link 0: mmio [a0000, bffff]
+>>  node 0 link 0: mmio [80000000, ffffffff]
+>>  bus: [00, ff] on node 0 link 0
+>>
+>> Try to make peer root buses to share same mmio/io resources if those peer root
+>> buses fall into the same bus range.
+>>
+>> Also need to update insert_resource to avoid insert same resource two times.
 > 
-> Signed-off-by: Matt Fleming <matthew.fleming@imgtec.com>
-> ---
->  include/asm-generic/vmlinux.lds.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> So 3e3da00c01d050307e753fb7b3e84aefc16da0d0 was supposed to address the
+> case where some laptop RAM ranges ended up incorrect.  Would using _CRS
+> on those machines also address that problem?  If so, we should consider
+> dropping amd_bus.c like we did with intel_bus.c.
 > 
-> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> index 48c5299..08f4680 100644
-> --- a/include/asm-generic/vmlinux.lds.h
-> +++ b/include/asm-generic/vmlinux.lds.h
-> @@ -369,6 +369,7 @@
->  		ALIGN_FUNCTION();					\
->  		*(.text.hot)						\
->  		*(.text)						\
-> +		*(.text.*)						\
->  		*(.ref.text)						\
->  	DEV_KEEP(init.text)						\
->  	DEV_KEEP(exit.text)						\
+> Yinghai, do you still have people from the RAM bug that could test
+> using _CRS data?
 
-This will break ia64.
->From their vmlinux.lds.h:
+I can not find the mail anymore.
 
-        TEXT_TEXT
-        SCHED_TEXT
-        LOCK_TEXT
-        KPROBES_TEXT
-        *(.gnu.linkonce.t*)
-    }
-  .text2 : AT(ADDR(.text2) - LOAD_OFFSET)
-        { *(.text2) }
-#ifdef CONFIG_SMP
-  .text..lock : AT(ADDR(.text..lock) - LOAD_OFFSET)
-        { *(.text..lock) }
-#endif
+looks like someone is using one AMD k8 Aruma laptop for firewire development.
 
-The patch above we would match the section ".text.*" too soon and
-add the .text..lock section at the wrong place.
-
-Browsing the vmlinux.lds files other archs will be impacted too.
-
-If you feel tempted to clean up the linker script one place to start
-would be to introduce consistent indention / layout.
-If you use arch/sparc/kernel/vmlinux.lds.h as a template then you
-have a good start.
-
-The above mentioned ia64 vmlinux.lds.h would be a good place to start.
-
-	Sam
+YH
