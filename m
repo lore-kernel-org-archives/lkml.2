@@ -1,68 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab0FNGK4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 02:10:56 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:47189 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753345Ab0FNGKp (ORCPT
+	id S1753285Ab0FNGKm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 02:10:42 -0400
+Received: from smtp107.sbc.mail.gq1.yahoo.com ([67.195.14.110]:42207 "HELO
+	smtp107.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751598Ab0FNGKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 02:10:45 -0400
-Date: Mon, 14 Jun 2010 08:10:38 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Bug #15712] [regression] 2.6.34-rc1 to -rc3 on zaurus: no
- longer boots
-Message-ID: <20100614061038.GA31896@elf.ucw.cz>
-References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera>
- <YPGdyfWGvNK.A.2FB.W8OFMB@chimera>
- <AANLkTilOhHVi6u0jmPj87s9PGvxPjiT_dxAmqDJ5qTUf@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTilOhHVi6u0jmPj87s9PGvxPjiT_dxAmqDJ5qTUf@mail.gmail.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 14 Jun 2010 02:10:41 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: U2THpUsVM1kqtp4U1ss.s5tefHEXUn7ayxV7eyLyq33C8uvFaQ9OhqFXy9GAGXLr3lRUn4ByRknNWdbTb_Osh3LzNzsl8iafXUJ9Hhh0Eoj1ftJww9hVKmXim9QuZsmbCS1UK17_b7Z8e78fOodonPICBAfSRBwtiHwug6zyTd.br.nZoupYec85ZSqvtqVgAz2A4xgr12.wy5XVf1jcVJ6ZjM5xyqtwOtuUgueUHizQ3lRLu2KREn7hS5HEtyBHXqwXEaGb6yYDIOEoSrfehG_VET1Mgdrbb3A6sK_zQp6UOrVuJaLdsNtDBOU.JibkIenxrcbNLJ__n_Obg1W41LSgqDxPterCkcflFZMtYNgqag--
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jaxboe@fusionio.com>,
+       James Bottomley <James.Bottomley@suse.de>
+Cc: Christoph Hellwig <hch@lst.de>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+       Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH] [BSG]: Add support for struct sg_io_v4->d[out,in]_iovec_count
+Date: Sun, 13 Jun 2010 23:11:29 -0700
+Message-Id: <1276495889-1714-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-> I can boot successfully on my akita/corgi with my 2.6.35-rc3 kernel.
-> I'll find some time to test v2.6.34 though.
+Greetings Jens and co,
 
-This one is long solved. 2.6.34 works for me, as does 2.6.35-rc2.
-									Pavel
+This patch adds the missing support to block/bsg.c:bsg_map_hdr() to accept
+struct sg_io_v4->d[out,in]_iovec_count and process struct sg_io_v4->d[out,in]_xferp memory
+containing userspace iovecs for kernel level BSG.  It adds a new wrapper bsg_rq_map_user_iov()
+that will call copy_from_user() and blk_rq_map_user_iov() following the original SG_IO logic in
+drivers/scsi/sg.c:sg_start_req().
 
-> Pavel,
-> 
-> Is any more update on your side?
-> 
-> On Sun, Jun 13, 2010 at 10:48 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.33 and 2.6.34.
-> >
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> >
-> >
-> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=15712
-> > Subject         : [regression] 2.6.34-rc1 to -rc3 on zaurus: no longer boots
-> > Submitter       : Pavel Machek <pavel@ucw.cz>
-> > Date            : 2010-04-01 6:06 (74 days old)
-> > Message-ID      : <20100401060624.GA1329@ucw.cz>
-> > References      : http://marc.info/?l=linux-kernel&m=127010200817402&w=2
-> > Handled-By      : Eric Miao <eric.y.miao@gmail.com>
-> >
-> >
-> >
+So far this has been tested on a x86_64 v2.6.34 KVM Host with TCM_Loop Virtual SAS Port/LUNs
+into a x86_64 v2.6.26 KVM Guest with Megasas 8707EM2 HBA Emulation + my new scsi-bsg backstore code.
 
+Please consider this for v2.6.36 as it will be required in order for QEMU-KVM MegaSAS and VirtIO HBA
+emulation using QEMU scatterlist memory and BSG backstores.
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ block/bsg.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 47 insertions(+), 8 deletions(-)
+
+diff --git a/block/bsg.c b/block/bsg.c
+index 82d5882..3f789cf 100644
+--- a/block/bsg.c
++++ b/block/bsg.c
+@@ -239,6 +239,33 @@ bsg_validate_sgv4_hdr(struct request_queue *q, struct sg_io_v4 *hdr, int *rw)
+ 	return ret;
+ }
+ 
++static int
++bsg_rq_map_user_iov(struct request_queue *q, struct request *rq, void *dxferp,
++	unsigned int dxfer_len, int iovec_count, int gfp)
++{
++	struct iovec *iov;
++	int len, ret, size = sizeof(struct sg_iovec) * iovec_count;
++
++	iov = kzalloc(size, GFP_ATOMIC);
++	if (!iov)
++		return -ENOMEM;
++	
++	if (copy_from_user(iov, dxferp, size)) {
++		kfree(iov);
++		return -EFAULT;
++	}
++
++	len = iov_length(iov, iovec_count);
++	if (dxfer_len < len) {
++		iovec_count = iov_shorten(iov, iovec_count, dxfer_len);
++		len = dxfer_len;
++	}
++	ret = blk_rq_map_user_iov(q, rq, NULL, dxferp, iovec_count,
++			len, gfp);
++	kfree(iov);	
++	return ret;
++}
++
+ /*
+  * map sg_io_v4 to a request.
+  */
+@@ -248,7 +275,7 @@ bsg_map_hdr(struct bsg_device *bd, struct sg_io_v4 *hdr, fmode_t has_write_perm,
+ {
+ 	struct request_queue *q = bd->queue;
+ 	struct request *rq, *next_rq = NULL;
+-	int ret, rw;
++	int ret, rw, iovec_count;
+ 	unsigned int dxfer_len;
+ 	void *dxferp = NULL;
+ 
+@@ -284,28 +311,40 @@ bsg_map_hdr(struct bsg_device *bd, struct sg_io_v4 *hdr, fmode_t has_write_perm,
+ 		rq->next_rq = next_rq;
+ 		next_rq->cmd_type = rq->cmd_type;
+ 
++		iovec_count = hdr->din_iovec_count;
+ 		dxferp = (void*)(unsigned long)hdr->din_xferp;
+-		ret =  blk_rq_map_user(q, next_rq, NULL, dxferp,
+-				       hdr->din_xfer_len, GFP_KERNEL);
++
++		if (iovec_count)
++			ret = bsg_rq_map_user_iov(q, next_rq, dxferp,
++					hdr->din_xfer_len, iovec_count,
++					GFP_KERNEL);
++		else
++			ret = blk_rq_map_user(q, next_rq, NULL, dxferp,
++					hdr->din_xfer_len, GFP_KERNEL);
+ 		if (ret)
+ 			goto out;
+ 	}
+ 
+ 	if (hdr->dout_xfer_len) {
+ 		dxfer_len = hdr->dout_xfer_len;
++		iovec_count = hdr->dout_iovec_count;
+ 		dxferp = (void*)(unsigned long)hdr->dout_xferp;
+ 	} else if (hdr->din_xfer_len) {
+ 		dxfer_len = hdr->din_xfer_len;
++		iovec_count = hdr->din_iovec_count;
+ 		dxferp = (void*)(unsigned long)hdr->din_xferp;
+ 	} else
+ 		dxfer_len = 0;
+ 
+-	if (dxfer_len) {
++	if (iovec_count && dxfer_len) 
++		ret = bsg_rq_map_user_iov(q, rq, dxferp, dxfer_len,
++				iovec_count, GFP_KERNEL);
++	else if (dxfer_len)
+ 		ret = blk_rq_map_user(q, rq, NULL, dxferp, dxfer_len,
+-				      GFP_KERNEL);
+-		if (ret)
+-			goto out;
+-	}
++				GFP_KERNEL);
++	
++	if (ret)
++		goto out;
+ 
+ 	rq->sense = sense;
+ 	rq->sense_len = 0;
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.5.6.5
+
