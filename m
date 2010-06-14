@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab0FNJpE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 05:45:04 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39911 "EHLO hera.kernel.org"
+	id S1755958Ab0FNJpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 05:45:19 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:55290 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753295Ab0FNJpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 05:45:00 -0400
-Message-ID: <4C15F9D0.40706@kernel.org>
-Date: Mon, 14 Jun 2010 11:43:44 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1755691Ab0FNJpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 05:45:03 -0400
+Message-ID: <4C15FA1C.1080901@kernel.dk>
+Date: Mon, 14 Jun 2010 11:45:00 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Jiri Slaby <jirislaby@gmail.com>
-CC: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, jeff@garzik.org,
-       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
-       khali@linux-fr.org
-Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
-References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-10-git-send-email-tj@kernel.org> <4C15F4B7.5040601@gmail.com>
-In-Reply-To: <4C15F4B7.5040601@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-2
+To: Philipp Reisner <philipp.reisner@linbit.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, drbd-dev@lists.linbit.com,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the drbd tree with the block trees
+References: <20100610135203.4649453a.sfr@canb.auug.org.au> <20100614112639.ef45a777.sfr@canb.auug.org.au> <4C15F18C.3050905@kernel.dk> <201006141143.42783.philipp.reisner@linbit.com>
+In-Reply-To: <201006141143.42783.philipp.reisner@linbit.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Jun 2010 09:43:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 06/14/2010 11:21 AM, Jiri Slaby wrote:
-> On 06/13/2010 05:31 PM, Tejun Heo wrote:
->> --- a/kernel/irq/spurious.c
->> +++ b/kernel/irq/spurious.c
-> ...
+On 2010-06-14 11:43, Philipp Reisner wrote:
+> Am Montag, 14. Juni 2010, um 11:08:28 schrieb Jens Axboe:
+>> On 2010-06-14 03:26, Stephen Rothwell wrote:
+>>> Hi Jens, Philipp,
+>>>
+>>> On Thu, 10 Jun 2010 08:01:35 +0200 Jens Axboe <axboe@kernel.dk> wrote:
+>>>> I'm starting to think that it would be a little easier if you did not
+>>>> pull the drbd tree, I really should be pulling that into my -next branch
+>>>> instead.
+>>>
+>>> Given that the drbd tree has not been updated to match the increasingly
+>>> different block tree, I have dropped it for today.
+>>>
+>>> There a a few possibilities here:
+>>> 	- I just drop the drbd tree completely and it only gets merged
+>>>
+>>> into the block tree.
+>>>
+>>> 	- if the drbd tree doesn't actually depend on any of the features
+>>>
+>>> in the block tree then it could be rebased onto Linus tree (and I would
+>>> cope with any merge fixups - as I do with many other trees).
+>>>
+>>> 	- if it does depend on things in the block tree, those particular
+>>>
+>>> features in the block tree could be put in a separate branch that is
+>>> never rebased and then that branch could be merged into both the block
+>>> and drbd trees (this has been done before e.g. stuff in the vfs tree.
+>>>
+>>> 	- the drbd tree could be rebased on tom of the current block tree
+>>>
+>>> (but then it must be kept up to date if the block tree is rebased).
+>>
+>> The thing with the dependencies is that sometimes they are true,
+>> sometimes they are not. What I suggested to the drbd team is that they
+>> always just base off Linus and then ask me to pull their changes, then I
+>> will resolve any potential conflicts when that happens. The consequence
+>> would be that you stop pulling the drbd tree separately.
 > 
->> @@ -25,9 +26,43 @@ enum {
->>  	/* IRQ polling common parameters */
->>  	IRQ_POLL_SLOW_INTV		= 3 * HZ,	/* not too slow for ppl, slow enough for machine */
->>  	IRQ_POLL_INTV			= HZ / 100,	/* from the good ol' 100HZ tick */
->> +	IRQ_POLL_QUICK_INTV		= HZ / 1000,	/* pretty quick but not too taxing */
->>  
->>  	IRQ_POLL_SLOW_SLACK		= HZ,
->>  	IRQ_POLL_SLACK			= HZ / 1000,	/* 10% slack */
->> +	IRQ_POLL_QUICK_SLACK		= HZ / 10000,	/* 10% slack */
-> 
-> Hi. These are zeros on most systems (assuming distros set HZ=100 and
-> 250), what is their purpose then?
+> Ok, from now on I will use Linus most recent -rc as base and put DRBD
+> patches on top of that. -- I will do this today (CEST timezone).
 
-On every tick and no slack.  :-)
+You want to continue to use for-2.6.xx for your next version updates, as
+that has a larger risk of containing things you need to adapt to. But
+for current version patches, Linus' branch is fine.
 
 -- 
-tejun
+Jens Axboe
+
