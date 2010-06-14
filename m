@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993Ab0FNWVN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 18:21:13 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:60740 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266Ab0FNWVL (ORCPT
+	id S1757069Ab0FNWVi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 18:21:38 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55901 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757037Ab0FNWVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 18:21:11 -0400
-Date: Mon, 14 Jun 2010 18:21:07 -0400 (EDT)
-From: Tim Abbott <tabbott@ksplice.com>
-X-X-Sender: tabbott@dr-wily.mit.edu
-To: Matt Fleming <matt@console-pimps.org>
-cc: linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-       linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-       Michal Marek <mmarek@suse.cz>,
-       Denys Vlasenko <vda.linux@googlemail.com>,
-       James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
-In-Reply-To: <87y6ehxvby.fsf@linux-g6p1.site>
-Message-ID: <alpine.DEB.1.10.1006141534490.1248@dr-wily.mit.edu>
-References: <1276519112-11649-1-git-send-email-matt@console-pimps.org> <alpine.DEB.1.10.1006141014360.1432@dr-wily.mit.edu> <87y6ehxvby.fsf@linux-g6p1.site>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 14 Jun 2010 18:21:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=jQ/2lKX2rufKeZaU5P1cdMj3eNykLCS+XoGJlrTzC2AdrbujZB2g96/3EQdJ9LMjHn
+         57ZkAVW/ckXln04zxlpSmiCQnqmuJS5vAHUMfsKkB4/ALfLtnER9C9dZT2s8oj2iSbHx
+         +4Du+U/URvIDJnrH3L9vxJ5g1XR+Azr3ecMEw=
+From: John Kacur <jkacur@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+       rt-users <linux-rt-users@vger.kernel.org>,
+       Clark Williams <williams@redhat.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 3/6] perf: Fix errors path in perf_output_begin()
+Date: Tue, 15 Jun 2010 00:21:24 +0200
+Message-Id: <1276554087-3632-4-git-send-email-jkacur@redhat.com>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <1276554087-3632-1-git-send-email-jkacur@redhat.com>
+References: <1276554087-3632-1-git-send-email-jkacur@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jun 2010, Matt Fleming wrote:
+From: Stephane Eranian <eranian@google.com>
 
-> Do these special kernel sections include things like the parisc
-> .text.do_softirq, .text.sys_exit, etc? James raised a good objection to
-> the parisc patch of this series. I'm guessing most people saw it already
-> but I'll paste it here for reference,
-> 
->     This would destroy all of the named parisc text ordering we do above the
->     removed line because now you'd have swept up all the function sections
->     before we get to them, won't it?
-> 
->     The ordering is an execution speed up on 32 bit systems because our
->     relative jump is so short.
-> 
-> Will you changes handle this OK?
+In case the sampling buffer has no "payload" pages,
+nr_pages is 0. The problem is that the error path in
+perf_output_begin() skips to a label which assumes
+perf_output_lock() has been issued which is not the
+case. That triggers a WARN_ON() in
+perf_output_unlock().
 
-I think I addressed this in my reply to James just now, but to be super 
-clear, this -ffunction-sections plan involves renaming .text.do_softirq to 
-.text..do_softirq (etc.) first.
+This patch fixes the problem by skipping
+perf_output_unlock() in case data->nr_pages is 0.
 
-	-Tim Abbott
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+LKML-Reference: <4bf13674.014fd80a.6c82.ffffb20c@mx.google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Upstream-commit: 00d1d0b095ba4e5c0958cb228b2a9c445d4a339d
+Signed-off-by: John Kacur <jkacur@redhat.com>
+---
+ kernel/perf_event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 43c1dfb..e353be2 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -2933,7 +2933,7 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 	handle->sample	= sample;
+ 
+ 	if (!data->nr_pages)
+-		goto fail;
++		goto out;
+ 
+ 	have_lost = atomic_read(&data->lost);
+ 	if (have_lost)
+-- 
+1.6.6.1
+
