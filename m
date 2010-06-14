@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab0FNWRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 18:17:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45638 "EHLO mx2.suse.de"
+	id S1756890Ab0FNWTK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 18:19:10 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58870 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481Ab0FNWRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 18:17:18 -0400
-Date: Mon, 14 Jun 2010 15:11:24 -0700
-From: Greg KH <gregkh@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, jeff@garzik.org,
-       linux-ide@vger.kernel.org, stern@rowland.harvard.edu,
-       khali@linux-fr.org
-Subject: Re: [PATCH 12/12] usb: use IRQ watching
-Message-ID: <20100614221124.GA22801@suse.de>
-References: <1276443098-20653-1-git-send-email-tj@kernel.org>
- <1276443098-20653-13-git-send-email-tj@kernel.org>
- <20100614214122.GA21064@suse.de>
- <4C16A48A.2070404@kernel.org>
+	id S1751481Ab0FNWTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 18:19:08 -0400
+Message-ID: <4C16AA75.8030303@kernel.org>
+Date: Tue, 15 Jun 2010 00:17:25 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C16A48A.2070404@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, rusty@rustcorp.com.au, cl@linux-foundation.org,
+       dhowells@redhat.com, arjan@linux.intel.com, johannes@sipsolutions.net,
+       oleg@redhat.com, axboe@kernel.dk
+Subject: Re: [PATCHSET] workqueue: concurrency managed workqueue, take#5
+References: <1276551467-21246-1-git-send-email-tj@kernel.org> <20100614145839.8ac7687a.akpm@linux-foundation.org>
+In-Reply-To: <20100614145839.8ac7687a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Jun 2010 22:17:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 11:52:10PM +0200, Tejun Heo wrote:
-> Hello,
+On 06/14/2010 11:58 PM, Andrew Morton wrote:
+> On Mon, 14 Jun 2010 23:37:17 +0200
+> Tejun Heo <tj@kernel.org> wrote:
 > 
-> On 06/14/2010 11:41 PM, Greg KH wrote:
-> > So if there's a routing problem, it turns into a polled interrupt?  Do
-> > we really want that?
+>> This is the fifth take of cmwq (concurrency managed workqueue)
+>> patchset.
 > 
-> Oh yeah, I really want that for libata.  Routing is only part of the
-> problem and flaky IRQ is something we have to learn to cope with.
-> 
-> > I wonder how long people will run without realizing that there are
-> > problems with their system if their devices still work.
-> 
-> I think things would be better this way.  If the drives (both cd and
-> hard) / input devices are not accessible, most people would simply
-> give up rather than reporting, and many cases are transient problems
-> which happen only once in the blue moon.
-> 
-> It would be great if some kind of automatic reporting can be used
-> (similar to kerneloops?).  Hmm... maybe make the warnings scarier?
+> What is a concurrency managed workqueue and why do we want one?
 
-If you throw a WARN(), then kerneloops will pick it up, so you should be
-fine there.
+That goes back about 9 month.  You were cc'd there too.  :-)
 
-thanks,
+  http://thread.gmane.org/gmane.linux.kernel/896268
 
-greg k-h
+Thanks.
+
+-- 
+tejun
