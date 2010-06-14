@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab0FNAWw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 20:22:52 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44260 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754934Ab0FNAWu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 20:22:50 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 14 Jun 2010 09:18:23 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-       jbarnes@virtuousgeek.org
-Subject: Re: [PATCH 2/4] x86: ioremap: fix physical address check
-Message-Id: <20100614091823.34fac7a6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4C1275BF.3070605@zytor.com>
-References: <4C11FF10.4060203@jp.fujitsu.com>
-	<4C11FFC0.1030006@jp.fujitsu.com>
-	<4C1275BF.3070605@zytor.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755062Ab0FNA1P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 20:27:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6142 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754997Ab0FNA1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Jun 2010 20:27:14 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH] oom: Make coredump interruptible
+In-Reply-To: Oleg Nesterov's message of  Wednesday, 2 June 2010 22:38:27 +0200 <20100602203827.GA29244@redhat.com>
+References: <20100601093951.2430.A69D9226@jp.fujitsu.com>
+	<20100601201843.GA20732@redhat.com>
+	<20100602221805.F524.A69D9226@jp.fujitsu.com>
+	<20100602154210.GA9622@redhat.com>
+	<20100602172956.5A3E34A491@magilla.sf.frob.com>
+	<20100602175325.GA16474@redhat.com>
+	<20100602185812.4B5894A549@magilla.sf.frob.com>
+	<20100602203827.GA29244@redhat.com>
+X-Antipastobozoticataclysm: When George Bush projectile vomits antipasto on the Japanese.
+Message-Id: <20100614002655.35D9E408C1@magilla.sf.frob.com>
+Date: Sun, 13 Jun 2010 17:26:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010 10:43:27 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+> Oh. This needs more thinking. Definitely the task sleeping in exit_mm()
+> must not exit until core_state->dumper->thread returns from do_coredump().
+> If nothing else, the dumper can use its task_struct and it relies on
+> the stable core_thread->next list. And right now TASK_KILLABLE can't
+> work anyway, it is possible that fatal_signal_pending() is true.
 
-> On 06/11/2010 02:20 AM, Kenji Kaneshige wrote:
-> > If the physical address is too high to be handled by ioremap() in
-> > x86_32 PAE (e.g. more than 36-bit physical address), ioremap() must
-> > return error (NULL). However, current x86 ioremap try to map this too
-> > high physical address, and it causes unexpected behavior.
-> 
-> What unexpected behavior?  It is perfectly legitimately to map such a
-> high address in PAE mode.  We have a 36-bit kernel-imposed limit on
-> *RAM* in 32-bit mode (because we can't manage more than that), but there
-> is no reason it should apply to I/O.
-> 
+Yes, I was right to say this should be another thread.  Let's not get into
+all this right now.  I think it is mostly orthogonal to the oom_kill issue.
 
-I'm sorry for lack of study. 
-How to access it via mapped area by ioremap() ?
 
 Thanks,
--Kame
-
+Roland
