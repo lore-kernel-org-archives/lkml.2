@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab0FNPKS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 11:10:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38185 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755050Ab0FNPKP (ORCPT
+	id S1755008Ab0FNPK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 11:10:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48400 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078Ab0FNPKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 11:10:15 -0400
-Date: Mon, 14 Jun 2010 11:10:11 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/12] Avoid overflowing of stack during page reclaim V2
-Message-ID: <20100614151011.GA24948@infradead.org>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
+	Mon, 14 Jun 2010 11:10:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=eb38Err9Eg3WdbV5m13QE86A17I7eUhcGzTvc8pQrJ/13ztR2mlJvJfLRAHQEX0Ggi
+         bc+62p6W+I2gyPF1G39wbQZUfsbQ3Q9789pCc8n7gi4rC3rLv6lkgp1sVqWRgfgbCUxs
+         un+BWZWjUuJ8gJ+sqNsMz/HSiGileOmz3mPhk=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: Panic on boot on today's tip/master
+Date: Mon, 14 Jun 2010 17:10:47 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.35-rc3; KDE/4.3.4; i686; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+References: <20100610112839.GK5878@linux.vnet.ibm.com>
+In-Reply-To: <20100610112839.GK5878@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006141710.47568.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 12:17:41PM +0100, Mel Gorman wrote:
-> This is a merging of two series - the first of which reduces stack usage
-> in page reclaim and the second which writes contiguous pages during reclaim
-> and avoids writeback in direct reclaimers.
+On czwartek, 10 czerwca 2010 o 13:28:39 Srikar Dronamraju wrote:
+> When I updated my tip/master and rebooted into it, I am seeing a panic on
+>  boot.
+> 
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=16208
+for your bug report, please add your address to the CC list in there, thanks!
 
-This stuff looks good to me from the filesystem POV.
 
-You might want to throw in a follow on patch to remove the PF_MEMALLOC
-checks from the various ->writepage methods.
-
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
