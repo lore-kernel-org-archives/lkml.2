@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab0FNIRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 04:17:39 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:35520 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366Ab0FNIRh (ORCPT
+	id S1754742Ab0FNIYZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 04:24:25 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:48009 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988Ab0FNIYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 04:17:37 -0400
-Date: Mon, 14 Jun 2010 04:17:36 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: make sure to invalidate pages if we fall back on
- buffered reads
-Message-ID: <20100614081736.GA29239@infradead.org>
-References: <1276007044-17715-1-git-send-email-josef@redhat.com>
+	Mon, 14 Jun 2010 04:24:24 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C15E710.9040002@jp.fujitsu.com>
+Date: Mon, 14 Jun 2010 17:23:44 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276007044-17715-1-git-send-email-josef@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org
+Subject: Re: [PATCH 2/4] x86: ioremap: fix physical address check
+References: <4C11FF10.4060203@jp.fujitsu.com> <4C11FFC0.1030006@jp.fujitsu.com> <4C1275BF.3070605@zytor.com> <4C158BCF.6000303@jp.fujitsu.com> <alpine.LFD.2.00.1006140735040.11549@eddie.linux-mips.org>
+In-Reply-To: <alpine.LFD.2.00.1006140735040.11549@eddie.linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 10:24:04AM -0400, Josef Bacik wrote:
-> Since BTRFS can fallback on buffered reads after having done some direct reads,
-> we need to make sure to invalidate any pages that we may have read by doing
-> buffered IO.  This shouldn't have shown up as a visible user problem, it's just
-> for correctness sake.  Thanks,
+(2010/06/14 15:38), Maciej W. Rozycki wrote:
+> On Mon, 14 Jun 2010, Kenji Kaneshige wrote:
+>
+>> - Architectural limit of physical address in x86 32-bit mode is 40-bit
+>>    (depnds on processor version).
+>
+>   According to documentation I happen to have handy this limit is actually
+> 52 bits (and space is currently available in the data structures used for
+> a possible future extension up to 63 bits).
 
-Everything else in direct I/O land uses invalidate_inode_pages2(_range),
-why not this one?
+Thank you for pointing it out. I misunderstood that.
 
->  	loff_t *ppos = &iocb->ki_pos;
-> +	bool invalidate = false;
->  
->  	count = 0;
->  	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
-> @@ -1291,7 +1292,8 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
->  							iov, pos, nr_segs);
->  			}
->  			if (retval > 0) {
-> -				*ppos = pos + retval;
-> +				pos += retval;
-> +				*ppos = pos;
->  				count -= retval;
->  			}
->  
-> @@ -1307,6 +1309,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
->  				file_accessed(filp);
->  				goto out;
->  			}
-> +			invalidate = true;
->  		}
->  	}
->  
-> @@ -1343,6 +1346,10 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
->  		if (desc.count > 0)
->  			break;
->  	}
-> +	if (invalidate && retval > 0)
-> +		invalidate_mapping_pages(filp->f_mapping,
-> +					 pos >> PAGE_CACHE_SHIFT,
-> +					 (*ppos - 1) >> PAGE_CACHE_SHIFT);
+Now I think I need to add additional check to see if specified
+physical address can be handled by x86 ioremap(), instead of
+changing phys_addr_valid(). The code would be
 
-A little comment here would be surely useful.  Telling that we want to
-get rid of the pages again if we were falling through from an attempted
-direct I/O read.
+static void __iomem *__ioremap_caller(...)
+{
+	...
+#if defined(CONFIG_X86_32) && defined(CONFIG_X86_PAE)
+	if (phys_addr is higer than 36-bit)  {
+		printk(KERN_INFO "ioremap can't map physical address %llx\n",
+		return NULL;
+	}
+#endif
+	...
+}
+
+Thanks,
+Kenji Kaneshige
 
