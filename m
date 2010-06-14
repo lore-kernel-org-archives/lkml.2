@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab0FNCmI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 22:42:08 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:35354 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755213Ab0FNCmG (ORCPT
+	id S1755355Ab0FNCyR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 22:54:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37392 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755310Ab0FNCyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 22:42:06 -0400
-Subject: Re: Tracing configuration review
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       Prasad <prasad@linux.vnet.ibm.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
-       Soeren Sandmann <sandmann@daimi.au.dk>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com
-In-Reply-To: <20100611145116.72c88387.randy.dunlap@oracle.com>
-References: <1274815906.9757.83.camel@cndougla-ubuntu>
-	 <20100525201259.GA5370@nowhere> <1274821799.9346.17.camel@cndougla-ubuntu>
-	 <20100608103517.ac380ad4.randy.dunlap@oracle.com>
-	 <1276034434.8645.56.camel@cndougla-ubuntu>
-	 <20100611145116.72c88387.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 13 Jun 2010 22:41:30 -0400
-Message-ID: <1276483290.1943.80.camel@mini>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sun, 13 Jun 2010 22:54:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=kj+3P+N2Fm/UZP3TffI6fDr3uQfJXz53L7Wn4ghPx6C8qiSuyibPJosFGU09+QVGPC
+         CFCqFWwyILkVxhr+fyedzzKVR/YI1vU/lElPhgiY4tDKFOeCS4Vn/0zeA9Bay0KwnPtU
+         IAynN3u+zckPJhUgkq66nzfuZfZaIx46Ihtfg=
+Message-ID: <4C1599E4.4080703@gmail.com>
+Date: Sun, 13 Jun 2010 19:54:28 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+MIME-Version: 1.0
+To: Bill Davidsen <davidsen@tmr.com>
+CC: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>
+Subject: Re: warning from gcc version 4.6.0 20100416
+References: <4C11A598.8090504@gmail.com> <4C158335.9000906@tmr.com>
+In-Reply-To: <4C158335.9000906@tmr.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-11 at 14:51 -0700, Randy Dunlap wrote:
-> I'm a bit surprised by one (family) of kconfig symbols here:
-> 
-> PM_TRACE=y, PM_TRACE_RTC=y
-> 
-> That enables low-level kernel developer debugging code.
-> 
-> Other than that, the rest make sense to me.
+On 06/13/2010 06:17 PM, Bill Davidsen wrote:
+> Justin P. Mattock wrote:
+>> o.k. andi,
+>>
+>> here is the rest of the warnings that
+>> I see when compiling the kernel
+>>
+>> I can try and create some patches for
+>> this(hopefully!!)
+>>
+> There is no great solution to this, in a fair number of cases the fix
+> would slow the code or make it harder to read, so some of these probably
+> don't want a fix. Of course some clearly are errors, so you are doing
+> something valuable by checking.
+>>
 
-We try to focus a lot on the laptop use case, and so we do a bit of work
-on suspend/resume bugs. For those unaware, these options allow one to
-save the very last PM event point inside the RTC. If a suspend dies we
-may be able to get some good information on where it died using this
-tool. The functionality has to be manually enabled at runtime, otherwise
-the RTC would get scribbled over during every resume. Since it doesn't
-have any impact in the general use case, we leave it enabled by default.
-We already build too many test kernels for other types of bugs :).
+cool thanks..
+I'm guessing lots
+of false positives then.
+I'll go through and see what
+I find..
 
-Thanks,
-
--- Chase
-
+Justin P. Mattock
