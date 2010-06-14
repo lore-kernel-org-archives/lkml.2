@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab0FNIbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 04:31:37 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:32981 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320Ab0FNIbe (ORCPT
+	id S1754689Ab0FNIbw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 04:31:52 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:49542 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988Ab0FNIbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 04:31:34 -0400
+	Mon, 14 Jun 2010 04:31:48 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
@@ -19,281 +19,404 @@ Cc: Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
        "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Mon, 14 Jun 2010 13:59:38 +0530
-Message-Id: <20100614082938.29068.18516.sendpatchset@localhost6.localdomain6>
+Date: Mon, 14 Jun 2010 13:59:53 +0530
+Message-Id: <20100614082953.29068.76083.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
 References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v5 9/14] Uprobes documentation.
+Subject: [PATCH v5 10/14] trace: Common code for kprobes/uprobes traceevents
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uprobes-documentation.patch
+share_traceevents.patch.
 
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Changelog from v3: Updated measurements.
+Changelog from v5: Addressed comments from Masami.
+        Also shared lot more code from kprobes traceevents.
 
-Changelog from v2: Updated measurements.
+Move common parts of trace_kprobe.c and trace_uprobec.
+Adjust kernel/trace/trace_kprobe.c after moving common code to
+kernel/trace/trace_probe.h. However they still have few duplicate
+functions.
 
-Changelog from v1: Addressed comments from Randy Dunlap.
-		 : Updated measurements.
+TODO: Merge both events to a single probe event.
 
-Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
 
- Documentation/uprobes.txt |  236 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 236 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/uprobes.txt
+ kernel/trace/trace_kprobe.c |  141 +--------------------------------------
+ kernel/trace/trace_probe.h  |  157 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 161 insertions(+), 137 deletions(-)
+ create mode 100644 kernel/trace/trace_probe.h
 
 
-diff --git a/Documentation/uprobes.txt b/Documentation/uprobes.txt
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index f52b5f5..f546e73 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -20,32 +20,12 @@
+ #include <linux/module.h>
+ #include <linux/uaccess.h>
+ #include <linux/kprobes.h>
+-#include <linux/seq_file.h>
+-#include <linux/slab.h>
+-#include <linux/smp.h>
+-#include <linux/debugfs.h>
+-#include <linux/types.h>
+-#include <linux/string.h>
+-#include <linux/ctype.h>
+-#include <linux/ptrace.h>
+-#include <linux/perf_event.h>
+-#include <linux/stringify.h>
+-#include <asm/bitsperlong.h>
+-
+-#include "trace.h"
+-#include "trace_output.h"
+-
+-#define MAX_TRACE_ARGS 128
+-#define MAX_ARGSTR_LEN 63
+-#define MAX_EVENT_NAME_LEN 64
+-#define KPROBE_EVENT_SYSTEM "kprobes"
+ 
+-/* Reserved field names */
+-#define FIELD_STRING_IP "__probe_ip"
+-#define FIELD_STRING_RETIP "__probe_ret_ip"
+-#define FIELD_STRING_FUNC "__probe_func"
++#include "trace_probe.h"
++
++#define KPROBE_EVENT_SYSTEM "kprobes"
+ 
+-const char *reserved_field_names[] = {
++static const char *reserved_field_names[] = {
+ 	"common_type",
+ 	"common_flags",
+ 	"common_preempt_count",
+@@ -57,70 +37,9 @@ const char *reserved_field_names[] = {
+ 	FIELD_STRING_FUNC,
+ };
+ 
+-/* Printing function type */
+-typedef int (*print_type_func_t)(struct trace_seq *, const char *, void *);
+-#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
+-#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
+-
+-/* Printing  in basic type function template */
+-#define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt, cast)			\
+-static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
+-						const char *name, void *data)\
+-{									\
+-	return trace_seq_printf(s, " %s=" fmt, name, (cast)*(type *)data);\
+-}									\
+-static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
+-
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
+-DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
+ DEFINE_BASIC_PRINT_TYPE_FUNC(s32, "%ld", long)
+ DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%lld", long long)
+ 
+-/* Data fetch function type */
+-typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
+-
+-struct fetch_param {
+-	fetch_func_t	fn;
+-	void *data;
+-};
+-
+-static __kprobes void call_fetch(struct fetch_param *fprm,
+-				 struct pt_regs *regs, void *dest)
+-{
+-	return fprm->fn(regs, fprm->data, dest);
+-}
+-
+-#define FETCH_FUNC_NAME(kind, type)	fetch_##kind##_##type
+-/*
+- * Define macro for basic types - we don't need to define s* types, because
+- * we have to care only about bitwidth at recording time.
+- */
+-#define DEFINE_BASIC_FETCH_FUNCS(kind)  \
+-DEFINE_FETCH_##kind(u8)			\
+-DEFINE_FETCH_##kind(u16)		\
+-DEFINE_FETCH_##kind(u32)		\
+-DEFINE_FETCH_##kind(u64)
+-
+-#define CHECK_BASIC_FETCH_FUNCS(kind, fn)	\
+-	((FETCH_FUNC_NAME(kind, u8) == fn) ||	\
+-	 (FETCH_FUNC_NAME(kind, u16) == fn) ||	\
+-	 (FETCH_FUNC_NAME(kind, u32) == fn) ||	\
+-	 (FETCH_FUNC_NAME(kind, u64) == fn))
+-
+-/* Data fetch function templates */
+-#define DEFINE_FETCH_reg(type)						\
+-static __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,	\
+-					  void *offset, void *dest)	\
+-{									\
+-	*(type *)dest = (type)regs_get_register(regs,			\
+-				(unsigned int)((unsigned long)offset));	\
+-}
+-DEFINE_BASIC_FETCH_FUNCS(reg)
+-
+ #define DEFINE_FETCH_stack(type)					\
+ static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
+ 					  void *offset, void *dest)	\
+@@ -234,15 +153,6 @@ static __kprobes void free_deref_fetch_param(struct deref_fetch_param *data)
+ 	kfree(data);
+ }
+ 
+-/* Default (unsigned long) fetch type */
+-#define __DEFAULT_FETCH_TYPE(t) u##t
+-#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
+-#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
+-#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
+-
+-#define ASSIGN_FETCH_FUNC(kind, type)	\
+-	.kind = FETCH_FUNC_NAME(kind, type)
+-
+ #define ASSIGN_FETCH_TYPE(ptype, ftype, sign)	\
+ 	{.name = #ptype,			\
+ 	 .size = sizeof(ftype),			\
+@@ -306,18 +216,6 @@ static __kprobes void fetch_stack_address(struct pt_regs *regs,
+  * Kprobe event core functions
+  */
+ 
+-struct probe_arg {
+-	struct fetch_param	fetch;
+-	unsigned int		offset;	/* Offset from argument entry */
+-	const char		*name;	/* Name of this argument */
+-	const char		*comm;	/* Command of this argument */
+-	const struct fetch_type	*type;	/* Type of this argument */
+-};
+-
+-/* Flags for trace_probe */
+-#define TP_FLAG_TRACE	1
+-#define TP_FLAG_PROFILE	2
+-
+ struct trace_probe {
+ 	struct list_head	list;
+ 	struct kretprobe	rp;	/* Use rp.kp for kprobe use */
+@@ -355,19 +253,6 @@ static LIST_HEAD(probe_list);
+ static int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs);
+ static int kretprobe_dispatcher(struct kretprobe_instance *ri,
+ 				struct pt_regs *regs);
+-
+-/* Check the name is good for event/group */
+-static int check_event_name(const char *name)
+-{
+-	if (!isalpha(*name) && *name != '_')
+-		return 0;
+-	while (*++name != '\0') {
+-		if (!isalpha(*name) && !isdigit(*name) && *name != '_')
+-			return 0;
+-	}
+-	return 1;
+-}
+-
+ /*
+  * Allocate new trace_probe and initialize it (including kprobes).
+  */
+@@ -537,8 +422,6 @@ static int split_symbol_offset(char *symbol, unsigned long *offset)
+ 	return 0;
+ }
+ 
+-#define PARAM_MAX_ARGS 16
+-#define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
+ 
+ static int parse_probe_vars(char *arg, const struct fetch_type *t,
+ 			    struct fetch_param *f, int is_return)
+@@ -1214,22 +1097,6 @@ static void probe_event_disable(struct ftrace_event_call *call)
+ 	}
+ }
+ 
+-static int probe_event_raw_init(struct ftrace_event_call *event_call)
+-{
+-	return 0;
+-}
+-
+-#undef DEFINE_FIELD
+-#define DEFINE_FIELD(type, item, name, is_signed)			\
+-	do {								\
+-		ret = trace_define_field(event_call, #type, name,	\
+-					 offsetof(typeof(field), item),	\
+-					 sizeof(field.item), is_signed, \
+-					 FILTER_OTHER);			\
+-		if (ret)						\
+-			return ret;					\
+-	} while (0)
+-
+ static int kprobe_event_define_fields(struct ftrace_event_call *event_call)
+ {
+ 	int ret, i;
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
 new file mode 100644
-index 0000000..c922d5f
+index 0000000..b4c5763
 --- /dev/null
-+++ b/Documentation/uprobes.txt
-@@ -0,0 +1,236 @@
-+Title	: User-Space Probes (Uprobes)
-+Authors	: Jim Keniston <jkenisto@us.ibm.com>
-+	: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
++++ b/kernel/trace/trace_probe.h
+@@ -0,0 +1,157 @@
++/*
++ * Common header file for probe-based Dynamic events.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ * Copyright (C) IBM Corporation, 2010
++ * Author:	Srikar Dronamraju
++ */
 +
-+CONTENTS
-+
-+1. Concepts: Uprobes
-+2. Architectures Supported
-+3. Configuring Uprobes
-+4. API Reference
-+5. Uprobes Features and Limitations
-+6. Probe Overhead
-+7. TODO
-+8. Uprobes Team
-+9. Uprobes Example
-+
-+1. Concepts: Uprobes
-+
-+Uprobes enables you to dynamically break into any routine in a
-+user application and collect debugging and performance information
-+non-disruptively. You can trap at any code address, specifying a
-+kernel handler routine to be invoked when the breakpoint is hit.
-+
-+A uprobe can be inserted on any instruction in the application's
-+virtual address space.  The registration function register_uprobe()
-+specifies which process is to be probed, where the probe is to be
-+inserted, and what handler is to be called when the probe is hit.
-+
-+Uprobes-based instrumentation can be packaged as a kernel
-+module.  In the simplest case, the module's init function installs
-+("registers") one or more probes, and the exit function unregisters
-+them.
-+
-+1.1 How Does a Uprobe Work?
-+
-+When a uprobe is registered, Uprobes makes a copy of the probed
-+instruction, stops the probed application, replaces the first byte(s)
-+of the probed instruction with a breakpoint instruction (e.g., int3
-+on i386 and x86_64), and allows the probed application to continue.
-+(When inserting the breakpoint, Uprobes uses background page
-+replacement mechanism, so that the breakpoint affects only that
-+process, and not any other process running that program.  This is
-+true even if the probed instruction is in a shared library.)
-+
-+When a CPU hits the breakpoint instruction, a trap occurs, the CPU's
-+user-mode registers are saved, and uprobes notifier code finds the
-+associated uprobe.  It then executes the handler associated with the
-+uprobe, passing the handler the addresses of the uprobe struct and the
-+saved registers. The handler can run either in interrupt context or in
-+task context; this is specified by the user at the time of registration.
-+When run in task context, the handler may block, but keep in mind that
-+the probed thread remains stopped while your handler runs.
-+
-+Next, Uprobes single-steps its copy of the probed instruction and
-+resumes execution of the probed process at the instruction following
-+the probepoint.  (It would be simpler to single-step the actual
-+instruction in place, but then Uprobes would have to temporarily
-+remove the breakpoint instruction.  This would create problems in a
-+multithreaded application.  For example, it would open a time window
-+when another thread could sail right past the probepoint.)
-+
-+Instruction copies to be single-stepped are stored in a per-process
-+"execution out of line (XOL) area," which is a little VM area
-+created by Uprobes in each probed process's address space.
-+
-+Uprobes handles interesting events in the lifetime of the probed
-+process, such as fork, clone, exec, and exit.
-+
-+1.2 Multithreaded Applications
-+
-+Uprobes supports the probing of multithreaded applications.  Uprobes
-+imposes no limit on the number of threads in a probed application.
-+All threads in a process use the same text pages, so every probe
-+in a process affects all threads; of course, each thread hits the
-+probepoint (and runs the handler) independently.  Multiple threads
-+may run the same handler simultaneously.  If you want a particular
-+thread or set of threads to run a particular handler, your handler
-+should check current or current->pid to determine which thread has
-+hit the probepoint.
-+
-+When a process clones a new thread, that thread automatically shares
-+all current and future probes established for that process.
-+
-+2. Architectures Supported
-+
-+This user_bkpt based version of Uprobes is implemented on the following
-+architectures:
-+
-+- x86
-+
-+3. Configuring Uprobes
-+
-+When configuring the kernel using make menuconfig/xconfig/oldconfig,
-+ensure that CONFIG_UPROBES is set to "y". Under "General setup" select
-+"User-space breakpoint assistance" then select "User-space probes".
-+
-+So that you can load and unload Uprobes-based instrumentation modules,
-+make sure "Loadable module support" (CONFIG_MODULES) and "Module
-+unloading" (CONFIG_MODULE_UNLOAD) are set to "y".
-+
-+4. API Reference
-+
-+The Uprobes API includes a "register" function and an "unregister"
-+function for uprobes.  Here are terse, mini-man-page specifications for
-+these functions and the associated probe handlers that you'll write.
-+See the latter half of this document for examples.
-+
-+4.1 register_uprobe
-+
-+#include <linux/uprobes.h>
-+int register_uprobe(struct uprobe *u);
-+
-+Sets a breakpoint at virtual address u->vaddr in the process whose
-+pid is u->pid.  When the breakpoint is hit, Uprobes calls u->handler.
-+If u->handler_in_interrupt is set, the handler runs in interrupt
-+context. Otherwise it runs in task context.
-+
-+register_uprobe() returns 0 on success, or a negative errno
-+otherwise.
-+
-+User's handler (u->handler):
-+#include <linux/uprobes.h>
++#include <linux/seq_file.h>
++#include <linux/slab.h>
++#include <linux/smp.h>
++#include <linux/debugfs.h>
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/ctype.h>
 +#include <linux/ptrace.h>
-+void handler(struct uprobe *u, struct pt_regs *regs);
++#include <linux/perf_event.h>
 +
-+Called with u pointing to the uprobe associated with the breakpoint,
-+and regs pointing to the struct containing the registers saved when
-+the breakpoint was hit.
++#include "trace.h"
++#include "trace_output.h"
 +
-+4.2 unregister_uprobe
++#define MAX_TRACE_ARGS 128
++#define MAX_ARGSTR_LEN 63
++#define MAX_EVENT_NAME_LEN 64
 +
-+#include <linux/uprobes.h>
-+void unregister_uprobe(struct uprobe *u);
++/* Reserved field names */
++#define FIELD_STRING_IP "__probe_ip"
++#define FIELD_STRING_RETIP "__probe_ret_ip"
++#define FIELD_STRING_FUNC "__probe_func"
 +
-+Removes the specified probe.  The unregister function can be called
-+at any time after the probe has been registered, and can be called
-+from a uprobe handler.
++#define WRITE_BUFSIZE 128
 +
-+5. Uprobes Features and Limitations
++#undef DEFINE_FIELD
++#define DEFINE_FIELD(type, item, name, is_signed)			\
++	do {								\
++		ret = trace_define_field(event_call, #type, name,	\
++					 offsetof(typeof(field), item),	\
++					 sizeof(field.item), is_signed, \
++					 FILTER_OTHER);			\
++		if (ret)						\
++			return ret;					\
++	} while (0)
 +
-+The user is expected to assign values to the following members
-+of struct uprobe: pid, vaddr, handler, and handler_in_interrupt.
-+Uprobes may produce unexpected results if you:
-+- change the contents of a uprobe object while it is registered; or
-+- attempt to register a uprobe that is already registered.
++/* Printing function type */
++typedef int (*print_type_func_t)(struct trace_seq *, const char *, void *);
++#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
++#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
 +
-+In this implementation, Uprobes allows only one uprobe at a particular
-+address.
++/* Printing  in basic type function template */
++#define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt, cast)			\
++static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
++						const char *name, void *data)\
++{									\
++	return trace_seq_printf(s, " %s=" fmt, name, (cast)*(type *)data);\
++}									\
++static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
 +
-+Any number of kernel modules may probe a particular process
-+simultaneously, and a particular module may probe any number of
-+processes simultaneously.
++DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
++DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
++DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
 +
-+Probes are shared by all threads in a process (including newly
-+created threads).
++/* Data fetch function type */
++typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
 +
-+If a probed process exits or execs, Uprobes automatically
-+unregisters all uprobes associated with that process.  Subsequent
-+attempts to unregister these probes will be treated as no-ops.
++struct fetch_param {
++	fetch_func_t	fn;
++	void *data;
++};
 +
-+On the other hand, if a probed memory area is removed from the
-+process's virtual memory map (e.g., via dlclose(3) or munmap(2)),
-+it's currently up to you to unregister the probes first.
++#define FETCH_FUNC_NAME(kind, type)	fetch_##kind##_##type
++/*
++ * Define macro for basic types - we don't need to define s* types, because
++ * we have to care only about bitwidth at recording time.
++ */
++#define DEFINE_BASIC_FETCH_FUNCS(kind)  \
++DEFINE_FETCH_##kind(u8)			\
++DEFINE_FETCH_##kind(u16)		\
++DEFINE_FETCH_##kind(u32)		\
++DEFINE_FETCH_##kind(u64)
 +
-+There is no way to specify that probes should be inherited across fork;
-+Uprobes removes all probepoints in the newly created child process.
++#define CHECK_BASIC_FETCH_FUNCS(kind, fn)	\
++	((FETCH_FUNC_NAME(kind, u8) == fn) ||	\
++	 (FETCH_FUNC_NAME(kind, u16) == fn) ||	\
++	 (FETCH_FUNC_NAME(kind, u32) == fn) ||	\
++	 (FETCH_FUNC_NAME(kind, u64) == fn))
 +
-+To avoid interfering with interactive debuggers, Uprobes will refuse
-+to insert a probepoint where a breakpoint instruction already exists.
-+Some architectures may refuse to insert probes on other types of
-+instructions.
++/* Data fetch function templates */
++#define DEFINE_FETCH_reg(type)						\
++static __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,	\
++					  void *offset, void *dest)	\
++{									\
++	*(type *)dest = (type)regs_get_register(regs,			\
++				(unsigned int)((unsigned long)offset));	\
++}
++DEFINE_BASIC_FETCH_FUNCS(reg)
 +
-+If you install a probe in an inline-able function, Uprobes makes
-+no attempt to chase down all inline instances of the function and
-+install probes there.  gcc may inline a function without being asked,
-+so keep this in mind if you're not seeing the probe hits you expect.
++/* Default (unsigned long) fetch type */
++#define __DEFAULT_FETCH_TYPE(t) u##t
++#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
++#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
++#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
 +
-+A probe handler can modify the environment of the probed function
-+-- e.g., by modifying data structures, or by modifying the
-+contents of the pt_regs struct (which are restored to the registers
-+upon return from the breakpoint).  So Uprobes can be used, for example,
-+to install a bug fix or to inject faults for testing.  Uprobes, of
-+course, has no way to distinguish the deliberately injected faults
-+from the accidental ones.  Don't drink and probe.
++#define ASSIGN_FETCH_FUNC(kind, type)	\
++	.kind = FETCH_FUNC_NAME(kind, type)
 +
-+When Uprobes establishes a probepoint on a previous unprobed page
-+of text, Linux creates a new copy of the page via its copy-on-write
-+mechanism.  When probepoints are removed, Uprobes makes no attempt
-+to consolidate identical copies of the same page.  This could affect
-+memory availability if you probe many, many pages in many, many
-+long-running processes.
++/* Flags for trace_probe */
++#define TP_FLAG_TRACE	1
++#define TP_FLAG_PROFILE	2
 +
-+6. Probe Overhead
++#define PARAM_MAX_ARGS 16
++#define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
 +
-+Probe overhead is measured on a benchmark that hits the same probepoint
-+repeatedly, firing a simple handler each time. Probe overhead
-+changes with different cpus/archs/probe handlers and the number of
-+iterations.
++struct probe_arg {
++	struct fetch_param	fetch;
++	unsigned int		offset;	/* Offset from argument entry */
++	const char		*name;	/* Name of this argument */
++	const char		*comm;	/* Command of this argument */
++	const struct fetch_type	*type;	/* Type of this argument */
++};
 +
-+Here are sample overhead figures (in usec) for x86 architecture.
++static __kprobes void call_fetch(struct fetch_param *fprm,
++				 struct pt_regs *regs, void *dest)
++{
++	return fprm->fn(regs, fprm->data, dest);
++}
 +
-+i686: Intel(R) Xeon(TM) CPU 2.40GHz
-+Without probe module.
-+100000 interations in 0.000687 sec i.e 0.006870 usec per iteration
++/* Check the name is good for event/group */
++static inline int check_event_name(const char *name)
++{
++	if (!isalpha(*name) && *name != '_')
++		return 0;
++	while (*++name != '\0') {
++		if (!isalpha(*name) && !isdigit(*name) && *name != '_')
++			return 0;
++	}
++	return 1;
++}
 +
-+With probes
-+100000 interations in 0.314938 sec i.e 3.149380 usec per iteration
-+probe overhead is 3.142510 usec per probe hit.
-+
-+x86_64: Intel(R) Xeon(R) CPU           X7350  @ 2.93GHz
-+Without probe module.
-+100000 interations in 0.000432 sec i.e 0.004320 usec per iteration
-+
-+With probes
-+100000 interations in 0.101276 sec i.e 1.012760 usec per iteration
-+Probe overhead is 1.301738 usec per probe hit.
-+
-+7. TODO
-+
-+a. Support for other architectures.
-+b. Support for multiple probes at the same address.
-+c. Support for boosted probes.
-+d. Support return probes.
-+
-+8. Uprobes Team
-+
-+The following people have made major contributions to Uprobes:
-+Jim Keniston - jkenisto@us.ibm.com
-+Srikar Dronamraju - srikar@linux.vnet.ibm.com
-+Ananth Mavinakayanahalli - ananth@in.ibm.com
-+Prasanna Panchamukhi - prasanna@in.ibm.com
-+Dave Wilder - dwilder@us.ibm.com
-+
-+9. Uprobes Example
-+
-+samples/uprobes/uprobe_example.c
++static int probe_event_raw_init(struct ftrace_event_call *event_call)
++{
++	return 0;
++}
