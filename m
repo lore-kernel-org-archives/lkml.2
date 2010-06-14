@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab0FNPob (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 11:44:31 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59309 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534Ab0FNPoa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 11:44:30 -0400
-Subject: Re: [PATCH] mtd: Fix bug using smp_processor_id() in preemptible
- ubi_bgt1d kthread
-From: Philby John <pjohn@mvista.com>
-Reply-To: pjohn@mvista.com
-To: Jamie Lokier <jamie@shareable.org>
-Cc: linux-mtd@lists.infradead.org, linux-mips@linux-mips.org,
-       David Daney <ddaney@caviumnetworks.com>, linux-kernel@vger.kernel.org,
-       Artem Bityutskiy <dedekind1@gmail.com>
-In-Reply-To: <20100614150425.GC9550@shareable.org>
-References: <1276513457.16642.3.camel@localhost.localdomain>
-	 <20100614150425.GC9550@shareable.org>
-Content-Type: text/plain
-Date: Mon, 14 Jun 2010 21:07:04 +0530
-Message-Id: <1276529824.17519.24.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.5 (2.24.5-2.fc10) 
+	id S1754854Ab0FNPok (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 11:44:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61340 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754645Ab0FNPoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 11:44:38 -0400
+Message-ID: <4C164E63.2020204@redhat.com>
+Date: Mon, 14 Jun 2010 18:44:35 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: balbir@linux.vnet.ibm.com, kvm <kvm@vger.kernel.org>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
+ control
+References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>	 <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>	 <4C10B3AF.7020908@redhat.com> <20100610142512.GB5191@balbir.in.ibm.com>	 <1276214852.6437.1427.camel@nimitz>	 <20100611045600.GE5191@balbir.in.ibm.com> <4C15E3C8.20407@redhat.com>	 <20100614084810.GT5191@balbir.in.ibm.com> <4C16233C.1040108@redhat.com>	 <20100614125010.GU5191@balbir.in.ibm.com>  <4C162846.7030303@redhat.com> <1276529596.6437.7216.camel@nimitz>
+In-Reply-To: <1276529596.6437.7216.camel@nimitz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-14 at 16:04 +0100, Jamie Lokier wrote:
-> Philby John wrote:
-> > mtd: Fix bug using smp_processor_id() in preemptible ubi_bgt1d kthread
-> > 
-> > On a MIPS Cavium Octeon CN5020 when trying to create a UBI volume,
-> > on the NOR flash, the kernel thread ubi_bgt1d calls
-> > cfi_amdstd_write_buffers() --> do_write_buffer() -->
-> > INVALIDATE_CACHE_UDELAY --> __udelay(). Its __udelay() that calls
-> > smp_processor_id() in preemptible code, which you are not supposed to.
-> > Fix the problem by disabling preemption.
-> 
-> The MTD code just calls udelay().
-> Are you sure it isn't permitted to call udelay() from preemptible code?
-> I think it is fine.
+On 06/14/2010 06:33 PM, Dave Hansen wrote:
+> On Mon, 2010-06-14 at 16:01 +0300, Avi Kivity wrote:
+>    
+>> If we drop unmapped pagecache pages, we need to be sure they can be
+>> backed by the host, and that depends on the amount of sharing.
+>>      
+> You also have to set up the host up properly, and continue to maintain
+> it in a way that finds and eliminates duplicates.
+>
+> I saw some benchmarks where KSM was doing great, finding lots of
+> duplicate pages.  Then, the host filled up, and guests started
+> reclaiming.  As memory pressure got worse, so did KSM's ability to find
+> duplicates.
+>    
 
+Yup.  KSM needs to be backed up by ballooning, swap, and live migration.
 
-The mips code uses __udelay() where the macro current_cpu_data returns
-the actual data structure on a per CPU basis by calling
-smp_processor_id(). Since I have enabled CONFIG_DEBUG_PREEMPT, this
-would call debug_smp_processor_id(). This function would check
+> At the same time, I see what you're trying to do with this.  It really
+> can be an alternative to ballooning if we do it right, since ballooning
+> would probably evict similar pages.  Although it would only work in idle
+> guests, what about a knob that the host can turn to just get the guest
+> to start running reclaim?
+>    
 
-a)if the thread is preemptiable. If preemption is disabled, normal flow.
-b)If irqs are disabled, if yes normal flow.
-c)if the thread is bound to a single cpu, if yes normal flow
-d)or if its an early bootup
+Isn't the knob in this proposal the balloon?  AFAICT, the idea here is 
+to change how the guest reacts to being ballooned, but the trigger 
+itself would not change.
 
-None of these condition get satisfied and hence the kernel error
-messages are seen. So I think yes for MIPS, udelay() shouldn't be called
-in preemptiable code.
+My issue is that changing the type of object being preferentially 
+reclaimed just changes the type of workload that would prematurely 
+suffer from reclaim.  In this case, workloads that use a lot of unmapped 
+pagecache would suffer.
 
-> 
-> Perhaps MIPS udelay() should be disabling preemption itself,
+btw, aren't /proc/sys/vm/swapiness and vfs_cache_pressure similar knobs?
 
-I will need to investigate this. Will follow up soon.
-
->  or
-> (as x86 does) using raw_smp_processor_id() instead?
-
-I have enabled CONFIG_DEBUG_PREEMPT so this would call
-debug_smp_processor_id() instead of raw_smp_processor_id().
-
->   Or perhaps the x86
-> version is a bug because the current CPU might change during the delay loop?
-> 
-
-Yes, isn't this a possibility? In that case shouldn't we be using
-spin_lock_irqsave() ?
-
-> See git commit 5c1ea08215f1f830dfaf4819a5f22efca41c3832
-> "x86: enable preemption in delay"
-> 
-> I don't think it makes sense to disable preemption in all udelay()
-> calls in drivers, so my NAK to this MTD patch.  To workaround,
-> consider putting the preempt_disable in MIPS udelay(),
-
-This would definitely work.
-
->  or using
-> raw_smp_processor_id() in it, after reading the above git commit's
-> message.
-
-Will look into this.
-
-Thanks
-Philby
+-- 
+error compiling committee.c: too many arguments to function
 
