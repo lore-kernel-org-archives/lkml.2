@@ -1,36 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab0FNTVa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 15:21:30 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57954 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753522Ab0FNTV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 15:21:29 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-       Tim Abbott <tabbott@ksplice.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
-In-Reply-To: <20100614182212.GA14747@merkur.ravnborg.org>
-References: <1276519112-11649-1-git-send-email-matt@console-pimps.org> <20100614182212.GA14747@merkur.ravnborg.org>
-User-Agent: Notmuch/0.3.1-61-g3f63bb6 (http://notmuchmail.org) Emacs/23.1.90.2 (x86_64-unknown-linux-gnu)
-Date: Mon, 14 Jun 2010 20:21:27 +0100
-Message-ID: <874oh5zah4.fsf@linux-g6p1.site>
+	id S1754065Ab0FNTYa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 15:24:30 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:40035 "EHLO mail001.aei.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753774Ab0FNTY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 15:24:28 -0400
+From: Ed Tomlinson <edt@aei.ca>
+To: Chris Mason <chris.mason@oracle.com>,
+       "linux-kernel" <linux-kernel@vger.kernel.org>,
+       linux-btrfs@vger.kernel.org
+Subject: Re: [GIT PULL] Btrfs updates for 2.6.35
+Date: Mon, 14 Jun 2010 15:24:19 -0400
+User-Agent: KMail/1.13.3 (Linux/2.6.34-crc; KDE/4.4.4; x86_64; ; )
+References: <20100611193731.GA3018@think>
+In-Reply-To: <20100611193731.GA3018@think>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006141524.20752.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jun 2010 20:22:12 +0200, Sam Ravnborg <sam@ravnborg.org> wrote:
+On Friday 11 June 2010 15:37:31 Chris Mason wrote:
+> Hello everyone,
 > 
-> The patch above we would match the section ".text.*" too soon and
-> add the .text..lock section at the wrong place.
+> The master branch of the btrfs-unstable tree is a collection of fixes
+> and cleanups, including two btrfs regressions from rc1:
 > 
-> Browsing the vmlinux.lds files other archs will be impacted too.
+> git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
+> 
+> One is an freeing blocks on an FS converted from ext34 to btrfs,
+> and the other is a fallocate fix.
+> 
+> The rest are the usual small bug fixes.
 
-Yeah, good point. James Bottomley has already pointed out how this
-change completely breaks parisc. I'll drop this series.
+Looks like this still misses any fix for the oops I reported May 8th in thread:
+"[OPPS] btrfs on 33-3 with latest from btrfs-unstable.git master"
 
-Thanks for the review!
+Any chance this could be looked into?  I've kept the fs just in case.
+
+Thanks
+Ed Tomlinson
+
+> 
+> Dan Carpenter (11) commits (+24/-17):
+>     Btrfs: handle error returns from btrfs_lookup_dir_item() (+2/-0)
+>     Btrfs: btrfs_read_fs_root_no_name() returns ERR_PTRs (+4/-0)
+>     Btrfs: unwind after btrfs_start_transaction() errors (+1/-1)
+>     Btrfs: remove unneeded null check in btrfs_rename() (+1/-3)
+>     Btrfs: The file argument for fsync() is never null (+1/-1)
+>     Btrfs: handle ERR_PTR from posix_acl_from_xattr() (+2/-0)
+>     Btrfs: btrfs_lookup_dir_item() can return ERR_PTR (+1/-1)
+>     Btrfs: uninitialized data is check_path_shared() (+1/-1)
+>     Btrfs: handle kzalloc() failure in open_ctree() (+5/-2)
+>     Btrfs: silence sparse warnings in ioctl.c (+4/-6)
+>     Btrfs: btrfs_iget() returns ERR_PTR (+2/-2)
+> 
+> Zheng Yan (2) commits (+6/-4):
+>     Btrfs: Fix BUG_ON for fs converted from extN (+2/-1)
+>     Btrfs: Fix null dereference in relocation.c (+4/-3)
+> 
+> Liu Bo (2) commits (+14/-4):
+>     Btrfs: Add error check for add_to_page_cache_lru (+13/-3)
+>     Btrfs: fix break in btrfs_insert_some_items() (+1/-1)
+> 
+> Julia Lawall (2) commits (+9/-17):
+>     Btrfs: Use memdup_user (+6/-14)
+>     Btrfs: Use ERR_CAST (+3/-3)
+> 
+> Shi Weihua (2) commits (+6/-0):
+>     Btrfs: prohibit a operation of changing acl's mask when noacl mount option used (+3/-0)
+>     Btrfs: should add a permission check for setfacl (+3/-0)
+> 
+> Miao Xie (2) commits (+9/-1):
+>     Btrfs: fix loop device on top of btrfs (+1/-0)
+>     Btrfs: fix remap_file_pages error (+8/-1)
+> 
+> Sage Weil (1) commits (+0/-3):
+>     Btrfs: avoid BUG when dropping root and reference in same transaction
+> 
+> Andi Kleen (1) commits (+2/-94):
+>     BTRFS: Clean up unused variables -- nonbugs
+> 
+> Josef Bacik (1) commits (+1/-1):
+>     Btrfs: fix fallocate regression
+> 
+> Prarit Bhargava (1) commits (+1/-1):
+>     Btrfs: Fix warning in tree_search()
+> 
+> Total: (25) commits (+72/-142)
+> 
+>  fs/btrfs/acl.c          |    8 ++++++++
+>  fs/btrfs/compression.c  |   18 +++++++++++++-----
+>  fs/btrfs/ctree.c        |   20 +-------------------
+>  fs/btrfs/disk-io.c      |   22 +++++++++-------------
+>  fs/btrfs/extent-tree.c  |    5 ++---
+>  fs/btrfs/extent_io.c    |    9 ---------
+>  fs/btrfs/extent_map.c   |    4 ++--
+>  fs/btrfs/file.c         |   12 ++++++++++--
+>  fs/btrfs/inode.c        |   22 +++-------------------
+>  fs/btrfs/ioctl.c        |   36 ++++++++++++------------------------
+>  fs/btrfs/ordered-data.c |    4 +---
+>  fs/btrfs/relocation.c   |    7 ++++---
+>  fs/btrfs/root-tree.c    |    5 -----
+>  fs/btrfs/super.c        |   14 +++++++-------
+>  fs/btrfs/tree-defrag.c  |    2 --
+>  fs/btrfs/tree-log.c     |   15 ---------------
+>  fs/btrfs/volumes.c      |    4 ----
+>  fs/btrfs/xattr.c        |    2 --
+>  fs/btrfs/zlib.c         |    5 -----
+>  19 files changed, 72 insertions(+), 142 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
