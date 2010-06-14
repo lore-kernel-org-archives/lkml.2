@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab0FNRvJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 13:51:09 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:60870 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753227Ab0FNRvH (ORCPT
+	id S1756632Ab0FNRvT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 13:51:19 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:35551 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756367Ab0FNRvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 13:51:07 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: David Airlie <airlied@linux.ie>
-Subject: [PATCH] intel_agp: Don't oops with zero stolen memory
-Date: Mon, 14 Jun 2010 19:50:57 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org
+	Mon, 14 Jun 2010 13:51:16 -0400
+Date: Mon, 14 Jun 2010 13:50:48 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 3/14] User Space Breakpoint Assistance Layer
+Message-ID: <20100614175048.GE23754@infradead.org>
+References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
+ <20100614082832.29068.53628.sendpatchset@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201006141950.59409.linux@rainbow-software.org>
+In-Reply-To: <20100614082832.29068.53628.sendpatchset@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When "onboard video memory" is set do "disabled" in BIOS on Asus P4P800-VM
-board (i865G), kernel oopses with memory corruption:
-https://bugs.freedesktop.org/show_bug.cgi?id=28430
+On Mon, Jun 14, 2010 at 01:58:32PM +0530, Srikar Dronamraju wrote:
+> TODO: Merge user_bkpt layer with uprobes.
 
-Fix that by cleanly aborting the initialization.
+Yes, I don't think there's any point in that split.  What's the
+timeframe for you to finish that merge?
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> +	depends on MODULES
 
-diff -urp linux-2.6.35-rc2-orig/drivers/char/agp/intel-gtt.c linux-2.6.35-rc2/drivers/char/agp/intel-gtt.c
---- linux-2.6.35-rc2-orig/drivers/char/agp/intel-gtt.c	2010-06-06 05:43:24.000000000 +0200
-+++ linux-2.6.35-rc2/drivers/char/agp/intel-gtt.c	2010-06-14 19:14:05.000000000 +0200
-@@ -797,6 +797,10 @@ static int intel_i830_create_gatt_table(
- 
- 	/* we have to call this as early as possible after the MMIO base address is known */
- 	intel_i830_init_gtt_entries();
-+	if (intel_private.gtt_entries == 0) {
-+		iounmap(intel_private.registers);
-+		return -ENOMEM;
-+	}
- 
- 	agp_bridge->gatt_table = NULL;
- 
-@@ -1279,6 +1283,11 @@ static int intel_i915_create_gatt_table(
- 
- 	/* we have to call this as early as possible after the MMIO base address is known */
- 	intel_i830_init_gtt_entries();
-+	if (intel_private.gtt_entries == 0) {
-+		iounmap(intel_private.gtt);
-+		iounmap(intel_private.registers);
-+		return -ENOMEM;
-+	}
- 
- 	agp_bridge->gatt_table = NULL;
- 
-@@ -1387,6 +1396,11 @@ static int intel_i965_create_gatt_table(
- 
- 	/* we have to call this as early as possible after the MMIO base address is known */
- 	intel_i830_init_gtt_entries();
-+	if (intel_private.gtt_entries == 0) {
-+		iounmap(intel_private.gtt);
-+		iounmap(intel_private.registers);
-+		return -ENOMEM;
-+	}
- 
- 	agp_bridge->gatt_table = NULL;
- 
+This doesn't make too much sense - the only real user of this is not
+modular at all.
 
--- 
-Ondrej Zary
+> +	depends on HAVE_USER_BKPT
+
+Should this be ARCH_HAVE_USER_BKPT or similar?
+
