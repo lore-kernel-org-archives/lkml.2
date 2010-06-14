@@ -1,110 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab0FNT0S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 15:26:18 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:40973 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab0FNT0P (ORCPT
+	id S1754657Ab0FNT0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 15:26:48 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:59712 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972Ab0FNT0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 15:26:15 -0400
-Subject: Re: Timekeeping issue on aggressive suspend/resume
-From: john stultz <johnstul@us.ibm.com>
-To: Suresh Rajashekara <suresh.raj+linuxomap@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       linux-pm@lists.linux-foundation.org
-In-Reply-To: <AANLkTikPwOWHUdqZH1S9QVh-sgjlzptAB27_hK_otQ4Y@mail.gmail.com>
-References: <AANLkTinIO5a1EeK6Ej2ljkuyL9zv06OMfbyiZBaxTQTd@mail.gmail.com>
-	 <alpine.LFD.2.00.1006092206020.2933@localhost.localdomain>
-	 <AANLkTin-6XsW49ECufTLcdzaD1eK9bAxe0j7RXvPqN7p@mail.gmail.com>
-	 <1276199568.16089.35.camel@work-vm>
-	 <AANLkTikPwOWHUdqZH1S9QVh-sgjlzptAB27_hK_otQ4Y@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Jun 2010 12:25:57 -0700
-Message-ID: <1276543557.3076.30.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Jun 2010 15:26:47 -0400
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <mhiramat@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [RESEND][PATCH v2] perf probe: add kernel source path option
+Date: Mon, 14 Jun 2010 15:26:30 -0400
+Message-Id: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-14 at 00:46 -0700, Suresh Rajashekara wrote:
-> On Thu, Jun 10, 2010 at 12:52 PM, john stultz <johnstul@us.ibm.com> wrote:
-> > I think Thomas was suggesting that you consider creating a option for
-> > where CLOCK_MONOTONIC included total_sleep_time.
-> >
-> > In that case the *hack* (and this is a hack, we'll need some more
-> > thoughtful discussion before anything like it could make it upstream)
-> > would be in timekeeping_resume() to comment out the lines that update
-> > wall_to_monotonic and total_sleep_time.
-> >
-> > It would be interesting to hear if that hack works for you, and we can
-> > try to come up with a better way to think about how to accommodate both
-> > views of how to account time over suspend.
-> 
-> Thanks.
-> 
-> I tried this fix. It seemed to help, however the accuracy of sleep
-> time for the process was not quite right. A process thread which was
-> supposed to wake up every (X) seconds, seemed to wake up every (X -
-> delta X) seconds.
+The probe plugin requires access to the source code for some operations.
+The source code must be in the exact same location as specified by the
+DWARF tags, but sometimes the location is an absolute path that cannot
+be replicated by a normal user. This change adds the -s|--source option
+to allow the user to specify the root of the kernel source tree.
 
-Ah, the sleep time is probably too coarse (seconds). We probably need to
-increase the granularity from read_persistent_clock() and see if that
-helps (although most persistent clocks aren't very fine grained).
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+---
+ tools/perf/Documentation/perf-probe.txt |    4 ++
+ tools/perf/builtin-probe.c              |    2 +
+ tools/perf/util/probe-finder.c          |   58 +++++++++++++++++++++++++++++--
+ tools/perf/util/symbol.h                |    1 +
+ 4 files changed, 62 insertions(+), 3 deletions(-)
 
-> Also another side effect of this change was that the system time was
-> no longer in sync with the wall time.
-
-? This doesn't make much sense to me, as you shouldn't be manipulating
-xtime differently.
-
-Just to be clear, you mean the value from "date" doesn't match your
-watch after resume? 
-
-> These problems were more pronounced when the suspend/wakeup cycle time
-> was brought down to 0.5 seconds from 4 seconds. The periodicity of
-> most of the process threads were disturbed.
-> 
-> I decided to NOT suspend/resume the timekeeping subsystem in the
-> kernel and try. It seemed to work. Every application seems to work
-> fine.
-> 
-> Now my question is; Is it safe to disable suspend/resume of the
-> timekeeping subsystem? Will it have an effect (on
-> functionality/performance) which may not surface in my short
-> experiments?
-
-Well, the difficultly here is what folks actually mean by suspend. On
-some hardware it means everything is powered off, and so on resume we
-have to re-init hardware values.
-
-It seems in your case that the hardware isn't completely powered off,
-since the clocksource you're using seemed to continue counting while the
-system was suspended. 
-
-So in this case you might be ok. Your suspend seems closer to an deep
-idle state on x86. So suspending timekeeping might not be necessary.
-
-However, you're right that there may be lurking issues:
-
-1) The suspend time would have to be limited to the clocksource's
-max_idle_ns value, since after that amount of cycles have past, we might
-overflow the accumulation function, or the clocksource may have wrapped.
-
-2) If the hardware does reset the clocksource at some point during the
-suspend, you'll have odd time issues.
-
-3) You could run into some difficulty keeping close sync with an NTP
-server, as the long delays between accumulation will probably cause an
-oscillating over-shoot and over-correction.
-
-I suspect these different definitions of "suspend" on all of the
-different hardware types out there is going to be a growing problem in
-the near term. Especially as deep idle states start to power off more
-hardware and becomes closer to suspend in behavior.
-
-thanks
--john
+diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+index 94a258c..ea531d9 100644
+--- a/tools/perf/Documentation/perf-probe.txt
++++ b/tools/perf/Documentation/perf-probe.txt
+@@ -31,6 +31,10 @@ OPTIONS
+ --vmlinux=PATH::
+ 	Specify vmlinux path which has debuginfo (Dwarf binary).
+ 
++-s::
++--source=PATH::
++	Specify path to kernel source.
++
+ -v::
+ --verbose::
+         Be more verbose (show parsed arguments, etc).
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index e4a4da3..5455186 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -182,6 +182,8 @@ static const struct option options[] = {
+ 		     "Show source code lines.", opt_show_lines),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
++	OPT_STRING('s', "source", &symbol_conf.source_prefix,
++		   "directory", "path to kernel source"),
+ #endif
+ 	OPT__DRY_RUN(&probe_event_dry_run),
+ 	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index d964cb1..8c33aa1 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -37,6 +37,7 @@
+ #include "event.h"
+ #include "debug.h"
+ #include "util.h"
++#include "symbol.h"
+ #include "probe-finder.h"
+ 
+ /* Kprobe tracer basic type is up to u64 */
+@@ -57,6 +58,55 @@ static int strtailcmp(const char *s1, const char *s2)
+ 	return 0;
+ }
+ 
++/*
++ * Find a src file from a DWARF tag path. Prepend optional source path prefix
++ * and chop off leading directories that do not exist. Result is passed back as
++ * a newly allocated path on success.
++ * Return 0 if file was found and readable, -errno otherwise.
++ */
++static int get_real_path(const char *raw_path, char **new_path)
++{
++	if (!symbol_conf.source_prefix) {
++		if (access(raw_path, R_OK) == 0) {
++			*new_path = strdup(raw_path);
++			return 0;
++		} else
++			return -errno;
++	}
++
++	*new_path = malloc(strlen(symbol_conf.source_prefix)
++			   + strlen(raw_path) + 2);
++	if (!*new_path)
++		return -ENOMEM;
++
++	for (;;) {
++		sprintf(*new_path, "%s/%s", symbol_conf.source_prefix,
++			raw_path);
++
++		if (access(*new_path, R_OK) == 0)
++			return 0;
++
++		switch (errno) {
++		case ENAMETOOLONG:
++		case ENOENT:
++		case EROFS:
++		case EFAULT:
++			raw_path = strchr(++raw_path, '/');
++			if (!raw_path) {
++				free(*new_path);
++				*new_path = NULL;
++				return -ENOENT;
++			}
++			continue;
++
++		default:
++			free(*new_path);
++			*new_path = NULL;
++			return -errno;
++		}
++	}
++}
++
+ /* Line number list operations */
+ 
+ /* Add a line to line number list */
+@@ -1096,11 +1146,13 @@ end:
+ static int line_range_add_line(const char *src, unsigned int lineno,
+ 			       struct line_range *lr)
+ {
++	int ret;
++
+ 	/* Copy real path */
+ 	if (!lr->path) {
+-		lr->path = strdup(src);
+-		if (lr->path == NULL)
+-			return -ENOMEM;
++		ret = get_real_path(src, &lr->path);
++		if (ret != 0)
++			return ret;
+ 	}
+ 	return line_list__add_line(&lr->line_list, lineno);
+ }
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 10b7ff8..80e569b 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -71,6 +71,7 @@ struct symbol_conf {
+ 			full_paths,
+ 			show_cpu_utilization;
+ 	const char	*vmlinux_name,
++			*source_prefix,
+ 			*field_sep;
+ 	const char	*default_guest_vmlinux_name,
+ 			*default_guest_kallsyms,
+-- 
+1.7.0.4
 
