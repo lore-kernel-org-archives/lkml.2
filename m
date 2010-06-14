@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab0FNHrL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 03:47:11 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58195 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab0FNHrJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 03:47:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=LAY2XBRMg8EiQQ14vIp0y+n/SZn94iZM/bz471WoFhKDnQGEggrqlSaMYrlGEA13vc
-         crvQIyNP2kcT/wuasTTRGFfIzo/Y8F8Ew91Mdpk5TaZbMVtmy2fKbFojKSTprKLRuDzF
-         eDEtdoPsBxW4GaB0KSGXGUMTSwCg0VOJAeeaI=
+	id S1753594Ab0FNHro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 03:47:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27621 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751819Ab0FNHrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 03:47:42 -0400
+Message-ID: <4C15DE87.3080202@redhat.com>
+Date: Mon, 14 Jun 2010 10:47:19 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1276199568.16089.35.camel@work-vm>
-References: <AANLkTinIO5a1EeK6Ej2ljkuyL9zv06OMfbyiZBaxTQTd@mail.gmail.com> 
-	<alpine.LFD.2.00.1006092206020.2933@localhost.localdomain> 
-	<AANLkTin-6XsW49ECufTLcdzaD1eK9bAxe0j7RXvPqN7p@mail.gmail.com> 
-	<1276199568.16089.35.camel@work-vm>
-From: Suresh Rajashekara <suresh.raj+linuxomap@gmail.com>
-Date: Mon, 14 Jun 2010 00:46:48 -0700
-X-Google-Sender-Auth: iCJwvlKdx5pIL465k8xHgD-X7eU
-Message-ID: <AANLkTikPwOWHUdqZH1S9QVh-sgjlzptAB27_hK_otQ4Y@mail.gmail.com>
-Subject: Re: Timekeeping issue on aggressive suspend/resume
-To: john stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       linux-pm@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Valdis.Kletnieks@vt.edu
+CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Really lazy fpu
+References: <1276441427-31514-1-git-send-email-avi@redhat.com> <39727.1276461922@localhost>
+In-Reply-To: <39727.1276461922@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 12:52 PM, john stultz <johnstul@us.ibm.com> wrote:
-> I think Thomas was suggesting that you consider creating a option for
-> where CLOCK_MONOTONIC included total_sleep_time.
->
-> In that case the *hack* (and this is a hack, we'll need some more
-> thoughtful discussion before anything like it could make it upstream)
-> would be in timekeeping_resume() to comment out the lines that update
-> wall_to_monotonic and total_sleep_time.
->
-> It would be interesting to hear if that hack works for you, and we can
-> try to come up with a better way to think about how to accommodate both
-> views of how to account time over suspend.
+On 06/13/2010 11:45 PM, Valdis.Kletnieks@vt.edu wrote:
+> On Sun, 13 Jun 2010 18:03:43 +0300, Avi Kivity said:
+>    
+>> Currently fpu management is only lazy in one direction.  When we switch into
+>> a task, we may avoid loading the fpu state in the hope that the task will
+>> never use it.  If we guess right we save an fpu load/save cycle; if not,
+>> a Device not Available exception will remind us to load the fpu.
+>>
+>> However, in the other direction, fpu management is eager.  When we switch out
+>> of an fpu-using task, we always save its fpu state.
+>>      
+> Does anybody have numbers on how many clocks it takes a modern CPU design
+> to do a FPU state save or restore?
 
-Thanks.
+320 cycles for a back-to-back round trip.  Presumably less on more 
+modern hardware, more if uncached, more on even more modern hardware 
+that has the xsave header (8 bytes) and ymm state (256 bytes) in addition.
 
-I tried this fix. It seemed to help, however the accuracy of sleep
-time for the process was not quite right. A process thread which was
-supposed to wake up every (X) seconds, seemed to wake up every (X -
-delta X) seconds.
+> I know it must have been painful in the
+> days before cache memory, having to make added trips out to RAM for 128-bit
+> registers.  But what's the impact today?
 
-Also another side effect of this change was that the system time was
-no longer in sync with the wall time.
+I'd estimate between 300 and 600 cycles depending on the factors above.
 
-These problems were more pronounced when the suspend/wakeup cycle time
-was brought down to 0.5 seconds from 4 seconds. The periodicity of
-most of the process threads were disturbed.
+> (Yes, I see there's the potential
+> for a painful IPI call - anything else?)
+>    
 
-I decided to NOT suspend/resume the timekeeping subsystem in the
-kernel and try. It seemed to work. Every application seems to work
-fine.
+The IPI is only taken after a task migration, hopefully a rare event.  
+The patchset also adds the overhead of irq save/restore.  I think I can 
+remove that at the cost of some complexity, but prefer to start with a 
+simple approach.
 
-Now my question is; Is it safe to disable suspend/resume of the
-timekeeping subsystem? Will it have an effect (on
-functionality/performance) which may not surface in my short
-experiments?
+> Do we have any numbers on how many saves/restores this will save us when
+> running the hypothetical "standard Gnome desktop" environment?
 
-Thanks in advance,
+The potential is in the number of context switches per second.  On a 
+desktop environment, I don't see much potential for a throughput 
+improvement, rather latency reduction from making the crypto threads 
+preemptible and reducing context switch times.
 
-Suresh
+Servers with high context switch rates, esp. with real-time preemptible 
+kernels (due to threaded interrupts), will see throughput gains.  And, 
+of course, kvm will benefit from not needing to switch the fpu when 
+going from guest to host userspace or to a host kernel thread (vhost-net).
+
+> How common
+> is the "we went all the way around to the original single FPU-using task" case?
+>    
+
+When your context switch is due to an oversubscribed cpu, not very 
+common.  When it is due to the need to service an event and go back to 
+sleep, very common.
+
+-- 
+error compiling committee.c: too many arguments to function
+
