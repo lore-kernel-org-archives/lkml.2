@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab0FNHgw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 03:36:52 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:44795 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752322Ab0FNHgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 03:36:51 -0400
-Date: Mon, 14 Jun 2010 13:06:46 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: kvm <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 1/2] Linux/Guest unmapped page cache control
-Message-ID: <20100614073646.GS5191@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>
- <20100608155146.3749.67837.sendpatchset@L34Z31A.ibm.com>
- <20100613183145.GM5191@balbir.in.ibm.com>
- <20100614092819.cb7515a5.kamezawa.hiroyu@jp.fujitsu.com>
- <20100614064955.GR5191@balbir.in.ibm.com>
- <20100614160021.7febbdb2.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754243Ab0FNHic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 03:38:32 -0400
+Received: from mx.ij.cx ([212.13.201.15]:50269 "EHLO wes.ijneb.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752341Ab0FNHia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 03:38:30 -0400
+Date: Mon, 14 Jun 2010 08:38:27 +0100 (BST)
+From: Mark Hills <mark@pogo.org.uk>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+       Michal Marek <mmarek@suse.cz>
+Subject: Re: Appending '+' to version, since 2.6.35-rc2
+In-Reply-To: <20100614065221.GB3999@x200>
+Message-ID: <alpine.NEB.2.01.1006140822080.28879@jrf.vwaro.pbz>
+References: <alpine.NEB.2.01.1006131729430.2991@jrf.vwaro.pbz> <20100614065221.GB3999@x200>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100614160021.7febbdb2.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mark@pogo.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-06-14 16:00:21]:
+On Mon, 14 Jun 2010, Alexey Dobriyan wrote:
 
-> On Mon, 14 Jun 2010 12:19:55 +0530
-> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> > > - Why don't you believe LRU ? And if LRU doesn't work well, should it be
-> > >   fixed by a knob rather than generic approach ?
-> > > - No side effects ?
+> On Sun, Jun 13, 2010 at 08:01:26PM +0100, Mark Hills wrote:
+> > Commit 85a256d adds a new feature:
 > > 
-> > I believe in LRU, just that the problem I am trying to solve is of
-> > using double the memory for caching the same data (consider kvm
-> > running in cache=writethrough or writeback mode, both the hypervisor
-> > and the guest OS maintain a page cache of the same data). As the VM's
-> > grow the overhead is substantial. In my runs I found upto 60%
-> > duplication in some cases.
+> >   [...] When CONFIG_LOCALVERSION_AUTO is not enabled, a `+' is appended
+> >   to the kernel version to represent that the kernel has been revised
+> >   since the last release unless "make LOCALVERSION=" was used to uniquely
+> >   identify the build.
 > > 
+> > I'm finding this inconvenient for 'casual' kernel development.
 > > 
-> > - Linux vm guys tend to say, "free memory is bad memory". ok, for what
-> >   free memory created by your patch is used ? IOW, I can't see the benefit.
-> >   If free memory that your patch created will be used for another page-cache,
-> >   it will be dropped soon by your patch itself.
+> > For example, my usual workflow goes something like:
 > > 
-> > Free memory is good for cases when you want to do more in the same
-> > system. I agree that in a bare metail environment that might be
-> > partially true. I don't have a problem with frequently used data being
-> > cached, but I am targetting a consolidated environment at the moment.
-> > Moreover, the administrator has control via a boot option, so it is
-> > non-instrusive in many ways.
+> > 1) find something I suspect is a bug
+> > 2) upgrade to the latest stable or -rc kernel, to confirm
+> > 3) experiment with patch to fix it
+> > 
+> > Since 2.6.35-rc2, going from step 2 to 3 causes the version of the kernel 
+> > to change: forcing time-consuming rebuilds,
 > 
-> It sounds that what you want is to improve performance etc. but to make it
-> easy sizing the system and to help admins. Right ?
->
-
-Right, to allow freeing up of using double the memory to cache data.
- 
-> From performance perspective, I don't see any advantage to drop caches
-> which can be dropped easily. I just use cpus for the purpose it may no
-> be necessary.
+> init/version.c
+> kernel/configs.c
+> + whatever patch has changed
+> + vmlinux 2 or 3 times
 > 
+> That's not time consuming.
 
-It is not that easy, in a virtualized environment, you do directly
-reclaim, but use a mechanism like ballooning and that too requires a
-smart software to decide where to balloon from. This patch (optionally
-if enabled) optimizes that by
+There is also the modpost step, which is most time consuming.
 
-1. Reducing double caching
-2. Not requiring newer smarts or a management software to monitor and
-balloon
-3. Allows better estimation of free memory by avoiding double caching
-4. Allows immediate use of free memory for other applications or
-startup of newer guest instances.
+> 
+> > installing modules, and manual 
+> > changes associated with a new version number; eg. updating the lilo/grub 
+> > config, or the distribution's initrd.
+> 
 
 -- 
-	Three Cheers,
-	Balbir
+Mark
