@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab0FNOeL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 10:34:11 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:41651 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754070Ab0FNOeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 10:34:09 -0400
-Date: Mon, 14 Jun 2010 16:33:39 +0200
-From: Florian Mickler <florian@mickler.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Jonathan Corbet <corbet@lwn.net>, Frederic Weisbecker <fweisbec@gmail.com>,
-       markgross@thegnar.org, linville@tuxdriver.com,
-       linux-kernel@vger.kernel.org,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [linux-pm] [PATCH v4] pm_qos: make update_request non blocking
-Message-ID: <20100614163339.755a2b5b@schatten.dmk.lab>
-In-Reply-To: <1276266352.2862.70.camel@mulgrave.site>
-References: <1276097381-3982-1-git-send-email-florian@mickler.org>
-	<1276097832.4343.223.camel@mulgrave.site>
-	<20100609180033.39d5b499@schatten.dmk.lab>
-	<1276099645.4343.257.camel@mulgrave.site>
-	<20100609183204.1eeca494@schatten.dmk.lab>
-	<1276103149.4343.350.camel@mulgrave.site>
-	<20100610094525.0449d797@schatten.dmk.lab>
-	<1276177144.27283.37.camel@mulgrave.site>
-	<20100610164118.15ec7a05@schatten.dmk.lab>
-	<1276266352.2862.70.camel@mulgrave.site>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+	id S1754935Ab0FNOgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 10:36:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33257 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754100Ab0FNOgh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 10:36:37 -0400
+Date: Mon, 14 Jun 2010 07:38:53 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: BUG: using smp_processor_id() in preemptible code: s2disk
+Message-ID: <20100614073853.6fa2f91f@infradead.org>
+In-Reply-To: <20100614140941.GA3581@swordfish.minsk.epam.com>
+References: <20100613203352.GA3577@swordfish>
+	<1276461183.2659.4.camel@maxim-laptop>
+	<201006140136.18652.rjw@sisk.pl>
+	<20100614140941.GA3581@swordfish.minsk.epam.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010 09:25:52 -0500
-James Bottomley <James.Bottomley@suse.de> wrote:
+On Mon, 14 Jun 2010 17:09:41 +0300
+Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
 
-> 
-> Actually, pm_qos_remove now needs a flush_scheduled work since you don't
-> want to return until the list is clear (since the next action may be to
-> free the object).
+> Hello,
+> Not sure if this simple solution is the correct one.
 
-The work-items are allocated in the pm_qos objects (which get never
-freed), so we should be fine there.
+it's not; the caller needs to pass in the cpu number I suspect for this
+to be really correct....
 
-> 
-> James
-> 
+I just returned from family emergency travel and will take a look today
+
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
