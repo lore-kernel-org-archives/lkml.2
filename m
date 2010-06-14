@@ -1,233 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab0FNVlS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 17:41:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46992 "EHLO hera.kernel.org"
+	id S1756741Ab0FNVjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 17:39:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46902 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756766Ab0FNVj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 17:39:59 -0400
+	id S1754347Ab0FNVjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 17:39:15 -0400
 From: Tejun Heo <tj@kernel.org>
 To: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
        jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
        cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
        johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-Cc: Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@pobox.com>
-Subject: [PATCH 29/30] libata: take advantage of cmwq and remove concurrency limitations
-Date: Mon, 14 Jun 2010 23:37:46 +0200
-Message-Id: <1276551467-21246-30-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 23/30] workqueue: use shared worklist and pool all workers per cpu
+Date: Mon, 14 Jun 2010 23:37:40 +0200
+Message-Id: <1276551467-21246-24-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1276551467-21246-1-git-send-email-tj@kernel.org>
 References: <1276551467-21246-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Jun 2010 21:37:59 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 14 Jun 2010 21:37:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-libata has two concurrency related limitations.
+Use gcwq->worklist instead of cwq->worklist and break the strict
+association between a cwq and its worker.  All works queued on a cpu
+are queued on gcwq->worklist and processed by any available worker on
+the gcwq.
 
-a. ata_wq which is used for polling PIO has single thread per CPU.  If
-   there are multiple devices doing polling PIO on the same CPU, they
-   can't be executed simultaneously.
+As there no longer is strict association between a cwq and its worker,
+whether a work is executing can now only be determined by calling
+[__]find_worker_executing_work().
 
-b. ata_aux_wq which is used for SCSI probing has single thread.  In
-   cases where SCSI probing is stalled for extended period of time
-   which is possible for ATAPI devices, this will stall all probing.
+After this change, the only association between a cwq and its worker
+is that a cwq puts a worker into shared worker pool on creation and
+kills it on destruction.  As all workqueues are still limited to
+max_active of one, this means that there are always at least as many
+workers as active works and thus there's no danger for deadlock.
 
-#a is solved by increasing maximum concurrency of ata_wq.  Please note
-that polling PIO might be used under allocation path and thus needs to
-be served by a separate wq with a rescuer.
-
-#b is solved by using the default wq instead and achieving exclusion
-via per-port mutex.
+The break of strong association between cwqs and workers requires
+somewhat clumsy changes to current_is_keventd() and
+destroy_workqueue().  Dynamic worker pool management will remove both
+clumsy changes.  current_is_keventd() won't be necessary at all as the
+only reason it exists is to avoid queueing a work from a work which
+will be allowed just fine.  The clumsy part of destroy_workqueue() is
+added because a worker can only be destroyed while idle and there's no
+guarantee a worker is idle when its wq is going down.  With dynamic
+pool management, workers are not associated with workqueues at all and
+only idle ones will be submitted to destroy_workqueue() so the code
+won't be necessary anymore.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jeff Garzik <jgarzik@pobox.com>
 ---
- drivers/ata/libata-core.c |   20 +++++---------------
- drivers/ata/libata-eh.c   |    4 ++--
- drivers/ata/libata-scsi.c |   10 ++++++----
- drivers/ata/libata-sff.c  |    9 +--------
- drivers/ata/libata.h      |    1 -
- include/linux/libata.h    |    1 +
- 6 files changed, 15 insertions(+), 30 deletions(-)
+ kernel/workqueue.c |  131 +++++++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 99 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index ddf8e48..4f78741 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -98,8 +98,6 @@ static unsigned long ata_dev_blacklisted(const struct ata_device *dev);
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 7994edb..e0a7609 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -34,6 +34,7 @@
+ #include <linux/debug_locks.h>
+ #include <linux/lockdep.h>
+ #include <linux/idr.h>
++#include <linux/delay.h>
  
- unsigned int ata_print_id = 1;
+ enum {
+ 	/* global_cwq flags */
+@@ -72,7 +73,6 @@ enum {
+  */
  
--struct workqueue_struct *ata_aux_wq;
--
- struct ata_force_param {
- 	const char	*name;
- 	unsigned int	cbl;
-@@ -5611,6 +5609,7 @@ struct ata_port *ata_port_alloc(struct ata_host *host)
- 	ap->msg_enable = ATA_MSG_DRV | ATA_MSG_ERR | ATA_MSG_WARN;
- #endif
+ struct global_cwq;
+-struct cpu_workqueue_struct;
  
-+	mutex_init(&ap->scsi_scan_mutex);
- 	INIT_DELAYED_WORK(&ap->hotplug_task, ata_scsi_hotplug);
- 	INIT_WORK(&ap->scsi_rescan_task, ata_scsi_dev_rescan);
- 	INIT_LIST_HEAD(&ap->eh_done_q);
-@@ -6549,29 +6548,20 @@ static int __init ata_init(void)
+ struct worker {
+ 	/* on idle list while idle, on busy hash table while busy */
+@@ -86,7 +86,6 @@ struct worker {
+ 	struct list_head	scheduled;	/* L: scheduled works */
+ 	struct task_struct	*task;		/* I: worker task */
+ 	struct global_cwq	*gcwq;		/* I: the associated gcwq */
+-	struct cpu_workqueue_struct *cwq;	/* I: the associated cwq */
+ 	unsigned int		flags;		/* L: flags */
+ 	int			id;		/* I: worker id */
+ };
+@@ -96,6 +95,7 @@ struct worker {
+  */
+ struct global_cwq {
+ 	spinlock_t		lock;		/* the gcwq lock */
++	struct list_head	worklist;	/* L: list of pending works */
+ 	unsigned int		cpu;		/* I: the associated cpu */
+ 	unsigned int		flags;		/* L: GCWQ_* flags */
  
- 	ata_parse_force_param();
- 
--	ata_aux_wq = create_singlethread_workqueue("ata_aux");
--	if (!ata_aux_wq)
--		goto fail;
--
- 	rc = ata_sff_init();
--	if (rc)
--		goto fail;
-+	if (rc) {
-+		kfree(ata_force_tbl);
-+		return rc;
-+	}
- 
- 	printk(KERN_DEBUG "libata version " DRV_VERSION " loaded.\n");
- 	return 0;
--
--fail:
--	kfree(ata_force_tbl);
--	if (ata_aux_wq)
--		destroy_workqueue(ata_aux_wq);
--	return rc;
+@@ -121,7 +121,6 @@ struct global_cwq {
+  */
+ struct cpu_workqueue_struct {
+ 	struct global_cwq	*gcwq;		/* I: the associated gcwq */
+-	struct list_head worklist;
+ 	struct worker		*worker;
+ 	struct workqueue_struct *wq;		/* I: the owning workqueue */
+ 	int			work_color;	/* L: current color */
+@@ -386,6 +385,32 @@ static struct global_cwq *get_work_gcwq(struct work_struct *work)
+ 	return get_gcwq(cpu);
  }
  
- static void __exit ata_exit(void)
- {
- 	ata_sff_exit();
- 	kfree(ata_force_tbl);
--	destroy_workqueue(ata_aux_wq);
- }
- 
- subsys_initcall(ata_init);
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index f77a673..4d2af82 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -727,7 +727,7 @@ void ata_scsi_error(struct Scsi_Host *host)
- 	if (ap->pflags & ATA_PFLAG_LOADING)
- 		ap->pflags &= ~ATA_PFLAG_LOADING;
- 	else if (ap->pflags & ATA_PFLAG_SCSI_HOTPLUG)
--		queue_delayed_work(ata_aux_wq, &ap->hotplug_task, 0);
-+		schedule_delayed_work(&ap->hotplug_task, 0);
- 
- 	if (ap->pflags & ATA_PFLAG_RECOVERED)
- 		ata_port_printk(ap, KERN_INFO, "EH complete\n");
-@@ -2944,7 +2944,7 @@ static int ata_eh_revalidate_and_attach(struct ata_link *link,
- 			ehc->i.flags |= ATA_EHI_SETMODE;
- 
- 			/* schedule the scsi_rescan_device() here */
--			queue_work(ata_aux_wq, &(ap->scsi_rescan_task));
-+			schedule_work(&(ap->scsi_rescan_task));
- 		} else if (dev->class == ATA_DEV_UNKNOWN &&
- 			   ehc->tries[dev->devno] &&
- 			   ata_class_enabled(ehc->classes[dev->devno])) {
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index a54273d..d75c9c4 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3435,7 +3435,7 @@ void ata_scsi_scan_host(struct ata_port *ap, int sync)
- 				"                  switching to async\n");
- 	}
- 
--	queue_delayed_work(ata_aux_wq, &ap->hotplug_task,
-+	queue_delayed_work(system_long_wq, &ap->hotplug_task,
- 			   round_jiffies_relative(HZ));
- }
- 
-@@ -3582,6 +3582,7 @@ void ata_scsi_hotplug(struct work_struct *work)
- 	}
- 
- 	DPRINTK("ENTER\n");
-+	mutex_lock(&ap->scsi_scan_mutex);
- 
- 	/* Unplug detached devices.  We cannot use link iterator here
- 	 * because PMP links have to be scanned even if PMP is
-@@ -3595,6 +3596,7 @@ void ata_scsi_hotplug(struct work_struct *work)
- 	/* scan for new ones */
- 	ata_scsi_scan_host(ap, 0);
- 
-+	mutex_unlock(&ap->scsi_scan_mutex);
- 	DPRINTK("EXIT\n");
- }
- 
-@@ -3673,9 +3675,7 @@ static int ata_scsi_user_scan(struct Scsi_Host *shost, unsigned int channel,
-  *	@work: Pointer to ATA port to perform scsi_rescan_device()
-  *
-  *	After ATA pass thru (SAT) commands are executed successfully,
-- *	libata need to propagate the changes to SCSI layer.  This
-- *	function must be executed from ata_aux_wq such that sdev
-- *	attach/detach don't race with rescan.
-+ *	libata need to propagate the changes to SCSI layer.
-  *
-  *	LOCKING:
-  *	Kernel thread context (may sleep).
-@@ -3688,6 +3688,7 @@ void ata_scsi_dev_rescan(struct work_struct *work)
- 	struct ata_device *dev;
- 	unsigned long flags;
- 
-+	mutex_lock(&ap->scsi_scan_mutex);
- 	spin_lock_irqsave(ap->lock, flags);
- 
- 	ata_for_each_link(link, ap, EDGE) {
-@@ -3707,6 +3708,7 @@ void ata_scsi_dev_rescan(struct work_struct *work)
- 	}
- 
- 	spin_unlock_irqrestore(ap->lock, flags);
-+	mutex_unlock(&ap->scsi_scan_mutex);
++/* Return the first worker.  Safe with preemption disabled */
++static struct worker *first_worker(struct global_cwq *gcwq)
++{
++	if (unlikely(list_empty(&gcwq->idle_list)))
++		return NULL;
++
++	return list_first_entry(&gcwq->idle_list, struct worker, entry);
++}
++
++/**
++ * wake_up_worker - wake up an idle worker
++ * @gcwq: gcwq to wake worker for
++ *
++ * Wake up the first idle worker of @gcwq.
++ *
++ * CONTEXT:
++ * spin_lock_irq(gcwq->lock).
++ */
++static void wake_up_worker(struct global_cwq *gcwq)
++{
++	struct worker *worker = first_worker(gcwq);
++
++	if (likely(worker))
++		wake_up_process(worker->task);
++}
++
+ /**
+  * busy_worker_head - return the busy hash head for a work
+  * @gcwq: gcwq of interest
+@@ -467,13 +492,14 @@ static struct worker *find_worker_executing_work(struct global_cwq *gcwq,
  }
  
  /**
-diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
-index efa4a18..dd57815 100644
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -3318,14 +3318,7 @@ void ata_sff_port_init(struct ata_port *ap)
+- * insert_work - insert a work into cwq
++ * insert_work - insert a work into gcwq
+  * @cwq: cwq @work belongs to
+  * @work: work to insert
+  * @head: insertion point
+  * @extra_flags: extra WORK_STRUCT_* flags to set
+  *
+- * Insert @work into @cwq after @head.
++ * Insert @work which belongs to @cwq into @gcwq after @head.
++ * @extra_flags is or'd to work_struct flags.
+  *
+  * CONTEXT:
+  * spin_lock_irq(gcwq->lock).
+@@ -492,7 +518,7 @@ static void insert_work(struct cpu_workqueue_struct *cwq,
+ 	smp_wmb();
  
- int __init ata_sff_init(void)
+ 	list_add_tail(&work->entry, head);
+-	wake_up_process(cwq->worker->task);
++	wake_up_worker(cwq->gcwq);
+ }
+ 
+ /**
+@@ -608,7 +634,7 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
+ 
+ 	if (likely(cwq->nr_active < cwq->max_active)) {
+ 		cwq->nr_active++;
+-		worklist = &cwq->worklist;
++		worklist = &gcwq->worklist;
+ 	} else
+ 		worklist = &cwq->delayed_works;
+ 
+@@ -793,10 +819,10 @@ static struct worker *alloc_worker(void)
+ 
+ /**
+  * create_worker - create a new workqueue worker
+- * @cwq: cwq the new worker will belong to
++ * @gcwq: gcwq the new worker will belong to
+  * @bind: whether to set affinity to @cpu or not
+  *
+- * Create a new worker which is bound to @cwq.  The returned worker
++ * Create a new worker which is bound to @gcwq.  The returned worker
+  * can be started by calling start_worker() or destroyed using
+  * destroy_worker().
+  *
+@@ -806,9 +832,8 @@ static struct worker *alloc_worker(void)
+  * RETURNS:
+  * Pointer to the newly created worker.
+  */
+-static struct worker *create_worker(struct cpu_workqueue_struct *cwq, bool bind)
++static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
  {
--	/*
--	 * FIXME: In UP case, there is only one workqueue thread and if you
--	 * have more than one PIO device, latency is bloody awful, with
--	 * occasional multi-second "hiccups" as one PIO device waits for
--	 * another.  It's an ugly wart that users DO occasionally complain
--	 * about; luckily most users have at most one PIO polled device.
--	 */
--	ata_sff_wq = create_workqueue("ata_sff");
-+	ata_sff_wq = __create_workqueue("ata_sff", WQ_RESCUER, WQ_MAX_ACTIVE);
- 	if (!ata_sff_wq)
- 		return -ENOMEM;
+-	struct global_cwq *gcwq = cwq->gcwq;
+ 	int id = -1;
+ 	struct worker *worker = NULL;
  
-diff --git a/drivers/ata/libata.h b/drivers/ata/libata.h
-index 4b84ed6..9ce1ecc 100644
---- a/drivers/ata/libata.h
-+++ b/drivers/ata/libata.h
-@@ -54,7 +54,6 @@ enum {
- };
+@@ -826,7 +851,6 @@ static struct worker *create_worker(struct cpu_workqueue_struct *cwq, bool bind)
+ 		goto fail;
  
- extern unsigned int ata_print_id;
--extern struct workqueue_struct *ata_aux_wq;
- extern int atapi_passthru16;
- extern int libata_fua;
- extern int libata_noacpi;
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index b85f3ff..f010f18 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -751,6 +751,7 @@ struct ata_port {
- 	struct ata_host		*host;
- 	struct device 		*dev;
+ 	worker->gcwq = gcwq;
+-	worker->cwq = cwq;
+ 	worker->id = id;
  
-+	struct mutex		scsi_scan_mutex;
- 	struct delayed_work	hotplug_task;
- 	struct work_struct	scsi_rescan_task;
+ 	worker->task = kthread_create(worker_thread, worker, "kworker/%u:%d",
+@@ -953,7 +977,7 @@ static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
+ 	struct work_struct *work = list_first_entry(&cwq->delayed_works,
+ 						    struct work_struct, entry);
  
+-	move_linked_works(work, &cwq->worklist, NULL);
++	move_linked_works(work, &cwq->gcwq->worklist, NULL);
+ 	cwq->nr_active++;
+ }
+ 
+@@ -1021,11 +1045,12 @@ static void cwq_dec_nr_in_flight(struct cpu_workqueue_struct *cwq, int color)
+  */
+ static void process_one_work(struct worker *worker, struct work_struct *work)
+ {
+-	struct cpu_workqueue_struct *cwq = worker->cwq;
++	struct cpu_workqueue_struct *cwq = get_work_cwq(work);
+ 	struct global_cwq *gcwq = cwq->gcwq;
+ 	struct hlist_head *bwh = busy_worker_head(gcwq, work);
+ 	work_func_t f = work->func;
+ 	int work_color;
++	struct worker *collision;
+ #ifdef CONFIG_LOCKDEP
+ 	/*
+ 	 * It is permissible to free the struct work_struct from
+@@ -1036,6 +1061,18 @@ static void process_one_work(struct worker *worker, struct work_struct *work)
+ 	 */
+ 	struct lockdep_map lockdep_map = work->lockdep_map;
+ #endif
++	/*
++	 * A single work shouldn't be executed concurrently by
++	 * multiple workers on a single cpu.  Check whether anyone is
++	 * already processing the work.  If so, defer the work to the
++	 * currently executing one.
++	 */
++	collision = __find_worker_executing_work(gcwq, bwh, work);
++	if (unlikely(collision)) {
++		move_linked_works(work, &collision->scheduled, NULL);
++		return;
++	}
++
+ 	/* claim and process */
+ 	debug_work_deactivate(work);
+ 	hlist_add_head(&worker->hentry, bwh);
+@@ -1043,7 +1080,6 @@ static void process_one_work(struct worker *worker, struct work_struct *work)
+ 	worker->current_cwq = cwq;
+ 	work_color = get_work_color(work);
+ 
+-	BUG_ON(get_work_cwq(work) != cwq);
+ 	/* record the current cpu number in the work data and dequeue */
+ 	set_work_cpu(work, gcwq->cpu);
+ 	list_del_init(&work->entry);
+@@ -1107,7 +1143,6 @@ static int worker_thread(void *__worker)
+ {
+ 	struct worker *worker = __worker;
+ 	struct global_cwq *gcwq = worker->gcwq;
+-	struct cpu_workqueue_struct *cwq = worker->cwq;
+ 
+ woke_up:
+ 	spin_lock_irq(&gcwq->lock);
+@@ -1127,9 +1162,9 @@ recheck:
+ 	 */
+ 	BUG_ON(!list_empty(&worker->scheduled));
+ 
+-	while (!list_empty(&cwq->worklist)) {
++	while (!list_empty(&gcwq->worklist)) {
+ 		struct work_struct *work =
+-			list_first_entry(&cwq->worklist,
++			list_first_entry(&gcwq->worklist,
+ 					 struct work_struct, entry);
+ 
+ 		/*
+@@ -1844,18 +1879,37 @@ int keventd_up(void)
+ 
+ int current_is_keventd(void)
+ {
+-	struct cpu_workqueue_struct *cwq;
+-	int cpu = raw_smp_processor_id(); /* preempt-safe: keventd is per-cpu */
+-	int ret = 0;
++	bool found = false;
++	unsigned int cpu;
+ 
+-	BUG_ON(!keventd_wq);
++	/*
++	 * There no longer is one-to-one relation between worker and
++	 * work queue and a worker task might be unbound from its cpu
++	 * if the cpu was offlined.  Match all busy workers.  This
++	 * function will go away once dynamic pool is implemented.
++	 */
++	for_each_possible_cpu(cpu) {
++		struct global_cwq *gcwq = get_gcwq(cpu);
++		struct worker *worker;
++		struct hlist_node *pos;
++		unsigned long flags;
++		int i;
+ 
+-	cwq = get_cwq(cpu, keventd_wq);
+-	if (current == cwq->worker->task)
+-		ret = 1;
++		spin_lock_irqsave(&gcwq->lock, flags);
+ 
+-	return ret;
++		for_each_busy_worker(worker, i, pos, gcwq) {
++			if (worker->task == current) {
++				found = true;
++				break;
++			}
++		}
++
++		spin_unlock_irqrestore(&gcwq->lock, flags);
++		if (found)
++			break;
++	}
+ 
++	return found;
+ }
+ 
+ static struct cpu_workqueue_struct *alloc_cwqs(void)
+@@ -1947,12 +2001,11 @@ struct workqueue_struct *__create_workqueue_key(const char *name,
+ 		cwq->wq = wq;
+ 		cwq->flush_color = -1;
+ 		cwq->max_active = max_active;
+-		INIT_LIST_HEAD(&cwq->worklist);
+ 		INIT_LIST_HEAD(&cwq->delayed_works);
+ 
+ 		if (failed)
+ 			continue;
+-		cwq->worker = create_worker(cwq, cpu_online(cpu));
++		cwq->worker = create_worker(gcwq, cpu_online(cpu));
+ 		if (cwq->worker)
+ 			start_worker(cwq->worker);
+ 		else
+@@ -2014,13 +2067,26 @@ void destroy_workqueue(struct workqueue_struct *wq)
+ 
+ 	for_each_possible_cpu(cpu) {
+ 		struct cpu_workqueue_struct *cwq = get_cwq(cpu, wq);
++		struct global_cwq *gcwq = cwq->gcwq;
+ 		int i;
+ 
+ 		if (cwq->worker) {
+-			spin_lock_irq(&cwq->gcwq->lock);
++		retry:
++			spin_lock_irq(&gcwq->lock);
++			/*
++			 * Worker can only be destroyed while idle.
++			 * Wait till it becomes idle.  This is ugly
++			 * and prone to starvation.  It will go away
++			 * once dynamic worker pool is implemented.
++			 */
++			if (!(cwq->worker->flags & WORKER_IDLE)) {
++				spin_unlock_irq(&gcwq->lock);
++				msleep(100);
++				goto retry;
++			}
+ 			destroy_worker(cwq->worker);
+ 			cwq->worker = NULL;
+-			spin_unlock_irq(&cwq->gcwq->lock);
++			spin_unlock_irq(&gcwq->lock);
+ 		}
+ 
+ 		for (i = 0; i < WORK_NR_COLORS; i++)
+@@ -2318,7 +2384,7 @@ EXPORT_SYMBOL_GPL(work_on_cpu);
+  *
+  * Start freezing workqueues.  After this function returns, all
+  * freezeable workqueues will queue new works to their frozen_works
+- * list instead of the cwq ones.
++ * list instead of gcwq->worklist.
+  *
+  * CONTEXT:
+  * Grabs and releases workqueue_lock and gcwq->lock's.
+@@ -2404,7 +2470,7 @@ out_unlock:
+  * thaw_workqueues - thaw workqueues
+  *
+  * Thaw workqueues.  Normal queueing is restored and all collected
+- * frozen works are transferred to their respective cwq worklists.
++ * frozen works are transferred to their respective gcwq worklists.
+  *
+  * CONTEXT:
+  * Grabs and releases workqueue_lock and gcwq->lock's.
+@@ -2485,6 +2551,7 @@ void __init init_workqueues(void)
+ 		struct global_cwq *gcwq = get_gcwq(cpu);
+ 
+ 		spin_lock_init(&gcwq->lock);
++		INIT_LIST_HEAD(&gcwq->worklist);
+ 		gcwq->cpu = cpu;
+ 
+ 		INIT_LIST_HEAD(&gcwq->idle_list);
 -- 
 1.6.4.2
 
