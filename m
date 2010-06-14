@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307Ab0FNQ4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 12:56:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55465 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755009Ab0FNQ4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 12:56:18 -0400
-Message-ID: <4C165D04.9020400@redhat.com>
-Date: Mon, 14 Jun 2010 12:47:00 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 02/12] tracing, vmscan: Add trace events for LRU page
- isolation
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-3-git-send-email-mel@csn.ul.ie>
-In-Reply-To: <1276514273-27693-3-git-send-email-mel@csn.ul.ie>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1756297Ab0FNQ62 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 12:58:28 -0400
+Received: from e24smtp02.br.ibm.com ([32.104.18.86]:40478 "EHLO
+	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450Ab0FNQ61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 12:58:27 -0400
+Subject: [PATCH] TPM: ReadPubEK output struct fix
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: jmorris@namei.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Mon, 14 Jun 2010 13:58:22 -0300
+Message-ID: <1276534702.5670.8.camel@blackbox.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 07:17 AM, Mel Gorman wrote:
-> This patch adds an event for when pages are isolated en-masse from the
-> LRU lists. This event augments the information available on LRU traffic
-> and can be used to evaluate lumpy reclaim.
->
-> Signed-off-by: Mel Gorman<mel@csn.ul.ie>
+This patch adds a missing element of the ReadPubEK command output, 
+that prevents future overflow of this buffer when copying the 
+TPM output result into it.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+---
+ drivers/char/tpm/tpm.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index 8e00b4d..792868d 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -224,6 +224,7 @@ struct	tpm_readpubek_params_out {
+ 	u8	algorithm[4];
+ 	u8	encscheme[2];
+ 	u8	sigscheme[2];
++	__be32	paramsize;
+ 	u8	parameters[12]; /*assuming RSA*/
+ 	__be32	keysize;
+ 	u8	modulus[256];
 -- 
-All rights reversed
+1.6.6.1
+
+
+
