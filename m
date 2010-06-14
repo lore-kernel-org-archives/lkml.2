@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab0FNMhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 08:37:04 -0400
-Received: from bar.sig21.net ([80.81.252.164]:34900 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750847Ab0FNMhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 08:37:02 -0400
-Date: Mon, 14 Jun 2010 14:36:52 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
-Subject: Re: FIGETBSZ ioctl conflict
-Message-ID: <20100614123652.GA312@sig21.net>
-References: <20100614110252.GB32224@sig21.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100614110252.GB32224@sig21.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-21-Score: -3.7 (---)
-X-Spam-21-Report: No, score=-3.7 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.713,BAYES_00=-2.599 autolearn=no
+	id S1752301Ab0FNMif (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 08:38:35 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:58025 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750784Ab0FNMie (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 08:38:34 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: linux-arch@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Tim Abbott <tabbott@ksplice.com>,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
+Date: Mon, 14 Jun 2010 13:38:28 +0100
+Message-Id: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.6.4.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(forgot to add lkml to Cc)
+From: Matt Fleming <matthew.fleming@imgtec.com>
 
-On Mon, Jun 14, 2010 at 01:02:52PM +0200, Johannes Stezenbach wrote:
-> Hi,
-> 
-> in commit 19ba0559 the FIGETBSZ (and FS_IOC_FIEMAP) ioctl was moved
-> from file_ioctl() to do_vfs_ioctl(), so it also works for directories.
-> The problem I'm seeing is that FIGETBSZ is defined as _IO(0x00,2)
-> which is simply 2.  so there is some potential for conflicts
-> with character devices which do not use the _IO macros for numbering
-> their ioctls.
-> Just doing a web search for "FIGETBSZ ioctl conflict" shows
-> that a few people already ran into this problem.
-> 
-> Would you mind adding a check for S_ISDIR | S_ISREG,
-> or maybe !S_ISCHR?
-> 
-> 
-> Thanks,
-> Johannes
+Many architectures collect text sections beginning with '.text.' in
+their .text section, so move this pattern into TEXT_TEXT to stop them
+all having to duplicate the pattern in their arch/ linker scripts.
+
+Signed-off-by: Matt Fleming <matthew.fleming@imgtec.com>
+---
+ include/asm-generic/vmlinux.lds.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 48c5299..08f4680 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -369,6 +369,7 @@
+ 		ALIGN_FUNCTION();					\
+ 		*(.text.hot)						\
+ 		*(.text)						\
++		*(.text.*)						\
+ 		*(.ref.text)						\
+ 	DEV_KEEP(init.text)						\
+ 	DEV_KEEP(exit.text)						\
+-- 
+1.6.6.1
+
