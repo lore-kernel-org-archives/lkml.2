@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab0FNLc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 07:32:59 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59707 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab0FNLc5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 07:32:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=iDPkJdUCQuzLsVAzGLQZbRvCvwT/1A+XS0zyS3b8b7jr8aU3TVYfPahKuu/117iBP9
-         3ApL2Pksw9XRb1VhXVoNm1rXFQ2s9yYMCNIPBk1+tBX0jzKjF+227wVAGB5I6aA2Ewqj
-         sCWBjSHMh6L6WuUw+/zHXI4pYPDmp3tsUQh08=
-MIME-Version: 1.0
-In-Reply-To: <38a51c60af41f83d891a156b3b99fa35a383b470.1276503768.git.m.nazarewicz@samsung.com>
-References: <9e21e4f5440d2a2fcfa11bca18e62c713317b330.1275906835.git.m.nazarewicz@samsung.com>
-	<38a51c60af41f83d891a156b3b99fa35a383b470.1276503768.git.m.nazarewicz@samsung.com>
-Date: Mon, 14 Jun 2010 19:32:56 +0800
-Message-ID: <AANLkTind4hJcY6vUiAWwZncdB3TuW76951m-3CaLwBzx@mail.gmail.com>
-Subject: Re: [PATCHv4.1 07/13] USB: gadget: g_ether: updated INF file
-From: Xiaofan Chen <xiaofanc@gmail.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, David Brownell <david-b@pacbell.net>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752760Ab0FNLhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 07:37:32 -0400
+Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:40666 "EHLO
+	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751269Ab0FNLhb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 07:37:31 -0400
+Subject: [PATCH] x86: add power_end event to process_*.c cpu_idle routine
+From: Robert =?ISO-8859-1?Q?Sch=F6ne?= <robert.schoene@tu-dresden.de>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Jun 2010 13:37:20 +0200
+Message-ID: <1276515440.5441.45.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 8BIT
+X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 4:43 PM, Michal Nazarewicz
-<m.nazarewicz@samsung.com> wrote:
-> Updated the INF file for the g_ether gadget. †It should work with most
-> recent Windows systems now. †The file has been also renamed to
-> linux-rndis.inf rather then linux.inf.
->
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> On Wed, 09 Jun 2010 17:33:51 +0200, Greg KH <greg@kroah.com> wrote:
->> How about putting the following on the file:
->> † † † ; based on a example .inf file that was:
->> † † † ; † † † Copyright (c) Microsoft Corporation
->> † † † ; and released under the MLPL as found at
->> † † † ; http://msdn.microsoft.com/en-us/cc300389.aspx#MLPL
->> † † † ; For use only on Windows operating systems.
->> † † † ;
->
-> As requested only with a little bit different wording.
->
-> Still, I am not sure what to do with the serial INF.
-> I cannot even find the original file Xiaofan posted
-> not mentioning any associated license. †I mean, I would
-> leave it as is without changes but dunno...
+From: Robert Sch√∂ne <robert.schoene@tu-dresden.de>
 
-I think all the INF file templates ultimately comes
-from DDK/WDK.
+Systems using the idle thread from process_32.c and process_64.c do not
+generate power_end events which could be traced using perf. This patch
+adds the event generation for such systems.
 
-For example, the RNDIS template is from here. And the title
-says WDK.
-http://msdn.microsoft.com/en-us/library/ff570620%28VS.85%29.aspx
+Signed-off-by: Robert Sch√∂ne <robert.schoene@tu-dresden.de>
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
 
-For the CDC-ACM INF, the original template may well be from an ancient
-DDK. Anyway, here are some places to infer the CDC-ACM
-INF file.
-http://support.microsoft.com/kb/837637/en-us (important for Vista/Win7)
-http://msdn.microsoft.com/en-us/library/ff542605%28VS.85%29.aspx
-(same as above).
-http://msdn.microsoft.com/en-us/library/ff543241.aspx (for 2000/XP)
-http://msdn.microsoft.com/en-us/library/ff542491%28v=VS.85%29.aspx
-http://msdn.microsoft.com/en-us/library/ff542559.aspx
-
-Worse come worse, you might contact Microsoft about the license.
-The Microsoft Driver News group has a lot of experts including
-Microsoft employees who are very helpful.
-microsoft.public.development.device.drivers
+---
+The smp_processor_id() is given to power_end as i hope that the changed
+interface defined in http://lkml.org/lkml/2010/4/27/271 will be part of
+the standard tree one day. (It is currently part of the -mm tree.) As
+long as this new interface is not included in the standard tree, this
+patch won't make no harm. When it will be included, this code does not
+have to be touched anymore.
 
 
--- 
-Xiaofan http://mcuee.blogspot.com
+ arch/x86/kernel/process_32.c |    4 ++++
+ arch/x86/kernel/process_64.c |    5 +++++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index f6c6266..134f5f9 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -58,6 +58,8 @@
+ #include <asm/ds.h>
+ #include <asm/debugreg.h>
+ 
++#include <trace/events/power.h> 
++
+ asmlinkage void ret_from_fork(void) __asm__("ret_from_fork");
+ 
+ /*
+@@ -112,6 +114,8 @@ void cpu_idle(void)
+ 			stop_critical_timings();
+ 			pm_idle();
+ 			start_critical_timings();
++
++			trace_power_end(smp_processor_id());
+ 		}
+ 		tick_nohz_restart_sched_tick();
+ 		preempt_enable_no_resched();
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 17cb329..01c55ed 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -52,6 +52,8 @@
+ #include <asm/ds.h>
+ #include <asm/debugreg.h>
+ 
++#include <trace/events/power.h> 
++
+ asmlinkage extern void ret_from_fork(void);
+ 
+ DEFINE_PER_CPU(unsigned long, old_rsp);
+@@ -139,6 +141,9 @@ void cpu_idle(void)
+ 			stop_critical_timings();
+ 			pm_idle();
+ 			start_critical_timings();
++
++			trace_power_end(smp_processor_id());
++
+ 			/* In many cases the interrupt that ended idle
+ 			   has already called exit_idle. But some idle
+ 			   loops can be woken up without interrupt. */
+
+
+
+
