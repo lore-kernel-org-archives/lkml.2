@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab0FNXlc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 19:41:32 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39529 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab0FNXla (ORCPT
+	id S1753620Ab0FNXsl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 19:48:41 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39988 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab0FNXsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 19:41:30 -0400
+	Mon, 14 Jun 2010 19:48:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Ez7KvtlkMJFvQDRmbO6JUrTV/W8unXEHA/yltdZIjx91EmAW2G5wuYElYqUWdHd3Ds
-         4HY3IJDbHCksBjzAMY6TbobkDzY82JFQnOURR41XrZpCtcxWCkrvH0R/NnvS59Tey3BT
-         el59SWW/ayhiFJbFNrObZ0/hmUO7bSgcz+qls=
-Message-ID: <4C16BE39.2080303@gmail.com>
-Date: Mon, 14 Jun 2010 16:41:45 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: reiserfs-devel@vger.kernel.org, edward.shishkin@gmail.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8 v2]reiserfs:stree.c Fix variable set but not used.
-References: <1276555568-31550-1-git-send-email-justinmattock@gmail.com>
-In-Reply-To: <1276555568-31550-1-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=och6UqdLlZR9tPFz9cCt6rkmwSj2UBBvhDsbEH4I7oEIvgtPOHyUqkpgEGJRhdXtV/
+         yXgJcqn/FQdz23jHrSoepfCFl+ScR87+I9Pg4hwtGQu1CJGKH+kidTkC959aMQAAdTLN
+         ds6/SMw1RqandPOgtlv8Lkp871mbpE3llMGkY=
+Subject: Re: [PATCH v2] MMC: fix all hangs related to mmc/sd card
+ insert/removal during suspend/resume.
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mmc <linux-mmc@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Philip Langdale <philipl@overt.org>
+In-Reply-To: <20100614155157.dca38e09.akpm@linux-foundation.org>
+References: <1276283791.8557.29.camel@maxim-laptop>
+	 <1276283995-10812-1-git-send-email-maximlevitsky@gmail.com>
+	 <20100614155157.dca38e09.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Jun 2010 02:48:33 +0300
+Message-ID: <1276559313.7837.41.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 03:46 PM, Justin P. Mattock wrote:
-> Resend of this patch due to previous whitespace issues.
-> The below fixes this warning:
-> fs/reiserfs/stree.c: In function 'search_by_key':
-> fs/reiserfs/stree.c:602:6: warning: variable 'right_neighbor_of_leaf_node' set but not used
->
->   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->   Acked-by: Edward Shishkin<edward.shishkin@gmail.com>
->
-> ---
->   fs/reiserfs/stree.c |    3 ---
->   1 files changed, 0 insertions(+), 3 deletions(-)
->
-> diff --git a/fs/reiserfs/stree.c b/fs/reiserfs/stree.c
-> index 313d39d..f268067 100644
-> --- a/fs/reiserfs/stree.c
-> +++ b/fs/reiserfs/stree.c
-> @@ -599,7 +599,6 @@ int search_by_key(struct super_block *sb, const struct cpu_key *key,	/* Key to s
->   	struct buffer_head *bh;
->   	struct path_element *last_element;
->   	int node_level, retval;
-> -	int right_neighbor_of_leaf_node;
->   	int fs_gen;
->   	struct buffer_head *reada_bh[SEARCH_BY_KEY_READA];
->   	b_blocknr_t reada_blocks[SEARCH_BY_KEY_READA];
-> @@ -617,8 +616,6 @@ int search_by_key(struct super_block *sb, const struct cpu_key *key,	/* Key to s
->
->   	pathrelse(search_path);
->
-> -	right_neighbor_of_leaf_node = 0;
-> -
->   	/* With each iteration of this loop we search through the items in the
->   	   current node, and calculate the next current node(next path element)
->   	   for the next iteration of this loop.. */
+On Mon, 2010-06-14 at 15:51 -0700, Andrew Morton wrote: 
+> On Fri, 11 Jun 2010 22:19:55 +0300
+> Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> 
+> > If you don't use CONFIG_MMC_UNSAFE_RESUME, card will now be removed
+> > in pm notified while userspace is still running.
+> > Thus it will be possible to sync it propely.
+> 
+> That paragraph is a disaster and I'm not sure that I understand it well
+> enough to repair it.  I think you wanted s/now/not/ and s/in/if/ and
+> s/it will be/it will not be/.  Or perhaps you didn't.
+> 
+> Please send a comprehensible replacement.
+> 
+
+Sure.
 
 
 
-shit I messed up.. forgot the last bit for this.
-sorry about that I'll resend.
+If you don't use CONFIG_MMC_UNSAFE_RESUME, as soon as you attempt to
+suspend, the card will be removed, therefore this patch doesn't change
+the behavior of this option.
 
-Justin P. Mattock
+However the removal will be done by pm notifier, which runs while
+userspace is still not frozen and thus can freely use del_gendisk,
+without the risk of deadlock which would happen otherwise.
+
+If you do use 
+
+
+Best regards,
+Maxim Levitsky
+
