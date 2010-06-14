@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab0FNOiS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 10:38:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62461 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab0FNOiR convert rfc822-to-8bit (ORCPT
+	id S1754189Ab0FNOjE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 10:39:04 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51280 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258Ab0FNOjB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 10:38:17 -0400
+	Mon, 14 Jun 2010 10:39:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=kVekZygw0JGeYO+j/ynJZtXXG1bubcnXlLqQpPuW7bA79YcX70YwQxXJpggKXyNHrA
-         +gGJs9F0WaM1UFU+tMgNyMKuhL0FiIT09kB2k4O9P8pIHpIPoS8yXO3BygPL606PwcRI
-         Mxkn6WjyYMBdZCfI2PxGT7QBteV8ijlYG13XI=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Ales Teska <ales.teska@gmail.com>
-Subject: Re: PROBLEM: PPP and other serial port related application hangs in kernel space
-Date: Mon, 14 Jun 2010 16:38:10 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc3; KDE/4.3.4; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <900E3B14-5B92-4A37-9581-049DB40F4D1C@gmail.com>
-In-Reply-To: <900E3B14-5B92-4A37-9581-049DB40F4D1C@gmail.com>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=dXJp89MvU6AndgZAE6IAe8OgAkOp5QSA4CsKiLXIYbHFSED+qncXC3ZpI28jTe2tEq
+         23fO1dfr5YrhONP5rVjJAir4V2TtUZMXh1oTGO/kaUscnvhRIumWrmXESPbkZR+evFr2
+         C/9KmWaqyLy8HNsTHL8FEG0hkPcxCzvUIsUBk=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+In-Reply-To: <201006141544.59500.toralf.foerster@gmx.de>
+References: <201005271944.09541.toralf.foerster@gmx.de>
+	<201006141149.24647.toralf.foerster@gmx.de>
+	<20100614130039.GA4618@kryptos.osrc.amd.com>
+	<201006141544.59500.toralf.foerster@gmx.de>
+Date: Mon, 14 Jun 2010 16:39:00 +0200
+X-Google-Sender-Auth: ih58x_uyD7wEXBR55tHH5Ht2iYM
+Message-ID: <AANLkTik7aQPVl2OsOIhAtMzRHDNw6jkZYzcRNtfi7QSh@mail.gmail.com>
+Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>
+Cc: Borislav Petkov <bp@amd64.org>, Borislav Petkov <bp@alien8.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201006141638.10734.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On środa, 9 czerwca 2010 o 22:46:28 Ales Teska wrote:
-> Hi all,
-> 
-> after upgrade of Linux kernel to version 2.6.34 I started to observe
->  following problem - ppp and other serial port related application
->  occasionally (in 1 hour or 1/10 ppp connections) 'hangs' (see description
->  bellow) rendering related serial device unusable. I backtracked this issue
->  to 2.6.32.15. Application remains in the condition marked as 'D' in 'ps'
->  output (waiting for result from kernel space, if I understand that
->  correctly); it stays in this condition forever. Moreover any other
->  application that tries to open same serial port hangs the same way.
-> 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=16206
-for your bug report, please add your address to the CC list in there, thanks!
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+2010/6/14 Toralf Förster <toralf.foerster@gmx.de>:
+> Borislav Petkov wrote at 15:00:39
+>
+>> Linus' tree doesn't contain the fix yet - rather it is in -tip:
+>> http://git.kernel.org/tip/055c47272b8f5679d08ccc57efea3cb4aaeb5fc6
+>>
+>> You can easily cherry-pick it from there and retest.
+> Issue solved works with that patch.
+>
+> FWIW : This command sequence produced a linux executable which crashed too:
+>
+> $> ~/devel/linux-2.6 $ patch -p1 < ../linux-2.6-
+> tip.git-055c47272b8f5679d08ccc57efea3cb4aaeb5fc6.patch patching file
+> arch/um/include/asm/arch_hweight.h
+>
+> $> ~/devel/linux-2.6 $ make ARCH=um CC="ccache gcc"
+> make[1]: `arch/um/sys-i386/user-offsets.s' is up to date.
+>  CHK     include/linux/version.h
+>  CHK     include/generated/utsrelease.h
+>  CALL    scripts/checksyscalls.sh
+>  CHK     include/generated/compile.h
+>  LINK linux
+> $> start_uml.sh
+> ...
+>
+> But after I compiled it w/o ccache
+>
+> $> ~/devel/linux-2.6 $ make ARCH=um
+>
+> linux executable works (!?!)
+
+I assume you did a `make clean' in between?
+So could this just be the problem that new include files early in the
+include path are
+not detected by the dependency system, as they aren't in any *.d file?
+
+BTW, I'm also using ccache. Always. Ever. All my (cross)compilers are symlinks
+to ccache ;-)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
