@@ -1,167 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab0FNXIq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 19:08:46 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35699 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757209Ab0FNXIm (ORCPT
+	id S1753490Ab0FNXM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 19:12:57 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:54964 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750784Ab0FNXMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 19:08:42 -0400
-Subject: Re: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Tim Abbott <tabbott@ksplice.com>
-Cc: Matt Fleming <matt@console-pimps.org>, linux-arch@vger.kernel.org,
-       Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-       Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-       Denys Vlasenko <vda.linux@googlemail.com>,
-       Parisc List <linux-parisc@vger.kernel.org>
-In-Reply-To: <alpine.DEB.1.10.1006141608550.1248@dr-wily.mit.edu>
-References: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
-	 <alpine.DEB.1.10.1006141014360.1432@dr-wily.mit.edu>
-	 <87y6ehxvby.fsf@linux-g6p1.site> <1276545951.5374.260.camel@mulgrave.site>
-	 <alpine.DEB.1.10.1006141608550.1248@dr-wily.mit.edu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Jun 2010 18:08:39 -0500
-Message-ID: <1276556919.5374.822.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Jun 2010 19:12:55 -0400
+Date: Tue, 15 Jun 2010 09:11:44 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Chris Mason <chris.mason@oracle.com>,
+       Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
+Message-ID: <20100614231144.GG6590@dastard>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
+ <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-14 at 18:02 -0400, Tim Abbott wrote:
-> On Mon, 14 Jun 2010, James Bottomley wrote:
+On Mon, Jun 14, 2010 at 12:17:52PM +0100, Mel Gorman wrote:
+> Page reclaim cleans individual pages using a_ops->writepage() because from
+> the VM perspective, it is known that pages in a particular zone must be freed
+> soon, it considers the target page to be the oldest and it does not want
+> to wait while background flushers cleans other pages. From a filesystem
+> perspective this is extremely inefficient as it generates a very seeky
+> IO pattern leading to the perverse situation where it can take longer to
+> clean all dirty pages than it would have otherwise.
 > 
-> > On Mon, 2010-06-14 at 20:33 +0100, Matt Fleming wrote:
-> > > On Mon, 14 Jun 2010 10:32:46 -0400 (EDT), Tim Abbott <tabbott@ksplice.com> wrote:
-> > > > 
-> > > > I was planning to submit in the next couple weeks a change that adds 
-> > > > support for building the kernel with -ffunction-sections -fdata-sections, 
-> > > > which would have as a piece of it adding to TEXT_TEXT the following 
-> > > > expression:
-> > > > 
-> > > > 	*(.text.[A-Za-z$_]*)	/* handle -ffunction-sections */\
-> > 
-> > Just as a point of technical interest, that won't handle
-> > -ffunction-sections.  At least on parisc, we get a
-> > section .text.<function name> for every function.  This means that any
-> > character legal in a function name can appear there, not just letters
-> > and underscores (we get millicode ones with dollar signs as well for
-> > instance).  That's why *(.text.*) is safer
-> 
-> Hi James,
-> 
-> I believe that the pattern [A-Za-z$_] matches all valid characters to 
-> start a function name (in particular, it includes "$").  If I'm missing 
-> any valid characters for the start of a function name, please correct me.
+> This patch queues all dirty pages at once to maximise the chances that
+> the write requests get merged efficiently. It also makes the next patch
+> that avoids writeout from direct reclaim more straight-forward.
 
-Well, our linker seems to generate annoying symbols with carets in
-them ...
+Seeing as you have a list of pages for IO, perhaps they could be sorted
+before issuing ->writepage on them.
 
-> To give some background, the strategy here for -ffunction-sections support 
-> is to have the kernel's "magic" text sections all start with
-> 
-> ".text.."
-> 
-> while the sections generated by -ffunction-sections will start with
-> 
-> ".text." followed by a character other than "."
-> 
-> These sets are disjoint, and so if we have a complete set of valid next 
-> characters in the pattern ".text.[A-Za-z$_]*", it will be just as good as 
-> ".text.*" for matching the sections produced by -ffunction-sections.  (As 
-> a sidenote, I would prefer .text.[^.], but I don't believe that is valid 
-> linker script syntax).
-> 
-> While one could in principle try to handle things by not renaming the 
-> .text.foo sections and instead just placing the linker script code for 
-> them all before a .text.* item in the linker script, that approach is 
-> really fragile.  I think the "text..foo" approach is a good design and I 
-> am not aware of any problems with it.
+That is, while this patch issues all the IO in one hit, it doesn't
+change the order in which the IO is issued - it is still issued in
+LRU order. Given that they are issued in a short period of time now,
+rather than across a longer scan period, it is likely that it will
+not be any faster as:
 
-OK, but how about some actual explanation?  You've just characterised
-the current -ffunction-sections scheme that parisc has used for decades
-as "fragile"
+	a) IO will not be started as soon, and
+	b) the IO scheduler still only has a small re-ordering
+	   window and will choke just as much on random IO patterns.
 
-> Some more detailed explanation is available here:
-> <http://lkml.org/lkml/2010/2/19/365>
+However, there is a list_sort() function that could be used to sort
+the list; sorting the list of pages by mapping and page->index
+within the mapping would result in all the pages on each mapping
+being sent down in ascending offset order at once - exactly how the
+filesystems want IO to be sent to it.  Perhaps this is a simple
+improvement that can be made to this code that will make a big
+difference to worst case performance.
 
-That's still a bit short on explanations.
+FWIW, I did this for delayed metadata buffer writeback in XFS
+recently (i.e. sort the queue of (potentially tens of thousands of)
+buffers in ascending block order before dispatch) and that showed a
+10-15% reduction in seeks on simple kernel compile workloads. This
+shows that if we optimise IO patterns at higher layers where the
+sort window is much, much larger than in the IO scheduler, then
+overall system performance improves....
 
-But if I infer from the rest, someone, somewhere broke the convention
-that all our special linux sections be called .XX.data and .XX.text to
-distinguish them from the .text.FF and .data.YY the compiler will
-generate with the relevant sectional directives? because it's been
-working OK for us for a while.
+Cheers,
 
-To fix the breakage, the proposal now is to name all linux special
-sections as .text..XX and .data..XX?  I can see that's more standard
-looking that XX.text and XX.data, but not necessarily that it's better.
-
-This then introduces a problem of matching because .text.X and .text..X
-are hard to distinguish using the linker matching scripts.
-
-So even if I buy the rename of the linux symbols, what about using a
-linker defined symbol that's illegal as a function as the initial
-separator instead of .?  So hyphen looks the obvious one ... you can
-have all the linux special sections being .text- and .data- then we can
-easily distinguish.
-
-James
-
-> > > > which should match the .text.foo sections generated by -ffunction-sections 
-> > > > but not the kernel's special sections which now all have names of the form 
-> > > > .text..foo.
-> > 
-> > They do?  I don't find any symbols like that on parisc.
-> > 
-> > Historically, the way we've differentiated is that kernel special
-> > symbols tend to have the text designator *after* the name, whereas the
-> > linker puts it before  ... of course that has issues for functions
-> > called things like text or init ... but we try not to do that ...
-> 
-> It looks like the patches for the .text.foo rename haven't been sent yet, 
-> my mistake.  I've primarily been tracking the much larger .data.foo -> 
-> .data..foo transition.  I expect a patch series to rename the remaining 
-> sections and add -ffunction-sections support will be sent by either Denys 
-> Vlasenko or myself in the next few weeks.
-> 
-> While the kernel does use section names like ".init.text", there were 
-> before quite recently a very large number of kernel special sections with 
-> names like ".data.page_aligned" which would conflict with:
-> 
-> static int page_aligned;
-> 
-> when compiling with -fdata-sections.
-> 
-> In fact, we initially sent patches that changed these all to e.g. 
-> ".page_aligned.data".  But we discovered that it is problem when writing 
-> assembly files, since if you write:
-> 
-> .section ".page_aligned.data"
-> 
-> it doesn't work  -- you need to specify the load flags like so:
-> 
-> .section ".page_aligned.data", "aw"
-> 
-> while if you write e.g.
-> 
-> .section ".data..page_aligned"
-> 
-> the assembler will automatically set the right load flags for read/write 
-> data.
-> 
-> Since this is a subtle issue and I'd be surprised if there weren't a lot 
-> of people who work on assembly code in the kernel who don't know about 
-> this subtle issue, the ".page_aligned.data" naming scheme is destined to 
-> result in some frustrating bugs.  So we settled on the more bug-proof 
-> ".data..page_aligned" naming scheme for adding -fdata-sections support.
-> 
-> It would probably be a good cleanup to go through and rename e.g. 
-> .init.text to .text..init so that we're consistent everywhere, but I'd 
-> like to get -ffunction-sections working before starting that project 
-> myself.
-
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
