@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab0FNQoJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 12:44:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47653 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752901Ab0FNQoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 12:44:07 -0400
-Message-ID: <4C165BCF.4030507@zytor.com>
-Date: Mon, 14 Jun 2010 09:41:51 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, Borislav Petkov <bp@alien8.de>,
-       =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
-       uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Jeff Dike <jdike@addtoit.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [uml-devel] [PATCH resend] um, hweight: Fix UML boot crash
-References: <4C0F4B00.4090307@panasas.com>	<4C0F4C40.5020207@panasas.com> <AANLkTinwQmWP-rFu9e-ns5twsZwZjuSLi5vcll55ZZhx@mail.gmail.com> <4C0FDD8C.2020704@zytor.com> <4C1653FF.3080108@panasas.com>
-In-Reply-To: <4C1653FF.3080108@panasas.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756227Ab0FNQpW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 12:45:22 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20671 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab0FNQpU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 12:45:20 -0400
+Date: Mon, 14 Jun 2010 09:44:48 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH] Adding support for BMP085 pressure sensor.
+Message-Id: <20100614094448.cd1a76b9.randy.dunlap@oracle.com>
+In-Reply-To: <0680EC522D0CC943BC586913CF3768C003B34A6178@dbde02.ent.ti.com>
+References: <0680EC522D0CC943BC586913CF3768C003B34A6178@dbde02.ent.ti.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4C165C9C.02AD:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 09:08 AM, Boaz Harrosh wrote:
-> On 06/09/2010 09:29 PM, H. Peter Anvin wrote:
->> On 06/09/2010 01:46 AM, Geert Uytterhoeven wrote:
->>>
->>> Peter, are you happy with this?
->>> Although we still don't know why UML cannot grok it, it does fix a
->>> regression in post-2.6.34.
->>>
->>
->> Yes, I'll push it.
->>
->> 	-hpa
+On Mon, 14 Jun 2010 19:49:00 +0530 Datta, Shubhrajyoti wrote:
+
 > 
-> Peter hi.
+> Adding support for BMP085 pressure sensor.
+> The interface of the device is I2C.
+> The driver is based on a version initially written by Christoph
+> Mair.
 > 
-> Why have we missed that patch from -rc3. This is so *not fun* to keep
-> out-of-tree patches. Specially when working with lots of other people's
-> trees.
 > 
-> Please push it ASAP
-> Boaz
+> Signed-off-by: Shubhrajyoti Datta <shubhrajyoti@ti.com>
+> ---
+>  drivers/misc/bmp085.c |  342 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 342 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/misc/bmp085.c
 
-We made the decision of not pushing our queue for -rc3 because Linus
-specifically wanted only critical fixes for -rc3.  We will push it for
--rc4 for when Linus returns.
 
-Also, you may want to consider moderating your tone.
+No Kconfig and Makefile changes?
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
