@@ -1,109 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab0FNA1c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Jun 2010 20:27:32 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:43529 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755092Ab0FNA1b (ORCPT
+	id S1755076Ab0FNAcr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Jun 2010 20:32:47 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56357 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754978Ab0FNAcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Jun 2010 20:27:31 -0400
-Date: Mon, 14 Jun 2010 10:27:06 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Tao Ma <tao.ma@oracle.com>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, sandeen@sandeen.net,
-       Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH v2] xfs: Make fiemap works with sparse file.
-Message-ID: <20100614002705.GA6590@dastard>
-References: <1276308495-14267-1-git-send-email-tao.ma@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276308495-14267-1-git-send-email-tao.ma@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 13 Jun 2010 20:32:45 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 14 Jun 2010 09:28:19 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: balbir@linux.vnet.ibm.com
+Cc: kvm <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 1/2] Linux/Guest unmapped page cache control
+Message-Id: <20100614092819.cb7515a5.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100613183145.GM5191@balbir.in.ibm.com>
+References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>
+	<20100608155146.3749.67837.sendpatchset@L34Z31A.ibm.com>
+	<20100613183145.GM5191@balbir.in.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 12, 2010 at 10:08:15AM +0800, Tao Ma wrote:
-> In xfs_vn_fiemap, we set bvm_count to fi_extent_max + 1 and want
-> to return fi_extent_max extents, but actually it won't work for
-> a sparse file.
+On Mon, 14 Jun 2010 00:01:45 +0530
+Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
 
-Define "won't work". i.e. what's the test case?  I just created a
-sparse file and checked it, and it reported all the extents in it:
+> * Balbir Singh <balbir@linux.vnet.ibm.com> [2010-06-08 21:21:46]:
+> 
+> > Selectively control Unmapped Page Cache (nospam version)
+> > 
+> > From: Balbir Singh <balbir@linux.vnet.ibm.com>
+> > 
+> > This patch implements unmapped page cache control via preferred
+> > page cache reclaim. The current patch hooks into kswapd and reclaims
+> > page cache if the user has requested for unmapped page control.
+> > This is useful in the following scenario
+> > 
+> > - In a virtualized environment with cache=writethrough, we see
+> >   double caching - (one in the host and one in the guest). As
+> >   we try to scale guests, cache usage across the system grows.
+> >   The goal of this patch is to reclaim page cache when Linux is running
+> >   as a guest and get the host to hold the page cache and manage it.
+> >   There might be temporary duplication, but in the long run, memory
+> >   in the guests would be used for mapped pages.
+> > - The option is controlled via a boot option and the administrator
+> >   can selectively turn it on, on a need to use basis.
+> > 
+> > A lot of the code is borrowed from zone_reclaim_mode logic for
+> > __zone_reclaim(). One might argue that the with ballooning and
+> > KSM this feature is not very useful, but even with ballooning,
+> > we need extra logic to balloon multiple VM machines and it is hard
+> > to figure out the correct amount of memory to balloon. With these
+> > patches applied, each guest has a sufficient amount of free memory
+> > available, that can be easily seen and reclaimed by the balloon driver.
+> > The additional memory in the guest can be reused for additional
+> > applications or used to start additional guests/balance memory in
+> > the host.
+> > 
+> > KSM currently does not de-duplicate host and guest page cache. The goal
+> > of this patch is to help automatically balance unmapped page cache when
+> > instructed to do so.
+> > 
+> > There are some magic numbers in use in the code, UNMAPPED_PAGE_RATIO
+> > and the number of pages to reclaim when unmapped_page_control argument
+> > is supplied. These numbers were chosen to avoid aggressiveness in
+> > reaping page cache ever so frequently, at the same time providing control.
+> > 
+> > The sysctl for min_unmapped_ratio provides further control from
+> > within the guest on the amount of unmapped pages to reclaim.
+> >
+> 
+> Are there any major objections to this patch?
+>  
 
-# xfs_bmap -vp testfile 
-testfile:
- EXT: FILE-OFFSET      BLOCK-RANGE      AG AG-OFFSET        TOTAL FLAGS
-   0: [0..7]:          hole                                     8
-   1: [8..15]:         96..103           0 (96..103)            8 00000
-   2: [16..23]:        hole                                     8
-   3: [24..31]:        112..119          0 (112..119)           8 00000
-   4: [32..39]:        hole                                     8
-   5: [40..47]:        128..135          0 (128..135)           8 00000
-   6: [48..55]:        hole                                     8
-   7: [56..63]:        144..151          0 (144..151)           8 00000
-   8: [64..71]:        hole                                     8
-   9: [72..79]:        160..167          0 (160..167)           8 00000
-  10: [80..87]:        hole                                     8
-  11: [88..95]:        176..183          0 (176..183)           8 00000
-  12: [96..103]:       hole                                     8
-  13: [104..111]:      192..199          0 (192..199)           8 00000
-  14: [112..119]:      hole                                     8
-  15: [120..127]:      208..215          0 (208..215)           8 00000
-# filefrag -v testfile 
-Filesystem type is: 58465342
-File size of testfile is 65536 (16 blocks, blocksize 4096)
- ext logical physical expected length flags
-   0       1       12               1 
-   1       3       14       12      1 
-   2       5       16       14      1 
-   3       7       18       16      1 
-   4       9       20       18      1 
-   5      11       22       20      1 
-   6      13       24       22      1 
-   7      15       26       24      1 eof
-testfile: 9 extents found
-#
+This kind of patch needs "how it works well" measurement.
 
-FWIW, filefrag seems busted - the file has 8 extents, not 9.
+- How did you measure the effect of the patch ? kernbench is not enough, of course.
+- Why don't you believe LRU ? And if LRU doesn't work well, should it be
+  fixed by a knob rather than generic approach ?
+- No side effects ?
 
-For a more fragmented sparse file (25,000 extents):
+- Linux vm guys tend to say, "free memory is bad memory". ok, for what
+  free memory created by your patch is used ? IOW, I can't see the benefit.
+  If free memory that your patch created will be used for another page-cache,
+  it will be dropped soon by your patch itself.
 
-# for i in `seq 1 2 50000`; do dd if=/dev/zero of=testfile bs=4k count=1 seek=$i; done
-....
-# xfs_bmap -vp testfile | grep -v hole | wc -l
-25002
-# filefrag -v testfile |tail -1
-testfile: 25001 extents found
+  If your patch just drops "duplicated, but no more necessary for other kvm",
+  I agree your patch may increase available size of page-caches. But you just
+  drops unmapped pages.
+  Hmm.
 
-So taking away the 2 header lines from xfs_bmap output we have 25000
-extents, and filefrag has over-counted by one again. However, we are
-we are definitely finding all the extents through fiemap...
+Thanks,
+-Kame
+ 
 
-> The reason is that in xfs_getbmap we will
-> calculate holes and set it in 'out', while out is malloced by
-> bmv_count(fi_extent_max+1) which didn't consider holes. So in the
-> worst case, if 'out' vector looks like
-> [hole, extent, hole, extent, hole, ... hole, extent, hole],
-> we will only return half of fi_extent_max extents.
-
-Right, it's not broken, we simply return less than fi_extent_mex
-extents when there are holes. I don't see that as a problem as
-applications have to handle that case anyway, and....
-
-> So in xfs_vn_fiemap, we should consider this worst case. If the
-> user wants fi_extent_max extents, we need a 'out' with size of
-> 2 *fi_extent_max + 2(one more the header).
-
-That's rather dangerous, I think. It relies on other code to catch
-the buffer overrun that this sets up for fragmented, non-sparse
-files. Personally I'd much prefer to return fewer extents for sparse
-files than to add a landmine like this into the kernel code....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
