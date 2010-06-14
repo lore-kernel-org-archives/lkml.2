@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab0FNLTU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 07:19:20 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47658 "EHLO gir.skynet.ie"
+	id S1752994Ab0FNLR7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 07:17:59 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47586 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753724Ab0FNLSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 07:18:01 -0400
+	id S1752441Ab0FNLR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 07:17:56 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        linux-mm@kvack.org
@@ -15,9 +15,9 @@ Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
        Christoph Hellwig <hch@infradead.org>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 10/12] vmscan: Update isolated page counters outside of main path in shrink_inactive_list()
-Date: Mon, 14 Jun 2010 12:17:51 +0100
-Message-Id: <1276514273-27693-11-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 01/12] tracing, vmscan: Add trace events for kswapd wakeup, sleeping and direct reclaim
+Date: Mon, 14 Jun 2010 12:17:42 +0100
+Message-Id: <1276514273-27693-2-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
 References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
@@ -25,140 +25,309 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When shrink_inactive_list() isolates pages, it updates a number of
-counters using temporary variables to gather them. These consume stack
-and it's in the main path that calls ->writepage(). This patch moves the
-accounting updates outside of the main path to reduce stack usage.
+This patch adds two trace events for kswapd waking up and going asleep for
+the purposes of tracking kswapd activity and two trace events for direct
+reclaim beginning and ending. The information can be used to work out how
+much time a process or the system is spending on the reclamation of pages
+and in the case of direct reclaim, how many pages were reclaimed for that
+process.  High frequency triggering of these events could point to memory
+pressure problems.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/vmscan.c |   63 +++++++++++++++++++++++++++++++++++-----------------------
- 1 files changed, 38 insertions(+), 25 deletions(-)
+ include/trace/events/gfpflags.h |   37 +++++++++++++
+ include/trace/events/kmem.h     |   38 +-------------
+ include/trace/events/vmscan.h   |  115 +++++++++++++++++++++++++++++++++++++++
+ mm/vmscan.c                     |   24 +++++++--
+ 4 files changed, 173 insertions(+), 41 deletions(-)
+ create mode 100644 include/trace/events/gfpflags.h
+ create mode 100644 include/trace/events/vmscan.h
 
+diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
+new file mode 100644
+index 0000000..e3615c0
+--- /dev/null
++++ b/include/trace/events/gfpflags.h
+@@ -0,0 +1,37 @@
++/*
++ * The order of these masks is important. Matching masks will be seen
++ * first and the left over flags will end up showing by themselves.
++ *
++ * For example, if we have GFP_KERNEL before GFP_USER we wil get:
++ *
++ *  GFP_KERNEL|GFP_HARDWALL
++ *
++ * Thus most bits set go first.
++ */
++#define show_gfp_flags(flags)						\
++	(flags) ? __print_flags(flags, "|",				\
++	{(unsigned long)GFP_HIGHUSER_MOVABLE,	"GFP_HIGHUSER_MOVABLE"}, \
++	{(unsigned long)GFP_HIGHUSER,		"GFP_HIGHUSER"},	\
++	{(unsigned long)GFP_USER,		"GFP_USER"},		\
++	{(unsigned long)GFP_TEMPORARY,		"GFP_TEMPORARY"},	\
++	{(unsigned long)GFP_KERNEL,		"GFP_KERNEL"},		\
++	{(unsigned long)GFP_NOFS,		"GFP_NOFS"},		\
++	{(unsigned long)GFP_ATOMIC,		"GFP_ATOMIC"},		\
++	{(unsigned long)GFP_NOIO,		"GFP_NOIO"},		\
++	{(unsigned long)__GFP_HIGH,		"GFP_HIGH"},		\
++	{(unsigned long)__GFP_WAIT,		"GFP_WAIT"},		\
++	{(unsigned long)__GFP_IO,		"GFP_IO"},		\
++	{(unsigned long)__GFP_COLD,		"GFP_COLD"},		\
++	{(unsigned long)__GFP_NOWARN,		"GFP_NOWARN"},		\
++	{(unsigned long)__GFP_REPEAT,		"GFP_REPEAT"},		\
++	{(unsigned long)__GFP_NOFAIL,		"GFP_NOFAIL"},		\
++	{(unsigned long)__GFP_NORETRY,		"GFP_NORETRY"},		\
++	{(unsigned long)__GFP_COMP,		"GFP_COMP"},		\
++	{(unsigned long)__GFP_ZERO,		"GFP_ZERO"},		\
++	{(unsigned long)__GFP_NOMEMALLOC,	"GFP_NOMEMALLOC"},	\
++	{(unsigned long)__GFP_HARDWALL,		"GFP_HARDWALL"},	\
++	{(unsigned long)__GFP_THISNODE,		"GFP_THISNODE"},	\
++	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
++	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"}		\
++	) : "GFP_NOWAIT"
++
+diff --git a/include/trace/events/kmem.h b/include/trace/events/kmem.h
+index 3adca0c..a9c87ad 100644
+--- a/include/trace/events/kmem.h
++++ b/include/trace/events/kmem.h
+@@ -6,43 +6,7 @@
+ 
+ #include <linux/types.h>
+ #include <linux/tracepoint.h>
+-
+-/*
+- * The order of these masks is important. Matching masks will be seen
+- * first and the left over flags will end up showing by themselves.
+- *
+- * For example, if we have GFP_KERNEL before GFP_USER we wil get:
+- *
+- *  GFP_KERNEL|GFP_HARDWALL
+- *
+- * Thus most bits set go first.
+- */
+-#define show_gfp_flags(flags)						\
+-	(flags) ? __print_flags(flags, "|",				\
+-	{(unsigned long)GFP_HIGHUSER_MOVABLE,	"GFP_HIGHUSER_MOVABLE"}, \
+-	{(unsigned long)GFP_HIGHUSER,		"GFP_HIGHUSER"},	\
+-	{(unsigned long)GFP_USER,		"GFP_USER"},		\
+-	{(unsigned long)GFP_TEMPORARY,		"GFP_TEMPORARY"},	\
+-	{(unsigned long)GFP_KERNEL,		"GFP_KERNEL"},		\
+-	{(unsigned long)GFP_NOFS,		"GFP_NOFS"},		\
+-	{(unsigned long)GFP_ATOMIC,		"GFP_ATOMIC"},		\
+-	{(unsigned long)GFP_NOIO,		"GFP_NOIO"},		\
+-	{(unsigned long)__GFP_HIGH,		"GFP_HIGH"},		\
+-	{(unsigned long)__GFP_WAIT,		"GFP_WAIT"},		\
+-	{(unsigned long)__GFP_IO,		"GFP_IO"},		\
+-	{(unsigned long)__GFP_COLD,		"GFP_COLD"},		\
+-	{(unsigned long)__GFP_NOWARN,		"GFP_NOWARN"},		\
+-	{(unsigned long)__GFP_REPEAT,		"GFP_REPEAT"},		\
+-	{(unsigned long)__GFP_NOFAIL,		"GFP_NOFAIL"},		\
+-	{(unsigned long)__GFP_NORETRY,		"GFP_NORETRY"},		\
+-	{(unsigned long)__GFP_COMP,		"GFP_COMP"},		\
+-	{(unsigned long)__GFP_ZERO,		"GFP_ZERO"},		\
+-	{(unsigned long)__GFP_NOMEMALLOC,	"GFP_NOMEMALLOC"},	\
+-	{(unsigned long)__GFP_HARDWALL,		"GFP_HARDWALL"},	\
+-	{(unsigned long)__GFP_THISNODE,		"GFP_THISNODE"},	\
+-	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
+-	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"}		\
+-	) : "GFP_NOWAIT"
++#include "gfpflags.h"
+ 
+ DECLARE_EVENT_CLASS(kmem_alloc,
+ 
+diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+new file mode 100644
+index 0000000..f76521f
+--- /dev/null
++++ b/include/trace/events/vmscan.h
+@@ -0,0 +1,115 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM vmscan
++
++#if !defined(_TRACE_VMSCAN_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_VMSCAN_H
++
++#include <linux/types.h>
++#include <linux/tracepoint.h>
++#include "gfpflags.h"
++
++TRACE_EVENT(mm_vmscan_kswapd_sleep,
++
++	TP_PROTO(int nid),
++
++	TP_ARGS(nid),
++
++	TP_STRUCT__entry(
++		__field(	int,	nid	)
++	),
++
++	TP_fast_assign(
++		__entry->nid	= nid;
++	),
++
++	TP_printk("nid=%d", __entry->nid)
++);
++
++TRACE_EVENT(mm_vmscan_kswapd_wake,
++
++	TP_PROTO(int nid, int order),
++
++	TP_ARGS(nid, order),
++
++	TP_STRUCT__entry(
++		__field(	int,	nid	)
++		__field(	int,	order	)
++	),
++
++	TP_fast_assign(
++		__entry->nid	= nid;
++		__entry->order	= order;
++	),
++
++	TP_printk("nid=%d order=%d", __entry->nid, __entry->order)
++);
++
++TRACE_EVENT(mm_vmscan_wakeup_kswapd,
++
++	TP_PROTO(int nid, int zid, int order),
++
++	TP_ARGS(nid, zid, order),
++
++	TP_STRUCT__entry(
++		__field(	int,		nid	)
++		__field(	int,		zid	)
++		__field(	int,		order	)
++	),
++
++	TP_fast_assign(
++		__entry->nid		= nid;
++		__entry->zid		= zid;
++		__entry->order		= order;
++	),
++
++	TP_printk("nid=%d zid=%d order=%d",
++		__entry->nid,
++		__entry->zid,
++		__entry->order)
++);
++
++TRACE_EVENT(mm_vmscan_direct_reclaim_begin,
++
++	TP_PROTO(int order, int may_writepage, gfp_t gfp_flags),
++
++	TP_ARGS(order, may_writepage, gfp_flags),
++
++	TP_STRUCT__entry(
++		__field(	int,	order		)
++		__field(	int,	may_writepage	)
++		__field(	gfp_t,	gfp_flags	)
++	),
++
++	TP_fast_assign(
++		__entry->order		= order;
++		__entry->may_writepage	= may_writepage;
++		__entry->gfp_flags	= gfp_flags;
++	),
++
++	TP_printk("order=%d may_writepage=%d gfp_flags=%s",
++		__entry->order,
++		__entry->may_writepage,
++		show_gfp_flags(__entry->gfp_flags))
++);
++
++TRACE_EVENT(mm_vmscan_direct_reclaim_end,
++
++	TP_PROTO(unsigned long nr_reclaimed),
++
++	TP_ARGS(nr_reclaimed),
++
++	TP_STRUCT__entry(
++		__field(	unsigned long,	nr_reclaimed	)
++	),
++
++	TP_fast_assign(
++		__entry->nr_reclaimed	= nr_reclaimed;
++	),
++
++	TP_printk("nr_reclaimed=%lu", __entry->nr_reclaimed)
++);
++
++#endif /* _TRACE_VMSCAN_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 165c2f5..019f0af 100644
+index 9c7e57c..6bfb579 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1073,7 +1073,8 @@ static unsigned long clear_active_flags(struct list_head *page_list,
- 			ClearPageActive(page);
- 			nr_active++;
- 		}
--		count[lru]++;
-+		if (count)
-+			count[lru]++;
- 	}
+@@ -48,6 +48,9 @@
  
- 	return nr_active;
-@@ -1153,12 +1154,13 @@ static int too_many_isolated(struct zone *zone, int file,
-  * TODO: Try merging with migrations version of putback_lru_pages
-  */
- static noinline_for_stack void putback_lru_pages(struct zone *zone,
--				struct zone_reclaim_stat *reclaim_stat,
-+				struct scan_control *sc,
- 				unsigned long nr_anon, unsigned long nr_file,
-  				struct list_head *page_list)
- {
- 	struct page *page;
- 	struct pagevec pvec;
-+	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
+ #include "internal.h"
  
- 	pagevec_init(&pvec, 1);
- 
-@@ -1197,6 +1199,37 @@ static noinline_for_stack void putback_lru_pages(struct zone *zone,
- 	pagevec_release(&pvec);
- }
- 
-+static noinline_for_stack void update_isolated_counts(struct zone *zone, 
-+					struct scan_control *sc,
-+					unsigned long *nr_anon,
-+					unsigned long *nr_file,
-+					struct list_head *isolated_list)
-+{
-+	unsigned long nr_active;
-+	unsigned int count[NR_LRU_LISTS] = { 0, };
-+	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
++#define CREATE_TRACE_POINTS
++#include <trace/events/vmscan.h>
 +
-+	nr_active = clear_active_flags(isolated_list, count);
-+	__count_vm_events(PGDEACTIVATE, nr_active);
-+
-+	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
-+			      -count[LRU_ACTIVE_FILE]);
-+	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
-+			      -count[LRU_INACTIVE_FILE]);
-+	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
-+			      -count[LRU_ACTIVE_ANON]);
-+	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
-+			      -count[LRU_INACTIVE_ANON]);
-+
-+	*nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-+	*nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-+	__mod_zone_page_state(zone, NR_ISOLATED_ANON, *nr_anon);
-+	__mod_zone_page_state(zone, NR_ISOLATED_FILE, *nr_file);
-+
-+	reclaim_stat->recent_scanned[0] += *nr_anon;
-+	reclaim_stat->recent_scanned[1] += *nr_file;
-+}
-+
- /*
-  * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
-  * of reclaimed pages
-@@ -1208,10 +1241,8 @@ static noinline_for_stack unsigned long shrink_inactive_list(unsigned long nr_to
- 	LIST_HEAD(page_list);
+ struct scan_control {
+ 	/* Incremented by the number of inactive pages that were scanned */
  	unsigned long nr_scanned;
- 	unsigned long nr_reclaimed = 0;
--	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(zone, sc);
- 	unsigned long nr_taken;
- 	unsigned long nr_active;
--	unsigned int count[NR_LRU_LISTS] = { 0, };
- 	unsigned long nr_anon;
- 	unsigned long nr_file;
+@@ -1886,6 +1889,7 @@ out:
+ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 				gfp_t gfp_mask, nodemask_t *nodemask)
+ {
++	unsigned long nr_reclaimed;
+ 	struct scan_control sc = {
+ 		.gfp_mask = gfp_mask,
+ 		.may_writepage = !laptop_mode,
+@@ -1898,7 +1902,15 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 		.nodemask = nodemask,
+ 	};
  
-@@ -1256,25 +1287,7 @@ static noinline_for_stack unsigned long shrink_inactive_list(unsigned long nr_to
- 		return 0;
- 	}
- 
--	nr_active = clear_active_flags(&page_list, count);
--	__count_vm_events(PGDEACTIVATE, nr_active);
--
--	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
--					-count[LRU_ACTIVE_FILE]);
--	__mod_zone_page_state(zone, NR_INACTIVE_FILE,
--					-count[LRU_INACTIVE_FILE]);
--	__mod_zone_page_state(zone, NR_ACTIVE_ANON,
--					-count[LRU_ACTIVE_ANON]);
--	__mod_zone_page_state(zone, NR_INACTIVE_ANON,
--					-count[LRU_INACTIVE_ANON]);
--
--	nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
--	nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
--	__mod_zone_page_state(zone, NR_ISOLATED_ANON, nr_anon);
--	__mod_zone_page_state(zone, NR_ISOLATED_FILE, nr_file);
--
--	reclaim_stat->recent_scanned[0] += nr_anon;
--	reclaim_stat->recent_scanned[1] += nr_file;
-+	update_isolated_counts(zone, sc, &nr_anon, &nr_file, &page_list);
- 
- 	spin_unlock_irq(&zone->lru_lock);
- 
-@@ -1293,7 +1306,7 @@ static noinline_for_stack unsigned long shrink_inactive_list(unsigned long nr_to
- 		 * The attempt at page out may have made some
- 		 * of the pages active, mark them inactive again.
- 		 */
--		nr_active = clear_active_flags(&page_list, count);
-+		nr_active = clear_active_flags(&page_list, NULL);
- 		count_vm_events(PGDEACTIVATE, nr_active);
- 
- 		nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
-@@ -1304,7 +1317,7 @@ static noinline_for_stack unsigned long shrink_inactive_list(unsigned long nr_to
- 		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
- 	__count_zone_vm_events(PGSTEAL, zone, nr_reclaimed);
- 
--	putback_lru_pages(zone, reclaim_stat, nr_anon, nr_file, &page_list);
-+	putback_lru_pages(zone, sc, nr_anon, nr_file, &page_list);
- 	return nr_reclaimed;
+-	return do_try_to_free_pages(zonelist, &sc);
++	trace_mm_vmscan_direct_reclaim_begin(order,
++				sc.may_writepage,
++				gfp_mask);
++
++	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
++
++	trace_mm_vmscan_direct_reclaim_end(nr_reclaimed);
++
++	return nr_reclaimed;
  }
  
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+@@ -2297,9 +2309,10 @@ static int kswapd(void *p)
+ 				 * premature sleep. If not, then go fully
+ 				 * to sleep until explicitly woken up
+ 				 */
+-				if (!sleeping_prematurely(pgdat, order, remaining))
++				if (!sleeping_prematurely(pgdat, order, remaining)) {
++					trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
+ 					schedule();
+-				else {
++				} else {
+ 					if (remaining)
+ 						count_vm_event(KSWAPD_LOW_WMARK_HIT_QUICKLY);
+ 					else
+@@ -2319,8 +2332,10 @@ static int kswapd(void *p)
+ 		 * We can speed up thawing tasks if we don't call balance_pgdat
+ 		 * after returning from the refrigerator
+ 		 */
+-		if (!ret)
++		if (!ret) {
++			trace_mm_vmscan_kswapd_wake(pgdat->node_id, order);
+ 			balance_pgdat(pgdat, order);
++		}
+ 	}
+ 	return 0;
+ }
+@@ -2340,6 +2355,7 @@ void wakeup_kswapd(struct zone *zone, int order)
+ 		return;
+ 	if (pgdat->kswapd_max_order < order)
+ 		pgdat->kswapd_max_order = order;
++	trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, zone_idx(zone), order);
+ 	if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+ 		return;
+ 	if (!waitqueue_active(&pgdat->kswapd_wait))
 -- 
 1.7.1
 
