@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459Ab0FNRyt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 13:54:49 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39964 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647Ab0FNRys (ORCPT
+	id S1756625Ab0FNRzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 13:55:54 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:47882 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404Ab0FNRzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 13:54:48 -0400
-Date: Mon, 14 Jun 2010 13:54:23 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5 7/14] x86 support for Uprobes
-Message-ID: <20100614175423.GG23754@infradead.org>
-References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
- <20100614082913.29068.86825.sendpatchset@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100614082913.29068.86825.sendpatchset@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 14 Jun 2010 13:55:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=GhWn4iGqFK0cSwazffgXzUu0e83ZOBD/Uob0XuN5kNdlNQhh5mibi9HbunJyufx6O/
+         dfOH78q4TWSp5KI9ujjpApOPtrYVOcZmMsfNutMAl01NPxqZFK6BS+gNoztiaIN44w7r
+         2o67cSN1X8JWqH7kQAl1fmemso4lEMDTYNkoY=
+Subject: Re: [REGRESSION] [IWL3945] Broadcast is broken?
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: maciej.rutecki@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>, reinette.chatre@intel.com,
+       wey-yi.w.guy@intel.com, ilw@linux.intel.com,
+       linux-wireless@vger.kernel.org, Berg Johannes <johannes.berg@intel.com>,
+       iwlwifi maling list <ipw3945-devel@lists.sourceforge.net>
+In-Reply-To: <201006141924.24061.maciej.rutecki@gmail.com>
+References: <201006141924.24061.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Jun 2010 20:55:38 +0300
+Message-ID: <1276538138.7931.3.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 01:59:13PM +0530, Srikar Dronamraju wrote:
-> @@ -850,7 +850,19 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
->  
->  	if (thread_info_flags & _TIF_UPROBE) {
->  		clear_thread_flag(TIF_UPROBE);
-> +#ifdef CONFIG_X86_32
-> +		/*
-> +		 * On x86_32, do_notify_resume() gets called with
-> +		 * interrupts disabled. Hence enable interrupts if they
-> +		 * are still disabled.
-> +		 */
-> +		native_irq_enable();
-> +#endif
->  		uprobe_notify_resume(regs);
-> +
-> +#ifdef CONFIG_X86_32
-> +		native_irq_disable();
-> +#endif
+On Mon, 2010-06-14 at 19:24 +0200, Maciej Rutecki wrote: 
+> Hardware:
+> 08:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG [Golan] 
+> Network Connection (rev 02)
+> 
+> Last known good kernel: 2.6.34
+> 
+> Failing kernels: since 2.6.35-rc1 to 2.6.35-rc3
+> 
+> Symptoms:
+> During connect do wireless network authentication seems be OK, but I cannot 
+> get IP from dhcp serwer. I do:
+> echo 0x43fff > /sys/class/net/wlan0/device/debug_level
+> 
+> Syslog is here:
+> http://unixy.pl/maciek/download/kernel/2.6.35-rc3/gumis/syslog-before.txt
+> 
+> From syslog I guess the problem is that it doesn't receive broadcast frames 
+> (but I'm not sure), so I try:
+> sudo ifconfig wlan0 promisc
+> 
+> Syslog:
+> http://unixy.pl/maciek/download/kernel/2.6.35-rc3/gumis/syslog-after.txt
+> 
+> And then I can get IP address.
+> 
+> Any advice?
 
-I'm no x86 port guru, but this looks rather worriesome to me.  Why does
-do_notify_resume have different calling conventions on 32 vs 64-bit?
-And if there is a good reason that 32-bit has them disabled, why is
-enabling them in the middle of do_notify_resume okay?
+Very likely commit 3474ad635db371b0d8d0ee40086f15d223d5b6a4, 
+because I have same problem.
 
-> +void arch_uprobe_disable_sstep(struct pt_regs *regs)
-> +{
-> +		/* Disable single-stepping by clearing what we set */
-> +		clear_thread_flag(TIF_SINGLESTEP);
-> +		clear_thread_flag(TIF_FORCED_TF);
-> +		regs->flags &= ~X86_EFLAGS_TF;
-> +}
+Try to revert it.
 
-This seems to have one layer of indentation too much.
+Best regards,
+Maxim Levitsky
+
+
