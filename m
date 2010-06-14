@@ -1,117 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab0FNUW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 16:22:26 -0400
-Received: from www.tglx.de ([62.245.132.106]:44510 "EHLO www.tglx.de"
+	id S1755511Ab0FNUXa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 16:23:30 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:50466 "EHLO mail.sf-mail.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755055Ab0FNUWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 16:22:25 -0400
-Date: Mon, 14 Jun 2010 22:21:52 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: john stultz <johnstul@us.ibm.com>
-cc: Suresh Rajashekara <suresh.raj+linuxomap@gmail.com>,
-       linux-omap@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: Timekeeping issue on aggressive suspend/resume
-In-Reply-To: <1276543557.3076.30.camel@localhost.localdomain>
-Message-ID: <alpine.LFD.2.00.1006142204340.4290@localhost.localdomain>
-References: <AANLkTinIO5a1EeK6Ej2ljkuyL9zv06OMfbyiZBaxTQTd@mail.gmail.com>  <alpine.LFD.2.00.1006092206020.2933@localhost.localdomain>  <AANLkTin-6XsW49ECufTLcdzaD1eK9bAxe0j7RXvPqN7p@mail.gmail.com>  <1276199568.16089.35.camel@work-vm> 
- <AANLkTikPwOWHUdqZH1S9QVh-sgjlzptAB27_hK_otQ4Y@mail.gmail.com> <1276543557.3076.30.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755055Ab0FNUX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 16:23:29 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jun 2010 16:23:29 EDT
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Subject: Re: [PATCH 2/4] x86: ioremap: fix physical address check
+Date: Mon, 14 Jun 2010 22:16:36 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.85; i686; ; )
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org
+References: <4C11FF10.4060203@jp.fujitsu.com> <4C15F2BD.9020904@jp.fujitsu.com> <4C160D27.1050809@jp.fujitsu.com>
+In-Reply-To: <4C160D27.1050809@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed;
+  boundary="nextPart5256271.Xt28rHopTh";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006142216.42864.eike-kernel@sf-tec.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jun 2010, john stultz wrote:
+--nextPart5256271.Xt28rHopTh
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-> On Mon, 2010-06-14 at 00:46 -0700, Suresh Rajashekara wrote:
-> > On Thu, Jun 10, 2010 at 12:52 PM, john stultz <johnstul@us.ibm.com> wrote:
-> > > I think Thomas was suggesting that you consider creating a option for
-> > > where CLOCK_MONOTONIC included total_sleep_time.
-> > >
-> > > In that case the *hack* (and this is a hack, we'll need some more
-> > > thoughtful discussion before anything like it could make it upstream)
-> > > would be in timekeeping_resume() to comment out the lines that update
-> > > wall_to_monotonic and total_sleep_time.
-> > >
-> > > It would be interesting to hear if that hack works for you, and we can
-> > > try to come up with a better way to think about how to accommodate both
-> > > views of how to account time over suspend.
-> > 
-> > Thanks.
-> > 
-> > I tried this fix. It seemed to help, however the accuracy of sleep
-> > time for the process was not quite right. A process thread which was
-> > supposed to wake up every (X) seconds, seemed to wake up every (X -
-> > delta X) seconds.
-> 
-> Ah, the sleep time is probably too coarse (seconds). We probably need to
-> increase the granularity from read_persistent_clock() and see if that
-> helps (although most persistent clocks aren't very fine grained).
-> 
-> > Also another side effect of this change was that the system time was
-> > no longer in sync with the wall time.
-> 
-> ? This doesn't make much sense to me, as you shouldn't be manipulating
-> xtime differently.
-> 
-> Just to be clear, you mean the value from "date" doesn't match your
-> watch after resume? 
-> 
-> > These problems were more pronounced when the suspend/wakeup cycle time
-> > was brought down to 0.5 seconds from 4 seconds. The periodicity of
-> > most of the process threads were disturbed.
-> > 
-> > I decided to NOT suspend/resume the timekeeping subsystem in the
-> > kernel and try. It seemed to work. Every application seems to work
-> > fine.
-> > 
-> > Now my question is; Is it safe to disable suspend/resume of the
-> > timekeeping subsystem? Will it have an effect (on
-> > functionality/performance) which may not surface in my short
-> > experiments?
-> 
-> Well, the difficultly here is what folks actually mean by suspend. On
-> some hardware it means everything is powered off, and so on resume we
-> have to re-init hardware values.
-> 
-> It seems in your case that the hardware isn't completely powered off,
-> since the clocksource you're using seemed to continue counting while the
-> system was suspended. 
-> 
-> So in this case you might be ok. Your suspend seems closer to an deep
-> idle state on x86. So suspending timekeeping might not be necessary.
-> 
-> However, you're right that there may be lurking issues:
-> 
-> 1) The suspend time would have to be limited to the clocksource's
-> max_idle_ns value, since after that amount of cycles have past, we might
-> overflow the accumulation function, or the clocksource may have wrapped.
-> 
-> 2) If the hardware does reset the clocksource at some point during the
-> suspend, you'll have odd time issues.
-> 
-> 3) You could run into some difficulty keeping close sync with an NTP
-> server, as the long delays between accumulation will probably cause an
-> oscillating over-shoot and over-correction.
-> 
-> I suspect these different definitions of "suspend" on all of the
-> different hardware types out there is going to be a growing problem in
-> the near term. Especially as deep idle states start to power off more
-> hardware and becomes closer to suspend in behavior.
+Kenji Kaneshige wrote:
+> (2010/06/14 18:13), Kenji Kaneshige wrote:
+> > Thank you Hiroyuki.
+> >=20
+> > So many bugs in ioremap()...
+> >=20
+> > Will try with those bugs fixed.
+> >=20
+> > Thanks,
+> > Kenji Kaneshige
+>=20
+> The problem seems to be fixed by the following patch. This is still
+> under testing. I will post the patch as v2 after testing.
+>=20
+> Thanks,
+> Kenji Kaneshige
+>=20
+>=20
+> Current x86 ioremap() doesn't handle physical address higher than
+> 32-bit properly in X86_32 PAE mode. When physical address higher than
+> 32-bit is passed to ioremap(), higher 32-bits in physical address is
+> cleared wrongly. Due to this bug, ioremap() can map wrong address to
+> linear address space.
+>=20
+> In my case, 64-bit MMIO region was assigned to a PCI device (ioat
+> device) on my system. Because of the ioremap()'s bug, wrong physical
+> address (instead of MMIO region) was mapped to linear address space.
+> Because of this, loading ioatdma driver caused unexpected behavior
+> (kernel panic, kernel hangup, ...).
+>=20
+> Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+>=20
+> ---
+>  arch/x86/mm/ioremap.c   |   11 +++++------
+>  include/linux/io.h      |    4 ++--
+>  include/linux/vmalloc.h |    2 +-
+>  lib/ioremap.c           |   10 +++++-----
+>  4 files changed, 13 insertions(+), 14 deletions(-)
+>=20
+> Index: linux-2.6.34/arch/x86/mm/ioremap.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- linux-2.6.34.orig/arch/x86/mm/ioremap.c
+> +++ linux-2.6.34/arch/x86/mm/ioremap.c
+> @@ -62,7 +62,8 @@ int ioremap_change_attr(unsigned long va
+>  static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+>  		unsigned long size, unsigned long prot_val, void *caller)
+>  {
+> -	unsigned long pfn, offset, vaddr;
+> +	u64 pfn, last_pfn;
+> +	unsigned long offset, vaddr;
+>  	resource_size_t last_addr;
+>  	const resource_size_t unaligned_phys_addr =3D phys_addr;
+>  	const unsigned long unaligned_size =3D size;
 
-I don't think it's really an issue. Such hardware uses a 32.768kHz
-driven (RTC alike) clocksource/event which is never powered off and
-not affected by suspend/resume unless you run out of battery. That
-hardware provides sub second resolution (~30us) contrary to the PC
-style RTC which gives you seconds only. That's really good enough for
-timekeeping, NOHZ and even HIGHRES.
+Why do you use u64 and not resource_size_t for those? That way this would n=
+ot=20
+be needlessly big for "real" 32 bit platforms.
 
-The NTP sync might become an issue for real long sleep times, but
-that's an NTP problem and needs to be addressed seperately.
+Eike
 
-Thanks,
+--nextPart5256271.Xt28rHopTh
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-	tglx
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.12 (GNU/Linux)
+
+iEYEABECAAYFAkwWjioACgkQXKSJPmm5/E4WxQCeIQVB08zbJZO2EI5dzzfqqwan
+HBUAoJ0zuGwtdJmexBVRqxVPkA6NJ5qA
+=WAgj
+-----END PGP SIGNATURE-----
+
+--nextPart5256271.Xt28rHopTh--
