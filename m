@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab0FNQVL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 12:21:11 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:64920 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755855Ab0FNQVJ (ORCPT
+	id S1755823Ab0FNQYl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 12:24:41 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:39659 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab0FNQYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 12:21:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=EF0KzzedG/ELvdUj41qhEfiUcAvKDrOsTXH7PGYGCNJLp18Wt069KKz2hRmKg0Jgl0
-         Eah46Q0IaLFTQpm8E62QyrpPqe/+OVKh7YSWu0A2cEgADZRX7yKlyETo6k/9U3Lp8jW5
-         Lk3oLWPKYF582MhrJpyLLSYOfM16Vi2Qnyel8=
-Date: Mon, 14 Jun 2010 19:51:08 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 23/26] power: Add JZ4740 battery driver.
-Message-ID: <20100614155108.GA30552@oksana.dev.rtsoft.ru>
-References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
- <1275505950-17334-7-git-send-email-lars@metafoo.de>
+	Mon, 14 Jun 2010 12:24:40 -0400
+Date: Tue, 15 Jun 2010 01:24:38 +0900
+From: Norbert Preining <preining@logic.at>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: iwlagn completely unusable with some AP since 2.6.31
+Message-ID: <20100614162438.GB31239@gamma.logic.tuwien.ac.at>
+References: <20100614160910.GA10738@gandalf.dynalias.org> <20100614162048.GA28894@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1275505950-17334-7-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100614162048.GA28894@infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 09:12:29PM +0200, Lars-Peter Clausen wrote:
-> This patch adds support for the battery voltage measurement part of the JZ4740
-> ADC unit.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-> ---
+On Mo, 14 Jun 2010, Christoph Hellwig wrote:
+> I see the same issue, and I even tried the git bisect, but due to
+> various issues in early boot / ACPI code in that merge window it's
 
-Looks good. I see this is an RFC. Do you want me to apply it
-or there's a newer version to be submitted?
+Me, too, but as you said, hard to finish, it is getting weird when we
+come down to the merge window.
 
-Thanks,
+Is there a way to restrict git bisect to consider *only* changes in 
+a specific sub-directory (directories) ? That would help.
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+> impossible to finish it.  The ugly workaround for me is to always keep
+> a ping running in the background, which keeps it from dropping the
+
+I had the feeling that this helped a bit, but didn't explore it
+in an organized way. Thanks for the tip.
+
+Let's hope for the best
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+`Er, hey Earthman...'
+`Arthur,' said Arthur.
+`Yeah, could you just sort of keep this robot with you and
+guard this end of the passageway. OK?'
+What from? You just said there's no
+one here.'
+`Yeah, well, just for safety, OK?' said Zaphod.
+`Whose? Yours or mine?'
+                 --- Arthur drawing the short straw on Magrathea.
+                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
