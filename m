@@ -1,87 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab0FNUF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 16:05:57 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40049 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751644Ab0FNUF4 (ORCPT
+	id S1754870Ab0FNUHT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 16:07:19 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:53733 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab0FNUHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 16:05:56 -0400
-Subject: Re: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Tim Abbott <tabbott@ksplice.com>, linux-arch@vger.kernel.org,
-       Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-       Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-       Denys Vlasenko <vda.linux@googlemail.com>
-In-Reply-To: <87y6ehxvby.fsf@linux-g6p1.site>
-References: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
-	 <alpine.DEB.1.10.1006141014360.1432@dr-wily.mit.edu>
-	 <87y6ehxvby.fsf@linux-g6p1.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 14 Jun 2010 15:05:51 -0500
-Message-ID: <1276545951.5374.260.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Jun 2010 16:07:16 -0400
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Nils Carlson <nils.carlson@ludd.ltu.se>, Ingo Molnar <mingo@elte.hu>,
+       Borislav Petkov <bp@amd64.org>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       "Luck\, Tony" <tony.luck@intel.com>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       "Young\, Brent" <brent.young@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "bluesmoke-devel\@lists.sourceforge.net" 
+	<bluesmoke-devel@lists.sourceforge.net>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Joe Perches <joe@perches.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+       Ingo Molnar <mingo@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>
+References: <1274204560.17703.82.camel@Joe-Laptop.home>
+	<20100518185305.GA23921@elte.hu>
+	<987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com>
+	<20100518191802.GG25224@aftab> <m1k4r0c0y7.fsf@fess.ebiederm.org>
+	<20100518222832.GJ22675@basil.fritz.box>
+	<m1wrv0zo9q.fsf@fess.ebiederm.org> <20100519064619.GA30320@aftab>
+	<20100519070919.GA9618@elte.hu>
+	<50689ECC-A371-4923-BEBE-1A5A7E5B9D3B@ludd.ltu.se>
+	<20100614114906.GG17092@basil.fritz.box>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Mon, 14 Jun 2010 13:06:59 -0700
+In-Reply-To: <20100614114906.GG17092@basil.fritz.box> (Andi Kleen's message of "Mon\, 14 Jun 2010 13\:49\:06 +0200")
+Message-ID: <m14oh59y58.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: andi@firstfloor.org, Matt_Domsch@dell.com, mingo@redhat.com, linux-edac@vger.kernel.org, tglx@linutronix.de, joe@perches.com, dougthompson@xmission.com, bluesmoke-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org, brent.young@intel.com, mchehab@redhat.com, tony.luck@intel.com, seto.hidetoshi@jp.fujitsu.com, bp@amd64.org, mingo@elte.hu, nils.carlson@ludd.ltu.se
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andi Kleen <andi@firstfloor.org>
+X-Spam-Relay-Country: 
+X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: Re: Hardware Error Kernel Mini-Summit
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-14 at 20:33 +0100, Matt Fleming wrote:
-> On Mon, 14 Jun 2010 10:32:46 -0400 (EDT), Tim Abbott <tabbott@ksplice.com> wrote:
-> > 
-> > I was planning to submit in the next couple weeks a change that adds 
-> > support for building the kernel with -ffunction-sections -fdata-sections, 
-> > which would have as a piece of it adding to TEXT_TEXT the following 
-> > expression:
-> > 
-> > 	*(.text.[A-Za-z$_]*)	/* handle -ffunction-sections */\
+Andi Kleen <andi@firstfloor.org> writes:
 
-Just as a point of technical interest, that won't handle
--ffunction-sections.  At least on parisc, we get a
-section .text.<function name> for every function.  This means that any
-character legal in a function name can appear there, not just letters
-and underscores (we get millicode ones with dollar signs as well for
-instance).  That's why *(.text.*) is safer
+>> Just left the above for reference. How would this affect other
+>> aspects of EDAC such as the error injection, the sysfs
+>> entries that (in most cases) reflect the layout of dimm's, and
+>
+> Some of this can be probably retained, about the way EDAC
+> e.g. represents layout is quite unsuitable too. It includes
+> a lot of internal implementation details that in some cases
+> you can't even get anymore on modern design. Something
+> with a proper abstract interface is better.  EDAC never had this.
 
-> > which should match the .text.foo sections generated by -ffunction-sections 
-> > but not the kernel's special sections which now all have names of the form 
-> > .text..foo.
+It sounds like you can't be bothered to understand the EDAC code,
+or the fact that some users actually like to know when their hardware
+is having problems.
 
-They do?  I don't find any symbols like that on parisc.
+> Also the biggest problem is still that EDAC doesn't
+> give you any silk screen labels, so unless you 
+> have motherboard schemantics the layout it presents
+> is fairly useless -- you still don't know which DIMM
+> to exchange. So in theory EDAC looks great, but in practice ...
 
-Historically, the way we've differentiated is that kernel special
-symbols tend to have the text designator *after* the name, whereas the
-linker puts it before  ... of course that has issues for functions
-called things like text or init ... but we try not to do that ...
+- In practice it works even without silk screen labels.
+- The current EDAC code displays which DIMMS you have plugged
+  in so you can tell if you unplug one, if it was the DIMM
+  you were aiming at.
 
->   I suspect after that change, the cleanup of deleting .text.* 
-> > from the various architecture linker scripts that reference it should be 
-> > possible.
-> 
-> Do these special kernel sections include things like the parisc
-> .text.do_softirq, .text.sys_exit, etc? James raised a good objection to
-> the parisc patch of this series. I'm guessing most people saw it already
-> but I'll paste it here for reference,
-> 
-> 
->     This would destroy all of the named parisc text ordering we do above the
->     removed line because now you'd have swept up all the function sections
->     before we get to them, won't it?
-> 
->     The ordering is an execution speed up on 32 bit systems because our
->     relative jump is so short.
-> 
->     James
-> 
-> Will you changes handle this OK?
+> On a lot of modern systems I checked DMI
+> seems reasonably accurate in terms of layout, so I suspect they can 
+> be handled with this. For others probably
+> still need some special driver, but one 
+> with a proper interface.
 
-As long as we don't do the generic gathering of the rest of the text
-sections until after the special ones are handled (and this includes the
-specific function sections we name), it doesn't really matter to us how
-it's done.
+DMI is great on the days it works, there is a lot of variations
+between BIOS's.  Also if the information is decent it can be
+used to inform the current EDAC code as well as anything else.
 
-James
+You mean an interface that doesn't report the error so people
+won't complain to you about a near useless kernel error
+message.
 
+> Anyways the old EDAC drivers for this are not going
+> away, you can still use them. The interesting
+> question though is how to properly define the interface
+> for new hardware.
+>
+>> allow the setting of scrub rate? If we're just talking about
+>
+> I never quite saw the point of that one, but yes
+> there's no replacement for this anywhere else.
+>
+> Normally scrub rate can be simply set in the BIOS,
+> is that not good enough? Is there a use case for
+> changing it dynamically? 
+>
+> Note that modern hardware typically has demand scrubbing
+> anyways, that is when there is an error it automatically
+> scrubs.
 
+Setting the scrub rate isn't half so interesting as displaying
+it.
+
+Having basic hardware information displayed in sysfs seems to be the
+design of the rest of linux.  I don't see abandoning that part of the
+EDAC design as wise.
+
+Displaying the fact that ECC is turned on in the hardware is one
+of the more interesting bits.  That at least allows you to verify
+that things are working.
+
+>> replacing all instances of printk (when logging single bit
+>> errors) with perf events, I don't really see that as a problem.
+>
+> I don't think perf is the right tool for this, the semantics
+> are mostly unsuitable (it hasn't been designed as a error reporting
+> tool, but as a performance tool and performance events are quite
+> different from errors) and it doesn't provide most of the infrastructure
+> needed for it anyways.
+
+I will agree with that.  The argument that errors that should only
+happen rarely need a high performance handler seems to indicate
+there is some deep misunderstanding of the code.
+
+>> But EDAC is much more than that today...
+>
+> Well it's a hodge podge of quite a lot of odd bits.
+> I'm not sure "more" is the right word.
+
+If the basic errors could be posted in some kind of NMI/machine check
+safe data structure it would not be hard to get EDAC drivers to
+consume them.
+
+Eric
