@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987Ab0FNWqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 18:46:10 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:40045 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab0FNWqI (ORCPT
+	id S1757128Ab0FNWtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 18:49:19 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:54248 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab0FNWtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 18:46:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=sKq6MBHjLjCuGujTWG+8xx4XAaeBESgTK1lVUZoMGbznby9dhUA/7A0K4gegErVXbW
-         LYp0o2J0SEDn1en7G1WSehm06FRfj2NvoZXtbTs3qdfDUCuhYwd/051ntcoW80jEKx75
-         FLnWmPiy80CY46L1rSSYPNFI5I8yHWvsvLHE0=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: reiserfs-devel@vger.kernel.org
-Cc: edward.shishkin@gmail.com, linux-kernel@vger.kernel.org,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 1/8 v2]reiserfs:stree.c Fix variable set but not used.
-Date: Mon, 14 Jun 2010 15:46:08 -0700
-Message-Id: <1276555568-31550-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
+	Mon, 14 Jun 2010 18:49:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6013"; a="44443175"
+Subject: Re: [PATCHSET] workqueue: concurrency managed workqueue, take#5
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu, awalls@radix.net,
+       linux-kernel@vger.kernel.org, jeff@garzik.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+In-Reply-To: <4C16B0CA.9060107@kernel.org>
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>
+	 <20100614145839.8ac7687a.akpm@linux-foundation.org>
+	 <4C16AA75.8030303@kernel.org>
+	 <1276554672.3505.199.camel@c-dwalke-linux.qualcomm.com>
+	 <4C16AE4B.609@kernel.org>
+	 <1276554931.3505.200.camel@c-dwalke-linux.qualcomm.com>
+	 <4C16B0CA.9060107@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Jun 2010 15:49:12 -0700
+Message-ID: <1276555752.3505.204.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resend of this patch due to previous whitespace issues.
-The below fixes this warning:
-fs/reiserfs/stree.c: In function 'search_by_key':
-fs/reiserfs/stree.c:602:6: warning: variable 'right_neighbor_of_leaf_node' set but not used
+On Tue, 2010-06-15 at 00:44 +0200, Tejun Heo wrote:
+> On 06/15/2010 12:35 AM, Daniel Walker wrote:
+> > What is you definition of "concurrency" ? and explain try to explain it
+> > in terms of your patchset.
+> 
+> How many workers are concurrently executing?  What else?  Eh... I'll
+> write up another summary tomorrow.  Let's talk it there.
 
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
- Acked-by: Edward Shishkin <edward.shishkin@gmail.com> 
+I'd suggest If you write up another description try to not use the word
+concurrency .. That term can be used for all sorts of things, and it
+doesn't covey enough detail for anyone to know what your implementation
+is actually doing.
 
----
- fs/reiserfs/stree.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/fs/reiserfs/stree.c b/fs/reiserfs/stree.c
-index 313d39d..f268067 100644
---- a/fs/reiserfs/stree.c
-+++ b/fs/reiserfs/stree.c
-@@ -599,7 +599,6 @@ int search_by_key(struct super_block *sb, const struct cpu_key *key,	/* Key to s
- 	struct buffer_head *bh;
- 	struct path_element *last_element;
- 	int node_level, retval;
--	int right_neighbor_of_leaf_node;
- 	int fs_gen;
- 	struct buffer_head *reada_bh[SEARCH_BY_KEY_READA];
- 	b_blocknr_t reada_blocks[SEARCH_BY_KEY_READA];
-@@ -617,8 +616,6 @@ int search_by_key(struct super_block *sb, const struct cpu_key *key,	/* Key to s
- 
- 	pathrelse(search_path);
- 
--	right_neighbor_of_leaf_node = 0;
--
- 	/* With each iteration of this loop we search through the items in the
- 	   current node, and calculate the next current node(next path element)
- 	   for the next iteration of this loop.. */
--- 
-1.7.1.rc1.21.gf3bd6
+Daniel
 
