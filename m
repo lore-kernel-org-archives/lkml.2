@@ -1,58 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834Ab0FNVqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 17:46:51 -0400
-Received: from THUNK.ORG ([69.25.196.29]:51920 "EHLO thunker.thunk.org"
+	id S1756979Ab0FNVr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 17:47:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35573 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755295Ab0FNVqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 17:46:49 -0400
-Date: Mon, 14 Jun 2010 17:46:46 -0400
-From: tytso@mit.edu
-To: Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@redhat.com>,
-       David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Why is kslowd accumulating so much CPU time?
-Message-ID: <20100614214646.GF6666@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Dave Airlie <airlied@gmail.com>,
-	Dave Airlie <airlied@redhat.com>,
-	David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
-References: <E1OMQ88-0002a1-Gb@closure.thunk.org>
- <AANLkTilqc0jpwnIwe3OIQvB9avaXXzrBK4Hz0huESygy@mail.gmail.com>
- <20100613194949.GC8055@thunk.org>
- <AANLkTilQLk7ofSJBm9KIa2g1KQ35GC1D1vOZlPrv1VRv@mail.gmail.com>
- <20100614184244.GA11480@elliptictech.com>
+	id S1755295Ab0FNVr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 17:47:56 -0400
+Message-ID: <4C16A372.6020604@gmail.com>
+Date: Mon, 14 Jun 2010 23:47:30 +0200
+From: Edward Shishkin <edward.shishkin@gmail.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100614184244.GA11480@elliptictech.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+       linux-bluetooth@vger.kernel.org, clemens@ladisch.de,
+       debora@linux.vnet.ibm.com, dri-devel@lists.freedesktop.org,
+       linux-i2c@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+       linux-media@vger.kernel.org
+Subject: Re: [PATCH 1/8]reiserfs:stree.c Fix variable set but not used.
+References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com> <1276547208-26569-2-git-send-email-justinmattock@gmail.com> <4C1699AA.3000900@gmail.com> <4C169D71.90800@gmail.com>
+In-Reply-To: <4C169D71.90800@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 02:42:44PM -0400, Nick Bowler wrote:
-> 
-> This sounds exactly like the issue I've been seeing on a T500 laptop, as
-> well (GM45 board).  The slowdowns render the system essentially
-> unusable, as it can spend a loooong time just moving the mouse cursor a
-> few pixels on the screen.  During this time, nothing else on the display
-> is updating (glxgears drops to 0fps).  Things generally seem to be
-> working fine if I am not moving the mouse, or if I'm not running X.
+Justin P. Mattock wrote:
+> On 06/14/2010 02:05 PM, Edward Shishkin wrote:
+>> Justin P. Mattock wrote:
+>>> Not sure if this is correct or not.
+>>> the below patch gets rid of this warning message
+>>> produced by gcc 4.6.0
+>>>
+>>> fs/reiserfs/stree.c: In function 'search_by_key':
+>>> fs/reiserfs/stree.c:602:6: warning: variable
+>>> 'right_neighbor_of_leaf_node' set but not used
+>>>
+>>> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+>>
+>> Acked-by: Edward Shishkin <edward.shishkin@gmail.com>
+>>
+>
+> o.k.!!
+> what about the whitespace issue?
 
-I saw exactly the same behaviour when using the Ubuntu Karmic
-userspace.  Basically, using a 2.6.35-rc2 (+ vt memory corrupter fix)
-kernel, the system was essentially unusable.  Interestingly, the
-problem went away (with the same kernel) once I updated to Ubuntu
-Lucid.  I was going to mention that so that hopefully someone with far
-more X.org-fu than I could figure out how much of this is a X server
-bug, and how much of this was a kernel bug, but things worked just
-*fine* with 2.6.34 kernel.
+Whitespaces should be removed.
+I recommend quilt package for managing patches:
+"quilt refresh --strip-trailing-whitespace" is your friend..
 
-Occasionally it will happen that the mouse stops tracking, and then I
-grumble and curse, and a few seconds later it resolves itself.  I
-haven't had time to track it down; but the problem was breathtakingly
-easy to reproduce with an Ubuntu Karmic userspace.  :-)
+Thanks,
+Edward.
 
-     		       	  	 		    - Ted
+>
+> from what I remember I did notice the "+"
+> that git does when making patches like this
+> but given some many of these warnings I just
+> did a quick workaround or however then figured
+> to worry later on that.
+>
+>>> ---
+>>> fs/reiserfs/stree.c | 7 ++-----
+>>> 1 files changed, 2 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/fs/reiserfs/stree.c b/fs/reiserfs/stree.c
+>>> index 313d39d..73086ad 100644
+>>> --- a/fs/reiserfs/stree.c
+>>> +++ b/fs/reiserfs/stree.c
+>>> @@ -599,7 +599,6 @@ int search_by_key(struct super_block *sb, const
+>>> struct cpu_key *key, /* Key to s
+>>> struct buffer_head *bh;
+>>> struct path_element *last_element;
+>>> int node_level, retval;
+>>> - int right_neighbor_of_leaf_node;
+>>> int fs_gen;
+>>> struct buffer_head *reada_bh[SEARCH_BY_KEY_READA];
+>>> b_blocknr_t reada_blocks[SEARCH_BY_KEY_READA];
+>>> @@ -617,8 +616,7 @@ int search_by_key(struct super_block *sb, const
+>>> struct cpu_key *key, /* Key to s
+>>>
+>>> pathrelse(search_path);
+>>>
+>>> - right_neighbor_of_leaf_node = 0;
+>>> -
+>>> +
+>>> /* With each iteration of this loop we search through the items in the
+>>> current node, and calculate the next current node(next path element)
+>>> for the next iteration of this loop.. */
+>>> @@ -695,8 +693,7 @@ int search_by_key(struct super_block *sb, const
+>>> struct cpu_key *key, /* Key to s
+>>> starting from the root. */
+>>> block_number = SB_ROOT_BLOCK(sb);
+>>> expected_level = -1;
+>>> - right_neighbor_of_leaf_node = 0;
+>>> -
+>>> +
+>>> /* repeat search from the root */
+>>> continue;
+>>> }
+>>
+>>
+>
+>
+
