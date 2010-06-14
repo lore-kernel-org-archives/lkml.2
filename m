@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab0FNT5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 15:57:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44006 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751100Ab0FNT5c (ORCPT
+	id S1754491Ab0FNT7L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 15:59:11 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:37941 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab0FNT7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 15:57:32 -0400
-Date: Mon, 14 Jun 2010 12:57:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>,
-       Frantisek Hanzlik <franta@hanzlici.cz>, linux-kernel@vger.kernel.org,
-       Jens Axboe <axboe@kernel.dk>
-Subject: Re: fs/fs-writeback oopses in kernel 2.6.33.4-95.fc13.i686.PAE
-Message-Id: <20100614125716.b04fcd28.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTimPwbOga_gEMajfciD8ZokBaz99c2ty9R6q_cs5@mail.gmail.com>
-References: <4BFA730C.1010906@hanzlici.cz>
-	<20100524230512.8cc7dfc1.akpm@linux-foundation.org>
-	<87vdacl15j.fsf@openvz.org>
-	<AANLkTimPwbOga_gEMajfciD8ZokBaz99c2ty9R6q_cs5@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Jun 2010 15:59:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=J6WPKhztba2a/qK1ritnDeoYP8gL3wFivrV/lyE9+YiRPDu+LtpS4j4Nd8nPm2WWR6
+         UNe5s0sT5/B/tZm6U2e38cWHGRCXem+0LI78LPtjootuheYVYGLoBBB8IEPeovKUxOqi
+         wJD4HZOcmkIyQ2ySu8hZKZ3W9QTGFgLJ31Vr0=
+MIME-Version: 1.0
+In-Reply-To: <1276519112-11649-2-git-send-email-matt@console-pimps.org>
+References: <1276519112-11649-1-git-send-email-matt@console-pimps.org> 
+	<1276519112-11649-2-git-send-email-matt@console-pimps.org>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Mon, 14 Jun 2010 15:58:49 -0400
+Message-ID: <AANLkTim61KGFgXWlzO71Zqav07AUVazohlcsTmygZaui@mail.gmail.com>
+Subject: Re: [PATCH 2/5] blackfin: Remove *(.text.*) pattern from the linker 
+	script
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jun 2010 11:06:17 +0200
-Bastien ROUCARIES <roucaries.bastien@gmail.com> wrote:
+On Mon, Jun 14, 2010 at 08:38, Matt Fleming wrote:
+> From: Matt Fleming <matthew.fleming@imgtec.com>
+>
+> Drop the pattern from the linker script because the pattern is now
+> provided by TEXT_TEXT.
+>
+> Signed-off-by: Matt Fleming <matthew.fleming@imgtec.com>
 
-> > > I don't see anything which would generate this warning in 2.6.33.4's
-> > > fs/fs-writeback.c:597. __RH must have mucked with it.
-> > Already fixed in mainstream by
-> > commit 7c8a3554c683f512dbcee26faedb42e4c05f12fa
-> > Author: Jens Axboe <jens.axboe@oracle.com>
-> > Date: __ Tue May 18 14:29:29 2010 +0200
-> 
-> Do you send it to stable ? I am hitting the same bug and count is high
-> on kerneloops (http://www.kerneloops.org/searchweek.php?search=writeback_inodes_wb)
-> 
-
-The commit didn't have a cc:stable in the changelog so no, it probably
-wasn't backported.
-
-But that commit was later reverted anyway.  Hopefully when the real fix
-gets merged, it will be backported.
-
+once the vmlinux.lds.h change gets merged:
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
