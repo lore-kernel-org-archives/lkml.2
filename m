@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab0FNU57 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 16:57:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1285 "EHLO mx1.redhat.com"
+	id S1756248Ab0FNU6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 16:58:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23698 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050Ab0FNU56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 16:57:58 -0400
-Subject: Re: [PATCH 02/12] tracing, vmscan: Add trace events for LRU page
-	isolation
+	id S1755842Ab0FNU6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 16:58:08 -0400
+Subject: Re: [PATCH 03/12] tracing, vmscan: Add trace event when a page is
+	written
 From: Larry Woodman <lwoodman@redhat.com>
 To: Mel Gorman <mel@csn.ul.ie>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
@@ -17,12 +17,12 @@ Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        Christoph Hellwig <hch@infradead.org>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1276514273-27693-3-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <1276514273-27693-4-git-send-email-mel@csn.ul.ie>
 References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
-	 <1276514273-27693-3-git-send-email-mel@csn.ul.ie>
+	 <1276514273-27693-4-git-send-email-mel@csn.ul.ie>
 Content-Type: text/plain
-Date: Mon, 14 Jun 2010 17:02:10 -0400
-Message-Id: <1276549330.8736.104.camel@dhcp-100-19-198.bos.redhat.com>
+Date: Mon, 14 Jun 2010 17:02:51 -0400
+Message-Id: <1276549371.8736.105.camel@dhcp-100-19-198.bos.redhat.com>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,9 +30,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 2010-06-14 at 12:17 +0100, Mel Gorman wrote:
-> This patch adds an event for when pages are isolated en-masse from the
-> LRU lists. This event augments the information available on LRU traffic
-> and can be used to evaluate lumpy reclaim.
+> This patch adds a trace event for when page reclaim queues a page for IO and
+> records whether it is synchronous or asynchronous. Excessive synchronous
+> IO for a process can result in noticeable stalls during direct reclaim.
+> Excessive IO from page reclaim may indicate that the system is seriously
+> under provisioned for the amount of dirty pages that exist.
 > 
 > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 
