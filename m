@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab0FNQ1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 12:27:45 -0400
-Received: from mail-yw0-f204.google.com ([209.85.211.204]:36258 "EHLO
-	mail-yw0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754890Ab0FNQ1o (ORCPT
+	id S1753858Ab0FNQ2w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 12:28:52 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:41951 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab0FNQ2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 12:27:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=rDdvCQ61zcJSt0b+jo8lWDqTVWNfIGVHavuvVDvEpP3OlvTaEsiae2F25rHwfysQpT
-         B12+0hF1cztRDYrNXZePtoNRcs0F9UxlWw/+fk/f02SXG9i1EL0Q43fOy+n4L9vfxep5
-         Nm9kS8ibMoAPcmCIsW9FGmikKDX0+2lSjXIyM=
-From: Gene Heskett <gene.heskett@gmail.com>
-Organization: Organization? very little
-To: walt <w41ter@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Noticeable slow-down in 2.6.35-rc3
-Date: Mon, 14 Jun 2010 12:27:40 -0400
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-References: <AANLkTimDUf0N6b5PBy2wTGeAWEIY-lUvQPHQ7D7Gyrq4@mail.gmail.com> <201006131813.04096.gene.heskett@gmail.com> <hv58sc$b1b$1@dough.gmane.org>
-In-Reply-To: <hv58sc$b1b$1@dough.gmane.org>
+	Mon, 14 Jun 2010 12:28:51 -0400
+X-Greylist: delayed 527 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Jun 2010 12:28:51 EDT
+Date: Mon, 14 Jun 2010 18:19:04 +0200
+From: Nico Schottelius <nico-linux-20100614@schottelius.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: New issues in 2.6.35-rc{1,2}
+Message-ID: <20100614161904.GE31910@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20100614@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006141227.40233.gene.heskett@gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u5E4XgoOPWr4PD9E"
+Content-Disposition: inline
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.35-rc2 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 June 2010, walt wrote:
->On 06/13/2010 03:13 PM, Gene Heskett wrote:
->> Unfortunately, this patch will not apply to my src tree for 2.6.35-rc3,
->> even after I fixed the unwanted line wrap in the first active line.
->>
->> I get:
->>
->> [root@coyote linux-2.6.35-rc3]# patch -p1<../2.6.35-rc3-test.patch
->> patching file net/core/skbuff.c
->> Hunk #1 FAILED at 532.
->> 1 out of 1 hunk FAILED -- saving rejects to file net/core/skbuff.c.rej
->>
->> Did my grabbing it with swiftfox damage it even further?
->> ------------------------------------------------------------------
->> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
->> index 9f07e74..bcf2fa3 100644
->> --- a/net/core/skbuff.c
->> +++ b/net/core/skbuff.c
->> @@ -532,6 +532,7 @@ static void __copy_skb_header(struct sk_buff *new,
->> const struct sk_buff *old) new-&gt;ip_summed		= old-&gt;ip_summed;
 
-It also seems that the whole string "&gt;ip_" has been traded for the 
-leading c in the var names.  So that patch was totally trashed by a broken 
-html converter by the time it actually got to my machine.
+--u5E4XgoOPWr4PD9E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Where can I get a pristine copy?
+Hey devs!
 
-I am also wondering if this has anything to do with my missing USB devices 
-when booted to 2.6.35-rc3.  In my case the symptoms are as it it did not 
-recurse far enough up the various branches of my usb tree from hell to find 
-everything.
+In both of these versions, the update of the carrier flag seems
+to be "different" than before (linux-2.6.34-08528-gb3f2f6c):
 
-Thanks.
+wlan0 (iwlagn) does not recognize it's disconnected
+and eth0 (e1000e) does only react correctly after I restarted
+dhcpcd (isc):
 
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-				FROM THE DESK OF
-				Rapunzel
+[11:20] kr:pm# dhcpcd eth0=20
+dhcpcd: version 5.2.2 starting
+dhcpcd: eth0: waiting for carrier
+^Cdhcpcd: received SIGINT, stopping
+dhcpcd: eth0: removing interface
+[11:20] kr:pm# dhcpcd eth0
+dhcpcd: version 5.2.2 starting
+dhcpcd: eth0: broadcasting for a lease
+dhcpcd: eth0: offered 129.132.102.115 from 129.132.65.12
+dhcpcd: eth0: ignoring offer of 129.132.102.115 from 129.132.57.97
+dhcpcd: eth0: acknowledged 129.132.102.115 from 129.132.65.12
+dhcpcd: eth0: checking for 129.132.102.115
+dhcpcd: eth0: leased 129.132.102.115 for 86400 seconds
+dhcpcd: forking to background
 
-Dear Prince:
+It's known that iwlagn has problems after suspend/resume,
+but new is that both nics do not notify dhcpcd that the link
+has gone. I'm not sure what / where broke here, just see that
+dhcpcd noticed it before and now doesn't anymore.
 
-	Use ladder tonight -- you're splitting my ends.
+Nico
+
+--=20
+New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+Please resign, if you signed 9885188C or 8D0E27A4.
+
+Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
+
+--u5E4XgoOPWr4PD9E
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwWVngACgkQ19zI5DGHffAURgCgxt+B8Q2OK4fYEXaqnoTeeXmV
+qrIAnRJldjxynFGP/R3k+9j/+yHVclhb
+=Jf1e
+-----END PGP SIGNATURE-----
+
+--u5E4XgoOPWr4PD9E--
