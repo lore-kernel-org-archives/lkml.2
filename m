@@ -1,117 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab0FNSYQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 14:24:16 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:46261 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab0FNSYO convert rfc822-to-8bit (ORCPT
+	id S1753377Ab0FNSeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 14:34:21 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:11388 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342Ab0FNSeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 14:24:14 -0400
-Date: Mon, 14 Jun 2010 11:23:19 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Thomas =?ISO-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-       John Fastabend <john.r.fastabend@intel.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [2.6.35-rc3 regression] TCP connections on 'lo' interface
- randomly stall
-Message-Id: <20100614112319.9a2758f2.randy.dunlap@oracle.com>
-In-Reply-To: <4C167093.2030308@archlinux.org>
-References: <4C167093.2030308@archlinux.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090208.4C1673CA.013B:SCFMA922111,ss=1,fgs=0
+	Mon, 14 Jun 2010 14:34:19 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Subject: Re: [PATCH -v2] x86, pci: Handle fallout pci devices with peer root bus
+Date: Mon, 14 Jun 2010 12:34:17 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Graham Ramsey <ramsey.graham@ntlworld.com>,
+       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+       Robert Richter <robert.richter@amd.com>,
+       Harald Welte <HaraldWelte@viatech.com>,
+       Joseph Chan <JosephChan@via.com.tw>, Jiri Slaby <jslaby@suse.cz>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dominik Brodowski <linux@dominikbrodowski.net>
+References: <4BF40014.30303@ntlworld.com> <4C12C189.50201@oracle.com> <4C166B4F.90308@oracle.com>
+In-Reply-To: <4C166B4F.90308@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006141234.17912.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jun 2010 20:10:27 +0200 Thomas Bächler wrote:
+On Monday, June 14, 2010 11:47:59 am Yinghai Lu wrote:
+> 
+> Graham bisected
+> |    commit 3e3da00c01d050307e753fb7b3e84aefc16da0d0
+> |    x86/pci: AMD one chain system to use pci read out res
+> 
+> cause the SND_HDA_INTEL doesn't work anymore.
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=16007
+> 
+> It turns out that his system with via chipset only have one hypertransport
+> chain, but does have one extra orphan device 80:01.0
+> 
+>  PCI: Probing PCI hardware (bus 00)
+>  PCI: Discovered primary peer bus 80 [IRQ]
+> 
+>  node 0 link 0: io port [1000, ffffff]
+>  TOM: 0000000080000000 aka 2048M
+>  node 0 link 0: mmio [e0000000, efffffff]
+>  node 0 link 0: mmio [a0000, bffff]
+>  node 0 link 0: mmio [80000000, ffffffff]
+>  bus: [00, ff] on node 0 link 0
+> 
+> Try to make peer root buses to share same mmio/io resources if those peer root
+> buses fall into the same bus range.
 
-> With 2.6.35-rc3, I cannot use TCP over the 'lo' interface any more. This
-> is reproduced easily by running 'ssh localhost' and executing a few
-> commands inside the ssh session (if you are able to log in, 'ls -lhFR /'
-> does a good job) - the connection will stall completely after a very
-> short time. As far as I can see, all applications are affected.
-> 
-> It also seems that once a service is "stalled", I cannot open a new
-> connection to the same TCP port anymore. However, I can open a
-> connection to a different port until that one is stalled, too.
-> 
-> Running wireshark, I can see that TCP retransmissions are sent, but
-> never acknowledged.
-> 
-> Bisection (starting with 7908a9e as good and v2.6.35-rc3 as bad) leads
-> to the following commit. Please CC me on replies to this issue. Thanks
-> for your help.
+Yinghai, did you read https://bugzilla.kernel.org/show_bug.cgi?id=16007#c15 ?
 
-Does this patch fix it for you?
-http://lkml.org/lkml/2010/6/13/155
+I made the point there that an HT chain may contain multiple HT/PCI
+host bridges, but you are stuck on the idea that "one HT chain == one
+PCI root bus."
 
+I have not found the "one PCI host bridge per HT chain" requirement
+in the HT spec (if you find it, please point me to it).
 
-> commit 597a264b1a9c7e36d1728f677c66c5c1f7e3b837
-> Author: John Fastabend <john.r.fastabend@intel.com>
-> Date:   Thu Jun 3 09:30:11 2010 +0000
-> 
->     net: deliver skbs on inactive slaves to exact matches
-> 
->     Currently, the accelerated receive path for VLAN's will
->     drop packets if the real device is an inactive slave and
->     is not one of the special pkts tested for in
->     skb_bond_should_drop().  This behavior is different then
->     the non-accelerated path and for pkts over a bonded vlan.
-> 
->     For example,
-> 
->     vlanx -> bond0 -> ethx
-> 
->     will be dropped in the vlan path and not delivered to any
->     packet handlers at all.  However,
-> 
->     bond0 -> vlanx -> ethx
-> 
->     and
-> 
->     bond0 -> ethx
-> 
->     will be delivered to handlers that match the exact dev,
->     because the VLAN path checks the real_dev which is not a
->     slave and netif_recv_skb() doesn't drop frames but only
->     delivers them to exact matches.
-> 
->     This patch adds a sk_buff flag which is used for tagging
->     skbs that would previously been dropped and allows the
->     skb to continue to skb_netif_recv().  Here we add
->     logic to check for the deliver_no_wcard flag and if it
->     is set only deliver to handlers that match exactly.  This
->     makes both paths above consistent and gives pkt handlers
->     a way to identify skbs that come from inactive slaves.
->     Without this patch in some configurations skbs will be
->     delivered to handlers with exact matches and in others
->     be dropped out right in the vlan path.
-> 
->     I have tested the following 4 configurations in failover modes
->     and load balancing modes.
-> 
->     # bond0 -> ethx
-> 
->     # vlanx -> bond0 -> ethx
-> 
->     # bond0 -> vlanx -> ethx
-> 
->     # bond0 -> ethx
->                 |
->       vlanx -> --
-> 
->     Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
+If an HT chain may contain multiple HT/PCI host bridges, then it's
+obvious that the HT host bridge registers read by amd_bus.c don't
+contain enough information to correctly assign address space to the
+PCI root buses.
 
+> Also need to update insert_resource to avoid insert same resource two times.
+> 
+> We need this patch for 2.6.34 stable.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+No, we don't!  Not yet, anyway.  We need to find the root cause of this
+problem, not just paper over it and wait for it to pop up again somewhere
+else.
+
+> Reported-by: Graham Ramsey <ramsey.graham@ntlworld.com>
+> Bisected-by: Graham Ramsey <ramsey.graham@ntlworld.com>
+> Tested-by: Graham Ramsey <ramsey.graham@ntlworld.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: stable@kernel.org
+> 
+> ---
+>  arch/x86/pci/bus_numa.c |    3 ++-
+>  kernel/resource.c       |    2 +-
+>  2 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/pci/bus_numa.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/pci/bus_numa.c
+> +++ linux-2.6/arch/x86/pci/bus_numa.c
+> @@ -22,7 +22,8 @@ void x86_pci_root_bus_res_quirks(struct
+>  		return;
+>  
+>  	for (i = 0; i < pci_root_num; i++) {
+> -		if (pci_root_info[i].bus_min == b->number)
+> +		if (pci_root_info[i].bus_min <= b->number &&
+> +		    pci_root_info[i].bus_max >= b->number)
+>  			break;
+>  	}
+>  
+> Index: linux-2.6/kernel/resource.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/resource.c
+> +++ linux-2.6/kernel/resource.c
+> @@ -451,7 +451,7 @@ static struct resource * __insert_resour
+>  		if (!first)
+>  			return first;
+>  
+> -		if (first == parent)
+> +		if (first == parent || first == new)
+>  			return first;
+>  
+>  		if ((first->start > new->start) || (first->end < new->end))
+> 
