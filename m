@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490Ab0FNRVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 13:21:17 -0400
-Received: from thunk.org ([69.25.196.29]:56248 "EHLO thunker.thunk.org"
+	id S1756481Ab0FNRXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 13:23:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:1125 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751644Ab0FNRVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 13:21:15 -0400
-Date: Mon, 14 Jun 2010 13:21:13 -0400
-From: tytso@mit.edu
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-ext4@vger.kernel.org, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [17/23] EXT3: Fix set but unused variables
-Message-ID: <20100614172113.GB6666@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Andi Kleen <andi@firstfloor.org>,
-	linux-ext4@vger.kernel.org, akpm@linux-foundation.org,
-	linux-kernel@vger.kernel.org
-References: <20100610110.764742110@firstfloor.org>
- <20100610111053.43E78B1A2B@basil.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100610111053.43E78B1A2B@basil.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1751165Ab0FNRXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 13:23:07 -0400
+Subject: [PATCH V2 7/7] MAINTAINERS: Add patterns to WIMAX STACK
+From: Joe Perches <joe@perches.com>
+To: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <1276534504.21431.47.camel@localhost.localdomain>
+References: <cover.1276304638.git.joe@perches.com>
+	 <557e2d3330369558badc163da6215008ffc50ab1.1276304638.git.joe@perches.com>
+	 <1276534504.21431.47.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Jun 2010 10:23:04 -0700
+Message-ID: <1276536184.1449.129.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 01:10:53PM +0200, Andi Kleen wrote:
-> 
-> I think it's mostly dead code, but needs more review. I was not fully sure
-> about the jbd case.
-> 
-> cc: tytso@mit.edu
-> cc: linux-ext4@vger.kernel.org
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Joe Perches <joe@perches.com>
+Cc: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
+---
+ MAINTAINERS |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Acked-by: "Theodore Ts'o" <tytso@mit.edu>
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 4cf783b..03cfc1c 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6243,6 +6243,11 @@ M:        linux-wimax@intel.com
+ L:	wimax@linuxwimax.org
+ S:	Supported
+ W:	http://linuxwimax.org
++F:	Documentation/wimax/README.wimax
++F:	include/linux/wimax.h
++F:	include/linux/wimax/debug.h
++F:	include/net/wimax.h
++F:	net/wimax/
+ 
+ WIMEDIA LLC PROTOCOL (WLP) SUBSYSTEM
+ M:	David Vrabel <david.vrabel@csr.com>
+-- 
+1.7.1.244.gbdc4
 
-						- Ted
+
