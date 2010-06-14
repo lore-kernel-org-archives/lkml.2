@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab0FNHpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 03:45:09 -0400
-Received: from mailout2.zih.tu-dresden.de ([141.30.67.73]:38643 "EHLO
-	mailout2.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752851Ab0FNHpH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 03:45:07 -0400
-Message-ID: <4C15DDF5.5040202@tu-dresden.de>
-Date: Mon, 14 Jun 2010 09:44:53 +0200
-From: =?UTF-8?B?Um9ubnkgVHNjaMO8dGVy?= <Ronny.Tschueter@tu-dresden.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
+	id S1753411Ab0FNHrL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 03:47:11 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58195 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab0FNHrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 03:47:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=LAY2XBRMg8EiQQ14vIp0y+n/SZn94iZM/bz471WoFhKDnQGEggrqlSaMYrlGEA13vc
+         crvQIyNP2kcT/wuasTTRGFfIzo/Y8F8Ew91Mdpk5TaZbMVtmy2fKbFojKSTprKLRuDzF
+         eDEtdoPsBxW4GaB0KSGXGUMTSwCg0VOJAeeaI=
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: sched:sched_migrate_task event tracing returns incorrect
- events
-References: <4C10FD1C.7080200@tu-dresden.de> <1276182701.2077.462.camel@twins>
-In-Reply-To: <1276182701.2077.462.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-TUD-Virus-Scanned: mailout2.zih.tu-dresden.de
+In-Reply-To: <1276199568.16089.35.camel@work-vm>
+References: <AANLkTinIO5a1EeK6Ej2ljkuyL9zv06OMfbyiZBaxTQTd@mail.gmail.com> 
+	<alpine.LFD.2.00.1006092206020.2933@localhost.localdomain> 
+	<AANLkTin-6XsW49ECufTLcdzaD1eK9bAxe0j7RXvPqN7p@mail.gmail.com> 
+	<1276199568.16089.35.camel@work-vm>
+From: Suresh Rajashekara <suresh.raj+linuxomap@gmail.com>
+Date: Mon, 14 Jun 2010 00:46:48 -0700
+X-Google-Sender-Auth: iCJwvlKdx5pIL465k8xHgD-X7eU
+Message-ID: <AANLkTikPwOWHUdqZH1S9QVh-sgjlzptAB27_hK_otQ4Y@mail.gmail.com>
+Subject: Re: Timekeeping issue on aggressive suspend/resume
+To: john stultz <johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-omap@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       linux-pm@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.06.2010 17:11, schrieb Peter Zijlstra:
-> On Thu, 2010-06-10 at 16:56 +0200, Ronny Tschüter wrote:
->    
->> Hi,
->>
->> I want to know a little bit more about the execution of my program.
->> Especially I'm interested in cpu migrations of my process. Therefore I
->> use the Linux performance counter infrastructure, set appropriate
->> perf_event attributes and setup the sched:sched_migrate_task event with
->> a system call:
->> ...
->> attr.type = PERF_TYPE_TRACEPOINT;
->> attr.size = sizeof( struct perf_event_attr );
->> attr.config = event_id; // id of sched:sched_migrate_task event
->> attr.sample_type = PERF_SAMPLE_TIME|PERF_SAMPLE_CPU|PERF_SAMPLE_RAW;
->> attr.freq = 0;
->> attr.sample_freq = 1;
->> fd = syscall( __NR_perf_counter_open,&attr, getpid(), -1, -1, 0 );
->> ...
->> Finally to read the events I map the kernel event buffer via mmap and
->> process every event in this buffer. However I run into two problems:
->>
->> (1) I need root privileges to open the counter successfully. Without
->> root privileges syscall returns -1. I think that is not OK because users
->> should be allowed to create per task counters.
->>      
-> It is, because you specify PERF_SAMPLE_RAW, which is considered a data
-> leak for unpriv users.
+On Thu, Jun 10, 2010 at 12:52 PM, john stultz <johnstul@us.ibm.com> wrote:
+> I think Thomas was suggesting that you consider creating a option for
+> where CLOCK_MONOTONIC included total_sleep_time.
 >
->    
->> (2) The buffer contains events that aren't caused by my process (i.e.
->> the COMM field does not contain the name of my process and the PID field
->> is not equal to the pid of my process).
->>      
-> I think that could happen if the migration happens from interrupt
-> context while your task is running. Also wakeups your process does can
-> result in migrations of the woken task from the context of your task.
->    
-What I need is a counter that trace every scheduling event (at least 
-every cpu migration event) of a given process. Is there such a counter 
-in the perf_events or does all counters come with this weakness? At the 
-moment I open one counter per cpu, trace all scheduling events on this 
-cpu and filter the events manually. But this approach is not feasible 
-for MPI programs, because the number of required counters will increase 
-enormously ( #processes * #cpus counters are needed ).
+> In that case the *hack* (and this is a hack, we'll need some more
+> thoughtful discussion before anything like it could make it upstream)
+> would be in timekeeping_resume() to comment out the lines that update
+> wall_to_monotonic and total_sleep_time.
+>
+> It would be interesting to hear if that hack works for you, and we can
+> try to come up with a better way to think about how to accommodate both
+> views of how to account time over suspend.
 
+Thanks.
 
+I tried this fix. It seemed to help, however the accuracy of sleep
+time for the process was not quite right. A process thread which was
+supposed to wake up every (X) seconds, seemed to wake up every (X -
+delta X) seconds.
+
+Also another side effect of this change was that the system time was
+no longer in sync with the wall time.
+
+These problems were more pronounced when the suspend/wakeup cycle time
+was brought down to 0.5 seconds from 4 seconds. The periodicity of
+most of the process threads were disturbed.
+
+I decided to NOT suspend/resume the timekeeping subsystem in the
+kernel and try. It seemed to work. Every application seems to work
+fine.
+
+Now my question is; Is it safe to disable suspend/resume of the
+timekeeping subsystem? Will it have an effect (on
+functionality/performance) which may not surface in my short
+experiments?
+
+Thanks in advance,
+
+Suresh
