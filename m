@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab0FNLuG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 07:50:06 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:49705 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752369Ab0FNLuD (ORCPT
+	id S1754476Ab0FNLug (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 07:50:36 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43186 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751882Ab0FNLue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 07:50:03 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Stephane Chatty <chatty@enac.fr>,
-       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>,
-       Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] hid-input: Use a larger event buffer for MT devices
-Date: Mon, 14 Jun 2010 13:49:41 +0200
-Message-Id: <1276516181-4519-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.6.3.3
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OO8Al-0001qG-9E.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OO8Al-0001qG-9E ea2bc5a7b96ab9109ae8aa475559eb87
+	Mon, 14 Jun 2010 07:50:34 -0400
+Date: Mon, 14 Jun 2010 12:50:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Luotao Fu <l.fu@pengutronix.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3 V2] mfd: add STMPE811 core support
+Message-ID: <20100614115032.GA14604@rakim.wolfsonmicro.main>
+References: <1276251195-22981-1-git-send-email-l.fu@pengutronix.de>
+ <1276511558-27121-2-git-send-email-l.fu@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276511558-27121-2-git-send-email-l.fu@pengutronix.de>
+X-Cookie: I brake for chezlogs!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MT devices produce a lot of data. Tell the underlying input device
-approximately how many events will be sent per synchronization, to allow
-for better buffering. The number is a template based on continuously
-reporting details for each finger on a single hand.
+On Mon, Jun 14, 2010 at 12:32:36PM +0200, Luotao Fu wrote:
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Hi Jiri,
+> +static void stmpe811_mask_work(struct work_struct *work)
+> +{
+> +	struct stmpe811 *stm = container_of(work, struct stmpe811, mask_work);
+> +
+> +	stmpe811_reg_write(stm, STMPE811_REG_INT_EN, stm->int_en_mask);
+> +
+> +	mutex_unlock(&stm->irq_mask_lock);
+> +}
 
-This patch goes together with the evdev buffer patchset, which Dmitry
-is going to queue for 2.6.36.
+Why are you doing this in a workqueue?  You shouldn't need to do this -
+you should implement the bus_lock() and bus_unlock() callbacks instead.
 
-Cheers,
-Henrik
+> +	ret = request_threaded_irq(client->irq, NULL, stmpe811_irq,
+> +				   pdata->irq_flags, "stmpe811", stm);
+> +	if (ret) {
+> +		dev_err(&client->dev, "failed to request IRQ: %d\n", ret);
+> +		goto err_free;
+> +	}
 
- drivers/hid/hid-input.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 7a0d2e4..69d152e 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -534,6 +534,9 @@ mapped:
- 			input_set_abs_params(input, usage->code, a, b, (b - a) >> 8, (b - a) >> 4);
- 		else	input_set_abs_params(input, usage->code, a, b, 0, 0);
- 
-+		/* use a larger default input buffer for MT devices */
-+		if (usage->code == ABS_MT_POSITION_X && input->hint_events_per_packet == 0)
-+			input_set_events_per_packet(input, 60);
- 	}
- 
- 	if (usage->type == EV_ABS &&
--- 
-1.6.3.3
-
+I suspect you should be unconditionally putting IRQF_ONESHOT here since
+the threaded IRQ requires it.
