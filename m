@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab0FNNpG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 09:45:06 -0400
-Received: from mail.gmx.net ([213.165.64.20]:35716 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751835Ab0FNNpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 09:45:04 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1+Y/wo4VcyYV3QO9Ed80Plp8ACI9mXCQHdT5vihKX
-	LS3faIwhvWD1Kx
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: Borislav Petkov <bp@amd64.org>
-Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
-Date: Mon, 14 Jun 2010 15:44:58 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.4; i686; ; )
-Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <201005271944.09541.toralf.foerster@gmx.de> <201006141149.24647.toralf.foerster@gmx.de> <20100614130039.GA4618@kryptos.osrc.amd.com>
-In-Reply-To: <20100614130039.GA4618@kryptos.osrc.amd.com>
+	id S1752502Ab0FNNyi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 09:54:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10620 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765Ab0FNNyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 09:54:37 -0400
+Date: Mon, 14 Jun 2010 09:54:03 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Huang Ying <ying.huang@intel.com>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+       Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
+Message-ID: <20100614135403.GH4894@redhat.com>
+References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
+ <20100612102558.GA4000@elte.hu>
+ <4C15A5D1.1040104@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201006141544.59500.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C15A5D1.1040104@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Borislav Petkov wrote at 15:00:39
-
-> Linus' tree doesn't contain the fix yet - rather it is in -tip:
-> http://git.kernel.org/tip/055c47272b8f5679d08ccc57efea3cb4aaeb5fc6
+On Mon, Jun 14, 2010 at 12:45:21PM +0900, Hidetoshi Seto wrote:
+> (2010/06/12 19:25), Ingo Molnar wrote:
+> > 
+> > * Huang Ying <ying.huang@intel.com> wrote:
+> > 
+> >> NMI can be triggered even when IRQ is masked. So it is not safe for NMI 
+> >> handler to call some functions. One solution is to delay the call via self 
+> >> interrupt, so that the delayed call can be done once the interrupt is 
+> >> enabled again. This has been implemented in MCE and perf event. This patch 
+> >> provides a unified version and make it easier for other NMI semantic handler 
+> >> to take use of the delayed call.
+> > 
+> > Instead of introducing this extra intermediate facility please use the same 
+> > approach the unified NMI watchdog is using (see latest -tip): a perf event 
+> > callback gives all the extra functionality needed.
+> > 
+> > The MCE code needs to be updated to use that - and then it will be integrated 
+> > into the events framework.
 > 
-> You can easily cherry-pick it from there and retest.
-Issue solved works with that patch.
+> Hi Ingo,
+> 
+> I think this "NMI delayed call mechanism" could be a part of "the events
+> framework" that we are planning to get in kernel soon.  At least APEI will
+> use NMI to report some hardware events (likely error) to kernel.  So I
+> suppose we will go to have a delayed call as an event handler for APEI.
+> 
+> Generally speaking "event" can occur independently of the situation.
+> NMI can tell us some of external events, expecting urgent reaction for
+> the event, but we cannot do everything in NMI context.  Or we might have
+> a sudden urge to generate an internal event while interrupts are disabled.
+> 
+> I agree that generating a self interrupt is reasonable solution.
+> Note that it could be said that both of "MCE handled (=event log should
+> be delivered to userland asap)" and "perf events pending (=pending events
+> should be handled asap)" are kind of internal event that requires urgent
+> handling in non-NMI kernel context.  One question here is why we should
+> have different vectors for these events that uses same mechanism.
 
-FWIW : This command sequence produced a linux executable which crashed too:
+I think the perf event subsytem can log events in NMI context already and
+deliver them to userspace when the NMI is done.  This is why I think Ingo
+wants MCE to be updated to sit on top of the perf event subsytem to avoid
+re-invent everything again.
 
-$> ~/devel/linux-2.6 $ patch -p1 < ../linux-2.6-
-tip.git-055c47272b8f5679d08ccc57efea3cb4aaeb5fc6.patch patching file 
-arch/um/include/asm/arch_hweight.h
+Then again I do not know enough about the MCE stuff to understand what you
+mean when an event comes in but you can't handle it in an NMI-safe
+context.  An example would be helpful.
 
-$> ~/devel/linux-2.6 $ make ARCH=um CC="ccache gcc"
-make[1]: `arch/um/sys-i386/user-offsets.s' is up to date.
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CHK     include/generated/compile.h
-  LINK linux
-$> start_uml.sh
-...
-
-But after I compiled it w/o ccache
-
-$> ~/devel/linux-2.6 $ make ARCH=um
-
-linux executable works (!?!)
-
-Anyway thx for the fix
-:-)
-
--- 
-MfG/Kind regards
-Toralf Förster
-
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
-
+Cheers,
+Don
