@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab0FORKP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 13:10:15 -0400
-Received: from rain.florz.de ([62.216.164.86]:37757 "EHLO
-	rain.florz.dyndns.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754136Ab0FORKN (ORCPT
+	id S1758006Ab0FORMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 13:12:09 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:65499 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136Ab0FORMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 13:10:13 -0400
-X-Greylist: delayed 977 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jun 2010 13:10:13 EDT
-Date: Tue, 15 Jun 2010 19:10:11 +0200
-From: Florian Zumbiehl <florz@florz.de>
+	Tue, 15 Jun 2010 13:12:08 -0400
+From: Himanshu Chauhan <hschauhan@nulltrace.org>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH] __ioremap_caller(): make check for ioremapping of RAM
-	cover complete mapping
-Message-ID: <20100615171011.GB15436@florz.florz.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Cc: ralf@linux-mips.org, linux-mips@linux-mips.org, ddaney@caviumnetworks.com
+Subject: [PATCH 0/2] MIPS: Kprobes and Kretprobes Support
+Date: Tue, 15 Jun 2010 20:12:47 +0530
+Message-Id: <1276612969-13508-1-git-send-email-hschauhan@nulltrace.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is a set of 2 patches for adding support of kprobes
+and kretprobes support on MIPS architecture. All my tests
+are done on Qemu's MALTA board. If somebody has _real_ MIPS
+machine, I would appreciate a try on the machine.
 
-the patch is untested and someone with detailed understanding of the
-semantics of this code probably should check for correctness of
-the fixed version in corner cases.
+Signed-off-by: Himanshu Chauhan <hschauhan@nulltrace.org>
 
-Florian
----------------------------------------------------------------------------
-x86 __ioremap_caller(): fix check for overlap with RAM to check the
-last page of the mapping as well.
+---
+Himanshu Chauhan (2):
+  MIPS: KProbes Support
+  MIPS: Kretprobe support
 
-Signed-off-by: Florian Zumbiehl <florz@florz.de>
+ arch/mips/Kconfig               |   14 ++
+ arch/mips/include/asm/break.h   |    2 +
+ arch/mips/include/asm/kdebug.h  |    5 +
+ arch/mips/include/asm/kprobes.h |   86 +++++++
+ arch/mips/kernel/Makefile       |    2 +
+ arch/mips/kernel/kprobes.c      |  493 +++++++++++++++++++++++++++++++++++++++
+ arch/mips/kernel/traps.c        |   43 ++++-
+ arch/mips/mm/fault.c            |   12 +-
+ 8 files changed, 654 insertions(+), 3 deletions(-)
+ create mode 100644 arch/mips/include/asm/kprobes.h
+ create mode 100644 arch/mips/kernel/kprobes.c
 
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index a4643e5..4c3e4f9 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -101,7 +101,7 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
- 	 * Don't allow anybody to remap normal RAM that we're using..
- 	 */
- 	for (pfn = phys_addr >> PAGE_SHIFT;
--				(pfn << PAGE_SHIFT) < (last_addr & PAGE_MASK);
-+				pfn <= (last_addr >> PAGE_SHIFT);
- 				pfn++) {
- 
- 		int is_ram = page_is_ram(pfn);
