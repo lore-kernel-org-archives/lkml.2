@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab0FOISz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 04:18:55 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:48449 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab0FOISx (ORCPT
+	id S1756361Ab0FOIVY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 04:21:24 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33011 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755399Ab0FOIVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 04:18:53 -0400
-Date: Tue, 15 Jun 2010 04:18:27 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Bastien ROUCARIES <roucaries.bastien@gmail.com>,
-       Dmitry Monakhov <dmonakhov@openvz.org>,
-       Frantisek Hanzlik <franta@hanzlici.cz>, linux-kernel@vger.kernel.org,
-       Jens Axboe <axboe@kernel.dk>
-Subject: Re: fs/fs-writeback oopses in kernel 2.6.33.4-95.fc13.i686.PAE
-Message-ID: <20100615081827.GL20317@bombadil.infradead.org>
-References: <4BFA730C.1010906@hanzlici.cz> <20100524230512.8cc7dfc1.akpm@linux-foundation.org> <87vdacl15j.fsf@openvz.org> <AANLkTimPwbOga_gEMajfciD8ZokBaz99c2ty9R6q_cs5@mail.gmail.com> <20100614125716.b04fcd28.akpm@linux-foundation.org>
+	Tue, 15 Jun 2010 04:21:22 -0400
+Date: Tue, 15 Jun 2010 10:21:21 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] max730x: make pullups configurable via platformdata
+Message-ID: <20100615082121.GA2478@pengutronix.de>
+References: <1276588861-15663-1-git-send-email-mkl@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
 Content-Disposition: inline
-In-Reply-To: <20100614125716.b04fcd28.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1276588861-15663-1-git-send-email-mkl@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 12:57:16PM -0700, Andrew Morton wrote:
-> > Do you send it to stable ? I am hitting the same bug and count is high
-> > on kerneloops (http://www.kerneloops.org/searchweek.php?search=writeback_inodes_wb)
-> > 
-> 
-> The commit didn't have a cc:stable in the changelog so no, it probably
-> wasn't backported.
-> 
-> But that commit was later reverted anyway.  Hopefully when the real fix
-> gets merged, it will be backported.
-> 
 
-Yes, we backported it when it hit mainline, and have since pulled them
-until the real fix is sorted out.
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-thanks, Kyle.
+On Tue, Jun 15, 2010 at 10:01:01AM +0200, Marc Kleine-Budde wrote:
+> The gpios on the max730x chips have support for internal pullups
+> while in input mode.
+>=20
+> This patch adds support for configuring these pullups via platform data.
+> A new member ("input_pullup_active") to the platform data struct is
+> introduced. A set bit in this variable activates the pullups while the
+> respective port is in input mode. This is a compatible enhancement since
+> unset bits lead to disables pullups which was the default in the
+> original driver.
+>=20
+> _Note_: the 4 lowest bits in "input_pullup_active" are unused because
+> the first 4 ports of the controller are not used, too.
+>=20
+> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+
+Marc an I already discussed the previous versions, so:
+
+Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--BOKacYhQ+x31HxR3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkwXOAEACgkQD27XaX1/VRtxiwCggTNqDMucC1YDs8UQKYc+3fZH
+UkMAn1tyQQHaTUfNrcCFVp0PIl7qOxim
+=gcmK
+-----END PGP SIGNATURE-----
+
+--BOKacYhQ+x31HxR3--
