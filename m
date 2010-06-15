@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab0FONcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 09:32:21 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39367 "EHLO ogre.sisk.pl"
+	id S1757426Ab0FONdb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 09:33:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23128 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752959Ab0FONcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 09:32:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [Regression, post-2.6.34] Hibernation broken on machines with radeon/KMS and r300
-Date: Tue, 15 Jun 2010 15:30:47 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Dave Airlie <airlied@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "dri-devel" <dri-devel@lists.freedesktop.org>
-References: <201006141653.03879.rjw@sisk.pl> <201006142103.54616.rjw@sisk.pl> <AANLkTimgktYZiepVvbOssbYk7oLAOcWbT5X8uvtifxgC@mail.gmail.com>
-In-Reply-To: <AANLkTimgktYZiepVvbOssbYk7oLAOcWbT5X8uvtifxgC@mail.gmail.com>
+	id S1752879Ab0FONd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 09:33:29 -0400
+Message-ID: <4C1780F2.7010003@redhat.com>
+Date: Tue, 15 Jun 2010 09:32:34 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Christoph Hellwig <hch@infradead.org>
+CC: Dave Chinner <david@fromorbit.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Chris Mason <chris.mason@oracle.com>,
+       Nick Piggin <npiggin@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-12-git-send-email-mel@csn.ul.ie> <20100614231144.GG6590@dastard> <20100614162143.04783749.akpm@linux-foundation.org> <20100615003943.GK6590@dastard> <4C16D46D.3020302@redhat.com> <20100615110102.GD31051@infradead.org>
+In-Reply-To: <20100615110102.GD31051@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006151530.47890.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 14, 2010, Alex Deucher wrote:
-> On Mon, Jun 14, 2010 at 3:03 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday, June 14, 2010, Alex Deucher wrote:
-> >> On Mon, Jun 14, 2010 at 10:53 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > Alex, Dave,
-> >> >
-> >> > I'm afraid hibernation is broken on all machines using radeon/KMS with r300
-> >> > after commit ce8f53709bf440100cb9d31b1303291551cf517f
-> >> > (drm/radeon/kms/pm: rework power management).  At least, I'm able to reproduce
-> >> > the symptom, which is that the machine hangs hard around the point where an
-> >> > image is created (probably during the device thaw phase), on two different
-> >> > boxes with r300 (the output of lspci from one of them is attached for
-> >> > reference, the other one is HP nx6325).
-> >> >
-> >> > Suspend to RAM appears to work fine at least on one of the affected boxes.
-> >> >
-> >> > Unfortunately, the commit above changes a lot of code and it's not too easy to
-> >> > figure out what's wrong with it and I didn't have the time to look more into
-> >> > details of this failure.  However, it looks like you use .suspend() and
-> >> > .resume() callbacks as .freeze() and .thaw() which may not be 100% correct
-> >> > (in fact it looks like the "legacy" PCI suspend/resume is used, which is not
-> >> > recommended any more).
-> >> >
-> >>
-> >> Does it work any better after Dave's last drm pull request?
-> >
-> > Nope.  The symptom is slightly different, though, because now it hangs after
-> > turning off the screen.
-> >
-> >> With the latest changes, pm should not be a factor unless it's explicitly
-> >> enabled via sysfs.
-> >
-> > Well, I guess the first pm patch changed more than just pm, then.
-> 
-> Does this patch help?
-> http://lists.freedesktop.org/archives/dri-devel/2010-June/001314.html
+On 06/15/2010 07:01 AM, Christoph Hellwig wrote:
+> On Mon, Jun 14, 2010 at 09:16:29PM -0400, Rik van Riel wrote:
+>>> Besides, there really isn't the right context in the block layer to
+>>> be able to queue and prioritise large amounts of IO without
+>>> significant penalties to some higher layer operation.
+>>
+>> Can we kick flushing for the whole inode at once from
+>> vmscan.c?
+>
+> kswapd really should be a last effort tool to clean filesystem pages.
+> If it does enough I/O for this to matter significantly we need to
+> fix the VM to move more work to the flusher threads instead of trying
+> to fix kswapd.
+>
+>> Would it be hard to add a "please flush this file"
+>> way to call the filesystem flushing threads?
+>
+> We already have that API, in Jens' latest tree that's
+> sync_inodes_sb/writeback_inodes_sb.  We could also add a non-waiting
+> variant if required, but I think the big problem with kswapd is that
+> we want to wait on I/O completion under circumstances.
 
-No, it doesn't.  I try to hibernate, everything works to the point where the
-screen goes off and the box hangs (solid).  Normally, it would turn the
-screen back on and continue with saving the image.
+However, kswapd does not need to wait on I/O completion of
+any page in particular - it just wants to wait on I/O
+completion of any inactive pages in the zone (or memcg)
+where memory is being freed.
 
-But, since that happens with the patch above applied, I think it doesn't
-really pass the suspend phase (IOW, it probably hangs somewhere in the radeon's
-suspend routine).
-
-Rafael
+-- 
+All rights reversed
