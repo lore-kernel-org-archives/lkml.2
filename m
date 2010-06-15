@@ -1,100 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab0FON4T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 09:56:19 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:49217 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757726Ab0FONzm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 09:55:42 -0400
-Subject: [RFC][PATCH 7/9] make kvm_get_kvm() more robust
+	id S932197Ab0FON4k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 09:56:40 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:49725 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932156Ab0FONze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 09:55:34 -0400
+Subject: [RFC][PATCH 8/9] reduce kvm_lock hold times in mmu_skrink()
 To: linux-kernel@vger.kernel.org
 Cc: kvm@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
 From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Tue, 15 Jun 2010 06:55:27 -0700
+Date: Tue, 15 Jun 2010 06:55:29 -0700
 References: <20100615135518.BC244431@kernel.beaverton.ibm.com>
 In-Reply-To: <20100615135518.BC244431@kernel.beaverton.ibm.com>
-Message-Id: <20100615135527.262CFEA2@kernel.beaverton.ibm.com>
+Message-Id: <20100615135528.01AC8966@kernel.beaverton.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The comment tells most of the story here.  This patch guarantees
-that once a user decrements kvm->users_count to 0 that no one
-will increment it again.
+mmu_shrink() is effectively single-threaded since the global
+kvm_lock is held over the entire function.
 
-We'll need this in a moment because we are going to use
-kvm->users_count as a more generic refcount.
+I beleive its only use here is for synchronization of the
+vm_list.  Instead of using the kvm_lock to ensure
+consistency of the list, we instead obtain a kvm_get_kvm()
+reference.  This keeps the kvm object on the vm_list while
+we shrink it.
+
+Since we don't need the lock to maintain the list any more,
+we can drop it.  We'll reacquire it if we need to get another
+object off.
+
+This leads to a larger number of atomic ops, but reduces
+lock hold times: the typical latency vs. throughput debate.
 
 Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 ---
 
- linux-2.6.git-dave/include/linux/kvm_host.h |    2 -
- linux-2.6.git-dave/virt/kvm/kvm_main.c      |   32 +++++++++++++++++++++++++---
- 2 files changed, 30 insertions(+), 4 deletions(-)
+ linux-2.6.git-dave/arch/x86/kvm/mmu.c |   48 ++++++++++++++++++++++++++--------
+ linux-2.6.git-dave/kernel/profile.c   |    2 +
+ 2 files changed, 40 insertions(+), 10 deletions(-)
 
-diff -puN include/linux/kvm_host.h~make-kvm_get_kvm-more-robust include/linux/kvm_host.h
---- linux-2.6.git/include/linux/kvm_host.h~make-kvm_get_kvm-more-robust	2010-06-11 08:39:16.000000000 -0700
-+++ linux-2.6.git-dave/include/linux/kvm_host.h	2010-06-11 08:39:16.000000000 -0700
-@@ -247,7 +247,7 @@ int kvm_init(void *opaque, unsigned vcpu
- 		  struct module *module);
- void kvm_exit(void);
+diff -puN arch/x86/kvm/mmu.c~optimize_shrinker-3 arch/x86/kvm/mmu.c
+--- linux-2.6.git/arch/x86/kvm/mmu.c~optimize_shrinker-3	2010-06-11 08:39:17.000000000 -0700
++++ linux-2.6.git-dave/arch/x86/kvm/mmu.c	2010-06-11 08:39:17.000000000 -0700
+@@ -2930,7 +2930,8 @@ static int kvm_mmu_remove_some_alloc_mmu
  
--void kvm_get_kvm(struct kvm *kvm);
-+int kvm_get_kvm(struct kvm *kvm);
- void kvm_put_kvm(struct kvm *kvm);
- 
- static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
-diff -puN virt/kvm/kvm_main.c~make-kvm_get_kvm-more-robust virt/kvm/kvm_main.c
---- linux-2.6.git/virt/kvm/kvm_main.c~make-kvm_get_kvm-more-robust	2010-06-11 08:39:16.000000000 -0700
-+++ linux-2.6.git-dave/virt/kvm/kvm_main.c	2010-06-11 08:39:16.000000000 -0700
-@@ -496,9 +496,30 @@ static void kvm_destroy_vm(struct kvm *k
- 	mmdrop(mm);
- }
- 
--void kvm_get_kvm(struct kvm *kvm)
-+/*
-+ * Once the counter goes to 0, we destroy the
-+ * kvm object.  Do not allow additional refs
-+ * to be obtained once this occurs.
-+ *
-+ * Any calls which are done via the kvm fd
-+ * could use atomic_inc().  That is because
-+ * ->users_count is set to 1 when the kvm fd
-+ * is created, and stays at least 1 while
-+ * the fd exists.
-+ *
-+ * But, those calls are currently rare, so do
-+ * this (more expensive) atomic_add_unless()
-+ * to keep the number of functions down.
-+ *
-+ * Returns 0 if the reference was obtained
-+ * successfully.
-+ */
-+int kvm_get_kvm(struct kvm *kvm)
+ static int shrink_kvm_mmu(struct kvm *kvm, int nr_to_scan)
  {
--	atomic_inc(&kvm->users_count);
-+	int did_add = atomic_add_unless(&kvm->users_count, 1, 0);
-+	if (did_add)
-+		return 0;
-+	return -EBUSY;
- }
- EXPORT_SYMBOL_GPL(kvm_get_kvm);
+-	int idx, freed_pages;
++	int idx;
++	int freed_pages = 0;
  
-@@ -1332,7 +1353,12 @@ static int kvm_vm_ioctl_create_vcpu(stru
- 	BUG_ON(kvm->vcpus[atomic_read(&kvm->online_vcpus)]);
+ 	idx = srcu_read_lock(&kvm->srcu);
+ 	spin_lock(&kvm->mmu_lock);
+@@ -2950,23 +2951,50 @@ static int shrink_kvm_mmu(struct kvm *kv
  
- 	/* Now it's all set up, let userspace reach it */
--	kvm_get_kvm(kvm);
-+	r = kvm_get_kvm(kvm);
+ static int mmu_shrink(int nr_to_scan, gfp_t gfp_mask)
+ {
++	int err;
++	int freed;
+ 	struct kvm *kvm;
+ 
+ 	if (nr_to_scan == 0)
+ 		goto out;
+ 
++retry:
++	nr_to_scan--;
+ 	spin_lock(&kvm_lock);
+-
+-	list_for_each_entry(kvm, &vm_list, vm_list) {
+-		int freed = shrink_kvm_mmu(kvm, nr_to_scan);
+-		if (!freed)
+-			continue;
+-
+-		list_move_tail(&kvm->vm_list, &vm_list);
+-		break;
++	if (list_empty(&vm_list)) {
++		spin_unlock(&kvm_lock);
++		goto out;
+ 	}
+-
++	kvm = list_first_entry(&vm_list, struct kvm, vm_list);
 +	/*
-+	 * Getting called via the kvm fd _should_ guarantee
-+	 * that we can always get a reference.
++	 * With a reference to the kvm object, it can not go away
++	 * nor get removed from the vm_list.
 +	 */
-+	WARN_ON(r);
- 	r = create_vcpu_fd(vcpu);
- 	if (r < 0) {
- 		kvm_put_kvm(kvm);
-diff -puN arch/x86/kvm/mmu.c~make-kvm_get_kvm-more-robust arch/x86/kvm/mmu.c
++	err = kvm_get_kvm(kvm);
++	/* Did someone race and start destroying the kvm object? */
++	if (err) {
++		spin_unlock(&kvm_lock);
++		goto retry;
++	}
++	/*
++	 * Stick this kvm on the end of the list so the next
++	 * interation will shrink a different one.  Do this here
++	 * so that we normally don't have to reacquire the lock.
++	 */
++	list_move_tail(&kvm->vm_list, &vm_list);
++	/*
++	 * Which lets us release the global lock, holding it for
++	 * the minimal amount of time possible, and ensuring that
++	 * we don't hold it during the (presumably slow) shrink
++	 * operation itself.
++	 */
+ 	spin_unlock(&kvm_lock);
++	freed = shrink_kvm_mmu(kvm, nr_to_scan);
++
++	kvm_put_kvm(kvm);
++
++	if (!freed && nr_to_scan > 0)
++		goto retry;
+ 
+ out:
+ 	return kvm_total_used_mmu_pages;
+diff -puN virt/kvm/kvm_main.c~optimize_shrinker-3 virt/kvm/kvm_main.c
+diff -puN kernel/profile.c~optimize_shrinker-3 kernel/profile.c
+--- linux-2.6.git/kernel/profile.c~optimize_shrinker-3	2010-06-11 09:09:43.000000000 -0700
++++ linux-2.6.git-dave/kernel/profile.c	2010-06-11 09:12:24.000000000 -0700
+@@ -314,6 +314,8 @@ void profile_hits(int type, void *__pc, 
+ 	if (prof_on != type || !prof_buffer)
+ 		return;
+ 	pc = min((pc - (unsigned long)_stext) >> prof_shift, prof_len - 1);
++	if ((pc == prof_len - 1) && printk_ratelimit())
++		printk("profile_hits(%d, %p, %d)\n", type, __pc, nr_hits);
+ 	i = primary = (pc & (NR_PROFILE_GRP - 1)) << PROFILE_GRPSHIFT;
+ 	secondary = (~(pc << 1) & (NR_PROFILE_GRP - 1)) << PROFILE_GRPSHIFT;
+ 	cpu = get_cpu();
 _
