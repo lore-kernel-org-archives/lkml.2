@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab0FOP4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 11:56:51 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34497 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751196Ab0FOP4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 11:56:50 -0400
-Date: Tue, 15 Jun 2010 16:56:32 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 08/12] vmscan: Setup pagevec as late as possible in
-	shrink_inactive_list()
-Message-ID: <20100615155631.GQ26788@csn.ul.ie>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-9-git-send-email-mel@csn.ul.ie> <20100615104701.GA31051@infradead.org>
+	id S1752708Ab0FOQCY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 12:02:24 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:54327 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab0FOQCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 12:02:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=nV8bLzyIxscqLHabrL7YBVNz1pDanG98jWq7guORDrGC0Lx+tje4aR9nh7ONCys7k/
+         uhC3x7Z03F9+yOIu0VSI/2jQORJXZ8LwkkQdB8RaLwtFbxUzi8H0lG8wieZznXuFtsS3
+         4IWFcV1sF/XdVL0gkQcyOk9SdO6E/lFCdopgQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100615104701.GA31051@infradead.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <AANLkTimOvFsGZU6Brd-VjzBQGCoP7pgM1rO0wLrZjZZW@mail.gmail.com>
+References: <AANLkTimnqVSom2qHetXMBPiCNTYd-yc8Tl6a64n0zTSk@mail.gmail.com>
+	<20100614162002.GA13902@kroah.com>
+	<AANLkTinwaYy5Z528PraVuWUsU2pJBLoq0c2hgIGirTNn@mail.gmail.com>
+	<4C16BFF5.7070308@gmail.com>
+	<AANLkTimp4_TaQuGPlnw9ZpQCoTiTeFxtWQeZgfsdUBnK@mail.gmail.com>
+	<AANLkTimOvFsGZU6Brd-VjzBQGCoP7pgM1rO0wLrZjZZW@mail.gmail.com>
+Date: Wed, 16 Jun 2010 00:02:22 +0800
+Message-ID: <AANLkTikjbZlzE3ibVKCm2lOi5qBnD8nRQXfv9h6cBx6z@mail.gmail.com>
+Subject: Re: e-SATA ExpressCard - OOPS plus incrementing "ataX" on 
+	Linux-2.6.xx
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: Jeff Garzik <jgarzik@redhat.com>, Greg KH <greg@kroah.com>,
+       kristen.c.accardi@intel.com, Dely Sy <dely.l.sy@intel.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Matthew Wilcox <willy@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 06:47:01AM -0400, Christoph Hellwig wrote:
-> On Mon, Jun 14, 2010 at 12:17:49PM +0100, Mel Gorman wrote:
-> >  /*
-> > + * TODO: Try merging with migrations version of putback_lru_pages
-> > + */
-> > +static noinline_for_stack void putback_lru_pages(struct zone *zone,
-> > +				struct zone_reclaim_stat *reclaim_stat,
-> > +				unsigned long nr_anon, unsigned long nr_file,
-> > + 				struct list_head *page_list)
-> > +{
-> 
-> I hate to nitpick on this, but with noinline_for_stack a prototype
-> really is unreadbale unless the function identifier goes to the next
-> line.  Compare the one above with:
-> 
-> static noinline_for_stack void
-> putback_lru_pages(struct zone *zone, struct zone_reclaim_stat *reclaim_stat,
-> 		unsigned long nr_anon, unsigned long nr_file,
-> 		struct list_head *page_list)
-> 
-> > -static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
-> > +static noinline_for_stack unsigned long shrink_inactive_list(unsigned long nr_to_scan,
-> >  			struct zone *zone, struct scan_control *sc,
-> >  			int priority, int file)
-> 
-> Same here, just even worse due to the spill over ove 80 characters.
-> 
+On Tue, Jun 15, 2010 at 10:52 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
 
-It's a fair nitpick and so is cleaned up.
+> Try echoing 1 to the file for the SCSI disk's "delete" file, something
+> like: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/delete
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Very nice. That works!
+
+sd 20:0:0:0: [sdb] Synchronizing SCSI cache
+sd 20:0:0:0: [sdb] Stopping disk
+ata17.00: disabled
+
+/sys has so much cool things there, but I just didn't know what they were.
+
+Thank you so much!
+
+Jeff.
