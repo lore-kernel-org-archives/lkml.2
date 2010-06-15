@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab0FOOZt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 10:25:49 -0400
+	id S932157Ab0FOO0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 10:26:19 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:42129 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307Ab0FOOZs (ORCPT
+	with ESMTP id S1757860Ab0FOO0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 10:25:48 -0400
+	Tue, 15 Jun 2010 10:26:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=lIMvsgyVJYyBvfVCa1zViz7A8YPQ4NLvvz/fVCsgkV7PnpKrbZ0gVfh1WcqvJUjGqZ
-         SULJeiTKCOEP6u7Z1vy2txVWL6NoI45CbdgdWLCgrFt/XxEJttBRAJly+OAIhEjXOaox
-         qjF9QJg3kfgjM+N0jR3Fr1TBeiyV3misDVPqI=
+        b=Cff04zyDdVo0IvCknXY3g3IrVk9wKxSBns62ZPlOgOqAdxMOCFTynj2QQVEURB3mee
+         4aUeiGFW8ZZyqnhMcKFuCDO+VtP7K8lmLGO8iNwOcTg8yu7nbCLmUVQhn/Ney1XL7kaU
+         2QC9QkQJfzrmsqjzERwWiokDIwrCTNY/eVSPM=
 From: Andy Shevchenko <andy.shevchenko@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org
-Subject: [PATCH] staging: don't use custom hex_to_bin() implementation
-Date: Tue, 15 Jun 2010 17:25:38 +0300
-Message-Id: <1276611938-28464-1-git-send-email-andy.shevchenko@gmail.com>
+       Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+       "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       James Smart <james.smart@emulex.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH] drivers: scsi: use newly introduced hex_to_bin() method
+Date: Tue, 15 Jun 2010 17:26:07 +0300
+Message-Id: <1276611967-28576-1-git-send-email-andy.shevchenko@gmail.com>
 X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,85 +30,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
 
 Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: devel@driverdev.osuosl.org
+Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: James Smart <james.smart@emulex.com>
+Cc: linux-scsi@vger.kernel.org
 ---
- drivers/staging/comedi/drivers/jr3_pci.c |   17 +++++++++--------
- drivers/staging/rtl8192su/r8192S_Efuse.c |   19 +------------------
- 2 files changed, 10 insertions(+), 26 deletions(-)
+ drivers/scsi/aacraid/rx.c        |    5 ++---
+ drivers/scsi/lpfc/lpfc_attr.c    |   23 +++++++++++------------
+ drivers/scsi/scsi_transport_fc.c |   12 ++++++------
+ 3 files changed, 19 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
-index d330b18..51f4c5c 100644
---- a/drivers/staging/comedi/drivers/jr3_pci.c
-+++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -48,6 +48,7 @@ Devices: [JR3] PCI force sensor board (jr3_pci)
- #include <linux/jiffies.h>
- #include <linux/slab.h>
- #include <linux/timer.h>
+diff --git a/drivers/scsi/aacraid/rx.c b/drivers/scsi/aacraid/rx.c
+index 04057ab..84d77fd 100644
+--- a/drivers/scsi/aacraid/rx.c
++++ b/drivers/scsi/aacraid/rx.c
+@@ -352,9 +352,8 @@ static int aac_rx_check_health(struct aac_dev *dev)
+ 		pci_free_consistent(dev->pdev, sizeof(struct POSTSTATUS),
+ 		  post, paddr);
+ 		if (likely((buffer[0] == '0') && ((buffer[1] == 'x') || (buffer[1] == 'X')))) {
+-			ret = (buffer[2] <= '9') ? (buffer[2] - '0') : (buffer[2] - 'A' + 10);
+-			ret <<= 4;
+-			ret += (buffer[3] <= '9') ? (buffer[3] - '0') : (buffer[3] - 'A' + 10);
++			ret = (hex_to_bin(buffer[2]) << 4) +
++				hex_to_bin(buffer[3]);
+ 		}
+ 		pci_free_consistent(dev->pdev, 512, buffer, baddr);
+ 		return ret;
+diff --git a/drivers/scsi/lpfc/lpfc_attr.c b/drivers/scsi/lpfc/lpfc_attr.c
+index bf33b31..9f82cf9 100644
+--- a/drivers/scsi/lpfc/lpfc_attr.c
++++ b/drivers/scsi/lpfc/lpfc_attr.c
+@@ -25,6 +25,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/aer.h>
+ #include <linux/gfp.h>
 +#include <linux/kernel.h>
- #include "comedi_pci.h"
- #include "jr3_pci.h"
  
-@@ -399,14 +400,14 @@ int read_idm_word(const u8 * data, size_t size, int *pos, unsigned int *val)
- 		}
- 		/*  Collect value */
- 		*val = 0;
--		for (; *pos < size && isxdigit(data[*pos]); (*pos)++) {
--			char ch = tolower(data[*pos]);
--			result = 1;
--			if ('0' <= ch && ch <= '9') {
--				*val = (*val << 4) + (ch - '0');
--			} else if ('a' <= ch && ch <= 'f') {
--				*val = (*val << 4) + (ch - 'a' + 10);
--			}
-+		for (; *pos < size; (*pos)++) {
-+			int value;
-+			value = hex_to_bin(data[*pos]);
-+			if (value >= 0) {
-+				result = 1;
-+				*val = (*val << 4) + value;
-+			} else
-+				break;
- 		}
- 	}
- 	return result;
-diff --git a/drivers/staging/rtl8192su/r8192S_Efuse.c b/drivers/staging/rtl8192su/r8192S_Efuse.c
-index f0ce656..1e1d55e 100644
---- a/drivers/staging/rtl8192su/r8192S_Efuse.c
-+++ b/drivers/staging/rtl8192su/r8192S_Efuse.c
-@@ -1848,22 +1848,6 @@ bool IsHexDigit(	char chTmp)
- 	}
- }
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_device.h>
+@@ -1797,12 +1798,11 @@ lpfc_soft_wwpn_store(struct device *dev, struct device_attribute *attr,
  
--//
--//	Description:
--//		Translate a character to hex digit.
--//
--u32 MapCharToHexDigit(char chTmp)
--{
--	if(chTmp >= '0' && chTmp <= '9')
--		return (chTmp - '0');
--	else if(chTmp >= 'a' && chTmp <= 'f')
--		return (10 + (chTmp - 'a'));
--	else if(chTmp >= 'A' && chTmp <= 'F')
--		return (10 + (chTmp - 'A'));
--	else
--		return 0;
--}
--
- /*-----------------------------------------------------------------------------
-  * Function:	efuse_ParsingMap
-  *
-@@ -1917,8 +1901,7 @@ efuse_ParsingMap(char* szStr,u32* pu4bVal,u32* pu4bMove)
- 	// Parse each digit.
- 	do
- 	{
--		(*pu4bVal) <<= 4;
--		*pu4bVal += MapCharToHexDigit(*szScan);
-+		*pu4bVal = (*pu4bVal << 4) + hex_to_bin(*szScan);
+ 	/* Validate and store the new name */
+ 	for (i=0, j=0; i < 16; i++) {
+-		if ((*buf >= 'a') && (*buf <= 'f'))
+-			j = ((j << 4) | ((*buf++ -'a') + 10));
+-		else if ((*buf >= 'A') && (*buf <= 'F'))
+-			j = ((j << 4) | ((*buf++ -'A') + 10));
+-		else if ((*buf >= '0') && (*buf <= '9'))
+-			j = ((j << 4) | (*buf++ -'0'));
++		int value;
++
++		value = hex_to_bin(*buf++);
++		if (value >= 0)
++			j = (j << 4) | value;
+ 		else
+ 			return -EINVAL;
+ 		if (i % 2) {
+@@ -1890,12 +1890,11 @@ lpfc_soft_wwnn_store(struct device *dev, struct device_attribute *attr,
  
- 		szScan++;
- 		(*pu4bMove)++;
+ 	/* Validate and store the new name */
+ 	for (i=0, j=0; i < 16; i++) {
+-		if ((*buf >= 'a') && (*buf <= 'f'))
+-			j = ((j << 4) | ((*buf++ -'a') + 10));
+-		else if ((*buf >= 'A') && (*buf <= 'F'))
+-			j = ((j << 4) | ((*buf++ -'A') + 10));
+-		else if ((*buf >= '0') && (*buf <= '9'))
+-			j = ((j << 4) | (*buf++ -'0'));
++		int value;
++
++		value = hex_to_bin(*buf++);
++		if (value >= 0)
++			j = (j << 4) | value;
+ 		else
+ 			return -EINVAL;
+ 		if (i % 2) {
+diff --git a/drivers/scsi/scsi_transport_fc.c b/drivers/scsi/scsi_transport_fc.c
+index 0681378..73ae8ec 100644
+--- a/drivers/scsi/scsi_transport_fc.c
++++ b/drivers/scsi/scsi_transport_fc.c
+@@ -29,6 +29,7 @@
+ #include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
++#include <linux/kernel.h>
+ #include <scsi/scsi_device.h>
+ #include <scsi/scsi_host.h>
+ #include <scsi/scsi_transport.h>
+@@ -1730,12 +1731,11 @@ fc_parse_wwn(const char *ns, u64 *nm)
+ 
+ 	/* Validate and store the new name */
+ 	for (i=0, j=0; i < 16; i++) {
+-		if ((*ns >= 'a') && (*ns <= 'f'))
+-			j = ((j << 4) | ((*ns++ -'a') + 10));
+-		else if ((*ns >= 'A') && (*ns <= 'F'))
+-			j = ((j << 4) | ((*ns++ -'A') + 10));
+-		else if ((*ns >= '0') && (*ns <= '9'))
+-			j = ((j << 4) | (*ns++ -'0'));
++		int value;
++
++		value = hex_to_bin(*ns++);
++		if (value >= 0)
++			j = (j << 4) | value;
+ 		else
+ 			return -EINVAL;
+ 		if (i % 2) {
 -- 
 1.6.6.1
 
