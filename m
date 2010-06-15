@@ -1,118 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab0FOPgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 11:36:37 -0400
-Received: from doppler.zen.co.uk ([212.23.3.27]:57443 "EHLO doppler.zen.co.uk"
+	id S932375Ab0FOPi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 11:38:58 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:42975 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932327Ab0FOPgf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 11:36:35 -0400
-X-Greylist: delayed 1223 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jun 2010 11:36:34 EDT
-X-Spam-Score: -2.9
-Message-ID: <e4ea1892f15eaac945c151ea14a5d2d9.squirrel@www.chrestomanci.org>
-In-Reply-To: <201006151611.36443.knikanth@novell.com>
-References: <201006092035.46481.knikanth@novell.com>
-    <87aaqzp39a.fsf@devron.myhome.or.jp>
-    <201006151611.36443.knikanth@novell.com>
-Date: Tue, 15 Jun 2010 16:16:06 +0100
-Subject: Re: [PATCH][RFC] Complex filesystem operations: split and join
-From: "David Pottage" <david@electric-spoon.com>
-To: "Nikanth Karthikesan" <knikanth@novell.com>
-Cc: "OGAWA Hirofumi" <hirofumi@mail.parknet.co.jp>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Alexander Viro" <viro@zeniv.linux.org.uk>,
-       "Christoph Hellwig" <hch@lst.de>,
-       "Chris Mason" <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
-User-Agent: SquirrelMail/1.4.20
+	id S1753918Ab0FOPi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 11:38:56 -0400
+Date: Tue, 15 Jun 2010 16:38:38 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
+	and use a_ops->writepages() where possible
+Message-ID: <20100615153838.GO26788@csn.ul.ie>
+References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie> <20100615140011.GD28052@random.random> <20100615141122.GA27893@infradead.org> <20100615142219.GE28052@random.random> <20100615144342.GA3339@infradead.org> <20100615150850.GF28052@random.random>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-Priority: 3 (Normal)
-Importance: Normal
-Content-Transfer-Encoding: 7BIT
-X-Originating-Smarthost01-IP: [82.70.68.182]
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100615150850.GF28052@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/06/10 11:41, Nikanth Karthikesan wrote:
+On Tue, Jun 15, 2010 at 05:08:50PM +0200, Andrea Arcangeli wrote:
+> On Tue, Jun 15, 2010 at 10:43:42AM -0400, Christoph Hellwig wrote:
+> > Other callers of ->writepage are fine because they come from a
+> > controlled environment with relatively little stack usage.  The problem
+> > with direct reclaim is that we splice multiple stack hogs ontop of each
+> > other.
+> 
+> It's not like we're doing a stack recursive algorithm in kernel. These
+> have to be "controlled hogs", so we must have space to run 4/5 of them
+> on top of each other, that's the whole point.
+> 
+> I'm aware the ->writepage can run on any alloc_pages, but frankly I
+> don't see a whole lot of difference between regular kernel code paths
+> or msync. Sure they can be at higher stack usage, but not like with
+> only 1000bytes left.
+> 
 
-> I had a one-off use-case, where I had no free-space, which made me
-> think along this line.
->
-> 1. We have the GNU split tool for example, which I guess, many of us
-> use to split larger files to be transfered via smaller thumb drives,
-> for example. We do cat many files into one, afterwards. [For this
-> usecase, one can simply dd with seek and skip and avoid split/cat
-> completely, but we dont.]
+That is pretty much what Dave is claiming here at
+http://lkml.org/lkml/2010/4/13/121 where if mempool_alloc_slab() needed
+to allocate a page and writepage was entered, there would have been a
+a problem.
 
-I am not sure how you gain here as either way you have to do I/O to get
-the split files on and off the thumb drive. It might make sense if the
-thumb drive is formated with btrfs, and the file needs to be copied to
-another filling system that can't handle large files (eg FAT-16), but I
-would say that is unlikely.
+I disagreed with his fix which is what led to this series as an alternative.
 
-> 2. It could be useful for multimedia editing softwares, that converts
-> frames into video/animation and vice versa.
+> > And seriously, if the VM isn't stopped from calling ->writepage from
+> > reclaim context we FS people will simply ignore any ->writepage from
+> > reclaim context.  Been there, done that and never again.
+> > 
+> > Just wondering, what filesystems do your hugepage testing systems use?
+> > If it's any of the ext4/btrfs/xfs above you're already seeing the
+> > filesystem refuse ->writepage from both kswapd and direct reclaim,
+> > so Mel's series will allow us to reclaim pages from more contexts
+> > than before.
+> 
+> fs ignoring ->writepage during memory pressure (even from kswapd) is
+> broken, this is not up to the fs to decide. I'm using ext4 on most of
+> my testing, it works ok, but it doesn't make it right (if fact if
+> performance declines without that hack, it may prove VM needs fixing,
+> it doesn't justify the hack).
+> 
 
-Agreed, it would be very useful in this case, as it would save a lot of
-I/O and time.
+Broken or not, it's what some of them are doing to avoid stack
+overflows. Worst, they are ignoring both kswapd and direct reclaim when they
+only really needed to ignore kswapd. With this series at least, the
+check for PF_MEMALLOC in ->writepage can be removed
 
-Video files are very big, so a simple edit of removing a few minutes
-here and there in an hour long HD recoding will involve copying many
-gigabytes from one file to another. Imagine the time and disc space
-saved, if you could just make a COW copy of your source file(s), and
-then cut out the portions you don't want, and join the parts you do
-want together.
+> If you don't throttle against kswapd, or if even kswapd can't turn a
+> dirty page into a clean one, you can get oom false positives. Anything
+> is better than that.
 
-Your final edited file would take no extra disc space compared with
-your source files, and though it would be fragmented, the fragments
-would still be large compared with most files so the performance
-penalty to read the file sequentially to play it would be small. Once
-you decide you are happy with the final cut, you can delete the source
-files and let some background defrag demon tidy up the final file.
+This series would at least allow kswapd to turn dirty pages into clean
+ones so it's an improvement.
 
-> 3. It could be useful for archiving solutions.
+> (provided you've proper stack instrumentation to
+> notice when there is risk of a stack overflow, it's ages I never seen
+> a stack overflow debug detector report)
+> 
+> The irq stack must be enabled and this isn't about direct reclaim but
+> about irqs in general and their potential nesting with softirq calls
+> too.
+> 
+> Also note, there's nothing that prevents us from switching the stack
+> to something else the moment we enter direct reclaim.
 
-Agreed.
+Other than a lack of code to do it :/
 
-> 4. It would make it easier to implement simple databases. Even help
-> avoid needing databases at times. For example, to delete a row, split
-> before &amp; after that row, and join leaving it.
+If you really feel strongly about this, you could follow on the series
+by extending clean_page_list() to switch stack if !kswapd.
 
-I am not sure it would be usefull in practice, as these days, if you
-need a simple DB in a programming project, you just use SQLite. (Which
-has an extremely liberal licence), and let it figure out how to store
-your data on disc.
+> It doesn't need
+> to be physically contiguous. Just allocate a couple of 4k pages and
+> switch to them every time a new hog starts in VM context. The only
+> real complexity is in the stack unwind but if irqstack can cope with
+> it sure stack unwind can cope with more "special" stacks too.
+> 
+> Ignoring ->writepage on VM invocations at best can only hide VM
+> inefficiencies with the downside of breaking the VM in corner cases
+> with heavy VM pressure.
+> 
 
-On the other hand, perhaps databases such as SQLite or MySQL would
-benifit from this feature for improving their backend storage, especaly
-if large amounts of BLOB data is inserted or deleted?
+This has actually been the case for a while. I vaguely recall FS people
+complaining about writepage from direct reclaim at some conference or
+the other two years ago.
 
-> So I thought this could be useful generally.
+> Crippling down the kernel by vetoing ->writepage to me looks very
+> wrong, but I'd be totally supportive of a "special" writepage stack or
+> special iscsi stack etc...
+> 
 
-Agreed. I think this would be very useful.
+I'm not sure the complexityy is justified based on the data I've seen so
+far.
 
-I have proposed this kind of thing in the past, and been shouted down,
-and told that it should be implemented in the userland program, however
-I think it is anachronistic that Unix filesystems have supported sparse
-files since the dawn of time, originaly to suit a particular way of
-storing fixed size records, but do not support growing or truncating
-files except at the end.
+                if (reclaim_can_writeback(sc)) {
+                        cleaned = MAX_SWAP_CLEAN_WAIT;
+                        clean_page_list(page_list, sc);
+                        goto restart_dirty;
+                } else {
+                        cleaned++;
+                        /*
+                         * If lumpy reclaiming, kick the background
+                         * flusher and wait
+                         * for the pages to be cleaned
+                         *
+                         * XXX: kswapd won't find these isolated pages but the
+                         *      background flusher does not prioritise pages. It'd
+                         *      be nice to prioritise a list of pages somehow
+                         */
+                        if (sync_writeback == PAGEOUT_IO_SYNC) {
+                                wakeup_flusher_threads(nr_dirty);
+                                congestion_wait(BLK_RW_ASYNC, HZ/10);
+                                goto restart_dirty;
+                        }
+                }
 
-> I was also thinking of facilities to add/remove bytes from/at any
-> position in the file. As you said truncate any range, but one which
-> can also increase the filesize, adding blocks even in between.
->
-> IMO It is kind of Chicken-and-egg problem, where applications will
-> start using these, only, if it would be available.
+to
 
-I agree that it is a Chicken and egg problem, but I think the
-advantages for video editing are so large, that the feature could
-become a killer-app when it comes to video editing, as it would improve
-performance so much.
+                if (reclaim_can_writeback(sc)) {
+                        cleaned = MAX_SWAP_CLEAN_WAIT;
+                        clean_page_list(page_list, sc);
+                        goto restart_dirty;
+                } else {
+                        cleaned++;
+                        wakeup_flusher_threads(nr_dirty);
+                        congestion_wait(BLK_RW_ASYNC, HZ/10);
+
+			/* If not in lumpy reclaim, just try these
+			 * pages one more time before isolating more
+			 * pages from the LRU
+			 */
+			if (sync_writeback != PAGEOUT_IO_SYNC)
+				clean = MAX_SWAP_CLEAN_WAIT;
+			goto restart_dirty;
+                }
+
+i.e. when direct reclaim encounters N dirty pages, unconditionally ask the
+flusher threads to clean that number of pages, throttle by waiting for them
+to be cleaned, reclaim them if they get cleaned or otherwise scan more pages
+on the LRU.
 
 -- 
-David Pottage
-
-Error compiling committee.c To many arguments to function.
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
