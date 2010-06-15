@@ -1,72 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab0FONR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 09:17:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52745 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754354Ab0FONRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 09:17:55 -0400
-Date: Tue, 15 Jun 2010 15:15:12 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5 7/14] x86 support for Uprobes
-Message-ID: <20100615131512.GA8751@redhat.com>
-References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6> <20100614082913.29068.86825.sendpatchset@localhost6.localdomain6> <20100614175423.GG23754@infradead.org> <20100615062332.GE13800@linux.vnet.ibm.com> <20100615115155.GA4831@redhat.com> <20100615121506.GM13800@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100615121506.GM13800@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756781Ab0FONUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 09:20:43 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:35065 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756630Ab0FONUl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 09:20:41 -0400
+Subject: Re: [PATCH] trace-cmd: prevent print_graph_duration buffer overflow
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <srostedt@redhat.com>, Valdis.Kletnieks@vt.edu,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100615131002.GD5342@nowhere>
+References: <1276449108-21328-1-git-send-email-chase.douglas@canonical.com>
+	 <1276449108-21328-2-git-send-email-chase.douglas@canonical.com>
+	 <40245.1276462373@localhost> <1276462894.2356.6.camel@cndougla-ubuntu>
+	 <15749.1276551633@localhost>
+	 <1276560963.13426.54.camel@localhost.localdomain>
+	 <20100615124953.GB5342@nowhere> <1276607098.3452.5.camel@cndougla-ubuntu>
+	 <20100615131002.GD5342@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 15 Jun 2010 09:20:35 -0400
+Message-ID: <1276608035.3452.13.camel@cndougla-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15, Srikar Dronamraju wrote:
->
-> > I think it is OK to enable interrupts. do_notify_resume() calls do_signal()
-> > which enables them anyway.
-> >
-> > But there is another question I already asked. Why the code uses
-> > native_irq_enable()? IIRC, you explained that local_irq_enable() doesn't
-> > work for unkown reason. This is strange, and imho should be explained.
->
-> local_irq_enable() translates to raw_local_irq_enable().
-> However raw_local_irq_enable on x86 seems to depend on CONFIG_PARAVIRT.
-> On a machine, where CONFIG_PARAVIRT was defined, local_irq_enable
-> translates to something other than native_irq_enable.
-> It translates to PVOP_VCALLEE0(pv_irq_ops.irq_enable);
+On Tue, 2010-06-15 at 15:10 +0200, Frederic Weisbecker wrote:
+> On Tue, Jun 15, 2010 at 09:04:58AM -0400, Chase Douglas wrote:
+> > On Tue, 2010-06-15 at 14:49 +0200, Frederic Weisbecker wrote:
+> > > On Mon, Jun 14, 2010 at 08:16:03PM -0400, Steven Rostedt wrote:
+> > > > On Mon, 2010-06-14 at 17:40 -0400, Valdis.Kletnieks@vt.edu wrote:
+> > > > > On Sun, 13 Jun 2010 17:01:34 EDT, Chase Douglas said:
+> > > > > > On Sun, 2010-06-13 at 16:52 -0400, Valdis.Kletnieks@vt.edu wrote:
+> > > > > > > On Sun, 13 Jun 2010 13:11:48 EDT, Chase Douglas said:
+> > > > > > > > Passing n > sizeof(string) to snprintf can cause a glibc buffer overflow
+> > > > > > > > condition. We know the exact size of nsecs_str, so use it instead of
+> > > > > > > > math that may overflow.
+> > > > > > > 
+> > > > > > > >  	/* Print nsecs (we don't want to exceed 7 numbers) */
+> > > > > > > >  	if ((s->len - len) < 7) {
+> > > > > > > > -		snprintf(nsecs_str, 8 - (s->len - len), "%03lu", nsecs_rem);
+> > > > > > > > +		snprintf(nsecs_str, sizeof(nsecs_str), "%03lu", nsecs_rem);
+> > > > > > > 
+> > > > > > > We only get into this code after we've checked that the length is under 7
+> > > > > > > characters.  How much overflow can happen as long as the sizeof(nsecs_str) is a
+> > > > > > > sane size (like at least 8 chars)?  Probably a better bet would be doing the
+> > > > > > > right thing and 'BUILD_BUG_ON(sizeof(nsecs_str) < 8);'?
+> > > > > > 
+> > > > > > nsecs_str is a local variable defined just above this block of code as:
+> > > > > > 
+> > > > > > 	char nsecs_str[5];
+> > > > > > 
+> > > > > > I was hitting cases where s->len == 64 and len == 63, leading to the
+> > > > > > size argument of snprintf being 7 on a 5 byte string. I didn't delve too
+> > > > > > much into the reasoning for the if statement, but I think it's math is
+> > > > > > not actually related to the size of nsecs_rem but to some other string
+> > > > > > length.
+> > > > > 
+> > > > > This is starting to smell like that patch is just papering over a bug...
+> > > > > 
+> > > > > I saw that '8 -' and made the rash assumption that was the size of the array.
+> > > > > Is 5 in fact big enough and the  's->len - len' calculation is broken, or
+> > > > > should it be bigger?  As you noted, that length calculation is looking a tad
+> > > > > sketchy.  (And if we're stuck with '5' because it's a magic number for
+> > > > > somebody's formatting purposes, maybe it needs to be a #define?)
+> > > > > 
+> > > > 
+> > > > Ouch, this is worse than that. this code was cut & pasted almost
+> > > > directly from the Linux kernel (kernel/trace/trace_function_graph.c).
+> > > > And it looks like any bug here is also a bug there. The difference is
+> > > > that if we trigger the bug there we crash the kernel :-p
+> > > 
+> > > 
+> > > I must be missing the purpose of this patch.
+> > > 
+> > > log10(nsecs_rem) can't exceed 3 characters as it is the rest of
+> > > a division per 1000.
+> > > 
+> > > The goal of this:
+> > > 
+> > > 	if (len < 7) {
+> > > 		snprintf(nsecs_str, 8 - len, "%03lu", nsecs_rem)
+> > > 
+> > > is to avoid having a duration that exceeds 7 characters, so formatted nsecs
+> > > be shrinked on need.
+> > > 
+> > > For example:
+> > > 
+> > > 	75000.567
+> > > 
+> > > would be shrinked to 75000.56, and that's the point.
+> > > 
+> > > if (len < 7) is not a security guard, it is a formatting convenience
+> > > to get a fixed column length.
+> > > 
+> > > The security guard is the mathematics that tells us log10(n % 1000) < 4.
+> > > In fact nsecs_str could be even of size 4 rather than 5.
+> > 
+> > I agree that there is no *real* security issue here because of the
+> > length of the string that snprintf would generate. However, glibc still
+> > barfs when you pass in a size parameter larger than the string. Without
+> > this patch, trace-cmd is unusable for me; glibc aborts as soon as the
+> > condition is hit. I found this as I was packaging trace-cmd for Ubuntu,
+> > so maybe glibc in other distributions is behaving differently?
+> 
+> 
+> Ah, I see what you mean. So the check is made on runtime, right?
+> But your patch breaks the nsec adaptive size reduction that keeps a fixed
+> column size.
+> 
+> What about:
+> 
+> 	if (len < 7) {
+> -		snprintf(nsecs_str, 8 - len, "%03lu", nsecs_rem);
+> +		snprintf(nsecs_str, min(sizeof(nsecs_rem), 8 - len), "%03lu", nsecs_rem);
 
-I see, and my question is why PVOP_VCALLEE0(pv_irq_ops.irq_enable) doesn't
-work ? If it doesn't here, why it works for other callers of local_irq_enable?
+That seems good to me, I'll send another patch around for trace-cmd.
 
-I think we should ask paravirt developers.
+Thanks,
 
-> Is it okay to use local_irq_enable() and then make CONFIG_UPROBES depend
-> on !CONFIG_PARAVIRT?
-
-I dunno, and I know nothing about paravirt.
-
-But please note that currently native_irq_enable has the only caller,
-raw_local_irq_enable(). It is really strange that do_notify_resume()
-has to use it, and it uses it to bypass the paravirt layer which perhaps
-can introduce other problems.
-
-Oleg.
+-- Chase
 
