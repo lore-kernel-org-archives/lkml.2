@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab0FOIH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 04:07:56 -0400
-Received: from mother.ludd.ltu.se ([130.240.16.3]:37355 "EHLO
-	mother.ludd.ltu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab0FOIHw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 04:07:52 -0400
-Date: Tue, 15 Jun 2010 10:06:33 +0200 (MEST)
-From: Nils Carlson <nils.carlson@ludd.ltu.se>
-X-X-Sender: pyssling@dexter.ludd.ltu.se
-To: Andi Kleen <andi@firstfloor.org>
-cc: Doug Thompson <norsk5@yahoo.com>, Tony Luck <tony.luck@intel.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Nils Carlson <nils.carlson@ludd.ltu.se>, Ingo Molnar <mingo@elte.hu>,
-       Borislav Petkov <bp@amd64.org>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       BrentYoung <brent.young@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "bluesmoke-devel@lists.sourceforge.net" 
-	<bluesmoke-devel@lists.sourceforge.net>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Joe Perches <joe@perches.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-       Ingo Molnar <mingo@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>,
-       Nils Carlson <nils.carlson@ericsson.com>
-Subject: Re: Hardware Error Kernel Mini-Summit
-In-Reply-To: <20100615065630.GC6727@basil.fritz.box>
-Message-ID: <Pine.GSO.4.58.1006150951150.17579@dexter.ludd.ltu.se>
-References: <AANLkTil_mDFOsDUjvnp_NFZvkj0Ij-qww6BqewJ4lpHP@mail.gmail.com>
- <35525.41387.qm@web50105.mail.re2.yahoo.com> <20100615065630.GC6727@basil.fritz.box>
+	id S1755779Ab0FOIJj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 04:09:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13744 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754023Ab0FOIJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 04:09:36 -0400
+Message-ID: <4C17353F.5020006@redhat.com>
+Date: Tue, 15 Jun 2010 11:09:35 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Zachary Amsden <zamsden@redhat.com>
+CC: mtosatti@redhat.com, glommer@redhat.com, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/17] Fix deep C-state TSC desynchronization
+References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-5-git-send-email-zamsden@redhat.com>
+In-Reply-To: <1276587259-32319-5-git-send-email-zamsden@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jun 2010, Andi Kleen wrote:
-
-> On Mon, Jun 14, 2010 at 04:46:40PM -0700, Doug Thompson wrote:
+On 06/15/2010 10:34 AM, Zachary Amsden wrote:
+> When CPUs with unstable TSCs enter deep C-state, TSC may stop
+> running.  This causes us to require resynchronization.  Since
+> we can't tell when this may potentially happen, we assume the
+> worst by forcing re-compensation for it at every point the VCPU
+> task is descheduled.
 >
-> Hi Doug,
+> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+> ---
+>   arch/x86/kvm/x86.c |   11 +++++++++++
+>   1 files changed, 11 insertions(+), 0 deletions(-)
 >
-> >
-> > Maybe I didn't see it covered (or I missed it), but EDAC is used on more than just x86 based machines, though they are the majority by volume. We should have an abstraction that covers all the archs, like we do with other subsystems of Linux.
->
-> The way I envision it to working is that a abstracted dimm interface
-> (or edac2 or whatever you want to call it) can be fed from any reasonable
-> DIMM layout driver. This could be either DMI on x86 or some other
-> driver. There would be nothing really x86 specific about that.
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index c8289d0..618c435 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -1822,7 +1822,18 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+>   {
+>   	kvm_x86_ops->vcpu_put(vcpu);
+>   	kvm_put_guest_fpu(vcpu);
+> +
+>   	vcpu->arch.last_host_tsc = native_read_tsc();
+> +
+> +	/*
+> +	 * When potentially leaving a CPU with unstable TSCs, we risk
+> +	 * that the CPU enters deep C-state.  If it does, the TSC may
+> +	 * go out of sync but we will not recalibrate because the test
+> +	 * vcpu->cpu != cpu can not detect this condition.  So set
+> +	 * vcpu->cpu = -1 to force the recalibration above.
+> +	 */
+> +	if (check_tsc_unstable())
+> +		vcpu->cpu = -1;
+>   }
+>    
 
-Could you maybe provide some references on how DIMM layout
-could be read from DMI? I can't find anything nearly this specific,
-or is it something we're expecting to happen in future BIOS's?
+That will cause us to miss a vmclear later on.  Also it invalidates an 
+invariant that the per-cpu list vcpus_on_cpu has all the vcpus with 
+vcpu->cpu == cpu on this cpu (try saything that fast).
 
-Also, there would probably need to be some standard describing
-different DIMM layouts in general, though maybe such a thing exists.
+-- 
+error compiling committee.c: too many arguments to function
 
-In other words, there would be have to be some way of ascertaining
-that the info you read from DMI is sufficient to decode MCEs so that
-a faulting DIMM can be identified. In an ideal world, this could
-be tested by some simple tool that could be run by the BIOS writers
-to test that they're providing the OS with sufficient info.
-
-/Nils
