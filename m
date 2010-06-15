@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757393Ab0FOKpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 06:45:49 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44438 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757378Ab0FOKpq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 06:45:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=CDebYeZycZaxg3UcozbDUEOaxQchS7o6unLS8cX39l4kdzHo2JiAINT+LCQCPwifBr
-         iMHQtRNRD0uwCuqeiQruBMqDtBaxSTycDfXQm+zqJZynRwaJ859H91UeZy0ddr2TVbjV
-         ru88J6DzkFx6hAdGxF0MJokN7JrB4Ml4f66J4=
+	id S1757407Ab0FOKqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 06:46:10 -0400
+Received: from corega.com.ru ([195.178.208.66]:50366 "EHLO tservice.net.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757049Ab0FOKqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 06:46:07 -0400
+X-Greylist: delayed 1063 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jun 2010 06:46:07 EDT
+Date: Tue, 15 Jun 2010 14:28:22 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Chris Mason <chris.mason@oracle.com>,
+       Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
+Message-ID: <20100615102822.GA4010@ioremap.net>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-12-git-send-email-mel@csn.ul.ie> <20100614231144.GG6590@dastard> <20100614162143.04783749.akpm@linux-foundation.org> <20100615003943.GK6590@dastard> <20100614183957.ad0cdb58.akpm@linux-foundation.org> <20100615032034.GR6590@dastard> <20100614211515.dd9880dc.akpm@linux-foundation.org> <20100615063643.GS6590@dastard>
 MIME-Version: 1.0
-In-Reply-To: <002001cb0c75$0a54fd00$1efef700$%kim@samsung.com>
-References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com>
-	<002001cb0c75$0a54fd00$1efef700$%kim@samsung.com>
-Date: Tue, 15 Jun 2010 19:45:45 +0900
-Message-ID: <AANLkTil7gb7SjrYPrHPfSomwxLlHpowXOZd_Qr125jvr@mail.gmail.com>
-Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 
-	PrimeCells
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-       Dan Williams <dan.j.williams@intel.com>,
-       linux-arm-kernel@lists.infradead.org, yuanyabin1978@sina.com,
-       Viresh Kumar <viresh.kumar@st.com>, Alessandro Rubini <rubini@unipv.it>,
-       linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-       Peter Pearse <peter.pearse@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100615063643.GS6590@dastard>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 7:25 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> Linus Walleij wrote:
->>
->> This creates a DMAengine driver for the ARM PL080/PL081 PrimeCells
->> based on the implementation earlier submitted by Peter Pearse.
->> This is working like a charm for memcpy on the PB11MPCore, but
->> slave DMA to devices is still not working.
->>
->> This DMA controller is used in mostly unmodified form in the ARM
->> RealView and Versatile platforms, in the ST-Ericsson Nomadik, and
->> in the ST SPEAr platform.
->>
->> It has been converted to use the header from the Samsung PL080
->> derivate instead of its own defintions, and can potentially support
->> several controllers in the same system.
->>
->> Cc: Peter Pearse <peter.pearse@arm.com>
->> Cc: Ben Dooks <ben-linux@fluff.org>
->> Cc: Kukjin Kim <kgene.kim@samsung.com>
->
-> Looks good, but please give me some time to test on the board(SMDK6410).
-> If any problem, let you know. Of course no problem, will ack.
-Samsung doesn't use the DMA API, so this driver is unlikely to work.
+On Tue, Jun 15, 2010 at 04:36:43PM +1000, Dave Chinner (david@fromorbit.com) wrote:
+> > Nope.  Large-number-of-small-files is a pretty common case.  If the fs
+> > doesn't handle that well (ie: by placing them nearby on disk), it's
+> > borked.
+> 
+> Filesystems already handle this case just fine as we see it from
+> writeback all the time. Untarring a kernel is a good example of
+> this...
+> 
+> I suggested sorting all the IO to be issued into per-mapping page
+> groups because:
+> 	a) makes IO issued from reclaim look almost exactly the same
+> 	   to the filesytem as if writeback is pushing out the IO.
+> 	b) it looks to be a trivial addition to the new code.
+> 
+> To me that's a no-brainer.
+
+That doesn't coverup large-number-of-small-files pattern, since
+untarring subsequently means creating something new, which FS can
+optimize. Much more interesting case is when we have dirtied large
+number of small files in kind-of random order and submitted them
+down to disk.
+
+Per-mapping sorting will not do anything good in this case, even if
+files were previously created in a good facion being placed closely and
+so on, and only block layer will find a correlation between adjacent
+blocks in different files. But with existing queue management it has
+quite a small opportunity, and that's what I think Andrew is arguing
+about.
+
+-- 
+	Evgeniy Polyakov
