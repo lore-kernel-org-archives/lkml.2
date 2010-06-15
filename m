@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab0FOLNo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 07:13:44 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41347 "EHLO mx1.suse.de"
+	id S1757463Ab0FOLRY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 07:17:24 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:54319 "EHLO mail001.aei.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752225Ab0FOLNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 07:13:42 -0400
-Date: Tue, 15 Jun 2010 21:13:37 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Rik van Riel <riel@redhat.com>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
-Message-ID: <20100615111337.GK6138@laptop>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
- <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
- <20100615105341.GB31051@infradead.org>
+	id S1752317Ab0FOLRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 07:17:23 -0400
+From: Ed Tomlinson <edt@aei.ca>
+To: Chris Mason <chris.mason@oracle.com>
+Subject: Re: [GIT PULL] Btrfs updates for 2.6.35
+Date: Tue, 15 Jun 2010 07:17:19 -0400
+User-Agent: KMail/1.13.3 (Linux/2.6.34-crc; KDE/4.4.4; x86_64; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+References: <20100611193731.GA3018@think> <201006141524.20752.edt@aei.ca> <20100615004735.GR18266@think>
+In-Reply-To: <20100615004735.GR18266@think>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100615105341.GB31051@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006150717.19886.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 06:53:41AM -0400, Christoph Hellwig wrote:
-> > +	/*
-> > +	 * XXX: This is the Holy Hand Grenade of PotentiallyInvalidMapping. As
-> > +	 * the page lock has been dropped by ->writepage, that mapping could
-> > +	 * be anything
-> > +	 */
+On Monday 14 June 2010 20:47:35 Chris Mason wrote:
+> On Mon, Jun 14, 2010 at 03:24:19PM -0400, Ed Tomlinson wrote:
+> > On Friday 11 June 2010 15:37:31 Chris Mason wrote:
+> > > Hello everyone,
+> > > 
+> > > The master branch of the btrfs-unstable tree is a collection of fixes
+> > > and cleanups, including two btrfs regressions from rc1:
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
+> > > 
+> > > One is an freeing blocks on an FS converted from ext34 to btrfs,
+> > > and the other is a fallocate fix.
+> > > 
+> > > The rest are the usual small bug fixes.
+> > 
+> > Looks like this still misses any fix for the oops I reported May 8th in thread:
+> > "[OPPS] btrfs on 33-3 with latest from btrfs-unstable.git master"
+> > 
+> > Any chance this could be looked into?  I've kept the fs just in case.
 > 
-> Why is this an XXX comment?
-
-It's just a pretty simple use-after-free. Maybe people forget it because
-->writepage is an asynchronous API.
-
-
-> > + *
-> > + * XXX: Is there a problem with holding multiple page locks like this?
+> The oops shows a crc failure and then we were not able to read the tree
+> block.  Yan Zheng is working on an fsck that can repair things now.
+> Until then the best I can do is help copy things off.
 > 
-> I think there is.  There's quite a few places that do hold multiple
-> pages locked, but they always lock pages in increasing page->inxex order.
-> Given that this locks basically in random order it could cause problems
-> for those places.
+> Would you rather save the FS to test fsck?
 
-There shouldn't be a problem _holding_ the locks, but there is a problem
-waiting for multiple locks out of page->index order.
+I can hang on to the FS for a while longer.  One interesting point.  The FS
+has both both meta-data and data mirroring enabled.  I gather the oops is
+implying that both versions are corrupt.  Btw the fs problem occured after
+heavy vm activity caused by running too many kvm(s).
 
-But there is a problem with holding the lock of a lot of pages while
-calling ->writepage on them. So yeah, you can't do that.
-
-Hmm, I should rediff that lockdep page_lock patch and get it merged.
-(although I don't know if that can catch these all these problems easily)
-
+Thanks
+Ed
