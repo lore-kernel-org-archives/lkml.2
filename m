@@ -1,81 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab0FOPjE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 11:39:04 -0400
-Received: from mail.gmx.net ([213.165.64.20]:59228 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932379Ab0FOPjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 11:39:00 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX190Tb10GX10OahueXGfgl3otiMt5egemUUpAAFNxI
-	BHYCUu2Q/GiM6g
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH v2] soc/sh: Fix I2C dependency for SND_FSI_AK4642 and SND_FSI_DA7210
-Date: Tue, 15 Jun 2010 17:38:55 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-sh@vger.kernel.org,
-       Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-       Kuninori Morimoto <morimoto.kuninori@renesas.com>,
-       Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-       alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-References: <201006141739.42346.PeterHuewe@gmx.de> <201006151649.07554.PeterHuewe@gmx.de> <20100615151913.GJ14510@rakim.wolfsonmicro.main>
-In-Reply-To: <20100615151913.GJ14510@rakim.wolfsonmicro.main>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S932426Ab0FOPjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 11:39:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56375 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932400Ab0FOPjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 11:39:03 -0400
+Subject: Re: [PATCH v2] trace-cmd: prevent print_graph_duration buffer
+ overflow
+From: Steven Rostedt <srostedt@redhat.com>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Valdis.Kletnieks@vt.edu, Frederic Weisbecker <fweisbec@gmail.com>,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1276615294.19578.1.camel@cndougla-ubuntu>
+References: <1276613224-19247-1-git-send-email-chase.douglas@canonical.com>
+	 <1276613661.13426.56.camel@localhost.localdomain>
+	 <1276615294.19578.1.camel@cndougla-ubuntu>
+Content-Type: text/plain
+Organization: Red Hat
+Date: Tue, 15 Jun 2010 11:38:55 -0400
+Message-Id: <1276616335.13426.57.camel@localhost.localdomain>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006151738.56143.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+On Tue, 2010-06-15 at 11:21 -0400, Chase Douglas wrote:
+> On Tue, 2010-06-15 at 10:54 -0400, Steven Rostedt wrote:
+> > Quick note. Please send to my rostedt@goodmis.org address. I may not see
+> > messages here for weeks at a time. I author patches with my RH account
+> > just to "advertise" who I work for. But I sign-off-by with the account I
+> > want people to send to.
+> 
+> Ahh. I took the email address from the authors line like you said :). Is
+> this standard practice for others as well?
 
-The config option SND_FSI_AK4642 selects SND_SOC_AK4642 which in turn
-enables the compilation of ak4642.c - however this codec uses I2C to
-communicate with the HW.
-Same applies to DA7210.
+Probably not, but I like to confuse people ;-)
 
-Consequently when I2C is not set, the compilation fails [1]
+-- Steve
 
-This patch fixes this issues, by adding a depencdency on the related HW-
-controller.
-
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-How about this one?
-
-References:
-[1] http://kisskb.ellerman.id.au/kisskb/buildresult/2709408/
-KernelVersion: linux-next 20100615
-
- sound/soc/sh/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/sound/soc/sh/Kconfig b/sound/soc/sh/Kconfig
-index a1d14bc..52d7e8e 100644
---- a/sound/soc/sh/Kconfig
-+++ b/sound/soc/sh/Kconfig
-@@ -48,7 +48,7 @@ config SND_SH7760_AC97
- 
- config SND_FSI_AK4642
- 	bool "FSI-AK4642 sound support"
--	depends on SND_SOC_SH4_FSI
-+	depends on SND_SOC_SH4_FSI && I2C_SH_MOBILE
- 	select SND_SOC_AK4642
- 	help
- 	  This option enables generic sound support for the
-@@ -56,7 +56,7 @@ config SND_FSI_AK4642
- 
- config SND_FSI_DA7210
- 	bool "FSI-DA7210 sound support"
--	depends on SND_SOC_SH4_FSI
-+	depends on SND_SOC_SH4_FSI && I2C_SH_MOBILE
- 	select SND_SOC_DA7210
- 	help
- 	  This option enables generic sound support for the
--- 
-1.6.4.4
 
