@@ -1,43 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab0FOSH6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 14:07:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45465 "EHLO mx1.redhat.com"
+	id S1758217Ab0FOSI0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 14:08:26 -0400
+Received: from lirone.symas.net ([64.71.152.235]:44387 "EHLO lirone.symas.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754665Ab0FOSH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 14:07:57 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <AANLkTikxOwYQYSzNjEqRduTQvoUandnAsZzm5Auzgnaz@mail.gmail.com>
-References: <AANLkTikxOwYQYSzNjEqRduTQvoUandnAsZzm5Auzgnaz@mail.gmail.com> <E1OMQ88-0002a1-Gb@closure.thunk.org> <AANLkTilqc0jpwnIwe3OIQvB9avaXXzrBK4Hz0huESygy@mail.gmail.com> <20100613194949.GC8055@thunk.org> <AANLkTilQLk7ofSJBm9KIa2g1KQ35GC1D1vOZlPrv1VRv@mail.gmail.com> <20100614184244.GA11480@elliptictech.com> <20100614214646.GF6666@thunk.org> 
-To: Andy Whitcroft <apw@canonical.com>
-Cc: dhowells@redhat.com, tytso@mit.edu, Dave Airlie <airlied@gmail.com>,
-       Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Why is kslowd accumulating so much CPU time?
-Date: Tue, 15 Jun 2010 19:07:48 +0100
-Message-ID: <18402.1276625268@redhat.com>
+	id S1753512Ab0FOSIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 14:08:24 -0400
+Message-ID: <4C17C190.1020000@symas.com>
+Date: Tue, 15 Jun 2010 11:08:16 -0700
+From: Howard Chu <hyc@symas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; rv:1.9.3a5pre) Gecko/20100607 Firefox 3.6
+MIME-Version: 1.0
+To: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 0/2] tty: add EXTPROC support for LINEMODE
+References: <4C120D8A.8050207@symas.com> <87631pq2aj.fsf@basil.nowhere.org> <4C121B4C.2000702@symas.com> <4C12E4B7.4020900@symas.com>
+In-Reply-To: <4C12E4B7.4020900@symas.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Whitcroft <apw@canonical.com> wrote:
+Paraphrased from the 1989 BSD patch by David Borman @ cray.com:
 
-> I am seeing crunchy cursor behavior on boot on Ubuntu Lucid user space
-> with the 2.6.35-rc3 kernel as well.  It pretty much always does that
-> on boot, and often later as well.  Right now I have four of these
-> chaps each consuming 9% of a CPU.  Though they definatly come and go.
-> Very odd:
-> 
->   938 root      15  -5     0    0    0 S    9  0.0   1:00.90 kslowd001
->  1048 root      15  -5     0    0    0 S    9  0.0   1:01.12 kslowd002
->   937 root      15  -5     0    0    0 S    8  0.0   1:00.92 kslowd000
->  1544 root      15  -5     0    0    0 D    8  0.0   1:00.55 kslowd003
+     These are the changes needed for the kernel to support
+     LINEMODE in the server.
 
-Can you see what they're doing?
+     There is a new bit in the termios local flag word, EXTPROC.
+     When this bit is set, several aspects of the terminal driver
+     are disabled.  Input line editing, character echo, and mapping
+     of signals are all disabled.  This allows the telnetd to turn
+     off these functions when in linemode, but still keep track of
+     what state the user wants the terminal to be in.
 
-	watch -n0 cat /sys/kernel/debug/slow_work/runqueue
+     New ioctl:
+         TIOCSIG         Generate a signal to processes in the
+                         current process group of the pty.
 
-David
+     There is a new mode for packet driver, the TIOCPKT_IOCTL bit.
+     When packet mode is turned on in the pty, and the EXTPROC bit
+     is set, then whenever the state of the pty is changed, the
+     next read on the master side of the pty will have the TIOCPKT_IOCTL
+     bit set, and the data will be the contents of a struct termios.
+     This allows the process on the server side of the pty to know
+     when the state of the terminal has changed, and what the new
+     state is.
+
+Since the original BSD patches accompanied the source code for telnet I've 
+left that reference here, but obviously the feature is useful for any remote 
+terminal protocol, including ssh.
+
+The corresponding feature has existed in the BSD tty driver since 1989. For 
+historical reference, a good copy of the relevant files can be found here:
+
+http://anonsvn.mit.edu/viewvc/krb5/trunk/src/appl/telnet/?pathrev=17741
+
+Signed-off-by: Howard Chu <hyc@symas.com>
+
+---
+Howard Chu (2):
+   Add EXTPROC tty support for Telnet LINEMODE
+   Add arch-specific EXTPROC definitions
+
+  arch/alpha/include/asm/ioctls.h     |    2 ++
+  arch/alpha/include/asm/termbits.h   |    1 +
+  arch/arm/include/asm/ioctls.h       |    2 ++
+  arch/arm/include/asm/termbits.h     |    1 +
+  arch/avr32/include/asm/ioctls.h     |    2 ++
+  arch/avr32/include/asm/termbits.h   |    1 +
+  arch/cris/include/asm/ioctls.h      |    2 ++
+  arch/cris/include/asm/termbits.h    |    1 +
+  arch/frv/include/asm/ioctls.h       |    2 ++
+  arch/frv/include/asm/termbits.h     |    1 +
+  arch/h8300/include/asm/ioctls.h     |    2 ++
+  arch/h8300/include/asm/termbits.h   |    1 +
+  arch/ia64/include/asm/ioctls.h      |    2 ++
+  arch/ia64/include/asm/termbits.h    |    1 +
+  arch/m32r/include/asm/ioctls.h      |    2 ++
+  arch/m32r/include/asm/termbits.h    |    1 +
+  arch/m68k/include/asm/ioctls.h      |    2 ++
+  arch/m68k/include/asm/termbits.h    |    1 +
+  arch/mips/include/asm/ioctls.h      |    3 ++-
+  arch/mips/include/asm/termbits.h    |    1 +
+  arch/mn10300/include/asm/ioctls.h   |    2 ++
+  arch/mn10300/include/asm/termbits.h |    1 +
+  arch/parisc/include/asm/ioctls.h    |    2 ++
+  arch/parisc/include/asm/termbits.h  |    1 +
+  arch/powerpc/include/asm/ioctls.h   |    2 ++
+  arch/powerpc/include/asm/termbits.h |    1 +
+  arch/s390/include/asm/ioctls.h      |    2 ++
+  arch/sh/include/asm/ioctls.h        |    2 ++
+  arch/sparc/include/asm/ioctls.h     |    2 ++
+  arch/sparc/include/asm/termbits.h   |    1 +
+  arch/xtensa/include/asm/ioctls.h    |    2 ++
+  arch/xtensa/include/asm/termbits.h  |    1 +
+  drivers/char/n_tty.c                |   25 ++++++++++++++++++++++---
+  drivers/char/pty.c                  |   13 +++++++++++++
+  drivers/char/tty_ioctl.c            |   18 ++++++++++++------
+  fs/compat_ioctl.c                   |    1 +
+  include/asm-generic/ioctls.h        |    2 ++
+  include/asm-generic/termbits.h      |    1 +
+  include/linux/tty.h                 |    1 +
+  39 files changed, 101 insertions(+), 10 deletions(-)
+
+-- 
+   -- Howard Chu
+   CTO, Symas Corp.           http://www.symas.com
+   Director, Highland Sun     http://highlandsun.com/hyc/
+   Chief Architect, OpenLDAP  http://www.openldap.org/project/
