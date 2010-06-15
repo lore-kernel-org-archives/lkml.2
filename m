@@ -1,182 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab0FOFRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 01:17:47 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:42654 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988Ab0FOFRq (ORCPT
+	id S1752694Ab0FOF0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 01:26:22 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:42447 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752094Ab0FOF0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 01:17:46 -0400
-X-Greylist: delayed 3837 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jun 2010 01:17:45 EDT
-X-AuditID: b753bd60-a8003ba000007d15-4e-4c170cf5f84a
-Message-ID: <4C170CF4.2050908@hitachi.com>
-Date: Tue, 15 Jun 2010 14:17:40 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Tue, 15 Jun 2010 01:26:21 -0400
+Message-ID: <4C170EE2.4010706@st.com>
+Date: Tue, 15 Jun 2010 10:55:54 +0530
+From: Viresh KUMAR <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Masami Hiramatsu <mhiramat@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND][PATCH v2] perf probe: add kernel source path option
-References: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
-In-Reply-To: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+       Dan Williams <dan.j.williams@intel.com>,
+       linux-arm-kernel@lists.infradead.org, yuanyabin1978@sina.com,
+       linux-kernel@vger.kernel.org, Peter Pearse <peter.pearse@arm.com>,
+       Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+       Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 	PrimeCells
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com>	<4C15C60E.6080404@st.com> <AANLkTim9n-p-Pw6FWvzQMBiAuB3h9ILq1Ya6XWk_0l-c@mail.gmail.com>
+In-Reply-To: <AANLkTim9n-p-Pw6FWvzQMBiAuB3h9ILq1Ya6XWk_0l-c@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chase Douglas wrote:
-> The probe plugin requires access to the source code for some operations.
-> The source code must be in the exact same location as specified by the
-> DWARF tags, but sometimes the location is an absolute path that cannot
-> be replicated by a normal user. This change adds the -s|--source option
-> to allow the user to specify the root of the kernel source tree.
+On 6/14/2010 7:09 PM, Linus Walleij wrote:
+> Hi Viresh, thanks a lot for reviewing this and I'd be *very* happy if
+> you could give it a spin on
+> the SPEAr as well!
 
-Thanks, it looks very good to me :) and works!
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you,
+I would be happy too linus, will do it in few weeks, right now we are running
+short of time.
 
 > 
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> ---
->  tools/perf/Documentation/perf-probe.txt |    4 ++
->  tools/perf/builtin-probe.c              |    2 +
->  tools/perf/util/probe-finder.c          |   58 +++++++++++++++++++++++++++++--
->  tools/perf/util/symbol.h                |    1 +
->  4 files changed, 62 insertions(+), 3 deletions(-)
+> 2010/6/14 Viresh KUMAR <viresh.kumar@st.com>:
+>>> diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+>>> (...)
+>>> + * (Bursts are irrelevant for mem to mem transfers - there are no burst
+>>> + * signals)
+>>
+>> I agree that there are no request lines from memories but still we can program
+>> them with burst in order to faster the transfer. This burst feature is
+>> automatically handled by DMA.
 > 
-> diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-> index 94a258c..ea531d9 100644
-> --- a/tools/perf/Documentation/perf-probe.txt
-> +++ b/tools/perf/Documentation/perf-probe.txt
-> @@ -31,6 +31,10 @@ OPTIONS
->  --vmlinux=PATH::
->  	Specify vmlinux path which has debuginfo (Dwarf binary).
->  
-> +-s::
-> +--source=PATH::
-> +	Specify path to kernel source.
-> +
->  -v::
->  --verbose::
->          Be more verbose (show parsed arguments, etc).
-> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-> index e4a4da3..5455186 100644
-> --- a/tools/perf/builtin-probe.c
-> +++ b/tools/perf/builtin-probe.c
-> @@ -182,6 +182,8 @@ static const struct option options[] = {
->  		     "Show source code lines.", opt_show_lines),
->  	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
->  		   "file", "vmlinux pathname"),
-> +	OPT_STRING('s', "source", &symbol_conf.source_prefix,
-> +		   "directory", "path to kernel source"),
->  #endif
->  	OPT__DRY_RUN(&probe_event_dry_run),
->  	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
-> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> index d964cb1..8c33aa1 100644
-> --- a/tools/perf/util/probe-finder.c
-> +++ b/tools/perf/util/probe-finder.c
-> @@ -37,6 +37,7 @@
->  #include "event.h"
->  #include "debug.h"
->  #include "util.h"
-> +#include "symbol.h"
->  #include "probe-finder.h"
->  
->  /* Kprobe tracer basic type is up to u64 */
-> @@ -57,6 +58,55 @@ static int strtailcmp(const char *s1, const char *s2)
->  	return 0;
->  }
->  
-> +/*
-> + * Find a src file from a DWARF tag path. Prepend optional source path prefix
-> + * and chop off leading directories that do not exist. Result is passed back as
-> + * a newly allocated path on success.
-> + * Return 0 if file was found and readable, -errno otherwise.
-> + */
-> +static int get_real_path(const char *raw_path, char **new_path)
-> +{
-> +	if (!symbol_conf.source_prefix) {
-> +		if (access(raw_path, R_OK) == 0) {
-> +			*new_path = strdup(raw_path);
-> +			return 0;
-> +		} else
-> +			return -errno;
-> +	}
-> +
-> +	*new_path = malloc(strlen(symbol_conf.source_prefix)
-> +			   + strlen(raw_path) + 2);
-> +	if (!*new_path)
-> +		return -ENOMEM;
-> +
-> +	for (;;) {
-> +		sprintf(*new_path, "%s/%s", symbol_conf.source_prefix,
-> +			raw_path);
-> +
-> +		if (access(*new_path, R_OK) == 0)
-> +			return 0;
-> +
-> +		switch (errno) {
-> +		case ENAMETOOLONG:
-> +		case ENOENT:
-> +		case EROFS:
-> +		case EFAULT:
-> +			raw_path = strchr(++raw_path, '/');
-> +			if (!raw_path) {
-> +				free(*new_path);
-> +				*new_path = NULL;
-> +				return -ENOENT;
-> +			}
-> +			continue;
-> +
-> +		default:
-> +			free(*new_path);
-> +			*new_path = NULL;
-> +			return -errno;
-> +		}
-> +	}
-> +}
-> +
->  /* Line number list operations */
->  
->  /* Add a line to line number list */
-> @@ -1096,11 +1146,13 @@ end:
->  static int line_range_add_line(const char *src, unsigned int lineno,
->  			       struct line_range *lr)
->  {
-> +	int ret;
-> +
->  	/* Copy real path */
->  	if (!lr->path) {
-> -		lr->path = strdup(src);
-> -		if (lr->path == NULL)
-> -			return -ENOMEM;
-> +		ret = get_real_path(src, &lr->path);
-> +		if (ret != 0)
-> +			return ret;
->  	}
->  	return line_list__add_line(&lr->line_list, lineno);
->  }
-> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-> index 10b7ff8..80e569b 100644
-> --- a/tools/perf/util/symbol.h
-> +++ b/tools/perf/util/symbol.h
-> @@ -71,6 +71,7 @@ struct symbol_conf {
->  			full_paths,
->  			show_cpu_utilization;
->  	const char	*vmlinux_name,
-> +			*source_prefix,
->  			*field_sep;
->  	const char	*default_guest_vmlinux_name,
->  			*default_guest_kallsyms,
+> Actually in the example platform data I set this to the maxburst size
+> 256 Bytes, however if I read the manual correctly this is simply ignored
+> when you do mem2mem transfers.
+> 
+> It will simply AHB master the bus until the transaction is finished. That
+> is why the manual states:
+> 
+> "You must program memory-to-memory transfers with a low channel
+> priority, otherwise:
+> •    other DMA channels cannot access the bus until the
+> memory-to-memory transfer
+>      has finished
+> •    other AHB masters cannot perform any transaction."
+
+Yes i have seen them. One more thing i have found related to mem to mem
+transfers is:
+"You must set this value to the burst size of the destination peripheral,
+or if the destination is memory, to the memory boundary size."
+
+>>> +static void pl08x_set_cregs(struct pl08x_driver_data *pl08x,
+>>> +                         struct pl08x_phy_chan *ch)
+>>> +{
+>>> +     u32 val;
+>>> +
+>>> +     /* Wait for channel inactive */
+>>> +     val = readl(ch->base + PL080_CH_CONFIG);
+>>> +     while (val & PL080_CONFIG_ACTIVE)
+>>> +             val = readl(ch->base + PL080_CH_CONFIG);
+>>
+>> can we use pl08x_phy_channel_busy() instead of above code?
+> 
+> Fixed.
+> 
+>>> +     /*
+>>> +      * Do not access config register until channel shows as inactive
+>>> +      */
+>>> +     val = readl(ch->base + PL080_CH_CONFIG);
+>>> +     while ((val & PL080_CONFIG_ACTIVE) || (val & PL080_CONFIG_ENABLE))
+>>> +             val = readl(ch->base + PL080_CH_CONFIG);
+>>
+>> above 3 fns are always called in order, i.e. pl08x_enable_phy_chan will
+>> be called after pl08x_set_cregs, so we may not require these checks
+>> here. Is my understanding correct??
+> 
+> The previous check if the channel is active before proceeding, this check also
+> checks the enable bit, this behaviour comes straight from the manual and is
+> required to avoid hardware races, so I don't dare to touch it really...
+> 
+
+I was talking about the similar check present in pl08x_set_cregs, which will
+be called before this routine. pl08x_set_cregs has already checked if channel
+is active or not. so checking active in this routine is not required.
 
 
+>>> +     .device_alloc_chan_resources    = pl08x_alloc_chan_resources,
+>>> +     .device_free_chan_resources     = pl08x_free_chan_resources,
+>>> +     .device_prep_dma_xor            = NULL,
+>>> +     .device_prep_dma_memset         = NULL,
+>>> +     .device_prep_dma_interrupt      = pl08x_prep_dma_interrupt,
+>>> +     .device_tx_status               = pl08x_dma_tx_status,
+>>> +     .device_issue_pending           = pl08x_issue_pending,
+>>> +     .device_prep_slave_sg           = pl08x_prep_slave_sg,
+>>> +     .device_control                 = pl08x_control,
+>>> +};
+>>> +
+>>
+>> One more thing linus, why do we need to create this separation between
+>> channels. i.e. few are for memcpy and few for slave_sg. Why don't all
+>> channels support everything and this is resolved at runtime.
+> 
+> This is done in all in-tree drivers, the reason is (I think) that for example
+> the dmatest.c test client will look for:
+> 
+> 	if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)) {
+> 		cnt = dmatest_add_threads(dtc, DMA_MEMCPY);
+> 		thread_count += cnt > 0 ? cnt : 0;
+> 
+> So if you want to partition some channels for device I/O (typically some
+> which are hard-coded to some devices) and others for memcpy() you create
+> a slave instance for the former and a memcpy() instance for the latter.
+> 
+> In this case we multiplex the memcpy and slave transfers on the few
+> physical channels we have, but I haven't finally decided how to handle this:
+> perhaps we should always set on physical channel aside for memcpy
+> so this won't ever fail, and then this special memcpy device entry will help.
+> 
+> Ideas? Use cases?
+
+Hmmm. I am not sure, but i think we can't hard code a channel for some device.
+All channels should be available with both capabilities. If still there are
+some conditions (that you might know), where we need to hard code channels
+for devices, then this should come from plat data in some way.
+
+
+
+I have few more doubts that i wanted to ask. Are following supported in your
+driver, we need them in SPEAr:
+ - Configure burst size of source or destination.
+ - Configure DMA Master for src or dest.
+ - Transfer from Peripheral to Peripheral.
+ - Configure Width of src or dest peripheral.
+ - Configure Flow controller of transfer.
+ - Some callback for fixing Request line multiplexing just before
+	initiating transfer.
+ - Multiple sg elements in slave_sg transfer. I think it is not supported.
+ - Control for autoincrement of addresses, both in case of memory and
+	peripherals.
+
+
+viresh.
