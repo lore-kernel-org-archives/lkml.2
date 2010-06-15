@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758339Ab0FOUwi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 16:52:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:57444 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab0FOUwh (ORCPT
+	id S932442Ab0FOU4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 16:56:07 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:34334 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754103Ab0FOU4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 16:52:37 -0400
-X-Authority-Analysis: v=1.1 cv=w1shWbTWTAfAQ6jIUag4hBIbd8wqGnfzh/ne7nEp+Po= c=1 sm=0 a=JzHsGVqNTC4A:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=DfNHnWVPAAAA:8 a=lbOMpYSq-iLWNoPaIvoA:9 a=k6SBIJzDHDRpfZ5QrZQA:7 a=MFaw_K8LkwLcxCJKDRGNeIQX2ckA:4 a=PUjeQqilurYA:10 a=LI9Vle30uBYA:10 a=lBRciGGoxdUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] tracing: use correct string size for snprintf
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-       Jiri Olsa <jolsa@redhat.com>, Tejun Heo <tj@kernel.org>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <1276619355-18116-1-git-send-email-chase.douglas@canonical.com>
-References: <1276619355-18116-1-git-send-email-chase.douglas@canonical.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Tue, 15 Jun 2010 16:52:35 -0400
-Message-ID: <1276635155.3556.26.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jun 2010 16:56:05 -0400
+From: Linus WALLEIJ <linus.walleij@stericsson.com>
+To: Jassi Brar <jassisinghbrar@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       "yuanyabin1978@sina.com" <yuanyabin1978@sina.com>,
+       Viresh KUMAR <viresh.kumar@st.com>, Alessandro Rubini <rubini@unipv.it>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>
+Date: Tue, 15 Jun 2010 22:55:07 +0200
+Subject: RE: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081
+ 	PrimeCells
+Thread-Topic: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081
+ 	PrimeCells
+Thread-Index: AcsMd+q3AYY1yp/CQ8qG58SqACRjuAAVKKeA
+Message-ID: <CEE6BB42CAD6E947908279175AF8470A025E5AE204@EXDCVYMBSTM006.EQ1STM.local>
+References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com>
+	<002001cb0c75$0a54fd00$1efef700$%kim@samsung.com>
+ <AANLkTil7gb7SjrYPrHPfSomwxLlHpowXOZd_Qr125jvr@mail.gmail.com>
+In-Reply-To: <AANLkTil7gb7SjrYPrHPfSomwxLlHpowXOZd_Qr125jvr@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5FKuDim032513
 
-On Tue, 2010-06-15 at 12:29 -0400, Chase Douglas wrote:
-> The nsecs_str string is a local variable defined as:
-> 
-> char nsecs_str[5];
-> 
-> It is possible for the snprintf call to use a size value larger than the
-> size of the string. This should not cause a buffer overrun as it is
-> written now due to the maximum size of the string format. However, this
-> change makes it correct. By making the size correct we guard against
-> potential future changes that could actually cause a buffer overrun.
-> 
-> Cc: stable@kernel.org
+[Jassi]
+> [Kukjin]
+> >> It has been converted to use the header from the Samsung PL080
+> >> derivate instead of its own defintions, and can potentially support
+> >> several controllers in the same system.
+> > Looks good, but please give me some time to test on the
+> board(SMDK6410).
+> > If any problem, let you know. Of course no problem, will ack.
+> Samsung doesn't use the DMA API, so this driver is unlikely to work.
 
-I see that because nsecs_str is based off of nsecs_rem which is the
-remainder of a division of a 1000, that it wont ever be more than 4 in
-length. For this, I'll remove the "Cc: stable" part and queue it for 36.
-No urgent need for now.
+Yeah that was never the intention, the Samsung derivate has one extra
+Register and other funny stuff.
 
-But I still think it should be added, just because it looks to fragile
-to have what is in the kernel now.
+I was more hoping on breaking out a subset in the same elegant way
+with a generic part and a separate DMAengine as was done with the
+PL330... But I need to get it fully working first.
 
-Thanks!
+Atleast I used the same include file.
 
--- Steve
+But I have functional UART DMA on the RealView PB11MPCore now!
 
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> ---
->  kernel/trace/trace_functions_graph.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-> index 79f4bac..73d6bd1 100644
-> --- a/kernel/trace/trace_functions_graph.c
-> +++ b/kernel/trace/trace_functions_graph.c
-> @@ -641,7 +641,8 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
->  
->  	/* Print nsecs (we don't want to exceed 7 numbers) */
->  	if (len < 7) {
-> -		snprintf(nsecs_str, 8 - len, "%03lu", nsecs_rem);
-> +		snprintf(nsecs_str, min(sizeof(nsecs_str), 8 - len), "%03lu",
-> +			 nsecs_rem);
->  		ret = trace_seq_printf(s, ".%s", nsecs_str);
->  		if (!ret)
->  			return TRACE_TYPE_PARTIAL_LINE;
-
-
+Yours,
+Linus Walleij
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
