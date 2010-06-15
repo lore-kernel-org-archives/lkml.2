@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab0FOApI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 20:45:08 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:16018 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754251Ab0FOApF (ORCPT
+	id S1756703Ab0FOAsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 20:48:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41599 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070Ab0FOAsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 20:45:05 -0400
-From: Ryan Mallon <ryan@bluewatersys.com>
-To: cbouatmailru@gmail.com
-Cc: mike@compulab.co.il, linux-kernel@vger.kernel.org, vilensky@compulab.co.il,
-       mike.rapoport@gmail.com, Ryan Mallon <ryan@bluewatersys.com>
-Subject: [PATCH] ds2782: Fix ds2782_get_capacity return value
-Date: Tue, 15 Jun 2010 12:44:59 +1200
-Message-Id: <1276562699-4933-1-git-send-email-ryan@bluewatersys.com>
-X-Mailer: git-send-email 1.5.5.1
+	Mon, 14 Jun 2010 20:48:10 -0400
+Date: Mon, 14 Jun 2010 20:47:35 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
+Subject: Re: [GIT PULL] Btrfs updates for 2.6.35
+Message-ID: <20100615004735.GR18266@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Ed Tomlinson <edt@aei.ca>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	linux-btrfs@vger.kernel.org
+References: <20100611193731.GA3018@think>
+ <201006141524.20752.edt@aei.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006141524.20752.edt@aei.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4C16CDC7.022F:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ds2782_get_capacity function should return 0 on success, not the
-capacity value.
+On Mon, Jun 14, 2010 at 03:24:19PM -0400, Ed Tomlinson wrote:
+> On Friday 11 June 2010 15:37:31 Chris Mason wrote:
+> > Hello everyone,
+> > 
+> > The master branch of the btrfs-unstable tree is a collection of fixes
+> > and cleanups, including two btrfs regressions from rc1:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
+> > 
+> > One is an freeing blocks on an FS converted from ext34 to btrfs,
+> > and the other is a fallocate fix.
+> > 
+> > The rest are the usual small bug fixes.
+> 
+> Looks like this still misses any fix for the oops I reported May 8th in thread:
+> "[OPPS] btrfs on 33-3 with latest from btrfs-unstable.git master"
+> 
+> Any chance this could be looked into?  I've kept the fs just in case.
 
-Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
----
- drivers/power/ds2782_battery.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The oops shows a crc failure and then we were not able to read the tree
+block.  Yan Zheng is working on an fsck that can repair things now.
+Until then the best I can do is help copy things off.
 
-diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-index d762a0c..2afbeec 100644
---- a/drivers/power/ds2782_battery.c
-+++ b/drivers/power/ds2782_battery.c
-@@ -163,7 +163,7 @@ static int ds2782_get_capacity(struct ds278x_info *info, int *capacity)
- 	if (err)
- 		return err;
- 	*capacity = raw;
--	return raw;
-+	return 0;
- }
- 
- static int ds2786_get_current(struct ds278x_info *info, int *current_uA)
--- 
-1.5.5.1
+Would you rather save the FS to test fsck?
 
+-chris
