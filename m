@@ -1,123 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758201Ab0FOTuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 15:50:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61492 "EHLO mga11.intel.com"
+	id S932376Ab0FOTyy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 15:54:54 -0400
+Received: from lirone.symas.net ([64.71.152.235]:58816 "EHLO lirone.symas.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396Ab0FOTuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 15:50:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,422,1272870000"; 
-   d="scan'208";a="808274736"
-Subject: [PATCH  1/1] mutex: prevent optimistic spinning from spinning
- longer than neccessary
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: peterz@infradead.org, mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-       Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Jun 2010 12:46:32 -0700
-Message-ID: <1276631192.2385.244.camel@mudge.jf.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 8bit
+	id S1757835Ab0FOTyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 15:54:53 -0400
+Message-ID: <4C17DA85.40803@symas.com>
+Date: Tue, 15 Jun 2010 12:54:45 -0700
+From: Howard Chu <hyc@symas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; rv:1.9.3a5pre) Gecko/20100607 Firefox 3.6
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] tty: Add EXTPROC support for LINEMODE
+References: <E1OObIu-0004K2-3K@lirone.symas.net> <20100615202924.24446d28@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100615202924.24446d28@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-There is a scalability issue for current implementation of optimistic
-mutex spin in the kernel.  It is found on a 8 node 64 core Nehalem-EX
-system (HT mode).
+Alan Cox wrote:
+>>       bit set, and the data will be the contents of a struct termios.
+>>       This allows the process on the server side of the pty to know
+>>       when the state of the terminal has changed, and what the new
+>>       state is.
+>
+> First problem - the kernel and user idea of struct termios don't match.
 
-The intention of the optimistic mutex spin is to busy wait and spin on a 
-mutex if the owner of the mutex is running, in the hope that the mutex will 
-get released soon and can then be acquired without going to sleep.  However, 
-when we have a large number of threads, contending for the mutex, we could 
-have the mutex grabbed by other thread, and then another ……, and we will still 
-be spinning, wasting cpu cycles and adding to the contention.  One
-possible fix is to quit spinning and put the current thread on wait-list
-if mutex lock switch to a new owner while we spin, indicating heavy
-contention (see the patch included).   
+OK, since you mention it again down below I'll respond to this last.
 
-I did some testing on a 8 node Nehalem-EX system with a total of 64
-cores. Using Ingo's test-mutex program that creates/delete files with
-256 threads (http://lkml.org/lkml/2006/1/8/50) , I see the following
-speed up after putting in the mutex spin fix:
+>> diff --git a/arch/alpha/include/asm/termbits.h b/arch/alpha/include/asm/termbits.h
+>> index ad854a4..879dd35 100644
+>> --- a/arch/alpha/include/asm/termbits.h
+>> +++ b/arch/alpha/include/asm/termbits.h
+>> @@ -180,6 +180,7 @@ struct ktermios {
+>>   #define FLUSHO	0x00800000
+>>   #define PENDIN	0x20000000
+>>   #define IEXTEN	0x00000400
+>> +#define EXTPROC	0x10000000
+>
+> For Alpha this value should match OSF if possible.
 
-./mutex-test V 256 10
-		Ops/sec
-2.6.34		62864
-With fix	197200
+I'm grubbing around looking for a live Alpha system now, doesn't seem likely 
+that I'll find one. Not sure what needs to match here, it's also unlikely that 
+OSF/1 (or any other SVR4 platform) ever provided a definition for this bit. 
+Looking at the telnet README:
+ >>>>
+This is a distribution of both client and server telnet.  These programs
+have been compiled on:
+			telnet	telnetd
+	BSD 4.4		  x	  x
+	BSD 4.3 Reno	  X	  X
+	UNICOS 8.0	  X	  X
+	UNICOS 7.C	  X	  X
+	UNICOS 7.0	  X	  X
+	UNICOS 6.1	  X	  X
+	BSDI 1.0	  X	  X
+	Solaris 2.2       x       x (no linemode in server)
+	Solaris 2.3       x       x (no linemode in server)
+	SunOs 4.1.3	  X	  X (no linemode in server)
+	Ultrix 4.3	  X	  X (no linemode in server)
+	DYNIX V3.0.17.9	  X	  X (no linemode in server)
+	HP-UX 8.0	  x       x (no linemode in server)
+<<<<
 
-Repeating the test with Aim7 fserver workload, again there is a speed up
-with the fix:
+I doubt that anyone ever ported this feature over to those OSes.
+>
+>
+>> +			if (cs&  TIOCPKT_IOCTL) {
+>> +				c = sizeof(struct termios);
+>> +				if (c>  nr)
+>> +					c = nr;
+>> +				copy_to_user(b, tty->link->termios, c);
+>> +				nr -= c;
+>> +				b += c;
+>> +			}
+>
+> This is where the wheels come off the bus.
+>
+> The kernel use struct ktermios which is what tty->link->termios is
+>
+> The C library presents this via struct termios which is a glibc invention
+> dependant on the C library and which is converted by libc from struct
+> termios or struct termios2 depending on your C library
+>
+> How you fix that given a broken by design historic Unix interface which
+> pastes arbitary struct termios objects into the data stream is an
+> interesting question - doubly so when like most Unixen we have also have
+> extended terminal attributes as well (termiox)
 
-		Jobs/min
-2.6.34 		91657
-With fix 	149325
+Are you suggesting that this is completely unfixable/unworkable? Would it be 
+sufficient to use kernel_termios_to_user_termios() ?
 
-To look at the impact on the distribution of mutex acquisition time, I
-collected the mutex acquisition time on Aim7 fserver workload with some
-instrumentation.  The average acquisition time is reduced by 48% and
-number of contentions reduced by 32%.
-
-		#contentions	Time to acquire mutex (cycles)
-2.6.34		72973		44765791
-With fix	49210		23067129 
-
-The histogram of mutex acquisition time is listed below.  The
-acquisition time is in 2^bin cycles.  We see that without the fix, the
-acquisition time is mostly around 2^26 cycles.  With the fix, we the
-distribution get spread out a lot more towards the lower cycles,
-starting from 2^13.  However, there is an increase of the tail
-distribution with the fix at 2^28 and 2^29 cycles.  I think it is a
-small price to pay for the reduced average acquisition time and also
-getting the cpu to do useful work.
-
-Mutex acquisition time distribution (acq time = 2^bin cycles):
-	2.6.34			With Fix
-bin     #occurrence     %       #occurrence     %
-11      2       	0.00%   120     	0.24%
-12      10      	0.01%   790     	1.61%
-13      14      	0.02%   2058    	4.18%
-14      86      	0.12%   3378    	6.86%
-15      393     	0.54%   4831    	9.82%
-16      710     	0.97%   4893    	9.94%
-17      815     	1.12%   4667    	9.48%
-18      790     	1.08%   5147    	10.46%
-19      580     	0.80%   6250    	12.70%
-20      429     	0.59%   6870    	13.96%
-21      311     	0.43%   1809    	3.68%
-22      255     	0.35%   2305    	4.68%
-23      317     	0.44%   916     	1.86%
-24      610     	0.84%   233     	0.47%
-25      3128    	4.29%   95      	0.19%
-26      63902   	87.69%  122     	0.25%
-27      619     	0.85%   286     	0.58%
-28      0       	0.00%   3536    	7.19%
-29      0       	0.00%   903     	1.83%
-30	0		0.00%	0		0.00%
-
-Regards,
-Tim
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-diff -ur linux-2.6.34/kernel/sched.c linux-2.6.34-fix/kernel/sched.c
---- linux-2.6.34/kernel/sched.c	2010-05-16 14:17:36.000000000 -0700
-+++ linux-2.6.34-fix/kernel/sched.c	2010-06-04 10:28:33.564777030 -0700
-@@ -3815,8 +3815,11 @@
- 		/*
- 		 * Owner changed, break to re-assess state.
- 		 */
--		if (lock->owner != owner)
-+		if (lock->owner != owner) {
-+			if (lock->owner)
-+				return 0;
- 			break;
-+		}
- 
- 		/*
- 		 * Is that owner really running on that cpu?
-
-
+-- 
+   -- Howard Chu
+   CTO, Symas Corp.           http://www.symas.com
+   Director, Highland Sun     http://highlandsun.com/hyc/
+   Chief Architect, OpenLDAP  http://www.openldap.org/project/
