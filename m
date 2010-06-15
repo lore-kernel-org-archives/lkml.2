@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab0FOWcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 18:32:46 -0400
-Received: from farizej.centrum.cz ([90.183.38.130]:54882 "EHLO
-	farizej.centrum.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873Ab0FOWco (ORCPT
+	id S1756214Ab0FOWdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 18:33:53 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64353 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab0FOWdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 18:32:44 -0400
-Date: Wed, 16 Jun 2010 00:32:40 +0200
-From: "Dr Christina" <drchristina@centrum.sk>
-X-Mailer: Centrum Mail 5.0
+	Tue, 15 Jun 2010 18:33:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=Uk/OunZgHT/ZT3k92JizYlq9KPueFNfICStNoIepix7L/sdnxbXi/Q1SAtXMUntgb8
+         uSbWHtbPpynzJEEo5l0vl73btEMPA0peCIvQ4SVzVWvtmNaZjNU0eGRaoNbh7ieHhqTA
+         WXjNqL0AINPLi77zT22CE0bxQT3Y6NbOPhUIY=
 MIME-Version: 1.0
-X-Priority: 3
-Message-ID: <201006160032.19248@centrum.cz>
-Subject: Take-
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20100615065630.GC6727@basil.fritz.box>
+References: <AANLkTil_mDFOsDUjvnp_NFZvkj0Ij-qww6BqewJ4lpHP@mail.gmail.com>
+	<35525.41387.qm@web50105.mail.re2.yahoo.com>
+	<20100615065630.GC6727@basil.fritz.box>
+Date: Tue, 15 Jun 2010 15:33:51 -0700
+X-Google-Sender-Auth: hPOZHgHw6SPpANb0WSrgipQ1Csw
+Message-ID: <AANLkTikS9ocvQm2WK_9PFeiMNCcBGeW-8o1r30nnb59Y@mail.gmail.com>
+Subject: Re: Hardware Error Kernel Mini-Summit
+From: Tony Luck <tony.luck@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Doug Thompson <norsk5@yahoo.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Nils Carlson <nils.carlson@ludd.ltu.se>, Ingo Molnar <mingo@elte.hu>,
+       Borislav Petkov <bp@amd64.org>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       BrentYoung <brent.young@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "bluesmoke-devel@lists.sourceforge.net" 
+	<bluesmoke-devel@lists.sourceforge.net>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Joe Perches <joe@perches.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+       Ingo Molnar <mingo@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Уважаемый победитель,
+On Mon, Jun 14, 2010 at 11:56 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> The way I envision it to working is that a abstracted dimm interface
+> (or edac2 or whatever you want to call it) can be fed from any reasonable
+> DIMM layout driver. This could be either DMI on x86 or some other
+> driver. There would be nothing really x86 specific about that.
 
+You could go one stage further and make DIMMs just one example of
+a field replaceable unit.  So the "error analysis subsystem" would keep track
+of errors reported by any component (cpu, DIMM, I/O card, fan, power
+supply, disk, ...).  Each category could have different "X errors per Y
+interval" parameter that made sense for it.
 
-Это письмо подтверждает, что вы получили уведомление от
-ИНТЕР POWER BALL AWARD промо, колеса E-игр, состоявшемся 15.06.2010.
- 
-Вы были утверждены награды 480.000.00 долл. США (шесть
-Сто тысяч долларов США) наличными, кредитной файл см.: ILP / ТВ
-47509/02
-
-Полное имя:
-Адрес:
-Дата рождения:
-Профессия:
-номер телефона:
-Страна:
-
-Пожалуйста, свяжитесь с агентом говорится, что:
-Название: Dr. James Cole
-Email: (mr.james1923@hotmail.com)
-Веб-сайт: www.powerball.com
-
-
-Signed.
-Г-н Стив Dave (г)
-
+-Tony
