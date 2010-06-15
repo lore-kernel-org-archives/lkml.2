@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab0FONu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 09:50:28 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:40859 "EHLO
-	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1757188Ab0FONu1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 09:50:27 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: chris.mason@oracle.com
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-       Jiri Slaby <jslaby@suse.cz>, linux-btrfs@vger.kernel.org
-Subject: [PATCH 1/1] FS: btrfs, use helpers for rlimits
-Date: Tue, 15 Jun 2010 15:48:08 +0200
-Message-Id: <1276609688-2117-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.1
+	id S1757632Ab0FONv5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 09:51:57 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34987 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757188Ab0FONvz (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 15 Jun 2010 09:51:55 -0400
+Date: Tue, 15 Jun 2010 01:10:27 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, jeff@garzik.org,
+       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
+       khali@linux-fr.org
+Subject: Re: [PATCH 02/12] irq: make spurious poll timer per desc
+Message-ID: <20100615051027.GA8073@phenom.dumpdata.com>
+References: <1276443098-20653-1-git-send-email-tj@kernel.org>
+ <1276443098-20653-3-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276443098-20653-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090204.4C1784F6.012C:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure compiler won't do weird things with limits. E.g. fetching
-them twice may return 2 different values after writable limits are
-implemented.
+> @@ -169,6 +170,7 @@ struct irq_2_iommu;
+>   * @pending_mask:	pending rebalanced interrupts
+>   * @threads_active:	number of irqaction threads currently running
+>   * @wait_for_threads:	wait queue for sync_irq to wait for threaded handlers
+> + * @poll_timer:		timer for IRQ polling
 
-I.e. either use rlimit helpers added in
-3e10e716abf3c71bdb5d86b8f507f9e72236c9cd
-or ACCESS_ONCE if not applicable.
+I looked over the patches and they all look good to my eyes.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Chris Mason <chris.mason@oracle.com>
-Cc: linux-btrfs@vger.kernel.org
----
- fs/btrfs/inode.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+The only thing that looked out of place was the above comment.
+Would it make sense to move the comment one tab to the left?
 
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 44d404c..8f11078 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -3576,8 +3576,7 @@ static int btrfs_setattr_size(struct inode *inode, struct iattr *attr)
- 		return 0;
- 
- 	if (attr->ia_size > inode->i_size) {
--		unsigned long limit;
--		limit = current->signal->rlim[RLIMIT_FSIZE].rlim_cur;
-+		unsigned long limit = rlimit(RLIMIT_FSIZE);
- 		if (attr->ia_size > inode->i_sb->s_maxbytes)
- 			return -EFBIG;
- 		if (limit != RLIM_INFINITY && attr->ia_size > limit) {
--- 
-1.7.1
-
-
+>   * @dir:		/proc/irq/ procfs entry
+>   * @name:		flow handler name for /proc/interrupts output
+>   */
