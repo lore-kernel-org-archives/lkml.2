@@ -1,82 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758089Ab0FORTM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 13:19:12 -0400
-Received: from smtp5.freeserve.com ([193.252.22.151]:55979 "EHLO
-	smtp6.freeserve.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754391Ab0FORTK (ORCPT
+	id S1758115Ab0FORYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 13:24:10 -0400
+Received: from ausxippc101.us.dell.com ([143.166.85.207]:1431 "EHLO
+	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758047Ab0FORYI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 13:19:10 -0400
-X-ME-UUID: 20100615165051767.BB4577002A8D@mwinf3504.me.freeserve.com
-Date: Tue, 15 Jun 2010 17:50:34 +0100
-From: Chris Vine <chris@cvine.freeserve.co.uk>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: nfsd hang and kernel bug in 2.6.35-rc3
-Message-ID: <20100615175034.1e015fbc@boulder.homenet>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jun 2010 13:24:08 -0400
+X-Loopcount0: from 10.166.72.158
+From: <Rezwanul_Kabir@Dell.com>
+To: <pharon@gmail.com>, <tim.gardner@canonical.com>
+CC: <mjg59@srcf.ucam.org>, <linux-kernel@vger.kernel.org>,
+       <platform-driver-x86@vger.kernel.org>, <akpm@linux-foundation.org>
+Date: Tue, 15 Jun 2010 12:23:57 -0500
+Subject: RE: Dell Studio 1555 eject key does not work ( small patch to fix
+ 	included )
+Thread-Topic: Dell Studio 1555 eject key does not work ( small patch to fix
+ 	included )
+Thread-Index: AcsJzl2u51JcuR6SQDisjwtSg5RikwC39sJQ
+Message-ID: <57DF5FDC2DC0634FA2A310BC5B81A68D01E06306A9@AUSX7MCPC108.AMER.DELL.COM>
+References: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com>
+ 	<20100602213429.GA14866@srcf.ucam.org>
+ <57DF5FDC2DC0634FA2A310BC5B81A68D01DF4CD01E@AUSX7MCPC108.AMER.DELL.COM>
+ 	<AANLkTimIl6UL0HQT1wxRgXuj_m0O3CwMHQIa1xNE1Ax9@mail.gmail.com>
+ 	<AANLkTin0qht1XR2rUgIXMEeJNU_gb3IZWqSBJb7NXD8K@mail.gmail.com>
+ 	<57DF5FDC2DC0634FA2A310BC5B81A68D01DFD57663@AUSX7MCPC108.AMER.DELL.COM>
+ 	<20100610184023.GA17320@srcf.ucam.org>
+ <AANLkTilT3KCeJUpG-APK0MFh2ChMlZ4qwVPhOJpHnPB9@mail.gmail.com>
+ 	<57DF5FDC2DC0634FA2A310BC5B81A68D01DFD5780A@AUSX7MCPC108.AMER.DELL.COM>
+ 	<AANLkTinoWK4uSL2KOhgF-EVWuBhgCeAqWwL9cJKeGRD1@mail.gmail.com>
+ 	<4C124358.8020007@canonical.com>
+ <AANLkTimxo3CeRR2YZptTL6RoEi8Q5sdnUEMIi9A5-KcA@mail.gmail.com>
+ 	<AANLkTilaoFJuT8d9iPWqDzyxBC8o4E1Vhh03ufiwLEk-@mail.gmail.com>
+ 	<4C128201.8020104@canonical.com>
+ <AANLkTin1bEjYt08P923v1c0aSM1O6kYDwoaOYiFufGCd@mail.gmail.com>
+In-Reply-To: <AANLkTin1bEjYt08P923v1c0aSM1O6kYDwoaOYiFufGCd@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 15 Jun 2010 17:23:59.0532 (UTC) FILETIME=[8AA8CEC0:01CB0CAF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Booting up kernel 2.6.35-rc3 on my netbook, with the kernel compiled for
-an Atom N270 processor, hangs when starting nfsd.  If I then end the hang
-by rebooting with Ctrl-Alt-Delete, I get a kernel bug reported.  The only
-one of these that has been logged is as follows, as on other boots the bug
-seems to be reported elsewhere but is not committed to syslog, or no bug
-is reported at all (it just hangs):
+Hi Matthew/Islam
 
-...
-Jun 15 16:06:18 laptop kernel: NFSD: Using /var/lib/nfs/v4recovery as the NFSv4 state recovery directory
-Jun 15 16:07:18 laptop kernel: svc: failed to register lockdv3 RPC service (errno 110).
-Jun 15 16:07:18 laptop kernel: lockd_up: makesock failed, error=-110
-[Ctrl-Alt-Delete here]
-Jun 15 16:08:21 laptop kernel: lockd_down: no users! task=(null)
-Jun 15 16:08:21 laptop kernel: ------------[ cut here ]------------
-Jun 15 16:08:21 laptop kernel: kernel BUG at fs/lockd/svc.c:347!
-Jun 15 16:08:21 laptop kernel: invalid opcode: 0000 [#1] SMP 
-Jun 15 16:08:21 laptop kernel: last sysfs file: /sys/module/x_tables/initstate
-Jun 15 16:08:21 laptop kernel: Modules linked in: nfsd lockd nfs_acl auth_rpcgss sunrpc exportfs xt_recent xt_tcpudp nf_conntrack_ipv4 nf_defrag_i
-pv4 iptable_filter ip_tables xt_helper xt_conntrack xt_state x_tables nf_conntrack_irc nf_conntrack_ftp nf_conntrack pcmcia pcmcia_core cpufreq_on
-demand speedstep_lib acpi_cpufreq freq_table mperf parport_pc parport fuse snd_hda_codec_realtek i915 snd_hda_intel drm_kms_helper snd_hda_codec d
-rm snd_hwdep tg3 uvcvideo i2c_algo_bit snd_pcm videodev rtc_cmos joydev snd_timer rtc_core intel_agp snd soundcore btusb usbhid bluetooth snd_page
-_alloc video led_class agpgart processor sg rtc_lib output thermal libphy psmouse i2c_i801 rfkill evdev serio_raw thermal_sys ac v4l1_compat batte
-ry wmi button hwmon [last unloaded: pcmcia_core]
-Jun 15 16:08:21 laptop kernel: 
-Jun 15 16:08:21 laptop kernel: Pid: 1852, comm: rpc.nfsd Not tainted 2.6.35-rc3 #1 MoutCook/20021,2959
-Jun 15 16:08:21 laptop kernel: EIP: 0060:[<f90ef780>] EFLAGS: 00010286 CPU: 1
-Jun 15 16:08:21 laptop kernel: EIP is at lockd_down+0x70/0x90 [lockd]
-Jun 15 16:08:21 laptop kernel: EAX: 00000028 EBX: f6a9c400 ECX: f69e5ec4 EDX: f90f6be4
-Jun 15 16:08:21 laptop kernel: ESI: f70e7920 EDI: f70e7928 EBP: f9143a60 ESP: f69e5ec0
-Jun 15 16:08:21 laptop kernel:  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-Jun 15 16:08:21 laptop kernel: Process rpc.nfsd (pid: 1852, ti=f69e4000 task=f7184a20 task.ti=f69e4000)
-Jun 15 16:08:21 laptop kernel: Stack:
-Jun 15 16:08:21 laptop kernel:  f90f6be4 00000000 f9142995 f70e7900 f70e7900 00000801 f909960b f90ef8f1
-Jun 15 16:08:21 laptop kernel: <0> f90f6c74 ffffff92 00000008 00000801 ffffff92 f914279f 00000801 00000000
-Jun 15 16:08:21 laptop kernel: <0> f697c004 f69e5f22 f9143440 f91434eb f71df400 f6c027f8 00000101 00000000
-Jun 15 16:08:21 laptop kernel: Call Trace:
-Jun 15 16:08:21 laptop kernel:  [<f9142995>] ? nfsd_last_thread+0x25/0x60 [nfsd]
-Jun 15 16:08:21 laptop kernel:  [<f909960b>] ? svc_destroy+0x4b/0x130 [sunrpc]
-Jun 15 16:08:21 laptop kernel:  [<f90ef8f1>] ? lockd_up+0x31/0x1c0 [lockd]
-Jun 15 16:08:21 laptop kernel:  [<f914279f>] ? nfsd_svc+0xcf/0x160 [nfsd]
-Jun 15 16:08:21 laptop kernel:  [<f9143440>] ? write_threads+0x0/0xc0 [nfsd]
-Jun 15 16:08:21 laptop kernel:  [<f91434eb>] ? write_threads+0xab/0xc0 [nfsd]
-Jun 15 16:08:21 laptop kernel:  [<c101fb50>] ? do_page_fault+0x0/0x360
-Jun 15 16:08:21 laptop kernel:  [<c11460e1>] ? _copy_from_user+0x31/0x80
-Jun 15 16:08:21 laptop kernel:  [<c10b395f>] ? simple_transaction_get+0x8f/0xa0
-Jun 15 16:08:21 laptop kernel:  [<f9143ab9>] ? nfsctl_transaction_write+0x59/0x70 [nfsd]
-Jun 15 16:08:21 laptop kernel:  [<c1099a20>] ? vfs_write+0xa0/0x160
-Jun 15 16:08:21 laptop kernel:  [<c1099ba1>] ? sys_write+0x41/0x70
-Jun 15 16:08:21 laptop kernel:  [<c12eefc5>] ? syscall_call+0x7/0xb
-Jun 15 16:08:21 laptop kernel: Code: 05 3c 8e 0f f9 00 00 00 00 b8 c8 7c 0f f9 83 c4 08 e9 15 e3 1f c8 a1 38 8e 0f f9 c7 04 24 e4 6b 0f f9 89 44 24 04 e8 3f d4 1f c8 <0f> 0b eb fe c7 04 24 08 6c 0f f9 e8 2f d4 1f c8 0f 0b eb fe 8d 
-Jun 15 16:08:21 laptop kernel: EIP: [<f90ef780>] lockd_down+0x70/0x90 [lockd] SS:ESP 0068:f69e5ec0
-Jun 15 16:08:21 laptop kernel: ---[ end trace 8ca67da05153a656 ]---
+   I don't know how Ubuntu 10.04 fixed the issue, but from my communications with the BIOS team, I think 
+ Islam's patch would be acceptable. "buffer_entry[1] == 0x0" would indicate HotKey events on these platforms.
 
-This particular trace is with NFS v4 compiled in, but I get a similar hang
-with only v2/3 compiled in.
+Thanks..
+   --rez
 
-Chris
+ 
 
+Rezwanul Kabir
+Dell Linux Development
+512-725-0766
+ 
 
+>-----Original Message-----
+>From: Islam Amer [mailto:pharon@gmail.com] 
+>Sent: Friday, June 11, 2010 8:27 PM
+>To: tim.gardner@canonical.com
+>Cc: Kabir, Rezwanul; mjg59@srcf.ucam.org; 
+>linux-kernel@vger.kernel.org; 
+>platform-driver-x86@vger.kernel.org; akpm@linux-foundation.org
+>Subject: Re: Dell Studio 1555 eject key does not work ( small 
+>patch to fix included )
+>
+>What would you like me to do now? I want to help :)
+>
+>Thanks.
+>
+>On Fri, Jun 11, 2010 at 9:35 PM, Tim Gardner 
+><tim.gardner@canonical.com> wrote:
+>> The only difference between 2.6.32.15 and Ubuntu Lucid wrt 
+>dell-wmi.c 
+>> is
+>> this:
+>>
+>> 43,46d42
+>> < /* Temporary workaround until the WMI sysfs interface goes in.
+>> <    Borrowed from acer-wmi */
+>> < MODULE_ALIAS("dmi:*:*Dell*:*:");
+>> <
+>>
+>> I wonder about input event filtering? There are substantial 
+>> differences in drivers/input/input.c.
+>>
+>> rtg
+>>
+>> On 06/11/2010 12:02 PM, Islam Amer wrote:
+>>>
+>>> Dear Tim,
+>>>
+>>> I tried the mainline kernel 2.6.32-0206321505-generic as you 
+>>> suggested and the eject key doesn't work but it also 
+>doesn't produce 
+>>> the error message in dmesg.
+>>>
+>>> I then tried the 2.6.32-22.36-generic from 
+>>> 
+>http://packages.ubuntu.com/lucid/linux-image-2.6.32-22-generic and I 
+>>> found the eject key working fine.
+>>>
+>>> So there is something in the ubuntu patchset that fixes this issue.
+>>>
+>>> On Fri, Jun 11, 2010 at 5:23 PM, Islam 
+>Amer<pharon@gmail.com>  wrote:
+>>>>
+>>>> Tim I am running debian,
+>>>>
+>>>> I think it's the other way round, the mainline kernel is borked ( 
+>>>> regarding dell-wmi and eject key ) while the lucid patched kernel 
+>>>> works ( as reported by dell team ).
+>>>>
+>>>> I guess I could download a Lucid livecd and see if the eject key 
+>>>> works there ( event only as it won't eject the lived while it is 
+>>>> running :)
+>>>> )
+>>>>
+>>>> On Fri, Jun 11, 2010 at 5:08 PM, Tim 
+>>>> Gardner<tim.gardner@canonical.com>
+>>>>  wrote:
+>>>>>
+>>>>> Islam Amer,
+>>>>>
+>>>>> You could try a vanilla stable kernel from 
+>>>>> http://kernel.ubuntu.com/~kernel-ppa/mainline/v2.6.32.15.5-lucid/ 
+>>>>> to see if we've borked the dell-wmi code.
+>>>>>
+>>>>> rtg
+>>>>>
+>>>>> On 06/11/2010 07:28 AM, Islam Amer wrote:
+>>>>>>
+>>>>>> Rezwanul,
+>>>>>>
+>>>>>> I've updated my bios to A11 and installed a new 
+>unmodified kernel. 
+>>>>>> The issue still persists that the eject key produces "dell-wmi: 
+>>>>>> Unknown key 0 pressed" in the dmesg output and it doesn't work.
+>>>>>>
+>>>>>> It is possible that Ubuntu is including patches to fix 
+>stuff. The 
+>>>>>> latest patch for the Lucid kernel at
+>>>>>>
+>>>>>>
+>>>>>> 
+>http://archive.ubuntu.com/ubuntu/pool/main/l/linux/linux_2.6.32-22
+>>>>>> .36.diff.gz does include patches that touch wmi and 
+>dell-wmi code, 
+>>>>>> but I can't find a specific change that would fix this issue.
+>>>>>>
+>>>>>> I might try to selectively apply patches from it and see if it 
+>>>>>> gets fixed.
+>>>>>>
+>>>>>> Thanks.
+>>>>>>
+>>>>>>
+>>>>>> On Fri, Jun 11, 2010 at 3:15 
+>AM,<Rezwanul_Kabir@dell.com>    wrote:
+>>>>>>>
+>>>>>>> Islam Amer
+>>>>>>>
+>>>>>>>   Please try the new BIOS A11 and eliminate any 
+>potential BIOS issues.
+>>>>>>> The BIOS team confirmed that
+>>>>>>>   they weren't able to reproduce the issue with Ubuntu 
+>10.04 and A11.
+>>>>>>>
+>>>>>>> Thanks..
+>>>>>>>   --rez
+>>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>> Rezwanul Kabir
+>>>>>>> Dell Linux Development
+>>>>>>> 512-725-0766
+>>>>>>>
+>>>>>>>
+>>>>>>>> -----Original Message-----
+>>>>>>>> From: Islam Amer [mailto:pharon@gmail.com]
+>>>>>>>> Sent: Thursday, June 10, 2010 6:52 PM
+>>>>>>>> To: Matthew Garrett
+>>>>>>>> Cc: Kabir, Rezwanul; linux-kernel@vger.kernel.org; 
+>>>>>>>> platform-driver-x86@vger.kernel.org; akpm@linux-foundation.org
+>>>>>>>> Subject: Re: Dell Studio 1555 eject key does not work ( small 
+>>>>>>>> patch to fix included )
+>>>>>>>>
+>>>>>>>> Hello all,
+>>>>>>>>
+>>>>>>>> My bios version is A08 , I see that A11 was recently released 
+>>>>>>>> but the changelog doesn't say much.
+>>>>>>>>
+>>>>>>>> Which is better, upgrade and hope the problem goes 
+>away, or wait 
+>>>>>>>> until we have a fix that is agreed upon ?
+>>>>>>>>
+>>>>>>>> Thanks.
+>>>>>>>>
+>>>>>>>> On Thu, Jun 10, 2010 at 9:40 PM, Matthew Garrett 
+>>>>>>>> <mjg59@srcf.ucam.org>    wrote:
+>>>>>>>>>
+>>>>>>>>> On Thu, Jun 10, 2010 at 01:36:56PM -0500,
+>>>>>>>>
+>>>>>>>> Rezwanul_Kabir@Dell.com wrote:
+>>>>>>>>>>
+>>>>>>>>>> Hi Islam Amer
+>>>>>>>>>>
+>>>>>>>>>>    I got report that "Ubuntu 10.04 + BIOS A11" was 
+>tested and 
+>>>>>>>>>> the "Eject CD" key is working
+>>>>>>>>>>    as expected. Sorry, I couldn't find any Studio 1555 to
+>>>>>>>>
+>>>>>>>> test myself
+>>>>>>>>>>
+>>>>>>>>>> and cannot provide you
+>>>>>>>>>>    with more details.
+>>>>>>>>>>
+>>>>>>>>>>     Also, you may try acpi_osi="Windows 2009" kernel
+>>>>>>>>
+>>>>>>>> parameter and see if there is any difference.
+>>>>>>>>>
+>>>>>>>>> That's the default on any kernel that has this 
+>support in dell-wmi.
+>>>>>>>>> Rez, could you let me know if the proposed patch breaks the 
+>>>>>>>>> spec in ways that are likely to cause problems?
+>>>>>>>>>
+>>>>>>>>> --
+>>>>>>>>> Matthew Garrett | mjg59@srcf.ucam.org
+>>>>>>>>>
+>>>>>>>>
+>>>>>> --
+>>>>>> To unsubscribe from this list: send the line 
+>"unsubscribe linux-kernel"
+>>>>>> in
+>>>>>> the body of a message to majordomo@vger.kernel.org More 
+>majordomo 
+>>>>>> info at  http://vger.kernel.org/majordomo-info.html
+>>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>>
+>>>>>
+>>>>> --
+>>>>> Tim Gardner tim.gardner@canonical.com
+>>>>>
+>>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe 
+>>> linux-kernel" in the body of a message to majordomo@vger.kernel.org 
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>> --
+>> Tim Gardner tim.gardner@canonical.com
+>>
+>
