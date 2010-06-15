@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757747Ab0FOLpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 07:45:38 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:36257 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757726Ab0FOLpg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 07:45:36 -0400
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jun 2010 07:45:35 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=M9k7DR0BTwisI37iQT1BVSpB0PzdpAp7Qias52JNejCGS1qjLnXwWRmqKOPkWGui7l
-         BbGzCNMNDRTG/heF7SzGR1inxO87Y3KnG+UtWI7MeHoOFNZGrFkKChWzymc4PUcLtutd
-         qKIaO3wIyKVgqMQYnNuBsfdCmRBz4DlyVoB6E=
+	id S1757649Ab0FOLuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 07:50:19 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:32837 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752626Ab0FOLuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 07:50:17 -0400
+Date: Tue, 15 Jun 2010 12:49:58 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/12] Avoid overflowing of stack during page reclaim V2
+Message-ID: <20100615114958.GG26788@csn.ul.ie>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <20100615090833.12f69ae5.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <4C176148.4020507@gmail.com>
-References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com>
-	<002001cb0c75$0a54fd00$1efef700$%kim@samsung.com>
-	<AANLkTil7gb7SjrYPrHPfSomwxLlHpowXOZd_Qr125jvr@mail.gmail.com>
-	<4C176148.4020507@gmail.com>
-Date: Tue, 15 Jun 2010 20:39:43 +0900
-Message-ID: <AANLkTil7b5Pg5q18eGvGY_cFH75rdpSuZhigH4vcjrnu@mail.gmail.com>
-Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 
-	PrimeCells
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Maurus Cuelenaere <mcuelenaere@gmail.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-       Linus Walleij <linus.walleij@stericsson.com>,
-       Dan Williams <dan.j.williams@intel.com>,
-       linux-arm-kernel@lists.infradead.org, yuanyabin1978@sina.com,
-       Viresh Kumar <viresh.kumar@st.com>, Alessandro Rubini <rubini@unipv.it>,
-       linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-       Peter Pearse <peter.pearse@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100615090833.12f69ae5.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 8:17 PM, Maurus Cuelenaere
-<mcuelenaere@gmail.com> wrote:
-> Op 15-06-10 12:45, Jassi Brar schreef:
->> On Tue, Jun 15, 2010 at 7:25 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
->>> Linus Walleij wrote:
->>>>
->>>> This creates a DMAengine driver for the ARM PL080/PL081 PrimeCells
->>>> based on the implementation earlier submitted by Peter Pearse.
->>>> This is working like a charm for memcpy on the PB11MPCore, but
->>>> slave DMA to devices is still not working.
->>>>
->>>> This DMA controller is used in mostly unmodified form in the ARM
->>>> RealView and Versatile platforms, in the ST-Ericsson Nomadik, and
->>>> in the ST SPEAr platform.
->>>>
->>>> It has been converted to use the header from the Samsung PL080
->>>> derivate instead of its own defintions, and can potentially support
->>>> several controllers in the same system.
->>>>
->>>> Cc: Peter Pearse <peter.pearse@arm.com>
->>>> Cc: Ben Dooks <ben-linux@fluff.org>
->>>> Cc: Kukjin Kim <kgene.kim@samsung.com>
->>>
->>> Looks good, but please give me some time to test on the board(SMDK6410).
->>> If any problem, let you know. Of course no problem, will ack.
->> Samsung doesn't use the DMA API, so this driver is unlikely to work.
->
-> It doesn't indeed, but it could be adapted to be a wrapper around the DMA engine API.
-> Or even better, the drivers could be adapted to use that API.
-I don't particularly like the idea of making Samsung's drivers use the DMA API.
-IMHO the S3C dma api is better atm.
+On Tue, Jun 15, 2010 at 09:08:33AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Mon, 14 Jun 2010 12:17:41 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+> > SysBench
+> > ========
+> >                 traceonly-v2r5  stackreduce-v2r5     nodirect-v2r5
+> >            1 11025.01 ( 0.00%) 10249.52 (-7.57%) 10430.57 (-5.70%)
+> >            2  3844.63 ( 0.00%)  4988.95 (22.94%)  4038.95 ( 4.81%)
+> >            3  3210.23 ( 0.00%)  2918.52 (-9.99%)  3113.38 (-3.11%)
+> >            4  1958.91 ( 0.00%)  1987.69 ( 1.45%)  1808.37 (-8.32%)
+> >            5  2864.92 ( 0.00%)  3126.13 ( 8.36%)  2355.70 (-21.62%)
+> >            6  4831.63 ( 0.00%)  3815.67 (-26.63%)  4164.09 (-16.03%)
+> >            7  3788.37 ( 0.00%)  3140.39 (-20.63%)  3471.36 (-9.13%)
+> >            8  2293.61 ( 0.00%)  1636.87 (-40.12%)  1754.25 (-30.75%)
+> > FTrace Reclaim Statistics
+> >                                      traceonly-v2r5  stackreduce-v2r5     nodirect-v2r5
+> > Direct reclaims                               9843      13398      51651 
+> > Direct reclaim pages scanned                871367    1008709    3080593 
+> > Direct reclaim write async I/O               24883      30699          0 
+> > Direct reclaim write sync I/O                    0          0          0 
+> 
+> Hmm, page-scan and reclaims jumps up but...
+> 
+
+It could be accounted for by the fact that the direct reclaimers are
+stalled less in direct reclaim. They make more forward progress needing
+more pages so end up scanning more as a result.
+
+> 
+> > User/Sys Time Running Test (seconds)        734.52    712.39     703.9
+> > Percentage Time Spent Direct Reclaim         0.00%     0.00%     0.00%
+> > Total Elapsed Time (seconds)               9710.02   9589.20   9334.45
+> > Percentage Time kswapd Awake                 0.06%     0.00%     0.00%
+> > 
+> 
+> Execution time is reduced. Does this shows removing "I/O noise" by direct
+> reclaim makes the system happy? or writeback in direct reclaim give
+> us too much costs ?
+> 
+
+I think it's accounted for by just making more forward progress rather than
+IO noise. The throughput results for sysbench are all over the place because
+the disk was maxed so I'm shying away from drawing any conclusions on the
+IO efficiency.
+
+> It seems I'll have to consider about avoiding direct-reciam in memcg, later.
+> 
+> BTW, I think we'll have to add wait-for-pages-to-be-cleaned trick in
+> direct reclaim if we want to avoid too much scanning, later.
+> 
+
+This happens for lumpy reclaim. I didn't think it was justified for
+normal reclaim based on the percentage of dirty pages encountered during
+scanning. If the percentage of dirty pages scanned, we'll need to first
+figure out why that happened and then if stalling when they are
+encountered is the correct thing to do.
+
+> 
+> Thank you for interesting test.
+> 
+
+You're welcome.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
