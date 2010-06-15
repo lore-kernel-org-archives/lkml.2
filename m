@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081Ab0FOK5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 06:57:45 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59068 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225Ab0FOK5o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 06:57:44 -0400
-Date: Tue, 15 Jun 2010 06:57:40 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Chris Mason <chris.mason@oracle.com>,
-       Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
-Message-ID: <20100615105740.GC31051@infradead.org>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
- <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
- <20100614231144.GG6590@dastard>
- <20100614162143.04783749.akpm@linux-foundation.org>
+	id S1757364Ab0FOK7O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 06:59:14 -0400
+Received: from www.tglx.de ([62.245.132.106]:43494 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753187Ab0FOK7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 06:59:13 -0400
+Date: Tue, 15 Jun 2010 12:58:34 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: Len Brown <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Alexey Starikovskiy <astarikovskiy@suse.de>,
+       Xiaotian Feng <dfeng@redhat.com>, Wu Fengguang <wfg@linux.intel.com>
+Subject: acpi: Fix bogus preemption logic
+Message-ID: <alpine.LFD.2.00.1006151252250.4290@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100614162143.04783749.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 04:21:43PM -0700, Andrew Morton wrote:
-> Yup.
-> 
-> But then, this all really should be done at the block layer so other
-> io-submitting-paths can benefit from it.
-> 
-> IOW, maybe "the sort queue is the submission queue" wasn't a good idea.
+The ACPI_PREEMPTION_POINT() logic was introduced in commit 8bd108d
+(ACPICA: add preemption point after each opcode parse). The follow up
+commits abe1dfab6, 138d15692, c084ca70 tried to fix the preemption
+logic back and forth, but nobody noticed that the usage of
+in_atomic_preempt_off() in that context is wrong.
 
-Even if has not effect on the actual I/O patters it has a massive
-benefit for the filesystem.  When probing delalloc/unwritten space at
-least XFS does try to convert a larger extent forward from the index,
-but doesn't bother to go backwards.  By providing the trivial sort here
-we make life a lot easier for the filesystem.
+The check which guards the call of cond_resched() is:
 
-In addition to that we do get better I/O patters especially with short
-queues as smart writepage implementatons will also submit the next few
-pages, which is essentially free given how the storage works.
-This means we already have a page cleaned before we might even submit it
-without sorting.
+    if (!in_atomic_preempt_off() && !irqs_disabled())
 
+in_atomic_preempt_off() is not intended for general use as the comment
+above the macro definition clearly says:
+
+ * Check whether we were atomic before we did preempt_disable():
+ * (used by the scheduler, *after* releasing the kernel lock)
+
+On a CONFIG_PREEMPT=n kernel the usage of in_atomic_preempt_off()
+works by accident, but with CONFIG_PREEMPT=y it's just broken.
+
+The whole purpose of the ACPI_PREEMPTION_POINT() is to reduce the
+latency on a CONFIG_PREEMPT=n kernel, so make ACPI_PREEMPTION_POINT()
+depend on CONFIG_PREEMPT=n and remove the in_atomic_preempt_off()
+check.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/acpi/platform/aclinux.h |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/include/acpi/platform/aclinux.h
+===================================================================
+--- linux-2.6.orig/include/acpi/platform/aclinux.h
++++ linux-2.6/include/acpi/platform/aclinux.h
+@@ -148,13 +148,17 @@ static inline void *acpi_os_acquire_obje
+ #define ACPI_ALLOCATE_ZEROED(a) acpi_os_allocate_zeroed(a)
+ #define ACPI_FREE(a)            kfree(a)
+ 
+-/* Used within ACPICA to show where it is safe to preempt execution */
+-#include <linux/hardirq.h>
++#ifndef CONFIG_PREEMPT
++/*
++ * Used within ACPICA to show where it is safe to preempt execution
++ * when CONFIG_PREEMPT=n
++ */
+ #define ACPI_PREEMPTION_POINT() \
+ 	do { \
+-		if (!in_atomic_preempt_off() && !irqs_disabled()) \
++		if (!irqs_disabled()) \
+ 			cond_resched(); \
+ 	} while (0)
++#endif
+ 
+ #endif /* __KERNEL__ */
+ 
