@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab0FOFnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 01:43:55 -0400
-Received: from cantor.suse.de ([195.135.220.2]:60267 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab0FOFnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 01:43:53 -0400
-Date: Tue, 15 Jun 2010 15:43:44 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-       Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Chris Mason <chris.mason@oracle.com>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [patch] mm: vmscan fix mapping use after free
-Message-ID: <20100615054343.GE6138@laptop>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
- <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
- <20100614231144.GG6590@dastard>
- <20100614162143.04783749.akpm@linux-foundation.org>
- <20100615003943.GK6590@dastard>
- <4C16D46D.3020302@redhat.com>
- <20100614184544.32b1c371.akpm@linux-foundation.org>
- <4C16FCAE.4050607@redhat.com>
- <20100614213732.034b4a13.akpm@linux-foundation.org>
- <20100615051242.GD6138@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100615051242.GD6138@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752127Ab0FOFsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 01:48:30 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50949 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab0FOFs2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 01:48:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Y8zMnkdYRS5VtuCOmfA/6GKMmnsfnLadFBSLinppE8fmZclqB9bpUDULc3BiyA4+dj
+         01Fj+JHId6FGbent/Ep+Uvu7cwf2Vwf3JGOTnQph9zy5hpG+SHBTql6Lo+iBORiXmTCF
+         2UM0EBF71S67UEh2SWCrBMEzgn257svAy56m0=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: reiserfs-devel@vger.kernel.org
+Cc: mchehab@redhat.com, linux-kernel@vger.kernel.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 8/8 v2]tuners:tuner-simple Fix warning: variable 'tun' set but not used
+Date: Mon, 14 Jun 2010 22:48:34 -0700
+Message-Id: <1276580914-21883-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 03:12:42PM +1000, Nick Piggin wrote:
-> > Once that page is unlocked, we can't touch *mapping - its inode can be
-> > concurrently reclaimed.  Although I guess the technique in
-> > handle_write_error() can be reused.
-> 
-> Nasty. That guy needs to be using lock_page_nosync().
---
+Resend due to a whitespace issue I created by mistake.
+The below patch fixes a warning message create by gcc 4.6.0
+ 
+ CC [M]  drivers/media/common/tuners/tuner-simple.o
+drivers/media/common/tuners/tuner-simple.c: In function 'simple_set_tv_freq':
+drivers/media/common/tuners/tuner-simple.c:548:20: warning: variable 'tun' set but not used
 
-Need lock_page_nosync here because we have no reference to the mapping when
-taking the page lock.
-
-Signed-off-by: Nick Piggin <npiggin@suse.de>
+ Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+ Reviewed-By: Mauro Carvalho Chehab <mchehab@redhat.com>
 
 ---
- mm/vmscan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/common/tuners/tuner-simple.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-Index: linux-2.6/mm/vmscan.c
-===================================================================
---- linux-2.6.orig/mm/vmscan.c
-+++ linux-2.6/mm/vmscan.c
-@@ -296,7 +296,7 @@ static int may_write_to_queue(struct bac
- static void handle_write_error(struct address_space *mapping,
- 				struct page *page, int error)
- {
--	lock_page(page);
-+	lock_page_nosync(page);
- 	if (page_mapping(page) == mapping)
- 		mapping_set_error(mapping, error);
- 	unlock_page(page);
+diff --git a/drivers/media/common/tuners/tuner-simple.c b/drivers/media/common/tuners/tuner-simple.c
+index 8abbcc5..84900fa 100644
+--- a/drivers/media/common/tuners/tuner-simple.c
++++ b/drivers/media/common/tuners/tuner-simple.c
+@@ -545,14 +545,11 @@ static int simple_set_tv_freq(struct dvb_frontend *fe,
+ 	struct tuner_simple_priv *priv = fe->tuner_priv;
+ 	u8 config, cb;
+ 	u16 div;
+-	struct tunertype *tun;
+ 	u8 buffer[4];
+ 	int rc, IFPCoff, i;
+ 	enum param_type desired_type;
+ 	struct tuner_params *t_params;
+ 
+-	tun = priv->tun;
+-
+ 	/* IFPCoff = Video Intermediate Frequency - Vif:
+ 		940  =16*58.75  NTSC/J (Japan)
+ 		732  =16*45.75  M/N STD
+-- 
+1.7.1.rc1.21.gf3bd6
+
