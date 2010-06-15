@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994Ab0FOJBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 05:01:17 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51965 "EHLO
+	id S1757025Ab0FOJBT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 05:01:19 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51969 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756860Ab0FOJBM (ORCPT
+	with ESMTP id S1756699Ab0FOJBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 05:01:12 -0400
+	Tue, 15 Jun 2010 05:01:14 -0400
 From: Luotao Fu <l.fu@pengutronix.de>
 To: Samuel Ortiz <sameo@linux.intel.com>,
        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
@@ -14,9 +14,9 @@ To: Samuel Ortiz <sameo@linux.intel.com>,
        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
        Luotao Fu <l.fu@pengutronix.de>
-Subject: [PATCH 2/3 V3] gpio: add STMPE811 gpio controller support
-Date: Tue, 15 Jun 2010 11:00:45 +0200
-Message-Id: <1276592446-26909-3-git-send-email-l.fu@pengutronix.de>
+Subject: [PATCH 3/3 V3] input: STMPE811 touch controller support
+Date: Tue, 15 Jun 2010 11:00:46 +0200
+Message-Id: <1276592446-26909-4-git-send-email-l.fu@pengutronix.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1276511558-27121-1-git-send-email-l.fu@pengutronix.de>
 References: <1276511558-27121-1-git-send-email-l.fu@pengutronix.de>
@@ -28,68 +28,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one adds a driver for STMPE811 GPIO controller. STMPE811 is a
-multifunction device. Hence this driver depends on stmpe811_core
-driver for core functionalities. The gpio chip is registered to
-gpiolib. Interrupts are currently not supported.
+This one adds a driver for STMPE811 4-wire resistive touchscreen
+controller. STMPE811 is a multifunction device. Hence this driver
+depends on stmpe811_core driver for core functionalities.
 
 Signed-off-by: Luotao Fu <l.fu@pengutronix.de>
 ---
-V2 changes:
-* include subsystem headers since they are now removed from the mfd
+V2 Changes:
+* include subsystem headers since they are now remove from the mfd
   core header file
+* use genirq to register threaded isr. The stmpe811 own irq callbacks
+  are dropped in the core driver.
+* use STMPE811_TS_NAME for name all over the place
+* wait for completion of core IO operation before cancelling polling of
+  release event.
+* switch to platform data for configuration parameters.
+* add FIFO reset to open callback, also reset FIFO before reporting
+  release.
 
 V3 Changes:
 * reformated platform data comments to kernel-doc style
-* move platform data stuff from core patch to herein.
 
- drivers/gpio/Kconfig         |   10 ++
- drivers/gpio/Makefile        |    1 +
- drivers/gpio/stmpe811_gpio.c |  238 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/stmpe811.h |   16 +++
- 4 files changed, 265 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpio/stmpe811_gpio.c
+ drivers/input/touchscreen/Kconfig       |   10 +
+ drivers/input/touchscreen/Makefile      |    1 +
+ drivers/input/touchscreen/stmpe811_ts.c |  361 +++++++++++++++++++++++++++++++
+ include/linux/mfd/stmpe811.h            |   40 ++++
+ 4 files changed, 412 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/touchscreen/stmpe811_ts.c
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 724038d..38307e5 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -249,6 +249,16 @@ config GPIO_ADP5588
- 	  To compile this driver as a module, choose M here: the module will be
- 	  called adp5588-gpio.
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 3b9d5e2..059b82b 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -603,4 +603,14 @@ config TOUCHSCREEN_TPS6507X
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called tps6507x_ts.
  
-+config GPIO_STMPE811
-+	tristate "STMPE811 I2C MFD GPIO expander"
-+	depends on I2C
++config TOUCHSCREEN_STMPE811
++	tristate "STMicroelectronics STMPE811 touchscreen"
 +	depends on MFD_STMPE811
 +	help
-+	  This option enables support for 8 GPIOs found
-+	  on STMicroelectronics STMPE811 multifunction devices.
-+	  To compile this driver as a module, choose M here: the module will be
-+	  called stmpe811_gpio.
++	  Say Y here if you want support for STMicroelectronics
++	  STMPE811 based touchscreen controller.
 +
- comment "PCI GPIO expanders:"
- 
- config GPIO_CS5535
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 51c3cdd..7b184aa 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -31,3 +31,4 @@ obj-$(CONFIG_GPIO_WM8994)	+= wm8994-gpio.o
- obj-$(CONFIG_GPIO_SCH)		+= sch_gpio.o
- obj-$(CONFIG_GPIO_RDC321X)	+= rdc321x-gpio.o
- obj-$(CONFIG_GPIO_JANZ_TTL)	+= janz-ttl.o
-+obj-$(CONFIG_GPIO_STMPE811)	+= stmpe811_gpio.o
-diff --git a/drivers/gpio/stmpe811_gpio.c b/drivers/gpio/stmpe811_gpio.c
++	  To compile this driver as a module, choose M here: the
++	  module will be called stmpe811_ts.
++
+ endif
+diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+index 497964a..9da8948 100644
+--- a/drivers/input/touchscreen/Makefile
++++ b/drivers/input/touchscreen/Makefile
+@@ -47,3 +47,4 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_MAINSTONE)	+= mainstone-wm97xx.o
+ obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
+ obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
++obj-$(CONFIG_TOUCHSCREEN_STMPE811)	+= stmpe811_ts.o
+diff --git a/drivers/input/touchscreen/stmpe811_ts.c b/drivers/input/touchscreen/stmpe811_ts.c
 new file mode 100644
-index 0000000..507fb5b
+index 0000000..ee6a547
 --- /dev/null
-+++ b/drivers/gpio/stmpe811_gpio.c
-@@ -0,0 +1,238 @@
-+/*
-+ * stmpe811_gpio.c  --  gpiolib support for STMicroelectronics STMPE811 chip.
++++ b/drivers/input/touchscreen/stmpe811_ts.c
+@@ -0,0 +1,361 @@
++/* STMicroelectronics STMPE811 Touchscreen Driver
 + *
-+ * (c)2010 Luotao Fu <l.fu@pengutronix.de>
++ * (C) 2010 Luotao Fu <l.fu@pengutronix.de>
++ * All rights reserved.
 + *
 + *  This program is free software; you can redistribute  it and/or modify it
 + *  under  the terms of  the GNU General  Public License as published by the
@@ -100,267 +104,415 @@ index 0000000..507fb5b
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
++#include <linux/sched.h>
 +#include <linux/interrupt.h>
-+#include <linux/slab.h>
-+#include <linux/gpio.h>
++#include <linux/init.h>
++#include <linux/device.h>
 +#include <linux/platform_device.h>
++#include <linux/input.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
 +#include <linux/i2c.h>
 +#include <linux/workqueue.h>
 +
 +#include <linux/mfd/stmpe811.h>
 +
-+#define STMPE811_GPIO_NAME	"stmpe811-gpio"
++#define STMPE811_TSC_CTRL_OP_MOD_XYZ	(0<<1)
++#define STMPE811_TSC_CTRL_OP_MOD_XY	(1<<1)
++#define STMPE811_TSC_CTRL_OP_MOD_X	(2<<1)
++#define STMPE811_TSC_CTRL_OP_MOD_Y	(3<<1)
++#define STMPE811_TSC_CTRL_OP_MOD_Z	(4<<1)
 +
-+struct stmpe811_gpio {
++#define STMPE811_TSC_CTRL_TSC_STA	(1<<7)
++#define STMPE811_TSC_CTRL_TSC_EN	(1<<0)
++
++#define SAMPLE_TIME(x)			((x & 0xf) << 4)
++#define MOD_12B(x)			((x & 0x1) << 3)
++#define REF_SEL(x)			((x & 0x1) << 1)
++#define ADC_FREQ(x)			(x & 0x3)
++#define AVE_CTRL(x)			((x & 0x3) << 6)
++#define DET_DELAY(x)			((x & 0x7) << 3)
++#define SETTLING(x)			((x & 0x7))
++#define FRACTION_Z(x)			((x & 0x7))
++
++#define STMPE811_TS_NAME	"stmpe811-ts"
++#define XY_MASK			0xfff
++
++struct stmpe811_touch {
 +	struct stmpe811 *stm;
-+	struct gpio_chip gpio;
++	struct input_dev *idev;
++	struct delayed_work work;
++	u8 sample_time;
++	u8 mod_12b;
++	u8 ref_sel;
++	u8 adc_freq;
++	u8 ave_ctrl;
++	u8 touch_det_delay;
++	u8 settling;
++	u8 fraction_z;
 +};
 +
-+static inline struct stmpe811_gpio *to_stmpe811_gpio(struct gpio_chip *chip)
++static void stmpe811_work(struct work_struct *work)
 +{
-+	return container_of(chip, struct stmpe811_gpio, gpio);
++	u8 int_sta;
++	u32 timeout = 40;
++
++	struct stmpe811_touch *ts =
++	    container_of(work, struct stmpe811_touch, work.work);
++
++	stmpe811_reg_read(ts->stm, STMPE811_REG_INT_STA, &int_sta);
++
++	/* touch_det sometimes get desasserted or just get stuck. This appears
++	 * to be a silicon bug, We still have to clearify this with the
++	 * manufacture. As a workaround We release the key anyway if the
++	 * touch_det keeps coming in after 4ms, while the FIFO contains no value
++	 * during the whole time. */
++	while ((int_sta & (1 << STMPE811_IRQ_TOUCH_DET)) && (timeout > 0)) {
++		timeout--;
++		stmpe811_reg_read(ts->stm, STMPE811_REG_INT_STA, &int_sta);
++		udelay(100);
++	}
++
++	/* reset the FIFO before we report release event */
++	stmpe811_reg_set_bits(ts->stm, STMPE811_REG_FIFO_STA,
++			STMPE811_FIFO_STA_RESET);
++	stmpe811_reg_clear_bits(ts->stm, STMPE811_REG_FIFO_STA,
++			STMPE811_FIFO_STA_RESET);
++
++	input_report_abs(ts->idev, ABS_PRESSURE, 0);
++	input_sync(ts->idev);
 +}
 +
-+static int stmpe811_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
++static irqreturn_t stmpe811_ts_handler(int irq, void *data)
 +{
-+	struct stmpe811_gpio *stm_gpio = to_stmpe811_gpio(chip);
++	u8 data_set[4];
++	int x, y, z;
++	struct stmpe811_touch *ts = data;
 +
-+	return stmpe811_reg_clear_bits(stm_gpio->stm,
-+			STMPE811_REG_GPIO_DIR, BIT(offset));
++	/* Cancel polling for release if we have new value available. Wait for
++	 * canceling till io operation in the work is finished. */
++	mutex_lock(&ts->stm->io_lock);
++	cancel_delayed_work(&ts->work);
++	mutex_unlock(&ts->stm->io_lock);
++
++	/*
++	 * The FIFO sometimes just crashes and stops generating interrupts. This
++	 * appears to be a silicon bug. We still have to clearify this with
++	 * the manufacture. As a workaround we disable the TSC while we are
++	 * collecting data and flush the FIFO after reading
++	 */
++	stmpe811_reg_clear_bits(ts->stm, STMPE811_REG_TSC_CTRL,
++				STMPE811_TSC_CTRL_TSC_EN);
++
++	stmpe811_block_read(ts->stm, STMPE811_REG_TSC_DATA_XYZ, 4, data_set);
++
++	x = (data_set[0] << 4) | (data_set[1] >> 4);
++	y = ((data_set[1] & 0xf) << 8) | data_set[2];
++	z = data_set[3];
++
++	input_report_abs(ts->idev, ABS_X, x);
++	input_report_abs(ts->idev, ABS_Y, y);
++	input_report_abs(ts->idev, ABS_PRESSURE, z);
++	input_sync(ts->idev);
++
++       /* flush the FIFO after we have read out our values. */
++	stmpe811_reg_set_bits(ts->stm, STMPE811_REG_FIFO_STA,
++			      STMPE811_FIFO_STA_RESET);
++	stmpe811_reg_clear_bits(ts->stm, STMPE811_REG_FIFO_STA,
++				STMPE811_FIFO_STA_RESET);
++
++	/* reenable the tsc */
++	stmpe811_reg_set_bits(ts->stm, STMPE811_REG_TSC_CTRL,
++			      STMPE811_TSC_CTRL_TSC_EN);
++
++	/* start polling for touch_det to detect release */
++	schedule_delayed_work(&ts->work, HZ / 50);
++
++	return IRQ_HANDLED;
 +}
 +
-+static int stmpe811_gpio_get(struct gpio_chip *chip, unsigned offset)
++static int stmpe811_ts_open(struct input_dev *dev)
 +{
-+	struct stmpe811_gpio *stm_gpio = to_stmpe811_gpio(chip);
-+	uint8_t gpio_sta;
-+	int ret;
++	struct stmpe811_touch *ts = input_get_drvdata(dev);
++	int ret = 0;
 +
-+	ret = stmpe811_reg_read(stm_gpio->stm,
-+			STMPE811_REG_GPIO_MP_STA, &gpio_sta);
-+	if (ret)
-+		return ret;
-+
-+	if (gpio_sta & BIT(offset))
-+		return 1;
-+	else
-+		return 0;
-+}
-+
-+static inline int __stmpe811_gpio_set(struct stmpe811 *stm,
-+		unsigned offset, int value)
-+{
-+	int ret;
-+
-+	if (value)
-+		ret = stmpe811_reg_write(stm, STMPE811_REG_GPIO_SET_PIN,
-+				BIT(offset));
-+	else
-+		ret = stmpe811_reg_write(stm, STMPE811_REG_GPIO_CLR_PIN,
-+				BIT(offset));
-+
-+	return ret;
-+}
-+
-+static int stmpe811_gpio_direction_out(struct gpio_chip *chip, unsigned offset,
-+				       int value)
-+{
-+	struct stmpe811_gpio *stm_gpio = to_stmpe811_gpio(chip);
-+	struct stmpe811 *stm = stm_gpio->stm;
-+	int ret;
-+
-+	ret = stmpe811_reg_set_bits(stm, STMPE811_REG_GPIO_DIR, BIT(offset));
++	ret = stmpe811_reg_set_bits(ts->stm, STMPE811_REG_FIFO_STA,
++			STMPE811_FIFO_STA_RESET);
 +	if (ret)
 +		goto out;
 +
-+	ret = __stmpe811_gpio_set(stm, offset, value);
++	ret = stmpe811_reg_clear_bits(ts->stm, STMPE811_REG_FIFO_STA,
++			STMPE811_FIFO_STA_RESET);
++	if (ret)
++		goto out;
++
++	ret = stmpe811_reg_set_bits(ts->stm, STMPE811_REG_TSC_CTRL,
++				     STMPE811_TSC_CTRL_TSC_EN);
++	if (ret)
++		goto out;
++
 +out:
 +	return ret;
 +}
 +
-+static void stmpe811_gpio_set(struct gpio_chip *chip, unsigned offset,
-+			      int value)
++static void stmpe811_ts_close(struct input_dev *dev)
 +{
-+	struct stmpe811_gpio *stm_gpio = to_stmpe811_gpio(chip);
++	struct stmpe811_touch *ts = input_get_drvdata(dev);
 +
-+	__stmpe811_gpio_set(stm_gpio->stm, offset, value);
++	stmpe811_reg_clear_bits(ts->stm, STMPE811_REG_TSC_CTRL,
++				STMPE811_TSC_CTRL_TSC_EN);
 +}
 +
-+static int stmpe811_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct stmpe811_gpio *stm_gpio = to_stmpe811_gpio(chip);
-+	struct stmpe811 *stm = stm_gpio->stm;
-+
-+	if (offset > 3 && (stm->active_flag & STMPE811_USE_TS))
-+		return 1;
-+	else
-+		return stmpe811_reg_set_bits(stm, STMPE811_REG_GPIO_AF,
-+				BIT(offset));
-+}
-+
-+static struct gpio_chip gpio_chip = {
-+	.label = STMPE811_GPIO_NAME,
-+	.owner = THIS_MODULE,
-+	.direction_input = stmpe811_gpio_direction_in,
-+	.get = stmpe811_gpio_get,
-+	.direction_output = stmpe811_gpio_direction_out,
-+	.set = stmpe811_gpio_set,
-+	.request = stmpe811_gpio_request,
-+	.can_sleep = 1,
-+};
-+
-+static int __devinit stmpe811_gpio_probe(struct platform_device *pdev)
++static int __devinit stmpe811_input_probe(struct platform_device *pdev)
 +{
 +	struct stmpe811 *stm = dev_get_drvdata(pdev->dev.parent);
 +	struct stmpe811_platform_data *pdata = stm->pdata;
-+	struct stmpe811_gpio_platform_data *gpio_pdata = NULL;
-+	struct stmpe811_gpio *stm_gpio;
++	struct stmpe811_touch *ts;
++	struct input_dev *idev;
++	struct stmpe811_ts_platform_data *ts_pdata = NULL;
 +
-+	int ret, tmp;
++	int ret = 0;
++	unsigned int ts_irq;
 +
-+	stm_gpio = kzalloc(sizeof(*stm_gpio), GFP_KERNEL);
-+	if (!stm_gpio)
-+		return -ENOMEM;
++	ts = kzalloc(sizeof(*ts), GFP_KERNEL);
++	if (!ts)
++		goto err_out;
 +
-+	stm_gpio->stm = stm;
-+	stm_gpio->gpio = gpio_chip;
-+	stm_gpio->gpio.ngpio = 8;
-+	stm_gpio->gpio.dev = &pdev->dev;
++	idev = input_allocate_device();
++	if (!idev)
++		goto err_free_ts;
++
++	platform_set_drvdata(pdev, ts);
++	ts->stm = stm;
++	ts->idev = idev;
 +
 +	if (pdata)
-+		gpio_pdata = pdata->gpio_pdata;
++		ts_pdata = pdata->ts_pdata;
 +
-+	if (gpio_pdata && gpio_pdata->gpio_base)
-+		stm_gpio->gpio.base = gpio_pdata->gpio_base;
-+	else
-+		stm_gpio->gpio.base = -1;
-+
-+	ret = gpiochip_add(&stm_gpio->gpio);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
-+		goto err_free_stmgpio;
++	if (ts_pdata) {
++		ts->sample_time = ts_pdata->sample_time;
++		ts->mod_12b = ts_pdata->mod_12b;
++		ts->ref_sel = ts_pdata->ref_sel;
++		ts->adc_freq = ts_pdata->adc_freq;
++		ts->ave_ctrl = ts_pdata->ave_ctrl;
++		ts->touch_det_delay = ts_pdata->touch_det_delay;
++		ts->settling = ts_pdata->settling;
++		ts->fraction_z = ts_pdata->fraction_z;
 +	}
-+	/* enable clock supply */
-+	ret = stmpe811_reg_clear_bits(stm, STMPE811_REG_SYS_CTRL2,
-+			STMPE811_SYS_CTRL2_GPIO_OFF);
++
++	INIT_DELAYED_WORK(&ts->work, stmpe811_work);
++
++	ts_irq = stm->irq_base + STMPE811_IRQ_FIFO_TH;
++	ret = request_threaded_irq(ts_irq, NULL, stmpe811_ts_handler,
++			IRQF_ONESHOT, STMPE811_TS_NAME, ts);
 +	if (ret) {
-+		dev_err(&pdev->dev, "Could not enable clock for gpio\n");
-+		goto err_free_gpiochip;
++		dev_err(&pdev->dev, "Failed to request IRQ %d\n", ts_irq);
++		goto err_free_input;
 +	}
 +
-+	if (gpio_pdata && gpio_pdata->setup) {
-+		ret = gpio_pdata->setup(stm);
-+
-+		if (ret != 0) {
-+			dev_err(&pdev->dev, "setup hook failed, %d\n",
-+					ret);
-+			goto err_free_gpiochip;
-+		}
++	ret = stmpe811_reg_clear_bits(stm, STMPE811_REG_SYS_CTRL2,
++				      (STMPE811_SYS_CTRL2_ADC_OFF |
++				       STMPE811_SYS_CTRL2_TSC_OFF));
++	if (ret) {
++		dev_err(&pdev->dev, "Could not enable clock for ADC and TS\n");
++		goto err_free_irq;
 +	}
 +
-+	dev_info(&pdev->dev, "registerd gpios %d..%d on a stmpe811\n",
-+			stm_gpio->gpio.base,
-+			stm_gpio->gpio.base + stm_gpio->gpio.ngpio - 1);
-+	platform_set_drvdata(pdev, stm_gpio);
++	ret = stmpe811_reg_set_bits(stm, STMPE811_REG_ADC_CTRL1,
++			SAMPLE_TIME(ts->sample_time) |
++			MOD_12B(ts->mod_12b) | REF_SEL(ts->ref_sel));
++	if (ret) {
++		dev_err(&pdev->dev, "Could not setup ADC\n");
++		goto err_free_irq;
++	}
++
++	ret = stmpe811_reg_set_bits(stm, STMPE811_REG_ADC_CTRL2,
++			ADC_FREQ(ts->adc_freq));
++	if (ret) {
++		dev_err(&pdev->dev, "Could not setup ADC\n");
++		goto err_free_irq;
++	}
++
++	ret = stmpe811_reg_set_bits(stm, STMPE811_REG_TSC_CFG,
++			AVE_CTRL(ts->ave_ctrl) |
++			DET_DELAY(ts->touch_det_delay) |
++			SETTLING(ts->settling));
++	if (ret) {
++		dev_err(&pdev->dev, "Could not config touch\n");
++		goto err_free_irq;
++	}
++
++	ret = stmpe811_reg_set_bits(stm,
++			STMPE811_REG_TSC_FRACTION_Z,
++			FRACTION_Z(ts->fraction_z));
++	if (ret) {
++		dev_err(&pdev->dev, "Could not config touch\n");
++		goto err_free_irq;
++	}
++
++	/* set FIFO to 1 for single point reading */
++	ret = stmpe811_reg_write(stm, STMPE811_REG_FIFO_TH, 1);
++	if (ret) {
++		dev_err(&pdev->dev, "Could not set FIFO\n");
++		goto err_free_irq;
++	}
++
++	ret = stmpe811_reg_set_bits(stm, STMPE811_REG_TSC_CTRL,
++				    STMPE811_TSC_CTRL_OP_MOD_XYZ);
++	if (ret) {
++		dev_err(&pdev->dev, "Could not set mode\n");
++		goto err_free_irq;
++	}
++
++	idev->name = STMPE811_TS_NAME;
++	idev->id.bustype = BUS_I2C;
++	idev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
++	idev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
++
++	idev->open = stmpe811_ts_open;
++	idev->close = stmpe811_ts_close;
++
++	input_set_drvdata(idev, ts);
++
++	ret = input_register_device(idev);
++	if (ret) {
++		dev_err(&pdev->dev, "Could not register input device\n");
++		goto err_free_irq;
++	}
++
++	stm->active_flag |= STMPE811_USE_TS;
++
++	input_set_abs_params(idev, ABS_X, 0, XY_MASK, 0, 0);
++	input_set_abs_params(idev, ABS_Y, 0, XY_MASK, 0, 0);
++	input_set_abs_params(idev, ABS_PRESSURE, 0x0, 0xff, 0, 0);
 +
 +	return ret;
 +
-+err_free_gpiochip:
-+	tmp = gpiochip_remove(&stm_gpio->gpio);
-+	if (tmp) {
-+		dev_err(&pdev->dev, "Could net remove gpio chip\n");
-+		return ret;
-+	}
-+err_free_stmgpio:
-+	kfree(stm_gpio);
++err_free_irq:
++	free_irq(ts_irq, ts);
++err_free_input:
++	input_free_device(idev);
++	platform_set_drvdata(pdev, NULL);
++err_free_ts:
++	kfree(ts);
++err_out:
 +	return ret;
 +}
 +
-+static int __devexit stmpe811_gpio_remove(struct platform_device *pdev)
++static int __devexit stmpe811_ts_remove(struct platform_device *pdev)
 +{
-+	struct stmpe811_gpio *stm_gpio = platform_get_drvdata(pdev);
-+	struct stmpe811_platform_data *pdata = stm_gpio->stm->pdata;
-+	struct stmpe811_gpio_platform_data *gpio_pdata = NULL;
-+	int ret;
++	struct stmpe811_touch *ts = platform_get_drvdata(pdev);
++	unsigned int ts_irq = ts->stm->irq_base + STMPE811_IRQ_FIFO_TH;
 +
-+	if (pdata)
-+		gpio_pdata = pdata->gpio_pdata;
++	cancel_delayed_work(&ts->work);
 +
-+	if (gpio_pdata && gpio_pdata->remove)
-+		gpio_pdata->remove(stm_gpio->stm);
++	stmpe811_reg_write(ts->stm, STMPE811_REG_FIFO_TH, 0);
 +
-+	/* disable clock supply */
-+	stmpe811_reg_set_bits(stm_gpio->stm, STMPE811_REG_SYS_CTRL2,
-+			STMPE811_SYS_CTRL2_GPIO_OFF);
++	stmpe811_reg_set_bits(ts->stm, STMPE811_REG_SYS_CTRL2,
++			      (STMPE811_SYS_CTRL2_ADC_OFF |
++			       STMPE811_SYS_CTRL2_ADC_OFF));
 +
-+	ret = gpiochip_remove(&stm_gpio->gpio);
-+	if (ret == 0)
-+		kfree(stm_gpio);
++	free_irq(ts_irq, ts);
 +
-+	return ret;
++	ts->stm->active_flag &= ~STMPE811_USE_TS;
++	platform_set_drvdata(pdev, NULL);
++
++	input_unregister_device(ts->idev);
++	input_free_device(ts->idev);
++
++	kfree(ts);
++
++	return 0;
 +}
 +
-+static struct platform_driver stmpe811_gpio_driver = {
-+	.driver.name = STMPE811_GPIO_NAME,
-+	.driver.owner = THIS_MODULE,
-+	.probe = stmpe811_gpio_probe,
-+	.remove = __devexit_p(stmpe811_gpio_remove),
++static struct platform_driver stmpe811_input_driver = {
++	.driver = {
++		   .name = STMPE811_TS_NAME,
++		   },
++	.probe = stmpe811_input_probe,
++	.remove = __devexit_p(stmpe811_ts_remove),
 +};
 +
-+static int __init stmpe811_gpio_init(void)
++static int __init stmpe811_input_init(void)
 +{
-+	return platform_driver_register(&stmpe811_gpio_driver);
++	return platform_driver_register(&stmpe811_input_driver);
 +}
 +
-+subsys_initcall(stmpe811_gpio_init);
++module_init(stmpe811_input_init);
 +
-+static void __exit stmpe811_gpio_exit(void)
++static void __exit stmpe811_input_exit(void)
 +{
-+	platform_driver_unregister(&stmpe811_gpio_driver);
++	platform_driver_unregister(&stmpe811_input_driver);
 +}
 +
-+module_exit(stmpe811_gpio_exit);
++module_exit(stmpe811_input_exit);
 +
 +MODULE_AUTHOR("Luotao Fu <l.fu@pengutronix.de>");
-+MODULE_DESCRIPTION("GPIO interface for STMicroelectronics STMPE811");
++MODULE_DESCRIPTION("STMPE811 touchscreen driver");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:" STMPE811_GPIO_NAME);
++MODULE_ALIAS("platform:" STMPE811_TS_NAME);
 diff --git a/include/linux/mfd/stmpe811.h b/include/linux/mfd/stmpe811.h
-index 8e2b55e..736b4eb 100644
+index 736b4eb..68bcdac 100644
 --- a/include/linux/mfd/stmpe811.h
 +++ b/include/linux/mfd/stmpe811.h
-@@ -94,12 +94,27 @@ struct stmpe811 {
+@@ -94,6 +94,44 @@ struct stmpe811 {
  };
  
  /**
-+ * struct stmpe811_gpio_platform_data - stmpe811 gpio controller platform data
-+ *
-+ * @gpio_base: number of the chip's first GPIO
-+ * @setup: optional callback issued once the GPIOs are valid
-+ * @remove: optional callback issued before the GPIOs are invalidated
++ * struct stmpe811_ts_platform_data - stmpe811 touch screen controller platform
++ * data
++ * @sample_time: ADC converstion time in number of clock.
++ * (0 -> 36 clocks, 1 -> 44 clocks, 2 -> 56 clocks, 3 -> 64 clocks,
++ * 4 -> 80 clocks, 5 -> 96 clocks, 6 -> 144 clocks),
++ * recommended is 4.
++ * @mod_12b: ADC Bit mode (0 -> 10bit ADC, 1 -> 12bit ADC)
++ * @ref_sel: ADC reference source
++ * (0 -> internal reference, 1 -> external reference)
++ * @adc_freq: ADC Clock speed
++ * (0 -> 1.625 MHz, 1 -> 3.25 MHz, 2 || 3 -> 6.5 MHz)
++ * @ave_ctrl: Sample average control
++ * (0 -> 1 sample, 1 -> 2 samples, 2 -> 4 samples, 3 -> 8 samples)
++ * @touch_det_delay: Touch detect interrupt delay
++ * (0 -> 10 us, 1 -> 50 us, 2 -> 100 us, 3 -> 500 us,
++ * 4-> 1 ms, 5 -> 5 ms, 6 -> 10 ms, 7 -> 50 ms)
++ * recommended is 3
++ * @settling: Panel driver settling time
++ * (0 -> 10 us, 1 -> 100 us, 2 -> 500 us, 3 -> 1 ms,
++ * 4 -> 5 ms, 5 -> 10 ms, 6 for 50 ms, 7 -> 100 ms)
++ * recommended is 2
++ * @fraction_z: Length of the fractional part in z
++ * (fraction_z ([0..7]) = Count of the fractional part)
++ * recommended is 7
 + *
 + * */
-+struct stmpe811_gpio_platform_data {
-+	unsigned int gpio_base;
-+	int (*setup) (struct stmpe811 *stm);
-+	void (*remove) (struct stmpe811 *stm);
++struct stmpe811_ts_platform_data {
++	u8 sample_time;
++	u8 mod_12b;
++	u8 ref_sel;
++	u8 adc_freq;
++	u8 ave_ctrl;
++	u8 touch_det_delay;
++	u8 settling;
++	u8 fraction_z;
 +};
 +
 +/**
-  * struct stmpe811_platform_data - stmpe811 core platform data
+  * struct stmpe811_gpio_platform_data - stmpe811 gpio controller platform data
   *
-  * @flags: define which subdevices should be supported
-  * @irq_high: IRQ is active high.
-  * @irq_rev_pol: IRQ line is connected with reversed polarity
+  * @gpio_base: number of the chip's first GPIO
+@@ -116,6 +154,7 @@ struct stmpe811_gpio_platform_data {
   * @irq_base: board dependt irq number of the first irq for the irq chip
-+ * @gpio_pdata: pointer to gpio controller platform data
+  * @gpio_pdata: pointer to gpio controller platform data
   * registered by the core.
++ * @ts_pdata: pointer to touch screen controller platform data
   *
   * */
-@@ -110,6 +125,7 @@ struct stmpe811_platform_data {
- 	unsigned int irq_high;
+ struct stmpe811_platform_data {
+@@ -126,6 +165,7 @@ struct stmpe811_platform_data {
  	unsigned int irq_rev_pol;
  	int irq_base;
-+	struct stmpe811_gpio_platform_data *gpio_pdata;
+ 	struct stmpe811_gpio_platform_data *gpio_pdata;
++	struct stmpe811_ts_platform_data *ts_pdata;
  };
  
  int stmpe811_block_read(struct stmpe811 *stm, u8 reg, uint len, u8 *val);
