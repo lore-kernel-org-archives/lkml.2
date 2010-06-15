@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab0FOKqk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 06:46:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51806 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab0FOKqi (ORCPT
+	id S1757415Ab0FOKrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 06:47:09 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:35519 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab0FOKrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 06:46:38 -0400
-Subject: Re: [PATCH] regulator: make sure the regulator is available prior
- to the consumers.
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       sonic zhang <sonic.adi@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
-In-Reply-To: <20100610114907.GC17945@opensource.wolfsonmicro.com>
-References: <1276160027.18479.1.camel@eight.analog.com>
-	 <20100610114907.GC17945@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Jun 2010 11:46:33 +0100
-Message-ID: <1276598793.3003.34.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jun 2010 06:47:07 -0400
+Date: Tue, 15 Jun 2010 06:47:01 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 08/12] vmscan: Setup pagevec as late as possible in
+ shrink_inactive_list()
+Message-ID: <20100615104701.GA31051@infradead.org>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
+ <1276514273-27693-9-git-send-email-mel@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276514273-27693-9-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-10 at 12:49 +0100, Mark Brown wrote:
-> On Thu, Jun 10, 2010 at 04:53:47PM +0800, sonic zhang wrote:
-> > >From 5a71b38961b0889a239842defd733774ed3d9cdf Mon Sep 17 00:00:00 2001
-> > From: Sonic Zhang <sonic.zhang@analog.com>
-> > Date: Thu, 10 Jun 2010 16:50:20 +0800
-> > Subject: [PATCH] regulator: make sure the regulator is available prior to the consumers.
-> > 
-> > Some systems are likely to want this to be subsys_initcall() to
-> > make sure the regulator is available prior to the consumers.
-> > 
-> > Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-> 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Mon, Jun 14, 2010 at 12:17:49PM +0100, Mel Gorman wrote:
+>  /*
+> + * TODO: Try merging with migrations version of putback_lru_pages
+> + */
+> +static noinline_for_stack void putback_lru_pages(struct zone *zone,
+> +				struct zone_reclaim_stat *reclaim_stat,
+> +				unsigned long nr_anon, unsigned long nr_file,
+> + 				struct list_head *page_list)
+> +{
 
-Applied.
+I hate to nitpick on this, but with noinline_for_stack a prototype
+really is unreadbale unless the function identifier goes to the next
+line.  Compare the one above with:
 
-Thanks
+static noinline_for_stack void
+putback_lru_pages(struct zone *zone, struct zone_reclaim_stat *reclaim_stat,
+		unsigned long nr_anon, unsigned long nr_file,
+		struct list_head *page_list)
 
-Liam
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+> -static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+> +static noinline_for_stack unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+>  			struct zone *zone, struct scan_control *sc,
+>  			int priority, int file)
+
+Same here, just even worse due to the spill over ove 80 characters.
 
