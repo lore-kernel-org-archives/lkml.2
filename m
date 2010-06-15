@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab0FOHZp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 03:25:45 -0400
-Received: from ozlabs.org ([203.10.76.45]:57064 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752828Ab0FOHZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 03:25:44 -0400
-Date: Tue, 15 Jun 2010 17:25:40 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: tytso@mit.edu, Salman <sqazi@google.com>, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, peterz@infradead.org, tytso@google.com,
-       torvalds@linux-foundation.org, walken@google.com,
-       Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
-Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
- reused immediately.
-Message-ID: <20100615072540.GA2530@brick.ozlabs.ibm.com>
-References: <AANLkTinlnb-HsDia4X2qgRjkTL_Z5CfVKYHRFwREoyIn@mail.gmail.com>
- <20100611224902.5039.60134.stgit@bumblebee1.mtv.corp.google.com>
- <20100614165851.6bdfe485.akpm@linux-foundation.org>
- <20100615005619.GI6666@thunk.org>
- <20100614185556.afdc5304.akpm@linux-foundation.org>
- <20100615032608.GB30479@drongo>
- <20100614212150.4dcb1feb.akpm@linux-foundation.org>
+	id S1753997Ab0FOH1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 03:27:33 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54825 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab0FOH1c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 03:27:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=kQSe59mDMRL2/Kk3+gZ5kAnktT9PmVLaT8FbRF2xYkkS/LKBBthYEi0HZUqLd6g1EN
+         oR7ria7DzwDcKff/eIDqTt30XalW0GNr5Iel8vUpFH6XPq8pSGTzJHP2IdNoqCGujtSH
+         sJZD9vVolzFJTRQkd6lwHz3s0E+DmRb+uaJFg=
+Message-ID: <4C172B73.6090609@gmail.com>
+Date: Tue, 15 Jun 2010 00:27:47 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100614212150.4dcb1feb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+       Peter Stuge <peter@stuge.se>
+Subject: Re: [PATCH 4/8]drivers:tmp.c Fix warning: variable 'rc' set but	not
+ used
+References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com> <1276547208-26569-5-git-send-email-justinmattock@gmail.com> <21331.1276560832@localhost> <4C16E18F.9050901@gmail.com> <9275.1276573789@localhost> <4C16F9FC.2080905@gmail.com> <20100615052944.7746.qmail@stuge.se> <4C17169F.4060205@gmail.com> <4C17244D.7010806@s5r6.in-berlin.de>
+In-Reply-To: <4C17244D.7010806@s5r6.in-berlin.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 09:21:50PM -0700, Andrew Morton wrote:
+On 06/14/2010 11:57 PM, Stefan Richter wrote:
+> Justin P. Mattock wrote:
+>> On 06/14/2010 10:29 PM, Peter Stuge wrote:
+>>> Justin P. Mattock wrote:
+>>>> I have no manual in front of me. Did a quick google, but came up with
+>>>> (no hits) info on what that function does. grep showed too many entries
+>>>> to really see why/what this is.
+>>>
+>>> Check out the tool cscope. (Or kscope, if you prefer a GUI.)
+>>
+>> thanks for this tool.. I think this is what I need.. running around not
+>> knowing what/where the manual is for a call is a bit daunting.
+>
+> Similar to cscope/kscope but online:
+> http://lxr.free-electrons.com/
+> http://lxr.linux.no/linux
+>
+> E.g. http://lxr.free-electrons.com/ident?i=transmit_cmd
 
-> If that happens then the best fix is for those architectures to get
-> themselves a cmpxchg64().  Unless for some reason it's simply
-> unimplementable?  Worst case I guess one could use a global spinlock. 
-> Second-worst-case: hashed spinlocks.
+hmm.. yeah I use those guys a lot.. with grep also.. I think what might 
+throw me off is things like def.orig = def.new then def.orig gets lost 
+in the mix(or it's there, but the grep becomes gigantic in code 
+results.) main thing I look for is googling "somedefinition linux man"
+for some idea of what that function does.
 
-Spinlocks won't help as long as you can use cmpxchg64 on any old u64
-that is also accessed directly.  UP can disable interrupts, of course,
-but for SMP we would have to restrict cmpxchg64 to some type
-(atomic64_t, maybe) for which you have to use an accessor function to
-read it, so we can take the spinlock around the reads.
-
-I suspect it isn't worth the trouble.  Note that I'm talking
-specifically about cmpxchg64 here, not cmpxchg.
-
-Paul.
+Justin P. Mattock
