@@ -1,91 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab0FONzd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 09:55:33 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:42602 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932122Ab0FONza (ORCPT
+	id S932154Ab0FON4T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 09:56:19 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:49217 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757726Ab0FONzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 09:55:30 -0400
-Subject: [RFC][PATCH 1/9] abstract kvm x86 mmu->n_free_mmu_pages
+	Tue, 15 Jun 2010 09:55:42 -0400
+Subject: [RFC][PATCH 7/9] make kvm_get_kvm() more robust
 To: linux-kernel@vger.kernel.org
 Cc: kvm@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
 From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Tue, 15 Jun 2010 06:55:19 -0700
+Date: Tue, 15 Jun 2010 06:55:27 -0700
 References: <20100615135518.BC244431@kernel.beaverton.ibm.com>
 In-Reply-To: <20100615135518.BC244431@kernel.beaverton.ibm.com>
-Message-Id: <20100615135519.00781795@kernel.beaverton.ibm.com>
+Message-Id: <20100615135527.262CFEA2@kernel.beaverton.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-First of all, I think "free" is a poor name for this value.  In
-this context, it means, "the number of mmu pages which this kvm
-instance should be able to allocate."  To me, "free" implies
-much more that the objects are there and ready for use.  I think
-"available" is a much better description, especially when you
-see how it is calculated.
+The comment tells most of the story here.  This patch guarantees
+that once a user decrements kvm->users_count to 0 that no one
+will increment it again.
 
-In this patch, we abstract its use into a function.  We'll soon
-replace the function's contents by calculating the value in a
-different way.
-
+We'll need this in a moment because we are going to use
+kvm->users_count as a more generic refcount.
 
 Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 ---
 
- linux-2.6.git-dave/arch/x86/kvm/mmu.c |    6 +++---
- linux-2.6.git-dave/arch/x86/kvm/mmu.h |    7 ++++++-
- 2 files changed, 9 insertions(+), 4 deletions(-)
+ linux-2.6.git-dave/include/linux/kvm_host.h |    2 -
+ linux-2.6.git-dave/virt/kvm/kvm_main.c      |   32 +++++++++++++++++++++++++---
+ 2 files changed, 30 insertions(+), 4 deletions(-)
 
-diff -puN arch/x86/kvm/mmu.c~abstract_kvm_free_mmu_pages arch/x86/kvm/mmu.c
---- linux-2.6.git/arch/x86/kvm/mmu.c~abstract_kvm_free_mmu_pages	2010-06-09 15:14:28.000000000 -0700
-+++ linux-2.6.git-dave/arch/x86/kvm/mmu.c	2010-06-09 15:14:28.000000000 -0700
-@@ -1522,7 +1522,7 @@ void kvm_mmu_change_mmu_pages(struct kvm
- {
- 	int used_pages;
+diff -puN include/linux/kvm_host.h~make-kvm_get_kvm-more-robust include/linux/kvm_host.h
+--- linux-2.6.git/include/linux/kvm_host.h~make-kvm_get_kvm-more-robust	2010-06-11 08:39:16.000000000 -0700
++++ linux-2.6.git-dave/include/linux/kvm_host.h	2010-06-11 08:39:16.000000000 -0700
+@@ -247,7 +247,7 @@ int kvm_init(void *opaque, unsigned vcpu
+ 		  struct module *module);
+ void kvm_exit(void);
  
--	used_pages = kvm->arch.n_alloc_mmu_pages - kvm->arch.n_free_mmu_pages;
-+	used_pages = kvm->arch.n_alloc_mmu_pages - kvm_mmu_available_pages(kvm);
- 	used_pages = max(0, used_pages);
+-void kvm_get_kvm(struct kvm *kvm);
++int kvm_get_kvm(struct kvm *kvm);
+ void kvm_put_kvm(struct kvm *kvm);
  
- 	/*
-@@ -2752,7 +2752,7 @@ EXPORT_SYMBOL_GPL(kvm_mmu_unprotect_page
- 
- void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
- {
--	while (vcpu->kvm->arch.n_free_mmu_pages < KVM_REFILL_PAGES &&
-+	while (kvm_mmu_available_pages(vcpu->kvm) < KVM_REFILL_PAGES &&
- 	       !list_empty(&vcpu->kvm->arch.active_mmu_pages)) {
- 		struct kvm_mmu_page *sp;
- 
-@@ -2933,7 +2933,7 @@ static int mmu_shrink(int nr_to_scan, gf
- 		idx = srcu_read_lock(&kvm->srcu);
- 		spin_lock(&kvm->mmu_lock);
- 		npages = kvm->arch.n_alloc_mmu_pages -
--			 kvm->arch.n_free_mmu_pages;
-+			 kvm_mmu_available_pages(kvm);
- 		cache_count += npages;
- 		if (!kvm_freed && nr_to_scan > 0 && npages > 0) {
- 			freed_pages = kvm_mmu_remove_some_alloc_mmu_pages(kvm);
-diff -puN arch/x86/kvm/mmu.h~abstract_kvm_free_mmu_pages arch/x86/kvm/mmu.h
---- linux-2.6.git/arch/x86/kvm/mmu.h~abstract_kvm_free_mmu_pages	2010-06-09 15:14:28.000000000 -0700
-+++ linux-2.6.git-dave/arch/x86/kvm/mmu.h	2010-06-09 15:14:28.000000000 -0700
-@@ -50,9 +50,14 @@
- 
- int kvm_mmu_get_spte_hierarchy(struct kvm_vcpu *vcpu, u64 addr, u64 sptes[4]);
- 
-+static inline unsigned int kvm_mmu_available_pages(struct kvm *kvm)
-+{
-+	return kvm->arch.n_free_mmu_pages;
-+}
-+
- static inline void kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
- {
--	if (unlikely(vcpu->kvm->arch.n_free_mmu_pages < KVM_MIN_FREE_MMU_PAGES))
-+	if (unlikely(kvm_mmu_available_pages(vcpu->kvm)< KVM_MIN_FREE_MMU_PAGES))
- 		__kvm_mmu_free_some_pages(vcpu);
+ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+diff -puN virt/kvm/kvm_main.c~make-kvm_get_kvm-more-robust virt/kvm/kvm_main.c
+--- linux-2.6.git/virt/kvm/kvm_main.c~make-kvm_get_kvm-more-robust	2010-06-11 08:39:16.000000000 -0700
++++ linux-2.6.git-dave/virt/kvm/kvm_main.c	2010-06-11 08:39:16.000000000 -0700
+@@ -496,9 +496,30 @@ static void kvm_destroy_vm(struct kvm *k
+ 	mmdrop(mm);
  }
  
+-void kvm_get_kvm(struct kvm *kvm)
++/*
++ * Once the counter goes to 0, we destroy the
++ * kvm object.  Do not allow additional refs
++ * to be obtained once this occurs.
++ *
++ * Any calls which are done via the kvm fd
++ * could use atomic_inc().  That is because
++ * ->users_count is set to 1 when the kvm fd
++ * is created, and stays at least 1 while
++ * the fd exists.
++ *
++ * But, those calls are currently rare, so do
++ * this (more expensive) atomic_add_unless()
++ * to keep the number of functions down.
++ *
++ * Returns 0 if the reference was obtained
++ * successfully.
++ */
++int kvm_get_kvm(struct kvm *kvm)
+ {
+-	atomic_inc(&kvm->users_count);
++	int did_add = atomic_add_unless(&kvm->users_count, 1, 0);
++	if (did_add)
++		return 0;
++	return -EBUSY;
+ }
+ EXPORT_SYMBOL_GPL(kvm_get_kvm);
+ 
+@@ -1332,7 +1353,12 @@ static int kvm_vm_ioctl_create_vcpu(stru
+ 	BUG_ON(kvm->vcpus[atomic_read(&kvm->online_vcpus)]);
+ 
+ 	/* Now it's all set up, let userspace reach it */
+-	kvm_get_kvm(kvm);
++	r = kvm_get_kvm(kvm);
++	/*
++	 * Getting called via the kvm fd _should_ guarantee
++	 * that we can always get a reference.
++	 */
++	WARN_ON(r);
+ 	r = create_vcpu_fd(vcpu);
+ 	if (r < 0) {
+ 		kvm_put_kvm(kvm);
+diff -puN arch/x86/kvm/mmu.c~make-kvm_get_kvm-more-robust arch/x86/kvm/mmu.c
 _
