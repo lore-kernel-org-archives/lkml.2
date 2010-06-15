@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab0FOJWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 05:22:35 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41743 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988Ab0FOJWd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 05:22:33 -0400
-Date: Tue, 15 Jun 2010 11:22:30 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-       stefani@seibold.net
-Subject: Re: [PATCH] tags: put function prototypes back!
-Message-ID: <20100615092230.GA21819@pengutronix.de>
-References: <20100203201816.GA5987@x200>
+	id S1753430Ab0FOJ0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 05:26:44 -0400
+Received: from ozlabs.org ([203.10.76.45]:60880 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751443Ab0FOJ0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 05:26:42 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: Tree for June 11
+Date: Tue, 15 Jun 2010 18:56:37 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>
+References: <20100611141738.cf8a6bbf.sfr@canb.auug.org.au> <20100611163124.bbc01d34.akpm@linux-foundation.org>
+In-Reply-To: <20100611163124.bbc01d34.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100203201816.GA5987@x200>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006151856.38882.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 03, 2010 at 10:18:17PM +0200, Alexey Dobriyan wrote:
-> commit 7db86dc97fb0c47af63e6b965e8ff37126050d25
-> "ctags: usability fix" removed function prototypes from tags file
-> claiming "It makes no real sense to include function prototypes".
-> But it is useful for quickly determining which header file developer
-> needs to include to fix compilation.
+On Sat, 12 Jun 2010 09:01:24 am Andrew Morton wrote:
+> On Fri, 11 Jun 2010 14:17:38 +1000
+> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 > 
-> Now if someone wants to remove forward declatations (which I agree are
-> baggage), write a postprocessing script.
+> > I have created today's linux-next tree at
+> > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> > (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).
 > 
-> Please apply.
+> Rusty broke your kernel!
 > 
-> 	Alexey, who is sick reverting this chunk locally.
+> oops: http://userweb.kernel.org/~akpm/IMG_20100611_155611.jpg
 > 
-> Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> config: http://userweb.kernel.org/~akpm/stuff/config-akpm2-small.txt
+> 
+> (gdb) l *0xffffffff8105f9fb
+> 0xffffffff8105f9fb is in get_ksymbol (kernel/module.c:2784).
+> 2779                    if (mod->symtab[i].st_shndx == SHN_UNDEF)
+> 2780                            continue;
+> 2781    
+> 2782                    /* We ignore unnamed symbols: they're uninformative
+> 2783                     * and inserted at a whim. */
+> 2784                    if (mod->symtab[i].st_value <= addr
+> 2785                        && mod->symtab[i].st_value > mod->symtab[best].st_value
+> 2786                        && *(mod->strtab + mod->symtab[i].st_name) != '\0'
+> 2787                        && !is_arm_mapping_symbol(mod->strtab + mod->symtab[i].st_name))
+> 2788                            best = i;
 
-Thanks
-Uwe
+Hmm, I can't reproduce this :(  I'm only 32 bit here, have to dig out my
+64-bit machine tomorrow.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+One wonders why we're in get_ksymbol at all.  Has something already gone
+horribly wrong?
+
+Rusty.
