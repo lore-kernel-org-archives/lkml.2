@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab0FOXsT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 19:48:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9213 "EHLO mx1.redhat.com"
+	id S1757663Ab0FOXs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 19:48:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1233 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755135Ab0FOXsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 19:48:17 -0400
-Date: Tue, 15 Jun 2010 17:09:56 -0300
+	id S1757516Ab0FOXsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 19:48:19 -0400
+Date: Tue, 15 Jun 2010 17:06:28 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
 To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
        KVM list <kvm@vger.kernel.org>
 Subject: Re: [PATCH 7/7] KVM: MMU: don't walk every parent pages while mark
  unsync
-Message-ID: <20100615200956.GA9280@amt.cnet>
+Message-ID: <20100615200628.GA3395@amt.cnet>
 References: <4C1239EE.3090904@cn.fujitsu.com>
  <4C123B93.7060803@cn.fujitsu.com>
  <20100614220708.GA8658@amt.cnet>
@@ -64,5 +64,6 @@ On Tue, Jun 15, 2010 at 09:32:25AM +0800, Xiao Guangrong wrote:
 > P2.unsync_child_bitmap[1] = 1, P2.unsync_children = 2
 > no need touch P1, since the P1 is already mark pte[0] unsync-child-exist.
 
-You're right, applied.
+
+You're right. Applied.
 
