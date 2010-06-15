@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab0FOOgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 10:36:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48810 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab0FOOgf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 10:36:35 -0400
-Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
- reused immediately.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: tytso@mit.edu, Salman <sqazi@google.com>, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, tytso@google.com,
-       torvalds@linux-foundation.org, walken@google.com,
-       Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
-In-Reply-To: <20100614185556.afdc5304.akpm@linux-foundation.org>
-References: <AANLkTinlnb-HsDia4X2qgRjkTL_Z5CfVKYHRFwREoyIn@mail.gmail.com>
-	 <20100611224902.5039.60134.stgit@bumblebee1.mtv.corp.google.com>
-	 <20100614165851.6bdfe485.akpm@linux-foundation.org>
-	 <20100615005619.GI6666@thunk.org>
-	 <20100614185556.afdc5304.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 15 Jun 2010 16:35:52 +0200
-Message-ID: <1276612552.2077.7725.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S932227Ab0FOOi3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 10:38:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757869Ab0FOOi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 10:38:27 -0400
+Message-ID: <4C1787DF.3020102@redhat.com>
+Date: Tue, 15 Jun 2010 10:02:07 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 12/12] vmscan: Do not writeback pages in direct reclaim
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-13-git-send-email-mel@csn.ul.ie> <4C16A567.4080000@redhat.com> <20100615114510.GE26788@csn.ul.ie> <4C17815A.8080402@redhat.com> <20100615133727.GA27980@infradead.org>
+In-Reply-To: <20100615133727.GA27980@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-14 at 18:55 -0700, Andrew Morton wrote:
-> > kernel/sched_clock.c:   if (cmpxchg64(&scd->clock, old_clock, clock) != old_cloc
-> 
-> I guess that'll flush out any stragglers.
+On 06/15/2010 09:37 AM, Christoph Hellwig wrote:
+> On Tue, Jun 15, 2010 at 09:34:18AM -0400, Rik van Riel wrote:
+>> If direct reclaim can overflow the stack, so can direct
+>> memcg reclaim.  That means this patch does not solve the
+>> stack overflow, while admitting that we do need the
+>> ability to get specific pages flushed to disk from the
+>> pageout code.
+>
+> Can you explain what the hell memcg reclaim is and why it needs
+> to reclaim from random contexts?
 
-cmpxchg64() is special, at the time i386 didn't handle the 8 byte
-cmpxchg(), although we could easily make it do today.
+The page fault code will call the cgroup accounting code.
 
-> I suspect sched_clock.c might be generating fair amounts of code which
-> UP builds don't need. 
+When a cgroup goes over its memory limit, __mem_cgroup_try_charge
+will call mem_cgroup_hierarchical_reclaim, which will then go
+into the page reclaim code.
 
-Only sched_clock_remote() and its caller, something like the below, not
-much code..
+> It seems everything that has a cg in it's name that I stumbled over
+> lately seems to be some ugly wart..
 
-UP machines can still have utterly sucky TSC, although the
-inter-cpu-drift thing isn't much of an issue ;-)
+No argument there.  It took me a few minutes to find the code
+path above :)
 
----
- kernel/sched_clock.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/sched_clock.c b/kernel/sched_clock.c
-index 52f1a14..7ff5b56 100644
---- a/kernel/sched_clock.c
-+++ b/kernel/sched_clock.c
-@@ -170,6 +170,7 @@ again:
- 	return clock;
- }
- 
-+#ifdef CONFIG_SMP
- static u64 sched_clock_remote(struct sched_clock_data *scd)
- {
- 	struct sched_clock_data *my_scd = this_scd();
-@@ -205,6 +206,7 @@ again:
- 
- 	return val;
- }
-+#endif
- 
- /*
-  * Similar to cpu_clock(), but requires local IRQs to be disabled.
-@@ -226,9 +228,11 @@ u64 sched_clock_cpu(int cpu)
- 
- 	scd = cpu_sdc(cpu);
- 
-+#ifdef CONFIG_SMP
- 	if (cpu != smp_processor_id())
- 		clock = sched_clock_remote(scd);
- 	else
-+#endif
- 		clock = sched_clock_local(scd);
- 
- 	return clock;
-
+-- 
+All rights reversed
