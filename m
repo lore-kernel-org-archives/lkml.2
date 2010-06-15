@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab0FOQfF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 12:35:05 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56791 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757527Ab0FOQfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 12:35:02 -0400
-Message-ID: <4C17AB91.1040207@kernel.org>
-Date: Tue, 15 Jun 2010 18:34:25 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1757735Ab0FOQfv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 12:35:51 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59697 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab0FOQft (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 12:35:49 -0400
+Date: Tue, 15 Jun 2010 12:35:46 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
+ and use a_ops->writepages() where possible
+Message-ID: <20100615163546.GA21250@infradead.org>
+References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+ <20100615140011.GD28052@random.random>
+ <20100615141122.GA27893@infradead.org>
+ <20100615142219.GE28052@random.random>
+ <20100615144342.GA3339@infradead.org>
+ <20100615150850.GF28052@random.random>
+ <20100615153838.GO26788@csn.ul.ie>
+ <20100615161419.GH28052@random.random>
+ <20100615163044.GR26788@csn.ul.ie>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, jeff@garzik.org,
-       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
-       khali@linux-fr.org
-Subject: Re: [PATCH 02/12] irq: make spurious poll timer per desc
-References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-3-git-send-email-tj@kernel.org> <20100615051027.GA8073@phenom.dumpdata.com>
-In-Reply-To: <20100615051027.GA8073@phenom.dumpdata.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 15 Jun 2010 16:34:27 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100615163044.GR26788@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 07:10 AM, Konrad Rzeszutek Wilk wrote:
->> @@ -169,6 +170,7 @@ struct irq_2_iommu;
->>   * @pending_mask:	pending rebalanced interrupts
->>   * @threads_active:	number of irqaction threads currently running
->>   * @wait_for_threads:	wait queue for sync_irq to wait for threaded handlers
->> + * @poll_timer:		timer for IRQ polling
-> 
-> I looked over the patches and they all look good to my eyes.
-> 
-> The only thing that looked out of place was the above comment.
-> Would it make sense to move the comment one tab to the left?
+On Tue, Jun 15, 2010 at 05:30:44PM +0100, Mel Gorman wrote:
+> After grepping through fs/, it was only xfs and btrfs that I saw were
+> specfically disabling writepage from reclaim context.
 
-When applied, it will show up at the right place.  It's because the
-first tab ends next to ':' and the leading '+' ends up pushing it to
-the next tab position.
+ext4 doesn't specificly disable writeback from reclaim context, but
+in a rather convoluted way disabled basically all writeback through
+->writepage.  The only thing allowed is overwrites of already allocated
+blocks.
 
-Thanks.
-
--- 
-tejun
+In addition to that reiserfs also frefuses to write back pages
+from reclaim context if they require a transaction, which is the case
+if the file was written to through mmap.
