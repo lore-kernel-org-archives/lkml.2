@@ -1,106 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159Ab0FOPZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 11:25:41 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60321 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab0FOPZk (ORCPT
+	id S932191Ab0FOP1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 11:27:46 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63311 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757548Ab0FOP1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 11:25:40 -0400
-Date: Tue, 15 Jun 2010 11:25:26 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-Message-ID: <20100615152526.GA3468@infradead.org>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
- <20100615140011.GD28052@random.random>
- <20100615141122.GA27893@infradead.org>
- <20100615142219.GE28052@random.random>
- <20100615144342.GA3339@infradead.org>
- <20100615150850.GF28052@random.random>
+	Tue, 15 Jun 2010 11:27:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GvN5PO/64mFwIfuYeWVAgIhBGhgsDfbMG1snupuuQO7EaS3O3Bw6Dn0bHAun8ZHbi9
+         78SaGV7Pq65KcvhAi6tGI1wxQoz41hSfhSmMTi2UVvwUNCrwKUhGeV7eJ3/l5u1p5bIj
+         8qqi1d8a+UlLyyhVzu2wS3/9HduGMIsTYhJTE=
+Date: Tue, 15 Jun 2010 18:31:16 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] avoid using smp_processor_id() in preemptible code
+ (nr_iowait_cpu)
+Message-ID: <20100615153116.GD3967@swordfish.minsk.epam.com>
+References: <20100614073853.6fa2f91f@infradead.org>
+ <20100614145439.GA3448@swordfish.minsk.epam.com>
+ <20100614080154.7d6a71fc@infradead.org>
+ <20100614151735.GB3448@swordfish.minsk.epam.com>
+ <20100614204021.52c50cdc@infradead.org>
+ <20100615061927.GA3312@swordfish>
+ <20100615072435.5a47d850@infradead.org>
+ <20100615145029.GB3967@swordfish.minsk.epam.com>
+ <20100615080808.6286448b@infradead.org>
+ <20100615152315.GC3967@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NtwzykIc2mflq5ck"
 Content-Disposition: inline
-In-Reply-To: <20100615150850.GF28052@random.random>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100615152315.GC3967@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 05:08:50PM +0200, Andrea Arcangeli wrote:
-> On Tue, Jun 15, 2010 at 10:43:42AM -0400, Christoph Hellwig wrote:
-> > Other callers of ->writepage are fine because they come from a
-> > controlled environment with relatively little stack usage.  The problem
-> > with direct reclaim is that we splice multiple stack hogs ontop of each
-> > other.
-> 
-> It's not like we're doing a stack recursive algorithm in kernel. These
-> have to be "controlled hogs", so we must have space to run 4/5 of them
-> on top of each other, that's the whole point.
 
-We're not doing a full recursion.  We're splicing a codepath that
-normally could use the full stack (fs writeback / block I/O) into
-a random other code path that could use the full stack, and add
-some quite stack heavy allocator / reclaim code inbetween.
+--NtwzykIc2mflq5ck
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> I'm aware the ->writepage can run on any alloc_pages, but frankly I
-> don't see a whole lot of difference between regular kernel code paths
-> or msync. Sure they can be at higher stack usage, but not like with
-> only 1000bytes left.
+On (06/15/10 18:23), Sergey Senozhatsky wrote:
+>....
+> 		delta =3D ktime_sub(now, ts->idle_entrytime);
+> 		ts->idle_sleeptime =3D ktime_add(ts->idle_sleeptime, delta);
+> 		if (nr_iowait_cpu(cpu) > 0)
+> 			ts->iowait_sleeptime =3D ktime_add(ts->iowait_sleeptime, delta);
+> 		put_cpu();
+> 		ts->idle_entrytime =3D now;
+> +		ts->idle_active =3D 0;
+		^^^^^^
 
-msync does not use any significant amount of stack:
+This part is wrong. Sorry.
 
-0xc01f53b3 sys_msync [vmlinux]:				40
-0xc022b165 vfs_fsync [vmlinux]:				12
-0xc022b053 vfs_fsync_range [vmlinux]:			24
-0xc01d7e63 filemap_write_and_wait_range [vmlinux]:	28
-0xc01d7df3 __filemap_fdatawrite_range [vmlinux]:	56
+> 	}
+>=20
+> 	if (last_update_time)
+> 		*last_update_time =3D ktime_to_us(now);
+>=20
+> }
 
-and then we alredy enter ->writepages.  Direct reclaim on the other
-hand can happen from context that already is say 4 or 6 kilobytes
-into stack usage.  And the callchain from kmalloc() into ->writepage
-alone adds another 0.7k of stack usage.  There's not much left for
-the filesystem after this.
+--NtwzykIc2mflq5ck
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-> If you don't throttle against kswapd, or if even kswapd can't turn a
-> dirty page into a clean one, you can get oom false positives. Anything
-> is better than that. (provided you've proper stack instrumentation to
-> notice when there is risk of a stack overflow, it's ages I never seen
-> a stack overflow debug detector report)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-I've never seen the stack overflow detector trigger on this, but I've
-seen lots of real life stack overflows on the mailing lists.  End
-users don't run with it enabled normally, and most testing workloads
-don't seem to hit direct reclaim enough to actually trigger this
-reproducibly.
+iJwEAQECAAYFAkwXnMQACgkQfKHnntdSXjTbJAP9FTB6CT50/t/LDi/hUm7MRgnp
+wceeao0fxngX9Hx4bwMQWqVmpMLNbTwd7reD1AnIlkXvlCeNL6ufCNljbPLHNc6O
+iXOVyUyb/SAwHLN7rTwaK8GeHLRV8u/3px6z+NR8VAJ3jE3N7Nc+7uDgXvAkMVJP
+puEXYuUZKnJJy+zp14I=
+=a4GJ
+-----END PGP SIGNATURE-----
 
-> Also note, there's nothing that prevents us from switching the stack
-> to something else the moment we enter direct reclaim. It doesn't need
-> to be physically contiguous. Just allocate a couple of 4k pages and
-> switch to them every time a new hog starts in VM context. The only
-> real complexity is in the stack unwind but if irqstack can cope with
-> it sure stack unwind can cope with more "special" stacks too.
-
-Which is a lot more complicated than loading off the page cleaning
-from direct reclaim to dedicated threads - be that the flusher threads
-or kswapd.
-
-> Ignoring ->writepage on VM invocations at best can only hide VM
-> inefficiencies with the downside of breaking the VM in corner cases
-> with heavy VM pressure.
-
-It allows the system to survive in case direct reclaim is called instead
-of crashing with a stack overflow.  And at least in my testing the
-VM seems to cope rather well with not beeing able to write out
-filesystem pages from direct reclaim.  That doesn't mean that this
-behaviour can't be further improved on.
-
+--NtwzykIc2mflq5ck--
