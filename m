@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758612Ab0FOSsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 14:48:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13285 "EHLO mx1.redhat.com"
+	id S1758643Ab0FOSsh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 14:48:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8721 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758443Ab0FOSmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 14:42:08 -0400
+	id S1758436Ab0FOSmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 14:42:05 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 37/38] union-mount: Implement union-aware setxattr()
-Date: Tue, 15 Jun 2010 11:40:07 -0700
-Message-Id: <1276627208-17242-38-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 35/38] union-mount: Implement union-aware lchown()
+Date: Tue, 15 Jun 2010 11:40:05 -0700
+Message-Id: <1276627208-17242-36-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,24 +21,15 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---
- fs/xattr.c |   34 +++++++++++++++++++++++++++-------
- 1 files changed, 27 insertions(+), 7 deletions(-)
+ fs/open.c |   23 ++++++++++++++++++++---
+ 1 files changed, 20 insertions(+), 3 deletions(-)
 
-diff --git a/fs/xattr.c b/fs/xattr.c
-index 46f87e8..66bb5c7 100644
---- a/fs/xattr.c
-+++ b/fs/xattr.c
-@@ -19,7 +19,7 @@
- #include <linux/fsnotify.h>
- #include <linux/audit.h>
- #include <asm/uaccess.h>
--
-+#include "union.h"
- 
- /*
-  * Check permissions for extended attribute access.  This is a bit complicated
-@@ -281,17 +281,37 @@ SYSCALL_DEFINE5(setxattr, const char __user *, pathname,
- 		size_t, size, int, flags)
+diff --git a/fs/open.c b/fs/open.c
+index 336fe01..b021dcb 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -812,18 +812,35 @@ out:
+ SYSCALL_DEFINE3(lchown, const char __user *, filename, uid_t, user, gid_t, group)
  {
  	struct path path;
 +	struct nameidata nd;
@@ -46,16 +37,11 @@ index 46f87e8..66bb5c7 100644
 +	char *tmp;
  	int error;
  
--	error = user_path(pathname, &path);
-+	error = user_path_nd(AT_FDCWD, pathname, LOOKUP_FOLLOW, &nd, &path,
-+			     &tmp);
+-	error = user_lpath(filename, &path);
++	error = user_path_nd(AT_FDCWD, filename, 0, &nd, &path, &tmp);
  	if (error)
- 		return error;
+ 		goto out;
 -	error = mnt_want_write(path.mnt);
--	if (!error) {
--		error = setxattr(path.dentry, name, value, size, flags);
--		mnt_drop_write(path.mnt);
--	}
 +
 +	if (IS_DIR_UNIONED(nd.path.dentry))
 +		mnt = nd.path.mnt;
@@ -63,24 +49,24 @@ index 46f87e8..66bb5c7 100644
 +		mnt = path.mnt;
 +
 +	error = mnt_want_write(mnt);
-+	if (error)
-+		goto out;
+ 	if (error)
+ 		goto out_release;
 +
 +	error = union_copyup(&nd, &path);
 +	if (error)
 +		goto out_drop_write;
 +
-+	error = setxattr(path.dentry, name, value, size, flags);
-+
+ 	error = chown_common(&path, user, group);
+-	mnt_drop_write(path.mnt);
 +out_drop_write:
 +	mnt_drop_write(mnt);
-+out:
+ out_release:
  	path_put(&path);
 +	path_put(&nd.path);
 +	putname(tmp);
+ out:
  	return error;
  }
- 
 -- 
 1.6.3.3
 
