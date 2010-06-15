@@ -1,69 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757238Ab0FOKTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 06:19:19 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:53258 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757190Ab0FOKTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 06:19:16 -0400
-Date: Tue, 15 Jun 2010 11:18:58 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
-Message-ID: <20100615101857.GB26788@csn.ul.ie>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-12-git-send-email-mel@csn.ul.ie> <4C169B81.8010707@redhat.com>
+	id S1757215Ab0FOKUv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 06:20:51 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44895 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757049Ab0FOKUt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 06:20:49 -0400
+Message-ID: <4C1753F6.3080106@pengutronix.de>
+Date: Tue, 15 Jun 2010 12:20:38 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4C169B81.8010707@redhat.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>, Sascha Hauer <sha@pengutronix.de>,
+       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V2] i2c-imx: do not allow interruptions when waiting for I2C
+ to complete (resend)
+X-Enigmail-Version: 0.95.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig3D1DC01A74CB43C625E9F994"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 05:13:37PM -0400, Rik van Riel wrote:
-> On 06/14/2010 07:17 AM, Mel Gorman wrote:
->> Page reclaim cleans individual pages using a_ops->writepage() because from
->> the VM perspective, it is known that pages in a particular zone must be freed
->> soon, it considers the target page to be the oldest and it does not want
->> to wait while background flushers cleans other pages. From a filesystem
->> perspective this is extremely inefficient as it generates a very seeky
->> IO pattern leading to the perverse situation where it can take longer to
->> clean all dirty pages than it would have otherwise.
->
-> Reclaiming clean pages should be fast enough that this should
-> make little, if any, difference.
->
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig3D1DC01A74CB43C625E9F994
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Indeed, this was a bit weak. The original point of the patch was to write
-contiguous pages belonging to the same inode when they were encountered in
-that batch which made a bit more sense but didn't work out at first
-pass.
+The i2c_imx_trx_complete() function is using
+wait_event_interruptible_timeout() to wait for the I2C controller to
+signal that it has completed an I2C bus operation. If the process that
+causes the I2C operation receives a signal, the wait will be
+interrupted, returning an error. It is better to let the I2C operation
+finished before handling the signal (i.e. returning into userspace).
 
->> This patch queues all dirty pages at once to maximise the chances that
->> the write requests get merged efficiently. It also makes the next patch
->> that avoids writeout from direct reclaim more straight-forward.
->
-> However, this is a convincing argument :)
->
+It is safe to use wait_event_timeout() instead, because the timeout
+will allow the process to exit if the I2C bus hangs. It's also better
+to allow the I2C operation to finish, because unacknowledged I2C
+operations can cause the I2C bus to hang.
 
-Thanks.
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+---
 
->> Signed-off-by: Mel Gorman<mel@csn.ul.ie>
->
-> Reviewed-by: Rik van Riel <riel@redhat.com>
->
+V2: Remove check for "result < 0" as commented by Wolfram Sang.
 
-Thanks again :)
+ drivers/i2c/busses/i2c-imx.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
+index d1ff940..58df809 100644
+--- a/drivers/i2c/busses/i2c-imx.c
++++ b/drivers/i2c/busses/i2c-imx.c
+@@ -161,13 +161,10 @@ static int i2c_imx_trx_complete(struct
+imx_i2c_struct *i2c_imx)
+ {
+ 	int result;
+
+-	result =3D wait_event_interruptible_timeout(i2c_imx->queue,
++	result =3D wait_event_timeout(i2c_imx->queue,
+ 		i2c_imx->i2csr & I2SR_IIF, HZ / 10);
+
+-	if (unlikely(result < 0)) {
+-		dev_dbg(&i2c_imx->adapter.dev, "<%s> result < 0\n", __func__);
+-		return result;
+-	} else if (unlikely(!(i2c_imx->i2csr & I2SR_IIF))) {
++	if (unlikely(!(i2c_imx->i2csr & I2SR_IIF))) {
+ 		dev_dbg(&i2c_imx->adapter.dev, "<%s> Timeout\n", __func__);
+ 		return -ETIMEDOUT;
+ 	}
+@@ -295,7 +292,7 @@ static irqreturn_t i2c_imx_isr(int irq, void *dev_id)=
+
+ 		i2c_imx->i2csr =3D temp;
+ 		temp &=3D ~I2SR_IIF;
+ 		writeb(temp, i2c_imx->base + IMX_I2C_I2SR);
+-		wake_up_interruptible(&i2c_imx->queue);
++		wake_up(&i2c_imx->queue);
+ 		return IRQ_HANDLED;
+ 	}
+
+--=20
+1.7.1
+
+
+--------------enig3D1DC01A74CB43C625E9F994
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org
+
+iEYEARECAAYFAkwXU/sACgkQjTAFq1RaXHOY2gCdEu745+5db/OFd2wvoWW0AFzp
+ejEAn0QA+T5EqPgHpDUMPnhMb0fJ56sY
+=m7zX
+-----END PGP SIGNATURE-----
+
+--------------enig3D1DC01A74CB43C625E9F994--
