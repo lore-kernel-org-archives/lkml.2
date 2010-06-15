@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757719Ab0FOLpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 07:45:31 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:54427 "EHLO gir.skynet.ie"
+	id S1757771Ab0FOLpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 07:45:44 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:54450 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757702Ab0FOLp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 07:45:28 -0400
-Date: Tue, 15 Jun 2010 12:45:11 +0100
+	id S1757755Ab0FOLpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 07:45:41 -0400
+Date: Tue, 15 Jun 2010 12:45:24 +0100
 From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 12/12] vmscan: Do not writeback pages in direct reclaim
-Message-ID: <20100615114510.GE26788@csn.ul.ie>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-13-git-send-email-mel@csn.ul.ie> <4C16A567.4080000@redhat.com>
+Subject: Re: [PATCH 0/12] Avoid overflowing of stack during page reclaim V2
+Message-ID: <20100615114523.GF26788@csn.ul.ie>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <20100614151011.GA24948@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4C16A567.4080000@redhat.com>
+In-Reply-To: <20100614151011.GA24948@infradead.org>
 User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 05:55:51PM -0400, Rik van Riel wrote:
-> On 06/14/2010 07:17 AM, Mel Gorman wrote:
->
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 4856a2a..574e816 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -372,6 +372,12 @@ int write_reclaim_page(struct page *page, struct address_space *mapping,
->>   	return PAGE_SUCCESS;
->>   }
->>
->> +/* kswapd and memcg can writeback as they are unlikely to overflow stack */
->> +static inline bool reclaim_can_writeback(struct scan_control *sc)
->> +{
->> +	return current_is_kswapd() || sc->mem_cgroup != NULL;
->> +}
->> +
->
-> I'm not entirely convinced on this bit, but am willing to
-> be convinced by the data.
->
+On Mon, Jun 14, 2010 at 11:10:11AM -0400, Christoph Hellwig wrote:
+> On Mon, Jun 14, 2010 at 12:17:41PM +0100, Mel Gorman wrote:
+> > This is a merging of two series - the first of which reduces stack usage
+> > in page reclaim and the second which writes contiguous pages during reclaim
+> > and avoids writeback in direct reclaimers.
+> 
+> This stuff looks good to me from the filesystem POV.
+> 
+> You might want to throw in a follow on patch to remove the PF_MEMALLOC
+> checks from the various ->writepage methods.
+> 
 
-Which bit?
-
-You're not convinced that kswapd should be allowed to write back?
-You're not convinced that memcg should be allowed to write back?
-You're not convinced that direct reclaim writing back pages can overflow
-	the stack?
+Will do, thanks.
 
 -- 
 Mel Gorman
