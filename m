@@ -1,95 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab0FOHD6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 03:03:58 -0400
-Received: from dtp.xs4all.nl ([80.101.171.8]:29869 "HELO abra2.bitwizard.nl"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752777Ab0FOHD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 03:03:57 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jun 2010 03:03:56 EDT
-Date: Tue, 15 Jun 2010 08:57:14 +0200
-From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
-To: Alan <alan@clueserver.org>
-Cc: Jeff Garzik <jeff@garzik.org>, linux-kernel@vger.kernel.org
-Subject: Re: Question on siig sata 3 controller
-Message-ID: <20100615065714.GA9034@bitwizard.nl>
-References: <34979.10.6.6.23.1276144792.squirrel@10.6.6.2> <4C10A81F.50801@garzik.org> <54318.10.6.6.23.1276222123.squirrel@10.6.6.2>
+	id S1752829Ab0FOHJo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 03:09:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39459 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751946Ab0FOHJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 03:09:42 -0400
+Message-ID: <4C1726C4.8050300@redhat.com>
+Date: Tue, 15 Jun 2010 10:07:48 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54318.10.6.6.23.1276222123.squirrel@10.6.6.2>
-Organization: BitWizard.nl
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: balbir@linux.vnet.ibm.com, kvm <kvm@vger.kernel.org>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
+ control
+References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>	 <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>	 <4C10B3AF.7020908@redhat.com> <20100610142512.GB5191@balbir.in.ibm.com>	 <1276214852.6437.1427.camel@nimitz>	 <20100611045600.GE5191@balbir.in.ibm.com> <4C15E3C8.20407@redhat.com>	 <20100614084810.GT5191@balbir.in.ibm.com> <4C16233C.1040108@redhat.com>	 <20100614125010.GU5191@balbir.in.ibm.com> <4C162846.7030303@redhat.com>	 <1276529596.6437.7216.camel@nimitz> <4C164E63.2020204@redhat.com>	 <1276530932.6437.7259.camel@nimitz>  <4C1659F8.3090300@redhat.com> <1276538293.6437.7528.camel@nimitz>
+In-Reply-To: <1276538293.6437.7528.camel@nimitz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 07:08:43PM -0700, Alan wrote:
-> When writing large amounts of data I see messages like the following:
+On 06/14/2010 08:58 PM, Dave Hansen wrote:
+> On Mon, 2010-06-14 at 19:34 +0300, Avi Kivity wrote:
+>    
+>>> Again, this is useless when ballooning is being used.  But, I'm thinking
+>>> of a more general mechanism to force the system to both have MemFree
+>>> _and_ be acting as if it is under memory pressure.
+>>>
+>>>        
+>> If there is no memory pressure on the host, there is no reason for the
+>> guest to pretend it is under pressure.
+>>      
+> I can think of quite a few places where this would be beneficial.
+>
+> Ballooning is dangerous.  I've OOMed quite a few guests by
+> over-ballooning them.  Anything that's voluntary like this is safer than
+> things imposed by the host, although you do trade of effectiveness.
+>    
 
-yeah! I'm trying to write some 2.5Tb to my raid array, where 2 of 8
-disks are connected to an Asus U3S6 board.
-   http://www.asus.com/product.aspx?P_ID=lGYmelQ8mJvPtYTv
+That's a bug that needs to be fixed.  Eventually the host will come 
+under pressure and will balloon the guest.  If that kills the guest, the 
+ballooning is not effective as a host memory management technique.
 
-After a while, those two disks bomb out, and make the raid
-inaccessible.
+Trying to defer ballooning by voluntarily dropping cache is simply 
+trying to defer being bitten by the bug.
 
-A reboot brings the disks back to life. So in theory, Linux should be
-able to restore life into these drives by doing the right magic with
-the hardware bits... 
+> If all the guests do this, then it leaves that much more free memory on
+> the host, which can be used flexibly for extra host page cache, new
+> guests, etc...
 
-I'm running 2.6.34: 
+If the host detects lots of pagecache misses it can balloon guests 
+down.  If pagecache is quiet, why change anything?
 
-Linux version 2.6.34 (root@zebigbos) (gcc version 3.4.2) #3 SMP Mon May 17 21:04:13 CEST 2010
+If the host wants to start new guests, it can balloon guests down.  If 
+no new guests are wanted, why change anything?
 
+etc...
 
-Log file entries: 
+> A system in this state where everyone is proactively
+> keeping their footprints down is more likely to be able to handle load
+> spikes.
 
-ata5.00: exception Emask 0x0 SAct 0xfff SErr 0x0 action 0x6 frozen
-ata5.00: failed command: READ FPDMA QUEUED
-ata5.00: cmd 60/a8:00:f6:12:10/00:00:0d:00:00/40 tag 0 ncq 86016 in
-         res 40/00:14:ee:98:bb/00:00:0a:00:00/40 Emask 0x4 (timeout)
-ata5.00: status: { DRDY }
-...
-ata5.00: failed command: READ FPDMA QUEUED
-ata5.00: cmd 60/a0:58:ee:19:10/00:00:0d:00:00/40 tag 11 ncq 81920 in
-         res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-ata5.00: status: { DRDY }
-ata5: hard resetting link
-ata5: SATA link up 3.0 Gbps (SStatus 123 SControl 370)
-ata5.00: configured for UDMA/133
-ata5.00: device reported invalid CHS sector 0
-*last message repeated 10 times
-ata5: EH complete
+That is true.  But from the guest's point of view, voluntarily giving up 
+memory means dropping the guest's cushion vs load spikes.
 
-(all tags 1...10 are aalso listed.)
+> Reclaim is an expensive, costly activity, and this ensures that
+> we don't have to do that when we're busy doing other things like
+> handling load spikes.
 
-This seems "harmless", it happend a few times the last hour or so
-(during the rebuild). 
+The guest doesn't want to reclaim memory from the host when it's under a 
+load spike either.
 
-When things went bad last time I got: 
+> This was one of the concepts behind CMM2: reduce
+> the overhead during peak periods.
+>    
 
-one of these "harmless events" (but this time with 31 tags listed!): 
+Ah, but CMM2 actually reduced work being done by sharing information 
+between guest and host.
 
-Jun 14 18:26:23 vercingetorix kernel: ata5: SATA link up 3.0 Gbps (SStatus 123 SControl 370)
+> It's also handy for planning.  Guests exhibiting this behavior will
+> _act_ as if they're under pressure.  That's a good thing to approximate
+> how a guest will act when it _is_ under pressure.
+>    
 
-and then 5 seconds later: 
+If a guest acts as if it is under pressure, then it will be slower and 
+consume more cpu.  Bad for both guest and host.
 
-ata5.00: qc timeout (cmd 0xec)
-ata5.00: failed to IDENTIFY (I/O error, err_mask=0x4)
-ata5.00: revalidation failed (errno=-5)
-ata5: hard resetting link
-ata5: SATA link up 3.0 Gbps (SStatus 123 SControl 370)
-ata5.00: qc timeout (cmd 0xec)
-ata5.00: failed to IDENTIFY (I/O error, err_mask=0x4)
+>> If there is memory pressure on
+>> the host, it should share the pain among its guests by applying the
+>> balloon.  So I don't think voluntarily dropping cache is a good direction.
+>>      
+> I think we're trying to consider things slightly outside of ballooning
+> at this point.  If ballooning was the end-all solution, I'm fairly sure
+> Balbir wouldn't be looking at this stuff.  Just trying to keep options
+> open. :)
+>    
 
-
-	Roger. 
+I see this as an extension to ballooning - perhaps I'm missing the big 
+picture.  I would dearly love to have CMM2 where decisions are made on a 
+per-page basis instead of using heuristics.
 
 -- 
-** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
-**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
-*-- BitWizard writes Linux device drivers for any device you may have! --*
-Q: It doesn't work. A: Look buddy, doesn't work is an ambiguous statement. 
-Does it sit on the couch all day? Is it unemployed? Please be specific! 
-Define 'it' and what it isn't doing. --------- Adapted from lxrbot FAQ
+error compiling committee.c: too many arguments to function
+
