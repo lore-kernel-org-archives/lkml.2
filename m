@@ -1,86 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab0FOKRu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 06:17:50 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34398 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756154Ab0FOKRs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 06:17:48 -0400
-Message-ID: <4C17519C.5080209@ru.mvista.com>
-Date: Tue, 15 Jun 2010 14:10:36 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1757174Ab0FOKTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 06:19:05 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:55104 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752177Ab0FOKTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 06:19:01 -0400
+Date: Tue, 15 Jun 2010 15:48:55 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, kvm <kvm@vger.kernel.org>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
+ control
+Message-ID: <20100615101855.GC4306@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100614125010.GU5191@balbir.in.ibm.com>
+ <4C162846.7030303@redhat.com>
+ <1276529596.6437.7216.camel@nimitz>
+ <4C164E63.2020204@redhat.com>
+ <1276530932.6437.7259.camel@nimitz>
+ <4C1659F8.3090300@redhat.com>
+ <20100614174548.GB5191@balbir.in.ibm.com>
+ <4C172499.7090800@redhat.com>
+ <20100615074949.GA4306@balbir.in.ibm.com>
+ <4C174B7F.8070504@redhat.com>
 MIME-Version: 1.0
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-CC: linux-usb@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: gadget: g_fs: possible invalid pointer reference
- bug fixed
-References: <f8fbee30a711b740b5875514715c3c58b4eb196c.1276170819.git.m.nazarewicz@samsung.com>
-In-Reply-To: <f8fbee30a711b740b5875514715c3c58b4eb196c.1276170819.git.m.nazarewicz@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4C174B7F.8070504@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+* Avi Kivity <avi@redhat.com> [2010-06-15 12:44:31]:
 
-Michal Nazarewicz wrote:
+> On 06/15/2010 10:49 AM, Balbir Singh wrote:
+> >
+> >>All we need is to select the right page to drop.
+> >>
+> >Do we need to drop to the granularity of the page to drop? I think
+> >figuring out the class of pages and making sure that we don't write
+> >our own reclaim logic, but work with what we have to identify the
+> >class of pages is a good start.
+> 
+> Well, the class of pages are 'pages that are duplicated on the
+> host'.  Unmapped page cache pages are 'pages that might be
+> duplicated on the host'.  IMO, that's not close enough.
+>
 
-> During __gfs_do_config() some invalid pointers may be left
-> in usb_configuration::interfaces array from previous calls
-> to the __gfs_do_config() for the same configuration.  This
-> will always happen if an user space function which has
-> a fewer then the last user space function registers itself.
-> Composite's set_config() function that a pointer after the
-> last interface in usb_configuration::interface is NULL
-> unless the array is full.
+Agreed, but what happens in reality with the code is that it drops
+not-so-frequently-used cache (still reusing the reclaim mechanism),
+but prioritizing cached memory.
+ 
+> >>How can the host tell if there is duplication?  It may know it has
+> >>some pagecache, but it has no idea whether or to what extent guest
+> >>pagecache duplicates host pagecache.
+> >>
+> >Well it is possible in host user space, I for example use memory
+> >cgroup and through the stats I have a good idea of how much is duplicated.
+> >I am ofcourse making an assumption with my setup of the cached mode,
+> >that the data in the guest page cache and page cache in the cgroup
+> >will be duplicated to a large extent. I did some trivial experiments
+> >like drop the data from the guest and look at the cost of bringing it
+> >in and dropping the data from both guest and host and look at the
+> >cost. I could see a difference.
+> >
+> >Unfortunately, I did not save the data, so I'll need to redo the
+> >experiment.
+> 
+> I'm sure we can detect it experimentally, but how do we do it
+> programatically at run time (without dropping all the pages).
+> Situations change, and I don't think we can infer from a few
+> experiments that we'll have a similar amount of sharing.  The cost
+> of an incorrect decision is too high IMO (not that I think the
+> kernel always chooses the right pages now, but I'd like to avoid
+> regressions from the unvirtualized state).
+> 
+> btw, when running with a disk controller that has a very large
+> cache, we might also see duplication between "guest" and host.  So,
+> if this is a good idea, it shouldn't be enabled just for
+> virtualization, but for any situation where we have a sizeable cache
+> behind us.
+> 
 
-> This patch makes the __gfs_do_config() make sure that if the
-> usb_configuration::interface is not full then a pointer
-> after the last interface is NULL.
+It depends, once the disk controller has the cache and the pages in
+the guest are not-so-frequently-used we can drop them. Please remember
+we still use the LRU to identify these pages.
 
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/usb/gadget/g_ffs.c |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
+> >>It doesn't, really.  The host only has aggregate information about
+> >>itself, and no information about the guest.
+> >>
+> >>Dropping duplicate pages would be good if we could identify them.
+> >>Even then, it's better to drop the page from the host, not the
+> >>guest, unless we know the same page is cached by multiple guests.
+> >>
+> >On the exact pages to drop, please see my comments above on the class
+> >of pages to drop.
+> 
+> Well, we disagree about that.  There is some value in dropping
+> duplicated pages (not always), but that's not what the patch does.
+> It drops unmapped pagecache pages, which may or may not be
+> duplicated.
+> 
+> >There are reasons for wanting to get the host to cache the data
+> 
+> There are also reasons to get the guest to cache the data - it's
+> more efficient to access it in the guest.
+> 
+> >Unless the guest is using cache = none, the data will still hit the
+> >host page cache
+> >The host can do a better job of optimizing the writeouts
+> 
+> True, especially for non-raw storage.  But even there we have to
+> fsync all the time to keep the metadata right.
+> 
+> >>But why would the guest voluntarily drop the cache?  If there is no
+> >>memory pressure, dropping caches increases cpu overhead and latency
+> >>even if the data is still cached on the host.
+> >>
+> >So, there are basically two approaches
+> >
+> >1. First patch, proactive - enabled by a boot option
+> >2. When ballooned, we try to (please NOTE try to) reclaim cached pages
+> >first. Failing which, we go after regular pages in the alloc_page()
+> >call in the balloon driver.
+> 
+> Doesn't that mean you may evict a RU mapped page ahead of an LRU
+> unmapped page, just in the hope that it is double-cached?
+> 
+> Maybe we need the guest and host to talk to each other about which
+> pages to keep.
+> 
 
-> diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
-> index 2f26470..da3a9e4 100644
-> --- a/drivers/usb/gadget/g_ffs.c
-> +++ b/drivers/usb/gadget/g_ffs.c
-> @@ -392,6 +392,17 @@ static int __gfs_do_config(struct usb_configuration *c,
->  	if (unlikely(ret < 0))
->  		return ret;
->  
-> +	/* After previous do_configs there may be some invalid
-> +	 * pointers in c->interface array.  This happens every time
-> +	 * a user space function with fewer interfaces than a user
-> +	 * space function that was run before the new one is run.  The
-> +	 * compasit's set_config() assumes that if there is no more
-> +	 * then MAX_CONFIG_INTERFACES interfaces in a configuration
-> +	 * then there is a NULL pointer after the last interface in
-> +	 * c->interface array.  We need to make sure this is true. */
+Yeah.. I guess that falls into the domain of CMM.
 
-    According to CodingStyle, the preferred style of the multi-line comments 
-is this:
+> >>>2. Drop the cache on either a special balloon option, again the host
+> >>>knows it caches that very same information, so it prefers to free that
+> >>>up first.
+> >>Dropping in response to pressure is good.  I'm just not convinced
+> >>the patch helps in selecting the correct page to drop.
+> >>
+> >That is why I've presented data on the experiments I've run and
+> >provided more arguments to backup the approach.
+> 
+> I'm still unconvinced, sorry.
+> 
 
-/*
-  * bla
-  * bla
-  */
+The reason for making this optional is to let the administrators
+decide how they want to use the memory in the system. In some
+situations it might be a big no-no to waste memory, in some cases it
+might be acceptable. 
 
-> +	if (c->next_interface_id < ARRAY_SIZE(c->interface))
-> +		c->interface[c->next_interface_id] = NULL;
-> +
->  	return 0;
->  }
-
-WBR, Sergei
-
+-- 
+	Three Cheers,
+	Balbir
