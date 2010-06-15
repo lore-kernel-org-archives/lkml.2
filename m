@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757989Ab0FOOx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 10:53:29 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:33410 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757762Ab0FOOx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 10:53:27 -0400
-Date: Tue, 15 Jun 2010 09:49:34 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Alex Shi <alex.shi@intel.com>, Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [Bug #15713] hackbench regression due to commit 9dfc6e68bfe6e
-In-Reply-To: <YPGdyfWGvNK.A.Y9.U8OFMB@chimera>
-Message-ID: <alpine.DEB.2.00.1006150949100.6625@router.home>
-References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera> <YPGdyfWGvNK.A.Y9.U8OFMB@chimera>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758001Ab0FOOxq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 10:53:46 -0400
+Received: from dtp.xs4all.nl ([80.101.171.8]:50859 "HELO abra2.bitwizard.nl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1757762Ab0FOOxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 10:53:44 -0400
+Date: Tue, 15 Jun 2010 16:53:42 +0200
+From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Alan <alan@clueserver.org>, Jeff Garzik <jeff@garzik.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: Question on siig sata 3 controller
+Message-ID: <20100615145342.GC26989@bitwizard.nl>
+References: <34979.10.6.6.23.1276144792.squirrel@10.6.6.2> <4C10A81F.50801@garzik.org> <54318.10.6.6.23.1276222123.squirrel@10.6.6.2> <20100615065714.GA9034@bitwizard.nl> <20100615110748.4303a106@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100615110748.4303a106@lxorguk.ukuu.org.uk>
+Organization: BitWizard.nl
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This has been addressed by moving the per node information into a
-different cacheline.
+On Tue, Jun 15, 2010 at 11:07:48AM +0100, Alan Cox wrote:
+> > A reboot brings the disks back to life. So in theory, Linux should be
+> > able to restore life into these drives by doing the right magic with
+> > the hardware bits... 
+ 
+> We don't have power control of the drives. If the firmware crashes
+> or a drive flakes out due to power problems or something similar
+> occurs its game over until you hit the switch.
 
-On Sun, 13 Jun 2010, Rafael J. Wysocki wrote:
+The thing is, the power didn't cycle. I just typed "reboot" from a
+remote location. (Yes, in most cases leading up to yesterday's/this
+morning's event I thought I had to powercycle to bring them back, but
+I tried "just the reboot" this morning and it worked!)
 
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.33 and 2.6.34.
->
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-> be listed and let the tracking team know (either way).
->
->
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15713
-> Subject		: hackbench regression due to commit 9dfc6e68bfe6e
-> Submitter	: Alex Shi <alex.shi@intel.com>
-> Date		: 2010-03-25 8:40 (81 days old)
-> First-Bad-Commit: http://git.kernel.org/linus/9dfc6e68bfe6ee452efb1a4e9ca26a9007f2b864
-> Message-ID	: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-> References	: http://marc.info/?l=linux-kernel&m=126950632920682&w=4
-> Handled-By	: Christoph Lameter <cl@linux-foundation.org>
-> 		  Pekka Enberg <penberg@cs.helsinki.fi>
->
->
->
->
+The controller has TWO drives connected. BOTH drives became
+inaccessible at exactly the same point in time. This has happened
+before, with BOTH drives disappearing at the same moment.
+
+The RAID superblocks on BOTH drives had info like: 
+      RAID disk 1/8, raid is up 8/8
+say for disk numbers 1,2. 
+
+All six other drives had
+      RAID disk 4/8, raid is broken 6/8
+say, for disk numbers 0, 3,4,5,6,7
+
+Next time this happens, I'll try removing and reinserting all the sata
+modules (the machine is a file-server. It's NFS-root so it doesn't
+depend on the storage modules for it's root fs.... :-) )
+
+sata_nv                20758  0 
+ahci                   36037  6 
+
+Is one of these modules the driver for this controller? I think it's
+AHCI: lshw says it uses ports cc00 ... and a bunch of others, and
+those ports are claimed by ahci according to /proc/ioports. Ah! I need
+better eyes. lshw already mentions that it's ahci...
+
+> > ata5: hard resetting link
+> > ata5: SATA link up 3.0 Gbps (SStatus 123 SControl 370)
+> 
+> We tried the biggest hammer we had
+
+Not big enough! De BIOS manages a bigger one!
+
+	Roger.
+
+-- 
+** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
+**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
+*-- BitWizard writes Linux device drivers for any device you may have! --*
+Q: It doesn't work. A: Look buddy, doesn't work is an ambiguous statement. 
+Does it sit on the couch all day? Is it unemployed? Please be specific! 
+Define 'it' and what it isn't doing. --------- Adapted from lxrbot FAQ
