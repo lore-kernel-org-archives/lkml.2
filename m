@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab0FOLBK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 07:01:10 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59154 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756154Ab0FOLBI (ORCPT
+	id S1757443Ab0FOLFZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 07:05:25 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:58480 "EHLO poutre.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757426Ab0FOLFX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 07:01:08 -0400
-Date: Tue, 15 Jun 2010 07:01:02 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>,
-       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Chris Mason <chris.mason@oracle.com>,
-       Nick Piggin <npiggin@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
-Message-ID: <20100615110102.GD31051@infradead.org>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
- <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
- <20100614231144.GG6590@dastard>
- <20100614162143.04783749.akpm@linux-foundation.org>
- <20100615003943.GK6590@dastard>
- <4C16D46D.3020302@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C16D46D.3020302@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 15 Jun 2010 07:05:23 -0400
+Date: Tue, 15 Jun 2010 13:05:18 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tejun Heo <tj@kernel.org>, Greg KH <gregkh@suse.de>, mingo@elte.hu,
+       tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, jeff@garzik.org,
+       linux-ide@vger.kernel.org, stern@rowland.harvard.edu
+Subject: Re: [PATCH 12/12] usb: use IRQ watching
+Message-ID: <20100615130518.1a62210a@hyperion.delvare>
+In-Reply-To: <AANLkTilG1KAVOe5DcpLEFAJ-37PQJCgVT-jLZhr1e6tC@mail.gmail.com>
+References: <1276443098-20653-1-git-send-email-tj@kernel.org>
+	<1276443098-20653-13-git-send-email-tj@kernel.org>
+	<20100614214122.GA21064@suse.de>
+	<4C16A48A.2070404@kernel.org>
+	<4C16AAEE.5090204@kernel.org>
+	<AANLkTilG1KAVOe5DcpLEFAJ-37PQJCgVT-jLZhr1e6tC@mail.gmail.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 09:16:29PM -0400, Rik van Riel wrote:
-> >Besides, there really isn't the right context in the block layer to
-> >be able to queue and prioritise large amounts of IO without
-> >significant penalties to some higher layer operation.
+On Tue, 15 Jun 2010 12:30:00 +0200, Kay Sievers wrote:
+> On Tue, Jun 15, 2010 at 00:19, Tejun Heo <tj@kernel.org> wrote:
+> > Hmm... maybe what we can do is generating an uevent when an IRQ is
+> > confirmed to be bad and then let udev notify the user.  That way we'll
+> > probably have better chance of getting bug reports and users have
+> > whiny but working system.
 > 
-> Can we kick flushing for the whole inode at once from
-> vmscan.c?
+> Not really, uevents are not picked up by anything that could report an
+> error to userspace, they are just seen by udev. Also uevents are
+> usually not the proper passing method. They are not meant to ever
+> transport higher frequency events, or structured data. They cause to
+> run the entire udev rule matching machine, and update symlinks and
+> permissions with every event.
+> 
+> We will need some better error reporting facility. On Linux you don't
+> even get notified when the kernel mounts your filesystem read-only
+> because of an error. It will only end up in 'dmesg' as a pretty much
+> undefined bunch of words. :)
+> 
+> We will need some generic error reporting facility, with structured
+> data exported, and where userspace stuff can subscribe to.
+> Uevents/udev can not really properly provide such infrastructure.
+> Maybe that can be extended somehow, but using kobject_uevent() and
+> trigger the usual udev rule engine is not what we are looking for, for
+> sane error reporting.
 
-kswapd really should be a last effort tool to clean filesystem pages.
-If it does enough I/O for this to matter significantly we need to
-fix the VM to move more work to the flusher threads instead of trying
-to fix kswapd.  
+Random idea of the day (I don't know anything about it all): let the
+kernel connect to D-Bus and use it somehow?
 
-> Would it be hard to add a "please flush this file"
-> way to call the filesystem flushing threads?
-
-We already have that API, in Jens' latest tree that's
-sync_inodes_sb/writeback_inodes_sb.  We could also add a non-waiting
-variant if required, but I think the big problem with kswapd is that
-we want to wait on I/O completion under circumstances.
+-- 
+Jean Delvare
