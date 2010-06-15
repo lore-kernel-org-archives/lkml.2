@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227Ab0FOOi3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 10:38:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48093 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757869Ab0FOOi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 10:38:27 -0400
-Message-ID: <4C1787DF.3020102@redhat.com>
-Date: Tue, 15 Jun 2010 10:02:07 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
+	id S1757899Ab0FOOoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 10:44:01 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40516 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753441Ab0FOOn7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 10:43:59 -0400
+Date: Tue, 15 Jun 2010 10:43:42 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 12/12] vmscan: Do not writeback pages in direct reclaim
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-13-git-send-email-mel@csn.ul.ie> <4C16A567.4080000@redhat.com> <20100615114510.GE26788@csn.ul.ie> <4C17815A.8080402@redhat.com> <20100615133727.GA27980@infradead.org>
-In-Reply-To: <20100615133727.GA27980@infradead.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
+ and use a_ops->writepages() where possible
+Message-ID: <20100615144342.GA3339@infradead.org>
+References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+ <20100615140011.GD28052@random.random>
+ <20100615141122.GA27893@infradead.org>
+ <20100615142219.GE28052@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100615142219.GE28052@random.random>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 09:37 AM, Christoph Hellwig wrote:
-> On Tue, Jun 15, 2010 at 09:34:18AM -0400, Rik van Riel wrote:
->> If direct reclaim can overflow the stack, so can direct
->> memcg reclaim.  That means this patch does not solve the
->> stack overflow, while admitting that we do need the
->> ability to get specific pages flushed to disk from the
->> pageout code.
->
-> Can you explain what the hell memcg reclaim is and why it needs
-> to reclaim from random contexts?
+On Tue, Jun 15, 2010 at 04:22:19PM +0200, Andrea Arcangeli wrote:
+> If we were forbidden to call ->writepage just because of stack
+> overflow yes as I don't think it's big deal with memory compaction and
+> I see this as a too limiting design to allow ->writepage only in
+> kernel thread. ->writepage is also called by the pagecache layer,
+> msync etc.. not just by kswapd.
 
-The page fault code will call the cgroup accounting code.
+Other callers of ->writepage are fine because they come from a
+controlled environment with relatively little stack usage.  The problem
+with direct reclaim is that we splice multiple stack hogs ontop of each
+other.
 
-When a cgroup goes over its memory limit, __mem_cgroup_try_charge
-will call mem_cgroup_hierarchical_reclaim, which will then go
-into the page reclaim code.
+Direct reclaim can come from any point that does memory allocations,
+including those that absolutely have to because their stack "quota"
+is almost used up.  Let's look at a worst case scenario:
 
-> It seems everything that has a cg in it's name that I stumbled over
-> lately seems to be some ugly wart..
+We're in a deep stack codepath, say
 
-No argument there.  It took me a few minutes to find the code
-path above :)
+ (1) core_sys_select, which has to kmalloc the array if it doesn't
+     fit on the huge stack variable.  All fine by now, it stays in it's
+     stack quota.
+ (2) That code now calls into the slab allocator, which doesn't find free
+     space in the large slab, and then calls into kmem_getpages, adding
+     more stack usage.
+ (3) That calls into alloc_pages_exact_node which adds stack usage of
+     the page allocator.
+ (4) no free pages in the zone anymore, and direct reclaim is invoked,
+     adding the stack usage of the reclaim code, which currently is
+     quite heavy.
+ (5) direct reclaim calls into foofs ->writepage.  foofs_writepage
+     notices the page is delayed allocated and needs to conver it.
+     It now has to start a transaction, then call the extent management
+     code to convert the extent, which calls into the space managment
+     code, which calls into the buffercache for the metadata buffers,
+     which needs to submit a bio to read/write the metadata.
+ (6) The metadata buffer goes through submit_bio and the block layer
+     code.  Because we're doing a synchronous writeout it gets directly
+     dispatched to the block layer.
+ (7) for extra fun add a few remapping layers for raid or similar to
+     add to the stack usage.
+ (8) The lowlevel block driver is iscsi or something similar, so after
+     going through the scsi layer adding more stack it now goes through
+     the networking layer with tcp and ipv4 (if you're unlucky ipv6)
+     code
+ (9) we finally end up in the lowlevel networking driver (except that we
+     would have long overflown the stack)
 
--- 
-All rights reversed
+And for extrea fun:
+
+(10) Just when we're way down that stack an IRQ comes in on the CPU that
+     we're executing on.  Because we don't enable irqstacks for the only
+     sensible stack configuration (yeah, still bitter about the patch
+     for that getting ignored) it goes on the same stack above.
+
+
+And note that the above does not only happen with ext4/btrfs/xfs that
+have delayed allocations.  With every other filesystem it can also
+happen, just a lot less likely - when writing to a file through shared
+mmaps we still have to call the allocator from ->writepage in
+ext2/ext3/reiserfs/etc.
+
+And seriously, if the VM isn't stopped from calling ->writepage from
+reclaim context we FS people will simply ignore any ->writepage from
+reclaim context.  Been there, done that and never again.
+
+Just wondering, what filesystems do your hugepage testing systems use?
+If it's any of the ext4/btrfs/xfs above you're already seeing the
+filesystem refuse ->writepage from both kswapd and direct reclaim,
+so Mel's series will allow us to reclaim pages from more contexts
+than before.
