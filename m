@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757677Ab0FOLpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 07:45:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1222 "EHLO mx1.redhat.com"
+	id S1757719Ab0FOLpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 07:45:31 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:54427 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752841Ab0FOLpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 07:45:12 -0400
-Message-ID: <4C1767C4.7020506@redhat.com>
-Date: Tue, 15 Jun 2010 14:45:08 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1757702Ab0FOLp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 07:45:28 -0400
+Date: Tue, 15 Jun 2010 12:45:11 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 12/12] vmscan: Do not writeback pages in direct reclaim
+Message-ID: <20100615114510.GE26788@csn.ul.ie>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-13-git-send-email-mel@csn.ul.ie> <4C16A567.4080000@redhat.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 0/6] KVM: MMU: support pte prefetch when intercepted guest
- #PF
-References: <4C16E974.8000304@cn.fujitsu.com>
-In-Reply-To: <4C16E974.8000304@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4C16A567.4080000@redhat.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 05:46 AM, Xiao Guangrong wrote:
-> Hi Avi, Marcelo,
+On Mon, Jun 14, 2010 at 05:55:51PM -0400, Rik van Riel wrote:
+> On 06/14/2010 07:17 AM, Mel Gorman wrote:
 >
-> This patchset support pte prefetch when intercepted guest #PF,
-> the aim is to reduce guest #PF which can be intercepted by VMM.
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index 4856a2a..574e816 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -372,6 +372,12 @@ int write_reclaim_page(struct page *page, struct address_space *mapping,
+>>   	return PAGE_SUCCESS;
+>>   }
+>>
+>> +/* kswapd and memcg can writeback as they are unlikely to overflow stack */
+>> +static inline bool reclaim_can_writeback(struct scan_control *sc)
+>> +{
+>> +	return current_is_kswapd() || sc->mem_cgroup != NULL;
+>> +}
+>> +
 >
-> If we meet any failure in the prefetch path, we will exit it
-> and not try other ptes to avoid become heavy path.
+> I'm not entirely convinced on this bit, but am willing to
+> be convinced by the data.
 >
-> During my performance test, under EPT enabled case, unixbench
-> shows the performance improved ~1.2%,
 
-Once the guest has faulted in all memory, we shouldn't see much 
-improvement, yes?
+Which bit?
 
-> user EPT disable case,
-> unixbench shows the performance improved ~3.6%
->    
-
-I'm a little worried about this.  In some workloads, prefetch can often 
-fail due to gpte.a=0 so we spend effort doing nothing.  There is also 
-the issue of marking pages as accessed or even dirty when in fact the 
-guest did not access them.
-
-We should map those pages with pte.a=pte.d=0 so we don't confuse host 
-memory management.  On EPT (which lacks a/d bits) we can't enable it 
-(but we can on NPT).
+You're not convinced that kswapd should be allowed to write back?
+You're not convinced that memcg should be allowed to write back?
+You're not convinced that direct reclaim writing back pages can overflow
+	the stack?
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
