@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758643Ab0FOSsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 14:48:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8721 "EHLO mx1.redhat.com"
+	id S932260Ab0FOSsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 14:48:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45744 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758436Ab0FOSmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 14:42:05 -0400
+	id S1758439Ab0FOSmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 14:42:07 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 35/38] union-mount: Implement union-aware lchown()
-Date: Tue, 15 Jun 2010 11:40:05 -0700
-Message-Id: <1276627208-17242-36-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 36/38] union-mount: Implement union-aware utimensat()
+Date: Tue, 15 Jun 2010 11:40:06 -0700
+Message-Id: <1276627208-17242-37-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,52 +21,53 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---
- fs/open.c |   23 ++++++++++++++++++++---
- 1 files changed, 20 insertions(+), 3 deletions(-)
+ fs/utimes.c |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 336fe01..b021dcb 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -812,18 +812,35 @@ out:
- SYSCALL_DEFINE3(lchown, const char __user *, filename, uid_t, user, gid_t, group)
- {
- 	struct path path;
-+	struct nameidata nd;
-+	struct vfsmount *mnt;
-+	char *tmp;
- 	int error;
+diff --git a/fs/utimes.c b/fs/utimes.c
+index e4c75db..e83b6bd 100644
+--- a/fs/utimes.c
++++ b/fs/utimes.c
+@@ -8,8 +8,10 @@
+ #include <linux/stat.h>
+ #include <linux/utime.h>
+ #include <linux/syscalls.h>
++#include <linux/slab.h>
+ #include <asm/uaccess.h>
+ #include <asm/unistd.h>
++#include "union.h"
  
--	error = user_lpath(filename, &path);
-+	error = user_path_nd(AT_FDCWD, filename, 0, &nd, &path, &tmp);
- 	if (error)
- 		goto out;
--	error = mnt_want_write(path.mnt);
+ #ifdef __ARCH_WANT_SYS_UTIME
+ 
+@@ -152,18 +154,26 @@ long do_utimes(int dfd, char __user *filename, struct timespec *times, int flags
+ 		error = utimes_common(&file->f_path, times);
+ 		fput(file);
+ 	} else {
++		struct nameidata nd;
++		char *tmp;
+ 		struct path path;
+ 		int lookup_flags = 0;
+ 
+ 		if (!(flags & AT_SYMLINK_NOFOLLOW))
+ 			lookup_flags |= LOOKUP_FOLLOW;
+ 
+-		error = user_path_at(dfd, filename, lookup_flags, &path);
++		error = user_path_nd(dfd, filename, lookup_flags, &nd, &path,
++				     &tmp);
+ 		if (error)
+ 			goto out;
+ 
+-		error = utimes_common(&path, times);
++		error = union_copyup(&nd, &path);
 +
-+	if (IS_DIR_UNIONED(nd.path.dentry))
-+		mnt = nd.path.mnt;
-+	else
-+		mnt = path.mnt;
-+
-+	error = mnt_want_write(mnt);
- 	if (error)
- 		goto out_release;
-+
-+	error = union_copyup(&nd, &path);
-+	if (error)
-+		goto out_drop_write;
-+
- 	error = chown_common(&path, user, group);
--	mnt_drop_write(path.mnt);
-+out_drop_write:
-+	mnt_drop_write(mnt);
- out_release:
- 	path_put(&path);
-+	path_put(&nd.path);
-+	putname(tmp);
++		if (!error)
++			error = utimes_common(&path, times);
+ 		path_put(&path);
++		path_put(&nd.path);
++		putname(tmp);
+ 	}
+ 
  out:
- 	return error;
- }
 -- 
 1.6.3.3
 
