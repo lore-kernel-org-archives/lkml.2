@@ -1,77 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab0FOPp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 11:45:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47167 "EHLO mx1.redhat.com"
+	id S1751882Ab0FOPtL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 11:49:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26654 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751357Ab0FOPpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 11:45:53 -0400
-Date: Tue, 15 Jun 2010 17:45:16 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-Message-ID: <20100615154516.GG28052@random.random>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
- <20100615140011.GD28052@random.random>
- <20100615141122.GA27893@infradead.org>
- <20100615142219.GE28052@random.random>
- <20100615144342.GA3339@infradead.org>
- <20100615150850.GF28052@random.random>
- <20100615152526.GA3468@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100615152526.GA3468@infradead.org>
+	id S1750994Ab0FOPtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 11:49:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,421,1272870000"; 
+   d="scan'208";a="527100894"
+Date: Tue, 15 Jun 2010 16:26:28 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Matti Lammi <mattij.lammi@gmail.com>
+Cc: gregkh@suse.de, ossama.othman@intel.com, randy.dunlap@oracle.com,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: memrar: memrar_handler.c: Fixed whitespace and
+ tab warnings
+Message-ID: <20100615162628.5856d509@linux.intel.com>
+In-Reply-To: <1276584987-9202-1-git-send-email-mattij.lammi@gmail.com>
+References: <1276584987-9202-1-git-send-email-mattij.lammi@gmail.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 11:25:26AM -0400, Christoph Hellwig wrote:
-> hand can happen from context that already is say 4 or 6 kilobytes
-> into stack usage.  And the callchain from kmalloc() into ->writepage
+On Tue, 15 Jun 2010 09:56:27 +0300
+Matti Lammi <mattij.lammi@gmail.com> wrote:
 
-Mel's stack trace of 5k was still not realistic as it doesn't call
-writepage there. I was just asking the 6k example vs msync.
+> Fixed several witespace and tab related warnings and errors reported
+> by the chechpatch.pl tool. This is my second patch. Please, be nice.
+> 
+> Signed-off-by: Matti Lammi <mattij.lammi@gmail.com>
 
-Plus shrink dcache/inodes may also invoke I/O and end up with all
-those hogs.
-
-> I've never seen the stack overflow detector trigger on this, but I've
-> seen lots of real life stack overflows on the mailing lists.  End
-> users don't run with it enabled normally, and most testing workloads
-> don't seem to hit direct reclaim enough to actually trigger this
-> reproducibly.
-
-How do you know it's a stack overflow if it's not the stack overflow
-detector firing before the fact, could be bad ram too, usually?
-
-> Which is a lot more complicated than loading off the page cleaning
-> from direct reclaim to dedicated threads - be that the flusher threads
-> or kswapd.
-
-More complicated for sure. But surely I like that more than vetoing
-->writepage from VM context, especially if it's a fs decision. fs
-shouldn't decide that.
-
-> It allows the system to survive in case direct reclaim is called instead
-> of crashing with a stack overflow.  And at least in my testing the
-> VM seems to cope rather well with not beeing able to write out
-> filesystem pages from direct reclaim.  That doesn't mean that this
-> behaviour can't be further improved on.
-
-Agreed. Surely it seems to work ok for me too, but it may hide VM
-issues, it makes the VM less reliable against potential false positive
-OOM, and it's better if we just teach the VM to switch stack before
-invoking the freeing methods, so it automatically solves dcache/icache
-collection ending up writing data etc...
-
-Then if we don't want to call ->writepage we won't do it for other
-reasons, but we can solve this in a generic and reliable way that
-covers not just ->writepage but all source I/O, including swapout over
-iscsi, vfs etc...
+Acked-by: Alan Cox <alan@linux.intel.com>
