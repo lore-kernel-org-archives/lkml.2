@@ -1,102 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376Ab0FOTyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 15:54:54 -0400
-Received: from lirone.symas.net ([64.71.152.235]:58816 "EHLO lirone.symas.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757835Ab0FOTyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 15:54:53 -0400
-Message-ID: <4C17DA85.40803@symas.com>
-Date: Tue, 15 Jun 2010 12:54:45 -0700
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; rv:1.9.3a5pre) Gecko/20100607 Firefox 3.6
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] tty: Add EXTPROC support for LINEMODE
-References: <E1OObIu-0004K2-3K@lirone.symas.net> <20100615202924.24446d28@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100615202924.24446d28@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1758135Ab0FOUB6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 16:01:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45710 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754474Ab0FOUB4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 16:01:56 -0400
+Date: Tue, 15 Jun 2010 13:01:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Gregory Bean <gbean@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Michael Hennerich <michael.hennerich@analog.com>,
+       Mike Frysinger <vapier@gentoo.org>, David Brown <davidb@codeaurora.org>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Bryan Huntsman <bryanh@codeaurora.org>
+Subject: Re: [PATCH 1/2 v2] gpio: msm7200a: Add gpiolib support for MSM
+ chips.
+Message-Id: <20100615130131.bf20833a.akpm@linux-foundation.org>
+In-Reply-To: <1276301969-31385-2-git-send-email-gbean@codeaurora.org>
+References: <1276301969-31385-1-git-send-email-gbean@codeaurora.org>
+	<1276301969-31385-2-git-send-email-gbean@codeaurora.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
->>       bit set, and the data will be the contents of a struct termios.
->>       This allows the process on the server side of the pty to know
->>       when the state of the terminal has changed, and what the new
->>       state is.
->
-> First problem - the kernel and user idea of struct termios don't match.
+On Fri, 11 Jun 2010 17:19:28 -0700
+Gregory Bean <gbean@codeaurora.org> wrote:
 
-OK, since you mention it again down below I'll respond to this last.
+> Add support for uniprocessor MSM chips whose TLMM/GPIO design
+> is the same as the MSM7200A.
+> This includes, but is not necessarily limited to, the:
+> MSM7200A, MSM7x25, MSM7x27, MSM7x30, QSD8x50, QSD8x50A
+> 
+>
+> ...
+>
+> +static inline unsigned bit(unsigned offset)
+> +{
+> +	BUG_ON(offset >= sizeof(unsigned) * 8);
+> +	return 1U << offset;
+> +}
 
->> diff --git a/arch/alpha/include/asm/termbits.h b/arch/alpha/include/asm/termbits.h
->> index ad854a4..879dd35 100644
->> --- a/arch/alpha/include/asm/termbits.h
->> +++ b/arch/alpha/include/asm/termbits.h
->> @@ -180,6 +180,7 @@ struct ktermios {
->>   #define FLUSHO	0x00800000
->>   #define PENDIN	0x20000000
->>   #define IEXTEN	0x00000400
->> +#define EXTPROC	0x10000000
->
-> For Alpha this value should match OSF if possible.
+Could use bitops.h's BIT(), but it hardly matters.
 
-I'm grubbing around looking for a live Alpha system now, doesn't seem likely 
-that I'll find one. Not sure what needs to match here, it's also unlikely that 
-OSF/1 (or any other SVR4 platform) ever provided a definition for this bit. 
-Looking at the telnet README:
- >>>>
-This is a distribution of both client and server telnet.  These programs
-have been compiled on:
-			telnet	telnetd
-	BSD 4.4		  x	  x
-	BSD 4.3 Reno	  X	  X
-	UNICOS 8.0	  X	  X
-	UNICOS 7.C	  X	  X
-	UNICOS 7.0	  X	  X
-	UNICOS 6.1	  X	  X
-	BSDI 1.0	  X	  X
-	Solaris 2.2       x       x (no linemode in server)
-	Solaris 2.3       x       x (no linemode in server)
-	SunOs 4.1.3	  X	  X (no linemode in server)
-	Ultrix 4.3	  X	  X (no linemode in server)
-	DYNIX V3.0.17.9	  X	  X (no linemode in server)
-	HP-UX 8.0	  x       x (no linemode in server)
-<<<<
+> +/*
+> + * This function assumes that msm_gpio_dev::lock is held.
+> + */
+> +static inline void set_gpio_bit(unsigned n, void __iomem *reg)
+> +{
+> +	writel(readl(reg) | bit(n), reg);
+> +}
+> +
+> +/*
+> + * This function assumes that msm_gpio_dev::lock is held.
+> + */
+> +static inline void clr_gpio_bit(unsigned n, void __iomem *reg)
+> +{
+> +	writel(readl(reg) & ~bit(n), reg);
+> +}
+> +
+> +/*
+> + * This function assumes that msm_gpio_dev::lock is held.
+> + */
+> +static inline void
+> +msm_gpio_write(struct msm_gpio_dev *dev, unsigned n, unsigned on)
+> +{
+> +	if (on)
+> +		set_gpio_bit(n, dev->regs.out);
+> +	else
+> +		clr_gpio_bit(n, dev->regs.out);
+> +}
 
-I doubt that anyone ever ported this feature over to those OSes.
->
->
->> +			if (cs&  TIOCPKT_IOCTL) {
->> +				c = sizeof(struct termios);
->> +				if (c>  nr)
->> +					c = nr;
->> +				copy_to_user(b, tty->link->termios, c);
->> +				nr -= c;
->> +				b += c;
->> +			}
->
-> This is where the wheels come off the bus.
->
-> The kernel use struct ktermios which is what tty->link->termios is
->
-> The C library presents this via struct termios which is a glibc invention
-> dependant on the C library and which is converted by libc from struct
-> termios or struct termios2 depending on your C library
->
-> How you fix that given a broken by design historic Unix interface which
-> pastes arbitary struct termios objects into the data stream is an
-> interesting question - doubly so when like most Unixen we have also have
-> extended terminal attributes as well (termiox)
+Recent gcc's often uninline things whcih were marked inline.  Doesn't
+matter much.
 
-Are you suggesting that this is completely unfixable/unworkable? Would it be 
-sufficient to use kernel_termios_to_user_termios() ?
+>
+> ...
+>
+> +static int gpio_chip_get(struct gpio_chip *chip, unsigned offset)
+> +{
+> +	struct msm_gpio_dev *msm_gpio = TO_MSM_GPIO_DEV(chip);
+> +	unsigned long irq_flags;
+> +	int ret;
+> +
+> +	spin_lock_irqsave(&msm_gpio->lock, irq_flags);
+> +	ret = readl(msm_gpio->regs.in) & bit(offset) ? 1 : 0;
+> +	spin_unlock_irqrestore(&msm_gpio->lock, irq_flags);
+> +
+> +	return ret;
+> +}
 
--- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+The locking here is actually unneeded, I expect.
+
+> +static void gpio_chip_set(struct gpio_chip *chip, unsigned offset, int value)
+> +{
+> +	struct msm_gpio_dev *msm_gpio = TO_MSM_GPIO_DEV(chip);
+> +	unsigned long irq_flags;
+> +
+> +	spin_lock_irqsave(&msm_gpio->lock, irq_flags);
+> +	msm_gpio_write(msm_gpio, offset, value);
+> +	spin_unlock_irqrestore(&msm_gpio->lock, irq_flags);
+> +}
+> +
+> +static int msm_gpio_probe(struct platform_device *dev)
+> +{
+> +	struct msm_gpio_dev *msm_gpio;
+> +	struct msm7200a_gpio_platform_data *pdata =
+> +		(struct msm7200a_gpio_platform_data *)dev->dev.platform_data;
+
+The the typecast of a void* is unneeded and undesirable because it
+defeats typechecking.
+
+> +	int ret;
+> +
+> +	if (!pdata)
+> +		return -EINVAL;
+> +
+> +	msm_gpio = kzalloc(sizeof(struct msm_gpio_dev), GFP_KERNEL);
+> +	if (!msm_gpio)
+> +		return -ENOMEM;
+> +
+> +	spin_lock_init(&msm_gpio->lock);
+> +	platform_set_drvdata(dev, msm_gpio);
+> +	memcpy(&msm_gpio->regs,
+> +	       &pdata->regs,
+> +	       sizeof(struct msm7200a_gpio_regs));
+> +
+> +	msm_gpio->gpio_chip.label            = dev->name;
+> +	msm_gpio->gpio_chip.base             = pdata->gpio_base;
+> +	msm_gpio->gpio_chip.ngpio            = pdata->ngpio;
+> +	msm_gpio->gpio_chip.direction_input  = gpio_chip_direction_input;
+> +	msm_gpio->gpio_chip.direction_output = gpio_chip_direction_output;
+> +	msm_gpio->gpio_chip.get              = gpio_chip_get;
+> +	msm_gpio->gpio_chip.set              = gpio_chip_set;
+> +
+> +	ret = gpiochip_add(&msm_gpio->gpio_chip);
+> +	if (ret < 0)
+> +		goto err_post_malloc;
+> +
+> +	return ret;
+> +err_post_malloc:
+> +	kfree(msm_gpio);
+
+Maybe undo platform_set_drvdata() here?
+
+> +	return ret;
+> +}
+> +
+>
+> ...
+>
+
