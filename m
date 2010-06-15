@@ -1,58 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112Ab0FOToG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 15:44:06 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:47850 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680Ab0FOToE (ORCPT
+	id S1758159Ab0FOTqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 15:46:17 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61035 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752680Ab0FOTqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 15:44:04 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6014"; a="44395267"
-Subject: Re: Overview of concurrency managed workqueue
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-In-Reply-To: <4C17C598.7070303@kernel.org>
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>
-	 <4C17C598.7070303@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Jun 2010 12:43:57 -0700
-Message-ID: <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jun 2010 15:46:15 -0400
+Date: Tue, 15 Jun 2010 15:44:27 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Dave Chinner <david@fromorbit.com>, Nick Piggin <npiggin@suse.de>
+Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
+ and use a_ops->writepages() where possible
+Message-ID: <20100615194427.GL27466@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Christoph Hellwig <hch@infradead.org>,
+	Rik van Riel <riel@redhat.com>,
+	Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+	Nick Piggin <npiggin@suse.de>
+References: <20100615142219.GE28052@random.random>
+ <20100615144342.GA3339@infradead.org>
+ <20100615150850.GF28052@random.random>
+ <20100615152526.GA3468@infradead.org>
+ <20100615154516.GG28052@random.random>
+ <20100615162600.GA9910@infradead.org>
+ <4C17AF2D.2060904@redhat.com>
+ <20100615165423.GA16868@infradead.org>
+ <4C17D0C5.9030203@redhat.com>
+ <20100615191716.GA6778@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100615191716.GA6778@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090205.4C17D82A.0168:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-15 at 20:25 +0200, Tejun Heo wrote:
-> Hello, all.
+On Tue, Jun 15, 2010 at 03:17:16PM -0400, Christoph Hellwig wrote:
+> On Tue, Jun 15, 2010 at 03:13:09PM -0400, Rik van Riel wrote:
+> > Why?   How about because you know the stack is not big enough
+> > to have the XFS call path on it twice? :)
+> > 
+> > Isn't the whole purpose of this patch series to prevent writepage
+> > from being called by the VM, when invoked from a deep callstack
+> > like xfs writepage?
 > 
-> So, here's the overview I wrote up today.  If anything needs more
-> clarification, just ask.  Thanks.
-> 
-> == Overview
-> 
-> There are many cases where an execution context is needed and there
-> already are several mechanisms for them.  The most commonly used one
-> is workqueue and there are slow_work, async and a few other.  Although
-> workqueue has been serving the kernel for quite some time now, it has
-> some limitations.
+> It's not invoked from xfs writepage, but from xfs_file_aio_write via
+> generic_file_buffered_write.  Which isn't actually an all that deep
+> callstack, just en example of one that's alread bad enough to overflow
+> the stack.
 
-I noticed that you removed the RT workqueue since it's no longer used,
-but it's possible that a user can raise the priority of a given work
-queue thread into real time priorities. So with single threaded, and
-multithreaded workqueues specific to certain areas of the kernel the
-user would have a greater ability to control priorities of those areas.
+Keep in mind that both ext4 and btrfs have similar checks in their
+writepage path.  I think Dave Chinner's stack analysis we very clear
+here, there's no room in the stack for any filesystem and direct reclaim
+to live happily together.
 
-It looks like with your patches it would remove that level of
-flexability effectively making all the work item the same priority with
-no ability to raise or lower .. Is that accurate ?
+Circling back to an older thread:
 
-btw, Thanks for the write up.
+> 32)     3184      64   xfs_vm_writepage+0xab/0x160 [xfs]
+> 33)     3120     384   shrink_page_list+0x65e/0x840
+> 34)     2736     528   shrink_zone+0x63f/0xe10
+> 35)     2208     112   do_try_to_free_pages+0xc2/0x3c0
+> 36)     2096     128   try_to_free_pages+0x77/0x80
+> 37)     1968     240   __alloc_pages_nodemask+0x3e4/0x710
+> 35)     2208     112   do_try_to_free_pages+0xc2/0x3c0
+> 36)     2096     128   try_to_free_pages+0x77/0x80
+> 37)     1968     240   __alloc_pages_nodemask+0x3e4/0x710
+> 38)     1728      48   alloc_pages_current+0x8c/0xe0
+> 39)     1680      16   __get_free_pages+0xe/0x50
+> 40)     1664      48   __pollwait+0xca/0x110
+> 41)     1616      32   unix_poll+0x28/0xc0
+> 42)     1584      16   sock_poll+0x1d/0x20
+> 43)     1568     912   do_select+0x3d6/0x700
+> 44)      656     416   core_sys_select+0x18c/0x2c0
+> 45)      240     112   sys_select+0x4f/0x110
+> 46)      128     128   system_call_fastpath+0x16/0x1b
 
-Daniel
+So, before xfs can hand this work off to one of its 16 btrees, push
+it through the hand tuned irix simulator or even think about spreading
+the work across 512 cpus (whoops, I guess that's just btrfs), we've used
+up quite a lot of the stack.
 
+I'm not against direct reclaim, but I think we have to admit that it has
+to be done directly with another stack context.  Handoff to a different
+thread, whatever.
+
+When the reclaim does happen, it would be really nice if ios were done
+in large-ish clusters.  Small ios reclaim less memory in more time and
+slow everything down.
+
+-chris
