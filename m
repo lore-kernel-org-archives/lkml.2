@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756383Ab0FOABa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 20:01:30 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:50286 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751188Ab0FOAB3 (ORCPT
+	id S1756358Ab0FOACf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 20:02:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47421 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972Ab0FOACd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 20:01:29 -0400
-Date: Tue, 15 Jun 2010 10:01:07 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       viro@ZenIV.linux.org.uk, josef@redhat.com, jeffmerkey@gmail.com
-Subject: Re: [PATCH 3/5] fsfreeze: freeze_super and thaw_bdev don't play
- well together
-Message-ID: <20100615000107.GJ6590@dastard>
-References: <1276154395-24766-1-git-send-email-david@fromorbit.com>
- <1276154395-24766-4-git-send-email-david@fromorbit.com>
- <20100614152219.GC32354@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100614152219.GC32354@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 14 Jun 2010 20:02:33 -0400
+Date: Mon, 14 Jun 2010 17:01:22 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>,
+       Haojian Zhuang <haojian.zhuang@marvell.com>,
+       Richard Purdie <rpurdie@rpsys.net>
+Subject: [PATCH] backlight: fix 88pm860x_bl macro collision
+Message-Id: <20100614170122.b44df729.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4C16C308.000C:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 11:22:19AM -0400, Christoph Hellwig wrote:
-> This breaks the "feature" that we can freeze a block device that doesn't
-> have a filesystem mounted yet.  For filesystems using get_sb_bdev that
-> prevents a new filesystem to be mounted on them.
->
-> I'm not sure it's a particularly useful feature, but it's been there
-> since day 1 of the freeze support.  The easiest way to not break it
-> would be to keep the per-sb freeze count only for that case and only
-> check it during mount.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-You mean the per-bdev freeze count, right? So freeze/thaw_bdev would
-have to remain?
+Fix collision with kernel-supplied #define:
 
-Cheers,
+drivers/video/backlight/88pm860x_bl.c:24:1: warning: "CURRENT_MASK" redefined
+arch/x86/include/asm/page_64_types.h:6:1: warning: this is the location of the previous definition
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
+---
+ drivers/video/backlight/88pm860x_bl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- lnx-2634-rc5.orig/drivers/video/backlight/88pm860x_bl.c
++++ lnx-2634-rc5/drivers/video/backlight/88pm860x_bl.c
+@@ -21,7 +21,7 @@
+ #define MAX_BRIGHTNESS		(0xFF)
+ #define MIN_BRIGHTNESS		(0)
+ 
+-#define CURRENT_MASK		(0x1F << 1)
++#define CURRENT_BITMASK		(0x1F << 1)
+ 
+ struct pm860x_backlight_data {
+ 	struct pm860x_chip *chip;
+@@ -85,7 +85,7 @@ static int pm860x_backlight_set(struct b
+ 	if ((data->current_brightness == 0) && brightness) {
+ 		if (data->iset) {
+ 			ret = pm860x_set_bits(data->i2c, wled_idc(data->port),
+-					      CURRENT_MASK, data->iset);
++					      CURRENT_BITMASK, data->iset);
+ 			if (ret < 0)
+ 				goto out;
+ 		}
