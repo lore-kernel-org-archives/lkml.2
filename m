@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757649Ab0FOLuT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 07:50:19 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:32837 "EHLO gir.skynet.ie"
+	id S1757714Ab0FOLwL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 07:52:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:42776 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752626Ab0FOLuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 07:50:17 -0400
-Date: Tue, 15 Jun 2010 12:49:58 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/12] Avoid overflowing of stack during page reclaim V2
-Message-ID: <20100615114958.GG26788@csn.ul.ie>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <20100615090833.12f69ae5.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1752886Ab0FOLwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 07:52:09 -0400
+Message-ID: <4C176968.8070807@suse.cz>
+Date: Tue, 15 Jun 2010 13:52:08 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100615090833.12f69ae5.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, stefani@seibold.net
+Subject: Re: [PATCH] tags: put function prototypes back!
+References: <20100203201816.GA5987@x200> <20100615092230.GA21819@pengutronix.de> <4C174DBB.9000901@suse.cz> <20100615114108.GD21709@pengutronix.de>
+In-Reply-To: <20100615114108.GD21709@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 09:08:33AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Mon, 14 Jun 2010 12:17:41 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On 15.6.2010 13:41, Uwe Kleine-König wrote:
+> On Tue, Jun 15, 2010 at 11:54:03AM +0200, Michal Marek wrote:
+>> On 15.6.2010 11:22, Uwe Kleine-König wrote:
+>>> On Wed, Feb 03, 2010 at 10:18:17PM +0200, Alexey Dobriyan wrote:
+>>>> commit 7db86dc97fb0c47af63e6b965e8ff37126050d25
+>>>> "ctags: usability fix" removed function prototypes from tags file
+>>>> claiming "It makes no real sense to include function prototypes".
+>>>> But it is useful for quickly determining which header file developer
+>>>> needs to include to fix compilation.
+>>>>
+>>>> Now if someone wants to remove forward declatations (which I agree are
+>>>> baggage), write a postprocessing script.
+>>>>
+>>>> Please apply.
+>>>>
+>>>> 	Alexey, who is sick reverting this chunk locally.
+>>>>
+>>>> Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+>>> Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>>
+>> Alexey, can you please resend the patch? I don't see it in the archives
+>> anywhere.
 > 
-> > SysBench
-> > ========
-> >                 traceonly-v2r5  stackreduce-v2r5     nodirect-v2r5
-> >            1 11025.01 ( 0.00%) 10249.52 (-7.57%) 10430.57 (-5.70%)
-> >            2  3844.63 ( 0.00%)  4988.95 (22.94%)  4038.95 ( 4.81%)
-> >            3  3210.23 ( 0.00%)  2918.52 (-9.99%)  3113.38 (-3.11%)
-> >            4  1958.91 ( 0.00%)  1987.69 ( 1.45%)  1808.37 (-8.32%)
-> >            5  2864.92 ( 0.00%)  3126.13 ( 8.36%)  2355.70 (-21.62%)
-> >            6  4831.63 ( 0.00%)  3815.67 (-26.63%)  4164.09 (-16.03%)
-> >            7  3788.37 ( 0.00%)  3140.39 (-20.63%)  3471.36 (-9.13%)
-> >            8  2293.61 ( 0.00%)  1636.87 (-40.12%)  1754.25 (-30.75%)
-> > FTrace Reclaim Statistics
-> >                                      traceonly-v2r5  stackreduce-v2r5     nodirect-v2r5
-> > Direct reclaims                               9843      13398      51651 
-> > Direct reclaim pages scanned                871367    1008709    3080593 
-> > Direct reclaim write async I/O               24883      30699          0 
-> > Direct reclaim write sync I/O                    0          0          0 
+> Gmane supports getting mails by Message-Id:
 > 
-> Hmm, page-scan and reclaims jumps up but...
-> 
+> 	http://mid.gmane.org/20100203201816.GA5987@x200
 
-It could be accounted for by the fact that the direct reclaimers are
-stalled less in direct reclaim. They make more forward progress needing
-more pages so end up scanning more as a result.
+Ah, thanks. I didn't notice that the original mail was from February.
 
-> 
-> > User/Sys Time Running Test (seconds)        734.52    712.39     703.9
-> > Percentage Time Spent Direct Reclaim         0.00%     0.00%     0.00%
-> > Total Elapsed Time (seconds)               9710.02   9589.20   9334.45
-> > Percentage Time kswapd Awake                 0.06%     0.00%     0.00%
-> > 
-> 
-> Execution time is reduced. Does this shows removing "I/O noise" by direct
-> reclaim makes the system happy? or writeback in direct reclaim give
-> us too much costs ?
-> 
-
-I think it's accounted for by just making more forward progress rather than
-IO noise. The throughput results for sysbench are all over the place because
-the disk was maxed so I'm shying away from drawing any conclusions on the
-IO efficiency.
-
-> It seems I'll have to consider about avoiding direct-reciam in memcg, later.
-> 
-> BTW, I think we'll have to add wait-for-pages-to-be-cleaned trick in
-> direct reclaim if we want to avoid too much scanning, later.
-> 
-
-This happens for lumpy reclaim. I didn't think it was justified for
-normal reclaim based on the percentage of dirty pages encountered during
-scanning. If the percentage of dirty pages scanned, we'll need to first
-figure out why that happened and then if stalling when they are
-encountered is the correct thing to do.
-
-> 
-> Thank you for interesting test.
-> 
-
-You're welcome.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Michal
