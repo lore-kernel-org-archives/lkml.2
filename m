@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab0FOSqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 14:46:46 -0400
-Received: from lirone.symas.net ([64.71.152.235]:39346 "EHLO lirone.symas.net"
+	id S1758461Ab0FOSmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 14:42:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20136 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758604Ab0FOSqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 14:46:43 -0400
-Message-ID: <4C17CA8A.1060406@symas.com>
-Date: Tue, 15 Jun 2010 11:46:34 -0700
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; rv:1.9.3a5pre) Gecko/20100607 Firefox 3.6
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 0/2] tty: add EXTPROC support for LINEMODE
-References: <4C120D8A.8050207@symas.com> <87631pq2aj.fsf@basil.nowhere.org> <4C121B4C.2000702@symas.com> <4C12E4B7.4020900@symas.com> <4C17C190.1020000@symas.com> <20100615183501.GA22092@kroah.com>
-In-Reply-To: <20100615183501.GA22092@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758406Ab0FOSmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 14:42:03 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 33/38] union-mount: Implement union-aware truncate()
+Date: Tue, 15 Jun 2010 11:40:03 -0700
+Message-Id: <1276627208-17242-34-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> On Tue, Jun 15, 2010 at 11:08:16AM -0700, Howard Chu wrote:
->> Paraphrased from the 1989 BSD patch by David Borman @ cray.com:
->
-> <snip>
->
-> This is the stuff you need in the 1/2 patch, otherwise it will be lost.
->
-> Does the build break if you don't apply the second patch?  Or is that
-> just needed to hook everything up for all of the arches?  We can't break
-> things inbetween each patch.
->
-> Care to resend?
+---
+ fs/open.c |   24 ++++++++++++++++++++----
+ 1 files changed, 20 insertions(+), 4 deletions(-)
 
-Yeah, since it's not ifdef'd I imagine it will break all of the other arches 
-if applied separately.
-
-And it looks like my mail client butchered the patches so I was going to have 
-to resend anyway. Coming up...
+diff --git a/fs/open.c b/fs/open.c
+index 68c97dd..3c1ae55 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -230,14 +230,17 @@ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
+ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ {
+ 	struct path path;
++	struct nameidata nd;
++	struct vfsmount *mnt;
+ 	struct inode *inode;
++	char *tmp;
+ 	int error;
+ 
+ 	error = -EINVAL;
+ 	if (length < 0)	/* sorry, but loff_t says... */
+ 		goto out;
+ 
+-	error = user_path(pathname, &path);
++	error = user_path_nd(AT_FDCWD, pathname, 0, &nd, &path, &tmp);
+ 	if (error)
+ 		goto out;
+ 	inode = path.dentry->d_inode;
+@@ -251,11 +254,16 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ 	if (!S_ISREG(inode->i_mode))
+ 		goto dput_and_out;
+ 
+-	error = mnt_want_write(path.mnt);
++	if (IS_DIR_UNIONED(nd.path.dentry))
++		mnt = nd.path.mnt;
++	else
++		mnt = path.mnt;
++
++	error = mnt_want_write(mnt);
+ 	if (error)
+ 		goto dput_and_out;
+ 
+-	error = inode_permission(inode, MAY_WRITE);
++	error = path_permission(&path, &nd.path, MAY_WRITE);
+ 	if (error)
+ 		goto mnt_drop_write_and_out;
+ 
+@@ -263,6 +271,12 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ 	if (IS_APPEND(inode))
+ 		goto mnt_drop_write_and_out;
+ 
++	error = union_copyup_len(&nd, &path, length);
++	if (error)
++		goto mnt_drop_write_and_out;
++
++	/* path may have changed after copyup */
++	inode = path.dentry->d_inode;
+ 	error = get_write_access(inode);
+ 	if (error)
+ 		goto mnt_drop_write_and_out;
+@@ -284,9 +298,11 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
+ put_write_and_out:
+ 	put_write_access(inode);
+ mnt_drop_write_and_out:
+-	mnt_drop_write(path.mnt);
++	mnt_drop_write(mnt);
+ dput_and_out:
+ 	path_put(&path);
++	path_put(&nd.path);
++	putname(tmp);
+ out:
+ 	return error;
+ }
 -- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+1.6.3.3
+
