@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757126Ab0FOOwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 10:52:46 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38556 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757762Ab0FOOwp convert rfc822-to-8bit (ORCPT
+	id S1757989Ab0FOOx3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 10:53:29 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:33410 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757762Ab0FOOx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 10:52:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Z5r+dP96+SprDw6aOe8o5dE0xEf+ywrASnhDZHZjGqioS0FGEz0svPFODct4Dm+VDK
-         8lyLsZLEHQT1kkEZp0CW5+xOfSyB3b9MWovSwzOP5iciwVkkrpSnD003T3LjAAaLcqgk
-         xGftgkcbm3+DbEpXJZfs0NfLz2rVCaHGNh3Y4=
+	Tue, 15 Jun 2010 10:53:27 -0400
+Date: Tue, 15 Jun 2010 09:49:34 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Alex Shi <alex.shi@intel.com>, Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [Bug #15713] hackbench regression due to commit 9dfc6e68bfe6e
+In-Reply-To: <YPGdyfWGvNK.A.Y9.U8OFMB@chimera>
+Message-ID: <alpine.DEB.2.00.1006150949100.6625@router.home>
+References: <g77CuMUl7QI.A.5wF.V5OFMB@chimera> <YPGdyfWGvNK.A.Y9.U8OFMB@chimera>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimp4_TaQuGPlnw9ZpQCoTiTeFxtWQeZgfsdUBnK@mail.gmail.com>
-References: <AANLkTimnqVSom2qHetXMBPiCNTYd-yc8Tl6a64n0zTSk@mail.gmail.com>
-	<20100614162002.GA13902@kroah.com>
-	<AANLkTinwaYy5Z528PraVuWUsU2pJBLoq0c2hgIGirTNn@mail.gmail.com>
-	<4C16BFF5.7070308@gmail.com>
-	<AANLkTimp4_TaQuGPlnw9ZpQCoTiTeFxtWQeZgfsdUBnK@mail.gmail.com>
-Date: Tue, 15 Jun 2010 08:52:44 -0600
-Message-ID: <AANLkTimOvFsGZU6Brd-VjzBQGCoP7pgM1rO0wLrZjZZW@mail.gmail.com>
-Subject: Re: e-SATA ExpressCard - OOPS plus incrementing "ataX" on 
-	Linux-2.6.xx
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Jeff Garzik <jgarzik@redhat.com>, Greg KH <greg@kroah.com>,
-       kristen.c.accardi@intel.com, Dely Sy <dely.l.sy@intel.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Wilcox <willy@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 6:08 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
-> On Tue, Jun 15, 2010 at 7:49 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
->
->> The ataX number incrementing is normal (it always increments when an ATA
->> host is initialized, it doesn't appear the numbers get reused). The other
->> messages are the expected result when you surprise-remove the card. I think
->> there should be a way to trigger the hotplug code to disable the device
->> before you eject it, but I'm not sure what that is supposed to be - maybe
->> echo 1 to /sys/device/pci_somethingorother/remove ?
->
-> Robert,
->
-> Thanks for the pointer. I found this "remove" is in
-> /sys/bus/pci/devices/0000:05:00.0/remove
->
-> # echo 1 >/sys/bus/pci/devices/0000:05:00.0/remove
->
-> ata14.00: disabled
-> sd 17:0:0:0: [sdb] Synchronizing SCSI cache
-> sd 17:0:0:0: [sdb] Result: hostbyte=0x04 driverbyte=0x00
-> sd 17:0:0:0: [sdb] Stopping disk
-> sd 17:0:0:0: [sdb] START_STOP FAILED
-> sd 17:0:0:0: [sdb] Result: hostbyte=0x04 driverbyte=0x00
-> ahci 0000:05:00.0: PCI INT A disabled
->
->
-> It's getter better. Next is to really shutdown the "sdb" hard disk. Is
-> that possible? Would be nice to make the "sd 17:0:0:0: [sdb]
-> START_STOP FAILED" go away gracefully. Any command to do that?
+This has been addressed by moving the per node information into a
+different cacheline.
 
-Try echoing 1 to the file for the SCSI disk's "delete" file, something
-like: /sys/devices/pci0000:00/0000:00:1f.2/host0/target0:0:0/0:0:0:0/delete
+On Sun, 13 Jun 2010, Rafael J. Wysocki wrote:
 
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.33 and 2.6.34.
+>
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
+> be listed and let the tracking team know (either way).
 >
 >
-> On Tue, Jun 15, 2010 at 9:26 AM, Jeff Garzik <jeff@garzik.org> wrote:
->
->> The incrementing of ataX is unrelated to anything else...  Each "new" ata interface gets a new id.
->
-> Jeff,
->
-> With the "remove" command working, it'll be nice to make "ahci"
-> _reuse_ the interface now that it's removed cleanly. I'm just afaid
-> that each time the card is removed and reinserted, the ataXX interface
-> kept incrementing and will eventually does harm to the kernel?
-
-I don't think so, it's just a number used to associate debug output
-for the device. I suppose if you did it 2 billion times it might wrap
-negative but even that would just be cosmetic..
-
->
->
->> "failed to stop engine" is where the driver is attempting to talk to the card, and gracefully shut things down.  > If the card does not exist (ie. has been removed/ejected), then this is normal behavior.
->
-> Ok, that's fixed with "echo 1 >/sys/bus/pci/devices/0000:05:00.0/remove".
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15713
+> Subject		: hackbench regression due to commit 9dfc6e68bfe6e
+> Submitter	: Alex Shi <alex.shi@intel.com>
+> Date		: 2010-03-25 8:40 (81 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/9dfc6e68bfe6ee452efb1a4e9ca26a9007f2b864
+> Message-ID	: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
+> References	: http://marc.info/?l=linux-kernel&m=126950632920682&w=4
+> Handled-By	: Christoph Lameter <cl@linux-foundation.org>
+> 		  Pekka Enberg <penberg@cs.helsinki.fi>
 >
 >
 >
-> Thanks,
-> Jeff
 >
