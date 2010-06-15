@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab0FOKZL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 06:25:11 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:49152 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab0FOKZJ (ORCPT
+	id S1757291Ab0FOKgq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 06:36:46 -0400
+Received: from mail-yw0-f204.google.com ([209.85.211.204]:55564 "EHLO
+	mail-yw0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab0FOKgo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 06:25:09 -0400
-Date: Tue, 15 Jun 2010 19:25:08 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
-In-reply-to: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com>
-To: "'Linus Walleij'" <linus.walleij@stericsson.com>,
-       "'Dan Williams'" <dan.j.williams@intel.com>,
-       linux-arm-kernel@lists.infradead.org, yuanyabin1978@sina.com
-Cc: linux-kernel@vger.kernel.org, "'Peter Pearse'" <peter.pearse@arm.com>,
-       "'Ben Dooks'" <ben-linux@fluff.org>,
-       "'Alessandro Rubini'" <rubini@unipv.it>,
-       "'Viresh Kumar'" <viresh.kumar@st.com>
-Message-id: <002001cb0c75$0a54fd00$1efef700$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcsJerGS60KZNHBaQpy2FN83jWiN2QC+W8rw
-References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com>
+	Tue, 15 Jun 2010 06:36:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <4C16AAEE.5090204@kernel.org>
+References: <1276443098-20653-1-git-send-email-tj@kernel.org> 
+	<1276443098-20653-13-git-send-email-tj@kernel.org> <20100614214122.GA21064@suse.de> 
+	<4C16A48A.2070404@kernel.org> <4C16AAEE.5090204@kernel.org>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Tue, 15 Jun 2010 12:30:00 +0200
+Message-ID: <AANLkTilG1KAVOe5DcpLEFAJ-37PQJCgVT-jLZhr1e6tC@mail.gmail.com>
+Subject: Re: [PATCH 12/12] usb: use IRQ watching
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg KH <gregkh@suse.de>, mingo@elte.hu, tglx@linutronix.de,
+       bphilips@suse.de, yinghai@kernel.org, akpm@linux-foundation.org,
+       torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, linux-ide@vger.kernel.org, stern@rowland.harvard.edu,
+       khali@linux-fr.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote:
-> 
-> This creates a DMAengine driver for the ARM PL080/PL081 PrimeCells
-> based on the implementation earlier submitted by Peter Pearse.
-> This is working like a charm for memcpy on the PB11MPCore, but
-> slave DMA to devices is still not working.
-> 
-> This DMA controller is used in mostly unmodified form in the ARM
-> RealView and Versatile platforms, in the ST-Ericsson Nomadik, and
-> in the ST SPEAr platform.
-> 
-> It has been converted to use the header from the Samsung PL080
-> derivate instead of its own defintions, and can potentially support
-> several controllers in the same system.
-> 
-> Cc: Peter Pearse <peter.pearse@arm.com>
-> Cc: Ben Dooks <ben-linux@fluff.org>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
+On Tue, Jun 15, 2010 at 00:19, Tejun Heo <tj@kernel.org> wrote:
+> On 06/14/2010 11:52 PM, Tejun Heo wrote:
+>> On 06/14/2010 11:41 PM, Greg KH wrote:
+>>> So if there's a routing problem, it turns into a polled interrupt?  Do
+>>> we really want that?
+>>
+>> Oh yeah, I really want that for libata.  Routing is only part of the
+>> problem and flaky IRQ is something we have to learn to cope with.
+>>
+>>> I wonder how long people will run without realizing that there are
+>>> problems with their system if their devices still work.
+>>
+>> I think things would be better this way.  If the drives (both cd and
+>> hard) / input devices are not accessible, most people would simply
+>> give up rather than reporting, and many cases are transient problems
+>> which happen only once in the blue moon.
+>>
+>> It would be great if some kind of automatic reporting can be used
+>> (similar to kerneloops?).  Hmm... maybe make the warnings scarier?
+>
+> Hmm... maybe what we can do is generating an uevent when an IRQ is
+> confirmed to be bad and then let udev notify the user.  That way we'll
+> probably have better chance of getting bug reports and users have
+> whiny but working system.
 
-Looks good, but please give me some time to test on the board(SMDK6410).
-If any problem, let you know. Of course no problem, will ack.
+Not really, uevents are not picked up by anything that could report an
+error to userspace, they are just seen by udev. Also uevents are
+usually not the proper passing method. They are not meant to ever
+transport higher frequency events, or structured data. They cause to
+run the entire udev rule matching machine, and update symlinks and
+permissions with every event.
 
-> Cc: Alessandro Rubini <rubini@unipv.it>
-> Cc: Viresh Kumar <viresh.kumar@st.com>
-> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
-> ---
->  arch/arm/include/asm/hardware/pl080.h |    2 +
->  drivers/dma/Kconfig                   |    9 +
->  drivers/dma/Makefile                  |    1 +
->  drivers/dma/amba-pl08x.c              | 1925
-> +++++++++++++++++++++++++++++++++
->  include/linux/amba/pl08x.h            |  173 +++
->  5 files changed, 2110 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/dma/amba-pl08x.c
->  create mode 100644 include/linux/amba/pl08x.h
-> 
-(snip)
+We will need some better error reporting facility. On Linux you don't
+even get notified when the kernel mounts your filesystem read-only
+because of an error. It will only end up in 'dmesg' as a pretty much
+undefined bunch of words. :)
 
-Thanks.
+We will need some generic error reporting facility, with structured
+data exported, and where userspace stuff can subscribe to.
+Uevents/udev can not really properly provide such infrastructure.
+Maybe that can be extended somehow, but using kobject_uevent() and
+trigger the usual udev rule engine is not what we are looking for, for
+sane error reporting.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+Kay
