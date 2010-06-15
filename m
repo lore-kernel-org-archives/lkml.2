@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab0FOOW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 10:22:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53633 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757812Ab0FOOWZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 10:22:25 -0400
-Date: Tue, 15 Jun 2010 07:24:35 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] avoid using smp_processor_id() in preemptible code
- (nr_iowait_cpu)
-Message-ID: <20100615072435.5a47d850@infradead.org>
-In-Reply-To: <20100615061927.GA3312@swordfish>
-References: <20100613203352.GA3577@swordfish>
-	<1276461183.2659.4.camel@maxim-laptop>
-	<201006140136.18652.rjw@sisk.pl>
-	<20100614140941.GA3581@swordfish.minsk.epam.com>
-	<20100614073853.6fa2f91f@infradead.org>
-	<20100614145439.GA3448@swordfish.minsk.epam.com>
-	<20100614080154.7d6a71fc@infradead.org>
-	<20100614151735.GB3448@swordfish.minsk.epam.com>
-	<20100614204021.52c50cdc@infradead.org>
-	<20100615061927.GA3312@swordfish>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S932163Ab0FOOW5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 10:22:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52846 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757820Ab0FOOW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 10:22:56 -0400
+Date: Tue, 15 Jun 2010 16:22:19 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
+ and use a_ops->writepages() where possible
+Message-ID: <20100615142219.GE28052@random.random>
+References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+ <20100615140011.GD28052@random.random>
+ <20100615141122.GA27893@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100615141122.GA27893@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jun 2010 09:19:27 +0300
-Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 1d7b9bc..101e8aa 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -159,10 +159,12 @@ update_ts_time_stats(struct tick_sched *ts,
-> ktime_t now, u64 *last_update_time) ktime_t delta;
->  
->  	if (ts->idle_active) {
-> +		int cpu = get_cpu();
->  		delta = ktime_sub(now, ts->idle_entrytime);
->  		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime,
-> delta);
-> -		if (nr_iowait_cpu() > 0)
-> +		if (nr_iowait_cpu(cpu) > 0)
->  			ts->iowait_sleeptime =
-> ktime_add(ts->iowait_sleeptime, delta);
-> +		put_cpu();
->  		ts->idle_entrytime = now;
->  	}
+On Tue, Jun 15, 2010 at 10:11:22AM -0400, Christoph Hellwig wrote:
+> On Tue, Jun 15, 2010 at 04:00:11PM +0200, Andrea Arcangeli wrote:
+> > collecting clean cache doesn't still satisfy the allocation), during
+> > allocations in direct reclaim and increase the THREAD_SIZE than doing
+> > this purely for stack reasons as the VM will lose reliability if we
+> 
+> This basically means doubling the stack size, as you can splice together
+> two extremtly stack hungry codepathes in the worst case.  Do you really
+> want order 2 stack allocations?
 
+If we were forbidden to call ->writepage just because of stack
+overflow yes as I don't think it's big deal with memory compaction and
+I see this as a too limiting design to allow ->writepage only in
+kernel thread. ->writepage is also called by the pagecache layer,
+msync etc.. not just by kswapd.
 
-hmm this part is wrong
-you pick the current cpu, rather than the one denoted by ts.....
+But let's defer this after we have any resemblance of hard numbers of
+worst-case stack usage measured during the aforementioned workload, I
+didn't read all the details as I'm quite against this design, but I
+didn't see any stack usage number or any sign of stack-overflow debug
+triggering. I'd suggest to measure the max stack usage first and worry
+later.
 
-they will normally be the same, except for the case where you get your
-warning...
-(and this is also why you can't move the get_cpu() inside
-nr_iowait_cpu() ... )
+And if ->writepage is a stack hog in some fs, I'd rather see
+->writepage made less stack hungry (with proper warning at runtime
+with debug option enabled) than vetoed. The VM itself shouldn't be a
+stack hog already. I don't see a particular reason why writepage
+should be so stuck hungry compared to the rest of the kernel, it just
+have to do I/O, if it requires complex data structure it should
+kmalloc those and stay light on stack as everybody else.
 
->  
-
-
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+And if something I'm worried more about slab shrink than ->writepage
+as that enters the vfs layer and then the lowlevel fs to collect the
+dentry, inode etc...
