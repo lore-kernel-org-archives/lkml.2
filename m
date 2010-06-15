@@ -1,64 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab0FOOW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 10:22:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52846 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757820Ab0FOOW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 10:22:56 -0400
-Date: Tue, 15 Jun 2010 16:22:19 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-Message-ID: <20100615142219.GE28052@random.random>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
- <20100615140011.GD28052@random.random>
- <20100615141122.GA27893@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100615141122.GA27893@infradead.org>
+	id S1757872Ab0FOOZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 10:25:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42129 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753307Ab0FOOZs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 10:25:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=lIMvsgyVJYyBvfVCa1zViz7A8YPQ4NLvvz/fVCsgkV7PnpKrbZ0gVfh1WcqvJUjGqZ
+         SULJeiTKCOEP6u7Z1vy2txVWL6NoI45CbdgdWLCgrFt/XxEJttBRAJly+OAIhEjXOaox
+         qjF9QJg3kfgjM+N0jR3Fr1TBeiyV3misDVPqI=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org
+Subject: [PATCH] staging: don't use custom hex_to_bin() implementation
+Date: Tue, 15 Jun 2010 17:25:38 +0300
+Message-Id: <1276611938-28464-1-git-send-email-andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 10:11:22AM -0400, Christoph Hellwig wrote:
-> On Tue, Jun 15, 2010 at 04:00:11PM +0200, Andrea Arcangeli wrote:
-> > collecting clean cache doesn't still satisfy the allocation), during
-> > allocations in direct reclaim and increase the THREAD_SIZE than doing
-> > this purely for stack reasons as the VM will lose reliability if we
-> 
-> This basically means doubling the stack size, as you can splice together
-> two extremtly stack hungry codepathes in the worst case.  Do you really
-> want order 2 stack allocations?
+From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
 
-If we were forbidden to call ->writepage just because of stack
-overflow yes as I don't think it's big deal with memory compaction and
-I see this as a too limiting design to allow ->writepage only in
-kernel thread. ->writepage is also called by the pagecache layer,
-msync etc.. not just by kswapd.
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org
+---
+ drivers/staging/comedi/drivers/jr3_pci.c |   17 +++++++++--------
+ drivers/staging/rtl8192su/r8192S_Efuse.c |   19 +------------------
+ 2 files changed, 10 insertions(+), 26 deletions(-)
 
-But let's defer this after we have any resemblance of hard numbers of
-worst-case stack usage measured during the aforementioned workload, I
-didn't read all the details as I'm quite against this design, but I
-didn't see any stack usage number or any sign of stack-overflow debug
-triggering. I'd suggest to measure the max stack usage first and worry
-later.
+diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
+index d330b18..51f4c5c 100644
+--- a/drivers/staging/comedi/drivers/jr3_pci.c
++++ b/drivers/staging/comedi/drivers/jr3_pci.c
+@@ -48,6 +48,7 @@ Devices: [JR3] PCI force sensor board (jr3_pci)
+ #include <linux/jiffies.h>
+ #include <linux/slab.h>
+ #include <linux/timer.h>
++#include <linux/kernel.h>
+ #include "comedi_pci.h"
+ #include "jr3_pci.h"
+ 
+@@ -399,14 +400,14 @@ int read_idm_word(const u8 * data, size_t size, int *pos, unsigned int *val)
+ 		}
+ 		/*  Collect value */
+ 		*val = 0;
+-		for (; *pos < size && isxdigit(data[*pos]); (*pos)++) {
+-			char ch = tolower(data[*pos]);
+-			result = 1;
+-			if ('0' <= ch && ch <= '9') {
+-				*val = (*val << 4) + (ch - '0');
+-			} else if ('a' <= ch && ch <= 'f') {
+-				*val = (*val << 4) + (ch - 'a' + 10);
+-			}
++		for (; *pos < size; (*pos)++) {
++			int value;
++			value = hex_to_bin(data[*pos]);
++			if (value >= 0) {
++				result = 1;
++				*val = (*val << 4) + value;
++			} else
++				break;
+ 		}
+ 	}
+ 	return result;
+diff --git a/drivers/staging/rtl8192su/r8192S_Efuse.c b/drivers/staging/rtl8192su/r8192S_Efuse.c
+index f0ce656..1e1d55e 100644
+--- a/drivers/staging/rtl8192su/r8192S_Efuse.c
++++ b/drivers/staging/rtl8192su/r8192S_Efuse.c
+@@ -1848,22 +1848,6 @@ bool IsHexDigit(	char chTmp)
+ 	}
+ }
+ 
+-//
+-//	Description:
+-//		Translate a character to hex digit.
+-//
+-u32 MapCharToHexDigit(char chTmp)
+-{
+-	if(chTmp >= '0' && chTmp <= '9')
+-		return (chTmp - '0');
+-	else if(chTmp >= 'a' && chTmp <= 'f')
+-		return (10 + (chTmp - 'a'));
+-	else if(chTmp >= 'A' && chTmp <= 'F')
+-		return (10 + (chTmp - 'A'));
+-	else
+-		return 0;
+-}
+-
+ /*-----------------------------------------------------------------------------
+  * Function:	efuse_ParsingMap
+  *
+@@ -1917,8 +1901,7 @@ efuse_ParsingMap(char* szStr,u32* pu4bVal,u32* pu4bMove)
+ 	// Parse each digit.
+ 	do
+ 	{
+-		(*pu4bVal) <<= 4;
+-		*pu4bVal += MapCharToHexDigit(*szScan);
++		*pu4bVal = (*pu4bVal << 4) + hex_to_bin(*szScan);
+ 
+ 		szScan++;
+ 		(*pu4bMove)++;
+-- 
+1.6.6.1
 
-And if ->writepage is a stack hog in some fs, I'd rather see
-->writepage made less stack hungry (with proper warning at runtime
-with debug option enabled) than vetoed. The VM itself shouldn't be a
-stack hog already. I don't see a particular reason why writepage
-should be so stuck hungry compared to the rest of the kernel, it just
-have to do I/O, if it requires complex data structure it should
-kmalloc those and stay light on stack as everybody else.
-
-And if something I'm worried more about slab shrink than ->writepage
-as that enters the vfs layer and then the lowlevel fs to collect the
-dentry, inode etc...
