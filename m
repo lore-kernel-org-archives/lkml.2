@@ -1,121 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab0FOGhp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 02:37:45 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:57330 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750874Ab0FOGhn (ORCPT
+	id S1752856Ab0FOGo2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 02:44:28 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:60109 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab0FOGo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 02:37:43 -0400
-Date: Tue, 15 Jun 2010 16:36:43 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
-Message-ID: <20100615063643.GS6590@dastard>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
- <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
- <20100614231144.GG6590@dastard>
- <20100614162143.04783749.akpm@linux-foundation.org>
- <20100615003943.GK6590@dastard>
- <20100614183957.ad0cdb58.akpm@linux-foundation.org>
- <20100615032034.GR6590@dastard>
- <20100614211515.dd9880dc.akpm@linux-foundation.org>
+	Tue, 15 Jun 2010 02:44:27 -0400
+Date: Tue, 15 Jun 2010 08:44:19 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Nils Carlson <nils.carlson@ludd.ltu.se>, Ingo Molnar <mingo@elte.hu>,
+       Borislav Petkov <bp@amd64.org>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       "Young, Brent" <brent.young@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "bluesmoke-devel@lists.sourceforge.net" 
+	<bluesmoke-devel@lists.sourceforge.net>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Joe Perches <joe@perches.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+       Ingo Molnar <mingo@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>
+Subject: Re: Hardware Error Kernel Mini-Summit
+Message-ID: <20100615064419.GA6727@basil.fritz.box>
+References: <m1k4r0c0y7.fsf@fess.ebiederm.org> <20100518222832.GJ22675@basil.fritz.box> <m1wrv0zo9q.fsf@fess.ebiederm.org> <20100519064619.GA30320@aftab> <20100519070919.GA9618@elte.hu> <50689ECC-A371-4923-BEBE-1A5A7E5B9D3B@ludd.ltu.se> <20100614114906.GG17092@basil.fritz.box> <m14oh59y58.fsf@fess.ebiederm.org> <20100614203611.GE369@basil.fritz.box> <AANLkTil_mDFOsDUjvnp_NFZvkj0Ij-qww6BqewJ4lpHP@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100614211515.dd9880dc.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTil_mDFOsDUjvnp_NFZvkj0Ij-qww6BqewJ4lpHP@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 09:15:15PM -0700, Andrew Morton wrote:
-> On Tue, 15 Jun 2010 13:20:34 +1000 Dave Chinner <david@fromorbit.com> wrote:
-> 
-> > On Mon, Jun 14, 2010 at 06:39:57PM -0700, Andrew Morton wrote:
-> > > On Tue, 15 Jun 2010 10:39:43 +1000 Dave Chinner <david@fromorbit.com> wrote:
-> > > 
-> > > > 
-> > > > IOWs, IMO anywhere there is a context with significant queue of IO,
-> > > > that's where we should be doing a better job of sorting before that
-> > > > IO is dispatched to the lower layers. This is still no guarantee of
-> > > > better IO (e.g. if the filesystem fragments the file) but it does
-> > > > give the lower layers a far better chance at optimal allocation and
-> > > > scheduling of IO...
-> > > 
-> > > None of what you said had much to do with what I said.
-> > > 
-> > > What you've described are implementation problems in the current block
-> > > layer because it conflates "sorting" with "queueing".  I'm saying "fix
-> > > that".
-> > 
-> > You can't sort until you've queued.
-> 
-> Yes you can.  That's exactly what you're recommending!
+> There was a case mentioned at the collaboration summit
+> meeting where a BIOS bug mis-reported whether ECC was
+> enabled - claiming it was on, when in fact it was off.
 
-Umm, I suggested sorting a queue dirty pages that was build by
-reclaim before dispatching them. How does that translate to
-me recommending "sort before queuing"?
+Yes I heard about that, but since it's not a single bit setting
+there are lots of different ways it could be broken in theory.
 
-> Only you're
-> recommending doing it at the wrong level.
+To check it you really need to have a tool that knows about
+all the registers and checks them all.
 
-If you feed a filesystem garbage IO, you'll get garbage performance
-and there's nothing that a block layer sort queue can do to fix the
-damage it does to both performance and filesystem fragmentation
-levels. It's not just about IO issue - delayed allocation pretty
-much requires writeback to be issuing well formed IOs to reap the
-benefits it can provide....
+It's a bit like checking if someone speaks a foreign language
+by asking them a single question with a one letter answer.
 
-> > > And...  sorting at the block layer will always be superior to sorting
-> > > at the pagecache layer because the block layer sorts at the physical
-> > > block level and can handle not-well-laid-out files and can sort and merge
-> > > pages from different address_spaces.
-> > 
-> > Yes it, can do that. And it still does that even if the higher
-> > layers sort their I/O dispatch better,
-> > 
-> > Filesystems try very hard to allocate adjacent logical offsets in a
-> > file in adjacent physical blocks on disk - that's the whole point of
-> > extent-indexed filesystems. Hence with modern filesystems there is
-> > generally a direct correlation between the page {mapping,index}
-> > tuple and the physical location of the mapped block.
-> > 
-> > i.e. there is generally zero physical correlation between pages in
-> > different mappings, but there is a high physical correlation
-> > between the index of pages on the same mapping.
-> 
-> Nope.  Large-number-of-small-files is a pretty common case.  If the fs
-> doesn't handle that well (ie: by placing them nearby on disk), it's
-> borked.
+> of the chipset specific code against each other. An EDAC
+> driver that tells you that ECC is enabled might be lying too,
+> if it is looking at the wrong bit or the wrong register.
 
-Filesystems already handle this case just fine as we see it from
-writeback all the time. Untarring a kernel is a good example of
-this...
+Yep.
 
-I suggested sorting all the IO to be issued into per-mapping page
-groups because:
-	a) makes IO issued from reclaim look almost exactly the same
-	   to the filesytem as if writeback is pushing out the IO.
-	b) it looks to be a trivial addition to the new code.
+It's asking a question with a one word answer where you don't
+know the correct answer.
 
-To me that's a no-brainer.
+-Andi
 
-> It would be interesting to code up a little test patch though, see if
-> there's benefit to be had going down this path.
-
-I doubt Mel's tests cases will show anything - they simply didn't
-show enough IO issued from reclaim to make any difference.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+ak@linux.intel.com -- Speaking for myself only.
