@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab0FOBgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 21:36:04 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55541 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755493Ab0FOBgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 21:36:01 -0400
-Message-ID: <4C16D829.6020500@cn.fujitsu.com>
-Date: Tue, 15 Jun 2010 09:32:25 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 7/7] KVM: MMU: don't walk every parent pages while mark
- unsync
-References: <4C1239EE.3090904@cn.fujitsu.com> <4C123B93.7060803@cn.fujitsu.com> <20100614220708.GA8658@amt.cnet>
-In-Reply-To: <20100614220708.GA8658@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
+	id S1755952Ab0FOBlc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 21:41:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36925 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755332Ab0FOBlb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 21:41:31 -0400
+Date: Mon, 14 Jun 2010 18:39:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
+Message-Id: <20100614183957.ad0cdb58.akpm@linux-foundation.org>
+In-Reply-To: <20100615003943.GK6590@dastard>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
+	<1276514273-27693-12-git-send-email-mel@csn.ul.ie>
+	<20100614231144.GG6590@dastard>
+	<20100614162143.04783749.akpm@linux-foundation.org>
+	<20100615003943.GK6590@dastard>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 15 Jun 2010 10:39:43 +1000 Dave Chinner <david@fromorbit.com> wrote:
 
-
-Marcelo Tosatti wrote:
-
->> -	if (!sp->multimapped) {
->> -		kvm_mmu_update_unsync_bitmap(sp->parent_pte);
->> +	if (sp->unsync_children++)
->>  		return;
+> On Mon, Jun 14, 2010 at 04:21:43PM -0700, Andrew Morton wrote:
+> > On Tue, 15 Jun 2010 09:11:44 +1000
+> > > 10-15% reduction in seeks on simple kernel compile workloads. This
+> > > shows that if we optimise IO patterns at higher layers where the
+> > > sort window is much, much larger than in the IO scheduler, then
+> > > overall system performance improves....
+> > 
+> > Yup.
+> > 
+> > But then, this all really should be done at the block layer so other
+> > io-submitting-paths can benefit from it.
 > 
-> This looks wrong. If the sp has an unrelated children marked as 
-> unsync (which increased sp->unsync_children), you stop the walk? 
+> That was what we did in the past with really, really deep IO
+> scheduler queues. That leads to IO latency and OOM problems because
+> we could lock gigabytes of memory away under IO and take minutes to
+> clean it.
 > 
+> Besides, there really isn't the right context in the block layer to
+> be able to queue and prioritise large amounts of IO without
+> significant penalties to some higher layer operation.
+> 
+> > IOW, maybe "the sort queue is the submission queue" wasn't a good idea.
+> 
+> Perhaps, but IMO sorting should be done where the context allows it
+> to be done most efficiently. Sorting is most effective when ever a
+> significant queue of IO is formed, whether it be in the filesystem,
+> the VFS, the VM or the block layer because the IO stack is very much
+> a GIGO queue.
+> 
+> Simply put, there's nothing the lower layers can do to optimise bad
+> IO patterns from the higher layers because they have small sort
+> windows which are necessary to keep IO latency in check. Hence if
+> the higher layers feed the lower layers crap they simply don't have
+> the context or depth to perform the same level of optimistations we
+> can do easily higher up the stack.
+> 
+> IOWs, IMO anywhere there is a context with significant queue of IO,
+> that's where we should be doing a better job of sorting before that
+> IO is dispatched to the lower layers. This is still no guarantee of
+> better IO (e.g. if the filesystem fragments the file) but it does
+> give the lower layers a far better chance at optimal allocation and
+> scheduling of IO...
 
-Marcelo,
+None of what you said had much to do with what I said.
 
-I think it's right :-), we only walk the parents only when
-sp->unsync_children is 0, since sp->unsync_children is the number bit
-set in sp->unsync_child_bitmap, if sp->unsync_children > 0, we can sure
-its parents already have mark unsync-child-exist, assume, for example,
-have this mapping:
+What you've described are implementation problems in the current block
+layer because it conflates "sorting" with "queueing".  I'm saying "fix
+that".
 
-         / SP1
-P1 -> P2
-         \ SP2
+And...  sorting at the block layer will always be superior to sorting
+at the pagecache layer because the block layer sorts at the physical
+block level and can handle not-well-laid-out files and can sort and merge
+pages from different address_spaces.
 
-[ P2 = P1.pte[0] SP1 = P2.pte[0] SP2 = P2.pte[1] ]
+Still, I suspect none of it will improve anything anyway.  Those pages
+are still dirty, possibly-locked and need to go to disk.  It doesn't
+matter from the MM POV whether they sit in some VM list or in the
+request queue.
 
-First, we mark SP1 unsyc, it will set:
-P2.unsync_child_bitmap[0] = 1, P2.unsync_children = 1
-and
-P1.unsync_child_bitmap[0] = 1, P1.unsync_children = 1
+Possibly there may be some benefit to not putting so many of these
+unreclaimable pages into the queue all at the the same time.  But
+that's a shortcoming in the block code: we should be able to shove
+arbitrary numbers of dirty page (segments) into the queue and not gum
+the system up.  Don't try to work around that in the VM.
 
-Then, we mark SP2 unsync, we only need do:
-P2.unsync_child_bitmap[1] = 1, P2.unsync_children = 2
-no need touch P1, since the P1 is already mark pte[0] unsync-child-exist.
