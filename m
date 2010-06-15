@@ -1,75 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab0FOPg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 11:36:26 -0400
-Received: from xenotime.net ([72.52.115.56]:42347 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932346Ab0FOPgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 11:36:24 -0400
-Date: Tue, 15 Jun 2010 08:36:23 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-doc@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] docbook: need xmldoclinks for all doc types
-Message-Id: <20100615083623.2dbaab24.rdunlap@xenotime.net>
-In-Reply-To: <1276563314.14011.361.camel@localhost>
-References: <1276513297-23306-1-git-send-email-apw@canonical.com>
-	<1276514142.14011.329.camel@localhost>
-	<1276563314.14011.361.camel@localhost>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
+	id S932391Ab0FOPgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 11:36:37 -0400
+Received: from doppler.zen.co.uk ([212.23.3.27]:57443 "EHLO doppler.zen.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932327Ab0FOPgf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 11:36:35 -0400
+X-Greylist: delayed 1223 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jun 2010 11:36:34 EDT
+X-Spam-Score: -2.9
+Message-ID: <e4ea1892f15eaac945c151ea14a5d2d9.squirrel@www.chrestomanci.org>
+In-Reply-To: <201006151611.36443.knikanth@novell.com>
+References: <201006092035.46481.knikanth@novell.com>
+    <87aaqzp39a.fsf@devron.myhome.or.jp>
+    <201006151611.36443.knikanth@novell.com>
+Date: Tue, 15 Jun 2010 16:16:06 +0100
+Subject: Re: [PATCH][RFC] Complex filesystem operations: split and join
+From: "David Pottage" <david@electric-spoon.com>
+To: "Nikanth Karthikesan" <knikanth@novell.com>
+Cc: "OGAWA Hirofumi" <hirofumi@mail.parknet.co.jp>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Alexander Viro" <viro@zeniv.linux.org.uk>,
+       "Christoph Hellwig" <hch@lst.de>,
+       "Chris Mason" <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
+User-Agent: SquirrelMail/1.4.20
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Importance: Normal
+Content-Transfer-Encoding: 7BIT
+X-Originating-Smarthost01-IP: [82.70.68.182]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jun 2010 01:55:14 +0100 Ben Hutchings wrote:
+On 15/06/10 11:41, Nikanth Karthikesan wrote:
 
-> Andy Whitcroft wrote:
-> > We need the xmldoclinks built for any document types built from the
-> > XML sources.
-> 
-> Indeed we do.  So make the XML files depend on xmldoclinks.
+> I had a one-off use-case, where I had no free-space, which made me
+> think along this line.
+>
+> 1. We have the GNU split tool for example, which I guess, many of us
+> use to split larger files to be transfered via smaller thumb drives,
+> for example. We do cat many files into one, afterwards. [For this
+> usecase, one can simply dd with seek and skip and avoid split/cat
+> completely, but we dont.]
 
-The patch description tells me what but not why.
+I am not sure how you gain here as either way you have to do I/O to get
+the split files on and off the thumb drive. It might make sense if the
+thumb drive is formated with btrfs, and the file needs to be copied to
+another filling system that can't handle large files (eg FAT-16), but I
+would say that is unlikely.
 
-IOW, what error is this fixing and how do I produce that error
-when this patch is not applied?
+> 2. It could be useful for multimedia editing softwares, that converts
+> frames into video/animation and vice versa.
 
-Thanks.
+Agreed, it would be very useful in this case, as it would save a lot of
+I/O and time.
 
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> Acked-by: Andy Whitcroft <apw@canonical.com>
-> ---
-> --- a/Documentation/DocBook/Makefile
-> +++ b/Documentation/DocBook/Makefile
-> @@ -35,7 +35,7 @@ PS_METHOD	= $(prefer-db2x)
->  PHONY += xmldocs sgmldocs psdocs pdfdocs htmldocs mandocs installmandocs cleandocs xmldoclinks
->  
->  BOOKS := $(addprefix $(obj)/,$(DOCBOOKS))
-> -xmldocs: $(BOOKS) xmldoclinks
-> +xmldocs: $(BOOKS)
->  sgmldocs: xmldocs
->  
->  PS := $(patsubst %.xml, %.ps, $(BOOKS))
-> @@ -95,7 +95,7 @@ define rule_docproc
->          ) > $(dir $@).$(notdir $@).cmd
->  endef
->  
-> -%.xml: %.tmpl FORCE
-> +%.xml: %.tmpl xmldoclinks FORCE
->  	$(call if_changed_rule,docproc)
->  
->  ###
-> 
-> -- 
-> Ben Hutchings
-> Once a job is fouled up, anything done to improve it makes it worse.
+Video files are very big, so a simple edit of removing a few minutes
+here and there in an hour long HD recoding will involve copying many
+gigabytes from one file to another. Imagine the time and disc space
+saved, if you could just make a COW copy of your source file(s), and
+then cut out the portions you don't want, and join the parts you do
+want together.
 
+Your final edited file would take no extra disc space compared with
+your source files, and though it would be fragmented, the fragments
+would still be large compared with most files so the performance
+penalty to read the file sequentially to play it would be small. Once
+you decide you are happy with the final cut, you can delete the source
+files and let some background defrag demon tidy up the final file.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> 3. It could be useful for archiving solutions.
+
+Agreed.
+
+> 4. It would make it easier to implement simple databases. Even help
+> avoid needing databases at times. For example, to delete a row, split
+> before &amp; after that row, and join leaving it.
+
+I am not sure it would be usefull in practice, as these days, if you
+need a simple DB in a programming project, you just use SQLite. (Which
+has an extremely liberal licence), and let it figure out how to store
+your data on disc.
+
+On the other hand, perhaps databases such as SQLite or MySQL would
+benifit from this feature for improving their backend storage, especaly
+if large amounts of BLOB data is inserted or deleted?
+
+> So I thought this could be useful generally.
+
+Agreed. I think this would be very useful.
+
+I have proposed this kind of thing in the past, and been shouted down,
+and told that it should be implemented in the userland program, however
+I think it is anachronistic that Unix filesystems have supported sparse
+files since the dawn of time, originaly to suit a particular way of
+storing fixed size records, but do not support growing or truncating
+files except at the end.
+
+> I was also thinking of facilities to add/remove bytes from/at any
+> position in the file. As you said truncate any range, but one which
+> can also increase the filesize, adding blocks even in between.
+>
+> IMO It is kind of Chicken-and-egg problem, where applications will
+> start using these, only, if it would be available.
+
+I agree that it is a Chicken and egg problem, but I think the
+advantages for video editing are so large, that the feature could
+become a killer-app when it comes to video editing, as it would improve
+performance so much.
+
+-- 
+David Pottage
+
+Error compiling committee.c To many arguments to function.
+
