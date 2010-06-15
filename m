@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab0FOIln (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 04:41:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48898 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756630Ab0FOIlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 04:41:42 -0400
-Message-ID: <4C173CC3.8000506@redhat.com>
-Date: Tue, 15 Jun 2010 11:41:39 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1756724Ab0FOIoJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 04:44:09 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:41671 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab0FOIoH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 04:44:07 -0400
+Date: Tue, 15 Jun 2010 10:43:07 +0200
+From: Nico Schottelius <nico-linux-20100614@schottelius.org>
+To: Borislav Petkov <bp@alien8.de>,
+       Nico Schottelius <nico-linux-20100614@schottelius.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-pm@lists.osdl.org
+Subject: Re: New issues in 2.6.35-rc{1,2}
+Message-ID: <20100615084307.GC9549@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-linux-20100614@schottelius.org>,
+	Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+	linux-pm@lists.osdl.org
+References: <20100614161904.GE31910@schottelius.org>
+ <20100614164320.GA4392@a1.tnic>
 MIME-Version: 1.0
-To: Zachary Amsden <zamsden@redhat.com>
-CC: mtosatti@redhat.com, glommer@redhat.com, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/17] Add helper function get_kernel_ns
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-13-git-send-email-zamsden@redhat.com>
-In-Reply-To: <1276587259-32319-13-git-send-email-zamsden@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DIOMP1UsTsWJauNi"
+Content-Disposition: inline
+In-Reply-To: <20100614164320.GA4392@a1.tnic>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.34-NS-08528-gb3f2f6c x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 10:34 AM, Zachary Amsden wrote:
-> Add a helper function for the multiple places this is used.  Note that it
-> must not be called in preemptible context, as that would mean the kernel
-> could enter software suspend state, which would cause non-atomic operation
-> of the monotonic_to_bootbased computation.
->
-> Open question: should the KVM_SET_CLOCK / KVM_GET_CLOCK ioctls use this
-> as well?  Currently, they are not bootbased (but perhaps should be).
->
-> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
-> ---
->   arch/x86/kvm/x86.c |   26 +++++++++++++-------------
->   1 files changed, 13 insertions(+), 13 deletions(-)
->
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 703ea43..15c7317 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -915,6 +915,16 @@ static void kvm_get_time_scale(uint32_t scaled_khz, uint32_t base_khz,
->   		 __func__, base_khz, scaled_khz, shift, *pmultiplier);
->   }
->
-> +static inline u64 get_kernel_ns(void)
-> +{
-> +	struct timespec ts;
-> +
-> +	WARN_ON(preemptible());
-> +	ktime_get_ts(&ts);
-> +	monotonic_to_bootbased(&ts);
-> +	return timespec_to_ns(&ts);
-> +}
-> +
->   static DEFINE_PER_CPU(unsigned long, cpu_tsc_khz);
->
->    
 
-Isn't something like this a candidate for the time infrastructure?
+--DIOMP1UsTsWJauNi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-error compiling committee.c: too many arguments to function
+And another one: with 2.6.35-rc2 my system freezes after
+about 5 times suspend & resume.
 
+I'm now back on 2.6.34-08528-gb3f2f6c, it seems this kernel
+reliable suspends & resumes.
+
+Although this issue is an old one, it simply "disappeared", but
+has never been solved explicitly, see thread
+"2.6.33-2.6.34-rc5 suspend issues" on lkml, from 27 Apr 2010.
+
+Cheers,
+
+Nico
+
+--=20
+New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+Please resign, if you signed 9885188C or 8D0E27A4.
+
+Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
+
+--DIOMP1UsTsWJauNi
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwXPRsACgkQ19zI5DGHffDU4wCfSGbARbaw0DvJAxLl7+nA26wi
+WfAAoNZ/Hrvs3TS+MbouFiHQiPReNobP
+=rSH5
+-----END PGP SIGNATURE-----
+
+--DIOMP1UsTsWJauNi--
