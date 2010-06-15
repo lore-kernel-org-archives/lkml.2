@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab0FOO4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 10:56:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35704 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757939Ab0FOO4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 10:56:02 -0400
-Message-ID: <4C17945A.5070500@redhat.com>
-Date: Tue, 15 Jun 2010 10:55:22 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie> <20100615140011.GD28052@random.random> <20100615145134.GM26788@csn.ul.ie>
-In-Reply-To: <20100615145134.GM26788@csn.ul.ie>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1757962Ab0FOO63 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 10:58:29 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51708 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751458Ab0FOO61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 10:58:27 -0400
+Date: Tue, 15 Jun 2010 16:01:37 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+Cc: Alan <alan@clueserver.org>, Jeff Garzik <jeff@garzik.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: Question on siig sata 3 controller
+Message-ID: <20100615160137.62c92494@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100615145342.GC26989@bitwizard.nl>
+References: <34979.10.6.6.23.1276144792.squirrel@10.6.6.2>
+	<4C10A81F.50801@garzik.org>
+	<54318.10.6.6.23.1276222123.squirrel@10.6.6.2>
+	<20100615065714.GA9034@bitwizard.nl>
+	<20100615110748.4303a106@lxorguk.ukuu.org.uk>
+	<20100615145342.GC26989@bitwizard.nl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 10:51 AM, Mel Gorman wrote:
-> On Tue, Jun 15, 2010 at 04:00:11PM +0200, Andrea Arcangeli wrote:
->> Hi Mel,
->>
->> I know lots of people doesn't like direct reclaim,
->
-> It's not direct reclaim that is the problem per-se, it's direct reclaim
-> calling writepage and splicing two potentially deep call chains
-> together.
+> Is one of these modules the driver for this controller? I think it's
+> AHCI: lshw says it uses ports cc00 ... and a bunch of others, and
+> those ports are claimed by ahci according to /proc/ioports. Ah! I need
+> better eyes. lshw already mentions that it's ahci...
 
-I have talked to Mel on IRC, and the above means:
-
-"calling alloc_pages from an already deep stack frame,
-  and then going into direct reclaim"
-
-That explanation would have been helpful in email :)
-
--- 
-All rights reversed
+AHCI will be driving it.
