@@ -1,106 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab0FOQO7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 12:14:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753780Ab0FOQOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 12:14:55 -0400
-Date: Tue, 15 Jun 2010 18:14:19 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-Message-ID: <20100615161419.GH28052@random.random>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
- <20100615140011.GD28052@random.random>
- <20100615141122.GA27893@infradead.org>
- <20100615142219.GE28052@random.random>
- <20100615144342.GA3339@infradead.org>
- <20100615150850.GF28052@random.random>
- <20100615153838.GO26788@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100615153838.GO26788@csn.ul.ie>
+	id S1754264Ab0FOQSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 12:18:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23804 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab0FOQSk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 12:18:40 -0400
+Date: Tue, 15 Jun 2010 09:15:58 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: tytso@mit.edu
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+       mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, rusty@rustcorp.com.au, cl@linux-foundation.org,
+       dhowells@redhat.com, arjan@linux.intel.com, johannes@sipsolutions.net,
+       oleg@redhat.com, axboe@kernel.dk
+Subject: [PATCH] SubmittingPatches: add more about patch descriptions
+Message-Id: <20100615091558.fb01497d.randy.dunlap@oracle.com>
+In-Reply-To: <20100615125302.GK6666@thunk.org>
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>
+	<20100614145839.8ac7687a.akpm@linux-foundation.org>
+	<4C16AA75.8030303@kernel.org>
+	<20100614153545.51fe0338.akpm@linux-foundation.org>
+	<4C16B085.3030707@kernel.org>
+	<20100615125302.GK6666@thunk.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090201.4C17A74C.019F:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 04:38:38PM +0100, Mel Gorman wrote:
-> That is pretty much what Dave is claiming here at
-> http://lkml.org/lkml/2010/4/13/121 where if mempool_alloc_slab() needed
+On Tue, 15 Jun 2010 08:53:02 -0400 tytso@mit.edu wrote:
 
-This stack trace shows writepage called by shrink_page_list... that
-contradict Christoph's claim that xfs already won't writepage if
-invoked by direct reclaim.
+> On Tue, Jun 15, 2010 at 12:43:17AM +0200, Tejun Heo wrote:
+> > 
+> > Well, basics of the whole thing didn't change all that much since the
+> > first take and most people on cc list were cc'd on each take.  The
+> > biggest reason I'm still carrying the whole patchset is due to the
+> > scheduler changes.  The numbers are in the third take (which you can
+> > follow the links to find out).  Anyways, I'll write up another summary
+> > tomorrow.
+> 
+> It really helps if patch summaries are self contained and don't
+> require a bunch of kernel developers who are trying to review things
+> to have to do research and then figure out which links are the right
+> ones to chase down.  It's also not reasonable to expect your reviewers
+> to diff your patches to determine how much has changed and whether
+> they should expect benchmarks run from months ago to still be
+> applicable or not.
+> 
+> Many of us get literally hundreds of e-mail messages a day, and
+> e-mails are read with one finger hovering over the the 'd' key.  It
+> simply scales better if you don't assume that everybody else considers
+> the patch as important as you do, and instead assume that most people
+> have forgotten patches sent months ago....  
 
-> to allocate a page and writepage was entered, there would have been a
-> a problem.
+Ack that.
 
-There can't be a problem if a page wasn't available in mempool because
-we can't nest two writepage on top of the other or it'd deadlock on fs
-locks and this is the reason of GFP_NOFS, like noticed in the email.
+Does this help?  anything need to be added to it?
 
-Surely this shows the writepage going very close to the stack
-size... probably not enough to trigger the stack detector but close
-enough to worry! Agreed.
+---
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-I think we just need to switch stack on do_try_to_free_pages to solve
-it, and not just writepage or the filesystems.
+Add more information about patch descriptions.
 
-> Broken or not, it's what some of them are doing to avoid stack
-> overflows. Worst, they are ignoring both kswapd and direct reclaim when they
-> only really needed to ignore kswapd. With this series at least, the
-> check for PF_MEMALLOC in ->writepage can be removed
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ Documentation/SubmittingPatches |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-I don't get how we end up in xfs_buf_ioapply above though if xfs
-writepage is a noop on PF_MEMALLOC. Definitely PF_MEMALLOC is set
-before try_to_free_pages but in the above trace writepage still runs
-and submit the I/O.
-
-> This series would at least allow kswapd to turn dirty pages into clean
-> ones so it's an improvement.
-
-Not saying it's not an improvement, but still it's not necessarily the
-right direction.
-
-> Other than a lack of code to do it :/
-
-;)
-
-> If you really feel strongly about this, you could follow on the series
-> by extending clean_page_list() to switch stack if !kswapd.
->
-> This has actually been the case for a while. I vaguely recall FS people
-
-Again not what looks like from the stack trace. Also grepping for
-PF_MEMALLOC in fs/xfs shows nothing. In fact it's ext4_write_inode
-that skips the write if PF_MEMALLOC is set, not writepage apparently
-(only did a quick grep so I might be wrong). I suspect
-ext4_write_inode is the case I just mentioned about slab shrink, not
-->writepage ;).
-
-inodes are small, it's no big deal to keep an inode pinned and not
-slab-reclaimable because dirty, while skipping real writepage in
-memory pressure could really open a regression in oom false positives!
-One pagecache much bigger than one inode and there can be plenty more
-dirty pagecache than inodes.
-
-> i.e. when direct reclaim encounters N dirty pages, unconditionally ask the
-> flusher threads to clean that number of pages, throttle by waiting for them
-> to be cleaned, reclaim them if they get cleaned or otherwise scan more pages
-> on the LRU.
-
-Not bad at all... throttling is what makes it safe too. Problem is all
-the rest that isn't solved by this and could be solved with a stack
-switch, that's my main reason for considering this a ->writepage only
-hack not complete enough to provide a generic solution for reclaim
-issues ending up in fs->dm->iscsi/bio. I also suspect xfs is more hog
-than others (might not be a coicidence the 7k happens with xfs
-writepage) and could be lightened up a bit by looking into it.
+--- lnx-2635-rc3.orig/Documentation/SubmittingPatches
++++ lnx-2635-rc3/Documentation/SubmittingPatches
+@@ -98,6 +98,17 @@ system, git, as a "commit log".  See #15
+ If your description starts to get long, that's a sign that you probably
+ need to split up your patch.  See #3, next.
+ 
++When you submit or resubmit a patch or patch series, include the
++complete patch description and justification for it.  Don't just
++say that this is version N of the patch (series).  Don't expect the
++patch merger to refer back to earlier patch versions or referenced
++URLs to find the patch description and put that into the patch.
++I.e., the patch (series) and its description should be self-contained.
++This benefits both the patch merger(s) and reviewers.  Some reviewers
++probably didn't even receive earlier versions of the patch.
++
++If the patch fixes a logged bug entry, refer to that bug entry by
++number and URL.
+ 
+ 
+ 3) Separate your changes.
