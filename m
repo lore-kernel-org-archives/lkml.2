@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab0FONza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 09:55:30 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:36268 "EHLO e6.ny.us.ibm.com"
+	id S1757752Ab0FON7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 09:59:48 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:50004 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932107Ab0FONz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 09:55:27 -0400
-Subject: [RFC][PATCH 5/9] break out some mmu_skrink() code
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Tue, 15 Jun 2010 06:55:24 -0700
-References: <20100615135518.BC244431@kernel.beaverton.ibm.com>
-In-Reply-To: <20100615135518.BC244431@kernel.beaverton.ibm.com>
-Message-Id: <20100615135524.8C3300E8@kernel.beaverton.ibm.com>
+	id S1757439Ab0FON7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 09:59:47 -0400
+Date: Tue, 15 Jun 2010 14:59:28 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 12/12] vmscan: Do not writeback pages in direct reclaim
+Message-ID: <20100615135928.GK26788@csn.ul.ie>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-13-git-send-email-mel@csn.ul.ie> <4C16A567.4080000@redhat.com> <20100615114510.GE26788@csn.ul.ie> <4C17815A.8080402@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4C17815A.8080402@redhat.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 15, 2010 at 09:34:18AM -0400, Rik van Riel wrote:
+> On 06/15/2010 07:45 AM, Mel Gorman wrote:
+>> On Mon, Jun 14, 2010 at 05:55:51PM -0400, Rik van Riel wrote:
+>>> On 06/14/2010 07:17 AM, Mel Gorman wrote:
+>>>
+>>>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>>>> index 4856a2a..574e816 100644
+>>>> --- a/mm/vmscan.c
+>>>> +++ b/mm/vmscan.c
+>>>> @@ -372,6 +372,12 @@ int write_reclaim_page(struct page *page, struct address_space *mapping,
+>>>>    	return PAGE_SUCCESS;
+>>>>    }
+>>>>
+>>>> +/* kswapd and memcg can writeback as they are unlikely to overflow stack */
+>>>> +static inline bool reclaim_can_writeback(struct scan_control *sc)
+>>>> +{
+>>>> +	return current_is_kswapd() || sc->mem_cgroup != NULL;
+>>>> +}
+>>>> +
+>>>
+>>> I'm not entirely convinced on this bit, but am willing to
+>>> be convinced by the data.
+>>>
+>>
+>> Which bit?
+>>
+>> You're not convinced that kswapd should be allowed to write back?
+>> You're not convinced that memcg should be allowed to write back?
+>> You're not convinced that direct reclaim writing back pages can overflow
+>> 	the stack?
+>
+> If direct reclaim can overflow the stack, so can direct
+> memcg reclaim.  That means this patch does not solve the
+> stack overflow, while admitting that we do need the
+> ability to get specific pages flushed to disk from the
+> pageout code.
+>
 
-This basically takes the loop contents and sticks it in
-its own function for readability.  Don't pay too much
-attention to the use of nr_scanned in here.  It's a bit
-wonky but it'll change in a minute anyway.
+What path is taken with memcg != NULL that could overflow the stack? I
+couldn't spot one but mm/memcontrol.c is a bit tangled so finding all
+its use cases is tricky. The critical path I had in mind though was
+direct reclaim and for that path, memcg == NULL or did I miss something?
 
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
----
-
- linux-2.6.git-dave/arch/x86/kvm/mmu.c |   35 ++++++++++++++++++++++++----------
- 1 file changed, 25 insertions(+), 10 deletions(-)
-
-diff -puN arch/x86/kvm/mmu.c~optimize_shrinker arch/x86/kvm/mmu.c
---- linux-2.6.git/arch/x86/kvm/mmu.c~optimize_shrinker	2010-06-09 15:14:30.000000000 -0700
-+++ linux-2.6.git-dave/arch/x86/kvm/mmu.c	2010-06-09 15:14:30.000000000 -0700
-@@ -2923,6 +2923,26 @@ static int kvm_mmu_remove_some_alloc_mmu
- 	return kvm_mmu_zap_page(kvm, page) + 1;
- }
- 
-+static int shrink_kvm_mmu(struct kvm *kvm, int nr_to_scan)
-+{
-+	int idx, freed_pages;
-+
-+	idx = srcu_read_lock(&kvm->srcu);
-+	spin_lock(&kvm->mmu_lock);
-+	if (kvm->arch.n_used_mmu_pages > 0)
-+		freed_pages = kvm_mmu_remove_some_alloc_mmu_pages(kvm);
-+
-+	spin_unlock(&kvm->mmu_lock);
-+	srcu_read_unlock(&kvm->srcu, idx);
-+
-+	/*
-+	 * This should optimally return the number of objects (mmu pages)
-+	 * that we have scanned.  But, for now, just return the number
-+	 * that we were able to free.
-+	 */
-+	return freed_pages;
-+}
-+
- static int mmu_shrink(int nr_to_scan, gfp_t gfp_mask)
- {
- 	struct kvm *kvm;
-@@ -2934,20 +2954,15 @@ static int mmu_shrink(int nr_to_scan, gf
- 	spin_lock(&kvm_lock);
- 
- 	list_for_each_entry(kvm, &vm_list, vm_list) {
--		int idx, freed_pages;
-+		if (nr_to_scan <= 0)
-+			break;
- 
--		idx = srcu_read_lock(&kvm->srcu);
--		spin_lock(&kvm->mmu_lock);
--		if (!kvm_freed && nr_to_scan > 0 &&
--		    kvm->arch.n_used_mmu_pages > 0) {
--			freed_pages = kvm_mmu_remove_some_alloc_mmu_pages(kvm);
-+		shrink_kvm_mmu(kvm, nr_to_scan);
-+		if (!kvm_freed)
- 			kvm_freed = kvm;
--		}
- 		nr_to_scan--;
--
--		spin_unlock(&kvm->mmu_lock);
--		srcu_read_unlock(&kvm->srcu, idx);
- 	}
-+
- 	if (kvm_freed)
- 		list_move_tail(&kvm_freed->vm_list, &vm_list);
- 
-_
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
