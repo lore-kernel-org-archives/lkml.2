@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab0FONWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 09:22:25 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:45504 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab0FONWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 09:22:24 -0400
-Date: Tue, 15 Jun 2010 10:22:02 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Lin Ming <ming.m.lin@intel.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] perf: Add persistent events
-Message-ID: <20100615132202.GB27077@ghostprotocols.net>
-References: <1275059860.27810.9635.camel@twins>
- <20100528155719.GA10141@kryptos.osrc.amd.com>
- <1275070030.1645.362.camel@laptop>
- <20100603134301.GA30880@kryptos.osrc.amd.com>
- <20100603173242.GD29202@ghostprotocols.net>
- <20100614192514.GA7803@kryptos.osrc.amd.com>
- <20100614210116.GA26716@ghostprotocols.net>
- <20100614212426.GA19915@liondog.tnic>
- <20100615010201.GA27077@ghostprotocols.net>
- <20100615102259.GB17953@aftab>
+	id S1756854Ab0FONYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 09:24:10 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:36247 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755935Ab0FONYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 09:24:08 -0400
+Date: Tue, 15 Jun 2010 14:23:50 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+       Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Chris Mason <chris.mason@oracle.com>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [patch] mm: vmscan fix mapping use after free
+Message-ID: <20100615132349.GI26788@csn.ul.ie>
+References: <1276514273-27693-12-git-send-email-mel@csn.ul.ie> <20100614231144.GG6590@dastard> <20100614162143.04783749.akpm@linux-foundation.org> <20100615003943.GK6590@dastard> <4C16D46D.3020302@redhat.com> <20100614184544.32b1c371.akpm@linux-foundation.org> <4C16FCAE.4050607@redhat.com> <20100614213732.034b4a13.akpm@linux-foundation.org> <20100615051242.GD6138@laptop> <20100615054343.GE6138@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100615102259.GB17953@aftab>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100615054343.GE6138@laptop>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jun 15, 2010 at 12:22:59PM +0200, Borislav Petkov escreveu:
-> From: Arnaldo Carvalho de Melo <acme@infradead.org>
-> Date: Mon, Jun 14, 2010 at 09:02:01PM -0400
-> 
-> > Em Mon, Jun 14, 2010 at 11:24:26PM +0200, Borislav Petkov escreveu:
-> > > From: Arnaldo Carvalho de Melo <acme@infradead.org>
-> > > > From: Arnaldo Carvalho de Melo <acme@infradead.org>
-> > > > Will we continue using "util" here? What other name could we pick? Nah,
-> > > > probably for the ones you moved we can continue using it, the symbols
-> > > > part I plan to move to tools/lib/symbol/.
-> > > Em Mon, Jun 14, 2010 at 11:24:26PM +0200, Borislav Petkov escreveu:
-> > > Yeah, names are kinda arbitrary. Keeping "util" meant as little changes as
-> > > possible but it would make more sense to simply have all different library
-> > > modules under "tools/lib/<module>.(c|h)" Will do so in the next version.
+On Tue, Jun 15, 2010 at 03:43:44PM +1000, Nick Piggin wrote:
+> On Tue, Jun 15, 2010 at 03:12:42PM +1000, Nick Piggin wrote:
+> > > Once that page is unlocked, we can't touch *mapping - its inode can be
+> > > concurrently reclaimed.  Although I guess the technique in
+> > > handle_write_error() can be reused.
 > > 
-> > Ok
-> > 
-> > > > >  tools/perf/builtin-bench.c                         |    2 +-
-> > > > >  tools/perf/builtin.h                               |    4 +-
-> > > > 
-> > > > > -#include "types.h"
-> > > > > +#include <util/types.h>
-> > > > 
-> > > > I thought about suggesting using -I to reduce patch size, but then it is
-> > > > using "" :-\
-> > > 
-> > > Yeah, I have the -I$(CURDIR)/lib for this in the top level Makefile so all
-> > > library includes would be like:
-> > > 
-> > > #include <util.h>
-> > > 
-> > > however, this does not differentiate perflib (let's call it that for how
-> > > :) from libc headers. Do we want a "perf" or "kernel" or "perflib" or
-> > > whatever prefix here - it might make sense later when this thing grows
-> > > to differentiate between the namespaces...?
-> > 
-> > Agreed, but the last name this thing will have will be 'perf'something :-)
-> > 
-> > One of the goals at least I have with pursuing this path is to separate
-> > out everything that is not strictly 'perf' into things that can be reused
-> > by other tools, like yours.
+> > Nasty. That guy needs to be using lock_page_nosync().
+> --
 > 
-> Ok, since I'm a big fan of unambiguous short names, let's call it "lk"
-> for "linux kernel" and have this namespace for all generic headers. So
-> when you include those, you have something like
+> Need lock_page_nosync here because we have no reference to the mapping when
+> taking the page lock.
 > 
-> #include <lk/util.h>
+> Signed-off-by: Nick Piggin <npiggin@suse.de>
 > 
-> How does that sound?
 
-As this code originated on the Linux kernel, should be OK and probably
-unused.
+Thanks, I've picked this up and merged it into the series and removed
+the "hand grenade" comment.
 
-Peter, ideas?
+> ---
+>  mm/vmscan.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux-2.6/mm/vmscan.c
+> ===================================================================
+> --- linux-2.6.orig/mm/vmscan.c
+> +++ linux-2.6/mm/vmscan.c
+> @@ -296,7 +296,7 @@ static int may_write_to_queue(struct bac
+>  static void handle_write_error(struct address_space *mapping,
+>  				struct page *page, int error)
+>  {
+> -	lock_page(page);
+> +	lock_page_nosync(page);
+>  	if (page_mapping(page) == mapping)
+>  		mapping_set_error(mapping, error);
+>  	unlock_page(page);
+> 
 
-- Arnaldo
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
