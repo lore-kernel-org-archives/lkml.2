@@ -1,94 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab0FOQe1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 12:34:27 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:54541 "EHLO gir.skynet.ie"
+	id S1757639Ab0FOQfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 12:35:05 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56791 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753977Ab0FOQe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 12:34:26 -0400
-Date: Tue, 15 Jun 2010 17:34:07 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
-	and use a_ops->writepages() where possible
-Message-ID: <20100615163407.GS26788@csn.ul.ie>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie> <20100615140011.GD28052@random.random> <20100615141122.GA27893@infradead.org> <20100615142219.GE28052@random.random> <20100615144342.GA3339@infradead.org> <20100615150850.GF28052@random.random> <20100615153838.GO26788@csn.ul.ie> <20100615161419.GH28052@random.random> <20100615163044.GR26788@csn.ul.ie>
+	id S1757527Ab0FOQfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 12:35:02 -0400
+Message-ID: <4C17AB91.1040207@kernel.org>
+Date: Tue, 15 Jun 2010 18:34:25 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100615163044.GR26788@csn.ul.ie>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, jeff@garzik.org,
+       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
+       khali@linux-fr.org
+Subject: Re: [PATCH 02/12] irq: make spurious poll timer per desc
+References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-3-git-send-email-tj@kernel.org> <20100615051027.GA8073@phenom.dumpdata.com>
+In-Reply-To: <20100615051027.GA8073@phenom.dumpdata.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 15 Jun 2010 16:34:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > That is pretty much what Dave is claiming here at
-> > > http://lkml.org/lkml/2010/4/13/121 where if mempool_alloc_slab() needed
-> > 
-> > This stack trace shows writepage called by shrink_page_list... that
-> > contradict Christoph's claim that xfs already won't writepage if
-> > invoked by direct reclaim.
-> > 
+On 06/15/2010 07:10 AM, Konrad Rzeszutek Wilk wrote:
+>> @@ -169,6 +170,7 @@ struct irq_2_iommu;
+>>   * @pending_mask:	pending rebalanced interrupts
+>>   * @threads_active:	number of irqaction threads currently running
+>>   * @wait_for_threads:	wait queue for sync_irq to wait for threaded handlers
+>> + * @poll_timer:		timer for IRQ polling
 > 
-> See this
+> I looked over the patches and they all look good to my eyes.
 > 
-> STATIC int
-> xfs_vm_writepage(
->         struct page             *page,
->         struct writeback_control *wbc)
-> {
->         int                     error;
->         int                     need_trans;
->         int                     delalloc, unmapped, unwritten;
->         struct inode            *inode = page->mapping->host;
-> 
->         trace_xfs_writepage(inode, page, 0);
-> 
->         /*
->          * Refuse to write the page out if we are called from reclaim
->          * context.
->          *
->          * This is primarily to avoid stack overflows when called from deep
->          * used stacks in random callers for direct reclaim, but disabling
->          * reclaim for kswap is a nice side-effect as kswapd causes rather
->          * suboptimal I/O patters, too.
->          *
->          * This should really be done by the core VM, but until that happens
->          * filesystems like XFS, btrfs and ext4 have to take care of this
->          * by themselves.
->          */
->         if (current->flags & PF_MEMALLOC)
->                 goto out_fail;
-> 
+> The only thing that looked out of place was the above comment.
+> Would it make sense to move the comment one tab to the left?
 
-My apologies. I didn't realise this was added so recently. I thought for
-a while already so....
+When applied, it will show up at the right place.  It's because the
+first tab ends next to ':' and the leading '+' ends up pushing it to
+the next tab position.
 
-> > Not bad at all... throttling is what makes it safe too. Problem is all
-> > the rest that isn't solved by this and could be solved with a stack
-> > switch, that's my main reason for considering this a ->writepage only
-> > hack not complete enough to provide a generic solution for reclaim
-> > issues ending up in fs->dm->iscsi/bio. I also suspect xfs is more hog
-> > than others (might not be a coicidence the 7k happens with xfs
-> > writepage) and could be lightened up a bit by looking into it.
-> > 
-> 
-> Other than the whole "lacking the code" thing and it's still not clear that
-> writing from direct reclaim is absolutly necessary for VM stability considering
-> it's been ignored today by at least two filesystems.
-
-I retract this point as well because in reality, we have little data on
-the full consequences of not writing pages from direct reclaim. Early
-data based on the tests I've run indicate that the number of pages
-direct reclaim writes is so small that it's not a problem but there is a
-strong case for adding throttling at least.
+Thanks.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+tejun
