@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab0FODhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 23:37:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56210 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab0FODhq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 23:37:46 -0400
-Date: Mon, 14 Jun 2010 20:40:21 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: BUG: using smp_processor_id() in preemptible code: s2disk
-Message-ID: <20100614204021.52c50cdc@infradead.org>
-In-Reply-To: <20100614151735.GB3448@swordfish.minsk.epam.com>
-References: <20100613203352.GA3577@swordfish>
-	<1276461183.2659.4.camel@maxim-laptop>
-	<201006140136.18652.rjw@sisk.pl>
-	<20100614140941.GA3581@swordfish.minsk.epam.com>
-	<20100614073853.6fa2f91f@infradead.org>
-	<20100614145439.GA3448@swordfish.minsk.epam.com>
-	<20100614080154.7d6a71fc@infradead.org>
-	<20100614151735.GB3448@swordfish.minsk.epam.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+	id S1756000Ab0FODmm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 23:42:42 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36732 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751713Ab0FODmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 23:42:40 -0400
+Date: Tue, 15 Jun 2010 13:42:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, andy@greyhouse.net,
+       emil.s.tantilov@intel.com, jeffrey.t.kirsher@intel.com
+Subject: Re: linux-next: build failure after merge of the net tree
+Message-Id: <20100615134232.20eac3fa.sfr@canb.auug.org.au>
+In-Reply-To: <20100614.191356.193722104.davem@davemloft.net>
+References: <20100615120052.7202f20d.sfr@canb.auug.org.au>
+	<20100614.191356.193722104.davem@davemloft.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__15_Jun_2010_13_42_32_+1000_2UsFFEqGZz9DzUZq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jun 2010 18:17:35 +0300
-Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
+--Signature=_Tue__15_Jun_2010_13_42_32_+1000_2UsFFEqGZz9DzUZq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On (06/14/10 08:01), Arjan van de Ven wrote:
-> > > decided to patch nr_iowait_cpu instead.
-> > 
-> > the bug is that it needs to be
-> > 
-> > nr_iowait_cpu(int cpu)
-> > 
-> 
-> Something similar to this?
+Hi Dave,
 
+On Mon, 14 Jun 2010 19:13:56 -0700 (PDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> I'll incorporate your merge and build fixups when I merge net-2.6 into
+> net-next-2.6 later tonight, thanks Stephen!
 
-yup that'll do it
+Great, thanks.
 
-Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+--Signature=_Tue__15_Jun_2010_13_42_32_+1000_2UsFFEqGZz9DzUZq
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwW9qgACgkQjjKRsyhoI8xKsQCglbSw5mDJAEe0D2oNFN61+jT/
+krUAnRQnTZso4jicUKp6pKlnnYRAg+lJ
+=BBxR
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__15_Jun_2010_13_42_32_+1000_2UsFFEqGZz9DzUZq--
