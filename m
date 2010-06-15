@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab0FONYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 09:24:10 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:36247 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755935Ab0FONYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 09:24:08 -0400
-Date: Tue, 15 Jun 2010 14:23:50 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-       Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Chris Mason <chris.mason@oracle.com>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [patch] mm: vmscan fix mapping use after free
-Message-ID: <20100615132349.GI26788@csn.ul.ie>
-References: <1276514273-27693-12-git-send-email-mel@csn.ul.ie> <20100614231144.GG6590@dastard> <20100614162143.04783749.akpm@linux-foundation.org> <20100615003943.GK6590@dastard> <4C16D46D.3020302@redhat.com> <20100614184544.32b1c371.akpm@linux-foundation.org> <4C16FCAE.4050607@redhat.com> <20100614213732.034b4a13.akpm@linux-foundation.org> <20100615051242.GD6138@laptop> <20100615054343.GE6138@laptop>
+	id S1756977Ab0FON1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 09:27:11 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:47078 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752879Ab0FON1J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 09:27:09 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Bernd Petrovitsch <bernd@sysprog.at>
+Subject: Re: "ignoring host bridge windows from ACPI" in a recent laptop
+Date: Tue, 15 Jun 2010 07:27:10 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+       linux-pci@vger.kernel.org
+References: <1276600703.31461.53.camel@thorin>
+In-Reply-To: <1276600703.31461.53.camel@thorin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100615054343.GE6138@laptop>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006150727.10978.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 03:43:44PM +1000, Nick Piggin wrote:
-> On Tue, Jun 15, 2010 at 03:12:42PM +1000, Nick Piggin wrote:
-> > > Once that page is unlocked, we can't touch *mapping - its inode can be
-> > > concurrently reclaimed.  Although I guess the technique in
-> > > handle_write_error() can be reused.
-> > 
-> > Nasty. That guy needs to be using lock_page_nosync().
-> --
+On Tuesday, June 15, 2010 05:18:23 am Bernd Petrovitsch wrote:
+> Hi!
 > 
-> Need lock_page_nosync here because we have no reference to the mapping when
-> taking the page lock.
+> I have a Sony Vaio VPCF11M1E since early this year. Looking through the
+> output of `dmesg`, I noticed
+> ----  snip  ----
+> pci_root PNP0A08:00: ignoring host bridge windows from ACPI; boot with "pci=use_crs" to use them
+> ----  snip  ----
+> So I tried that.
+> The laptop boots and works without problems so far. I attached a diff of
+> the first approx. 630 lines of the `dmesg` outputs without and with the
+> above parameter. It gets pretty messy afterwards because (at least) the
+> USB and/or SATA initialization runs apparently in parallel.
 > 
-> Signed-off-by: Nick Piggin <npiggin@suse.de>
+> After finding http://lkml.org/lkml/2010/2/12/174, it seems that we might
+> need another quirk to activate that automatically.
 > 
+> At the end, I lost also dozens of
+> ----  snip  ----
+> name_count maxed, losing inode data: dev=00:07, inode=
+> ----  snip  ----
+> lines (which are also not in the attached diff). I don't know if that
+> has something to do with the above.
 
-Thanks, I've picked this up and merged it into the series and removed
-the "hand grenade" comment.
+Until the patch you mentioned above, Linux silently ignored window
+information from ACPI.  On your machine, the only effect of the
+patch was to print the new line you mentioned, which was only intended
+as a hint that "if PCI devices don't work correctly, here's something
+we can try."
 
-> ---
->  mm/vmscan.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-2.6/mm/vmscan.c
-> ===================================================================
-> --- linux-2.6.orig/mm/vmscan.c
-> +++ linux-2.6/mm/vmscan.c
-> @@ -296,7 +296,7 @@ static int may_write_to_queue(struct bac
->  static void handle_write_error(struct address_space *mapping,
->  				struct page *page, int error)
->  {
-> -	lock_page(page);
-> +	lock_page_nosync(page);
->  	if (page_mapping(page) == mapping)
->  		mapping_set_error(mapping, error);
->  	unlock_page(page);
-> 
+If your devices *are* working correctly, you can just ignore the hint.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+You mention the "name_count maxed" messages, and I think you meant
+they go away when you use "pci=use_crs".  I don't see how that would
+be connected, since that's from syscall auditing code that is several
+layers removed from PCI device resource management.
+
+Bjorn
