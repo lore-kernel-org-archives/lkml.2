@@ -1,76 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab0FOJyh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 05:54:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64305 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751833Ab0FOJyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 05:54:35 -0400
-Message-ID: <4C174DD7.3000608@redhat.com>
-Date: Tue, 15 Jun 2010 12:54:31 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1756693Ab0FOJ71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 05:59:27 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48917 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab0FOJ70 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 05:59:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=J+SMdSYpiRijwMe+/nsVWEJM/CT2AyX1SMRooYNHFTHNRhlWu4zTVn5paef74dnnJ5
+         i3ERn2DbdVXywHwyC5TGSzV2HutXkkC2SF9GBfJxN8ptzUG6vUiYCtbqlk5lEQR5nrbc
+         t/EBKdebWh86sYUuxx9sz2jNOCUzGyRs16DbA=
 MIME-Version: 1.0
-To: balbir@linux.vnet.ibm.com
-CC: Dave Hansen <dave@linux.vnet.ibm.com>, kvm <kvm@vger.kernel.org>,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
- control
-References: <20100610142512.GB5191@balbir.in.ibm.com> <1276214852.6437.1427.camel@nimitz> <20100611045600.GE5191@balbir.in.ibm.com> <4C15E3C8.20407@redhat.com> <20100614084810.GT5191@balbir.in.ibm.com> <1276528376.6437.7176.camel@nimitz> <20100614165853.GW5191@balbir.in.ibm.com> <1276535371.6437.7417.camel@nimitz> <20100614171624.GY5191@balbir.in.ibm.com> <4C1727EC.2020500@redhat.com> <20100615075210.GB4306@balbir.in.ibm.com>
-In-Reply-To: <20100615075210.GB4306@balbir.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100615152450.f82c1f8c.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100615152450.f82c1f8c.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 15 Jun 2010 18:59:25 +0900
+Message-ID: <AANLkTinEEYWULLICKqBr4yX7GL01E4cq0jQSfuN8J6Jq@mail.gmail.com>
+Subject: Re: [PATCH] use find_lock_task_mm in memory cgroups oom
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 10:52 AM, Balbir Singh wrote:
->>>
->>> That is why the policy (in the next set) will come from the host. As
->>> to whether the data is truly duplicated, my experiments show up to 60%
->>> of the page cache is duplicated.
->>>        
->> Isn't that incredibly workload dependent?
->>
->> We can't expect the host admin to know whether duplication will
->> occur or not.
->>
->>      
-> I was referring to cache = (policy) we use based on the setup. I don't
-> think the duplication is too workload specific. Moreover, we could use
-> aggressive policies and restrict page cache usage or do it selectively
-> on ballooning. We could also add other options to make the ballooning
-> option truly optional, so that the system management software decides.
->    
+Hi, Kame.
 
-Consider a read-only workload that exactly fits in guest cache.  Without 
-trimming, the guest will keep hitting its own cache, and the host will 
-see no access to the cache at all.  So the host (assuming it is under 
-even low pressure) will evict those pages, and the guest will happily 
-use its own cache.  If we start to trim, the guest will have to go to 
-disk.  That's the best case.
+On Tue, Jun 15, 2010 at 3:24 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>
+> based on  oom-introduce-find_lock_task_mm-to-fix-mm-false-positives.patch
+> tested on mm-of-the-moment snapshot 2010-06-11-16-40.
+>
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> When the OOM killer scans task, it check a task is under memcg or
+> not when it's called via memcg's context.
+>
+> But, as Oleg pointed out, a thread group leader may have NULL ->mm
+> and task_in_mem_cgroup() may do wrong decision. We have to use
+> find_lock_task_mm() in memcg as generic OOM-Killer does.
+>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Cc: Balbir Singh <balbir@linux.vnet.ibm.com>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-Now for the worst case.  A random access workload that misses the cache 
-on both guest and host.  Now every page is duplicated, and trimming 
-guest pages allows the host to increase its cache, and potentially 
-reduce misses.  In this case trimming duplicated pages works.
+I have a trivial comment below.
 
-Real life will see a mix of this.  Often used pages won't be duplicated, 
-and less often used pages may see some duplication, especially if the 
-host cache portion dedicated to the guest is bigger than the guest cache.
+> ---
+>  include/linux/oom.h |    2 ++
+>  mm/memcontrol.c     |   10 +++++++---
+>  mm/oom_kill.c       |    8 ++++++--
+>  3 files changed, 15 insertions(+), 5 deletions(-)
+>
+> Index: mmotm-2.6.35-0611/include/linux/oom.h
+> ===================================================================
+> --- mmotm-2.6.35-0611.orig/include/linux/oom.h
+> +++ mmotm-2.6.35-0611/include/linux/oom.h
+> @@ -45,6 +45,8 @@ static inline void oom_killer_enable(voi
+>        oom_killer_disabled = false;
+>  }
+>
+> +extern struct task_struct *find_lock_task_mm(struct task_struct *p);
+> +
+>  /* sysctls */
+>  extern int sysctl_oom_dump_tasks;
+>  extern int sysctl_oom_kill_allocating_task;
+> Index: mmotm-2.6.35-0611/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-2.6.35-0611.orig/mm/memcontrol.c
+> +++ mmotm-2.6.35-0611/mm/memcontrol.c
+> @@ -47,6 +47,7 @@
+>  #include <linux/mm_inline.h>
+>  #include <linux/page_cgroup.h>
+>  #include <linux/cpu.h>
+> +#include <linux/oom.h>
+>  #include "internal.h"
+>
+>  #include <asm/uaccess.h>
+> @@ -838,10 +839,13 @@ int task_in_mem_cgroup(struct task_struc
+>  {
+>        int ret;
+>        struct mem_cgroup *curr = NULL;
+> +       struct task_struct *p;
+>
+> -       task_lock(task);
+> -       curr = try_get_mem_cgroup_from_mm(task->mm);
+> -       task_unlock(task);
+> +       p = find_lock_task_mm(task);
+> +       if (!p)
+> +               return 0;
+> +       curr = try_get_mem_cgroup_from_mm(p->mm);
+> +       task_unlock(p);
+>        if (!curr)
+>                return 0;
+>        /*
+> Index: mmotm-2.6.35-0611/mm/oom_kill.c
+> ===================================================================
+> --- mmotm-2.6.35-0611.orig/mm/oom_kill.c
+> +++ mmotm-2.6.35-0611/mm/oom_kill.c
+> @@ -81,13 +81,17 @@ static bool has_intersects_mems_allowed(
+>  }
+>  #endif /* CONFIG_NUMA */
+>
+> -/*
+> +/**
+> + * find_lock_task_mm - Checking a process which a task belongs to has valid mm
+> + * and return a locked task which has a valid pointer to mm.
+> + *
 
-I can see that trimming duplicate pages helps, but (a) I'd like to be 
-sure they are duplicates and (b) often trimming them from the host is 
-better than trimming them from the guest.
+This comment should have been another patch.
+BTW, below comment uses "subthread" word.
+Personally it's easy to understand function's goal to me. :)
 
-Trimming from the guest is worthwhile if the pages are not used very 
-often (but enough that caching them in the host is worth it) and if the 
-host cache can serve more than one guest.  If we can identify those 
-pages, we don't risk degrading best-case workloads (as defined above).
+How about following as?
+Checking a process which has any subthread with vaild mm
+....
 
-(note ksm to some extent identifies those pages, though it is a bit 
-expensive, and doesn't share with the host pagecache).
+
+> + * @p: the task of a process to be checked.
+>  * The process p may have detached its own ->mm while exiting or through
+>  * use_mm(), but one or more of its subthreads may still have a valid
+>  * pointer.  Return p, or any of its subthreads with a valid ->mm, with
+>  * task_lock() held.
+>  */
+> -static struct task_struct *find_lock_task_mm(struct task_struct *p)
+> +struct task_struct *find_lock_task_mm(struct task_struct *p)
+>  {
+>        struct task_struct *t = p;
+>
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+
+
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Kind regards,
+Minchan Kim
