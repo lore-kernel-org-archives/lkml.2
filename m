@@ -1,142 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab0FOCut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 22:50:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64480 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756578Ab0FOCup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 22:50:45 -0400
-Message-ID: <4C16E9AF.2090501@cn.fujitsu.com>
-Date: Tue, 15 Jun 2010 10:47:11 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1757327Ab0FOCwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 22:52:14 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45778 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182Ab0FOCwM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 22:52:12 -0400
+Date: Mon, 14 Jun 2010 22:52:08 -0400 (EDT)
+From: Tim Abbott <tabbott@ksplice.com>
+X-X-Sender: tabbott@dr-wily.mit.edu
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Matt Fleming <matt@console-pimps.org>, linux-arch@vger.kernel.org,
+       Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+       Denys Vlasenko <vda.linux@googlemail.com>, linux-parisc@vger.kernel.org
+Subject: Re: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
+In-Reply-To: <1276557299.5374.847.camel@mulgrave.site>
+Message-ID: <alpine.DEB.1.10.1006142245560.1248@dr-wily.mit.edu>
+References: <1276519112-11649-1-git-send-email-matt@console-pimps.org>  <alpine.DEB.1.10.1006141014360.1432@dr-wily.mit.edu>  <87y6ehxvby.fsf@linux-g6p1.site>  <alpine.DEB.1.10.1006141534490.1248@dr-wily.mit.edu> <1276557299.5374.847.camel@mulgrave.site>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: [PATCH 6/6] KVM: MMU: trace pte prefetch
-References: <4C16E6ED.7020009@cn.fujitsu.com> <4C16E75F.6020003@cn.fujitsu.com> <4C16E7AD.1060101@cn.fujitsu.com> <4C16E7F4.5060801@cn.fujitsu.com> <4C16E82E.5010306@cn.fujitsu.com> <4C16E867.8040606@cn.fujitsu.com>
-In-Reply-To: <4C16E867.8040606@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trace pte prefetch to see what trouble we meet, if can help us to
-improve the prefetch
+On Mon, 14 Jun 2010, James Bottomley wrote:
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c         |   12 +++++++++++-
- arch/x86/kvm/mmutrace.h    |   26 ++++++++++++++++++++++++++
- arch/x86/kvm/paging_tmpl.h |    9 ++++++++-
- 3 files changed, 45 insertions(+), 2 deletions(-)
+> On Mon, 2010-06-14 at 18:21 -0400, Tim Abbott wrote:
+> > On Mon, 14 Jun 2010, Matt Fleming wrote:
+> > 
+> > > Do these special kernel sections include things like the parisc
+> > > .text.do_softirq, .text.sys_exit, etc? James raised a good objection to
+> > > the parisc patch of this series. I'm guessing most people saw it already
+> > > but I'll paste it here for reference,
+> > > 
+> > >     This would destroy all of the named parisc text ordering we do above the
+> > >     removed line because now you'd have swept up all the function sections
+> > >     before we get to them, won't it?
+> > > 
+> > >     The ordering is an execution speed up on 32 bit systems because our
+> > >     relative jump is so short.
+> > > 
+> > > Will you changes handle this OK?
+> > 
+> > I think I addressed this in my reply to James just now, but to be super 
+> > clear, this -ffunction-sections plan involves renaming .text.do_softirq to 
+> > .text..do_softirq (etc.) first.
+> 
+> OK, so that doesn't make a lot of sense to me; I suspect because you
+> don't understand what parisc is doing.  These aren't names of linux
+> special sections ... they're names of function sections.  For
+> efficiency, we take specific hot functions and place them together in
+> the linker script so the jumps between them are small enough to be coded
+> as relative on the 32 bit architecture.  It's really just a more
+> efficient way of laying out the binary.
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 941c86b..0aaa18d 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -91,6 +91,11 @@ module_param(oos_shadow, bool, 0644);
- 
- #define PTE_PREFETCH_NUM	16
- 
-+#define PREFETCH_SUCCESS	0
-+#define PREFETCH_ERR_GFN2PFN	1
-+#define PREFETCH_ERR_ALLOC_MEM	2
-+#define PREFETCH_ERR_READ_GPTE	3
-+
- #define PT_FIRST_AVAIL_BITS_SHIFT 9
- #define PT64_SECOND_AVAIL_BITS_SHIFT 52
- 
-@@ -2066,11 +2071,16 @@ static void direct_pte_prefetch(struct kvm_vcpu *vcpu, u64 *sptep)
- 		pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
- 		if (is_error_pfn(pfn)) {
- 			kvm_release_pfn_clean(pfn);
-+			trace_pte_prefetch(true, PREFETCH_ERR_GFN2PFN);
- 			break;
- 		}
--		if (pte_prefetch_topup_memory_cache(vcpu))
-+
-+		if (pte_prefetch_topup_memory_cache(vcpu)) {
-+			trace_pte_prefetch(true, PREFETCH_ERR_ALLOC_MEM);
- 			break;
-+		}
- 
-+		trace_pte_prefetch(true, PREFETCH_SUCCESS);
- 		mmu_set_spte(vcpu, spte, ACC_ALL, ACC_ALL, 0, 0, 1, NULL,
- 			     sp->role.level, gfn, pfn, true, false);
- 	}
-diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index 3aab0f0..1c3e84e 100644
---- a/arch/x86/kvm/mmutrace.h
-+++ b/arch/x86/kvm/mmutrace.h
-@@ -195,6 +195,32 @@ DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_prepare_zap_page,
- 
- 	TP_ARGS(sp)
- );
-+
-+#define pte_prefetch_err					\
-+	{PREFETCH_SUCCESS,		"SUCCESS"	},	\
-+	{PREFETCH_ERR_GFN2PFN,		"ERR_GFN2PFN"	},	\
-+	{PREFETCH_ERR_ALLOC_MEM,	"ERR_ALLOC_MEM"	},	\
-+	{PREFETCH_ERR_READ_GPTE,	"ERR_READ_GPTE"	}
-+
-+TRACE_EVENT(
-+	pte_prefetch,
-+	TP_PROTO(bool direct, int err_code),
-+	TP_ARGS(direct, err_code),
-+
-+	TP_STRUCT__entry(
-+		__field(bool, direct)
-+		__field(int, err_code)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->direct = direct;
-+		__entry->err_code = err_code;
-+	),
-+
-+	TP_printk("%s %s", __entry->direct ? "direct" : "no-direct",
-+		  __print_symbolic(__entry->err_code, pte_prefetch_err))
-+);
-+
- #endif /* _TRACE_KVMMMU_H */
- 
- #undef TRACE_INCLUDE_PATH
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index af4e041..64f2acb 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -331,6 +331,8 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, u64 *sptep)
- 			page = gfn_to_page_atomic(vcpu->kvm, sp->gfn);
- 			if (is_error_page(page)) {
- 				kvm_release_page_clean(page);
-+				trace_pte_prefetch(false,
-+						PREFETCH_ERR_READ_GPTE);
- 				break;
- 			}
- 			table = kmap_atomic(page, KM_USER0);
-@@ -353,11 +355,16 @@ gfn_mapping:
- 		pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
- 		if (is_error_pfn(pfn)) {
- 			kvm_release_pfn_clean(pfn);
-+			trace_pte_prefetch(false, PREFETCH_ERR_GFN2PFN);
- 			break;
- 		}
- 
--		if (pte_prefetch_topup_memory_cache(vcpu))
-+		if (pte_prefetch_topup_memory_cache(vcpu)) {
-+			trace_pte_prefetch(false, PREFETCH_ERR_ALLOC_MEM);
- 			break;
-+		}
-+
-+		trace_pte_prefetch(false, PREFETCH_SUCCESS);
- 		mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
- 			     dirty, NULL, sp->role.level, gfn, pfn,
- 			     true, false);
--- 
-1.6.1.2
+Yeah, I'd forgotten parisc was doing -ffunction-sections, now I understand 
+what you're talking about.  What I'd recommend is just moving the 
+.text.do_softirq and friends like in the hunk below -- I believe that 
+should achieve the same performance goals, and should have no conflict 
+with adding a wildcard for -ffunction-sections generated sections to 
+TEXT_TEXT.
 
+	-Tim Abbott
+
+diff --git a/arch/parisc/kernel/vmlinux.lds.S 
+b/arch/parisc/kernel/vmlinux.lds.S
+index d64a6bb..ad0d3d3 100644
+--- a/arch/parisc/kernel/vmlinux.lds.S
++++ b/arch/parisc/kernel/vmlinux.lds.S
+@@ -52,15 +52,15 @@ SECTIONS
+        _text = .;              /* Text and read-only data */
+        .text ALIGN(16) : {
+                HEAD_TEXT
++               *(.text.do_softirq)
++               *(.text.sys_exit)
++               *(.text.do_sigaltstack)
++               *(.text.do_fork)
+                TEXT_TEXT
+                SCHED_TEXT
+                LOCK_TEXT
+                KPROBES_TEXT
+                IRQENTRY_TEXT
+-               *(.text.do_softirq)
+-               *(.text.sys_exit)
+-               *(.text.do_sigaltstack)
+-               *(.text.do_fork)
+                *(.text.*)
+                *(.fixup)
+                *(.lock.text)           /* out-of-line lock text */
 
 
