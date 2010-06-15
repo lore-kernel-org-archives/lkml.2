@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758651Ab0FOSsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 14:48:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52798 "EHLO mx1.redhat.com"
+	id S1758421Ab0FOSl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 14:41:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11769 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758290Ab0FOSmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 14:42:05 -0400
+	id S1758403Ab0FOSl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 14:41:56 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Felix Fietkau <nbd@openwrt.org>,
-       Valerie Aurora <vaurora@redhat.com>,
-       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Subject: [PATCH 12/38] whiteout: jffs2 whiteout support
-Date: Tue, 15 Jun 2010 11:39:42 -0700
-Message-Id: <1276627208-17242-13-git-send-email-vaurora@redhat.com>
+       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+       Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 15/38] fallthru: jffs2 fallthru support
+Date: Tue, 15 Jun 2010 11:39:45 -0700
+Message-Id: <1276627208-17242-16-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,176 +24,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Felix Fietkau <nbd@openwrt.org>
 
-Add support for whiteout dentries to jffs2.
+Add support for fallthru dentries to jffs2.
 
-XXX - David Woodhouse suggests several changes and provides an
-untested patch.  See:
-
-http://patchwork.ozlabs.org/patch/50466/
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 Cc: David Woodhouse <dwmw2@infradead.org>
 Cc: linux-mtd@lists.infradead.org
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/jffs2/dir.c        |   72 +++++++++++++++++++++++++++++++++++++++++++++++-
- fs/jffs2/fs.c         |    4 +++
- fs/jffs2/super.c      |    2 +-
- include/linux/jffs2.h |    2 +
- 4 files changed, 77 insertions(+), 3 deletions(-)
+ fs/jffs2/dir.c        |   36 +++++++++++++++++++++++++++++++++---
+ include/linux/jffs2.h |    6 ++++++
+ 2 files changed, 39 insertions(+), 3 deletions(-)
 
 diff --git a/fs/jffs2/dir.c b/fs/jffs2/dir.c
-index 7aa4417..c259193 100644
+index c259193..98397b3 100644
 --- a/fs/jffs2/dir.c
 +++ b/fs/jffs2/dir.c
-@@ -34,6 +34,8 @@ static int jffs2_mknod (struct inode *,struct dentry *,int,dev_t);
- static int jffs2_rename (struct inode *, struct dentry *,
+@@ -35,6 +35,7 @@ static int jffs2_rename (struct inode *, struct dentry *,
  			 struct inode *, struct dentry *);
  
-+static int jffs2_whiteout (struct inode *, struct dentry *, struct dentry *);
-+
+ static int jffs2_whiteout (struct inode *, struct dentry *, struct dentry *);
++static int jffs2_fallthru (struct inode *, struct dentry *);
+ 
  const struct file_operations jffs2_dir_operations =
  {
- 	.read =		generic_read_dir,
-@@ -56,6 +58,7 @@ const struct inode_operations jffs2_dir_inode_operations =
- 	.mknod =	jffs2_mknod,
+@@ -59,6 +60,7 @@ const struct inode_operations jffs2_dir_inode_operations =
  	.rename =	jffs2_rename,
  	.check_acl =	jffs2_check_acl,
-+	.whiteout =     jffs2_whiteout,
+ 	.whiteout =     jffs2_whiteout,
++	.fallthru =     jffs2_fallthru,
  	.setattr =	jffs2_setattr,
  	.setxattr =	jffs2_setxattr,
  	.getxattr =	jffs2_getxattr,
-@@ -98,8 +101,14 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
- 			fd = fd_list;
- 		}
+@@ -103,10 +105,14 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
  	}
--	if (fd)
--		ino = fd->ino;
-+	if (fd) {
-+		spin_lock(&target->d_lock);
-+		if (fd->type == DT_WHT)
-+			target->d_flags |= DCACHE_WHITEOUT;
-+		else
-+			ino = fd->ino;
-+		spin_unlock(&target->d_lock);
-+	}
+ 	if (fd) {
+ 		spin_lock(&target->d_lock);
+-		if (fd->type == DT_WHT)
++		switch (fd->type) {
++		case DT_WHT:
+ 			target->d_flags |= DCACHE_WHITEOUT;
+-		else
++		case JFFS2_DT_FALLTHRU:
++			target->d_flags |= DCACHE_FALLTHRU;
++		default:
+ 			ino = fd->ino;
++		}
+ 		spin_unlock(&target->d_lock);
+ 	}
  	mutex_unlock(&dir_f->sem);
- 	if (ino) {
- 		inode = jffs2_iget(dir_i->i_sb, ino);
-@@ -498,6 +507,11 @@ static int jffs2_mkdir (struct inode *dir_i, struct dentry *dentry, int mode)
- 		return PTR_ERR(inode);
- 	}
- 
-+	if (dentry->d_flags & DCACHE_WHITEOUT) {
-+		inode->i_flags |= S_OPAQUE;
-+		ri->flags = cpu_to_je16(JFFS2_INO_FLAG_OPAQUE);
-+	}
-+
- 	inode->i_op = &jffs2_dir_inode_operations;
- 	inode->i_fop = &jffs2_dir_operations;
- 
-@@ -779,6 +793,60 @@ static int jffs2_mknod (struct inode *dir_i, struct dentry *dentry, int mode, de
+@@ -164,7 +170,10 @@ static int jffs2_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 				  fd->name, fd->ino, fd->type, curofs, offset));
+ 			continue;
+ 		}
+-		if (!fd->ino) {
++		if (fd->type == JFFS2_DT_FALLTHRU)
++			/* XXX Should really do a lookup for the real inode number here */
++			fd->ino = 100;
++		else if (!fd->ino && (fd->type != DT_WHT)) {
+ 			D2(printk(KERN_DEBUG "Skipping deletion dirent \"%s\"\n", fd->name));
+ 			offset++;
+ 			continue;
+@@ -793,6 +802,26 @@ static int jffs2_mknod (struct inode *dir_i, struct dentry *dentry, int mode, de
  	return 0;
  }
  
-+static int jffs2_whiteout (struct inode *dir, struct dentry *old_dentry,
-+			   struct dentry *new_dentry)
++static int jffs2_fallthru (struct inode *dir, struct dentry *dentry)
 +{
 +	struct jffs2_sb_info *c = JFFS2_SB_INFO(dir->i_sb);
-+	struct jffs2_inode_info *victim_f = NULL;
 +	uint32_t now;
 +	int ret;
 +
-+	/* If it's a directory, then check whether it is really empty */
-+	if (new_dentry->d_inode) {
-+		victim_f = JFFS2_INODE_INFO(old_dentry->d_inode);
-+		if (S_ISDIR(old_dentry->d_inode->i_mode)) {
-+			struct jffs2_full_dirent *fd;
-+
-+			mutex_lock(&victim_f->sem);
-+			for (fd = victim_f->dents; fd; fd = fd->next) {
-+				if (fd->ino) {
-+					mutex_unlock(&victim_f->sem);
-+					return -ENOTEMPTY;
-+				}
-+			}
-+			mutex_unlock(&victim_f->sem);
-+		}
-+	}
-+
 +	now = get_seconds();
-+	ret = jffs2_do_link(c, JFFS2_INODE_INFO(dir), 0, DT_WHT,
-+			    new_dentry->d_name.name, new_dentry->d_name.len, now);
++	ret = jffs2_do_link(c, JFFS2_INODE_INFO(dir), 0, DT_UNKNOWN,
++			    dentry->d_name.name, dentry->d_name.len, now);
 +	if (ret)
 +		return ret;
 +
-+	spin_lock(&new_dentry->d_lock);
-+	new_dentry->d_flags |= DCACHE_WHITEOUT;
-+	spin_unlock(&new_dentry->d_lock);
-+	d_add(new_dentry, NULL);
-+
-+	if (victim_f) {
-+		/* There was a victim. Kill it off nicely */
-+		drop_nlink(old_dentry->d_inode);
-+		/* Don't oops if the victim was a dirent pointing to an
-+		   inode which didn't exist. */
-+		if (victim_f->inocache) {
-+			mutex_lock(&victim_f->sem);
-+			if (S_ISDIR(old_dentry->d_inode->i_mode))
-+				victim_f->inocache->pino_nlink = 0;
-+			else
-+				victim_f->inocache->pino_nlink--;
-+			mutex_unlock(&victim_f->sem);
-+		}
-+	}
++	d_instantiate(dentry, NULL);
++	spin_lock(&dentry->d_lock);
++	dentry->d_flags |= DCACHE_FALLTHRU;
++	spin_unlock(&dentry->d_lock);
 +
 +	return 0;
 +}
 +
- static int jffs2_rename (struct inode *old_dir_i, struct dentry *old_dentry,
- 			 struct inode *new_dir_i, struct dentry *new_dentry)
+ static int jffs2_whiteout (struct inode *dir, struct dentry *old_dentry,
+ 			   struct dentry *new_dentry)
  {
-diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
-index 3451a81..c1e333c 100644
---- a/fs/jffs2/fs.c
-+++ b/fs/jffs2/fs.c
-@@ -301,6 +301,10 @@ struct inode *jffs2_iget(struct super_block *sb, unsigned long ino)
+@@ -825,6 +854,7 @@ static int jffs2_whiteout (struct inode *dir, struct dentry *old_dentry,
+ 		return ret;
  
- 		inode->i_op = &jffs2_dir_inode_operations;
- 		inode->i_fop = &jffs2_dir_operations;
-+
-+		if (je16_to_cpu(latest_node.flags) & JFFS2_INO_FLAG_OPAQUE)
-+			inode->i_flags |= S_OPAQUE;
-+
- 		break;
- 	}
- 	case S_IFREG:
-diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
-index 9a80e8e..c12cd1c 100644
---- a/fs/jffs2/super.c
-+++ b/fs/jffs2/super.c
-@@ -172,7 +172,7 @@ static int jffs2_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	sb->s_op = &jffs2_super_operations;
- 	sb->s_export_op = &jffs2_export_ops;
--	sb->s_flags = sb->s_flags | MS_NOATIME;
-+	sb->s_flags = sb->s_flags | MS_NOATIME | MS_WHITEOUT;
- 	sb->s_xattr = jffs2_xattr_handlers;
- #ifdef CONFIG_JFFS2_FS_POSIX_ACL
- 	sb->s_flags |= MS_POSIXACL;
+ 	spin_lock(&new_dentry->d_lock);
++	new_dentry->d_flags &= ~DCACHE_FALLTHRU;
+ 	new_dentry->d_flags |= DCACHE_WHITEOUT;
+ 	spin_unlock(&new_dentry->d_lock);
+ 	d_add(new_dentry, NULL);
 diff --git a/include/linux/jffs2.h b/include/linux/jffs2.h
-index 2b32d63..65533bb 100644
+index 65533bb..dbe8c93 100644
 --- a/include/linux/jffs2.h
 +++ b/include/linux/jffs2.h
-@@ -87,6 +87,8 @@
- #define JFFS2_INO_FLAG_USERCOMPR  2	/* User has requested a specific
- 					   compression type */
+@@ -114,6 +114,12 @@ struct jffs2_unknown_node
+ 	jint32_t hdr_crc;
+ };
  
-+#define JFFS2_INO_FLAG_OPAQUE     4	/* Directory is opaque (for union mounts) */
++/*
++ * Non-standard directory entry type(s), for on-disk use
++ */
 +
- 
- /* These can go once we've made sure we've caught all uses without
-    byteswapping */
++#define                JFFS2_DT_FALLTHRU       (DT_WHT + 1)
++
+ struct jffs2_raw_dirent
+ {
+ 	jint16_t magic;
 -- 
 1.6.3.3
 
