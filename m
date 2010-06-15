@@ -1,265 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab0FOSog (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 14:44:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31045 "EHLO mx1.redhat.com"
+	id S932362Ab0FOSow (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 14:44:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52517 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932264Ab0FOSme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 14:42:34 -0400
+	id S932222Ab0FOSm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 14:42:26 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
-       Felix Fietkau <nbd@openwrt.org>
-Subject: [PATCH 24/38] union-mount: Copy up directory entries on first readdir()
-Date: Tue, 15 Jun 2010 11:39:54 -0700
-Message-Id: <1276627208-17242-25-git-send-email-vaurora@redhat.com>
+       linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 25/38] VFS: Split inode_permission() and create path_permission()
+Date: Tue, 15 Jun 2010 11:39:55 -0700
+Message-Id: <1276627208-17242-26-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-readdir() in union mounts is implemented by copying up all visible
-directory entries from the lower level directories to the topmost
-directory.  Directory entries that refer to lower level file system
-objects are marked as "fallthru" in the topmost directory.
+Split inode_permission() into inode and file-system-dependent parts.
+Create path_permission() to check permission based on the path to the
+inode.  This is for union mounts, in which an inode can be located on
+a read-only lower layer file system but is still writable, since we
+will copy it up to the writable top layer file system.  So in that
+case, we want to ignore MS_RDONLY on the lower layer.  To make this
+decision, we must know the path (vfsmount, dentry) of both the target
+and its parent.
 
-Thanks to Felix Fietkau <nbd@openwrt.org> for a bug fix.
-
-XXX - How to deal with fallthrus in lower layers?
-
-Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+XXX - so ugly!
 ---
- fs/readdir.c |    9 +++
- fs/union.c   |  157 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/union.h   |    2 +
- 3 files changed, 168 insertions(+), 0 deletions(-)
+ fs/namei.c         |   92 ++++++++++++++++++++++++++++++++++++++++++++--------
+ include/linux/fs.h |    1 +
+ 2 files changed, 79 insertions(+), 14 deletions(-)
 
-diff --git a/fs/readdir.c b/fs/readdir.c
-index 3a48491..dd3eae1 100644
---- a/fs/readdir.c
-+++ b/fs/readdir.c
-@@ -19,6 +19,8 @@
- 
- #include <asm/uaccess.h>
- 
-+#include "union.h"
-+
- int vfs_readdir(struct file *file, filldir_t filler, void *buf)
- {
- 	struct inode *inode = file->f_path.dentry->d_inode;
-@@ -36,9 +38,16 @@ int vfs_readdir(struct file *file, filldir_t filler, void *buf)
- 
- 	res = -ENOENT;
- 	if (!IS_DEADDIR(inode)) {
-+		if (IS_DIR_UNIONED(file->f_path.dentry) && !IS_OPAQUE(inode)) {
-+			res = union_copyup_dir(&file->f_path);
-+			if (res)
-+				goto out_unlock;
-+		}
-+
- 		res = file->f_op->readdir(file, buf, filler);
- 		file_accessed(file);
- 	}
-+out_unlock:
- 	mutex_unlock(&inode->i_mutex);
- out:
- 	return res;
-diff --git a/fs/union.c b/fs/union.c
-index c089c02..76a6c34 100644
---- a/fs/union.c
-+++ b/fs/union.c
-@@ -22,6 +22,8 @@
- #include <linux/fs_struct.h>
- #include <linux/slab.h>
- #include <linux/namei.h>
-+#include <linux/file.h>
-+#include <linux/security.h>
- 
- #include "union.h"
- 
-@@ -211,3 +213,158 @@ int union_create_topmost_dir(struct path *parent, struct qstr *name,
- 
- 	return res;
+diff --git a/fs/namei.c b/fs/namei.c
+index 1e6adf7..4fd431e 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -241,29 +241,20 @@ int generic_permission(struct inode *inode, int mask,
  }
-+
-+/**
-+ * union_copyup_dir_one - copy up a single directory entry
+ 
+ /**
+- * inode_permission  -  check for access rights to a given inode
++ * __inode_permission  -  check for access rights to a given inode
+  * @inode:	inode to check permission on
+  * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
+  *
+  * Used to check for read/write/execute permissions on an inode.
+- * We use "fsuid" for this, letting us set arbitrary permissions
+- * for filesystem access without changing the "normal" uids which
+- * are used for other things.
 + *
-+ * Individual directory entry copyup function for union_copyup_dir.
-+ * We get the entries from higher level layers first.
++ * This does not check for a read-only file system.  You probably want
++ * inode_permission().
+  */
+-int inode_permission(struct inode *inode, int mask)
++static int __inode_permission(struct inode *inode, int mask)
+ {
+ 	int retval;
+ 
+ 	if (mask & MAY_WRITE) {
+-		umode_t mode = inode->i_mode;
+-
+-		/*
+-		 * Nobody gets write access to a read-only fs.
+-		 */
+-		if (IS_RDONLY(inode) &&
+-		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
+-			return -EROFS;
+-
+ 		/*
+ 		 * Nobody gets write access to an immutable file.
+ 		 */
+@@ -288,6 +279,79 @@ int inode_permission(struct inode *inode, int mask)
+ }
+ 
+ /**
++ * sb_permission  -  check superblock-level permissions
++ * @sb: superblock of inode to check permission on
++ * @mask: right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
++ *
++ * Separate out file-system wide checks from inode-specific permission
++ * checks.  In particular, union mounts want to check the read-only
++ * status of the top-level file system, not the lower.
 + */
-+
-+static int union_copyup_dir_one(void *buf, const char *name, int namlen,
-+				loff_t offset, u64 ino, unsigned int d_type)
++int sb_permission(struct super_block *sb, struct inode *inode, int mask)
 +{
-+	struct dentry *topmost_dentry = (struct dentry *) buf;
-+	struct dentry *dentry;
-+	int err = 0;
++	if (mask & MAY_WRITE) {
++		umode_t mode = inode->i_mode;
 +
-+	switch (namlen) {
-+	case 2:
-+		if (name[1] != '.')
-+			break;
-+	case 1:
-+		if (name[0] != '.')
-+			break;
-+		return 0;
-+	}
-+
-+	/* Lookup this entry in the topmost directory */
-+	dentry = lookup_one_len(name, topmost_dentry, namlen);
-+
-+	if (IS_ERR(dentry)) {
-+		printk(KERN_WARNING "%s: error looking up %s\n", __func__,
-+		       dentry->d_name.name);
-+		err = PTR_ERR(dentry);
-+		goto out;
-+	}
-+
-+	/*
-+	 * If the entry already exists, one of the following is true:
-+	 * it was already copied up (due to an earlier lookup), an
-+	 * entry with the same name already exists on the topmost file
-+	 * system, it is a whiteout, or it is a fallthru.  In each
-+	 * case, the top level entry masks any entries from lower file
-+	 * systems, so don't copy up this entry.
-+	 */
-+	if (dentry->d_inode || d_is_whiteout(dentry) || d_is_fallthru(dentry))
-+		goto out_dput;
-+
-+	/*
-+	 * If the entry doesn't exist, create a fallthru entry in the
-+	 * topmost file system.  All possible directory types are
-+	 * used, so each file system must implement its own way of
-+	 * storing a fallthru entry.
-+	 */
-+	err = topmost_dentry->d_inode->i_op->fallthru(topmost_dentry->d_inode,
-+						      dentry);
-+out_dput:
-+	dput(dentry);
-+out:
-+	return err;
-+}
-+
-+/**
-+ * union_copyup_dir - copy up low-level directory entries to topmost dir
-+ *
-+ * readdir() is difficult to support on union file systems for two
-+ * reasons: We must eliminate duplicates and apply whiteouts, and we
-+ * must return something in f_pos that lets us restart in the same
-+ * place when we return.  Our solution is to, on first readdir() of
-+ * the directory, copy up all visible entries from the low-level file
-+ * systems and mark the entries that refer to low-level file system
-+ * objects as "fallthru" entries.
-+ *
-+ * Locking strategy: We hold the topmost dir's i_mutex on entry.  We
-+ * grab the i_mutex on lower directories one by one.  So the locking
-+ * order is:
-+ *
-+ * Writable/topmost layers > Read-only/lower layers
-+ *
-+ * So there is no problem with lock ordering for union stacks with
-+ * multiple lower layers.  E.g.:
-+ *
-+ * (topmost) A->B->C (bottom)
-+ * (topmost) D->C->B (bottom)
-+ *
-+ * (Not that we support more than two layers at the moment.)
-+ */
-+
-+int union_copyup_dir(struct path *topmost_path)
-+{
-+	struct dentry *topmost_dentry = topmost_path->dentry;
-+	struct union_dir *ud;
-+	int res = 0;
-+
-+	BUG_ON(IS_OPAQUE(topmost_dentry->d_inode));
-+
-+	res = mnt_want_write(topmost_path->mnt);
-+	if (res)
-+		return res;
-+	/*
-+	 * Mark this dir opaque to show that we have already copied up
-+	 * the lower entries.  Only fallthru entries pass through to
-+	 * the underlying file system.
-+	 */
-+	topmost_dentry->d_inode->i_flags |= S_OPAQUE;
-+	mark_inode_dirty(topmost_dentry->d_inode);
-+
-+	for (ud = topmost_path->dentry->d_union_dir; ud != NULL; ud = ud->u_lower) {
-+		struct file * ftmp;
-+		struct inode * inode;
-+		struct path path;
-+
-+		BUG_ON(ud->u_this.dentry->d_count.counter == 0);
-+		path = ud->u_this;
-+		/* dentry_open() doesn't get a path reference itself */
-+		path_get(&path);
-+		ftmp = dentry_open(path.dentry, path.mnt,
-+				   O_RDONLY | O_DIRECTORY | O_NOATIME,
-+				   current_cred());
-+		if (IS_ERR(ftmp)) {
-+			printk (KERN_ERR "unable to open dir %s for "
-+				"directory copyup: %ld\n",
-+				path.dentry->d_name.name, PTR_ERR(ftmp));
-+			path_put(&path);
-+			continue;
-+		}
-+
-+		inode = path.dentry->d_inode;
-+		mutex_lock(&inode->i_mutex);
-+
-+		res = -ENOENT;
-+		if (IS_DEADDIR(inode))
-+			goto out_fput;
 +		/*
-+		 * Read the whole directory, calling our directory
-+		 * entry copyup function on each entry.  Pass in the
-+		 * topmost dentry as our private data so we can create
-+		 * new entries in the topmost directory.
++		 * Nobody gets write access to a read-only fs.
 +		 */
-+		res = ftmp->f_op->readdir(ftmp, topmost_dentry,
-+					  union_copyup_dir_one);
-+out_fput:
-+		mutex_unlock(&inode->i_mutex);
-+		fput(ftmp);
-+
-+		if (res)
-+			break;
-+
-+		/* XXX Should process directories below an opaque
-+		 * directory in case there are fallthrus in it */
-+		if (IS_OPAQUE(path.dentry->d_inode))
-+			break;
-+
++		if ((sb->s_flags & MS_RDONLY) &&
++		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
++			return -EROFS;
 +	}
-+	mnt_drop_write(topmost_path->mnt);
-+	return res;
++	return 0;
 +}
-diff --git a/fs/union.h b/fs/union.h
-index 505f132..80c2421 100644
---- a/fs/union.h
-+++ b/fs/union.h
-@@ -58,6 +58,7 @@ extern void d_free_unions(struct dentry *);
- int needs_lookup_union(struct path *, struct path *);
- int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
- 			     struct path *);
-+extern int union_copyup_dir(struct path *);
++
++/**
++ * inode_permission  -  check for access rights to a given inode
++ * @inode:	inode to check permission on
++ * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
++ *
++ * Used to check for read/write/execute permissions on an inode.
++ * We use "fsuid" for this, letting us set arbitrary permissions
++ * for filesystem access without changing the "normal" uids which
++ * are used for other things.
++ */
++int inode_permission(struct inode *inode, int mask)
++{
++	int retval;
++
++	retval = sb_permission(inode->i_sb, inode, mask);
++	if (retval)
++		return retval;
++	return __inode_permission(inode, mask);
++}
++
++/**
++ * path_permission - check for inode access rights depending on path
++ * @path: path of inode to check
++ * @parent_path: path of inode's parent
++ * @mask: right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
++ *
++ * Like inode_permission, but used to check for permission when the
++ * file may potentially be copied up between union layers.
++ */
++
++int path_permission(struct path *path, struct path *parent_path, int mask)
++{
++	struct vfsmount *mnt;
++	int retval;
++
++	/* Catch some reversal of args */
++	BUG_ON(!S_ISDIR(parent_path->dentry->d_inode->i_mode));
++
++	if (IS_MNT_UNION(parent_path->mnt))
++		mnt = parent_path->mnt;
++	else
++		mnt = path->mnt;
++
++	retval = sb_permission(mnt->mnt_sb, path->dentry->d_inode, mask);
++	if (retval)
++		return retval;
++	return __inode_permission(path->dentry->d_inode, mask);
++}
++
++/**
+  * file_permission  -  check for additional access rights to a given file
+  * @file:	file to check access rights for
+  * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index cc2934d..82750b5 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2118,6 +2118,7 @@ extern sector_t bmap(struct inode *, sector_t);
+ #endif
+ extern int notify_change(struct dentry *, struct iattr *);
+ extern int inode_permission(struct inode *, int);
++extern int path_permission(struct path *, struct path *, int);
+ extern int generic_permission(struct inode *, int,
+ 		int (*check_acl)(struct inode *, int));
  
- #else /* CONFIG_UNION_MOUNT */
- 
-@@ -67,6 +68,7 @@ int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
- #define d_free_unions(x)		do { } while (0)
- #define needs_lookup_union(x, y)	({ (0); })
- #define union_create_topmost_dir(w, x, y, z)	({ BUG(); (NULL); })
-+#define union_copyup_dir(x)		({ BUG(); (0); })
- 
- #endif	/* CONFIG_UNION_MOUNT */
- #endif	/* __KERNEL__ */
 -- 
 1.6.3.3
 
