@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab0FODmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 23:42:42 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36732 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751713Ab0FODmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 23:42:40 -0400
-Date: Tue, 15 Jun 2010 13:42:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, andy@greyhouse.net,
-       emil.s.tantilov@intel.com, jeffrey.t.kirsher@intel.com
-Subject: Re: linux-next: build failure after merge of the net tree
-Message-Id: <20100615134232.20eac3fa.sfr@canb.auug.org.au>
-In-Reply-To: <20100614.191356.193722104.davem@davemloft.net>
-References: <20100615120052.7202f20d.sfr@canb.auug.org.au>
-	<20100614.191356.193722104.davem@davemloft.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1755653Ab0FODrt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 23:47:49 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40884
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752247Ab0FODrs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 23:47:48 -0400
+Date: Mon, 14 Jun 2010 20:47:59 -0700 (PDT)
+Message-Id: <20100614.204759.226765762.davem@davemloft.net>
+To: jbaron@redhat.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+       vgoyal@redhat.com, sam@ravnborg.org
+Subject: Re: [PATCH 00/13] jump label v9
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1276116186.git.jbaron@redhat.com>
+References: <cover.1276116186.git.jbaron@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__15_Jun_2010_13_42_32_+1000_2UsFFEqGZz9DzUZq"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__15_Jun_2010_13_42_32_+1000_2UsFFEqGZz9DzUZq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Dave,
+Jason, I'm really at wits end about this patch set.  To say
+that trying to test our your patches is frustrating for me
+so far would be an understatement.
 
-On Mon, 14 Jun 2010 19:13:56 -0700 (PDT) David Miller <davem@davemloft.net>=
- wrote:
->
-> I'll incorporate your merge and build fixups when I merge net-2.6 into
-> net-next-2.6 later tonight, thanks Stephen!
+Nothing you ever post builds for me, not one patch set has
+built properly.
 
-Great, thanks.
+I can also tell that you're just blindly making changes to the
+sparc bits and not trying to build test them at all:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+1) Even though you created the jump_label_t, and made it properly
+   a u32 on sparc, you left the assembler using ".xword" to
+   record the entries.
 
---Signature=_Tue__15_Jun_2010_13_42_32_+1000_2UsFFEqGZz9DzUZq
-Content-Type: application/pgp-signature
+2) The sparc "struct jump_label" still calls it's third member "name",
+   it needs to be "key" or else the build breaks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+3) Eventhough the sparc JUMP_LABEL macro was fixed to have two args,
+   the first arg was left as "tag" instead of being renamed to "key"
+   and that name change propaged into the asm in the macro expansion.
 
-iEYEARECAAYFAkwW9qgACgkQjjKRsyhoI8xKsQCglbSw5mDJAEe0D2oNFN61+jT/
-krUAnRQnTZso4jicUKp6pKlnnYRAg+lJ
-=BBxR
------END PGP SIGNATURE-----
+I took care of that locally to try and test this, but then I hit the
+current major problem which is that you're using things like
+text_poke_early() unconditionally, but that is an X86-only facility
+implemented by x86's alternative mechanism.
 
---Signature=_Tue__15_Jun_2010_13_42_32_+1000_2UsFFEqGZz9DzUZq--
+Also, kernel/jump_label.c only gets the ERR_PTR() definitions
+indirectly on the x86 platform, it needs to include linux/err.h
+directly to make sure those things are available on every platform.
+
+You gave me the impression a few iterations ago that you were doing
+build testing on sparc64 using cross-compilers, or that you would
+start to do so.  You're obviously not, could you please start doing so
+and let me know when you've at least build tested your jump-label
+patch series on sparc64 and at least one architecture that lacks
+jump-label support?
+
+Thanks.
