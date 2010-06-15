@@ -1,797 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758584Ab0FOSqW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 14:46:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19806 "EHLO mx1.redhat.com"
+	id S1758616Ab0FOSrc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 14:47:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47102 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932208Ab0FOSmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 14:42:19 -0400
+	id S1758456Ab0FOSmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 14:42:10 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 17/38] union-mount: Union mounts documentation
-Date: Tue, 15 Jun 2010 11:39:47 -0700
-Message-Id: <1276627208-17242-18-git-send-email-vaurora@redhat.com>
+       linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
+       Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org
+Subject: [PATCH 14/38] fallthru: ext2 fallthru support
+Date: Tue, 15 Jun 2010 11:39:44 -0700
+Message-Id: <1276627208-17242-15-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document design and implementation of union mounts (a.k.a. writable
-overlays).
----
- Documentation/filesystems/union-mounts.txt |  759 ++++++++++++++++++++++++++++
- 1 files changed, 759 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/filesystems/union-mounts.txt
+Add support for fallthru directory entries to ext2.
 
-diff --git a/Documentation/filesystems/union-mounts.txt b/Documentation/filesystems/union-mounts.txt
-new file mode 100644
-index 0000000..2ada88d
---- /dev/null
-+++ b/Documentation/filesystems/union-mounts.txt
-@@ -0,0 +1,759 @@
-+Union mounts (a.k.a. writable overlays)
-+=======================================
+XXX What to do for d_ino for fallthrus?  If we return the inode from
+the the underlying file system, it comes from a different inode
+"namespace" and that will produce spurious matches.  This argues for
+implementation of fallthrus as symlinks because they have to allocate
+an inode (and inode number) anyway, and we can later reuse it if we
+copy the file up.
+
+Cc: Theodore Tso <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org
+Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+Signed-off-by: Jan Blunck <jblunck@suse.de>
+---
+ fs/ext2/dir.c           |   92 ++++++++++++++++++++++++++++++++++++++++++++--
+ fs/ext2/ext2.h          |    1 +
+ fs/ext2/namei.c         |   22 +++++++++++
+ include/linux/ext2_fs.h |    1 +
+ 4 files changed, 112 insertions(+), 4 deletions(-)
+
+diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
+index 030bd46..f3b4aff 100644
+--- a/fs/ext2/dir.c
++++ b/fs/ext2/dir.c
+@@ -219,7 +219,8 @@ static inline int ext2_match (int len, const char * const name,
+ {
+ 	if (len != de->name_len)
+ 		return 0;
+-	if (!de->inode && (de->file_type != EXT2_FT_WHT))
++	if (!de->inode && ((de->file_type != EXT2_FT_WHT) &&
++			   (de->file_type != EXT2_FT_FALLTHRU)))
+ 		return 0;
+ 	return !memcmp(name, de->name, len);
+ }
+@@ -256,6 +257,7 @@ static unsigned char ext2_filetype_table[EXT2_FT_MAX] = {
+ 	[EXT2_FT_SOCK]		= DT_SOCK,
+ 	[EXT2_FT_SYMLINK]	= DT_LNK,
+ 	[EXT2_FT_WHT]		= DT_WHT,
++	[EXT2_FT_FALLTHRU]	= DT_UNKNOWN,
+ };
+ 
+ #define S_SHIFT 12
+@@ -342,6 +344,24 @@ ext2_readdir (struct file * filp, void * dirent, filldir_t filldir)
+ 					ext2_put_page(page);
+ 					return 0;
+ 				}
++			} else if (de->file_type == EXT2_FT_FALLTHRU) {
++				int over;
++				unsigned char d_type = DT_UNKNOWN;
 +
-+This document describes the architecture and current status of union
-+mounts, also known as writable overlays.
-+
-+In this document:
-+ - Overview of union mounts
-+ - Terminology
-+ - VFS implementation
-+ - Locking strategy
-+ - VFS/file system interface
-+ - Userland interface
-+ - NFS interaction
-+ - Status
-+ - Contributing to union mounts
-+
-+Overview
-+========
-+
-+A union mount layers one read-write file system over a one read-only
-+file system, with all writes going to the writable file system.  The
-+namespace of both file systems appears as a combined whole to
-+userland, with files and directories on the writable file system
-+covering up any files or directories with matching pathnames on the
-+read-only file system.  The read-write file system is the "topmost"
-+or "upper" file system and the read-only file system is the "lower"
-+file system.  A few use cases:
-+
-+- Root file system on CD with writes saved to hard drive (LiveCD)
-+- Multiple virtual machines with the same starting root file system
-+- Cluster with NFS mounted root on clients
-+
-+Most if not all of these problems could be solved with a COW block
-+device or a clustered file system (include NFS mounts).  However, for
-+some use cases, sharing is more efficient and better performing if
-+done at the file system namespace level.  COW block devices only
-+increase their divergence as time goes on, and a fully coherent
-+writable file system is unnecessary synchronization overhead if no
-+other client needs to see the writes.
-+
-+What union mounts are not
-+-------------------------
-+
-+Union mounts are not a general-purpose unioning file system.  They do
-+not provide a generic "union of namespaces" operation for an arbitrary
-+number of file systems.  Many interesting features can be implemented
-+with a generic unioning facility: unioning of more than two file
-+systems, dynamic insertion and removal of branches, online upgrade,
-+etc.  Some unioning file systems that do this are UnionFS and AUFS.
-+
-+File systems can only be union mounted at their mountpoints, and the
-+lower level file system cannot have any submounts.
-+
-+Terminology
-+===========
-+
-+The main physical metaphor for union mounts is that a writable file
-+system is mounted "on top" of a read-only file system.  Lookups start
-+at the "topmost" read-write file system and travel "down" to the
-+"bottom" read-only file system only if no blocking entry exists on the
-+top layer.
-+
-+Topmost layer: The read-write file system.  Lookups begin here.
-+
-+Bottom layer: The read-only file system.  Lookups end here.
-+
-+Path: Combination of the vfsmount and dentry structure.
-+
-+Follow down: Given a path from the top layer, find the corresponding
-+path on the bottom layer.
-+
-+Follow up: Given a path from the bottom layer, find the corresponding
-+path on the top layer.
-+
-+Whiteout: A directory entry in the top layer that prevents lookups
-+from travelling down to the bottom layer.  Created on unlink()/rmdir()
-+if a corresponding directory entry exists in the bottom layer.
-+
-+Opaque flag: A flag on a directory in the top layer that prevents
-+lookups of entries in this directory from travelling down to the
-+bottom layer (unless there is an explicit fallthru entry allowing that
-+for a particular entry).  Set on creation of a directory that replaces
-+a whiteout, and after a directory copyup.
-+
-+Fallthru: A directory entry which allows lookups to "fall through" to
-+the bottom layer for that exact directory entry.  This serves as a
-+placeholder for directory entries from the bottom layer during
-+readdir().  Fallthrus override opaque flags.
-+
-+File copyup: Create a file on the top layer that has the same metadata
-+and contents as the file with the same pathname on the bottom layer.
-+
-+Directory copyup: Copy up the visible directory entries from the
-+bottom layer as fallthrus in the matching top layer directory.  Mark
-+the directory opaque to avoid unnecessary negative lookups on the
-+bottom layer.
-+
-+Examples
-+========
-+
-+What happens when I...
-+
-+- creat() /newfile -> creates on topmost layer
-+- unlink() /oldfile -> creates a whiteout on topmost layer
-+- Edit /existingfile -> copies up to top layer at open(O_WR) time
-+- truncate /existingfile -> copies up to topmost layer + N bytes if specified
-+- touch()/chmod()/chown()/etc. -> copies up to topmost layer
-+- mkdir() /newdir -> creates on topmost layer
-+- rmdir() /olddir -> creates a whiteout on topmost layer
-+- mkdir() /olddir after above -> creates on topmost layer w/ opaque flag
-+- readdir() /shareddir -> copies up entries from bottom layer as fallthrus
-+- link() /oldfile /newlink -> copies up /oldfile, creates /newlink on topmost layer
-+- symlink() /oldfile /symlink -> nothing special
-+- rename() /oldfile /newfile -> copies up /oldfile to /newfile on top layer
-+- rename() /olddir /newdir -> EXDEV
-+- rename() /topmost_only_dir /topmost_only_dir2 -> success
-+
-+Getting to a root file system with union mounts:
-+
-+- Mount the base read-only file system as the root file system
-+- Mount the read-only file system again on /newroot
-+- Mount the read-write layer on /newroot:
-+   # mount -o union /dev/sda /newroot
-+- pivot_root to /newroot
-+- Start init
-+
-+See scripts/pivot.sh in the UML devkit linked to from:
-+
-+http://valerieaurora.org/union/
-+
-+VFS implementation
-+==================
-+
-+Union mounts are implemented as an integral part of the VFS, rather
-+than as a VFS client file system (i.e., a stacked file system like
-+unionfs or ecryptfs).  Implementing unioning inside the VFS eliminates
-+the need for duplicate copies of VFS data structures, unnecessary
-+indirection, and code duplication, but requires very maintainable,
-+low-to-zero overhead code.  Union mounts require no change to file
-+systems serving as the read-only layer, and requires some minor
-+support from file systems serving as the read-write layer.  File
-+systems that want to be the writable layer must implement the new
-+->whiteout() and ->fallthru() inode operations, which create special
-+dummy directory entries.
-+
-+The union mounts code must accomplish the following major tasks:
-+
-+1) Pass lookups through to the lower level file system.
-+2) Copy files and directories up to the topmost layer when written.
-+3) Create whiteouts and fallthrus as necessary.
-+
-+VFS objects and union mounts
-+----------------------------
-+
-+First, some VFS basics:
-+
-+The VFS allows multiple mounts of the same file system.  For example,
-+/dev/sda can be mounted at /usr and also at /mnt.  The same file
-+system can be mounted read-only at one point and read-write at
-+another.  Each of these mounts has its own vfsmount data structure in
-+the kernel.  However, each underlying file system has exactly one
-+in-kernel superblock structure no matter how many times it is mounted.
-+All the separate vfsmounts for the same file system reference the same
-+superblock data structure.
-+
-+Directory entries are cached by the VFS in dentry structures.  The VFS
-+keeps one dentry structure for each file or directory in a file
-+system, no matter how many times it is mounted.  Each dentry
-+represents only one element of a path name.  When the VFS looks up a
-+pathname (e.g., "/sbin/init"), the result is combination of vfsmount
-+and dentry.  This <mnt,dentry> pair is usually stored in a kernel
-+structure named "path", which is simply two pointers, one to the
-+vfsmount and one to the dentry.  A "struct path" is this structure; a
-+pathname is a string like "/etc/fstab".
-+
-+In union mounts, a file system can only be the topmost layer for one
-+union mount.  A file system can be part of multiple union mounts if it
-+is a read-only layer.  So dentries in the read-only layers can be part
-+of multiple unions, while a dentry in the read-write layer can only be
-+part of one unin.
-+
-+union_dir structure
-+---------------------
-+
-+The first job of union mounts is to map directories from the topmost
-+layer to directories with the same pathname in the lower layer.  That
-+is, given the <mnt,dentry> pair for a directory pathname in the
-+topmost layer, we need to find all the <mnt,dentry> pairs for the
-+directory with the same pathname in the lower layer.  We do this with
-+a singly linked list rooted in the dentry from the topmost layer.  The
-+linked list is the union_dir structure:
-+
-+/*
-+ * The union_dir structure.  Basically just a singly-linked list with
-+ * a pointer to the referenced dentry, whose head is d_union_dir in
-+ * the dentry of the topmost directory.  We can't link this list
-+ * purely through list elements in the dentry because lower layer
-+ * dentries can be part of multiple union stacks.  However, the
-+ * topmost dentry is only part of one union stack.  So we point at the
-+ * lower layer dentries through a linked list rooted in the topmost
-+ * dentry.
++				offset = (char *)de - kaddr;
++				/* XXX We don't know the inode number
++				 * of the directory entry in the
++				 * underlying file system.  Should
++				 * look it up, either on fallthru
++				 * creation at first readdir or now at
++				 * filldir time. */
++				over = filldir(dirent, de->name, de->name_len,
++					       (n<<PAGE_CACHE_SHIFT) | offset,
++					       123 /* Made up ino */, d_type);
++				if (over) {
++					ext2_put_page(page);
++					return 0;
++				}
+ 			}
+ 			filp->f_pos += ext2_rec_len_from_disk(de->rec_len);
+ 		}
+@@ -463,6 +483,10 @@ ino_t ext2_inode_by_dentry(struct inode *dir, struct dentry *dentry)
+ 			spin_lock(&dentry->d_lock);
+ 			dentry->d_flags |= DCACHE_WHITEOUT;
+ 			spin_unlock(&dentry->d_lock);
++		} else if(!res && de->file_type == EXT2_FT_FALLTHRU) {
++			spin_lock(&dentry->d_lock);
++			dentry->d_flags |= DCACHE_FALLTHRU;
++			spin_unlock(&dentry->d_lock);
+ 		}
+ 		ext2_put_page(page);
+ 	}
+@@ -532,6 +556,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
+ 				de->name_len = 0;
+ 				de->rec_len = ext2_rec_len_to_disk(chunk_size);
+ 				de->inode = 0;
++				de->file_type = 0;
+ 				goto got_it;
+ 			}
+ 			if (de->rec_len == 0) {
+@@ -545,6 +570,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
+ 			name_len = EXT2_DIR_REC_LEN(de->name_len);
+ 			rec_len = ext2_rec_len_from_disk(de->rec_len);
+ 			if (!de->inode && (de->file_type != EXT2_FT_WHT) &&
++			    (de->file_type != EXT2_FT_FALLTHRU) &&
+ 			    (rec_len >= reclen))
+ 				goto got_it;
+ 			if (rec_len >= name_len + reclen)
+@@ -587,7 +613,8 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 
+ 	err = -EEXIST;
+ 	if (ext2_match (namelen, name, de)) {
+-		if (de->file_type == EXT2_FT_WHT)
++		if ((de->file_type == EXT2_FT_WHT) ||
++		    (de->file_type == EXT2_FT_FALLTHRU))
+ 			goto got_it;
+ 		goto out_unlock;
+ 	}
+@@ -602,7 +629,8 @@ got_it:
+ 							&page, NULL);
+ 	if (err)
+ 		goto out_unlock;
+-	if (de->inode || ((de->file_type == EXT2_FT_WHT) &&
++	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
++			   (de->file_type == EXT2_FT_FALLTHRU)) &&
+ 			  !ext2_match (namelen, name, de))) {
+ 		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
+ 		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
+@@ -627,6 +655,60 @@ out_unlock:
+ }
+ 
+ /*
++ * Create a fallthru entry.
 + */
-+struct union_dir {
-+	struct path u_this;		/* this is me */
-+	struct union_dir *u_lower;	/* this is what I overlay */
-+};
-+
-+This structure is flexible enough to support an arbitrary number of
-+layers of unioned file systems. (The current code is tested only with
-+two layers but should allow more layers.) Since there can be more than
-+two layers, this section will talk about mapping "upper" directories
-+to "lower" directories, instead of "topmost" directories to "bottom"
-+directories.
-+
-+At the time of a union mount, we allocate a union_dir structure to link
-+the root directory of the upper layer to the root directory of the
-+lower layer and put the pointer to it in the d_union_dir field of
-+struct dentry:
-+
-+struct dentry {
-+[...]
-+#ifdef CONFIG_UNION_MOUNT
-+	struct union_dir *d_union_dir;	/* head of union stack */
-+#endif
-+
-+
-+Traversing the union stack
-+--------------------------
-+
-+The set of union_dir structures referring to a particular pathname are
-+called collectively the union stack for that directory.  Only lookup
-+needs to traverse the union stack - walk down the list of paths
-+beginning with the topmost.  This is open-coded:
-+
-+static int __lookup_union(struct nameidata *nd, struct qstr *name,
-+			  struct path *topmost)
++int ext2_fallthru_entry (struct inode *dir, struct dentry *dentry)
 +{
-+[...]
-+	/* new_ud is the tail of the list of union dirs for this dentry */
-+	struct union_dir **next_ud = &topmost->dentry->d_union_dir;
-+[...]
-+	/* Go through each dir underlying the parent, looking for a match */
-+	for (ud = nd->path.dentry->d_union_dir; ud != NULL; ud = ud->u_lower) {
-+[...]
-+		next_ud = &(*next_ud)->u_lower;
++	const char *name = dentry->d_name.name;
++	int namelen = dentry->d_name.len;
++	unsigned short rec_len, name_len;
++	ext2_dirent * de;
++	struct page *page;
++	loff_t pos;
++	int err;
++
++	de = ext2_append_entry(dentry, &page);
++	if (IS_ERR(de))
++		return PTR_ERR(de);
++
++	err = -EEXIST;
++	if (ext2_match (namelen, name, de))
++		goto out_unlock;
++
++	name_len = EXT2_DIR_REC_LEN(de->name_len);
++	rec_len = ext2_rec_len_from_disk(de->rec_len);
++
++	pos = page_offset(page) +
++		(char*)de - (char*)page_address(page);
++	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
++							&page, NULL);
++	if (err)
++		goto out_unlock;
++	if (de->inode || (de->file_type == EXT2_FT_WHT) ||
++	    (de->file_type == EXT2_FT_FALLTHRU)) {
++		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
++		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
++		de->rec_len = ext2_rec_len_to_disk(name_len);
++		de = de1;
 +	}
++	de->name_len = namelen;
++	memcpy(de->name, name, namelen);
++	de->inode = 0;
++	de->file_type = EXT2_FT_FALLTHRU;
++	err = ext2_commit_chunk(page, pos, rec_len);
++	dir->i_mtime = dir->i_ctime = CURRENT_TIME_SEC;
++	EXT2_I(dir)->i_flags &= ~EXT2_BTREE_FL;
++	mark_inode_dirty(dir);
++	/* OFFSET_CACHE */
++out_put:
++	ext2_put_page(page);
++	return err;
++out_unlock:
++	unlock_page(page);
++	goto out_put;
 +}
 +
-+Code paths
-+n----------
-+
-+Union mounts modify the following key code paths in the VFS:
-+
-+- mount()/umount()
-+- Pathname lookup
-+- Any path that modifies an existing file
-+
-+Mount
-+-----
-+
-+Union mounts are created in two steps:
-+
-+1. Mount the read-only layer file systems read-only in the usual
-+manner, all on the same mountpoint.
-+
-+2. Mount the top layer with the "-o union" option at the same
-+mountpoint.  All read-only file systems mounted at this mountpoint
-+will be included in the union mount.
-+
-+The bottom layers must be read-only and the top layer must be
-+read-write and support whiteouts and fallthrus.  A file system that
-+supports whiteouts and fallthrus indicates this by setting the
-+MS_WHITEOUT flag in the superblock.  Currently, the top layer is
-+forced to "noatime" to avoid a copyup on every access of a file.
-+Supporting atime with the current infrastructure would require a
-+copyup on every open().  The "relatime" option would be equally
-+efficient if the atime is the same or more recent than the mtime/ctime
-+for every object on the read-only file system, and if the 24-hour
-+timeout on relatime was disabled.  However, this is probably not
-+worthwhile for the majority of union mount use cases.
-+
-+The lower layer file systems must not have any submounts - other file
-+systems mounted at points in the lower file system's namespace.  File
-+systems can only be union mounted at their root directories.  Without
-+this restriction, some VFS operations must always do a union_lookup()
-+- requiring a global lock - in order to find out if a path is
-+potentially unioned.  With this restriction, we can tell if a path is
-+potentially unioned by checking a flag in the vfsmount.
-+
-+pivot_root() to a union mounted file system is supported.  The
-+recommended way to get to a union mounted root file system is to boot
-+with the read-only mount as the root file system, construct the union
-+mount on an entirely new mount, and pivot_root() to the new union
-+mount root.  Attempting to union mount the root file system later in
-+boot will result in covering other file systems, e.g., /proc, which
-+isn't permitted in the current code and is a bad idea anyway.
-+
-+Hard read-only file systems
-+---------------------------
-+
-+Union mounts require the lower layer of the file system to be
-+read-only.  However, in Linux, any individual file system may be
-+mounted at multiple places in the namespace, and a file system can be
-+changed from read-only to read-write while still mounted.  Thus, simply
-+checking that the bottom layer is read-only at the time the writable
-+overlay is mounted over it is pointless, since at any time the bottom
-+layer may become read-write.
-+
-+We have to guarantee that a file system will be read-only for as long
-+as it is the bottom layer of a union mount.  To do this, we track the
-+number of hard read-only users of a file system in its VFS superblock
-+structure.  When we union mount a writable overlay over a file system,
-+we increment its read-only user count.  The file system can only be
-+mounted read-write if its read-only users count is zero.
-+
-+Todo:
-+
-+- Support hard read-only NFS mounts.  See discussion here:
-+
-+  http://markmail.org/message/3mkgnvo4pswxd7lp
-+
-+Pathname lookup
-+---------------
-+
-+Pathname lookup in a unioned directory traverses down the union stack
-+for the parent directory, looking up each pathname element in each
-+layer of the file system (according to the rules of whiteouts,
-+fallthrus, and opaque flags).  At mount time, the union stack for the
-+root directory of the file system is created, and the union stack
-+creation for every other unioned directory in the file system is
-+boot-strapped using the already-existing union stack of the
-+directory's parent.  In order to simplify the code greatly, every
-+visible directory on the lower file system is required to have a
-+matching directory on the upper file system.  This matching directory
-+is created during pathname lookup if does not already exist.
-+Therefore, each unioned directory is the child of another unioned
-+directory (or is the root directory of the file system).
-+
-+The actual union lookup function is called in the following code
-+paths:
-+
-+do_lookup()->do_union_lookup()->lookup_union()->__lookup_union()
-+lookup_hash()->lookup_union()->__lookup_union()
-+
-+__lookup_union() is where the rules of whiteouts, fallthrus, and
-+opaque flags are actually implemented.  __lookup_union() returns
-+either the first visible dentry, or a negative dentry from the topmost
-+file system if no matching dentry exists.  If it finds a directory, it
-+looks up any potential matching lower layer directories.  If it finds
-+a lower layer directory, it first creates the topmost dir if necessary
-+via union_create_topmost_dir(), and then calls union_add_dir() to
-+append the lower directory to the end of the union stack.
-+
-+Note that not all directories in a union mount are unioned, only those
-+with matching directories on the lower layer.  The macro
-+IS_DIR_UNIONED() is a cheap, constant time way to check if a directory
-+is unioned, while IS_MNT_UNION() checks if the entire mount is unioned
-+(and therefore whether the directory in question is potentially
-+unioned).
-+
-+Currently, lookup of a negative dentry in a unioned directory requires
-+a lookup in every directory in the union stack every time it is looked
-+up.  We could avoid subsequent lookups by adding a negative union
-+cache entry, exactly the way negative dentries are cached.
-+
-+File copyup
-+-----------
-+
-+Any system call that alters the data or metadata of a file on the
-+bottom layer, or creates or changes a hard link to it will trigger a
-+copyup of the target file from the lower layer to the topmost layer
-+
-+ - open(O_WRITE | O_RDWR | O_APPEND)
-+ - truncate()/open(O_TRUNC)
-+ - link()
-+ - rename()
-+ - chmod()
-+ - chown()/lchown()
-+ - utimes()
-+ - setxattr()/lsetxattr()
-+
-+Copyup of a file due to open(O_WRITE) has already occurred when:
-+
-+ - write()
-+ - ftruncate()
-+ - writable mmap()
-+
-+The following system calls will fail on an fd opened O_RDONLY:
-+
-+ - fchmod()
-+ - fchown()
-+ - fsetxattr()
-+ - futimensat()
-+
-+Contrary to common sense, the above system calls are defined to
-+succeed on O_RDONLY fds.  The idea seems to be that the
-+O_RDONLY/O_RDWR/O_WRITE flags only apply to the actual file data, not
-+to any form of metadata (times, owner, mode, or even extended
-+attributes).  Applications making these system calls on O_RDONLY fds
-+are correct according to the standard and work on non-union-mounts.
-+They will need to be rewritten (O_RDONLY -> O_RDWR) to work on union
-+mounts.  We suspect this usage is uncommon.
-+
-+This deviation from standard is due to technical limitations of the
-+union mount implementation.  Specifically, we would need to replace an
-+open file descriptor from the lower layer with an open file descriptor
-+for a file with matching pathname and contents on the upper layer,
-+which is difficult to do.  We avoid this in other system calls by
-+doing the copyup before the file is opened.  Unionfs doesn't encounter
-+this problem because it creates a dummy file struct which redirects or
-+fans out operations to the struct files for the underlying file
-+systems.
-+
-+From an application's point of view, the result of an in-kernel file
-+copyup is the logical equivalent of another application updating the
-+file via the rename() pattern: creat() a new file, copy the data over,
-+make changes the copy, and rename() over the old version.  Any
-+existing open file descriptors for that file (including those in the
-+same application) refer to a now invisible object that used to have
-+the same pathname.  Only opens that occur after the copyup will see
-+updates to the file.
-+
-+Permission checks
-+-----------------
-+
-+We want to be sure we have the correct permissions to actually succeed
-+in a system call before copying a file up to avoid unnecessary IO.  At
-+present, the permission check for a single system call may be spread
-+out over many hundreds of lines of code (e.g., open()).  In order to
-+check permissions, we occasionally need to determine if there is a
-+writable overlay on top of this inode.  This requires a full path, but
-+often we only have the inode at this point.  In particular,
-+inode_permission() returns EROFS if the inode is on a read-only file
-+system, which is the wrong answer if there is a writable overlay
-+mounted on top of it.
-+
-+The current solution is to split out the file-system-wide permission
-+checks from the per-inode permission checks.  inode_permission()
-+becomes:
-+
-+sb_permission()
-+__inode_permission()
-+
-+inode_permission() calls sb_permission() and __inode_permission() on
-+the same path.  We create path_permission() which calls
-+sb_permission() on the parent directory from the top layer, and
-+__inode_permission() on the target on the lower layer.  This gets us
-+the correct write permissions consdering that the file will be copied
-+up.
-+
-+Currently, we don't deal with differing directory permissions at
-+different levels of the stack.  This is a bug.
-+
-+Impact on non-union kernels and mounts
-+--------------------------------------
-+
-+Union-related data structures, extra fields, and function calls are
-+#ifdef'd out at the function/macro level with CONFIG_UNION_MOUNT in
-+nearly all cases (see fs/union.h).
-+
-+Todo:
-+
-+ - Do performance tests
-+
-+Locking strategy
-+================
-+
-+The current union mount locking strategy is based on the following
-+rules:
-+
-+* The lower layer file system is always read-only
-+* The topmost file system is always read-write
-+  => A file system can never a topmost and lower layer at the same time
-+
-+Additionally, the topmost layer may only be mounted exactly once.
-+Don't think of the topmost layer as a separate independent file
-+system; when it is part of a union mount, it is only a file system in
-+conjunction with the read-only bottom layer.  The read-only bottom
-+layer is an independent file system in and of itself and can be
-+mounted elsewhere, including as the bottom layer for another union
-+mount.
-+
-+Thus, we may define a stable locking order in terms of top layer and
-+bottom layer locks, since a top layer is never a bottom layer and a
-+bottom layer is never a top layer.  Another simplifying assumption is
-+that all directories in a pathname exist on the top layer, as they are
-+created step-by-step during lookup.  This prevents us from ever having
-+to walk backwards up the path creating directory entries, which can
-+get complicated.  By implication, parent directories paths during any
-+operation (rename(), unlink(),etc.) are from the top layer.  Dentries
-+for directories from the bottom layer are only ever seen or used by
-+the lookup code.
-+
-+The two major problems we avoid with the above rules are:
-+
-+Lock ordering: Imagine two union stacks with the same two file
-+systems: A mounted over B, and B mounted over A.  Sometimes locks on
-+objects in both A and B will have to be held simultanously.  What
-+order should they be acquired in?  Simply acquiring them from top to
-+bottom will create a lock-ordering problem - one thread acquires lock
-+on object from A and then tries for a lock on object from B, while
-+another thread grabs the lock on object from B and then waits for the
-+lock on object from A.  Some other lock ordering must be defined.
-+
-+Movement/change/disappearance of objects on multiple layers: A variety
-+of nasty corner cases arise when more than one layer is changing at
-+the same time.  Changes in the directory topology and their effect on
-+inheritance are of special concern.  Al Viro's canonical email on the
-+subject:
-+
-+http://lkml.indiana.edu/hypermail/linux/kernel/0802.0/0839.html
-+
-+We don't try to solve any of these cases, just avoid them in the first
-+place.
-+
-+Todo: Prevent top layer from being mounted more than once.
-+
-+Cross-layer interactions
-+------------------------
-+
-+The VFS code simultaneously holds references to and/or modifies
-+objects from both the top and bottom layers in the following cases:
-+
-+Path lookup:
-+
-+Grabs i_mutex on bottom layer while holding i_mutex on top layer
-+directory inode.
-+
-+File copyup:
-+
-+Holds i_mutex on the parent directory from the top layer while copying
-+up file from lower layer.
-+
-+link():
-+
-+File copyup of target while holding i_mutex on parent directory on top
-+layer.  Followed by a normal link() operation.
-+
-+rename():
-+
-+Holds s_vfs_rename_mutex on the top layer, i_mutex of the source's
-+parent dir (top layer), and i_mutex of the target's parent dir (also
-+top layer) while looking up and copying the bottom layer target and
-+also creating the whiteout.
-+
-+Notes on rename():
-+
-+First, renaming of directories returns EXDEV.  It's not at all
-+reasonable to recursively copy directory trees and userspace has to
-+handle this case anyway.  An exception is rename() of directories that
-+exist only on the topmost layer; this succeeds.
-+
-+Rename involves three steps on a union mount: (1) copyup of the file
-+from the bottom layer, (2) rename of the new top-layer copy to the
-+target in the usual manner, (3) creation of a whiteout covering the
-+source of the rename.
-+
-+Directory copyup:
-+
-+Directory entries are copied up on the first readdir().  We hold the
-+top layer directory i_mutex throughout and sequentially acquire and
-+drop the i_mutex for each lower layer directory.
-+
-+VFS-fs interface
-+================
-+
-+Read-only layer: No support necessary other than enforcement of really
-+really read-only semantics (done by VFS for local file systems).
-+
-+Writable layer: Must implement two new inode operations:
-+
-+int (*whiteout) (struct inode *, struct dentry *, struct dentry *);
-+int (*fallthru) (struct inode *, struct dentry *);
-+
-+And set the MS_WHITEOUT flag to indicate support of these operations.
-+
-+Todo:
-+
-+- Decide what to return in d_ino of struct dirent
-+  - As Miklos Szeredi points out, the inode number from the underlying
-+    fs is from a different inode "namespace" and doesn't have any
-+    useful meaning in the top layer fs.
-+- Implement whiteouts and fallthrus in ext3
-+- Implement whiteouts and fallthrus in btrfs
-+
-+Supported file systems
-+----------------------
-+
-+Any file system can be a read-only layer.  File systems must
-+explicitly support whiteouts and fallthrus in order to be a read-write
-+layer.  This patch set implements whiteouts for ext2, tmpfs, and
-+jffs2.  We have tested ext2, tmpfs, and iso9660 as the read-only
-+layer.
-+
-+Todo:
-+ - Test corner cases of case-insensitive/oversensitive file systems
-+
-+NFS interaction
-+===============
-+
-+NFS is currently not supported as either type of layer.  NFS as
-+read-only layer requires support from the server to honor the
-+read-only guarantee needed for the bottom layer.  To do this, the
-+server needs to revoke access to clients requesting read-only file
-+systems if the exported file system is remounted read-write or
-+unmounted (during which arbitrary changes can occur).  Some recent
-+discussion:
-+
-+http://markmail.org/message/3mkgnvo4pswxd7lp
-+
-+NFS as the read-write layer would require implementation of the
-+->whiteout() and ->fallthru() methods.  DT_WHT directory entries are
-+theoretically already supported.
-+
-+Also, technically the requirement for a readdir() cookie that is
-+stable across reboots comes only from file systems exported via NFSv2:
-+
-+http://oss.oracle.com/pipermail/btrfs-devel/2008-January/000463.html
-+
-+Todo:
-+
-+- Guarantee really really read-only on NFS exports
-+- Implement whiteout()/fallthru() for NFS
-+
-+Userland support
-+================
-+
-+The mount command must support the "-o union" mount option and pass
-+the corresponding MS_UNION flag to the kerel.  A util-linux git
-+tree with union mount support is here:
-+
-+git://git.kernel.org/pub/scm/utils/util-linux-ng/val/util-linux-ng.git
-+
-+File system utilities must support whiteouts and fallthrus.  An
-+e2fsprogs git tree with union mount support is here:
-+
-+git://git.kernel.org/pub/scm/fs/ext2/val/e2fsprogs.git
-+
-+Currently, whiteout directory entries are not returned to userland.
-+While the directory type for whiteouts, DT_WHT, has been defined for
-+many years, very little userland code handles them.  Userland will
-+never see fallthru directory entries.
-+
-+Known non-POSIX behaviors
-+-------------------------
-+
-+- Any writing system call (unlink()/chmod()/etc.) can return ENOSPC or EIO
-+
-+  Most programs are not tested and don't work well under conditions of
-+  ENOSPC.  The solution is to add more disk space.
-+
-+- Link count may be wrong for files on bottom layer with > 1 link count
-+
-+  A file may have more than one hard link to it.  When a file with
-+  multiple hard links is copied up, any other hard links pointing to
-+  the same inode will remain unchanged.  If the file is looked up via
-+  one of the hard links on the read-only layer, it will have the
-+  original link count (which is off by one at this point).  An
-+  example:
-+
-+  /bin/link1 -> inode 100
-+  /etc/link2 -> inode 100
-+
-+  inode 100 will have link count 2.
-+
-+  # echo "blah" > /bin/link1
-+
-+  Now /bin/link1 will be copied up to the topmost layer.  But
-+  /etc/link2 will still point to the original inode 100, and its link
-+  count will still be 2.
-+
-+- Link count on directories will be wrong before readdir() (fixable)
-+- File copyup is the logical equivalent of an update via copy +
-+  rename().  Any existing open file descriptors will continue to refer
-+  to the read-only copy on the bottom layer and will not see any
-+  changes that occur after the copy-up.
-+- rename() of directory may fail with EXDEV
-+- inode number in d_ino of struct dirent will be wrong for fallthrus
-+- fchmod()/fchown()/futimensat()/fsetattr() fail on O_RDONLY fds
-+
-+Status
-+======
-+
-+The current union mounts implementation is feature-complete on local
-+file systems and passes an extensive union mounts test suite,
-+available in the union mounts Usermode Linux-based development kit:
-+
-+http://valerieaurora.org/union/union_mount_devkit.tar.gz
-+
-+The whiteout code has had some non-trivial level of review and
-+testing, but the much the code has had no external review or testing
-+outside the authors' machines.
-+
-+The latest version is available at:
-+
-+git://git.kernel.org/pub/scm/linux/kernel/git/val/linux-2.6.git
-+
-+Check the union mounts web page for the name of the latest branch:
-+
-+http://valerieaurora.org/union/
-+
-+Todo:
-+
-+- Run more tests (e.g., XFS test suite)
-+- Get review from VFS maintainers
-+
-+Non-features
-+------------
-+
-+Features we do not currently plan to support in union mounts:
-+
-+Online upgrade: E.g., installing software on a file system NFS
-+exported to clients while the clients are still up and running.
-+Allowing the read-only bottom layer of a union mount to change
-+invalidates our locking strategy.
-+
-+Recursive copying of directories: E.g., implementing rename() across
-+layers for directories.  Doing an in-kernel copy of a single file is
-+bad enough.  Recursively copying a directory is a big no-no.
-+
-+Read-only top layer: The readdir() strategy fundamentally requires the
-+ability to create persistent directory entries on the top layer file
-+system (which may be tmpfs).  Numerous alternatives (including
-+in-kernel or in-application caching) exist and are compatible with
-+union mounts with its writing-readdir() implementation disabled.
-+Creating a readdir() cookie that is stable across multiple readdir()s
-+requires one of:
-+
-+- Write to stable storage (e.g., fallthru dentries)
-+- Non-evictable kernel memory cache (doesn't handle NFS server reboot)
-+- Per-application caching by glibc readdir()
-+
-+Aggregation of multiple read-only file systems: We are beginning to
-+see how to implement this but it doesn't currently work.
-+
-+Often these features are supported by other unioning file systems or
-+by other versions of union mounts.
-+
-+Contributing to union mounts
-+============================
-+
-+The union mounts web page is here:
-+
-+http://valerieaurora.org/union/
-+
-+It links to:
-+
-+ - All git repositories
-+ - Documentation
-+ - An entire self-contained UML-based dev kit with README, etc.
-+
-+The best mailing list for discussing union mounts is:
-+
-+linux-fsdevel@vger.kernel.org
-+
-+http://vger.kernel.org/vger-lists.html#linux-fsdevel
-+
-+Thank you for reading!
++/*
+  * ext2_delete_entry deletes a directory entry by merging it with the
+  * previous entry. Page is up-to-date. Releases the page.
+  */
+@@ -711,7 +793,9 @@ int ext2_whiteout_entry (struct inode * dir, struct dentry * dentry,
+ 	 */
+ 	if (ext2_match (namelen, name, de))
+ 		de->inode = 0;
+-	if (de->inode || (de->file_type == EXT2_FT_WHT)) {
++	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
++			   (de->file_type == EXT2_FT_FALLTHRU)) &&
++			  !ext2_match (namelen, name, de))) {
+ 		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
+ 		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
+ 		de->rec_len = ext2_rec_len_to_disk(name_len);
+diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+index 44d190c..2fa32b3 100644
+--- a/fs/ext2/ext2.h
++++ b/fs/ext2/ext2.h
+@@ -108,6 +108,7 @@ extern struct ext2_dir_entry_2 * ext2_find_entry (struct inode *,struct qstr *,
+ extern int ext2_delete_entry (struct ext2_dir_entry_2 *, struct page *);
+ extern int ext2_whiteout_entry (struct inode *, struct dentry *,
+ 				struct ext2_dir_entry_2 *, struct page *);
++extern int ext2_fallthru_entry (struct inode *, struct dentry *);
+ extern int ext2_empty_dir (struct inode *);
+ extern struct ext2_dir_entry_2 * ext2_dotdot (struct inode *, struct page **);
+ extern void ext2_set_link(struct inode *, struct ext2_dir_entry_2 *, struct page *, struct inode *, int);
+diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+index 12195a5..f28154c 100644
+--- a/fs/ext2/namei.c
++++ b/fs/ext2/namei.c
+@@ -349,6 +349,7 @@ static int ext2_whiteout(struct inode *dir, struct dentry *dentry,
+ 		goto out;
+ 
+ 	spin_lock(&new_dentry->d_lock);
++	new_dentry->d_flags &= ~DCACHE_FALLTHRU;
+ 	new_dentry->d_flags |= DCACHE_WHITEOUT;
+ 	spin_unlock(&new_dentry->d_lock);
+ 	d_add(new_dentry, NULL);
+@@ -367,6 +368,26 @@ out:
+ 	return err;
+ }
+ 
++/*
++ * Create a fallthru entry.
++ */
++static int ext2_fallthru (struct inode *dir, struct dentry *dentry)
++{
++	int err;
++
++	dquot_initialize(dir);
++
++	err = ext2_fallthru_entry(dir, dentry);
++	if (err)
++		return err;
++
++	d_instantiate(dentry, NULL);
++	spin_lock(&dentry->d_lock);
++	dentry->d_flags |= DCACHE_FALLTHRU;
++	spin_unlock(&dentry->d_lock);
++	return 0;
++}
++
+ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+ 	struct inode * new_dir,	struct dentry * new_dentry )
+ {
+@@ -470,6 +491,7 @@ const struct inode_operations ext2_dir_inode_operations = {
+ 	.rmdir		= ext2_rmdir,
+ 	.mknod		= ext2_mknod,
+ 	.whiteout	= ext2_whiteout,
++	.fallthru	= ext2_fallthru,
+ 	.rename		= ext2_rename,
+ #ifdef CONFIG_EXT2_FS_XATTR
+ 	.setxattr	= generic_setxattr,
+diff --git a/include/linux/ext2_fs.h b/include/linux/ext2_fs.h
+index 20468bd..cb3d400 100644
+--- a/include/linux/ext2_fs.h
++++ b/include/linux/ext2_fs.h
+@@ -577,6 +577,7 @@ enum {
+ 	EXT2_FT_SOCK		= 6,
+ 	EXT2_FT_SYMLINK		= 7,
+ 	EXT2_FT_WHT		= 8,
++	EXT2_FT_FALLTHRU	= 9,
+ 	EXT2_FT_MAX
+ };
+ 
 -- 
 1.6.3.3
 
