@@ -1,299 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab0FOFJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 01:09:16 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58731 "EHLO smtps.tip.net.au"
+	id S1752382Ab0FOFMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 01:12:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54288 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750854Ab0FOFJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 01:09:14 -0400
-Date: Tue, 15 Jun 2010 15:09:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for June 15
-Message-Id: <20100615150907.5fb984da.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__15_Jun_2010_15_09_07_+1000_JvShSj59/KiZqWLW"
+	id S1750795Ab0FOFMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 01:12:52 -0400
+Date: Tue, 15 Jun 2010 15:12:42 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Chris Mason <chris.mason@oracle.com>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
+Message-ID: <20100615051242.GD6138@laptop>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
+ <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
+ <20100614231144.GG6590@dastard>
+ <20100614162143.04783749.akpm@linux-foundation.org>
+ <20100615003943.GK6590@dastard>
+ <4C16D46D.3020302@redhat.com>
+ <20100614184544.32b1c371.akpm@linux-foundation.org>
+ <4C16FCAE.4050607@redhat.com>
+ <20100614213732.034b4a13.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100614213732.034b4a13.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__15_Jun_2010_15_09_07_+1000_JvShSj59/KiZqWLW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 14, 2010 at 09:37:32PM -0700, Andrew Morton wrote:
+> On Tue, 15 Jun 2010 00:08:14 -0400 Rik van Riel <riel@redhat.com> wrote:
+> 
+> > On 06/14/2010 09:45 PM, Andrew Morton wrote:
+> > > On Mon, 14 Jun 2010 21:16:29 -0400 Rik van Riel<riel@redhat.com>  wrote:
+> > >
+> > >> Would it be hard to add a "please flush this file"
+> > >> way to call the filesystem flushing threads?
+> > >
+> > > Passing the igrab()bed inode into the flusher threads would fix the
+> > > iput_final() problems, as long as the alloc_pages() caller never blocks
+> > > indefinitely waiting for the work which the flusher threads are doing.
+> > >
+> > > Otherwise we get (very hard-to-hit) deadlocks where the alloc_pages()
+> > > caller holds VFS locks and is waiting for the flusher threads while all
+> > > the flusher threads are stuck under iput_final() waiting for those VFS
+> > > locks.
+> > >
+> > > That's fixable by not using igrab()/iput().  You can use lock_page() to
+> > > pin the address_space.  Pass the address of the locked page across to
+> > > the flusher threads so they don't try to lock it a second time, or just
+> > > use trylocking on that writeback path or whatever.
+> > 
+> > Any thread that does not have __GFP_FS set in its gfp_mask
+> > cannot wait for the flusher to complete. This is regardless
+> > of the mechanism used to kick the flusher.
+> 
+> mm...  kinda.  A bare order-zero __GFP_WAIT allocation can still wait
+> forever, afaict.
+> 
+> > Then again, those threads cannot call ->writepage today
+> > either, so we should be fine keeping that behaviour.
+> 
+> I'm not sure.  iput_final() can take a lot of locks, both VFS and
+> heaven knows what within the individual filesystems.  Is it the case
+> that all allocations which occur under all of those locks is always
+> !__GFP_FS?  Hard to say...
 
-Hi all,
+__GFP_FS is set with i_mutex held in places, and there is nothing to
+prevent a filesystem from using that in iput_final paths, AFAIK.
 
-Changes since 20100614:
+ 
+> > Threads that do have __GFP_FS in their gfp_mask can wait
+> > for the flusher in various ways.  Maybe the lock_page()
+> > method can be simplified by having the flusher thread
+> > unlock the page the moment it gets it, and then run the
+> > normal flusher code?
+> 
+> Well, _something_ has to pin the address_space.  A single locked page
+> will do.
+> 
+> > The pageout code (in shrink_page_list) already unlocks
+> > the page anyway before putting it back on the relevant
+> > LRU list.  It would be easy enough to skip that unlock
+> > and let the flusher thread take care of it.
+> 
+> Once that page is unlocked, we can't touch *mapping - its inode can be
+> concurrently reclaimed.  Although I guess the technique in
+> handle_write_error() can be reused.
 
-Removed tree: drbd (to be merged via the block tree)
+Nasty. That guy needs to be using lock_page_nosync().
 
-My fixes tree contains:
-      v4l-dvb: update gfp/slab.h includes
-      arm: update gfp/slab.h includes
-      davinci: update gfp/slab.h includes
-      ocfs2: update gfp/slab.h includes
-      acpi: update gfp/slab.h includes
-
-The net tree gained a conflict against the net-current tree and a build
-failure requiring a merge fixup.
-
-The wireless tree gained a conflict against Linus' tree.
-
-The battery tree gained a conflict against the arm-current tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 163 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/for-linus
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-mx25/devices.c
-CONFLICT (content): Merge conflict in arch/arm/mach-mx25/devices.h
-CONFLICT (content): Merge conflict in arch/arm/plat-mxc/include/mach/iomux-=
-mx25.h
-CONFLICT (content): Merge conflict in arch/arm/plat-mxc/include/mach/mx25.h
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
-Merging galak/next
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-CONFLICT (content): Merge conflict in include/linux/serial_sci.h
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-CONFLICT (content): Merge conflict in fs/ecryptfs/main.c
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
-Merging quilt/jdelvare-hwmon
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging ibft/master
-Merging swiotlb/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in drivers/net/ixgbe/ixgbe_ethtool.c
-Applying: net: ixgbe_ethtool merge fix up
-Merging wireless/master
-CONFLICT (content): Merge conflict in net/mac80211/mlme.c
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-CONFLICT (content): Merge conflict in kernel/module.c
-Merging mmc/next
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-CONFLICT (content): Merge conflict in drivers/power/z2_battery.c
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/evergreen.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/r600.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_combios=
-.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_pm.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/rv770.c
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
-or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
-eft in tree.
-$ git rm -f fs/notify/inotify/inotify.c
-Applying: fsnotify: update gfp/slab.h includes
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging catalin/for-next
-Merging alacrity/linux-next
-Merging i7core_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging omap_dss2/for-next
-Merging tip/auto-latest
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-CONFLICT (content): Merge conflict in mm/memory-failure.c
-Merging sysctl/master
-Merging bkl-core/bkl/core
-Merging bkl-procfs/bkl/procfs
-Merging bkl-ioctl/bkl/ioctl
-Merging quilt/driver-core
-Merging quilt/tty
-Merging quilt/usb
-Merging staging-next/staging-next
-Merging slabh/slabh
-Merging scsi-post-merge/master
-
---Signature=_Tue__15_Jun_2010_15_09_07_+1000_JvShSj59/KiZqWLW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwXCvMACgkQjjKRsyhoI8yoigCgiG3NxiYX/qhy9pJXvrvmQif8
-7WwAoIO/lbcsaWhNrkyzMssQkqmTuG9s
-=xQQR
------END PGP SIGNATURE-----
-
---Signature=_Tue__15_Jun_2010_15_09_07_+1000_JvShSj59/KiZqWLW--
