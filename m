@@ -1,109 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab0FOHJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 03:09:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39459 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751946Ab0FOHJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 03:09:42 -0400
-Message-ID: <4C1726C4.8050300@redhat.com>
-Date: Tue, 15 Jun 2010 10:07:48 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: balbir@linux.vnet.ibm.com, kvm <kvm@vger.kernel.org>, linux-mm@kvack.org,
+	id S1753495Ab0FOHJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 03:09:59 -0400
+Received: from aa011msr.fastwebnet.it ([85.18.95.71]:47325 "EHLO
+	aa011msr.fastwebnet.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976Ab0FOHJs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 03:09:48 -0400
+From: Fabio Giovagnini <fabio.giovagnini@aurion-tech.com>
+Organization: Auiron s.r.l.
+To: Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [GIT PULL] sh updates for 2.6.35-rc2
+Date: Tue, 15 Jun 2010 09:09:01 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; i686; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-sh@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
- control
-References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>	 <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>	 <4C10B3AF.7020908@redhat.com> <20100610142512.GB5191@balbir.in.ibm.com>	 <1276214852.6437.1427.camel@nimitz>	 <20100611045600.GE5191@balbir.in.ibm.com> <4C15E3C8.20407@redhat.com>	 <20100614084810.GT5191@balbir.in.ibm.com> <4C16233C.1040108@redhat.com>	 <20100614125010.GU5191@balbir.in.ibm.com> <4C162846.7030303@redhat.com>	 <1276529596.6437.7216.camel@nimitz> <4C164E63.2020204@redhat.com>	 <1276530932.6437.7259.camel@nimitz>  <4C1659F8.3090300@redhat.com> <1276538293.6437.7528.camel@nimitz>
-In-Reply-To: <1276538293.6437.7528.camel@nimitz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+References: <20100604050007.GD31868@linux-sh.org>
+In-Reply-To: <20100604050007.GD31868@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006150909.01958.fabio.giovagnini@aurion-tech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 08:58 PM, Dave Hansen wrote:
-> On Mon, 2010-06-14 at 19:34 +0300, Avi Kivity wrote:
->    
->>> Again, this is useless when ballooning is being used.  But, I'm thinking
->>> of a more general mechanism to force the system to both have MemFree
->>> _and_ be acting as if it is under memory pressure.
->>>
->>>        
->> If there is no memory pressure on the host, there is no reason for the
->> guest to pretend it is under pressure.
->>      
-> I can think of quite a few places where this would be beneficial.
->
-> Ballooning is dangerous.  I've OOMed quite a few guests by
-> over-ballooning them.  Anything that's voluntary like this is safer than
-> things imposed by the host, although you do trade of effectiveness.
->    
+I Paul,
+I just finished my last application ald linux 2.6 jernel based.
+I'd like to upgrade my structure to the latest kernel for giving my apport 
+into the development of sh7203 target.
+Can I have an account at 
 
-That's a bug that needs to be fixed.  Eventually the host will come 
-under pressure and will balloon the guest.  If that kills the guest, the 
-ballooning is not effective as a host memory management technique.
+master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git
 
-Trying to defer ballooning by voluntarily dropping cache is simply 
-trying to defer being bitten by the bug.
+Thanks a lot
 
-> If all the guests do this, then it leaves that much more free memory on
-> the host, which can be used flexibly for extra host page cache, new
-> guests, etc...
 
-If the host detects lots of pagecache misses it can balloon guests 
-down.  If pagecache is quiet, why change anything?
-
-If the host wants to start new guests, it can balloon guests down.  If 
-no new guests are wanted, why change anything?
-
-etc...
-
-> A system in this state where everyone is proactively
-> keeping their footprints down is more likely to be able to handle load
-> spikes.
-
-That is true.  But from the guest's point of view, voluntarily giving up 
-memory means dropping the guest's cushion vs load spikes.
-
-> Reclaim is an expensive, costly activity, and this ensures that
-> we don't have to do that when we're busy doing other things like
-> handling load spikes.
-
-The guest doesn't want to reclaim memory from the host when it's under a 
-load spike either.
-
-> This was one of the concepts behind CMM2: reduce
-> the overhead during peak periods.
->    
-
-Ah, but CMM2 actually reduced work being done by sharing information 
-between guest and host.
-
-> It's also handy for planning.  Guests exhibiting this behavior will
-> _act_ as if they're under pressure.  That's a good thing to approximate
-> how a guest will act when it _is_ under pressure.
->    
-
-If a guest acts as if it is under pressure, then it will be slower and 
-consume more cpu.  Bad for both guest and host.
-
->> If there is memory pressure on
->> the host, it should share the pain among its guests by applying the
->> balloon.  So I don't think voluntarily dropping cache is a good direction.
->>      
-> I think we're trying to consider things slightly outside of ballooning
-> at this point.  If ballooning was the end-all solution, I'm fairly sure
-> Balbir wouldn't be looking at this stuff.  Just trying to keep options
-> open. :)
->    
-
-I see this as an extension to ballooning - perhaps I'm missing the big 
-picture.  I would dearly love to have CMM2 where decisions are made on a 
-per-page basis instead of using heuristics.
+In data venerdì 04 giugno 2010 07:00:07, Paul Mundt ha scritto:
+: > Please pull from:
+> 
+> 	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git
+> 
+> Which contains:
+> 
+> Aurelien Jarno (1):
+>       clocksource: sh_tmu: compute mult and shift before registration
+> 
+> Guennadi Liakhovetski (1):
+>       fbdev: fix erroneous index in drivers/video/sh_mobile_lcdcfb.c
+> 
+> Huang Weiyi (1):
+>       sh: remove duplicated #include
+> 
+> Kuninori Morimoto (4):
+>       sh: make sure static declaration on mach-ap325rxa
+>       sh: make sure static declaration on mach-ecovec24
+>       sh: make sure static declaration on mach-migor
+>       sh: make sure static declaration on ms7724se
+> 
+> Magnus Damm (4):
+>       sh: allow romImage data between head.S and the zero page
+>       sh: prepare MMCIF driver header file
+>       sh: add boot code to MMCIF driver header
+>       sh: add romImage MMCIF boot for sh7724 and Ecovec V2
+> 
+> Paul Mundt (11):
+>       serial: sh-sci: fix up serial DMA build.
+>       sh: handle early calls to return_address() when using dwarf unwinder.
+>       input: serio: disable i8042 for non-cayman sh platforms.
+>       usb: gadget: m66592-udc pio to mmio accessor conversion.
+>       usb: gadget: r8a66597-udc pio to mmio accessor conversion.
+>       usb: r8a66597-hcd pio to mmio accessor conversion.
+>       sh: support for platforms without PIO.
+>       sh: mach-sdk7786: conditionally disable PIO support.
+>       sh: PIO disabling for x3proto and urquell.
+>       clocksource: sh_cmt: compute mult and shift before registration
+>       sh: Make intc messages consistent via pr_fmt.
+> 
+> Yusuke Goda (1):
+>       sh: Add support MMCIF for ecovec
+> 
+>  arch/sh/Kconfig                               |   16 +++-
+>  arch/sh/boards/Kconfig                        |    3 +
+>  arch/sh/boards/mach-ap325rxa/setup.c          |    2 +-
+>  arch/sh/boards/mach-ecovec24/setup.c          |  101 ++++++++++++++--
+>  arch/sh/boards/mach-migor/setup.c             |    2 +-
+>  arch/sh/boards/mach-se/7724/setup.c           |    8 +-
+>  arch/sh/boot/romimage/Makefile                |   13 ++-
+>  arch/sh/boot/romimage/head.S                  |   42 ++++++-
+>  arch/sh/boot/romimage/mmcif-sh7724.c          |   72 +++++++++++
+>  arch/sh/boot/romimage/vmlinux.scr             |    2 +
+>  arch/sh/include/asm/io.h                      |    8 ++
+>  arch/sh/include/asm/machvec.h                 |    9 +-
+>  arch/sh/include/cpu-sh4/cpu/sh7724.h          |    1 +
+>  arch/sh/include/mach-common/mach/romimage.h   |   10 ++
+>  arch/sh/include/mach-ecovec24/mach/romimage.h |   27 ++++
+>  arch/sh/include/mach-kfr2r09/mach/romimage.h  |   10 ++
+>  arch/sh/kernel/Makefile                       |    3 +-
+>  arch/sh/kernel/dwarf.c                        |   19 +++-
+>  arch/sh/kernel/io.c                           |   22 ----
+>  arch/sh/kernel/io_generic.c                   |   20 +++
+>  arch/sh/kernel/io_trapped.c                   |    4 +
+>  arch/sh/kernel/machvec.c                      |   17 ++-
+>  arch/sh/kernel/return_address.c               |    2 +
+>  drivers/clocksource/sh_cmt.c                  |   22 ++--
+>  drivers/clocksource/sh_tmu.c                  |   20 ++--
+>  drivers/input/serio/Kconfig                   |    3 +-
+>  drivers/mmc/host/sh_mmcif.c                   |  125 ++++++++------------
+>  drivers/sh/intc.c                             |   12 +-
+>  drivers/usb/gadget/m66592-udc.h               |   22 ++--
+>  drivers/usb/gadget/r8a66597-udc.c             |    4 +-
+>  drivers/usb/gadget/r8a66597-udc.h             |   24 ++--
+>  drivers/usb/host/r8a66597-hcd.c               |    4 +-
+>  drivers/usb/host/r8a66597.h                   |   26 ++--
+>  drivers/video/sh_mobile_lcdcfb.c              |    6 +-
+>  include/linux/mmc/sh_mmcif.h                  |  161
+>  +++++++++++++++++++++++++ include/linux/serial_sci.h                    | 
+>    4 +-
+>  36 files changed, 642 insertions(+), 204 deletions(-)
+>  create mode 100644 arch/sh/boot/romimage/mmcif-sh7724.c
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
 -- 
-error compiling committee.c: too many arguments to function
+Fabio Giovagnini
 
+Aurion s.r.l.
+P.I e C.F.
+00885711200
+skype: aurion.giovagnini
+Tel. +39.051.594.78.24
+Cell. +39.335.83.50.919
+www.aurion-tech.com
