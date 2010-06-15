@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab0FOLcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 07:32:20 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:58753 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab0FOLcT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 07:32:19 -0400
-Date: Tue, 15 Jun 2010 17:00:15 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5 6/14] Uprobes Implementation
-Message-ID: <20100615113015.GL13800@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
- <20100614082903.29068.62439.sendpatchset@localhost6.localdomain6>
- <20100614072706.d29f3cbd.randy.dunlap@oracle.com>
+	id S1757481Ab0FOLcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 07:32:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36065 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757254Ab0FOLca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 07:32:30 -0400
+Message-ID: <4C1764CD.3080402@suse.cz>
+Date: Tue, 15 Jun 2010 13:32:29 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100614072706.d29f3cbd.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Greg Thelen <gthelen@google.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Running make install over sshfs is painful now
+References: <20100607065324.GA25590@core.coreip.homeip.net>
+In-Reply-To: <20100607065324.GA25590@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Randy Dunlap <randy.dunlap@oracle.com> [2010-06-14 07:27:06]:
-
-> On Mon, 14 Jun 2010 13:59:03 +0530 Srikar Dronamraju wrote:
+On 7.6.2010 08:53, Dmitry Torokhov wrote:
+> Hi,
 > 
-> > diff --git a/arch/Kconfig b/arch/Kconfig
-> > index 16541af..995f7f2 100644
-> > --- a/arch/Kconfig
-> > +++ b/arch/Kconfig
-> > @@ -58,6 +58,16 @@ config USER_BKPT
-> >  	  This service is used by components such as uprobes.
-> >  	  If in doubt, say "N".
-> >  
-> > +config UPROBES
-> > +	bool "User-space probes (EXPERIMENTAL)"
-> > +	depends on MODULES && USER_BKPT_XOL
+> With the following commit running "make modules_install install" over
+> sshfs (and I suppose nfs) is extremely painful:
 > 
-> depends on having CONFIG_MODULES enabled.  Please explain.
+> commit fb994ecc2b1c214951366c2ba5d8b121f0010d1f
+> Author: Greg Thelen <gthelen@google.com>
+> Date:   Wed May 5 10:41:44 2010 -0700
 > 
+>     kbuild: Fix checking of scm-identifier variable
+...
 
-As Christoph suggested, I will remove the samples and hence the
-dependency on CONFIG_MODULES.
+Commit 85a256d8 and this one just exposed a problem we had before with
+CONFIG_LOCALVERSION_AUTO, namely that the Makefile computes the release
+string on _every_ invocation:
 
+$ strace -feexecve make help 2>&1 | grep -v ' -1 ' | grep git
+[pid 13788] execve("/usr/bin/git", ["git", "rev-parse", "--verify",
+"--short", "HEAD"], [/* 88 vars */]) = 0
+[pid 13790] execve("/usr/bin/git", ["git", "describe", "--exact-match"],
+[/* 88 vars */]) = 0
+[pid 13792] execve("/usr/bin/git", ["git", "describe"], [/* 88 vars */]) = 0
+[pid 13795] execve("/usr/bin/git", ["git", "config", "--get",
+"svn-remote.svn.url"], [/* 88 vars */]) = 0
+[pid 13796] execve("/usr/bin/git", ["git", "update-index", "--refresh",
+"--unmerged"], [/* 88 vars */]) = 0
+[pid 13797] execve("/usr/bin/git", ["git", "diff-index", "--name-only",
+"HEAD"], [/* 88 vars */]Process 13786 suspended
+
+> Any cfhance we could generate the tag at compile time
+> as opposed to install time?
+
+The Makefile already stores the string in include/config/kernel.release
+during 'make prepare', but it is nevertheless recomputed every time.
+Need to clean this up.
+
+Michal
