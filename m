@@ -1,161 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758693Ab0FOSve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 14:51:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48866 "EHLO mx1.redhat.com"
+	id S1758264Ab0FOSlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 14:41:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13904 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758269Ab0FOSlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 14:41:32 -0400
+	id S1754485Ab0FOSl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 14:41:29 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-       Valerie Aurora <vaurora@redhat.com>, linux-nfs@vger.kernel.org,
-       "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
-Subject: [PATCH 05/38] whiteout/NFSD: Don't return information about whiteouts to userspace
-Date: Tue, 15 Jun 2010 11:39:35 -0700
-Message-Id: <1276627208-17242-6-git-send-email-vaurora@redhat.com>
+       linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 01/38] VFS: Comment follow_mount() and friends
+Date: Tue, 15 Jun 2010 11:39:31 -0700
+Message-Id: <1276627208-17242-2-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
+Add comments describing what the directions "up" and "down" mean and
+ref count handling to the VFS follow_mount() family of functions.
 
-Userspace isn't ready for handling another file type, so silently drop
-whiteout directory entries before they leave the kernel.
-
-Signed-off-by: Jan Blunck <jblunck@suse.de>
-Signed-off-by: David Woodhouse <dwmw2@infradead.org>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- fs/compat.c       |    9 +++++++++
- fs/nfsd/nfs3xdr.c |    5 +++++
- fs/nfsd/nfs4xdr.c |    5 +++++
- fs/nfsd/nfsxdr.c  |    4 ++++
- fs/readdir.c      |    9 +++++++++
- 5 files changed, 32 insertions(+), 0 deletions(-)
+ fs/namei.c     |   43 +++++++++++++++++++++++++++++++++++++++----
+ fs/namespace.c |   16 ++++++++++++++--
+ 2 files changed, 53 insertions(+), 6 deletions(-)
 
-diff --git a/fs/compat.c b/fs/compat.c
-index 0544873..5d88516 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -839,6 +839,9 @@ static int compat_fillonedir(void *__buf, const char *name, int namlen,
- 	struct compat_old_linux_dirent __user *dirent;
- 	compat_ulong_t d_ino;
+diff --git a/fs/namei.c b/fs/namei.c
+index b86b96f..ec178f1 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -596,6 +596,17 @@ loop:
+ 	return err;
+ }
  
-+	if (d_type == DT_WHT)
-+		return 0;
++/*
++ * follow_up - Find the mountpoint of path's vfsmount
++ *
++ * Given a path, find the mountpoint of its source file system.
++ * Replace @path with the path of the mountpoint in the parent mount.
++ * Up is towards /.
++ *
++ * Return 1 if we went up a level and 0 if we were already at the
++ * root.
++ */
 +
- 	if (buf->result)
- 		return -EINVAL;
- 	d_ino = ino;
-@@ -910,6 +913,9 @@ static int compat_filldir(void *__buf, const char *name, int namlen,
- 	compat_ulong_t d_ino;
- 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(compat_long_t));
+ int follow_up(struct path *path)
+ {
+ 	struct vfsmount *parent;
+@@ -616,8 +627,22 @@ int follow_up(struct path *path)
+ 	return 1;
+ }
  
-+	if (d_type == DT_WHT)
-+		return 0;
+-/* no need for dcache_lock, as serialization is taken care in
+- * namespace.c
++/*
++ * __follow_mount - Return the most recent mount at this mountpoint
++ *
++ * Given a mountpoint, find the most recently mounted file system at
++ * this mountpoint and return the path to its root dentry.  This is
++ * the file system that is visible, and it is in the direction of VFS
++ * "down" - away from the root of the mount tree.  See comments to
++ * lookup_mnt() for an example of "down."
++ *
++ * Does not decrement the refcount on the given mount even if it
++ * follows it to another mount and returns that path instead.
++ *
++ * Returns 0 if path was unchanged, 1 if we followed it to another mount.
++ *
++ * No need for dcache_lock, as serialization is taken care in
++ * namespace.c.
+  */
+ static int __follow_mount(struct path *path)
+ {
+@@ -636,6 +661,12 @@ static int __follow_mount(struct path *path)
+ 	return res;
+ }
+ 
++/*
++ * Like __follow_mount, but no return value and drops references to
++ * both mnt and dentry of the given path if it follows to another
++ * mount.
++ */
 +
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-@@ -999,6 +1005,9 @@ static int compat_filldir64(void * __buf, const char * name, int namlen, loff_t
- 	int reclen = ALIGN(jj + namlen + 1, sizeof(u64));
- 	u64 off;
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-diff --git a/fs/nfsd/nfs3xdr.c b/fs/nfsd/nfs3xdr.c
-index 2a533a0..9b96f5a 100644
---- a/fs/nfsd/nfs3xdr.c
-+++ b/fs/nfsd/nfs3xdr.c
-@@ -885,6 +885,11 @@ encode_entry(struct readdir_cd *ccd, const char *name, int namlen,
- 	int		elen;		/* estimated entry length in words */
- 	int		num_entry_words = 0;	/* actual number of words */
- 
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
-+
- 	if (cd->offset) {
- 		u64 offset64 = offset;
- 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 34ccf81..2ddf144 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2269,6 +2269,11 @@ nfsd4_encode_dirent(void *ccdv, const char *name, int namlen,
- 		return 0;
+ static void follow_mount(struct path *path)
+ {
+ 	while (d_mountpoint(path->dentry)) {
+@@ -649,8 +680,12 @@ static void follow_mount(struct path *path)
  	}
+ }
  
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
-+
- 	if (cd->offset)
- 		xdr_encode_hyper(cd->offset, (u64) offset);
+-/* no need for dcache_lock, as serialization is taken care in
+- * namespace.c
++/*
++ * Like follow_mount(), but traverses only one layer instead of
++ * continuing until it runs out.
++ *
++ * No need for dcache_lock, as serialization is taken care in
++ * namespace.c.
+  */
+ int follow_down(struct path *path)
+ {
+diff --git a/fs/namespace.c b/fs/namespace.c
+index f20cb57..d405444 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -433,8 +433,20 @@ struct vfsmount *__lookup_mnt(struct vfsmount *mnt, struct dentry *dentry,
+ }
  
-diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
-index 4ce005d..0e57d4b 100644
---- a/fs/nfsd/nfsxdr.c
-+++ b/fs/nfsd/nfsxdr.c
-@@ -503,6 +503,10 @@ nfssvc_encode_entry(void *ccdv, const char *name,
- 			namlen, name, offset, ino);
- 	 */
- 
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
- 	if (offset > ~((u32) 0)) {
- 		cd->common.err = nfserr_fbig;
- 		return -EINVAL;
-diff --git a/fs/readdir.c b/fs/readdir.c
-index 7723401..3a48491 100644
---- a/fs/readdir.c
-+++ b/fs/readdir.c
-@@ -77,6 +77,9 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
- 	struct old_linux_dirent __user * dirent;
- 	unsigned long d_ino;
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	if (buf->result)
- 		return -EINVAL;
- 	d_ino = ino;
-@@ -154,6 +157,9 @@ static int filldir(void * __buf, const char * name, int namlen, loff_t offset,
- 	unsigned long d_ino;
- 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(long));
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-@@ -239,6 +245,9 @@ static int filldir64(void * __buf, const char * name, int namlen, loff_t offset,
- 	struct getdents_callback64 * buf = (struct getdents_callback64 *) __buf;
- 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 1, sizeof(u64));
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
+ /*
+- * lookup_mnt increments the ref count before returning
+- * the vfsmount struct.
++ * lookup_mnt - Return the first child mount mounted at path
++ *
++ * "First" means first mounted chronologically.  If you create the
++ * following mounts:
++ *
++ * mount /dev/sda1 /mnt
++ * mount /dev/sda2 /mnt
++ * mount /dev/sda3 /mnt
++ *
++ * Then lookup_mnt() on the base /mnt dentry in the root mount will
++ * return successively the root dentry and vfsmount of /dev/sda1, then
++ * /dev/sda2, then /dev/sda3, then NULL.
++ *
++ * lookup_mnt takes a reference to the found vfsmount.
+  */
+ struct vfsmount *lookup_mnt(struct path *path)
+ {
 -- 
 1.6.3.3
 
