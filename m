@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245Ab0FORiT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 13:38:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39988 "EHLO mx1.redhat.com"
+	id S1758215Ab0FORlE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 13:41:04 -0400
+Received: from tex.lwn.net ([70.33.254.29]:49409 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758216Ab0FORiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 13:38:06 -0400
-Date: Tue, 15 Jun 2010 18:37:47 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-Message-ID: <20100615163747.GK28052@random.random>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
- <20100615140011.GD28052@random.random>
- <20100615141122.GA27893@infradead.org>
- <20100615142219.GE28052@random.random>
- <20100615144342.GA3339@infradead.org>
- <20100615150850.GF28052@random.random>
- <20100615153838.GO26788@csn.ul.ie>
- <20100615161419.GH28052@random.random>
- <20100615163044.GR26788@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100615163044.GR26788@csn.ul.ie>
+	id S1758093Ab0FORlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 13:41:03 -0400
+Date: Tue, 15 Jun 2010 11:40:58 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, jeff@garzik.org
+Subject: Re: [PATCH 06/12] irq: implement irq_schedule_poll()
+Message-ID: <20100615114058.32e58afd@bike.lwn.net>
+In-Reply-To: <1276443098-20653-7-git-send-email-tj@kernel.org>
+References: <1276443098-20653-1-git-send-email-tj@kernel.org>
+	<1276443098-20653-7-git-send-email-tj@kernel.org>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.1; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 05:30:44PM +0100, Mel Gorman wrote:
-> See this
-> 
-> STATIC int
-> xfs_vm_writepage(
->         struct page             *page,
->         struct writeback_control *wbc)
-> {
->         int                     error;
->         int                     need_trans;
->         int                     delalloc, unmapped, unwritten;
->         struct inode            *inode = page->mapping->host;
-> 
->         trace_xfs_writepage(inode, page, 0);
-> 
->         /*
->          * Refuse to write the page out if we are called from reclaim
->          * context.
->          *
->          * This is primarily to avoid stack overflows when called from deep
->          * used stacks in random callers for direct reclaim, but disabling
->          * reclaim for kswap is a nice side-effect as kswapd causes rather
->          * suboptimal I/O patters, too.
->          *
->          * This should really be done by the core VM, but until that happens
->          * filesystems like XFS, btrfs and ext4 have to take care of this
->          * by themselves.
->          */
->         if (current->flags & PF_MEMALLOC)
->                 goto out_fail;
+On Sun, 13 Jun 2010 17:31:32 +0200
+Tejun Heo <tj@kernel.org> wrote:
 
-so it's under xfs/linux-2.6... ;) I guess this dates back from the
-xfs/irix xfs/freebsd days, no prob.
+> Implement and use irq_schedule_poll() to schedule desc->poll_timer
+> instead of calling mod_timer directly.  irq_schedule_poll() is called
+> with desc->lock held and schedules the timer iff necessary - ie. if
+> the timer is offline or scheduled to expire later than requested.
+> This will be used to share desc->poll_timer.
 
-> Again, missing the code to do it and am missing data showing that not
-> writing pages in direct reclaim is really a bad idea.
+One quick question...
 
-Your code is functionally fine, my point is it's not just writepage as
-shown by the PF_MEMALLOC check in ext4.
+> diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
+> index 0bce0e3..0b8fd0a 100644
+> --- a/kernel/irq/spurious.c
+> +++ b/kernel/irq/spurious.c
+> @@ -23,6 +23,8 @@ enum {
+>  
+>  	/* IRQ polling common parameters */
+>  	IRQ_POLL_INTV			= HZ / 100,	/* from the good ol' 100HZ tick */
+> +
+> +	IRQ_POLL_SLACK			= HZ / 1000,	/* 10% slack */
+>  };
 
-> Other than the whole "lacking the code" thing and it's still not clear that
-> writing from direct reclaim is absolutly necessary for VM stability considering
-> it's been ignored today by at least two filesystems. I can add the throttling
-> logic if it'd make you happied but I know it'd be at least two weeks
->  before I could start from scratch on a
-> stack-switch-based-solution and a PITA considering that I'm not convinced
-> it's necessary :)
+Why would IRQ_POLL_SLACK be anything other than zero for HZ < 1000?
+It seems like you'd get no slack at all on most systems.  Am I missing
+something?
 
-The reason things are working on I think is because of
-wait_on_page_writeback. By the time lots of ram is full with dirty
-pdflush and stuff will submit I/O, then VM will still wait on I/O to
-complete. Waiting is eating no stack, submitting I/O does instead. So
-that explains why everything works fine.
+Thanks,
 
-It'd be interesting to verify that things don't fall apart with
-current xfs if you swapon ./file_on_xfs instead of /dev/something.
+jon
