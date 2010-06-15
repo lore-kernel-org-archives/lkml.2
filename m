@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab0FOBRd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 21:17:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755260Ab0FOBRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 21:17:31 -0400
-Message-ID: <4C16D46D.3020302@redhat.com>
-Date: Mon, 14 Jun 2010 21:16:29 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1757145Ab0FOBUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 21:20:38 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57897 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754970Ab0FOBUg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 21:20:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=LMbO1CWnexNEEhP+N7aseggG2q++EIXWjQ3Ah7BrSLcwn+U+ejFWmYNaifyXZC90yl
+         JYth2vRqOmIniY26Tpzz3ai7pCcr/Ztcp3XAad7m1kfL+0O+mLDcl2G/gO9bnqaeK3D7
+         pkU2Yi3ucATMPivqJ+cA1q0jT2S5Dacz2xqeM=
+Message-ID: <4C16D55E.6040701@garzik.org>
+Date: Mon, 14 Jun 2010 21:20:30 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Chris Mason <chris.mason@oracle.com>,
-       Nick Piggin <npiggin@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-12-git-send-email-mel@csn.ul.ie> <20100614231144.GG6590@dastard> <20100614162143.04783749.akpm@linux-foundation.org> <20100615003943.GK6590@dastard>
-In-Reply-To: <20100615003943.GK6590@dastard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: [PATCHSET] workqueue: concurrency managed workqueue, take#5
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1276551467-21246-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 08:39 PM, Dave Chinner wrote:
-> On Mon, Jun 14, 2010 at 04:21:43PM -0700, Andrew Morton wrote:
-
->> But then, this all really should be done at the block layer so other
->> io-submitting-paths can benefit from it.
+On 06/14/2010 05:37 PM, Tejun Heo wrote:
+> Hello, all.
 >
-> That was what we did in the past with really, really deep IO
-> scheduler queues. That leads to IO latency and OOM problems because
-> we could lock gigabytes of memory away under IO and take minutes to
-> clean it.
+> This is the fifth take of cmwq (concurrency managed workqueue)
+> patchset.  It's on top of v2.6.35-rc3 + sched/core patches.  Git tree
+> is available at
 >
-> Besides, there really isn't the right context in the block layer to
-> be able to queue and prioritise large amounts of IO without
-> significant penalties to some higher layer operation.
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-cmwq
+>
+> Changes from the last take[L] are...
+>
+> * fscache patches are omitted for now.
+>
+> * The patchset is rebased on cpu_stop + sched/core, which now includes
+>    all the necessary scheduler patches.  cpu_stop already reimplements
+>    stop_machine so that it doesn't use RT workqueue, so this patchset
+>    simply drops RT wq support.
+>
+> * __set_cpus_allowed() was determined to be unnecessary with recent
+>    scheduler changes.  On cpu re-onlining, cmwq now kills all idle
+>    workers and tells busy ones to rebind after finishing the current
+>    work by scheduling a dedicated work.  This allows managing proper
+>    cpu binding without adding overhead to hotpath.
+>
+> * Oleg's clear work->data patch moved at the head of the queue and now
+>    lives in the for-next branch which will be pushed to mainline on the
+>    next merge window.
+>
+> * Applied Oleg's review.
+>
+>    * Comments updated as suggested.
+>
+>    * work_flags_to_color() replaced w/ get_work_color()
+>
+>    * nr_cwqs_to_flush bug which could cause premature flush completion
+>      fixed.
+>
+>    * Replace rewind + list_for_each_entry_safe_continue() w/
+>      list_for_each_entry_safe_from().
+>
+>    * Don't directly write to *work_data_bits() but use __set_bit()
+>      instead.
+>
+>    * Fixed cpu hotplug exclusion bug.
+>
+> * Other misc tweaks.
+>
+> Now that all scheduler bits are in place, I'll keep the tree stable
+> and publish it to linux-next soonish, so this hopefully is the last of
+> exhausting massive postings of this patchset.
+>
+> Jeff, Arjan, I think it'll be best to route the libata and async
+> patches through wq tree.  Would that be okay?
 
-Can we kick flushing for the whole inode at once from
-vmscan.c?
+ACK for libata bits routing through wq tree...  you know I support this 
+work, as libata (and the kernel, generally speaking) has needed 
+something like this for a long time.
 
-That way we should:
-1) ensure that the page we want is written to disk, and
-2) we flush out related pages at the same time, getting
-    a decent IO pattern
 
-Chances are that if we want to evict one page from a
-file, we'll also want to evict other pages from that
-same file.  In fact, chances are a good number of them
-will live nearby on the LRU list.
-
-Does this make sense?
-
-Would it be hard to add a "please flush this file"
-way to call the filesystem flushing threads?
-
--- 
-All rights reversed
