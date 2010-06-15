@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758301Ab0FOSlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 14:41:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43983 "EHLO mx1.redhat.com"
+	id S1758320Ab0FOSlk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 14:41:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34337 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758280Ab0FOSle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 14:41:34 -0400
+	id S1758305Ab0FOSli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 14:41:38 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
-       autofs@linux.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 04/38] autofs4: Save autofs trigger's vfsmount in super block info
-Date: Tue, 15 Jun 2010 11:39:34 -0700
-Message-Id: <1276627208-17242-5-git-send-email-vaurora@redhat.com>
+       linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 07/38] whiteout: Set S_OPAQUE inode flag when creating directories
+Date: Tue, 15 Jun 2010 11:39:37 -0700
+Message-Id: <1276627208-17242-8-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,117 +22,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Blunck <jblunck@suse.de>
 
-XXX - This is broken and included just to make union mounts work.  See
-discussion at:
-
-http://kerneltrap.org/mailarchive/linux-fsdevel/2010/1/15/6708053/thread
-
-Original commit message:
-
-This is a bugfix/replacement for commit
-051d381259eb57d6074d02a6ba6e90e744f1a29f:
-
-    During a path walk if an autofs trigger is mounted on a dentry,
-    when the follow_link method is called, the nameidata struct
-    contains the vfsmount and mountpoint dentry of the parent mount
-    while the dentry that is passed in is the root of the autofs
-    trigger mount.  I believe it is impossible to get the vfsmount of
-    the trigger mount, within the follow_link method, when only the
-    parent vfsmount and the root dentry of the trigger mount are
-    known.
-
-The solution in this commit was to replace the path embedded in the
-parent's nameidata with the path of the link itself in
-__do_follow_link().  This is a relatively harmless misuse of the
-field, but union mounts ran into a bug during follow_link() caused by
-the nameidata containing the wrong path (we count on it being what it
-is all other places - the path of the parent).
-
-A cleaner and easier to understand solution is to save the necessary
-vfsmount in the autofs superblock info when it is mounted.  Then we
-can easily update the vfsmount in autofs4_follow_link().
+In case of an union directory we don't want that the directories on lower
+layers of the union "show through". So to prevent that the contents of
+underlying directories magically shows up after a mkdir() we set the S_OPAQUE
+flag if directories are created where a whiteout existed before.
 
 Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Acked-by: Ian Kent <raven@themaw.net>
-Cc: autofs@linux.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- fs/autofs4/autofs_i.h |    1 +
- fs/autofs4/init.c     |   11 ++++++++++-
- fs/autofs4/root.c     |    6 ++++++
- fs/namei.c            |    7 ++-----
- 4 files changed, 19 insertions(+), 6 deletions(-)
+ fs/namei.c         |   11 ++++++++++-
+ include/linux/fs.h |    3 +++
+ 2 files changed, 13 insertions(+), 1 deletions(-)
 
-diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-index 3d283ab..de3af64 100644
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -133,6 +133,7 @@ struct autofs_sb_info {
- 	int reghost_enabled;
- 	int needs_reghost;
- 	struct super_block *sb;
-+	struct vfsmount *mnt;
- 	struct mutex wq_mutex;
- 	spinlock_t fs_lock;
- 	struct autofs_wait_queue *queues; /* Wait queue pointer */
-diff --git a/fs/autofs4/init.c b/fs/autofs4/init.c
-index 9722e4b..5e0dcd7 100644
---- a/fs/autofs4/init.c
-+++ b/fs/autofs4/init.c
-@@ -17,7 +17,16 @@
- static int autofs_get_sb(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
- {
--	return get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
-+	struct autofs_sb_info *sbi;
-+	int ret;
-+
-+	ret = get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
-+	if (ret)
-+		return ret;
-+
-+	sbi = autofs4_sbi(mnt->mnt_sb);
-+	sbi->mnt = mnt;
-+	return 0;
- }
- 
- static struct file_system_type autofs_fs_type = {
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index e8e5e63..c41e01d 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -219,6 +219,12 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
- 	DPRINTK("dentry=%p %.*s oz_mode=%d nd->flags=%d",
- 		dentry, dentry->d_name.len, dentry->d_name.name, oz_mode,
- 		nd->flags);
-+
-+	dput(nd->path.dentry);
-+	mntput(nd->path.mnt);
-+	nd->path.mnt = mntget(sbi->mnt);
-+	nd->path.dentry = dget(dentry);
-+
- 	/*
- 	 * For an expire of a covered direct or offset mount we need
- 	 * to break out of follow_down() at the autofs mount trigger
 diff --git a/fs/namei.c b/fs/namei.c
-index 3b43c48..f731108 100644
+index 2c723e2..8c67636 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -538,11 +538,8 @@ __do_follow_link(struct path *path, struct nameidata *nd, void **p)
- 	touch_atime(path->mnt, dentry);
- 	nd_set_link(nd, NULL);
+@@ -2107,6 +2107,7 @@ SYSCALL_DEFINE3(mknod, const char __user *, filename, int, mode, unsigned, dev)
+ int vfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
+ {
+ 	int error = may_create(dir, dentry);
++	int opaque = 0;
  
--	if (path->mnt != nd->path.mnt) {
--		path_to_nameidata(path, nd);
--		dget(dentry);
--	}
--	mntget(path->mnt);
-+	if (path->mnt == nd->path.mnt)
-+		mntget(nd->path.mnt);
- 	nd->last_type = LAST_BIND;
- 	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
- 	error = PTR_ERR(*p);
+ 	if (error)
+ 		return error;
+@@ -2119,9 +2120,17 @@ int vfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
+ 	if (error)
+ 		return error;
+ 
++	if (d_is_whiteout(dentry))
++		opaque = 1;
++
+ 	error = dir->i_op->mkdir(dir, dentry, mode);
+-	if (!error)
++	if (!error) {
+ 		fsnotify_mkdir(dir, dentry);
++		if (opaque) {
++			dentry->d_inode->i_flags |= S_OPAQUE;
++			mark_inode_dirty(dentry->d_inode);
++		}
++	}
+ 	return error;
+ }
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 7afdbd4..e9aa650 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -236,6 +236,7 @@ struct inodes_stat_t {
+ #define S_NOCMTIME	128	/* Do not update file c/mtime */
+ #define S_SWAPFILE	256	/* Do not truncate: swapon got its bmaps */
+ #define S_PRIVATE	512	/* Inode is fs-internal */
++#define S_OPAQUE	1024	/* Directory is opaque */
+ 
+ /*
+  * Note that nosuid etc flags are inode-specific: setting some file-system
+@@ -271,6 +272,8 @@ struct inodes_stat_t {
+ #define IS_SWAPFILE(inode)	((inode)->i_flags & S_SWAPFILE)
+ #define IS_PRIVATE(inode)	((inode)->i_flags & S_PRIVATE)
+ 
++#define IS_OPAQUE(inode)	((inode)->i_flags & S_OPAQUE)
++
+ /* the read-only stuff doesn't really belong here, but any other place is
+    probably as bad and I don't want to create yet another include file. */
+ 
 -- 
 1.6.3.3
 
