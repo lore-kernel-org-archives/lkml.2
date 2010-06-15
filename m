@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab0FOLcc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 07:32:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36065 "EHLO mx2.suse.de"
+	id S1757567Ab0FOLig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 07:38:36 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:51581 "EHLO poutre.nerim.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757254Ab0FOLca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 07:32:30 -0400
-Message-ID: <4C1764CD.3080402@suse.cz>
-Date: Tue, 15 Jun 2010 13:32:29 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Greg Thelen <gthelen@google.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Running make install over sshfs is painful now
-References: <20100607065324.GA25590@core.coreip.homeip.net>
-In-Reply-To: <20100607065324.GA25590@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752802Ab0FOLie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 07:38:34 -0400
+Date: Tue, 15 Jun 2010 13:38:30 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+       linux-bluetooth@vger.kernel.org, clemens@ladisch.de,
+       debora@linux.vnet.ibm.com, dri-devel@lists.freedesktop.org,
+       linux-i2c@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+       linux-media@vger.kernel.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: Re: [PATCH 7/8]ieee1394/sdp2 Fix warning: variable
+ 'unit_characteristics' set but not used
+Message-ID: <20100615133830.55afdddf@hyperion.delvare>
+In-Reply-To: <1276547208-26569-8-git-send-email-justinmattock@gmail.com>
+References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com>
+	<1276547208-26569-8-git-send-email-justinmattock@gmail.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7.6.2010 08:53, Dmitry Torokhov wrote:
-> Hi,
+On Mon, 14 Jun 2010 13:26:47 -0700, Justin P. Mattock wrote:
+> Temporary fix until something is resolved
+
+This is wrong by design, sorry. Warnings aren't blocking, and thus need
+no "temporary fix". Such temporary fixes would be only hiding the
+warning, cancelling the good work of gcc developers. Nack nack nack.
+
+> to fix the below warning:
+>   CC [M]  drivers/ieee1394/sbp2.o
+> drivers/ieee1394/sbp2.c: In function 'sbp2_parse_unit_directory':
+> drivers/ieee1394/sbp2.c:1353:6: warning: variable 'unit_characteristics' set but not used
+>  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 > 
-> With the following commit running "make modules_install install" over
-> sshfs (and I suppose nfs) is extremely painful:
+> ---
+>  drivers/ieee1394/sbp2.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> commit fb994ecc2b1c214951366c2ba5d8b121f0010d1f
-> Author: Greg Thelen <gthelen@google.com>
-> Date:   Wed May 5 10:41:44 2010 -0700
-> 
->     kbuild: Fix checking of scm-identifier variable
-...
+> diff --git a/drivers/ieee1394/sbp2.c b/drivers/ieee1394/sbp2.c
+> index 4565cb5..fcf8bd5 100644
+> --- a/drivers/ieee1394/sbp2.c
+> +++ b/drivers/ieee1394/sbp2.c
+> @@ -1356,6 +1356,8 @@ static void sbp2_parse_unit_directory(struct sbp2_lu *lu,
+>  
+>  	management_agent_addr = 0;
+>  	unit_characteristics = 0;
+> +	if (!unit_characteristics)
+> +		unit_characteristics = 0;
+>  	firmware_revision = SBP2_ROM_VALUE_MISSING;
+>  	model = ud->flags & UNIT_DIRECTORY_MODEL_ID ?
+>  				ud->model_id : SBP2_ROM_VALUE_MISSING;
 
-Commit 85a256d8 and this one just exposed a problem we had before with
-CONFIG_LOCALVERSION_AUTO, namely that the Makefile computes the release
-string on _every_ invocation:
 
-$ strace -feexecve make help 2>&1 | grep -v ' -1 ' | grep git
-[pid 13788] execve("/usr/bin/git", ["git", "rev-parse", "--verify",
-"--short", "HEAD"], [/* 88 vars */]) = 0
-[pid 13790] execve("/usr/bin/git", ["git", "describe", "--exact-match"],
-[/* 88 vars */]) = 0
-[pid 13792] execve("/usr/bin/git", ["git", "describe"], [/* 88 vars */]) = 0
-[pid 13795] execve("/usr/bin/git", ["git", "config", "--get",
-"svn-remote.svn.url"], [/* 88 vars */]) = 0
-[pid 13796] execve("/usr/bin/git", ["git", "update-index", "--refresh",
-"--unmerged"], [/* 88 vars */]) = 0
-[pid 13797] execve("/usr/bin/git", ["git", "diff-index", "--name-only",
-"HEAD"], [/* 88 vars */]Process 13786 suspended
-
-> Any cfhance we could generate the tag at compile time
-> as opposed to install time?
-
-The Makefile already stores the string in include/config/kernel.release
-during 'make prepare', but it is nevertheless recomputed every time.
-Need to clean this up.
-
-Michal
+-- 
+Jean Delvare
