@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab0FOW6W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 18:58:22 -0400
-Received: from mail.perches.com ([173.55.12.10]:1154 "EHLO mail.perches.com"
+	id S1757355Ab0FOXJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 19:09:50 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41138 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753457Ab0FOW6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 18:58:21 -0400
-Subject: Re: [B.A.T.M.A.N.] [PATCH] drivers/staging/batman-adv: Use
- (pr|netdev)_<level> macro helpers
-From: Joe Perches <joe@perches.com>
-To: Sven Eckelmann <sven.eckelmann@gmx.de>, netdev <netdev@vger.kernel.org>
-Cc: b.a.t.m.a.n@lists.open-mesh.org, devel <devel@driverdev.osuosl.org>,
-       b.a.t.m.a.n@lists.open-mesh.net, Greg Kroah-Hartman <gregkh@suse.de>,
-       linux-kernel@vger.kernel.org,
-       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-       Marek Lindner <lindner_marek@yahoo.de>
-In-Reply-To: <201006160037.48573.sven.eckelmann@gmx.de>
-References: <1275498615.23599.12.camel@Joe-Laptop.home>
-	 <1275509466.23599.43.camel@Joe-Laptop.home>
-	 <201006160023.04296.sven.eckelmann@gmx.de>
-	 <201006160037.48573.sven.eckelmann@gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Jun 2010 15:58:17 -0700
-Message-ID: <1276642697.1586.151.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753457Ab0FOXJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 19:09:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: [Regression, post-2.6.34] Hibernation broken on machines with radeon/KMS and r300
+Date: Wed, 16 Jun 2010 01:07:54 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Dave Airlie <airlied@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       "dri-devel" <dri-devel@lists.freedesktop.org>
+References: <201006141653.03879.rjw@sisk.pl> <AANLkTimgktYZiepVvbOssbYk7oLAOcWbT5X8uvtifxgC@mail.gmail.com> <201006151530.47890.rjw@sisk.pl>
+In-Reply-To: <201006151530.47890.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006160107.54822.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-16 at 00:37 +0200, Sven Eckelmann wrote:
-> Sven Eckelmann wrote:
-
-Hi Sven.
-
-> > The problem seems to be that dev_printk is used by netdev_printk (which is
-> > used by netdev_info). netdev_printk will add (netdev)->dev.parent as second
-> > parameter of dev_printk (and parent is NULL in our case). This macro will
-> > now call dev_driver_string with NULL as parameter and just dereference
-> > this null pointer.
+On Tuesday, June 15, 2010, Rafael J. Wysocki wrote:
+> On Monday, June 14, 2010, Alex Deucher wrote:
+> > On Mon, Jun 14, 2010 at 3:03 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > On Monday, June 14, 2010, Alex Deucher wrote:
+> > >> On Mon, Jun 14, 2010 at 10:53 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > >> > Alex, Dave,
+> > >> >
+> > >> > I'm afraid hibernation is broken on all machines using radeon/KMS with r300
+> > >> > after commit ce8f53709bf440100cb9d31b1303291551cf517f
+> > >> > (drm/radeon/kms/pm: rework power management).  At least, I'm able to reproduce
+> > >> > the symptom, which is that the machine hangs hard around the point where an
+> > >> > image is created (probably during the device thaw phase), on two different
+> > >> > boxes with r300 (the output of lspci from one of them is attached for
+> > >> > reference, the other one is HP nx6325).
+> > >> >
+> > >> > Suspend to RAM appears to work fine at least on one of the affected boxes.
+> > >> >
+> > >> > Unfortunately, the commit above changes a lot of code and it's not too easy to
+> > >> > figure out what's wrong with it and I didn't have the time to look more into
+> > >> > details of this failure.  However, it looks like you use .suspend() and
+> > >> > .resume() callbacks as .freeze() and .thaw() which may not be 100% correct
+> > >> > (in fact it looks like the "legacy" PCI suspend/resume is used, which is not
+> > >> > recommended any more).
+> > >> >
+> > >>
+> > >> Does it work any better after Dave's last drm pull request?
+> > >
+> > > Nope.  The symptom is slightly different, though, because now it hangs after
+> > > turning off the screen.
+> > >
+> > >> With the latest changes, pm should not be a factor unless it's explicitly
+> > >> enabled via sysfs.
+> > >
+> > > Well, I guess the first pm patch changed more than just pm, then.
 > > 
-> > Maybe it is related to something else, but at least I think that this could
-> > be the cause of the crash.
+> > Does this patch help?
+> > http://lists.freedesktop.org/archives/dri-devel/2010-June/001314.html
+> 
+> No, it doesn't.  I try to hibernate, everything works to the point where the
+> screen goes off and the box hangs (solid).  Normally, it would turn the
+> screen back on and continue with saving the image.
+> 
+> But, since that happens with the patch above applied, I think it doesn't
+> really pass the suspend phase (IOW, it probably hangs somewhere in the radeon's
+> suspend routine).
 
-Nope, I think that's exactly correct.
+I've just verified that in fact hibernation works on HP nx6325 with 2.6.35-rc3,
+but it takes about 55 sec. to suspend the graphics adapter in the "freeze"
+phase.  Surprisingly enough, during suspend to RAM it works normally
+(as well as in the "poweroff" phase of hibernation).
 
-> As far as I understand, the netdev_* stuff is made to be used by real drivers 
-> with more or less physical hardware. batman-adv is a virtual bridge used for 
-> mesh networks. Like net/bridge/ it has no physical parent device and only 
-> other net_devices are used inside of it - which may have real physical network 
-> devices as parents.
-
-> Please correct me if my assumption is wrong.
-
-No correction necessary...
-
-netdev_printk and netdev_<level> are meant to be used
-with parented network devices.
-
-I think that netdev_<level> will eventually do the right
-thing when dev->dev.parent is NULL.  Right now, that'd
-be a bit of an expensive test as it would be expanded in
-place for every use of the macro.
-
-Right now it's:
-
-#define netdev_printk(level, netdev, format, args...)		\
-	dev_printk(level, (netdev)->dev.parent,			\
-		   "%s: " format,				\
-		   netdev_name(netdev), ##args)
-
-It could be something like:
-
-#define netdev_printk(level, netdev, format, args...)		\
-do {								\
-	if ((netdev)->dev.parent)				\
-		dev_printk(level, (netdev)->dev.parent, 	\
-			   "%s: " format, 			\
-			   netdev_name(netdev), ##args);	\
-	else							\
-		printk(level "%s: " format,			\
-			netdev_name(netdev), ##args);		\
-} while (0)
-
-Unfortunately, that just about doubles the format string space,
-so I don't really want to do that.
-
-If/when %pV is accepted,
-
-http://lkml.org/lkml/2010/3/4/17
-http://lkml.org/lkml/2010/3/4/18
-
-then the netdev_<level> macros will be converted to functions,
-so size reduced with an added test for dev.parent == NULL without
-the need to double the string space.
-
-
+Rafael
