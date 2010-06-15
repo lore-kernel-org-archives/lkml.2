@@ -1,50 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab0FOHqr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 03:46:47 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:36586 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab0FOHqq (ORCPT
+	id S1754371Ab0FOHt5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 03:49:57 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:36492 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab0FOHt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 03:46:46 -0400
-Date: Tue, 15 Jun 2010 09:46:41 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Dave Chinner <david@fromorbit.com>,
-       xfs@oss.sgi.com, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [16/23] XFS: Fix gcc 4.6 set but not read and unused
-	statement warnings
-Message-ID: <20100615074641.GF6727@basil.fritz.box>
-References: <20100610110.764742110@firstfloor.org> <20100610111052.3DDC5B1A2B@basil.firstfloor.org> <20100614042700.GC6590@dastard> <20100614074309.GA17092@basil.fritz.box> <20100614133755.GE6590@dastard> <20100614143720.GI17092@basil.fritz.box> <20100614222458.GF6590@dastard> <20100615070244.GD6727@basil.fritz.box> <20100615074028.GA15322@infradead.org>
+	Tue, 15 Jun 2010 03:49:56 -0400
+Date: Tue, 15 Jun 2010 13:19:50 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, kvm <kvm@vger.kernel.org>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
+ control
+Message-ID: <20100615074949.GA4306@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100614084810.GT5191@balbir.in.ibm.com>
+ <4C16233C.1040108@redhat.com>
+ <20100614125010.GU5191@balbir.in.ibm.com>
+ <4C162846.7030303@redhat.com>
+ <1276529596.6437.7216.camel@nimitz>
+ <4C164E63.2020204@redhat.com>
+ <1276530932.6437.7259.camel@nimitz>
+ <4C1659F8.3090300@redhat.com>
+ <20100614174548.GB5191@balbir.in.ibm.com>
+ <4C172499.7090800@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100615074028.GA15322@infradead.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4C172499.7090800@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 03:40:28AM -0400, Christoph Hellwig wrote:
-> On Tue, Jun 15, 2010 at 09:02:45AM +0200, Andi Kleen wrote:
-> > I suspect you miss quite a lot of valuable information from
-> > your user base by not supporting kerneloops.org. On the other
-> > hand it would likely also save you from spending time on 
-> > flakes.
-> > 
-> > That said you don't need BUG_ON to support it (WARN etc. work
-> > too), it's just the easiest way.
+* Avi Kivity <avi@redhat.com> [2010-06-15 09:58:33]:
+
+> On 06/14/2010 08:45 PM, Balbir Singh wrote:
+> >
+> >>There are two decisions that need to be made:
+> >>
+> >>- how much memory a guest should be given
+> >>- given some guest memory, what's the best use for it
+> >>
+> >>The first question can perhaps be answered by looking at guest I/O
+> >>rates and giving more memory to more active guests.  The second
+> >>question is hard, but not any different than running non-virtualized
+> >>- except if we can detect sharing or duplication.  In this case,
+> >>dropping a duplicated page is worthwhile, while dropping a shared
+> >>page provides no benefit.
+> >I think there is another way of looking at it, give some free memory
+> >
+> >1. Can the guest run more applications or run faster
 > 
-> Note that a XFS filesystem shutdown already gives a stack trace.
-> But picking up every filesystem shutdown on kerneloops.org seems
-> to be quite a bit too much.  It's usually due to IO errors from
-> the underlying device.
+> That's my second question.  How to best use this memory.  More
+> applications == drop the page from cache, faster == keep page in
+> cache.
+> 
+> All we need is to select the right page to drop.
+>
 
-Yes, but known race check asserts should be probably there, right?
-Maybe you need a special kind of ASSERT (or shutdown) for those? 
+Do we need to drop to the granularity of the page to drop? I think
+figuring out the class of pages and making sure that we don't write
+our own reclaim logic, but work with what we have to identify the
+class of pages is a good start. 
+ 
+> >2. Can the host potentially get this memory via ballooning or some
+> >other means to start newer guest instances
+> 
+> Well, we already have ballooning.  The question is can we improve
+> the eviction algorithm.
+> 
+> >I think the answer to 1 and 2 is yes.
+> >
+> >>How the patch helps answer either question, I'm not sure.  I don't
+> >>think preferential dropping of unmapped page cache is the answer.
+> >>
+> >Preferential dropping as selected by the host, that knows about the
+> >setup and if there is duplication involved. While we use the term
+> >preferential dropping, remember it is still via LRU and we don't
+> >always succeed. It is a best effort (if you can and the unmapped pages
+> >are not highly referenced) scenario.
+> 
+> How can the host tell if there is duplication?  It may know it has
+> some pagecache, but it has no idea whether or to what extent guest
+> pagecache duplicates host pagecache.
+> 
 
--Andi
+Well it is possible in host user space, I for example use memory
+cgroup and through the stats I have a good idea of how much is duplicated.
+I am ofcourse making an assumption with my setup of the cached mode,
+that the data in the guest page cache and page cache in the cgroup
+will be duplicated to a large extent. I did some trivial experiments
+like drop the data from the guest and look at the cost of bringing it
+in and dropping the data from both guest and host and look at the
+cost. I could see a difference.
+
+Unfortunately, I did not save the data, so I'll need to redo the
+experiment.
+
+> >>>Those tell you how to balance going after the different classes of
+> >>>things that we can reclaim.
+> >>>
+> >>>Again, this is useless when ballooning is being used.  But, I'm thinking
+> >>>of a more general mechanism to force the system to both have MemFree
+> >>>_and_ be acting as if it is under memory pressure.
+> >>If there is no memory pressure on the host, there is no reason for
+> >>the guest to pretend it is under pressure.  If there is memory
+> >>pressure on the host, it should share the pain among its guests by
+> >>applying the balloon.  So I don't think voluntarily dropping cache
+> >>is a good direction.
+> >>
+> >There are two situations
+> >
+> >1. Voluntarily drop cache, if it was setup to do so (the host knows
+> >that it caches that information anyway)
+> 
+> It doesn't, really.  The host only has aggregate information about
+> itself, and no information about the guest.
+> 
+> Dropping duplicate pages would be good if we could identify them.
+> Even then, it's better to drop the page from the host, not the
+> guest, unless we know the same page is cached by multiple guests.
+>
+
+On the exact pages to drop, please see my comments above on the class
+of pages to drop.
+There are reasons for wanting to get the host to cache the data
+
+Unless the guest is using cache = none, the data will still hit the
+host page cache
+The host can do a better job of optimizing the writeouts
+ 
+> But why would the guest voluntarily drop the cache?  If there is no
+> memory pressure, dropping caches increases cpu overhead and latency
+> even if the data is still cached on the host.
+> 
+
+So, there are basically two approaches
+
+1. First patch, proactive - enabled by a boot option
+2. When ballooned, we try to (please NOTE try to) reclaim cached pages
+first. Failing which, we go after regular pages in the alloc_page()
+call in the balloon driver.
+
+> >2. Drop the cache on either a special balloon option, again the host
+> >knows it caches that very same information, so it prefers to free that
+> >up first.
+> 
+> Dropping in response to pressure is good.  I'm just not convinced
+> the patch helps in selecting the correct page to drop.
+>
+
+That is why I've presented data on the experiments I've run and
+provided more arguments to backup the approach. 
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+	Three Cheers,
+	Balbir
