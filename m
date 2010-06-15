@@ -1,60 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab0FOH1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 03:27:33 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54825 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab0FOH1c (ORCPT
+	id S1753551Ab0FOHcK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 03:32:10 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:59973 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837Ab0FOHcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 03:27:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=kQSe59mDMRL2/Kk3+gZ5kAnktT9PmVLaT8FbRF2xYkkS/LKBBthYEi0HZUqLd6g1EN
-         oR7ria7DzwDcKff/eIDqTt30XalW0GNr5Iel8vUpFH6XPq8pSGTzJHP2IdNoqCGujtSH
-         sJZD9vVolzFJTRQkd6lwHz3s0E+DmRb+uaJFg=
-Message-ID: <4C172B73.6090609@gmail.com>
-Date: Tue, 15 Jun 2010 00:27:47 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
-       Peter Stuge <peter@stuge.se>
-Subject: Re: [PATCH 4/8]drivers:tmp.c Fix warning: variable 'rc' set but	not
- used
-References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com> <1276547208-26569-5-git-send-email-justinmattock@gmail.com> <21331.1276560832@localhost> <4C16E18F.9050901@gmail.com> <9275.1276573789@localhost> <4C16F9FC.2080905@gmail.com> <20100615052944.7746.qmail@stuge.se> <4C17169F.4060205@gmail.com> <4C17244D.7010806@s5r6.in-berlin.de>
-In-Reply-To: <4C17244D.7010806@s5r6.in-berlin.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Jun 2010 03:32:08 -0400
+To: viro@ZenIV.linux.org.uk
+CC: akpm@linux-foundation.org, john.johansen@canonical.com,
+       penguin-kernel@I-love.SAKURA.ne.jp, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-reply-to: <E1OKVT4-0002bA-KD@pomaz-ex.szeredi.hu> (message from Miklos
+	Szeredi on Fri, 04 Jun 2010 13:53:42 +0200)
+Subject: Re: [PATCH 2/2] vfs: show unreachable paths in getcwd and proc
+References: <E1OKVRc-0002Zk-Sc@pomaz-ex.szeredi.hu> <E1OKVT4-0002bA-KD@pomaz-ex.szeredi.hu>
+Message-Id: <E1OOQch-0006Bn-TT@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Tue, 15 Jun 2010 09:31:51 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 11:57 PM, Stefan Richter wrote:
-> Justin P. Mattock wrote:
->> On 06/14/2010 10:29 PM, Peter Stuge wrote:
->>> Justin P. Mattock wrote:
->>>> I have no manual in front of me. Did a quick google, but came up with
->>>> (no hits) info on what that function does. grep showed too many entries
->>>> to really see why/what this is.
->>>
->>> Check out the tool cscope. (Or kscope, if you prefer a GUI.)
->>
->> thanks for this tool.. I think this is what I need.. running around not
->> knowing what/where the manual is for a call is a bit daunting.
->
-> Similar to cscope/kscope but online:
-> http://lxr.free-electrons.com/
-> http://lxr.linux.no/linux
->
-> E.g. http://lxr.free-electrons.com/ident?i=transmit_cmd
+Hi Al,
 
-hmm.. yeah I use those guys a lot.. with grep also.. I think what might 
-throw me off is things like def.orig = def.new then def.orig gets lost 
-in the mix(or it's there, but the grep becomes gigantic in code 
-results.) main thing I look for is googling "somedefinition linux man"
-for some idea of what that function does.
+Could you please consider these patches for 2.6.36?
 
-Justin P. Mattock
+Thanks,
+Miklos
+
+
+On Fri, 04 Jun 2010, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> Prepend "(unreachable)" to path strings if the path is not reachable
+> from the current root.
+> 
+> Two places updated are
+>  - the return string from getcwd()
+>  - and symlinks under /proc/$PID.
+> 
+> Other uses of d_path() are left unchanged (we know that some old
+> software crashes if /proc/mounts is changed).
+> 
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> ---
+>  fs/dcache.c            |   82 +++++++++++++++++++++++++++++++++++++++++--------
+>  fs/proc/base.c         |    2 -
+>  include/linux/dcache.h |    1 
+>  3 files changed, 72 insertions(+), 13 deletions(-)
+> 
+> Index: linux-2.6/fs/dcache.c
+> ===================================================================
+> --- linux-2.6.orig/fs/dcache.c	2010-05-27 12:22:21.000000000 +0200
+> +++ linux-2.6/fs/dcache.c	2010-05-27 12:22:24.000000000 +0200
+> @@ -1957,6 +1957,33 @@ int __d_path(const struct path *path, st
+>  	return error;
+>  }
+>  
+> +static void current_root(struct path *root)
+> +{
+> +	read_lock(&current->fs->lock);
+> +	*root = current->fs->root;
+> +	path_get(root);
+> +	read_unlock(&current->fs->lock);
+> +}
+> +
+> +static int __d_path_with_deleted(const struct path *path, struct path *root,
+> +				 char **buffer, int *buflen)
+> +{
+> +	int error;
+> +
+> +	prepend(buffer, buflen, "\0", 1);
+> +	if (d_unlinked(path->dentry)) {
+> +		error = prepend(buffer, buflen, " (deleted)", 10);
+> +		if (error)
+> +			return error;
+> +	}
+> +	return __d_path(path, root, buffer, buflen);
+> +}
+> +
+> +static int prepend_unreachable(char **buffer, int *buflen)
+> +{
+> +	return prepend(buffer, buflen, "(unreachable)", 13);
+> +}
+> +
+>  /**
+>   * d_path - return the path of a dentry
+>   * @path: path to report
+> @@ -1990,27 +2017,51 @@ char *d_path(const struct path *path, ch
+>  	if (path->dentry->d_op && path->dentry->d_op->d_dname)
+>  		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+>  
+> -	read_lock(&current->fs->lock);
+> -	root = current->fs->root;
+> -	path_get(&root);
+> -	read_unlock(&current->fs->lock);
+> +	current_root(&root);
+>  	spin_lock(&dcache_lock);
+>  	ptr = buf + buflen;
+> -	prepend(&ptr, &buflen, "\0", 1);
+> -	if (d_unlinked(path->dentry)) {
+> -		error = prepend(&ptr, &buflen, " (deleted)", 10);
+> -		if (error)
+> -			goto out;
+> -	}
+>  	tmp = root;
+> -	error = __d_path(path, &tmp, &ptr, &buflen);
+> -out:
+> +	error = __d_path_with_deleted(path, &tmp, &ptr, &buflen);
+>  	spin_unlock(&dcache_lock);
+>  	path_put(&root);
+>  	return error ? ERR_PTR(error) : ptr;
+>  }
+>  EXPORT_SYMBOL(d_path);
+>  
+> +/**
+> + * d_path_with_unreachable - return the path of a dentry
+> + * @path: path to report
+> + * @buf: buffer to return value in
+> + * @buflen: buffer length
+> + *
+> + * The difference from d_path() is that this prepends "(unreachable)"
+> + * to paths which are unreachable from the current process' root.
+> + */
+> +char *d_path_with_unreachable(const struct path *path, char *buf, int buflen)
+> +{
+> +	char *ptr;
+> +	struct path root;
+> +	struct path tmp;
+> +	int error;
+> +
+> +	if (path->dentry->d_op && path->dentry->d_op->d_dname)
+> +		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+> +
+> +	current_root(&root);
+> +	spin_lock(&dcache_lock);
+> +	ptr = buf + buflen;
+> +	tmp = root;
+> +	error = __d_path_with_deleted(path, &tmp, &ptr, &buflen);
+> +	if (!error) {
+> +		if (tmp.dentry != root.dentry || tmp.mnt != root.mnt)
+> +			error = prepend_unreachable(&ptr, &buflen);
+> +	}
+> +
+> +	spin_unlock(&dcache_lock);
+> +	path_put(&root);
+> +	return error ? ERR_PTR(error) : ptr;
+> +}
+> +
+>  /*
+>   * Helper function for dentry_operations.d_dname() members
+>   */
+> @@ -2118,6 +2169,13 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
+>  		if (error)
+>  			goto out;
+>  
+> +		/* Unreachable from current root */
+> +		if (tmp.dentry != root.dentry || tmp.mnt != root.mnt) {
+> +			error = prepend_unreachable(&cwd, &buflen);
+> +			if (error)
+> +				goto out;
+> +		}
+> +
+>  		error = -ERANGE;
+>  		len = PAGE_SIZE + page - cwd;
+>  		if (len <= size) {
+> Index: linux-2.6/include/linux/dcache.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/dcache.h	2010-05-27 12:13:48.000000000 +0200
+> +++ linux-2.6/include/linux/dcache.h	2010-05-27 12:22:24.000000000 +0200
+> @@ -315,6 +315,7 @@ extern char *dynamic_dname(struct dentry
+>  
+>  extern int __d_path(const struct path *path, struct path *root, char **, int *);
+>  extern char *d_path(const struct path *, char *, int);
+> +extern char *d_path_with_unreachable(const struct path *, char *, int);
+>  extern char *dentry_path(struct dentry *, char *, int);
+>  
+>  /* Allocation counts.. */
+> Index: linux-2.6/fs/proc/base.c
+> ===================================================================
+> --- linux-2.6.orig/fs/proc/base.c	2010-05-27 11:53:55.000000000 +0200
+> +++ linux-2.6/fs/proc/base.c	2010-05-27 12:22:24.000000000 +0200
+> @@ -1438,7 +1438,7 @@ static int do_proc_readlink(struct path
+>  	if (!tmp)
+>  		return -ENOMEM;
+>  
+> -	pathname = d_path(path, tmp, PAGE_SIZE);
+> +	pathname = d_path_with_unreachable(path, tmp, PAGE_SIZE);
+>  	len = PTR_ERR(pathname);
+>  	if (IS_ERR(pathname))
+>  		goto out;
+> 
