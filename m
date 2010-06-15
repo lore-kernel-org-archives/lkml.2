@@ -1,127 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab0FOTg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 15:36:28 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:44996 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419Ab0FOTgZ (ORCPT
+	id S1758118Ab0FOThv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 15:37:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53332 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754779Ab0FOThu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 15:36:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=gHb81XBVY2D27Nc9bWj12qbBlDnG3GCkmdXhwpUGjecW2ycxhS6xIp99cWAIacwtLs
-         zowRxPdTYKMzC/XprlqOykwegYPupoU7UX3QqyPxlArBB7b7R5JLQu+k6uw7BC2HNnwj
-         uKo1I9apf7IrtKpwG/d5uJISlzqrk5zMYP2s4=
-Message-ID: <4C17D646.5030306@gmail.com>
-Date: Tue, 15 Jun 2010 12:36:38 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: "Sergey V." <sftp.mtuci@gmail.com>
-CC: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-       linux-bluetooth@vger.kernel.org, clemens@ladisch.de,
-       debora@linux.vnet.ibm.com, dri-devel@lists.freedesktop.org,
-       linux-i2c@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH 4/8]drivers:tmp.c Fix warning: variable 'rc' set but not
- used
-References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com> <1276547208-26569-5-git-send-email-justinmattock@gmail.com> <201006152253.44326.sftp.mtuci@gmail.com>
-In-Reply-To: <201006152253.44326.sftp.mtuci@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 15 Jun 2010 15:37:50 -0400
+Date: Tue, 15 Jun 2010 12:37:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: tytso@mit.edu, Salman <sqazi@google.com>, mingo@elte.hu,
+       linux-kernel@vger.kernel.org, tytso@google.com,
+       torvalds@linux-foundation.org, walken@google.com,
+       Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
+Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
+ reused immediately.
+Message-Id: <20100615123705.232f1cf2.akpm@linux-foundation.org>
+In-Reply-To: <1276612552.2077.7725.camel@twins>
+References: <AANLkTinlnb-HsDia4X2qgRjkTL_Z5CfVKYHRFwREoyIn@mail.gmail.com>
+	<20100611224902.5039.60134.stgit@bumblebee1.mtv.corp.google.com>
+	<20100614165851.6bdfe485.akpm@linux-foundation.org>
+	<20100615005619.GI6666@thunk.org>
+	<20100614185556.afdc5304.akpm@linux-foundation.org>
+	<1276612552.2077.7725.camel@twins>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 11:53 AM, Sergey V. wrote:
-> On Tuesday 15 of June 2010 00:26:44 Justin P. Mattock wrote:
->> Im getting this warning when compiling:
->>   CC      drivers/char/tpm/tpm.o
->> drivers/char/tpm/tpm.c: In function 'tpm_gen_interrupt':
->> drivers/char/tpm/tpm.c:508:10: warning: variable 'rc' set but not used
->>
->> The below patch gets rid of the warning,
->> but I'm not sure if it's the best solution.
->>
->>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>
->> ---
->>   drivers/char/tpm/tpm.c |    2 ++
->>   1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
->> index 05ad4a1..3d685dc 100644
->> --- a/drivers/char/tpm/tpm.c
->> +++ b/drivers/char/tpm/tpm.c
->> @@ -514,6 +514,8 @@ void tpm_gen_interrupt(struct tpm_chip *chip)
->>
->>   	rc = transmit_cmd(chip,&tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
->>   			"attempting to determine the timeouts");
->> +	if (!rc)
->> +		rc = 0;
->>   }
->>   EXPORT_SYMBOL_GPL(tpm_gen_interrupt);
->>
->> --
->> 1.7.1.rc1.21.gf3bd6
->>
->
-> Hi Justin
->
-> IMHO
-> See code of functions tpm_transmit(), transmit_cmd and tpm_gen_interrupt().
-> In tpm_gen_interrupt() not need check rc for wrong value bacause if in function
-> transmit_cmd() len == TPM_ERROR_SIZE then put a debug message (dev_dbg()).
-> Again, if something wrong in tpm_transmit() then runs dev_err() and rc in
-> tpm_gen_interrupt() get -E* value.
-> So, we can remove unused rc variable in tpm_gen_interrupt().
->
-> See patch below. Note: I not tested it.
->
->
-> Subject: [PATCH] drivers: tpm.c: Remove unused variable 'rc'
->
+On Tue, 15 Jun 2010 16:35:52 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
+
+> > I suspect sched_clock.c might be generating fair amounts of code which
+> > UP builds don't need. 
+> 
+> Only sched_clock_remote() and its caller, something like the below, not
+> much code..
+> 
+> UP machines can still have utterly sucky TSC, although the
+> inter-cpu-drift thing isn't much of an issue ;-)
+> 
 > ---
->   drivers/char/tpm/tpm.c |    5 ++---
->   1 files changed, 2 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-> index 05ad4a1..f9f5b47 100644
-> --- a/drivers/char/tpm/tpm.c
-> +++ b/drivers/char/tpm/tpm.c
-> @@ -505,15 +505,14 @@ ssize_t tpm_getcap(struct device *dev, __be32 subcap_id,
-> cap_t *cap,
->   void tpm_gen_interrupt(struct tpm_chip *chip)
->   {
->   	struct	tpm_cmd_t tpm_cmd;
-> -	ssize_t rc;
->
->   	tpm_cmd.header.in = tpm_getcap_header;
->   	tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
->   	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
->   	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
->
-> -	rc = transmit_cmd(chip,&tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
-> -			"attempting to determine the timeouts");
-> +	transmit_cmd(chip,&tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
-> +		     "attempting to determine the timeouts");
->   }
->   EXPORT_SYMBOL_GPL(tpm_gen_interrupt);
->
+>  kernel/sched_clock.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/sched_clock.c b/kernel/sched_clock.c
+> index 52f1a14..7ff5b56 100644
+> --- a/kernel/sched_clock.c
+> +++ b/kernel/sched_clock.c
+> @@ -170,6 +170,7 @@ again:
+>  	return clock;
+>  }
+>  
+> +#ifdef CONFIG_SMP
+>  static u64 sched_clock_remote(struct sched_clock_data *scd)
+>  {
+>  	struct sched_clock_data *my_scd = this_scd();
+> @@ -205,6 +206,7 @@ again:
+>  
+>  	return val;
+>  }
+> +#endif
+>  
+>  /*
+>   * Similar to cpu_clock(), but requires local IRQs to be disabled.
+> @@ -226,9 +228,11 @@ u64 sched_clock_cpu(int cpu)
+>  
+>  	scd = cpu_sdc(cpu);
+>  
+> +#ifdef CONFIG_SMP
+>  	if (cpu != smp_processor_id())
+>  		clock = sched_clock_remote(scd);
+>  	else
+> +#endif
+>  		clock = sched_clock_local(scd);
+>  
+>  	return clock;
 
+hm, OK, I was actually looking at sched_clock_local() at the time.  Can
+clocks go backwards on UP hardware?  What breaks if we do #define
+sched_clock_local sched_clock?
 
-
-o.k. applied this patch and rebuilt, here is what I see:
-
-   CC [M]  drivers/char/ipmi/ipmi_poweroff.o
-   CC      drivers/char/tpm/tpm.o
-   CC      drivers/char/tpm/tpm_bios.o
-   CC      drivers/char/tpm/tpm_tis.o
-   LD      drivers/char/tpm/built-in.o
-
-
-looks good over here Thanks for sending this..
-
-Justin P. Mattock
+I've mentioned this before, but sched_clock.c is really opaque - it
+would be a formidable task for anyone to get in there and work on the
+code if they hadn't already been working on it for years.
