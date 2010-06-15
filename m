@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735Ab0FOQfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 12:35:51 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59697 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975Ab0FOQft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 12:35:49 -0400
-Date: Tue, 15 Jun 2010 12:35:46 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-Message-ID: <20100615163546.GA21250@infradead.org>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
- <20100615140011.GD28052@random.random>
- <20100615141122.GA27893@infradead.org>
- <20100615142219.GE28052@random.random>
- <20100615144342.GA3339@infradead.org>
- <20100615150850.GF28052@random.random>
- <20100615153838.GO26788@csn.ul.ie>
- <20100615161419.GH28052@random.random>
- <20100615163044.GR26788@csn.ul.ie>
+	id S1757554Ab0FOQiZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 12:38:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54187 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756970Ab0FOQiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 12:38:24 -0400
+Message-ID: <4C17AC47.1080808@kernel.org>
+Date: Tue, 15 Jun 2010 18:37:27 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100615163044.GR26788@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: [PATCH 08/30] workqueue: temporarily disable workqueue tracing
+References: <1276551467-21246-1-git-send-email-tj@kernel.org> <1276551467-21246-9-git-send-email-tj@kernel.org> <20100615132926.GE5342@nowhere>
+In-Reply-To: <20100615132926.GE5342@nowhere>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 15 Jun 2010 16:37:28 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 05:30:44PM +0100, Mel Gorman wrote:
-> After grepping through fs/, it was only xfs and btrfs that I saw were
-> specfically disabling writepage from reclaim context.
+On 06/15/2010 03:29 PM, Frederic Weisbecker wrote:
+> On Mon, Jun 14, 2010 at 11:37:25PM +0200, Tejun Heo wrote:
+>> Strip tracing code from workqueue and disable workqueue tracing.  This
+>> is temporary measure till concurrency managed workqueue is complete.
+>>
+>> Signed-off-by: Tejun Heo <tj@kernel.org>
+>> ---
+>>  kernel/trace/Kconfig |    4 +++-
+>>  kernel/workqueue.c   |   14 +++-----------
+>>  2 files changed, 6 insertions(+), 12 deletions(-)
+> 
+> If the new workqueue implementation makes the workqueue tracing useless,
+> than please remove it. We can think about providing a more suitable
+> tracing for that later, once we have determined the interesting organic
+> points.
+> 
+> I'll be happy to help.
 
-ext4 doesn't specificly disable writeback from reclaim context, but
-in a rather convoluted way disabled basically all writeback through
-->writepage.  The only thing allowed is overwrites of already allocated
-blocks.
+Cool, yeah, will rip it out.
 
-In addition to that reiserfs also frefuses to write back pages
-from reclaim context if they require a transaction, which is the case
-if the file was written to through mmap.
+Thanks.
+
+-- 
+tejun
