@@ -1,130 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594Ab0FOLkp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 07:40:45 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:49157 "EHLO poutre.nerim.net"
+	id S1757604Ab0FOLlR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 07:41:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37660 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802Ab0FOLkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 07:40:42 -0400
-Date: Tue, 15 Jun 2010 13:40:39 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: David Daney <david.s.daney@gmail.com>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-       linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-       linux-bluetooth@vger.kernel.org, clemens@ladisch.de,
-       debora@linux.vnet.ibm.com, dri-devel@lists.freedesktop.org,
-       linux-i2c@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH 6/8]i2c:i2c_core Fix warning: variable 'dummy' set but 
- not used
-Message-ID: <20100615134039.6ccfc17a@hyperion.delvare>
-In-Reply-To: <4C169F19.1040608@gmail.com>
-References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com>
-	<1276547208-26569-7-git-send-email-justinmattock@gmail.com>
-	<20100614225315.2bae9e37@hyperion.delvare>
-	<4C169F19.1040608@gmail.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752818Ab0FOLlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 07:41:15 -0400
+Message-ID: <4C1766D6.3040000@redhat.com>
+Date: Tue, 15 Jun 2010 14:41:10 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 5/6] KVM: MMU: prefetch ptes when intercepted guest #PF
+References: <4C16E6ED.7020009@cn.fujitsu.com> <4C16E75F.6020003@cn.fujitsu.com> <4C16E7AD.1060101@cn.fujitsu.com> <4C16E7F4.5060801@cn.fujitsu.com> <4C16E82E.5010306@cn.fujitsu.com> <4C16E9A8.10409@cn.fujitsu.com>
+In-Reply-To: <4C16E9A8.10409@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On 06/15/2010 05:47 AM, Xiao Guangrong wrote:
+> Support prefetch ptes when intercept guest #PF, avoid to #PF by later
+> access
+>
+> If we meet any failure in the prefetch path, we will exit it and
+> not try other ptes to avoid become heavy path
+>
+>
+>
+> +#define PTE_PREFETCH_NUM	16
+> +
+>   #define PT_FIRST_AVAIL_BITS_SHIFT 9
+>   #define PT64_SECOND_AVAIL_BITS_SHIFT 52
+>
+> @@ -2041,6 +2043,39 @@ static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
+>   {
+>   }
+>
+> +static void direct_pte_prefetch(struct kvm_vcpu *vcpu, u64 *sptep)
+> +{
+> +	struct kvm_mmu_page *sp;
+> +	int index, i;
+> +
+> +	sp = page_header(__pa(sptep));
+> +	WARN_ON(!sp->role.direct);
+> +	index = sptep - sp->spt;
+> +
+> +	for (i = index + 1; i<  min(PT64_ENT_PER_PAGE,
+> +				      index + PTE_PREFETCH_NUM); i++) {
+> +		gfn_t gfn;
+> +		pfn_t pfn;
+> +		u64 *spte = sp->spt + i;
+> +
+> +		if (*spte != shadow_trap_nonpresent_pte)
+> +			continue;
+> +
+> +		gfn = sp->gfn + (i<<  ((sp->role.level - 1) * PT64_LEVEL_BITS));
+>    
 
-On Mon, 14 Jun 2010 14:28:57 -0700, David Daney wrote:
-> On 06/14/2010 01:53 PM, Jean Delvare wrote:
-> > Hi Justin,
-> >
-> > On Mon, 14 Jun 2010 13:26:46 -0700, Justin P. Mattock wrote:
-> >> could be a right solution, could be wrong
-> >> here is the warning:
-> >>    CC      drivers/i2c/i2c-core.o
-> >> drivers/i2c/i2c-core.c: In function 'i2c_register_adapter':
-> >> drivers/i2c/i2c-core.c:757:15: warning: variable 'dummy' set but not used
-> >>
-> >>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
-> >>
-> >> ---
-> >>   drivers/i2c/i2c-core.c |    2 ++
-> >>   1 files changed, 2 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> >> index 1cca263..79c6c26 100644
-> >> --- a/drivers/i2c/i2c-core.c
-> >> +++ b/drivers/i2c/i2c-core.c
-> >> @@ -794,6 +794,8 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
-> >>   	mutex_lock(&core_lock);
-> >>   	dummy = bus_for_each_drv(&i2c_bus_type, NULL, adap,
-> >>   				 __process_new_adapter);
-> >> +	if(!dummy)
-> >> +		dummy = 0;
-> >
-> > One word: scripts/checkpatch.pl
-> >
-> > In other news, the above is just plain wrong. First we force people to
-> > read the result of bus_for_each_drv() and then when they do and don't
-> > need the value, gcc complains, so we add one more layer of useless
-> > code, which developers and possibly tools will later wonder and
-> > complain about? I can easily imagine that a static code analyzer would
-> > spot the above code as being a potential bug.
-> >
-> > Let's stop this madness now please.
-> >
-> > Either __must_check goes away from bus_for_each_drv() and from every
-> > other function which raises this problem, or we must disable that new
-> > type of warning gcc 4.6.0 generates. Depends which warnings we value
-> > more, as we can't sanely have both.
-> >
-> 
-> That is the crux of the whole thing.  Putting in crap to get rid of the 
-> __must_check warning someone obviously wanted to provoke is just plain 
-> wrong.
+Can calculate outside the loop and use +=.
 
-__process_new_adapter() calls i2c_do_add_adapter() which always returns
-0. Why should I check the return value of bus_for_each_drv() when I
-know it will always be 0 by construction?
+Can this in fact work for level != PT_PAGE_TABLE_LEVEL?  We might start 
+at PT_PAGE_DIRECTORY_LEVEL but get 4k pages while iterating.
 
-Also note that the same function is also called through
-bus_for_each_dev() somewhere else in i2c-core, and there is no warning
-there because bus_for_each_dev() is not marked __must_check. How
-consistent is this? If bus_for_each_dev() is OK without __must_check,
-then I can't see why bus_for_each_drv() wouldn't be.
+> +
+> +		pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
+> +		if (is_error_pfn(pfn)) {
+> +			kvm_release_pfn_clean(pfn);
+> +			break;
+> +		}
+> +		if (pte_prefetch_topup_memory_cache(vcpu))
+> +			break;
+> +
+> +		mmu_set_spte(vcpu, spte, ACC_ALL, ACC_ALL, 0, 0, 1, NULL,
+> +			     sp->role.level, gfn, pfn, true, false);
+> +	}
+> +}
+>    
 
-> I don't know what the answer is, but in addition to your suggestion of 
-> removing the __must_check, you might try:
-> 
-> BUG_ON(dummy != WHAT_IT_SHOULD_BE);
-> 
-> or
-> 
-> if (dummy != WHAT_IT_SHOULD_BE)
-> 	panic("nice message here);
+Nice.  Direct prefetch should usually succeed.
 
-Which will never trigger.
+Can later augment to call get_users_pages_fast(..., PTE_PREFETCH_NUM, 
+...) to reduce gup overhead.
 
-> or
-> 
-> static inline void i_really_know_what_i_am_doing(int arg)
-> {
-> 	/*
-> 	 * Trick the compiler because we don't want to
-> 	 * handle error conditions.
-> 	 */
-> 	return;
-> }
-> 
-> ..
-> ..
-> ..
-> 
-> 	i_really_know_what_i_am_doing(dummy);
+>
+> +static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, u64 *sptep)
+> +{
+> +	struct kvm_mmu_page *sp;
+> +	pt_element_t *table = NULL;
+> +	int offset = 0, shift, index, i;
+> +
+> +	sp = page_header(__pa(sptep));
+> +	index = sptep - sp->spt;
+> +
+> +	if (PTTYPE == 32) {
+> +		shift = PAGE_SHIFT - (PT_LEVEL_BITS -
+> +					PT64_LEVEL_BITS) * sp->role.level;
+> +		offset = sp->role.quadrant<<  shift;
+> +	}
+> +
+> +	for (i = index + 1; i<  min(PT64_ENT_PER_PAGE,
+> +				      index + PTE_PREFETCH_NUM); i++) {
+> +		struct page *page;
+> +		pt_element_t gpte;
+> +		unsigned pte_access;
+> +		u64 *spte = sp->spt + i;
+> +		gfn_t gfn;
+> +		pfn_t pfn;
+> +		int dirty;
+> +
+> +		if (*spte != shadow_trap_nonpresent_pte)
+> +			continue;
+> +
+> +		pte_access = sp->role.access;
+> +		if (sp->role.direct) {
+> +			dirty = 1;
+> +			gfn = sp->gfn + (i<<  ((sp->role.level - 1) *
+> +					      PT64_LEVEL_BITS));
+> +			goto gfn_mapping;
+> +		}
+>    
 
-Which is adding a lot of lines, and might eventually fail when the
-compiler becomes smarter (if it isn't already). Thanks but no thanks.
-If I really have to chose one of these evils, I'll go for BUG_ON(), at
-least the intent is clear and the bloat is minimum.
+Should just call direct_pte_prefetch.
+
+> +
+> +		if (!table) {
+> +			page = gfn_to_page_atomic(vcpu->kvm, sp->gfn);
+> +			if (is_error_page(page)) {
+> +				kvm_release_page_clean(page);
+> +				break;
+> +			}
+> +			table = kmap_atomic(page, KM_USER0);
+> +			table = (pt_element_t *)((char *)table + offset);
+> +		}
+>    
+
+Why not kvm_read_guest_atomic()?  Can do it outside the loop.
+
+> +
+> +		gpte = table[i];
+> +		if (!(gpte&  PT_ACCESSED_MASK))
+> +			continue;
+> +
+> +		if (!is_present_gpte(gpte)) {
+> +			if (!sp->unsync)
+> +				*spte = shadow_notrap_nonpresent_pte;
+>    
+
+Need __set_spte().
+
+> +			continue;
+> +		}
+> +		dirty = is_dirty_gpte(gpte);
+> +		gfn = (gpte&  PT64_BASE_ADDR_MASK)>>  PAGE_SHIFT;
+> +		pte_access = pte_access&  FNAME(gpte_access)(vcpu, gpte);
+> +gfn_mapping:
+> +		pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
+> +		if (is_error_pfn(pfn)) {
+> +			kvm_release_pfn_clean(pfn);
+> +			break;
+> +		}
+> +
+> +		if (pte_prefetch_topup_memory_cache(vcpu))
+> +			break;
+> +		mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
+> +			     dirty, NULL, sp->role.level, gfn, pfn,
+> +			     true, false);
+> +	}
+> +	if (table)
+> +		kunmap_atomic((char *)table - offset, KM_USER0);
+> +}
+>    
+
+I think lot of code can be shared with the pte prefetch in invlpg.
+
+> +
+>   /*
+>    * Fetch a shadow pte for a specific level in the paging hierarchy.
+>    */
+> @@ -322,6 +397,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+>   				     is_dirty_gpte(gw->ptes[gw->level-1]),
+>   				     ptwrite, level,
+>   				     gw->gfn, pfn, false, true);
+> +			FNAME(pte_prefetch)(vcpu, sptep);
+>   			break;
+>   		}
+>
+>    
+
 
 -- 
-Jean Delvare
+error compiling committee.c: too many arguments to function
+
