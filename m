@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab0FOLlV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 07:41:21 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48429 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757607Ab0FOLlS (ORCPT
+	id S1757651Ab0FOLlk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 07:41:40 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:51760 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757642Ab0FOLlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 07:41:18 -0400
-Date: Tue, 15 Jun 2010 13:41:08 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, stefani@seibold.net
-Subject: Re: [PATCH] tags: put function prototypes back!
-Message-ID: <20100615114108.GD21709@pengutronix.de>
-References: <20100203201816.GA5987@x200> <20100615092230.GA21819@pengutronix.de> <4C174DBB.9000901@suse.cz>
+	Tue, 15 Jun 2010 07:41:37 -0400
+Date: Tue, 15 Jun 2010 13:41:35 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Nils Carlson <nils.carlson@ludd.ltu.se>
+Cc: Andi Kleen <andi@firstfloor.org>, Doug Thompson <norsk5@yahoo.com>,
+       Tony Luck <tony.luck@intel.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       BrentYoung <brent.young@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "bluesmoke-devel@lists.sourceforge.net" 
+	<bluesmoke-devel@lists.sourceforge.net>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Joe Perches <joe@perches.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+       Ingo Molnar <mingo@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>,
+       Nils Carlson <nils.carlson@ericsson.com>
+Subject: Re: Hardware Error Kernel Mini-Summit
+Message-ID: <20100615114135.GH6727@basil.fritz.box>
+References: <AANLkTil_mDFOsDUjvnp_NFZvkj0Ij-qww6BqewJ4lpHP@mail.gmail.com> <35525.41387.qm@web50105.mail.re2.yahoo.com> <20100615065630.GC6727@basil.fritz.box> <Pine.GSO.4.58.1006150951150.17579@dexter.ludd.ltu.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C174DBB.9000901@suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <Pine.GSO.4.58.1006150951150.17579@dexter.ludd.ltu.se>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 11:54:03AM +0200, Michal Marek wrote:
-> On 15.6.2010 11:22, Uwe Kleine-König wrote:
-> > On Wed, Feb 03, 2010 at 10:18:17PM +0200, Alexey Dobriyan wrote:
-> >> commit 7db86dc97fb0c47af63e6b965e8ff37126050d25
-> >> "ctags: usability fix" removed function prototypes from tags file
-> >> claiming "It makes no real sense to include function prototypes".
-> >> But it is useful for quickly determining which header file developer
-> >> needs to include to fix compilation.
-> >>
-> >> Now if someone wants to remove forward declatations (which I agree are
-> >> baggage), write a postprocessing script.
-> >>
-> >> Please apply.
-> >>
-> >> 	Alexey, who is sick reverting this chunk locally.
-> >>
-> >> Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-> > Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+On Tue, Jun 15, 2010 at 10:06:33AM +0200, Nils Carlson wrote:
+
+Hi Nils,
+
+> Could you maybe provide some references on how DIMM layout
+> could be read from DMI? I can't find anything nearly this specific,
+> or is it something we're expecting to happen in future BIOS's?
+
+The hardware (or BIOS) tells you the DIMM. You read the DIMMs
+from DMI and map them using the locators. The locator strings
+are not standardized, but there are not too many different
+formats around, so they can be implemented.
+
+Again this does not give you full layout, but it gives
+you a "path to a DIMM" and a DIMM locator. 
+
+An alternative is also to use the ACPI based reporting
+mechanism which is needed on some system. In this case
+the CPER gives you a reference to the DMI object of the DIMM. 
+
+In principle DMI has more information (arrays, ranges etc.)
+but in my experience that is not strong enough to really find
+the DIMM on modern systems. You need hardware or BIOS help for this.
+
+This is implemented in mcelog today.
+
 > 
-> Alexey, can you please resend the patch? I don't see it in the archives
-> anywhere.
+> Also, there would probably need to be some standard describing
+> different DIMM layouts in general, though maybe such a thing exists.
 
-Gmane supports getting mails by Message-Id:
+I don't think the goal is to have full DIMM layout. This will
+never replace your schemantics.
 
-	http://mid.gmane.org/20100203201816.GA5987@x200
+The goal is to find which DIMM has a problem. So have a path
+and a locator. The path may tell you some additional information
+(e.g. channel), but that's hard to generalize.
 
-redirects to http://article.gmane.org/gmane.linux.kernel/946067,
-appending raw is nearly suitable for usage by mutt.
+> 
+> In other words, there would be have to be some way of ascertaining
+> that the info you read from DMI is sufficient to decode MCEs so that
+> a faulting DIMM can be identified. In an ideal world, this could
+> be tested by some simple tool that could be run by the BIOS writers
+> to test that they're providing the OS with sufficient info.
 
-{ echo From lala Mon Sep 17 00:00:00 2001; wget -O - http://article.gmane.org/gmane.linux.kernel/946067/raw; } > patch
+That's difficult in a general way, you will probably always 
+need some system specific test plan.
 
-Best regards
-Uwe
+-Andi
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+ak@linux.intel.com -- Speaking for myself only.
