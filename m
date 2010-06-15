@@ -1,149 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab0FODV2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 23:21:28 -0400
-Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:54238 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750744Ab0FODV1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 23:21:27 -0400
-Date: Tue, 15 Jun 2010 13:20:34 +1000
-From: Dave Chinner <david@fromorbit.com>
+	id S1754251Ab0FOD0S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 23:26:18 -0400
+Received: from ozlabs.org ([203.10.76.45]:49191 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752041Ab0FOD0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 23:26:17 -0400
+Date: Tue, 15 Jun 2010 13:26:08 +1000
+From: Paul Mackerras <paulus@samba.org>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
-Message-ID: <20100615032034.GR6590@dastard>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
- <1276514273-27693-12-git-send-email-mel@csn.ul.ie>
- <20100614231144.GG6590@dastard>
- <20100614162143.04783749.akpm@linux-foundation.org>
- <20100615003943.GK6590@dastard>
- <20100614183957.ad0cdb58.akpm@linux-foundation.org>
+Cc: tytso@mit.edu, Salman <sqazi@google.com>, mingo@elte.hu,
+       linux-kernel@vger.kernel.org, peterz@infradead.org, tytso@google.com,
+       torvalds@linux-foundation.org, walken@google.com,
+       Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
+Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
+ reused immediately.
+Message-ID: <20100615032608.GB30479@drongo>
+References: <AANLkTinlnb-HsDia4X2qgRjkTL_Z5CfVKYHRFwREoyIn@mail.gmail.com>
+ <20100611224902.5039.60134.stgit@bumblebee1.mtv.corp.google.com>
+ <20100614165851.6bdfe485.akpm@linux-foundation.org>
+ <20100615005619.GI6666@thunk.org>
+ <20100614185556.afdc5304.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100614183957.ad0cdb58.akpm@linux-foundation.org>
+In-Reply-To: <20100614185556.afdc5304.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 06:39:57PM -0700, Andrew Morton wrote:
-> On Tue, 15 Jun 2010 10:39:43 +1000 Dave Chinner <david@fromorbit.com> wrote:
+On Mon, Jun 14, 2010 at 06:55:56PM -0700, Andrew Morton wrote:
+
+> > kernel/sched_clock.c:   if (cmpxchg64(&scd->clock, old_clock, clock) != old_cloc
 > 
-> > On Mon, Jun 14, 2010 at 04:21:43PM -0700, Andrew Morton wrote:
-> > > On Tue, 15 Jun 2010 09:11:44 +1000
-> > > > 10-15% reduction in seeks on simple kernel compile workloads. This
-> > > > shows that if we optimise IO patterns at higher layers where the
-> > > > sort window is much, much larger than in the IO scheduler, then
-> > > > overall system performance improves....
-> > > 
-> > > Yup.
-> > > 
-> > > But then, this all really should be done at the block layer so other
-> > > io-submitting-paths can benefit from it.
-> > 
-> > That was what we did in the past with really, really deep IO
-> > scheduler queues. That leads to IO latency and OOM problems because
-> > we could lock gigabytes of memory away under IO and take minutes to
-> > clean it.
-> > 
-> > Besides, there really isn't the right context in the block layer to
-> > be able to queue and prioritise large amounts of IO without
-> > significant penalties to some higher layer operation.
-> > 
-> > > IOW, maybe "the sort queue is the submission queue" wasn't a good idea.
-> > 
-> > Perhaps, but IMO sorting should be done where the context allows it
-> > to be done most efficiently. Sorting is most effective when ever a
-> > significant queue of IO is formed, whether it be in the filesystem,
-> > the VFS, the VM or the block layer because the IO stack is very much
-> > a GIGO queue.
-> > 
-> > Simply put, there's nothing the lower layers can do to optimise bad
-> > IO patterns from the higher layers because they have small sort
-> > windows which are necessary to keep IO latency in check. Hence if
-> > the higher layers feed the lower layers crap they simply don't have
-> > the context or depth to perform the same level of optimistations we
-> > can do easily higher up the stack.
-> > 
-> > IOWs, IMO anywhere there is a context with significant queue of IO,
-> > that's where we should be doing a better job of sorting before that
-> > IO is dispatched to the lower layers. This is still no guarantee of
-> > better IO (e.g. if the filesystem fragments the file) but it does
-> > give the lower layers a far better chance at optimal allocation and
-> > scheduling of IO...
-> 
-> None of what you said had much to do with what I said.
-> 
-> What you've described are implementation problems in the current block
-> layer because it conflates "sorting" with "queueing".  I'm saying "fix
-> that".
+> I guess that'll flush out any stragglers.
 
-You can't sort until you've queued.
+And break most non-x86 32-bit architectures, including 32-bit powerpc.
+Fortunately that code is only used if CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+is set, and it looks like only x86 and ia64 set it.
 
-> And...  sorting at the block layer will always be superior to sorting
-> at the pagecache layer because the block layer sorts at the physical
-> block level and can handle not-well-laid-out files and can sort and merge
-> pages from different address_spaces.
-
-Yes it, can do that. And it still does that even if the higher
-layers sort their I/O dispatch better,
-
-Filesystems try very hard to allocate adjacent logical offsets in a
-file in adjacent physical blocks on disk - that's the whole point of
-extent-indexed filesystems. Hence with modern filesystems there is
-generally a direct correlation between the page {mapping,index}
-tuple and the physical location of the mapped block.
-
-i.e. there is generally zero physical correlation between pages in
-different mappings, but there is a high physical correlation
-between the index of pages on the same mapping. Hence by sorting
-where we have a {mapping,index} context, we push out IO that is
-much more likely to be in contiguous physical chunks that the
-current random page shootdown.
-
-We optimise applications to use these sorts of correlations all the
-time to improve IO patterns. Why can't we make the same sort of
-optmisations to the IO that the VM issues?
-
-> Still, I suspect none of it will improve anything anyway.  Those pages
-> are still dirty, possibly-locked and need to go to disk.  It doesn't
-> matter from the MM POV whether they sit in some VM list or in the
-> request queue.
-
-Oh, but it does.....
-
-> Possibly there may be some benefit to not putting so many of these
-> unreclaimable pages into the queue all at the the same time.  But
-> that's a shortcoming in the block code: we should be able to shove
-> arbitrary numbers of dirty page (segments) into the queue and not gum
-> the system up.  Don't try to work around that in the VM.
-
-I think you know perfectly well why the system gums up when we
-increase block layer queue depth: it's the fact that the _VM_ relies
-on block layer queue congestion to limit the amount of dirty memory
-in the system.
-
-We've got a feedback loop between the block layer and the VM that
-only works if block device queues are kept shallow. Keeping the
-number of dirty pages under control is a VM responsibility, but it
-is putting limitations on the block layer to ensure that the VM
-works correctly.  If you want the block layer to have deep queues,
-then someone needs to fix the VM not to require knowledge of the
-internal operation of the block layer for correct operation.
-
-Adding a few lines of code to sort a list in the VM is far, far
-easier than redesigning the write throttling code....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Paul.
