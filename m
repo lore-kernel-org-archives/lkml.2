@@ -1,102 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab0FOMuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 08:50:08 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46067 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab0FOMuG (ORCPT
+	id S1756325Ab0FOMuX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 08:50:23 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:33353 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab0FOMuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 08:50:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gqU80pesur6h0cYpxwZWmqBA7oUp+QZWpQsjjCjLhTvG+xFz/l/tNo1T+rlUeQaCDD
-         VG++oOObK9ZyXZzxlIvvsqsz6h1bv0wyY8TtFrI4pz3I3l9nMZ/tYXkWQjXupY4ynA3d
-         J4P85Uu266hutZI2HtynWuGToodZFkvUi0biw=
-Date: Tue, 15 Jun 2010 14:49:56 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <srostedt@redhat.com>
-Cc: Valdis.Kletnieks@vt.edu, Chase Douglas <chase.douglas@canonical.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] trace-cmd: prevent print_graph_duration buffer overflow
-Message-ID: <20100615124953.GB5342@nowhere>
-References: <1276449108-21328-1-git-send-email-chase.douglas@canonical.com> <1276449108-21328-2-git-send-email-chase.douglas@canonical.com> <40245.1276462373@localhost> <1276462894.2356.6.camel@cndougla-ubuntu> <15749.1276551633@localhost> <1276560963.13426.54.camel@localhost.localdomain>
+	Tue, 15 Jun 2010 08:50:20 -0400
+Date: Tue, 15 Jun 2010 18:19:55 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, kvm <kvm@vger.kernel.org>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
+ control
+Message-ID: <20100615124955.GF4306@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100611045600.GE5191@balbir.in.ibm.com>
+ <4C15E3C8.20407@redhat.com>
+ <20100614084810.GT5191@balbir.in.ibm.com>
+ <1276528376.6437.7176.camel@nimitz>
+ <20100614165853.GW5191@balbir.in.ibm.com>
+ <1276535371.6437.7417.camel@nimitz>
+ <20100614171624.GY5191@balbir.in.ibm.com>
+ <4C1727EC.2020500@redhat.com>
+ <20100615075210.GB4306@balbir.in.ibm.com>
+ <4C174DD7.3000608@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1276560963.13426.54.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C174DD7.3000608@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 08:16:03PM -0400, Steven Rostedt wrote:
-> On Mon, 2010-06-14 at 17:40 -0400, Valdis.Kletnieks@vt.edu wrote:
-> > On Sun, 13 Jun 2010 17:01:34 EDT, Chase Douglas said:
-> > > On Sun, 2010-06-13 at 16:52 -0400, Valdis.Kletnieks@vt.edu wrote:
-> > > > On Sun, 13 Jun 2010 13:11:48 EDT, Chase Douglas said:
-> > > > > Passing n > sizeof(string) to snprintf can cause a glibc buffer overflow
-> > > > > condition. We know the exact size of nsecs_str, so use it instead of
-> > > > > math that may overflow.
-> > > > 
-> > > > >  	/* Print nsecs (we don't want to exceed 7 numbers) */
-> > > > >  	if ((s->len - len) < 7) {
-> > > > > -		snprintf(nsecs_str, 8 - (s->len - len), "%03lu", nsecs_rem);
-> > > > > +		snprintf(nsecs_str, sizeof(nsecs_str), "%03lu", nsecs_rem);
-> > > > 
-> > > > We only get into this code after we've checked that the length is under 7
-> > > > characters.  How much overflow can happen as long as the sizeof(nsecs_str) is a
-> > > > sane size (like at least 8 chars)?  Probably a better bet would be doing the
-> > > > right thing and 'BUILD_BUG_ON(sizeof(nsecs_str) < 8);'?
-> > > 
-> > > nsecs_str is a local variable defined just above this block of code as:
-> > > 
-> > > 	char nsecs_str[5];
-> > > 
-> > > I was hitting cases where s->len == 64 and len == 63, leading to the
-> > > size argument of snprintf being 7 on a 5 byte string. I didn't delve too
-> > > much into the reasoning for the if statement, but I think it's math is
-> > > not actually related to the size of nsecs_rem but to some other string
-> > > length.
-> > 
-> > This is starting to smell like that patch is just papering over a bug...
-> > 
-> > I saw that '8 -' and made the rash assumption that was the size of the array.
-> > Is 5 in fact big enough and the  's->len - len' calculation is broken, or
-> > should it be bigger?  As you noted, that length calculation is looking a tad
-> > sketchy.  (And if we're stuck with '5' because it's a magic number for
-> > somebody's formatting purposes, maybe it needs to be a #define?)
-> > 
+* Avi Kivity <avi@redhat.com> [2010-06-15 12:54:31]:
+
+> On 06/15/2010 10:52 AM, Balbir Singh wrote:
+> >>>
+> >>>That is why the policy (in the next set) will come from the host. As
+> >>>to whether the data is truly duplicated, my experiments show up to 60%
+> >>>of the page cache is duplicated.
+> >>Isn't that incredibly workload dependent?
+> >>
+> >>We can't expect the host admin to know whether duplication will
+> >>occur or not.
+> >>
+> >I was referring to cache = (policy) we use based on the setup. I don't
+> >think the duplication is too workload specific. Moreover, we could use
+> >aggressive policies and restrict page cache usage or do it selectively
+> >on ballooning. We could also add other options to make the ballooning
+> >option truly optional, so that the system management software decides.
 > 
-> Ouch, this is worse than that. this code was cut & pasted almost
-> directly from the Linux kernel (kernel/trace/trace_function_graph.c).
-> And it looks like any bug here is also a bug there. The difference is
-> that if we trigger the bug there we crash the kernel :-p
+> Consider a read-only workload that exactly fits in guest cache.
+> Without trimming, the guest will keep hitting its own cache, and the
+> host will see no access to the cache at all.  So the host (assuming
+> it is under even low pressure) will evict those pages, and the guest
+> will happily use its own cache.  If we start to trim, the guest will
+> have to go to disk.  That's the best case.
+>
+> Now for the worst case.  A random access workload that misses the
+> cache on both guest and host.  Now every page is duplicated, and
+> trimming guest pages allows the host to increase its cache, and
+> potentially reduce misses.  In this case trimming duplicated pages
+> works.
+> 
+> Real life will see a mix of this.  Often used pages won't be
+> duplicated, and less often used pages may see some duplication,
+> especially if the host cache portion dedicated to the guest is
+> bigger than the guest cache.
+> 
+> I can see that trimming duplicate pages helps, but (a) I'd like to
+> be sure they are duplicates and (b) often trimming them from the
+> host is better than trimming them from the guest.
+>
 
+Lets see the behaviour with these patches
 
-I must be missing the purpose of this patch.
+The first patch is a proactive approach to keep more memory around.
+Enabling the parameter implies we are OK paying the cost of some
+overhead. My data shows that leaves a significant amount of free
+memory with a small 5% (in my case) overhead. This brings us back to
+what you can do with free memory.
 
-log10(nsecs_rem) can't exceed 3 characters as it is the rest of
-a division per 1000.
+The second patch shows no overhead and selectively tries to use free
+cache to return back on memory pressure (as indicated by the balloon
+driver). We've discussed the reasons for doing this
 
-The goal of this:
+1. In the situations where cache is duplicated this should benefit
+us. Your contention is that we need to be specific about the
+duplication. That falls under the realm of CMM.
+2. In the case of slab cache, duplication does not matter, it is a
+free page, that should be reclaimed ahead of mapped pages ideally.
+If the slab grows, it will get another new page.
 
-	if (len < 7) {
-		snprintf(nsecs_str, 8 - len, "%03lu", nsecs_rem)
+What is the cost of (1)
 
-is to avoid having a duration that exceeds 7 characters, so formatted nsecs
-be shrinked on need.
+In the worst case, we select a non-duplicated page, but for us to
+select it, it should be inactive, in that case we do I/O to bring back
+the page.
 
-For example:
+> Trimming from the guest is worthwhile if the pages are not used very
+> often (but enough that caching them in the host is worth it) and if
+> the host cache can serve more than one guest.  If we can identify
+> those pages, we don't risk degrading best-case workloads (as defined
+> above).
+> 
+> (note ksm to some extent identifies those pages, though it is a bit
+> expensive, and doesn't share with the host pagecache).
+>
 
-	75000.567
+I see that you are hinting towards finding exact duplicates, I don't
+know if the cost and complexity justify it. I hope more users can try
+the patches with and without the boot parameter and provide additional
+feedback.
 
-would be shrinked to 75000.56, and that's the point.
-
-if (len < 7) is not a security guard, it is a formatting convenience
-to get a fixed column length.
-
-The security guard is the mathematics that tells us log10(n % 1000) < 4.
-In fact nsecs_str could be even of size 4 rather than 5.
-
+-- 
+	Three Cheers,
+	Balbir
