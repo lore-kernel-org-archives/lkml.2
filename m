@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab0FOCAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 22:00:55 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56988 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755912Ab0FOCAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 22:00:53 -0400
-Date: Tue, 15 Jun 2010 12:00:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Andy Gospodarek <andy@greyhouse.net>,
-       Emil Tantilov <emil.s.tantilov@intel.com>,
-       Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: linux-next: build failure after merge of the net tree
-Message-Id: <20100615120052.7202f20d.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756274Ab0FOCMU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 22:12:20 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:46603 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab0FOCMR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 22:12:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=d3uoGiQqA6QI/b8aJMconIvZxhqb9jHWYcjoI4ag5MkWWY8VA75kNTI96801nfDd6l
+         A4mLfhsoUoGko38CF5lhIZmj/F1jD6tEXwMOOQ5epusFaGJTx35+am9FZUKaM5LTaSkH
+         HnwNmZIIoEHGoOXXmj+iTTCifq/VkkJWVs3nY=
+Message-ID: <4C16E18F.9050901@gmail.com>
+Date: Mon, 14 Jun 2010 19:12:31 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+MIME-Version: 1.0
+To: Valdis.Kletnieks@vt.edu
+CC: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+       linux-bluetooth@vger.kernel.org, clemens@ladisch.de,
+       debora@linux.vnet.ibm.com, dri-devel@lists.freedesktop.org,
+       linux-i2c@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+       linux-media@vger.kernel.org
+Subject: Re: [PATCH 4/8]drivers:tmp.c Fix warning: variable 'rc' set but not
+ used
+References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com>            <1276547208-26569-5-git-send-email-justinmattock@gmail.com> <21331.1276560832@localhost>
+In-Reply-To: <21331.1276560832@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On 06/14/2010 05:13 PM, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 14 Jun 2010 13:26:44 PDT, "Justin P. Mattock" said:
+>> Im getting this warning when compiling:
+>>   CC      drivers/char/tpm/tpm.o
+>> drivers/char/tpm/tpm.c: In function 'tpm_gen_interrupt':
+>> drivers/char/tpm/tpm.c:508:10: warning: variable 'rc' set but not used
+>>
+>> The below patch gets rid of the warning,
+>> but I'm not sure if it's the best solution.
+>
+>>   	rc = transmit_cmd(chip,&tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
+>>   			"attempting to determine the timeouts");
+>> +	if (!rc)
+>> +		rc = 0;
+>>   }
+>
+> Good thing that's a void function. ;)
+>
+> Unless transmit_cmd() is marked 'must_check', maybe losing the 'rc =' would
+> be a better solution?
 
-After merging the wireless tree, today's linux-next build (powerpc ppc64_defconfig)
-failed like this:
 
-drivers/net/ixgbe/ixgbe_ethtool.c: In function 'ixgbe_set_flags':
-drivers/net/ixgbe/ixgbe_ethtool.c:2232: error: implicit declaration of function 'DPRINTK'
-drivers/net/ixgbe/ixgbe_ethtool.c:2232: error: 'PROBE' undeclared (first use in this function)
-drivers/net/ixgbe/ixgbe_ethtool.c:2232: error: 'INFO' undeclared (first use in this function)
+what I tried was this:
 
-Commit 28c8e4790ca5ef75f54895ca46437f9fbb433ddf ("ixgbe: fix automatic
-LRO/RSC settings for low latency") from the net-current tree added
-another use of DPRINTK which needs comverting to e_info().  I applied the
-following patch:
+if (!rc)
+	printk("test........"\n")
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 15 Jun 2010 11:43:33 +1000
-Subject: [PATCH] net: ixgbe_ethtool merge fix up
+and everything looked good,
+but as a soon as I changed
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/ixgbe/ixgbe_ethtool.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+rc = transmit_cmd(chip,&tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
+    			"attempting to determine the timeouts");
 
-diff --git a/drivers/net/ixgbe/ixgbe_ethtool.c b/drivers/net/ixgbe/ixgbe_ethtool.c
-index 65fe1f5..093461b 100644
---- a/drivers/net/ixgbe/ixgbe_ethtool.c
-+++ b/drivers/net/ixgbe/ixgbe_ethtool.c
-@@ -2229,7 +2229,7 @@ static int ixgbe_set_flags(struct net_device *netdev, u32 data)
- 		} else if (!adapter->rx_itr_setting) {
- 			netdev->features &= ~ETH_FLAG_LRO;
- 			if (data & ETH_FLAG_LRO)
--				DPRINTK(PROBE, INFO, "rx-usecs set to 0, "
-+				e_info("rx-usecs set to 0, "
- 					"LRO/RSC cannot be enabled.\n");
- 		}
- 	}
--- 
-1.7.1
+to this:
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+rc = transmit_cmd(chip,&tpm_cmd, TPM_INTERNAL_RESULT_SIZE);
+
+if (!rc)
+	printk("attempting to determine the timeouts\n");
+
+I error out with transmit_cmd not having enough
+functions to it.. so I just added the rc = 0;
+and went on to the next.
+
+Justin P. Mattock
