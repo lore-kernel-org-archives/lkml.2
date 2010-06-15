@@ -1,67 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab0FOJTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 05:19:11 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:51574 "EHLO poutre.nerim.net"
+	id S1752878Ab0FOJVS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 05:21:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47305 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401Ab0FOJTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 05:19:08 -0400
-Date: Tue, 15 Jun 2010 11:19:02 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Peter Stuge <peter@stuge.se>,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
-       dri-devel@lists.freedesktop.org, reiserfs-devel@vger.kernel.org,
-       linux-bluetooth@vger.kernel.org, debora@linux.vnet.ibm.com,
-       linux-i2c@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH 4/8]drivers:tmp.c Fix warning: variable 'rc' set but 
- not used
-Message-ID: <20100615111902.373ac06d@hyperion.delvare>
-In-Reply-To: <20100615052944.7746.qmail@stuge.se>
-References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com>
-	<1276547208-26569-5-git-send-email-justinmattock@gmail.com>
-	<21331.1276560832@localhost>
-	<4C16E18F.9050901@gmail.com>
-	<9275.1276573789@localhost>
-	<4C16F9FC.2080905@gmail.com>
-	<20100615052944.7746.qmail@stuge.se>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751780Ab0FOJVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 05:21:16 -0400
+Message-ID: <4C174607.4040107@redhat.com>
+Date: Mon, 14 Jun 2010 23:21:11 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: mtosatti@redhat.com, glommer@redhat.com, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH 15/17] Fix AMD C1 TSC desynchronization
+References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-16-git-send-email-zamsden@redhat.com> <4C173E18.6000804@redhat.com>
+In-Reply-To: <4C173E18.6000804@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jun 2010 07:29:44 +0200, Peter Stuge wrote:
-> Justin P. Mattock wrote:
-> > > *baffled* Why did you think that would work? transmit_cmd()s signature
-> > > has 4 parameters.
-> > 
-> > I have no manual in front of me. Did a quick google, but came up with 
-> > (no hits) info on what that function does. grep showed too many entries 
-> > to really see why/what this is.
+On 06/14/2010 10:47 PM, Avi Kivity wrote:
+> On 06/15/2010 10:34 AM, Zachary Amsden wrote:
+>> Some AMD based machines can have TSC drift when in C1 HLT state because
+>> despite attempting to scale the TSC increment when dividing down the
+>> P-state, the processor may return to full P-state to service cache
+>> probes.  The TSC of halted CPUs can advance faster than that of running
+>> CPUs as a result, causing unpredictable TSC drift.
+>>
+>> We implement a recommended workaround, which is disabling C1 clock 
+>> ramping.
+>> ---
+>>   arch/x86/kvm/x86.c |   45 
+>> +++++++++++++++++++++++++++++++++++++++++++++
+>>   1 files changed, 45 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index ef847ee..8e836e9 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -56,6 +56,11 @@
+>>   #include<asm/i387.h>
+>>   #include<asm/xcr.h>
+>>
+>> +#ifdef CONFIG_K8_NB
+>> +#include<linux/pci.h>
+>> +#include<asm/k8.h>
+>> +#endif
+>> +
+>>   #define MAX_IO_MSRS 256
+>>   #define CR0_RESERVED_BITS                        \
+>>       (~(unsigned long)(X86_CR0_PE | X86_CR0_MP | X86_CR0_EM | 
+>> X86_CR0_TS \
+>> @@ -4287,10 +4292,43 @@ static struct notifier_block 
+>> kvmclock_cpu_notifier_block = {
+>>       .priority = -INT_MAX
+>>   };
+>>
+>> +static u8 disabled_c1_ramp = 0;
+>> +
+>>   static void kvm_timer_init(void)
+>>   {
+>>       int cpu;
+>>
+>> +    /*
+>> +     * AMD processors can de-synchronize TSC on halt in C1 state, 
+>> because
+>> +     * processors in lower P state will have TSC scaled properly during
+>> +     * normal operation, but will have TSC scaled improperly while
+>> +     * servicing cache probes.  Because there is no way to determine 
+>> how
+>> +     * TSC was adjusted during cache probes, there are two solutions:
+>> +     * resynchronize after halt, or disable C1-clock ramping.
+>> +     *
+>> +     * We implemenent solution 2.
+>> +     */
+>> +#ifdef CONFIG_K8_NB
+>> +    if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD&&
+>> +        boot_cpu_data.x86 == 0x0f&&
+>> +        !boot_cpu_has(X86_FEATURE_CONSTANT_TSC)) {
+>> +        struct pci_dev *nb;
+>> +        int i;
+>> +        cache_k8_northbridges();
+>> +        for (i = 0; i<  num_k8_northbridges; i++) {
+>> +            u8 byte;
+>> +            nb = k8_northbridges[i];
+>> +            pci_read_config_byte(nb, 0x87,&byte);
+>> +            if (byte&  1) {
+>> +                printk(KERN_INFO "%s: AMD C1 clock ramping detected, 
+>> performing workaround\n", __func__);
+>> +                disabled_c1_ramp = byte;
+>> +                pci_write_config_byte(nb, 0x87, byte&  0xFC);
+>> +
+>> +            }
+>> +        }
+>> +    }
+>> +#endif
+>> +
+>>       register_hotcpu_notifier(&kvmclock_cpu_notifier_block);
+>>       if (!boot_cpu_has(X86_FEATURE_CONSTANT_TSC)) {
+>>           cpufreq_register_notifier(&kvmclock_cpufreq_notifier_block,
+>> @@ -4402,6 +4440,13 @@ void kvm_arch_exit(void)
+>>       unregister_hotcpu_notifier(&kvmclock_cpu_notifier_block);
+>>       kvm_x86_ops = NULL;
+>>       kvm_mmu_module_exit();
+>> +#ifdef CONFIG_K8_NB
+>> +    if (disabled_c1_ramp) {
+>> +        struct pci_dev **nb;
+>> +        for (nb = k8_northbridges; *nb; nb++)
+>> +            pci_write_config_byte(*nb, 0x87, disabled_c1_ramp);
+>> +    }
+>> +#endif
+>>   }
+>
+> Such platform hackery should be in the platform code, not in kvm.  kvm 
+> might request to enable it (why not enable it unconditionally?  should 
+> we disable it on hardware_disable()?
 
-Justin, I think you're on the wrong track here. You seem to be in a
-hurry to fix all these warnings generated by gcc 4.6. There is no hurry
-at all. Most warnings are false positives, and actual bugs may take
-some thinking and knowledge. So rushing is not needed and not
-desirable. Going too fast, you might even introduce new bugs, or
-prevent old bugs from being properly fixed.
+I actually have some negative effects to report from this patch - when 
+under stress, my laptop spontaneously shut down.  Thermal problems?
 
-Warnings are a chance to make the code better. The goal is not to fix
-them quickly, but to fix them properly. If this is not your intent,
-then please stop immediately and let others deal with these warnings.
-If you want to help, this is appreciated, but what we need it quality,
-not quantity.
+I agree it is complete hackery.  I do not recommend this patch for 
+upstream inclusion unless it is proposed also by someone more familiar 
+with the hardware.
 
-> Check out the tool cscope. (Or kscope, if you prefer a GUI.)
-
-Or just LXR online if you don't want to install anything:
-
-http://lxr.linux.no/linux
-http://lxr.linux.no/#linux+v2.6.34/drivers/char/tpm/tpm.c#L451
-
--- 
-Jean Delvare
+However, it was required for my testing.
