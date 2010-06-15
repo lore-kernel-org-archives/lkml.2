@@ -1,387 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab0FOG6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 02:58:50 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38674 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752341Ab0FOG6s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 02:58:48 -0400
-Message-ID: <001401cb0c58$33b3ae20$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Arnd Bergmann" <arnd@arndb.de>,
-       "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Cc: "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
-       "Intel OTC" <joel.clark@intel.com>,
-       "Andrew" <andrew.chih.howe.khor@intel.com>,
-       "LKML" <linux-kernel@vger.kernel.org>,
-       "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
-Date: Tue, 15 Jun 2010 15:58:43 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	id S1753555Ab0FOG7S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 02:59:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32145 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752085Ab0FOG7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 02:59:17 -0400
+Message-ID: <4C172499.7090800@redhat.com>
+Date: Tue, 15 Jun 2010 09:58:33 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: balbir@linux.vnet.ibm.com
+CC: Dave Hansen <dave@linux.vnet.ibm.com>, kvm <kvm@vger.kernel.org>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
+ control
+References: <20100611045600.GE5191@balbir.in.ibm.com> <4C15E3C8.20407@redhat.com> <20100614084810.GT5191@balbir.in.ibm.com> <4C16233C.1040108@redhat.com> <20100614125010.GU5191@balbir.in.ibm.com> <4C162846.7030303@redhat.com> <1276529596.6437.7216.camel@nimitz> <4C164E63.2020204@redhat.com> <1276530932.6437.7259.camel@nimitz> <4C1659F8.3090300@redhat.com> <20100614174548.GB5191@balbir.in.ibm.com>
+In-Reply-To: <20100614174548.GB5191@balbir.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On 06/14/2010 08:45 PM, Balbir Singh wrote:
+>
+>> There are two decisions that need to be made:
+>>
+>> - how much memory a guest should be given
+>> - given some guest memory, what's the best use for it
+>>
+>> The first question can perhaps be answered by looking at guest I/O
+>> rates and giving more memory to more active guests.  The second
+>> question is hard, but not any different than running non-virtualized
+>> - except if we can detect sharing or duplication.  In this case,
+>> dropping a duplicated page is worthwhile, while dropping a shared
+>> page provides no benefit.
+>>      
+> I think there is another way of looking at it, give some free memory
+>
+> 1. Can the guest run more applications or run faster
+>    
 
-I have additional question.
-> - When the user does an llseek or pread, the *pos argument is not zero,
->   so you should return data from the middle, but you still return data
->   from the beginning.
+That's my second question.  How to best use this memory.  More 
+applications == drop the page from cache, faster == keep page in cache.
 
+All we need is to select the right page to drop.
 
-Must a driver read/write method support '*pos' parameter ?
-We think PHUB doesn't have to support '*pos',
-and ,we think, PHUB OROM R/W function supports only whole of ROM data R/W is enough.
-Please give us your opinion.
+> 2. Can the host potentially get this memory via ballooning or some
+> other means to start newer guest instances
+>    
 
-Thanks.
-Ohtake
+Well, we already have ballooning.  The question is can we improve the 
+eviction algorithm.
 
------ Original Message ----- 
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: "Alan Cox" <alan@lxorguk.ukuu.org.uk>; "LKML" <linux-kernel@vger.kernel.org>; "Andrew"
-<andrew.chih.howe.khor@intel.com>; "Intel OTC" <joel.clark@intel.com>; "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y"
-<yong.y.wang@intel.com>
-Sent: Tuesday, June 15, 2010 3:25 PM
-Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+> I think the answer to 1 and 2 is yes.
+>
+>    
+>> How the patch helps answer either question, I'm not sure.  I don't
+>> think preferential dropping of unmapped page cache is the answer.
+>>
+>>      
+> Preferential dropping as selected by the host, that knows about the
+> setup and if there is duplication involved. While we use the term
+> preferential dropping, remember it is still via LRU and we don't
+> always succeed. It is a best effort (if you can and the unmapped pages
+> are not highly referenced) scenario.
+>    
 
+How can the host tell if there is duplication?  It may know it has some 
+pagecache, but it has no idea whether or to what extent guest pagecache 
+duplicates host pagecache.
 
-> Hi Arnd,
+>>> Those tell you how to balance going after the different classes of
+>>> things that we can reclaim.
+>>>
+>>> Again, this is useless when ballooning is being used.  But, I'm thinking
+>>> of a more general mechanism to force the system to both have MemFree
+>>> _and_ be acting as if it is under memory pressure.
+>>>        
+>> If there is no memory pressure on the host, there is no reason for
+>> the guest to pretend it is under pressure.  If there is memory
+>> pressure on the host, it should share the pain among its guests by
+>> applying the balloon.  So I don't think voluntarily dropping cache
+>> is a good direction.
+>>
+>>      
+> There are two situations
 >
-> >> +#to set CAN clock to 50Mhz
-> >> +ifdef CONFIG_PCH_CAN_PCLK_50MHZ
-> >> +EXTRA_CFLAGS +=-DPCH_CAN_PCLK_50MHZ
-> >> +endif
->
-> >This should not be necessary. Just use CONFIG_PCH_CAN_PCLK_50MHZ directly
-> >in the code instead of the extra PCH_CAN_PCLK_50MHZ macro.
->
-> I have a question. I show the above reason.
-> In case CAN is integrated as MODULE, macro name is CONFIG_PCH_CAN_PCLK_50MHZ_MODULE.
-> On the other hand, integrated as built-in, CONFIG_PCH_CAN_PCLK_50MHZ.
-> To prevent PHUB source code from integrated as MODULE or BUILT-IN,
-> we re-define macro name in Makefile.
->
-> If use CONFIG_PCH_CAN_PCLK_50MHZ directly in the source code,
-> in case buit-in, behavior is not correct.
-> But in case module, behavior is not correct.
->
-> Please give us your opinion
->
-> Thanks,
-> Ohtake.
-> ----- Original Message ----- 
-> From: "Arnd Bergmann" <arnd@arndb.de>
-> To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
-> Cc: "Alan Cox" <alan@lxorguk.ukuu.org.uk>; "LKML" <linux-kernel@vger.kernel.org>; "Andrew"
-> <andrew.chih.howe.khor@intel.com>; "Intel OTC" <joel.clark@intel.com>; "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y"
-> <yong.y.wang@intel.com>
-> Sent: Monday, June 14, 2010 9:50 PM
-> Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
->
->
-> > On Monday 14 June 2010, Masayuki Ohtak wrote:
-> > > Hi we have modified for your comments.
-> > > Please Confirm below.
-> >
-> > Looks much better. A few more comments about the new code:
-> >
-> > > +#to set CAN clock to 50Mhz
-> > > +ifdef CONFIG_PCH_CAN_PCLK_50MHZ
-> > > +EXTRA_CFLAGS +=-DPCH_CAN_PCLK_50MHZ
-> > > +endif
-> >
-> > This should not be necessary. Just use CONFIG_PCH_CAN_PCLK_50MHZ directly
-> > in the code instead of the extra PCH_CAN_PCLK_50MHZ macro.
-> > > +
-> > > +DEFINE_MUTEX(pch_phub_ioctl_mutex);
-> >
-> > This should probable be 'static DEFINE_MUTEX', since the symbol does not
-> > need to be visible in the entire kernel.
-> >
-> >
-> > > +/*--------------------------------------------
-> > > + internal function prototypes
-> > > +--------------------------------------------*/
-> > > +static __s32 __devinit pch_phub_probe(struct pci_dev *pdev, const
-> > > +        struct pci_device_id *id);
-> > > +static void __devexit pch_phub_remove(struct pci_dev *pdev);
-> > > +static __s32 pch_phub_suspend(struct pci_dev *pdev, pm_message_t state);
-> > > +static __s32 pch_phub_resume(struct pci_dev *pdev);
-> > > +static __s32 pch_phub_open(struct inode *inode, struct file *file);
-> > > +static __s32 pch_phub_release(struct inode *inode, struct file *file);
-> > > +static long pch_phub_ioctl(struct file *file, unsigned int cmd,
-> > > + unsigned long arg);
-> > > +static ssize_t pch_phub_read(struct file *, char __user *, size_t, loff_t *);
-> > > +static ssize_t pch_phub_write(struct file *, const char __user *,
-> > > + size_t, loff_t *);
-> >
-> > My general recommendation would be to reorder all the function
-> > definitions so that you don't need any of these forward declarations.
-> > That is the order used in most parts of the kernel (so you start reading
-> > at the bottom), and it makes it easier to understand the structure of
-> > the code IMHO.
-> >
-> > > +/** pch_phub_open - Implements the Initializing and opening of the Packet Hub
-> > > + module.
-> > > + *  @inode: Contains the reference of the inode structure
-> > > + *  @file: Contains the reference of the file structure
-> > > + */
-> > > +static __s32 pch_phub_open(struct inode *inode, struct file *file)
-> > > +{
-> > > + __s32 ret;
-> > > +
-> > > + spin_lock(&pch_phub_lock);
-> > > + if (pch_phub_reg.pch_phub_opencount) {
-> > > + ret = -EBUSY;
-> > > + } else {
-> > > + pch_phub_reg.pch_phub_opencount++;
-> > > + ret = 0;
-> > > + }
-> > > + spin_unlock(&pch_phub_lock);
-> > > +
-> > > + return ret;
-> > > +}
-> >
-> > As far as I can tell, there is no longer a reason to prevent multiple
-> > openers. Besides, even if there is only a single user, you might still
-> > have concurrency problems, so the lock does not help and you could remove
-> > the open function entirely.
-> >
-> > > +/** pch_phub_read - Implements the read functionality of the Packet Hub module.
-> > > + *  @file: Contains the reference of the file structure
-> > > + *  @buf: Usermode buffer pointer
-> > > + *  @size: Usermode buffer size
-> > > + *  @pos: Contains the reference of the file structure
-> > > + */
-> > > +
-> > > +static ssize_t pch_phub_read(struct file *file, char __user *buf, size_t size,
-> > > + loff_t *pos)
-> > > +{
-> > > + __u32 rom_signature = 0;
-> > > + __u8 rom_length;
-> > > + __s32 ret_value;
-> > > + __u32 tmp;
-> > > + __u8 data;
-> > > + __u32 addr_offset = 0;
-> > > +
-> > > + /*Get Rom signature*/
-> > > + pch_phub_read_serial_rom(0x80, (__u8 *)&rom_signature);
-> > > + pch_phub_read_serial_rom(0x81, (__u8 *)&tmp);
-> > > + rom_signature |= (tmp & 0xff) << 8;
-> > > + if (rom_signature == 0xAA55) {
-> > > + pch_phub_read_serial_rom(0x82, &rom_length);
-> > > + if (size > (rom_length * 512)+1)
-> > > + return -ENOMEM;
-> > > +
-> > > + for (addr_offset = 0;
-> > > + addr_offset <= ((__u32)rom_length * 512);
-> > > + addr_offset++) {
-> > > + pch_phub_read_serial_rom(0x80 + addr_offset, &data);
-> > > + ret_value = copy_to_user((void *)&buf[addr_offset],
-> > > + (void *)&data, 1);
-> > > + if (ret_value)
-> > > + return -EFAULT;
-> > > + }
-> > > + } else {
-> > > + return -ENOEXEC;
-> > > + }
-> > > +
-> > > + return rom_length * 512 + 1;
-> > > +}
-> >
-> > This function has multiple problems:
-> >
-> > - If the size argument is less than rom_length*512, you access past the
-> >   user-provided buffer.
-> > - When the user does an llseek or pread, the *pos argument is not zero,
-> >   so you should return data from the middle, but you still return data
-> >   from the beginning.
-> > - You don't update the *pos argument with the new position, so you cannot
-> >   continue the read where the first call left.
-> > - Instead of returning -ENOMEM, you should just the data you have (or
-> >   0 for end-of-file).
-> > - ENOEXEC does not seem appropriate either: The user can just check
-> >   these buffer for the signature here, so you just as well return
-> >   whatever you find in the ROM.
-> >
-> > > +
-> > > +/** pch_phub_write - Implements the write functionality of the Packet Hub
-> > > + *  module.
-> > > + *  @file: Contains the reference of the file structure
-> > > + *  @buf: Usermode buffer pointer
-> > > + *  @size: Usermode buffer size
-> > > + *  @pos: Contains the reference of the file structure
-> > > + */
-> > > +static ssize_t pch_phub_write(struct file *file, const char __user *buf,
-> > > + size_t size, loff_t *pos)
-> > > +{
-> > > + static __u8 data[PCH_PHUB_OROM_SIZE];
-> > > + __s32 ret_value;
-> > > + __u32 addr_offset = 0;
-> > > +
-> > > + if (size > PCH_PHUB_OROM_SIZE)
-> > > + size = PCH_PHUB_OROM_SIZE;
-> > > +
-> > > + ret_value = copy_from_user(data, buf, size);
-> > > + if (ret_value)
-> > > + return -EFAULT;
-> > > +
-> > > + for (addr_offset = 0; addr_offset < size; addr_offset++) {
-> > > + ret_value = pch_phub_write_serial_rom(0x80 + addr_offset,
-> > > + data[addr_offset]);
-> > > + }
-> > > +
-> > > + return size;
-> > > +}
-> >
-> > This has the same problems, plus a buffer overflow: You must never have an
-> > array of multiple kilobytes on the stack (data[PCH_PHUB_OROM_SIZE]), because
-> > the stack itself is only a few kilobytes in the kernel. Better use a loop
-> > with copy_from_user like the read function does.
-> >
-> > > +/** pch_phub_release - Implements the release functionality of the Packet Hub
-> > > + *  module.
-> > > + *  @inode: Contains the reference of the inode structure
-> > > + *  @file: Contains the reference of the file structure
-> > > + */
-> > > +static __s32 pch_phub_release(struct inode *inode, struct file *file)
-> > > +{
-> > > + spin_lock(&pch_phub_lock);
-> > > +
-> > > + if (pch_phub_reg.pch_phub_opencount > 0)
-> > > + pch_phub_reg.pch_phub_opencount--;
-> > > + spin_unlock(&pch_phub_lock);
-> > > +
-> > > + return 0;
-> > > +}
-> >
-> > When you remove the open function, this one can go away as well.
-> >
-> > > +/** pch_phub_ioctl - Implements the various ioctl functionalities of the Packet
-> > > + *  Hub module.
-> > > + *  @inode: Contains the reference of the inode structure
-> > > + *  @file: Contains the reference of the file structure
-> > > + *  @cmd: Contains the command value
-> > > + *  @arg: Contains the command argument value
-> > > + */
-> > > +
-> > > +
-> > > +static long pch_phub_ioctl(struct file *file, unsigned int cmd,
-> > > + unsigned long arg)
-> > > +{
-> > > + __s32 ret_value = 0;
-> > > + struct pch_phub_reqt __user *p_pch_phub_reqt;
-> > > + __u32 data;
-> > > + __u32 mac_addr[2];
-> > > + __s32 ret;
-> > > + __u32 i;
-> > > + void __user *varg = (void __user *)arg;
-> > > +
-> > > + ret = mutex_trylock(&pch_phub_ioctl_mutex);
-> > > + if (ret == 0)
-> > > + goto return_ioctrl;/*Can't get mutex lock*/
-> >
-> > mutex_trylock is probably not what you want, it returns immediately
-> > when there is another function in the kernel.
-> > mutex_lock_interruptible seems more appropriate, it will block
-> > until the mutex is free or the process gets sent a signal,
-> > which you should handle by returning -ERESTARTSYS.
-> >
-> > In either case, you must not jump to return_ioctrl here, because
-> > that will try to release the mutex that you do not hold here,
-> > causing a hang the next time you enter the function.
-> >
-> > > + if (pch_phub_reg.pch_phub_suspended == true) {
-> > > + ret_value = -EPERM;
-> > > + goto return_ioctrl;
-> > > + }
-> > > +
-> > > + p_pch_phub_reqt = (struct pch_phub_reqt *)varg;
-> > > +
-> > > + if (ret_value)
-> > > + goto return_ioctrl;
-> >
-> > is always zero here.
-> >
-> > > + /* End of Access area check */
-> > > +
-> > > +
-> > > + switch (cmd) {
-> > > +
-> > > + case IOCTL_PHUB_READ_MAC_ADDR:
-> > > + mac_addr[0] = 0;
-> > > + mac_addr[1] = 0;
-> > > + for (i = 0; i < 4; i++) {
-> > > + pch_phub_read_gbe_mac_addr(i, (__u8 *)&data);
-> > > + mac_addr[0] |= data << i*8;
-> > > + }
-> > > + for (; i < 6; i++) {
-> > > + pch_phub_read_gbe_mac_addr(i, (__u8 *)&data);
-> > > + mac_addr[1] |= data << (i-4)*8;
-> > > + }
-> > > +
-> > > + ret_value = copy_to_user((void *)&p_pch_phub_reqt->data,
-> > > + (void *)mac_addr, sizeof(mac_addr));
-> >
-> > p_pch_phub_reqt->data has multiple problems:
-> >
-> > - You have the typecast to (void *), which is wrong and unneeded.
-> > - The data structure has no point at all any more when you use only one
-> >   field.
-> >
-> > Just make this
-> >
-> > u8 mac_addr[6];
-> > for (i = 0; i < 4; i++)
-> > pch_phub_read_gbe_mac_addr(i, &mac_addr[i]);
-> > ret_value = copy_to_user(varg, mac_addr, sizeof(mac_addr));
-> >
-> > > +#define PHUB_IOCTL_MAGIC (0xf7)
-> > > +
-> > > +/*Outlines the read register function signature.  */
-> > > +#define IOCTL_PHUB_READ_REG (_IOW(PHUB_IOCTL_MAGIC, 1, __u32))
-> > > +
-> > > +/*Outlines the write register function signature. */
-> > > +#define IOCTL_PHUB_WRITE_REG (_IOW(PHUB_IOCTL_MAGIC, 2, __u32))
-> > > +
-> > > +/*Outlines the read, modify and write register function signature. */
-> > > +#define IOCTL_PHUB_READ_MODIFY_WRITE_REG (_IOW(PHUB_IOCTL_MAGIC, 3,\
-> > > + __u32))
-> > > +
-> > > +/*Outlines the read option rom function signature. */
-> > > +#define IOCTL_PHUB_READ_OROM (_IOW(PHUB_IOCTL_MAGIC, 4, __u32))
-> > > +
-> > > +/*Outlines the write option rom function signature. */
-> > > +#define IOCTL_PHUB_WRITE_OROM (_IOW(PHUB_IOCTL_MAGIC, 5, __u32))
-> >
-> > These should all get removed now.
-> >
-> > > +/*Outlines the read mac address function signature. */
-> > > +#define IOCTL_PHUB_READ_MAC_ADDR (_IOW(PHUB_IOCTL_MAGIC, 6, __u32))
-> > > +
-> > > +/*brief Outlines the write mac address function signature. */
-> > > +#define IOCTL_PHUB_WRITE_MAC_ADDR (_IOW(PHUB_IOCTL_MAGIC, 7, __u32))
-> >
-> > IOCTL_PHUB_READ_MAC_ADDR needs _IOR instead of _IOW, and the type
-> > is still wrong here. Your code currently has struct pch_phub_reqt
-> > instead of __u32, and if you change the ioctl function as I explained
-> > above, it should become
-> >
-> > #define IOCTL_PHUB_READ_MAC_ADDR (_IOR(PHUB_IOCTL_MAGIC, 6, __u8[6]))
-> > #define IOCTL_PHUB_WRITE_MAC_ADDR (_IOW(PHUB_IOCTL_MAGIC, 7, __u8[6]))
-> >
-> > Arnd
-> >
->
->
+> 1. Voluntarily drop cache, if it was setup to do so (the host knows
+> that it caches that information anyway)
+>    
 
+It doesn't, really.  The host only has aggregate information about 
+itself, and no information about the guest.
+
+Dropping duplicate pages would be good if we could identify them.  Even 
+then, it's better to drop the page from the host, not the guest, unless 
+we know the same page is cached by multiple guests.
+
+But why would the guest voluntarily drop the cache?  If there is no 
+memory pressure, dropping caches increases cpu overhead and latency even 
+if the data is still cached on the host.
+
+> 2. Drop the cache on either a special balloon option, again the host
+> knows it caches that very same information, so it prefers to free that
+> up first.
+>    
+
+Dropping in response to pressure is good.  I'm just not convinced the 
+patch helps in selecting the correct page to drop.
+
+-- 
+error compiling committee.c: too many arguments to function
 
