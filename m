@@ -1,171 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab0FOSow (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 14:44:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52517 "EHLO mx1.redhat.com"
+	id S1758476Ab0FOSmY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 14:42:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31861 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932222Ab0FOSm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 14:42:26 -0400
+	id S932178Ab0FOSmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 14:42:17 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 25/38] VFS: Split inode_permission() and create path_permission()
-Date: Tue, 15 Jun 2010 11:39:55 -0700
-Message-Id: <1276627208-17242-26-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 18/38] union-mount: Introduce MNT_UNION and MS_UNION flags
+Date: Tue, 15 Jun 2010 11:39:48 -0700
+Message-Id: <1276627208-17242-19-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split inode_permission() into inode and file-system-dependent parts.
-Create path_permission() to check permission based on the path to the
-inode.  This is for union mounts, in which an inode can be located on
-a read-only lower layer file system but is still writable, since we
-will copy it up to the writable top layer file system.  So in that
-case, we want to ignore MS_RDONLY on the lower layer.  To make this
-decision, we must know the path (vfsmount, dentry) of both the target
-and its parent.
+From: Jan Blunck <jblunck@suse.de>
 
-XXX - so ugly!
+Add per mountpoint flag for Union Mount support. You need additional patches
+to util-linux for that to work - see:
+
+git://git.kernel.org/pub/scm/utils/util-linux-ng/val/util-linux-ng.git
+
+Signed-off-by: Jan Blunck <jblunck@suse.de>
+Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/namei.c         |   92 ++++++++++++++++++++++++++++++++++++++++++++--------
- include/linux/fs.h |    1 +
- 2 files changed, 79 insertions(+), 14 deletions(-)
+ fs/namespace.c        |    5 ++++-
+ include/linux/fs.h    |    1 +
+ include/linux/mount.h |    4 ++--
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 1e6adf7..4fd431e 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -241,29 +241,20 @@ int generic_permission(struct inode *inode, int mask,
- }
+diff --git a/fs/namespace.c b/fs/namespace.c
+index b788cfa..7a399ba 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -808,6 +808,7 @@ static void show_mnt_opts(struct seq_file *m, struct vfsmount *mnt)
+ 		{ MNT_NODIRATIME, ",nodiratime" },
+ 		{ MNT_RELATIME, ",relatime" },
+ 		{ MNT_STRICTATIME, ",strictatime" },
++		{ MNT_UNION, ",union" },
+ 		{ 0, NULL }
+ 	};
+ 	const struct proc_fs_info *fs_infop;
+@@ -2018,10 +2019,12 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
+ 		mnt_flags &= ~(MNT_RELATIME | MNT_NOATIME);
+ 	if (flags & MS_RDONLY)
+ 		mnt_flags |= MNT_READONLY;
++	if (flags & MS_UNION)
++		mnt_flags |= MNT_UNION;
  
- /**
-- * inode_permission  -  check for access rights to a given inode
-+ * __inode_permission  -  check for access rights to a given inode
-  * @inode:	inode to check permission on
-  * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-  *
-  * Used to check for read/write/execute permissions on an inode.
-- * We use "fsuid" for this, letting us set arbitrary permissions
-- * for filesystem access without changing the "normal" uids which
-- * are used for other things.
-+ *
-+ * This does not check for a read-only file system.  You probably want
-+ * inode_permission().
-  */
--int inode_permission(struct inode *inode, int mask)
-+static int __inode_permission(struct inode *inode, int mask)
- {
- 	int retval;
+ 	flags &= ~(MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_ACTIVE |
+ 		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME| MS_KERNMOUNT |
+-		   MS_STRICTATIME);
++		   MS_STRICTATIME | MS_UNION);
  
- 	if (mask & MAY_WRITE) {
--		umode_t mode = inode->i_mode;
--
--		/*
--		 * Nobody gets write access to a read-only fs.
--		 */
--		if (IS_RDONLY(inode) &&
--		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
--			return -EROFS;
--
- 		/*
- 		 * Nobody gets write access to an immutable file.
- 		 */
-@@ -288,6 +279,79 @@ int inode_permission(struct inode *inode, int mask)
- }
- 
- /**
-+ * sb_permission  -  check superblock-level permissions
-+ * @sb: superblock of inode to check permission on
-+ * @mask: right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-+ *
-+ * Separate out file-system wide checks from inode-specific permission
-+ * checks.  In particular, union mounts want to check the read-only
-+ * status of the top-level file system, not the lower.
-+ */
-+int sb_permission(struct super_block *sb, struct inode *inode, int mask)
-+{
-+	if (mask & MAY_WRITE) {
-+		umode_t mode = inode->i_mode;
-+
-+		/*
-+		 * Nobody gets write access to a read-only fs.
-+		 */
-+		if ((sb->s_flags & MS_RDONLY) &&
-+		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
-+			return -EROFS;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * inode_permission  -  check for access rights to a given inode
-+ * @inode:	inode to check permission on
-+ * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-+ *
-+ * Used to check for read/write/execute permissions on an inode.
-+ * We use "fsuid" for this, letting us set arbitrary permissions
-+ * for filesystem access without changing the "normal" uids which
-+ * are used for other things.
-+ */
-+int inode_permission(struct inode *inode, int mask)
-+{
-+	int retval;
-+
-+	retval = sb_permission(inode->i_sb, inode, mask);
-+	if (retval)
-+		return retval;
-+	return __inode_permission(inode, mask);
-+}
-+
-+/**
-+ * path_permission - check for inode access rights depending on path
-+ * @path: path of inode to check
-+ * @parent_path: path of inode's parent
-+ * @mask: right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-+ *
-+ * Like inode_permission, but used to check for permission when the
-+ * file may potentially be copied up between union layers.
-+ */
-+
-+int path_permission(struct path *path, struct path *parent_path, int mask)
-+{
-+	struct vfsmount *mnt;
-+	int retval;
-+
-+	/* Catch some reversal of args */
-+	BUG_ON(!S_ISDIR(parent_path->dentry->d_inode->i_mode));
-+
-+	if (IS_MNT_UNION(parent_path->mnt))
-+		mnt = parent_path->mnt;
-+	else
-+		mnt = path->mnt;
-+
-+	retval = sb_permission(mnt->mnt_sb, path->dentry->d_inode, mask);
-+	if (retval)
-+		return retval;
-+	return __inode_permission(path->dentry->d_inode, mask);
-+}
-+
-+/**
-  * file_permission  -  check for additional access rights to a given file
-  * @file:	file to check access rights for
-  * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
+ 	if (flags & MS_REMOUNT)
+ 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index cc2934d..82750b5 100644
+index b59cd7b..dbd9881 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -2118,6 +2118,7 @@ extern sector_t bmap(struct inode *, sector_t);
- #endif
- extern int notify_change(struct dentry *, struct iattr *);
- extern int inode_permission(struct inode *, int);
-+extern int path_permission(struct path *, struct path *, int);
- extern int generic_permission(struct inode *, int,
- 		int (*check_acl)(struct inode *, int));
+@@ -192,6 +192,7 @@ struct inodes_stat_t {
+ #define MS_REMOUNT	32	/* Alter flags of a mounted FS */
+ #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
+ #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
++#define MS_UNION	256	/* Merge namespace with FS mounted below */
+ #define MS_NOATIME	1024	/* Do not update access times. */
+ #define MS_NODIRATIME	2048	/* Do not update directory access times */
+ #define MS_BIND		4096
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 4bd0547..0302703 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -43,9 +43,9 @@ struct mnt_namespace;
+  */
+ #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
+ #define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
++#define MNT_UNION	0x4000	/* top layer of a union mount */
  
+-
+-#define MNT_INTERNAL	0x4000
++#define MNT_INTERNAL	0x8000
+ 
+ struct vfsmount {
+ 	struct list_head mnt_hash;
 -- 
 1.6.3.3
 
