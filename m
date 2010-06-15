@@ -1,68 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab0FOFQl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 01:16:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4909 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188Ab0FOFQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 01:16:39 -0400
-Message-ID: <4C170CA4.2020805@redhat.com>
-Date: Tue, 15 Jun 2010 08:16:20 +0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1752743Ab0FOFRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 01:17:47 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:42654 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab0FOFRq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 01:17:46 -0400
+X-Greylist: delayed 3837 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Jun 2010 01:17:45 EDT
+X-AuditID: b753bd60-a8003ba000007d15-4e-4c170cf5f84a
+Message-ID: <4C170CF4.2050908@hitachi.com>
+Date: Tue, 15 Jun 2010 14:17:40 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-       linux-bluetooth@vger.kernel.org, clemens@ladisch.de,
-       debora@linux.vnet.ibm.com, dri-devel@lists.freedesktop.org,
-       linux-i2c@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH 8/8]tuners:tuner-simple Fix warning: variable 'tun' set
- but not used
-References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com> <1276547208-26569-9-git-send-email-justinmattock@gmail.com>
-In-Reply-To: <1276547208-26569-9-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+       Masami Hiramatsu <mhiramat@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH v2] perf probe: add kernel source path option
+References: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
+In-Reply-To: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Chase Douglas wrote:
+> The probe plugin requires access to the source code for some operations.
+> The source code must be in the exact same location as specified by the
+> DWARF tags, but sometimes the location is an absolute path that cannot
+> be replicated by a normal user. This change adds the -s|--source option
+> to allow the user to specify the root of the kernel source tree.
 
+Thanks, it looks very good to me :) and works!
 
-Em 14-06-2010 23:26, Justin P. Mattock escreveu:
-> not sure if this is correct or not for 
-> fixing this warning:
->   CC [M]  drivers/media/common/tuners/tuner-simple.o
-> drivers/media/common/tuners/tuner-simple.c: In function 'simple_set_tv_freq':
-> drivers/media/common/tuners/tuner-simple.c:548:20: warning: variable 'tun' set but not used
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thank you,
+
 > 
->  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
+> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
 > ---
->  drivers/media/common/tuners/tuner-simple.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
+>  tools/perf/Documentation/perf-probe.txt |    4 ++
+>  tools/perf/builtin-probe.c              |    2 +
+>  tools/perf/util/probe-finder.c          |   58 +++++++++++++++++++++++++++++--
+>  tools/perf/util/symbol.h                |    1 +
+>  4 files changed, 62 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/media/common/tuners/tuner-simple.c b/drivers/media/common/tuners/tuner-simple.c
-> index 8abbcc5..4465b99 100644
-> --- a/drivers/media/common/tuners/tuner-simple.c
-> +++ b/drivers/media/common/tuners/tuner-simple.c
-> @@ -545,14 +545,12 @@ static int simple_set_tv_freq(struct dvb_frontend *fe,
->  	struct tuner_simple_priv *priv = fe->tuner_priv;
->  	u8 config, cb;
->  	u16 div;
-> -	struct tunertype *tun;
->  	u8 buffer[4];
->  	int rc, IFPCoff, i;
->  	enum param_type desired_type;
->  	struct tuner_params *t_params;
+> diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+> index 94a258c..ea531d9 100644
+> --- a/tools/perf/Documentation/perf-probe.txt
+> +++ b/tools/perf/Documentation/perf-probe.txt
+> @@ -31,6 +31,10 @@ OPTIONS
+>  --vmlinux=PATH::
+>  	Specify vmlinux path which has debuginfo (Dwarf binary).
 >  
-> -	tun = priv->tun;
-> -
-> +	
-Why are you adding an extra blank line here? Except for that, the patch
-looks sane.
+> +-s::
+> +--source=PATH::
+> +	Specify path to kernel source.
+> +
+>  -v::
+>  --verbose::
+>          Be more verbose (show parsed arguments, etc).
+> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+> index e4a4da3..5455186 100644
+> --- a/tools/perf/builtin-probe.c
+> +++ b/tools/perf/builtin-probe.c
+> @@ -182,6 +182,8 @@ static const struct option options[] = {
+>  		     "Show source code lines.", opt_show_lines),
+>  	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+>  		   "file", "vmlinux pathname"),
+> +	OPT_STRING('s', "source", &symbol_conf.source_prefix,
+> +		   "directory", "path to kernel source"),
+>  #endif
+>  	OPT__DRY_RUN(&probe_event_dry_run),
+>  	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
+> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> index d964cb1..8c33aa1 100644
+> --- a/tools/perf/util/probe-finder.c
+> +++ b/tools/perf/util/probe-finder.c
+> @@ -37,6 +37,7 @@
+>  #include "event.h"
+>  #include "debug.h"
+>  #include "util.h"
+> +#include "symbol.h"
+>  #include "probe-finder.h"
+>  
+>  /* Kprobe tracer basic type is up to u64 */
+> @@ -57,6 +58,55 @@ static int strtailcmp(const char *s1, const char *s2)
+>  	return 0;
+>  }
+>  
+> +/*
+> + * Find a src file from a DWARF tag path. Prepend optional source path prefix
+> + * and chop off leading directories that do not exist. Result is passed back as
+> + * a newly allocated path on success.
+> + * Return 0 if file was found and readable, -errno otherwise.
+> + */
+> +static int get_real_path(const char *raw_path, char **new_path)
+> +{
+> +	if (!symbol_conf.source_prefix) {
+> +		if (access(raw_path, R_OK) == 0) {
+> +			*new_path = strdup(raw_path);
+> +			return 0;
+> +		} else
+> +			return -errno;
+> +	}
+> +
+> +	*new_path = malloc(strlen(symbol_conf.source_prefix)
+> +			   + strlen(raw_path) + 2);
+> +	if (!*new_path)
+> +		return -ENOMEM;
+> +
+> +	for (;;) {
+> +		sprintf(*new_path, "%s/%s", symbol_conf.source_prefix,
+> +			raw_path);
+> +
+> +		if (access(*new_path, R_OK) == 0)
+> +			return 0;
+> +
+> +		switch (errno) {
+> +		case ENAMETOOLONG:
+> +		case ENOENT:
+> +		case EROFS:
+> +		case EFAULT:
+> +			raw_path = strchr(++raw_path, '/');
+> +			if (!raw_path) {
+> +				free(*new_path);
+> +				*new_path = NULL;
+> +				return -ENOENT;
+> +			}
+> +			continue;
+> +
+> +		default:
+> +			free(*new_path);
+> +			*new_path = NULL;
+> +			return -errno;
+> +		}
+> +	}
+> +}
+> +
+>  /* Line number list operations */
+>  
+>  /* Add a line to line number list */
+> @@ -1096,11 +1146,13 @@ end:
+>  static int line_range_add_line(const char *src, unsigned int lineno,
+>  			       struct line_range *lr)
+>  {
+> +	int ret;
+> +
+>  	/* Copy real path */
+>  	if (!lr->path) {
+> -		lr->path = strdup(src);
+> -		if (lr->path == NULL)
+> -			return -ENOMEM;
+> +		ret = get_real_path(src, &lr->path);
+> +		if (ret != 0)
+> +			return ret;
+>  	}
+>  	return line_list__add_line(&lr->line_list, lineno);
+>  }
+> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+> index 10b7ff8..80e569b 100644
+> --- a/tools/perf/util/symbol.h
+> +++ b/tools/perf/util/symbol.h
+> @@ -71,6 +71,7 @@ struct symbol_conf {
+>  			full_paths,
+>  			show_cpu_utilization;
+>  	const char	*vmlinux_name,
+> +			*source_prefix,
+>  			*field_sep;
+>  	const char	*default_guest_vmlinux_name,
+>  			*default_guest_kallsyms,
 
->  	/* IFPCoff = Video Intermediate Frequency - Vif:
->  		940  =16*58.75  NTSC/J (Japan)
->  		732  =16*45.75  M/N STD
 
