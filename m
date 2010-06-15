@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757814Ab0FOOAs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 10:00:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11599 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757733Ab0FOOAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 10:00:46 -0400
-Date: Tue, 15 Jun 2010 16:00:11 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-Message-ID: <20100615140011.GD28052@random.random>
-References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+	id S1757837Ab0FOOBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 10:01:35 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:45345 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757725Ab0FOOBe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 10:01:34 -0400
+Date: Tue, 15 Jun 2010 16:01:32 +0200
+From: Jan Kara <jack@suse.cz>
+To: tytso@mit.edu, Andi Kleen <andi@firstfloor.org>,
+       linux-ext4@vger.kernel.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [17/23] EXT3: Fix set but unused variables
+Message-ID: <20100615140132.GB18513@atrey.karlin.mff.cuni.cz>
+References: <20100610110.764742110@firstfloor.org> <20100610111053.43E78B1A2B@basil.firstfloor.org> <20100614172718.GC6666@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <20100614172718.GC6666@thunk.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+> On Thu, Jun 10, 2010 at 01:10:53PM +0200, Andi Kleen wrote:
+> > Index: linux-2.6.35-rc2-gcc/fs/jbd/recovery.c
+> > ===================================================================
+> > --- linux-2.6.35-rc2-gcc.orig/fs/jbd/recovery.c
+> > +++ linux-2.6.35-rc2-gcc/fs/jbd/recovery.c
+> > @@ -283,12 +283,10 @@ int journal_recover(journal_t *journal)
+> >  int journal_skip_recovery(journal_t *journal)
+> >  {
+> >  	int			err;
+> > -	journal_superblock_t *	sb;
+> >  
+> >  	struct recovery_info	info;
+> >  
+> >  	memset (&info, 0, sizeof(info));
+> > -	sb = journal->j_superblock;
+> 
+> Oops, spoke too soon.  This will cause a compile error if
+> CONFIG_JBD_DEBUG is defined.
+> 
+> The following pesudo-patch is required:
+> 
+>  #ifdef CONFIG_JBD_DEBUG
+> -		int dropped = info.end_transaction - be32_to_cpu(sb->s_sequence);
+> +		int dropped = info.end_transaction - 
+> +				be32_to_cpu(journal->j_superblock->s_sequence);
+>  #endif
+  I have merged the patch with your fix to my tree.
 
-I know lots of people doesn't like direct reclaim, but I personally do
-and I think if memory pressure is hard enough we should eventually
-enter direct reclaim full force including ->writepage to avoid false
-positive OOM failures. Transparent hugepage allocation in fact won't
-even wakeup kswapd that would be insist to create hugepages and shrink
-an excessive amount of memory (especially before memory compaction was
-merged, it shall be tried again but if memory compaction fails in
-kswapd context, definitely kswapd should immediately stop and not go
-ahead trying the create hugepages the blind way, kswapd
-order-awareness the blind way is surely detrimental and pointless).
-
-When memory pressure is low, not going into ->writepage may be
-beneficial from latency prospective too. (but again it depends how
-much it matters to go in LRU and how beneficial is the cache, to know
-if it's worth taking clean cache away even if hotter than dirty cache)
-
-About the stack overflow did you ever got any stack-debug error? We've
-plenty of instrumentation and ->writepage definitely runs with irq
-enable, so if there's any issue, it can't possibly be unnoticed. The
-worry about stack overflow shall be backed by numbers.
-
-You posted lots of latency numbers (surely latency will improve but
-it's only safe approach on light memory pressure, on heavy pressure
-it'll early-oom not to call ->writepage, and if cache is very
-important and system has little ram, not going in lru order may also
-screw fs-cache performance), but I didn't see any max-stack usage hard
-numbers, to back the claim that we're going to overflow.
-
-In any case I'd prefer to be able to still call ->writepage if memory
-pressure is high (at some point when priority going down and
-collecting clean cache doesn't still satisfy the allocation), during
-allocations in direct reclaim and increase the THREAD_SIZE than doing
-this purely for stack reasons as the VM will lose reliability if we
-forbid ->writepage at all in direct reclaim. Throttling on kswapd is
-possible but it's probably less efficient and on the stack we know
-exactly which kind of memory we should allocate, kswapd doesn't and it
-works global.
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SuSE CR Labs
