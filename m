@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab0FOW3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 18:29:51 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:46134 "EHLO e5.ny.us.ibm.com"
+	id S1754078Ab0FOW3u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 18:29:50 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:46132 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345Ab0FOW3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 18:29:49 -0400
+	id S1753226Ab0FOW3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 18:29:48 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/urgent 3/3] idr: fix RCU lockdep splat in idr_get_next()
-Date: Tue, 15 Jun 2010 15:29:43 -0700
-Message-Id: <1276640983-14641-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/urgent 2/3] rcu: fix scope of wake_affine()'s new RCU read-side critical section
+Date: Tue, 15 Jun 2010 15:29:42 -0700
+Message-Id: <1276640983-14641-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100615222923.GA14571@linux.vnet.ibm.com>
 References: <20100615222923.GA14571@linux.vnet.ibm.com>
@@ -24,38 +24,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to rcu_dereference_raw() given that many callers may have many
-different locking models.
+The RCU read-side critical section needs to cover all uses of the pointer
+returned by task_group().
 
-Located-by: Miles Lane <miles.lane@gmail.com>
-Tested-by: Miles Lane <miles.lane@gmail.com>
+Located-by: Li Zefan <lizf@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- lib/idr.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched_fair.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/lib/idr.c b/lib/idr.c
-index c1a2069..7f1a4f0 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -602,7 +602,7 @@ void *idr_get_next(struct idr *idp, int *nextidp)
- 	/* find first ent */
- 	n = idp->layers * IDR_BITS;
- 	max = 1 << n;
--	p = rcu_dereference(idp->top);
-+	p = rcu_dereference_raw(idp->top);
- 	if (!p)
- 		return NULL;
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index ca56133..a878b53 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1250,7 +1250,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 	}
  
-@@ -610,7 +610,7 @@ void *idr_get_next(struct idr *idp, int *nextidp)
- 		while (n > 0 && p) {
- 			n -= IDR_BITS;
- 			*paa++ = p;
--			p = rcu_dereference(p->ary[(id >> n) & IDR_MASK]);
-+			p = rcu_dereference_raw(p->ary[(id >> n) & IDR_MASK]);
- 		}
+ 	tg = task_group(p);
+-	rcu_read_unlock();
+ 	weight = p->se.load.weight;
  
- 		if (p) {
+ 	/*
+@@ -1277,6 +1276,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 		balanced = this_eff_load <= prev_eff_load;
+ 	} else
+ 		balanced = true;
++	rcu_read_unlock();
+ 
+ 	/*
+ 	 * If the currently running task will sleep within
 -- 
 1.7.0.6
 
