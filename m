@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757847Ab0FOOQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 10:16:21 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:50668 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753266Ab0FOOQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 10:16:20 -0400
-Date: Tue, 15 Jun 2010 15:16:01 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	id S932095Ab0FOOSn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 10:18:43 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52749 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab0FOOSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 10:18:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=mUudzq1Ym1B1Z+kTftCRM6jwPQ4jOH/w8op8h/ko1GQ7bz+xOjnpodKb6/sEGLgVwJ
+         ZHCrMTICniUIS4b/xXoa2ZH2GyuDkxeIwI5FQz82yRfU7dHaYJ2yCuflE/L3lh5aLgPV
+         4EVc7Unb96qi+89vXTcpfQROsoFZdk0l9YFPI=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 12/12] vmscan: Do not writeback pages in direct reclaim
-Message-ID: <20100615141601.GL26788@csn.ul.ie>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-13-git-send-email-mel@csn.ul.ie> <4C16A567.4080000@redhat.com> <20100615114510.GE26788@csn.ul.ie> <4C17815A.8080402@redhat.com> <20100615135928.GK26788@csn.ul.ie> <4C178868.2010002@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4C178868.2010002@redhat.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Subject: [PATCH] drivers: net: use new hex_to_bin() method
+Date: Tue, 15 Jun 2010 17:18:29 +0300
+Message-Id: <1276611509-27637-1-git-send-email-andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 10:04:24AM -0400, Rik van Riel wrote:
-> On 06/15/2010 09:59 AM, Mel Gorman wrote:
->> On Tue, Jun 15, 2010 at 09:34:18AM -0400, Rik van Riel wrote:
->>> On 06/15/2010 07:45 AM, Mel Gorman wrote:
->
->>>>>>
->>>>>> +/* kswapd and memcg can writeback as they are unlikely to overflow stack */
->>>>>> +static inline bool reclaim_can_writeback(struct scan_control *sc)
->>>>>> +{
->>>>>> +	return current_is_kswapd() || sc->mem_cgroup != NULL;
->>>>>> +}
->
->>> If direct reclaim can overflow the stack, so can direct
->>> memcg reclaim.  That means this patch does not solve the
->>> stack overflow, while admitting that we do need the
->>> ability to get specific pages flushed to disk from the
->>> pageout code.
->>>
->>
->> What path is taken with memcg != NULL that could overflow the stack? I
->> couldn't spot one but mm/memcontrol.c is a bit tangled so finding all
->> its use cases is tricky. The critical path I had in mind though was
->> direct reclaim and for that path, memcg == NULL or did I miss something?
->
-> mem_cgroup_hierarchical_reclaim -> try_to_free_mem_cgroup_pages
->
+From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
 
-But in turn, where is mem_cgroup_hierarchical_reclaim called from direct
-reclaim? It appears to be only called from the fault path or as a result
-of the memcg changing size.
+Get rid of own implementation of hex_to_bin().
 
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Acked-by: Divy Le Ray <divy@chelsio.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ drivers/net/cxgb3/t3_hw.c |   16 ++++------------
+ 1 files changed, 4 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/net/cxgb3/t3_hw.c b/drivers/net/cxgb3/t3_hw.c
+index 95a8ba0..427c451 100644
+--- a/drivers/net/cxgb3/t3_hw.c
++++ b/drivers/net/cxgb3/t3_hw.c
+@@ -679,14 +679,6 @@ int t3_seeprom_wp(struct adapter *adapter, int enable)
+ 	return t3_seeprom_write(adapter, EEPROM_STAT_ADDR, enable ? 0xc : 0);
+ }
+ 
+-/*
+- * Convert a character holding a hex digit to a number.
+- */
+-static unsigned int hex2int(unsigned char c)
+-{
+-	return isdigit(c) ? c - '0' : toupper(c) - 'A' + 10;
+-}
+-
+ /**
+  *	get_vpd_params - read VPD parameters from VPD EEPROM
+  *	@adapter: adapter to read
+@@ -727,15 +719,15 @@ static int get_vpd_params(struct adapter *adapter, struct vpd_params *p)
+ 		p->port_type[0] = uses_xaui(adapter) ? 1 : 2;
+ 		p->port_type[1] = uses_xaui(adapter) ? 6 : 2;
+ 	} else {
+-		p->port_type[0] = hex2int(vpd.port0_data[0]);
+-		p->port_type[1] = hex2int(vpd.port1_data[0]);
++		p->port_type[0] = hex_to_bin(vpd.port0_data[0]);
++		p->port_type[1] = hex_to_bin(vpd.port1_data[0]);
+ 		p->xauicfg[0] = simple_strtoul(vpd.xaui0cfg_data, NULL, 16);
+ 		p->xauicfg[1] = simple_strtoul(vpd.xaui1cfg_data, NULL, 16);
+ 	}
+ 
+ 	for (i = 0; i < 6; i++)
+-		p->eth_base[i] = hex2int(vpd.na_data[2 * i]) * 16 +
+-				 hex2int(vpd.na_data[2 * i + 1]);
++		p->eth_base[i] = hex_to_bin(vpd.na_data[2 * i]) * 16 +
++				 hex_to_bin(vpd.na_data[2 * i + 1]);
+ 	return 0;
+ }
+ 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.6.6.1
+
