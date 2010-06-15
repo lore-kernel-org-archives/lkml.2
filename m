@@ -1,203 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab0FOTDA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 15:03:00 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:41704 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932189Ab0FOTC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 15:02:57 -0400
-Date: Tue, 15 Jun 2010 12:02:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Ulrich Weigand <Ulrich.Weigand@de.ibm.com>, ltt-dev@lists.casi.polymtl.ca,
-       Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, linux-arm-kernel@lists.infradead.org,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: Userspace helpers at static addresses on ARM [was: Re: [PATCH]
- fix the "unknown" case]
-Message-ID: <20100615190254.GH2304@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100614220600.GA15130@linux.vnet.ibm.com>
- <OF014FB97C.3968191D-ONC1257743.0043E356-C1257743.004525C9@de.ibm.com>
- <20100615150727.GC2304@linux.vnet.ibm.com>
- <OFCD1BC564.0035E292-ONC1257743.0057CB53-C1257743.0058903F@de.ibm.com>
- <20100615170001.GG2304@linux.vnet.ibm.com>
- <20100615170315.GA7835@Krystal>
- <OFC507BE7B.F11411B7-ONC1257743.005F924F-C1257743.00605E5E@de.ibm.com>
- <20100615182919.GB11394@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100615182919.GB11394@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932367Ab0FOTEs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 15:04:48 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47076 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189Ab0FOTEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 15:04:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type;
+        b=nAfqjdhMwL9JxkQlCoXDFcJ8sAwJ8pBH8xKl6NxcU4RGhTYKmhAnPqD3U1lgZGXgHY
+         JWh3llAXwigC7RMw1313X5i8yC4qy/Sx6J9+yMDIkdr0fAwaxbRPMBgL+BBUwUofEiKi
+         fTX+9eaV2WAhcKt4eBfAdD6b3WAE4mBnHsEcc=
+Date: Tue, 15 Jun 2010 22:04:42 +0300
+From: Sergei Trofimovich <slyich@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: v2.6.35-rc3: BUG: using smp_processor_id() in preemptible
+ [00000000] code: modprobe/1255
+Message-ID: <20100615220442.55b5271e@mosly>
+In-Reply-To: <20100613124246.07f98bd7@mosly>
+References: <20100613124246.07f98bd7@mosly>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/g7vE4KQg3iVTwSoL_Xbol89"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 02:29:19PM -0400, Mathieu Desnoyers wrote:
-> * Ulrich Weigand (Ulrich.Weigand@de.ibm.com) wrote:
-> > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote on 06/15/2010
-> > 07:03:15 PM:
-> > 
-> > > I wonder starting with which Linux kernel version __kernel_dmb appeared.
-> > > Tying ourself directly to a Linux kernel ABI might complicate things.
-> > >
-> > > Is this ABI presented in a vDSO or userland have to go through a system
-> > call ?
-> > > Is there any way to probe for its availability ?
-> > 
-> > This looks sort-of like a vDSO, except without the DSO part :-)
-> > 
-> > The kernel simply makes the code available at a fixed address that is
-> > directly callable by user space.  See the comments in
-> > linux/arch/arm/kernel/entry-armv.S:
-> > 
-> 
-> Hrm, statically addressed shared objects. The security guys should be freaking
-> out here. This can sadly make stack overflow exploitation much, much, easier
-> because of lack of randomization of addresses where the code is located. :-/
-> 
-> About the original topic of our discussion:
-> Thanks for the explanation below. I think making urcu test for the kernel
-> feature at library load seems like the best portable solution so far. We can
-> directly use the specific memory barriers when armv7+ is specified, and check
-> at runtime if the kernel feature is there for "generic" arm build. For generic
-> ARM build where we discover that the kernel lacks the proper features, we could
-> rely on Paul's double-fake-mutex scheme (assuming we audit glibc pthreads to
-> ensure the proper memory barriers are there). If we find out that even pthreads
-> mutexes got the barriers wrong there, then we should refuse to load the library
-> altogether.
+--Sig_/g7vE4KQg3iVTwSoL_Xbol89
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-OK.  The gcc patches were for __sync_sychronize(), which I have replaced
-with a "dmb" asm, and for __sync_lock_release(), which I do not use.
-If I understand Paolo and Uli correctly (a dubious assumption, to be
-sure), then the memory barriers and atomicity should be supplied by
-the libraries and/or kernel for the other __sync_ primitives.
+> [    7.582027] BUG: using smp_processor_id() in preemptible [00000000] co=
+de: modprobe/1255
+> [    7.582038] caller is nr_iowait_cpu+0x15/0x2b
+> [    7.582044] Pid: 1255, comm: modprobe Not tainted 2.6.35-rc3 #87
+> [    7.582048] Call Trace:
+> [    7.582059]  [<ffffffff81185470>] debug_smp_processor_id+0xc4/0xe0
+> [    7.582067]  [<ffffffff810265cd>] nr_iowait_cpu+0x15/0x2b
+> [    7.582075]  [<ffffffff81053b78>] update_ts_time_stats+0x37/0x72
+> [    7.582083]  [<ffffffff8104f5b5>] ? ktime_get+0x60/0xb9
+> [    7.582089]  [<ffffffff81053d2d>] get_cpu_idle_time_us+0x44/0x63
+> [    7.582100]  [<ffffffff8126f516>] cpufreq_governor_dbs+0xe1/0x3cf
+> [    7.582109]  [<ffffffff8104bb5e>] ? notifier_call_chain+0x32/0x5e
+> [    7.582116]  [<ffffffff8126c87e>] __cpufreq_governor+0xc7/0x105
+> [    7.582124]  [<ffffffff8126d66c>] __cpufreq_set_policy+0x1a8/0x222
+> [    7.582131]  [<ffffffff8126d977>] cpufreq_add_dev_interface+0x291/0x2ac
+> [    7.582139]  [<ffffffff8126e22e>] ? handle_update+0x0/0x33
+> [    7.582147]  [<ffffffff8126e107>] cpufreq_add_dev+0x4b9/0x4c9
+> [    7.582157]  [<ffffffff811ff373>] sysdev_driver_register+0xbf/0x119
+> [    7.582164]  [<ffffffff8126c9a8>] cpufreq_register_driver+0xb9/0x1a5
+> [    7.582174]  [<ffffffffa02e40d7>] acpi_cpufreq_init+0xd7/0x10d [acpi_c=
+pufreq]
+> [    7.582183]  [<ffffffffa02e4000>] ? acpi_cpufreq_init+0x0/0x10d [acpi_=
+cpufreq]
+> [    7.582191]  [<ffffffff810001ef>] do_one_initcall+0x59/0x149
+> [    7.582199]  [<ffffffff8105cced>] sys_init_module+0x9c/0x1db
+> [    7.582206]  [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
+>=20
+> Attached whole config and dmesg.
 
-So for ARMv7, my prior patch should suffice.  (Or am I still missing
-something?)
+It seems to be reproducible on each boot. Today's one:
+[   20.242755] BUG: using smp_processor_id() in preemptible [00000000] code=
+: modprobe/1462
+[   20.242765] caller is nr_iowait_cpu+0x15/0x2b
+[   20.242770] Pid: 1462, comm: modprobe Not tainted 2.6.35-rc3 #87
+[   20.242774] Call Trace:
+[   20.242784]  [<ffffffff81185470>] debug_smp_processor_id+0xc4/0xe0
+[   20.242790]  [<ffffffff810265cd>] nr_iowait_cpu+0x15/0x2b
+[   20.242798]  [<ffffffff81053b78>] update_ts_time_stats+0x37/0x72
+[   20.242805]  [<ffffffff8104f5b5>] ? ktime_get+0x60/0xb9
+[   20.242811]  [<ffffffff81053d2d>] get_cpu_idle_time_us+0x44/0x63
+[   20.242820]  [<ffffffff8126f516>] cpufreq_governor_dbs+0xe1/0x3cf
+[   20.242828]  [<ffffffff8104bb5e>] ? notifier_call_chain+0x32/0x5e
+[   20.242835]  [<ffffffff8126c87e>] __cpufreq_governor+0xc7/0x105
+[   20.242842]  [<ffffffff8126d66c>] __cpufreq_set_policy+0x1a8/0x222
+[   20.242848]  [<ffffffff8126d977>] cpufreq_add_dev_interface+0x291/0x2ac
+[   20.242855]  [<ffffffff8126e22e>] ? handle_update+0x0/0x33
+[   20.242863]  [<ffffffff8126e107>] cpufreq_add_dev+0x4b9/0x4c9
+[   20.242871]  [<ffffffff811ff373>] sysdev_driver_register+0xbf/0x119
+[   20.242878]  [<ffffffff8126c9a8>] cpufreq_register_driver+0xb9/0x1a5
+[   20.242887]  [<ffffffffa02e40d7>] acpi_cpufreq_init+0xd7/0x10d [acpi_cpu=
+freq]
+[   20.242894]  [<ffffffffa02e4000>] ? acpi_cpufreq_init+0x0/0x10d [acpi_cp=
+ufreq]
+[   20.242902]  [<ffffffff810001ef>] do_one_initcall+0x59/0x149
+[   20.242909]  [<ffffffff8105cced>] sys_init_module+0x9c/0x1db
+[   20.242915]  [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
 
-Additional patches are no doubt required for other ARM flavors, and
-perhaps also for older compilers and kernels.
+--=20
 
-							Thanx, Paul
+  Sergei
 
-> Thanks,
-> 
-> Mathieu
-> 
-> > /*
-> >  * User helpers.
-> >  *
-> >  * These are segment of kernel provided user code reachable from user space
-> >  * at a fixed address in kernel memory.  This is used to provide user space
-> >  * with some operations which require kernel help because of unimplemented
-> >  * native feature and/or instructions in many ARM CPUs. The idea is for
-> >  * this code to be executed directly in user mode for best efficiency but
-> >  * which is too intimate with the kernel counter part to be left to user
-> >  * libraries.  In fact this code might even differ from one CPU to another
-> >  * depending on the available  instruction set and restrictions like on
-> >  * SMP systems.  In other words, the kernel reserves the right to change
-> >  * this code as needed without warning. Only the entry points and their
-> >  * results are guaranteed to be stable.
-> >  *
-> >  * Each segment is 32-byte aligned and will be moved to the top of the high
-> >  * vector page.  New segments (if ever needed) must be added in front of
-> >  * existing ones.  This mechanism should be used only for things that are
-> >  * really small and justified, and not be abused freely.
-> >  *
-> >  * User space is expected to implement those things inline when optimizing
-> >  * for a processor that has the necessary native support, but only if such
-> >  * resulting binaries are already to be incompatible with earlier ARM
-> >  * processors due to the use of unsupported instructions other than what
-> >  * is provided here.  In other words don't make binaries unable to run on
-> >  * earlier processors just for the sake of not using these kernel helpers
-> >  * if your compiled code is not going to use the new instructions for other
-> >  * purpose.
-> >  */
-> > 
-> > 
-> > /*
-> >  * Reference prototype:
-> >  *
-> >  *           void __kernel_memory_barrier(void)
-> >  *
-> >  * Input:
-> >  *
-> >  *           lr = return address
-> >  *
-> >  * Output:
-> >  *
-> >  *           none
-> >  *
-> >  * Clobbered:
-> >  *
-> >  *           none
-> >  *
-> >  * Definition and user space usage example:
-> >  *
-> >  *           typedef void (__kernel_dmb_t)(void);
-> >  *           #define __kernel_dmb (*(__kernel_dmb_t *)0xffff0fa0)
-> >  *
-> >  * Apply any needed memory barrier to preserve consistency with data
-> > modified
-> >  * manually and __kuser_cmpxchg usage.
-> >  *
-> >  * This could be used as follows:
-> >  *
-> >  * #define __kernel_dmb() \
-> >  *         asm volatile ( "mov r0, #0xffff0fff; mov lr, pc; sub pc, r0,
-> > #95" \
-> >  *		         : : : "r0", "lr","cc" )
-> >  */
-> > 
-> > 
-> > As far as I can see, the only provision to check whether a feature is
-> > available
-> > is this one:
-> > 
-> > /*
-> >  * Reference declaration:
-> >  *
-> >  *           extern unsigned int __kernel_helper_version;
-> >  *
-> >  * Definition and user space usage example:
-> >  *
-> >  *           #define __kernel_helper_version (*(unsigned int *)0xffff0ffc)
-> >  *
-> >  * User space may read this to determine the curent number of helpers
-> >  * available.
-> >  */
-> > 
-> > However, note that libgcc code does not perform this check, it simply
-> > assumes
-> > the above routine to be present.
-> > 
-> > The __kernel_dmb (which is the most recently added helper available in
-> > current
-> > mainline) seems to have been available since kernel 2.6.15, so presumably
-> > code
-> > using any of the GCC sync primitives would simply fail on any older kernel,
-> > unless I'm missing something here ...
-> > 
-> > 
-> > Mit freundlichen Gruessen / Best Regards
-> > 
-> > Ulrich Weigand
-> > 
-> > --
-> >   Dr. Ulrich Weigand | Phone: +49-7031/16-3727
-> >   STSM, GNU compiler and toolchain for Linux on System z and Cell/B.E.
-> >   IBM Deutschland Research & Development GmbH
-> >   Vorsitzender des Aufsichtsrats: Martin Jetter | Geschäftsführung: Dirk
-> > Wittkopp
-> >   Sitz der Gesellschaft: Böblingen | Registergericht: Amtsgericht
-> > Stuttgart, HRB 243294
-> > 
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
+--Sig_/g7vE4KQg3iVTwSoL_Xbol89
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+
+iEYEARECAAYFAkwXzsoACgkQcaHudmEf86qX6ACfc2u4TFkIi5n5jhG5bCXj+s8u
+cPQAnRwDZKB3s4v6tH/vY8Zk9rowxl7g
+=toS5
+-----END PGP SIGNATURE-----
+
+--Sig_/g7vE4KQg3iVTwSoL_Xbol89--
