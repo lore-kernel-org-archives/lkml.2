@@ -1,198 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604Ab0FOLlR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 07:41:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37660 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752818Ab0FOLlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 07:41:15 -0400
-Message-ID: <4C1766D6.3040000@redhat.com>
-Date: Tue, 15 Jun 2010 14:41:10 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1757624Ab0FOLlV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 07:41:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48429 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757607Ab0FOLlS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 07:41:18 -0400
+Date: Tue, 15 Jun 2010 13:41:08 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, stefani@seibold.net
+Subject: Re: [PATCH] tags: put function prototypes back!
+Message-ID: <20100615114108.GD21709@pengutronix.de>
+References: <20100203201816.GA5987@x200> <20100615092230.GA21819@pengutronix.de> <4C174DBB.9000901@suse.cz>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 5/6] KVM: MMU: prefetch ptes when intercepted guest #PF
-References: <4C16E6ED.7020009@cn.fujitsu.com> <4C16E75F.6020003@cn.fujitsu.com> <4C16E7AD.1060101@cn.fujitsu.com> <4C16E7F4.5060801@cn.fujitsu.com> <4C16E82E.5010306@cn.fujitsu.com> <4C16E9A8.10409@cn.fujitsu.com>
-In-Reply-To: <4C16E9A8.10409@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C174DBB.9000901@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 05:47 AM, Xiao Guangrong wrote:
-> Support prefetch ptes when intercept guest #PF, avoid to #PF by later
-> access
->
-> If we meet any failure in the prefetch path, we will exit it and
-> not try other ptes to avoid become heavy path
->
->
->
-> +#define PTE_PREFETCH_NUM	16
-> +
->   #define PT_FIRST_AVAIL_BITS_SHIFT 9
->   #define PT64_SECOND_AVAIL_BITS_SHIFT 52
->
-> @@ -2041,6 +2043,39 @@ static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
->   {
->   }
->
-> +static void direct_pte_prefetch(struct kvm_vcpu *vcpu, u64 *sptep)
-> +{
-> +	struct kvm_mmu_page *sp;
-> +	int index, i;
-> +
-> +	sp = page_header(__pa(sptep));
-> +	WARN_ON(!sp->role.direct);
-> +	index = sptep - sp->spt;
-> +
-> +	for (i = index + 1; i<  min(PT64_ENT_PER_PAGE,
-> +				      index + PTE_PREFETCH_NUM); i++) {
-> +		gfn_t gfn;
-> +		pfn_t pfn;
-> +		u64 *spte = sp->spt + i;
-> +
-> +		if (*spte != shadow_trap_nonpresent_pte)
-> +			continue;
-> +
-> +		gfn = sp->gfn + (i<<  ((sp->role.level - 1) * PT64_LEVEL_BITS));
->    
+On Tue, Jun 15, 2010 at 11:54:03AM +0200, Michal Marek wrote:
+> On 15.6.2010 11:22, Uwe Kleine-König wrote:
+> > On Wed, Feb 03, 2010 at 10:18:17PM +0200, Alexey Dobriyan wrote:
+> >> commit 7db86dc97fb0c47af63e6b965e8ff37126050d25
+> >> "ctags: usability fix" removed function prototypes from tags file
+> >> claiming "It makes no real sense to include function prototypes".
+> >> But it is useful for quickly determining which header file developer
+> >> needs to include to fix compilation.
+> >>
+> >> Now if someone wants to remove forward declatations (which I agree are
+> >> baggage), write a postprocessing script.
+> >>
+> >> Please apply.
+> >>
+> >> 	Alexey, who is sick reverting this chunk locally.
+> >>
+> >> Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+> > Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> 
+> Alexey, can you please resend the patch? I don't see it in the archives
+> anywhere.
 
-Can calculate outside the loop and use +=.
+Gmane supports getting mails by Message-Id:
 
-Can this in fact work for level != PT_PAGE_TABLE_LEVEL?  We might start 
-at PT_PAGE_DIRECTORY_LEVEL but get 4k pages while iterating.
+	http://mid.gmane.org/20100203201816.GA5987@x200
 
-> +
-> +		pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
-> +		if (is_error_pfn(pfn)) {
-> +			kvm_release_pfn_clean(pfn);
-> +			break;
-> +		}
-> +		if (pte_prefetch_topup_memory_cache(vcpu))
-> +			break;
-> +
-> +		mmu_set_spte(vcpu, spte, ACC_ALL, ACC_ALL, 0, 0, 1, NULL,
-> +			     sp->role.level, gfn, pfn, true, false);
-> +	}
-> +}
->    
+redirects to http://article.gmane.org/gmane.linux.kernel/946067,
+appending raw is nearly suitable for usage by mutt.
 
-Nice.  Direct prefetch should usually succeed.
+{ echo From lala Mon Sep 17 00:00:00 2001; wget -O - http://article.gmane.org/gmane.linux.kernel/946067/raw; } > patch
 
-Can later augment to call get_users_pages_fast(..., PTE_PREFETCH_NUM, 
-...) to reduce gup overhead.
-
->
-> +static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, u64 *sptep)
-> +{
-> +	struct kvm_mmu_page *sp;
-> +	pt_element_t *table = NULL;
-> +	int offset = 0, shift, index, i;
-> +
-> +	sp = page_header(__pa(sptep));
-> +	index = sptep - sp->spt;
-> +
-> +	if (PTTYPE == 32) {
-> +		shift = PAGE_SHIFT - (PT_LEVEL_BITS -
-> +					PT64_LEVEL_BITS) * sp->role.level;
-> +		offset = sp->role.quadrant<<  shift;
-> +	}
-> +
-> +	for (i = index + 1; i<  min(PT64_ENT_PER_PAGE,
-> +				      index + PTE_PREFETCH_NUM); i++) {
-> +		struct page *page;
-> +		pt_element_t gpte;
-> +		unsigned pte_access;
-> +		u64 *spte = sp->spt + i;
-> +		gfn_t gfn;
-> +		pfn_t pfn;
-> +		int dirty;
-> +
-> +		if (*spte != shadow_trap_nonpresent_pte)
-> +			continue;
-> +
-> +		pte_access = sp->role.access;
-> +		if (sp->role.direct) {
-> +			dirty = 1;
-> +			gfn = sp->gfn + (i<<  ((sp->role.level - 1) *
-> +					      PT64_LEVEL_BITS));
-> +			goto gfn_mapping;
-> +		}
->    
-
-Should just call direct_pte_prefetch.
-
-> +
-> +		if (!table) {
-> +			page = gfn_to_page_atomic(vcpu->kvm, sp->gfn);
-> +			if (is_error_page(page)) {
-> +				kvm_release_page_clean(page);
-> +				break;
-> +			}
-> +			table = kmap_atomic(page, KM_USER0);
-> +			table = (pt_element_t *)((char *)table + offset);
-> +		}
->    
-
-Why not kvm_read_guest_atomic()?  Can do it outside the loop.
-
-> +
-> +		gpte = table[i];
-> +		if (!(gpte&  PT_ACCESSED_MASK))
-> +			continue;
-> +
-> +		if (!is_present_gpte(gpte)) {
-> +			if (!sp->unsync)
-> +				*spte = shadow_notrap_nonpresent_pte;
->    
-
-Need __set_spte().
-
-> +			continue;
-> +		}
-> +		dirty = is_dirty_gpte(gpte);
-> +		gfn = (gpte&  PT64_BASE_ADDR_MASK)>>  PAGE_SHIFT;
-> +		pte_access = pte_access&  FNAME(gpte_access)(vcpu, gpte);
-> +gfn_mapping:
-> +		pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
-> +		if (is_error_pfn(pfn)) {
-> +			kvm_release_pfn_clean(pfn);
-> +			break;
-> +		}
-> +
-> +		if (pte_prefetch_topup_memory_cache(vcpu))
-> +			break;
-> +		mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
-> +			     dirty, NULL, sp->role.level, gfn, pfn,
-> +			     true, false);
-> +	}
-> +	if (table)
-> +		kunmap_atomic((char *)table - offset, KM_USER0);
-> +}
->    
-
-I think lot of code can be shared with the pte prefetch in invlpg.
-
-> +
->   /*
->    * Fetch a shadow pte for a specific level in the paging hierarchy.
->    */
-> @@ -322,6 +397,7 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
->   				     is_dirty_gpte(gw->ptes[gw->level-1]),
->   				     ptwrite, level,
->   				     gw->gfn, pfn, false, true);
-> +			FNAME(pte_prefetch)(vcpu, sptep);
->   			break;
->   		}
->
->    
-
+Best regards
+Uwe
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
