@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab0FOPzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 11:55:09 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55229 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab0FOPzH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 11:55:07 -0400
-Date: Tue, 15 Jun 2010 08:54:43 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for June 15 (video/uvc & gadget/webcam)
-Message-Id: <20100615085443.e49beae5.randy.dunlap@oracle.com>
-In-Reply-To: <20100615150907.5fb984da.sfr@canb.auug.org.au>
-References: <20100615150907.5fb984da.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090206.4C17A252.0211:SCFMA4539811,ss=1,fgs=0
+	id S1752904Ab0FOP4v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 11:56:51 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:34497 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196Ab0FOP4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 11:56:50 -0400
+Date: Tue, 15 Jun 2010 16:56:32 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 08/12] vmscan: Setup pagevec as late as possible in
+	shrink_inactive_list()
+Message-ID: <20100615155631.GQ26788@csn.ul.ie>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-9-git-send-email-mel@csn.ul.ie> <20100615104701.GA31051@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100615104701.GA31051@infradead.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jun 2010 15:09:07 +1000 Stephen Rothwell wrote:
-
-> Hi all,
+On Tue, Jun 15, 2010 at 06:47:01AM -0400, Christoph Hellwig wrote:
+> On Mon, Jun 14, 2010 at 12:17:49PM +0100, Mel Gorman wrote:
+> >  /*
+> > + * TODO: Try merging with migrations version of putback_lru_pages
+> > + */
+> > +static noinline_for_stack void putback_lru_pages(struct zone *zone,
+> > +				struct zone_reclaim_stat *reclaim_stat,
+> > +				unsigned long nr_anon, unsigned long nr_file,
+> > + 				struct list_head *page_list)
+> > +{
 > 
-> Changes since 20100614:
+> I hate to nitpick on this, but with noinline_for_stack a prototype
+> really is unreadbale unless the function identifier goes to the next
+> line.  Compare the one above with:
+> 
+> static noinline_for_stack void
+> putback_lru_pages(struct zone *zone, struct zone_reclaim_stat *reclaim_stat,
+> 		unsigned long nr_anon, unsigned long nr_file,
+> 		struct list_head *page_list)
+> 
+> > -static unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+> > +static noinline_for_stack unsigned long shrink_inactive_list(unsigned long nr_to_scan,
+> >  			struct zone *zone, struct scan_control *sc,
+> >  			int priority, int file)
+> 
+> Same here, just even worse due to the spill over ove 80 characters.
+> 
 
-(FYI)
+It's a fair nitpick and so is cleaned up.
 
-CONFIG_USB_VIDEO_CLASS=y
-CONFIG_USB_G_WEBCAM=y
-
-(.text+0x1b72a0): multiple definition of `uvc_queue_poll'
-(.text+0x1b74a0): multiple definition of `uvc_queue_buffer'
-(.text+0x1b7030): multiple definition of `uvc_queue_cancel'
-(.text+0x1b7140): multiple definition of `uvc_queue_enable'
-(.text+0x1b82b0): multiple definition of `uvc_alloc_buffers'
-(.text+0x1b8070): multiple definition of `uvc_query_buffer'
-(.text+0x1b85c0): multiple definition of `uvc_queue_init'
-(.text+0x1bfa60): multiple definition of `uvc_video_init'
-(.text+0x1b7c90): multiple definition of `uvc_dequeue_buffer'
-drivers/media/built-in.o:(.bss+0x73a04): multiple definition of `uvc_trace_param'
-(.text+0x1bf6e0): multiple definition of `uvc_video_enable'
-(.text+0x1b8140): multiple definition of `uvc_free_buffers'
-(.text+0x1b6e50): multiple definition of `uvc_queue_next_buffer'
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
