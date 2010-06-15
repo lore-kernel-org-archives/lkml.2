@@ -1,69 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750870Ab0FOEJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 00:09:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32446 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750701Ab0FOEJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 00:09:06 -0400
-Message-ID: <4C16FCAE.4050607@redhat.com>
-Date: Tue, 15 Jun 2010 00:08:14 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1750971Ab0FOEQG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 00:16:06 -0400
+Received: from mailx.hitachi.co.jp ([133.145.228.49]:35142 "EHLO
+	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab0FOEQE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 00:16:04 -0400
+X-AuditID: b753bd60-a7602ba000007d15-df-4c16fdfa4d99
+Message-ID: <4C16FDF5.1070803@hitachi.com>
+Date: Tue, 15 Jun 2010 13:13:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Dave Chinner <david@fromorbit.com>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Chris Mason <chris.mason@oracle.com>,
-       Nick Piggin <npiggin@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 11/12] vmscan: Write out dirty pages in batch
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>	<1276514273-27693-12-git-send-email-mel@csn.ul.ie>	<20100614231144.GG6590@dastard>	<20100614162143.04783749.akpm@linux-foundation.org>	<20100615003943.GK6590@dastard>	<4C16D46D.3020302@redhat.com> <20100614184544.32b1c371.akpm@linux-foundation.org>
-In-Reply-To: <20100614184544.32b1c371.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH v5 10/14] trace: Common code for kprobes/uprobes traceevents
+References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6> <20100614082953.29068.76083.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20100614082953.29068.76083.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 09:45 PM, Andrew Morton wrote:
-> On Mon, 14 Jun 2010 21:16:29 -0400 Rik van Riel<riel@redhat.com>  wrote:
->
->> Would it be hard to add a "please flush this file"
->> way to call the filesystem flushing threads?
->
-> Passing the igrab()bed inode into the flusher threads would fix the
-> iput_final() problems, as long as the alloc_pages() caller never blocks
-> indefinitely waiting for the work which the flusher threads are doing.
->
-> Otherwise we get (very hard-to-hit) deadlocks where the alloc_pages()
-> caller holds VFS locks and is waiting for the flusher threads while all
-> the flusher threads are stuck under iput_final() waiting for those VFS
-> locks.
->
-> That's fixable by not using igrab()/iput().  You can use lock_page() to
-> pin the address_space.  Pass the address of the locked page across to
-> the flusher threads so they don't try to lock it a second time, or just
-> use trylocking on that writeback path or whatever.
+Srikar Dronamraju wrote:
+> share_traceevents.patch.
+> 
+> From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> 
+> Changelog from v5: Addressed comments from Masami.
+>         Also shared lot more code from kprobes traceevents.
+> 
+> Move common parts of trace_kprobe.c and trace_uprobec.
+> Adjust kernel/trace/trace_kprobe.c after moving common code to
+> kernel/trace/trace_probe.h. However they still have few duplicate
+> functions.
 
-Any thread that does not have __GFP_FS set in its gfp_mask
-cannot wait for the flusher to complete. This is regardless
-of the mechanism used to kick the flusher.
+Hi Shriker,
 
-Then again, those threads cannot call ->writepage today
-either, so we should be fine keeping that behaviour.
+OK, sharing fetch codes between them is acceptable.
 
-Threads that do have __GFP_FS in their gfp_mask can wait
-for the flusher in various ways.  Maybe the lock_page()
-method can be simplified by having the flusher thread
-unlock the page the moment it gets it, and then run the
-normal flusher code?
+> diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+> new file mode 100644
+> index 0000000..b4c5763
+> --- /dev/null
+> +++ b/kernel/trace/trace_probe.h
+[...]
 
-The pageout code (in shrink_page_list) already unlocks
-the page anyway before putting it back on the relevant
-LRU list.  It would be easy enough to skip that unlock
-and let the flusher thread take care of it.
+> +/* Printing  in basic type function template */
+> +#define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt, cast)			\
+> +static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
+> +						const char *name, void *data)\
+> +{									\
+> +	return trace_seq_printf(s, " %s=" fmt, name, (cast)*(type *)data);\
+> +}									\
+> +static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
+> +
+> +DEFINE_BASIC_PRINT_TYPE_FUNC(u8, "%x", unsigned int)
+> +DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned int)
+> +DEFINE_BASIC_PRINT_TYPE_FUNC(u32, "%lx", unsigned long)
+> +DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%llx", unsigned long long)
+> +DEFINE_BASIC_PRINT_TYPE_FUNC(s8, "%d", int)
+> +DEFINE_BASIC_PRINT_TYPE_FUNC(s16, "%d", int)
 
--- 
-All rights reversed
+Please do NOT define static variables in header file...
+It should be in trace_probe_common.c.
+
+> +
+> +/* Data fetch function type */
+> +typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
+> +
+> +struct fetch_param {
+> +	fetch_func_t	fn;
+> +	void *data;
+> +};
+> +
+> +#define FETCH_FUNC_NAME(kind, type)	fetch_##kind##_##type
+> +/*
+> + * Define macro for basic types - we don't need to define s* types, because
+> + * we have to care only about bitwidth at recording time.
+> + */
+> +#define DEFINE_BASIC_FETCH_FUNCS(kind)  \
+> +DEFINE_FETCH_##kind(u8)			\
+> +DEFINE_FETCH_##kind(u16)		\
+> +DEFINE_FETCH_##kind(u32)		\
+> +DEFINE_FETCH_##kind(u64)
+> +
+> +#define CHECK_BASIC_FETCH_FUNCS(kind, fn)	\
+> +	((FETCH_FUNC_NAME(kind, u8) == fn) ||	\
+> +	 (FETCH_FUNC_NAME(kind, u16) == fn) ||	\
+> +	 (FETCH_FUNC_NAME(kind, u32) == fn) ||	\
+> +	 (FETCH_FUNC_NAME(kind, u64) == fn))
+> +
+> +/* Data fetch function templates */
+> +#define DEFINE_FETCH_reg(type)						\
+> +static __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,	\
+> +					  void *offset, void *dest)	\
+> +{									\
+> +	*(type *)dest = (type)regs_get_register(regs,			\
+> +				(unsigned int)((unsigned long)offset));	\
+> +}
+> +DEFINE_BASIC_FETCH_FUNCS(reg)
+> +
+> +/* Default (unsigned long) fetch type */
+> +#define __DEFAULT_FETCH_TYPE(t) u##t
+> +#define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
+> +#define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
+> +#define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
+> +
+> +#define ASSIGN_FETCH_FUNC(kind, type)	\
+> +	.kind = FETCH_FUNC_NAME(kind, type)
+
+And, please do not split these macros and function bodies.
+I think we should make a new .c and put them into there.
+Maybe, we need a new interface for generating new fetch_arg
+according to its type (and access region, user/kernel).
+
+> +
+> +/* Flags for trace_probe */
+> +#define TP_FLAG_TRACE	1
+> +#define TP_FLAG_PROFILE	2
+> +
+> +#define PARAM_MAX_ARGS 16
+> +#define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
+> +
+> +struct probe_arg {
+> +	struct fetch_param	fetch;
+> +	unsigned int		offset;	/* Offset from argument entry */
+> +	const char		*name;	/* Name of this argument */
+> +	const char		*comm;	/* Command of this argument */
+> +	const struct fetch_type	*type;	/* Type of this argument */
+> +};
+> +
+> +static __kprobes void call_fetch(struct fetch_param *fprm,
+> +				 struct pt_regs *regs, void *dest)
+> +{
+> +	return fprm->fn(regs, fprm->data, dest);
+> +}
+> +
+> +/* Check the name is good for event/group */
+> +static inline int check_event_name(const char *name)
+> +{
+> +	if (!isalpha(*name) && *name != '_')
+> +		return 0;
+> +	while (*++name != '\0') {
+> +		if (!isalpha(*name) && !isdigit(*name) && *name != '_')
+> +			return 0;
+> +	}
+> +	return 1;
+> +}
+> +
+> +static int probe_event_raw_init(struct ftrace_event_call *event_call)
+> +{
+> +	return 0;
+> +}
+
+Exporting these interfaces are OK.
+
+Thank you,
+
+
+
