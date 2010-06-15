@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758370Ab0FOSlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 14:41:49 -0400
-Received: from hapkido.dreamhost.com ([66.33.216.122]:57160 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758328Ab0FOSlm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 14:41:42 -0400
-Subject: Re: [PATCH] uniform cdrom: fix mutex unlocking in
- /proc/sys/dev/cdrom/info file
-From: Davidlohr Bueso <dave.bueso@gmail.com>
-Reply-To: dave.bueso@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
-In-Reply-To: <20100614123417.444a82c3.akpm@linux-foundation.org>
-References: <1276102610.5572.32.camel@cowboy>
-	 <20100614123417.444a82c3.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Jun 2010 14:40:54 -0400
-Message-ID: <1276627254.4666.0.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1758268Ab0FOSly (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 14:41:54 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57275 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758374Ab0FOSlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 14:41:51 -0400
+Message-ID: <4C17C938.4040703@kernel.org>
+Date: Tue, 15 Jun 2010 20:40:56 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: [PATCHSET] workqueue: concurrency managed workqueue, take#5
+References: <1276551467-21246-1-git-send-email-tj@kernel.org> <4C17C671.3020605@s5r6.in-berlin.de>
+In-Reply-To: <4C17C671.3020605@s5r6.in-berlin.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 15 Jun 2010 18:40:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-14 at 12:34 -0700, Andrew Morton wrote:
-> On Wed, 09 Jun 2010 12:56:50 -0400
-> Davidlohr Bueso <dave.bueso@gmail.com> wrote:
+Hello,
+
+On 06/15/2010 08:29 PM, Stefan Richter wrote:
+> Tejun Heo wrote:
+>> This is the fifth take of cmwq (concurrency managed workqueue)
+>> patchset.  It's on top of v2.6.35-rc3 + sched/core patches.  Git tree
+>> is available at
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-cmwq
 > 
-> > If the last if condition passes the cdrom_mutex mutex will not be unlocked. 
-> > This patch fixes this and also removes the unnecessary doit label that was only invoked by the done label.
-> > 
+> A comment and a question:
 > 
-> Confused.  There is no way in which cdrom_sysctl_info() can forget to
-> unlock cdrom_mutex.
-> 
+> As a driver maintainer, I would find it helpful if the WQ_flags in
+> include/linux/workqueue.h and/or __create_workqueue_key() in
+> kernel/workqueue.c (or its wrappers in include/linux/workqueue.h) were
+> better documented.
 
-Ok, I had misread the code then, one of the reasons I don't like goto
-labels, but that's a different story.
+Sure, it can definitely be improved.
 
-Regarding cdrom_sysctl_info(), I have noticed in several netbooks
-(haven't
-looked in other machines with no cdrom drive) that the
-/proc/sys/dev/cdrom/info file shows no values for the listed entries,
-ie:
+> How about the global workqueue, i.e. schedule_work() and friends?  At
+> your current review-cmwq head, they use system_wq, not system_nrt_wq.
+> But doesn't have the present global workqueue WQ_NON_REENTRANT
+> semantics?  In fact, don't have _all_ workqueues WQ_NON_REENTRANT
+> semantics presently?  If so, a good deal of existing users probably
+> relies on non-reentrant behaviour.  Or am I thoroughly misunderstanding
+> the meaning of WQ_NON_REENTRANT?
 
-CD-ROM information, Id: cdrom.c 3.20 2003/12/17
+Yeah, it's a bit confusing. :-( The current workqueue semantics is
+non-reentrant on the same cpu but reentrant on different cpus.
+WQ_NON_REENTRANT is non-reentrant regardless of cpu, so it's stronger
+guarantee than before.  To summarize,
 
-drive name:
-drive speed:
-drive # of slots:
-Can close tray:
-Can open tray:
-...
+ current MT == !WQ_NON_REENTRANT < WQ_NON_REENTRANT <
+	WQ_SINGLE_CPU < current ST == WQ_SINGLE_CPU + max in_flight of 1.
 
-Now, is this expected behavior? If not, should it be changed to
-something
-more descriptive? Perhaps it would affect user space applications that
-read
-the file?
+> (Sorry if this had been discussed before; I followed the discussions of
+> some of your previous submissions but not all.  And PS, I am eagerly
+> awaiting for this to go into the mainline.)
 
-Thanks,
-Davidlohr
+Ah, yeah, after ten month, I'm pretty eager too.  :-)
 
+Thanks.
+
+-- 
+tejun
