@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab0FOB70 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 21:59:26 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33066 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab0FOB7Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 21:59:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=kgVMTSRyziU/yetJBYr+OiEwWOHmusZre2ZeL9LoxjZBB26VTa/7luf7/9w6kvy0D3
-         /3uJ9HKgbOrT665L9f0vzhYid+tvLF6F0S6XppxFhtZZ7PPcEqJ2WPXYfWNDX4Ui2nod
-         HKxz5lI0Q6ukJMNHK2yDsXlbVKnIY9Ikq4N7U=
-Message-ID: <4C16DE8B.3010901@gmail.com>
-Date: Mon, 14 Jun 2010 18:59:39 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: Re: [PATCH] ieee1394: sbp2: remove unused code
-References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com> <1276547208-26569-8-git-send-email-justinmattock@gmail.com> <tkrat.6f2ad8e8a9e281c2@s5r6.in-berlin.de> <4C16AECD.50506@gmail.com> <tkrat.0ef352b3c2fae897@s5r6.in-berlin.de>
-In-Reply-To: <tkrat.0ef352b3c2fae897@s5r6.in-berlin.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755731Ab0FOCAr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 22:00:47 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56975 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751394Ab0FOCAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Jun 2010 22:00:46 -0400
+Date: Tue, 15 Jun 2010 12:00:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Emil Tantilov <emil.s.tantilov@intel.com>,
+       Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+       Andy Gospodarek <andy@greyhouse.net>
+Subject: linux-next: manual merge of the net tree with the net-current tree
+Message-Id: <20100615120041.27b02c6f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2010 05:05 PM, Stefan Richter wrote:
-> On 14 Jun, Justin P. Mattock wrote:
->> drivers/ieee1394/raw1394.c: In function 'arm_lock64':
->> drivers/ieee1394/raw1394.c:1373:11: warning: 'old' may be used
->> uninitialized in this function
->> drivers/ieee1394/raw1394.c: In function 'arm_lock':
->> drivers/ieee1394/raw1394.c:1155:12: warning: 'old' may be used
->> uninitialized in this function
->
-> Thanks.  I briefly looked at this and am not sure if this is real or a
-> false positive.  This code is old crud that is really hard to read.
->
-> I will look at it again at a more convenient time of day.
+Hi all,
 
+Today's linux-next merge of the net tree got a conflict in
+drivers/net/ixgbe/ixgbe_ethtool.c between commit
+28c8e4790ca5ef75f54895ca46437f9fbb433ddf ("ixgbe: fix automatic LRO/RSC
+settings for low latency") from the net-current tree and commit
+849c45423c0c108e08d67644728cc9b0ed225fa1 ("ixgbe: Use netdev_<level>,
+dev_<level>, pr_<level>") from the net tree.
 
-I dont think you need to buddy!! just applied all
-patches you sent..
-she looks like this now:
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-   CC [M]  drivers/firewire/core-card.o
-   CC [M]  drivers/firewire/core-cdev.o
-   CC [M]  drivers/firewire/core-device.o
-   CC [M]  drivers/firewire/core-iso.o
-   CC [M]  drivers/firewire/core-topology.o
-   CC [M]  drivers/firewire/core-transaction.o
-   CC [M]  drivers/firewire/ohci.o
-   CC [M]  drivers/firewire/sbp2.o
-   LD [M]  drivers/firewire/firewire-core.o
-   LD [M]  drivers/firewire/firewire-ohci.o
-   LD [M]  drivers/firewire/firewire-sbp2.o
-   CC      drivers/firmware/dmi_scan.o
-   CC      drivers/firmware/efivars.o
-   CC      drivers/firmware/dmi-id.o
-   CC      drivers/firmware/memmap.o
-   LD      drivers/firmware/built-in.o
-
-she's clean as a whistle!!
-
-only concern now is the
-hardware and driver functioning properly
-i.g. I haven't installed the kernel
-(if it even makes a difference)
-just compiling and looking at warning messages.
-
-cheers,
-
-Justin P. Mattock
+diff --cc drivers/net/ixgbe/ixgbe_ethtool.c
+index 3a93a81,644e3d2..0000000
+--- a/drivers/net/ixgbe/ixgbe_ethtool.c
++++ b/drivers/net/ixgbe/ixgbe_ethtool.c
+@@@ -2132,11 -2155,9 +2130,10 @@@ static int ixgbe_set_coalesce(struct ne
+  		 */
+  		if (adapter->flags2 & IXGBE_FLAG2_RSC_ENABLED) {
+  			adapter->flags2 &= ~IXGBE_FLAG2_RSC_ENABLED;
+ -			netdev->features &= ~NETIF_F_LRO;
+ -			e_info("rx-usecs set to 0, disabling RSC\n");
+ -
+ +			if (netdev->features & NETIF_F_LRO) {
+ +				netdev->features &= ~NETIF_F_LRO;
+- 				DPRINTK(PROBE, INFO, "rx-usecs set to 0, "
+- 					"disabling LRO/RSC\n");
+++				e_info("rx-usecs set to 0, disabling LRO/RSC\n");
+ +			}
+  			need_reset = true;
+  		}
+  	}
