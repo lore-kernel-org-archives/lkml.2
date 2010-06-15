@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab0FOTMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 15:12:08 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:48730 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932287Ab0FOTME (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 15:12:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=CCrTYanautMFf/Di8FKGuWlG4P4GWHxH1hZEI4w4oB1pE/du4KXRhJJf5WeBocriNp
-         P1Iou+IHtxJCV7pJj6zG/c6s9PbYGVCd9E3lgC/ZUPYKqplcz3IHHJHN3luahP2Pn5Lq
-         toct5JyxkwCMD08WzMG4wkxVu+ZJHaI5ptrdE=
-Date: Tue, 15 Jun 2010 21:11:43 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       David Rientjes <rientjes@google.com>,
-       Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH] mempolicy:  fix dangling reference to tmpfs superblock
-	mpol
-Message-ID: <20100615191143.GE5483@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	David Rientjes <rientjes@google.com>,
-	Christoph Lameter <cl@linux-foundation.org>
-References: <1276624037.5044.47.camel@useless.americas.hpqcorp.net>
+	id S1758411Ab0FOTOZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 15:14:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754736Ab0FOTOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 15:14:24 -0400
+Message-ID: <4C17D0C5.9030203@redhat.com>
+Date: Tue, 15 Jun 2010 15:13:09 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276624037.5044.47.camel@useless.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Christoph Hellwig <hch@infradead.org>
+CC: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>
+Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
+ and use a_ops->writepages() where possible
+References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie> <20100615140011.GD28052@random.random> <20100615141122.GA27893@infradead.org> <20100615142219.GE28052@random.random> <20100615144342.GA3339@infradead.org> <20100615150850.GF28052@random.random> <20100615152526.GA3468@infradead.org> <20100615154516.GG28052@random.random> <20100615162600.GA9910@infradead.org> <4C17AF2D.2060904@redhat.com> <20100615165423.GA16868@infradead.org>
+In-Reply-To: <20100615165423.GA16868@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 01:47:17PM -0400, Lee Schermerhorn wrote:
-> Against 2.6.35-rc1+
-> 
-> My patch to "Factor out duplicate put/frees in mpol_shared_policy_init()
-> to a common return path"; and Dan Carpenter's fix thereto both left a
-> dangling reference to the incoming tmpfs superblock mempolicy structure.
-> A similar leak was introduced earlier when the nodemask was moved offstack
-> to the scratch area despite the note in the comment block regarding the
-> incoming ref.
-> 
+On 06/15/2010 12:54 PM, Christoph Hellwig wrote:
+> On Tue, Jun 15, 2010 at 12:49:49PM -0400, Rik van Riel wrote:
+>> This is already in a filesystem.  Why does ->writepage get
+>> called a second time?  Shouldn't this have a gfp_mask
+>> without __GFP_FS set?
+>
+> Why would it?  GFP_NOFS is not for all filesystem code, but only for
+> code where we can't re-enter the filesystem due to deadlock potential.
 
-Yup.  You're right.
+Why?   How about because you know the stack is not big enough
+to have the XFS call path on it twice? :)
 
-Acked-by: Dan Carpenter <error27@gmail.com>
+Isn't the whole purpose of this patch series to prevent writepage
+from being called by the VM, when invoked from a deep callstack
+like xfs writepage?
 
-regards,
-dan carpenter
+That sounds a lot like simply wanting to not have GFP_FS...
+
+-- 
+All rights reversed
