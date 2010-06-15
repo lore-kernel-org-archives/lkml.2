@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab0FODrt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Jun 2010 23:47:49 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40884
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752247Ab0FODrs (ORCPT
+	id S1756369Ab0FODuG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Jun 2010 23:50:06 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:39603 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab0FODuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Jun 2010 23:47:48 -0400
-Date: Mon, 14 Jun 2010 20:47:59 -0700 (PDT)
-Message-Id: <20100614.204759.226765762.davem@davemloft.net>
-To: jbaron@redhat.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-       vgoyal@redhat.com, sam@ravnborg.org
-Subject: Re: [PATCH 00/13] jump label v9
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <cover.1276116186.git.jbaron@redhat.com>
-References: <cover.1276116186.git.jbaron@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 14 Jun 2010 23:50:02 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+       linux-bluetooth@vger.kernel.org, clemens@ladisch.de,
+       debora@linux.vnet.ibm.com, dri-devel@lists.freedesktop.org,
+       linux-i2c@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+       linux-media@vger.kernel.org
+Subject: Re: [PATCH 4/8]drivers:tmp.c Fix warning: variable 'rc' set but not used
+In-Reply-To: Your message of "Mon, 14 Jun 2010 19:12:31 PDT."
+             <4C16E18F.9050901@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1276547208-26569-1-git-send-email-justinmattock@gmail.com> <1276547208-26569-5-git-send-email-justinmattock@gmail.com> <21331.1276560832@localhost>
+            <4C16E18F.9050901@gmail.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: multipart/signed; boundary="==_Exmh_1276573789_4860P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Mon, 14 Jun 2010 23:49:49 -0400
+Message-ID: <9275.1276573789@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A010203.4C16F85F.0066,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--==_Exmh_1276573789_4860P
+Content-Type: text/plain; charset=us-ascii
 
-Jason, I'm really at wits end about this patch set.  To say
-that trying to test our your patches is frustrating for me
-so far would be an understatement.
+On Mon, 14 Jun 2010 19:12:31 PDT, "Justin P. Mattock" said:
 
-Nothing you ever post builds for me, not one patch set has
-built properly.
+> what I tried was this:
+> 
+> if (!rc)
+> 	printk("test........"\n")
+> 
+> and everything looked good,
+> but as a soon as I changed
+> 
+> rc = transmit_cmd(chip,&tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
+>     			"attempting to determine the timeouts");
+> 
+> to this:
+> 
+> rc = transmit_cmd(chip,&tpm_cmd, TPM_INTERNAL_RESULT_SIZE);
+> 
+> if (!rc)
+> 	printk("attempting to determine the timeouts\n");
 
-I can also tell that you're just blindly making changes to the
-sparc bits and not trying to build test them at all:
+*baffled* Why did you think that would work? transmit_cmd()s signature
+has 4 parameters.
 
-1) Even though you created the jump_label_t, and made it properly
-   a u32 on sparc, you left the assembler using ".xword" to
-   record the entries.
+--==_Exmh_1276573789_4860P
+Content-Type: application/pgp-signature
 
-2) The sparc "struct jump_label" still calls it's third member "name",
-   it needs to be "key" or else the build breaks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-3) Eventhough the sparc JUMP_LABEL macro was fixed to have two args,
-   the first arg was left as "tag" instead of being renamed to "key"
-   and that name change propaged into the asm in the macro expansion.
+iD8DBQFMFvhdcC3lWbTT17ARAoaDAJsFnmHjFcoQL0nTEuY8H8yGQYdpqQCglYgf
+HqrVXnNW5QE2b8CWdDVStzE=
+=d/C0
+-----END PGP SIGNATURE-----
 
-I took care of that locally to try and test this, but then I hit the
-current major problem which is that you're using things like
-text_poke_early() unconditionally, but that is an X86-only facility
-implemented by x86's alternative mechanism.
+--==_Exmh_1276573789_4860P--
 
-Also, kernel/jump_label.c only gets the ERR_PTR() definitions
-indirectly on the x86 platform, it needs to include linux/err.h
-directly to make sure those things are available on every platform.
-
-You gave me the impression a few iterations ago that you were doing
-build testing on sparc64 using cross-compilers, or that you would
-start to do so.  You're obviously not, could you please start doing so
-and let me know when you've at least build tested your jump-label
-patch series on sparc64 and at least one architecture that lacks
-jump-label support?
-
-Thanks.
