@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab0FOG7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 02:59:48 -0400
-Received: from gate.crashing.org ([63.228.1.57]:37726 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752863Ab0FOG7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 02:59:47 -0400
-Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
- reused immediately.
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Mackerras <paulus@samba.org>, tytso@mit.edu,
-       Salman <sqazi@google.com>, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       peterz@infradead.org, tytso@google.com, torvalds@linux-foundation.org,
-       walken@google.com, Chen Liqin <liqin.chen@sunplusct.com>,
-       Lennox Wu <lennox.wu@gmail.com>
-In-Reply-To: <20100614212150.4dcb1feb.akpm@linux-foundation.org>
-References: <AANLkTinlnb-HsDia4X2qgRjkTL_Z5CfVKYHRFwREoyIn@mail.gmail.com>
-	 <20100611224902.5039.60134.stgit@bumblebee1.mtv.corp.google.com>
-	 <20100614165851.6bdfe485.akpm@linux-foundation.org>
-	 <20100615005619.GI6666@thunk.org>
-	 <20100614185556.afdc5304.akpm@linux-foundation.org>
-	 <20100615032608.GB30479@drongo>
-	 <20100614212150.4dcb1feb.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 15 Jun 2010 16:57:47 +1000
-Message-ID: <1276585067.2552.101.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753336Ab0FOHCs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 03:02:48 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:40671 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab0FOHCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 03:02:47 -0400
+Date: Tue, 15 Jun 2010 09:02:45 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andi Kleen <andi@firstfloor.org>, xfs@oss.sgi.com,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [16/23] XFS: Fix gcc 4.6 set but not read and unused
+	statement warnings
+Message-ID: <20100615070244.GD6727@basil.fritz.box>
+References: <20100610110.764742110@firstfloor.org> <20100610111052.3DDC5B1A2B@basil.firstfloor.org> <20100614042700.GC6590@dastard> <20100614074309.GA17092@basil.fritz.box> <20100614133755.GE6590@dastard> <20100614143720.GI17092@basil.fritz.box> <20100614222458.GF6590@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100614222458.GF6590@dastard>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-14 at 21:21 -0700, Andrew Morton wrote:
-> If that happens then the best fix is for those architectures to get
-> themselves a cmpxchg64().  Unless for some reason it's simply
-> unimplementable?  Worst case I guess one could use a global spinlock. 
-> Second-worst-case: hashed spinlocks. 
+> We find out about corrupted filesystems all the time from users
+> sending mail to the list. Even if we did panic by default on
+> corruption events, kerneloops.org is *useless* for reporting them
+> because finding out about a corruption is only the very first step
+> of what is usually a long and involved process that requires user
+> interaction to gather information necessary to find the cause of the
+> corruption.
 
-Right, ppc32 at least can't so that would be spinlocks...
+The idea behind kerneloops.org 
+is normally that any single report can be always a flake
+(broken memory, hardware, flipped bit whatever).
 
-Cheers,
-Ben.
+An error becomes important and interesting when there are multiple
+occurrences of it in the field.
+> 
+> Besides, if we _really_ want the machine to panic on corruption,
 
+BUG_ON is not panic normally.
+
+> then we configure the machine specifically for it via setting the
+> relevant corruption type bit in /proc/sys/fs/xfs/panic_mask. This is
+> generally only used when a developer asks a user to set it to get
+> kernel crash dumps triggered when a corruption event occurs so we
+> can do remote, offline analysis of the failure.
+
+Especially when you're talking about desktop class systems
+without ECC memory that will mean you'll spend at least some
+time on errors which are simply bit flips.
+
+> > That's standard Linux kernel development
+> > practice.  Maybe XFS should catch up on that.
+> 
+> I find this really amusing because linux filesystems have, over the
+
+This has really nothing to do with file systems, it's general
+practice for everything (well except XFS) 
+
+> last few years, implemented a simpler version of XFS's way of
+> dealing with corruption events(*). Perhaps you should catch up
+> with the state of the art before throwing rocks, Andi....
+
+I suspect you miss quite a lot of valuable information from
+your user base by not supporting kerneloops.org. On the other
+hand it would likely also save you from spending time on 
+flakes.
+
+That said you don't need BUG_ON to support it (WARN etc. work
+too), it's just the easiest way.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
