@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759424Ab0FPS7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 14:59:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37552 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759022Ab0FPS7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 14:59:49 -0400
-Date: Wed, 16 Jun 2010 14:59:13 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-       Christoph Hellwig <hch@infradead.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-       Jamie Lokier <jamie@shareable.org>,
-       David Woodhouse <dwmw2@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH] d_ino considered harmful
-Message-ID: <20100616185913.GA15566@shell>
+	id S1759114Ab0FPTE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 15:04:29 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45562
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753457Ab0FPTE1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 15:04:27 -0400
+Date: Wed, 16 Jun 2010 12:04:39 -0700 (PDT)
+Message-Id: <20100616.120439.104063332.davem@davemloft.net>
+To: schwab@redhat.com
+Cc: plaes@plaes.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: IMAP through SSH tunnels stopped working in 2.6.35
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <m3ocfbjle2.fsf@hase.home>
+References: <1276683847.3874.25.camel@chi>
+	<m3ocfbjle2.fsf@hase.home>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Who needs d_ino anyway?  I am running a kernel with this patch -
-Gnome, a browser, IRC, kernel compile, etc. and everything works.
+From: Andreas Schwab <schwab@redhat.com>
+Date: Wed, 16 Jun 2010 12:56:53 +0200
 
--VAL
+> Priit Laes <plaes@plaes.org> writes:
+> 
+>> I recently tried out 2.6.35-rc3 kernel (latest Linus's tree), where I
+>> noticed that I couldn't access my IMAP accounts through ssh tunnel
+>> anymore because connection timeouts. Things used to work in 2.6.34-rc7+.
+> 
+> See <https://bugzilla.kernel.org/show_bug.cgi?id=16188>.
 
-commit 184f3919d0071f3bfa40010aa6919ea89999d79b
-Author: Valerie Aurora <vaurora@redhat.com>
-Date:   Wed Jun 16 11:05:06 2010 -0700
-
-    VFS: Always return 0 for d_ino
-    
-    Use of d_ino without the corresponding st_dev is always buggy in the
-    presence of submounts, bind mounts, and union mounts.  E.g., the d_ino
-    of a mountpoint will be the inode number of the directory under the
-    mountpoint, not the mounted directory.  Correct code must call stat(),
-    which returns the correct device ID and inode in st_dev and st_ino.
-    Since no one should be using d_ino anyway, always return 0 to detect
-    bugs.
-
-diff --git a/fs/readdir.c b/fs/readdir.c
-index dd3eae1..38ea772 100644
---- a/fs/readdir.c
-+++ b/fs/readdir.c
-@@ -91,7 +91,9 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
- 
- 	if (buf->result)
- 		return -EINVAL;
--	d_ino = ino;
-+	/* Use of d_ino without st_dev is always buggy. */
-+	d_ino = 0;
-+
- 	if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
- 		buf->result = -EOVERFLOW;
- 		return -EOVERFLOW;
+Also "linux-netdev" does not exist, it's just plain "netdev" :-)
