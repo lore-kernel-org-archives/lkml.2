@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab0FPQsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 12:48:32 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:59118 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978Ab0FPQsb (ORCPT
+	id S932461Ab0FPQt4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 12:49:56 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:57236 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755881Ab0FPQtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 12:48:31 -0400
-X-SpamScore: -20
-X-BigFish: VPS-20(zz1432N98dN936eM62a3Lzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L44973-02-AF5-02
-X-M-MSG: 
-Date: Wed, 16 Jun 2010 18:45:01 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 3/8] perf: register pmu implementations
-Message-ID: <20100616164501.GS21799@erda.amd.com>
-References: <20100616160027.590430763@chello.nl>
- <20100616160238.241599593@chello.nl>
+	Wed, 16 Jun 2010 12:49:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=OIoKqgFzcwmFAyncbOufRfvU5sf9J5BgaCv0GIFHCtFg645azVl8QaPMOaeZUvRxI3
+         pt93fveN1RExqJQ1VTZ9BnCYCGK0bg/0nurQ/siNB2qxIzaX+hInOQdkqgUG+deCSD6V
+         059l8HeR3f7yVMID42MnKqecAw8UaESXMtpkw=
+Message-ID: <4C1900AF.804@gmail.com>
+Date: Wed, 16 Jun 2010 09:49:51 -0700
+From: David Daney <david.s.daney@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100616160238.241599593@chello.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: trivial@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/10] trivial: fix typos concerning "precedence"
+References: <20100611101624.GD10894@pengutronix.de> <1276251424-12806-8-git-send-email-u.kleine-koenig@pengutronix.de>
+In-Reply-To: <1276251424-12806-8-git-send-email-u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.06.10 12:00:30, Peter Zijlstra wrote:
-> Simple registration interface for struct pmu, this provides the
-> infrastructure for removing all the weak functions.
-> 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  arch/arm/kernel/perf_event.c             |   36 +
->  arch/powerpc/kernel/perf_event.c         |   41 +-
->  arch/powerpc/kernel/perf_event_fsl_emb.c |   31 -
->  arch/sh/kernel/perf_event.c              |   19
->  arch/sparc/kernel/perf_event.c           |   13
->  arch/x86/kernel/cpu/perf_event.c         |   45 +-
->  include/linux/perf_event.h               |   10
->  kernel/hw_breakpoint.c                   |   35 +
->  kernel/perf_event.c                      |  597 +++++++++++++++----------------
->  9 files changed, 432 insertions(+), 395 deletions(-)
+On 06/11/2010 03:17 AM, Uwe Kleine-König wrote:
+> diff --git a/drivers/staging/octeon/cvmx-cmd-queue.c b/drivers/staging/octeon/cvmx-cmd-queue.c
+> index e9809d3..976227b 100644
+> --- a/drivers/staging/octeon/cvmx-cmd-queue.c
+> +++ b/drivers/staging/octeon/cvmx-cmd-queue.c
+> @@ -140,21 +140,21 @@ cvmx_cmd_queue_result_t cvmx_cmd_queue_initialize(cvmx_cmd_queue_id_t queue_id,
+>   	if (qstate->base_ptr_div128) {
+>   		if (max_depth != (int)qstate->max_depth) {
+>   			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
+> -				"Queue already initialized with different "
+> +				"Queue already initalized with different "
+>   				"max_depth (%d).\n",
+>   			     (int)qstate->max_depth);
+>   			return CVMX_CMD_QUEUE_INVALID_PARAM;
+>   		}
+>   		if (fpa_pool != qstate->fpa_pool) {
+>   			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
+> -				"Queue already initialized with different "
+> +				"Queue already initalized with different "
+>   				"FPA pool (%u).\n",
+>   			     qstate->fpa_pool);
+>   			return CVMX_CMD_QUEUE_INVALID_PARAM;
+>   		}
+>   		if ((pool_size>>  3) - 1 != qstate->pool_size_m1) {
+>   			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
+> -				"Queue already initialized with different "
+> +				"Queue already initalized with different "
+>   				"FPA pool size (%u).\n",
+>   			     (qstate->pool_size_m1 + 1)<<  3);
+>   			return CVMX_CMD_QUEUE_INVALID_PARAM;
 
-Yes, this makes the code much more easier! Now it would be possible to
-easy register multiple hw pmus.
+NAK!
 
-Thanks Peter,
+I am not sure which dictionary you are using, but I would like to keep 
+the spelling consistent with the American Heritage Dictionary of the 
+English Language, Fourth Edition.  My reading indicates that no change 
+is needed.
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
-
+David Daney
