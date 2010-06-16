@@ -1,66 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab0FPCOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 22:14:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41583 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560Ab0FPCOI (ORCPT
+	id S1755398Ab0FPCYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 22:24:54 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52795 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754875Ab0FPCYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 22:14:08 -0400
-Message-ID: <4C18337C.3040605@vflare.org>
-Date: Wed, 16 Jun 2010 07:44:20 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] zram: generic RAM based compressed R/W block devices
-References: <1274710685-2351-1-git-send-email-ngupta@vflare.org> <4BFFEA95.9040505@vflare.org> <20100528162657.GA28781@kroah.com>
-In-Reply-To: <20100528162657.GA28781@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 15 Jun 2010 22:24:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 16 Jun 2010 11:20:24 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 12/12] vmscan: Do not writeback pages in direct reclaim
+Message-Id: <20100616112024.5b093905.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100616104036.b45d352b.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
+	<1276514273-27693-13-git-send-email-mel@csn.ul.ie>
+	<4C16A567.4080000@redhat.com>
+	<20100615114510.GE26788@csn.ul.ie>
+	<4C17815A.8080402@redhat.com>
+	<20100615135928.GK26788@csn.ul.ie>
+	<4C178868.2010002@redhat.com>
+	<20100615141601.GL26788@csn.ul.ie>
+	<20100616091755.7121c7d3.kamezawa.hiroyu@jp.fujitsu.com>
+	<4C181AFD.5060503@redhat.com>
+	<20100616093958.00673123.kamezawa.hiroyu@jp.fujitsu.com>
+	<4C182097.2070603@redhat.com>
+	<20100616104036.b45d352b.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Wed, 16 Jun 2010 10:40:36 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-On 05/28/2010 09:56 PM, Greg KH wrote:
-> On Fri, May 28, 2010 at 09:38:53PM +0530, Nitin Gupta wrote:
->>
->> On 05/24/2010 07:48 PM, Nitin Gupta wrote:
->>> Creates RAM based block devices: /dev/zramX (X = 0, 1, ...).
->>> Pages written to these disks are compressed and stored in memory
->>> itself. These disks allow very fast I/O and compression provides
->>> good amounts of memory savings.
->>>
->>> This is enhancement over existing ramzswap driver which creates
->>> virtual block devices (/dev/ramzswapX) which could be used only
->>> as swap disks.
->>>
->>> Now, with the ability to handle any kind of I/O request, zram
->>> devices have lot more use cases:
->>>  - /tmp storage
->>>  - various caches under /var
->>>  - swap disks
->>>  - maybe even more! :)
->>>
->>> Performance numbers can be found at:
->>> http://code.google.com/p/compcache/wiki/zramperf
->>>
->>
->> Any reviews/comments, please?
+> On Tue, 15 Jun 2010 20:53:43 -0400
+> Rik van Riel <riel@redhat.com> wrote:
 > 
-> We are all busy with the .35-rc1 merge work at the moment, sorry.
+> > On 06/15/2010 08:39 PM, KAMEZAWA Hiroyuki wrote:
+> > 
+> > > Hmm, or do you recommend no-dirty-page-writeback when a memcg hits limit ?
+> > > Maybe we'll see much swaps.
+> > >
+> > > I want to go with this for a while, changing memcg's behavior will took
+> > > some amounts of time, there are only a few developpers.
+> > 
+> > One thing we can do, for kswapd, memcg and direct reclaim alike,
+> > is to tell the flusher threads to flush pages related to a pageout
+> > candidate page to disk.
+> > 
+> > That way the reclaiming processes can wait on some disk IO to
+> > finish, while the flusher thread takes care of the actual flushing.
+> > 
+> > That should also fix the "kswapd filesystem IO has really poor IO
+> > patterns" issue.
+> > 
+> > There's no reason not to fix this issue the right way.
+> > 
+> yes. but this patch just stops writeback. I think it's sane to ask
+> not to change behavior until there are some useful changes in flusher
+> threads.
+> 
+> IMO, until flusher threads can work with I/O cgroup, memcg shoudln't
+> depend on it because writeback allows stealing resource without it.
 > 
 
-Can you please apply these patches to linux-next? or maybe for .35-rc3/rc4 too?
+BTW, copy_from_user/copy_to_user is _real_ problem, I'm afraid following
+much more than memcg.
 
-Thanks,
-Nitin
+handle_mm_fault()
+-> handle_pte_fault()
+-> do_wp_page()
+-> balance_dirty_page_rate_limited()
+-> balance_dirty_pages()
+-> writeback_inodes_wbc()
+-> writeback_inodes_wb()
+-> writeback_sb_inodes()
+-> writeback_single_inode()
+-> do_writepages()
+-> generic_write_pages()
+-> write_cache_pages()   // use on-stack pagevec.
+-> writepage()
+
+maybe much more stack consuming than memcg->writeback after vmscan.c diet.
+
+Bye.
+-Kame
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
