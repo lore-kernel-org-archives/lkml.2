@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759182Ab0FPQEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 12:04:45 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33171 "EHLO mx1.suse.de"
+	id S1758987Ab0FPQG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 12:06:29 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:10430 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757914Ab0FPQEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 12:04:43 -0400
-Date: Wed, 16 Jun 2010 18:04:42 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/10] trivial: fix typos concerning "precedence"
-In-Reply-To: <1276251424-12806-8-git-send-email-u.kleine-koenig@pengutronix.de>
-Message-ID: <alpine.LNX.2.00.1006161804150.12271@pobox.suse.cz>
-References: <20100611101624.GD10894@pengutronix.de> <1276251424-12806-8-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752438Ab0FPQG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 12:06:28 -0400
+Message-ID: <4C18F625.9040107@openvz.org>
+Date: Wed, 16 Jun 2010 20:04:53 +0400
+From: Pavel Emelyanov <xemul@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Louis Rilling <louis.rilling@kerlabs.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+References: <1276703910-16936-1-git-send-email-louis.rilling@kerlabs.com>
+In-Reply-To: <1276703910-16936-1-git-send-email-louis.rilling@kerlabs.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010, Uwe Kleine-König wrote:
+> +void proc_new_task(struct task_struct *task)
+> +{
+> +	struct pid *pid;
+> +	int i;
+> +
+> +	if (!task->pid)
+> +		return;
+> +
+> +	pid = task_pid(task);
+> +	for (i = 0; i <= pid->level; i++)
+> +		mntget(pid->numbers[i].ns->proc_mnt);
 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
->  arch/sh/kernel/clkdev.c                  |    2 +-
->  drivers/staging/comedi/drivers/usbdux.c  |    2 +-
->  drivers/staging/octeon/cvmx-cmd-queue.c  |    6 +++---
->  drivers/staging/pohmelfs/inode.c         |    2 +-
->  drivers/staging/rt2860/common/cmm_wpa.c  |    4 ++--
->  drivers/staging/rtl8192e/r8190_rtl8256.c |    6 +++---
+I feel I'm missing something significant, but this patch breaks
+the mntget/mntput balance. Doesn't it?
 
-Hi,
-
-please send the staging parts separately to Greg (you did it for other 
-patches, but likely forgot for this one).
-
-Thanks.
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+> +}
