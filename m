@@ -1,55 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab0FPI1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 04:27:36 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55900 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab0FPI1e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 04:27:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=BuTsyptDdbuiYQ4w7MzBJKKZZ37RedqAAuRUC+uZMfInbKIKMf2cHS+2Oyd2uPImR1
-         G6f0NeURVEkEoESXSGoM1l7T9cElJEM6V6E9npMIl/62tccrHrIDsfjl+BTuLQh+zvqH
-         tBfy1sXbS8jALGt3xla17qz2I022doBQRoVPk=
-Message-ID: <4C188AEA.3010109@gmail.com>
-Date: Wed, 16 Jun 2010 11:27:22 +0300
-From: roma1390 <roma1390@gmail.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	id S1752777Ab0FPI1t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 04:27:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751641Ab0FPI1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 04:27:35 -0400
+Date: Wed, 16 Jun 2010 11:22:40 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+       linux-pci@vger.kernel.org
+Subject: Re: [PATCH] pci: fix compilation when CONFIG_PCI_MSI=n
+Message-ID: <20100616082240.GA3848@redhat.com>
+References: <201006161421.11148.rusty@rustcorp.com.au> <4C186A87.6040005@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Oliver Neukum <oneukum@suse.de>
-CC: linux-kernel@vger.kernel.org,
-       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: INFO: task khubd:271 blocked for more than 120 seconds.
-References: <4C18855E.5010508@gmail.com> <201006161022.32398.oneukum@suse.de>
-In-Reply-To: <201006161022.32398.oneukum@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C186A87.6040005@jp.fujitsu.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-Oliver Neukum wrote:
-> Am Mittwoch, 16. Juni 2010 10:03:42 schrieb roma1390:
->> Hello,
->>
->>
->> We got this on our production system. Kernel: 2.6.26-2-amd64.
->> This seems to be related with http://bugzilla.kernel.org/show_bug.cgi?id=13316 and still is open. Sadly to have such long standing bugs in common used subsystems like USB.
->>
+On Wed, Jun 16, 2010 at 03:09:11PM +0900, Hidetoshi Seto wrote:
+> (2010/06/16 13:51), Rusty Russell wrote:
+> > drivers/pci/pci.c:2277: error: redefinition of ‘pci_msi_off’
+> > include/linux/pci.h:786: note: previous definition of ‘pci_msi_off’ was here
+> > 
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> > ---
+> >  drivers/pci/pci.c |    2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> > --- a/drivers/pci/pci.c
+> > +++ b/drivers/pci/pci.c
+> > @@ -2266,6 +2266,7 @@ pci_intx(struct pci_dev *pdev, int enabl
+> >  	}
+> >  }
+> >  
+> > +#ifdef CONFIG_PCI_MSI
+> >  /**
+> >   * pci_msi_off - disables any msi or msix capabilities
+> >   * @dev: the PCI device to operate on
+> > @@ -2293,6 +2294,7 @@ void pci_msi_off(struct pci_dev *dev)
+> >  	}
+> >  }
+> >  EXPORT_SYMBOL_GPL(pci_msi_off);
+> > +#endif
+> >  
+> >  #ifndef HAVE_ARCH_PCI_SET_DMA_MAX_SEGMENT_SIZE
+> >  int pci_set_dma_max_seg_size(struct pci_dev *dev, unsigned int size)
 > 
-> Under which conditions did you get this? Physical unplug, S3 or S4?
+> Rusty, thank you for reporting it.
+> But I think this fix is not correct.
 > 
-> 	Regards
-> 		Oliver
+> It looks like a bug in Michael's patch:
+>   [PATCH for-2.6.35] virtio-pci: disable msi at startup
+> 
+> The patch includes a change as following:
+> 
+> > > --- a/include/linux/pci.h
+> > > +++ b/include/linux/pci.h
+> > > @@ -780,7 +780,11 @@ int __must_check pci_set_mwi(struct pci_dev *dev);
+> > >  int pci_try_set_mwi(struct pci_dev *dev);
+> > >  void pci_clear_mwi(struct pci_dev *dev);
+> > >  void pci_intx(struct pci_dev *dev, int enable);
+> > > +#ifdef CONFIG_PCI_MSI
+> > >  void pci_msi_off(struct pci_dev *dev);
+> > > +#else
+> > > +static inline void pci_msi_off(struct pci_dev *dev) {}
+> > > +#endif
+> > >  int pci_set_dma_max_seg_size(struct pci_dev *dev, unsigned int size);
+> > >  int pci_set_dma_seg_boundary(struct pci_dev *dev, unsigned long mask);
+> > >  int pcix_get_max_mmrbc(struct pci_dev *dev);
+> 
+> According to the old commit f5f2b13129a6541debf8851bae843cbbf48298b7,
+> pci_msi_off() was designed to be available even when msi support is not
+> compiled in.  So I think this change will make something wrong.
+> 
+> Michael, could you check your patch?
+> 
+> 
+> Thanks,
+> H.Seto
 
-this was normal operation (no unplug, no S3 or something like that). This is on-line
-server. There is posible issue with usb device itself or physical usb port. Which
-sometimes causes device disconections, reconnections.
+You are right. I didn't think this through: we must disable
+the capability at startup even if the current kernel does not
+support MSI, otherwise the device won't work.
 
-Of course it's posible to fix on hardware level, but OS can't do such nasty things also.
+Please apply this on top.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
+---
+
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 31d8a12..7cb0084 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -780,11 +780,7 @@ int __must_check pci_set_mwi(struct pci_dev *dev);
+ int pci_try_set_mwi(struct pci_dev *dev);
+ void pci_clear_mwi(struct pci_dev *dev);
+ void pci_intx(struct pci_dev *dev, int enable);
+-#ifdef CONFIG_PCI_MSI
+ void pci_msi_off(struct pci_dev *dev);
+-#else
+-static inline void pci_msi_off(struct pci_dev *dev) {}
+-#endif
+ int pci_set_dma_max_seg_size(struct pci_dev *dev, unsigned int size);
+ int pci_set_dma_seg_boundary(struct pci_dev *dev, unsigned long mask);
+ int pcix_get_max_mmrbc(struct pci_dev *dev);
 
