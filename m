@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586Ab0FPIGJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 04:06:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27724 "EHLO mx1.redhat.com"
+	id S1757456Ab0FPIHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 04:07:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45700 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751963Ab0FPIGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 04:06:04 -0400
-Message-ID: <4C1885DF.80903@redhat.com>
-Date: Wed, 16 Jun 2010 11:05:51 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1753055Ab0FPIHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 04:07:15 -0400
+Message-ID: <4C18877E.9070605@redhat.com>
+Date: Wed, 16 Jun 2010 16:12:46 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>,
-       Huang Ying <ying.huang@intel.com>
-Subject: Re: [PATCH 3/6] KVM: MMU: introduce gfn_to_page_atomic() and	gfn_to_pfn_atomic()
-References: <4C16E6ED.7020009@cn.fujitsu.com> <4C16E75F.6020003@cn.fujitsu.com> <4C16E7AD.1060101@cn.fujitsu.com> <4C16E999.6050004@cn.fujitsu.com> <4C17625E.3020308@redhat.com> <20100616075918.GA17599@basil.fritz.box>
-In-Reply-To: <20100616075918.GA17599@basil.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Zachary Amsden <zamsden@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com, glommer@redhat.com,
+       kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       john stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 12/17] Add helper function get_kernel_ns
+References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-13-git-send-email-zamsden@redhat.com> <4C173CC3.8000506@redhat.com> <4C17EAA5.90009@redhat.com>
+In-Reply-To: <4C17EAA5.90009@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2010 10:59 AM, Andi Kleen wrote:
-> On Tue, Jun 15, 2010 at 02:22:06PM +0300, Avi Kivity wrote:
->    
->> Too much duplication.  How about putting the tail end of the function in a
->> common helper (with an inatomic flag)?
+Zachary Amsden wrote:
+> On 06/14/2010 10:41 PM, Avi Kivity wrote:
+>   
+>> On 06/15/2010 10:34 AM, Zachary Amsden wrote:
+>>     
+>>> Add a helper function for the multiple places this is used.  Note 
+>>> that it
+>>> must not be called in preemptible context, as that would mean the kernel
+>>> could enter software suspend state, which would cause non-atomic 
+>>> operation
+>>> of the monotonic_to_bootbased computation.
+>>>
+>>> Open question: should the KVM_SET_CLOCK / KVM_GET_CLOCK ioctls use this
+>>> as well?  Currently, they are not bootbased (but perhaps should be).
+>>>
+>>> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+>>> ---
+>>>   arch/x86/kvm/x86.c |   26 +++++++++++++-------------
+>>>   1 files changed, 13 insertions(+), 13 deletions(-)
+>>>
+>>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>>> index 703ea43..15c7317 100644
+>>> --- a/arch/x86/kvm/x86.c
+>>> +++ b/arch/x86/kvm/x86.c
+>>> @@ -915,6 +915,16 @@ static void kvm_get_time_scale(uint32_t 
+>>> scaled_khz, uint32_t base_khz,
+>>>            __func__, base_khz, scaled_khz, shift, *pmultiplier);
+>>>   }
+>>>
+>>> +static inline u64 get_kernel_ns(void)
+>>> +{
+>>> +    struct timespec ts;
+>>> +
+>>> +    WARN_ON(preemptible());
+>>> +    ktime_get_ts(&ts);
+>>> +    monotonic_to_bootbased(&ts);
+>>> +    return timespec_to_ns(&ts);
+>>> +}
+>>> +
+>>>   static DEFINE_PER_CPU(unsigned long, cpu_tsc_khz);
+>>>
+>>>       
+>> Isn't something like this a candidate for the time infrastructure?
 >>
->> btw, is_hwpoison_address() is racy.  While it looks up the address, some
->> other task can unmap the page tables under us.
->>      
-> Where is is_hwpoison_address() coming from? I can't find it anywhere.
+>>     
 >
->    
-
-kvm.git master mm/memory-failure.c (19564281fe).
-
-> Anyways hwpoison will not remove the page as long as there
-> is a reference to it, so as long as you get the reference
-> race free against another task you're ok. Of course there might
-> be always an error in between and the hardware may poison
-> the data, but we don't try to handle all kernel errors.
->    
-
-The page is fine, the page tables are not.  Another task can munmap() 
-the thing while is_hwpoison_address() is running.
-
--- 
-error compiling committee.c: too many arguments to function
+> Should it be?  It certainly seems reasonable.
+>
+>
+> Also, should we be using it for the cases KVM_GET_CLOCK / 
+> KVM_SET_CLOCK?  It seems global kvmclock_offset for the VM ignores the 
+> bootbased conversion.
+>
+>   
+Yes we should.
+> Zach
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   
 
