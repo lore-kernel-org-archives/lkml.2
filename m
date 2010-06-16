@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368Ab0FPFtt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 01:49:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28677 "EHLO
+	id S1758649Ab0FPFty (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 01:49:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28676 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757231Ab0FPFqj (ORCPT
+	with ESMTP id S1757206Ab0FPFqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Jun 2010 01:46:39 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -15,75 +15,161 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
 Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 36/37] x86: Use walk_system_ream_range() instead of referring e820.map directly for tboot
-Date: Tue, 15 Jun 2010 22:42:45 -0700
-Message-Id: <1276666966-14259-37-git-send-email-yinghai@kernel.org>
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+       Jan Beulich <jbeulich@novell.com>
+Subject: [PATCH 12/37] x86, lmb: Add get_free_all_memory_range()
+Date: Tue, 15 Jun 2010 22:42:21 -0700
+Message-Id: <1276666966-14259-13-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090209.4C186515.016E,ss=1,fgs=0
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090208.4C186514.00F3,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So we can make e820 to be __initdata
+get_free_all_memory_range is for CONFIG_NO_BOOTMEM=y, and will be called by
+free_all_memory_core_early().
+
+It will use early_node_map aka active ranges subtract lmb.reserved to
+get all free range, and those ranges will convert to slab pages.
+
+-v4: increase range size
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Jan Beulich <jbeulich@novell.com>
 ---
- arch/x86/kernel/tboot.c |   22 +++++++++-------------
- 1 files changed, 9 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/lmb.h |    2 +
+ arch/x86/mm/lmb.c          |  102 +++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 103 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index c2f1b26..20b9531 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -171,34 +171,30 @@ static void tboot_create_trampoline(void)
+diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
+index 70df84f..63bb597 100644
+--- a/arch/x86/include/asm/lmb.h
++++ b/arch/x86/include/asm/lmb.h
+@@ -8,5 +8,7 @@ void lmb_to_bootmem(u64 start, u64 end);
  
- #ifdef CONFIG_ACPI_SLEEP
+ void lmb_reserve_range(u64 start, u64 end, char *name);
+ void lmb_free_range(u64 start, u64 end);
++struct range;
++int get_free_all_memory_range(struct range **rangep, int nodeid);
  
--static void add_mac_region(phys_addr_t start, unsigned long size)
-+static int
-+add_mac_region(unsigned long start_pfn, unsigned long nr_pages, void  *arg)
- {
-+	u64 start = start_pfn;
-+	u64 size = nr_pages;
- 	struct tboot_mac_region *mr;
--	phys_addr_t end = start + size;
- 
- 	if (tboot->num_mac_regions >= MAX_TB_MAC_REGIONS)
- 		panic("tboot: Too many MAC regions\n");
- 
- 	if (start && size) {
- 		mr = &tboot->mac_regions[tboot->num_mac_regions++];
--		mr->start = round_down(start, PAGE_SIZE);
--		mr->size  = round_up(end, PAGE_SIZE) - mr->start;
-+		mr->start = start << PAGE_SHIFT;
-+		mr->size  = (u32) (size << PAGE_SHIFT);
- 	}
-+
-+	return 0;
+ #endif
+diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+index 6b6cc58..3954103 100644
+--- a/arch/x86/mm/lmb.c
++++ b/arch/x86/mm/lmb.c
+@@ -86,7 +86,107 @@ u64 __init lmb_find_in_range_size(u64 start, u64 *sizep, u64 align)
+ 	return LMB_ERROR;
  }
  
- static int tboot_setup_sleep(void)
+-#ifndef CONFIG_NO_BOOTMEM
++static __init struct range *find_range_array(int count)
++{
++	u64 end, size, mem;
++	struct range *range;
++
++	size = sizeof(struct range) * count;
++	end = lmb.current_limit;
++
++	mem = lmb_find_in_range(0, end, size, sizeof(struct range));
++	if (mem == LMB_ERROR)
++		panic("can not find more space for range array");
++
++	/*
++	 * This range is tempoaray, so don't reserve it, it will not be
++	 * overlapped because We will not alloccate new buffer before
++	 * We discard this one
++	 */
++	range = __va(mem);
++	memset(range, 0, size);
++
++	return range;
++}
++
++#ifdef CONFIG_NO_BOOTMEM
++static void __init subtract_lmb_reserved(struct range *range, int az)
++{
++	int count;
++	u64 final_start, final_end;
++	struct lmb_region *r;
++
++	/* Take out region array itself at first*/
++	if (lmb.reserved.regions != lmb_reserved_init_regions)
++		lmb_free(__pa(lmb.reserved.regions), sizeof(struct lmb_region) * lmb.reserved.max);
++
++	count  = lmb.reserved.cnt;
++
++	pr_info("Subtract (%d early reservations)\n", count);
++
++	for_each_lmb(reserved, r) {
++		pr_info("  [%010llx - %010llx]\n", (u64)r->base, (u64)r->base + r->size);
++		final_start = PFN_DOWN(r->base);
++		final_end = PFN_UP(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		subtract_range(range, az, final_start, final_end);
++	}
++	/* Put region array back ? */
++	if (lmb.reserved.regions != lmb_reserved_init_regions)
++		lmb_reserve(__pa(lmb.reserved.regions), sizeof(struct lmb_region) * lmb.reserved.max);
++}
++
++struct count_data {
++	int nr;
++};
++
++static int __init count_work_fn(unsigned long start_pfn,
++				unsigned long end_pfn, void *datax)
++{
++	struct count_data *data = datax;
++
++	data->nr++;
++
++	return 0;
++}
++
++static int __init count_early_node_map(int nodeid)
++{
++	struct count_data data;
++
++	data.nr = 0;
++	work_with_active_regions(nodeid, count_work_fn, &data);
++
++	return data.nr;
++}
++
++int __init get_free_all_memory_range(struct range **rangep, int nodeid)
++{
++	int count;
++	struct range *range;
++	int nr_range;
++
++	count = (lmb.reserved.cnt + count_early_node_map(nodeid)) * 2;
++
++	range = find_range_array(count);
++	nr_range = 0;
++
++	/*
++	 * Use early_node_map[] and lmb.reserved.region to get range array
++	 * at first
++	 */
++	nr_range = add_from_early_node_map(range, count, nr_range, nodeid);
++#ifdef CONFIG_X86_32
++	subtract_range(range, count, max_low_pfn, -1ULL);
++#endif
++	subtract_lmb_reserved(range, count);
++	nr_range = clean_sort_range(range, count);
++
++	*rangep = range;
++	return nr_range;
++}
++#else
+ void __init lmb_to_bootmem(u64 start, u64 end)
  {
--	int i;
--
- 	tboot->num_mac_regions = 0;
- 
--	for (i = 0; i < e820.nr_map; i++) {
--		if ((e820.map[i].type != E820_RAM)
--		 && (e820.map[i].type != E820_RESERVED_KERN))
--			continue;
--
--		add_mac_region(e820.map[i].addr, e820.map[i].size);
--	}
-+	walk_system_ram_range(0, max_pfn, NULL, add_mac_region);
- 
- 	tboot->acpi_sinfo.kernel_s3_resume_vector = acpi_wakeup_address;
- 
+ 	int count;
 -- 
 1.6.4.2
 
