@@ -1,59 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab0FPImY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 04:42:24 -0400
-Received: from gate.crashing.org ([63.228.1.57]:38509 "EHLO gate.crashing.org"
+	id S1754706Ab0FPIsi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 04:48:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31179 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752268Ab0FPImW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 04:42:22 -0400
-Subject: Re: [PATCH -v18 00/37] Use lmb with x86
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-In-Reply-To: <AANLkTinhO5sFs4YRP3nraC_ldZ8ZgzJBOQYYv9jLd_Dw@mail.gmail.com>
-References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
-	 <AANLkTinhO5sFs4YRP3nraC_ldZ8ZgzJBOQYYv9jLd_Dw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Jun 2010 18:41:20 +1000
-Message-ID: <1276677680.2552.205.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752442Ab0FPIsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 04:48:36 -0400
+Message-ID: <4C188FC0.3050306@redhat.com>
+Date: Wed, 16 Jun 2010 11:48:00 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [RFC][PATCH 4/9] create aggregate kvm_total_used_mmu_pages value
+References: <20100615135518.BC244431@kernel.beaverton.ibm.com> <20100615135523.25D24A73@kernel.beaverton.ibm.com>
+In-Reply-To: <20100615135523.25D24A73@kernel.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-15 at 23:10 -0700, Linus Torvalds wrote:
-> On Tuesday, June 15, 2010, Yinghai Lu <yinghai@kernel.org> wrote:
-> >
-> >  46 files changed, 1476 insertions(+), 1282 deletions(-)
-> 
-> So what was the advantage again? It's adding more lines than it
-> removes. Wasn't the point to simplify things, not make them bigger?
+On 06/15/2010 04:55 PM, Dave Hansen wrote:
+> Note: this is the real meat of the patch set.  It can be applied up
+> to this point, and everything will probably be improved, at least
+> a bit.
+>
+> Of slab shrinkers, the VM code says:
+>
+>   * Note that 'shrink' will be passed nr_to_scan == 0 when the VM is
+>   * querying the cache size, so a fastpath for that case is appropriate.
+>
+> and it *means* it.  Look at how it calls the shrinkers:
+>
+> 	nr_before = (*shrinker->shrink)(0, gfp_mask);
+> 	shrink_ret = (*shrinker->shrink)(this_scan, gfp_mask);
+>
+> So, if you do anything stupid in your shrinker, the VM will doubly
+> punish you.
+>    
 
-I -think- the point is that once that's done, you can remove a whole lot
-of gunk that was added such as the kernel/range.c caca, etc...
-(basically, x86 gunk gratuituously made generic and that should really
-just die instead).
+Ouch.
 
-However, I do have some issues with some aspects of Yinghai port to x86,
-where instead of removing the old crap, it adds a layer that turns the
-LMB into that old crap which is then turned back into something else...
-not too sure, it's definitely a bit weird.
+> The mmu_shrink() function takes the global kvm_lock, then acquires
+> every VM's kvm->mmu_lock in sequence.  If we have 100 VMs, then
+> we're going to take 101 locks.  We do it twice, so each call takes
+> 202 locks.  If we're under memory pressure, we can have each cpu
+> trying to do this.  It can get really hairy, and we've seen lock
+> spinning in mmu_shrink() be the dominant entry in profiles.
+>
+> This is guaranteed to optimize at least half of those lock
+> aquisitions away.  It removes the need to take any of the locks
+> when simply trying to count objects.
+>
+>
+> Signed-off-by: Dave Hansen<dave@linux.vnet.ibm.com>
+> ---
+>
+>   linux-2.6.git-dave/arch/x86/kvm/mmu.c |   33 +++++++++++++++++++++++----------
+>   1 file changed, 23 insertions(+), 10 deletions(-)
+>
+> diff -puN arch/x86/kvm/mmu.c~make_global_used_value arch/x86/kvm/mmu.c
+> --- linux-2.6.git/arch/x86/kvm/mmu.c~make_global_used_value	2010-06-09 15:14:30.000000000 -0700
+> +++ linux-2.6.git-dave/arch/x86/kvm/mmu.c	2010-06-09 15:14:30.000000000 -0700
+> @@ -891,6 +891,19 @@ static int is_empty_shadow_page(u64 *spt
+>   }
+>   #endif
+>
+> +/*
+> + * This value is the sum of all of the kvm instances's
+> + * kvm->arch.n_used_mmu_pages values.  We need a global,
+> + * aggregate version in order to make the slab shrinker
+> + * faster
+> + */
+> +static unsigned int kvm_total_used_mmu_pages;
+>    
 
-So using LMB per-se is a good idea, because it replaces whatever other
-range management/allocator you have there. But it has to be done "right"
-and I think we need Thomas, Ingo and/or Peter to give that a good look
-and see whether what we have there is "right" or not as far as x86 is
-concerned.
+The variable needs to be at the top of the file.
 
-Cheers,
-Ben.
+> +static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+> +{
+> +	kvm->arch.n_used_mmu_pages += nr;
+> +	kvm_total_used_mmu_pages += nr;
+>    
 
+Needs an atomic operation, since there's no global lock here.  To avoid 
+bouncing this cacheline around, make the variable percpu and make 
+readers take a sum across all cpus.  Side benefit is that you no longer 
+need an atomic but a local_t, which is considerably cheaper.
+
+> +}
+> +
+>    
+
+
+-- 
+error compiling committee.c: too many arguments to function
 
