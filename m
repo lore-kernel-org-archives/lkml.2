@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab0FPKHd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 06:07:33 -0400
+	id S1757754Ab0FPKH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 06:07:29 -0400
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:57058 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757728Ab0FPKH3 (ORCPT
+	with ESMTP id S1757636Ab0FPKH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 06:07:29 -0400
+	Wed, 16 Jun 2010 06:07:26 -0400
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Wed, 16 Jun 2010 12:08:03 +0200
+Date: Wed, 16 Jun 2010 12:08:00 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv5 08/11] USB: gadget: g_serial: INF file updated
-In-reply-to: <9f32ae2ab133d27642ac4c1e81777b1e34a0c1a1.1276681840.git.m.nazarewicz@samsung.com>
+Subject: [PATCHv5 05/11] USB: gadget: f_fs: use usb_string_ids_n()
+In-reply-to: <45fc10256bd2374706e4153360427257d15804a9.1276681840.git.m.nazarewicz@samsung.com>
 To: linux-usb@vger.kernel.org
 Cc: David Brownell <dbrownell@users.sourceforge.net>, Greg KH <greg@kroah.com>,
-       Xiaofan Chen <xiaofanc@gmail.com>,
        Kyungmin Park <kyungmin.park@samsung.com>,
        Marek Szyprowski <m.szyprowski@samsung.com>,
        linux-kernel@vger.kernel.org
-Message-id: <c4143e7fdd0fc61f05118c30a0a9edbbc0a97db4.1276681840.git.m.nazarewicz@samsung.com>
+Message-id: <bb0d9f73c7caae31c0bc291d3dfce44a2f6a3736.1276681840.git.m.nazarewicz@samsung.com>
 X-Mailer: git-send-email 1.7.1
 References: <20100615185527.GA22803@kroah.com>
  <cover.1276681840.git.m.nazarewicz@samsung.com>
@@ -28,246 +27,77 @@ References: <20100615185527.GA22803@kroah.com>
  <1cf0484e46e3b2b5ce0dea8cdc7396d4bfa977c5.1276681840.git.m.nazarewicz@samsung.com>
  <0022e21e1b622b3a54d1e55aed727e7e429c7c70.1276681840.git.m.nazarewicz@samsung.com>
  <45fc10256bd2374706e4153360427257d15804a9.1276681840.git.m.nazarewicz@samsung.com>
- <bb0d9f73c7caae31c0bc291d3dfce44a2f6a3736.1276681840.git.m.nazarewicz@samsung.com>
- <c7fbb2934e18cfd25df3e00a548ac33e5b0a7353.1276681840.git.m.nazarewicz@samsung.com>
- <9f32ae2ab133d27642ac4c1e81777b1e34a0c1a1.1276681840.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated the INF file for g_serial gadget.  It should work with
-most recent Windows systems now.
+Use usb_string_ids_n() function to simplify string ids
+registeration.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- Documentation/usb/gadget_serial.txt |   87 +++-------------------------
- Documentation/usb/linux-cdc-acm.inf |  107 +++++++++++++++++++++++++++++++++++
- 2 files changed, 117 insertions(+), 77 deletions(-)
- create mode 100644 Documentation/usb/linux-cdc-acm.inf
+ drivers/usb/gadget/f_fs.c |   30 ++++++++++++------------------
+ 1 files changed, 12 insertions(+), 18 deletions(-)
 
-diff --git a/Documentation/usb/gadget_serial.txt b/Documentation/usb/gadget_serial.txt
-index eac7df9..61e67f6 100644
---- a/Documentation/usb/gadget_serial.txt
-+++ b/Documentation/usb/gadget_serial.txt
-@@ -151,88 +151,23 @@ instructions below to install the host side driver.
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 3fe120f..97c2ac2 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1377,7 +1377,8 @@ static void ffs_data_reset(struct ffs_data *ffs)
  
- Installing the Windows Host ACM Driver
- --------------------------------------
--To use the Windows ACM driver you must have the files "gserial.inf"
--and "usbser.sys" together in a folder on the Windows machine.
--
--The "gserial.inf" file is given here.
--
---------------------- CUT HERE --------------------
--[Version]
--Signature="$Windows NT$"
--Class=Ports
--ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
--Provider=%LINUX%
--DriverVer=08/17/2004,0.0.2.0
--; Copyright (C) 2004 Al Borchers (alborchers@steinerpoint.com)
--
--[Manufacturer]
--%LINUX%=GSerialDeviceList
--
--[GSerialDeviceList]
--%GSERIAL%=GSerialInstall, USB\VID_0525&PID_A4A7
--
--[DestinationDirs]
--DefaultDestDir=10,System32\Drivers
--
--[GSerialInstall]
--CopyFiles=GSerialCopyFiles
--AddReg=GSerialAddReg
--
--[GSerialCopyFiles]
--usbser.sys
--
--[GSerialAddReg]
--HKR,,DevLoader,,*ntkern
--HKR,,NTMPDriver,,usbser.sys
--HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
--
--[GSerialInstall.Services]
--AddService = usbser,0x0002,GSerialService
--
--[GSerialService]
--DisplayName = %GSERIAL_DISPLAY_NAME%
--ServiceType = 1                  ; SERVICE_KERNEL_DRIVER
--StartType = 3                    ; SERVICE_DEMAND_START
--ErrorControl = 1                 ; SERVICE_ERROR_NORMAL
--ServiceBinary = %10%\System32\Drivers\usbser.sys
--LoadOrderGroup = Base
--
--[Strings]
--LINUX = "Linux"
--GSERIAL = "Gadget Serial"
--GSERIAL_DISPLAY_NAME = "USB Gadget Serial Driver"
---------------------- CUT HERE --------------------
--
--The "usbser.sys" file comes with various versions of Windows.
--For example, it can be found on Windows XP typically in
--
--  C:\WINDOWS\Driver Cache\i386\driver.cab
--
--Or it can be found on the Windows 98SE CD in the "win98" folder
--in the "DRIVER11.CAB" through "DRIVER20.CAB" cab files.  You will
--need the DOS "expand" program, the Cygwin "cabextract" program, or
--a similar program to unpack these cab files and extract "usbser.sys".
--
--For example, to extract "usbser.sys" into the current directory
--on Windows XP, open a DOS window and run a command like
--
--  expand C:\WINDOWS\Driver~1\i386\driver.cab -F:usbser.sys .
--
--(Thanks to Nishant Kamat for pointing out this DOS command.)
-+To use the Windows ACM driver you must have the "linux-cdc-acm.inf"
-+file (provided along this document) which supports all recent versions
-+of Windows.
+ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
+ {
+-	unsigned i, count;
++	struct usb_gadget_strings **lang;
++	int first_id;
  
- When the gadget serial driver is loaded and the USB device connected
- to the Windows host with a USB cable, Windows should recognize the
- gadget serial device and ask for a driver.  Tell Windows to find the
--driver in the folder that contains "gserial.inf" and "usbser.sys".
-+driver in the folder that contains the "linux-cdc-acm.inf" file.
+ 	ENTER();
  
- For example, on Windows XP, when the gadget serial device is first
- plugged in, the "Found New Hardware Wizard" starts up.  Select
--"Install from a list or specific location (Advanced)", then on
--the next screen select "Include this location in the search" and
--enter the path or browse to the folder containing "gserial.inf" and
--"usbser.sys".  Windows will complain that the Gadget Serial driver
--has not passed Windows Logo testing, but select "Continue anyway"
--and finish the driver installation.
-+"Install from a list or specific location (Advanced)", then on the
-+next screen select "Include this location in the search" and enter the
-+path or browse to the folder containing the "linux-cdc-acm.inf" file.
-+Windows will complain that the Gadget Serial driver has not passed
-+Windows Logo testing, but select "Continue anyway" and finish the
-+driver installation.
+@@ -1385,7 +1386,9 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
+ 		 || test_and_set_bit(FFS_FL_BOUND, &ffs->flags)))
+ 		return -EBADFD;
  
- On Windows XP, in the "Device Manager" (under "Control Panel",
- "System", "Hardware") expand the "Ports (COM & LPT)" entry and you
-@@ -345,5 +280,3 @@ you should be able to send data back and forth between the gadget
- side and host side systems.  Anything you type on the terminal
- window on the gadget side should appear in the terminal window on
- the host side and vice versa.
+-	ffs_data_get(ffs);
++	first_id = usb_string_ids_n(cdev, ffs->strings_count);
++	if (unlikely(first_id < 0))
++		return first_id;
+ 
+ 	ffs->ep0req = usb_ep_alloc_request(cdev->gadget->ep0, GFP_KERNEL);
+ 	if (unlikely(!ffs->ep0req))
+@@ -1393,25 +1396,16 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
+ 	ffs->ep0req->complete = ffs_ep0_complete;
+ 	ffs->ep0req->context = ffs;
+ 
+-	/* Get strings identifiers */
+-	for (count = ffs->strings_count, i = 0; i < count; ++i) {
+-		struct usb_gadget_strings **lang;
 -
+-		int id = usb_string_id(cdev);
+-		if (unlikely(id < 0)) {
+-			usb_ep_free_request(cdev->gadget->ep0, ffs->ep0req);
+-			ffs->ep0req = NULL;
+-			return id;
+-		}
 -
-diff --git a/Documentation/usb/linux-cdc-acm.inf b/Documentation/usb/linux-cdc-acm.inf
-new file mode 100644
-index 0000000..77636dd
---- /dev/null
-+++ b/Documentation/usb/linux-cdc-acm.inf
-@@ -0,0 +1,107 @@
-+; Windows USB CDC ACM Setup File
-+
-+; Based on INF temlate which was:
-+;     Copyright (c) 2000 Microsoft Corporation
-+;     Copyright (c) 2007 Microchip Technology Inc.
-+; likely to be cevered by the MLPL as found at:
-+;    <http://msdn.microsoft.com/en-us/cc300389.aspx#MLPL>.
-+; For use only on Windows operating systems.
-+
-+[Version]
-+Signature="$Windows NT$"
-+Class=Ports
-+ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
-+Provider=%Linux%
-+DriverVer=11/15/2007,5.1.2600.0
-+
-+[Manufacturer]
-+%Linux%=DeviceList, NTamd64
-+
-+[DestinationDirs]
-+DefaultDestDir=12
-+
-+
-+;------------------------------------------------------------------------------
-+;  Windows 2000/XP/Vista-32bit Sections
-+;------------------------------------------------------------------------------
-+
-+[DriverInstall.nt]
-+include=mdmcpq.inf
-+CopyFiles=DriverCopyFiles.nt
-+AddReg=DriverInstall.nt.AddReg
-+
-+[DriverCopyFiles.nt]
-+usbser.sys,,,0x20
-+
-+[DriverInstall.nt.AddReg]
-+HKR,,DevLoader,,*ntkern
-+HKR,,NTMPDriver,,USBSER.sys
-+HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
-+
-+[DriverInstall.nt.Services]
-+AddService=usbser, 0x00000002, DriverService.nt
-+
-+[DriverService.nt]
-+DisplayName=%SERVICE%
-+ServiceType=1
-+StartType=3
-+ErrorControl=1
-+ServiceBinary=%12%\USBSER.sys
-+
-+;------------------------------------------------------------------------------
-+;  Vista-64bit Sections
-+;------------------------------------------------------------------------------
-+
-+[DriverInstall.NTamd64]
-+include=mdmcpq.inf
-+CopyFiles=DriverCopyFiles.NTamd64
-+AddReg=DriverInstall.NTamd64.AddReg
-+
-+[DriverCopyFiles.NTamd64]
-+USBSER.sys,,,0x20
-+
-+[DriverInstall.NTamd64.AddReg]
-+HKR,,DevLoader,,*ntkern
-+HKR,,NTMPDriver,,USBSER.sys
-+HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
-+
-+[DriverInstall.NTamd64.Services]
-+AddService=usbser, 0x00000002, DriverService.NTamd64
-+
-+[DriverService.NTamd64]
-+DisplayName=%SERVICE%
-+ServiceType=1
-+StartType=3
-+ErrorControl=1
-+ServiceBinary=%12%\USBSER.sys
-+
-+
-+;------------------------------------------------------------------------------
-+;  Vendor and Product ID Definitions
-+;------------------------------------------------------------------------------
-+; When developing your USB device, the VID and PID used in the PC side
-+; application program and the firmware on the microcontroller must match.
-+; Modify the below line to use your VID and PID.  Use the format as shown below.
-+; Note: One INF file can be used for multiple devices with different
-+VID and PIDs.
-+; For each supported device, append ",USB\VID_xxxx&PID_yyyy" to the
-+end of the line.
-+;------------------------------------------------------------------------------
-+[SourceDisksFiles]
-+[SourceDisksNames]
-+[DeviceList]
-+%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7
-+
-+[DeviceList.NTamd64]
-+%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7
-+
-+
-+;------------------------------------------------------------------------------
-+;  String Definitions
-+;------------------------------------------------------------------------------
-+;Modify these strings to customize your device
-+;------------------------------------------------------------------------------
-+[Strings]
-+Linux               = "Linux Developer Community"
-+DESCRIPTION         = "Gadget Serial"
-+SERVICE             = "USB RS-232 Emulation Driver"
+-		lang = ffs->stringtabs;
+-		do {
+-			(*lang)->strings[i].id = id;
+-			++lang;
+-		} while (*lang);
++	lang = ffs->stringtabs;
++	for (lang = ffs->stringtabs; *lang; ++lang) {
++		struct usb_string *str = (*lang)->strings;
++		int id = first_id;
++		for (; str->s; ++id, ++str)
++			str->id = id;
+ 	}
+ 
+ 	ffs->gadget = cdev->gadget;
++	ffs_data_get(ffs);
+ 	return 0;
+ }
+ 
 -- 
 1.7.1
 
