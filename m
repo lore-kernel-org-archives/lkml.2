@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab0FPIkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 04:40:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64160 "EHLO mx1.redhat.com"
+	id S1754353Ab0FPImY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 04:42:24 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38509 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753421Ab0FPIkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 04:40:43 -0400
-Message-ID: <4C188E08.3060806@redhat.com>
-Date: Wed, 16 Jun 2010 11:40:40 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [RFC][PATCH 1/9] abstract kvm x86 mmu->n_free_mmu_pages
-References: <20100615135518.BC244431@kernel.beaverton.ibm.com> <20100615135519.00781795@kernel.beaverton.ibm.com>
-In-Reply-To: <20100615135519.00781795@kernel.beaverton.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752268Ab0FPImW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 04:42:22 -0400
+Subject: Re: [PATCH -v18 00/37] Use lmb with x86
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+In-Reply-To: <AANLkTinhO5sFs4YRP3nraC_ldZ8ZgzJBOQYYv9jLd_Dw@mail.gmail.com>
+References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
+	 <AANLkTinhO5sFs4YRP3nraC_ldZ8ZgzJBOQYYv9jLd_Dw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Jun 2010 18:41:20 +1000
+Message-ID: <1276677680.2552.205.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 04:55 PM, Dave Hansen wrote:
-> First of all, I think "free" is a poor name for this value.  In
-> this context, it means, "the number of mmu pages which this kvm
-> instance should be able to allocate."  To me, "free" implies
-> much more that the objects are there and ready for use.  I think
-> "available" is a much better description, especially when you
-> see how it is calculated.
->
->    
+On Tue, 2010-06-15 at 23:10 -0700, Linus Torvalds wrote:
+> On Tuesday, June 15, 2010, Yinghai Lu <yinghai@kernel.org> wrote:
+> >
+> >  46 files changed, 1476 insertions(+), 1282 deletions(-)
+> 
+> So what was the advantage again? It's adding more lines than it
+> removes. Wasn't the point to simplify things, not make them bigger?
 
-Agreed.  Note that if reclaim is improved, we can drop it completely and 
-let the kernel trim the cache when it grows too large.
+I -think- the point is that once that's done, you can remove a whole lot
+of gunk that was added such as the kernel/range.c caca, etc...
+(basically, x86 gunk gratuituously made generic and that should really
+just die instead).
 
--- 
-error compiling committee.c: too many arguments to function
+However, I do have some issues with some aspects of Yinghai port to x86,
+where instead of removing the old crap, it adds a layer that turns the
+LMB into that old crap which is then turned back into something else...
+not too sure, it's definitely a bit weird.
+
+So using LMB per-se is a good idea, because it replaces whatever other
+range management/allocator you have there. But it has to be done "right"
+and I think we need Thomas, Ingo and/or Peter to give that a good look
+and see whether what we have there is "right" or not as far as x86 is
+concerned.
+
+Cheers,
+Ben.
+
 
