@@ -1,100 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab0FPAcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 20:32:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36494 "EHLO mx1.redhat.com"
+	id S1758257Ab0FPAcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 20:32:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20311 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752042Ab0FPAcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 20:32:23 -0400
-Message-ID: <4C181B93.2020009@redhat.com>
-Date: Tue, 15 Jun 2010 14:32:19 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1757970Ab0FPAc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 20:32:28 -0400
+Message-ID: <4C181AFD.5060503@redhat.com>
+Date: Tue, 15 Jun 2010 20:29:49 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: avi@redhat.com, glommer@redhat.com, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/17] TSC reset compensation
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-17-git-send-email-zamsden@redhat.com> <20100616002705.GA15994@amt.cnet>
-In-Reply-To: <20100616002705.GA15994@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 12/12] vmscan: Do not writeback pages in direct reclaim
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>	<1276514273-27693-13-git-send-email-mel@csn.ul.ie>	<4C16A567.4080000@redhat.com>	<20100615114510.GE26788@csn.ul.ie>	<4C17815A.8080402@redhat.com>	<20100615135928.GK26788@csn.ul.ie>	<4C178868.2010002@redhat.com>	<20100615141601.GL26788@csn.ul.ie> <20100616091755.7121c7d3.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100616091755.7121c7d3.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 02:27 PM, Marcelo Tosatti wrote:
-> On Mon, Jun 14, 2010 at 09:34:18PM -1000, Zachary Amsden wrote:
->    
->> Attempt to synchronize TSCs which are reset to the same value.  In the
->> case of a reliable hardware TSC, we can just re-use the same offset, but
->> on non-reliable hardware, we can get closer by adjusting the offset to
->> match the elapsed time.
->>
->> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
->> ---
->>   arch/x86/kvm/x86.c |   34 ++++++++++++++++++++++++++++++++--
->>   1 files changed, 32 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index 8e836e9..cedb71f 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -937,14 +937,44 @@ static inline void kvm_request_guest_time_update(struct kvm_vcpu *v)
->>   	set_bit(KVM_REQ_CLOCK_SYNC,&v->requests);
->>   }
->>
->> +static inline int kvm_tsc_reliable(void)
->> +{
->> +	return (boot_cpu_has(X86_FEATURE_CONSTANT_TSC)&&
->> +		boot_cpu_has(X86_FEATURE_NONSTOP_TSC)&&
->> +		!check_tsc_unstable());
->> +}
->> +
->>   void guest_write_tsc(struct kvm_vcpu *vcpu, u64 data)
->>   {
->>   	struct kvm *kvm = vcpu->kvm;
->> -	u64 offset;
->> +	u64 offset, ns, elapsed;
->>
->>   	spin_lock(&kvm->arch.tsc_write_lock);
->>   	offset = data - native_read_tsc();
->> -	kvm->arch.last_tsc_nsec = get_kernel_ns();
->> +	ns = get_kernel_ns();
->> +	elapsed = ns - kvm->arch.last_tsc_nsec;
->> +
->> +	/*
->> +	 * Special case: identical write to TSC within 5 seconds of
->> +	 * another CPU is interpreted as an attempt to synchronize
->> +	 * (the 5 seconds is to accomodate host load / swapping).
->> +	 *
->> +	 * In that case, for a reliable TSC, we can match TSC offsets,
->> +	 * or make a best guest using kernel_ns value.
->> +	 */
->> +	if (data == kvm->arch.last_tsc_write&&  elapsed<  5 * NSEC_PER_SEC) {
->> +		if (kvm_tsc_reliable()) {
->> +			offset = kvm->arch.last_tsc_offset;
->> +			pr_debug("kvm: matched tsc offset for %llu\n", data);
->> +		} else {
->> +			u64 tsc_delta = elapsed * __get_cpu_var(cpu_tsc_khz);
->> +			tsc_delta = tsc_delta / USEC_PER_SEC;
->> +			offset -= tsc_delta;
->> +			pr_debug("kvm: adjusted tsc offset by %llu\n", tsc_delta);
->> +		}
->> +		ns = kvm->arch.last_tsc_nsec;
->> +	}
->> +	kvm->arch.last_tsc_nsec = ns;
->>   	kvm->arch.last_tsc_write = data;
->>   	kvm->arch.last_tsc_offset = offset;
->>   	kvm_x86_ops->write_tsc_offset(vcpu, offset);
->> -- 
->>      
-> Could extend this to handle migration.
->    
+On 06/15/2010 08:17 PM, KAMEZAWA Hiroyuki wrote:
+> On Tue, 15 Jun 2010 15:16:01 +0100
+> Mel Gorman<mel@csn.ul.ie>  wrote:
 
-Also, this could be extended to cover the kvmclock variables themselves; 
-then, if tsc is reliable, we need not ever recalibrate the kvmclock.  In 
-fact, all VMs would have the same parameters for kvmclock in that case, 
-just with a different kvm->arch.kvmclock_offset.
+>> But in turn, where is mem_cgroup_hierarchical_reclaim called from direct
+>> reclaim? It appears to be only called from the fault path or as a result
+>> of the memcg changing size.
+>>
+> yes. It's only called from
+> 	- page fault
+> 	- add_to_page_cache()
+>
+> I think we'll see no stack problem. Now, memcg doesn't wakeup kswapd for
+> reclaiming memory, it needs direct writeback.
 
-Zach
+Of course, a memcg page fault could still be triggered
+from copy_to_user or copy_from_user, with a fairly
+arbitrary stack frame above...
+
+-- 
+All rights reversed
