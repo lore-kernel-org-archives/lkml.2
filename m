@@ -1,39 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab0FPDQs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 23:16:48 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38414 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab0FPDQr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 23:16:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=iyCRMpyjL3EwXbIvioVN/l81Q08oCXvEJsf4nCaC4JMUyFQOjgDVCgwSa0zKf1qm6M
-         NNsNAGwlBXbVGuYwyGJ059PlmkUW6He+eAq2svqGMFXS+r46rqtBoQLyUnOD1XGxFHet
-         Qt6e/VWz+uJIWMy2rFcmt8hHWhtD7atjVemnE=
-MIME-Version: 1.0
-Date: Tue, 15 Jun 2010 21:16:45 -0600
-Message-ID: <AANLkTimBXLzaHyPvj0vpbW8yWVxdnepi704b9CGpaKrs@mail.gmail.com>
-Subject: [ANNOUNCE] MDB - Merkey Debugger 2.6.34-06-15-2010
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756934Ab0FPDjF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 23:39:05 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51897 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754425Ab0FPDjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jun 2010 23:39:02 -0400
+Date: Wed, 16 Jun 2010 13:38:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Ben Hutchings <bhutchings@solarflare.com>
+Subject: linux-next: build warnings after merge of the net tree
+Message-Id: <20100616133854.1bbbbb37.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__16_Jun_2010_13_38_54_+1000_mlmjYNNFlOR/cK6T"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://merkeydebugger.googlecode.com/files/mdb-2.6.34-06-15-2010.patch
+--Signature=_Wed__16_Jun_2010_13_38_54_+1000_mlmjYNNFlOR/cK6T
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Some more fixes for 2.6.34 after testing on a 4 x Opteron HP Proliant
+Hi Dave,
 
-FIXES:
+After merging the net tree, today's linux-next build (x86_64 allmodconfig)
+produced these warnings:
 
-Fixed Crash in display_process
-added more X86_64 support for register parser
-fixed keyboard interrupt lockup with keyboard while debugger is active
-on Compaq based systems
- Added NMI support for initial keyboard and sysrq handling.
+In file included from drivers/usb/gadget/ether.c:123:
+drivers/usb/gadget/rndis.c: In function 'gen_ndis_query_resp':
+drivers/usb/gadget/rndis.c:197: warning: assignment from incompatible point=
+er type
+In file included from drivers/usb/gadget/multi.c:67:
+drivers/usb/gadget/rndis.c: In function 'gen_ndis_query_resp':
+drivers/usb/gadget/rndis.c:197: warning: assignment from incompatible point=
+er type
+In file included from drivers/usb/gadget/g_ffs.c:30:
+drivers/usb/gadget/rndis.c: In function 'gen_ndis_query_resp':
+drivers/usb/gadget/rndis.c:197: warning: assignment from incompatible point=
+er type
 
-Jeff
+Introduced by commit be1f3c2c027cc5ad735df6a45a542ed1db7ec48b ("net:
+Enable 64-bit net device statistics on 32-bit architectures").  This is a
+call to dev_get_stats() and the return value is being assigned to a
+"struct net_device_stats *".
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__16_Jun_2010_13_38_54_+1000_mlmjYNNFlOR/cK6T
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwYR04ACgkQjjKRsyhoI8wLqACfTy3XaBsmvmBUChhuf1XeTze0
+ZKMAoK+heaf5UztEnxGlCaIER9q937RZ
+=y7pG
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__16_Jun_2010_13_38_54_+1000_mlmjYNNFlOR/cK6T--
