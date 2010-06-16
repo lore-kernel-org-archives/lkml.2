@@ -1,113 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758904Ab0FPOep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 10:34:45 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:49604 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758847Ab0FPOen (ORCPT
+	id S1758816Ab0FPOhK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 10:37:10 -0400
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:37466 "EHLO
+	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753874Ab0FPOhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 10:34:43 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6014"; a="44614054"
-Subject: Re: Overview of concurrency managed workqueue
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-In-Reply-To: <4C18DC69.10704@kernel.org>
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>
-	 <4C17C598.7070303@kernel.org>
-	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
-	 <4C18BF40.40607@kernel.org> <1276694825.9309.12.camel@m0nster>
-	 <4C18D1FD.9060804@kernel.org> <1276695665.9309.17.camel@m0nster>
-	 <4C18D574.1040903@kernel.org> <1276697146.9309.27.camel@m0nster>
-	 <4C18DC69.10704@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Jun 2010 07:34:40 -0700
-Message-ID: <1276698880.9309.44.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jun 2010 10:37:08 -0400
+Date: Wed, 16 Jun 2010 10:36:59 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: David Howells <dhowells@redhat.com>, tytso@mit.edu,
+       Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@redhat.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: Why is kslowd accumulating so much CPU time?
+Message-ID: <20100616143659.GA14616@elliptictech.com>
+Mail-Followup-To: Andy Whitcroft <apw@canonical.com>,
+	David Howells <dhowells@redhat.com>, tytso@mit.edu,
+	Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@redhat.com>,
+	linux-kernel@vger.kernel.org
+References: <E1OMQ88-0002a1-Gb@closure.thunk.org>
+ <AANLkTilqc0jpwnIwe3OIQvB9avaXXzrBK4Hz0huESygy@mail.gmail.com>
+ <20100613194949.GC8055@thunk.org>
+ <AANLkTilQLk7ofSJBm9KIa2g1KQ35GC1D1vOZlPrv1VRv@mail.gmail.com>
+ <20100614184244.GA11480@elliptictech.com>
+ <20100614214646.GF6666@thunk.org>
+ <AANLkTikxOwYQYSzNjEqRduTQvoUandnAsZzm5Auzgnaz@mail.gmail.com>
+ <18402.1276625268@redhat.com>
+ <AANLkTilZElLEBJDjfpZVx72uDR-x_3t14Jkga5eHy3wf@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTilZElLEBJDjfpZVx72uDR-x_3t14Jkga5eHy3wf@mail.gmail.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-16 at 16:15 +0200, Tejun Heo wrote:
-> Hello,
+On 12:37 Wed 16 Jun     , Andy Whitcroft wrote:
+> > Can you see what they're doing?
+> >
+> >        watch -n0 cat /sys/kernel/debug/slow_work/runqueue
 > 
-> On 06/16/2010 04:05 PM, Daniel Walker wrote:
-> > On Wed, 2010-06-16 at 15:45 +0200, Tejun Heo wrote:
-> >> On 06/16/2010 03:41 PM, Daniel Walker wrote:
-> >>> Any workqueue that has a thread which can be prioritized from userspace.
-> >>> As long as there is a thread it can usually be given a priority from
-> >>> userspace, so any _current_ workqueue which uses a single thread or
-> >>> multiple threads is an example of what I'm talking about.
-> >>
-> >> Eh... what's the use case for that?  That's just so wrong.  What do
-> >> you do after a suspend/resume cycle?  Reprioritize all of them from
-> >> suspend/resume hooks?
-> > 
-> > The use case is any situation when the user wants to give higher
-> > priority to some set of work items, and there's nothing wrong with that.
+> Turned on the debugging and applied the patch from Ted, and when
+> things are bad I see constant cycling of all four threads in the
+> output showing similar to the below, note only one thread shows at a
+> time:
 > 
-> Come on.  The user can't even know what's going on each workqueue
-> thread.  Something you can do doesn't make it a good idea.  In this
-> case, it's a very bad idea.
-
-You just don't understand the use case. Let say I have a high priority
-thread in userspace , and I discover through analysis that my thread is
-being forced to wait on a workqueue thread (priority inversion) , so
-then I just increase the workqueue thread priority to overcome the
-inversion. That's totally valid, and you don't even need to know exactly
-what the thread is doing..
-
-Now lets say the same thing happens under your changes.. Well, then I'm
-screwed cause your changes turn the workqueues into a opaque thread
-cloud which can't be prioritized.
-
-> > In fact there has been a lot of work in the RT kernel related to
-> > workqueue prioritization ..
+> Every 0.1s: cat /sys/kernel/debug/slow_work/runqueue    Wed Jun 16 12:34:52 2010
 > 
-> That frankly I don't have much idea about.
+> THR PID   ITEM ADDR        FL MARK  DESC
+> === ===== ================ == ===== ==========
+>    0   897 ffff88012bb07510 12  20ms DRM_CRTC_HELPER: i915@pci:0000:00:02.0
 
-Exactly, but I do know about it which is why we're talking. So your
-saying that use cases that you don't know about don't really matter
-right?
+Indeed, this looks very similar to mine, except my DESC field is blank
+for some reason.  The FL value is sometimes 12, sometimes 2.
 
-> > suspend/resume shouldn't touch the thread priorities unless your tearing
-> > down the threads and remaking them each suspend/resume cycle from inside
-> > the kernel.
-> 
-> And here's a perfect example of why it's a very bad idea.  The kernel
-> is *ALREADY* doing that on every suspend/resume cycle, so if you are
-> thinking that priorities on kernel workqueue threads were being
-> maintained over suspend/resume cycles, you're wrong and have been
-> wrong for a very long time.
+When things are bad, all four of the kslowd threads are pegged at 16%
+CPU usage.  On my T500, they _never_ calm down once they're pegged.
+However, things seem to be working normally at boot.  It seems that
+there is some initial trigger which pegs the threads, then the cursor
+lag and other problems are just fallout after that.  The system is
+essentially unusable after this point.
 
-I'd have to look into that cause that seems odd to me. In terms of what
-we're talking about it doesn't really matter tho. The use cases I'm
-citing could easily be on systems that don't suspend (or even have that
-enabled).
+The threads sometimes get pegged immediately after booting the system,
+sometimes it can last an hour or more before showing any problems.
+Unfortunately, this is making bisection essentially impossible.
 
-> Mangling workqueue thread priorities from userland is a fundamentally
-> broken thing to do.  It's not a part of AP|BI and there's no guarantee
-> whatsoever that something which works currently in certain way will
-> keep working that way one release later.  If there's something which
-> wants priority adjustment from userland, the right thing to do is
-> finding out precisely why it's necesssary and implementing a published
-> interface to do that.
+This seems to have been introduced somewhere between 2.6.35-rc1 and
+-rc2.
 
-Your completely wrong .. Look at the example I gave above .. Bottom line
-is that your removing currently useful functionality, which is bad.. You
-can say it's not useful, but again you also say you don't "have much
-idea" regarding the cases where this is actually important.
-
-Could you please just entertain the idea that maybe someone somewhere
-might want to give priorities to the work items inside your system. I
-mean consider the RT workqueue that you removed, why in the world would
-we even have that if giving workqueues special priorities was a bad
-thing (or not useful).
-
-Daniel
-
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
