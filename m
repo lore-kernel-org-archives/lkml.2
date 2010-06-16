@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759752Ab0FPVeq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 17:34:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756644Ab0FPVeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 17:34:44 -0400
-Message-ID: <4C193F02.1090406@redhat.com>
-Date: Wed, 16 Jun 2010 11:15:46 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: avi@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/17] Keep SMP VMs more in sync on unstable TSC
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-6-git-send-email-zamsden@redhat.com> <20100616133257.GK19104@mothafucka.localdomain>
-In-Reply-To: <20100616133257.GK19104@mothafucka.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S932661Ab0FPVff (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 17:35:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52194 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759510Ab0FPVfc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 17:35:32 -0400
+Date: Wed, 16 Jun 2010 14:34:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: sedat.dilek@gmail.com
+Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>, dmonakhov@openvz.org
+Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
+Message-Id: <20100616143427.a0323701.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTil-X5IMZMer7fHVPOMalsTJNliv-gMimzKmJ3Od@mail.gmail.com>
+References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
+	<AANLkTiksbL1qHg7Q0A-6TbX0uUrxra4jctUoIGVk5vnE@mail.gmail.com>
+	<201006091122.35304.rjw@sisk.pl>
+	<20100616134231.23ff30da.akpm@linux-foundation.org>
+	<AANLkTil-X5IMZMer7fHVPOMalsTJNliv-gMimzKmJ3Od@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2010 03:32 AM, Glauber Costa wrote:
-> On Mon, Jun 14, 2010 at 09:34:07PM -1000, Zachary Amsden wrote:
->    
->> SMP VMs on machines with unstable TSC have their TSC offset adjusted by the
->> local offset delta from last measurement.  This does not take into account how
->> long it has been since the measurement, leading to drift.  Minimize the drift
->> by accounting for any time difference the kernel has observed.
->>
->> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
->>      
-> I believe this should be done not only if we have check_tsc_unstable() == true,
-> but anytime we adjust the tsc. I mean:
->
-> Sure it is expected to be much more relevant in this case, but if we're testing
-> generally for tsc_delta<  0 in the adjustment code, it is because we believe
-> it can happen, even if tsc is stable (otherwise, we'd better take it off completely).
->
-> And in that case, we should account elapsed time too.
->    
+On Wed, 16 Jun 2010 23:00:37 +0200
+Sedat Dilek <sedat.dilek@googlemail.com> wrote:
 
-If we get tsc_delta < 0 test turning true, we've got an unstable tsc to 
-begin with, so perhaps we should just check that and let the TSC code 
-deal with detecting an unstable TSC for us.
+> On Wed, Jun 16, 2010 at 10:42 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Wed, 9 Jun 2010 11:22:35 +0200
+> > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> >
+> >> On Wednesday 09 June 2010, Sedat Dilek wrote:
+> >> > The patch from [1] is still missing.
+> >> >
+> >> > __ __"cpufreq-call-nr_iowait_cpu-with-disabled-preemption.patch" from
+> >> > Dmitry Monakhoc
+> >> >
+> >> > Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> >> > Tested-by Maciej Rutecki <maciej.rutecki@gmail.com>
+> >> >
+> >> > I have already reported this issue on LKML [2] and cpufreq ML [3].
+> >> >
+> >> > - Sedat -
+> >> >
+> >> > [1] http://www.spinics.net/lists/cpufreq/msg01631.html
+> >> > [2] http://lkml.org/lkml/2010/5/31/77
+> >> > [3] http://www.spinics.net/lists/cpufreq/msg01637.html
+> >>
+> >> Thanks, added.
+> >
+> > I just merged a different patch whcih should address this:
+>
+> How do cpu-freq related stuff find its way into mainline?
+> Is there a GIT repository/branch on <git.kernel.org> where you can pull from?
+> 
+
+(top-posting repaired.  Please don't)
+
+Usually via the cpufreq git tree, mailing list and maintainer, as
+described in ./MAINTAINERS.
+
+But for a patch like this one, I'll just scoot it into mainline unless
+Dave happens to grab it before I do that.
+
