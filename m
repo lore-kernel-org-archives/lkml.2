@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759709Ab0FPVd6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 17:33:58 -0400
-Received: from mail.idngh.com ([41.204.36.5]:39589 "EHLO idngh.com"
+	id S1759731Ab0FPVeI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 17:34:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43380 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754720Ab0FPVd4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 17:33:56 -0400
-X-Greylist: delayed 4944 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jun 2010 17:33:56 EDT
-Message-ID: <20100616203040.soda89wk9w8wowgw@mail.idngh.com>
-Date: Wed, 16 Jun 2010 20:30:40 +0000
-From: SBECKFORD Financial Loan Company <sbeckfordh@gmail.com>
-To: undisclosed-recipients:;
-Subject: 
+	id S1759715Ab0FPVeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 17:34:04 -0400
+Date: Wed, 16 Jun 2010 23:33:42 +0200 (CEST)
+From: John Kacur <jkacur@redhat.com>
+X-X-Sender: jkacur@localhost.localdomain
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>,
+       rt-users <linux-rt-users@vger.kernel.org>,
+       Clark Williams <williams@redhat.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Sven-Thorsten Dietrich <sven@thebigcorporation.com>,
+       ghaskins@novell.com
+Subject: Re: [PATCH 2/6: v4] lockdep: Make MAX_STACK_TRACE_ENTRIES
+ configurable.
+In-Reply-To: <1276723008.2077.9574.camel@twins>
+Message-ID: <alpine.LFD.2.00.1006162331380.28756@localhost.localdomain>
+References: <1276554087-3632-1-git-send-email-jkacur@redhat.com> <1276554087-3632-3-git-send-email-jkacur@redhat.com> <1276714154.1745.623.camel@laptop> <alpine.LFD.2.00.1006162213220.28756@localhost.localdomain> <1276723008.2077.9574.camel@twins>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
-X-idngh-MailScanner-Information: Please contact the ISP for more information
-X-idngh-MailScanner-ID: 1OOzFy-0005NM-Ux
-X-idngh-MailScanner: Found to be clean
-X-idngh-MailScanner-SpamCheck: not spam, SpamAssassin (cached, score=0.17,
-	required 4, autolearn=disabled, ALL_TRUSTED -1.44, BAD_CREDIT 0.33,
-	MISSING_SUBJECT 1.28)
-X-idngh-MailScanner-From: sbeckfordh@gmail.com
-Subject: 
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
+On Wed, 16 Jun 2010, Peter Zijlstra wrote:
 
-SBECKFORD Financial Loan Company
-190 - 194 Main Street
-Barrhead Glasgow G78 1SL
-www.sbeckford.webs.com
+> On Wed, 2010-06-16 at 22:37 +0200, John Kacur wrote:
+> > 
+> > On Wed, 16 Jun 2010, Peter Zijlstra wrote:
+> > 
+> > > On Tue, 2010-06-15 at 00:21 +0200, John Kacur wrote:
+> > > > Certain debug configurations that have LOCKDEP turned on, run into the limit
+> > > > where the MAX_STACK_TRACE_ENTRIES are too small. Rather than simply turning
+> > > > off the locking correctness validator, let the user configure this value
+> > > > to something reasonable for their system.
+> > > > 
+> > > > This patch was generated against 2.6.33.5-rt23 but is also intended to be
+> > > > picked-up for mainline.
+> > > 
+> > > NACK
+> > > 
+> > > patches like 4726f2a617ebd868a4fdeb5679613b897e5f1676 are the way to go.
+> > 
+> > I've been testing 4726f2a617ebd868a4fdeb5679613b897e5f1676 in rt
+> > (Thomas has it in tip/rt/2.6.33 now) and so far it is doing the trick for 
+> > me, at least on my laptop. I still need to test it on larger machines.
+> > However, this problem seems to continuably come up, and I'm not the only 
+> > one who has expessed the wish / need to have this tunable.
+> 
+> And simply increasing the number without thought is the worst approach
+> ever and I'm simply not going to merge it.
+> 
+> Also, google doesn't seem to index msg-ids, so I've no idea what you're
+> referring to.
+> --
 
-Attn: Friend,
+The first mail in which Gregory also expressed desire to make this tunable 
+is here
+http://lkml.org/lkml/2010/4/21/123
 
-Are you looking for a cheap loan today?
-
-We are Private Loan Lender and a Cooperate
-Financial for real Estate and any kinds of
-business financing.
-
-We offer loans to individuals, firms and
-cooperate bodies at 2.5% interest rate per
-annual both secured and unsecured at 3%
-interest rate monthly base, with no credit
-check up, Loan terms and determinant, loan
-amount between the sum of $3,000.00usd to
-20,000,000.00usd.
-
-For quick processing of your loan
-request,kindly fill the loan application
-form below.
-
-THE LOAN APPLICATION FORM BELOW:
-
-*Full Name:.............................
-*Address:..............Age:.............
-*Country:..............Sex:.............
-*Contact Phone number:.................
-*Occupation:............................
-*Purpose of Loan:.......................
-*Loan Amount Needed/Duration:...........
-*E-mail: ...............................
-
-Contact: Mr. Greg Rudolph
-E-mail: Sbeckfordh@gmail.com
-Tel:08136431741
-
-Note: Everyone above 18 years of age are
-qualified for this offer.
-Await your swift reply.
-
-My Best Regards,
-Mr. Greg Rudolph
-(Financial Manager).
-
-ReplyReply All
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
-
-
--- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
-
+The second in which Sven said in certain configurations they might even 
+tune it down (decrease) is here.
+http://lkml.org/lkml/2010/4/21/183
