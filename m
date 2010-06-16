@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612Ab0FPSt2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 14:49:28 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55712 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582Ab0FPSt0 convert rfc822-to-8bit (ORCPT
+	id S932634Ab0FPSt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 14:49:59 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43756
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932615Ab0FPSt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 14:49:26 -0400
-Subject: Re: [PATCH 2/6: v4] lockdep: Make MAX_STACK_TRACE_ENTRIES
- configurable.
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Kacur <jkacur@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Clark Williams <williams@redhat.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1276554087-3632-3-git-send-email-jkacur@redhat.com>
-References: <1276554087-3632-1-git-send-email-jkacur@redhat.com>
-	 <1276554087-3632-3-git-send-email-jkacur@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 16 Jun 2010 20:49:14 +0200
-Message-ID: <1276714154.1745.623.camel@laptop>
+	Wed, 16 Jun 2010 14:49:57 -0400
+Date: Wed, 16 Jun 2010 11:50:08 -0700 (PDT)
+Message-Id: <20100616.115008.226776050.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-2.6 2010-06-16
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100616182847.GB3138@tuxdriver.com>
+References: <20100616182847.GB3138@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-15 at 00:21 +0200, John Kacur wrote:
-> Certain debug configurations that have LOCKDEP turned on, run into the limit
-> where the MAX_STACK_TRACE_ENTRIES are too small. Rather than simply turning
-> off the locking correctness validator, let the user configure this value
-> to something reasonable for their system.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Wed, 16 Jun 2010 14:28:48 -0400
+
+> Here is another passel of of fixes intended for 2.6.35.  Included are
+> some build warning fixes, a PCI identifier, a fix for premature
+> IRQs during hostap initialization, a fix for a warning caused by
+> failing to cancel a scan watchdog in iwlwifi, a fix for a null
+> pointer dereference in iwlwifi, and a fix for a race condition in
+> the same driver.  Also included is the MAINTAINERS change for the
+> orphaning of the older Intel wireless drivers.  All but the last few
+> warning fixes have spent some time in linux-next already.
 > 
-> This patch was generated against 2.6.33.5-rt23 but is also intended to be
-> picked-up for mainline.
+> Please let me know if there are problems!
 
-NACK
+The patches removing unused function variables just to kill compile
+warnings are not appropriate, _at_ _all_.  They don't fix any real
+bug, and they definitely don't fix entries in the regression list do
+they?
 
-patches like 4726f2a617ebd868a4fdeb5679613b897e5f1676 are the way to go.
+Kill all of those and resend this pull request.
+
+Thanks.
