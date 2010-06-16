@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759517Ab0FPTzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 15:55:00 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:56625 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759219Ab0FPTy5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 15:54:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=uMzezy8rzcXY5O8lIO24rhjNWxo25ir98M7yZBLEsB+oh1mlaKenidbXpNFU1Kn6fa
-         avPAcsyC/rdnCK/Hu48Qwl1BWsM4lDK0VCDOA6zhZ7HpGz8yI2Cr+jlRFYIyQ7QwyOqQ
-         3ncaLNuifRfwUZg5TzngZjRouyvlgMiOBzM8E=
-Date: Wed, 16 Jun 2010 16:54:47 -0300
-From: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 9/9] oom: give the dying task a higher priority
-Message-ID: <20100616195447.GH5009@uudg.org>
-References: <20100616201948.72D7.A69D9226@jp.fujitsu.com>
- <20100616203517.72EF.A69D9226@jp.fujitsu.com>
- <20100616153120.GH9278@barrios-desktop>
-MIME-Version: 1.0
+	id S1759502Ab0FPT6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 15:58:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10228 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751976Ab0FPT6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 15:58:23 -0400
+Date: Wed, 16 Jun 2010 15:58:01 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Christoph Hellwig <hch@infradead.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+       Jamie Lokier <jamie@shareable.org>,
+       David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] d_ino considered harmful
+Message-ID: <20100616195801.GC24382@shell>
+References: <20100616185913.GA15566@shell> <201006162110.43322.arnd@arndb.de>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100616153120.GH9278@barrios-desktop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <201006162110.43322.arnd@arndb.de>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 12:31:20AM +0900, Minchan Kim wrote:
-| >         /*
-| >          * We give our sacrificial lamb high priority and access to
-| >          * all the memory it needs. That way it should be able to
-| >          * exit() and clear out its resources quickly...
-| >          */
-| >  	p->rt.time_slice = HZ;
-| >  	set_tsk_thread_flag(p, TIF_MEMDIE);
-...
-| > +	if (rt_task(p)) {
-| > +		p->rt.time_slice = HZ;
-| > +		return;
+On Wed, Jun 16, 2010 at 09:10:42PM +0200, Arnd Bergmann wrote:
+> On Wednesday 16 June 2010 20:59:13 Valerie Aurora wrote:
+> > @@ -91,7 +91,9 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
+> >  
+> >         if (buf->result)
+> >                 return -EINVAL;
+> > -       d_ino = ino;
+> > +       /* Use of d_ino without st_dev is always buggy. */
+> > +       d_ino = 0;
+> > +
+> >         if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
+> >                 buf->result = -EOVERFLOW;
+> >                 return -EOVERFLOW;
+> 
+> Isn't this just the path taken by sys_oldreaddir?
+> 
+> Glibc (at least on my box) translates all user calls to readdir into
+> sys_getdents or sys_getdents64, so I think you'd also need to change
+> filldir() and filldir64() for your testing.
 
-I am not sure the code above will have any real effect for an RT task.
-Kosaki-san, was this change motivated by test results or was it just a code
-cleanup? I ask that out of curiosity.
+You're right.  I changed both code paths in the new version, and
+actually tested this time.
 
-| I have a question from long time ago. 
-| If we change rt.time_slice _without_ setscheduler, is it effective?
-| I mean scheduler pick up the task faster than other normal task?
+Thanks,
 
-$ git log --pretty=oneline -Stime_slice mm/oom_kill.c
-1da177e4c3f41524e886b7f1b8a0c1fc7321cac2 Linux-2.6.12-rc2
-
-This code ("time_slice = HZ;") is around for quite a while and
-probably comes from a time where having a big time slice was enough to be
-sure you would be the next on the line. I would say sched_setscheduler is
-indeed necessary.
-
-Regards,
-Luis
--- 
-[ Luis Claudio R. Goncalves             Red Hat  -  Realtime Team ]
-[ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
-
+-VAL
