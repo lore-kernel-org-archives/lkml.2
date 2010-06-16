@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759435Ab0FPTHs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 15:07:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:54457 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758747Ab0FPTHq (ORCPT
+	id S1759451Ab0FPTH6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 15:07:58 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:58806 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759440Ab0FPTH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 15:07:46 -0400
-Message-ID: <4C192113.7030101@vlnb.net>
-Date: Wed, 16 Jun 2010 23:08:03 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
-MIME-Version: 1.0
-To: sparclinux@vger.kernel.org
-CC: Simone Ricci <simone.ricci@gmail.com>, scst-devel@lists.sourceforge.net,
-       Joe Eykholt <jeykholt@cisco.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: How to printk/sprintf uint64_t on Sparc without format and argument
- types mismatch
-References: <AANLkTimuv7nOlcGFxqPZlwcAjLmFMiLAvbA5O7F32Wbg@mail.gmail.com>
-In-Reply-To: <AANLkTimuv7nOlcGFxqPZlwcAjLmFMiLAvbA5O7F32Wbg@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V01U2FsdGVkX1+v3XirkF2wF6M/uTDTpJE0hL/4tZxOGIAbbDl
- bNHp7SqLtuJWgqT2PDJYYBhRtVLagtky7vpIKcp3YjjgOXpUnk
- wHbdJW79Moamr4Xn5uScw==
+	Wed, 16 Jun 2010 15:07:56 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=nh3IRd0oge7/vOXTkx5RanmJFAOiHRSz5L4sLcDmc0XtMGNWd4MFy5So9LS7pzaiL
+	HJ/JxI3g6VhrpQt5fMpmw==
+Message-ID: <4c192107.4f1ee30a.4316.fffff98e@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Wed, 16 Jun 2010 20:59:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       fweisbec@gmail.com, acme@infradead.org, perfmon2-devel@lists.sf.net,
+       eranian@gmail.com, eranian@google.com
+Subject: [PATCH] perf: avoid synthesizing mmap() for all processes in per-thread mode perf record
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+A bug was introduced by commit c45c6ea2e5c57960dc67e00294c2b78e9540c007.
 
-We in SCST project need to printk/sprintf variables of type uint64_t. 
-Size of those variables is required to be 64-bit integer. On x86 we 
-printk/sprintf them as %lld, but on Sparc we have a compiler warnings like:
+Perf record was scanning /proc/PID to create synthetic PERF_RECOR_MMAP
+entries even though it was running in per-thread mode. There was a bogus
+check to select what mmaps to synthesize. We only need all processes in
+system-wide mode.
 
-scst/src/scst_targ.c:2136: warning: format ‘%llx’ expects type ‘long 
-long unsigned int’, but argument 4 has type ‘uint64_t’.
+Signed-off-by: Stephane Eranian <eranian@google.com>
 
-It is because on Sparc uint64_t defined as unsigned long, but on x86 - 
-as unsigned long long.
-
-Sure, we can cast all the cases to unsigned long long, but we wonder, 
-maybe there is a more elegant way to do that without the warning? For 
-instance, like %z for size_t or PRId64 in the user space.
-
-Thanks,
-Vlad
-
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 39c7247..5efc3fc 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -714,7 +714,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	if (perf_guest)
+ 		perf_session__process_machines(session, event__synthesize_guest_os);
+ 
+-	if (!system_wide && cpu_list)
++	if (!system_wide)
+ 		event__synthesize_thread(target_tid, process_synthesized_event,
+ 					 session);
+ 	else
