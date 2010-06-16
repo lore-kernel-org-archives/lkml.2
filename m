@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759652Ab0FPUrZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 16:47:25 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51594 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759527Ab0FPUrX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 16:47:23 -0400
-Date: Wed, 16 Jun 2010 13:46:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, rpurdie@rpsys.net,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       jirislaby@gmail.com, Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [PATCH 1/1] LEDS: leds-input, fix sleep inside atomic
-Message-Id: <20100616134646.3f7870e7.akpm@linux-foundation.org>
-In-Reply-To: <20100605234505.GZ5358@const.famille.thibault.fr>
-References: <1275772342-25094-1-git-send-email-jslaby@suse.cz>
-	<20100605234505.GZ5358@const.famille.thibault.fr>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932600Ab0FPUvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 16:51:23 -0400
+Received: from [18.85.46.34] ([18.85.46.34]:40187 "EHLO bombadil.infradead.org"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932369Ab0FPUvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 16:51:21 -0400
+Date: Wed, 16 Jun 2010 17:50:56 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+Subject: Re: [PATCH] perf: avoid synthesizing mmap() for all processes in
+ per-thread mode perf record
+Message-ID: <20100616205056.GB30679@ghostprotocols.net>
+References: <4c192107.4f1ee30a.4316.fffff98e@mx.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4c192107.4f1ee30a.4316.fffff98e@mx.google.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Jun 2010 01:45:06 +0200
-Samuel Thibault <samuel.thibault@ens-lyon.org> wrote:
-
-> Jiri Slaby, le Sat 05 Jun 2010 23:12:22 +0200, a __crit :
-> > Fix this by changing the spinlock to mutex as it is used only in
-> > input_handler->connect and ->disconnect and it is safe to sleep
-> > there.
+Em Wed, Jun 16, 2010 at 08:59:01PM +0200, Stephane Eranian escreveu:
+> A bug was introduced by commit c45c6ea2e5c57960dc67e00294c2b78e9540c007.
 > 
-> Right. in a previous patch it was also used in interrupt context, but
-> now it should be safe indeed.
+> Perf record was scanning /proc/PID to create synthetic PERF_RECOR_MMAP
+> entries even though it was running in per-thread mode. There was a bogus
+> check to select what mmaps to synthesize. We only need all processes in
+> system-wide mode.
 > 
-> Andrew, please fold it into the leds-input patch.
+> Signed-off-by: Stephane Eranian <eranian@google.com>
 
-hm, I did, nine days ago;
+Thanks, appling to perf/urgent
 
-btw, leds-route-kbd-leds-through-the-generic-leds-layer.patch is still
-in the "stuck" state coz Alessandro said he'd test it ;)
-
-I think I'll start pestering Richard with it anyway.
-
+- Arnaldo
