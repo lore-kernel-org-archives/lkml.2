@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758623Ab0FPFsl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 01:48:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28713 "EHLO
+	id S1758590Ab0FPFsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 01:48:33 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28722 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757447Ab0FPFqt (ORCPT
+	with ESMTP id S1757197Ab0FPFqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 01:46:49 -0400
+	Wed, 16 Jun 2010 01:46:52 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,53 +16,119 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 37/37] x86: make e820 to be __initdata
-Date: Tue, 15 Jun 2010 22:42:46 -0700
-Message-Id: <1276666966-14259-38-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 13/37] x86, lmb: Add lmb_register_active_regions() and lmb_hole_size()
+Date: Tue, 15 Jun 2010 22:42:22 -0700
+Message-Id: <1276666966-14259-14-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
 X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090206.4C18650C.00CA,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090204.4C186510.0147,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Finally no user after init boot stage. We can free it to save some bytes.
+lmb_register_active_regions() will be used to fill early_node_map,
+the result will be lmb.memory.region AND numa data
+
+lmb_hole_size will be used to find hole size on lmb.memory.region
+with specified range.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    2 --
- arch/x86/kernel/e820.c      |    2 +-
- 2 files changed, 1 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/lmb.h |    4 ++
+ arch/x86/mm/lmb.c          |   67 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 71 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index cd7de51..f2ab72e 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -73,8 +73,6 @@ struct e820map {
- #define BIOS_END		0x00100000
+diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
+index 63bb597..763fb52 100644
+--- a/arch/x86/include/asm/lmb.h
++++ b/arch/x86/include/asm/lmb.h
+@@ -11,4 +11,8 @@ void lmb_free_range(u64 start, u64 end);
+ struct range;
+ int get_free_all_memory_range(struct range **rangep, int nodeid);
  
- #ifdef __KERNEL__
--/* see comment in arch/x86/kernel/e820.c */
--extern struct e820map e820;
++void lmb_register_active_regions(int nid, unsigned long start_pfn,
++					 unsigned long last_pfn);
++u64 lmb_hole_size(u64 start, u64 end);
++
+ #endif
+diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+index 3954103..b7e42bc 100644
+--- a/arch/x86/mm/lmb.c
++++ b/arch/x86/mm/lmb.c
+@@ -238,3 +238,70 @@ void __init lmb_free_range(u64 start, u64 end)
  
- #if defined(CONFIG_X86_OOSTORE) && defined(CONFIG_CPU_SUP_CENTAUR)
- extern int centaur_ram_top;
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index f338b3b..b2594a4 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -35,7 +35,7 @@
-  * user can e.g. boot the original kernel with mem=1G while still booting the
-  * next kernel with full memory.
-  */
--struct e820map e820;
-+static struct e820map __initdata e820;
- static struct e820map __initdata e820_saved;
- 
- /* For PCI or other memory-mapped resources */
+ 	lmb_free(start, end - start);
+ }
++
++/*
++ * Finds an active region in the address range from start_pfn to last_pfn and
++ * returns its range in ei_startpfn and ei_endpfn for the lmb entry.
++ */
++static int __init lmb_find_active_region(const struct lmb_region *ei,
++				  unsigned long start_pfn,
++				  unsigned long last_pfn,
++				  unsigned long *ei_startpfn,
++				  unsigned long *ei_endpfn)
++{
++	u64 align = PAGE_SIZE;
++
++	*ei_startpfn = round_up(ei->base, align) >> PAGE_SHIFT;
++	*ei_endpfn = round_down(ei->base + ei->size, align) >> PAGE_SHIFT;
++
++	/* Skip map entries smaller than a page */
++	if (*ei_startpfn >= *ei_endpfn)
++		return 0;
++
++	/* Skip if map is outside the node */
++	if (*ei_endpfn <= start_pfn || *ei_startpfn >= last_pfn)
++		return 0;
++
++	/* Check for overlaps */
++	if (*ei_startpfn < start_pfn)
++		*ei_startpfn = start_pfn;
++	if (*ei_endpfn > last_pfn)
++		*ei_endpfn = last_pfn;
++
++	return 1;
++}
++
++/* Walk the lmb.memory map and register active regions within a node */
++void __init lmb_register_active_regions(int nid, unsigned long start_pfn,
++					 unsigned long last_pfn)
++{
++	unsigned long ei_startpfn;
++	unsigned long ei_endpfn;
++	struct lmb_region *r;
++
++	for_each_lmb(memory, r)
++		if (lmb_find_active_region(r, start_pfn, last_pfn,
++					   &ei_startpfn, &ei_endpfn))
++			add_active_range(nid, ei_startpfn, ei_endpfn);
++}
++
++/*
++ * Find the hole size (in bytes) in the memory range.
++ * @start: starting address of the memory range to scan
++ * @end: ending address of the memory range to scan
++ */
++u64 __init lmb_hole_size(u64 start, u64 end)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long last_pfn = end >> PAGE_SHIFT;
++	unsigned long ei_startpfn, ei_endpfn, ram = 0;
++	struct lmb_region *r;
++
++	for_each_lmb(memory, r)
++		if (lmb_find_active_region(r, start_pfn, last_pfn,
++					   &ei_startpfn, &ei_endpfn))
++			ram += ei_endpfn - ei_startpfn;
++
++	return end - start - ((u64)ram << PAGE_SHIFT);
++}
++
 -- 
 1.6.4.2
 
