@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759202Ab0FPQBF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 12:01:05 -0400
-Received: from cantor.suse.de ([195.135.220.2]:32963 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759167Ab0FPQBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 12:01:02 -0400
-Date: Wed, 16 Jun 2010 18:00:59 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Gilles Espinasse <g.esp@free.fr>,
-       Tejun Heo <tj@kernel.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 3/9] Removing dead CONFIG_SIBYTE_BCM1480_PROF
-In-Reply-To: <c217f4530c057f4b8030bd14459a0cb2856decde.1275925108.git.siccegge@cs.fau.de>
-Message-ID: <alpine.LNX.2.00.1006161800290.12271@pobox.suse.cz>
-References: <cover.1275925108.git.siccegge@cs.fau.de> <c217f4530c057f4b8030bd14459a0cb2856decde.1275925108.git.siccegge@cs.fau.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1759172Ab0FPQDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 12:03:32 -0400
+Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:44093 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754574Ab0FPQDb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 12:03:31 -0400
+X-Greylist: delayed 354 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jun 2010 12:03:31 EDT
+From: Louis Rilling <louis.rilling@kerlabs.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org, Louis Rilling <louis.rilling@kerlabs.com>
+Subject: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+Date: Wed, 16 Jun 2010 17:58:30 +0200
+Message-Id: <1276703910-16936-1-git-send-email-louis.rilling@kerlabs.com>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jun 2010, Christoph Egger wrote:
+Detached tasks are not seen by zap_pid_ns_processes()->sys_wait4(), so
+that release_task()->proc_flush_task() of container init can be called
+before it is for some detached tasks in the namespace.
 
-> CONFIG_SIBYTE_BCM1480_PROF doesn't exist in Kconfig, therefore removing all
-> references for it from the source code.
+Pin proc_mnt's in copy_process(), so that proc_flush_task() becomes safe
+whatever the ordering of tasks.
 
-The patch isn't present in linux-next as of today. I have applied it to my 
-tree, thanks.
+Signed-off-by: Louis Rilling <louis.rilling@kerlabs.com>
+---
+ fs/proc/base.c          |   17 +++++++++++++++++
+ include/linux/proc_fs.h |    4 ++++
+ kernel/fork.c           |    1 +
+ 3 files changed, 22 insertions(+), 0 deletions(-)
 
-> 
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> ---
->  arch/mips/sibyte/bcm1480/irq.c |   11 -----------
->  1 files changed, 0 insertions(+), 11 deletions(-)
-> 
-> diff --git a/arch/mips/sibyte/bcm1480/irq.c b/arch/mips/sibyte/bcm1480/irq.c
-> index 044bbe4..919d2d5 100644
-> --- a/arch/mips/sibyte/bcm1480/irq.c
-> +++ b/arch/mips/sibyte/bcm1480/irq.c
-> @@ -362,19 +362,8 @@ asmlinkage void plat_irq_dispatch(void)
->  	unsigned int cpu = smp_processor_id();
->  	unsigned int pending;
->  
-> -#ifdef CONFIG_SIBYTE_BCM1480_PROF
-> -	/* Set compare to count to silence count/compare timer interrupts */
-> -	write_c0_compare(read_c0_count());
-> -#endif
-> -
->  	pending = read_c0_cause() & read_c0_status();
->  
-> -#ifdef CONFIG_SIBYTE_BCM1480_PROF
-> -	if (pending & CAUSEF_IP7)	/* Cpu performance counter interrupt */
-> -		sbprof_cpu_intr();
-> -	else
-> -#endif
-> -
->  	if (pending & CAUSEF_IP4)
->  		do_IRQ(K_BCM1480_INT_TIMER_0 + cpu);
->  #ifdef CONFIG_SMP
-> -- 
-> 1.6.3.3
-> 
-
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index acb7ef8..4d7328f 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2663,6 +2663,23 @@ static const struct inode_operations proc_tgid_base_inode_operations = {
+ 	.setattr	= proc_setattr,
+ };
+ 
++/*
++ * Pin all proc_mnt so that detached tasks can safely call proc_flush_task()
++ * after container init calls itself proc_flush_task().
++ */
++void proc_new_task(struct task_struct *task)
++{
++	struct pid *pid;
++	int i;
++
++	if (!task->pid)
++		return;
++
++	pid = task_pid(task);
++	for (i = 0; i <= pid->level; i++)
++		mntget(pid->numbers[i].ns->proc_mnt);
++}
++
+ static void proc_flush_task_mnt(struct vfsmount *mnt, pid_t pid, pid_t tgid)
+ {
+ 	struct dentry *dentry, *leader, *dir;
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 379eaed..f24faa1 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -104,6 +104,7 @@ struct vmcore {
+ 
+ extern void proc_root_init(void);
+ 
++void proc_new_task(struct task_struct *task);
+ void proc_flush_task(struct task_struct *task);
+ 
+ extern struct proc_dir_entry *create_proc_entry(const char *name, mode_t mode,
+@@ -184,6 +185,9 @@ extern void dup_mm_exe_file(struct mm_struct *oldmm, struct mm_struct *newmm);
+ #define proc_net_fops_create(net, name, mode, fops)  ({ (void)(mode), NULL; })
+ static inline void proc_net_remove(struct net *net, const char *name) {}
+ 
++static inline void proc_new_task(struct task_struct *task)
++{
++}
+ static inline void proc_flush_task(struct task_struct *task)
+ {
+ }
+diff --git a/kernel/fork.c b/kernel/fork.c
+index b6cce14..c6c2874 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1281,6 +1281,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	total_forks++;
+ 	spin_unlock(&current->sighand->siglock);
+ 	write_unlock_irq(&tasklist_lock);
++	proc_new_task(p);
+ 	proc_fork_connector(p);
+ 	cgroup_post_fork(p);
+ 	perf_event_fork(p);
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+1.5.6.5
+
