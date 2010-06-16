@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab0FPFyz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 01:54:55 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50558 "EHLO mx3.mail.elte.hu"
+	id S1756362Ab0FPF4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 01:56:23 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50766 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754341Ab0FPFyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 01:54:53 -0400
-Date: Wed, 16 Jun 2010 07:53:58 +0200
+	id S1753996Ab0FPF4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 01:56:22 -0400
+Date: Wed, 16 Jun 2010 07:56:09 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, daniel.blueman@gmail.com,
-       lizf@cn.fujitsu.com, miles.lane@gmail.com, manfred@colorfullife.com
-Subject: Re: [GIT PULL rcu/urgent] yet more lockdep-RCU splat fixes
-Message-ID: <20100616055358.GB17936@elte.hu>
-References: <20100616042224.GA3892@linux.vnet.ibm.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH] x86-32: always use irq stacks
+Message-ID: <20100616055609.GC17936@elte.hu>
+References: <20100526110923.GA28414@lst.de>
+ <20100616051629.GA26012@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100616042224.GA3892@linux.vnet.ibm.com>
+In-Reply-To: <20100616051629.GA26012@lst.de>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -32,30 +33,16 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+* Christoph Hellwig <hch@lst.de> wrote:
 
-> Hello, Ingo,
-> 
-> Here are a few more fixes for RCU-lockdep splats.
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
-> 
-> This is based off of v2.6.35-rc3.
-> 
-> 							Thanx, Paul
-> 
-> ------------------>
-> Daniel J Blueman (1):
->       rcu: fix lockdep splat in wake_affine()
-> 
-> Paul E. McKenney (2):
->       rcu: fix scope of wake_affine()'s new RCU read-side critical section
->       idr: fix RCU lockdep splat in idr_get_next()
-> 
->  kernel/sched_fair.c |    2 ++
->  lib/idr.c           |    4 ++--
->  2 files changed, 4 insertions(+), 2 deletions(-)
+> ping?  This just came up again as a side-issue in the direct reclaim thread.  
+> x86-32 really is the only one out there still having this compared to the 
+> other common architetures like x86-64, powerpc and s390.
 
-Pulled, thanks a lot Paul!
+We should also make 8K stacks the default on 32-bit. I.e. remove all the 
+Kconfig distinctions and make the stack model similar on 32-bit and 64-bit 
+x86.
+
+Thanks,
 
 	Ingo
