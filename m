@@ -1,235 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759624Ab0FPUxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 16:53:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48164 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753571Ab0FPUxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 16:53:17 -0400
+	id S932666Ab0FPVAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 17:00:45 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:57685 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932525Ab0FPVAk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 17:00:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=mP1C18vx/8l0lkpYoslIaZaef7TbIedDWslg+S0EASWCGLzWplZmOHEb2KVUR3izN1
+         ydoPzUFNrZsBsKGnL3i6+eHWptw55t6tlSWgH6CXpoegATSdKMOvZeS3u0SSQlM4U4/a
+         PLb61cjzSlBL2+epoMONgtYLX1WqfbGcM11D8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-X-Fcc: ~/Mail/linus
-Cc: Jan Kratochvil <jan.kratochvil@redhat.com>, linux-kernel@vger.kernel.org,
-       x86@kernel.org
-Subject: Re: Bug 16061 - single stepping in a signal handler can cause the
-	single step flag to get "stuck"
-In-Reply-To: Oleg Nesterov's message of  Wednesday, 16 June 2010 21:56:29 +0200 <20100616195629.GA25475@redhat.com>
-References: <20100602192318.GA26735@redhat.com>
-	<20100616023111.007FA40736@magilla.sf.frob.com>
-	<20100616195629.GA25475@redhat.com>
-X-Shopping-List: (1) Repugnant fatuous snoozeers
-   (2) Mauve organ yies
-   (3) Amorphous retardation breath
-Message-Id: <20100616205311.B7BE8403D2@magilla.sf.frob.com>
-Date: Wed, 16 Jun 2010 13:53:11 -0700 (PDT)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20100616134231.23ff30da.akpm@linux-foundation.org>
+References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
+	<AANLkTiksbL1qHg7Q0A-6TbX0uUrxra4jctUoIGVk5vnE@mail.gmail.com>
+	<201006091122.35304.rjw@sisk.pl>
+	<20100616134231.23ff30da.akpm@linux-foundation.org>
+Date: Wed, 16 Jun 2010 23:00:37 +0200
+Message-ID: <AANLkTil-X5IMZMer7fHVPOMalsTJNliv-gMimzKmJ3Od@mail.gmail.com>
+Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>, dmonakhov@openvz.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Roland, thanks a lot for this (long!) explanation. Another email from
-> you which I should save in ~/DOCS. I don't know how many time you spent
-> writing this message, but I bet I spent more trying to understand it ;)
+How do cpu-freq related stuff find its way into mainline?
+Is there a GIT repository/branch on <git.kernel.org> where you can pull from?
 
-That was my plan. ;-)
+- Sedat -
 
-> Damn. Can't resists. And when I read to this point, I decided to
-> learn what exactly DR_STEP and db6 (I looked at native_get_debugreg)
-> mean. More than hour I was trying to google and search in the intel
-> pdf's I have. No lack. Nothing about db[0-6]! However, I discovered
-> that volume 3b system programming guide describes DR6 register (not db!)
-
-Yes, the assembly syntax is %dbN, some comments and docs say DBn, and
-others say DRn.  They're called the "debug registers", abbreviate randomly.
-Go team.
-
-> and it has BS=14 bit (matches DR_STEP == (1 << 14)) which merely means:
-> "the debug exception was triggered by the single-step execution mode".
-> Heh. Finally I can understand this code, more or less.
-
-Nobody understands it more than more or less. ;-) 
-To get more confused, try to figure out when the hardware (or kernel) does
-or doesn't clear the DR_STEP bit (or others) in %db6.  (Actually, don't.
-You can find some old LKML thread about hw_breakpoint where we figured that
-out, but my brain hurts just recalling that I once almost knew.)
-
-> grep, grep, grep, grep... syscall_init()->wrmsrl(X86_EFLAGS_TF), right?
-
-Right.
-
-> OK. And now I spent a couple more hours. Because I decided to learn
-> how actually syscalls work on x86_64. I read the sysenter code for
-> i386 a long ago, and I found my understanding doesn't match the current
-> reality. grep * a_lot.
-
-Muwhahaha.  Indeed, this is not directly relevant and I judiciously said
-"the next instruction" for sysenter without mentioning the vDSO magic that
-is actually where that PC always is.  You don't really need to know about
-that stuff, for this subject.  But go ahead and learn about it, and then
-you'll get stuck fixing it next time there is a problem. ;-)
-
-> So, the user-space doesn't use vdso/vsyscall, it merely calls the
-> "syscall" insn.
-
-Right.  x86-64 started out with a single, sensible and optimal mechanism
-for native system calls.  The only reason i386 has __kernel_vsyscall is
-that there are multiple variants best for different hardware, and you
-don't know which flavor you want until you boot and see the actual CPU.
-
-> But what about vdso and vsyscall? Looks like, they both do (almost)
-> the same, but using different the methods.
-
-Yes, the non-DSO vsyscall page is an older hack and now we are stuck with
-that as a permanent part of the x86-64 user/kernel ABI.  The vDSO is the
-"modern" method, and is treated similarly on i386 and several other
-machines (e.g. powerpc has exported calls there too).
-
-> OK, after this grepping I see it was off-topic. And I do not even
-> remember my concerns which forced me to study this magic now.
-
-Too late!  Now we know that you know, and you will be the expert when I am
-hit by the bus.
-
-> Aha. So, in short: we restore TF in syscall_trace_enter() to expose
-> this flag to debugger, right? This was my (vague) understanding, but
-> I wasn't sure.
-
-Right.  It also exposes it correctly in struct sigcontext if user-mode had
-set TF itself.  This fix came long after most of the rest of the logic.  So
-some other existing code might be redundant or strange-looking now that we
-have this.
-
-> > Back to prehistory. It's always been possible in the hardware for
-> > user-mode to set TF itself, i.e.:
-> >
-> > 	pushf
-> > 	orw $0x200, (%esp)
-> > 	popf
-> 
-> Quick question: is it connected to is_setting_trap_flag() ? IOW,
-> what is_setting_trap_flag() actually tells us? Looks like, it should
-> return true if the next insn changes the flags, correct?
-
-Correct.  is_setting_trap_flag() returns true when the PC is pointing at
-that "popf", for example.
-
-> 	- if it was set by us: TIF_SINGLESTEP should be true, and
-> 	  we are not going to run the signal handler, we are going
-> 	  to ptrace_notify(SIGTRAP).
-
-Right.
-
-> 	- else: it was set by the app or debugger. Why should we
-> 	  clear TF?
-> 
-> 	  OK, probably we need this if the app sets TF for the
-> 	  self-debugging and has a handerl for SIGTRAP...
-
-Correct.  That's always been the only way to usefully set TF yourself in
-user mode (otherwise you'd just get infinite SIGTRAPs).  It corresponds to
-how the hardware trap behavior works, e.g. if you were using signal
-handlers to execute old DOS code in emulation and had a DOS debugger in
-there.
-
-> 	  If it was debugger, then I am not sure. OTOH, I do not
-> 	  know why debugger may want to do set_flags(X86_EFLAGS_TF).
-
-It's just the general pedanticism that the debugger should be able to set
-up any state that user-mode code could have created itself.
-
-> > Not long after, I wanted to clean things up, and added TIF_FORCED_TF.
-> 
-> In short, TIF_FORCED_TF means: we believe we "own" X86_EFLAGS_TF.
-
-Well, only sort of.  It means we "own" it being on.  If it's off, that
-doesn't mean we're choosing to turn it off when the userland state is on,
-for example.  That might be a nice and clear thing for a flag like that to
-mean.  But there are so many ways that it can be implicitly cleared by
-hardware and such that it would take more work to make it mean that.
-
-> > (That detection is imperfect in various ways
-> 
-> Ah, good. I thought that my misunderstanding is the only problem.
-
-I could tell you some ways it could be wrong.  But that's left as an
-exercise for the reader, and you really just don't care.
-
-> > To complete the background, there is one more set of wrinkles.  There
-> > are the various potential ptrace stops that take place "inside" some
-> > system call (execve, clone, fork, or vfork).
-> 
-> Oh, thanks. I didn't think about this. Again, will re-read your explanation
-> tomorrow. (Probably this doesn't matter in the context of this particular
-> bug, but I am not sure...)
-
-I don't think it directly influences anything we're talking about changing.
-But it is a nonobvious thing I wanted to put in the record.
-
-> Confused... syscall insn doesn't lead to TIF_SINGLESTEP, so
-> syscall_trace_leave() should return to user-space, and then we should
-> have a single step after the next instruction? (assuming TIF_SYSCALL_TRACE
-> is not set).
-
-You're not confused!  That's exactly how it works.
->From the userland perspective this is a "double-step":
-
-0000000000400078 <_start>:
-  400078:	9c                   	pushfq 
-  400079:	66 81 0c 24 00 02    	orw    $0x200,(%rsp)
-  40007f:	9d                   	popfq  
-  400080:	0f 05                	syscall 
-  400082:	f4                   	hlt    
-
-This doesn't get a SIGTRAP at 400082 as it would for any normal instruction
-instead of "syscall".  Instead it gets SIGSEGV because "hlt" is executed.
-
-> > It may make sense to have signal.c just notice TIF_FORCED_TF and mask TF
-> > out of what it stores in the signal frame rather than actually clearing
-> > it in the registers beforehand.
-> 
-> Yes, the patch I sent you privately does exactly this.
-
-Right.  I think that direction is where the right fixes lie.
-
-> Well, this is minor, but get_flags() from ptrace.c takes the task_struct
-> pointer, while we already have pt_regs in setup_sigcontext... OK, I agree,
-> but then we need a good name for this helper. ptrace_get_task_flags?
-
-I'd call it user_[gs]et_eflags, but names don't matter much.  Feel free to
-change the signatures to take the pt_regs pointer too.  Half the ptrace.c
-callers have the pointer on hand already too.  And it wouldn't hurt to
-change the signature of the local {get,put}reg{,32} calls to take the
-argument and have their callers use task_pt_regs() only once, too.
-
-> > But it still
-> > needs to clear TF for the handler entry if TIF_SINGLESTEP is not set.
-> 
-> Aha. This partly answers my "Why should we clear TF" question above.
-> At least you agree that if TIF_SINGLESTEP is set, this is not needed.
-
-Right.
-
-> I still can't fully understand why should we clear it otherwise. But,
-> in any case, I guess we should do this because we do not want the user
-> visible changes.
-
-It's the only way that user-mode being able to set TF on itself can ever
-make any kind of sense.
-
-> > And notice also restore_sigcontext (and ia32_restore_sigcontext), which
-> > also lets userland choose the TF value without regard to TIF_FORCED_TF.
-> 
-> Oh! thanks... Again, again, again, will reread tomorrow. But at first
-> glance, doesn't this mean another problem/patch?
-
-Yes, those should use user_set_eflags.  With today's kernel I think you
-could write another test case where a signal handler returns after setting
-TF in the sigcontext, so that PTRACE_SINGLESTEP over the sigreturn syscall
-breaks the untraced userland behavior by the next PTRACE_CONT clearing TF
-when userland wants it set.
-
-
-Thanks,
-Roland
+On Wed, Jun 16, 2010 at 10:42 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 9 Jun 2010 11:22:35 +0200
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+>
+>> On Wednesday 09 June 2010, Sedat Dilek wrote:
+>> > The patch from [1] is still missing.
+>> >
+>> >    "cpufreq-call-nr_iowait_cpu-with-disabled-preemption.patch" from
+>> > Dmitry Monakhoc
+>> >
+>> > Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+>> > Tested-by Maciej Rutecki <maciej.rutecki@gmail.com>
+>> >
+>> > I have already reported this issue on LKML [2] and cpufreq ML [3].
+>> >
+>> > - Sedat -
+>> >
+>> > [1] http://www.spinics.net/lists/cpufreq/msg01631.html
+>> > [2] http://lkml.org/lkml/2010/5/31/77
+>> > [3] http://www.spinics.net/lists/cpufreq/msg01637.html
+>>
+>> Thanks, added.
+>
+> I just merged a different patch whcih should address this:
+>
+>
+> From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+>
+> Fix
+>
+>  BUG: using smp_processor_id() in preemptible [00000000] code: s2disk/3392
+>  caller is nr_iowait_cpu+0xe/0x1e
+>  Pid: 3392, comm: s2disk Not tainted 2.6.35-rc3-dbg-00106-ga75e02b #2
+>  Call Trace:
+>  [<c1184c55>] debug_smp_processor_id+0xa5/0xbc
+>  [<c10282a5>] nr_iowait_cpu+0xe/0x1e
+>  [<c104ab7c>] update_ts_time_stats+0x32/0x6c
+>  [<c104ac73>] get_cpu_idle_time_us+0x36/0x58
+>  [<c124229b>] get_cpu_idle_time+0x12/0x74
+>  [<c1242963>] cpufreq_governor_dbs+0xc3/0x2dc
+>  [<c1240437>] __cpufreq_governor+0x51/0x85
+>  [<c1241190>] __cpufreq_set_policy+0x10c/0x13d
+>  [<c12413d3>] cpufreq_add_dev_interface+0x212/0x233
+>  [<c1241b1e>] ? handle_update+0x0/0xd
+>  [<c1241a18>] cpufreq_add_dev+0x34b/0x35a
+>  [<c103c973>] ? schedule_delayed_work_on+0x11/0x13
+>  [<c12c14db>] cpufreq_cpu_callback+0x59/0x63
+>  [<c1042f39>] notifier_call_chain+0x26/0x48
+>  [<c1042f7d>] __raw_notifier_call_chain+0xe/0x10
+>  [<c102efb9>] __cpu_notify+0x15/0x29
+>  [<c102efda>] cpu_notify+0xd/0xf
+>  [<c12bfb30>] _cpu_up+0xaf/0xd2
+>  [<c12b3ad4>] enable_nonboot_cpus+0x3d/0x94
+>  [<c1055eef>] hibernation_snapshot+0x104/0x1a2
+>  [<c1058b49>] snapshot_ioctl+0x24b/0x53e
+>  [<c1028ad1>] ? sub_preempt_count+0x7c/0x89
+>  [<c10ab91d>] vfs_ioctl+0x2e/0x8c
+>  [<c10588fe>] ? snapshot_ioctl+0x0/0x53e
+>  [<c10ac2c7>] do_vfs_ioctl+0x42f/0x45a
+>  [<c10a0ba5>] ? fsnotify_modify+0x4f/0x5a
+>  [<c11e9dc3>] ? tty_write+0x0/0x1d0
+>  [<c10a12d6>] ? vfs_write+0xa2/0xda
+>  [<c10ac333>] sys_ioctl+0x41/0x62
+>  [<c10027d3>] sysenter_do_call+0x12/0x2d
+>
+> The initial fix was to use get_cpu/put_cpu in nr_iowait_cpu.  However,
+> Arjan stated that "the bug is that it needs to be nr_iowait_cpu(int cpu)".
+>
+> This patch introduces nr_iowait_cpu(int cpu) and changes to it callers.
+>
+> akpm: addresses about 30,000,000 different bug reports.
+>
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Cc: Arjan van de Ven <arjan@infradead.org>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>
+>  drivers/cpuidle/governors/menu.c |   10 ++++++++--
+>  include/linux/sched.h            |    2 +-
+>  kernel/sched.c                   |    4 ++--
+>  kernel/time/tick-sched.c         |    4 +++-
+>  4 files changed, 14 insertions(+), 6 deletions(-)
+>
+> diff -puN drivers/cpuidle/governors/menu.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu drivers/cpuidle/governors/menu.c
+> --- a/drivers/cpuidle/governors/menu.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu
+> +++ a/drivers/cpuidle/governors/menu.c
+> @@ -137,15 +137,18 @@ static inline int which_bucket(unsigned
+>  {
+>        int bucket = 0;
+>
+> +       int cpu = get_cpu();
+>        /*
+>         * We keep two groups of stats; one with no
+>         * IO pending, one without.
+>         * This allows us to calculate
+>         * E(duration)|iowait
+>         */
+> -       if (nr_iowait_cpu())
+> +       if (nr_iowait_cpu(cpu))
+>                bucket = BUCKETS/2;
+>
+> +       put_cpu();
+> +
+>        if (duration < 10)
+>                return bucket;
+>        if (duration < 100)
+> @@ -169,13 +172,16 @@ static inline int which_bucket(unsigned
+>  static inline int performance_multiplier(void)
+>  {
+>        int mult = 1;
+> +       int cpu = get_cpu();
+>
+>        /* for higher loadavg, we are more reluctant */
+>
+>        mult += 2 * get_loadavg();
+>
+>        /* for IO wait tasks (per cpu!) we add 5x each */
+> -       mult += 10 * nr_iowait_cpu();
+> +       mult += 10 * nr_iowait_cpu(cpu);
+> +
+> +       put_cpu();
+>
+>        return mult;
+>  }
+> diff -puN include/linux/sched.h~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu include/linux/sched.h
+> --- a/include/linux/sched.h~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu
+> +++ a/include/linux/sched.h
+> @@ -139,7 +139,7 @@ extern int nr_processes(void);
+>  extern unsigned long nr_running(void);
+>  extern unsigned long nr_uninterruptible(void);
+>  extern unsigned long nr_iowait(void);
+> -extern unsigned long nr_iowait_cpu(void);
+> +extern unsigned long nr_iowait_cpu(int cpu);
+>  extern unsigned long this_cpu_load(void);
+>
+>
+> diff -puN kernel/sched.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu kernel/sched.c
+> --- a/kernel/sched.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu
+> +++ a/kernel/sched.c
+> @@ -2864,9 +2864,9 @@ unsigned long nr_iowait(void)
+>        return sum;
+>  }
+>
+> -unsigned long nr_iowait_cpu(void)
+> +unsigned long nr_iowait_cpu(int cpu)
+>  {
+> -       struct rq *this = this_rq();
+> +       struct rq *this = cpu_rq(cpu);
+>        return atomic_read(&this->nr_iowait);
+>  }
+>
+> diff -puN kernel/time/tick-sched.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu kernel/time/tick-sched.c
+> --- a/kernel/time/tick-sched.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu
+> +++ a/kernel/time/tick-sched.c
+> @@ -159,10 +159,12 @@ update_ts_time_stats(struct tick_sched *
+>        ktime_t delta;
+>
+>        if (ts->idle_active) {
+> +               int cpu = get_cpu();
+>                delta = ktime_sub(now, ts->idle_entrytime);
+>                ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+> -               if (nr_iowait_cpu() > 0)
+> +               if (nr_iowait_cpu(cpu) > 0)
+>                        ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
+> +               put_cpu();
+>                ts->idle_entrytime = now;
+>        }
+>
+> _
+>
+>
