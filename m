@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437Ab0FPQn2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 12:43:28 -0400
-Received: from athena.yggdrasilsoft.net ([208.79.213.178]:49235 "EHLO
-	athena.yggdrasilsoft.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932292Ab0FPQn1 (ORCPT
+	id S932430Ab0FPQsc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 12:48:32 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:59118 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978Ab0FPQsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 12:43:27 -0400
-X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jun 2010 12:43:27 EDT
-Message-ID: <4C18FD5E.7070809@tabris.net>
-Date: Wed, 16 Jun 2010 09:35:42 -0700
-From: Adam Schrotenboer <adam@tabris.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Wed, 16 Jun 2010 12:48:31 -0400
+X-SpamScore: -20
+X-BigFish: VPS-20(zz1432N98dN936eM62a3Lzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L44973-02-AF5-02
+X-M-MSG: 
+Date: Wed, 16 Jun 2010 18:45:01 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 3/8] perf: register pmu implementations
+Message-ID: <20100616164501.GS21799@erda.amd.com>
+References: <20100616160027.590430763@chello.nl>
+ <20100616160238.241599593@chello.nl>
 MIME-Version: 1.0
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-CC: mingo@elte.hu, linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: excluding "." and ".." directories when calculating
- tids.
-References: <4C1740B1.9070806@cn.fujitsu.com> <4C1748D6.1020007@cn.fujitsu.com> <4C185F68.1020505@cn.fujitsu.com>
-In-Reply-To: <4C185F68.1020505@cn.fujitsu.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/signed; micalg=pgp-ripemd160;
- protocol="application/pgp-signature";
- boundary="------------enigCBC39A6A3D863648D9409362"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100616160238.241599593@chello.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigCBC39A6A3D863648D9409362
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 06/15/2010 10:21 PM, Gui Jianfeng wrote:
-> Introduce a filter function to skip "." and ".." directories when calcu=
-lating
-> tid number.
->
-> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+On 16.06.10 12:00:30, Peter Zijlstra wrote:
+> Simple registration interface for struct pmu, this provides the
+> infrastructure for removing all the weak functions.
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 > ---
->  tools/perf/util/thread.c |   11 ++++++++++-
->  1 files changed, 10 insertions(+), 1 deletions(-)
->
-> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-> index 1f7ecd4..9a448b4 100644
-> --- a/tools/perf/util/thread.c
-> +++ b/tools/perf/util/thread.c
-> @@ -7,6 +7,15 @@
->  #include "util.h"
->  #include "debug.h"
-> =20
-> +/* Skip "." and ".." directories */
-> +static int filter(const struct dirent *dir)
-> +{
-> +	if (dir->d_name[0] =3D=3D '.')
-> +		return 0;
-> +	else
-> +		return 1;
-> +}
-> +
->  =20
+>  arch/arm/kernel/perf_event.c             |   36 +
+>  arch/powerpc/kernel/perf_event.c         |   41 +-
+>  arch/powerpc/kernel/perf_event_fsl_emb.c |   31 -
+>  arch/sh/kernel/perf_event.c              |   19
+>  arch/sparc/kernel/perf_event.c           |   13
+>  arch/x86/kernel/cpu/perf_event.c         |   45 +-
+>  include/linux/perf_event.h               |   10
+>  kernel/hw_breakpoint.c                   |   35 +
+>  kernel/perf_event.c                      |  597 +++++++++++++++----------------
+>  9 files changed, 432 insertions(+), 395 deletions(-)
 
-Is this safe? Can you _never_ have a d_name with a leading dot, like '
-=2Ehidden' ??
-Maybe should
-if(dir->d_name[0] =3D=3D '.' && (dir->d_name[1] =3D=3D '\0' || (dir->d_na=
-me[1]
-=3D=3D '.' && dir->d_name[2] =3D=3D '\0')))
+Yes, this makes the code much more easier! Now it would be possible to
+easy register multiple hw pmus.
 
-Admittedly I don't think it happens in the current procfs, but I'd want
-to be careful regardless.
+Thanks Peter,
 
+-Robert
 
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
 
---------------enigCBC39A6A3D863648D9409362
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEAREDAAYFAkwY/WEACgkQXNlttaeijWd95gCfW1cups/PjP+GYfKCMKLeUEgc
-bscAnRC0osKtoYBf/dmHVqtvSUBpDUdA
-=F42o
------END PGP SIGNATURE-----
-
---------------enigCBC39A6A3D863648D9409362--
