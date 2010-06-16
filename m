@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab0FPO6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 10:58:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42703 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189Ab0FPO6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 10:58:30 -0400
-Date: Wed, 16 Jun 2010 11:58:27 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/17] Fix a possible backwards warp of kvmclock
-Message-ID: <20100616145827.GP19104@mothafucka.localdomain>
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com>
- <1276587259-32319-12-git-send-email-zamsden@redhat.com>
- <4C18872E.4030105@redhat.com>
- <20100616135845.GM19104@mothafucka.localdomain>
- <4C18DBEE.70600@redhat.com>
+	id S1754791Ab0FPPCl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 11:02:41 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54758 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755114Ab0FPPCi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 11:02:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WG4eXL2UzQ7v1HJd4LciDhgoytijsCYUTTSMLN1gzKHxp7Bf+euDR/vsawwhQviNmr
+         y283vuDbcrL3uhMGqugHAoJLGxWCHjhMVdogH6oqC80O5uZ5IZiJrgpVgnoOtWdAd/XW
+         zTFsgpXk7M97eS/l41kMbpfUZJRTfdthoxPC4=
+Date: Thu, 17 Jun 2010 00:02:32 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 3/9] oom: oom_kill_process() doesn't select kthread
+ child
+Message-ID: <20100616150232.GC9278@barrios-desktop>
+References: <20100616201948.72D7.A69D9226@jp.fujitsu.com>
+ <20100616203126.72DD.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C18DBEE.70600@redhat.com>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+In-Reply-To: <20100616203126.72DD.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 05:13:02PM +0300, Avi Kivity wrote:
-> On 06/16/2010 04:58 PM, Glauber Costa wrote:
-> >On Wed, Jun 16, 2010 at 04:11:26PM +0800, Jason Wang wrote:
-> >>Zachary Amsden wrote:
-> >>>Kernel time, which advances in discrete steps may progress much slower
-> >>>than TSC.  As a result, when kvmclock is adjusted to a new base, the
-> >>>apparent time to the guest, which runs at a much higher, nsec scaled
-> >>>rate based on the current TSC, may have already been observed to have
-> >>>a larger value (kernel_ns + scaled tsc) than the value to which we are
-> >>>setting it (kernel_ns + 0).
-> >>>
-> >>This is one issue of kvmclock which tries to supply a clocksource whose
-> >>precision may even higher than host.
-> >What if we export to the guest the current clock resolution, and when doing guest
-> >reads, simply chop whatever value we got to the lowest acceptable value?
-> 
-> The clock resolution can change, and while we can expose it reliably
-> through pvclock, do we need a notification so that the guest can
-> update other internal structures?
-I believe the only thing we need is to warn the guest whenever this changes.
-We can probably fit it in one of the paddings we have, and add a flag to say
-it is valid (now that we have the infrastructure).
+On Wed, Jun 16, 2010 at 08:32:08PM +0900, KOSAKI Motohiro wrote:
+> Now, select_bad_process() have PF_KTHREAD check, but oom_kill_process
+> doesn't. It mean oom_kill_process() may choose wrong task, especially,
+> when the child are using use_mm().
+Now oom_kill_process is called by three place. 
+
+1. mem_cgroup_out_of_memory
+2. out_of_memory with sysctl_oom_kill_allocating_task
+3. out_of_memory with non-sysctl_oom_kill_allocating_task
+
+I think it's no problem in 1 and 3 since select_bad_process already checks
+PF_KTHREAD. The problem in in 2. 
+So How about put the check before calling oom_kill_process in case of
+sysctl_oom_kill_allocating task?
+
+if (sysctl_oom_kill_allocating_task) {
+        if (!current->flags & PF_KTHREAD)
+                oom_kill_process();
+                        
+It can remove duplicated PF_KTHREAD check in select_bad_process and
+oom_kill_process. 
+
+-- 
+Kind regards,
+Minchan Kim
