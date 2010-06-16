@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758359Ab0FPAo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 20:44:29 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50848 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757940Ab0FPAo1 (ORCPT
+	id S1758497Ab0FPAqm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 20:46:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33667 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758219Ab0FPAql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 20:44:27 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 16 Jun 2010 09:39:58 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 12/12] vmscan: Do not writeback pages in direct reclaim
-Message-Id: <20100616093958.00673123.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4C181AFD.5060503@redhat.com>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
-	<1276514273-27693-13-git-send-email-mel@csn.ul.ie>
-	<4C16A567.4080000@redhat.com>
-	<20100615114510.GE26788@csn.ul.ie>
-	<4C17815A.8080402@redhat.com>
-	<20100615135928.GK26788@csn.ul.ie>
-	<4C178868.2010002@redhat.com>
-	<20100615141601.GL26788@csn.ul.ie>
-	<20100616091755.7121c7d3.kamezawa.hiroyu@jp.fujitsu.com>
-	<4C181AFD.5060503@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 15 Jun 2010 20:46:41 -0400
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-doc@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100615083623.2dbaab24.rdunlap@xenotime.net>
+References: <1276513297-23306-1-git-send-email-apw@canonical.com>
+	 <1276514142.14011.329.camel@localhost>
+	 <1276563314.14011.361.camel@localhost>
+	 <20100615083623.2dbaab24.rdunlap@xenotime.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-YOOsbQwINSpHeaZUIzkl"
+Date: Wed, 16 Jun 2010 01:46:33 +0100
+Message-ID: <1276649193.14011.574.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.1.2 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [PATCH] docbook: need xmldoclinks for all doc types
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jun 2010 20:29:49 -0400
-Rik van Riel <riel@redhat.com> wrote:
 
-> On 06/15/2010 08:17 PM, KAMEZAWA Hiroyuki wrote:
-> > On Tue, 15 Jun 2010 15:16:01 +0100
-> > Mel Gorman<mel@csn.ul.ie>  wrote:
-> 
-> >> But in turn, where is mem_cgroup_hierarchical_reclaim called from direct
-> >> reclaim? It appears to be only called from the fault path or as a result
-> >> of the memcg changing size.
-> >>
-> > yes. It's only called from
-> > 	- page fault
-> > 	- add_to_page_cache()
-> >
-> > I think we'll see no stack problem. Now, memcg doesn't wakeup kswapd for
-> > reclaiming memory, it needs direct writeback.
-> 
-> Of course, a memcg page fault could still be triggered
-> from copy_to_user or copy_from_user, with a fairly
-> arbitrary stack frame above...
-> 
+--=-YOOsbQwINSpHeaZUIzkl
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Hmm. But I don't expect copy_from/to_user is called in very deep stack.
+On Tue, 2010-06-15 at 08:36 -0700, Randy Dunlap wrote:
+> On Tue, 15 Jun 2010 01:55:14 +0100 Ben Hutchings wrote:
+>=20
+> > Andy Whitcroft wrote:
+> > > We need the xmldoclinks built for any document types built from the
+> > > XML sources.
+> >=20
+> > Indeed we do.  So make the XML files depend on xmldoclinks.
+>=20
+> The patch description tells me what but not why.
 
-Should I prepare a thread for reclaiming memcg pages ?
-Because we shouldn't limit kswapd's cpu time by CFS cgroup, waking up
-kswapd just because "a memcg hit limits" isn't fun. 
+The quoted text from Andy says why.
 
-Hmm, or do you recommend no-dirty-page-writeback when a memcg hits limit ?
-Maybe we'll see much swaps.
+> IOW, what error is this fixing and how do I produce that error
+> when this patch is not applied?
 
-I want to go with this for a while, changing memcg's behavior will took
-some amounts of time, there are only a few developpers.
+$ rm -rf build
+$ mkdir build
+$ cp .config build
+$ make O=3Dbuild htmldocs
+...
+xmlto: /home/ben/src/linux-2.6/build/Documentation/DocBook/media.xml
+does not validate (status 3)
+xmlto: Fix document syntax or use --skip-validation option
+/home/ben/src/linux-2.6/build/Documentation/DocBook/media.xml:4:
+warning: failed to load external entity
+"/home/ben/src/linux-2.6/build/Documentation/DocBook/media-entities.tmpl"
+...
 
-Thanks,
--Kame
+Ben.
 
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
+
+--=-YOOsbQwINSpHeaZUIzkl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIVAwUATBge1ee/yOyVhhEJAQIYrg//dXBw2lyfK9oLerK0sfZwfnZjyLj3/lUL
+J1OUSwRYJGRQLIu9odB+zzPSzDeHj4K5pYwoFOtuqq10vc+B0I8im1kMlzAzx4kk
+B4n+rrE8DecV+GDegFmInsReAaWE12aRb7YOXtEXH+5pe2seSLgQRHLVLThid0oW
+A349SlyzUpU6DnDYQDR9G81LgSn5uq2OGipSBcRTmc2LlFmbn9x488V2UnT2If17
+jrJ/bEArnpzZoe1oBmIkSSZ+AGkq1Yzf2ODtlvmW4oeKGS+EEWl9EymoPExmsYZV
+Wtjed9r/siUqHTfP/qY+aZYGiDTp+9mpzq5h8B+IOE9lxWOt3PHkXMUHFIxmjzq2
+2wlU2XGjOFsxFy0ThuIvveJLBWELjiDv7hLArggArueHZnsAlWCW4azKD68JMiTN
+p4VGrunDP5IRwytTzSXZWTlcoqBVh5EdP8XdUuT1w5pUUSaIbblB5fLbUMXam+y4
+FNV7LCR1p/61rnfW9u4Ix3Eb4QZmoCBaLAJORILy1rDjot2289aQkRzF/XXfpFe3
+LYaJ+b2K7emEUtK+ZT0gNjKpBKJXnOUOHufrOciqaVSW1w1cV1dPnXqqUMc9FhOe
+KVn4cJa+D9IpWXpqujOrIsxAUfwghNUt2cd7xAWnmgsh05nX4lEeq8wI87Ih64L5
+pR3GSrhICKE=
+=N/ri
+-----END PGP SIGNATURE-----
+
+--=-YOOsbQwINSpHeaZUIzkl--
