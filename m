@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab0FPQt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 12:49:56 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:57236 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755881Ab0FPQtz (ORCPT
+	id S1759283Ab0FPQxE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 12:53:04 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:22625 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756063Ab0FPQxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 12:49:55 -0400
+	Wed, 16 Jun 2010 12:53:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=OIoKqgFzcwmFAyncbOufRfvU5sf9J5BgaCv0GIFHCtFg645azVl8QaPMOaeZUvRxI3
-         pt93fveN1RExqJQ1VTZ9BnCYCGK0bg/0nurQ/siNB2qxIzaX+hInOQdkqgUG+deCSD6V
-         059l8HeR3f7yVMID42MnKqecAw8UaESXMtpkw=
-Message-ID: <4C1900AF.804@gmail.com>
-Date: Wed, 16 Jun 2010 09:49:51 -0700
-From: David Daney <david.s.daney@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Do9lmHIddm91n1E96GeDiR+CbE3Kn2QL5T8qfVbkFPF2ep9Kvf0wmFX3/2ujQ1f68U
+         +iptgGFY3NBTKgUX39Jg2AG/X6DtXnHh8t1lpCz//VX5e/q+QaJX3pbvtithz2I//e8Y
+         mXbtK6UNUnskjFCEXPJl5FL1AjltG62EkQS8M=
+Date: Wed, 16 Jun 2010 20:52:44 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Lin Ming <ming.m.lin@intel.com>, Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 5/8] perf: Reduce perf_disable() usage
+Message-ID: <20100616165244.GB6751@lenovo>
+References: <20100616160027.590430763@chello.nl> <20100616160238.431137125@chello.nl>
 MIME-Version: 1.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/10] trivial: fix typos concerning "precedence"
-References: <20100611101624.GD10894@pengutronix.de> <1276251424-12806-8-git-send-email-u.kleine-koenig@pengutronix.de>
-In-Reply-To: <1276251424-12806-8-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100616160238.431137125@chello.nl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/11/2010 03:17 AM, Uwe Kleine-König wrote:
-> diff --git a/drivers/staging/octeon/cvmx-cmd-queue.c b/drivers/staging/octeon/cvmx-cmd-queue.c
-> index e9809d3..976227b 100644
-> --- a/drivers/staging/octeon/cvmx-cmd-queue.c
-> +++ b/drivers/staging/octeon/cvmx-cmd-queue.c
-> @@ -140,21 +140,21 @@ cvmx_cmd_queue_result_t cvmx_cmd_queue_initialize(cvmx_cmd_queue_id_t queue_id,
->   	if (qstate->base_ptr_div128) {
->   		if (max_depth != (int)qstate->max_depth) {
->   			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
-> -				"Queue already initialized with different "
-> +				"Queue already initalized with different "
->   				"max_depth (%d).\n",
->   			     (int)qstate->max_depth);
->   			return CVMX_CMD_QUEUE_INVALID_PARAM;
->   		}
->   		if (fpa_pool != qstate->fpa_pool) {
->   			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
-> -				"Queue already initialized with different "
-> +				"Queue already initalized with different "
->   				"FPA pool (%u).\n",
->   			     qstate->fpa_pool);
->   			return CVMX_CMD_QUEUE_INVALID_PARAM;
->   		}
->   		if ((pool_size>>  3) - 1 != qstate->pool_size_m1) {
->   			cvmx_dprintf("ERROR: cvmx_cmd_queue_initialize: "
-> -				"Queue already initialized with different "
-> +				"Queue already initalized with different "
->   				"FPA pool size (%u).\n",
->   			     (qstate->pool_size_m1 + 1)<<  3);
->   			return CVMX_CMD_QUEUE_INVALID_PARAM;
+On Wed, Jun 16, 2010 at 06:00:32PM +0200, Peter Zijlstra wrote:
+> Since the current perf_disable() usage is only an optimization, remove
+> it for now. This eases the removal of the weak hw_perf_enable
+> interface.
+> 
+> [ Some comments talk about NMI races, but I cannot find any such
+>   things. ]
+> 
 
-NAK!
+The race was there and was fixed by commit 
 
-I am not sure which dictionary you are using, but I would like to keep 
-the spelling consistent with the American Heritage Dictionary of the 
-English Language, Fourth Edition.  My reading indicates that no change 
-is needed.
+| commit 34adc8062227f41b04ade0ff3fbd1dbe3002669e
+| Author: Ingo Molnar <mingo@elte.hu>
+| Date:   Wed May 20 20:13:28 2009 +0200
 
-David Daney
+then you fixed it further in commit
+
+| commit 3fb2b8ddcc6a7aa62af6bd2cb939edfd4c460506
+| Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+| Date:   Mon Mar 8 13:51:01 2010 +0100
+
+which I understand as we don't need perf_disable here for sure.
+Just for the record :)
+
+	-- Cyrill
