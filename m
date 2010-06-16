@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075Ab0FPNZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 09:25:48 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36579 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066Ab0FPNZr (ORCPT
+	id S1755911Ab0FPN1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 09:27:17 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:18383 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753573Ab0FPN1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 09:25:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:subject:from:reply-to:to:cc:in-reply-to:references
-         :content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=xsfuHJZ0iNULDdr2a7Uj22KC1UBQvN4DdRXDEphV7Mlt7/dOg4CU2QRV4n8gHYrt5t
-         5aFFf/LiS3/Px4l8zaKHWrqpEgVa2BT/9z4/35BsulzYYJyj3o9xh6qnSae/uv+/44Mp
-         7iQVGBTUurUju0OE6S/lsvF32/TgqCAdsaXR8=
-Subject: Re: [PATCH] Clear IFF_XMIT_DST_RELEASE for teql interfaces
-From: jamal <hadi@cyberus.ca>
-Reply-To: hadi@cyberus.ca
-To: Tom Hughes <tom@compton.nu>
-Cc: netdev@vger.kernel.org, akpm@linux-foundation.org,
-       "David S. Miller" <davem@davemloft.net>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Stephen Hemminger <shemminger@vyatta.com>,
-       Patrick McHardy <kaber@trash.net>, Tejun Heo <tj@kernel.org>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <1276676668-10256-1-git-send-email-tom@compton.nu>
-References: <1276676668-10256-1-git-send-email-tom@compton.nu>
-Content-Type: text/plain
-Date: Wed, 16 Jun 2010 09:25:45 -0400
-Message-Id: <1276694745.3862.1.camel@bigi>
+	Wed, 16 Jun 2010 09:27:15 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6014"; a="44609559"
+Subject: Re: Overview of concurrency managed workqueue
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+In-Reply-To: <4C18BF40.40607@kernel.org>
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>
+	 <4C17C598.7070303@kernel.org>
+	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
+	 <4C18BF40.40607@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Jun 2010 06:27:05 -0700
+Message-ID: <1276694825.9309.12.camel@m0nster>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-16 at 09:24 +0100, Tom Hughes wrote:
-> The sch_teql module, which can be used to load balance over a set of
-> underlying interfaces, stopped working after 2.6.30 and has been
-> broken in all kernels since then for any underlying interface which
-> requires the addition of link level headers.
+On Wed, 2010-06-16 at 14:10 +0200, Tejun Heo wrote:
+> Hello,
 > 
-> The problem is that the transmit routine relies on being able to
-> access the destination address in the skb in order to do address
-> resolution once it has decided which underlying interface it is going
-> to transmit through.
+> On 06/15/2010 09:43 PM, Daniel Walker wrote:
+> > I noticed that you removed the RT workqueue since it's no longer used,
+> > but it's possible that a user can raise the priority of a given work
+> > queue thread into real time priorities. So with single threaded, and
+> > multithreaded workqueues specific to certain areas of the kernel the
+> > user would have a greater ability to control priorities of those areas.
+> > 
+> > It looks like with your patches it would remove that level of
+> > flexability effectively making all the work item the same priority with
+> > no ability to raise or lower .. Is that accurate ?
 > 
-> In 2.6.31 the IFF_XMIT_DST_RELEASE flag was introduced, and set by
-> default for all interfaces, which causes the destination address to be
-> released before the transmit routine for the interface is called.
-> 
-> The solution is to clear that flag for teql interfaces.
-> 
-> Signed-off-by: Tom Hughes <tom@compton.nu>
+> Yes, that is.  With new cmwq, a wq can't assume association with
+> specific kthread and thus can't use wq as simple frontend to kthreads,
+> but if somebody wants dedicated kthreads instead of shared ones in
+> units of work, [s]he should be using kthread.
 
-Sounds reasonable. Lets CC Eric and get his ACK.
+I'm not talking about coders using workqueues when they should be using
+kthreads .. We're talking about currently existing workqueues. Aren't
+you converting all _current_ workqueues to your system?
 
-cheers,
-jamal
+> wq does provide nicer tools for synchronization but in general I don't
+> think using kthread is too hard and there aren't too many cases
+> anyway.  If there are many users && kthread is difficult to use
+> directly, we can definitely write up a wrapping layer tho.  But I
+> really think using wq as wrapper around kthreads and manipulating
+> worker thread directly is an abusement.
+
+It would be a hack the user would have to patch onto there kernel in
+order to get back functionality your taking away.
+
+I think from your perspective workqueue threads are all used for
+"concurrency management" only, but I don't think that's true. Some will
+be user for prioritization (I'm talking about _current_ workqueues).
+
+Could you address or ponder how the work items could be prioritized
+under your system?
+
+Daniel
 
