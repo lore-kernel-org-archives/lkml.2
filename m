@@ -1,225 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab0FPGBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 02:01:19 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:34877 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab0FPGBR (ORCPT
+	id S1758663Ab0FPGCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 02:02:53 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42441 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759Ab0FPGCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 02:01:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ZFXiBqkCdMUglyKh3A7c8lPpKkEptEiHS8GnoD7Yz0D+3hmaycQMrBvk7jkf33Hu2c
-         8K6pFWu15RA4G6f6c3QGqssVsDVf2LoAjnPOdHwfB4+P69QoCfz4SNy5aaLIs32L71G/
-         26XVOdW+GBv4Hh0vq4u8xvIPgWAq3BDTFLfDo=
-From: Gustavo Silva <silvagustavosilva@gmail.com>
-To: gregkh@suse.de, abbotti@mev.co.uk
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Gustavo Silva <silvagustavo@users.sourceforge.net>
-Subject: [PATCH] Staging: comedi: drivers: fix coding style issues in quatech_daqp_cs.c
-Date: Wed, 16 Jun 2010 01:01:07 -0500
-Message-Id: <1276668067-12084-1-git-send-email-silvagustavo@users.sourceforge.net>
-X-Mailer: git-send-email 1.5.4.3
-In-Reply-To: <>
-References: <>
+	Wed, 16 Jun 2010 02:02:51 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 16/37] x86, lmb: Add lmb_free_memory_in_range()
+Date: Tue, 15 Jun 2010 22:42:25 -0700
+Message-Id: <1276666966-14259-17-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
+References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090203.4C186506.002F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the quatech_daqp_cs.c file that fixes up the following
-issues:
+It will return free memory size in specified range.
 
-ERROR: code indent should use tabs where possible		   x  1
-WARNING: line over 80 characters				   x  1
-WARNING: braces {} are not necessary for single statement blocks   x 10
-WARNING: printk() should include KERN_ facility level		   x  6
+We can not use memory_size - reserved_size here, because some reserved area
+may not be in the scope of lmb.memory.region.
 
-Signed-off-by: Gustavo Silva <silvagustavo@users.sourceforge.net>
+Use lmb.memory.region subtracting lmb.reserved.region to get free range array.
+then count size of all free ranges.
+
+-v2: Ben insist on using _in_range
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/staging/comedi/drivers/quatech_daqp_cs.c |   53 +++++++++++-----------
- 1 files changed, 26 insertions(+), 27 deletions(-)
+ arch/x86/include/asm/lmb.h |    1 +
+ arch/x86/mm/lmb.c          |   48 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/quatech_daqp_cs.c b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-index a91db6c..70c820a 100644
---- a/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-+++ b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-@@ -14,7 +14,7 @@
+diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
+index 02fe25d..3a304f8 100644
+--- a/arch/x86/include/asm/lmb.h
++++ b/arch/x86/include/asm/lmb.h
+@@ -15,5 +15,6 @@ void lmb_register_active_regions(int nid, unsigned long start_pfn,
+ 					 unsigned long last_pfn);
+ u64 lmb_hole_size(u64 start, u64 end);
+ u64 lmb_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
++u64 lmb_free_memory_in_range(u64 addr, u64 limit);
  
-     Documentation for the DAQP PCMCIA cards can be found on Quatech's site:
- 
--                ftp://ftp.quatech.com/Manuals/daqp-208.pdf
-+		ftp://ftp.quatech.com/Manuals/daqp-208.pdf
- 
-     This manual is for both the DAQP-208 and the DAQP-308.
- 
-@@ -195,7 +195,7 @@ static struct comedi_driver driver_daqp = {
- 
- static void daqp_dump(struct comedi_device *dev)
- {
--	printk("DAQP: status %02x; aux status %02x\n",
-+	printk(KERN_INFO "DAQP: status %02x; aux status %02x\n",
- 	       inb(dev->iobase + DAQP_STATUS), inb(dev->iobase + DAQP_AUX));
+ #endif
+diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+index 399d223..991dd55 100644
+--- a/arch/x86/mm/lmb.c
++++ b/arch/x86/mm/lmb.c
+@@ -217,6 +217,54 @@ void __init lmb_to_bootmem(u64 start, u64 end)
  }
+ #endif
  
-@@ -207,9 +207,9 @@ static void hex_dump(char *str, void *ptr, int len)
- 	printk(str);
- 
- 	for (i = 0; i < len; i++) {
--		if (i % 16 == 0) {
-+		if (i % 16 == 0)
- 			printk("\n0x%08x:", (unsigned int)cptr);
--		}
++u64 __init lmb_free_memory_in_range(u64 addr, u64 limit)
++{
++	int i, count;
++	struct range *range;
++	int nr_range;
++	u64 final_start, final_end;
++	u64 free_size;
++	struct lmb_region *r;
 +
- 		printk(" %02x", *(cptr++));
- 	}
- 	printk("\n");
-@@ -223,9 +223,9 @@ static int daqp_ai_cancel(struct comedi_device *dev, struct comedi_subdevice *s)
++	count = (lmb.reserved.cnt + lmb.memory.cnt) * 2;
++
++	range = find_range_array(count);
++	nr_range = 0;
++
++	addr = PFN_UP(addr);
++	limit = PFN_DOWN(limit);
++
++	for_each_lmb(memory, r) {
++		final_start = PFN_UP(r->base);
++		final_end = PFN_DOWN(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		if (final_start >= limit || final_end <= addr)
++			continue;
++
++		nr_range = add_range(range, count, nr_range, final_start, final_end);
++	}
++	subtract_range(range, count, 0, addr);
++	subtract_range(range, count, limit, -1ULL);
++	for_each_lmb(reserved, r) {
++		final_start = PFN_DOWN(r->base);
++		final_end = PFN_UP(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		if (final_start >= limit || final_end <= addr)
++			continue;
++
++		subtract_range(range, count, final_start, final_end);
++	}
++	nr_range = clean_sort_range(range, count);
++
++	free_size = 0;
++	for (i = 0; i < nr_range; i++)
++		free_size += range[i].end - range[i].start;
++
++	return free_size << PAGE_SHIFT;
++}
++
+ void __init lmb_reserve_range(u64 start, u64 end, char *name)
  {
- 	struct local_info_t *local = (struct local_info_t *)s->private;
- 
--	if (local->stop) {
-+	if (local->stop)
- 		return -EIO;
--	}
-+
- 
- 	outb(DAQP_COMMAND_STOP, dev->iobase + DAQP_COMMAND);
- 
-@@ -355,9 +355,9 @@ static int daqp_ai_insn_read(struct comedi_device *dev,
- 	int v;
- 	int counter = 10000;
- 
--	if (local->stop) {
-+	if (local->stop)
- 		return -EIO;
--	}
-+
- 
- 	/* Stop any running conversion */
- 	daqp_ai_cancel(dev, s);
-@@ -372,9 +372,9 @@ static int daqp_ai_insn_read(struct comedi_device *dev,
- 	v = DAQP_SCANLIST_CHANNEL(CR_CHAN(insn->chanspec))
- 	    | DAQP_SCANLIST_GAIN(CR_RANGE(insn->chanspec));
- 
--	if (CR_AREF(insn->chanspec) == AREF_DIFF) {
-+	if (CR_AREF(insn->chanspec) == AREF_DIFF)
- 		v |= DAQP_SCANLIST_DIFFERENTIAL;
--	}
-+
- 
- 	v |= DAQP_SCANLIST_START;
- 
-@@ -488,7 +488,10 @@ static int daqp_ai_cmdtest(struct comedi_device *dev,
- 	if (err)
- 		return 1;
- 
--	/* step 2: make sure trigger sources are unique and mutually compatible */
-+	/*
-+	 * step 2: make sure trigger sources
-+	 * are unique and mutually compatible
-+	 */
- 
- 	/* note that mutual compatibility is not an issue here */
- 	if (cmd->scan_begin_src != TRIG_TIMER &&
-@@ -588,9 +591,9 @@ static int daqp_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	int i;
- 	int v;
- 
--	if (local->stop) {
-+	if (local->stop)
- 		return -EIO;
--	}
-+
- 
- 	/* Stop any running conversion */
- 	daqp_ai_cancel(dev, s);
-@@ -640,13 +643,11 @@ static int daqp_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		v = DAQP_SCANLIST_CHANNEL(CR_CHAN(chanspec))
- 		    | DAQP_SCANLIST_GAIN(CR_RANGE(chanspec));
- 
--		if (CR_AREF(chanspec) == AREF_DIFF) {
-+		if (CR_AREF(chanspec) == AREF_DIFF)
- 			v |= DAQP_SCANLIST_DIFFERENTIAL;
--		}
- 
--		if (i == 0 || scanlist_start_on_every_entry) {
-+		if (i == 0 || scanlist_start_on_every_entry)
- 			v |= DAQP_SCANLIST_START;
--		}
- 
- 		outb(v & 0xff, dev->iobase + DAQP_SCANLIST);
- 		outb(v >> 8, dev->iobase + DAQP_SCANLIST);
-@@ -760,7 +761,8 @@ static int daqp_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	while (--counter
- 	       && (inb(dev->iobase + DAQP_STATUS) & DAQP_STATUS_EVENTS)) ;
- 	if (!counter) {
--		printk("daqp: couldn't clear interrupts in status register\n");
-+		printk(KERN_ERR
-+		       "daqp: couldn't clear interrupts in status register\n");
- 		return -1;
- 	}
- 
-@@ -785,9 +787,8 @@ static int daqp_ao_insn_write(struct comedi_device *dev,
- 	int d;
- 	unsigned int chan;
- 
--	if (local->stop) {
-+	if (local->stop)
- 		return -EIO;
--	}
- 
- 	chan = CR_CHAN(insn->chanspec);
- 	d = data[0];
-@@ -811,9 +812,8 @@ static int daqp_di_insn_read(struct comedi_device *dev,
- {
- 	struct local_info_t *local = (struct local_info_t *)s->private;
- 
--	if (local->stop) {
-+	if (local->stop)
- 		return -EIO;
--	}
- 
- 	data[0] = inb(dev->iobase + DAQP_DIGITAL_IO);
- 
-@@ -828,9 +828,8 @@ static int daqp_do_insn_write(struct comedi_device *dev,
- {
- 	struct local_info_t *local = (struct local_info_t *)s->private;
- 
--	if (local->stop) {
-+	if (local->stop)
- 		return -EIO;
--	}
- 
- 	outw(data[0] & 0xf, dev->iobase + DAQP_DIGITAL_IO);
- 
-@@ -878,7 +877,7 @@ static int daqp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (ret < 0)
- 		return ret;
- 
--	printk("comedi%d: attaching daqp%d (io 0x%04lx)\n",
-+	printk(KERN_INFO "comedi%d: attaching daqp%d (io 0x%04lx)\n",
- 	       dev->minor, it->options[0], dev->iobase);
- 
- 	s = dev->subdevices + 0;
-@@ -931,7 +930,7 @@ static int daqp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- static int daqp_detach(struct comedi_device *dev)
- {
--	printk("comedi%d: detaching daqp\n", dev->minor);
-+	printk(KERN_INFO "comedi%d: detaching daqp\n", dev->minor);
- 
- 	return 0;
- }
-@@ -1153,7 +1152,7 @@ static void daqp_cs_config(struct pcmcia_device *link)
- 	/* Finally, report what we've done */
- 	dev_info(&link->dev, "index 0x%02x", link->conf.ConfigIndex);
- 	if (link->conf.Attributes & CONF_ENABLE_IRQ)
--		printk(", irq %u", link->irq);
-+		printk(KERN_INFO ", irq %u", link->irq);
- 	if (link->io.NumPorts1)
- 		printk(", io 0x%04x-0x%04x", link->io.BasePort1,
- 		       link->io.BasePort1 + link->io.NumPorts1 - 1);
+ 	if (start == end)
 -- 
-1.5.4.3
+1.6.4.2
 
