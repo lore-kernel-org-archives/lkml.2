@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759443Ab0FPTUf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 15:20:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1051 "EHLO mx1.redhat.com"
+	id S1759455Ab0FPTWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 15:22:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55974 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756569Ab0FPTUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 15:20:34 -0400
-Message-ID: <4C1923FE.3090300@redhat.com>
-Date: Wed, 16 Jun 2010 09:20:30 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1759144Ab0FPTWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 15:22:42 -0400
+Message-ID: <4C192404.7000004@kernel.org>
+Date: Wed, 16 Jun 2010 21:20:36 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: avi@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/17] Fix deep C-state TSC desynchronization
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-5-git-send-email-zamsden@redhat.com> <20100616132436.GJ19104@mothafucka.localdomain>
-In-Reply-To: <20100616132436.GJ19104@mothafucka.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Daniel Walker <dwalker@codeaurora.org>
+CC: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: Overview of concurrency managed workqueue
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>	 <4C17C598.7070303@kernel.org>	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>	 <4C18BF40.40607@kernel.org> <1276694825.9309.12.camel@m0nster>	 <4C18D1FD.9060804@kernel.org> <1276695665.9309.17.camel@m0nster>	 <4C18D574.1040903@kernel.org> <1276697146.9309.27.camel@m0nster>	 <4C18DC69.10704@kernel.org> <1276698880.9309.44.camel@m0nster>	 <4C18E4B7.5040702@kernel.org> <1276701074.9309.60.camel@m0nster>	 <4C18F2B8.9060805@kernel.org> <1276705838.9309.94.camel@m0nster>	 <4C1901E9.2080907@kernel.org> <1276712547.9309.172.camel@m0nster> <4C191BE9.1060400@kernel.org>
+In-Reply-To: <4C191BE9.1060400@kernel.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Jun 2010 19:20:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2010 03:24 AM, Glauber Costa wrote:
-> On Mon, Jun 14, 2010 at 09:34:06PM -1000, Zachary Amsden wrote:
->    
->> When CPUs with unstable TSCs enter deep C-state, TSC may stop
->> running.  This causes us to require resynchronization.  Since
->> we can't tell when this may potentially happen, we assume the
->> worst by forcing re-compensation for it at every point the VCPU
->> task is descheduled.
->>      
-> can't we just compensate everytime check_tsc_unstable() is true?
->    
+On 06/16/2010 08:46 PM, Tejun Heo wrote:
+> * I'm very sorry I'm breaking your hacky workaround but seriously
+>   that's another problem to solve.  Let's talk about the problem
+>   itself instead of your hacky workaround.  (I think for most cases
+>   not using workqueue in RT path would be the right thing to do.)
 
-We should probably not rely on check_tsc_unstable, we should do this 
-only if we don't have NONSTOP_TSC.
+For example, for the actual case of amba-pl022.c you mentioned, where
+interrupt handler sometimes offloads to workqueue, convert
+amba-pl022.c to use threaded interrupt handler.  That's why it's
+there.
+
+If you actually _solve_ the problem like this, other users wouldn't
+experience the problem at all once the update reaches them and you
+won't have to worry about your workaround breaking with the next
+kernel update or unexpected suspend/resume and we won't be having this
+discussion about adjusting workqueue priorities from userland.
+
+There are many wrong things about working around RT latency problems
+by setting workqueue priorities from userland.  Please think about why
+the driver would have a separate workqueue for itself in the first
+place.  It was to work around the limitation of workqueue facility and
+you're arguing that, because that work around allows yet another very
+fragile workaround, the property which made the original work around
+necessary in the first place needs to stay.  That sounds really
+perverse to me.
+
+-- 
+tejun
