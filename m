@@ -1,111 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336Ab0FPQde (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 12:33:34 -0400
-Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:42301 "EHLO
-	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932139Ab0FPQdd (ORCPT
+	id S932332Ab0FPQlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 12:41:09 -0400
+Received: from ey-out-2122.google.com ([74.125.78.27]:47030 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753362Ab0FPQlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 12:33:33 -0400
-From: Louis Rilling <louis.rilling@kerlabs.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org, Louis Rilling <louis.rilling@kerlabs.com>
-Subject: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
-Date: Wed, 16 Jun 2010 18:34:28 +0200
-Message-Id: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com>
-X-Mailer: git-send-email 1.5.6.5
+	Wed, 16 Jun 2010 12:41:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=LcvLqkAlMQnu2b16rXYtanq5rVHojnsHn4y2/XkpaD7AGnHYVAARCCV5rs5TSvrfr0
+         Ik7Go9SEMPAGjdqAqb42tEvFFiyoIOByCFvBBP+S+i2aWda2mo+8l7jR0d2HKgN6B6VW
+         DOIdCHhyN5d2L/QlOfqMJFCAqVMZBcQPT3ulY=
+MIME-Version: 1.0
+Reply-To: eranian@gmail.com
+In-Reply-To: <1276699962.1745.599.camel@laptop>
+References: <AANLkTikvExLi_MahU3kkX1TQKvBODq8SyTSXgpyAjOay@mail.gmail.com>
+	<1276699962.1745.599.camel@laptop>
+Date: Wed, 16 Jun 2010 18:41:03 +0200
+Message-ID: <AANLkTim1yFwS5g-s_2fMRHljjf5yMouoHb2Ulqj6V1AC@mail.gmail.com>
+Subject: Re: [RFC] perf/perf_events: misleading number of samples due to 
+	mmap()
+From: stephane eranian <eranian@googlemail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+       davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Resending, hopefully with all pieces ]
+On Wed, Jun 16, 2010 at 4:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-06-16 at 16:40 +0200, Stephane Eranian wrote:
+>> This leads me to another point. For per-thread sampling, why
+>> do we need to record mmap() events happening *outside* of
+>> the process? I can understand the exception of kernel modules.
+>
+> How does that happen? The per-thread events should be on the per-task
+> context, so another task's mmap() events should never end up there.
+>
 
-Detached tasks are not seen by zap_pid_ns_processes()->sys_wait4(), so
-that release_task()->proc_flush_task() of container init can be called
-before it is for some detached tasks in the namespace.
+I don't see the test that says the vma does not belong to the current task.
+I also don't see anything in perf_event_mmap_match().
 
-Pin proc_mnt's in copy_process(), so that proc_flush_task() becomes safe
-whatever the ordering of tasks.
-
-Signed-off-by: Louis Rilling <louis.rilling@kerlabs.com>
----
- fs/proc/base.c          |   18 ++++++++++++++++++
- include/linux/proc_fs.h |    4 ++++
- kernel/fork.c           |    1 +
- 3 files changed, 23 insertions(+), 0 deletions(-)
-
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index acb7ef8..d6cdd91 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2663,6 +2663,23 @@ static const struct inode_operations proc_tgid_base_inode_operations = {
- 	.setattr	= proc_setattr,
- };
- 
-+/*
-+ * Pin all proc_mnt so that detached tasks can safely call proc_flush_task()
-+ * after container init calls itself proc_flush_task().
-+ */
-+void proc_new_task(struct task_struct *task)
-+{
-+	struct pid *pid;
-+	int i;
-+
-+	if (!task->pid)
-+		return;
-+
-+	pid = task_pid(task);
-+	for (i = 0; i <= pid->level; i++)
-+		mntget(pid->numbers[i].ns->proc_mnt);
-+}
-+
- static void proc_flush_task_mnt(struct vfsmount *mnt, pid_t pid, pid_t tgid)
- {
- 	struct dentry *dentry, *leader, *dir;
-@@ -2744,6 +2761,7 @@ void proc_flush_task(struct task_struct *task)
- 		upid = &pid->numbers[i];
- 		proc_flush_task_mnt(upid->ns->proc_mnt, upid->nr,
- 					tgid->numbers[i].nr);
-+		mntput(upid->ns->proc_mnt);
- 	}
- 
- 	upid = &pid->numbers[pid->level];
-diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-index 379eaed..f24faa1 100644
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -104,6 +104,7 @@ struct vmcore {
- 
- extern void proc_root_init(void);
- 
-+void proc_new_task(struct task_struct *task);
- void proc_flush_task(struct task_struct *task);
- 
- extern struct proc_dir_entry *create_proc_entry(const char *name, mode_t mode,
-@@ -184,6 +185,9 @@ extern void dup_mm_exe_file(struct mm_struct *oldmm, struct mm_struct *newmm);
- #define proc_net_fops_create(net, name, mode, fops)  ({ (void)(mode), NULL; })
- static inline void proc_net_remove(struct net *net, const char *name) {}
- 
-+static inline void proc_new_task(struct task_struct *task)
-+{
-+}
- static inline void proc_flush_task(struct task_struct *task)
- {
- }
-diff --git a/kernel/fork.c b/kernel/fork.c
-index b6cce14..c6c2874 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1281,6 +1281,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	total_forks++;
- 	spin_unlock(&current->sighand->siglock);
- 	write_unlock_irq(&tasklist_lock);
-+	proc_new_task(p);
- 	proc_fork_connector(p);
- 	cgroup_post_fork(p);
- 	perf_event_fork(p);
--- 
-1.5.6.5
-
+It does seem to work as you said in recent kernels, though. So I am certainly
+missing something here.
