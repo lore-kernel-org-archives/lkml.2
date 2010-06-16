@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab0FPSc2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 14:32:28 -0400
-Received: from hp3.statik.tu-cottbus.de ([141.43.120.68]:45151 "EHLO
-	hp3.statik.tu-cottbus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab0FPSc0 (ORCPT
+	id S932585Ab0FPSeP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 14:34:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41460 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756125Ab0FPSeN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 14:32:26 -0400
-Message-ID: <4C191885.9080303@s5r6.in-berlin.de>
-Date: Wed, 16 Jun 2010 20:31:33 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.8.1.24) Gecko/20100228 SeaMonkey/1.1.19
+	Wed, 16 Jun 2010 14:34:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=YO3G8hVwmrWY5La6tU3ZVOJENxEX6blnxyZ2wKzTrSdm3i5GdZnQM8AVrEz475A4cr
+         0MtygYUE5l8gBhvC+E3z1PmzkoCaQ+1To7wXeULtNvWDHm4hvjABMqzDCyhNuBnalR9t
+         1PfnJRUwRZhC1qYv0m2Wr57JNlRsKXApevdB8=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Subject: Re: [REGRESSION] [IWL3945] Broadcast is broken?
+Date: Wed, 16 Jun 2010 20:34:06 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3; KDE/4.4.4; i686; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, reinette.chatre@intel.com,
+       wey-yi.w.guy@intel.com, ilw@linux.intel.com,
+       linux-wireless@vger.kernel.org, Berg Johannes <johannes.berg@intel.com>,
+       iwlwifi maling list <ipw3945-devel@lists.sourceforge.net>
+References: <201006141924.24061.maciej.rutecki@gmail.com> <1276538138.7931.3.camel@maxim-laptop>
+In-Reply-To: <1276538138.7931.3.camel@maxim-laptop>
 MIME-Version: 1.0
-To: Daniel Walker <dwalker@codeaurora.org>
-CC: Tejun Heo <tj@kernel.org>, mingo@elte.hu, awalls@radix.net,
-       linux-kernel@vger.kernel.org, jeff@garzik.org,
-       akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-Subject: Re: Overview of concurrency managed workqueue
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>	 <4C17C598.7070303@kernel.org>	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>	 <4C18BF40.40607@kernel.org> <1276694825.9309.12.camel@m0nster>	 <4C18D1FD.9060804@kernel.org> <1276695665.9309.17.camel@m0nster>	 <4C18D574.1040903@kernel.org> <1276697146.9309.27.camel@m0nster>	 <4C18DC69.10704@kernel.org> <1276698880.9309.44.camel@m0nster>
-In-Reply-To: <1276698880.9309.44.camel@m0nster>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006162034.06754.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Walker wrote:
-[tweak scheduling priority of a worker thread]
-> Let say I have a high priority
-> thread in userspace , and I discover through analysis that my thread is
-> being forced to wait on a workqueue thread (priority inversion) , so
-> then I just increase the workqueue thread priority to overcome the
-> inversion. That's totally valid, and you don't even need to know exactly
-> what the thread is doing..
+On poniedziałek, 14 czerwca 2010 o 19:55:38 Maxim Levitsky wrote:
+> On Mon, 2010-06-14 at 19:24 +0200, Maciej Rutecki wrote:
+> > Hardware:
+> > 08:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG
+> > [Golan] Network Connection (rev 02)
+> > 
+> > Last known good kernel: 2.6.34
+> > 
+> > Failing kernels: since 2.6.35-rc1 to 2.6.35-rc3
+> > 
+> > Symptoms:
+> > During connect do wireless network authentication seems be OK, but I
+> > cannot get IP from dhcp serwer. I do:
+> > echo 0x43fff > /sys/class/net/wlan0/device/debug_level
+> > 
+> > Syslog is here:
+> > http://unixy.pl/maciek/download/kernel/2.6.35-rc3/gumis/syslog-before.txt
+> > 
+> > From syslog I guess the problem is that it doesn't receive broadcast
+> > frames (but I'm not sure), so I try:
+> > sudo ifconfig wlan0 promisc
+> > 
+> > Syslog:
+> > http://unixy.pl/maciek/download/kernel/2.6.35-rc3/gumis/syslog-after.txt
+> > 
+> > And then I can get IP address.
+> > 
+> > Any advice?
+> 
+> Very likely commit 3474ad635db371b0d8d0ee40086f15d223d5b6a4,
+> because I have same problem.
+> 
+> Try to revert it.
 
-I suspect the _actual_ problem to solve here is not that of proper
-scheduling priorities but that of having to meet deadlines.
+Thanks for information; revert this commit solves problem.
+
+> 
+> Best regards,
+> Maxim Levitsky
+
+Regards
 -- 
-Stefan Richter
--=====-==-=- -==- =----
-http://arcgraph.de/sr/
+Maciej Rutecki
+http://www.maciek.unixy.pl
