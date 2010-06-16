@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759126Ab0FPPmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 11:42:39 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:58064 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759097Ab0FPPmi (ORCPT
+	id S932278Ab0FPPoE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 11:44:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35447 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932136Ab0FPPoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 11:42:38 -0400
-Subject: Re: [RFC][PATCH 3/9] replace x86 kvm n_free_mmu_pages with
- n_used_mmu_pages
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-In-Reply-To: <20100616142541.GB1662@amt.cnet>
-References: <20100615135518.BC244431@kernel.beaverton.ibm.com>
-	 <20100615135522.892D6BFE@kernel.beaverton.ibm.com>
-	 <20100616142541.GB1662@amt.cnet>
-Content-Type: text/plain
-Date: Wed, 16 Jun 2010 08:42:28 -0700
-Message-Id: <1276702948.6437.17047.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jun 2010 11:44:00 -0400
+Date: Wed, 16 Jun 2010 16:43:58 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Huewe <PeterHuewe@gmx.de>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-sh@vger.kernel.org,
+       Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+       Kuninori Morimoto <morimoto.kuninori@renesas.com>,
+       Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+       alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] soc/sh: Fix I2C dependency for SND_FSI_AK4642 and
+ SND_FSI_DA7210
+Message-ID: <20100616154358.GE24491@rakim.wolfsonmicro.main>
+References: <201006141739.42346.PeterHuewe@gmx.de>
+ <201006151649.07554.PeterHuewe@gmx.de>
+ <20100615151913.GJ14510@rakim.wolfsonmicro.main>
+ <201006151738.56143.PeterHuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006151738.56143.PeterHuewe@gmx.de>
+X-Cookie: Eureka!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-16 at 11:25 -0300, Marcelo Tosatti wrote:
-> > -     if (used_pages > kvm_nr_mmu_pages) {
-> > -             while (used_pages > kvm_nr_mmu_pages &&
-> > +     if (kvm->arch.n_used_mmu_pages > goal_nr_mmu_pages) {
-> > +             while (kvm->arch.n_used_mmu_pages > goal_nr_mmu_pages &&
-> >                       !list_empty(&kvm->arch.active_mmu_pages)) {
-> >                       struct kvm_mmu_page *page;
-> >  
-> >                       page = container_of(kvm->arch.active_mmu_pages.prev,
-> >                                           struct kvm_mmu_page, link);
-> > -                     used_pages -= kvm_mmu_zap_page(kvm, page);
-> > -                     used_pages--;
-> > +                     kvm->arch.n_used_mmu_pages -= kvm_mmu_zap_page(kvm, page);
-> > +                     kvm->arch.n_used_mmu_pages--;
+On Tue, Jun 15, 2010 at 05:38:55PM +0200, Peter Huewe wrote:
+> From: Peter Huewe <peterhuewe@gmx.de>
 > 
-> kvm->arch.n_used_mmu_pages is deaccounted for in kvm_mmu_zap_page ->
-> kvm_mmu_free_page
-> already.
+> The config option SND_FSI_AK4642 selects SND_SOC_AK4642 which in turn
+> enables the compilation of ak4642.c - however this codec uses I2C to
+> communicate with the HW.
+> Same applies to DA7210.
 
-Ahh, I see that now.  Thanks!
-
--- Dave
-
+Applied, thanks.
