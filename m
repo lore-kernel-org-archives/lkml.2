@@ -1,93 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758840Ab0FPOEZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 10:04:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754072Ab0FPOEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 10:04:24 -0400
-Date: Wed, 16 Jun 2010 11:03:31 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
-       mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       john stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 12/17] Add helper function get_kernel_ns
-Message-ID: <20100616140331.GN19104@mothafucka.localdomain>
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com>
- <1276587259-32319-13-git-send-email-zamsden@redhat.com>
- <4C173CC3.8000506@redhat.com>
- <4C17EAA5.90009@redhat.com>
- <4C18877E.9070605@redhat.com>
+	id S1758869Ab0FPOE5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 10:04:57 -0400
+Received: from n15.bullet.mail.mud.yahoo.com ([68.142.206.42]:39928 "HELO
+	n15.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758739Ab0FPOE4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 10:04:56 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 292389.99859.bm@omp130.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=5NoKFyh1JG/+iK8via3XGJA7eQEPORLuruLInroEtMgL2JKHXYfI2KsmgmKI9zb827OiG9YZSgVLnGL9fEpiqZIyZHxZg49zy5GQk8VOfLSPIBaZd+KQGnZGWhXxS3Seql2IfIK03TuNvQeHdmqu2c03MD1SjA8j1VyRcBKfar4=;
+Message-ID: <140489.94250.qm@web180314.mail.gq1.yahoo.com>
+X-YMail-OSG: 9azAL10VM1k9Jv59qHFuh6DJ5CkKFneMnhNTgb7bCiaY21d
+ zxvU-
+X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.103.269680
+Date: Wed, 16 Jun 2010 06:56:09 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCHv5 08/11] USB: gadget: g_serial: INF file updated
+To: linux-usb@vger.kernel.org, Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>, Greg KH <greg@kroah.com>,
+       Xiaofan Chen <xiaofanc@gmail.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <c4143e7fdd0fc61f05118c30a0a9edbbc0a97db4.1276681840.git.m.nazarewicz@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C18877E.9070605@redhat.com>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 04:12:46PM +0800, Jason Wang wrote:
-> Zachary Amsden wrote:
-> > On 06/14/2010 10:41 PM, Avi Kivity wrote:
-> >   
-> >> On 06/15/2010 10:34 AM, Zachary Amsden wrote:
-> >>     
-> >>> Add a helper function for the multiple places this is used.  Note 
-> >>> that it
-> >>> must not be called in preemptible context, as that would mean the kernel
-> >>> could enter software suspend state, which would cause non-atomic 
-> >>> operation
-> >>> of the monotonic_to_bootbased computation.
-> >>>
-> >>> Open question: should the KVM_SET_CLOCK / KVM_GET_CLOCK ioctls use this
-> >>> as well?  Currently, they are not bootbased (but perhaps should be).
-> >>>
-> >>> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
-> >>> ---
-> >>>   arch/x86/kvm/x86.c |   26 +++++++++++++-------------
-> >>>   1 files changed, 13 insertions(+), 13 deletions(-)
-> >>>
-> >>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> >>> index 703ea43..15c7317 100644
-> >>> --- a/arch/x86/kvm/x86.c
-> >>> +++ b/arch/x86/kvm/x86.c
-> >>> @@ -915,6 +915,16 @@ static void kvm_get_time_scale(uint32_t 
-> >>> scaled_khz, uint32_t base_khz,
-> >>>            __func__, base_khz, scaled_khz, shift, *pmultiplier);
-> >>>   }
-> >>>
-> >>> +static inline u64 get_kernel_ns(void)
-> >>> +{
-> >>> +    struct timespec ts;
-> >>> +
-> >>> +    WARN_ON(preemptible());
-> >>> +    ktime_get_ts(&ts);
-> >>> +    monotonic_to_bootbased(&ts);
-> >>> +    return timespec_to_ns(&ts);
-> >>> +}
-> >>> +
-> >>>   static DEFINE_PER_CPU(unsigned long, cpu_tsc_khz);
-> >>>
-> >>>       
-> >> Isn't something like this a candidate for the time infrastructure?
-> >>
-> >>     
-> >
-> > Should it be?  It certainly seems reasonable.
-> >
-> >
-> > Also, should we be using it for the cases KVM_GET_CLOCK / 
-> > KVM_SET_CLOCK?  It seems global kvmclock_offset for the VM ignores the 
-> > bootbased conversion.
-> >
-> >   
-> Yes we should.
-indeed. Also shows the importance of doing it in a central place.
-Have we had an acessor like that before, we would probably not have
-made this mistake.
+Ack is inlined below.
 
+--- On Wed, 6/16/10, Michal Nazarewicz <m.nazarewicz@samsung.com> wrote:
 
+> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Subject: [PATCHv5 08/11] USB: gadget: g_serial: INF file updated
+> To: linux-usb@vger.kernel.org
+> Cc: "David Brownell" <dbrownell@users.sourceforge.net>, "Greg KH" <greg@kroah.com>, "Xiaofan Chen" <xiaofanc@gmail.com>, "Kyungmin Park" <kyungmin.park@samsung.com>, "Marek Szyprowski" <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org
+> Date: Wednesday, June 16, 2010, 3:08 AM
+> Updated the INF file for g_serial
+> gadget.  It should work with
+> most recent Windows systems now.
+> 
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+
+Acked-by: David Brownell <dbrownell@users.sourceforge.net>
+
+> ---
+>  Documentation/usb/gadget_serial.txt |   87
+> +++-------------------------
+>  Documentation/usb/linux-cdc-acm.inf |  107
+> +++++++++++++++++++++++++++++++++++
+>  2 files changed, 117 insertions(+), 77 deletions(-)
+>  create mode 100644 Documentation/usb/linux-cdc-acm.inf
+> 
+> diff --git a/Documentation/usb/gadget_serial.txt
+> b/Documentation/usb/gadget_serial.txt
+> index eac7df9..61e67f6 100644
+> --- a/Documentation/usb/gadget_serial.txt
+> +++ b/Documentation/usb/gadget_serial.txt
+> @@ -151,88 +151,23 @@ instructions below to install the
+> host side driver.
+>  
+>  Installing the Windows Host ACM Driver
+>  --------------------------------------
+> -To use the Windows ACM driver you must have the files
+> "gserial.inf"
+> -and "usbser.sys" together in a folder on the Windows
+> machine.
+> -
+> -The "gserial.inf" file is given here.
+> -
+> --------------------- CUT HERE --------------------
+> -[Version]
+> -Signature="$Windows NT$"
+> -Class=Ports
+> -ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
+> -Provider=%LINUX%
+> -DriverVer=08/17/2004,0.0.2.0
+> -; Copyright (C) 2004 Al Borchers (alborchers@steinerpoint.com)
+> -
+> -[Manufacturer]
+> -%LINUX%=GSerialDeviceList
+> -
+> -[GSerialDeviceList]
+> -%GSERIAL%=GSerialInstall, USB\VID_0525&PID_A4A7
+> -
+> -[DestinationDirs]
+> -DefaultDestDir=10,System32\Drivers
+> -
+> -[GSerialInstall]
+> -CopyFiles=GSerialCopyFiles
+> -AddReg=GSerialAddReg
+> -
+> -[GSerialCopyFiles]
+> -usbser.sys
+> -
+> -[GSerialAddReg]
+> -HKR,,DevLoader,,*ntkern
+> -HKR,,NTMPDriver,,usbser.sys
+> -HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+> -
+> -[GSerialInstall.Services]
+> -AddService = usbser,0x0002,GSerialService
+> -
+> -[GSerialService]
+> -DisplayName = %GSERIAL_DISPLAY_NAME%
+> -ServiceType = 1           
+>       ; SERVICE_KERNEL_DRIVER
+> -StartType = 3           
+>         ; SERVICE_DEMAND_START
+> -ErrorControl = 1           
+>      ; SERVICE_ERROR_NORMAL
+> -ServiceBinary = %10%\System32\Drivers\usbser.sys
+> -LoadOrderGroup = Base
+> -
+> -[Strings]
+> -LINUX = "Linux"
+> -GSERIAL = "Gadget Serial"
+> -GSERIAL_DISPLAY_NAME = "USB Gadget Serial Driver"
+> --------------------- CUT HERE --------------------
+> -
+> -The "usbser.sys" file comes with various versions of
+> Windows.
+> -For example, it can be found on Windows XP typically in
+> -
+> -  C:\WINDOWS\Driver Cache\i386\driver.cab
+> -
+> -Or it can be found on the Windows 98SE CD in the "win98"
+> folder
+> -in the "DRIVER11.CAB" through "DRIVER20.CAB" cab
+> files.  You will
+> -need the DOS "expand" program, the Cygwin "cabextract"
+> program, or
+> -a similar program to unpack these cab files and extract
+> "usbser.sys".
+> -
+> -For example, to extract "usbser.sys" into the current
+> directory
+> -on Windows XP, open a DOS window and run a command like
+> -
+> -  expand C:\WINDOWS\Driver~1\i386\driver.cab
+> -F:usbser.sys .
+> -
+> -(Thanks to Nishant Kamat for pointing out this DOS
+> command.)
+> +To use the Windows ACM driver you must have the
+> "linux-cdc-acm.inf"
+> +file (provided along this document) which supports all
+> recent versions
+> +of Windows.
+>  
+>  When the gadget serial driver is loaded and the USB device
+> connected
+>  to the Windows host with a USB cable, Windows should
+> recognize the
+>  gadget serial device and ask for a driver.  Tell
+> Windows to find the
+> -driver in the folder that contains "gserial.inf" and
+> "usbser.sys".
+> +driver in the folder that contains the "linux-cdc-acm.inf"
+> file.
+>  
+>  For example, on Windows XP, when the gadget serial device
+> is first
+>  plugged in, the "Found New Hardware Wizard" starts
+> up.  Select
+> -"Install from a list or specific location (Advanced)",
+> then on
+> -the next screen select "Include this location in the
+> search" and
+> -enter the path or browse to the folder containing
+> "gserial.inf" and
+> -"usbser.sys".  Windows will complain that the Gadget
+> Serial driver
+> -has not passed Windows Logo testing, but select "Continue
+> anyway"
+> -and finish the driver installation.
+> +"Install from a list or specific location (Advanced)",
+> then on the
+> +next screen select "Include this location in the search"
+> and enter the
+> +path or browse to the folder containing the
+> "linux-cdc-acm.inf" file.
+> +Windows will complain that the Gadget Serial driver has
+> not passed
+> +Windows Logo testing, but select "Continue anyway" and
+> finish the
+> +driver installation.
+>  
+>  On Windows XP, in the "Device Manager" (under "Control
+> Panel",
+>  "System", "Hardware") expand the "Ports (COM & LPT)"
+> entry and you
+> @@ -345,5 +280,3 @@ you should be able to send data back
+> and forth between the gadget
+>  side and host side systems.  Anything you type on the
+> terminal
+>  window on the gadget side should appear in the terminal
+> window on
+>  the host side and vice versa.
+> -
+> -
+> diff --git a/Documentation/usb/linux-cdc-acm.inf
+> b/Documentation/usb/linux-cdc-acm.inf
+> new file mode 100644
+> index 0000000..77636dd
+> --- /dev/null
+> +++ b/Documentation/usb/linux-cdc-acm.inf
+> @@ -0,0 +1,107 @@
+> +; Windows USB CDC ACM Setup File
+> +
+> +; Based on INF temlate which was:
+> +;     Copyright (c) 2000 Microsoft
+> Corporation
+> +;     Copyright (c) 2007 Microchip
+> Technology Inc.
+> +; likely to be cevered by the MLPL as found at:
+> +;    <http://msdn.microsoft.com/en-us/cc300389.aspx#MLPL>.
+> +; For use only on Windows operating systems.
+> +
+> +[Version]
+> +Signature="$Windows NT$"
+> +Class=Ports
+> +ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
+> +Provider=%Linux%
+> +DriverVer=11/15/2007,5.1.2600.0
+> +
+> +[Manufacturer]
+> +%Linux%=DeviceList, NTamd64
+> +
+> +[DestinationDirs]
+> +DefaultDestDir=12
+> +
+> +
+> +;------------------------------------------------------------------------------
+> +;  Windows 2000/XP/Vista-32bit Sections
+> +;------------------------------------------------------------------------------
+> +
+> +[DriverInstall.nt]
+> +include=mdmcpq.inf
+> +CopyFiles=DriverCopyFiles.nt
+> +AddReg=DriverInstall.nt.AddReg
+> +
+> +[DriverCopyFiles.nt]
+> +usbser.sys,,,0x20
+> +
+> +[DriverInstall.nt.AddReg]
+> +HKR,,DevLoader,,*ntkern
+> +HKR,,NTMPDriver,,USBSER.sys
+> +HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+> +
+> +[DriverInstall.nt.Services]
+> +AddService=usbser, 0x00000002, DriverService.nt
+> +
+> +[DriverService.nt]
+> +DisplayName=%SERVICE%
+> +ServiceType=1
+> +StartType=3
+> +ErrorControl=1
+> +ServiceBinary=%12%\USBSER.sys
+> +
+> +;------------------------------------------------------------------------------
+> +;  Vista-64bit Sections
+> +;------------------------------------------------------------------------------
+> +
+> +[DriverInstall.NTamd64]
+> +include=mdmcpq.inf
+> +CopyFiles=DriverCopyFiles.NTamd64
+> +AddReg=DriverInstall.NTamd64.AddReg
+> +
+> +[DriverCopyFiles.NTamd64]
+> +USBSER.sys,,,0x20
+> +
+> +[DriverInstall.NTamd64.AddReg]
+> +HKR,,DevLoader,,*ntkern
+> +HKR,,NTMPDriver,,USBSER.sys
+> +HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+> +
+> +[DriverInstall.NTamd64.Services]
+> +AddService=usbser, 0x00000002, DriverService.NTamd64
+> +
+> +[DriverService.NTamd64]
+> +DisplayName=%SERVICE%
+> +ServiceType=1
+> +StartType=3
+> +ErrorControl=1
+> +ServiceBinary=%12%\USBSER.sys
+> +
+> +
+> +;------------------------------------------------------------------------------
+> +;  Vendor and Product ID Definitions
+> +;------------------------------------------------------------------------------
+> +; When developing your USB device, the VID and PID used in
+> the PC side
+> +; application program and the firmware on the
+> microcontroller must match.
+> +; Modify the below line to use your VID and PID.  Use
+> the format as shown below.
+> +; Note: One INF file can be used for multiple devices with
+> different
+> +VID and PIDs.
+> +; For each supported device, append
+> ",USB\VID_xxxx&PID_yyyy" to the
+> +end of the line.
+> +;------------------------------------------------------------------------------
+> +[SourceDisksFiles]
+> +[SourceDisksNames]
+> +[DeviceList]
+> +%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7
+> +
+> +[DeviceList.NTamd64]
+> +%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7
+> +
+> +
+> +;------------------------------------------------------------------------------
+> +;  String Definitions
+> +;------------------------------------------------------------------------------
+> +;Modify these strings to customize your device
+> +;------------------------------------------------------------------------------
+> +[Strings]
+> +Linux           
+>    = "Linux Developer Community"
+> +DESCRIPTION         =
+> "Gadget Serial"
+> +SERVICE         
+>    = "USB RS-232 Emulation Driver"
+> -- 
+> 1.7.1
+> 
+> 
 
