@@ -1,61 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759602Ab0FPUkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 16:40:16 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:39746 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab0FPUkO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 16:40:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6015"; a="44506604"
-Subject: Re: Overview of concurrency managed workqueue
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-In-Reply-To: <4C1932FB.3000404@kernel.org>
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>
-	 <4C17C598.7070303@kernel.org>
-	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
-	 <4C18BF40.40607@kernel.org> <1276694825.9309.12.camel@m0nster>
-	 <4C18D1FD.9060804@kernel.org> <1276695665.9309.17.camel@m0nster>
-	 <4C18D574.1040903@kernel.org> <1276697146.9309.27.camel@m0nster>
-	 <4C18DC69.10704@kernel.org> <1276698880.9309.44.camel@m0nster>
-	 <4C18E4B7.5040702@kernel.org> <1276701074.9309.60.camel@m0nster>
-	 <4C18F2B8.9060805@kernel.org> <1276705838.9309.94.camel@m0nster>
-	 <4C1901E9.2080907@kernel.org> <1276712547.9309.172.camel@m0nster>
-	 <4C191BE9.1060400@kernel.org> <1276716999.9309.208.camel@m0nster>
-	 <4C192B94.9020601@kernel.org> <1276719599.9309.243.camel@m0nster>
-	 <4C1932FB.3000404@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Jun 2010 13:40:12 -0700
-Message-ID: <1276720812.9309.266.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1759630Ab0FPUkY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 16:40:24 -0400
+Received: from [18.85.46.34] ([18.85.46.34]:54040 "EHLO bombadil.infradead.org"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759605Ab0FPUkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 16:40:22 -0400
+Date: Wed, 16 Jun 2010 16:40:19 -0400
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: David Miller <davem@davemloft.net>
+Cc: kyle@mcmartin.ca, vst@vlnb.net, sparclinux@vger.kernel.org,
+       simone.ricci@gmail.com, scst-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org, Nick.Couchman@seakr.com
+Subject: Re: Error "Unknown relocation: 36" on module load on Sparc
+Message-ID: <20100616204019.GY20317@bombadil.infradead.org>
+References: <AANLkTimuv7nOlcGFxqPZlwcAjLmFMiLAvbA5O7F32Wbg@mail.gmail.com> <4C192085.2090404@vlnb.net> <20100616192257.GW20317@bombadil.infradead.org> <20100616.133854.183053376.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100616.133854.183053376.davem@davemloft.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-16 at 22:24 +0200, Tejun Heo wrote:
-> On 06/16/2010 10:19 PM, Daniel Walker wrote:
-> >> I don't have any problem with that.  I would be almost happy to get
-> >> your NACK.
-> > 
-> > Oh yeah? why is that?
+On Wed, Jun 16, 2010 at 01:38:54PM -0700, David Miller wrote:
+> This change is incorrect.
 > 
-> Because the discussion isn't leading anywhere and I've already thrown
-> almost everything I can think of, so if I haven't convinced you yet
-> there's very low probability that I'll be able to do with further
-> discussion.  So, I duly collected your Nacked-by: on the reason that
-> cmwq doesn't allow setting priorities from userland.
+> LM22 relocations do not get emitted for the "medlow" code model, which
+> is what is explicitly specified on the kernel compiler command line
+> for sparc64 via "-mcmodel=medlow".
 > 
-> Thanks and have a good night.
+> Someone this person is using incorrect CFLAGS when building their
+> module, and that's why they have this problem, because the compiler's
+> default code model on sparc64 can generate those relocations.
+>
 
-Ok, and please don't try to summarize why there is a NAK'ed-by, if
-people want to know they can contact me directly or read this thread.
+Yeah, just saw your other mail. Thanks for the explanation!
 
-Daniel
-
+--Kyle
