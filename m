@@ -1,81 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932661Ab0FPVff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 17:35:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52194 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759510Ab0FPVfc (ORCPT
+	id S932721Ab0FPVkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 17:40:11 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38381 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932512Ab0FPVkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 17:35:32 -0400
-Date: Wed, 16 Jun 2010 14:34:27 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: sedat.dilek@gmail.com
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>, dmonakhov@openvz.org
-Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
-Message-Id: <20100616143427.a0323701.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTil-X5IMZMer7fHVPOMalsTJNliv-gMimzKmJ3Od@mail.gmail.com>
-References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
-	<AANLkTiksbL1qHg7Q0A-6TbX0uUrxra4jctUoIGVk5vnE@mail.gmail.com>
-	<201006091122.35304.rjw@sisk.pl>
-	<20100616134231.23ff30da.akpm@linux-foundation.org>
-	<AANLkTil-X5IMZMer7fHVPOMalsTJNliv-gMimzKmJ3Od@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Wed, 16 Jun 2010 17:40:07 -0400
+Subject: Re: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Tim Abbott <tabbott@ksplice.com>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-arch@vger.kernel.org,
+       Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+       Denys Vlasenko <vda.linux@googlemail.com>,
+       Parisc List <linux-parisc@vger.kernel.org>
+In-Reply-To: <alpine.DEB.1.10.1006142039250.1248@dr-wily.mit.edu>
+References: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
+	 <alpine.DEB.1.10.1006141014360.1432@dr-wily.mit.edu>
+	 <87y6ehxvby.fsf@linux-g6p1.site> <1276545951.5374.260.camel@mulgrave.site>
+	 <alpine.DEB.1.10.1006141608550.1248@dr-wily.mit.edu>
+	 <1276556919.5374.822.camel@mulgrave.site>
+	 <alpine.DEB.1.10.1006142039250.1248@dr-wily.mit.edu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Jun 2010 16:40:03 -0500
+Message-ID: <1276724403.2847.453.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jun 2010 23:00:37 +0200
-Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-
-> On Wed, Jun 16, 2010 at 10:42 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Wed, 9 Jun 2010 11:22:35 +0200
-> > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> >
-> >> On Wednesday 09 June 2010, Sedat Dilek wrote:
-> >> > The patch from [1] is still missing.
-> >> >
-> >> > __ __"cpufreq-call-nr_iowait_cpu-with-disabled-preemption.patch" from
-> >> > Dmitry Monakhoc
-> >> >
-> >> > Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-> >> > Tested-by Maciej Rutecki <maciej.rutecki@gmail.com>
-> >> >
-> >> > I have already reported this issue on LKML [2] and cpufreq ML [3].
-> >> >
-> >> > - Sedat -
-> >> >
-> >> > [1] http://www.spinics.net/lists/cpufreq/msg01631.html
-> >> > [2] http://lkml.org/lkml/2010/5/31/77
-> >> > [3] http://www.spinics.net/lists/cpufreq/msg01637.html
-> >>
-> >> Thanks, added.
-> >
-> > I just merged a different patch whcih should address this:
->
-> How do cpu-freq related stuff find its way into mainline?
-> Is there a GIT repository/branch on <git.kernel.org> where you can pull from?
+On Mon, 2010-06-14 at 22:45 -0400, Tim Abbott wrote: 
+> On Mon, 14 Jun 2010, James Bottomley wrote:
 > 
+> > > I believe that the pattern [A-Za-z$_] matches all valid characters to 
+> > > start a function name (in particular, it includes "$").  If I'm missing 
+> > > any valid characters for the start of a function name, please correct me.
+> > 
+> > Well, our linker seems to generate annoying symbols with carets in
+> > them ...
+> 
+> The question here is: is there C code that when compiled with 
+> -ffunction-sections will generate an ELF section with a name that starts 
+> with ".text.^"?  For that to happen, you would need a function whose name 
+> started with "^", which isn't valid C.
 
-(top-posting repaired.  Please don't)
+True ... but I didn't say that it was valid C.  I said the compiler is
+spitting them out in the assembly ... I suspect it uses invalid C
+function characters precisely to avoid clashes.
 
-Usually via the cpufreq git tree, mailing list and maintainer, as
-described in ./MAINTAINERS.
+> The relevant namespace here is the names for ELF sections generated by 
+> -ffunction-sections.  These are in turn computed by the compiler from 
+> function names -- there's no potential conflict created by 
+> linker-generated symbols whose names start with a caret.  Similarly, for 
+> -fdata-sections, we only care about the names of C data objects, which 
+> also can't start with a caret.
+> 
+> > > While one could in principle try to handle things by not renaming the 
+> > > .text.foo sections and instead just placing the linker script code for 
+> > > them all before a .text.* item in the linker script, that approach is 
+> > > really fragile.  I think the "text..foo" approach is a good design and I 
+> > > am not aware of any problems with it.
+> > 
+> > OK, but how about some actual explanation?  You've just characterised
+> > the current -ffunction-sections scheme that parisc has used for decades
+> > as "fragile"
+> 
+> The current parisc situation is fine.
+> 
+> What I was trying to draw a contrast with is supporting -fdata-sections by 
+> adding ".data.*" to DATA_DATA, and then trying to make sure that all the 
+> architecture linker scripts handle all the kernel's special data sections 
+> with names like ".data.foo" before the place where DATA_DATA appears in 
+> their linker scripts.  Most of the architecture linker scripts mention 
+> more than a half dozen special kernel sections with names of the form 
+> ".data.foo", often in fairly random orders, and so it would be really 
+> fragile to add the constraint that these sections need to all appear above 
+> DATA_DATA.
+> 
+> Adding ".data.[A-Za-z$_]" to DATA_DATA doesn't have this problem.
+> 
+> If we similarly added ".text.[A-Za-z$_]" to TEXT_TEXT, we'd presumably 
+> move the 4 named .text.foo sections before TEXT_TEXT; I don't think any 
+> other architectures would require any work.
+> 
+> > > Some more detailed explanation is available here:
+> > > <http://lkml.org/lkml/2010/2/19/365>
+> > 
+> > That's still a bit short on explanations.
+> >
+> > But if I infer from the rest, someone, somewhere broke the convention
+> > that all our special linux sections be called .XX.data and .XX.text to
+> > distinguish them from the .text.FF and .data.YY the compiler will
+> > generate with the relevant sectional directives? because it's been
+> > working OK for us for a while.
+> 
+> I don't know the full history here.  But prior to the ".data.foo" -> 
+> ".data..foo" patches that were merged recently, there were a bunch of 
+> cross-architecture sections with these sorts of names, e.g.:
+> 
+> .data.page_aligned
+> .data.nosave
+> .data.read_mostly
+> .data.cacheline_aligned
+> .data.lock_aligned
+> .data.percpu*
+> .data.init_task
+> etc.
+> 
+> There were also a bunch of ".text.foo" sections on individual 
+> architectures, many of which currently don't support -ffunction-sections 
+> (sh, ia64, x86, mips, etc.).
+> 
+> However, there weren't any .text.foo sections that are cross-architecture.  
+> Since parisc only uses -ffunction-sections, and not -fdata-sections, the 
+> popular .data.foo naming scheme doesn't cause any breakage on parisc.
+> 
+> The only architecture that does use -fdata-sections is frv, and there 
+> could theoretically have been breakage there, but in practice it's likely 
+> nobody has written kernel code that would actually conflict, e.g. "static 
+> int percpu = 3;", yet.
 
-But for a patch like this one, I'll just scoot it into mainline unless
-Dave happens to grab it before I do that.
+Right, but what I was curious about, since, we already sorted all the
+problems with text sections out on parisc by putting the .text as a
+suffix not a prefix, and you have to change all the data sections
+anyway, why not just follow established practise?
+
+> > To fix the breakage, the proposal now is to name all linux special
+> > sections as .text..XX and .data..XX?  I can see that's more standard
+> > looking that XX.text and XX.data, but not necessarily that it's better.
+> 
+> Yes, that's the proposal.
+> 
+> > This then introduces a problem of matching because .text.X and .text..X
+> > are hard to distinguish using the linker matching scripts.
+> 
+> Right.  I believe that this is totally solvable with a simple linker 
+> script pattern, since the space of valid names for functions and data 
+> objects in C code is quite restricted (and that the implementation of 
+> using e.g. ".data.[A-Za-z$_]*" solves this problem).
+> 
+> > So even if I buy the rename of the linux symbols, what about using a 
+> > linker defined symbol that's illegal as a function as the initial 
+> > separator instead of .?  So hyphen looks the obvious one ... you can 
+> > have all the linux special sections being .text- and .data- then we can 
+> > easily distinguish.
+> 
+> Is "." a valid first character for a function name?  I don't see the 
+> problem with using "." here.
+
+The problem is that it's hard to get the linker to distinguish
+between .text.. and .text. without funny regexp contortions.  However,
+if the two sections began .text- and .text. they are easy to distinguish
+because one prefix isn't a subset of the other.
+
+> Both .page_aligned.data and .data-page_aligned are valid choices (and in 
+> fact, the first patch series I sent on this topic about 18 months ago did 
+> .page_aligned.data, I think).
+> 
+> The main technical difference between ".data..page_aligned" and 
+> ".page_aligned.data" in my view is that you need to be more careful when 
+> writing assembly files with ".page_aligned.data".
+> 
+> To give an example, if I run the following:
+> 
+> $ cat > foo.s 
+> .section .data-page-aligned
+> 	.long 0
+> .section .data.page_aligned
+> 	.long 1
+> $ gcc -c foo.s -o foo.o
+> $ objdump -h foo.o 
+> foo.o:     file format elf32-i386
+> 
+> Sections:
+> Idx Name          Size      VMA       LMA       File off  Algn
+>   0 .text         00000000  00000000  00000000  00000034  2**2
+>                   CONTENTS, ALLOC, LOAD, READONLY, CODE
+>   1 .data         00000000  00000000  00000000  00000034  2**2
+>                   CONTENTS, ALLOC, LOAD, DATA
+>   2 .bss          00000000  00000000  00000000  00000034  2**2
+>                   ALLOC
+>   3 .data-page-aligned 00000004  00000000  00000000  00000034  2**0
+>                   CONTENTS, READONLY
+>   4 .data.page_aligned 00000004  00000000  00000000  00000038  2**0
+>                   CONTENTS, ALLOC, LOAD, DATA
+> 
+> one can see that the .data-page-aligned section doesn't have the right 
+> section flags.  So I'm pretty sure the relevant assembler heuristic is 
+> looking for things starting with ".data.", not just ".data".
+> 
+> The kernel has a lot of code in assembly files that just does:
+> 
+> .section ".data"
+> 
+> and so there's a very real risk that folks who are doing pattern-matching 
+> development on assembly files will end up creating non-allocated sections 
+> by accident (I've certainly made this mistake myself, and there's a bug of 
+> this form in arch/x86/lib/thunk.S until commit 
+> c6c2d7a084d14a8a701be84872aa1b77d2945f46, so I don't think I'm alone)
+
+But that commit isn't anything to do with the section not being
+allocated.  That's actually irrelevant to us, since we sort out the
+sectional allocations out at link time with the linker script (which
+ends up completely ignoring the original file flags).  The problem,
+specifically, is that the linker does a rename of two identically named
+sections with different flags ... we would also get the same behaviour
+if the linker thought two sections weren't mergeable even if they did
+have identical flags.
+
+In general, I think it's good practise for all use of sections to
+specify the elf flags.
+
+> I also think that ".data..page_aligned" is more readable as a new name for 
+> the former ".data.page_aligned" than ".page_aligned.data" is, but I think 
+> that's a secondary consideration.  ".data.-page_aligned" would be 
+> technically equivalent to ".data..page_aligned", but I think it is uglier.
+
+Actually, as I said, that would be .data- 
+
+But, to be honest, I don't care that much about the data names because
+we don't use -fdata-sections, the only objection is that having two
+separate conventions for text and data is adding needless complexity ...
+I do care about the text names, and I'd rather we stuck to the existing
+convention there, or provided a good reason for the change ... and
+wanting .text. as a prefix for everything is weak at best.
+
+The specific objection I have to converting everything to the .text..*
+prefix for linux sections is that the gather all function sections can
+no longer be *(.text.*), but has to become a regular expression, which
+is adding fragility.
+
+James
+
 
