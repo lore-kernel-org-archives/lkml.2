@@ -1,121 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467Ab0FPQzh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 12:55:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59967 "EHLO mx1.redhat.com"
+	id S932507Ab0FPQzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 12:55:48 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53923 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932458Ab0FPQzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 12:55:36 -0400
-Date: Wed, 16 Jun 2010 12:35:32 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Chris Vine <chris@cvine.freeserve.co.uk>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: nfsd hang and kernel bug in 2.6.35-rc3
-Message-ID: <20100616123532.569efeb9@tlielax.poochiereds.net>
-In-Reply-To: <20100616153603.GH10223@fieldses.org>
-References: <20100615175034.1e015fbc@boulder.homenet>
-	<20100616153603.GH10223@fieldses.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755444Ab0FPQzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 12:55:46 -0400
+Message-ID: <4C1901E9.2080907@kernel.org>
+Date: Wed, 16 Jun 2010 18:55:05 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Daniel Walker <dwalker@codeaurora.org>
+CC: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: Overview of concurrency managed workqueue
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>	 <4C17C598.7070303@kernel.org>	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>	 <4C18BF40.40607@kernel.org> <1276694825.9309.12.camel@m0nster>	 <4C18D1FD.9060804@kernel.org> <1276695665.9309.17.camel@m0nster>	 <4C18D574.1040903@kernel.org> <1276697146.9309.27.camel@m0nster>	 <4C18DC69.10704@kernel.org> <1276698880.9309.44.camel@m0nster>	 <4C18E4B7.5040702@kernel.org> <1276701074.9309.60.camel@m0nster>	 <4C18F2B8.9060805@kernel.org> <1276705838.9309.94.camel@m0nster>
+In-Reply-To: <1276705838.9309.94.camel@m0nster>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Jun 2010 16:55:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jun 2010 11:36:03 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
+Hello,
 
-> Jeff, is this one of the problems you saw?
+On 06/16/2010 06:30 PM, Daniel Walker wrote:
+>> I don't know.  I suppose a high priority thread is trying to flush a
+>> work item or workqueue thus causing priority inversion, right?  Maybe
+>> we can add high priority emergency worker which gets triggered through
+>> priority inversion detection or maybe the code shouldn't be flushing
+>> in the critical path anyway.
 > 
-> --b.
+> It's not a flushing situation .. The high priority thread is a userspace
+> thread so it , AFAIK, can't flush any workqueues.
+
+So, how is it stalling?  How would I be able to tell anything about
+the situation when all you're saying is doing this and that voodoo
+thing made it go away for me?
+
+>>>> Peter brought up the work priority issue previously and Linus was
+>>>> pretty clear on the issue.  They're in the discussiosn for the first
+>>>> or second take.
+>>>
+>>> Send us a link to this discussion.
+>>
+>>   http://thread.gmane.org/gmane.linux.kernel/929641
 > 
-> On Tue, Jun 15, 2010 at 05:50:34PM +0100, Chris Vine wrote:
-> > Booting up kernel 2.6.35-rc3 on my netbook, with the kernel compiled for
-> > an Atom N270 processor, hangs when starting nfsd.  If I then end the hang
-> > by rebooting with Ctrl-Alt-Delete, I get a kernel bug reported.  The only
-> > one of these that has been logged is as follows, as on other boots the bug
-> > seems to be reported elsewhere but is not committed to syslog, or no bug
-> > is reported at all (it just hangs):
-> > 
+> I didn't see anything in there related to this discussion.
 
-No, I don't think we ever saw any oopses from this, but I think I can
-see what happened here:
+It was about using wq for cpu intensive / RT stuff.  Linus said,
 
-rpc.nfsd was unable to hand any socket fd's off to the kernel due to
-being unable to start lockd. Regardless though, it tried to start
-threads anyway, and called into nfsd_init_socks. It then started a udp
-socket, and tried to call lockd_up again. That failed, and it
-returned error. Now sv_permsocks is non-empty but the socket there
-doesn't hold a lockd reference.
+  So stop arguing about irrelevancies. Nobody uses workqueues for RT
+  or for CPU-intensive crap. It's not what they were designed for, or
+  used for.
 
-The right fix is probably to tear down the socket when lockd_up fails
-in nfsd_init_socks.
+>> Maybe it's me not understanding something but I don't really think
+>> exposing workqueue priorities to userland is a good solution at all.
+> 
+> Why not? They currently are to no known ill effects (none that I know
+> of).
 
-I suspect that Chris may be using an older version of rpc.nfsd though
-that might behave a little differently than the one I was using, and
-that might account for why he hit this and we didn't.
+Because...
 
-Chris, what version of nfs-utils do you have installed on this box?
+* fragile as hell
 
-> > ...
-> > Jun 15 16:06:18 laptop kernel: NFSD: Using /var/lib/nfs/v4recovery as the NFSv4 state recovery directory
-> > Jun 15 16:07:18 laptop kernel: svc: failed to register lockdv3 RPC service (errno 110).
-> > Jun 15 16:07:18 laptop kernel: lockd_up: makesock failed, error=-110
-> > [Ctrl-Alt-Delete here]
-> > Jun 15 16:08:21 laptop kernel: lockd_down: no users! task=(null)
-> > Jun 15 16:08:21 laptop kernel: ------------[ cut here ]------------
-> > Jun 15 16:08:21 laptop kernel: kernel BUG at fs/lockd/svc.c:347!
-> > Jun 15 16:08:21 laptop kernel: invalid opcode: 0000 [#1] SMP 
-> > Jun 15 16:08:21 laptop kernel: last sysfs file: /sys/module/x_tables/initstate
-> > Jun 15 16:08:21 laptop kernel: Modules linked in: nfsd lockd nfs_acl auth_rpcgss sunrpc exportfs xt_recent xt_tcpudp nf_conntrack_ipv4 nf_defrag_i
-> > pv4 iptable_filter ip_tables xt_helper xt_conntrack xt_state x_tables nf_conntrack_irc nf_conntrack_ftp nf_conntrack pcmcia pcmcia_core cpufreq_on
-> > demand speedstep_lib acpi_cpufreq freq_table mperf parport_pc parport fuse snd_hda_codec_realtek i915 snd_hda_intel drm_kms_helper snd_hda_codec d
-> > rm snd_hwdep tg3 uvcvideo i2c_algo_bit snd_pcm videodev rtc_cmos joydev snd_timer rtc_core intel_agp snd soundcore btusb usbhid bluetooth snd_page
-> > _alloc video led_class agpgart processor sg rtc_lib output thermal libphy psmouse i2c_i801 rfkill evdev serio_raw thermal_sys ac v4l1_compat batte
-> > ry wmi button hwmon [last unloaded: pcmcia_core]
-> > Jun 15 16:08:21 laptop kernel: 
-> > Jun 15 16:08:21 laptop kernel: Pid: 1852, comm: rpc.nfsd Not tainted 2.6.35-rc3 #1 MoutCook/20021,2959
-> > Jun 15 16:08:21 laptop kernel: EIP: 0060:[<f90ef780>] EFLAGS: 00010286 CPU: 1
-> > Jun 15 16:08:21 laptop kernel: EIP is at lockd_down+0x70/0x90 [lockd]
-> > Jun 15 16:08:21 laptop kernel: EAX: 00000028 EBX: f6a9c400 ECX: f69e5ec4 EDX: f90f6be4
-> > Jun 15 16:08:21 laptop kernel: ESI: f70e7920 EDI: f70e7928 EBP: f9143a60 ESP: f69e5ec0
-> > Jun 15 16:08:21 laptop kernel:  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-> > Jun 15 16:08:21 laptop kernel: Process rpc.nfsd (pid: 1852, ti=f69e4000 task=f7184a20 task.ti=f69e4000)
-> > Jun 15 16:08:21 laptop kernel: Stack:
-> > Jun 15 16:08:21 laptop kernel:  f90f6be4 00000000 f9142995 f70e7900 f70e7900 00000801 f909960b f90ef8f1
-> > Jun 15 16:08:21 laptop kernel: <0> f90f6c74 ffffff92 00000008 00000801 ffffff92 f914279f 00000801 00000000
-> > Jun 15 16:08:21 laptop kernel: <0> f697c004 f69e5f22 f9143440 f91434eb f71df400 f6c027f8 00000101 00000000
-> > Jun 15 16:08:21 laptop kernel: Call Trace:
-> > Jun 15 16:08:21 laptop kernel:  [<f9142995>] ? nfsd_last_thread+0x25/0x60 [nfsd]
-> > Jun 15 16:08:21 laptop kernel:  [<f909960b>] ? svc_destroy+0x4b/0x130 [sunrpc]
-> > Jun 15 16:08:21 laptop kernel:  [<f90ef8f1>] ? lockd_up+0x31/0x1c0 [lockd]
-> > Jun 15 16:08:21 laptop kernel:  [<f914279f>] ? nfsd_svc+0xcf/0x160 [nfsd]
-> > Jun 15 16:08:21 laptop kernel:  [<f9143440>] ? write_threads+0x0/0xc0 [nfsd]
-> > Jun 15 16:08:21 laptop kernel:  [<f91434eb>] ? write_threads+0xab/0xc0 [nfsd]
-> > Jun 15 16:08:21 laptop kernel:  [<c101fb50>] ? do_page_fault+0x0/0x360
-> > Jun 15 16:08:21 laptop kernel:  [<c11460e1>] ? _copy_from_user+0x31/0x80
-> > Jun 15 16:08:21 laptop kernel:  [<c10b395f>] ? simple_transaction_get+0x8f/0xa0
-> > Jun 15 16:08:21 laptop kernel:  [<f9143ab9>] ? nfsctl_transaction_write+0x59/0x70 [nfsd]
-> > Jun 15 16:08:21 laptop kernel:  [<c1099a20>] ? vfs_write+0xa0/0x160
-> > Jun 15 16:08:21 laptop kernel:  [<c1099ba1>] ? sys_write+0x41/0x70
-> > Jun 15 16:08:21 laptop kernel:  [<c12eefc5>] ? syscall_call+0x7/0xb
-> > Jun 15 16:08:21 laptop kernel: Code: 05 3c 8e 0f f9 00 00 00 00 b8 c8 7c 0f f9 83 c4 08 e9 15 e3 1f c8 a1 38 8e 0f f9 c7 04 24 e4 6b 0f f9 89 44 24 04 e8 3f d4 1f c8 <0f> 0b eb fe c7 04 24 08 6c 0f f9 e8 2f d4 1f c8 0f 0b eb fe 8d 
-> > Jun 15 16:08:21 laptop kernel: EIP: [<f90ef780>] lockd_down+0x70/0x90 [lockd] SS:ESP 0068:f69e5ec0
-> > Jun 15 16:08:21 laptop kernel: ---[ end trace 8ca67da05153a656 ]---
-> > 
-> > This particular trace is with NFS v4 compiled in, but I get a similar hang
-> > with only v2/3 compiled in.
-> > 
-> > Chris
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+* depends heavily on unrelated implementation details
 
+* has extremely limited test coverage
+
+* doesn't help progressing mainline at all
+
+>>> You have no idea how many people are doing this, or in what
+>>> circumstances .. Please don't make mass speculation over things you
+>>> clearly are not aware of.
+>>
+>> Well, then please stop insisting it to be a feature to keep.  It's not
+>> a feature.
+> 
+> It may not have been a feature in the past, but it's used as a feature
+> now.. So it is a feature even tho you don't want it to be.
+
+That's exactly like grepping /proc/kallsyms to determine some feature
+and claiming it's a feature whether the kernel intends it or not.
+Sure, use it all you want.  Just don't expect it to be there on the
+next release.
+
+>> Oh yeah, if you're not insisting fixed mapping, then I don't have any
+>> problem with that.  As for what to do for priority inversions
+>> involving workqueues, I don't have any concrete idea (it was not in
+>> the mainline, so I didn't have to solve it) but one way would be
+>> reserving/creating temporary high priority workers and use them to
+>> process work items which the high priority thread is blocked on.
+> 
+> But it is in the mainline, that's why we're talking right now.
+
+The problem is in the mainline.  Solution is not.  It's not a solved
+problem.  It's also a pretty niche problem.
+
+> What I was thinking is that you could have a debugfs interface which
+> would list off what workqueues you system is processing and give the
+> user the ability to pull one or more of those workqueues into individual
+> threads for processing, just like it currently is. That way I can
+> prioritize the work items with out you having to give priorities through
+> your entire system.
+
+Why would the user want to bother with all that?  Shouldn't the kernel
+just do the right thing?  IIRC, people are working on priority
+inheriting userland mutexes.  If your problem case can't be solved by
+that, please try to fix it in proper way not through some random knobs
+that nobody really can understand.
+
+> The alternative is that you would give each work item a settable
+> priority and your whole system would have to honor that, which would be
+> a little like re-creating the scheduler.
+>
+>> But, really, without knowing details of those inversion cases, it
+>> would be pretty difficult to design something which fits.  All that I
+>> can say is having shared worker pool isn't exclusive with solving the
+>> problem.
+> 
+> The cases are all in the mainline kernel, you just have to look at the
+> code in a different way to understand them ..
+
+Yeah, sure, all the problems in the world which haven't been solved
+yet are there.  The _solution_ isn't there and solutions are what
+people conserve when trying to improve things.
+
+> If I have a userspace thread at a high priority and I'm making calls
+> into the kernel, some of those call inevitably will put work items
+> onto workqueues, right? I'm sure you can think of 100's of ways in
+> which this could happen .. At that point my thread depends on the
+> workqueue thread, since the workqueue thread is doing processing for
+> which I've , in some way, requested from userspace.
+
+You're basically saying that "I don't know how those inheritance
+inversions are happening but if I turn these magic knobs they seem to
+go away so I want those magic knobs".  Maybe the RT part of the code
+shouldn't be depending on that many random things to begin with?  And
+if there are actually things which are necessary, it's better idea to
+solve it properly through identifying problem points and properly
+inheriting priority instead of turning knobs until it somehow works?
+
+If you wanna work on such things, be my guest.  I'll be happy to work
+with you but please stop talking about setting priorities of
+workqueues from userland.  That's just nuts.
+
+Thanks.
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+tejun
