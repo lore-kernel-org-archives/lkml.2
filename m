@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758680Ab0FPFvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 01:51:15 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28658 "EHLO
+	id S1758708Ab0FPFvr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 01:51:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28650 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756945Ab0FPFqg (ORCPT
+	with ESMTP id S1756797Ab0FPFqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 01:46:36 -0400
+	Wed, 16 Jun 2010 01:46:34 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,96 +16,153 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 31/37] x86: Change e820_saved to __initdata
-Date: Tue, 15 Jun 2010 22:42:40 -0700
-Message-Id: <1276666966-14259-32-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 33/37] x86: Use wake_system_ram_range() instead of e820_any_mapped() in agp path
+Date: Tue, 15 Jun 2010 22:42:42 -0700
+Message-Id: <1276666966-14259-34-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090203.4C186513.00E7,ss=1,fgs=0
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090209.4C186516.0033,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-for 2.6.34
+Move apterture_valid back to .c
 
-Add save_e820_map() and change e820_saved to static
-also make it to be __initdata to get some bytes memory back.
+and early path still use e820_any_mapped()
+
+So later we can make e820_any_mapped() to _init
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    2 +-
- arch/x86/kernel/e820.c      |    9 +++++++--
- arch/x86/kernel/setup.c     |    2 +-
- 3 files changed, 9 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/gart.h   |   22 ----------------------
+ arch/x86/kernel/aperture_64.c |   22 ++++++++++++++++++++++
+ drivers/char/agp/amd64-agp.c  |   39 ++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 60 insertions(+), 23 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 25962e1..334281f 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -75,7 +75,6 @@ struct e820map {
- #ifdef __KERNEL__
- /* see comment in arch/x86/kernel/e820.c */
- extern struct e820map e820;
--extern struct e820map e820_saved;
- 
- extern unsigned long pci_mem_start;
- extern int e820_any_mapped(u64 start, u64 end, unsigned type);
-@@ -83,6 +82,7 @@ extern int e820_all_mapped(u64 start, u64 end, unsigned type);
- extern void e820_add_region(u64 start, u64 size, int type);
- extern void e820_print_map(char *who);
- int sanitize_e820_map(void);
-+void save_e820_map(void);
- extern u64 e820_update_range(u64 start, u64 size, unsigned old_type,
- 			       unsigned new_type);
- extern u64 e820_remove_range(u64 start, u64 size, unsigned old_type,
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 6d85399..63b46ac 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -36,7 +36,7 @@
-  * next kernel with full memory.
-  */
- struct e820map e820;
--struct e820map e820_saved;
-+static struct e820map __initdata e820_saved;
- 
- /* For PCI or other memory-mapped resources */
- unsigned long pci_mem_start = 0xaeedbabe;
-@@ -1072,12 +1072,17 @@ char *__init default_machine_specific_memory_setup(void)
- 	return who;
+diff --git a/arch/x86/include/asm/gart.h b/arch/x86/include/asm/gart.h
+index 4ac5b0f..2b63a91 100644
+--- a/arch/x86/include/asm/gart.h
++++ b/arch/x86/include/asm/gart.h
+@@ -74,26 +74,4 @@ static inline void enable_gart_translation(struct pci_dev *dev, u64 addr)
+         pci_write_config_dword(dev, AMD64_GARTAPERTURECTL, ctl);
  }
  
-+void __init save_e820_map(void)
+-static inline int aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
+-{
+-	if (!aper_base)
+-		return 0;
+-
+-	if (aper_base + aper_size > 0x100000000ULL) {
+-		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
+-		return 0;
+-	}
+-	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
+-		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
+-		return 0;
+-	}
+-	if (aper_size < min_size) {
+-		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
+-				 aper_size>>20, min_size>>20);
+-		return 0;
+-	}
+-
+-	return 1;
+-}
+-
+ #endif /* _ASM_X86_GART_H */
+diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+index b5d8b0b..4755b5a 100644
+--- a/arch/x86/kernel/aperture_64.c
++++ b/arch/x86/kernel/aperture_64.c
+@@ -145,6 +145,28 @@ static u32 __init find_cap(int bus, int slot, int func, int cap)
+ 	return 0;
+ }
+ 
++static int __init aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
 +{
-+	memcpy(&e820_saved, &e820, sizeof(struct e820map));
++	if (!aper_base)
++		return 0;
++
++	if (aper_base + aper_size > 0x100000000ULL) {
++		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
++		return 0;
++	}
++	if (e820_any_mapped(aper_base, aper_base + aper_size, E820_RAM)) {
++		printk(KERN_INFO "Aperture pointing to e820 RAM. Ignoring.\n");
++		return 0;
++	}
++	if (aper_size < min_size) {
++		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
++				 aper_size>>20, min_size>>20);
++		return 0;
++	}
++
++	return 1;
 +}
 +
- void __init setup_memory_map(void)
+ /* Read a standard AGPv3 bridge header */
+ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
  {
- 	char *who;
+diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
+index 70312da..2b33f80 100644
+--- a/drivers/char/agp/amd64-agp.c
++++ b/drivers/char/agp/amd64-agp.c
+@@ -14,7 +14,6 @@
+ #include <linux/agp_backend.h>
+ #include <linux/mmzone.h>
+ #include <asm/page.h>		/* PAGE_SIZE */
+-#include <asm/e820.h>
+ #include <asm/k8.h>
+ #include <asm/gart.h>
+ #include "agp.h"
+@@ -232,6 +231,44 @@ static const struct agp_bridge_driver amd_8151_driver = {
+ 	.agp_type_to_mask_type  = agp_generic_type_to_mask_type,
+ };
  
- 	who = x86_init.resources.memory_setup();
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	save_e820_map();
- 	printk(KERN_INFO "BIOS-provided physical RAM map:\n");
- 	e820_print_map(who);
- }
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 30cbf8c..dc6b77b 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -463,7 +463,7 @@ static void __init e820_reserve_setup_data(void)
- 		return;
- 
- 	sanitize_e820_map();
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	save_e820_map();
- 	printk(KERN_INFO "extended physical RAM map:\n");
- 	e820_print_map("reserve setup_data");
- }
++static int __devinit
++__is_ram(unsigned long pfn, unsigned long nr_pages, void *arg)
++{
++	return 1;
++}
++
++static int __devinit any_ram_in_range(u64 base, u64 size)
++{
++	unsigned long pfn, nr_pages;
++
++	pfn = base >> PAGE_SHIFT;
++	nr_pages = size >> PAGE_SHIFT;
++
++	return walk_system_ram_range(pfn, nr_pages, NULL, __is_ram) == 1;
++}
++
++static int __devinit aperture_valid(u64 aper_base, u32 aper_size, u32 min_size)
++{
++	if (!aper_base)
++		return 0;
++
++	if (aper_base + aper_size > 0x100000000ULL) {
++		printk(KERN_INFO "Aperture beyond 4GB. Ignoring.\n");
++		return 0;
++	}
++	if (any_ram_in_range(aper_base, aper_size)) {
++		printk(KERN_INFO "Aperture pointing to E820 RAM. Ignoring.\n");
++		return 0;
++	}
++	if (aper_size < min_size) {
++		printk(KERN_INFO "Aperture too small (%d MB) than (%d MB)\n",
++				 aper_size>>20, min_size>>20);
++		return 0;
++	}
++
++	return 1;
++}
++
+ /* Some basic sanity checks for the aperture. */
+ static int __devinit agp_aperture_valid(u64 aper, u32 size)
+ {
 -- 
 1.6.4.2
 
