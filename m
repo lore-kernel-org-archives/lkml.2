@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab0FPIsi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 04:48:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31179 "EHLO mx1.redhat.com"
+	id S1754941Ab0FPIs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 04:48:59 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47296 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752442Ab0FPIsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 04:48:36 -0400
-Message-ID: <4C188FC0.3050306@redhat.com>
-Date: Wed, 16 Jun 2010 11:48:00 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [RFC][PATCH 4/9] create aggregate kvm_total_used_mmu_pages value
-References: <20100615135518.BC244431@kernel.beaverton.ibm.com> <20100615135523.25D24A73@kernel.beaverton.ibm.com>
-In-Reply-To: <20100615135523.25D24A73@kernel.beaverton.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752591Ab0FPIs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 04:48:57 -0400
+Subject: Re: [PATCH 02/37] lmb: Prepare x86 to use lmb to replace early_res
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <1276666966-14259-3-git-send-email-yinghai@kernel.org>
+References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
+	 <1276666966-14259-3-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Jun 2010 18:48:27 +1000
+Message-ID: <1276678107.2552.214.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 04:55 PM, Dave Hansen wrote:
-> Note: this is the real meat of the patch set.  It can be applied up
-> to this point, and everything will probably be improved, at least
-> a bit.
->
-> Of slab shrinkers, the VM code says:
->
->   * Note that 'shrink' will be passed nr_to_scan == 0 when the VM is
->   * querying the cache size, so a fastpath for that case is appropriate.
->
-> and it *means* it.  Look at how it calls the shrinkers:
->
-> 	nr_before = (*shrinker->shrink)(0, gfp_mask);
-> 	shrink_ret = (*shrinker->shrink)(this_scan, gfp_mask);
->
-> So, if you do anything stupid in your shrinker, the VM will doubly
-> punish you.
->    
+On Tue, 2010-06-15 at 22:42 -0700, Yinghai Lu wrote:
+> 1. expose lmb_debug
+> 2. expose lmb_reserved_init_regions
+> 
+> -v2: drop lmb_add_region() and LMB_ERROR export
+> -v3: seperate wrong return of lmb_fin_base to another patch
+> -v4: expose lmb_can_resize to handle x86 EFI that could have more than
+>       128 entries
 
-Ouch.
+I don't like those too much but I suppose we can go with that for now
+and fix things up later.
 
-> The mmu_shrink() function takes the global kvm_lock, then acquires
-> every VM's kvm->mmu_lock in sequence.  If we have 100 VMs, then
-> we're going to take 101 locks.  We do it twice, so each call takes
-> 202 locks.  If we're under memory pressure, we can have each cpu
-> trying to do this.  It can get really hairy, and we've seen lock
-> spinning in mmu_shrink() be the dominant entry in profiles.
->
-> This is guaranteed to optimize at least half of those lock
-> aquisitions away.  It removes the need to take any of the locks
-> when simply trying to count objects.
->
->
-> Signed-off-by: Dave Hansen<dave@linux.vnet.ibm.com>
+Ack.
+
+Ben.
+
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 > ---
->
->   linux-2.6.git-dave/arch/x86/kvm/mmu.c |   33 +++++++++++++++++++++++----------
->   1 file changed, 23 insertions(+), 10 deletions(-)
->
-> diff -puN arch/x86/kvm/mmu.c~make_global_used_value arch/x86/kvm/mmu.c
-> --- linux-2.6.git/arch/x86/kvm/mmu.c~make_global_used_value	2010-06-09 15:14:30.000000000 -0700
-> +++ linux-2.6.git-dave/arch/x86/kvm/mmu.c	2010-06-09 15:14:30.000000000 -0700
-> @@ -891,6 +891,19 @@ static int is_empty_shadow_page(u64 *spt
->   }
->   #endif
->
-> +/*
-> + * This value is the sum of all of the kvm instances's
-> + * kvm->arch.n_used_mmu_pages values.  We need a global,
-> + * aggregate version in order to make the slab shrinker
-> + * faster
-> + */
-> +static unsigned int kvm_total_used_mmu_pages;
->    
+>  include/linux/lmb.h |    3 +++
+>  lib/lmb.c           |    5 +++--
+>  2 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+> index 6f8c4bd..1e96224 100644
+> --- a/include/linux/lmb.h
+> +++ b/include/linux/lmb.h
+> @@ -39,6 +39,9 @@ struct lmb {
+>  };
+>  
+>  extern struct lmb lmb;
+> +extern int lmb_debug;
+> +extern int lmb_can_resize;
+> +extern struct lmb_region lmb_reserved_init_regions[];
+>  
+>  extern void __init lmb_init(void);
+>  extern void __init lmb_analyze(void);
+> diff --git a/lib/lmb.c b/lib/lmb.c
+> index 13d1a04..bbdb1ec 100644
+> --- a/lib/lmb.c
+> +++ b/lib/lmb.c
+> @@ -22,9 +22,10 @@
+>  
+>  struct lmb lmb;
+>  
+> -static int lmb_debug, lmb_can_resize;
+> +int lmb_debug;
+> +int lmb_can_resize;
+>  static struct lmb_region lmb_memory_init_regions[INIT_LMB_REGIONS + 1];
+> -static struct lmb_region lmb_reserved_init_regions[INIT_LMB_REGIONS + 1];
+> +struct lmb_region lmb_reserved_init_regions[INIT_LMB_REGIONS + 1];
+>  
+>  #define LMB_ERROR	(~(phys_addr_t)0)
+>  
 
-The variable needs to be at the top of the file.
-
-> +static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
-> +{
-> +	kvm->arch.n_used_mmu_pages += nr;
-> +	kvm_total_used_mmu_pages += nr;
->    
-
-Needs an atomic operation, since there's no global lock here.  To avoid 
-bouncing this cacheline around, make the variable percpu and make 
-readers take a sum across all cpus.  Side benefit is that you no longer 
-need an atomic but a local_t, which is considerably cheaper.
-
-> +}
-> +
->    
-
-
--- 
-error compiling committee.c: too many arguments to function
 
