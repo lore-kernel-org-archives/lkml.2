@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758988Ab0FPOqN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 10:46:13 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33663 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758560Ab0FPOqM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 10:46:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=iLq0+LEPitkRX8YMX8sNk/kNppT8eiI3TfwV8yQ93ZjshDfpStcFhuAilVE701MfmS
-         3a//txFCSUAOkngZZ+rkrvpOXas1pBpTpEsWZTAxl92+nkm4N2Ck/CctJZQ7KGZ1RXOm
-         6lZY5gNy/JnaTSct6PfXpYXz9GSSRFC38nkXw=
-Date: Wed, 16 Jun 2010 23:46:05 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 2/9] oom: rename badness() to oom_badness()
-Message-ID: <20100616144605.GB9278@barrios-desktop>
-References: <20100616201948.72D7.A69D9226@jp.fujitsu.com>
- <20100616202920.72DA.A69D9226@jp.fujitsu.com>
+	id S1759030Ab0FPOqU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 10:46:20 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58996 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759012Ab0FPOqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 10:46:18 -0400
+Date: Wed, 16 Jun 2010 16:46:12 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+       Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>
+Subject: Re: [PATCH 0/3] input: evdev: Dynamic buffers (rev4)
+In-Reply-To: <201006101211.51395.dmitry.torokhov@gmail.com>
+Message-ID: <alpine.LRH.2.00.1006161645380.2497@twin.jikos.cz>
+References: <1275735869-2185-1-git-send-email-rydberg@euromail.se> <201006101211.51395.dmitry.torokhov@gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100616202920.72DA.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 08:31:20PM +0900, KOSAKI Motohiro wrote:
+On Thu, 10 Jun 2010, Dmitry Torokhov wrote:
+
+> > This version implements buffer locking using event_lock as you
+> > suggested, such that we can proceed with fixing the evdev buffer
+> > problem independently from providing a suitable one-to-many buffer.
+> > 
+> > The first patch converts the per-client buffers to a common buffer,
+> > and adds a fixme since the code is expected to be further
+> > improved. The second and third patch includes your review comments.
 > 
-> badness() is wrong name because it's too generic name. rename it.
+> Henrik,
 > 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Applied to .36 queue with minor adjustments, please take a peek in my
+> 'for-linus' branch and see if you spot anything wrong. 
+
+Hi Dmitry,
+
+I guess you forgot to push it to kernel.org? Last change I see in your 
+tree is 6 days old.
+
+Thanks,
 
 -- 
-Kind regards,
-Minchan Kim
+Jiri Kosina
+SUSE Labs, Novell Inc.
+
