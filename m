@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab0FPI64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 04:58:56 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38478 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754631Ab0FPI6y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 04:58:54 -0400
-Message-ID: <000801cb0d32$24ca1360$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
-       "LKML" <linux-kernel@vger.kernel.org>,
-       "Andrew" <andrew.chih.howe.khor@intel.com>,
-       "Intel OTC" <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
-       "Wang, Yong Y" <yong.y.wang@intel.com>
-References: <001401cb0c58$33b3ae20$66f8800a@maildom.okisemi.com> <201006151237.30698.arnd@arndb.de>
-Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
-Date: Wed, 16 Jun 2010 17:58:48 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	id S1754130Ab0FPJKM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 05:10:12 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48050 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752071Ab0FPJKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 05:10:09 -0400
+Date: Wed, 16 Jun 2010 19:10:04 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Avi Kivity <avi@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Eric Dumazet <eric.dumazet@gmail.com>, Mike Galbraith <efault@gmx.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Really lazy fpu
+Message-ID: <20100616091003.GU6138@laptop>
+References: <1276441427-31514-1-git-send-email-avi@redhat.com>
+ <4C187C22.2080505@redhat.com>
+ <4C187DF1.9030007@zytor.com>
+ <4C188527.9040305@redhat.com>
+ <20100616083941.GA27151@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100616083941.GA27151@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Wed, Jun 16, 2010 at 10:39:41AM +0200, Ingo Molnar wrote:
+> 
+> (Cc:-ed various performance/optimization folks)
+> 
+> * Avi Kivity <avi@redhat.com> wrote:
+> 
+> > On 06/16/2010 10:32 AM, H. Peter Anvin wrote:
+> > >On 06/16/2010 12:24 AM, Avi Kivity wrote:
+> > >>Ingo, Peter, any feedback on this?
+> > > Conceptually, this makes sense to me.  However, I have a concern what
+> > > happens when a task is scheduled on another CPU, while its FPU state is
+> > > still in registers in the original CPU.  That would seem to require
+> > > expensive IPIs to spill the state in order for the rescheduling to
+> > > proceed, and this could really damage performance.
+> > 
+> > Right, this optimization isn't free.
+> > 
+> > I think the tradeoff is favourable since task migrations are much
+> > less frequent than context switches within the same cpu, can the
+> > scheduler experts comment?
+> 
+> This cannot be stated categorically without precise measurements of 
+> known-good, known-bad, average FPU usage and average CPU usage scenarios. All 
+> these workloads have different characteristics.
+> 
+> I can imagine bad effects across all sorts of workloads: tcpbench, AIM7, 
+> various lmbench components, X benchmarks, tiobench - you name it. Combined 
+> with the fact that most micro-benchmarks wont be using the FPU, while in the 
+> long run most processes will be using the FPU due to SIMM instructions. So 
+> even a positive result might be skewed in practice. Has to be measured 
+> carefully IMO - and i havent seen a _single_ performance measurement in the 
+> submission mail. This is really essential.
 
-For user useful, I have decided to implement 'pos' processing to Phub driver.
+It can be nice to code an absolute worst-case microbenchmark too.
 
-I have a question.
-> Especially if you want to be able to use tools like 'cat', 'hexdump'
-> or 'dd' on the file descriptor, you need to implement support for
-> short reads.
-I don't know how to test(short read/write access).
-Could you tell me how to do the above ?
-
-Thanks,
-Ohtake.
-
------ Original Message ----- 
-From: "Arnd Bergmann" <arnd@arndb.de>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Cc: "Wang, Yong Y" <yong.y.wang@intel.com>; "Wang, Qi" <qi.wang@intel.com>; "Intel OTC" <joel.clark@intel.com>; "Andrew"
-<andrew.chih.howe.khor@intel.com>; "LKML" <linux-kernel@vger.kernel.org>; "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-Sent: Tuesday, June 15, 2010 7:37 PM
-Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
-
-
-> On Tuesday 15 June 2010, Masayuki Ohtake wrote:
-> > I have additional question.
-> > > - When the user does an llseek or pread, the *pos argument is not zero,
-> > >   so you should return data from the middle, but you still return data
-> > >   from the beginning.
-> >
-> >
-> > Must a driver read/write method support '*pos' parameter ?
-> > We think PHUB doesn't have to support '*pos',
-> > and ,we think, PHUB OROM R/W function supports only whole of ROM data R/W is enough.
-> > Please give us your opinion.
->
-> While you do not strictly need to support *pos to get the functionality
-> you want, it should be easy enough to implement and it will make the
-> read/write callbacks conform to the general semantics of file based
-> I/O. Especially if you want to be able to use tools like 'cat', 'hexdump'
-> or 'dd' on the file descriptor, you need to implement support for
-> short reads. If you are unsure about how to do that correctly, I can
-> help you some more. A good reference implementation is
-> simple_transaction_read in fs/libfs.c, which simply returns some
-> private memory.
->
-> If there is a strict hardware limitation that prevents you from doing
-> partial writes, you could expose that in the interface and return -EIO
-> in case of invalid *pos or size arguements, but my impression was that
-> the hardware can deal with bytewise access.
->
-> Arnd
->
-
+Task migration can actually be very important to the point of being
+almost a fastpath in some workloads where threads are oversubscribed to
+CPUs and blocking on some contented resource (IO or mutex or whatever).
+I suspect the main issues in that case is the actual context switching
+and contention, but it would be nice to see just how much slower it
+could get.
 
