@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559Ab0FPKB3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 06:01:29 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62703 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab0FPKBZ (ORCPT
+	id S1757621Ab0FPKHZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 06:07:25 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:53344 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab0FPKHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 06:01:25 -0400
-Date: Wed, 16 Jun 2010 03:01:22 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: "markus@trippelsdorf.de" <markus@trippelsdorf.de>
-cc: John Fastabend <john.r.fastabend@intel.com>,
-       David Miller <davem@davemloft.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       yanmin_zhang@linux.intel.com, alex.shi@intel.com, tim.c.chen@intel.com
-Subject: Re: mpd client timeouts (bisected) 2.6.35-rc3
-In-Reply-To: <20100613205922.GA1806@arch.tripp.de>
-Message-ID: <alpine.DEB.2.01.1006160255070.3964@bogon.housecafe.de>
-References: <20100612102802.GA1782@arch.tripp.de> <20100612.145835.123986343.davem@davemloft.net> <4C149147.3080808@intel.com> <4C15414E.5090201@intel.com> <20100613205922.GA1806@arch.tripp.de>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V01U2FsdGVkX1/bp8QaiaKZjzWQASuFAPctoP0odkbjMwATSrT
- hjZ/4IucWzn/0zXBZju1UCMI9ztdhWhWo4Ewk8Rr3l6pstmxjt
- Bex434VqbSuDz48ANlPmQ==
+	Wed, 16 Jun 2010 06:07:21 -0400
+Date: Wed, 16 Jun 2010 12:07:56 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCHv5 01/11] USB: gadget: g_mass_storage: static data instead of
+ dynamic allocation
+In-reply-to: <cover.1276681840.git.m.nazarewicz@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>, Greg KH <greg@kroah.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <7131891c93ac20a3360068e2f4b8fff0de7dfafb.1276681840.git.m.nazarewicz@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <20100615185527.GA22803@kroah.com>
+ <cover.1276681840.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Jun 2010 at 22:59, markus@trippelsdorf.de wrote:
-> This solves the problem here. Thanks.
+This patch changes msg_do_config() function so that it uses
+a static object for a fsg_common structure instead of dynamically
+allocated.  This is a micro-optimisation.
 
-Not sure if this is related, but I've noticed connection timeouts and 
-connections going in FIN_WAIT2 state (most of them SSH tunnels) with 
-2.6.35. Going back to 2.6.34 or applying John's (and Eric's) patch 
-does seem to fix this issue.
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/usb/gadget/mass_storage.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
 
-Thanks,
-Christian.
+diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
+index 705cc1f..e68c00e 100644
+--- a/drivers/usb/gadget/mass_storage.c
++++ b/drivers/usb/gadget/mass_storage.c
+@@ -143,7 +143,9 @@ static int msg_thread_exits(struct fsg_common *common)
+ 
+ static int __init msg_do_config(struct usb_configuration *c)
+ {
+-	struct fsg_common *common;
++	static struct fsg_common common;
++
++	struct fsg_common *retp;
+ 	struct fsg_config config;
+ 	int ret;
+ 
+@@ -154,12 +156,13 @@ static int __init msg_do_config(struct usb_configuration *c)
+ 
+ 	fsg_config_from_params(&config, &mod_data);
+ 	config.thread_exits = msg_thread_exits;
+-	common = fsg_common_init(0, c->cdev, &config);
+-	if (IS_ERR(common))
+-		return PTR_ERR(common);
+ 
+-	ret = fsg_add(c->cdev, c, common);
+-	fsg_common_put(common);
++	retp = fsg_common_init(&common, c->cdev, &config);
++	if (IS_ERR(retp))
++		return PTR_ERR(retp);
++
++	ret = fsg_add(c->cdev, c, &common);
++	fsg_common_put(&common);
+ 	return ret;
+ }
+ 
 -- 
-BOFH excuse #168:
+1.7.1
 
-le0: no carrier: transceiver cable problem?
