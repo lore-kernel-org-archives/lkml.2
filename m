@@ -1,54 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab0FYKKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Jun 2010 06:10:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36746 "EHLO mx1.redhat.com"
+	id S1754320Ab0FYKLM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Jun 2010 06:11:12 -0400
+Received: from mail.idngh.com ([41.204.36.5]:44524 "EHLO idngh.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752406Ab0FYKKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Jun 2010 06:10:09 -0400
-Date: Fri, 25 Jun 2010 12:08:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Chris Friesen <chris.friesen@genband.com>, paulmck@linux.vnet.ibm.com,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Don Zickus <dzickus@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Jerome Marchand <jmarchan@redhat.com>,
-       Mandeep Singh Baines <msb@google.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org
-Subject: Re: while_each_thread() under rcu_read_lock() is broken?
-Message-ID: <20100625100809.GB6292@redhat.com>
-References: <20100618223354.GL2365@linux.vnet.ibm.com> <20100621170919.GA13826@redhat.com> <20100621205128.GI2354@linux.vnet.ibm.com> <20100622212357.GA19670@redhat.com> <20100622221226.GP2290@linux.vnet.ibm.com> <20100623152421.GA8445@redhat.com> <20100624180726.GK2373@linux.vnet.ibm.com> <4C23A90A.9040303@genband.com> <20100624220007.GB21360@redhat.com> <m1sk4c7z4l.fsf@fess.ebiederm.org>
+	id S1752406Ab0FYKLK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Jun 2010 06:11:10 -0400
+Message-ID: <20100616185750.zumiters00socowo@mail.idngh.com>
+Date: Wed, 16 Jun 2010 18:57:50 +0000
+From: SBECKFORD Financial Loan Company <sbeckfordh@gmail.com>
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII;
+	DelSp=Yes	format=flowed
 Content-Disposition: inline
-In-Reply-To: <m1sk4c7z4l.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
+X-idngh-MailScanner-Information: Please contact the ISP for more information
+X-idngh-MailScanner-ID: 1OOxo9-0007yR-Le
+X-idngh-MailScanner: Found to be clean
+X-idngh-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=0.17, required 4, autolearn=disabled, ALL_TRUSTED -1.44,
+	BAD_CREDIT 0.33, MISSING_SUBJECT 1.28)
+X-idngh-MailScanner-From: sbeckfordh@gmail.com
+Subject: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24, Eric W. Biederman wrote:
->
-> Oleg Nesterov <oleg@redhat.com> writes:
->
-> If what we are looking for is a stable list_head that won't disappear
-> on us we should be able to put one in sighand_struct or signal_struct
-> (I forget which is which at the moment) and have a list_head that
-> lives for the life of the longest living thread, and that won't get
-> messed up by things like de_thread, and then next_thread could simply
-> return NULL when we hit the end of the list.
 
-This was already discussed.
 
-Yes, we can add list_head into signal_struct. But this breaks, say,
-thread_group_empty() and the similar code. This is fixeable.
 
-But. We need to convert the code which does while_each_thread(g, t) to
-use list_for_each(t, head). And, if g != group_leader this can't work.
+SBECKFORD Financial Loan Company
+190 - 194 Main Street
+Barrhead Glasgow G78 1SL
+www.sbeckford.webs.com
 
-Not to mention the increase of sizeof(signal_struct).
+Attn: Friend,
 
-Oleg.
+Are you looking for a cheap loan today?
+
+We are Private Loan Lender and a Cooperate
+Financial for real Estate and any kinds of
+business financing.
+
+We offer loans to individuals, firms and
+cooperate bodies at 2.5% interest rate per
+annual both secured and unsecured at 3%
+interest rate monthly base, with no credit
+check up, Loan terms and determinant, loan
+amount between the sum of $3,000.00usd to
+20,000,000.00usd.
+
+For quick processing of your loan
+request,kindly fill the loan application
+form below.
+
+THE LOAN APPLICATION FORM BELOW:
+
+*Full Name:.............................
+*Address:..............Age:.............
+*Country:..............Sex:.............
+*Contact Phone number:.................
+*Occupation:............................
+*Purpose of Loan:.......................
+*Loan Amount Needed/Duration:...........
+*E-mail: ...............................
+
+Contact: Mr. Greg Rudolph
+E-mail: Sbeckfordh@gmail.com
+Tel:08136431741
+
+Note: Everyone above 18 years of age are
+qualified for this offer.
+Await your swift reply.
+
+My Best Regards,
+Mr. Greg Rudolph
+(Financial Manager).
+
+ReplyReply All
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
+
+
+-- 
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
 
