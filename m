@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab0FPFrL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 01:47:11 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28729 "EHLO
+	id S1757572Ab0FPFq7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 01:46:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28682 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757521Ab0FPFqz (ORCPT
+	with ESMTP id S1757313Ab0FPFql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 01:46:55 -0400
+	Wed, 16 Jun 2010 01:46:41 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,82 +16,129 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 25/37] mm: move contig_page_data define to bootmem.c/nobootmem.c
-Date: Tue, 15 Jun 2010 22:42:34 -0700
-Message-Id: <1276666966-14259-26-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 19/37] x86, lmb: Add x86 version of lmb_find_in_range()
+Date: Tue, 15 Jun 2010 22:42:28 -0700
+Message-Id: <1276666966-14259-20-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4C18650A.00D4,ss=1,fgs=0
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090209.4C186518.015A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can remove #ifdef in mm/page_alloc.c
+Generic version is going from high to low, and it seems it can not find
+right area compact enough.
+
+the x86 version will go from goal to limit and just like the way We used
+for early_res
+
+use ARCH_FIND_LMB_AREA to select from them.
+
+-v2: default to no
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- mm/bootmem.c    |    7 +++++++
- mm/nobootmem.c  |    5 +++++
- mm/page_alloc.c |    9 ---------
- 3 files changed, 12 insertions(+), 9 deletions(-)
+ arch/x86/Kconfig  |    8 ++++++
+ arch/x86/mm/lmb.c |   67 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 75 insertions(+), 0 deletions(-)
 
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index 2741c34..ff55ad7 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -23,6 +23,13 @@
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 6f77afa..e4d6bc0 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -587,6 +587,14 @@ config PARAVIRT_DEBUG
+ 	  Enable to debug paravirt_ops internals.  Specifically, BUG if
+ 	  a paravirt_op is missing when it is called.
  
- #include "internal.h"
- 
-+#ifndef CONFIG_NEED_MULTIPLE_NODES
-+struct pglist_data __refdata contig_page_data = {
-+ .bdata = &bootmem_node_data[0]
-+ };
-+EXPORT_SYMBOL(contig_page_data);
-+#endif
++config ARCH_LMB_FIND_AREA
++	default n
++	bool "Use x86 own lmb_find_in_range()"
++	---help---
++	  Use lmb_find_in_range() version instead of generic version, it get free
++	  area up from low.
++	  Generic one try to get free area down from limit.
 +
- unsigned long max_low_pfn;
- unsigned long min_low_pfn;
- unsigned long max_pfn;
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index b385871..c17b5d0 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -23,6 +23,11 @@
- 
- #include "internal.h"
- 
-+#ifndef CONFIG_NEED_MULTIPLE_NODES
-+struct pglist_data __refdata contig_page_data;
-+EXPORT_SYMBOL(contig_page_data);
-+#endif
-+
- unsigned long max_low_pfn;
- unsigned long min_low_pfn;
- unsigned long max_pfn;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f67a09d..ed53402 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4722,15 +4722,6 @@ void __init set_dma_reserve(unsigned long new_dma_reserve)
- 	dma_reserve = new_dma_reserve;
+ config NO_BOOTMEM
+ 	default y
+ 	bool "Disable Bootmem code"
+diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+index 209f25b..2cc83d6 100644
+--- a/arch/x86/mm/lmb.c
++++ b/arch/x86/mm/lmb.c
+@@ -396,3 +396,70 @@ u64 __init lmb_hole_size(u64 start, u64 end)
+ 	return end - start - ((u64)ram << PAGE_SHIFT);
  }
  
--#ifndef CONFIG_NEED_MULTIPLE_NODES
--struct pglist_data __refdata contig_page_data = {
--#ifndef CONFIG_NO_BOOTMEM
-- .bdata = &bootmem_node_data[0]
--#endif
-- };
--EXPORT_SYMBOL(contig_page_data);
--#endif
--
- void __init free_area_init(unsigned long *zones_size)
- {
- 	free_area_init_node(0, zones_size,
++#ifdef CONFIG_ARCH_LMB_FIND_AREA
++/* Check for already reserved areas */
++static inline bool __init bad_addr(u64 *addrp, u64 size, u64 align)
++{
++	u64 addr = *addrp;
++	bool changed = false;
++	struct lmb_region *r;
++again:
++	for_each_lmb(reserved, r) {
++		if ((addr + size) > r->base && addr < (r->base + r->size)) {
++			addr = round_up(r->base + r->size, align);
++			changed = true;
++			goto again;
++		}
++	}
++
++	if (changed)
++		*addrp = addr;
++
++	return changed;
++}
++
++static u64 __init __lmb_find_in_range(u64 ei_start, u64 ei_last, u64 start, u64 end,
++				 u64 size, u64 align)
++{
++	u64 addr, last;
++
++	addr = round_up(ei_start, align);
++	if (addr < start)
++		addr = round_up(start, align);
++	if (addr >= ei_last)
++		goto out;
++	while (bad_addr(&addr, size, align) && addr+size <= ei_last)
++		;
++	last = addr + size;
++	if (last > ei_last)
++		goto out;
++	if (last > end)
++		goto out;
++
++	return addr;
++
++out:
++	return LMB_ERROR;
++}
++
++/*
++ * Find a free area with specified alignment in a specific range.
++ */
++u64 __init lmb_find_in_range(u64 start, u64 end, u64 size, u64 align)
++{
++	struct lmb_region *r;
++
++	for_each_lmb(memory, r) {
++		u64 ei_start = r->base;
++		u64 ei_last = ei_start + r->size;
++		u64 addr;
++
++		addr = __lmb_find_in_range(ei_start, ei_last, start, end,
++					 size, align);
++
++		if (addr != LMB_ERROR)
++			return addr;
++	}
++	return LMB_ERROR;
++}
++#endif
 -- 
 1.6.4.2
 
