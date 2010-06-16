@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758824Ab0FPKvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 06:51:41 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:34218 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754042Ab0FPKvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 06:51:40 -0400
-Message-ID: <4C18ACBB.1090002@kernel.dk>
-Date: Wed, 16 Jun 2010 12:51:39 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1758841Ab0FPKvq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 06:51:46 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44445 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab0FPKvm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 06:51:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=njrAAfwlpoB/DioPanlCYyCWZhFlomCI3xvqVdI8YvWtOAfeRB+V6nW4GUjsGtA2JM
+         ppwux5nMTG4fjQ0bJCV8jMu85leVRJWiE1/Wd/KqSi0QrIY0Lc+d7Q7z8nCHq8VO01Oi
+         OgrEO1lZC61o8y1GAUHK0k8SB63zAhO/HuoTw=
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 12/12] vmscan: Do not writeback pages in direct reclaim
-References: <4C17815A.8080402@redhat.com> <20100615135928.GK26788@csn.ul.ie> <4C178868.2010002@redhat.com> <20100615141601.GL26788@csn.ul.ie> <20100616091755.7121c7d3.kamezawa.hiroyu@jp.fujitsu.com> <4C181AFD.5060503@redhat.com> <20100616093958.00673123.kamezawa.hiroyu@jp.fujitsu.com> <4C182097.2070603@redhat.com> <20100616104036.b45d352b.kamezawa.hiroyu@jp.fujitsu.com> <20100616112024.5b093905.kamezawa.hiroyu@jp.fujitsu.com> <20100616051133.GC10687@infradead.org>
-In-Reply-To: <20100616051133.GC10687@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4C17625E.3020308@redhat.com>
+References: <4C16E6ED.7020009@cn.fujitsu.com>
+	<4C16E75F.6020003@cn.fujitsu.com>
+	<4C16E7AD.1060101@cn.fujitsu.com>
+	<4C16E999.6050004@cn.fujitsu.com>
+	<4C17625E.3020308@redhat.com>
+Date: Wed, 16 Jun 2010 18:51:41 +0800
+Message-ID: <AANLkTikZfElLWJvRX2S97FBN2ZVptxg9kYZ7utjHstC6@mail.gmail.com>
+Subject: Re: [PATCH 3/6] KVM: MMU: introduce gfn_to_page_atomic() and 
+	gfn_to_pfn_atomic()
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>,
+       Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-06-16 07:11, Christoph Hellwig wrote:
-> On Wed, Jun 16, 2010 at 11:20:24AM +0900, KAMEZAWA Hiroyuki wrote:
->> BTW, copy_from_user/copy_to_user is _real_ problem, I'm afraid following
->> much more than memcg.
->>
->> handle_mm_fault()
->> -> handle_pte_fault()
->> -> do_wp_page()
->> -> balance_dirty_page_rate_limited()
->> -> balance_dirty_pages()
->> -> writeback_inodes_wbc()
->> -> writeback_inodes_wb()
->> -> writeback_sb_inodes()
->> -> writeback_single_inode()
->> -> do_writepages()
->> -> generic_write_pages()
->> -> write_cache_pages()   // use on-stack pagevec.
->> -> writepage()
-> 
-> Yes, this is a massive issue.  Strangely enough I just wondered about
-> this callstack as balance_dirty_pages is the only place calling into the
-> per-bdi/sb writeback code directly instead of offloading it to the
-> flusher threads.  It's something that should be fixed rather quickly
-> IMHO.  write_cache_pages and other bits of this writeback code can use
-> quite large amounts of stack.
+On Tue, Jun 15, 2010 at 7:22 PM, Avi Kivity <avi@redhat.com> wrote:
+> btw, is_hwpoison_address() is racy.  While it looks up the address, some
+> other task can unmap the page tables under us.
+>
+> Andi/Huang?
+>
+> One way of fixing it is get_user_pages_ptes_fast(), which also returns the
+> pte, also atomically.  I want it for other reasons as well (respond to a
+> read fault by gupping the page for read, but allowing write access if the
+> pte indicates it is writeable).
 
-I've had the same thought as well, bdp() should just signal a writeback
-instead. Much cleaner than doing cleaning from that point.
+Yes. is_hwpoison_address() is racy. But I think it is not absolutely
+necessary to call is_hwpoison_address() in hva_to_pfn_atomic(), is it?
 
--- 
-Jens Axboe
+For is_hwpoison_address() in hva_to_pfn(), we can protect it with mmap_sem.
 
+Best Regards,
+Huang Ying
