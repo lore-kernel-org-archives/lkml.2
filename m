@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757742Ab0FPLIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 07:08:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754111Ab0FPLIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 07:08:32 -0400
-Message-ID: <4C18B0A6.4000208@redhat.com>
-Date: Wed, 16 Jun 2010 14:08:22 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1758600Ab0FPLJT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 07:09:19 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:35595 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755620Ab0FPLJQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 07:09:16 -0400
+Date: Wed, 16 Jun 2010 05:09:15 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Julian Calaby <julian.calaby@gmail.com>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+       linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+       linux-pci@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 0/5] Fix set but unused variable warnings
+Message-ID: <20100616110914.GF9298@parisc-linux.org>
+References: <1276666434-11227-1-git-send-email-justinmattock@gmail.com> <AANLkTikwKHITQJDaSf9BnHQ9FLiQ-KYlCWNiH438otsV@mail.gmail.com>
 MIME-Version: 1.0
-To: huang ying <huang.ying.caritas@gmail.com>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>,
-       Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>
-Subject: Re: [PATCH 3/6] KVM: MMU: introduce gfn_to_page_atomic() and 	gfn_to_pfn_atomic()
-References: <4C16E6ED.7020009@cn.fujitsu.com>	<4C16E75F.6020003@cn.fujitsu.com>	<4C16E7AD.1060101@cn.fujitsu.com>	<4C16E999.6050004@cn.fujitsu.com>	<4C17625E.3020308@redhat.com> <AANLkTikZfElLWJvRX2S97FBN2ZVptxg9kYZ7utjHstC6@mail.gmail.com>
-In-Reply-To: <AANLkTikZfElLWJvRX2S97FBN2ZVptxg9kYZ7utjHstC6@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikwKHITQJDaSf9BnHQ9FLiQ-KYlCWNiH438otsV@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2010 01:51 PM, huang ying wrote:
-> On Tue, Jun 15, 2010 at 7:22 PM, Avi Kivity<avi@redhat.com>  wrote:
->    
->> btw, is_hwpoison_address() is racy.  While it looks up the address, some
->> other task can unmap the page tables under us.
->>
->> Andi/Huang?
->>
->> One way of fixing it is get_user_pages_ptes_fast(), which also returns the
->> pte, also atomically.  I want it for other reasons as well (respond to a
->> read fault by gupping the page for read, but allowing write access if the
->> pte indicates it is writeable).
->>      
-> Yes. is_hwpoison_address() is racy. But I think it is not absolutely
-> necessary to call is_hwpoison_address() in hva_to_pfn_atomic(), is it?
->    
+On Wed, Jun 16, 2010 at 03:52:58PM +1000, Julian Calaby wrote:
+> Given that patches 3, 4 and 5 seem to be a cases of missing error
+> handling, (3 and 4 in particular seem to be breaking things rather
+> than fixing them) in my humble opinion, I think this set needs some
+> work and discussion.
+> 
+> Justin, maybe you'd be better off posting the actual error messages
+> (split up by subsystem) and letting the lists discuss them, rather
+> than posting patches which are obviously wrong. (like the ones I've
+> pointed out)
 
-We can probably ignore it, yes.
-
-> For is_hwpoison_address() in hva_to_pfn(), we can protect it with mmap_sem.
->    
-
-Not very appealing, but should work.
+My first impression of patch 5 was "that can't be right", but upon review,
+I concluded that was the best solution.  If we return the PTR_ERR, this
+is going to confuse every user of scsi_host_alloc who are currently only
+checking for NULL.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
