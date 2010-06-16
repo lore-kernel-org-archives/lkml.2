@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758579Ab0FPKJn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 06:09:43 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:34491 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab0FPKHX (ORCPT
+	id S1757800Ab0FPKRk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 06:17:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42087 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487Ab0FPKRj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 06:07:23 -0400
-Date: Wed, 16 Jun 2010 12:07:55 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv5 00/11] g_multi & other improvements and cleanpus
-In-reply-to: <20100615185527.GA22803@kroah.com>
-To: linux-usb@vger.kernel.org
-Cc: David Brownell <dbrownell@users.sourceforge.net>, Greg KH <greg@kroah.com>,
-       Xiaofan Chen <xiaofanc@gmail.com>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <cover.1276681840.git.m.nazarewicz@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.1
-Content-type: TEXT/PLAIN; CHARSET=EUC-KR
-Content-transfer-encoding: 8BIT
-References: <20100615185527.GA22803@kroah.com>
+	Wed, 16 Jun 2010 06:17:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=h27ShiCG0qQ1t6TDWe1r3nNhhNZVrFNOanH1k9T/iSOpc/dufKbVj/ys/6x3UUYQHL
+         NKLxzox8OxSXiW+JrzCH4952vazCzI1alWbmi2zKzuVSiyI14BMSVgkEyvVE9IHqz3IA
+         uJ3yeCkfn92R3skCM+Hah5wBnsVxrPL5yZa4o=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikYo2fa_dZAkkr-Rq2ocVy0u1jJQDlin1yxX5sz@mail.gmail.com>
+References: <AANLkTikYo2fa_dZAkkr-Rq2ocVy0u1jJQDlin1yxX5sz@mail.gmail.com>
+Date: Wed, 16 Jun 2010 11:17:37 +0100
+X-Google-Sender-Auth: qPNMrO0BMqHgSEToiIL49m5f1Pg
+Message-ID: <AANLkTiltMUX2EzJrdsUhBFjPz0LTCYstunpRrzRBee8F@mail.gmail.com>
+Subject: Re: Noticed Issue in kmemleak test module if inserted twice
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Amit Agarwal <amit.agarr@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Jun 2010 20:55:27 +0200, Greg KH <greg@kroah.com> wrote:
-> Can you resend this the 5th time so I know I have all of the proper
-> versions?
+On 16 June 2010 09:52, Amit Agarwal <amit.agarr@gmail.com> wrote:
+> I backported the latest kmemleak(2.6.34-rc1) patches to my 2.6.29-RT kernel
+> for ARM target.
+> I am facing the issue while inserting the kmemleak-test.ko module twice in
+> my 29-RT kernel.
+> Step I followed.
+> {{{
+> # mount -t debugfs nodev /sys/kernel/debug/ # cat /sys/kernel/debug/kmemleak
+> # echo scan > /sys/kernel/debug/kmemleak # cat /sys/kernel/debug/kmemleak
+> †# insmod kmemleak-test.ko
+> †# rmmod kmemleak-test.ko
+> # insmod kmemleak-test.ko
+> # cat /sys/kernel/debug/kmemleak
+> cat: can't open '/sys/kernel/debug/kmemleak': Device or resource busy
+> }}}
+> I have attached the†detail†log with the mail.
+> I am not clear is this the behaviour of kmemleak
 
-As requested resending the whole patchset again.
+It works fine on the latest kernel, so it's not a kmemleak bug. Most
+likely it's a back-porting issue. From the log, kmemleak disabled
+itself because of errors (freeing some blocks of memory by a pointer
+to somewhere inside the block rather than to the beginning).
 
-
-Compared to the previous comments in RNDIS and CDC ACM INF files have
-been updated (the RNDIS fix was previously sent as v4.1 but this
-patchset includes a bit updated version) and a little fix to patch 01
-has been applied (already sent as version v4.1).
-
-The g_multi "more configuration" and install mode has been exluded
-from this patches -- they weren't ment for inclusien in the kernel in
-th elast patchset (just to show them), so no point in including here
-(if aynone interested refer to v4 patches 10/13 and 13/13).
-
-
-I wasn't sure 100% sure what wording to use in the CDC ACM INF file so
-I put something that is likely to be true and safe. ;) I posted
-on m.p.d.d.d and contactec Microchip so maybe there will be some more
-info.
-
-
-Michal Nazarewicz (11):
-  USB: gadget: g_mass_storage: static data instead of dynamic
-    allocation
-  USB: gadget: f_mass_storage: fsg_add() renamed to fsg_bind_config()
-  USB: gadget: f_fs: functionfs_add() renamed to
-    functionfs_bind_config()
-  USB: gadget: composite: usb_string_ids_*() functions added
-  USB: gadget: f_fs: use usb_string_ids_n()
-  USB: gadget: g_multi: code clean up and refactoring
-  USB: gadget: g_ether: updated INF file
-  USB: gadget: g_serial: INF file updated
-  USB: gadget: g_multi: added documentation and INF files
-  USB: gadget: composite: addad disconnect callback
-  USB: gadget: f_mass_storage: added eject callback
-
- Documentation/usb/gadget_multi.txt  |  150 ++++++++++++++++++++
- Documentation/usb/gadget_serial.txt |   87 ++----------
- Documentation/usb/linux-cdc-acm.inf |  107 ++++++++++++++
- Documentation/usb/linux.inf         |  236 +++++++------------------------
- drivers/usb/gadget/Kconfig          |    1 +
- drivers/usb/gadget/composite.c      |   73 +++++++++-
- drivers/usb/gadget/f_fs.c           |   36 ++---
- drivers/usb/gadget/f_mass_storage.c |  122 +++++++++++------
- drivers/usb/gadget/g_ffs.c          |    2 +-
- drivers/usb/gadget/mass_storage.c   |   20 ++-
- drivers/usb/gadget/multi.c          |  262 ++++++++++++++++++++---------------
- include/linux/usb/composite.h       |    6 +
- include/linux/usb/functionfs.h      |    6 +-
- 13 files changed, 654 insertions(+), 454 deletions(-)
- create mode 100644 Documentation/usb/gadget_multi.txt
- create mode 100644 Documentation/usb/linux-cdc-acm.inf
+All I can say is make sure that the kmemleak_*() callbacks are
+correct. The log gives you the backtrace of where kmemleak_free() was
+called from, so that should help.
 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Micha≈Ç "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Catalin
