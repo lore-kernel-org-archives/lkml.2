@@ -1,49 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759442Ab0FPWig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 18:38:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21305 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759346Ab0FPWie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 18:38:34 -0400
-Message-ID: <4C195266.5010000@redhat.com>
-Date: Wed, 16 Jun 2010 12:38:30 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1759469Ab0FPWjl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 18:39:41 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54743 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab0FPWjk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 18:39:40 -0400
+From: "Madhusudhan" <madhu.cr@ti.com>
+To: "'Adrian Hunter'" <adrian.hunter@nokia.com>,
+       "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'Kyungmin Park'" <kmpark@infradead.org>,
+       "'LKML'" <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>
+References: <4C14AC91.6020202@nokia.com>
+Subject: RE: [PATCH V2 4/4] omap_hsmmc: Add erase capability
+Date: Wed, 16 Jun 2010 17:39:00 -0500
+Message-ID: <008d01cb0da4$b730fdf0$544ff780@am.dhcp.ti.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: Jason Wang <jasowang@redhat.com>, avi@redhat.com, mtosatti@redhat.com,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/17] Fix a possible backwards warp of kvmclock
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-12-git-send-email-zamsden@redhat.com> <4C18872E.4030105@redhat.com> <20100616135845.GM19104@mothafucka.localdomain>
-In-Reply-To: <20100616135845.GM19104@mothafucka.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <4C14AC91.6020202@nokia.com>
+Thread-Index: AcsK33i/gS0v+1YyT5yHWNaVAaggtwCw7BWA
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3198
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2010 03:58 AM, Glauber Costa wrote:
-> On Wed, Jun 16, 2010 at 04:11:26PM +0800, Jason Wang wrote:
->    
->> Zachary Amsden wrote:
->>      
->>> Kernel time, which advances in discrete steps may progress much slower
->>> than TSC.  As a result, when kvmclock is adjusted to a new base, the
->>> apparent time to the guest, which runs at a much higher, nsec scaled
->>> rate based on the current TSC, may have already been observed to have
->>> a larger value (kernel_ns + scaled tsc) than the value to which we are
->>> setting it (kernel_ns + 0).
->>>
->>>        
->> This is one issue of kvmclock which tries to supply a clocksource whose
->> precision may even higher than host.
->>      
-> What if we export to the guest the current clock resolution, and when doing guest
-> reads, simply chop whatever value we got to the lowest acceptable value?
->    
 
-I considered it, but it still doesn't solve the problem, at least, not 
-without adding TSC trap and emulate.  If you can see a higher resolution 
-clock advance faster than the resolution of the kernel, you still have 
-the problem, and any visible TSC will do that.
+
+> -----Original Message-----
+> From: Adrian Hunter [mailto:adrian.hunter@nokia.com]
+> Sent: Sunday, June 13, 2010 5:02 AM
+> To: Andrew Morton
+> Cc: Kyungmin Park; Madhusudhan Chikkature; LKML; linux-mmc@vger.kernel.org
+> Subject: [PATCH V2 4/4] omap_hsmmc: Add erase capability
+> 
+> From 101ce0365d6ce1abc8518f4776ea723038eeb5ae Mon Sep 17 00:00:00 2001
+> From: Adrian Hunter <adrian.hunter@nokia.com>
+> Date: Tue, 18 May 2010 17:33:13 +0300
+> Subject: [PATCH 4/4] omap_hsmmc: Add erase capability
+> 
+> Disable the data (busy) timeout for erases and set the
+> MMC_CAP_ERASE capability.
+> 
+> Signed-off-by: Adrian Hunter <adrian.hunter@nokia.com>
+> ---
+>  drivers/mmc/host/omap_hsmmc.c |   13 ++++++++++---
+>  1 files changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+> index b032828..5cbbe09 100644
+> --- a/drivers/mmc/host/omap_hsmmc.c
+> +++ b/drivers/mmc/host/omap_hsmmc.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/clk.h>
+>  #include <linux/mmc/host.h>
+>  #include <linux/mmc/core.h>
+> +#include <linux/mmc/mmc.h>
+>  #include <linux/io.h>
+>  #include <linux/semaphore.h>
+>  #include <linux/gpio.h>
+> @@ -78,6 +79,7 @@
+>  #define INT_EN_MASK		0x307F0033
+>  #define BWR_ENABLE		(1 << 4)
+>  #define BRR_ENABLE		(1 << 5)
+> +#define DTO_ENABLE		(1 << 20)
+>  #define INIT_STREAM		(1 << 1)
+>  #define DP_SELECT		(1 << 21)
+>  #define DDIR			(1 << 4)
+> @@ -523,7 +525,8 @@ static void omap_hsmmc_stop_clock(struct
+> omap_hsmmc_host *host)
+>  		dev_dbg(mmc_dev(host->mmc), "MMC Clock is not stoped\n");
+>  }
+> 
+> -static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host)
+> +static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host,
+> +				  struct mmc_command *cmd)
+>  {
+>  	unsigned int irq_mask;
+> 
+> @@ -532,6 +535,10 @@ static void omap_hsmmc_enable_irq(struct
+> omap_hsmmc_host *host)
+>  	else
+>  		irq_mask = INT_EN_MASK;
+> 
+> +	/* Disable timeout for erases */
+> +	if (cmd->opcode == MMC_ERASE)
+> +		irq_mask &= ~DTO_ENABLE;
+> +
+
+I wonder is it safe to setup something based on the opcode? 
+
+When I first posted the driver I remember some comments on checks in the
+driver for opcode were considered as layer violation.
+
+But I don't see any other way of dealing with this. So it should be fine.
+
+Regards,
+Madhu
+
+>  	OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
+>  	OMAP_HSMMC_WRITE(host->base, ISE, irq_mask);
+>  	OMAP_HSMMC_WRITE(host->base, IE, irq_mask);
+> @@ -782,7 +789,7 @@ omap_hsmmc_start_command(struct omap_hsmmc_host *host,
+> struct mmc_command *cmd,
+>  		mmc_hostname(host->mmc), cmd->opcode, cmd->arg);
+>  	host->cmd = cmd;
+> 
+> -	omap_hsmmc_enable_irq(host);
+> +	omap_hsmmc_enable_irq(host, cmd);
+> 
+>  	host->response_busy = 0;
+>  	if (cmd->flags & MMC_RSP_PRESENT) {
+> @@ -2094,7 +2101,7 @@ static int __init omap_hsmmc_probe(struct
+> platform_device *pdev)
+>  	mmc->max_seg_size = mmc->max_req_size;
+> 
+>  	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
+> -		     MMC_CAP_WAIT_WHILE_BUSY;
+> +		     MMC_CAP_WAIT_WHILE_BUSY | MMC_CAP_ERASE;
+> 
+>  	if (mmc_slot(host).wires >= 8)
+>  		mmc->caps |= MMC_CAP_8_BIT_DATA;
+> --
+> 1.6.3.3
+
