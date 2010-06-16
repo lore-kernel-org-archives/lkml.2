@@ -1,99 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759639Ab0FPUnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 16:43:11 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48844 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756256Ab0FPUnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 16:43:09 -0400
-Date: Wed, 16 Jun 2010 20:42:43 GMT
-From: tip-bot for Venkatesh Pallipadi <venki@google.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       tglx@linutronix.de, hpa@linux.intel.com, len.brown@intel.com,
-       venki@google.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, hpa@linux.intel.com, venki@google.com,
-       len.brown@intel.com
-In-Reply-To: <alpine.LFD.2.00.1006032310160.6669@localhost.localdomain>
-References: <alpine.LFD.2.00.1006032310160.6669@localhost.localdomain>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86: Look for IA32_ENERGY_PERF_BIAS support
-Message-ID: <tip-23016bf0d25d62c45d8b8f61d55b290d704f7a79@git.kernel.org>
-Git-Commit-ID: 23016bf0d25d62c45d8b8f61d55b290d704f7a79
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Jun 2010 20:42:44 +0000 (UTC)
+	id S932509Ab0FPUnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 16:43:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60708 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932155Ab0FPUnV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 16:43:21 -0400
+Date: Wed, 16 Jun 2010 13:42:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: sedat.dilek@gmail.com,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>, dmonakhov@openvz.org
+Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
+Message-Id: <20100616134231.23ff30da.akpm@linux-foundation.org>
+In-Reply-To: <201006091122.35304.rjw@sisk.pl>
+References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
+	<AANLkTiksbL1qHg7Q0A-6TbX0uUrxra4jctUoIGVk5vnE@mail.gmail.com>
+	<201006091122.35304.rjw@sisk.pl>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  23016bf0d25d62c45d8b8f61d55b290d704f7a79
-Gitweb:     http://git.kernel.org/tip/23016bf0d25d62c45d8b8f61d55b290d704f7a79
-Author:     Venkatesh Pallipadi <venki@google.com>
-AuthorDate: Thu, 3 Jun 2010 23:22:28 -0400
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 16 Jun 2010 13:37:32 -0700
+On Wed, 9 Jun 2010 11:22:35 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-x86: Look for IA32_ENERGY_PERF_BIAS support
+> On Wednesday 09 June 2010, Sedat Dilek wrote:
+> > The patch from [1] is still missing.
+> > 
+> >    "cpufreq-call-nr_iowait_cpu-with-disabled-preemption.patch" from
+> > Dmitry Monakhoc
+> > 
+> > Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+> > Tested-by Maciej Rutecki <maciej.rutecki@gmail.com>
+> > 
+> > I have already reported this issue on LKML [2] and cpufreq ML [3].
+> > 
+> > - Sedat -
+> > 
+> > [1] http://www.spinics.net/lists/cpufreq/msg01631.html
+> > [2] http://lkml.org/lkml/2010/5/31/77
+> > [3] http://www.spinics.net/lists/cpufreq/msg01637.html
+> 
+> Thanks, added.
 
-The new IA32_ENERGY_PERF_BIAS MSR allows system software to give
-hardware a hint whether OS policy favors more power saving,
-or more performance.  This allows the OS to have some influence
-on internal hardware power/performance tradeoffs where the OS
-has previously had no influence.
+I just merged a different patch whcih should address this:
 
-The support for this feature is indicated by CPUID.06H.ECX.bit3,
-as documented in the Intel Architectures Software Developer's Manual.
 
-This patch discovers support of this feature and displays it
-as "epb" in /proc/cpuinfo.
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-LKML-Reference: <alpine.LFD.2.00.1006032310160.6669@localhost.localdomain>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Fix
+
+ BUG: using smp_processor_id() in preemptible [00000000] code: s2disk/3392
+ caller is nr_iowait_cpu+0xe/0x1e
+ Pid: 3392, comm: s2disk Not tainted 2.6.35-rc3-dbg-00106-ga75e02b #2
+ Call Trace:
+ [<c1184c55>] debug_smp_processor_id+0xa5/0xbc
+ [<c10282a5>] nr_iowait_cpu+0xe/0x1e
+ [<c104ab7c>] update_ts_time_stats+0x32/0x6c
+ [<c104ac73>] get_cpu_idle_time_us+0x36/0x58
+ [<c124229b>] get_cpu_idle_time+0x12/0x74
+ [<c1242963>] cpufreq_governor_dbs+0xc3/0x2dc
+ [<c1240437>] __cpufreq_governor+0x51/0x85
+ [<c1241190>] __cpufreq_set_policy+0x10c/0x13d
+ [<c12413d3>] cpufreq_add_dev_interface+0x212/0x233
+ [<c1241b1e>] ? handle_update+0x0/0xd
+ [<c1241a18>] cpufreq_add_dev+0x34b/0x35a
+ [<c103c973>] ? schedule_delayed_work_on+0x11/0x13
+ [<c12c14db>] cpufreq_cpu_callback+0x59/0x63
+ [<c1042f39>] notifier_call_chain+0x26/0x48
+ [<c1042f7d>] __raw_notifier_call_chain+0xe/0x10
+ [<c102efb9>] __cpu_notify+0x15/0x29
+ [<c102efda>] cpu_notify+0xd/0xf
+ [<c12bfb30>] _cpu_up+0xaf/0xd2
+ [<c12b3ad4>] enable_nonboot_cpus+0x3d/0x94
+ [<c1055eef>] hibernation_snapshot+0x104/0x1a2
+ [<c1058b49>] snapshot_ioctl+0x24b/0x53e
+ [<c1028ad1>] ? sub_preempt_count+0x7c/0x89
+ [<c10ab91d>] vfs_ioctl+0x2e/0x8c
+ [<c10588fe>] ? snapshot_ioctl+0x0/0x53e
+ [<c10ac2c7>] do_vfs_ioctl+0x42f/0x45a
+ [<c10a0ba5>] ? fsnotify_modify+0x4f/0x5a
+ [<c11e9dc3>] ? tty_write+0x0/0x1d0
+ [<c10a12d6>] ? vfs_write+0xa2/0xda
+ [<c10ac333>] sys_ioctl+0x41/0x62
+ [<c10027d3>] sysenter_do_call+0x12/0x2d
+
+The initial fix was to use get_cpu/put_cpu in nr_iowait_cpu.  However,
+Arjan stated that "the bug is that it needs to be nr_iowait_cpu(int cpu)".
+
+This patch introduces nr_iowait_cpu(int cpu) and changes to it callers.
+
+akpm: addresses about 30,000,000 different bug reports.
+
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- arch/x86/include/asm/cpufeature.h          |    1 +
- arch/x86/include/asm/msr-index.h           |    2 ++
- arch/x86/kernel/cpu/addon_cpuid_features.c |    1 +
- 3 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 4681459..2a904f4 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -162,6 +162,7 @@
- #define X86_FEATURE_IDA		(7*32+ 0) /* Intel Dynamic Acceleration */
- #define X86_FEATURE_ARAT	(7*32+ 1) /* Always Running APIC Timer */
- #define X86_FEATURE_CPB		(7*32+ 2) /* AMD Core Performance Boost */
-+#define X86_FEATURE_EPB		(7*32+ 3) /* IA32_ENERGY_PERF_BIAS support */
+ drivers/cpuidle/governors/menu.c |   10 ++++++++--
+ include/linux/sched.h            |    2 +-
+ kernel/sched.c                   |    4 ++--
+ kernel/time/tick-sched.c         |    4 +++-
+ 4 files changed, 14 insertions(+), 6 deletions(-)
+
+diff -puN drivers/cpuidle/governors/menu.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu drivers/cpuidle/governors/menu.c
+--- a/drivers/cpuidle/governors/menu.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu
++++ a/drivers/cpuidle/governors/menu.c
+@@ -137,15 +137,18 @@ static inline int which_bucket(unsigned 
+ {
+ 	int bucket = 0;
  
- /* Virtualization flags: Linux defined */
- #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index b49d8ca..e57bc20 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -238,6 +238,8 @@
++	int cpu = get_cpu();
+ 	/*
+ 	 * We keep two groups of stats; one with no
+ 	 * IO pending, one without.
+ 	 * This allows us to calculate
+ 	 * E(duration)|iowait
+ 	 */
+-	if (nr_iowait_cpu())
++	if (nr_iowait_cpu(cpu))
+ 		bucket = BUCKETS/2;
  
- #define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
- 
-+#define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
++	put_cpu();
 +
- /* MISC_ENABLE bits: architectural */
- #define MSR_IA32_MISC_ENABLE_FAST_STRING	(1ULL << 0)
- #define MSR_IA32_MISC_ENABLE_TCC		(1ULL << 1)
-diff --git a/arch/x86/kernel/cpu/addon_cpuid_features.c b/arch/x86/kernel/cpu/addon_cpuid_features.c
-index 10fa568..7369b4c 100644
---- a/arch/x86/kernel/cpu/addon_cpuid_features.c
-+++ b/arch/x86/kernel/cpu/addon_cpuid_features.c
-@@ -33,6 +33,7 @@ void __cpuinit init_scattered_cpuid_features(struct cpuinfo_x86 *c)
- 		{ X86_FEATURE_IDA,   		CR_EAX, 1, 0x00000006 },
- 		{ X86_FEATURE_ARAT,  		CR_EAX, 2, 0x00000006 },
- 		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006 },
-+		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006 },
- 		{ X86_FEATURE_CPB,   		CR_EDX, 9, 0x80000007 },
- 		{ X86_FEATURE_NPT,   		CR_EDX, 0, 0x8000000a },
- 		{ X86_FEATURE_LBRV,  		CR_EDX, 1, 0x8000000a },
+ 	if (duration < 10)
+ 		return bucket;
+ 	if (duration < 100)
+@@ -169,13 +172,16 @@ static inline int which_bucket(unsigned 
+ static inline int performance_multiplier(void)
+ {
+ 	int mult = 1;
++	int cpu = get_cpu();
+ 
+ 	/* for higher loadavg, we are more reluctant */
+ 
+ 	mult += 2 * get_loadavg();
+ 
+ 	/* for IO wait tasks (per cpu!) we add 5x each */
+-	mult += 10 * nr_iowait_cpu();
++	mult += 10 * nr_iowait_cpu(cpu);
++
++	put_cpu();
+ 
+ 	return mult;
+ }
+diff -puN include/linux/sched.h~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu include/linux/sched.h
+--- a/include/linux/sched.h~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu
++++ a/include/linux/sched.h
+@@ -139,7 +139,7 @@ extern int nr_processes(void);
+ extern unsigned long nr_running(void);
+ extern unsigned long nr_uninterruptible(void);
+ extern unsigned long nr_iowait(void);
+-extern unsigned long nr_iowait_cpu(void);
++extern unsigned long nr_iowait_cpu(int cpu);
+ extern unsigned long this_cpu_load(void);
+ 
+ 
+diff -puN kernel/sched.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu kernel/sched.c
+--- a/kernel/sched.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu
++++ a/kernel/sched.c
+@@ -2864,9 +2864,9 @@ unsigned long nr_iowait(void)
+ 	return sum;
+ }
+ 
+-unsigned long nr_iowait_cpu(void)
++unsigned long nr_iowait_cpu(int cpu)
+ {
+-	struct rq *this = this_rq();
++	struct rq *this = cpu_rq(cpu);
+ 	return atomic_read(&this->nr_iowait);
+ }
+ 
+diff -puN kernel/time/tick-sched.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu kernel/time/tick-sched.c
+--- a/kernel/time/tick-sched.c~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu
++++ a/kernel/time/tick-sched.c
+@@ -159,10 +159,12 @@ update_ts_time_stats(struct tick_sched *
+ 	ktime_t delta;
+ 
+ 	if (ts->idle_active) {
++		int cpu = get_cpu();
+ 		delta = ktime_sub(now, ts->idle_entrytime);
+ 		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+-		if (nr_iowait_cpu() > 0)
++		if (nr_iowait_cpu(cpu) > 0)
+ 			ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
++		put_cpu();
+ 		ts->idle_entrytime = now;
+ 	}
+ 
+_
+
