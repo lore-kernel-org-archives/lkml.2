@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758603Ab0FPG2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 02:28:15 -0400
-Received: from verein.lst.de ([213.95.11.210]:49514 "EHLO verein.lst.de"
+	id S1758710Ab0FPGaJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 02:30:09 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33593 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755791Ab0FPG2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 02:28:14 -0400
-Date: Wed, 16 Jun 2010 08:27:48 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Christoph Hellwig <hch@lst.de>, x86@kernel.org,
-       linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH] x86-32: always use irq stacks
-Message-ID: <20100616062748.GA29543@lst.de>
-References: <20100526110923.GA28414@lst.de> <20100616051629.GA26012@lst.de> <20100616055609.GC17936@elte.hu>
+	id S1755925Ab0FPGaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 02:30:07 -0400
+Date: Wed, 16 Jun 2010 16:30:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: herbert@gondor.hengli.com.au, netdev@vger.kernel.org,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the final tree (net
+ tree related)
+Message-Id: <20100616163001.c504331f.sfr@canb.auug.org.au>
+In-Reply-To: <20100615.214406.45904170.davem@davemloft.net>
+References: <20100616134848.3edd4a25.sfr@canb.auug.org.au>
+	<20100616035630.GB17440@gondor.apana.org.au>
+	<20100615.214406.45904170.davem@davemloft.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100616055609.GC17936@elte.hu>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__16_Jun_2010_16_30_01_+1000_FCbIh5YgOOfeQtjn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 07:56:09AM +0200, Ingo Molnar wrote:
-> 
-> * Christoph Hellwig <hch@lst.de> wrote:
-> 
-> > ping?  This just came up again as a side-issue in the direct reclaim thread.  
-> > x86-32 really is the only one out there still having this compared to the 
-> > other common architetures like x86-64, powerpc and s390.
-> 
-> We should also make 8K stacks the default on 32-bit. I.e. remove all the 
-> Kconfig distinctions and make the stack model similar on 32-bit and 64-bit 
-> x86.
+--Signature=_Wed__16_Jun_2010_16_30_01_+1000_FCbIh5YgOOfeQtjn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sounds fine to me.  Do you want an additional patch for that or a respin
-to include it in one patch?
+On Tue, 15 Jun 2010 21:44:06 -0700 (PDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: Herbert Xu <herbert@gondor.apana.org.au>
+> Date: Wed, 16 Jun 2010 13:56:30 +1000
+>=20
+> > bridge: Add const to dummy br_netpoll_send_skb
+> >=20
+> > The version of br_netpoll_send_skb used when netpoll is off is
+> > missing a const thus causing a warning.
+> >=20
+> > Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+>=20
+> Applied.
 
+Thanks guys.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__16_Jun_2010_16_30_01_+1000_FCbIh5YgOOfeQtjn
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwYb2kACgkQjjKRsyhoI8yjXACfe4YNP9IUcImdB93/ExpMILi/
+o0wAoKfmDdgXrl3ApwDu8N4n2qnHm5lv
+=IuBj
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__16_Jun_2010_16_30_01_+1000_FCbIh5YgOOfeQtjn--
