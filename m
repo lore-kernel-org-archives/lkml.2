@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab0FPROz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 13:14:55 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:47550 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755510Ab0FPROx (ORCPT
+	id S932532Ab0FPRPl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 13:15:41 -0400
+Received: from ey-out-2122.google.com ([74.125.78.24]:42294 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932493Ab0FPRPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 13:14:53 -0400
-Date: Wed, 16 Jun 2010 18:56:05 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Simon Arlott <cxacru@fire.lp0.eu>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-       accessrunner-general@lists.sourceforge.net, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: conexant: fixed spacing and brace coding style issues
-Message-ID: <20100616185605.00ce6f31@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Jun 2010 13:15:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=OoJCFIikttmFNejqJ5lKhyZaQNmbMFHqmIY/NTAjc2PYjX/IZo9O3LknqT8tuZpypG
+         RMLkmODFpDbenZGonAk1IANDaVQRsZE+aTQSXW7rBbxEHkHCT6lEY6+K16ezMOuGJVPw
+         mKHFUpGr+cS+SXobN0NOME4+NAN2NBq+jS1ws=
+MIME-Version: 1.0
+Reply-To: eranian@gmail.com
+In-Reply-To: <AANLkTim1yFwS5g-s_2fMRHljjf5yMouoHb2Ulqj6V1AC@mail.gmail.com>
+References: <AANLkTikvExLi_MahU3kkX1TQKvBODq8SyTSXgpyAjOay@mail.gmail.com>
+	<1276699962.1745.599.camel@laptop>
+	<AANLkTim1yFwS5g-s_2fMRHljjf5yMouoHb2Ulqj6V1AC@mail.gmail.com>
+Date: Wed, 16 Jun 2010 19:15:37 +0200
+Message-ID: <AANLkTilWIn9VOsIvxQB4BamD7RguNiirtNVTt60hW7XQ@mail.gmail.com>
+Subject: Re: [RFC] perf/perf_events: misleading number of samples due to 
+	mmap()
+From: stephane eranian <eranian@googlemail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+       davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed spacing and brace coding style issues.
+On Wed, Jun 16, 2010 at 6:41 PM, stephane eranian
+<eranian@googlemail.com> wrote:
+> On Wed, Jun 16, 2010 at 4:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Wed, 2010-06-16 at 16:40 +0200, Stephane Eranian wrote:
+>>> This leads me to another point. For per-thread sampling, why
+>>> do we need to record mmap() events happening *outside* of
+>>> the process? I can understand the exception of kernel modules.
+>>
+>> How does that happen? The per-thread events should be on the per-task
+>> context, so another task's mmap() events should never end up there.
+>>
+>
+> I don't see the test that says the vma does not belong to the current task.
+> I also don't see anything in perf_event_mmap_match().
+>
+> It does seem to work as you said in recent kernels, though. So I am certainly
+> missing something here.
+>
+I think I got it now. It's all based on the current->perf_event_ctxp.
+So you only
+look at the events (and thus sampling buffers) attached to current which issued
+the mmap().
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/usb/atm/cxacru.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/usb/atm/cxacru.c b/drivers/usb/atm/cxacru.c
-index c89990f..191e8ae 100644
---- a/drivers/usb/atm/cxacru.c
-+++ b/drivers/usb/atm/cxacru.c
-@@ -564,7 +564,7 @@ static void cxacru_timeout_kill(unsigned long data)
- }
- 
- static int cxacru_start_wait_urb(struct urb *urb, struct completion *done,
--				 int* actual_length)
-+				 int *actual_length)
- {
- 	struct timer_list timer;
- 
-@@ -952,7 +952,7 @@ static int cxacru_fw(struct usb_device *usb_dev, enum cxacru_fw_request fw,
- 		put_unaligned(cpu_to_le32(addr), (__le32 *)(buf + offb));
- 		offb += 4;
- 		addr += l;
--		if(l)
-+		if (l)
- 			memcpy(buf + offb, data + offd, l);
- 		if (l < stride)
- 			memset(buf + offb + l, 0, stride - l);
-@@ -967,7 +967,7 @@ static int cxacru_fw(struct usb_device *usb_dev, enum cxacru_fw_request fw,
- 			}
- 			offb = 0;
- 		}
--	} while(offd < size);
-+	} while (offd < size);
- 	dbg("sent fw %#x", fw);
- 
- 	ret = 0;
-@@ -1043,8 +1043,7 @@ static void cxacru_upload_firmware(struct cxacru_data *instance,
- 	if (instance->modem_type->boot_rom_patch) {
- 		val = cpu_to_le32(BR_ADDR);
- 		ret = cxacru_fw(usb_dev, FW_WRITE_MEM, 0x2, 0x0, BR_STACK_ADDR, (u8 *) &val, 4);
--	}
--	else {
-+	} else {
- 		ret = cxacru_fw(usb_dev, FW_GOTO_MEM, 0x0, 0x0, FW_ADDR, NULL, 0);
- 	}
- 	if (ret) {
-@@ -1068,7 +1067,7 @@ static void cxacru_upload_firmware(struct cxacru_data *instance,
- }
- 
- static int cxacru_find_firmware(struct cxacru_data *instance,
--				char* phase, const struct firmware **fw_p)
-+				char *phase, const struct firmware **fw_p)
- {
- 	struct usbatm_data *usbatm = instance->usbatm;
- 	struct device *dev = &usbatm->usb_intf->dev;
--- 
-1.6.4.4
-
+I found out that my problem is coming from perf creating synthetic
+mmap() entries
+for everything it finds in /proc/PID.
