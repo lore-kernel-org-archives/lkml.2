@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab0FPFm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 01:42:27 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53284 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754357Ab0FPFmX convert rfc822-to-8bit (ORCPT
+	id S1756039Ab0FPFoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 01:44:22 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26378 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab0FPFoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 01:42:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=ovm6GjkCCXigsE6/lVGPEfElsmuxKmS1pQpGlFITJ0sE9CJwXUcjgB8QgeKvP2gCc+
-         c5trrzjwVbPFfJ1sieEjLOwGd78Gqmx6LWFpCkpWBxes1r25MyMDSHKKQUuF5uNoqck9
-         Nkqo69uZvfrVVvM60mUoxS/915wxdCox7t6mg=
-MIME-Version: 1.0
-In-Reply-To: <1276666434-11227-4-git-send-email-justinmattock@gmail.com>
-References: <1276666434-11227-1-git-send-email-justinmattock@gmail.com> 
-	<1276666434-11227-4-git-send-email-justinmattock@gmail.com>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Wed, 16 Jun 2010 15:42:02 +1000
-Message-ID: <AANLkTik27fbCY0pMJdcbuCaEXr-902WiqiFPkju4Bet0@mail.gmail.com>
-Subject: Re: [PATCH 3/5]pci:bus.c Fix variable 'retval' set but not used
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-       linux-pci@vger.kernel.org, linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Jun 2010 01:44:17 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 03/37] lmb: Print new doubled array location info
+Date: Tue, 15 Jun 2010 22:42:12 -0700
+Message-Id: <1276666966-14259-4-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
+References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090203.4C186499.01A8,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 15:33, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> The patch below fixes the warning message I am seeing with gcc 4.6.0
->  CC      drivers/pci/bus.o
-> drivers/pci/bus.c: In function 'pci_enable_bridges':
-> drivers/pci/bus.c:237:6: warning: variable 'retval' set but not used
->
->  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
->
-> ---
->  drivers/pci/bus.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-> index 628ea20..84bdb48 100644
-> --- a/drivers/pci/bus.c
-> +++ b/drivers/pci/bus.c
-> @@ -234,12 +234,10 @@ void pci_bus_add_devices(const struct pci_bus *bus)
->  void pci_enable_bridges(struct pci_bus *bus)
->  {
->        struct pci_dev *dev;
-> -       int retval;
->
->        list_for_each_entry(dev, &bus->devices, bus_list) {
->                if (dev->subordinate) {
->                        if (!pci_is_enabled(dev)) {
-> -                               retval = pci_enable_device(dev);
->                                pci_set_master(dev);
->                        }
->                        pci_enable_bridges(dev->subordinate);
+so will have more idea where it is,  use lmb_debug to controll it
 
-Er, this appears to be bogus: I'm only guessing, but I'd expect that
-the pci_enable_device() call is actually doing something useful, and
-removing it is going to break *something* - Have you booted a kernel
-with this code enabled and these patches applied?
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ lib/lmb.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-As for this warning, I think that there is a better solution.
-
-Thanks,
-
+diff --git a/lib/lmb.c b/lib/lmb.c
+index bbdb1ec..7a6e11a 100644
+--- a/lib/lmb.c
++++ b/lib/lmb.c
+@@ -192,8 +192,6 @@ static int lmb_double_array(struct lmb_type *type)
+ 	if (!lmb_can_resize)
+ 		return -1;
+ 
+-	pr_debug("lmb: %s array full, doubling...", lmb_type_name(type));
+-
+ 	/* Calculate new doubled size */
+ 	old_size = type->max * sizeof(struct lmb_region);
+ 	new_size = old_size << 1;
+@@ -221,6 +219,10 @@ static int lmb_double_array(struct lmb_type *type)
+ 	}
+ 	new_array = __va(addr);
+ 
++	if (lmb_debug)
++		pr_info("lmb: %s array is doubled to %ld at %llx - %llx",
++			 lmb_type_name(type), type->max * 2, (u64)addr, (u64)addr + new_size);
++
+ 	/* Found space, we now need to move the array over before
+ 	 * we add the reserved region since it may be our reserved
+ 	 * array itself that is full.
 -- 
+1.6.4.2
 
-Julian Calaby
-
-Email: julian.calaby@gmail.com
-.Plan: http://sites.google.com/site/juliancalaby/
