@@ -1,60 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab0FPIDu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 04:03:50 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43728 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755630Ab0FPIDq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 04:03:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=rCm3tIlnQKmFBhrSOpw1uiNRl+KpNRX89H/8iW345HVN5UrjXD3bM4eQ3i8Noo+GVn
-         Div0IgoEbNNTV6jqkT2Jc9RYWPytpTqjhG0CXhDb5nnhMlvvRP27/c1o/lKb6b28LwG6
-         /gW8Kv39/J8RfXiSv2eeNGO5xBScFw81EMqrc=
-Message-ID: <4C18855E.5010508@gmail.com>
-Date: Wed, 16 Jun 2010 11:03:42 +0300
-From: roma1390 <roma1390@gmail.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	id S1755998Ab0FPIEh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 04:04:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24407 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751225Ab0FPIEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 04:04:33 -0400
+Message-ID: <4C1886E2.2060509@redhat.com>
+Date: Wed, 16 Jun 2010 16:10:10 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: INFO: task khubd:271 blocked for more than 120 seconds.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Zachary Amsden <zamsden@redhat.com>
+CC: avi@redhat.com, mtosatti@redhat.com, glommer@redhat.com,
+       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/17] Unify vendor TSC logic
+References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-4-git-send-email-zamsden@redhat.com>
+In-Reply-To: <1276587259-32319-4-git-send-email-zamsden@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-
-We got this on our production system. Kernel: 2.6.26-2-amd64.
-This seems to be related with http://bugzilla.kernel.org/show_bug.cgi?id=13316 and still is open. Sadly to have such long standing bugs in common used subsystems like USB.
-
-Jun 15 06:25:01 accelerator57 kernel: imklog 3.18.6, log source = /proc/kmsg started.
-Jun 16 00:36:55 accelerator57 kernel: [600606.885265] usb 6-1: USB disconnect, address 3
-Jun 16 00:39:02 accelerator57 kernel: [600738.152638] INFO: task khubd:271 blocked for more than 120 seconds.
-Jun 16 00:39:02 accelerator57 kernel: [600738.152682] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-Jun 16 00:39:02 accelerator57 kernel: [600738.155993] khubd         D ffff810916ca1400     0   271      2
-Jun 16 00:39:02 accelerator57 kernel: [600738.156038]  ffff810919523d50 0000000000000046 363030365b3e363c 36323538382e3630
-Jun 16 00:39:02 accelerator57 kernel: [600738.156118]  ffff810919521470 ffff810916dad220 ffff8109195216f8 00000000a00745a2
-Jun 16 00:39:02 accelerator57 kernel: [600738.156197]  ffff810919523da4 ffff810916ca1600 0000000000000286 ffff8109148851c0
-Jun 16 00:39:02 accelerator57 kernel: [600738.156245] Call Trace:
-Jun 16 00:39:02 accelerator57 kernel: [600738.156308]  [<ffffffff8039035a>] usb_kill_urb+0xa8/0xdb
-Jun 16 00:39:02 accelerator57 kernel: [600738.156612]  [<ffffffff80246111>] autoremove_wake_function+0x0/0x2e
-Jun 16 00:39:02 accelerator57 kernel: [600738.156660]  [<ffffffff8038fa32>] usb_hcd_flush_endpoint+0xd4/0xeb
-Jun 16 00:39:02 accelerator57 kernel: [600738.156707]  [<ffffffff80390a8e>] usb_disable_endpoint+0x5b/0x6d
-Jun 16 00:39:02 accelerator57 kernel: [600738.156752]  [<ffffffff80390ac5>] usb_disable_device+0x25/0xe8
-Jun 16 00:39:02 accelerator57 kernel: [600738.156792]  [<ffffffff8038c9cd>] usb_disconnect+0x92/0x142
-Jun 16 00:39:02 accelerator57 kernel: [600738.156830]  [<ffffffff8038dc07>] hub_thread+0x3f9/0xcfd
-Jun 16 00:39:02 accelerator57 kernel: [600738.156868]  [<ffffffff80246111>] autoremove_wake_function+0x0/0x2e
-Jun 16 00:39:02 accelerator57 kernel: [600738.156910]  [<ffffffff8038d80e>] hub_thread+0x0/0xcfd
-Jun 16 00:39:02 accelerator57 kernel: [600738.156952]  [<ffffffff80245feb>] kthread+0x47/0x74
-Jun 16 00:39:02 accelerator57 kernel: [600738.156993]  [<ffffffff8023008d>] schedule_tail+0x27/0x5c
-Jun 16 00:39:02 accelerator57 kernel: [600738.157036]  [<ffffffff8020cf38>] child_rip+0xa/0x12
-Jun 16 00:39:02 accelerator57 kernel: [600738.157077]  [<ffffffff80245fa4>] kthread+0x0/0x74
-Jun 16 00:39:02 accelerator57 kernel: [600738.157116]  [<ffffffff8020cf2e>] child_rip+0x0/0x12
-Jun 16 00:39:02 accelerator57 kernel: [600738.157154]
+Zachary Amsden wrote:
+> Move the TSC control logic from the vendor backends into x86.c
+> by adding adjust_tsc_offset to x86 ops.  Now all TSC decisions
+> can be done in one place.
+>
+> Also, rename some variable in the VCPU structure to more accurately
+> reflect their actual content.
+>
+> VMX backend would record last observed TSC very late (possibly in an
+> IPI to clear the VMCS from a remote CPU), now it is done earlier.
+>
+> Note this is still not yet perfect.  We adjust TSC in both
+> directions when the TSC is unstable, resulting in desynchronized
+> TSCs for SMP guests.  A better choice would be to compensate based
+> on a master reference clock.
+>
+> Signed-off-by: Zachary Amsden <zamsden@redhat.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    5 +++--
+>  arch/x86/kvm/svm.c              |   25 +++++++++++--------------
+>  arch/x86/kvm/vmx.c              |   20 ++++++++------------
+>  arch/x86/kvm/x86.c              |   16 +++++++++++-----
+>  4 files changed, 33 insertions(+), 33 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 91631b8..94f6ce8 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -253,7 +253,6 @@ struct kvm_mmu {
+>  };
+>  
+>  struct kvm_vcpu_arch {
+> -	u64 host_tsc;
+>  	/*
+>  	 * rip and regs accesses must go through
+>  	 * kvm_{register,rip}_{read,write} functions.
+> @@ -334,9 +333,10 @@ struct kvm_vcpu_arch {
+>  
+>  	gpa_t time;
+>  	struct pvclock_vcpu_time_info hv_clock;
+> -	unsigned int hv_clock_tsc_khz;
+> +	unsigned int hw_tsc_khz;
+>  	unsigned int time_offset;
+>  	struct page *time_page;
+> +	u64 last_host_tsc;
+>  
+>  	bool nmi_pending;
+>  	bool nmi_injected;
+> @@ -530,6 +530,7 @@ struct kvm_x86_ops {
+>  	u64 (*get_mt_mask)(struct kvm_vcpu *vcpu, gfn_t gfn, bool is_mmio);
+>  	int (*get_lpage_level)(void);
+>  	bool (*rdtscp_supported)(void);
+> +	void (*adjust_tsc_offset)(struct kvm_vcpu *vcpu, s64 adjustment);
+>  
+>  	void (*set_supported_cpuid)(u32 func, struct kvm_cpuid_entry2 *entry);
+>  
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index 09b2145..ee2cf30 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -948,18 +948,6 @@ static void svm_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>  	int i;
+>  
+>  	if (unlikely(cpu != vcpu->cpu)) {
+> -		u64 delta;
+> -
+> -		if (check_tsc_unstable()) {
+> -			/*
+> -			 * Make sure that the guest sees a monotonically
+> -			 * increasing TSC.
+> -			 */
+> -			delta = vcpu->arch.host_tsc - native_read_tsc();
+> -			svm->vmcb->control.tsc_offset += delta;
+> -			if (is_nested(svm))
+> -				svm->nested.hsave->control.tsc_offset += delta;
+> -		}
+>  		svm->asid_generation = 0;
+>  	}
+>  
+> @@ -975,8 +963,6 @@ static void svm_vcpu_put(struct kvm_vcpu *vcpu)
+>  	++vcpu->stat.host_state_reload;
+>  	for (i = 0; i < NR_HOST_SAVE_USER_MSRS; i++)
+>  		wrmsrl(host_save_user_msrs[i], svm->host_user_msrs[i]);
+> -
+> -	vcpu->arch.host_tsc = native_read_tsc();
+>  }
+>  
+>  static unsigned long svm_get_rflags(struct kvm_vcpu *vcpu)
+> @@ -3422,6 +3408,15 @@ static bool svm_rdtscp_supported(void)
+>  	return false;
+>  }
+>  
+> +static void svm_adjust_tsc_offset(struct kvm_vcpu *vcpu, s64 adjustment)
+> +{
+> +	struct vcpu_svm *svm = to_svm(vcpu);
+> +
+> +	svm->vmcb->control.tsc_offset += adjustment;
+> +	if (is_nested(svm))
+> +		svm->nested.hsave->control.tsc_offset += adjustment;
+> +}
+> +
+>  static void svm_fpu_deactivate(struct kvm_vcpu *vcpu)
+>  {
+>  	struct vcpu_svm *svm = to_svm(vcpu);
+> @@ -3506,6 +3501,8 @@ static struct kvm_x86_ops svm_x86_ops = {
+>  	.rdtscp_supported = svm_rdtscp_supported,
+>  
+>  	.set_supported_cpuid = svm_set_supported_cpuid,
+> +
+> +	.adjust_tsc_offset = svm_adjust_tsc_offset,
+>  };
+>  
+>  static int __init svm_init(void)
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index a657e08..a993e67 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -498,7 +498,6 @@ static void __vcpu_clear(void *arg)
+>  		vmcs_clear(vmx->vmcs);
+>  	if (per_cpu(current_vmcs, cpu) == vmx->vmcs)
+>  		per_cpu(current_vmcs, cpu) = NULL;
+> -	rdtscll(vmx->vcpu.arch.host_tsc);
+>  	list_del(&vmx->local_vcpus_link);
+>  	vmx->vcpu.cpu = -1;
+>  	vmx->launched = 0;
+> @@ -881,7 +880,6 @@ static void vmx_load_host_state(struct vcpu_vmx *vmx)
+>  static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>  {
+>  	struct vcpu_vmx *vmx = to_vmx(vcpu);
+> -	u64 tsc_this, delta, new_offset;
+>  	u64 phys_addr = __pa(per_cpu(vmxarea, cpu));
+>  
+>  	if (!vmm_exclusive)
+> @@ -914,16 +912,6 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>  
+>  		rdmsrl(MSR_IA32_SYSENTER_ESP, sysenter_esp);
+>  		vmcs_writel(HOST_IA32_SYSENTER_ESP, sysenter_esp); /* 22.2.3 */
+> -
+> -		/*
+> -		 * Make sure the time stamp counter is monotonous.
+> -		 */
+> -		rdtscll(tsc_this);
+> -		if (tsc_this < vcpu->arch.host_tsc) {
+> -			delta = vcpu->arch.host_tsc - tsc_this;
+> -			new_offset = vmcs_read64(TSC_OFFSET) + delta;
+> -			vmcs_write64(TSC_OFFSET, new_offset);
+> -		}
+>  	}
+>  }
+>  
+> @@ -1153,6 +1141,12 @@ static void guest_write_tsc(u64 guest_tsc, u64 host_tsc)
+>  	vmcs_write64(TSC_OFFSET, guest_tsc - host_tsc);
+>  }
+>  
+> +static void vmx_adjust_tsc_offset(struct kvm_vcpu *vcpu, s64 adjustment)
+> +{
+> +	u64 offset = vmcs_read64(TSC_OFFSET);
+> +	vmcs_write64(TSC_OFFSET, offset + adjustment);
+> +}
+> +
+>  /*
+>   * Reads an msr value (of 'msr_index') into 'pdata'.
+>   * Returns 0 on success, non-0 otherwise.
+> @@ -4340,6 +4334,8 @@ static struct kvm_x86_ops vmx_x86_ops = {
+>  	.rdtscp_supported = vmx_rdtscp_supported,
+>  
+>  	.set_supported_cpuid = vmx_set_supported_cpuid,
+> +
+> +	.adjust_tsc_offset = vmx_adjust_tsc_offset,
+>  };
+>  
+>  static int __init vmx_init(void)
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 0a102d3..c8289d0 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -929,9 +929,9 @@ static int kvm_write_guest_time(struct kvm_vcpu *v)
+>  		return 1;
+>  	}
+>  
+> -	if (unlikely(vcpu->hv_clock_tsc_khz != this_tsc_khz)) {
+> +	if (unlikely(vcpu->hw_tsc_khz != this_tsc_khz)) {
+>  		kvm_set_time_scale(this_tsc_khz, &vcpu->hv_clock);
+> -		vcpu->hv_clock_tsc_khz = this_tsc_khz;
+> +		vcpu->hw_tsc_khz = this_tsc_khz;
+>  	}
+>  
+>  	/* Keep irq disabled to prevent changes to the clock */
+> @@ -1805,18 +1805,24 @@ out:
+>  
+>  void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>  {
+> +	kvm_x86_ops->vcpu_load(vcpu, cpu);
+>  	if (unlikely(vcpu->cpu != cpu)) {
+> +		/* Make sure TSC doesn't go backwards */
+> +		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 : 
+> +				native_read_tsc() - vcpu->arch.last_host_tsc;
+> +		if (tsc_delta < 0 || check_tsc_unstable())
+>   
+It's better to do the adjustment also when tsc_delta > 0
+> +			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
+>  		kvm_migrate_timers(vcpu);
+> +		kvm_request_guest_time_update(vcpu);
+> +		vcpu->cpu = cpu;
+>  	}
+> -	kvm_x86_ops->vcpu_load(vcpu, cpu);
+> -	kvm_request_guest_time_update(vcpu);
+> -	vcpu->cpu = cpu;
+>  }
+>  
+>  void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+>  {
+>  	kvm_x86_ops->vcpu_put(vcpu);
+>  	kvm_put_guest_fpu(vcpu);
+> +	vcpu->arch.last_host_tsc = native_read_tsc();
+>  }
+>  
+>  static int is_efer_nx(void)
+>   
 
