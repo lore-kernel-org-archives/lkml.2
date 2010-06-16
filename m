@@ -1,36 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab0FPNYl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 09:24:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31782 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919Ab0FPNYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 09:24:40 -0400
-Date: Wed, 16 Jun 2010 10:24:37 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: avi@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
+	id S1755075Ab0FPNZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 09:25:48 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36579 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066Ab0FPNZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 09:25:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:subject:from:reply-to:to:cc:in-reply-to:references
+         :content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=xsfuHJZ0iNULDdr2a7Uj22KC1UBQvN4DdRXDEphV7Mlt7/dOg4CU2QRV4n8gHYrt5t
+         5aFFf/LiS3/Px4l8zaKHWrqpEgVa2BT/9z4/35BsulzYYJyj3o9xh6qnSae/uv+/44Mp
+         7iQVGBTUurUju0OE6S/lsvF32/TgqCAdsaXR8=
+Subject: Re: [PATCH] Clear IFF_XMIT_DST_RELEASE for teql interfaces
+From: jamal <hadi@cyberus.ca>
+Reply-To: hadi@cyberus.ca
+To: Tom Hughes <tom@compton.nu>
+Cc: netdev@vger.kernel.org, akpm@linux-foundation.org,
+       "David S. Miller" <davem@davemloft.net>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       Patrick McHardy <kaber@trash.net>, Tejun Heo <tj@kernel.org>,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/17] Fix deep C-state TSC desynchronization
-Message-ID: <20100616132436.GJ19104@mothafucka.localdomain>
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com>
- <1276587259-32319-5-git-send-email-zamsden@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276587259-32319-5-git-send-email-zamsden@redhat.com>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+In-Reply-To: <1276676668-10256-1-git-send-email-tom@compton.nu>
+References: <1276676668-10256-1-git-send-email-tom@compton.nu>
+Content-Type: text/plain
+Date: Wed, 16 Jun 2010 09:25:45 -0400
+Message-Id: <1276694745.3862.1.camel@bigi>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 09:34:06PM -1000, Zachary Amsden wrote:
-> When CPUs with unstable TSCs enter deep C-state, TSC may stop
-> running.  This causes us to require resynchronization.  Since
-> we can't tell when this may potentially happen, we assume the
-> worst by forcing re-compensation for it at every point the VCPU
-> task is descheduled.
-can't we just compensate everytime check_tsc_unstable() is true?
+On Wed, 2010-06-16 at 09:24 +0100, Tom Hughes wrote:
+> The sch_teql module, which can be used to load balance over a set of
+> underlying interfaces, stopped working after 2.6.30 and has been
+> broken in all kernels since then for any underlying interface which
+> requires the addition of link level headers.
+> 
+> The problem is that the transmit routine relies on being able to
+> access the destination address in the skb in order to do address
+> resolution once it has decided which underlying interface it is going
+> to transmit through.
+> 
+> In 2.6.31 the IFF_XMIT_DST_RELEASE flag was introduced, and set by
+> default for all interfaces, which causes the destination address to be
+> released before the transmit routine for the interface is called.
+> 
+> The solution is to clear that flag for teql interfaces.
+> 
+> Signed-off-by: Tom Hughes <tom@compton.nu>
 
+Sounds reasonable. Lets CC Eric and get his ACK.
+
+cheers,
+jamal
 
