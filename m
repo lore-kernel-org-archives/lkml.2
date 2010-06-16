@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758487Ab0FPFrI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 01:47:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28712 "EHLO
+	id S1758550Ab0FPFrL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 01:47:11 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28729 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757427Ab0FPFqs (ORCPT
+	with ESMTP id S1757521Ab0FPFqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 01:46:48 -0400
+	Wed, 16 Jun 2010 01:46:55 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,77 +16,82 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 27/37] x86: Have nobootmem version setup_bootmem_allocator()
-Date: Tue, 15 Jun 2010 22:42:36 -0700
-Message-Id: <1276666966-14259-28-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 25/37] mm: move contig_page_data define to bootmem.c/nobootmem.c
+Date: Tue, 15 Jun 2010 22:42:34 -0700
+Message-Id: <1276666966-14259-26-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090205.4C186508.0068,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4C18650A.00D4,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can reduce #ifdef number from 3 to one in init_32.c
+We can remove #ifdef in mm/page_alloc.c
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init_32.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+ mm/bootmem.c    |    7 +++++++
+ mm/nobootmem.c  |    5 +++++
+ mm/page_alloc.c |    9 ---------
+ 3 files changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index e3ae067..f172aa3 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -771,11 +771,9 @@ static unsigned long __init setup_node_bootmem(int nodeid,
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 2741c34..ff55ad7 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -23,6 +23,13 @@
  
- 	return bootmap + bootmap_size;
- }
--#endif
+ #include "internal.h"
  
- void __init setup_bootmem_allocator(void)
- {
--#ifndef CONFIG_NO_BOOTMEM
- 	int nodeid;
- 	unsigned long bootmap_size, bootmap;
- 	/*
-@@ -787,13 +785,11 @@ void __init setup_bootmem_allocator(void)
- 	if (bootmap == (unsigned long)LMB_ERROR)
- 		panic("Cannot find bootmem map of size %ld\n", bootmap_size);
- 	lmb_reserve_range(bootmap, bootmap + bootmap_size, "BOOTMAP");
--#endif
- 
- 	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
- 		 max_pfn_mapped<<PAGE_SHIFT);
- 	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
- 
--#ifndef CONFIG_NO_BOOTMEM
- 	for_each_online_node(nodeid) {
- 		 unsigned long start_pfn, end_pfn;
- 
-@@ -811,10 +807,19 @@ void __init setup_bootmem_allocator(void)
- 		bootmap = setup_node_bootmem(nodeid, start_pfn, end_pfn,
- 						 bootmap);
- 	}
--#endif
- 
- 	after_bootmem = 1;
- }
-+#else
-+void __init setup_bootmem_allocator(void)
-+{
-+	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
-+		 max_pfn_mapped<<PAGE_SHIFT);
-+	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
-+
-+	after_bootmem = 1;
-+}
++#ifndef CONFIG_NEED_MULTIPLE_NODES
++struct pglist_data __refdata contig_page_data = {
++ .bdata = &bootmem_node_data[0]
++ };
++EXPORT_SYMBOL(contig_page_data);
 +#endif
++
+ unsigned long max_low_pfn;
+ unsigned long min_low_pfn;
+ unsigned long max_pfn;
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index b385871..c17b5d0 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -23,6 +23,11 @@
  
- /*
-  * paging_init() sets up the page tables - note that the first 8MB are
+ #include "internal.h"
+ 
++#ifndef CONFIG_NEED_MULTIPLE_NODES
++struct pglist_data __refdata contig_page_data;
++EXPORT_SYMBOL(contig_page_data);
++#endif
++
+ unsigned long max_low_pfn;
+ unsigned long min_low_pfn;
+ unsigned long max_pfn;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index f67a09d..ed53402 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4722,15 +4722,6 @@ void __init set_dma_reserve(unsigned long new_dma_reserve)
+ 	dma_reserve = new_dma_reserve;
+ }
+ 
+-#ifndef CONFIG_NEED_MULTIPLE_NODES
+-struct pglist_data __refdata contig_page_data = {
+-#ifndef CONFIG_NO_BOOTMEM
+- .bdata = &bootmem_node_data[0]
+-#endif
+- };
+-EXPORT_SYMBOL(contig_page_data);
+-#endif
+-
+ void __init free_area_init(unsigned long *zones_size)
+ {
+ 	free_area_init_node(0, zones_size,
 -- 
 1.6.4.2
 
