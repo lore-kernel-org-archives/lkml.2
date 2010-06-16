@@ -1,129 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759469Ab0FPWjl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 18:39:41 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54743 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808Ab0FPWjk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 18:39:40 -0400
-From: "Madhusudhan" <madhu.cr@ti.com>
-To: "'Adrian Hunter'" <adrian.hunter@nokia.com>,
-       "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'Kyungmin Park'" <kmpark@infradead.org>,
-       "'LKML'" <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>
-References: <4C14AC91.6020202@nokia.com>
-Subject: RE: [PATCH V2 4/4] omap_hsmmc: Add erase capability
-Date: Wed, 16 Jun 2010 17:39:00 -0500
-Message-ID: <008d01cb0da4$b730fdf0$544ff780@am.dhcp.ti.com>
+	id S1759477Ab0FPWlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 18:41:15 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:40753 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754545Ab0FPWlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 18:41:13 -0400
+Date: Wed, 16 Jun 2010 15:41:10 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, tglx@linutronix.de, daniel.blueman@gmail.com,
+       lizf@cn.fujitsu.com, miles.lane@gmail.com, manfred@colorfullife.com
+Subject: Re: [GIT PULL rcu/urgent] yet more lockdep-RCU splat fixes
+Message-ID: <20100616224110.GI2457@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100616042224.GA3892@linux.vnet.ibm.com>
+ <20100616055358.GB17936@elte.hu>
+ <1276669431.1745.595.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <4C14AC91.6020202@nokia.com>
-Thread-Index: AcsK33i/gS0v+1YyT5yHWNaVAaggtwCw7BWA
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3198
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276669431.1745.595.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 16, 2010 at 08:23:51AM +0200, Peter Zijlstra wrote:
+> On Wed, 2010-06-16 at 07:53 +0200, Ingo Molnar wrote:
+> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > > Hello, Ingo,
+> > > 
+> > > Here are a few more fixes for RCU-lockdep splats.
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+> > > 
+> > > This is based off of v2.6.35-rc3.
+> > > 
+> > > 							Thanx, Paul
+> > > 
+> > > ------------------>
+> > > Daniel J Blueman (1):
+> > >       rcu: fix lockdep splat in wake_affine()
+> > > 
+> > > Paul E. McKenney (2):
+> > >       rcu: fix scope of wake_affine()'s new RCU read-side critical section
+> > >       idr: fix RCU lockdep splat in idr_get_next()
+> > > 
+> > >  kernel/sched_fair.c |    2 ++
+> > >  lib/idr.c           |    4 ++--
+> > >  2 files changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > Pulled, thanks a lot Paul!
+> 
+> I'm not at all sure of those two wake_affine() ones..
 
+Hello, Peter!
 
-> -----Original Message-----
-> From: Adrian Hunter [mailto:adrian.hunter@nokia.com]
-> Sent: Sunday, June 13, 2010 5:02 AM
-> To: Andrew Morton
-> Cc: Kyungmin Park; Madhusudhan Chikkature; LKML; linux-mmc@vger.kernel.org
-> Subject: [PATCH V2 4/4] omap_hsmmc: Add erase capability
-> 
-> From 101ce0365d6ce1abc8518f4776ea723038eeb5ae Mon Sep 17 00:00:00 2001
-> From: Adrian Hunter <adrian.hunter@nokia.com>
-> Date: Tue, 18 May 2010 17:33:13 +0300
-> Subject: [PATCH 4/4] omap_hsmmc: Add erase capability
-> 
-> Disable the data (busy) timeout for erases and set the
-> MMC_CAP_ERASE capability.
-> 
-> Signed-off-by: Adrian Hunter <adrian.hunter@nokia.com>
-> ---
->  drivers/mmc/host/omap_hsmmc.c |   13 ++++++++++---
->  1 files changed, 10 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-> index b032828..5cbbe09 100644
-> --- a/drivers/mmc/host/omap_hsmmc.c
-> +++ b/drivers/mmc/host/omap_hsmmc.c
-> @@ -28,6 +28,7 @@
->  #include <linux/clk.h>
->  #include <linux/mmc/host.h>
->  #include <linux/mmc/core.h>
-> +#include <linux/mmc/mmc.h>
->  #include <linux/io.h>
->  #include <linux/semaphore.h>
->  #include <linux/gpio.h>
-> @@ -78,6 +79,7 @@
->  #define INT_EN_MASK		0x307F0033
->  #define BWR_ENABLE		(1 << 4)
->  #define BRR_ENABLE		(1 << 5)
-> +#define DTO_ENABLE		(1 << 20)
->  #define INIT_STREAM		(1 << 1)
->  #define DP_SELECT		(1 << 21)
->  #define DDIR			(1 << 4)
-> @@ -523,7 +525,8 @@ static void omap_hsmmc_stop_clock(struct
-> omap_hsmmc_host *host)
->  		dev_dbg(mmc_dev(host->mmc), "MMC Clock is not stoped\n");
->  }
-> 
-> -static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host)
-> +static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host,
-> +				  struct mmc_command *cmd)
->  {
->  	unsigned int irq_mask;
-> 
-> @@ -532,6 +535,10 @@ static void omap_hsmmc_enable_irq(struct
-> omap_hsmmc_host *host)
->  	else
->  		irq_mask = INT_EN_MASK;
-> 
-> +	/* Disable timeout for erases */
-> +	if (cmd->opcode == MMC_ERASE)
-> +		irq_mask &= ~DTO_ENABLE;
-> +
+Here is the story as I understand it:
 
-I wonder is it safe to setup something based on the opcode? 
+o	wake_affine() calls task_group() and uses the resulting
+	pointer, for example, passing it to effective_load().
 
-When I first posted the driver I remember some comments on checks in the
-driver for opcode were considered as layer violation.
+	This pointer is to a struct task_group, which contains
+	a struct rcu_head, which is passed to call_rcu in
+	sched_destroy_group().  So some protection really is
+	needed -- or is it enough that wake_affine seems to be
+	invoked on the current task?  If the latter, we would
+	need to add a "task == current" check to task_subsys_state().
 
-But I don't see any other way of dealing with this. So it should be fine.
+o	task_group() calls task_subsys_state(), returning a pointer to
+	the enclosing task_group structure.
 
-Regards,
-Madhu
+o	task_subsys_state() returns an rcu_dereference_check()ed
+	pointer.  The caller must either be in an RCU read-side
+	critical section, hold the ->alloc_lock, or hold the
+	cgroup lock.
 
->  	OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
->  	OMAP_HSMMC_WRITE(host->base, ISE, irq_mask);
->  	OMAP_HSMMC_WRITE(host->base, IE, irq_mask);
-> @@ -782,7 +789,7 @@ omap_hsmmc_start_command(struct omap_hsmmc_host *host,
-> struct mmc_command *cmd,
->  		mmc_hostname(host->mmc), cmd->opcode, cmd->arg);
->  	host->cmd = cmd;
-> 
-> -	omap_hsmmc_enable_irq(host);
-> +	omap_hsmmc_enable_irq(host, cmd);
-> 
->  	host->response_busy = 0;
->  	if (cmd->flags & MMC_RSP_PRESENT) {
-> @@ -2094,7 +2101,7 @@ static int __init omap_hsmmc_probe(struct
-> platform_device *pdev)
->  	mmc->max_seg_size = mmc->max_req_size;
-> 
->  	mmc->caps |= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED |
-> -		     MMC_CAP_WAIT_WHILE_BUSY;
-> +		     MMC_CAP_WAIT_WHILE_BUSY | MMC_CAP_ERASE;
-> 
->  	if (mmc_slot(host).wires >= 8)
->  		mmc->caps |= MMC_CAP_8_BIT_DATA;
-> --
-> 1.6.3.3
+Now wake_affine() appears to be doing load calculations, so it does not
+seem reasonable to acquire the lock.  Hence the use of RCU.
 
+So, what should we be doing instead?  ;-)
+
+							Thanx, Paul
