@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759234Ab0FPXBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 19:01:47 -0400
-Received: from n20.bullet.mail.ukl.yahoo.com ([87.248.110.137]:37528 "HELO
-	n20.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755024Ab0FPXBp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 19:01:45 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 48507.84373.bm@omp101.mail.ukl.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.fr;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=I8qrRcMj3+nTIdcrmzsSlhI1SszUHHG+sfM6LvcWCZXqQmK/LG7LTABYQOAUmVY0pIxFvsb1z0QrCxDoBW72F1nT9i2afZviKsBd7owWoeGt0FNF62u78Sy7BIUsOe7fZkmZPMlPZokLuP+51CXX9/Z5xiKZE+43jGtA6/xEFWY=;
-Message-ID: <868976.42022.qm@web23602.mail.ird.yahoo.com>
-X-YMail-OSG: 137.uKYVM1lDxQEjeRBl08dM_BFexoi5uQqjuPh8pcAKR4Y
- yq8P6nTS4uUN2qJhDb1dzupVr1DaFaONCDOLcTKZH9XB4_Ik.bUWX9uvxTFr
- fvdukPT8A6YnqONwmSan7_lEWYK4jKQDxL.q53SMx.TUAEyl.Y0.ZtCeTggp
- VIoFzc23hcvQFKU6BAda.jdmjz2Nv8dg7rew1wKxh.PA5KZdajmBVvmTUt1c
- pO42SUx7zh8XiZNQYo32D1A6ShH5hk9MkTl7HW6c9fpamea4jnT5R.7zQSkv
- ZP_.MAa_20BUqexQCu_q72zIzaDEH.tXv6wGU4PI-
-X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.103.269680
-Date: Wed, 16 Jun 2010 23:01:43 +0000 (GMT)
-From: Etienne Lorrain <etienne_lorrain@yahoo.fr>
-Subject: [announce] gujin gpl bootloader version 2.8.2
-To: linux-kernel@vger.kernel.org
+	id S1759431Ab0FPXEq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 19:04:46 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:41021 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755354Ab0FPXEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 19:04:45 -0400
+Date: Wed, 16 Jun 2010 16:04:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       Daniel J Blueman <daniel.blueman@gmail.com>
+Subject: Re: [PATCH tip/core/urgent 1/3] rcu: fix lockdep splat in
+ wake_affine()
+Message-ID: <20100616230441.GK2457@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100615222923.GA14571@linux.vnet.ibm.com>
+ <1276640983-14641-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1276669391.1745.594.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276669391.1745.594.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a new version v2.8.2 of the Gujin bootloader at
+On Wed, Jun 16, 2010 at 08:23:11AM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-06-15 at 15:29 -0700, Paul E. McKenney wrote:
+> > From: Daniel J Blueman <daniel.blueman@gmail.com>
+> > 
+> > With 2.6.35-rc1 and your patch in the context below, we still see
+> > "include/linux/cgroup.h:534 invoked rcu_dereference_check() without
+> > protection!", so need this additional patch:
+> > 
+> > Acquire read-side RCU lock around task_group() calls, addressing
+> > "include/linux/cgroup.h:534 invoked rcu_dereference_check() without
+> > protection!" warning.
+> 
+> Uhm,. this is all just slapping in rcu_read_lock() to make the warning
+> go away, without explanation of what and why.
+> 
+> Its not obvious what the races is, nor how its handled.
 
-http://gujin.org and sourceforge with bugfixes and improvements, and
+Please let me know if my explanation in a recent email covers this.
+If so, I will add it to the commit log.  If not, well, back to the
+drawing board, I guess.  ;-)
 
-Debian/Fedora packages for easy installation on i386/amd64 PC. 
+							Thanx, Paul
 
-
-
-The major improvements are the possibility to review/edit the final
-
-command line of the Linux kernel when selecting by Shift-F1..Shift-F12
-
-or holding the shift key when selecting with the mouse; recognition
-
-of Rock Ridge on ISO9660, and the direct booting of unmodified live
-
-CDROM images stored in /boot or in the top-level of a partition by
-
-automagically adding one of:
-
-"from=" for CD images with label "NimbleX*"
-
-"fromiso=" for CD images with label "sidux*" and "Elive*"
-
-"root=live:LABEL=...:/" for CD images with label "Fedora*", "F1*",
-
-                               "rhel*", "CentOS*"
-
-"iso-scan/filename=" for any other (debian/ubuntu derivatives)
-
-
-
-The correct commandline for those live CD images is provided
-
-by a "distributed" file named "gujin.cmd" (i.e. all files found
-
-with this name are concat'ed and then treated), a real world example
-
-is in the source and install archive.
-
-It would be nice if live-cdrom author would create a file
-
-named gujin.cmd in the directory of the kernel containing:
-
-::vmlinu*:initr*::name to appear on Gujin menu:essential command line parameters
-
-::vmlinu*:initr*::alternative name:alternative parameters
-
-
-
-The file "changelog.wri" in the source archive describes many other
-
-modifications, fixing a lot of bugs.
-
-
-
-Downloads at:
-
-http://sourceforge.net/projects/gujin/files/
-
-
-
-Have fun,
-
-Etienne. 
-
-
-
-
-      
-
+> > Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/sched_fair.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> > index eed35ed..ca56133 100644
+> > --- a/kernel/sched_fair.c
+> > +++ b/kernel/sched_fair.c
+> > @@ -1240,6 +1240,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+> >  	 * effect of the currently running task from the load
+> >  	 * of the current CPU:
+> >  	 */
+> > +	rcu_read_lock();
+> >  	if (sync) {
+> >  		tg = task_group(current);
+> >  		weight = current->se.load.weight;
+> > @@ -1249,6 +1250,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+> >  	}
+> >  
+> >  	tg = task_group(p);
+> > +	rcu_read_unlock();
+> >  	weight = p->se.load.weight;
+> >  
+> >  	/*
+> 
+> 
