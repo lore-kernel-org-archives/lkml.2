@@ -1,225 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604Ab0FPTgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 15:36:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60059 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759205Ab0FPTga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 15:36:30 -0400
-Message-ID: <4C1927B9.9000103@redhat.com>
-Date: Wed, 16 Jun 2010 09:36:25 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: avi@redhat.com, mtosatti@redhat.com, glommer@redhat.com,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/17] Fix a possible backwards warp of kvmclock
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-12-git-send-email-zamsden@redhat.com> <4C18872E.4030105@redhat.com>
-In-Reply-To: <4C18872E.4030105@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S932648Ab0FPTgn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 15:36:43 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:15983 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932615Ab0FPTgl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 15:36:41 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6015"; a="44501145"
+Subject: Re: Overview of concurrency managed workqueue
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+In-Reply-To: <4C191BE9.1060400@kernel.org>
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>
+	 <4C17C598.7070303@kernel.org>
+	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
+	 <4C18BF40.40607@kernel.org> <1276694825.9309.12.camel@m0nster>
+	 <4C18D1FD.9060804@kernel.org> <1276695665.9309.17.camel@m0nster>
+	 <4C18D574.1040903@kernel.org> <1276697146.9309.27.camel@m0nster>
+	 <4C18DC69.10704@kernel.org> <1276698880.9309.44.camel@m0nster>
+	 <4C18E4B7.5040702@kernel.org> <1276701074.9309.60.camel@m0nster>
+	 <4C18F2B8.9060805@kernel.org> <1276705838.9309.94.camel@m0nster>
+	 <4C1901E9.2080907@kernel.org> <1276712547.9309.172.camel@m0nster>
+	 <4C191BE9.1060400@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Jun 2010 12:36:39 -0700
+Message-ID: <1276716999.9309.208.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 10:11 PM, Jason Wang wrote:
-> Zachary Amsden wrote:
->    
->> Kernel time, which advances in discrete steps may progress much slower
->> than TSC.  As a result, when kvmclock is adjusted to a new base, the
->> apparent time to the guest, which runs at a much higher, nsec scaled
->> rate based on the current TSC, may have already been observed to have
->> a larger value (kernel_ns + scaled tsc) than the value to which we are
->> setting it (kernel_ns + 0).
->>
->>      
-> This is one issue of kvmclock which tries to supply a clocksource whose
-> precision may even higher than host.
->    
->> We must instead compute the clock as potentially observed by the guest
->> for kernel_ns to make sure it does not go backwards.
->>
->> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
->> ---
->>   arch/x86/include/asm/kvm_host.h |    4 ++
->>   arch/x86/kvm/x86.c              |   79 +++++++++++++++++++++++++++++++++------
->>   2 files changed, 71 insertions(+), 12 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
->> index 1afecd7..7ec2472 100644
->> --- a/arch/x86/include/asm/kvm_host.h
->> +++ b/arch/x86/include/asm/kvm_host.h
->> @@ -338,6 +338,8 @@ struct kvm_vcpu_arch {
->>   	struct page *time_page;
->>   	u64 last_host_tsc;
->>   	u64 last_host_ns;
->> +	u64 last_guest_tsc;
->> +	u64 last_kernel_ns;
->>
->>   	bool nmi_pending;
->>   	bool nmi_injected;
->> @@ -455,6 +457,8 @@ struct kvm_vcpu_stat {
->>   	u32 hypercalls;
->>   	u32 irq_injections;
->>   	u32 nmi_injections;
->> +	u32 tsc_overshoot;
->> +	u32 tsc_ahead;
->>   };
->>
->>   struct kvm_x86_ops {
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index 52d7d34..703ea43 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -138,6 +138,8 @@ struct kvm_stats_debugfs_item debugfs_entries[] = {
->>   	{ "insn_emulation_fail", VCPU_STAT(insn_emulation_fail) },
->>   	{ "irq_injections", VCPU_STAT(irq_injections) },
->>   	{ "nmi_injections", VCPU_STAT(nmi_injections) },
->> +	{ "tsc_overshoot", VCPU_STAT(tsc_overshoot) },
->> +	{ "tsc_ahead", VCPU_STAT(tsc_ahead) },
->>   	{ "mmu_shadow_zapped", VM_STAT(mmu_shadow_zapped) },
->>   	{ "mmu_pte_write", VM_STAT(mmu_pte_write) },
->>   	{ "mmu_pte_updated", VM_STAT(mmu_pte_updated) },
->> @@ -927,33 +929,84 @@ static int kvm_recompute_guest_time(struct kvm_vcpu *v)
->>   	struct kvm_vcpu_arch *vcpu =&v->arch;
->>   	void *shared_kaddr;
->>   	unsigned long this_tsc_khz;
->> +	s64 kernel_ns, max_kernel_ns;
->> +	u64 tsc_timestamp;
->>
->>   	if ((!vcpu->time_page))
->>   		return 0;
->>
->> -	this_tsc_khz = get_cpu_var(cpu_tsc_khz);
->> -	put_cpu_var(cpu_tsc_khz);
->> +	/*
->> +	 * The protection we require is simple: we must not be preempted from
->> +	 * the CPU between our read of the TSC khz and our read of the TSC.
->> +	 * Interrupt protection is not strictly required, but it does result in
->> +	 * greater accuracy for the TSC / kernel_ns measurement.
->> +	 */
->> +	local_irq_save(flags);
->> +	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
->> +	kvm_get_msr(v, MSR_IA32_TSC,&tsc_timestamp);
->> +	ktime_get_ts(&ts);
->> +	monotonic_to_bootbased(&ts);
->> +	kernel_ns = timespec_to_ns(&ts);
->> +	local_irq_restore(flags);
->> +
->>   	if (unlikely(this_tsc_khz == 0)) {
->>   		kvm_request_guest_time_update(v);
->>   		return 1;
->>   	}
->>
->> +	/*
->> +	 * Time as measured by the TSC may go backwards when resetting the base
->> +	 * tsc_timestamp.  The reason for this is that the TSC resolution is
->> +	 * higher than the resolution of the other clock scales.  Thus, many
->> +	 * possible measurments of the TSC correspond to one measurement of any
->> +	 * other clock, and so a spread of values is possible.  This is not a
->> +	 * problem for the computation of the nanosecond clock; with TSC rates
->> +	 * around 1GHZ, there can only be a few cycles which correspond to one
->> +	 * nanosecond value, and any path through this code will inevitably
->> +	 * take longer than that.  However, with the kernel_ns value itself,
->> +	 * the precision may be much lower, down to HZ granularity.  If the
->> +	 * first sampling of TSC against kernel_ns ends in the low part of the
->> +	 * range, and the second in the high end of the range, we can get:
->> +	 *
->> +	 * (TSC - offset_low) * S + kns_old>  (TSC - offset_high) * S + kns_new
->> +	 *
->> +	 * As the sampling errors potentially range in the thousands of cycles,
->> +	 * it is possible such a time value has already been observed by the
->> +	 * guest.  To protect against this, we must compute the system time as
->> +	 * observed by the guest and ensure the new system time is greater.
->> + 	 */
->> +	max_kernel_ns = 0;
->> +	if (vcpu->hv_clock.tsc_timestamp) {
->> +		max_kernel_ns = vcpu->last_guest_tsc -
->>
->>      
-> Since you do the comparison with kernel_ns, so what you need here is
-> tsc_timestamp which looks more like the 'last' tsc seen by guest.
->    
+On Wed, 2010-06-16 at 20:46 +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On 06/16/2010 08:22 PM, Daniel Walker wrote:
+> > There's so many different ways that threads can interact .. Can you
+> > imagine a thread waiting in userspace for something to complete in the
+> > kernel, that does actually happen pretty often ;) .
+> > 
+> > I was just now randomly trolling through drivers and found this one,
+> > drivers/spi/amba-pl022.c ..
+> > 
+> > It processes some data in the interrupt, but sometimes it offloads the
+> > processing to a workqueue from the interrupt (or tasklet) .. If for
+> > example I'm a userspace thread waiting for that data then I would have
+> > to wait for that workqueue to complete (and it's priority plays a major
+> > roll in when it completes).
+> 
+> Yeah, and it would wait that by flushing the work, right?  If the
+> waiting part is using completion or some other event notification,
+> you'll just need to update the driver so that the kernel can determine
+> who's waiting for what so that it can bump the waited one's priority.
+> Otherwise, the problem can't be solved.
 
-What this is computing is the highest bootbased nanosecond time value 
-potentially seen by the guest:
+This has nothing to do with flushing .. You keep bringing this back into
+the kernel for some reason, we're talking about entirely userspace
+threads ..
 
-last_guest_tsc - hv_clock.tsc_timestamp  is the maximum cycle offset the 
-guest has seen against the last version of kvmclock.
+> >> It was about using wq for cpu intensive / RT stuff.  Linus said,
+> >>
+> >>   So stop arguing about irrelevancies. Nobody uses workqueues for RT
+> >>   or for CPU-intensive crap. It's not what they were designed for, or
+> >>   used for.
+> > 
+> > Which is not relevant to this discussion .. We're talking about
+> > re-prioritizing the workqueue threads. We're _not_ talking about
+> > workqueues designed specifically for real time purposes.
+> 
+> Well, it's somewhat related,
+> 
+> * Don't depend on works or workqueues for RT stuff.  It's not designed
+>   for that.
 
-Then it is scaled and added to the last_kernel_ns value used for 
-hv_clock.  I chose to cache vcpu->last_kernel_ns separately from 
-hv_clock so that kvmclock_offset can not change in the meantime, so the 
-value deliberately discounts kvmclock_offset.
+Too bad .. We have a posix OS, and posix has RT priorities .. You can't
+control what priorities user give those threads.
 
->> +				vcpu->hv_clock.tsc_timestamp;
->> +		max_kernel_ns = pvclock_scale_delta(max_kernel_ns,
->> +				    vcpu->hv_clock.tsc_to_system_mul,
->> +				    vcpu->hv_clock.tsc_shift);
->> +		max_kernel_ns += vcpu->last_kernel_ns;
->> +	}
->> +
->>   	if (unlikely(vcpu->hw_tsc_khz != this_tsc_khz)) {
->> -		kvm_set_time_scale(this_tsc_khz,&vcpu->hv_clock);
->> +		kvm_get_time_scale(NSEC_PER_SEC / 1000, this_tsc_khz,
->> +				&vcpu->hv_clock.tsc_shift,
->> +				&vcpu->hv_clock.tsc_to_system_mul);
->>   		vcpu->hw_tsc_khz = this_tsc_khz;
->>   	}
->>
->> -	/* Keep irq disabled to prevent changes to the clock */
->> -	local_irq_save(flags);
->> -	kvm_get_msr(v, MSR_IA32_TSC,&vcpu->hv_clock.tsc_timestamp);
->> -	ktime_get_ts(&ts);
->> -	monotonic_to_bootbased(&ts);
->> -	local_irq_restore(flags);
->> +	if (max_kernel_ns>  kernel_ns) {
->>
->>      
-> Both max_kernel_ns and kernel_ns are not adjusted by kvmclock_offset, so
-> this comparing is not safe after migration.
->    
+> * If you really wanna solve the problem, please go ahead and _solve_
+>   it yourself.  (read the rest of the mail)
 
-They are deliberately not adjusted by kvmclock_offset, so they are 
-simply scalar bootbased nanosecond values, not kvmclock_offset values.  
-Thus, we can add, subtract and take maximums of them without worrying 
-about kvmclock_offset at all.
+Your causing the problem, why should I solve it? My solution would just
+be to NAK your patches.
 
->> +		s64 overshoot = max_kernel_ns - kernel_ns;
->> +		++v->stat.tsc_ahead;
->> +		if (overshoot>  NSEC_PER_SEC / HZ) {
->> +			++v->stat.tsc_overshoot;
->> +			if (printk_ratelimit())
->> +				pr_debug("ns overshoot: %lld\n", overshoot);
->> +		}
->> +		kernel_ns = max_kernel_ns;
->> +	}
->>
->>      
-> A tsc_behind or something like this would make the problem more clear,
-> and tsc_ahead should be zero when host using tsc as its clocksource.
->    
->>
->>   	/* With all the info we got, fill in the values */
->> -
->> -	vcpu->hv_clock.system_time = ts.tv_nsec +
->> -				     (NSEC_PER_SEC * (u64)ts.tv_sec) + v->kvm->arch.kvmclock_offset;
->> +	vcpu->hv_clock.tsc_timestamp = tsc_timestamp;
->> +	vcpu->hv_clock.system_time = kernel_ns + v->kvm->arch.kvmclock_offset;
->> +	vcpu->last_kernel_ns = kernel_ns;
->>
->>   	vcpu->hv_clock.flags = 0;
->>
->> @@ -4836,6 +4889,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
->>   	if (hw_breakpoint_active())
->>   		hw_breakpoint_restore();
->>
->> +	kvm_get_msr(vcpu, MSR_IA32_TSC,&vcpu->arch.last_guest_tsc);
->>
->>      
-> This could be dropped since it does not take the time of guest execution
-> into account.
->    
+> >> * fragile as hell
+> > 
+> > Changing the thread priorities shouldn't be fragile , if it is right now
+> > then the threads are broken .. Can you exaplin in which cases you've
+> > seen it being fragile?
+> 
+> Because the workqueue might just go away in the next release or other
+> unrelated work which shouldn't get high priority might be scheduled
+> there.  Maybe the name of the workqueue changes or it gets merged with
+> another workqueue.  Maybe it gets split.  Maybe the system suspends
+> and resumes and nobody knows that workers die and are created again
+> over those events.  Maybe the backend implementaiton changes so that
+> workers are pooled.
 
-This is required is for the maximum cycle offset above.
+Changing the priorities is not fragile, your saying that ones ability to
+adapt to changes in the kernel makes it hard to know what the workqueue
+is actually doing.. Ok, that's fair.. This doesn't make it less useful
+since people can discover thread dependencies without looking at the
+kernel source.
+
+> >> * depends heavily on unrelated implementation details
+> > 
+> > I have no idea what this means.
+> 
+> (continued) because all those are implementation details which are NOT
+> PART OF THE INTERFACE in any way.
+
+yet they are part of the interface like it or not. How could you use
+threads and think thread priorities are not part of the interface.
+
+In your new system how do you currently prevent thread priorities on
+your new workqueue threads from getting modified? Surely you must be
+doing that since you don't want those priorities to change right?
+
+> >> * has extremely limited test coverage
+> > 
+> > Simple, just write tests.
+> 
+> Yeah, and test your few configurations with those,
+> 
+> >> * doesn't help progressing mainline at all
+> > 
+> > progressing where?
+> 
+> (continued) and other people experiencing the same problem will have
+> to do about the same thing and won't know whether there nice + pidof
+> will work with the next kernel upgrade.
+> 
+> Gee, I don't know.  These are pretty evident problems to me.  Aren't
+> they obvious?
+
+Your just looking at the problem through your specific use case glasses
+without imagining what else people could be doing with the kernel.
+
+How often do you think workqueues change names anyway? It's not all that
+often.
+
+> >> That's exactly like grepping /proc/kallsyms to determine some feature
+> >> and claiming it's a feature whether the kernel intends it or not.
+> >> Sure, use it all you want.  Just don't expect it to be there on the
+> >> next release.
+> > 
+> > Your assume there's no value in changing the priorities which is wrong.
+> > Your assuming way to much . Changing the priorities is useful.
+> 
+> And you're assuming grepping /proc/kallsyms is not useful?  It's
+> useful in its adhoc unsupported hacky way.
+
+Well lets say it's useful and 100k people use that method in it's
+"hacky" way .. When does it become a feature then?
+
+> >> You're basically saying that "I don't know how those inheritance
+> >> inversions are happening but if I turn these magic knobs they seem to
+> >> go away so I want those magic knobs".  Maybe the RT part of the code
+> >> shouldn't be depending on that many random things to begin with?  And
+> >> if there are actually things which are necessary, it's better idea to
+> >> solve it properly through identifying problem points and properly
+> >> inheriting priority instead of turning knobs until it somehow works?
+> > 
+> > I think your mis-interpreting me .. If I write a thread (in userspace)
+> > which I put into RT priorities I don't have a lot of control over what
+> > dependencies the kernel may put on my thread. Think from a users
+> > perspective not from a kernel developers perspective.
+> >
+> > I'm not saying changing a workqueue priority would be a final solution,
+> > but it is a way to prioritize things immediately and has worked in prior
+> > kernels up till your patches.
+> 
+> * Make the kernel or driver or whatever you use in the RT path track
+>   priority is the right thing to do.
+
+That's why your changing the priority of the workqueue.
+
+> * I'm very sorry I'm breaking your hacky workaround but seriously
+>   that's another problem to solve.  Let's talk about the problem
+>   itself instead of your hacky workaround.  (I think for most cases
+>   not using workqueue in RT path would be the right thing to do.)
+
+You have no control over using workqueue in an RT path, like I said you
+can't control which applications might get RT priorities and what
+workqueues they could be using..
+
+Bottom line is you have to assume any kernel path way could have an RT
+thread using it. You can't say "This is RT safe this kernel version, and
+this other stuff it's not RT safe.." This is posix, everything can and
+will get used by RT threads.
+
+> >> If you wanna work on such things, be my guest.  I'll be happy to work
+> >> with you but please stop talking about setting priorities of
+> >> workqueues from userland.  That's just nuts.
+> > 
+> > You just don't understand it.. How can you expect your patches to go
+> > into mainline with this attitude toward usages you just don't
+> > understand?
+> 
+> I'll keep your doubts on mind but I'm really understanding what you're
+> saying.  You just don't understand that I understand and disagree. :-)
+
+So your totally unwilling to change your patches to correct this
+problem? Is that what your getting at? Agree or disagree isn't relevant
+it's a real problem or I wouldn't have brought it up.
+
+btw, I already gave you a relatively easy way to correct this.
+
+Daniel
+
