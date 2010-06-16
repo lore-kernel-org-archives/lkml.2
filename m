@@ -1,79 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750950Ab0FPEAs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 00:00:48 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:36476 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750715Ab0FPEAq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 00:00:46 -0400
-Message-ID: <4C184C1C.4000204@st.com>
-Date: Wed, 16 Jun 2010 09:29:24 +0530
-From: Viresh KUMAR <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
+	id S1751235Ab0FPEDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 00:03:54 -0400
+Received: from ozlabs.org ([203.10.76.45]:60162 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750759Ab0FPEDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 00:03:53 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: torvalds@linux-foundation.org
+Subject: [PATCH] module: initialize module dynamic debug later
+Date: Wed, 16 Jun 2010 13:33:50 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Yehuda Sadeh <yehuda@hq.newdream.net>, linux-kernel@vger.kernel.org,
+       yehudasa@gmail.com, sage@newdream.net
+References: <b419ab1fe660cb24a32e63f9c2da2301b3ff1278.1276647544.git.yehuda@hq.newdream.net>
+In-Reply-To: <b419ab1fe660cb24a32e63f9c2da2301b3ff1278.1276647544.git.yehuda@hq.newdream.net>
 MIME-Version: 1.0
-To: Linus WALLEIJ <linus.walleij@stericsson.com>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-       Dan Williams <dan.j.williams@intel.com>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       "yuanyabin1978@sina.com" <yuanyabin1978@sina.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Peter Pearse <peter.pearse@arm.com>, Ben Dooks <ben-linux@fluff.org>,
-       Kukjin Kim <kgene.kim@samsung.com>, Alessandro Rubini <rubini@unipv.it>
-Subject: Re: [PATCH 06/13] DMAENGINE: driver for the ARM PL080/PL081 	PrimeCells
-References: <1276270031-1607-1-git-send-email-linus.walleij@stericsson.com>	<4C15C60E.6080404@st.com> <AANLkTim9n-p-Pw6FWvzQMBiAuB3h9ILq1Ya6XWk_0l-c@mail.gmail.com> <4C170EE2.4010706@st.com> <CEE6BB42CAD6E947908279175AF8470A025E5AE1ED@EXDCVYMBSTM006.EQ1STM.local>
-In-Reply-To: <CEE6BB42CAD6E947908279175AF8470A025E5AE1ED@EXDCVYMBSTM006.EQ1STM.local>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006161333.50868.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/16/2010 1:44 AM, Linus WALLEIJ wrote:
-> [Viresh]
-> 
->> On 6/14/2010 7:09 PM, Linus Walleij wrote:
->> I have few more doubts that i wanted to ask. Are following supported in
->> your
->> driver, we need them in SPEAr:
->>  - Configure burst size of source or destination.
-> 
-> The PrimeCell extension supports this, do you need that in things
-> that are not PrimeCells? In that case we need to make them generic.
-> 
->>  - Configure DMA Master for src or dest.
-> 
-> Right now I have an algorithm that will (on the PL080, the PL081
-> has only one master) try to select AHB1 for the memory and AHB2
+From: Yehuda Sadeh <yehuda@hq.newdream.net>
 
-PL080 have 2 Masters.
+We should initialize the module dynamic debug datastructures
+only after determining that the module is not loaded yet. This
+fixes a bug that introduced in 2.6.35-rc2, where when a trying
+to load a module twice, we also load it's dynamic printing data
+twice which causes all sorts of nasty issues. Also handle
+the dynamic debug cleanup later on failure.
 
-> for the device by checking if one address is fixed. If both or
-> none addresses are fixed it will simply select AHB1 for source
-> and AHB2 for destination.
-> 
-> Please elaborate on what algorithm you need for this!
+Signed-off-by: Yehuda Sadeh <yehuda@hq.newdream.net>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au> (removed a #ifdef)
+---
+ include/linux/dynamic_debug.h |    4 ++--
+ kernel/module.c               |   23 +++++++++++++++--------
+ lib/dynamic_debug.c           |    2 +-
+ 3 files changed, 18 insertions(+), 11 deletions(-)
 
-In the same way, how other peripheral related data is passed to DMA driver,
-(like request lines), we can also pass configuration and control information.
-This will provide us with all features requested by me, as most of the
-control will be from user only. In SPEAr6xx, Memory is accessible from Master1
-only but in SPEAr3xx only from Master 2, similar is the pattern with few 
-peripherals also and so i need control over DMA channel configuration.
-
->>  - Configure Flow controller of transfer.
-> 
-> Currently only done dynamically with DMA as the master for
-> Mem2mem, mem2per and per2mem. Mastering from the peripherals
-> is not supported. Do you have advanced features like that?
-
-We have JPEG controller, which acts as a flow controller for JPEG to
-mem transfer. (Synopsys JPEG Controller).
-
-> 
-> Anyway it can be passed in from platform data easily.
-> 
-
-But platform data will be passed one time only and we will not be able to
-do it while transferring data at run time.
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -40,7 +40,7 @@ int ddebug_add_module(struct _ddebug *ta
+ 				const char *modname);
+ 
+ #if defined(CONFIG_DYNAMIC_DEBUG)
+-extern int ddebug_remove_module(char *mod_name);
++extern int ddebug_remove_module(const char *mod_name);
+ 
+ #define __dynamic_dbg_enabled(dd)  ({	     \
+ 	int __ret = 0;							     \
+@@ -73,7 +73,7 @@ extern int ddebug_remove_module(char *mo
+ 
+ #else
+ 
+-static inline int ddebug_remove_module(char *mod)
++static inline int ddebug_remove_module(const char *mod)
+ {
+ 	return 0;
+ }
+diff --git a/kernel/module.c b/kernel/module.c
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2062,6 +2062,12 @@ static void dynamic_debug_setup(struct _
+ #endif
+ }
+ 
++static void dynamic_debug_remove(struct _ddebug *debug)
++{
++	if (debug)
++		ddebug_remove_module(debug->modname);
++}
++
+ static void *module_alloc_update_bounds(unsigned long size)
+ {
+ 	void *ret = module_alloc(size);
+@@ -2124,6 +2130,8 @@ static noinline struct module *load_modu
+ 	void *ptr = NULL; /* Stops spurious gcc warning */
+ 	unsigned long symoffs, stroffs, *strmap;
+ 	void __percpu *percpu;
++	struct _ddebug *debug = NULL;
++	unsigned int num_debug = 0;
+ 
+ 	mm_segment_t old_fs;
+ 
+@@ -2476,15 +2484,9 @@ static noinline struct module *load_modu
+ 	kfree(strmap);
+ 	strmap = NULL;
+ 
+-	if (!mod->taints) {
+-		struct _ddebug *debug;
+-		unsigned int num_debug;
+-
++	if (!mod->taints)
+ 		debug = section_objs(hdr, sechdrs, secstrings, "__verbose",
+ 				     sizeof(*debug), &num_debug);
+-		if (debug)
+-			dynamic_debug_setup(debug, num_debug);
+-	}
+ 
+ 	err = module_finalize(hdr, sechdrs, mod);
+ 	if (err < 0)
+@@ -2526,10 +2528,13 @@ static noinline struct module *load_modu
+ 		goto unlock;
+ 	}
+ 
++	if (debug)
++		dynamic_debug_setup(debug, num_debug);
++
+ 	/* Find duplicate symbols */
+ 	err = verify_export_symbols(mod);
+ 	if (err < 0)
+-		goto unlock;
++		goto ddebug;
+ 
+ 	list_add_rcu(&mod->list, &modules);
+ 	mutex_unlock(&module_mutex);
+@@ -2557,6 +2562,8 @@ static noinline struct module *load_modu
+ 	mutex_lock(&module_mutex);
+ 	/* Unlink carefully: kallsyms could be walking list. */
+ 	list_del_rcu(&mod->list);
++ ddebug:
++	dynamic_debug_remove(debug);
+  unlock:
+ 	mutex_unlock(&module_mutex);
+ 	synchronize_sched();
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -692,7 +692,7 @@ static void ddebug_table_free(struct dde
+  * Called in response to a module being unloaded.  Removes
+  * any ddebug_table's which point at the module.
+  */
+-int ddebug_remove_module(char *mod_name)
++int ddebug_remove_module(const char *mod_name)
+ {
+ 	struct ddebug_table *dt, *nextdt;
+ 	int ret = -ENOENT;
