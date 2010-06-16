@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759616Ab0FPUjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 16:39:20 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53967 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab0FPUjR (ORCPT
+	id S1759602Ab0FPUkQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 16:40:16 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:39746 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab0FPUkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 16:39:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lW1gaEleAHK9PE8t1XudV5OIFNfsy2R8d+GQlNitKZTsK4jOFi5XU+kZwbY2+cnspV
-         BaeUBBRMjF6Y65DyDlucvuwnoL+6rAKtYv3qmgt4TGfnQO6/MsngorMh5OU8j5HzmduI
-         wNLyTE2yyQGkjTj9Y6oJRNWQ3dmCVl5UgM81Y=
-Date: Wed, 16 Jun 2010 13:31:56 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@bitmath.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>
-Subject: Re: [PATCH 0/3] input: evdev: Dynamic buffers (rev4)
-Message-ID: <20100616203156.GA25729@core.coreip.homeip.net>
-References: <1275735869-2185-1-git-send-email-rydberg@euromail.se>
- <201006101211.51395.dmitry.torokhov@gmail.com>
- <alpine.LRH.2.00.1006161645380.2497@twin.jikos.cz>
- <4C18F906.5060805@bitmath.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C18F906.5060805@bitmath.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Wed, 16 Jun 2010 16:40:14 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6015"; a="44506604"
+Subject: Re: Overview of concurrency managed workqueue
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+In-Reply-To: <4C1932FB.3000404@kernel.org>
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>
+	 <4C17C598.7070303@kernel.org>
+	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
+	 <4C18BF40.40607@kernel.org> <1276694825.9309.12.camel@m0nster>
+	 <4C18D1FD.9060804@kernel.org> <1276695665.9309.17.camel@m0nster>
+	 <4C18D574.1040903@kernel.org> <1276697146.9309.27.camel@m0nster>
+	 <4C18DC69.10704@kernel.org> <1276698880.9309.44.camel@m0nster>
+	 <4C18E4B7.5040702@kernel.org> <1276701074.9309.60.camel@m0nster>
+	 <4C18F2B8.9060805@kernel.org> <1276705838.9309.94.camel@m0nster>
+	 <4C1901E9.2080907@kernel.org> <1276712547.9309.172.camel@m0nster>
+	 <4C191BE9.1060400@kernel.org> <1276716999.9309.208.camel@m0nster>
+	 <4C192B94.9020601@kernel.org> <1276719599.9309.243.camel@m0nster>
+	 <4C1932FB.3000404@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 16 Jun 2010 13:40:12 -0700
+Message-ID: <1276720812.9309.266.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 06:17:10PM +0200, Henrik Rydberg wrote:
-> Jiri Kosina wrote:
-> > On Thu, 10 Jun 2010, Dmitry Torokhov wrote:
+On Wed, 2010-06-16 at 22:24 +0200, Tejun Heo wrote:
+> On 06/16/2010 10:19 PM, Daniel Walker wrote:
+> >> I don't have any problem with that.  I would be almost happy to get
+> >> your NACK.
 > > 
-> >>> This version implements buffer locking using event_lock as you
-> >>> suggested, such that we can proceed with fixing the evdev buffer
-> >>> problem independently from providing a suitable one-to-many buffer.
-> >>>
-> >>> The first patch converts the per-client buffers to a common buffer,
-> >>> and adds a fixme since the code is expected to be further
-> >>> improved. The second and third patch includes your review comments.
-> >> Henrik,
-> >>
-> >> Applied to .36 queue with minor adjustments, please take a peek in my
-> >> 'for-linus' branch and see if you spot anything wrong. 
-> > 
-> > Hi Dmitry,
-> > 
-> > I guess you forgot to push it to kernel.org? Last change I see in your 
-> > tree is 6 days old.
-> > 
-> > Thanks,
-> > 
+> > Oh yeah? why is that?
 > 
-> ... which seems like a lucky strike; the patch has a blatant security hole,
-> leaking grabbed events to listening clients after ungrab. I sent an updated
-> patch to Dmitry earlier today, in a brown paper bag. Not knowing if the original
-> patch was actually applied or not, I thought I had better hold on to the change
-> just a little bit.
+> Because the discussion isn't leading anywhere and I've already thrown
+> almost everything I can think of, so if I haven't convinced you yet
+> there's very low probability that I'll be able to do with further
+> discussion.  So, I duly collected your Nacked-by: on the reason that
+> cmwq doesn't allow setting priorities from userland.
 > 
+> Thanks and have a good night.
 
-Sorry, just getting back from vacation, the mails escaped when I synced
-the mailbox at an airport but I indeed did not push the patcehs out yet.
+Ok, and please don't try to summarize why there is a NAK'ed-by, if
+people want to know they can contact me directly or read this thread.
 
-I should be operable in a day or so and sort everything out.
+Daniel
 
-Thanks.
-
--- 
-Dmitry
