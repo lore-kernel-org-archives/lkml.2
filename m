@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab0FPIjL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 04:39:11 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:55428 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab0FPIjJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 04:39:09 -0400
-Date: Wed, 16 Jun 2010 10:39:03 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 4/4] input: dynamically allocate ABS information
-Message-ID: <20100616083903.GU17833@buzzloop.caiaq.de>
-References: <1274289757-2723-1-git-send-email-daniel@caiaq.de>
- <1274289757-2723-5-git-send-email-daniel@caiaq.de>
- <20100524160805.GO30801@buzzloop.caiaq.de>
- <20100524161527.GC3182@core.coreip.homeip.net>
+	id S1753910Ab0FPIjr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 04:39:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10774 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751905Ab0FPIjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 04:39:45 -0400
+Message-ID: <4C188D8B.40508@redhat.com>
+Date: Wed, 16 Jun 2010 11:38:35 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100524161527.GC3182@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/9] rework KVM mmu_shrink() code
+References: <20100615135518.BC244431@kernel.beaverton.ibm.com>
+In-Reply-To: <20100615135518.BC244431@kernel.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On 06/15/2010 04:55 PM, Dave Hansen wrote:
+> This is a big RFC for the moment.  These need a bunch more
+> runtime testing.
+>
+> --
+>
+> We've seen contention in the mmu_shrink() function.
 
-On Mon, May 24, 2010 at 09:15:28AM -0700, Dmitry Torokhov wrote:
-> On Mon, May 24, 2010 at 06:08:05PM +0200, Daniel Mack wrote:
-> > any feelings about this approach?
-> > 
-> 
-> Still pondering...I applied the very first patch though...
+First of all, that's surprising.  I tried to configure the shrinker so 
+it would stay away from kvm unless memory was really tight.  The reason 
+is that kvm mmu pages can cost as much as 1-2 ms of cpu time to build, 
+perhaps even more, so we shouldn't drop them lightly.
 
-Any news about this? I have no problem throwing away the whole patch set
-and use a different approach, if there is any :)
+It's certainly a neglected area that needs attention, though.
 
-And I need one, because I have a patch pending for a MIDI/Controller
-device which is something like a drum computer control device, and this
-one has more ABS information channels than currently supported by the
-input stack.
+> This patch
+> set reworks it to hopefully be more scalable to large numbers
+> of CPUs, as well as large numbers of running VMs.
+>
+> The patches are ordered with increasing invasiveness.
+>
+> These seem to boot and run fine.  I'm running about 40 VMs at
+> once, while doing "echo 3>  /proc/sys/vm/drop_caches", and
+> killing/restarting VMs constantly.
+>    
 
-OTOH, the current plan is to use *axis* information for the transport
-to the user space, but in fact, their hardware representation is a
-pressure-sesitive button. Same counts for potentiometers etc, which
-aren't axis either. So maybe I should use some different layer for such
-devices? MIDI legacy after all? I'm open to any suggestions :)
+Will drop_caches actually shrink the kvm caches too?  If so we probably 
+need to add that to autotest since it's a really good stress test for 
+the mmu.
 
-Thanks,
-Daniel
+> Seems to be relatively stable, and seems to keep the numbers
+> of kvm_mmu_page_header objects down.
+>    
+
+That's no necessarily a good thing, those things are expensive to 
+recreate.  Of course, when we do need to reclaim them, that should be 
+efficient.
+
+We also do a very bad job of selecting which page to reclaim.  We need 
+to start using the accessed bit on sptes that point to shadow page 
+tables, and then look those up and reclaim unreferenced pages sooner.  
+With shadow paging there can be tons of unsync pages that are basically 
+unused and can be reclaimed at no cost to future runtime.
+
+-- 
+error compiling committee.c: too many arguments to function
 
