@@ -1,69 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758857Ab0FPLfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 07:35:51 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43808 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754671Ab0FPLfu (ORCPT
+	id S1758861Ab0FPLgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 07:36:33 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46946 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671Ab0FPLgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 07:35:50 -0400
-Date: Wed, 16 Jun 2010 13:35:48 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: Shane McDonald <mcdonald.shane@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 5/9] Removing dead CONFIG_BLK_DEV_IDE
-Message-ID: <20100616113548.GA10065@faui48a.informatik.uni-erlangen.de>
-References: <cover.1275925108.git.siccegge@cs.fau.de> <73e9e4bd7615488c9567f02f8962825386956365.1275925108.git.siccegge@cs.fau.de> <AANLkTillx50SaxZU2cT9YSlS4uRF_ED5-wlG-JwfXfFT@mail.gmail.com>
+	Wed, 16 Jun 2010 07:36:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 9/9] oom: give the dying task a higher priority
+Cc: kosaki.motohiro@jp.fujitsu.com,
+       "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+       Minchan Kim <minchan.kim@gmail.com>, Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <20100616201948.72D7.A69D9226@jp.fujitsu.com>
+References: <20100616201948.72D7.A69D9226@jp.fujitsu.com>
+Message-Id: <20100616203517.72EF.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTillx50SaxZU2cT9YSlS4uRF_ED5-wlG-JwfXfFT@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 16 Jun 2010 20:36:29 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 10, 2010 at 12:23:06PM -0600, Shane McDonald wrote:
->   I wonder if, instead of deleting the code, the constant should be
-> changed from CONFIG_BLK_DEV_IDE to CONFIG_IDE.  The original
-> patch that removed CONFIG_BLK_DEV_IDE seemed to make this change:
-> http://kerneltrap.org/mailarchive/linux-kernel/2008/8/13/2929444
-> 
-> Shane
 
-You're probably right, updated patch below
+From: Luis Claudio R. Goncalves <lclaudio@uudg.org>
 
--------
-From: Christoph Egger <siccegge@cs.fau.de>
-Date: Mon, 7 Jun 2010 17:29:48 +0200
-Subject: [PATCH 5/9] Removing dead CONFIG_BLK_DEV_IDE
+In a system under heavy load it was observed that even after the
+oom-killer selects a task to die, the task may take a long time to die.
 
-CONFIG_BLK_DEV_IDE doesn't exist in Kconfig, therefore removing all
-references for it from the source code.
+Right after sending a SIGKILL to the task selected by the oom-killer
+this task has it's priority increased so that it can exit() exit soon,
+freeing memory. That is accomplished by:
 
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+        /*
+         * We give our sacrificial lamb high priority and access to
+         * all the memory it needs. That way it should be able to
+         * exit() and clear out its resources quickly...
+         */
+ 	p->rt.time_slice = HZ;
+ 	set_tsk_thread_flag(p, TIF_MEMDIE);
+
+It sounds plausible giving the dying task an even higher priority to be
+sure it will be scheduled sooner and free the desired memory. It was
+suggested on LKML using SCHED_FIFO:1, the lowest RT priority so that
+this task won't interfere with any running RT task.
+
+If the dying task is already an RT task, leave it untouched.
+Another good suggestion, implemented here, was to avoid boosting the
+dying task priority in case of mem_cgroup OOM.
+
+Signed-off-by: Luis Claudio R. Goncalves <lclaudio@uudg.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
-diff --git a/arch/mips/mti-malta/malta-setup.c
-b/arch/mips/mti-malta/malta-setup.c
-index b7f37d4..f6a5ea8 100644
---- a/arch/mips/mti-malta/malta-setup.c
-+++ b/arch/mips/mti-malta/malta-setup.c
-@@ -105,7 +105,7 @@ static void __init fd_activate(void)
+ mm/oom_kill.c |   38 +++++++++++++++++++++++++++++++++++---
+ 1 files changed, 35 insertions(+), 3 deletions(-)
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 7e9942d..1ecfc7a 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -82,6 +82,28 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
+ #endif /* CONFIG_NUMA */
+ 
+ /*
++ * If this is a system OOM (not a memcg OOM) and the task selected to be
++ * killed is not already running at high (RT) priorities, speed up the
++ * recovery by boosting the dying task to the lowest FIFO priority.
++ * That helps with the recovery and avoids interfering with RT tasks.
++ */
++static void boost_dying_task_prio(struct task_struct *p,
++				  struct mem_cgroup *mem)
++{
++	struct sched_param param = { .sched_priority = 1 };
++
++	if (mem)
++		return;
++
++	if (rt_task(p)) {
++		p->rt.time_slice = HZ;
++		return;
++	}
++
++	sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
++}
++
++/*
+  * The process p may have detached its own ->mm while exiting or through
+  * use_mm(), but one or more of its subthreads may still have a valid
+  * pointer.  Return p, or any of its subthreads with a valid ->mm, with
+@@ -416,7 +438,7 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
  }
- #endif
  
--#ifdef CONFIG_BLK_DEV_IDE
-+#ifdef CONFIG_IDE
- static void __init pci_clock_check(void)
+ #define K(x) ((x) << (PAGE_SHIFT-10))
+-static int oom_kill_task(struct task_struct *p)
++static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
  {
-        unsigned int __iomem *jmpr_p =
-@@ -207,7 +207,7 @@ void __init plat_mem_setup(void)
-        if (mips_revision_sconid == MIPS_REVISION_SCON_BONITO)
-                bonito_quirks_setup();
+ 	p = find_lock_task_mm(p);
+ 	if (!p || p->signal->oom_adj == OOM_DISABLE) {
+@@ -429,9 +451,17 @@ static int oom_kill_task(struct task_struct *p)
+ 		K(get_mm_counter(p->mm, MM_FILEPAGES)));
+ 	task_unlock(p);
  
--#ifdef CONFIG_BLK_DEV_IDE
-+#ifdef CONFIG_IDE
-        pci_clock_check();
- #endif
+-	p->rt.time_slice = HZ;
++
+ 	set_tsk_thread_flag(p, TIF_MEMDIE);
+ 	force_sig(SIGKILL, p);
++
++	/*
++	 * We give our sacrificial lamb high priority and access to
++	 * all the memory it needs. That way it should be able to
++	 * exit() and clear out its resources quickly...
++	 */
++	boost_dying_task_prio(p, mem);
++
+ 	return 0;
+ }
+ #undef K
+@@ -462,6 +492,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	 */
+ 	if (p->flags & PF_EXITING) {
+ 		set_tsk_thread_flag(p, TIF_MEMDIE);
++		boost_dying_task_prio(p, mem);
+ 		return 0;
+ 	}
  
+@@ -495,7 +526,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 		}
+ 	} while_each_thread(p, t);
+ 
+-	return oom_kill_task(victim);
++	return oom_kill_task(victim, mem);
+ }
+ 
+ /*
+@@ -676,6 +707,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
+ 	 */
+ 	if (fatal_signal_pending(current)) {
+ 		set_thread_flag(TIF_MEMDIE);
++		boost_dying_task_prio(current, NULL);
+ 		return;
+ 	}
+ 
+-- 
+1.6.5.2
+
+
+
