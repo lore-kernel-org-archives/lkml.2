@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759465Ab0FPT1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 15:27:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38223 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759415Ab0FPT1J (ORCPT
+	id S1759478Ab0FPT3h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 15:29:37 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:54063 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756669Ab0FPT3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 15:27:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=OtkxhmKL84gxIvebfUw8fNPbFNIpStIUj1ecgBI7yn0wBqvHBhG3Fg/cFgdb34M+oX
-         oZNZ2iXa4Xk06zJU6mi8tZaSs4aDDzx4po5BdrJY0D841wl/A3/WgPhsLI+oPd8h/qUE
-         SOWh0VD2WfGusY4EgYg7ZSlQ2K0oA2a4ysnfk=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Marin Mitov <mitov@issp.bas.bg>
-Subject: Re: [REGRESSION]linux-2.6.35-rc3 in net/core/dev.c
-Date: Wed, 16 Jun 2010 21:27:03 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3; KDE/4.4.4; i686; ; )
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-References: <201006131625.55481.mitov@issp.bas.bg>
-In-Reply-To: <201006131625.55481.mitov@issp.bas.bg>
+	Wed, 16 Jun 2010 15:29:36 -0400
+Date: Wed, 16 Jun 2010 15:29:34 -0400
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: sparclinux@vger.kernel.org, Simone Ricci <simone.ricci@gmail.com>,
+       scst-devel@lists.sourceforge.net, Joe Eykholt <jeykholt@cisco.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: How to printk/sprintf uint64_t on Sparc without format and
+	argument types mismatch
+Message-ID: <20100616192934.GX20317@bombadil.infradead.org>
+References: <AANLkTimuv7nOlcGFxqPZlwcAjLmFMiLAvbA5O7F32Wbg@mail.gmail.com> <4C192113.7030101@vlnb.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006162127.03412.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C192113.7030101@vlnb.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On niedziela, 13 czerwca 2010 o 15:25:54 Marin Mitov wrote:
-> Hi all,
-> 
-> I am using ssh with port redirection to log on host_at_work:
-> 
-> ssh -L20110:mail:110 host_at_work
-> 
-> With linux-2.6.35-rc3, when I telnet to localhost I get:
-> 
-> telnet localhost 20110
-> Trying 127.0.0.1...
-> telnet: connect to address 127.0.0.1: Connection timed out
-> 
-> but the connection at host_at_work stays ESTABLISHED
-> 
+On Wed, Jun 16, 2010 at 11:08:03PM +0400, Vladislav Bolkhovitin wrote:
+> scst/src/scst_targ.c:2136: warning: format ?%llx? expects type ?long  
+> long unsigned int?, but argument 4 has type ?uint64_t?.
+>
+> It is because on Sparc uint64_t defined as unsigned long, but on x86 -  
+> as unsigned long long.
+>
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=16229
-for your bug report, please add your address to the CC list in there, thanks!
+>From your other mail, it looks like you're using 2.6.26... this is
+ancient! Sparc has since been fixed to use unsigned long long for u64.
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+commit 9018113649348c689da107166c05d436cd52e7bf
+Author: Sam Ravnborg <sam@ravnborg.org>
+Date:   Tue Jan 6 13:19:28 2009 -0800
+
+    sparc64: Use unsigned long long for u64.
+
+regards, Kyle
