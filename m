@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab0FPFqM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 01:46:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28433 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756072Ab0FPFqJ (ORCPT
+	id S1758726Ab0FPFxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 01:53:24 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46675 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756290Ab0FPFxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 01:46:09 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 07/37] lmb: Add lmb_find_in_range()
-Date: Tue, 15 Jun 2010 22:42:16 -0700
-Message-Id: <1276666966-14259-8-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
-References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090208.4C186506.0035,ss=1,fgs=0
+	Wed, 16 Jun 2010 01:53:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=wSLRhZgVzWoAeoWKMgTcIi4zsgJN3Aaxez+cAK6dO8K1hZhVXKvziPZFkjUXeEDErT
+         VqPSU7wPuBTXtZuTsdlj3qwRWhllzoDzJoex3kFaMa6GSk4jpEexKSXxz3p2u4reLfj4
+         QA/0dYtmau+aUjHaruhm9drgdt8W99O1gxJp0=
+MIME-Version: 1.0
+In-Reply-To: <1276666434-11227-1-git-send-email-justinmattock@gmail.com>
+References: <1276666434-11227-1-git-send-email-justinmattock@gmail.com>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Wed, 16 Jun 2010 15:52:58 +1000
+Message-ID: <AANLkTikwKHITQJDaSf9BnHQ9FLiQ-KYlCWNiH438otsV@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Fix set but unused variable warnings
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+       linux-pci@vger.kernel.org, linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-it is a wrapper for lmb_find_base
+On Wed, Jun 16, 2010 at 15:33, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+> Here is another set of patches fixing some warning messages generated
+> when building the kernel when using gcc 4.6.0.
+>
+> This set just focuses in on the variables warnings that are reported
+> to be unused. Keep in mind there are still lots more warning messages
+> that I'm seeing, and will try my hardest to see if I can come up with
+> a fix, but if things become too difficult and so forth then a bug should
+> be filled etc..
 
-make it more easy for x86 to use lmb. ( rebase )
-x86 early_res is using find/reserve pattern instead of alloc.
+Given that patches 3, 4 and 5 seem to be a cases of missing error
+handling, (3 and 4 in particular seem to be breaking things rather
+than fixing them) in my humble opinion, I think this set needs some
+work and discussion.
 
-keep it in weak version, so later We can use x86 own version if needed.
-also We need it in lib/lmb.c, so one caller mm/page_alloc.c could get compiled
+Justin, maybe you'd be better off posting the actual error messages
+(split up by subsystem) and letting the lists discuss them, rather
+than posting patches which are obviously wrong. (like the ones I've
+pointed out)
 
--v2: Change name to lmb_find_in_range() according to Michael Ellerman
--v3: Add generic weak version __lmb_find_in_range()
-     so keep the path for fallback to x86 version that handle from low
--v4: use 0 for failing path
--v5: use LMB_ERROR again
--v6: remove __lmb_find_in_range()
+I'm sure that everyone here is as committed as you are to eliminating
+compile warnings and errors and, in my opinion, more good will come
+from a healthy discussion of the warnings than maintainers NAKing your
+patches out of hand.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- include/linux/lmb.h |    2 ++
- lib/lmb.c           |    8 ++++++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+Thanks,
 
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index 5310c7b..6ca5659 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -45,6 +45,8 @@ extern int lmb_debug;
- extern int lmb_can_resize;
- extern struct lmb_region lmb_reserved_init_regions[];
- 
-+u64 lmb_find_in_range(u64 start, u64 end, u64 size, u64 align);
-+
- extern void __init lmb_init(void);
- extern void __init lmb_analyze(void);
- extern long lmb_add(phys_addr_t base, phys_addr_t size);
-diff --git a/lib/lmb.c b/lib/lmb.c
-index e45e967..2e00159 100644
---- a/lib/lmb.c
-+++ b/lib/lmb.c
-@@ -156,6 +156,14 @@ static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align,
- 	return LMB_ERROR;
- }
- 
-+/*
-+ * Find a free area with specified alignment in a specific range.
-+ */
-+u64 __init __weak lmb_find_in_range(u64 start, u64 end, u64 size, u64 align)
-+{
-+	return lmb_find_base(size, align, start, end);
-+}
-+
- static void __init_lmb lmb_remove_region(struct lmb_type *type, unsigned long r)
- {
- 	unsigned long i;
 -- 
-1.6.4.2
 
+Julian Calaby
+
+Email: julian.calaby@gmail.com
+.Plan: http://sites.google.com/site/juliancalaby/
