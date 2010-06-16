@@ -1,108 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758920Ab0FPMYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 08:24:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56610 "EHLO mx1.redhat.com"
+	id S1758898Ab0FPM0R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 08:26:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41164 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab0FPMYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 08:24:05 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: dhowells@redhat.com
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] cred - synchronize rcu before releasing cred
+	id S1754271Ab0FPM0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 08:26:16 -0400
 Date: Wed, 16 Jun 2010 14:24:03 +0200
-Message-Id: <1276691043-12694-1-git-send-email-jolsa@redhat.com>
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 6/9] oom: use same_thread_group instead comparing ->mm
+Message-ID: <20100616122403.GA5304@redhat.com>
+References: <20100616201948.72D7.A69D9226@jp.fujitsu.com> <20100616203319.72E6.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100616203319.72E6.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
+On 06/16, KOSAKI Motohiro wrote:
+>
+> Now, oom are using "child->mm != p->mm" check to distinguish subthread.
 
-BZ 591015 - kernel BUG at kernel/cred.c:168
-https://bugzilla.redhat.com/show_bug.cgi?id=591015
+Heh. is it true??? I never undestood what oom_kill_process()->list_for_each_entry()
+is supposed to do.
 
-Above bugzilla reported bug during the releasing of
-old cred structure.
+> But It's incorrect. vfork() child also have the same ->mm.
 
-There is reproducer attached to the bugzilla.
+Yes.
 
-The issue is caused by releasing old cred struct while other
-kernel path might be still using it. This leads to cred->usage
-inconsistency inside the __put_cred and triggering the bug.
+> This patch change to use same_thread_group() instead.
 
-Following kernel paths are affected:
+I don't think we need same_thread_group(). Please note that any children must
+be from the different thread_group.
 
-The CPU1 path is setting the new groups creds.
-The CPU2 path is cat /proc/PID/status
+So,
 
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -161,7 +161,7 @@ unsigned long oom_badness(struct task_struct *p, unsigned long uptime)
+>  		list_for_each_entry(c, &t->children, sibling) {
+>  			child = find_lock_task_mm(c);
+>  			if (child) {
+> -				if (child->mm != p->mm)
+> +				if (same_thread_group(p, child))
+>  					points += child->mm->total_vm/2 + 1;
+>  				task_unlock(child);
+>  			}
+> @@ -486,7 +486,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+>  		list_for_each_entry(child, &t->children, sibling) {
+>  			unsigned long child_points;
+>
+> -			if (child->mm == p->mm)
+> +			if (same_thread_group(p, child))
+>  				continue;
 
-CPU 1                              CPU 2
+In both cases same_thread_group() must be false.
 
-sys_setgroups                      proc_pid_status      
-  set_current_groups                 task_state
-    commit_creds                       rcu_read_lock
-      put_cred                         ...
-        __put_cred                     get_cred
-          BUG_ON(usage != 0)           ...
-                                       rcu_read_unlock
-                                       
+This means that the change in oom_badness() doesn't look right,
+"child->mm != p->mm" is the correct check to decide whether we should
+account child->mm.
 
+The change in oom_kill_process() merely removes this "continue".
+Could someone please explain what this code _should_ do?
 
-If __put_cred got executed during the CPU2 holding the reference
-the BUG_ON inside __put_cred is trigered.
+Oleg.
 
-I put synchronize_rcu before put_cred call, so we are sure
-all the rcu_read_lock blocks are finished, and if needed, using
-new creds.
-
-Also I moved rcu_read_unlock below the put_cred for consistency.
-
-
-wbr,
-jirka
-
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- fs/proc/array.c |    3 ++-
- kernel/cred.c   |    6 ++++++
- 2 files changed, 8 insertions(+), 1 deletions(-)
-
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index 9b58d38..c0e60d1 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -199,7 +199,6 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
- 		"FDSize:\t%d\n"
- 		"Groups:\t",
- 		fdt ? fdt->max_fds : 0);
--	rcu_read_unlock();
- 
- 	group_info = cred->group_info;
- 	task_unlock(p);
-@@ -208,6 +207,8 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
- 		seq_printf(m, "%d ", GROUP_AT(group_info, g));
- 	put_cred(cred);
- 
-+	rcu_read_unlock();
-+
- 	seq_printf(m, "\n");
- }
- 
-diff --git a/kernel/cred.c b/kernel/cred.c
-index a2d5504..4872f12 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -510,6 +510,12 @@ int commit_creds(struct cred *new)
- 	    new->fsgid != old->fsgid)
- 		proc_id_connector(task, PROC_EVENT_GID);
- 
-+	/*
-+	 * New cred is set already, now let the old one
-+	 * chance to disappear on other CPUs.
-+	 */
-+	synchronize_rcu();
-+
- 	/* release the old obj and subj refs both */
- 	put_cred(old);
- 	put_cred(old);
