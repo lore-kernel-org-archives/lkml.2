@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab0FPO4p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 10:56:45 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:35013 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189Ab0FPO4o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 10:56:44 -0400
-Date: Wed, 16 Jun 2010 16:56:39 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: "Pavel V. Panteleev" <pp_84@mail.ru>
-Cc: linux-mm@kvak.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-       tj@kernel.org
-Subject: Re: [patch] percpu in linux-2.6.35-rc3
-Message-ID: <20100616145639.GE17599@basil.fritz.box>
-References: <E1OOr6Q-0005Zi-00.pp_84-mail-ru@f57.mail.ru>
+	id S1758233Ab0FPO6c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 10:58:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42703 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752189Ab0FPO6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 10:58:30 -0400
+Date: Wed, 16 Jun 2010 11:58:27 -0300
+From: Glauber Costa <glommer@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/17] Fix a possible backwards warp of kvmclock
+Message-ID: <20100616145827.GP19104@mothafucka.localdomain>
+References: <1276587259-32319-1-git-send-email-zamsden@redhat.com>
+ <1276587259-32319-12-git-send-email-zamsden@redhat.com>
+ <4C18872E.4030105@redhat.com>
+ <20100616135845.GM19104@mothafucka.localdomain>
+ <4C18DBEE.70600@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E1OOr6Q-0005Zi-00.pp_84-mail-ru@f57.mail.ru>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4C18DBEE.70600@redhat.com>
+X-ChuckNorris: True
+User-Agent: Jack Bauer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 03:48:18PM +0400, Pavel V. Panteleev wrote:
-> Hello! My name is Pavel V. Panteleev.
+On Wed, Jun 16, 2010 at 05:13:02PM +0300, Avi Kivity wrote:
+> On 06/16/2010 04:58 PM, Glauber Costa wrote:
+> >On Wed, Jun 16, 2010 at 04:11:26PM +0800, Jason Wang wrote:
+> >>Zachary Amsden wrote:
+> >>>Kernel time, which advances in discrete steps may progress much slower
+> >>>than TSC.  As a result, when kvmclock is adjusted to a new base, the
+> >>>apparent time to the guest, which runs at a much higher, nsec scaled
+> >>>rate based on the current TSC, may have already been observed to have
+> >>>a larger value (kernel_ns + scaled tsc) than the value to which we are
+> >>>setting it (kernel_ns + 0).
+> >>>
+> >>This is one issue of kvmclock which tries to supply a clocksource whose
+> >>precision may even higher than host.
+> >What if we export to the guest the current clock resolution, and when doing guest
+> >reads, simply chop whatever value we got to the lowest acceptable value?
 > 
-> While working with percpu on linux-2.6.35-rc3 I have found trivial bugs in pcpu_build_alloc_info() function:
-> - we should memset group_cnt to 0 by size of group_cnt, not size of group_map;
-> - we can delete useless variable group_cnt_max.
-
-Thanks for the patch. Tejun maintains percpu code these days,
-putting him into cc.
-
--Andi
-
-Pavel's patch:
-
---- percpu_old.c	2010-06-12 06:14:04.000000000 +0400
-+++ percpu_new.c	2010-06-16 15:05:16.280214868 +0400
-@@ -1086,7 +1086,7 @@
- 	static int group_map[NR_CPUS] __initdata;
- 	static int group_cnt[NR_CPUS] __initdata;
- 	const size_t static_size = __per_cpu_end - __per_cpu_start;
--	int group_cnt_max = 0, nr_groups = 1, nr_units = 0;
-+	int nr_groups = 1, nr_units = 0;
- 	size_t size_sum, min_unit_size, alloc_size;
- 	int upa, max_upa, uninitialized_var(best_upa);	/* units_per_alloc */
- 	int last_allocs, group, unit;
-@@ -1096,7 +1096,7 @@
- 
- 	/* this function may be called multiple times */
- 	memset(group_map, 0, sizeof(group_map));
--	memset(group_cnt, 0, sizeof(group_map));
-+	memset(group_cnt, 0, sizeof(group_cnt));
- 
- 	/*
- 	 * Determine min_unit_size, alloc_size and max_upa such that
-@@ -1130,7 +1130,6 @@
- 		}
- 		group_map[cpu] = group;
- 		group_cnt[group]++;
--		group_cnt_max = max(group_cnt_max, group_cnt[group]);
- 	}
- 
- 	/*
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+> The clock resolution can change, and while we can expose it reliably
+> through pvclock, do we need a notification so that the guest can
+> update other internal structures?
+I believe the only thing we need is to warn the guest whenever this changes.
+We can probably fit it in one of the paddings we have, and add a flag to say
+it is valid (now that we have the infrastructure).
