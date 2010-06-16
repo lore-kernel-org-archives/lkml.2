@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab0FPFqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 01:46:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28558 "EHLO
+	id S1758487Ab0FPFrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 01:47:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28712 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756194Ab0FPFqT (ORCPT
+	with ESMTP id S1757427Ab0FPFqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 01:46:19 -0400
+	Wed, 16 Jun 2010 01:46:48 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,55 +16,77 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 28/37] x86: Put 64 bit numa node memmap above 16M
-Date: Tue, 15 Jun 2010 22:42:37 -0700
-Message-Id: <1276666966-14259-29-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 27/37] x86: Have nobootmem version setup_bootmem_allocator()
+Date: Tue, 15 Jun 2010 22:42:36 -0700
+Message-Id: <1276666966-14259-28-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4C18650B.0198,ss=1,fgs=0
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090205.4C186508.0068,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not use 0x8000 hard code value anymore.
+We can reduce #ifdef number from 3 to one in init_32.c
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/numa_64.c |    2 +-
- arch/x86/mm/srat_64.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/mm/init_32.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 92c01a5..93a1e07 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -85,7 +85,7 @@ static int __init allocate_cachealigned_memnodemap(void)
- 	if (memnodemapsize <= ARRAY_SIZE(memnode.embedded_map))
- 		return 0;
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index e3ae067..f172aa3 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -771,11 +771,9 @@ static unsigned long __init setup_node_bootmem(int nodeid,
  
--	addr = 0x8000;
-+	addr = __pa(MAX_DMA_ADDRESS);
- 	nodemap_size = roundup(sizeof(s16) * memnodemapsize, L1_CACHE_BYTES);
- 	nodemap_addr = lmb_find_in_range(addr, max_pfn<<PAGE_SHIFT,
- 				      nodemap_size, L1_CACHE_BYTES);
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index 8f82c80..1f9b7b7 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -99,8 +99,8 @@ void __init acpi_numa_slit_init(struct acpi_table_slit *slit)
- 	unsigned long phys;
+ 	return bootmap + bootmap_size;
+ }
+-#endif
  
- 	length = slit->header.length;
--	phys = lmb_find_in_range(0, max_pfn_mapped<<PAGE_SHIFT, length,
--		 PAGE_SIZE);
-+	phys = lmb_find_in_range(__pa(MAX_DMA_ADDRESS), max_pfn_mapped<<PAGE_SHIFT,
-+				 length, PAGE_SIZE);
+ void __init setup_bootmem_allocator(void)
+ {
+-#ifndef CONFIG_NO_BOOTMEM
+ 	int nodeid;
+ 	unsigned long bootmap_size, bootmap;
+ 	/*
+@@ -787,13 +785,11 @@ void __init setup_bootmem_allocator(void)
+ 	if (bootmap == (unsigned long)LMB_ERROR)
+ 		panic("Cannot find bootmem map of size %ld\n", bootmap_size);
+ 	lmb_reserve_range(bootmap, bootmap + bootmap_size, "BOOTMAP");
+-#endif
  
- 	if (phys == (unsigned long)LMB_ERROR)
- 		panic(" Can not save slit!\n");
+ 	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
+ 		 max_pfn_mapped<<PAGE_SHIFT);
+ 	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
+ 
+-#ifndef CONFIG_NO_BOOTMEM
+ 	for_each_online_node(nodeid) {
+ 		 unsigned long start_pfn, end_pfn;
+ 
+@@ -811,10 +807,19 @@ void __init setup_bootmem_allocator(void)
+ 		bootmap = setup_node_bootmem(nodeid, start_pfn, end_pfn,
+ 						 bootmap);
+ 	}
+-#endif
+ 
+ 	after_bootmem = 1;
+ }
++#else
++void __init setup_bootmem_allocator(void)
++{
++	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
++		 max_pfn_mapped<<PAGE_SHIFT);
++	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
++
++	after_bootmem = 1;
++}
++#endif
+ 
+ /*
+  * paging_init() sets up the page tables - note that the first 8MB are
 -- 
 1.6.4.2
 
