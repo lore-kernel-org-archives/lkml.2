@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759843Ab0FPXiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 19:38:18 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35957 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759576Ab0FPXiR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 19:38:17 -0400
-Date: Wed, 16 Jun 2010 16:37:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 05/12] vmscan: kill prev_priority completely
-Message-Id: <20100616163709.1e0f6b56.akpm@linux-foundation.org>
-In-Reply-To: <1276514273-27693-6-git-send-email-mel@csn.ul.ie>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie>
-	<1276514273-27693-6-git-send-email-mel@csn.ul.ie>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932224Ab0FPXko (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 19:40:44 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:54104 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755815Ab0FPXkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 19:40:42 -0400
+Date: Wed, 16 Jun 2010 16:39:37 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Roland McGrath <roland@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
+Message-ID: <20100616233937.GQ24749@outflux.net>
+References: <20100616221833.GM24749@outflux.net>
+ <20100616231006.34A28403D2@magilla.sf.frob.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100616231006.34A28403D2@magilla.sf.frob.com>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Jun 2010 12:17:46 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
+Hi,
 
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> Since 2.6.28 zone->prev_priority is unused. Then it can be removed
-> safely. It reduce stack usage slightly.
-> 
-> Now I have to say that I'm sorry. 2 years ago, I thought prev_priority
-> can be integrate again, it's useful. but four (or more) times trying
-> haven't got good performance number. Thus I give up such approach.
+On Wed, Jun 16, 2010 at 04:10:06PM -0700, Roland McGrath wrote:
+> This constraint seems fairly insane to me, but I don't really care about
+> people using sysctl to enable insane things if that's what floats your
+> boat.  GDB's "attach", "strace -p", etc. are pretty normal (and highly
+> useful) things for ordinary users debugging their own programs.
 
-This would have been badder in earlier days when we were using the
-scanning priority to decide when to start unmapping pte-mapped pages -
-page reclaim would have been recirculating large blobs of mapped pages
-around the LRU until the priority had built to the level where we
-started to unmap them.
+Right, but I don't think "ordinary users" debug their own programs.
+Ordinary developers and sysadmin do, absolutely, and for them, this
+sysctl would probably stay set to 0.
 
-However that priority-based decision got removed and right now I don't
-recall what it got replaced with.  Aren't we now unmapping pages way
-too early and suffering an increased major&minor fault rate?  Worried.
+> I tend to think that this constraint offers more a delusion of security
+> than much real protection.  But I'm too lazy to try to come up with a more
+> contorted exploit that this wouldn't prevent, so I won't belabor the point.
 
+Well, I don't want to present it as something it's not.  It's only
+designed to block access to what is immediately in memory.  It certainly
+won't stop an attacker from tricking a user into divulging credentials
+directly or launching a process and then ptracing it, but it would put
+a stop to an automated worm that did not need to go phishing.
 
-Things which are still broken after we broke prev_priority:
+> I think those who are actually paranoid would use something more meaningful
+> via the LSM ptrace check, like SELinux with a policy that only permits
+> known debugger applications to use ptrace.  Aside from SELinux, it could
+> also be done with a new capability like CAP_PTRACE_MINE and filesystem
+> capabilities on installed debugger application binaries, for example.
 
-- If page reclaim is having a lot of trouble, prev_priority would
-  have permitted do_try_to_free_pages() to call disable_swap_token()
-  earlier on.  As things presently stand, we'll do a lot of
-  thrash-detection stuff before (presumably correctly) dropping the
-  swap token.
+This has been the area I've run into the most.  I like the idea of a
+semi-privileged capability like you suggest.  It would solve a number
+of iffy spots, like KDE and Chrome that fork/exec a debugger from the
+crashing process and attach back to it.  Those programs could be given
+fscap for CAP_PTRACE_MINE, or something.  Though, honestly, just trying to
+get rid of PTRACE seems like the better place to spend time.
 
-  So.  What's up with that?  I don't even remember _why_ we disable
-  the swap token once the scanning priority gets severe and the code
-  comments there are risible.  And why do we wait until priority==0
-  rather than priority==1?
+> You've described this as allowing ptrace on "children", but really it's
+> "unorphaned descendants", i.e. also children of children, etc.
 
-- Busted prev_priority means that lumpy reclaim will act oddly. 
-  Every time someone goes into do some recalim, they'll start out not
-  doing lumpy reclaim.  Then, after a while, they'll get a clue and
-  will start doing the lumpy thing.  Then they return from reclaim and
-  the next recalim caller will again forget that he should have done
-  lumpy reclaim.
+Right, I should say "descendants", which is the correct intent.
 
-  I dunno what the effects of this are in the real world, but it
-  seems dumb.
+> I don't think "task->pid > 0" is a sort of check that is used elsewhere in
+> the kernel for this.  Perhaps "task == &init_task" would be better.
 
-And one has to wonder: if we're making these incorrect decisions based
-upon a bogus view of the current scanning difficulty, why are these
-various priority-based thresholding heuristics even in there?  Are they
-doing anything useful?
+Is this correct for pid_ns?  I thought pid 1 (regardless of NS) would have
+a NULL parent?
 
-So..  either we have a load of useless-crap-and-cruft in there which
-should be lopped out, or we don't have a load of useless-crap-and-cruft
-in there, and we should fix prev_priority.
+> It's not immediately obvious to me how this interacts with pid_ns, or
+> should.  Probably it shouldn't pay attention to pid_ns, as it doesn't.
+> But I think it merits an explicit statement of intent about that.
 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> ---
->  include/linux/mmzone.h |   15 ------------
->  mm/page_alloc.c        |    2 -
->  mm/vmscan.c            |   57 ------------------------------------------------
->  mm/vmstat.c            |    2 -
+Okay, I can do that.
 
-The patch forgot to remove mem_cgroup_get_reclaim_priority() and friends.
+> I suspect you really want to test same_thread_group(walker, current).
+> You don't actually mean to rule out a debugger that forks children with
+> one thread and calls ptrace with another, do you?
+
+Won't they ultimately have the same parent, though?
+
+> Oh, and surely you meant real_parent.  Off hand I think that might only
+> really add up to a different constraint if you had some ptrace attaches
+> already live when you did set the sysctl flag.  But I have the vague
+> sensation I'm overlooking some other arcane case.  And it just doesn't
+> logically match the stated intent of the thing to depend on parent
+> rather than real_parent.
+
+Oh, yes.  That seems right.  I can fix that.
+
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
