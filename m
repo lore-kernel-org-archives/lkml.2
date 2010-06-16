@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758875Ab0FPLjK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 07:39:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32185 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758563Ab0FPLjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 07:39:08 -0400
-Message-ID: <4C18B7D6.5070300@redhat.com>
-Date: Wed, 16 Jun 2010 14:39:02 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1758895Ab0FPLm1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 07:42:27 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41531 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758870Ab0FPLm0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 07:42:26 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jun 2010 07:42:25 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NEVe7p9EhgEfADt1ZBe7V36ZYQ3197PKgs3a89YMWychgP9gT9fauh868aaZIEpKQ3
+         6ieOvPzdG9ag7x4FrhSH1UvnZydcxoFCm42w2EMhdMhxHV8gX95rOzSgqMeb/5qhtE8H
+         1iJvm5iUjywzYd/NnxVp18kwTBmvySyQJRpZs=
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: balbir@linux.vnet.ibm.com, kvm <kvm@vger.kernel.org>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC/T/D][PATCH 2/2] Linux/Guest cooperative unmapped page cache
- control
-References: <20100608155140.3749.74418.sendpatchset@L34Z31A.ibm.com>	 <20100608155153.3749.31669.sendpatchset@L34Z31A.ibm.com>	 <4C10B3AF.7020908@redhat.com> <20100610142512.GB5191@balbir.in.ibm.com>	 <1276214852.6437.1427.camel@nimitz>	 <20100611045600.GE5191@balbir.in.ibm.com> <4C15E3C8.20407@redhat.com>	 <20100614084810.GT5191@balbir.in.ibm.com> <4C16233C.1040108@redhat.com>	 <20100614125010.GU5191@balbir.in.ibm.com> <4C162846.7030303@redhat.com>	 <1276529596.6437.7216.camel@nimitz> <4C164E63.2020204@redhat.com>	 <1276530932.6437.7259.camel@nimitz> <4C1659F8.3090300@redhat.com>	 <1276538293.6437.7528.camel@nimitz>  <4C1726C4.8050300@redhat.com> <1276613249.6437.11516.camel@nimitz>
-In-Reply-To: <1276613249.6437.11516.camel@nimitz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <18402.1276625268@redhat.com>
+References: <E1OMQ88-0002a1-Gb@closure.thunk.org>
+	<AANLkTilqc0jpwnIwe3OIQvB9avaXXzrBK4Hz0huESygy@mail.gmail.com>
+	<20100613194949.GC8055@thunk.org>
+	<AANLkTilQLk7ofSJBm9KIa2g1KQ35GC1D1vOZlPrv1VRv@mail.gmail.com>
+	<20100614184244.GA11480@elliptictech.com>
+	<20100614214646.GF6666@thunk.org>
+	<AANLkTikxOwYQYSzNjEqRduTQvoUandnAsZzm5Auzgnaz@mail.gmail.com>
+	<18402.1276625268@redhat.com>
+Date: Wed, 16 Jun 2010 12:37:22 +0100
+X-Google-Sender-Auth: 0hUdrIgRj_2ZGI1Gp2-nqDstyCI
+Message-ID: <AANLkTilZElLEBJDjfpZVx72uDR-x_3t14Jkga5eHy3wf@mail.gmail.com>
+Subject: Re: Why is kslowd accumulating so much CPU time?
+From: Andy Whitcroft <apw@canonical.com>
+To: David Howells <dhowells@redhat.com>
+Cc: tytso@mit.edu, Dave Airlie <airlied@gmail.com>,
+       Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 05:47 PM, Dave Hansen wrote:
+> Can you see what they're doing?
 >
->> That's a bug that needs to be fixed.  Eventually the host will come
->> under pressure and will balloon the guest.  If that kills the guest, the
->> ballooning is not effective as a host memory management technique.
->>      
-> I'm not convinced that it's just a bug that can be fixed.  Consider a
-> case where a host sees a guest with 100MB of free memory at the exact
-> moment that a database app sees that memory.  The host tries to balloon
-> that memory away at the same time that the app goes and allocates it.
-> That can certainly lead to an OOM very quickly, even for very small
-> amounts of memory (much less than 100MB).  Where's the bug?
->
-> I think the issues are really fundamental to ballooning.
->    
+>        watch -n0 cat /sys/kernel/debug/slow_work/runqueue
 
-There are two issues involved.
+Turned on the debugging and applied the patch from Ted, and when
+things are bad I see constant cycling of all four threads in the
+output showing similar to the below, note only one thread shows at a
+time:
 
-One is, can the kernel accurately determine the amount of memory it 
-needs to work?  We have resources such as RAM and swap.  We have 
-liabilities in the form of swappable userspace memory, mlocked userspace 
-memory, kernel memory to support these, and various reclaimable and 
-non-reclaimable kernel caches.  Can we determine the minimum amount of 
-RAM to support are workload at a point in time?
+Every 0.1s: cat /sys/kernel/debug/slow_work/runqueue    Wed Jun 16 12:34:52 2010
 
-If we had this, we could modify the balloon to refuse to balloon if it 
-takes the kernel beneath the minimum amount of RAM needed.
+THR PID   ITEM ADDR        FL MARK  DESC
+=== ===== ================ == ===== ==========
+   0   897 ffff88012bb07510 12  20ms DRM_CRTC_HELPER: i915@pci:0000:00:02.0
 
-In fact, this is similar to allocating memory with overcommit_memory = 
-0.  The difference is the balloon allocates mlocked memory, while normal 
-allocations can be charged against swap.  But fundamentally it's the same.
+When things are working well I see the same output appearing for one
+update, about every 10s.
 
->>> If all the guests do this, then it leaves that much more free memory on
->>> the host, which can be used flexibly for extra host page cache, new
->>> guests, etc...
->>>        
->> If the host detects lots of pagecache misses it can balloon guests
->> down.  If pagecache is quiet, why change anything?
->>      
-> Page cache misses alone are not really sufficient.  This is the classic
-> problem where we try to differentiate streaming I/O (which we can't
-> effectively cache) from I/O which can be effectively cached.
->    
-
-True.  Random I/O across a very large dataset is also difficult to cache.
-
->> If the host wants to start new guests, it can balloon guests down.  If
->> no new guests are wanted, why change anything?
->>      
-> We're talking about an environment which we're always trying to
-> optimize.  Imagine that we're always trying to consolidate guests on to
-> smaller numbers of hosts.  We're effectively in a state where we
-> _always_ want new guests.
->    
-
-If this came at no cost to the guests, you'd be right.  But at some 
-point guest performance will be hit by this, so the advantage gained 
-from freeing memory will be balanced by the disadvantage.
-
-Also, memory is not the only resource.  At some point you become cpu 
-bound; at that point freeing memory doesn't help and in fact may 
-increase your cpu load.
-
--- 
-error compiling committee.c: too many arguments to function
-
+-apw
