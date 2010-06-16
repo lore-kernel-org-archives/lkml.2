@@ -1,102 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759172Ab0FPQDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 12:03:32 -0400
-Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:44093 "EHLO
-	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab0FPQDb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 12:03:31 -0400
-X-Greylist: delayed 354 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Jun 2010 12:03:31 EDT
-From: Louis Rilling <louis.rilling@kerlabs.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org, Louis Rilling <louis.rilling@kerlabs.com>
-Subject: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
-Date: Wed, 16 Jun 2010 17:58:30 +0200
-Message-Id: <1276703910-16936-1-git-send-email-louis.rilling@kerlabs.com>
-X-Mailer: git-send-email 1.5.6.5
+	id S1759182Ab0FPQEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 12:04:45 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33171 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757914Ab0FPQEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 12:04:43 -0400
+Date: Wed, 16 Jun 2010 18:04:42 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/10] trivial: fix typos concerning "precedence"
+In-Reply-To: <1276251424-12806-8-git-send-email-u.kleine-koenig@pengutronix.de>
+Message-ID: <alpine.LNX.2.00.1006161804150.12271@pobox.suse.cz>
+References: <20100611101624.GD10894@pengutronix.de> <1276251424-12806-8-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Detached tasks are not seen by zap_pid_ns_processes()->sys_wait4(), so
-that release_task()->proc_flush_task() of container init can be called
-before it is for some detached tasks in the namespace.
+On Fri, 11 Jun 2010, Uwe Kleine-König wrote:
 
-Pin proc_mnt's in copy_process(), so that proc_flush_task() becomes safe
-whatever the ordering of tasks.
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+>  arch/sh/kernel/clkdev.c                  |    2 +-
+>  drivers/staging/comedi/drivers/usbdux.c  |    2 +-
+>  drivers/staging/octeon/cvmx-cmd-queue.c  |    6 +++---
+>  drivers/staging/pohmelfs/inode.c         |    2 +-
+>  drivers/staging/rt2860/common/cmm_wpa.c  |    4 ++--
+>  drivers/staging/rtl8192e/r8190_rtl8256.c |    6 +++---
 
-Signed-off-by: Louis Rilling <louis.rilling@kerlabs.com>
----
- fs/proc/base.c          |   17 +++++++++++++++++
- include/linux/proc_fs.h |    4 ++++
- kernel/fork.c           |    1 +
- 3 files changed, 22 insertions(+), 0 deletions(-)
+Hi,
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index acb7ef8..4d7328f 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2663,6 +2663,23 @@ static const struct inode_operations proc_tgid_base_inode_operations = {
- 	.setattr	= proc_setattr,
- };
- 
-+/*
-+ * Pin all proc_mnt so that detached tasks can safely call proc_flush_task()
-+ * after container init calls itself proc_flush_task().
-+ */
-+void proc_new_task(struct task_struct *task)
-+{
-+	struct pid *pid;
-+	int i;
-+
-+	if (!task->pid)
-+		return;
-+
-+	pid = task_pid(task);
-+	for (i = 0; i <= pid->level; i++)
-+		mntget(pid->numbers[i].ns->proc_mnt);
-+}
-+
- static void proc_flush_task_mnt(struct vfsmount *mnt, pid_t pid, pid_t tgid)
- {
- 	struct dentry *dentry, *leader, *dir;
-diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-index 379eaed..f24faa1 100644
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -104,6 +104,7 @@ struct vmcore {
- 
- extern void proc_root_init(void);
- 
-+void proc_new_task(struct task_struct *task);
- void proc_flush_task(struct task_struct *task);
- 
- extern struct proc_dir_entry *create_proc_entry(const char *name, mode_t mode,
-@@ -184,6 +185,9 @@ extern void dup_mm_exe_file(struct mm_struct *oldmm, struct mm_struct *newmm);
- #define proc_net_fops_create(net, name, mode, fops)  ({ (void)(mode), NULL; })
- static inline void proc_net_remove(struct net *net, const char *name) {}
- 
-+static inline void proc_new_task(struct task_struct *task)
-+{
-+}
- static inline void proc_flush_task(struct task_struct *task)
- {
- }
-diff --git a/kernel/fork.c b/kernel/fork.c
-index b6cce14..c6c2874 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1281,6 +1281,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	total_forks++;
- 	spin_unlock(&current->sighand->siglock);
- 	write_unlock_irq(&tasklist_lock);
-+	proc_new_task(p);
- 	proc_fork_connector(p);
- 	cgroup_post_fork(p);
- 	perf_event_fork(p);
+please send the staging parts separately to Greg (you did it for other 
+patches, but likely forgot for this one).
+
+Thanks.
+
 -- 
-1.5.6.5
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
