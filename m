@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758878Ab0FPLv1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 07:51:27 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52724 "EHLO hera.kernel.org"
+	id S1758901Ab0FPLwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 07:52:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52753 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754168Ab0FPLv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 07:51:26 -0400
-Message-ID: <4C18BABC.8090301@kernel.org>
-Date: Wed, 16 Jun 2010 13:51:24 +0200
+	id S1758812Ab0FPLws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 07:52:48 -0400
+Message-ID: <4C18BB0B.4050100@kernel.org>
+Date: Wed, 16 Jun 2010 13:52:43 +0200
 From: Tejun Heo <tj@kernel.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org,
+       Michal Svoboda <michal.svoboda@agents.felk.cvut.cz>
 CC: linux-ide@vger.kernel.org
 Subject: Re: Very slow disk speed after "IRQ: nobody cared"
 References: <20100615092818.GF1635@myhost.felk.cvut.cz>
@@ -19,11 +20,12 @@ In-Reply-To: <20100615092818.GF1635@myhost.felk.cvut.cz>
 X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Jun 2010 11:51:25 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Jun 2010 11:52:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(resending, for some reason TB dropped Michal's email address)
 (cc'ing linux-ide)
 
 On 06/15/2010 11:28 AM, Michal Svoboda wrote:
