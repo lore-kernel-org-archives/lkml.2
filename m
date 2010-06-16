@@ -1,136 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085Ab0FPM5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 08:57:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65185 "EHLO mx1.redhat.com"
+	id S1755276Ab0FPNHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 09:07:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53799 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756081Ab0FPM5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 08:57:15 -0400
-Date: Wed, 16 Jun 2010 14:57:08 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
-Message-ID: <20100616125708.GA1893@jolsa.lab.eng.brq.redhat.com>
-References: <1276691043-12694-1-git-send-email-jolsa@redhat.com>
- <1276692314.2632.66.camel@edumazet-laptop>
+	id S1751143Ab0FPNHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 09:07:16 -0400
+Date: Wed, 16 Jun 2010 10:07:03 -0300
+From: Glauber Costa <glommer@redhat.com>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: avi@redhat.com, mtosatti@redhat.com, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/17] Eliminate duplicated timer code
+Message-ID: <20100616130703.GH19104@mothafucka.localdomain>
+References: <1276587259-32319-1-git-send-email-zamsden@redhat.com>
+ <1276587259-32319-2-git-send-email-zamsden@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1276692314.2632.66.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1276587259-32319-2-git-send-email-zamsden@redhat.com>
+X-ChuckNorris: True
+User-Agent: Jack Bauer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 02:45:14PM +0200, Eric Dumazet wrote:
-> Le mercredi 16 juin 2010 à 14:24 +0200, Jiri Olsa a écrit :
-> > hi,
-> > 
-> > BZ 591015 - kernel BUG at kernel/cred.c:168
-> > https://bugzilla.redhat.com/show_bug.cgi?id=591015
-> > 
-> > Above bugzilla reported bug during the releasing of
-> > old cred structure.
-> > 
-> > There is reproducer attached to the bugzilla.
-> > 
-> > The issue is caused by releasing old cred struct while other
-> > kernel path might be still using it. This leads to cred->usage
-> > inconsistency inside the __put_cred and triggering the bug.
-> > 
-> > Following kernel paths are affected:
-> > 
-> > The CPU1 path is setting the new groups creds.
-> > The CPU2 path is cat /proc/PID/status
-> > 
-> > 
-> > CPU 1                              CPU 2
-> > 
-> > sys_setgroups                      proc_pid_status      
-> >   set_current_groups                 task_state
-> >     commit_creds                       rcu_read_lock
-> >       put_cred                         ...
-> >         __put_cred                     get_cred
-> >           BUG_ON(usage != 0)           ...
-> >                                        rcu_read_unlock
-> >                                        
-> > 
-> > 
-> > If __put_cred got executed during the CPU2 holding the reference
-> > the BUG_ON inside __put_cred is trigered.
-> > 
-> > I put synchronize_rcu before put_cred call, so we are sure
-> > all the rcu_read_lock blocks are finished, and if needed, using
-> > new creds.
-> > 
-> > Also I moved rcu_read_unlock below the put_cred for consistency.
-> > 
-> > 
-> > wbr,
-> > jirka
-> > 
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > ---
-> >  fs/proc/array.c |    3 ++-
-> >  kernel/cred.c   |    6 ++++++
-> >  2 files changed, 8 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/fs/proc/array.c b/fs/proc/array.c
-> > index 9b58d38..c0e60d1 100644
-> > --- a/fs/proc/array.c
-> > +++ b/fs/proc/array.c
-> > @@ -199,7 +199,6 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
-> >  		"FDSize:\t%d\n"
-> >  		"Groups:\t",
-> >  		fdt ? fdt->max_fds : 0);
-> > -	rcu_read_unlock();
-> >  
-> >  	group_info = cred->group_info;
-> >  	task_unlock(p);
-> > @@ -208,6 +207,8 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
-> >  		seq_printf(m, "%d ", GROUP_AT(group_info, g));
-> >  	put_cred(cred);
-> >  
-> > +	rcu_read_unlock();
-> > +
-> >  	seq_printf(m, "\n");
-> >  }
-> >  
-> > diff --git a/kernel/cred.c b/kernel/cred.c
-> > index a2d5504..4872f12 100644
-> > --- a/kernel/cred.c
-> > +++ b/kernel/cred.c
-> > @@ -510,6 +510,12 @@ int commit_creds(struct cred *new)
-> >  	    new->fsgid != old->fsgid)
-> >  		proc_id_connector(task, PROC_EVENT_GID);
-> >  
-> > +	/*
-> > +	 * New cred is set already, now let the old one
-> > +	 * chance to disappear on other CPUs.
-> > +	 */
-> > +	synchronize_rcu();
-> > +
-> >  	/* release the old obj and subj refs both */
-> >  	put_cred(old);
-> >  	put_cred(old);
-> > --
+On Mon, Jun 14, 2010 at 09:34:03PM -1000, Zachary Amsden wrote:
+> Move duplicated timer related code into arch_vcpu_load rather
+> than vendor callouts.  Should be an isomorphic transformation.
 > 
-> I respectfully suggest that every patch adding a synchronize_rcu() call
-> be reviewed by Paul himself. This is really the last option that should
-> be considered, since it adds a big delay.
+> Signed-off-by: Zachary Amsden <zamsden@redhat.com>
+Acked-by: Glauber Costa <glommer@redhat.com>
 
-no problem, I wasn't aware of this
-
-> 
-> Can you explain why other solutions cannot be used ?
-
-I'm not sure which ones do you mean.. I'm not RCU expert, and
-this one occured to me as probable fix, but if there're other
-ways, no problem ;)
-
-thanks,
-jirka
