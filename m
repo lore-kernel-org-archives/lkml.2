@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759591Ab0FPUiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 16:38:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48091 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595Ab0FPUiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 16:38:15 -0400
-Date: Wed, 16 Jun 2010 22:37:33 +0200 (CEST)
-From: John Kacur <jkacur@redhat.com>
-X-X-Sender: jkacur@localhost.localdomain
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Clark Williams <williams@redhat.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Sven-Thorsten Dietrich <sven@thebigcorporation.com>,
-       ghaskins@novell.com
-Subject: Re: [PATCH 2/6: v4] lockdep: Make MAX_STACK_TRACE_ENTRIES
- configurable.
-In-Reply-To: <1276714154.1745.623.camel@laptop>
-Message-ID: <alpine.LFD.2.00.1006162213220.28756@localhost.localdomain>
-References: <1276554087-3632-1-git-send-email-jkacur@redhat.com> <1276554087-3632-3-git-send-email-jkacur@redhat.com> <1276714154.1745.623.camel@laptop>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1759610Ab0FPUio (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 16:38:44 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39168
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751595Ab0FPUin (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 16:38:43 -0400
+Date: Wed, 16 Jun 2010 13:38:54 -0700 (PDT)
+Message-Id: <20100616.133854.183053376.davem@davemloft.net>
+To: kyle@mcmartin.ca
+Cc: vst@vlnb.net, sparclinux@vger.kernel.org, simone.ricci@gmail.com,
+       scst-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+       Nick.Couchman@seakr.com
+Subject: Re: Error "Unknown relocation: 36" on module load on Sparc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100616192257.GW20317@bombadil.infradead.org>
+References: <AANLkTimuv7nOlcGFxqPZlwcAjLmFMiLAvbA5O7F32Wbg@mail.gmail.com>
+	<4C192085.2090404@vlnb.net>
+	<20100616192257.GW20317@bombadil.infradead.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Kyle McMartin <kyle@mcmartin.ca>
+Date: Wed, 16 Jun 2010 15:22:57 -0400
 
-
-On Wed, 16 Jun 2010, Peter Zijlstra wrote:
-
-> On Tue, 2010-06-15 at 00:21 +0200, John Kacur wrote:
-> > Certain debug configurations that have LOCKDEP turned on, run into the limit
-> > where the MAX_STACK_TRACE_ENTRIES are too small. Rather than simply turning
-> > off the locking correctness validator, let the user configure this value
-> > to something reasonable for their system.
-> > 
-> > This patch was generated against 2.6.33.5-rt23 but is also intended to be
-> > picked-up for mainline.
+> arch/sparc/kernel/module.c needs to be patched to support the new
+> relocation type... Based on binutils/gas/config/tc-sparc.c and gold's
+> sparc config this looks to be the same as the hi22 reloc...
 > 
-> NACK
-> 
-> patches like 4726f2a617ebd868a4fdeb5679613b897e5f1676 are the way to go.
+> Can you test the following patch?
 
-I've been testing 4726f2a617ebd868a4fdeb5679613b897e5f1676 in rt
-(Thomas has it in tip/rt/2.6.33 now) and so far it is doing the trick for 
-me, at least on my laptop. I still need to test it on larger machines.
-However, this problem seems to continuably come up, and I'm not the only 
-one who has expessed the wish / need to have this tunable.
-See Message-Id	 <4BCEAD7B0200005A0006513E@soto.provo.novell.com>
+This change is incorrect.
 
-and here in the same thread is even an argument that some configs
-might tune it down. (I needed to increase it for rt-debug configs)
-See Message-Id	 <1271861581.29617.13.camel@sven.thebigcorporation.com>
+LM22 relocations do not get emitted for the "medlow" code model, which
+is what is explicitly specified on the kernel compiler command line
+for sparc64 via "-mcmodel=medlow".
 
-fwiw regarding a nacked patch, v4 is the least intrusive version
-(smallest number of changes), based on a bit of trout wacking induced 
-hints.  
-
-Thanks
+Someone this person is using incorrect CFLAGS when building their
+module, and that's why they have this problem, because the compiler's
+default code model on sparc64 can generate those relocations.
