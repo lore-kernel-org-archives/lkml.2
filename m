@@ -1,76 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758816Ab0FPOhK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 10:37:10 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:37466 "EHLO
-	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753874Ab0FPOhI (ORCPT
+	id S1758951Ab0FPOkz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 10:40:55 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:55042 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754054Ab0FPOky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 10:37:08 -0400
-Date: Wed, 16 Jun 2010 10:36:59 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: David Howells <dhowells@redhat.com>, tytso@mit.edu,
-       Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@redhat.com>,
+	Wed, 16 Jun 2010 10:40:54 -0400
+Date: Wed, 16 Jun 2010 16:41:14 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCHv5.1 07/11] USB: gadget: g_ether: updated INF file
+In-reply-to: <715635.32141.qm@web180308.mail.gq1.yahoo.com>
+To: linux-usb@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>, Greg KH <greg@kroah.com>,
+       Xiaofan Chen <xiaofanc@gmail.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
        linux-kernel@vger.kernel.org
-Subject: Re: Why is kslowd accumulating so much CPU time?
-Message-ID: <20100616143659.GA14616@elliptictech.com>
-Mail-Followup-To: Andy Whitcroft <apw@canonical.com>,
-	David Howells <dhowells@redhat.com>, tytso@mit.edu,
-	Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@redhat.com>,
-	linux-kernel@vger.kernel.org
-References: <E1OMQ88-0002a1-Gb@closure.thunk.org>
- <AANLkTilqc0jpwnIwe3OIQvB9avaXXzrBK4Hz0huESygy@mail.gmail.com>
- <20100613194949.GC8055@thunk.org>
- <AANLkTilQLk7ofSJBm9KIa2g1KQ35GC1D1vOZlPrv1VRv@mail.gmail.com>
- <20100614184244.GA11480@elliptictech.com>
- <20100614214646.GF6666@thunk.org>
- <AANLkTikxOwYQYSzNjEqRduTQvoUandnAsZzm5Auzgnaz@mail.gmail.com>
- <18402.1276625268@redhat.com>
- <AANLkTilZElLEBJDjfpZVx72uDR-x_3t14Jkga5eHy3wf@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTilZElLEBJDjfpZVx72uDR-x_3t14Jkga5eHy3wf@mail.gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-id: <9f32ae2ab133d27642ac4c1e81777b1e34a0c1a1.1276681840-2.git.m.nazarewicz@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <715635.32141.qm@web180308.mail.gq1.yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12:37 Wed 16 Jun     , Andy Whitcroft wrote:
-> > Can you see what they're doing?
-> >
-> >        watch -n0 cat /sys/kernel/debug/slow_work/runqueue
-> 
-> Turned on the debugging and applied the patch from Ted, and when
-> things are bad I see constant cycling of all four threads in the
-> output showing similar to the below, note only one thread shows at a
-> time:
-> 
-> Every 0.1s: cat /sys/kernel/debug/slow_work/runqueue    Wed Jun 16 12:34:52 2010
-> 
-> THR PID   ITEM ADDR        FL MARK  DESC
-> === ===== ================ == ===== ==========
->    0   897 ffff88012bb07510 12  20ms DRM_CRTC_HELPER: i915@pci:0000:00:02.0
+Updated the INF file for the g_ether gadegt.  It should work with most
+recent Windows systems now.
 
-Indeed, this looks very similar to mine, except my DESC field is blank
-for some reason.  The FL value is sometimes 12, sometimes 2.
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+On Wed, 16 Jun 2010 16:12:38 +0200, David Brownell <david-b@pacbell.net> wrote:
+> NAK ... still waiting for a version of the
+> patch with all requested changes.  In
+> particular, without the rename (which
+> invalidates most documentation, though
+> it would otherwise be a reasonable cleanup).
 
-When things are bad, all four of the kslowd threads are pegged at 16%
-CPU usage.  On my T500, they _never_ calm down once they're pegged.
-However, things seem to be working normally at boot.  It seems that
-there is some initial trigger which pegs the threads, then the cursor
-lag and other problems are just fallout after that.  The system is
-essentially unusable after this point.
+Argh...  Sorry about that.  The patch was updated per your suggestion.
+I only forgot about the commit message...
 
-The threads sometimes get pegged immediately after booting the system,
-sometimes it can last an hour or more before showing any problems.
-Unfortunately, this is making bisection essentially impossible.
+As such, this is identical to the previous expect the last sentence of
+the commit is removed.
 
-This seems to have been introduced somewhere between 2.6.35-rc1 and
--rc2.
+ Documentation/usb/linux.inf |  236 ++++++++++---------------------------------
+ 1 files changed, 52 insertions(+), 184 deletions(-)
 
+diff --git a/Documentation/usb/linux.inf b/Documentation/usb/linux.inf
+index 2f7217d..3bed2e9 100644
+--- a/Documentation/usb/linux.inf
++++ b/Documentation/usb/linux.inf
+@@ -1,200 +1,68 @@
+-; MS-Windows driver config matching some basic modes of the
+-; Linux-USB Ethernet/RNDIS gadget firmware:
+-;
+-;  - RNDIS plus CDC Ethernet ... this may be familiar as a DOCSIS
+-;    cable modem profile, and supports most non-Microsoft USB hosts
+-;
+-;  - RNDIS plus CDC Subset ... used by hardware that incapable of
+-;    full CDC Ethernet support.
+-;
+-; Microsoft only directly supports RNDIS drivers, and bundled them into XP.
+-; The Microsoft "Remote NDIS USB Driver Kit" is currently found at:
+-;   http://www.microsoft.com/whdc/hwdev/resources/HWservices/rndis.mspx
+-
++; Based on template INF file found at
++;    <http://msdn.microsoft.com/en-us/library/ff570620.aspx>
++; which was:
++;    Copyright (c) Microsoft Corporation
++; and released under the MLPL as found at:
++;    <http://msdn.microsoft.com/en-us/cc300389.aspx#MLPL>.
++; For use only on Windows operating systems.
+ 
+ [Version]
+-Signature           = "$CHICAGO$"
++Signature           = "$Windows NT$"
+ Class               = Net
+ ClassGUID           = {4d36e972-e325-11ce-bfc1-08002be10318}
+ Provider            = %Linux%
+-Compatible          = 1
+-MillenniumPreferred = .ME
+-DriverVer           = 03/30/2004,0.0.0.0
+-; catalog file would be used by WHQL
+-;CatalogFile         = Linux.cat
++DriverVer           = 06/21/2006,6.0.6000.16384
++;CatalogFile        = device.cat
+ 
+ [Manufacturer]
+-%Linux%          = LinuxDevices,NT.5.1
++%Linux%             = RndisDevices,NTx86,NTamd64,NTia64
++
++; Decoration for x86 architecture
++[RndisDevices.NTx86]
++%RndisDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2
+ 
+-[LinuxDevices]
+-; NetChip IDs, used by both firmware modes
+-%LinuxDevice%    = RNDIS, USB\VID_0525&PID_a4a2
++; Decoration for x64 architecture
++[RndisDevices.NTamd64]
++%RndisDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2
+ 
+-[LinuxDevices.NT.5.1]
+-%LinuxDevice%    = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2
++; Decoration for ia64 architecture
++[RndisDevices.NTia64]
++%RndisDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2
+ 
++;@@@ This is the common setting for setup
+ [ControlFlags]
+ ExcludeFromSelect=*
+ 
+-; Windows 98, Windows 98 Second Edition specific sections --------
+-
+-[RNDIS]
+-DeviceID        = usb8023
+-MaxInstance     = 512
+-DriverVer           = 03/30/2004,0.0.0.0
+-AddReg          = RNDIS_AddReg_98, RNDIS_AddReg_Common
+-
+-[RNDIS_AddReg_98]
+-HKR, ,               DevLoader,        0, *ndis
+-HKR, ,               DeviceVxDs,       0, usb8023.sys
+-HKR, NDIS,           LogDriverName,    0, "usb8023"
+-HKR, NDIS,           MajorNdisVersion, 1, 5
+-HKR, NDIS,           MinorNdisVersion, 1, 0
+-HKR, Ndi\Interfaces, DefUpper,         0, "ndis3,ndis4,ndis5"
+-HKR, Ndi\Interfaces, DefLower,         0, "ethernet"
+-HKR, Ndi\Interfaces, UpperRange,       0, "ndis3,ndis4,ndis5"
+-HKR, Ndi\Interfaces, LowerRange,       0, "ethernet"
+-HKR, Ndi\Install,    ndis3,            0, "RNDIS_Install_98"
+-HKR, Ndi\Install,    ndis4,            0, "RNDIS_Install_98"
+-HKR, Ndi\Install,    ndis5,            0, "RNDIS_Install_98"
+-HKR, Ndi,            DeviceId,         0, "USB\VID_0525&PID_a4a2"
+-
+-[RNDIS_Install_98]
+-CopyFiles=RNDIS_CopyFiles_98
+-
+-[RNDIS_CopyFiles_98]
+-usb8023.sys, usb8023w.sys, , 0 
+-rndismp.sys, rndismpw.sys, , 0 
+-
+-; Windows Millennium Edition specific sections --------------------
+-
+-[RNDIS.ME]
+-DeviceID        = usb8023
+-MaxInstance     = 512
+-DriverVer           = 03/30/2004,0.0.0.0
+-AddReg          = RNDIS_AddReg_ME, RNDIS_AddReg_Common
+-Characteristics = 0x84   ; NCF_PHYSICAL + NCF_HAS_UI
+-BusType         = 15
+-
+-[RNDIS_AddReg_ME]
+-HKR, ,               DevLoader,        0, *ndis
+-HKR, ,               DeviceVxDs,       0, usb8023.sys
+-HKR, NDIS,           LogDriverName,    0, "usb8023"
+-HKR, NDIS,           MajorNdisVersion, 1, 5
+-HKR, NDIS,           MinorNdisVersion, 1, 0
+-HKR, Ndi\Interfaces, DefUpper,         0, "ndis3,ndis4,ndis5"
+-HKR, Ndi\Interfaces, DefLower,         0, "ethernet"
+-HKR, Ndi\Interfaces, UpperRange,       0, "ndis3,ndis4,ndis5"
+-HKR, Ndi\Interfaces, LowerRange,       0, "ethernet"
+-HKR, Ndi\Install,    ndis3,            0, "RNDIS_Install_ME"
+-HKR, Ndi\Install,    ndis4,            0, "RNDIS_Install_ME"
+-HKR, Ndi\Install,    ndis5,            0, "RNDIS_Install_ME"
+-HKR, Ndi,            DeviceId,         0, "USB\VID_0525&PID_a4a2"
+-
+-[RNDIS_Install_ME]
+-CopyFiles=RNDIS_CopyFiles_ME
+-
+-[RNDIS_CopyFiles_ME]
+-usb8023.sys, usb8023m.sys, , 0 
+-rndismp.sys, rndismpm.sys, , 0 
+-
+-; Windows 2000 specific sections ---------------------------------
+-
+-[RNDIS.NT]
+-Characteristics = 0x84   ; NCF_PHYSICAL + NCF_HAS_UI
+-BusType         = 15
+-DriverVer           = 03/30/2004,0.0.0.0
+-AddReg          = RNDIS_AddReg_NT, RNDIS_AddReg_Common
+-CopyFiles       = RNDIS_CopyFiles_NT
+-
+-[RNDIS.NT.Services]
+-AddService = USB_RNDIS, 2, RNDIS_ServiceInst_NT, RNDIS_EventLog
+-
+-[RNDIS_CopyFiles_NT]
+-; no rename of files on Windows 2000, use the 'k' names as is
+-usb8023k.sys, , , 0 
+-rndismpk.sys, , , 0 
+-
+-[RNDIS_ServiceInst_NT]
+-DisplayName     = %ServiceDisplayName%
+-ServiceType     = 1 
+-StartType       = 3 
+-ErrorControl    = 1 
+-ServiceBinary   = %12%\usb8023k.sys    
+-LoadOrderGroup  = NDIS
+-AddReg          = RNDIS_WMI_AddReg_NT
+-
+-[RNDIS_WMI_AddReg_NT]
+-HKR, , MofImagePath, 0x00020000, "System32\drivers\rndismpk.sys"
+-
+-; Windows XP specific sections -----------------------------------
+-
++; DDInstall section
++; References the in-build Netrndis.inf
+ [RNDIS.NT.5.1]
+-Characteristics = 0x84   ; NCF_PHYSICAL + NCF_HAS_UI
+-BusType         = 15
+-DriverVer           = 03/30/2004,0.0.0.0
+-AddReg          = RNDIS_AddReg_NT, RNDIS_AddReg_Common
+-; no copyfiles - the files are already in place
+-
++Characteristics     = 0x84   ; NCF_PHYSICAL + NCF_HAS_UI
++BusType             = 15
++; NEVER REMOVE THE FOLLOWING REFERENCE FOR NETRNDIS.INF
++include             = netrndis.inf
++needs               = Usb_Rndis.ndi
++AddReg              = Rndis_AddReg_Vista
++
++; DDInstal.Services section
+ [RNDIS.NT.5.1.Services]
+-AddService      = USB_RNDIS, 2, RNDIS_ServiceInst_51, RNDIS_EventLog
+-
+-[RNDIS_ServiceInst_51]
+-DisplayName     = %ServiceDisplayName%
+-ServiceType     = 1 
+-StartType       = 3 
+-ErrorControl    = 1 
+-ServiceBinary   = %12%\usb8023.sys    
+-LoadOrderGroup  = NDIS
+-AddReg          = RNDIS_WMI_AddReg_51
+-
+-[RNDIS_WMI_AddReg_51]
+-HKR, , MofImagePath, 0x00020000, "System32\drivers\rndismp.sys"
+-
+-; Windows 2000 and Windows XP common sections --------------------
+-
+-[RNDIS_AddReg_NT]
+-HKR, Ndi,               Service,        0, "USB_RNDIS"
+-HKR, Ndi\Interfaces,    UpperRange,     0, "ndis5" 
+-HKR, Ndi\Interfaces,    LowerRange,     0, "ethernet"
+-
+-[RNDIS_EventLog]
+-AddReg = RNDIS_EventLog_AddReg
+-
+-[RNDIS_EventLog_AddReg]
+-HKR, , EventMessageFile, 0x00020000, "%%SystemRoot%%\System32\netevent.dll"
+-HKR, , TypesSupported,   0x00010001, 7
+-
+-; Common Sections -------------------------------------------------
+-
+-[RNDIS_AddReg_Common]
+-HKR, NDI\params\NetworkAddress, ParamDesc,  0, %NetworkAddress%
+-HKR, NDI\params\NetworkAddress, type,       0, "edit"
+-HKR, NDI\params\NetworkAddress, LimitText,  0, "12"
+-HKR, NDI\params\NetworkAddress, UpperCase,  0, "1"
+-HKR, NDI\params\NetworkAddress, default,    0, " "
+-HKR, NDI\params\NetworkAddress, optional,   0, "1"
+-
+-[SourceDisksNames]
+-1=%SourceDisk%,,1
+-
+-[SourceDisksFiles]
+-usb8023m.sys=1
+-rndismpm.sys=1
+-usb8023w.sys=1
+-rndismpw.sys=1
+-usb8023k.sys=1
+-rndismpk.sys=1
+-
+-[DestinationDirs]
+-RNDIS_CopyFiles_98    = 10, system32/drivers
+-RNDIS_CopyFiles_ME    = 10, system32/drivers
+-RNDIS_CopyFiles_NT    = 12
+-
++include             = netrndis.inf
++needs               = Usb_Rndis.ndi.Services
++
++; Optional registry settings. You can modify as needed.
++[RNDIS_AddReg_Vista]
++HKR, NDI\params\VistaProperty, ParamDesc,  0, %Vista_Property%
++HKR, NDI\params\VistaProperty, type,       0, "edit"
++HKR, NDI\params\VistaProperty, LimitText,  0, "12"
++HKR, NDI\params\VistaProperty, UpperCase,  0, "1"
++HKR, NDI\params\VistaProperty, default,    0, " "
++HKR, NDI\params\VistaProperty, optional,   0, "1"
++
++; No sys copyfiles - the sys files are already in-build
++; (part of the operating system).
++; We do not support XP SP1-, 2003 SP1-, ME, 9x.
++
++; Modify these strings for your device as needed.
+ [Strings]
+-ServiceDisplayName    = "USB Remote NDIS Network Device Driver"
+-NetworkAddress        = "Network Address"
+-Linux                 = "Linux Developer Community"
+-LinuxDevice           = "Linux USB Ethernet/RNDIS Gadget"
+-SourceDisk            = "Ethernet/RNDIS Gadget Driver Install Disk"
+-
++Linux               = "Linux Developer Community"
++RndisDevice         = "Ethernet/RNDIS Gadget"
++Vista_Property      = "Optional Vista Property"
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+1.7.1
+
