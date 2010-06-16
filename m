@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759541Ab0FPT6w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 15:58:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13080 "EHLO mx1.redhat.com"
+	id S1759546Ab0FPT7V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 15:59:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39008 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976Ab0FPT6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 15:58:50 -0400
-Date: Wed, 16 Jun 2010 15:58:35 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-       Christoph Hellwig <hch@infradead.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-       Jamie Lokier <jamie@shareable.org>,
-       David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] d_ino considered harmful
-Message-ID: <20100616195834.GD24382@shell>
-References: <20100616185913.GA15566@shell> <20100616151556.23cc9113@tlielax.poochiereds.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100616151556.23cc9113@tlielax.poochiereds.net>
-User-Agent: Mutt/1.4.2.2i
+	id S1751976Ab0FPT7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 15:59:19 -0400
+Message-ID: <4C192CD5.8080602@kernel.org>
+Date: Wed, 16 Jun 2010 21:58:13 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Daniel Walker <dwalker@codeaurora.org>
+CC: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: Overview of concurrency managed workqueue
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>	 <4C17C598.7070303@kernel.org>	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>	 <4C18BF40.40607@kernel.org> <1276694825.9309.12.camel@m0nster>	 <4C18D1FD.9060804@kernel.org> <1276695665.9309.17.camel@m0nster>	 <4C18D574.1040903@kernel.org> <1276697146.9309.27.camel@m0nster>	 <4C18DC69.10704@kernel.org> <1276698880.9309.44.camel@m0nster>	 <4C18E4B7.5040702@kernel.org> <1276701074.9309.60.camel@m0nster>	 <4C18F2B8.9060805@kernel.org> <1276705838.9309.94.camel@m0nster>	 <4C1901E9.2080907@kernel.org> <1276712547.9309.172.camel@m0nster>	 <4C191BE9.1060400@kernel.org>  <4C192404.7000004@kernel.org> <1276717576.9309.218.camel@m0nster>
+In-Reply-To: <1276717576.9309.218.camel@m0nster>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Jun 2010 19:58:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 03:15:56PM -0400, Jeff Layton wrote:
-> On Wed, 16 Jun 2010 14:59:13 -0400
-> Valerie Aurora <vaurora@redhat.com> wrote:
+Hello,
+
+On 06/16/2010 09:46 PM, Daniel Walker wrote:
+>> If you actually _solve_ the problem like this, other users wouldn't
+>> experience the problem at all once the update reaches them and you
+>> won't have to worry about your workaround breaking with the next
+>> kernel update or unexpected suspend/resume and we won't be having this
+>> discussion about adjusting workqueue priorities from userland.
 > 
-> > Who needs d_ino anyway?  I am running a kernel with this patch -
-> > Gnome, a browser, IRC, kernel compile, etc. and everything works.
-> > 
-> > -VAL
-> > 
-> > commit 184f3919d0071f3bfa40010aa6919ea89999d79b
-> > Author: Valerie Aurora <vaurora@redhat.com>
-> > Date:   Wed Jun 16 11:05:06 2010 -0700
-> > 
-> >     VFS: Always return 0 for d_ino
-> >     
-> >     Use of d_ino without the corresponding st_dev is always buggy in the
-> >     presence of submounts, bind mounts, and union mounts.  E.g., the d_ino
-> >     of a mountpoint will be the inode number of the directory under the
-> >     mountpoint, not the mounted directory.  Correct code must call stat(),
-> >     which returns the correct device ID and inode in st_dev and st_ino.
-> >     Since no one should be using d_ino anyway, always return 0 to detect
-> >     bugs.
-> > 
-> > diff --git a/fs/readdir.c b/fs/readdir.c
-> > index dd3eae1..38ea772 100644
-> > --- a/fs/readdir.c
-> > +++ b/fs/readdir.c
-> > @@ -91,7 +91,9 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
-> >  
-> >  	if (buf->result)
-> >  		return -EINVAL;
-> > -	d_ino = ino;
-> > +	/* Use of d_ino without st_dev is always buggy. */
-> > +	d_ino = 0;
-> > +
-> >  	if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
-> >  		buf->result = -EOVERFLOW;
-> >  		return -EOVERFLOW;
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
+> What you suggesting just means the user has to adjust an interrupt
+> thread instead of a workqueue thread. That really doesn't change
+> anything, since it's just another type of kernel thread.
+
+It allows writing an interrupt handler which requires context and
+PREEMPT_RT kernel will handle priority inheritance correctly with
+them, so there's no priority inversion problem.
+
+>> There are many wrong things about working around RT latency problems
+>> by setting workqueue priorities from userland.  Please think about why
+>> the driver would have a separate workqueue for itself in the first
+>> place.  It was to work around the limitation of workqueue facility and
+>> you're arguing that, because that work around allows yet another very
+>> fragile workaround, the property which made the original work around
+>> necessary in the first place needs to stay.  That sounds really
+>> perverse to me.
 > 
-> That may run afoul of the following check (where d_ino is compared to
-> ino). You can probably just remove that check though since you can be
-> reasonably sure that 0 will never overflow the field.
+> I have no idea what your trying to say here.. I'm sure there is no one
+> reason why people use workqueues in their drivers. In fact I'm sure
+> there are many reasons to use workqueues or not to use them.
 
-You're right, I included that in the next version of the patch.
+I mean that if workqueues don't have current limitations, there's no
+reason for most drivers which aren't in the allocation path to use
+separate workqueues.  They can simply use the default system one.
 
-Thanks,
+Thanks.
 
--VAL
+-- 
+tejun
