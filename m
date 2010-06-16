@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab0FPJkP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 05:40:15 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:46544 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249Ab0FPJkM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 05:40:12 -0400
-Date: Wed, 16 Jun 2010 11:40:10 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Nils Carlson <nils.carlson@ludd.ltu.se>
-Cc: Andi Kleen <andi@firstfloor.org>, Doug Thompson <norsk5@yahoo.com>,
-       Tony Luck <tony.luck@intel.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       BrentYoung <brent.young@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "bluesmoke-devel@lists.sourceforge.net" 
-	<bluesmoke-devel@lists.sourceforge.net>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Joe Perches <joe@perches.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-       Ingo Molnar <mingo@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>,
-       Nils Carlson <nils.carlson@ericsson.com>
-Subject: Re: Hardware Error Kernel Mini-Summit
-Message-ID: <20100616094010.GC17599@basil.fritz.box>
-References: <AANLkTil_mDFOsDUjvnp_NFZvkj0Ij-qww6BqewJ4lpHP@mail.gmail.com> <35525.41387.qm@web50105.mail.re2.yahoo.com> <20100615065630.GC6727@basil.fritz.box> <Pine.GSO.4.58.1006150951150.17579@dexter.ludd.ltu.se> <20100615114135.GH6727@basil.fritz.box> <Pine.GSO.4.58.1006151411370.17929@dexter.ludd.ltu.se> <20100615193519.GA12845@basil.fritz.box> <3B694326-F435-4A54-AC36-AE059AD9161D@ludd.ltu.se>
+	id S1757180Ab0FPJlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 05:41:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31703 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753162Ab0FPJk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 05:40:58 -0400
+Message-ID: <4C189C20.2070804@redhat.com>
+Date: Wed, 16 Jun 2010 12:40:48 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3B694326-F435-4A54-AC36-AE059AD9161D@ludd.ltu.se>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Andi Kleen <andi@firstfloor.org>
+CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>,
+       Huang Ying <ying.huang@intel.com>
+Subject: Re: [PATCH 3/6] KVM: MMU: introduce gfn_to_page_atomic() and	gfn_to_pfn_atomic()
+References: <4C16E6ED.7020009@cn.fujitsu.com> <4C16E75F.6020003@cn.fujitsu.com> <4C16E7AD.1060101@cn.fujitsu.com> <4C16E999.6050004@cn.fujitsu.com> <4C17625E.3020308@redhat.com> <20100616075918.GA17599@basil.fritz.box> <4C1885DF.80903@redhat.com> <20100616084900.GB17599@basil.fritz.box>
+In-Reply-To: <20100616084900.GB17599@basil.fritz.box>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/16/2010 11:49 AM, Andi Kleen wrote:
+>> The page is fine, the page tables are not.  Another task can munmap() the
+>> thing while is_hwpoison_address() is running.
+>>      
+> Ok  that boils down to me not seeing that source.
+>
+> If it accesses the page tables yes then it's racy. But whoever
+> looked up the page tables in the first place should have
+> returned an -EFAULT. There's no useful address attached
+> to poison.
+>    
 
-> Could you maybe give me an example from the board of your choosing
-> of a DMI table print out, explain the format and then show how to use it?
+We need to distinguish between genuine -EFAULT and poisoned address.
 
-The only requirement the current mcelog parser has is
-(that is what it actually uses, it parses more things but I abandoned
-them):
+That's why I suggested get_user_pages_ptes_fast.  You can return page = 
+NULL (-EFAULT) and the pte in the same go.  No race, and useful for 
+other cases.
 
-- List of DIMMs (type 17) 
-- It's useful if they have the correct size for display to the user.
-- Correct serial/part numbers/manufacturer are also useful (for display), but
-not strictly required.
-- Locator should match the silk screen label of the DIMM on the board
-- Bank Locator is in the format prefix_Node%u_Channel%u_Dimm%u
-prefix can be arbitary, but should not contain '_'
-Node matching SOCKETID coming from CPU, Channel matching Channel, Dimm
-matching Dimm number from CPU.
-This requirement is the only extension over the standard.
+-- 
+error compiling committee.c: too many arguments to function
 
--Andi
