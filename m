@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab0FPEwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 00:52:04 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49096
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751873Ab0FPEwB (ORCPT
+	id S1752645Ab0FPEzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 00:55:48 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33078 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab0FPEzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 00:52:01 -0400
-Date: Tue, 15 Jun 2010 21:52:12 -0700 (PDT)
-Message-Id: <20100615.215212.214211994.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, bhutchings@solarflare.com
-Subject: Re: linux-next: build warnings after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100616133854.1bbbbb37.sfr@canb.auug.org.au>
-References: <20100616133854.1bbbbb37.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 16 Jun 2010 00:55:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 16 Jun 2010 13:51:09 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+       Oleg Nesterov <oleg@redhat.com>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH] use find_lock_task_mm in memory cgroups oom v2
+Message-Id: <20100616135109.75b21f7c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTikGcl8l8TvSWx2Ij7I5E-TVjGplRU5YfX0mTAG0@mail.gmail.com>
+References: <20100615152450.f82c1f8c.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTinEEYWULLICKqBr4yX7GL01E4cq0jQSfuN8J6Jq@mail.gmail.com>
+	<20100616090334.d27e0c4e.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTikGcl8l8TvSWx2Ij7I5E-TVjGplRU5YfX0mTAG0@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 16 Jun 2010 13:38:54 +1000
+On Wed, 16 Jun 2010 10:12:20 +0530
+Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
 
-> After merging the net tree, today's linux-next build (x86_64 allmodconfig)
-> produced these warnings:
+> On Wed, Jun 16, 2010 at 5:33 AM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Tue, 15 Jun 2010 18:59:25 +0900
+> > Minchan Kim <minchan.kim@gmail.com> wrote:
+> >
+> >> > -/*
+> >> > +/**
+> >> > + * find_lock_task_mm - Checking a process which a task belongs to has valid mm
+> >> > + * and return a locked task which has a valid pointer to mm.
+> >> > + *
+> >>
+> >> This comment should have been another patch.
+> >> BTW, below comment uses "subthread" word.
+> >> Personally it's easy to understand function's goal to me. :)
+> >>
+> >> How about following as?
+> >> Checking a process which has any subthread with vaild mm
+> >> ....
+> >>
+> > Sure. thank you. v2 is here. I removed unnecessary parts.
+> >
+> > ==
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >
+> > When the OOM killer scans task, it check a task is under memcg or
+> > not when it's called via memcg's context.
+> >
+> > But, as Oleg pointed out, a thread group leader may have NULL ->mm
+> > and task_in_mem_cgroup() may do wrong decision. We have to use
+> > find_lock_task_mm() in memcg as generic OOM-Killer does.
+> >
+> > Changelog:
+> >  - removed unnecessary changes in comments.
+> >
 > 
-> In file included from drivers/usb/gadget/ether.c:123:
-> drivers/usb/gadget/rndis.c: In function 'gen_ndis_query_resp':
-> drivers/usb/gadget/rndis.c:197: warning: assignment from incompatible pointer type
-> In file included from drivers/usb/gadget/multi.c:67:
-> drivers/usb/gadget/rndis.c: In function 'gen_ndis_query_resp':
-> drivers/usb/gadget/rndis.c:197: warning: assignment from incompatible pointer type
-> In file included from drivers/usb/gadget/g_ffs.c:30:
-> drivers/usb/gadget/rndis.c: In function 'gen_ndis_query_resp':
-> drivers/usb/gadget/rndis.c:197: warning: assignment from incompatible pointer type
+> mm->owner solves the same problem, but unfortunately we have task
+> based selection in OOM killer, so we need this patch. It is quite
+> ironic that we find the mm from the task and then eventually the task
+> back from mm->owner and then the mem cgroup. If we already know the mm
+> from oom_kill.c, I think we can change the function to work off of
+> that. mm->owner->cgroup..no?
 > 
-> Introduced by commit be1f3c2c027cc5ad735df6a45a542ed1db7ec48b ("net:
-> Enable 64-bit net device statistics on 32-bit architectures").  This is a
-> call to dev_get_stats() and the return value is being assigned to a
-> "struct net_device_stats *".
 
-I've commited the patch below to deal with this, thanks for the report.
+There is no function as for_each_mm(). There is only for_each_process().
 
-There's some pre-existing warnings someone will need to deal with at
-some point:
+And, generally, there is no way to get a task via mm_struct.
+To send signal etc. we need task.
+(mm_owner is an option but not always configured and there will be
+ complicated problem as vfork() etc.)
 
-drivers/usb/gadget/rndis.c: whole file: warning: coding style is bolixed
+I think oom_kill.c has to depend on thread, not mm, unfortunately.
 
-:-)
 
->From fdb93f8ac39aa5902f3d264edd50dffcabfdd13b Mon Sep 17 00:00:00 2001
-From: David S. Miller <davem@davemloft.net>
-Date: Tue, 15 Jun 2010 21:50:14 -0700
-Subject: [PATCH] gadget/rndis: dev_get_stats() now returns rtnl_link_stats64.
-
-Based upon a report by Stephen Rothwell.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/usb/gadget/rndis.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/gadget/rndis.c b/drivers/usb/gadget/rndis.c
-index 5c0d06c..fb69b01 100644
---- a/drivers/usb/gadget/rndis.c
-+++ b/drivers/usb/gadget/rndis.c
-@@ -171,7 +171,7 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
- 	int			i, count;
- 	rndis_query_cmplt_type	*resp;
- 	struct net_device	*net;
--	const struct net_device_stats	*stats;
-+	const struct rtnl_link_stats64 *stats;
- 
- 	if (!r) return -ENOMEM;
- 	resp = (rndis_query_cmplt_type *) r->buf;
--- 
-1.7.0.4
+Thanks,
+-Kame
 
