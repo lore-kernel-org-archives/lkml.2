@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab0FPPCl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 11:02:41 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54758 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114Ab0FPPCi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 11:02:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WG4eXL2UzQ7v1HJd4LciDhgoytijsCYUTTSMLN1gzKHxp7Bf+euDR/vsawwhQviNmr
-         y283vuDbcrL3uhMGqugHAoJLGxWCHjhMVdogH6oqC80O5uZ5IZiJrgpVgnoOtWdAd/XW
-         zTFsgpXk7M97eS/l41kMbpfUZJRTfdthoxPC4=
-Date: Thu, 17 Jun 2010 00:02:32 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 3/9] oom: oom_kill_process() doesn't select kthread
- child
-Message-ID: <20100616150232.GC9278@barrios-desktop>
-References: <20100616201948.72D7.A69D9226@jp.fujitsu.com>
- <20100616203126.72DD.A69D9226@jp.fujitsu.com>
+	id S1758966Ab0FPPD2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 11:03:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53117 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755114Ab0FPPD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 11:03:26 -0400
+Date: Wed, 16 Jun 2010 17:03:22 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Brian Bloniarz <bmb@athenacr.com>
+Cc: Chris Wedgwood <cw@f00f.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       Jef Driesen <jefdriesen@telenet.be>, linux-kernel@vger.kernel.org,
+       Mike Galbraith <efault@gmx.de>
+Subject: Re: Slow pty's (was Re: libdivecomputer interfaces?)
+In-Reply-To: <4C116652.8010408@athenacr.com>
+Message-ID: <alpine.LRH.2.00.1006161702470.2497@twin.jikos.cz>
+References: <AANLkTinLth4iKXAwszEEsPm_9ZDlj8HtqsiG5cdFE1cZ@mail.gmail.com> <20100610181042.GA19210@puku.stupidest.org> <4C116652.8010408@athenacr.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100616203126.72DD.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 08:32:08PM +0900, KOSAKI Motohiro wrote:
-> Now, select_bad_process() have PF_KTHREAD check, but oom_kill_process
-> doesn't. It mean oom_kill_process() may choose wrong task, especially,
-> when the child are using use_mm().
-Now oom_kill_process is called by three place. 
+On Thu, 10 Jun 2010, Brian Bloniarz wrote:
 
-1. mem_cgroup_out_of_memory
-2. out_of_memory with sysctl_oom_kill_allocating_task
-3. out_of_memory with non-sysctl_oom_kill_allocating_task
+> On 06/10/2010 02:10 PM, Chris Wedgwood wrote:
+> > (sorry if this reponse isn't on target, i was just pointed to this
+> > thread a few minutes ago)
+> > 
+> > 
+> > On Thu, Jun 10, 2010 at 10:25:36AM -0700, Linus Torvalds wrote:
+> > 
+> >>  I thought we long since (ie back last fall) fixed the latency
+> >> problems with pty's, but there does seem to be something very fishy
+> >> going on there still.
+> > 
+> > this might not be related, but i have slow serial ports with NOHZ that
+> > goes away when i revert 39c0cbe2150cbd848a25ba6cdb271d1ad46818ad.
+> 
+> Unrelated or not, I think Chris is right about this. Somewhere before
+> -rc1, the emulated serial console on my KVM instance became slow
+> to echo input. I just tested with the commit reverted and it's
+> back to normal.
 
-I think it's no problem in 1 and 3 since select_bad_process already checks
-PF_KTHREAD. The problem in in 2. 
-So How about put the check before calling oom_kill_process in case of
-sysctl_oom_kill_allocating task?
+So let's CC Mike then.
 
-if (sysctl_oom_kill_allocating_task) {
-        if (!current->flags & PF_KTHREAD)
-                oom_kill_process();
-                        
-It can remove duplicated PF_KTHREAD check in select_bad_process and
-oom_kill_process. 
+> 
+> > commit 39c0cbe2150cbd848a25ba6cdb271d1ad46818ad
+> > Author: Mike Galbraith <efault@gmx.de>
+> > Date:   Thu Mar 11 17:17:13 2010 +0100
+> > 
+> >     sched: Rate-limit nohz
+> > 
+> >     Entering nohz code on every micro-idle is costing ~10% throughput for netperf
+> >     TCP_RR when scheduling cross-cpu.  Rate limiting entry fixes this, but raises
+> >     ticks a bit.  On my Q6600, an idle box goes from ~85 interrupts/sec to 128.
+> > 
+> >     The higher the context switch rate, the more nohz entry costs.  With this patch
+> >     and some cycle recovery patches in my tree, max cross cpu context switch rate is
+> >     improved by ~16%, a large portion of which of which is this ratelimiting.
+> > 
+> > and looking at the only two interesting hunks it's not clear why:
+> > 
+> > +int nohz_ratelimit(int cpu)
+> > +{
+> > +       struct rq *rq = cpu_rq(cpu);
+> > +       u64 diff = rq->clock - rq->nohz_stamp;
+> > +
+> > +       rq->nohz_stamp = rq->clock;
+> > +
+> > +       return diff < (NSEC_PER_SEC / HZ) >> 1;
+> > +}
+> > 
+> > +       if (nohz_ratelimit(cpu))
+> > +               goto end;
+> > +
+> > 
+> > network latnecy is fine, and if i create lots of wakeups (network IO
+> > is fine) then the serial port latency is noticable
 
 -- 
-Kind regards,
-Minchan Kim
+Jiri Kosina
+SUSE Labs, Novell Inc.
+
