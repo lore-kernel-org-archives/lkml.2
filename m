@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520Ab0FPUQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 16:16:54 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:39110 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932220Ab0FPUQv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 16:16:51 -0400
-Subject: Re: [PATCH v3] drivers: regulator: add Maxim 8998 driver
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-       kyungmin.park@samsung.com,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <20100616143041.GC24491@rakim.wolfsonmicro.main>
-References: <1276671856-18902-1-git-send-email-m.szyprowski@samsung.com>
-	 <20100616143041.GC24491@rakim.wolfsonmicro.main>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Jun 2010 21:16:43 +0100
-Message-ID: <1276719403.3028.50.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1759507Ab0FPUSu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 16:18:50 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46029 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752583Ab0FPUSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 16:18:48 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ondrej Zary <linux@rainbow-software.org>
+Subject: Re: [Regression, post-2.6.34] Hibernation broken on machines with radeon/KMS and r300
+Date: Wed, 16 Jun 2010 22:16:49 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       "dri-devel" <dri-devel@lists.freedesktop.org>
+References: <201006141653.03879.rjw@sisk.pl> <201006160107.54822.rjw@sisk.pl> <201006160811.43926.linux@rainbow-software.org>
+In-Reply-To: <201006160811.43926.linux@rainbow-software.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006162216.49756.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-16 at 15:30 +0100, Mark Brown wrote:
-> On Wed, Jun 16, 2010 at 09:04:16AM +0200, Marek Szyprowski wrote:
-> > From: Kyungmin Park <kyungmin.park@samsung.com>
-> > 
-> > This patch adds voltage regulator driver for Maxim 8998 chip. This chip
-> > is used on Samsung Aquila and GONI boards and provides following
-> > functionalities:
-> > - 4 BUCK voltage converters, 17 LDO power regulators and 5 other power
-> >   controllers
-> > - battery charger
-> > 
-> > This patch adds basic driver for voltage regulators and MAX 8998 MFD core.
-> > 
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+On Wednesday, June 16, 2010, Ondrej Zary wrote:
+> On Wednesday 16 June 2010, Rafael J. Wysocki wrote:
+> > On Tuesday, June 15, 2010, Rafael J. Wysocki wrote:
+> > > On Monday, June 14, 2010, Alex Deucher wrote:
+> > > > On Mon, Jun 14, 2010 at 3:03 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > > > On Monday, June 14, 2010, Alex Deucher wrote:
+> > > > >> On Mon, Jun 14, 2010 at 10:53 AM, Rafael J. Wysocki <rjw@sisk.pl> 
+> wrote:
+> > > > >> > Alex, Dave,
+> > > > >> >
+> > > > >> > I'm afraid hibernation is broken on all machines using radeon/KMS
+> > > > >> > with r300 after commit ce8f53709bf440100cb9d31b1303291551cf517f
+> > > > >> > (drm/radeon/kms/pm: rework power management).  At least, I'm able
+> > > > >> > to reproduce the symptom, which is that the machine hangs hard
+> > > > >> > around the point where an image is created (probably during the
+> > > > >> > device thaw phase), on two different boxes with r300 (the output
+> > > > >> > of lspci from one of them is attached for reference, the other one
+> > > > >> > is HP nx6325).
+> > > > >> >
+> > > > >> > Suspend to RAM appears to work fine at least on one of the
+> > > > >> > affected boxes.
+> > > > >> >
+> > > > >> > Unfortunately, the commit above changes a lot of code and it's not
+> > > > >> > too easy to figure out what's wrong with it and I didn't have the
+> > > > >> > time to look more into details of this failure.  However, it looks
+> > > > >> > like you use .suspend() and .resume() callbacks as .freeze() and
+> > > > >> > .thaw() which may not be 100% correct (in fact it looks like the
+> > > > >> > "legacy" PCI suspend/resume is used, which is not recommended any
+> > > > >> > more).
+> > > > >>
+> > > > >> Does it work any better after Dave's last drm pull request?
+> > > > >
+> > > > > Nope.  The symptom is slightly different, though, because now it
+> > > > > hangs after turning off the screen.
+> > > > >
+> > > > >> With the latest changes, pm should not be a factor unless it's
+> > > > >> explicitly enabled via sysfs.
+> > > > >
+> > > > > Well, I guess the first pm patch changed more than just pm, then.
+> > > >
+> > > > Does this patch help?
+> > > > http://lists.freedesktop.org/archives/dri-devel/2010-June/001314.html
+> > >
+> > > No, it doesn't.  I try to hibernate, everything works to the point where
+> > > the screen goes off and the box hangs (solid).  Normally, it would turn
+> > > the screen back on and continue with saving the image.
+> > >
+> > > But, since that happens with the patch above applied, I think it doesn't
+> > > really pass the suspend phase (IOW, it probably hangs somewhere in the
+> > > radeon's suspend routine).
+> >
+> > I've just verified that in fact hibernation works on HP nx6325 with
+> > 2.6.35-rc3, but it takes about 55 sec. to suspend the graphics adapter in
+> > the "freeze" phase.  Surprisingly enough, during suspend to RAM it works
+> > normally (as well as in the "poweroff" phase of hibernation).
 > 
-> Looks good!
-> 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> It takes 2 minutes on RV530: 
+> https://bugzilla.redhat.com/show_bug.cgi?id=586522
 
-Samuel, I can take the whole patch via regulator if necessary (providing
-I have your SoB for the mfd part).
+Well, my second affected box appears to hang somewhere in the radeon's suspend
+routine.
 
-Thanks
-
-Liam
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+Rafael
