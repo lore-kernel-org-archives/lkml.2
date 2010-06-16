@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759451Ab0FPTH6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 15:07:58 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:58806 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759440Ab0FPTH4 (ORCPT
+	id S1759436Ab0FPTLV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 15:11:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:50185 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759022Ab0FPTLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 15:07:56 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
-	b=nh3IRd0oge7/vOXTkx5RanmJFAOiHRSz5L4sLcDmc0XtMGNWd4MFy5So9LS7pzaiL
-	HJ/JxI3g6VhrpQt5fMpmw==
-Message-ID: <4c192107.4f1ee30a.4316.fffff98e@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Wed, 16 Jun 2010 20:59:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-       fweisbec@gmail.com, acme@infradead.org, perfmon2-devel@lists.sf.net,
-       eranian@gmail.com, eranian@google.com
-Subject: [PATCH] perf: avoid synthesizing mmap() for all processes in per-thread mode perf record
-X-System-Of-Record: true
+	Wed, 16 Jun 2010 15:11:19 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Valerie Aurora <vaurora@redhat.com>
+Subject: Re: [PATCH] d_ino considered harmful
+Date: Wed, 16 Jun 2010 21:10:42 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.35-rc1-00090-g358f4b6; KDE/4.4.2; x86_64; ; )
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Christoph Hellwig <hch@infradead.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+       Jamie Lokier <jamie@shareable.org>,
+       David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+References: <20100616185913.GA15566@shell>
+In-Reply-To: <20100616185913.GA15566@shell>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006162110.43322.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX18cj6cS7dkz2x7WjVZHZgey9sbngFIPbfqleWi
+ cXk7wpqgc1WoYvBMkvZgMAx1At1cF4CgrCy0PV1Rxb8YH+f+pt
+ 51fMyqcglsqbbjbIwzWCA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bug was introduced by commit c45c6ea2e5c57960dc67e00294c2b78e9540c007.
+On Wednesday 16 June 2010 20:59:13 Valerie Aurora wrote:
+> @@ -91,7 +91,9 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
+>  
+>         if (buf->result)
+>                 return -EINVAL;
+> -       d_ino = ino;
+> +       /* Use of d_ino without st_dev is always buggy. */
+> +       d_ino = 0;
+> +
+>         if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
+>                 buf->result = -EOVERFLOW;
+>                 return -EOVERFLOW;
 
-Perf record was scanning /proc/PID to create synthetic PERF_RECOR_MMAP
-entries even though it was running in per-thread mode. There was a bogus
-check to select what mmaps to synthesize. We only need all processes in
-system-wide mode.
+Isn't this just the path taken by sys_oldreaddir?
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Glibc (at least on my box) translates all user calls to readdir into
+sys_getdents or sys_getdents64, so I think you'd also need to change
+filldir() and filldir64() for your testing.
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 39c7247..5efc3fc 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -714,7 +714,7 @@ static int __cmd_record(int argc, const char **argv)
- 	if (perf_guest)
- 		perf_session__process_machines(session, event__synthesize_guest_os);
- 
--	if (!system_wide && cpu_list)
-+	if (!system_wide)
- 		event__synthesize_thread(target_tid, process_synthesized_event,
- 					 session);
- 	else
+	Arnd
