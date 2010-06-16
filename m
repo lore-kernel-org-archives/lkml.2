@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab0FPJYH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 05:24:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60427 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057Ab0FPJYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 05:24:05 -0400
-Message-ID: <4C189830.2070300@redhat.com>
-Date: Wed, 16 Jun 2010 12:24:00 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1755973Ab0FPJZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 05:25:06 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:46728 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab0FPJZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 05:25:04 -0400
+X-AuditID: b753bd60-a9cd2ba000005dcc-48-4c18986de75d
+Message-ID: <4C189868.8050900@hitachi.com>
+Date: Wed, 16 Jun 2010 18:24:56 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [RFC][PATCH 9/9] make kvm mmu shrinker more aggressive
-References: <20100615135518.BC244431@kernel.beaverton.ibm.com> <20100615135530.4565745D@kernel.beaverton.ibm.com>
-In-Reply-To: <20100615135530.4565745D@kernel.beaverton.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: DLE <dle-develop@lists.sourceforge.net>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jason Baron <jbaron@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Ingo Molnar <mingo@elte.hu>, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [Dle-develop] [PATCH -tip v3 3/5] x86: Introduce	text_poke_smp_batch()
+ for	batch-code modifying
+References: <20100519165305.31828.15577.stgit@localhost6.localdomain6>	<20100519165326.31828.43183.stgit@localhost6.localdomain6> <20100615121804.GA5342@nowhere>
+In-Reply-To: <20100615121804.GA5342@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 04:55 PM, Dave Hansen wrote:
-> In a previous patch, we removed the 'nr_to_scan' tracking.
-> It was not being used to track the number of objects
-> scanned, so we stopped using it entirely.  Here, we
-> strart using it again.
->
-> The theory here is simple; if we already have the refcount
-> and the kvm->mmu_lock, then we should do as much work as
-> possible under the lock.  The downside is that we're less
-> fair about the KVM instances from which we reclaim.  Each
-> call to mmu_shrink() will tend to "pick on" one instance,
-> after which it gets moved to the end of the list and left
-> alone for a while.
->    
+Frederic Weisbecker wrote:
+> On Wed, May 19, 2010 at 12:53:26PM -0400, Masami Hiramatsu wrote:
+>> Introduce text_poke_smp_batch(). This function modifies several
+>> text areas with one stop_machine() on SMPr. Because calling
+>> stop_machine() is heavy task, it is better to aggregate text_poke
+>> requests.
+>>
+>> Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+>> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+>> Cc: Ingo Molnar <mingo@elte.hu>
+>> Cc: Jim Keniston <jkenisto@us.ibm.com>
+>> Cc: Jason Baron <jbaron@redhat.com>
+>> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> <snip>
+>> +/**
+>> + * text_poke_smp_batch - Update instructions on a live kernel on SMP
+>> + * @params: an array of text_poke parameters
+>> + * @n: the number of elements in params.
+>> + *
+>> + * Modify multi-byte instruction by using stop_machine() on SMP. Since the
+>> + * stop_machine() is heavy task, it is better to aggregate text_poke requests
+>> + * and do it once if possible.
+>> + *
+>> + * Note: Must be called under get_online_cpus() and text_mutex.
+>> + */
+>> +void __kprobes text_poke_smp_batch(struct text_poke_param *params, int n)
+>> +{
+>> +	struct text_poke_params tpp = {.params = params, .nparams = n};
+>> +
+>> +	atomic_set(&stop_machine_first, 1);
+>> +	wrote_text = 0;
+>> +	stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
+>> +}
+> 
+> 
+> Looks good. But wouldn't it be even better to get stop_machine()
+> be able to support batches itself?
+> 
+> We could have stop_machine_queue() and stop_machine_flush(),
+> stop_machine() would be a shortcut for both, to execute single jobs,
+> may be that could simplify some code here and there.
+> 
 
-That also increases the latency hit, as well as a potential fault storm, 
-on that instance.  Spreading out is less efficient, but smoother.
+Ah, that's nice too :) But I don't know other people who need
+that interfaces. Would you know there are any other potential users?
 
-> If mmu_shrink() has already done a significant amount of
-> scanning, the use of 'nr_to_scan' inside shrink_kvm_mmu()
-> will also ensure that we do not over-reclaim when we have
-> already done a lot of work in this call.
->
-> In the end, this patch defines a "scan" as:
-> 1. An attempt to acquire a refcount on a 'struct kvm'
-> 2. freeing a kvm mmu page
->
-> This would probably be most ideal if we can expose some
-> of the work done by kvm_mmu_remove_some_alloc_mmu_pages()
-> as also counting as scanning, but I think we have churned
-> enough for the moment.
->    
-
-It usually removes one page.
-
-> Signed-off-by: Dave Hansen<dave@linux.vnet.ibm.com>
-> ---
->
->   linux-2.6.git-dave/arch/x86/kvm/mmu.c |   11 ++++++-----
->   1 file changed, 6 insertions(+), 5 deletions(-)
->
-> diff -puN arch/x86/kvm/mmu.c~make-shrinker-more-aggressive arch/x86/kvm/mmu.c
-> --- linux-2.6.git/arch/x86/kvm/mmu.c~make-shrinker-more-aggressive	2010-06-14 11:30:44.000000000 -0700
-> +++ linux-2.6.git-dave/arch/x86/kvm/mmu.c	2010-06-14 11:38:04.000000000 -0700
-> @@ -2935,8 +2935,10 @@ static int shrink_kvm_mmu(struct kvm *kv
->
->   	idx = srcu_read_lock(&kvm->srcu);
->   	spin_lock(&kvm->mmu_lock);
-> -	if (kvm->arch.n_used_mmu_pages>  0)
-> -		freed_pages = kvm_mmu_remove_some_alloc_mmu_pages(kvm);
-> +	while (nr_to_scan>  0&&  kvm->arch.n_used_mmu_pages>  0) {
-> +		freed_pages += kvm_mmu_remove_some_alloc_mmu_pages(kvm);
-> +		nr_to_scan--;
-> +	}
->    
-
-What tree are you patching?
-
--- 
-error compiling committee.c: too many arguments to function
-
+Thank you,
