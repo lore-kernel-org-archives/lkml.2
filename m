@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab0FPH5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 03:57:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39543 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753101Ab0FPH5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 03:57:30 -0400
-Date: Wed, 16 Jun 2010 17:57:23 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>
-Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
- and use a_ops->writepages() where possible
-Message-ID: <20100616075723.GT6138@laptop>
-References: <20100615141122.GA27893@infradead.org>
- <20100615142219.GE28052@random.random>
- <20100615144342.GA3339@infradead.org>
- <20100615150850.GF28052@random.random>
- <20100615152526.GA3468@infradead.org>
- <20100615154516.GG28052@random.random>
- <20100615162600.GA9910@infradead.org>
- <4C17AF2D.2060904@redhat.com>
- <20100615165423.GA16868@infradead.org>
- <4C17D0C5.9030203@redhat.com>
-MIME-Version: 1.0
+	id S1755726Ab0FPH6q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 03:58:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34294 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753718Ab0FPH6o convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 03:58:44 -0400
+Subject: Re: [PATCH v2] soc/sh: Fix I2C dependency for SND_FSI_AK4642 and SND_FSI_DA7210
+Mime-Version: 1.0 (Apple Message framework v1078)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C17D0C5.9030203@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <20100616074947.GC29614@linux-sh.org> (sfid-20100616_085006_460441_D8011665)
+Date: Wed, 16 Jun 2010 08:58:41 +0100
+Cc: Peter Huewe <PeterHuewe@gmx.de>, Liam Girdwood <lrg@slimlogic.co.uk>,
+       linux-sh@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
+       Takashi Iwai <tiwai@suse.de>,
+       Kuninori Morimoto <morimoto.kuninori@renesas.com>,
+       Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+       alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B480F429-3819-4086-8576-F0A1B0FC093C@opensource.wolfsonmicro.com>
+References: <201006141739.42346.PeterHuewe@gmx.de> <201006151649.07554.PeterHuewe@gmx.de> <20100615151913.GJ14510@rakim.wolfsonmicro.main> <201006151738.56143.PeterHuewe@gmx.de> <20100616035440.GA29614@linux-sh.org> <250A6DE6-BB14-42F7-9500-A479C8FCA9B3@opensource.wolfsonmicro.com> <20100616074947.GC29614@linux-sh.org> (sfid-20100616_085006_460441_D8011665)
+To: Paul Mundt <lethal@linux-sh.org>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 03:13:09PM -0400, Rik van Riel wrote:
-> On 06/15/2010 12:54 PM, Christoph Hellwig wrote:
-> >On Tue, Jun 15, 2010 at 12:49:49PM -0400, Rik van Riel wrote:
-> >>This is already in a filesystem.  Why does ->writepage get
-> >>called a second time?  Shouldn't this have a gfp_mask
-> >>without __GFP_FS set?
-> >
-> >Why would it?  GFP_NOFS is not for all filesystem code, but only for
-> >code where we can't re-enter the filesystem due to deadlock potential.
-> 
-> Why?   How about because you know the stack is not big enough
-> to have the XFS call path on it twice? :)
-> 
-> Isn't the whole purpose of this patch series to prevent writepage
-> from being called by the VM, when invoked from a deep callstack
-> like xfs writepage?
-> 
-> That sounds a lot like simply wanting to not have GFP_FS...
+On 16 Jun 2010, at 08:49, Paul Mundt wrote:
+> On Wed, Jun 16, 2010 at 08:43:33AM +0100, Mark Brown wrote:
 
-buffered write path uses __GFP_FS by design because huge amounts
-of (dirty) memory can be allocated in doing pagecache writes. If
-would be nasty if that was not allowed to wait for filesystem
-activity.
+>> Since these are board specific drivers they know which I2C controller they are
+>> hooked up to and so can usefully depend on a specific controller - without the
+>> correct controller driver they will not function.
 
+> I don't really mind one way or the other. Having it depend on the
+> controller is fine, but it's not really much of a stretch to expect it to
+> show up on other boards with other controllers as well.
+
+This is the driver for the board itself and its wiring - it's not a chip driver, it's
+the driver that says how the chips on a given board are connected. For new
+boards I'd expect you'd end up with a new driver.
