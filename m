@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759369Ab0FPRsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 13:48:18 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:33473
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756328Ab0FPRsQ (ORCPT
+	id S1759365Ab0FPRtA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 13:49:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50460 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755112Ab0FPRs6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 13:48:16 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zz98dN936eM62a3Lzz1202hzzz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L44C46-01-RFZ-02
-X-M-MSG: 
-Date: Wed, 16 Jun 2010 19:48:04 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+	Wed, 16 Jun 2010 13:48:58 -0400
+Subject: Re: [RFC][PATCH 4/8] perf: Unindent labels
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
        Yanmin <yanmin_zhang@linux.intel.com>,
        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 6/8] perf: Per PMU disable
-Message-ID: <20100616174804.GT21799@erda.amd.com>
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100616171611.GB5530@nowhere>
 References: <20100616160027.590430763@chello.nl>
- <20100616160238.529009255@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100616160238.529009255@chello.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	 <20100616160238.347022826@chello.nl>  <20100616171611.GB5530@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 16 Jun 2010 19:48:43 +0200
+Message-ID: <1276710523.1745.609.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.06.10 12:00:33, Peter Zijlstra wrote:
-> Changes perf_disable() into perf_disable_pmu().
+On Wed, 2010-06-16 at 19:16 +0200, Frederic Weisbecker wrote:
 
-I would rather use perf_pmu_disable() as this uses the perf_pmu_XXX
-namespace.
+> The point in having a space before the label starts is that it doesn't
+> appear as a function boundary in patches.
+> 
+> This avoid patches that look like:
+> 
+> @@ -xxx +yyy @@ out:
+> -	blah
+> 
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
-
+Yeah, fix diff already ;-)
