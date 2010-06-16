@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab0FPJQb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 05:16:31 -0400
-Received: from verein.lst.de ([213.95.11.210]:51290 "EHLO verein.lst.de"
+	id S1755826Ab0FPJYH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 05:24:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60427 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249Ab0FPJQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 05:16:30 -0400
-Date: Wed, 16 Jun 2010 11:16:21 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86-32: remove CONFIG_4KSTACKS
-Message-ID: <20100616091621.GA4486@lst.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S1753057Ab0FPJYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 05:24:05 -0400
+Message-ID: <4C189830.2070300@redhat.com>
+Date: Wed, 16 Jun 2010 12:24:00 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [RFC][PATCH 9/9] make kvm mmu shrinker more aggressive
+References: <20100615135518.BC244431@kernel.beaverton.ibm.com> <20100615135530.4565745D@kernel.beaverton.ibm.com>
+In-Reply-To: <20100615135530.4565745D@kernel.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These days 4 kilobytes of stack just aren't enough for reliably operation,
-and people using lots of threads have long switched to x86-64, so remove the
-CONFIG_4KSTACKS option.
+On 06/15/2010 04:55 PM, Dave Hansen wrote:
+> In a previous patch, we removed the 'nr_to_scan' tracking.
+> It was not being used to track the number of objects
+> scanned, so we stopped using it entirely.  Here, we
+> strart using it again.
+>
+> The theory here is simple; if we already have the refcount
+> and the kvm->mmu_lock, then we should do as much work as
+> possible under the lock.  The downside is that we're less
+> fair about the KVM instances from which we reclaim.  Each
+> call to mmu_shrink() will tend to "pick on" one instance,
+> after which it gets moved to the end of the list and left
+> alone for a while.
+>    
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+That also increases the latency hit, as well as a potential fault storm, 
+on that instance.  Spreading out is less efficient, but smoother.
 
-Index: linux-2.6/arch/x86/Kconfig.debug
-===================================================================
---- linux-2.6.orig/arch/x86/Kconfig.debug	2010-06-16 10:24:06.902272433 +0200
-+++ linux-2.6/arch/x86/Kconfig.debug	2010-06-16 10:24:11.837068354 +0200
-@@ -121,15 +121,6 @@ config DEBUG_NX_TEST
- 	  and the software setup of this feature.
- 	  If in doubt, say "N"
- 
--config 4KSTACKS
--	bool "Use 4Kb for kernel stacks instead of 8Kb"
--	depends on X86_32
--	---help---
--	  If you say Y here the kernel will use a 4Kb stacksize for the
--	  kernel stack attached to each process/thread. This facilitates
--	  running more threads on a system and also reduces the pressure
--	  on the VM subsystem for higher order allocations.
--
- config DOUBLEFAULT
- 	default y
- 	bool "Enable doublefault exception handler" if EMBEDDED
-Index: linux-2.6/arch/x86/include/asm/module.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/module.h	2010-06-16 10:24:06.922004449 +0200
-+++ linux-2.6/arch/x86/include/asm/module.h	2010-06-16 10:24:23.255291640 +0200
-@@ -60,12 +60,7 @@
- #endif
- 
- #ifdef CONFIG_X86_32
--# ifdef CONFIG_4KSTACKS
--#  define MODULE_STACKSIZE "4KSTACKS "
--# else
--#  define MODULE_STACKSIZE ""
--# endif
--# define MODULE_ARCH_VERMAGIC MODULE_PROC_FAMILY MODULE_STACKSIZE
-+# define MODULE_ARCH_VERMAGIC MODULE_PROC_FAMILY
- #endif
- 
- #endif /* _ASM_X86_MODULE_H */
-Index: linux-2.6/arch/x86/include/asm/page_32_types.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/page_32_types.h	2010-06-16 10:24:06.933273132 +0200
-+++ linux-2.6/arch/x86/include/asm/page_32_types.h	2010-06-16 10:24:30.251005496 +0200
-@@ -15,11 +15,7 @@
-  */
- #define __PAGE_OFFSET		_AC(CONFIG_PAGE_OFFSET, UL)
- 
--#ifdef CONFIG_4KSTACKS
--#define THREAD_ORDER	0
--#else
- #define THREAD_ORDER	1
--#endif
- #define THREAD_SIZE 	(PAGE_SIZE << THREAD_ORDER)
- 
- #define STACKFAULT_STACK 0
+> If mmu_shrink() has already done a significant amount of
+> scanning, the use of 'nr_to_scan' inside shrink_kvm_mmu()
+> will also ensure that we do not over-reclaim when we have
+> already done a lot of work in this call.
+>
+> In the end, this patch defines a "scan" as:
+> 1. An attempt to acquire a refcount on a 'struct kvm'
+> 2. freeing a kvm mmu page
+>
+> This would probably be most ideal if we can expose some
+> of the work done by kvm_mmu_remove_some_alloc_mmu_pages()
+> as also counting as scanning, but I think we have churned
+> enough for the moment.
+>    
+
+It usually removes one page.
+
+> Signed-off-by: Dave Hansen<dave@linux.vnet.ibm.com>
+> ---
+>
+>   linux-2.6.git-dave/arch/x86/kvm/mmu.c |   11 ++++++-----
+>   1 file changed, 6 insertions(+), 5 deletions(-)
+>
+> diff -puN arch/x86/kvm/mmu.c~make-shrinker-more-aggressive arch/x86/kvm/mmu.c
+> --- linux-2.6.git/arch/x86/kvm/mmu.c~make-shrinker-more-aggressive	2010-06-14 11:30:44.000000000 -0700
+> +++ linux-2.6.git-dave/arch/x86/kvm/mmu.c	2010-06-14 11:38:04.000000000 -0700
+> @@ -2935,8 +2935,10 @@ static int shrink_kvm_mmu(struct kvm *kv
+>
+>   	idx = srcu_read_lock(&kvm->srcu);
+>   	spin_lock(&kvm->mmu_lock);
+> -	if (kvm->arch.n_used_mmu_pages>  0)
+> -		freed_pages = kvm_mmu_remove_some_alloc_mmu_pages(kvm);
+> +	while (nr_to_scan>  0&&  kvm->arch.n_used_mmu_pages>  0) {
+> +		freed_pages += kvm_mmu_remove_some_alloc_mmu_pages(kvm);
+> +		nr_to_scan--;
+> +	}
+>    
+
+What tree are you patching?
+
+-- 
+error compiling committee.c: too many arguments to function
+
