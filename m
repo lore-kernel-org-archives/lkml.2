@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab0FPJ3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 05:29:23 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:53846 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776Ab0FPJ3U convert rfc822-to-8bit (ORCPT
+	id S1755933Ab0FPJbK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 05:31:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58465 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab0FPJbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 05:29:20 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Wed, 16 Jun 2010 11:30:09 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH] USB: gadget: g_fs: possible invalid pointer reference bug
- fixed
-In-reply-to: <4C17519C.5080209@ru.mvista.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: linux-usb@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <op.vedzcjyz7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <f8fbee30a711b740b5875514715c3c58b4eb196c.1276170819.git.m.nazarewicz@samsung.com>
- <4C17519C.5080209@ru.mvista.com>
+	Wed, 16 Jun 2010 05:31:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=n2r1kUu3GyRCLRa1q3rOCBj+xJyjcZ40AaAOGXg5SJ0lGhlkqo6K1xVb8jJVvfQn8C
+         cVpgmSBRUhmezrvjBMge4aTqzgZokRNRY7831hOGdoMVCbt9UhBef93wm5UN1RMEzkwD
+         bc5Cj3EJit3gKu4GaoV4yxCP4/1RWJYq9rle4=
+Date: Wed, 16 Jun 2010 12:34:42 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Jiri Slaby <jslaby@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] avoid using smp_processor_id() in preemptible code
+ (nr_iowait_cpu)
+Message-ID: <20100616093442.GA4230@swordfish.minsk.epam.com>
+References: <20100614145439.GA3448@swordfish.minsk.epam.com>
+ <20100614080154.7d6a71fc@infradead.org>
+ <20100614151735.GB3448@swordfish.minsk.epam.com>
+ <20100614204021.52c50cdc@infradead.org>
+ <20100615061927.GA3312@swordfish>
+ <20100615072435.5a47d850@infradead.org>
+ <20100615145029.GB3967@swordfish.minsk.epam.com>
+ <20100615080808.6286448b@infradead.org>
+ <20100615161303.GA4102@swordfish.minsk.epam.com>
+ <20100615230541.5db5078e@infradead.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
+Content-Disposition: inline
+In-Reply-To: <20100615230541.5db5078e@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Michal Nazarewicz wrote:
->> diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
->> index 2f26470..da3a9e4 100644
->> --- a/drivers/usb/gadget/g_ffs.c
->> +++ b/drivers/usb/gadget/g_ffs.c
->> @@ -392,6 +392,17 @@ static int __gfs_do_config(struct usb_configuration *c,
->>  	if (unlikely(ret < 0))
->>  		return ret;
->>
->> +	/* After previous do_configs there may be some invalid
->> +	 * pointers in c->interface array.  This happens every time
->> +	 * a user space function with fewer interfaces than a user
->> +	 * space function that was run before the new one is run.  The
->> +	 * compasit's set_config() assumes that if there is no more
->> +	 * then MAX_CONFIG_INTERFACES interfaces in a configuration
->> +	 * then there is a NULL pointer after the last interface in
->> +	 * c->interface array.  We need to make sure this is true. */
 
-On Tue, 15 Jun 2010 12:10:36 +0200, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
->     According to CodingStyle, the preferred style of the multi-line comments
-> is this:
->
-> /*
->   * bla
->   * bla
->   */
+--ZGiS0Q5IWpPtfppv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You are of course correct but on the other hand I have consistently used
-the incorrect form so far also in g_ffs.c so...  I think correcting only
-this comment would bring inconsistency so I should rather resend it with
-other (two) comments corrected as well.  Anyone thinks I should do that?
+On (06/15/10 23:05), Arjan van de Ven wrote:
+> can we do this bit once, when the ts structure gets initialized?
+> it's not like the cpu value will ever change...
+>=20
+>=20
+Hello Arjan,
 
-And I promise, I will remember to use the correct format in my future
-files.
+Sure we can. The question is where is the "proper place"?
+for_each_possible_cpu in __init?
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+or something like=20
+
+static DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
+int cpu =3D get_cpu();
+&per_cpu(tick_cpu_sched, cpu)->cpu =3D cpu;
+put_cpu();
+
+
+	Sergey
+
+--ZGiS0Q5IWpPtfppv
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iJwEAQECAAYFAkwYmrIACgkQfKHnntdSXjTicQP+O7zv/3k+yZTVeijM1CkXnD0s
+aZEPwo8rydiZVEp/5aNT/6n8c+4PDkgZ8KgoGKbUu/u6t7hV08uz2rvD3skKM+UR
+3QnsiwcVq+kKVHlf80ztYTqVDLB5J0SjjPElWkixt70o2DzjKY4gDxGgB2JceJDs
+xvkPcrVuhm8obfW78x8=
+=ERuC
+-----END PGP SIGNATURE-----
+
+--ZGiS0Q5IWpPtfppv--
