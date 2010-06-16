@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab0FPPoE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 11:44:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35447 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932136Ab0FPPoA (ORCPT
+	id S1754815Ab0FPPpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 11:45:05 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43044 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab0FPPpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 11:44:00 -0400
-Date: Wed, 16 Jun 2010 16:43:58 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Huewe <PeterHuewe@gmx.de>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-sh@vger.kernel.org,
-       Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-       Kuninori Morimoto <morimoto.kuninori@renesas.com>,
-       Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-       alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] soc/sh: Fix I2C dependency for SND_FSI_AK4642 and
- SND_FSI_DA7210
-Message-ID: <20100616154358.GE24491@rakim.wolfsonmicro.main>
-References: <201006141739.42346.PeterHuewe@gmx.de>
- <201006151649.07554.PeterHuewe@gmx.de>
- <20100615151913.GJ14510@rakim.wolfsonmicro.main>
- <201006151738.56143.PeterHuewe@gmx.de>
+	Wed, 16 Jun 2010 11:45:01 -0400
+Message-ID: <4C18F135.20807@kernel.org>
+Date: Wed, 16 Jun 2010 08:43:49 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006151738.56143.PeterHuewe@gmx.de>
-X-Cookie: Eureka!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Johannes Weiner <hannes@cmpxchg.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH -v18 00/37] Use lmb with x86
+References: <1276666966-14259-1-git-send-email-yinghai@kernel.org>	 <AANLkTinhO5sFs4YRP3nraC_ldZ8ZgzJBOQYYv9jLd_Dw@mail.gmail.com> <1276677680.2552.205.camel@pasglop>
+In-Reply-To: <1276677680.2552.205.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090208.4C18F15B.0208,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 05:38:55PM +0200, Peter Huewe wrote:
-> From: Peter Huewe <peterhuewe@gmx.de>
+On 06/16/2010 01:41 AM, Benjamin Herrenschmidt wrote:
+> On Tue, 2010-06-15 at 23:10 -0700, Linus Torvalds wrote:
+>> On Tuesday, June 15, 2010, Yinghai Lu <yinghai@kernel.org> wrote:
+>>>
+>>>  46 files changed, 1476 insertions(+), 1282 deletions(-)
+>>
+>> So what was the advantage again? It's adding more lines than it
+>> removes. Wasn't the point to simplify things, not make them bigger?
 > 
-> The config option SND_FSI_AK4642 selects SND_SOC_AK4642 which in turn
-> enables the compilation of ak4642.c - however this codec uses I2C to
-> communicate with the HW.
-> Same applies to DA7210.
+> I -think- the point is that once that's done, you can remove a whole lot
+> of gunk that was added such as the kernel/range.c caca, etc...
+> (basically, x86 gunk gratuituously made generic and that should really
+> just die instead).
 
-Applied, thanks.
+right.
+
+this patch include seperate bootmem.c into bootmem.c and nobootmem.c to reduce
+MACRO according Ingo and others.
+ mm/bootmem.c                    |  165 +----------
+ mm/nobootmem.c                  |  415 +++++++++++++++++++++++++++
+
+later will
+1. remove x86 own copy for find_from_low_to_high after more testing with high to low. that is about 200 lines code.
+2. replace range.c with lmb. but need to expand lmb little bit
+   like add can_resize and can_merge to be attribute of lmb_type.
+
+Thanks
+
+Yinghai Lu
