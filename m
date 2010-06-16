@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758851Ab0FPLfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 07:35:20 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50408 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758642Ab0FPLfR (ORCPT
+	id S1758857Ab0FPLfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 07:35:51 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43808 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754671Ab0FPLfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 07:35:17 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 8/9] oom: cleanup has_intersects_mems_allowed()
-Cc: kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20100616201948.72D7.A69D9226@jp.fujitsu.com>
-References: <20100616201948.72D7.A69D9226@jp.fujitsu.com>
-Message-Id: <20100616203445.72EC.A69D9226@jp.fujitsu.com>
+	Wed, 16 Jun 2010 07:35:50 -0400
+Date: Wed, 16 Jun 2010 13:35:48 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Shane McDonald <mcdonald.shane@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 5/9] Removing dead CONFIG_BLK_DEV_IDE
+Message-ID: <20100616113548.GA10065@faui48a.informatik.uni-erlangen.de>
+References: <cover.1275925108.git.siccegge@cs.fau.de> <73e9e4bd7615488c9567f02f8962825386956365.1275925108.git.siccegge@cs.fau.de> <AANLkTillx50SaxZU2cT9YSlS4uRF_ED5-wlG-JwfXfFT@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 16 Jun 2010 20:35:15 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTillx50SaxZU2cT9YSlS4uRF_ED5-wlG-JwfXfFT@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 10, 2010 at 12:23:06PM -0600, Shane McDonald wrote:
+>   I wonder if, instead of deleting the code, the constant should be
+> changed from CONFIG_BLK_DEV_IDE to CONFIG_IDE.  The original
+> patch that removed CONFIG_BLK_DEV_IDE seemed to make this change:
+> http://kerneltrap.org/mailarchive/linux-kernel/2008/8/13/2929444
+> 
+> Shane
 
-Now has_intersects_mems_allowed() has own thread iterate logic, but
-it should use while_each_thread().
+You're probably right, updated patch below
 
-It slightly improve the code readability.
+-------
+From: Christoph Egger <siccegge@cs.fau.de>
+Date: Mon, 7 Jun 2010 17:29:48 +0200
+Subject: [PATCH 5/9] Removing dead CONFIG_BLK_DEV_IDE
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CONFIG_BLK_DEV_IDE doesn't exist in Kconfig, therefore removing all
+references for it from the source code.
+
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 ---
- mm/oom_kill.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 4236d39..7e9942d 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -46,10 +46,10 @@ static DEFINE_SPINLOCK(zone_scan_lock);
-  * shares the same mempolicy nodes as current if it is bound by such a policy
-  * and whether or not it has the same set of allowed cpuset nodes.
-  */
--static bool has_intersects_mems_allowed(struct task_struct *tsk,
-+static bool has_intersects_mems_allowed(struct task_struct *p,
- 					const nodemask_t *mask)
- {
--	struct task_struct *start = tsk;
-+	struct task_struct *tsk = p;
- 
- 	do {
- 		if (mask) {
-@@ -69,8 +69,8 @@ static bool has_intersects_mems_allowed(struct task_struct *tsk,
- 			if (cpuset_mems_allowed_intersects(current, tsk))
- 				return true;
- 		}
--		tsk = next_thread(tsk);
--	} while (tsk != start);
-+	} while_each_thread(p, tsk);
-+
- 	return false;
+diff --git a/arch/mips/mti-malta/malta-setup.c
+b/arch/mips/mti-malta/malta-setup.c
+index b7f37d4..f6a5ea8 100644
+--- a/arch/mips/mti-malta/malta-setup.c
++++ b/arch/mips/mti-malta/malta-setup.c
+@@ -105,7 +105,7 @@ static void __init fd_activate(void)
  }
- #else
--- 
-1.6.5.2
-
-
-
+ #endif
+ 
+-#ifdef CONFIG_BLK_DEV_IDE
++#ifdef CONFIG_IDE
+ static void __init pci_clock_check(void)
+ {
+        unsigned int __iomem *jmpr_p =
+@@ -207,7 +207,7 @@ void __init plat_mem_setup(void)
+        if (mips_revision_sconid == MIPS_REVISION_SCON_BONITO)
+                bonito_quirks_setup();
+ 
+-#ifdef CONFIG_BLK_DEV_IDE
++#ifdef CONFIG_IDE
+        pci_clock_check();
+ #endif
+ 
