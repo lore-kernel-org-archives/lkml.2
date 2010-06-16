@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab0FPNQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 09:16:59 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52100 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab0FPNQ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 09:16:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=fEP0ln+se0O/Dng1ay2RxOuobNjAjA010hA1GqknkgQ7z+oD9uFE42uvzZHWCT4KM/
-         EEcHLzfqI+ydqSkBVuKpohza7u6Se/ENFRqg+ptMMGFWBeCCeSJNsa1PA7mUQslKnvmi
-         K0mGWv+Kd4YIpdCAQ3T6/vUNFkMn3wRxcbyys=
-Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20100616125708.GA1893@jolsa.lab.eng.brq.redhat.com>
-References: <1276691043-12694-1-git-send-email-jolsa@redhat.com>
-	 <1276692314.2632.66.camel@edumazet-laptop>
-	 <20100616125708.GA1893@jolsa.lab.eng.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Jun 2010 15:10:37 +0200
-Message-ID: <1276693837.2632.75.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1754184Ab0FPNW3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 09:22:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30833 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868Ab0FPNW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 09:22:28 -0400
+Date: Wed, 16 Jun 2010 10:22:23 -0300
+From: Glauber Costa <glommer@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: Zachary Amsden <zamsden@redhat.com>, avi@redhat.com, mtosatti@redhat.com,
+       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/17] Unify vendor TSC logic
+Message-ID: <20100616132223.GI19104@mothafucka.localdomain>
+References: <1276587259-32319-1-git-send-email-zamsden@redhat.com>
+ <1276587259-32319-4-git-send-email-zamsden@redhat.com>
+ <4C1886E2.2060509@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C1886E2.2060509@redhat.com>
+X-ChuckNorris: True
+User-Agent: Jack Bauer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 16 juin 2010 à 14:57 +0200, Jiri Olsa a écrit :
-> On Wed, Jun 16, 2010 at 02:45:14PM +0200, Eric Dumazet wrote:
+On Wed, Jun 16, 2010 at 04:10:10PM +0800, Jason Wang wrote:
+> Zachary Amsden wrote:
+> >  
+> >  void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+> >  {
+> > +	kvm_x86_ops->vcpu_load(vcpu, cpu);
+> >  	if (unlikely(vcpu->cpu != cpu)) {
+> > +		/* Make sure TSC doesn't go backwards */
+> > +		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 : 
+> > +				native_read_tsc() - vcpu->arch.last_host_tsc;
+> > +		if (tsc_delta < 0 || check_tsc_unstable())
+> >   
+> It's better to do the adjustment also when tsc_delta > 0
+And why do you think so? Doing it on tsc_delta > 0 would force us to adjust
+at every entry but the first. And I guess we want to adjust as few times as 
+we can.
 
-> > I respectfully suggest that every patch adding a synchronize_rcu() call
-> > be reviewed by Paul himself. This is really the last option that should
-> > be considered, since it adds a big delay.
-> 
-> no problem, I wasn't aware of this
-> 
-> > 
-> > Can you explain why other solutions cannot be used ?
-> 
-> I'm not sure which ones do you mean.. I'm not RCU expert, and
-> this one occured to me as probable fix, but if there're other
-> ways, no problem ;)
-
-To be fair, I am not RCU expert either, since I make mistakes on each
-RCU related patch I post. Welcome to the club :)
-
+For example, we would adjust on every cpu bounce even for machines that has
+a perfectly sync tsc. This could introduce an error not present before.
 
