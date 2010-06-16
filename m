@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759600Ab0FPVRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 17:17:12 -0400
-Received: from aeryn.fluff.org.uk ([87.194.8.8]:26678 "EHLO
-	kira.home.fluff.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753534Ab0FPVRK (ORCPT
+	id S932686Ab0FPVRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 17:17:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55177 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534Ab0FPVRb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 17:17:10 -0400
-Date: Wed, 16 Jun 2010 22:16:45 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-To: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
-Cc: Lothar Wa?mann <LW@KARO-electronics.de>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Jeremy Kerr <jeremy.kerr@canonical.com>,
-       Ben Dooks <ben-linux@fluff.org>, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
-Message-ID: <20100616211645.GC30005@fluff.org.uk>
-References: <19473.61547.684572.647641@ipc1.ka-ro>
- <201006111718.47426.jeremy.kerr@canonical.com>
- <19474.172.742782.972629@ipc1.ka-ro>
- <20100611095839.GC10894@pengutronix.de>
- <19474.2817.333749.485028@ipc1.ka-ro>
- <1276319643.1962.181.camel@pasglop>
- <19477.52889.982995.407051@ipc1.ka-ro>
- <1276507378.2552.39.camel@pasglop>
- <19477.63136.664249.167207@ipc1.ka-ro>
- <20100614094310.GE12159@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100614094310.GE12159@pengutronix.de>
-X-Disclaimer: These are my own opinions, so there!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 16 Jun 2010 17:17:31 -0400
+Subject: Re: [PATCH 2/6: v4] lockdep: Make MAX_STACK_TRACE_ENTRIES
+ configurable.
+From: Peter Zijlstra <peterz@infradead.org>
+To: John Kacur <jkacur@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>,
+       rt-users <linux-rt-users@vger.kernel.org>,
+       Clark Williams <williams@redhat.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Sven-Thorsten Dietrich <sven@thebigcorporation.com>,
+       ghaskins@novell.com
+In-Reply-To: <alpine.LFD.2.00.1006162213220.28756@localhost.localdomain>
+References: <1276554087-3632-1-git-send-email-jkacur@redhat.com>
+	 <1276554087-3632-3-git-send-email-jkacur@redhat.com>
+	 <1276714154.1745.623.camel@laptop>
+	 <alpine.LFD.2.00.1006162213220.28756@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 16 Jun 2010 23:16:48 +0200
+Message-ID: <1276723008.2077.9574.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 14, 2010 at 11:43:10AM +0200, Uwe Kleine-K?nig wrote:
-> On Mon, Jun 14, 2010 at 11:30:08AM +0200, Lothar Wa?mann wrote:
-> > Benjamin Herrenschmidt writes:
-> > > On Mon, 2010-06-14 at 08:39 +0200, Lothar Wa?mann wrote:
-> > > > All implementations so far use spin_lock_irq_save()!
+On Wed, 2010-06-16 at 22:37 +0200, John Kacur wrote:
+> 
+> On Wed, 16 Jun 2010, Peter Zijlstra wrote:
+> 
+> > On Tue, 2010-06-15 at 00:21 +0200, John Kacur wrote:
+> > > Certain debug configurations that have LOCKDEP turned on, run into the limit
+> > > where the MAX_STACK_TRACE_ENTRIES are too small. Rather than simply turning
+> > > off the locking correctness validator, let the user configure this value
+> > > to something reasonable for their system.
 > > > 
-> > > Nothing prevents your implementation to be a tad smarter.
-> > > 
-> > I vote for consistency, so that device drivers can be kept arch
-> > independent instead of having to care about implentation details of
-> > each arch.
-> Back when I implemented clock support for ns9xxx (unfortunately not in
-> mainline) I tried with a spinlock first and later switched to a mutex.
-> IIRC the reason was that on ns9215 enabling the rtc clock took long
-> (don't remember a number) and successfull enabling was signaled by an
-> irq.  So I would have had to implement irq polling in the clock code.
+> > > This patch was generated against 2.6.33.5-rt23 but is also intended to be
+> > > picked-up for mainline.
+> > 
+> > NACK
+> > 
+> > patches like 4726f2a617ebd868a4fdeb5679613b897e5f1676 are the way to go.
+> 
+> I've been testing 4726f2a617ebd868a4fdeb5679613b897e5f1676 in rt
+> (Thomas has it in tip/rt/2.6.33 now) and so far it is doing the trick for 
+> me, at least on my laptop. I still need to test it on larger machines.
+> However, this problem seems to continuably come up, and I'm not the only 
+> one who has expessed the wish / need to have this tunable.
 
-Ok, you could have implemented a lock ot update the state, then had
-some form of wake-queue to wake up the task once it did.
+And simply increasing the number without thought is the worst approach
+ever and I'm simply not going to merge it.
 
-> I think you can find different examples that make both possiblities bad.
-> All in all I think that a sleeping clock implementation is preferable as
-> it improves (general) latencies.
-
-It may be that we need to do a bit of work on some of the drivers to
-ensure that they don't fully re-set their clocks until they are able
-to sleep.
-
--- 
-Ben (ben@fluff.org, http://www.fluff.org/)
-
-  'a smiley only costs 4 bytes'
+Also, google doesn't seem to index msg-ids, so I've no idea what you're
+referring to.
