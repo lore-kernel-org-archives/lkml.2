@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab0FPQMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 12:12:09 -0400
-Received: from n1-vm0.bullet.mail.gq1.yahoo.com ([67.195.23.152]:47465 "HELO
-	n1-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932109Ab0FPQMH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 12:12:07 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 808020.84762.bm@omp201.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=uCCpm8HLO66BipDGDigb8D/lKDFPcEOUv0veJP0k5wGQgKkmaD6xvOf87GlL/jtZx2DgqrJMMqpenhymtTS7dRgdmiN5yYUSZg8vdRzmYxW1vGlyPuAuNulszgfzq0kH4cGzTn9h/I9ORXEUtTXctcDX2pO0f8d6T+pVMwffzPQ=;
-Message-ID: <715635.32141.qm@web180308.mail.gq1.yahoo.com>
-X-YMail-OSG: kbiTaZwVM1ng.cIrgm0mcb9uLqY1lzT_k5bv1AI0vyEx6fv
- BUT8gyKg53AgwwCafOJ8.8GlRXPKq9TClNxuXxeub4vHikQ7ToGRxLrlrMeZ
- uY7ghkC5.g88ABRfQPdu2AG4PDbXSK1Bn2j0Zq1W5WD0GtvVmgv_NP.nY.ER
- KPwah.34h8Gk9OgvYNgRc7S0Cj7LH8wsM5KNRXweImcw36NGGUaRHxQqD770
- bxiTcxPiD4edmz7NQ.2WH8vBeEOqOj2lLEgTgxARzX6t4qY5pqxI7zajbWkx
- uQIu4SZDN2YG8.LNh2uBGaPKIJpSzjBUZa4YVNlT_wgJ_3lo3qLMuFQ--
-X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.103.269680
-Date: Wed, 16 Jun 2010 07:12:38 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCHv5 07/11] USB: gadget: g_ether: updated INF file
-To: linux-usb@vger.kernel.org, Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>, Greg KH <greg@kroah.com>,
-       Xiaofan Chen <xiaofanc@gmail.com>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
+	id S1759189Ab0FPQOp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 12:14:45 -0400
+Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:52600 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755427Ab0FPQOo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 12:14:44 -0400
+Date: Wed, 16 Jun 2010 18:15:37 +0200
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: Pavel Emelyanov <xemul@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+       Linux Containers <containers@lists.osdl.org>,
        linux-kernel@vger.kernel.org
-In-Reply-To: <9f32ae2ab133d27642ac4c1e81777b1e34a0c1a1.1276681840.git.m.nazarewicz@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+Message-ID: <20100616161537.GA16877@hawkmoon.kerlabs.com>
+Mail-Followup-To: Pavel Emelyanov <xemul@openvz.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Oleg Nesterov <oleg@redhat.com>,
+	Linux Containers <containers@lists.osdl.org>,
+	linux-kernel@vger.kernel.org
+References: <1276703910-16936-1-git-send-email-louis.rilling@kerlabs.com> <4C18F625.9040107@openvz.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <4C18F625.9040107@openvz.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 16/06/10 20:04 +0400, Pavel Emelyanov wrote:
+> > +void proc_new_task(struct task_struct *task)
+> > +{
+> > +	struct pid *pid;
+> > +	int i;
+> > +
+> > +	if (!task->pid)
+> > +		return;
+> > +
+> > +	pid = task_pid(task);
+> > +	for (i = 0; i <= pid->level; i++)
+> > +		mntget(pid->numbers[i].ns->proc_mnt);
+> 
+> I feel I'm missing something significant, but this patch breaks
+> the mntget/mntput balance. Doesn't it?
 
-> Updated the INF file for the g_ether
-> gadegt.  It should work with most
-> recent Windows systems now.  The file hase been also
-> renamed to
-> linux-rndis.inf rather then linux.inf.
+Why?
 
-NAK ... still waiting for a version of the
-patch with all requested changes.  In
-particular, without the rename (which
-invalidates most documentation, though
-it would otherwise be a reasonable cleanup).
+all mntget() here have their mntput() in proc_flush_task(). At least, this is
+the intent...
 
+Thanks,
+
+Louis
+
+-- 
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
