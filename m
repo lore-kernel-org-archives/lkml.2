@@ -1,110 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412Ab0FPL3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 07:29:19 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:33374 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511Ab0FPL3S (ORCPT
+	id S1758589Ab0FPLar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 07:30:47 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58468 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756685Ab0FPLao convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 07:29:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 1/9] oom: don't try to kill oom_unkillable child
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20100616201948.72D7.A69D9226@jp.fujitsu.com>
+	Wed, 16 Jun 2010 07:30:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=mxYan7MYD1/OE5cLI2O45REtrVNruFKuYhR2s/IRAqY5SpbTb+2farXMXt4slslDqT
+         +wvxjiIZq69ufJ6EUOHaBAbxB2Nj3QpP3/kdZadCe0Kx8Ya212LAPdZl74p714Two2kl
+         PnJ74NvLRoQUX1oMLiTFgxwz8wemZXyz9W3g4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 16 Jun 2010 20:29:13 +0900 (JST)
+In-Reply-To: <20100616110914.GF9298@parisc-linux.org>
+References: <1276666434-11227-1-git-send-email-justinmattock@gmail.com> 
+	<AANLkTikwKHITQJDaSf9BnHQ9FLiQ-KYlCWNiH438otsV@mail.gmail.com> 
+	<20100616110914.GF9298@parisc-linux.org>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Wed, 16 Jun 2010 21:30:23 +1000
+Message-ID: <AANLkTil-d7LqofvvB9_QGd7Quy4kPucWGpJ5LHl94LoP@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Fix set but unused variable warnings
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+       linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+       linux-pci@vger.kernel.org, linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, badness() doesn't care neigher CPUSET nor mempolicy. Then
-if the victim child process have disjoint nodemask, __out_of_memory()
-can makes kernel hang eventually.
+On Wed, Jun 16, 2010 at 21:09, Matthew Wilcox <matthew@wil.cx> wrote:
+> On Wed, Jun 16, 2010 at 03:52:58PM +1000, Julian Calaby wrote:
+>> Given that patches 3, 4 and 5 seem to be a cases of missing error
+>> handling, (3 and 4 in particular seem to be breaking things rather
+>> than fixing them) in my humble opinion, I think this set needs some
+>> work and discussion.
+>>
+>> Justin, maybe you'd be better off posting the actual error messages
+>> (split up by subsystem) and letting the lists discuss them, rather
+>> than posting patches which are obviously wrong. (like the ones I've
+>> pointed out)
+>
+> My first impression of patch 5 was "that can't be right", but upon review,
+> I concluded that was the best solution.  If we return the PTR_ERR, this
+> is going to confuse every user of scsi_host_alloc who are currently only
+> checking for NULL.
 
-This patch fixes it.
+I did a double take at patch 4 when skimming over them, then took a
+proper look at the lot of them. Whilst I agree that 5 isn't doing
+anything particularly bad, it does seem wrong, especially in the
+context of 3 and 4.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |   16 +++++++++-------
- 1 files changed, 9 insertions(+), 7 deletions(-)
+Thanks,
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 26ae697..0623c3d 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -429,7 +429,7 @@ static int oom_kill_task(struct task_struct *p)
- 
- static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 			    unsigned long points, struct mem_cgroup *mem,
--			    const char *message)
-+			    nodemask_t *nodemask, const char *message)
- {
- 	struct task_struct *victim = p;
- 	struct task_struct *child;
-@@ -469,6 +469,8 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 				continue;
- 			if (mem && !task_in_mem_cgroup(child, mem))
- 				continue;
-+			if (!has_intersects_mems_allowed(child, nodemask))
-+				continue;
- 
- 			/* badness() returns 0 if the thread is unkillable */
- 			child_points = badness(child, uptime.tv_sec);
-@@ -519,7 +521,7 @@ retry:
- 	if (!p || PTR_ERR(p) == -1UL)
- 		goto out;
- 
--	if (oom_kill_process(p, gfp_mask, 0, points, mem,
-+	if (oom_kill_process(p, gfp_mask, 0, points, mem, NULL,
- 				"Memory cgroup out of memory"))
- 		goto retry;
- out:
-@@ -669,6 +671,8 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
- 	 */
- 	if (zonelist)
- 		constraint = constrained_alloc(zonelist, gfp_mask, nodemask);
-+	if (constraint != CONSTRAINT_MEMORY_POLICY)
-+		nodemask = NULL;
- 	check_panic_on_oom(constraint, gfp_mask, order);
- 
- 	read_lock(&tasklist_lock);
-@@ -678,15 +682,13 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
- 		 * non-zero, current could not be killed so we must fallback to
- 		 * the tasklist scan.
- 		 */
--		if (!oom_kill_process(current, gfp_mask, order, 0, NULL,
-+		if (!oom_kill_process(current, gfp_mask, order, 0, NULL, nodemask,
- 				"Out of memory (oom_kill_allocating_task)"))
- 			return;
- 	}
- 
- retry:
--	p = select_bad_process(&points, NULL,
--			constraint == CONSTRAINT_MEMORY_POLICY ? nodemask :
--								 NULL);
-+	p = select_bad_process(&points, NULL, nodemask);
- 	if (PTR_ERR(p) == -1UL)
- 		return;
- 
-@@ -697,7 +699,7 @@ retry:
- 		panic("Out of memory and no killable processes...\n");
- 	}
- 
--	if (oom_kill_process(p, gfp_mask, order, points, NULL,
-+	if (oom_kill_process(p, gfp_mask, order, points, NULL, nodemask,
- 			     "Out of memory"))
- 		goto retry;
- 	read_unlock(&tasklist_lock);
 -- 
-1.6.5.2
 
+Julian Calaby
 
-
+Email: julian.calaby@gmail.com
+.Plan: http://sites.google.com/site/juliancalaby/
