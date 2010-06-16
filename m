@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758316Ab0FPAzY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jun 2010 20:55:24 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47801 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757681Ab0FPAzW convert rfc822-to-8bit (ORCPT
+	id S1753515Ab0FPBMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jun 2010 21:12:13 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37055 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324Ab0FPBMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jun 2010 20:55:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=K+uEy1hcfUDaHg+RRWEqUkhIWeF9PgBgrH9133PBw6jSkGCKNHrgV731+sGDOU7yfa
-         TNhyn1xW4/hs85qV2KMY0SMpancZgHYl8757N0fzAVg3pEg4vkUpzTXmRPpEyvq/rvPs
-         63ru+upzLZiIMopgKQTqjDK2d5frtOf/8DXZI=
+	Tue, 15 Jun 2010 21:12:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Venkatesh Pallipadi <venki@google.com>, Len Brown <len.brown@intel.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] acpi: fix unused function warning
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100616100728.382C.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilfw_rXQ4P1jRnrOtun2c9kAq6zNEQHxTF124_x@mail.gmail.com>
-References: <AANLkTilfw_rXQ4P1jRnrOtun2c9kAq6zNEQHxTF124_x@mail.gmail.com>
-Date: Tue, 15 Jun 2010 20:55:20 -0400
-Message-ID: <AANLkTilOK580U03orIO6jcMvzrHeNsykLSMkdlw0hZLI@mail.gmail.com>
-Subject: Re: Does the kernel page the CFS's red-black tree nodes?
-From: Richard Yao <shiningarcanine@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 16 Jun 2010 10:12:05 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Linus Torvalds et all:
+Len, Is this known issue?
 
-I read a recently published article on the ACM website, which
-discusses the effect virtual memory pressure has on certain algorithms
-and explains that data structures need to be designed in such a way
-that they minimize such effects:
 
-http://queue.acm.org/detail.cfm?id=1814327
+=========================================================
+When CONFIG_ACPI_PROCFS=n, processor_idle.c makes following warning.
 
-The author observed slow-downs in an algorithm that ignored virtual
-memory upon the incidence of page faults. The basic idea I took from
-it is that people should use B-Heaps instead of Binary Heaps and
-B-Trees instead of Binary Trees for optimal performance on modern
-systems that use virtual memory. Today, it occurred to me that the
-kernel's completely fair scheduler could be susceptible this sort of
-slow-down, provided that the kernel pages its red-black tree nodes to
-swap, so I thought I would ask here if this is the case.
+	drivers/acpi/processor_idle.c:83: warning: 'us_to_pm_timer_ticks'
+	defined but not used.
 
-With that said, does the kernel page the CFS's red-black tree nodes to
-swap? If it does, it might be a good idea to reimplement the CFS'
-Red-Black trees in B-Trees, which would minimize slow-downs from
-vm-pressure and also have the additional benefit of minimizing cache
-misses caused by tree traversal.
+This patch fixes it.
 
-This is my first post to the kernel mailing list. The FAQ says that I
-should indicate that I "wish to be personally CC'ed the
-answers/comments posted to the list in response" to my posting, so
-this sentence is my indication that I "wish to be personally CC'ed the
-answers/comments posted to the list".
+Cc: Venkatesh Pallipadi <venki@google.com>
+Cc: Len Brown <len.brown@intel.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ drivers/acpi/processor_idle.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Yours truly,
-Richard Yao
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index 0e562d0..3c36769 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -80,10 +80,13 @@ module_param(nocst, uint, 0000);
+ static unsigned int latency_factor __read_mostly = 2;
+ module_param(latency_factor, uint, 0644);
+ 
++#ifdef CONFIG_ACPI_PROCFS
+ static u64 us_to_pm_timer_ticks(s64 t)
+ {
+ 	return div64_u64(t * PM_TIMER_FREQUENCY, 1000000);
+ }
++#endif
++
+ /*
+  * IBM ThinkPad R40e crashes mysteriously when going into C2 or C3.
+  * For now disable this. Probably a bug somewhere else.
+-- 
+1.6.5.2
+
+
+
