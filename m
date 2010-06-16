@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759577Ab0FPUee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 16:34:34 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35730 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab0FPUec (ORCPT
+	id S1759587Ab0FPUfa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 16:35:30 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36532
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753227Ab0FPUf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 16:34:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Hrh/GxGsjxalZf1f+FUjSrBrx1OnTJVldevqHCcIE/CMqZNZvf7x8aBvJ0zh3Wiu8u
-         +3U2v56Jmiph4YgZledh/LSUi+RhsudWWCWlqbsIPuY3a00da+IBLA8TTd+Uds11iCS6
-         21vQpKnIcRBmYN96VgYnm8KGYFSYnLZQx+LdA=
-Date: Wed, 16 Jun 2010 13:34:19 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jiri Kosina <jkosina@suse.cz>, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>
-Subject: Re: [PATCH 0/3] input: evdev: Dynamic buffers (rev4)
-Message-ID: <20100616203419.GB25729@core.coreip.homeip.net>
-References: <1275735869-2185-1-git-send-email-rydberg@euromail.se>
- <201006101211.51395.dmitry.torokhov@gmail.com>
- <4C174B31.6040403@euromail.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C174B31.6040403@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Wed, 16 Jun 2010 16:35:29 -0400
+Date: Wed, 16 Jun 2010 13:35:40 -0700 (PDT)
+Message-Id: <20100616.133540.189696272.davem@davemloft.net>
+To: vst@vlnb.net
+Cc: sparclinux@vger.kernel.org, simone.ricci@gmail.com,
+       scst-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+       Nick.Couchman@seakr.com
+Subject: Re: Error "Unknown relocation: 36" on module load on Sparc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C192085.2090404@vlnb.net>
+References: <AANLkTimuv7nOlcGFxqPZlwcAjLmFMiLAvbA5O7F32Wbg@mail.gmail.com>
+	<4C192085.2090404@vlnb.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 11:43:13AM +0200, Henrik Rydberg wrote:
-> Dmitry Torokhov wrote:
-> > On Saturday, June 05, 2010 04:04:26 am Henrik Rydberg wrote:
-> >> Dmitry,
-> >>
-> >> Please find enclosed the fourth version of the evdev buffer patches.
-> >>
-> >> This version implements buffer locking using event_lock as you
-> >> suggested, such that we can proceed with fixing the evdev buffer
-> >> problem independently from providing a suitable one-to-many buffer.
-> >>
-> >> The first patch converts the per-client buffers to a common buffer,
-> >> and adds a fixme since the code is expected to be further
-> >> improved. The second and third patch includes your review comments.
-> > 
-> > Henrik,
-> > 
-> > Applied to .36 queue with minor adjustments, please take a peek in my
-> > 'for-linus' branch and see if you spot anything wrong.
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+Date: Wed, 16 Jun 2010 23:05:41 +0400
+
+> We in SCST project have a very strange problem on Sparc. Our main
+> module scst.ko, if built as a module out of the kernel tree, can't be
+> loaded and "modprobe scst" returns:
 > 
-> We are talking about your tree @kernel.org, right? Nothing appeared there...
+> FATAL: Error inserting scst
+> (/lib/modules/2.6.26-2-sparc64/extra/scst.ko): Invalid module format
 > 
+> The following message is immediately spit out by the kernel:
+> [ 1686.676534] module scst: Unknown relocation: 36
 
-Right, haven't actually pushed yet, queued e-mail leakage ;)
+You're building the module with incorrect compiler flags, in
+particular somehow the "-mcmodel=medlow" option is not getting passed
+into the module build and thus the wrong code model is being used to
+build the module.
 
-> > The changes have
-> > been made with an eye of implementing a per-client event filters which
-> > would again require using private event queues (but only by clients that
-> > request filtering).
-> 
-> Would not having the separate reader tails suffice? Implementing the filtering
-> during client read?
-
-No, because that would cause waking up the reader thread, which is the
-whole goal of the change.
-
-> 
-> > The desire for allowing event filtering in kernel is to avoid waking up
-> > HAL-ish processes (ones that only interested in certain special events, 
-> > like KEY_SUSPEND, KEY_WIFI, KEY_MUTE, etc) needlessly. Not sure if I am
-> > going to have time to actually implement it though, anyone wants to
-> > take a stab?
-> 
-> I see. Something like a lovely new ioctl() command, setting the evbits on a per
-> client basis?
-
-Yep, exactly.
-
--- 
-Dmitry
+There are a host of other sparc64 specific compiler options that must
+be present for a correct build as well.  The only way to get it done
+correctly is to properly inherit the option settings made by
+arch/sparc/Makefile and friends in the kernel tree.
