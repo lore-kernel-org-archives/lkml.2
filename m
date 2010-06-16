@@ -1,156 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663Ab0FPEEP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 00:04:15 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:41729 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750759Ab0FPEEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 00:04:12 -0400
-X-Sasl-enc: WhDgvEPQOzHzA2Go0ZnKdnwtsGgIgvJMh3Ot6R/CHAsJ 1276661050
-Subject: Re: [autofs] [PATCH 04/38] autofs4: Save autofs trigger's vfsmount
- in super block info
-From: Ian Kent <raven@themaw.net>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, autofs@linux.kernel.org,
-       Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
-       Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-       Jan Blunck <jblunck@suse.de>
-In-Reply-To: <1276627208-17242-5-git-send-email-vaurora@redhat.com>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
-	 <1276627208-17242-5-git-send-email-vaurora@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Jun 2010 12:04:03 +0800
-Message-ID: <1276661043.2339.35.camel@localhost>
+	id S1751430Ab0FPEJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 00:09:26 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58449 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750884Ab0FPEJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 00:09:24 -0400
+Date: Wed, 16 Jun 2010 14:09:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for June 16
+Message-Id: <20100616140903.9c7cb4e6.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__16_Jun_2010_14_09_03_+1000_ZV4v5sDx1J=iUkft"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-15 at 11:39 -0700, Valerie Aurora wrote:
-> From: Jan Blunck <jblunck@suse.de>
-> 
-> XXX - This is broken and included just to make union mounts work.  See
-> discussion at:
-> 
-> http://kerneltrap.org/mailarchive/linux-fsdevel/2010/1/15/6708053/thread
+--Signature=_Wed__16_Jun_2010_14_09_03_+1000_ZV4v5sDx1J=iUkft
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Instead of saving the vfsmount we could save a pointer to the dentry of
-the mount point in the autofs super block info struct. I think that's
-the bit I don't have so it would be sufficient for a lookup_mnt() for
-the needed vfsmount in ->follow_mount().
+Hi all,
 
-Objections?
-Suggestions?
+Changes since 20100615:
 
-> 
-> Original commit message:
-> 
-> This is a bugfix/replacement for commit
-> 051d381259eb57d6074d02a6ba6e90e744f1a29f:
-> 
->     During a path walk if an autofs trigger is mounted on a dentry,
->     when the follow_link method is called, the nameidata struct
->     contains the vfsmount and mountpoint dentry of the parent mount
->     while the dentry that is passed in is the root of the autofs
->     trigger mount.  I believe it is impossible to get the vfsmount of
->     the trigger mount, within the follow_link method, when only the
->     parent vfsmount and the root dentry of the trigger mount are
->     known.
-> 
-> The solution in this commit was to replace the path embedded in the
-> parent's nameidata with the path of the link itself in
-> __do_follow_link().  This is a relatively harmless misuse of the
-> field, but union mounts ran into a bug during follow_link() caused by
-> the nameidata containing the wrong path (we count on it being what it
-> is all other places - the path of the parent).
-> 
-> A cleaner and easier to understand solution is to save the necessary
-> vfsmount in the autofs superblock info when it is mounted.  Then we
-> can easily update the vfsmount in autofs4_follow_link().
-> 
-> Signed-off-by: Jan Blunck <jblunck@suse.de>
-> Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-> Acked-by: Ian Kent <raven@themaw.net>
-> Cc: autofs@linux.kernel.org
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> ---
->  fs/autofs4/autofs_i.h |    1 +
->  fs/autofs4/init.c     |   11 ++++++++++-
->  fs/autofs4/root.c     |    6 ++++++
->  fs/namei.c            |    7 ++-----
->  4 files changed, 19 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-> index 3d283ab..de3af64 100644
-> --- a/fs/autofs4/autofs_i.h
-> +++ b/fs/autofs4/autofs_i.h
-> @@ -133,6 +133,7 @@ struct autofs_sb_info {
->  	int reghost_enabled;
->  	int needs_reghost;
->  	struct super_block *sb;
-> +	struct vfsmount *mnt;
->  	struct mutex wq_mutex;
->  	spinlock_t fs_lock;
->  	struct autofs_wait_queue *queues; /* Wait queue pointer */
-> diff --git a/fs/autofs4/init.c b/fs/autofs4/init.c
-> index 9722e4b..5e0dcd7 100644
-> --- a/fs/autofs4/init.c
-> +++ b/fs/autofs4/init.c
-> @@ -17,7 +17,16 @@
->  static int autofs_get_sb(struct file_system_type *fs_type,
->  	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
->  {
-> -	return get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
-> +	struct autofs_sb_info *sbi;
-> +	int ret;
-> +
-> +	ret = get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
-> +	if (ret)
-> +		return ret;
-> +
-> +	sbi = autofs4_sbi(mnt->mnt_sb);
-> +	sbi->mnt = mnt;
-> +	return 0;
->  }
->  
->  static struct file_system_type autofs_fs_type = {
-> diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-> index e8e5e63..c41e01d 100644
-> --- a/fs/autofs4/root.c
-> +++ b/fs/autofs4/root.c
-> @@ -219,6 +219,12 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
->  	DPRINTK("dentry=%p %.*s oz_mode=%d nd->flags=%d",
->  		dentry, dentry->d_name.len, dentry->d_name.name, oz_mode,
->  		nd->flags);
-> +
-> +	dput(nd->path.dentry);
-> +	mntput(nd->path.mnt);
-> +	nd->path.mnt = mntget(sbi->mnt);
-> +	nd->path.dentry = dget(dentry);
-> +
->  	/*
->  	 * For an expire of a covered direct or offset mount we need
->  	 * to break out of follow_down() at the autofs mount trigger
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 3b43c48..f731108 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -538,11 +538,8 @@ __do_follow_link(struct path *path, struct nameidata *nd, void **p)
->  	touch_atime(path->mnt, dentry);
->  	nd_set_link(nd, NULL);
->  
-> -	if (path->mnt != nd->path.mnt) {
-> -		path_to_nameidata(path, nd);
-> -		dget(dentry);
-> -	}
-> -	mntget(path->mnt);
-> +	if (path->mnt == nd->path.mnt)
-> +		mntget(nd->path.mnt);
->  	nd->last_type = LAST_BIND;
->  	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
->  	error = PTR_ERR(*p);
+My fixes tree contains:
+      v4l-dvb: update gfp/slab.h includes
+      arm: update gfp/slab.h includes
+      davinci: update gfp/slab.h includes
+      ocfs2: update gfp/slab.h includes
+      acpi: update gfp/slab.h includes
 
+The i.MX tree lost its conflicts.
 
+The net tree lost its conflict.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 163 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/for-linus
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+CONFLICT (content): Merge conflict in include/linux/serial_sci.h
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+CONFLICT (content): Merge conflict in fs/ecryptfs/main.c
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging ibft/master
+Merging swiotlb/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+CONFLICT (content): Merge conflict in net/mac80211/mlme.c
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+CONFLICT (content): Merge conflict in kernel/module.c
+Merging mmc/next
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+CONFLICT (content): Merge conflict in drivers/power/z2_battery.c
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/evergreen.c
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/r600.c
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_combios=
+.c
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_pm.c
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/rv770.c
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
+or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
+eft in tree.
+$ git rm -f fs/notify/inotify/inotify.c
+Applying: fsnotify: update gfp/slab.h includes
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging catalin/for-next
+Merging alacrity/linux-next
+Merging i7core_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging omap_dss2/for-next
+Merging tip/auto-latest
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+CONFLICT (content): Merge conflict in mm/memory-failure.c
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+Merging quilt/driver-core
+Merging quilt/tty
+Merging quilt/usb
+Merging staging-next/staging-next
+Merging slabh/slabh
+Merging scsi-post-merge/master
+
+--Signature=_Wed__16_Jun_2010_14_09_03_+1000_ZV4v5sDx1J=iUkft
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwYTl8ACgkQjjKRsyhoI8yG4QCfc7gbghSe0/8YHjG8nAyJsyYf
+SloAniZfCoK+KGAE8AobVu0UtuSxLXcg
+=gYfo
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__16_Jun_2010_14_09_03_+1000_ZV4v5sDx1J=iUkft--
