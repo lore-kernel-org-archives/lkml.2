@@ -1,92 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759486Ab0FPTyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 15:54:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38748 "EHLO mx1.redhat.com"
+	id S1759505Ab0FPTyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 15:54:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43589 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819Ab0FPTya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 15:54:30 -0400
-Date: Wed, 16 Jun 2010 15:54:00 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-       Christoph Hellwig <hch@infradead.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-       Jamie Lokier <jamie@shareable.org>,
-       David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-       Andreas Dilger <adilger@sun.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2] d_ino considered harmful
-Message-ID: <20100616195359.GA24382@shell>
-References: <20100616185913.GA15566@shell>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100616185913.GA15566@shell>
-User-Agent: Mutt/1.4.2.2i
+	id S1759494Ab0FPTyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 15:54:36 -0400
+Message-ID: <4C192B94.9020601@kernel.org>
+Date: Wed, 16 Jun 2010 21:52:52 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Daniel Walker <dwalker@codeaurora.org>
+CC: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: Overview of concurrency managed workqueue
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>	 <4C17C598.7070303@kernel.org>	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>	 <4C18BF40.40607@kernel.org> <1276694825.9309.12.camel@m0nster>	 <4C18D1FD.9060804@kernel.org> <1276695665.9309.17.camel@m0nster>	 <4C18D574.1040903@kernel.org> <1276697146.9309.27.camel@m0nster>	 <4C18DC69.10704@kernel.org> <1276698880.9309.44.camel@m0nster>	 <4C18E4B7.5040702@kernel.org> <1276701074.9309.60.camel@m0nster>	 <4C18F2B8.9060805@kernel.org> <1276705838.9309.94.camel@m0nster>	 <4C1901E9.2080907@kernel.org> <1276712547.9309.172.camel@m0nster>	 <4C191BE9.1060400@kernel.org> <1276716999.9309.208.camel@m0nster>
+In-Reply-To: <1276716999.9309.208.camel@m0nster>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 16 Jun 2010 19:52:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 02:59:13PM -0400, Valerie Aurora wrote:
-> Who needs d_ino anyway?  I am running a kernel with this patch -
-> Gnome, a browser, IRC, kernel compile, etc. and everything works.
+On 06/16/2010 09:36 PM, Daniel Walker wrote:
+>> Yeah, and it would wait that by flushing the work, right?  If the
+>> waiting part is using completion or some other event notification,
+>> you'll just need to update the driver so that the kernel can determine
+>> who's waiting for what so that it can bump the waited one's priority.
+>> Otherwise, the problem can't be solved.
+> 
+> This has nothing to do with flushing .. You keep bringing this back into
+> the kernel for some reason, we're talking about entirely userspace
+> threads ..
 
-Gosh, maybe it would help to patch the currently used readdir instead
-of just old_readdir() (thanks, Arnd).  And return 1 instead of 0 so ls
-doesn't think all files are deleted (thanks, Andreas).
+Yeah, sure, how would tose userspace threads wait for the event?  And
+how would the kernel be able to honor latency requirements not knowing
+the dependency?
 
-I'm running a kernel with the below patch and everything still works.
-Apparently "ls -i" is still using the bogus d_ino performance
-improvement mentioned here because it returns all 1's for inode
-number.
+>> Well, it's somewhat related,
+>>
+>> * Don't depend on works or workqueues for RT stuff.  It's not designed
+>>   for that.
+> 
+> Too bad .. We have a posix OS, and posix has RT priorities .. You can't
+> control what priorities user give those threads.
 
-http://www.mail-archive.com/bug-findutils@gnu.org/msg02531.html
+So, you're not talking about the real RT w/ timing guarantees?  So no
+priority inheritance or whatever?  Gees, then any lock can give you
+unexpected latencies.
 
--VAL
+>> * If you really wanna solve the problem, please go ahead and _solve_
+>>   it yourself.  (read the rest of the mail)
+> 
+> Your causing the problem, why should I solve it? My solution would just
+> be to NAK your patches.
 
-commit 5902fd7b7407e059c5cea1bf1ea101a1ff8a6072
-Author: Valerie Aurora <vaurora@redhat.com>
-Date:   Wed Jun 16 11:05:06 2010 -0700
+I don't have any problem with that.  I would be almost happy to get
+your NACK.
 
-    VFS: Always return 1 for d_ino
-    
-    Use of d_ino without the corresponding st_dev is always buggy in the
-    presence of submounts, bind mounts, and union mounts.  E.g., the d_ino
-    of a mountpoint will be the inode number of the directory under the
-    mountpoint, not the mounted directory.  Correct code must call stat(),
-    which returns the correct device ID and inode in st_dev and st_ino.
-    Since no one should be using d_ino anyway, always return 1 to detect
-    bugs.
+>> Because the workqueue might just go away in the next release or other
+>> unrelated work which shouldn't get high priority might be scheduled
+>> there.  Maybe the name of the workqueue changes or it gets merged with
+>> another workqueue.  Maybe it gets split.  Maybe the system suspends
+>> and resumes and nobody knows that workers die and are created again
+>> over those events.  Maybe the backend implementaiton changes so that
+>> workers are pooled.
+> 
+> Changing the priorities is not fragile, your saying that ones ability to
+> adapt to changes in the kernel makes it hard to know what the workqueue
+> is actually doing.. Ok, that's fair.. This doesn't make it less useful
+> since people can discover thread dependencies without looking at the
+> kernel source.
 
-diff --git a/fs/readdir.c b/fs/readdir.c
-index dd3eae1..5ff8f10 100644
---- a/fs/readdir.c
-+++ b/fs/readdir.c
-@@ -91,11 +91,8 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
- 
- 	if (buf->result)
- 		return -EINVAL;
--	d_ino = ino;
--	if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
--		buf->result = -EOVERFLOW;
--		return -EOVERFLOW;
--	}
-+	/* Use of d_ino without st_dev is always buggy. */
-+	d_ino = 1;
- 	buf->result++;
- 	dirent = buf->dirent;
- 	if (!access_ok(VERIFY_WRITE, dirent,
-@@ -172,11 +169,8 @@ static int filldir(void * __buf, const char * name, int namlen, loff_t offset,
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
--	d_ino = ino;
--	if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
--		buf->error = -EOVERFLOW;
--		return -EOVERFLOW;
--	}
-+	/* Use of d_ino without st_dev is always buggy. */
-+	d_ino = 1;
- 	dirent = buf->previous;
- 	if (dirent) {
- 		if (__put_user(offset, &dirent->d_off))
+Sigh, so, yeah, the whole thing is fragile.  When did I say nice(1) is
+fragile?
+
+>>>> * depends heavily on unrelated implementation details
+>>>
+>>> I have no idea what this means.
+>>
+>> (continued) because all those are implementation details which are NOT
+>> PART OF THE INTERFACE in any way.
+> 
+> yet they are part of the interface like it or not. How could you use
+> threads and think thread priorities are not part of the interface.
+> 
+> In your new system how do you currently prevent thread priorities on
+> your new workqueue threads from getting modified? Surely you must be
+> doing that since you don't want those priorities to change right?
+
+No, I don't.  If the root wanna shoot its feet, it can.  On the same
+tune, you can lower the priority of the migration thread to your own
+peril.
+
+>> Gee, I don't know.  These are pretty evident problems to me.  Aren't
+>> they obvious?
+> 
+> Your just looking at the problem through your specific use case glasses
+> without imagining what else people could be doing with the kernel.
+> 
+> How often do you think workqueues change names anyway? It's not all that
+> often.
+
+So does most symbols in kernel.  What you're saying applies almost
+word to word to grepping /proc/kallsyms.  Can't you see it?
+
+>> And you're assuming grepping /proc/kallsyms is not useful?  It's
+>> useful in its adhoc unsupported hacky way.
+> 
+> Well lets say it's useful and 100k people use that method in it's
+> "hacky" way .. When does it become a feature then?
+
+If 100k people actually want it, solve the damn problem instead of
+holding onto the bandaid which doesn't work anyway.
+
+> So your totally unwilling to change your patches to correct this
+> problem? Is that what your getting at? Agree or disagree isn't relevant
+> it's a real problem or I wouldn't have brought it up.
+>
+> btw, I already gave you a relatively easy way to correct this.
+
+I'm sorry but the problem you brought up seems bogus to me.  So does
+the solution.  In debugfs?  Is that debug feature or is it an API?  Do
+we keep the workqueues stable then?  Do we make announcements when
+moving one work from one workqueue to another?  If it's a debug
+feature, why are we talking like this any way?
+
+Thanks.
+
+-- 
+tejun
