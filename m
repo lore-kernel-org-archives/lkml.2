@@ -1,180 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab0FQOTW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 10:19:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36493 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753288Ab0FQOTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 10:19:21 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: axboe@kernel.dk, carns@mcs.anl.gov
-Subject: [patch] cfq: Don't allow queue merges for queues that have no process references
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 17 Jun 2010 10:19:11 -0400
-Message-ID: <x49ocf9agio.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1760135Ab0FQOUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 10:20:47 -0400
+Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:47985 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755136Ab0FQOUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 10:20:45 -0400
+Date: Thu, 17 Jun 2010 16:20:40 +0200
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+Message-ID: <20100617142040.GB7400@localdomain>
+Reply-To: Louis.Rilling@kerlabs.com
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <4C19F0A3.2050707@parallels.com> <m1631hdbdu.fsf@fess.ebiederm.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-13605-1276784438-0001-2"
+Content-Disposition: inline
+In-Reply-To: <m1631hdbdu.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
-A user reported a kernel bug when running a particular program that did
-the following:
+--=_bohort-13605-1276784438-0001-2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-created 32 threads
-- each thread took a mutex, grabbed a global offset, added a buffer size
-  to that offset, released the lock
-- read from the given offset in the file
-- created a new thread to do the same
-- exited
+On Thu, Jun 17, 2010 at 06:41:49AM -0700, Eric W. Biederman wrote:
+> Pavel Emelyanov <xemul@parallels.com> writes:
+>=20
+> > On 06/16/2010 08:34 PM, Louis Rilling wrote:
+> >> [ Resending, hopefully with all pieces ]
+> >>=20
+> >> Detached tasks are not seen by zap_pid_ns_processes()->sys_wait4(), so
+> >> that release_task()->proc_flush_task() of container init can be called
+> >> before it is for some detached tasks in the namespace.
+>=20
+> There are two ways we can go from here.
+>=20
+> - Completely asynchronous children exiting.
+> - Waiting for all of our children to exit.
 
-The result is that cfq's close cooperator logic would trigger, as the
-threads were issuing I/O within the mean seek distance of one another.
-This workload managed to routinely trigger a use after free bug when
-walking the list of merge candidates for a particular cfqq
-(cfqq->new_cfqq).  The logic used for merging queues looks like this:
+Agreed.
 
-static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
-{
-	int process_refs, new_process_refs;
-	struct cfq_queue *__cfqq;
+>=20
+> Your patch appears to be a weird middle ground, that is hard to
+> analyze, abusing the mount count as a thread count.
+>=20
+> I have been weighing the options between them, and to me properly
+> waiting for all the processes to exit in zap_pid_ns_processes as we
+> currently try to do is in our advantage.  It is simple and it means
+> one less cache line bounce for a write to global variable in the
+> much more common fork/exit path that we have to deal with.
+>=20
+> The task->children isn't changed until __unhash_process() which runs
+> after flush_proc_task().  So we should be able to come up with
+> a variant of do_wait() that zap_pid_ns_processes can use that does
+> what we need.
 
-	/* Avoid a circular list and skip interim queue merges */
-	while ((__cfqq = new_cfqq->new_cfqq)) {
-		if (__cfqq == cfqq)
-			return;
-		new_cfqq = __cfqq;
-	}
+Sounds correct.
 
-	process_refs = cfqq_process_refs(cfqq);
-	/*
-	 * If the process for the cfqq has gone away, there is no
-	 * sense in merging the queues.
-	 */
-	if (process_refs == 0)
-		return;
+>=20
+> Louis do you want to look at that?
 
-	/*
-	 * Merge in the direction of the lesser amount of work.
-	 */
-	new_process_refs = cfqq_process_refs(new_cfqq);
-	if (new_process_refs >= process_refs) {
-		cfqq->new_cfqq = new_cfqq;
-		atomic_add(process_refs, &new_cfqq->ref);
-	} else {
-		new_cfqq->new_cfqq = cfqq;
-		atomic_add(new_process_refs, &cfqq->ref);
-	}
-}
+Give me a few days to look at that. IMHO my patch fixes the bug (see the
+comment below), which was an emergency at work. Coding an improved fix is
+lower priority :)
 
-When a merge candidate is found, we add the process references for the
-queue with less references to the queue with more.  The actual merging
-of queues happens when a new request is issued for a given cfqq.  In the
-case of the test program, it only does a single pread call to read in
-1MB, so the actual merge never happens.
+>=20
+> >> Pin proc_mnt's in copy_process(), so that proc_flush_task() becomes sa=
+fe
+> >> whatever the ordering of tasks.
+> >
+> > See one comment below.
+> >
+> >> Signed-off-by: Louis Rilling <louis.rilling@kerlabs.com>
+> >> ---
+> >>  fs/proc/base.c          |   18 ++++++++++++++++++
+> >>  include/linux/proc_fs.h |    4 ++++
+> >>  kernel/fork.c           |    1 +
+> >>  3 files changed, 23 insertions(+), 0 deletions(-)
+> >>=20
+> >> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> >> index acb7ef8..d6cdd91 100644
+> >> --- a/fs/proc/base.c
+> >> +++ b/fs/proc/base.c
+> >> @@ -2663,6 +2663,23 @@ static const struct inode_operations proc_tgid_=
+base_inode_operations =3D {
+> >>  	.setattr	=3D proc_setattr,
+> >>  };
+> >> =20
+> >> +/*
+> >> + * Pin all proc_mnt so that detached tasks can safely call proc_flush=
+_task()
+> >> + * after container init calls itself proc_flush_task().
+> >> + */
+> >> +void proc_new_task(struct task_struct *task)
+> >> +{
+> >> +	struct pid *pid;
+> >> +	int i;
+> >> +
+> >> +	if (!task->pid)
+> >> +		return;
+> >> +
+> >> +	pid =3D task_pid(task);
+> >> +	for (i =3D 0; i <=3D pid->level; i++)
+> >> +		mntget(pid->numbers[i].ns->proc_mnt);
+> >
+> > NAK. Pids live their own lives - task can change one, pid will
+> > become orphan and will be destroyed, so you'll leak.
+>=20
+> There is that nasty case in exec isn't there.  Why we ever made it
+> part of the ABI that calling exec on a thread changes the pid of
+> that thread to the pid of the thread group is beyond me.
 
-Normally, this is fine, as when the queue exits, we simply drop the
-references we took on the other cfqqs in the merge chain:
+You're right that I forgot about de_thread(). However, de_thread() does not
+replace a task pid with an arbitrary other pid. The new pid lives in the sa=
+me
+pid namespaces, so that proc_flush_task() will call mntput() on the same
+proc_mnts as the ones on which proc_new_task() called mntget().
 
-	/*
-	 * If this queue was scheduled to merge with another queue, be
-	 * sure to drop the reference taken on that queue (and others in
-	 * the merge chain).  See cfq_setup_merge and cfq_merge_cfqqs.
-	 */
-	__cfqq = cfqq->new_cfqq;
-	while (__cfqq) {
-		if (__cfqq == cfqq) {
-			WARN(1, "cfqq->new_cfqq loop detected\n");
-			break;
-		}
-		next = __cfqq->new_cfqq;
-		cfq_put_queue(__cfqq);
-		__cfqq = next;
-	}
+Thanks,
 
-However, there is a hole in this logic.  Consider the following (and
-keep in mind that each I/O keeps a reference to the cfqq):
+Louis
 
-q1->new_cfqq = q2   // q2 now has 2 process references
-q3->new_cfqq = q2   // q2 now has 3 process references
+--=20
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
 
-// the process associated with q2 exits
-// q2 now has 2 process references
+--=_bohort-13605-1276784438-0001-2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
+Content-Disposition: inline
 
-// queue 1 exits, drops its reference on q2
-// q2 now has 1 process reference
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-// q3 exits, so has 0 process references, and hence drops its references
-// to q2, which leaves q2 also with 0 process references
+iEYEARECAAYFAkwaLzgACgkQVKcRuvQ9Q1R4bgCdEu9B/0ttyKtkvmTyzjJ1Hdfb
+GWgAoJaMsrybY+EGKI6m/nYZD1lNX3p+
+=g2Fx
+-----END PGP SIGNATURE-----
 
-q4 comes along and wants to merge with q3
-
-q3->new_cfqq still points at q2!  We follow that link and end up at an
-already freed cfqq.
-
-So, the fix is to not follow a merge chain if the top-most queue does
-not have a process reference, otherwise any queue in the chain could be
-already freed.  I also changed the logic to disallow merging with a
-queue that does not have any process references.  Previously, we did
-this check for one of the merge candidates, but not the other.  That
-doesn't really make sense.
-
-Without the attached patch, my system would BUG within a couple of
-seconds of running the reproducer program.  With the patch applied, my
-system ran the program for over an hour without issues.
-
-This addresses the following bugzilla:
-    https://bugzilla.kernel.org/show_bug.cgi?id=16217
-
-Thanks a ton to Phil Carns for providing the bug report and an excellent
-reproducer.
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Reported-by: Phil Carns <carns@mcs.anl.gov>
-
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 5ff4f48..153f627 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1986,6 +1986,15 @@ static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
- 	int process_refs, new_process_refs;
- 	struct cfq_queue *__cfqq;
- 
-+	/*
-+	 * If there are no process references on the new_cfqq, then it is
-+	 * unsafe to follow the ->new_cfqq chain as other cfqq's in the
-+	 * chain may have dropped their last reference (not just their
-+	 * last process reference).
-+	 */
-+	if (!cfqq_process_refs(new_cfqq))
-+		return;
-+
- 	/* Avoid a circular list and skip interim queue merges */
- 	while ((__cfqq = new_cfqq->new_cfqq)) {
- 		if (__cfqq == cfqq)
-@@ -1994,17 +2003,17 @@ static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
- 	}
- 
- 	process_refs = cfqq_process_refs(cfqq);
-+	new_process_refs = cfqq_process_refs(new_cfqq);
- 	/*
- 	 * If the process for the cfqq has gone away, there is no
- 	 * sense in merging the queues.
- 	 */
--	if (process_refs == 0)
-+	if (process_refs == 0 || new_process_refs == 0)
- 		return;
- 
- 	/*
- 	 * Merge in the direction of the lesser amount of work.
- 	 */
--	new_process_refs = cfqq_process_refs(new_cfqq);
- 	if (new_process_refs >= process_refs) {
- 		cfqq->new_cfqq = new_cfqq;
- 		atomic_add(process_refs, &new_cfqq->ref);
+--=_bohort-13605-1276784438-0001-2--
