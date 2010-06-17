@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759150Ab0FQBb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 21:31:56 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33405 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755648Ab0FQBby (ORCPT
+	id S1756125Ab0FQBiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 21:38:55 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47366 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755448Ab0FQBiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 21:31:54 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C197ADF.90509@jp.fujitsu.com>
-Date: Thu, 17 Jun 2010 10:31:11 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Wed, 16 Jun 2010 21:38:54 -0400
+Message-ID: <4C197CB5.5020907@vflare.org>
+Date: Thu, 17 Jun 2010 07:09:01 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-       linux-kernel@vger.kernel.org
-CC: linux-pci@vger.kernel.org, macro@linux-mips.org,
-       kamezawa.hiroyu@jp.fujitsu.com, eike-kernel@sf-tec.de
-Subject: [PATCH 2/2] x86: ioremap: fix normal ram range check
-References: <4C197A49.6020400@jp.fujitsu.com>
-In-Reply-To: <4C197A49.6020400@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Greg KH <greg@kroah.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
+       driverdev <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] zram: generic RAM based compressed R/W block devices
+References: <1274710685-2351-1-git-send-email-ngupta@vflare.org> <4BFFEA95.9040505@vflare.org> <20100528162657.GA28781@kroah.com> <4C18337C.3040605@vflare.org> <20100616184355.GA14248@kroah.com>
+In-Reply-To: <20100616184355.GA14248@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check for norma RAM in x86 ioremap() code seems to not work for the
-last page frame in the specified physical address range.
+On 06/17/2010 12:13 AM, Greg KH wrote:
+> On Wed, Jun 16, 2010 at 07:44:20AM +0530, Nitin Gupta wrote:
+>> Hi Greg,
+>>
+>> On 05/28/2010 09:56 PM, Greg KH wrote:
+>>> On Fri, May 28, 2010 at 09:38:53PM +0530, Nitin Gupta wrote:
+>>>>
+>>>> On 05/24/2010 07:48 PM, Nitin Gupta wrote:
+>>>>> Creates RAM based block devices: /dev/zramX (X = 0, 1, ...).
+>>>>> Pages written to these disks are compressed and stored in memory
+>>>>> itself. These disks allow very fast I/O and compression provides
+>>>>> good amounts of memory savings.
+>>>>>
+>>>>> This is enhancement over existing ramzswap driver which creates
+>>>>> virtual block devices (/dev/ramzswapX) which could be used only
+>>>>> as swap disks.
+>>>>>
+>>>>> Now, with the ability to handle any kind of I/O request, zram
+>>>>> devices have lot more use cases:
+>>>>>  - /tmp storage
+>>>>>  - various caches under /var
+>>>>>  - swap disks
+>>>>>  - maybe even more! :)
+>>>>>
+>>>>> Performance numbers can be found at:
+>>>>> http://code.google.com/p/compcache/wiki/zramperf
+>>>>>
+>>>>
+>>>> Any reviews/comments, please?
+>>>
+>>> We are all busy with the .35-rc1 merge work at the moment, sorry.
+>>>
+>>
+>> Can you please apply these patches to linux-next?
+> 
+> Yes, I'm working on it, I should get to it by the end of this week.
+> 
+>> or maybe for .35-rc3/rc4 too?
+> 
+> No, this is not a bugfix, why would it be acceptable for the .35 kernel
+> release?
+> 
 
-Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Since its a staging driver, I thought any kind of changes can be pulled in
+mainline too. Maybe I still don't understand how -staging works :)
 
----
- arch/x86/mm/ioremap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Anyways, thanks for taking it in linux-next.
 
-Index: linux-2.6.34/arch/x86/mm/ioremap.c
-===================================================================
---- linux-2.6.34.orig/arch/x86/mm/ioremap.c	2010-06-15 05:33:06.272381451 +0900
-+++ linux-2.6.34/arch/x86/mm/ioremap.c	2010-06-15 05:33:21.086585690 +0900
-@@ -101,7 +101,7 @@
- 	 * Don't allow anybody to remap normal RAM that we're using..
- 	 */
- 	last_pfn = last_addr >> PAGE_SHIFT;
--	for (pfn = phys_addr >> PAGE_SHIFT; pfn < last_pfn; pfn++) {
-+	for (pfn = phys_addr >> PAGE_SHIFT; pfn <= last_pfn; pfn++) {
- 		int is_ram = page_is_ram(pfn);
- 
- 		if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
-
-
+Nitin
