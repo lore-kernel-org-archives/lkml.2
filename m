@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760568Ab0FQR4G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 13:56:06 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53607 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760409Ab0FQR4E convert rfc822-to-8bit (ORCPT
+	id S1760589Ab0FQSDL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 14:03:11 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:22233 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759832Ab0FQSDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 13:56:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OXsLwYcWGrAapXxYJgsq+HGN9B15WyUjrFNECDQ+Tj1NjeNZysSpdVSaGkpUmKcT6c
-         MG5RCPBKY51byi3i0QDCbxj8UQRdZJ99mT4Q3Qy8kU4m5wJOpuMbIG+5ZEkFq6stgsJk
-         Zt0NWLsXdhf5YEFtiJNPGHkJu098Ou8hfSnEE=
+	Thu, 17 Jun 2010 14:03:08 -0400
+X-IronPort-AV: E=Sophos;i="4.53,432,1272844800"; 
+   d="scan'208";a="465268"
+Date: Thu, 17 Jun 2010 19:00:59 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "jeremy@goop.org" <jeremy@goop.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       "ddutile@redhat.com" <ddutile@redhat.com>,
+       "sheng@linux.intel.com" <sheng@linux.intel.com>
+Subject: Re: [Xen-devel] [PATCH 12/12] Unplug emulated disks and nics
+In-Reply-To: <20100617174622.GB17523@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1006171900110.3401@kaball-desktop>
+References: <1275570645-27189-1-git-send-email-stefano.stabellini@eu.citrix.com> <1275570645-27189-12-git-send-email-stefano.stabellini@eu.citrix.com> <20100614212017.GA8600@phenom.dumpdata.com> <alpine.DEB.2.00.1006171541490.3401@kaball-desktop>
+ <20100617174622.GB17523@phenom.dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100525071147.GC5985@elte.hu>
-References: <20100523144912.jfmkhsp50kcgk8os@webmail-stud.polimi.it>
-	<20100525071147.GC5985@elte.hu>
-Date: Thu, 17 Jun 2010 19:02:49 +0200
-Message-ID: <AANLkTikuunLAsrtS2GhSkICkYfN_0H0jdZyo7fxjQl9b@mail.gmail.com>
-Subject: Re: Sched_class documentation
-From: sebastiano spicuglia <spicuglia.sebastiano@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Thu, 17 Jun 2010, Konrad Rzeszutek Wilk wrote:
+> If was thinking of something like this in the header file:
+> 
+> 
+> int xen_must_unplug_nics() {
+> #if (defined(CONFIG_XEN_NETDEV_FRONTEND) || \
+> 		defined(CONFIG_XEN_NETDEV_FRONTEND_MODULE)) && \
+> 		(defined(CONFIG_XEN_PLATFORM_PCI) || \
+> 		 defined(CONFIG_XEN_PLATFORM_PCI_MODULE))
+> 	return 1;
+> #else
+> 	return 0;
+> }
+> 
+> and then your code would be:
+> 
+> 	if (xen_must_unplug_nics()) {
+> 		printk(".. blah blah ");
+> 		xen_emul_unplug |- XEN_unPLIG_ALL_NICS;
+> 	}
+> 
+> and similar for the IDE disks.
+> 
 
-I made many progress. But I have two doubts yet.
-First: what does hrtick_start do?
-I think that: if I call hrtick_start(rq, 500)  then, after 500ns, the
-task_tick function will be invocated.
-Is it right?
-Second: if my schedule_class decides to preempt the current task, it
-has to call resched_task(rq->curr).
-Is it right?
+this seems actually better, I'll do that
 
-Thanks in advance.
-Kind Regards.
-Sebastiano.
+> > 
+> > 
+> > > > +	}
+> > > > +	/* Now unplug the emulated devices */
+> > > > +	if (xen_platform_pci_enabled && !(xen_emul_unplug & XEN_UNPLUG_IGNORE))
+> > > > +		outw(xen_emul_unplug, XEN_IOPORT_UNPLUG);
+> > > > +}
+> > > > +
+> > > > +static int __init parse_xen_emul_unplug(char *arg)
+> > > > +{
+> > > > +	char *p, *q;
+> > > > +
+> > > > +	for (p = arg; p; p = q) {
+> > > > +		q = strchr(arg, ',');
+> > > > +		if (q)
+> > > > +			*q++ = '\0';
+> > > > +		if (!strcmp(p, "all"))
+> > > > +			xen_emul_unplug |= XEN_UNPLUG_ALL;
+> > > 
+> > > strncmp..
+> > > 
+> > 
+> > is it really needed considering that we know that both strings are NULL
+> > terminated and one of them is a constant?
+> 
+> Please do.
+> 
 
-On Tue, May 25, 2010 at 9:11 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> Hi,
->
-> * sebastiano.spicuglia@mail.polimi.it <sebastiano.spicuglia@mail.polimi.it> wrote:
->
->> Hi Ingo,
->>
->> excuse me for contacting you in this way.
->> I don't want hurt you.
->> I am implementing a new schedule class for my bachelor
->> project degree at Politecnico di Milano.
->> I experienced many problems but sometimes the kernel starts.
->> The main problem is the documentation.
->> Could you explain me when sched.c calls sched_class functions (
->> enqueue_task, dequeue_task, etc... )
->> and what sched_class functions should do?
->> My reverse engineering skills don't work very well and
->> in internet there are not many information about this and
->> however they are generic and incomplete.
->>
->> I am working with version 2.6.34.
->
-> There's a couple of files in Documentation/sched/ which give a high-level
-> description - but some of that info is outdated. Most of the documentation is
-> the code itself, as usual ;-)
->
-> If you have any questions, please also Cc: lkml and Peter Zijstra
-> (co-maintainer of the scheduler):
->
->  Peter Zijlstra <a.p.zijlstra@chello.nl>
->
-> Thanks,
->
->        Ingo
->
+all right
+
