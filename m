@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045Ab0FQQT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 12:19:28 -0400
-Received: from fg-out-1718.google.com ([72.14.220.154]:30242 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933032Ab0FQQTZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 12:19:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QTde+BkH5EWIheDEsVi6RTRJ07yoc0k4pmBZBSIxVGXDTVv7CO6iILNuE3VvFJflQp
-         X/Y2paXjj7ag2b2Ip5KuEhsyXM7rL91jOqXbeFJbY9o643uUsfNoTsn+cHFrSlEcaWUD
-         nNcNd9bNK0m1UFJS7LvrMO1fpVWPs1ACsz4XU=
-Date: Thu, 17 Jun 2010 18:17:28 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Dan Carpenter <error27@gmail.com>, Xiaotian Feng <dfeng@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-       Jack Steiner <steiner@sgi.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
-       x86@kernel.org
-Subject: Re: [patch] x86, pat: freeing invalid memtype messages
-Message-ID: <20100617161728.GA2741@joi.lan>
-References: <20100617134559.GA29824@bicker>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100617134559.GA29824@bicker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933061Ab0FQQTl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 12:19:41 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40665 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933008Ab0FQQTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 12:19:38 -0400
+Subject: Re: [PATCH 5/12] scsi: megaraid_sas - Online Controller Reset
+ (OCR): Add and initialize the OCR relaed variable
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Yang, Bo" <Bo.Yang@lsi.com>
+Cc: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+       "'akpm@osdl.org'" <akpm@osdl.org>,
+       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D0804554@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804554@cosmail02.lsi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Jun 2010 11:19:30 -0500
+Message-ID: <1276791570.7398.12.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 03:45:59PM +0200, Dan Carpenter wrote:
-> Commit 20413f27163 "x86, pat: Fix memory leak in free_memtype" added an
-> error message in free_memtype() if rbt_memtype_erase() returns NULL.  
-> The problem is that if CONFIG_X86_PAT is enabled, we use a different
-> implimentation of rbt_memtype_erase() that always returns NULL.
-> 
-> I've modified rbt_memtype_erase() to return an ERR_PTR() on errors and 
-> made free_memtype() check for that instead.
-> 
-> Addresses:  https://bugzilla.kernel.org/show_bug.cgi?id=16205
-> 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
+On Wed, 2010-06-09 at 21:54 -0600, Yang, Bo wrote:
+> To support online controller reset, driver need to define some
+> instance based variable and initialize them.
 
-This patch is probably ok, but it does not address my bug.
-I have CONFIG_X86_PAT=y, so rbt_memtype_erase does not always return NULL.
- 
-> diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-> index acc15b2..81b7735 100644
-> --- a/arch/x86/mm/pat.c
-> +++ b/arch/x86/mm/pat.c
-> @@ -359,10 +359,10 @@ int free_memtype(u64 start, u64 end)
->  	entry = rbt_memtype_erase(start, end);
->  	spin_unlock(&memtype_lock);
->  
-> -	if (!entry) {
-> +	if (IS_ERR(entry)) {
->  		printk(KERN_INFO "%s:%d freeing invalid memtype %Lx-%Lx\n",
->  			current->comm, current->pid, start, end);
-> -		return -EINVAL;
-> +		return PTR_ERR(entry);
->  	}
->  
->  	kfree(entry);
-> diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
-> index f537087..90e5cbe 100644
-> --- a/arch/x86/mm/pat_rbtree.c
-> +++ b/arch/x86/mm/pat_rbtree.c
-> @@ -236,8 +236,10 @@ struct memtype *rbt_memtype_erase(u64 start, u64 end)
->  	struct memtype *data;
->  
->  	data = memtype_rb_exact_match(&memtype_rbroot, start, end);
-> -	if (!data)
-> +	if (!data) {
-> +		data = ERR_PTR(-EINVAL);
->  		goto out;
-> +	}
->  
->  	rb_erase(&data->rb, &memtype_rbroot);
->  out:
-> 
-> 
+This doesn't compile:
+
+  CC [M]  drivers/scsi/megaraid/megaraid_sas.o
+drivers/scsi/megaraid/megaraid_sas.c: In function
+‘megasas_deplete_reply_queue’:
+drivers/scsi/megaraid/megaraid_sas.c:2090: warning: unused variable
+‘fw_state’
+drivers/scsi/megaraid/megaraid_sas.c: In function ‘megasas_init_mfi’:
+drivers/scsi/megaraid/megaraid_sas.c:3023: error: ‘struct
+megasas_ctrl_prop’ has no member named ‘OnOffProperties’
+drivers/scsi/megaraid/megaraid_sas.c: In function ‘megasas_probe_one’:
+drivers/scsi/megaraid/megaraid_sas.c:3486: error:
+‘process_fw_state_change_wq’ undeclared (first use in this function)
+drivers/scsi/megaraid/megaraid_sas.c:3486: error: (Each undeclared
+identifier is reported only once
+drivers/scsi/megaraid/megaraid_sas.c:3486: error: for each function it
+appears in.)
+
+Because OnOffProperties structure is defined in patch 6/12 as is the
+process_fw_state_change_wq function.
+
+I've got 1-4 ... please resubmit 5-12 so they actually build in the
+order submitted.
+
+Thanks,
+
+James
+
+
