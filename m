@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757072Ab0FQPbK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 11:31:10 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:45170 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab0FQPbI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 11:31:08 -0400
-Date: Fri, 18 Jun 2010 00:30:51 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: davem@davemloft.net, mchan@broadcom.com, vapier@gentoo.org,
-       JBottomley@novell.com, netdev@vger.kernel.org,
-       linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: bnx2 fails to compile on parisc because of missing get_dma_ops()
-Message-ID: <20100617153051.GB8964@linux-sh.org>
-References: <C27F8246C663564A84BB7AB3439772421B79CBCA1E@IRVEXCHCCR01.corp.ad.broadcom.com> <20100617211946A.fujita.tomonori@lab.ntt.co.jp> <20100617.073653.193708702.davem@davemloft.net> <20100617234520S.fujita.tomonori@lab.ntt.co.jp>
+	id S932293Ab0FQPje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 11:39:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58504 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752471Ab0FQPjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 11:39:33 -0400
+Date: Thu, 17 Jun 2010 11:39:24 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: fweisbec <fweisbec@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/14] tracing: add compat syscall support v3
+Message-ID: <20100617153924.GD3237@redhat.com>
+References: <cover.1268749695.git.jbaron@redhat.com>
+ <1274433809-sup-5031@au1.ibm.com>
+ <20100521132405.GA2109@redhat.com>
+ <1276759528-sup-4850@au1.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100617234520S.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <1276759528-sup-4850@au1.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 11:50:35PM +0900, FUJITA Tomonori wrote:
-> On Thu, 17 Jun 2010 07:36:53 -0700 (PDT)
-> David Miller <davem@davemloft.net> wrote:
-> 
-> > From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> > Date: Thu, 17 Jun 2010 21:21:13 +0900
-> > 
-> > > On Wed, 16 Jun 2010 23:24:44 -0700
-> > > "Michael Chan" <mchan@broadcom.com> wrote:
+On Thu, Jun 17, 2010 at 05:39:07PM +1000, Ian Munsie wrote:
+> Excerpts from Jason Baron's message of Fri May 21 23:24:07 +1000 2010:
+> > On Fri, May 21, 2010 at 07:40:21PM +1000, Ian Munsie wrote:
+> > > Hi Jason,
 > > > 
-> > >> David, why is dma_is_consistent() always returning 1 on sparc?  The
-> > >> streaming DMA is not consistent.
+> > > I'm currently in the process of implementing syscall tracepoints for
+> > > PowerPC, and a considerable amount of my work is going to end up
+> > > requiring these patches of yours. I've reviewed and tested your patches
+> > > (and spent a good chunk of time rebasing them on top of
+> > > tip/tracing/core) and they all seem pretty good.
 > > > 
-> > > I think that there are some confusion about dma_is_consistent(). Some
-> > > architectures think that dma_is_consistent() is supposed to return 1
-> > > if they can allocate coherent memory (note that some architectures
-> > > can't allocate coherent memory).
+> > > I *particularly* like the way in which they prevent ftrace syscalls from
+> > > reporting that sys_swapoff was constantly firing on x86_64 kernels with
+> > > a 32bit userspace ;)
+> > > 
+> > > Anyway, I'm just wondering if you have an ETA for the v4 patchset to
+> > > address the remaining issues that Frederic raised so that they can be
+> > > merged.
+> > > 
+> > > Cheers,
+> > > -Ian
+> > > 
 > > 
-> > Right, and that's why it's defined this way.
+> > hi Ian,
 > > 
-> > If the desired meaning is different, just me know and I'll fix the
-> > sparc definition.
+> > I think the main issue left was that I am using the same meta data for
+> > both the 32-bit and 64-bit table entries, when they reference the same
+> > syscall. for example, for x86 both the compat and underlying 64-bit
+> > kernel reference 'sys_rename'. Thus, i am pointing both perf events at
+> > the same meta data. Frederic was saying they need to be separate. I'm
+> > not sure i completely understand why, since the 32-bit are just sign
+> > extended to 64-bit in this case. Frederic, perhaps, you can explain this
+> > a bit more for me?
+> > 
+> > thanks,
+> > 
+> > -Jason
 > 
-> I think that there are some other architectures do the same. We need
-> to make sure that all the architectures define dma_is_consistent() in
-> the same meaning if drivers need it. However, I'm not sure we really
-> need dma_is_consistent(). There is only one user of it (and I think we
-> could remove it).
+> Hi Jason,
 > 
-> In the bnx2 case, we can simply prefetch on all the archs (or just
-> remove the optimization).
+> I'm currently cleaning up my patch series for ftrace syscalls on PowerPC
+> and want to release it soon.
+> 
+> It's probably easiest for me if I release your compat syscall support v3
+> patches as part of the series. You'd still be marked as the author of
+> those commits - the only changes I have made to them was rebasing them
+> against the current tip tree and resolving the conflicts that I came
+> across.
+> 
+> Is that OK with you? Otherwise I can wait until you put out the v4
+> patches then rebase mine on top of those.
+> 
 
-I think its worthwhile keeping, especially since the consistency can vary
-on a per struct device level. If there's a benefit with these sorts of
-prefetch micro-optimizations in drivers when it doesn't cost us that much
-to provide the hint, I don't really see the harm. If dma_is_consistent()
-is suddenly supposed to take on other meanings, or it's supposed to mean
-something entirely different, then this is something we should deal with
-separately.
+Hi Ian
 
-I don't see any harm in letting drivers know whether we can support
-consistent DMA allocs for a given struct device or not though, even if
-the micro-optimization is marginal at best.
+if its easier for you, that's fine, feel free to include my patches with
+your patchset.
 
-At least I've conditionalized the definition on SH, and it seems other
-archictures have done so too. It's not clear what we'd gain from throwing
-that away as long as they're generally in agreement on what it means.
+thanks,
+
+-Jason
