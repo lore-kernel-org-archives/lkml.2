@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab0FQLlV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 07:41:21 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54800 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752553Ab0FQLlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 07:41:20 -0400
-Message-ID: <4C1A09DF.9070809@kernel.dk>
-Date: Thu, 17 Jun 2010 13:41:19 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Richard Kennedy <richard@rsk.demon.co.uk>
-CC: Peter Zijlstra <peterz@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [RFC PATCH] mm: let the bdi_writeout fraction respond more  quickly
-References: <1276523894.1980.85.camel@castor.rsk>	 <1276526681.1980.89.camel@castor.rsk>  <1276714466.1745.625.camel@laptop> <1276774796.1978.11.camel@castor.rsk>
-In-Reply-To: <1276774796.1978.11.camel@castor.rsk>
-Content-Type: text/plain; charset=UTF-8
+	id S1759733Ab0FQLmY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 07:42:24 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45900 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752553Ab0FQLmW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 07:42:22 -0400
+Date: Thu, 17 Jun 2010 12:43:43 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Tejun Heo <tj@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Arjan van de Ven <arjan@infradead.org>, mingo@elte.hu, bphilips@suse.de,
+       yinghai@kernel.org, akpm@linux-foundation.org,
+       torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, linux-ide@vger.kernel.org, stern@rowland.harvard.edu,
+       gregkh@suse.de, khali@linux-fr.org
+Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
+Message-ID: <20100617124343.5889067c@lxorguk.ukuu.org.uk>
+In-Reply-To: <4C1A05AF.5010405@kernel.org>
+References: <1276443098-20653-1-git-send-email-tj@kernel.org>
+	<1276443098-20653-10-git-send-email-tj@kernel.org>
+	<20100616204854.4b036f87@infradead.org>
+	<4C19DA64.8000409@kernel.org>
+	<alpine.LFD.2.00.1006171310560.4290@localhost.localdomain>
+	<4C1A05AF.5010405@kernel.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-06-17 13:39, Richard Kennedy wrote:
-> On Wed, 2010-06-16 at 20:54 +0200, Peter Zijlstra wrote:
->> On Mon, 2010-06-14 at 15:44 +0100, Richard Kennedy wrote:
->>>> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
->>>> index 2fdda90..315dd04 100644
->>>> --- a/mm/page-writeback.c
->>>> +++ b/mm/page-writeback.c
->>>> @@ -144,7 +144,7 @@ static int calc_period_shift(void)
->>>>       else
->>>>               dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
->>>>                               100;
->>>> -     return 2 + ilog2(dirty_total - 1);
->>>> +     return ilog2(dirty_total - 1) - 4;
->>>>  } 
->>
->> IIRC I suggested similar things in the past and all we needed to do was
->> find people doing the measurements on different bits of hardware or so..
->>
->> I don't have any problems with the approach, all we need to make sure is
->> that we never return 0 or a negative number (possibly ensure a minimum
->> positive shift value).
-> 
-> Yep that sounds reasonable. would minimum shift of 4 be ok ?
-> 
-> something like
-> 
-> 	max ( (ilog2(dirty_total - 1)- 4) , 4);
-> 
-> Unfortunately volunteers don't seem to be leaping out of the woodwork,
-> maybe Andrew could be persuaded to try this in his tree for a while and
-> see if any one squeaks ?
+On Thu, 17 Jun 2010 13:23:27 +0200
+Tejun Heo <tj@kernel.org> wrote:
 
-I'm pretty sure that most volunteers are curious what to actually test,
-so they shy away from it. If you added a good explanation of an easy way
-to test the before and after, then it would be more approachable.
+> On 06/17/2010 01:12 PM, Thomas Gleixner wrote:
+> >> Hmmm.... oh, I see.  Wouldn't it be much better to use moving avg of
+> >> IRQ durations instead of letting the driver specify it?  Drivers are
+> >> most likely to just hard code it and It's never gonna be accurate.
+> > 
+> > Right, but that's probably more accurate than the core code heuristics
+> > ever will be.
+> 
+> Eh, not really.  For ATA at least, there will be three different
+> classes of devices.  SSDs, hard drives and optical devices
 
-I'll give it a spin here.
+At least four: It may also be battery backed RAM.
 
--- 
-Jens Axboe
+Alan
+
 
