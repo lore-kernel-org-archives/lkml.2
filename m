@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933179Ab0FQTAj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 15:00:39 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:28483 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757354Ab0FQTAh (ORCPT
+	id S1760663Ab0FQTCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 15:02:09 -0400
+Received: from vms173009pub.verizon.net ([206.46.173.9]:22711 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757354Ab0FQTCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 15:00:37 -0400
-Date: Thu, 17 Jun 2010 15:00:15 -0400 (EDT)
+	Thu, 17 Jun 2010 15:02:07 -0400
+Date: Thu, 17 Jun 2010 15:02:03 -0400 (EDT)
 From: Len Brown <lenb@kernel.org>
 X-X-Sender: lenb@localhost.localdomain
-To: Igor.Stoppa@nokia.com
-Cc: linux-pm@lists.osdl.org, linux-kernel@vger.kernel.org,
-       linux-acpi@vger.kernel.org
-Subject: RE: [linux-pm] RFC: /sys/power/policy_preference
-In-reply-to: <D32AB456855CBD4987499F68AFA421F4299A56E336@NOK-EUMSG-02.mgdnok.nokia.com>
-Message-id: <alpine.LFD.2.00.1006171445010.4214@localhost.localdomain>
+To: Victor Lowther <victor.lowther@gmail.com>
+Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [linux-pm] RFC: /sys/power/policy_preference
+In-reply-to: <0F1C0B07-60D6-405B-890B-F9C320820CA5@gmail.com>
+Message-id: <alpine.LFD.2.00.1006171500260.4214@localhost.localdomain>
 References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain>
- <D32AB456855CBD4987499F68AFA421F4299A56E336@NOK-EUMSG-02.mgdnok.nokia.com>
+ <0F1C0B07-60D6-405B-890B-F9C320820CA5@gmail.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-version: 1.0
 Content-type: TEXT/PLAIN; charset=US-ASCII
@@ -25,47 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010, Igor.Stoppa@nokia.com wrote:
 
-> i do understand that you are mostly targetting acpi based systems,
-> but even there, based on static leaks, it might not be always true
-> that lower frequencies are correlated to higher power savings
-> (or maybe i have misunderstood your draft - i am not so fluent in acpi)
-
-Right, my assertion is that ondemand deals only with P-states,
-where, by defintion, the deeper the P-state the lower the voltage,
-the higher the efficiency.
-
-I assume that ondemand is not used to enable T-states
-where the clock is throttled w/o lowering the voltage.
-I put a note to try to make that clear under
-max_powersave:
-
-"ondemand: min P-state (do not invoke T-states)"
-
-Of course it is also possible for a processor to do a poor job
-implementing P-states and a great job optimizing idle states
-such that race to idle were always a win.  However, on such
-a processor it would make more sense to simply disable P-states.
-
-> > it is likely
-> > that some users would want to use "powersave" when on
-> > battery and perhaps shift to "performance" on A/C.
+> On Jun 16, 2010, at 4:05 PM, Len Brown <lenb@kernel.org> wrote:
 > 
-> if we consider also the thermal envelope and the fact that "performance"
-> might steal power from a charging battery, even ton A/C it might not be 
-> possible to settle down in one state permanently.
+> > Create /sys/power/policy_preference, giving user-space
+> > the ability to express its preference for kernel based
+> > power vs. performance decisions in a single place.
+> > 
+> > This gives kernel sub-systems and drivers a central place
+> > to discover this system-wide policy preference.
+> > It also allows user-space to not have to be updated
+> > every time a sub-system or driver adds a new power/perf knob.
 > 
-> Or do you expect other mechanisms to intervene?
+> I would prefer documenting all the current knobs and adding them to pm-utils
+> so that pm-powersave knows about and can manage them. Once that is done,
+> creating arbitrary powersave levels should be fairly simple.
 
-Typical laptop BIOS commonly implement a scheme where
-they maximize performance on AC and bias towards saving energy
-on DC.
 
-That, of course, is just one example use-model.
-Here Linux user-space can choose whatever policy
-makes sense for them at run-time.
+The idea here is to not require user-space to need updating
+whenever a future knob is invented.  We can do a great job
+at documenting the past, but a poor job of documenting the future:-)
 
 cheers,
--Len Brown, Intel Open Source Technology Center
-
+Len Brown, Intel Open Source Technolgy Center
