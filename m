@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760423Ab0FQROy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 13:14:54 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:61052 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab0FQROv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 13:14:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=v30yXAd31lMMMgTclWS9/QznKaQ3U1skrJO4hy3KX1uz3eV4e/a/T8vWCLJjIp+SfT
-         oSi2qFs7P2XOnoqD1M4yEU6aiyRKLAeez2IVoVAUZgaePQ3tRLz76U/HUTUgWx043jyl
-         b8lW2YZD6vTLUDhq4UCtYsJdRJi3++39jzOLI=
-Message-ID: <4C1A581E.9050701@gmail.com>
-Date: Thu, 17 Jun 2010 10:15:10 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	id S1760445Ab0FQRZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 13:25:39 -0400
+Received: from kroah.org ([198.145.64.141]:58100 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756938Ab0FQRZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 13:25:37 -0400
+Date: Thu, 17 Jun 2010 10:25:16 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Alek Du <alek.du@intel.com>, Jacob Pan <jacob.jun.pan@intel.com>
+Subject: Re: linux-next: build failure after merge of the final tree (usb
+ tree related)
+Message-ID: <20100617172515.GA20453@kroah.com>
+References: <20100617145331.7bbefc4a.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Junchang Wang <junchangwang@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-       linux-pci@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 3/5]pci:bus.c Fix variable 'retval' set but not used
-References: <1276666434-11227-1-git-send-email-justinmattock@gmail.com> <1276666434-11227-4-git-send-email-justinmattock@gmail.com> <20100616060738.GA12461@host-a-229.ustcsz.edu.cn>
-In-Reply-To: <20100616060738.GA12461@host-a-229.ustcsz.edu.cn>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100617145331.7bbefc4a.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 11:07 PM, Junchang Wang wrote:
-> On Tue, Jun 15, 2010 at 10:33:52PM -0700, Justin P. Mattock wrote:
->> @@ -234,12 +234,10 @@ void pci_bus_add_devices(const struct pci_bus *bus)
->> void pci_enable_bridges(struct pci_bus *bus)
->> {
->> 	struct pci_dev *dev;
->> -	int retval;
->>
->> 	list_for_each_entry(dev,&bus->devices, bus_list) {
->> 		if (dev->subordinate) {
->> 			if (!pci_is_enabled(dev)) {
->> -				retval = pci_enable_device(dev);
-> Hi Justin,
->
-> pci_enable_device initializes device before it's used by a driver.
->
-> I think you should add check instead of eliminating pci_enable_device.
->
-> For example,
-> retval = pci_enable_device(dev);
-> if (retval<  0) {
-> 	goto handle_err;
-> }
->
-> --Junchang
->
->
+On Thu, Jun 17, 2010 at 02:53:31PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> In file included from drivers/usb/host/ehci-hcd.c:113:
+> drivers/usb/host/ehci-dbg.c: In function 'debug_lpm_write':
+> drivers/usb/host/ehci-dbg.c:992: error: implicit declaration of function 'copy_from_user'
+> 
+> Caused by commit a3c0b4b257eeaefe4e6c8fbf5ddfe674242f1b9e ("USB: EHCI:
+> EHCI 1.1 addendum: preparation").  Presumably a missing include of
+> linux/uaccess.h ...
+> 
+> I applied this patch for today:
 
-o.k. I looked into this one, as well as the scsi, please have a look 
-when you have time and let me know what you think:
+thanks, I've merged your fix in with the main patch so this problem will
+not show up, and pushed the updated patches out.
 
+thanks,
 
----
-  drivers/pci/bus.c |    3 +++
-  1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-index 628ea20..dba4c28 100644
---- a/drivers/pci/bus.c
-+++ b/drivers/pci/bus.c
-@@ -240,6 +240,9 @@ void pci_enable_bridges(struct pci_bus *bus)
-  		if (dev->subordinate) {
-  			if (!pci_is_enabled(dev)) {
-  				retval = pci_enable_device(dev);
-+				if (retval < 0) {
-+				dev_err(&dev->dev, "maybe something here explaining something...\n");
-+				}
-  				pci_set_master(dev);
-  			}
-  			pci_enable_bridges(dev->subordinate);
-
-
-Justin P. Mattock
+greg k-h
