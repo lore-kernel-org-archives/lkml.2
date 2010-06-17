@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932907Ab0FQPFK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 11:05:10 -0400
-Received: from fg-out-1718.google.com ([72.14.220.158]:47640 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760211Ab0FQPFH (ORCPT
+	id S932952Ab0FQPJF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 11:09:05 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:54122 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932897Ab0FQPJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 11:05:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=VYyKKE+j4/8MR8Lzmgb2nnxdALpDkUQD3rWUEg/ahVSLan71rgLG001dvMPMkzHAls
-         f3GjMsfnwjhJiFNmR5UXjVetfYCnyW3zbgLbzF10+h9u0WH+3EEVwvGKwYULsOiWicz/
-         p7WjcNV8WHuNKHQfa8gl2OoujrGpWezSXv4Co=
-Subject: Re: mpd client timeouts (bisected) 2.6.35-rc3
-From: Christoph Fritz <chf.fritz@googlemail.com>
-To: "markus@trippelsdorf.de" <markus@trippelsdorf.de>
-Cc: John Fastabend <john.r.fastabend@intel.com>,
-       David Miller <davem@davemloft.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       yanmin_zhang@linux.intel.com, alex.shi@intel.com, tim.c.chen@intel.com
-In-Reply-To: <20100613205922.GA1806@arch.tripp.de>
-References: <20100612102802.GA1782@arch.tripp.de>
-	 <20100612.145835.123986343.davem@davemloft.net>
-	 <4C149147.3080808@intel.com> <4C15414E.5090201@intel.com>
-	 <20100613205922.GA1806@arch.tripp.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 17 Jun 2010 17:05:11 +0200
-Message-ID: <1276787111.2970.1.camel@lovely.krouter>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jun 2010 11:09:03 -0400
+Date: Thu, 17 Jun 2010 09:08:54 -0600
+From: Alex Chiang <achiang@canonical.com>
+To: lenb@kernel.org, Jan Pogadl <pogadl.jan@googlemail.com>
+Cc: gong.chen@linux.intel.com, linux-acpi@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ACPI: processor: fix processor_physically_present on UP
+Message-ID: <20100617150853.GF2138@canonical.com>
+Mail-Followup-To: Alex Chiang <achiang@canonical.com>, lenb@kernel.org,
+	Jan Pogadl <pogadl.jan@googlemail.com>, gong.chen@linux.intel.com,
+	linux-acpi@vger.kernel.org,
+	linux-kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-06-13 at 22:59 +0200, markus@trippelsdorf.de wrote:
-> On Sun, Jun 13, 2010 at 01:36:30PM -0700, John Fastabend wrote:
+The commit 5d554a7bb06 (ACPI: processor: add internal
+processor_physically_present()) is broken on uniprocessor (UP)
+configurations, as acpi_get_cpuid() will always return -1.
 
-> > [PATCH] net: fix deliver_no_wcard regression on loopback device
-> 
-> This solves the problem here. Thanks.
+We use the value of num_possible_cpus() to tell us whether we got
+an invalid cpuid from acpi_get_cpuid() in the SMP case, or if
+instead, we are UP, in which case num_possible_cpus() is #defined
+as 1.
 
-here too
+We use num_possible_cpus() instead of num_online_cpus() to
+protect ourselves against the scenario of CPU hotplug, and we've
+taken down all the CPUs except one.
 
-Tested-by: Christoph Fritz <chf.fritz@googlemail.com>
+Thanks to Jan Pogadl for initial report and analysis and Chen
+Gong for review.
 
-
+Reported-by: Jan Pogadl <pogadl.jan@googlemail.com>:
+Cc: Chen Gong <gong.chen@linux.intel.com>
+Signed-off-by: Alex Chiang <achiang@canonical.com>
+---
+diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
+index 5128435..e9699aa 100644
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -223,7 +223,7 @@ static bool processor_physically_present(acpi_handle handle)
+ 	type = (acpi_type == ACPI_TYPE_DEVICE) ? 1 : 0;
+ 	cpuid = acpi_get_cpuid(handle, type, acpi_id);
+ 
+-	if (cpuid == -1)
++	if ((cpuid == -1) && (num_possible_cpus() > 1))
+ 		return false;
+ 
+ 	return true;
