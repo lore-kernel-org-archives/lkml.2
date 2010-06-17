@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759780Ab0FQKiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 06:38:13 -0400
-Received: from lider.pardus.org.tr ([193.140.100.216]:48192 "EHLO
-	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759754Ab0FQKiL (ORCPT
+	id S1759774Ab0FQKir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 06:38:47 -0400
+Received: from smtp6.freeserve.com ([193.252.22.190]:45047 "EHLO
+	smtp6.freeserve.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab0FQKiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 06:38:11 -0400
-From: =?UTF-8?q?Ozan=20=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>
-To: linux-kernel@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org, flamingice@sourmilk.net
-Subject: [PATCH] p54usb: Drop duplicate USBID 0xcde:0x0006
-Date: Thu, 17 Jun 2010 13:37:29 +0300
-Message-Id: <1276771049-2187-1-git-send-email-ozan@pardus.org.tr>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 17 Jun 2010 06:38:46 -0400
+X-ME-UUID: 20100617103842347.54E75700415F@mwinf3604.me.freeserve.com
+Date: Thu, 17 Jun 2010 11:38:15 +0100
+From: Chris Vine <chris@cvine.freeserve.co.uk>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: nfsd hang and kernel bug in 2.6.35-rc3
+Message-ID: <20100617113815.7e15d070@boulder.homenet>
+In-Reply-To: <20100616204415.49285875@corrin.poochiereds.net>
+References: <20100615175034.1e015fbc@boulder.homenet>
+	<20100616153603.GH10223@fieldses.org>
+	<20100616123532.569efeb9@tlielax.poochiereds.net>
+	<20100616220824.4e886552@boulder.homenet>
+	<20100616204415.49285875@corrin.poochiereds.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop the duplicate USB ID 0xcde:0x0006 which is written at two
-different places in p54usb.c
+On Wed, 16 Jun 2010 20:44:15 -0400
+Jeff Layton <jlayton@redhat.com> wrote:
+[snip]
+> I stand corrected then. That's pretty close to the nfsd that I've been
+> testing. I pulled down the nfsd init script and the only thing that
+> looks substantially different is that it sends signals to nfsd to shut
+> it down rather than just running "rpc.nfsd 0". That should work fine,
+> however.
+> 
+> Still I think the problem is basically something like what I've
+> described. You ended up somehow with sockets on the sv_permsocks list
+> that didn't hold lockd references. The way I described is one way that
+> could occur. Another seems to be __write_ports_addxprt (which I think
+> is clearly broken in light of this)...
+> 
+> The root cause of this however is likely to be related to this
+> problem:
+> 
+> > Jun 15 16:07:18 laptop kernel: svc: failed to register lockdv3 RPC
+> > service (errno 110). Jun 15 16:07:18 laptop kernel: lockd_up:
+> > makesock failed, error=-110
+> 
+> ...which means that the kernel couldn't talk to portmap or rpcbind.
+> Maybe it wasn't up at the time? Or a problem with firewalling?
 
-Signed-off-by: Ozan Çağlayan <ozan@pardus.org.tr>
----
- drivers/net/wireless/p54/p54usb.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+My initial reaction was "of course it is up" but your mention of
+portmap sent me investigating with interesting results. I was going
+to say "of course its is up" because the standard start-up script for
+nfsd (rc.nfsd) checks whether rpc.portmap and rpc.statd are running, if
+not starts them, and then starts exportfs, rpc.rquotad, rpc.nfsd and
+rpc.mountd.
 
-diff --git a/drivers/net/wireless/p54/p54usb.c b/drivers/net/wireless/p54/p54usb.c
-index 7307325..d6d8713 100644
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -69,7 +69,6 @@ static struct usb_device_id p54u_table[] __devinitdata = {
- 	{USB_DEVICE(0x0915, 0x2002)},	/* Cohiba Proto board */
- 	{USB_DEVICE(0x0baf, 0x0118)},   /* U.S. Robotics U5 802.11g Adapter*/
- 	{USB_DEVICE(0x0bf8, 0x1009)},   /* FUJITSU E-5400 USB D1700*/
--	{USB_DEVICE(0x0cde, 0x0006)},   /* Medion MD40900 */
- 	{USB_DEVICE(0x0cde, 0x0008)},	/* Sagem XG703A */
- 	{USB_DEVICE(0x0cde, 0x0015)},	/* Zcomax XG-705A */
- 	{USB_DEVICE(0x0d8e, 0x3762)},	/* DLink DWL-G120 Cohiba */
--- 
-1.7.1
+However, if I start portmap and statd early on so they do not rely on
+the nfsd start-up script, then nfsd starts fine, so it seems to be a
+timing thing notwithstanding that they are all started (at user level)
+sequentially and in the same thread/process.
+
+The timing problem does not arise on kernel-2.6.34 and earlier. Nor
+does it arise on my pentium uniprocessor machine with kernel 2.6.35-rc3,
+so it could well be core/thread related.  It looks as if something in
+the kernel has changed on that in 2.6.35 which provokes the kernel bug
+report if timing is wrong.  (If timing is wrong and if this is a user
+tools rather than a kernel deficiency, and I express no view on that,
+then I suppose it probably needs to be handled more gracefully in the
+kernel.)
+
+Chris
+
 
