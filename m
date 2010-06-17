@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933118Ab0FQRAy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 13:00:54 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:34829 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933084Ab0FQRAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 13:00:53 -0400
-Date: Thu, 17 Jun 2010 09:59:40 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       linux-doc@vger.kernel.org
-Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
-Message-ID: <20100617165940.GU24749@outflux.net>
-References: <20100616221833.GM24749@outflux.net>
- <m1hbl1eta6.fsf@fess.ebiederm.org>
+	id S933133Ab0FQRBJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 13:01:09 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:39192 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933084Ab0FQRBG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 13:01:06 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: James Bottomley <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+       "'akpm@osdl.org'" <akpm@osdl.org>,
+       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Thu, 17 Jun 2010 11:00:48 -0600
+Subject: RE: [PATCH 5/12] scsi: megaraid_sas - Online Controller Reset
+ (OCR): Add and initialize the OCR relaed variable
+Thread-Topic: [PATCH 5/12] scsi: megaraid_sas - Online Controller Reset
+ (OCR): Add and initialize the OCR relaed variable
+Thread-Index: AcsOOOwFjojY4gTVRIKSKEs+F2YnHAABY7Kg
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3D0926EE5@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804554@cosmail02.lsi.com>
+ <1276791570.7398.12.camel@mulgrave.site>
+In-Reply-To: <1276791570.7398.12.camel@mulgrave.site>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1hbl1eta6.fsf@fess.ebiederm.org>
-Organization: Canonical
-X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5HH1Nim020221
 
-Hi,
+James,
 
-On Thu, Jun 17, 2010 at 05:29:53AM -0700, Eric W. Biederman wrote:
-> Kees Cook <kees.cook@canonical.com> writes:
-> > running state of any of their processes. For example, if one application
-> > (e.g. Pidgin) was compromised, it would be possible for an attacker to
-> > attach to other running processes (e.g. Firefox, SSH sessions, GPG agent,
-> > etc) to extract additional credentials and continue to expand the scope
-> > of their attack without resorting to user-assisted phishing.
-> 
-> This is ineffective.  As an attacker after I gain access to a users
-> system on ubuntu I can wait around until a package gets an update,
-> and then run sudo and gain the power to do whatever I want.
+Thanks, I will re-submit the patches 5-12.
 
-I doesn't stop phishing, correct.  But it does stop immediate expansion of
-an attack using already-existing credentials.
+Regards,
 
-> Either that or I can inject something nasty into the suid pulse-audio.
+Bo Yang
 
-Hmm?
+-----Original Message-----
+From: James Bottomley [mailto:James.Bottomley@suse.de] 
+Sent: Thursday, June 17, 2010 12:20 PM
+To: Yang, Bo
+Cc: 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'
+Subject: Re: [PATCH 5/12] scsi: megaraid_sas - Online Controller Reset (OCR): Add and initialize the OCR relaed variable
 
-$ ls -la /usr/bin/pulseaudio
--rwxr-xr-x 1 root root 71712 2010-06-10 11:59 /usr/bin/pulseaudio
+On Wed, 2010-06-09 at 21:54 -0600, Yang, Bo wrote:
+> To support online controller reset, driver need to define some
+> instance based variable and initialize them.
 
-But I take your meaning to be "can still exploit other vulnerabilities".
-That'll always be true, but that's why I'm looking to make the attack
-surface smaller.
+This doesn't compile:
 
-> I tell you what.  If you really want something effective, help Serge
-> and I finish getting the cross namespace issues fixed for the user
-> namespace.  When complete, it will possible for an unprivileged process
-> to create a new one, and since kernel capabilities along with everything
-> else will be local to it, running pidgin, or firefox, or another network
-> facing potentially buggy application in such a namespace will ensure that
-> even if the process is compromised it won't have privileges to ptrace another
-> process or do much else on the system.
+  CC [M]  drivers/scsi/megaraid/megaraid_sas.o
+drivers/scsi/megaraid/megaraid_sas.c: In function
+â€˜megasas_deplete_reply_queueâ€™:
+drivers/scsi/megaraid/megaraid_sas.c:2090: warning: unused variable
+â€˜fw_stateâ€™
+drivers/scsi/megaraid/megaraid_sas.c: In function â€˜megasas_init_mfiâ€™:
+drivers/scsi/megaraid/megaraid_sas.c:3023: error: â€˜struct
+megasas_ctrl_propâ€™ has no member named â€˜OnOffPropertiesâ€™
+drivers/scsi/megaraid/megaraid_sas.c: In function â€˜megasas_probe_oneâ€™:
+drivers/scsi/megaraid/megaraid_sas.c:3486: error:
+â€˜process_fw_state_change_wqâ€™ undeclared (first use in this function)
+drivers/scsi/megaraid/megaraid_sas.c:3486: error: (Each undeclared
+identifier is reported only once
+drivers/scsi/megaraid/megaraid_sas.c:3486: error: for each function it
+appears in.)
 
-It sounds pretty good, but isolating desktop applications is no simple
-task.  They tend to like to have free reign over a user's entire home
-directory.  But I think that's a bit of a tangent.  That said, I'd like to
-know more; where can I find details?
+Because OnOffProperties structure is defined in patch 6/12 as is the
+process_fw_state_change_wq function.
 
-I'm all for better separations.  In fact, I'd like to see /proc/sys using
-caps instead of DAC so that containers mounting /proc can't fiddle with the
-entire system.  Has anyone done anything with this?  It seems like it's
-only seen sporadic attention (e.g. my patch to test CAP_SYS_RAWIO for
-changing mmap_min_addr).  I would assume there are others that need a
-similar protection?
+I've got 1-4 ... please resubmit 5-12 so they actually build in the
+order submitted.
 
--Kees
+Thanks,
 
--- 
-Kees Cook
-Ubuntu Security Team
+James
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
