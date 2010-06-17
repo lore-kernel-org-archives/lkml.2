@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759957Ab0FQMWK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 08:22:10 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:45787 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab0FQMWI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 08:22:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=pedIKIkV4HZ4e1fH8OWHjgRwa//UTRn4dditFVAe2+OPmWI8+gvaY7PhpyNGszHr5z
-         uMY7BrG5sLMMF8fv9811dpXRRbddpQAjtT8CLPzZheL3pG+0nBHLhqUbiF3c7hItKF+5
-         dTSrf1UpgVr+UhU2EHbJ/698x5XZZHsDk97GE=
-Date: Thu, 17 Jun 2010 14:21:56 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: [patch] get rid of "cut here" from bug output
-Message-ID: <20100617122156.GK5483@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	linux-kernel@vger.kernel.org
+	id S1759935Ab0FQMZs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 08:25:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33314 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752164Ab0FQMZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 08:25:46 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] hmc6352: Add driver for the HMC6352 compass
+Date: Thu, 17 Jun 2010 14:26:08 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.35-rc2-0.1-default+; KDE/4.3.5; x86_64; ; )
+Cc: Alan Cox <alan@linux.intel.com>, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+References: <20100616121534.26294.12540.stgit@localhost.localdomain> <201006161443.45375.oneukum@suse.de> <20100617122048.142def43@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100617122048.142def43@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006171426.08442.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's annoying to have chunks of dmesg output instead just the whole
-output.  A lot of times the very interesting information is before
-the bug happens.
+Am Donnerstag, 17. Juni 2010 13:20:48 schrieb Alan Cox:
+> On Wed, 16 Jun 2010 14:43:45 +0200
+> Oliver Neukum <oneukum@suse.de> wrote:
+> 
+> > Am Mittwoch, 16. Juni 2010 14:16:14 schrieb Alan Cox:
+> > > +       msleep(10); /* sending 0x41 cmd we need to wait for 7-10 milli seconds */
+> > > +       ret = i2c_transfer(client->adapter, msg1, 1);
+> > > +       if (ret != 1) {
+> > > +               dev_warn(dev, "i2c read data cmd failed\n");
+> > > +               return ret;
+> > > +       }
+> > > +       ret_val = i2c_data[0];
+> > > +       ret_val = ((ret_val << 8) | i2c_data[1]);
+> > 
+> > Please use the correct macro for this conversion.
+> 
+> Its an array anyway - there isn't as such a 'correct macro' nor does it
+> need to be using one.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+So why does he use this unstructured data? Do we just hope the compiler
+is good enough on big endian architectures?
 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 3b16cd9..2db532a 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -373,7 +373,7 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
- {
- 	const char *board;
- 
--	printk(KERN_WARNING "------------[ cut here ]------------\n");
-+	printk(KERN_WARNING "-----[ paste whole dmesg to bugzilla ]-----\n");
- 	printk(KERN_WARNING "WARNING: at %s:%d %pS()\n", file, line, caller);
- 	board = dmi_get_system_info(DMI_PRODUCT_NAME);
- 	if (board)
+	Regards
+		Oliver
