@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760629Ab0FQSRU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 14:17:20 -0400
-Received: from emroute3.ornl.gov ([160.91.4.110]:39102 "EHLO emroute3.ornl.gov"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760601Ab0FQSRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 14:17:19 -0400
-Date: Thu, 17 Jun 2010 14:17:17 -0400
-From: David Dillow <dillowda@ornl.gov>
-Subject: Re: [PATCH v2] d_ino considered harmful
-In-reply-to: <30568.1276797848@jrobl>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: Valerie Aurora <vaurora@redhat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Christoph Hellwig <hch@infradead.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-       Jamie Lokier <jamie@shareable.org>,
-       David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-       Andreas Dilger <adilger@sun.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Message-id: <1276798637.2492.8.camel@lap75545.ornl.gov>
-Organization: Oak Ridge National Laboratory
-MIME-version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12)
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-References: <20100616185913.GA15566@shell> <20100616195359.GA24382@shell>
- <1276721084.13788.53.camel@lap75545.ornl.gov> <30568.1276797848@jrobl>
+	id S1760634Ab0FQSXd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 14:23:33 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:44619 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757002Ab0FQSXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 14:23:32 -0400
+Date: Thu, 17 Jun 2010 13:24:53 -0500
+From: Cliff Wickman <cpw@sgi.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: per_cpu_ptr_to_phys() failure on UV x86_64
+Message-ID: <20100617182453.GA31478@sgi.com>
+References: <E1OPHpK-0007cw-S5@eag09.americas.sgi.com> <4C1A5679.8010907@kernel.org> <4C1A5CD4.3020802@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C1A5CD4.3020802@kernel.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-17 at 14:04 -0400, J. R. Okajima wrote:
-> David Dillow:
-> > For example, our main Lustre scratch space has over 285 million files in
-> > it, and using find -inum takes over 72 hours to walk the tree using
-> 	:::
-> > Using ne2scan -- which uses libext2fs and combines the inode scan and
-> > the name lookup -- takes over 48 hours to generate a list of candidate
-> > files for the purge example. With an optimized inode scan and the custom
-> 	:::
-> 
-> While I've never heard of ne2scan, I am interested in this simplified
-> problem such as "find the pathname(s) from an inum in a huge fs."
-> Is ne2scan essentially equivalent to "debugfs ncheck inum"?
 
-Yes, except it does that for every live inode in the system. ne2scan is
-extended for use on Lustre's backing store -- it parses the LOV object
-map and displays the information -- so I'm not sure how usable it will
-be on an plain ext{2,3,4} file system. It is based off of e2scan in the
-Oracle (nee Sun) Lustre version of e2fsprogs, so that could be a
-starting point for you.
+On Thu, Jun 17, 2010 at 07:35:16PM +0200, Tejun Heo wrote:
+> On 06/17/2010 07:08 PM, Tejun Heo wrote:
+> > (scratching head...) So, that means it's given an address for which
+> > !pcpu_addr_in_first_chunk() but outside of vmalloc area.  Strange.
+> > I'll find out what's going on.
+> 
+> Does the following patch work?  The original patch assumed that @addr
+> would be the address of the base cpu which isn't true.  I only compile
+> tested the patch so it might be broken (sorry, I gotta go somewhere
+> now) but this should be the right direction.
+
+Yes, your patch works.  I tested it on a 32p UV system.
+
+-Cliff
+ 
+> diff --git a/mm/percpu.c b/mm/percpu.c
+> index 46485e1..8956155 100644
+> --- a/mm/percpu.c
+> +++ b/mm/percpu.c
+> @@ -978,14 +978,23 @@ bool is_kernel_percpu_address(unsigned long addr)
+>   */
+>  phys_addr_t per_cpu_ptr_to_phys(void *addr)
+>  {
+> -	if (pcpu_addr_in_first_chunk(addr)) {
+> -		if ((unsigned long)addr < VMALLOC_START ||
+> -		    (unsigned long)addr >= VMALLOC_END)
+> -			return __pa(addr);
+> -		else
+> -			return page_to_phys(vmalloc_to_page(addr));
+> -	} else
+> -		return page_to_phys(pcpu_addr_to_page(addr));
+> +	void __percpu *base = __addr_to_pcpu_ptr(pcpu_base_addr);
+> +	unsigned int cpu;
+> +
+> +	for_each_possible_cpu(cpu) {
+> +		void *start = per_cpu_ptr(base, cpu);
+> +
+> +		if (addr >= start && addr < start + pcpu_unit_size) {
+> +			/* in the first chunk */
+> +			if ((unsigned long)addr < VMALLOC_START ||
+> +			    (unsigned long)addr >= VMALLOC_END)
+> +				return __pa(addr);
+> +			else
+> +				return page_to_phys(vmalloc_to_page(addr));
+> +		}
+> +	}
+> +	/* in one of the other chunks */
+> +	return page_to_phys(pcpu_addr_to_page(addr));
+>  }
+> 
+>  static inline size_t pcpu_calc_fc_sizes(size_t static_size,
+> 
+> 
+> -- 
+> tejun
 
 -- 
-Dave Dillow
-National Center for Computational Science
-Oak Ridge National Laboratory
-(865) 241-6602 office
-
-
+Cliff Wickman
+SGI
+cpw@sgi.com
+(651) 683-3824
