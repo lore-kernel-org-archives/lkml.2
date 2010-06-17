@@ -1,358 +1,1127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759367Ab0FQCc1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 22:32:27 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:38899 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759199Ab0FQCcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 22:32:25 -0400
-Date: Wed, 16 Jun 2010 22:32:20 -0400
-From: Andres Salomon <dilinger@queued.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-       hpa@zytor.com, x86@kernel.org, Mitch Bradley <wmb@laptop.org>
-Subject: [PATCH] x86: OLPC: add support for calling into OpenFirmware (v4)
-Message-ID: <20100616223220.326bee18@dev.queued.net>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.12.12; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1759287Ab0FQCnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 22:43:41 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:45602 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752147Ab0FQCnj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 22:43:39 -0400
+Message-ID: <4C198BD2.8060801@dsn.okisemi.com>
+Date: Thu, 17 Jun 2010 11:43:30 +0900
+From: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Masayuki Ohtak <masa-korg@dsn.okisemi.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew <andrew.chih.howe.khor@intel.com>,
+       Intel OTC <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+References: <4C0CE88C.9050708@dsn.okisemi.com> <4C161BE7.4080805@dsn.okisemi.com>
+In-Reply-To: <4C161BE7.4080805@dsn.okisemi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Alan,
 
-Add support for saving OFW's cif, and later calling into it to run OFW
-commands.  OFW remains resident in memory, living within virtual range
-0xff800000 - 0xffc00000.  A single page directory entry points to the
-pgdir that OFW actually uses, so rather than saving the entire page
-table, we grab and install that one entry permanently in the kernel's
-page table.
+We have modified for your comments.
+Please Confirm below.
 
-This is currently only used by the OLPC XO.
+Thanks. 
+Ohtake.
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
+
+Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
 ---
- Documentation/x86/zero-page.txt  |    1 +
- arch/x86/Kconfig                 |    9 +++
- arch/x86/include/asm/bootparam.h |   11 ++++-
- arch/x86/include/asm/olpc_ofw.h  |   31 +++++++++++
- arch/x86/kernel/Makefile         |    1 +
- arch/x86/kernel/head_32.S        |    6 ++
- arch/x86/kernel/olpc.c           |   12 ++---
- arch/x86/kernel/olpc_ofw.c       |  111 ++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/setup.c          |    6 ++
- 9 files changed, 180 insertions(+), 8 deletions(-)
- create mode 100644 arch/x86/include/asm/olpc_ofw.h
- create mode 100644 arch/x86/kernel/olpc_ofw.c
+ drivers/char/Kconfig             |   25 +
+ drivers/char/Makefile            |    4 +
+ drivers/char/pch_phub/Makefile   |    7 +
+ drivers/char/pch_phub/pch_phub.c |  940 +++++++++++++++++++++++
+ drivers/char/pch_phub/pch_phub.h |   58 ++
+ 5 files changed, 1034 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/char/pch_phub/Makefile
+ create mode 100755 drivers/char/pch_phub/pch_phub.c
+ create mode 100755 drivers/char/pch_phub/pch_phub.h
 
-diff --git a/Documentation/x86/zero-page.txt b/Documentation/x86/zero-page.txt
-index feb37e1..cf5437d 100644
---- a/Documentation/x86/zero-page.txt
-+++ b/Documentation/x86/zero-page.txt
-@@ -18,6 +18,7 @@ Offset	Proto	Name		Meaning
- 080/010	ALL	hd0_info	hd0 disk parameter, OBSOLETE!!
- 090/010	ALL	hd1_info	hd1 disk parameter, OBSOLETE!!
- 0A0/010	ALL	sys_desc_table	System description table (struct sys_desc_table)
-+0B0/010	ALL	olpc_ofw_header	OLPC's OpenFirmware CIF and friends
- 140/080	ALL	edid_info	Video mode setup (struct edid_info)
- 1C0/020	ALL	efi_info	EFI 32 information (struct efi_info)
- 1E0/004	ALL	alk_mem_k	Alternative mem check, in KB
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index dcb0593..71c194d 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2062,6 +2062,15 @@ config OLPC
- 	  Add support for detecting the unique features of the OLPC
- 	  XO hardware.
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index e023682..285ce78 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -4,6 +4,31 @@
  
-+config OLPC_OPENFIRMWARE
-+	bool "Support for OLPC's Open Firmware"
-+	depends on !X86_64 && !X86_PAE
-+	default y if OLPC
+ menu "Character devices"
+ 
++config PCH_IEEE1588
++	tristate "PCH IEEE1588"
++	depends on PCI
 +	help
-+	  This option adds support for the implementation of Open Firmware
-+	  that is used on the OLPC XO-1 Children's Machine.
-+	  If unsure, say N here.
++	  If you say yes to this option, support will be included for the
++	  PCH IEEE1588 Host controller.
 +
- endif # X86_32
- 
- config K8_NB
-diff --git a/arch/x86/include/asm/bootparam.h b/arch/x86/include/asm/bootparam.h
-index 6be33d8..8e62185 100644
---- a/arch/x86/include/asm/bootparam.h
-+++ b/arch/x86/include/asm/bootparam.h
-@@ -70,6 +70,14 @@ struct sys_desc_table {
- 	__u8  table[14];
- };
- 
-+/* Gleaned from OFW's set-parameters in cpu/x86/pc/linux.fth */
-+struct olpc_ofw_header {
-+	__u32 ofw_magic;	/* OFW signature */
-+	__u32 ofw_version;
-+	__u32 cif_handler;	/* callback into OFW */
-+	__u32 irq_desc_table;
-+} __attribute__((packed));
++config PCH_PHUB
++	tristate "PCH PHUB"
++	depends on PCI
++	help
++	  If you say yes to this option, support will be included for the
++	  PCH Packet Hub Host controller.
++	  This driver is for PCH Packet hub driver for Topcliff.
++	  This driver is integrated as built-in.
++	  This driver can access GbE MAC address.
++	  This driver can access HW register.
++	  You can also be integrated as module.
 +
- struct efi_info {
- 	__u32 efi_loader_signature;
- 	__u32 efi_systab;
-@@ -92,7 +100,8 @@ struct boot_params {
- 	__u8  hd0_info[16];	/* obsolete! */		/* 0x080 */
- 	__u8  hd1_info[16];	/* obsolete! */		/* 0x090 */
- 	struct sys_desc_table sys_desc_table;		/* 0x0a0 */
--	__u8  _pad4[144];				/* 0x0b0 */
-+	struct olpc_ofw_header olpc_ofw_header;		/* 0x0b0 */
-+	__u8  _pad4[128];				/* 0x0c0 */
- 	struct edid_info edid_info;			/* 0x140 */
- 	struct efi_info efi_info;			/* 0x1c0 */
- 	__u32 alt_mem_k;				/* 0x1e0 */
-diff --git a/arch/x86/include/asm/olpc_ofw.h b/arch/x86/include/asm/olpc_ofw.h
++config PCH_CAN_PCLK_50MHZ
++	bool "CAN PCLK 50MHz"
++	depends on PCH_PHUB
++        help
++          If you say yes to this option, clock is set to 50MHz.(For CAN control)
++
+ config VT
+ 	bool "Virtual terminal" if EMBEDDED
+ 	depends on !S390
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index f957edf..dc092d0 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -111,6 +111,10 @@ obj-$(CONFIG_PS3_FLASH)		+= ps3flash.o
+ obj-$(CONFIG_JS_RTC)		+= js-rtc.o
+ js-rtc-y = rtc.o
+ 
++obj-$(CONFIG_PCH_IEEE1588)		+= pch_ieee1588/
++
++obj-$(CONFIG_PCH_PHUB)	+= pch_phub/
++
+ # Files generated that shall be removed upon make clean
+ clean-files := consolemap_deftbl.c defkeymap.c
+ 
+diff --git a/drivers/char/pch_phub/Makefile b/drivers/char/pch_phub/Makefile
 new file mode 100644
-index 0000000..3e63d85
+index 0000000..51ce785
 --- /dev/null
-+++ b/arch/x86/include/asm/olpc_ofw.h
-@@ -0,0 +1,31 @@
-+#ifndef _ASM_X86_OLPC_OFW_H
-+#define _ASM_X86_OLPC_OFW_H
++++ b/drivers/char/pch_phub/Makefile
+@@ -0,0 +1,7 @@
++ifeq ($(CONFIG_PHUB_DEBUG),y)
++EXTRA_CFLAGS += -DDEBUG
++endif
 +
-+/* index into the page table containing the entry OFW occupies */
-+#define OLPC_OFW_PDE_NR 1022
++obj-$(CONFIG_PCH_PHUB) += pch_phub_drv.o
 +
-+#define OLPC_OFW_SIG 0x2057464F	/* aka "OFW " */
-+
-+#ifdef CONFIG_OLPC_OPENFIRMWARE
-+
-+/* run an OFW command by calling into the firmware */
-+#define olpc_ofw(name, args, res) \
-+	__olpc_ofw((name), ARRAY_SIZE(args), args, ARRAY_SIZE(res), res)
-+
-+extern int __olpc_ofw(const char *name, int nr_args, void **args, int nr_res,
-+		void **res);
-+
-+/* determine whether OFW is available and lives in the proper memory */
-+extern void olpc_ofw_detect(void);
-+
-+/* install OFW's pde permanently into the kernel's pgtable */
-+extern void setup_olpc_ofw_pgd(void);
-+
-+#else /* !CONFIG_OLPC_OPENFIRMWARE */
-+
-+static inline void olpc_ofw_detect(void) { }
-+static inline void setup_olpc_ofw_pgd(void) { }
-+
-+#endif /* !CONFIG_OLPC_OPENFIRMWARE */
-+
-+#endif /* _ASM_X86_OLPC_OFW_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index e77b220..0925676 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -104,6 +104,7 @@ obj-$(CONFIG_SCx200)		+= scx200.o
- scx200-y			+= scx200_32.o
- 
- obj-$(CONFIG_OLPC)		+= olpc.o
-+obj-$(CONFIG_OLPC_OPENFIRMWARE)	+= olpc_ofw.o
- obj-$(CONFIG_X86_MRST)		+= mrst.o
- 
- microcode-y				:= microcode_core.o
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index 37c3d4b..ff4c453 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -131,6 +131,12 @@ ENTRY(startup_32)
- 	movsl
- 1:
- 
-+#ifdef CONFIG_OLPC_OPENFIRMWARE
-+	/* save OFW's pgdir table for later use when calling into OFW */
-+	movl %cr3, %eax
-+	movl %eax, pa(olpc_ofw_pgd)
-+#endif
-+
- #ifdef CONFIG_PARAVIRT
- 	/* This is can only trip for a broken bootloader... */
- 	cmpw $0x207, pa(boot_params + BP_version)
-diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
-index 8297160..1566052 100644
---- a/arch/x86/kernel/olpc.c
-+++ b/arch/x86/kernel/olpc.c
-@@ -21,10 +21,7 @@
- #include <asm/geode.h>
- #include <asm/setup.h>
- #include <asm/olpc.h>
--
--#ifdef CONFIG_OPEN_FIRMWARE
--#include <asm/ofw.h>
--#endif
-+#include <asm/olpc_ofw.h>
- 
- struct olpc_platform_t olpc_platform_info;
- EXPORT_SYMBOL_GPL(olpc_platform_info);
-@@ -188,14 +185,15 @@ err:
- }
- EXPORT_SYMBOL_GPL(olpc_ec_cmd);
- 
--#ifdef CONFIG_OPEN_FIRMWARE
-+#ifdef CONFIG_OLPC_OPENFIRMWARE
- static void __init platform_detect(void)
- {
- 	size_t propsize;
- 	__be32 rev;
-+	void *args[] = { NULL, "board-revision-int", &rev, (void *)4 };
-+	void *res[] = { &propsize };
- 
--	if (ofw("getprop", 4, 1, NULL, "board-revision-int", &rev, 4,
--			&propsize) || propsize != 4) {
-+	if (olpc_ofw("getprop", args, res) || propsize != 4) {
- 		printk(KERN_ERR "ofw: getprop call failed!\n");
- 		rev = cpu_to_be32(0);
- 	}
-diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
-new file mode 100644
-index 0000000..b1a920b
++pch_phub_drv-objs := pch_phub.o
+diff --git a/drivers/char/pch_phub/pch_phub.c b/drivers/char/pch_phub/pch_phub.c
+new file mode 100755
+index 0000000..be1bfe2
 --- /dev/null
-+++ b/arch/x86/kernel/olpc_ofw.c
-@@ -0,0 +1,111 @@
-+#include <linux/kernel.h>
++++ b/drivers/char/pch_phub/pch_phub.c
+@@ -0,0 +1,940 @@
++/*!
++ * @file pch_phub.c
++ * @brief Provides all the implementation of the interfaces pertaining to
++ *		the Packet Hub module.
++ * @version 1.0.0.0
++ * @section
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
++ */
++
++/*
++ * History:
++ * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
++ *
++ * created:
++ *	OKI SEMICONDUCTOR 04/14/2010
++ * modified:
++ *
++ */
++
++/* includes */
++
 +#include <linux/module.h>
-+#include <linux/init.h>
-+#include <asm/page.h>
-+#include <asm/setup.h>
-+#include <asm/io.h>
-+#include <asm/pgtable.h>
-+#include <asm/tlbflush.h>
-+#include <asm/olpc_ofw.h>
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/fs.h>
++#include <linux/uaccess.h>
++#include <linux/string.h>
++#include <linux/pci.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++#include <linux/cdev.h>
++#include <linux/device.h>
++#include <linux/mutex.h>
 +
-+/* address of OFW callback interface; will be NULL if OFW isn't found */
-+static int (*olpc_ofw_cif)(int *);
++#include "pch_phub.h"
 +
-+/* page dir entry containing OFW's pgdir table; filled in by head_32.S */
-+pgd_t *olpc_ofw_pgd __initdata;
++/*--------------------------------------------
++	macros
++--------------------------------------------*/
++/* Status Register offset */
++#define PHUB_STATUS 0x00
++/* Control Register offset */
++#define PHUB_CONTROL 0x04
++/* Time out value for Status Register */
++#define PHUB_TIMEOUT 0x05
++/* Enabling for writing ROM */
++#define PCH_PHUB_ROM_WRITE_ENABLE 0x01
++/* Disabling for writing ROM */
++#define PCH_PHUB_ROM_WRITE_DISABLE 0x00
++/* ROM data area start address offset */
++#define PCH_PHUB_ROM_START_ADDR 0x14
++/* MAX number of INT_REDUCE_CONTROL registers */
++#define MAX_NUM_INT_REDUCE_CONTROL_REG 128
 +
-+static DEFINE_SPINLOCK(ofw_lock);
++#define PCI_DEVICE_ID_PCH1_PHUB 0x8801
 +
-+#define MAXARGS 10
++#define PCH_MINOR_NOS 1
++#define CLKCFG_CAN_50MHZ 0x12000000
++#define CLKCFG_CANCLK_MASK 0xFF000000
 +
-+void __init setup_olpc_ofw_pgd(void)
++#define MODULE_NAME "pch_phub"
++
++#define PCH_READ_REG(a)	ioread32(pch_phub_reg.pch_phub_base_address + (a))
++
++#define PCH_WRITE_REG(a, b) iowrite32((a), pch_phub_reg.pch_phub_base_address +\
++									 (b))
++/*--------------------------------------------
++	global variables
++--------------------------------------------*/
++/**
++ * struct pch_phub_reg_t - PHUB register structure
++ * @phub_id_reg:		 PHUB_ID register val
++ * @q_pri_val_reg:		 QUEUE_PRI_VAL register val
++ * @rc_q_maxsize_reg:	 RC_QUEUE_MAXSIZE register val
++ * @bri_q_maxsize_reg:	 BRI_QUEUE_MAXSIZE register val
++ * @comp_resp_timeout_reg:	 COMP_RESP_TIMEOUT register val
++ * @bus_slave_control_reg:	 BUS_SLAVE_CONTROL_REG register val
++ * @deadlock_avoid_type_reg:  DEADLOCK_AVOID_TYPE register val
++ * @intpin_reg_wpermit_reg0:  INTPIN_REG_WPERMIT register 0 val
++ * @intpin_reg_wpermit_reg1:  INTPIN_REG_WPERMIT register 1 val
++ * @intpin_reg_wpermit_reg2:  INTPIN_REG_WPERMIT register 2 val
++ * @intpin_reg_wpermit_reg3:  INTPIN_REG_WPERMIT register 3 val
++ * @int_reduce_control_reg:	 INT_REDUCE_CONTROL registers val
++ * @clkcfg_reg:		 CLK CFG register val
++ * @pch_phub_base_address:  register base address
++ * @pch_phub_extrom_base_address:  external rom base address
++ * @pch_phub_suspended: PHUB status val
++ */
++struct pch_phub_reg_t {
++	__u32 phub_id_reg;
++	__u32 q_pri_val_reg;
++	__u32 rc_q_maxsize_reg;
++	__u32 bri_q_maxsize_reg;
++	__u32 comp_resp_timeout_reg;
++	__u32 bus_slave_control_reg;
++	__u32 deadlock_avoid_type_reg;
++	__u32 intpin_reg_wpermit_reg0;
++	__u32 intpin_reg_wpermit_reg1;
++	__u32 intpin_reg_wpermit_reg2;
++	__u32 intpin_reg_wpermit_reg3;
++	__u32 int_reduce_control_reg[MAX_NUM_INT_REDUCE_CONTROL_REG];
++#ifdef CONFIG_PCH_CAN_PCLK_50MHZ
++	__u32 clkcfg_reg;
++#endif
++	void __iomem *pch_phub_base_address;
++	void __iomem *pch_phub_extrom_base_address;
++	__s32 pch_phub_suspended;
++} pch_phub_reg;
++
++static DEFINE_MUTEX(pch_phub_ioctl_mutex);
++
++/* ToDo: major number allocation via module parameter */
++static dev_t pch_phub_dev_no;
++static __s32 pch_phub_major_no;
++static struct cdev pch_phub_dev;
++
++/*--------------------------------------------
++	functions implementations
++--------------------------------------------*/
++/** pch_phub_read_modify_write_reg - Implements the functionality of reading,
++ * 						modifying and writing register.
++ *  @reg_addr_offset:  Contains the register offset address value
++ *  @data:             Contains the writing value
++ *  @mask:             Contains the mask value
++ */
++static void pch_phub_read_modify_write_reg(__u32 reg_addr_offset,
++				       __u32 data, __u32 mask)
 +{
-+	pgd_t *base, *pde, *ofw_pde;
-+
-+	if (!olpc_ofw_cif)
-+		return;
-+
-+	/* fetch the kernel's current PDE */
-+	base = __va(read_cr3());
-+	pde = &base[OLPC_OFW_PDE_NR];
-+
-+	/* fetch OFW's PDE */
-+	olpc_ofw_pgd = early_ioremap((unsigned long)olpc_ofw_pgd,
-+			sizeof(*olpc_ofw_pgd) * PTRS_PER_PGD);
-+	if (!olpc_ofw_pgd) {
-+		printk(KERN_ERR "failed to remap OFW's pgd - disabling OFW!\n");
-+		olpc_ofw_cif = NULL;
-+		return;
-+	}
-+	ofw_pde = &olpc_ofw_pgd[OLPC_OFW_PDE_NR];
-+
-+	/* install OFW's PDE permanently into the kernel's pgtable */
-+	set_pgd(pde, *ofw_pde);
-+	flush_tlb();
-+	early_iounmap(olpc_ofw_pgd, sizeof(*olpc_ofw_pgd) * PTRS_PER_PGD);
++	void __iomem *reg_addr = pch_phub_reg.pch_phub_base_address +\
++							 reg_addr_offset;
++	iowrite32(((ioread32(reg_addr) & ~mask)) | data, reg_addr);
++	return;
 +}
 +
-+int __olpc_ofw(const char *name, int nr_args, void **args, int nr_res,
-+		void **res)
++
++/** pch_phub_save_reg_conf - saves register configuration
++ */
++static void pch_phub_save_reg_conf(struct pci_dev *pdev)
 +{
-+	int ofw_args[MAXARGS + 3];
-+	unsigned long flags;
-+	int ret, i, *p;
++	__u32 i = 0;
 +
-+	BUG_ON(nr_args + nr_res > MAXARGS);
-+
-+	if (!olpc_ofw_cif)
-+		return -EIO;
-+
-+	ofw_args[0] = (int)name;
-+	ofw_args[1] = nr_args;
-+	ofw_args[2] = nr_res;
-+
-+	p = &ofw_args[3];
-+	for (i = 0; i < nr_args; i++, p++)
-+		*p = (int)args[i];
-+
-+	/* call into ofw */
-+	spin_lock_irqsave(&ofw_lock, flags);
-+	ret = olpc_ofw_cif(ofw_args);
-+	spin_unlock_irqrestore(&ofw_lock, flags);
-+
-+	if (!ret) {
-+		for (i = 0; i < nr_res; i++, p++)
-+			*((int *)res[i]) = *p;
++	dev_dbg(&pdev->dev, "pch_phub_save_reg_conf ENTRY\n");
++	/* to store contents of PHUB_ID register */
++	pch_phub_reg.phub_id_reg = PCH_READ_REG(PCH_PHUB_PHUB_ID_REG);
++	/* to store contents of QUEUE_PRI_VAL register */
++	pch_phub_reg.q_pri_val_reg = PCH_READ_REG(PCH_PHUB_QUEUE_PRI_VAL_REG);
++	/* to store contents of RC_QUEUE_MAXSIZE register */
++	pch_phub_reg.rc_q_maxsize_reg =
++	    PCH_READ_REG(PCH_PHUB_RC_QUEUE_MAXSIZE_REG);
++	/* to store contents of BRI_QUEUE_MAXSIZE register */
++	pch_phub_reg.bri_q_maxsize_reg =
++	    PCH_READ_REG(PCH_PHUB_BRI_QUEUE_MAXSIZE_REG);
++	/* to store contents of COMP_RESP_TIMEOUT register */
++	pch_phub_reg.comp_resp_timeout_reg =
++	    PCH_READ_REG(PCH_PHUB_COMP_RESP_TIMEOUT_REG);
++	/* to store contents of BUS_SLAVE_CONTROL_REG register */
++	pch_phub_reg.bus_slave_control_reg =
++	    PCH_READ_REG(PCH_PHUB_BUS_SLAVE_CONTROL_REG);
++	/* to store contents of DEADLOCK_AVOID_TYPE register */
++	pch_phub_reg.deadlock_avoid_type_reg =
++	    PCH_READ_REG(PCH_PHUB_DEADLOCK_AVOID_TYPE_REG);
++	/* to store contents of INTPIN_REG_WPERMIT register 0 */
++	pch_phub_reg.intpin_reg_wpermit_reg0 =
++	    PCH_READ_REG(PCH_PHUB_INTPIN_REG_WPERMIT_REG0);
++	/* to store contents of INTPIN_REG_WPERMIT register 1 */
++	pch_phub_reg.intpin_reg_wpermit_reg1 =
++	    PCH_READ_REG(PCH_PHUB_INTPIN_REG_WPERMIT_REG1);
++	/* to store contents of INTPIN_REG_WPERMIT register 2 */
++	pch_phub_reg.intpin_reg_wpermit_reg2 =
++	    PCH_READ_REG(PCH_PHUB_INTPIN_REG_WPERMIT_REG2);
++	/* to store contents of INTPIN_REG_WPERMIT register 3 */
++	pch_phub_reg.intpin_reg_wpermit_reg3 =
++	    PCH_READ_REG(PCH_PHUB_INTPIN_REG_WPERMIT_REG3);
++	dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
++		"pch_phub_reg.phub_id_reg=%x, "
++		"pch_phub_reg.q_pri_val_reg=%x, "
++		"pch_phub_reg.rc_q_maxsize_reg=%x, "
++		"pch_phub_reg.bri_q_maxsize_reg=%x, "
++		"pch_phub_reg.comp_resp_timeout_reg=%x, "
++		"pch_phub_reg.bus_slave_control_reg=%x, "
++		"pch_phub_reg.deadlock_avoid_type_reg=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg0=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg1=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg2=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg3=%x\n",
++		pch_phub_reg.phub_id_reg,
++		pch_phub_reg.q_pri_val_reg,
++		pch_phub_reg.rc_q_maxsize_reg,
++		pch_phub_reg.bri_q_maxsize_reg,
++		pch_phub_reg.comp_resp_timeout_reg,
++		pch_phub_reg.bus_slave_control_reg,
++		pch_phub_reg.deadlock_avoid_type_reg,
++		pch_phub_reg.intpin_reg_wpermit_reg0,
++		pch_phub_reg.intpin_reg_wpermit_reg1,
++		pch_phub_reg.intpin_reg_wpermit_reg2,
++		pch_phub_reg.intpin_reg_wpermit_reg3);
++	/* to store contents of INT_REDUCE_CONTROL registers */
++	for (i = 0; i < MAX_NUM_INT_REDUCE_CONTROL_REG; i++) {
++		pch_phub_reg.int_reduce_control_reg[i] =
++		    PCH_READ_REG(
++			PCH_PHUB_INT_REDUCE_CONTROL_REG_BASE + 4 * i);
++		dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
++			"pch_phub_reg.int_reduce_control_reg[%d]=%x\n",
++			i, pch_phub_reg.int_reduce_control_reg[i]);
 +	}
++#ifdef CONFIG_PCH_CAN_PCLK_50MHZ
++	/* save clk cfg register */
++	pch_phub_reg.clkcfg_reg = PCH_READ_REG(CLKCFG_REG_OFFSET);
++#endif
++	return;
++}
++
++/** pch_phub_restore_reg_conf - restore register configuration
++ */
++
++static void pch_phub_restore_reg_conf(struct pci_dev *pdev)
++{
++	__u32 i;
++
++	dev_dbg(&pdev->dev, "pch_phub_restore_reg_conf ENTRY\n");
++	/* to store contents of PHUB_ID register */
++	PCH_WRITE_REG(pch_phub_reg.phub_id_reg, PCH_PHUB_PHUB_ID_REG);
++	/* to store contents of QUEUE_PRI_VAL register */
++	PCH_WRITE_REG(pch_phub_reg.q_pri_val_reg, PCH_PHUB_QUEUE_PRI_VAL_REG);
++	/* to store contents of RC_QUEUE_MAXSIZE register */
++	PCH_WRITE_REG(pch_phub_reg.rc_q_maxsize_reg,
++						PCH_PHUB_RC_QUEUE_MAXSIZE_REG);
++	/* to store contents of BRI_QUEUE_MAXSIZE register */
++	PCH_WRITE_REG(pch_phub_reg.bri_q_maxsize_reg,
++						PCH_PHUB_BRI_QUEUE_MAXSIZE_REG);
++	/* to store contents of COMP_RESP_TIMEOUT register */
++	PCH_WRITE_REG(pch_phub_reg.comp_resp_timeout_reg,
++						PCH_PHUB_COMP_RESP_TIMEOUT_REG);
++	/* to store contents of BUS_SLAVE_CONTROL_REG register */
++	PCH_WRITE_REG(pch_phub_reg.bus_slave_control_reg,
++						PCH_PHUB_BUS_SLAVE_CONTROL_REG);
++	/* to store contents of DEADLOCK_AVOID_TYPE register */
++	PCH_WRITE_REG(pch_phub_reg.deadlock_avoid_type_reg,
++					PCH_PHUB_DEADLOCK_AVOID_TYPE_REG);
++	/* to store contents of INTPIN_REG_WPERMIT register 0 */
++	PCH_WRITE_REG(pch_phub_reg.intpin_reg_wpermit_reg0,
++					PCH_PHUB_INTPIN_REG_WPERMIT_REG0);
++	/* to store contents of INTPIN_REG_WPERMIT register 1 */
++	PCH_WRITE_REG(pch_phub_reg.intpin_reg_wpermit_reg1,
++					PCH_PHUB_INTPIN_REG_WPERMIT_REG1);
++	/* to store contents of INTPIN_REG_WPERMIT register 2 */
++	PCH_WRITE_REG(pch_phub_reg.intpin_reg_wpermit_reg2,
++					PCH_PHUB_INTPIN_REG_WPERMIT_REG2);
++	/* to store contents of INTPIN_REG_WPERMIT register 3 */
++	PCH_WRITE_REG(pch_phub_reg.intpin_reg_wpermit_reg3,
++					PCH_PHUB_INTPIN_REG_WPERMIT_REG3);
++	dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
++		"pch_phub_reg.phub_id_reg=%x, "
++		"pch_phub_reg.q_pri_val_reg=%x, "
++		"pch_phub_reg.rc_q_maxsize_reg=%x, "
++		"pch_phub_reg.bri_q_maxsize_reg=%x, "
++		"pch_phub_reg.comp_resp_timeout_reg=%x, "
++		"pch_phub_reg.bus_slave_control_reg=%x, "
++		"pch_phub_reg.deadlock_avoid_type_reg=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg0=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg1=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg2=%x, "
++		"pch_phub_reg.intpin_reg_wpermit_reg3=%x\n",
++		pch_phub_reg.phub_id_reg,
++		pch_phub_reg.q_pri_val_reg,
++		pch_phub_reg.rc_q_maxsize_reg,
++		pch_phub_reg.bri_q_maxsize_reg,
++		pch_phub_reg.comp_resp_timeout_reg,
++		pch_phub_reg.bus_slave_control_reg,
++		pch_phub_reg.deadlock_avoid_type_reg,
++		pch_phub_reg.intpin_reg_wpermit_reg0,
++		pch_phub_reg.intpin_reg_wpermit_reg1,
++		pch_phub_reg.intpin_reg_wpermit_reg2,
++		pch_phub_reg.intpin_reg_wpermit_reg3);
++	/* to store contents of INT_REDUCE_CONTROL register */
++	for (i = 0; i < MAX_NUM_INT_REDUCE_CONTROL_REG; i++) {
++		PCH_WRITE_REG(pch_phub_reg.int_reduce_control_reg[i],
++			PCH_PHUB_INT_REDUCE_CONTROL_REG_BASE + 4 * i);
++		dev_dbg(&pdev->dev, "pch_phub_save_reg_conf : "
++			"pch_phub_reg.int_reduce_control_reg[%d]=%x\n",
++			i, pch_phub_reg.int_reduce_control_reg[i]);
++	}
++
++#ifdef CONFIG_PCH_CAN_PCLK_50MHZ
++	/*restore the clock config reg */
++	PCH_WRITE_REG(pch_phub_reg.clkcfg_reg, CLKCFG_REG_OFFSET);
++#endif
++
++	return;
++}
++
++/** pch_phub_read_serial_rom - Implements the functionality of reading Serial
++ *  									 ROM.
++ *  @offset_address: Contains the Serial ROM address offset value
++ *  @data: Contains the Serial ROM value
++ */
++static __s32 pch_phub_read_serial_rom(__u32 offset_address, __u8 *data)
++{
++	void __iomem *mem_addr = pch_phub_reg.pch_phub_extrom_base_address +\
++								 offset_address;
++
++	*data = ioread8(mem_addr);
++
++	return 0;
++}
++
++/** pch_phub_write_serial_rom - Implements the functionality of writing Serial
++ *  									 ROM.
++ *  @offset_address: Contains the Serial ROM address offset value
++ *  @data: Contains the Serial ROM value
++ */
++static __s32 pch_phub_write_serial_rom(__u32 offset_address,
++							 __u8 data)
++{
++	__s32 retval = 0;
++	void __iomem *mem_addr = pch_phub_reg.pch_phub_extrom_base_address +\
++						 (offset_address & 0xFFFFFFFC);
++	__s32 i = 0;
++	__u32 word_data = 0;
++
++	iowrite32(PCH_PHUB_ROM_WRITE_ENABLE,
++			pch_phub_reg.pch_phub_extrom_base_address +\
++								 PHUB_CONTROL);
++
++	word_data = ioread32(mem_addr);
++
++	switch (offset_address % 4) {
++	case 0:
++		word_data &= 0xFFFFFF00;
++		iowrite32((word_data | (__u32)data),
++						mem_addr);
++		break;
++	case 1:
++		word_data &= 0xFFFF00FF;
++		iowrite32((word_data | ((__u32)data << 8)),
++						mem_addr);
++		break;
++	case 2:
++		word_data &= 0xFF00FFFF;
++		iowrite32((word_data | ((__u32)data << 16)),
++						mem_addr);
++		break;
++	case 3:
++		word_data &= 0x00FFFFFF;
++		iowrite32((word_data | ((__u32)data << 24)),
++						mem_addr);
++		break;
++	}
++	while (0x00 !=
++	       ioread8(pch_phub_reg.pch_phub_extrom_base_address +\
++							 PHUB_STATUS)) {
++		msleep(1);
++		if (PHUB_TIMEOUT == i) {
++			retval = -EPERM;
++			break;
++		}
++		i++;
++	}
++
++	iowrite32(PCH_PHUB_ROM_WRITE_DISABLE,
++			pch_phub_reg.pch_phub_extrom_base_address +\
++								 PHUB_CONTROL);
++
++	return retval;
++}
++
++/** pch_phub_read_serial_rom_val - Implements the functionality of reading
++ *  							 Serial ROM value.
++ *  @offset_address: Contains the Serial ROM address offset value
++ *  @data: Contains the Serial ROM value
++ */
++static __s32 pch_phub_read_serial_rom_val(__u32 offset_address, __u8 *data)
++{
++	__s32 retval = 0;
++	__u32 mem_addr;
++
++	mem_addr = (offset_address / 4 * 8) + 3 -
++			(offset_address % 4) + PCH_PHUB_ROM_START_ADDR;
++	retval = pch_phub_read_serial_rom(mem_addr, data);
++
++	return retval;
++}
++
++/** pch_phub_write_serial_rom_val - Implements the functionality of writing
++ *  							 Serial ROM value.
++ *  @offset_address: Contains the Serial ROM address offset value
++ *  @data: Contains the Serial ROM value
++ */
++static __s32 pch_phub_write_serial_rom_val(__u32 offset_address,
++				     __u8 data)
++{
++	__s32 retval = 0;
++	__u32 mem_addr;
++
++	mem_addr =
++	    (offset_address / 4 * 8) + 3 - (offset_address % 4) +
++	    PCH_PHUB_ROM_START_ADDR;
++	retval = pch_phub_write_serial_rom(mem_addr, data);
++
++	return retval;
++}
++
++/** pch_phub_gbe_serial_rom_conf - makes Serial ROM header format configuration
++ *  						for Gigabit Ethernet MAC address
++ */
++static __s32 pch_phub_gbe_serial_rom_conf(void)
++{
++	__s32 retval = 0;
++
++	retval |= pch_phub_write_serial_rom(0x0b, 0xbc);
++	retval |= pch_phub_write_serial_rom(0x0a, 0x10);
++	retval |= pch_phub_write_serial_rom(0x09, 0x01);
++	retval |= pch_phub_write_serial_rom(0x08, 0x02);
++
++	retval |= pch_phub_write_serial_rom(0x0f, 0x00);
++	retval |= pch_phub_write_serial_rom(0x0e, 0x00);
++	retval |= pch_phub_write_serial_rom(0x0d, 0x00);
++	retval |= pch_phub_write_serial_rom(0x0c, 0x80);
++
++	retval |= pch_phub_write_serial_rom(0x13, 0xbc);
++	retval |= pch_phub_write_serial_rom(0x12, 0x10);
++	retval |= pch_phub_write_serial_rom(0x11, 0x01);
++	retval |= pch_phub_write_serial_rom(0x10, 0x18);
++
++	retval |= pch_phub_write_serial_rom(0x1b, 0xbc);
++	retval |= pch_phub_write_serial_rom(0x1a, 0x10);
++	retval |= pch_phub_write_serial_rom(0x19, 0x01);
++	retval |= pch_phub_write_serial_rom(0x18, 0x19);
++
++	retval |= pch_phub_write_serial_rom(0x23, 0xbc);
++	retval |= pch_phub_write_serial_rom(0x22, 0x10);
++	retval |= pch_phub_write_serial_rom(0x21, 0x01);
++	retval |= pch_phub_write_serial_rom(0x20, 0x3a);
++
++	retval |= pch_phub_write_serial_rom(0x27, 0x01);
++	retval |= pch_phub_write_serial_rom(0x26, 0x00);
++	retval |= pch_phub_write_serial_rom(0x25, 0x00);
++	retval |= pch_phub_write_serial_rom(0x24, 0x00);
++
++	return retval;
++}
++
++/** pch_phub_read_gbe_mac_addr - Contains the Gigabit Ethernet MAC address
++ *  								offset value
++ *  @offset_address: Gigabit Ethernet MAC address offset value
++ *  @data: Contains the Gigabit Ethernet MAC address value
++ */
++static __s32 pch_phub_read_gbe_mac_addr(__u32 offset_address, __u8 *data)
++{
++	__s32 retval = 0;
++
++	retval = pch_phub_read_serial_rom_val(offset_address, data);
++
++	return retval;
++}
++
++/** pch_phub_write_gbe_mac_addr - Write MAC address
++ *  @offset_address: Contains the Gigabit Ethernet MAC address offset value
++ *  @data: Contains the Gigabit Ethernet MAC address value
++ */
++static __s32 pch_phub_write_gbe_mac_addr(__u32 offset_address,
++				   __u8 data)
++{
++	__s32 retval = 0;
++
++	retval = pch_phub_gbe_serial_rom_conf();
++	retval |= pch_phub_write_serial_rom_val(offset_address, data);
++
++	return retval;
++}
++
++/** pch_phub_read - Implements the read functionality of the Packet Hub module.
++ *  @file: Contains the reference of the file structure
++ *  @buf: Usermode buffer pointer
++ *  @size: Usermode buffer size
++ *  @ppos: Contains the reference of the file structure
++ */
++
++static ssize_t pch_phub_read(struct file *file, char __user *buf, size_t size,
++								 loff_t *ppos)
++{
++	__u32 rom_signature = 0;
++	__u8 rom_length;
++	__s32 ret_value;
++	__u32 tmp;
++	__u8 data;
++	__u32 addr_offset = 0;
++	__u32 orom_size;
++	loff_t pos = *ppos;
++
++	if (pos < 0)
++		return -EINVAL;
++
++	/*Get Rom signature*/
++	pch_phub_read_serial_rom(0x80, (__u8 *)&rom_signature);
++	pch_phub_read_serial_rom(0x81, (__u8 *)&tmp);
++	rom_signature |= (tmp & 0xff) << 8;
++	if (rom_signature == 0xAA55) {
++		pch_phub_read_serial_rom(0x82, &rom_length);
++		orom_size = rom_length * 512;
++		if (orom_size < pos)
++			return 0;
++
++		for (addr_offset = 0; addr_offset < size; addr_offset++) {
++			pch_phub_read_serial_rom(0x80 + addr_offset + pos,
++									 &data);
++			ret_value = copy_to_user(&buf[addr_offset], &data, 1);
++			if (ret_value)
++				return -EFAULT;
++
++			if (orom_size < pos + addr_offset) {
++				*ppos += addr_offset;
++				return addr_offset;
++			}
++
++		}
++	} else {
++		return -ENOEXEC;
++	}
++	*ppos += addr_offset;
++	return addr_offset;
++}
++
++/** pch_phub_write - Implements the write functionality of the Packet Hub
++ *  									 module.
++ *  @file: Contains the reference of the file structure
++ *  @buf: Usermode buffer pointer
++ *  @size: Usermode buffer size
++ *  @ppos: Contains the reference of the file structure
++ */
++static ssize_t pch_phub_write(struct file *file, const char __user *buf,
++						 size_t size, loff_t *ppos)
++{
++	static __u32 data;
++	__s32 ret_value;
++	__u32 addr_offset = 0;
++	loff_t pos = *ppos;
++
++	if (pos < 0)
++		return -EINVAL;
++
++	for (addr_offset = 0; addr_offset < size; addr_offset++) {
++		get_user(data, &buf[addr_offset]);
++
++		ret_value = pch_phub_write_serial_rom(0x80 + addr_offset + pos,
++								 data);
++		if (ret_value)
++			return -EFAULT;
++
++		if (PCH_PHUB_OROM_SIZE < pos + addr_offset) {
++			*ppos += addr_offset;
++			return addr_offset;
++		}
++
++	}
++
++	*ppos += addr_offset;
++	return addr_offset;
++}
++
++
++/** pch_phub_ioctl - Implements the various ioctl functionalities of the Packet
++ *  								 Hub module.
++ *  @inode: Contains the reference of the inode structure
++ *  @file: Contains the reference of the file structure
++ *  @cmd: Contains the command value
++ *  @arg: Contains the command argument value
++ */
++
++
++static long pch_phub_ioctl(struct file *file, unsigned int cmd,
++							 unsigned long arg)
++{
++	__s32 ret_value = 0;
++	__u8 mac_addr[6];
++	__s32 ret;
++	__u32 i;
++	void __user *varg = (void __user *)arg;
++
++	ret = mutex_lock_interruptible(&pch_phub_ioctl_mutex);
++	if (ret) {
++		ret_value = -ERESTARTSYS;
++		goto return_nomutex;
++	}
++
++	if (pch_phub_reg.pch_phub_suspended == true) {
++		ret_value = -EPERM;
++		goto return_ioctrl;
++	}
++
++	switch (cmd) {
++	case IOCTL_PHUB_READ_MAC_ADDR:
++		for (i = 0; i < 6; i++)
++			pch_phub_read_gbe_mac_addr(i, &mac_addr[i]);
++
++		ret_value = copy_to_user(varg,
++					 mac_addr, sizeof(mac_addr));
++		if (ret_value) {
++			ret_value = -EFAULT;
++			goto return_ioctrl;
++		}
++		break;
++
++	case IOCTL_PHUB_WRITE_MAC_ADDR:
++		ret_value = copy_from_user(mac_addr, varg, sizeof(mac_addr));
++
++		if (ret_value) {
++			ret_value = -EFAULT;
++			goto return_ioctrl;
++		}
++		for (i = 0; i < 6; i++)
++			pch_phub_write_gbe_mac_addr(i, mac_addr[i]);
++		break;
++
++	default:
++		ret_value = -EINVAL;
++		break;
++	}
++return_ioctrl:
++	mutex_unlock(&pch_phub_ioctl_mutex);
++return_nomutex:
++	return ret_value;
++}
++
++
++/**
++ * file_operations structure initialization
++ */
++static const struct file_operations pch_phub_fops = {
++	.owner = THIS_MODULE,
++	.read = pch_phub_read,
++	.write = pch_phub_write,
++	.unlocked_ioctl = pch_phub_ioctl,
++};
++
++
++/** pch_phub_probe - Implements the probe functionality of the module.
++ *  @pdev: Contains the reference of the pci_dev structure
++ *  @id: Contains the reference of the pci_device_id structure
++ */
++static __s32 __devinit pch_phub_probe(struct pci_dev *pdev,
++				       const struct pci_device_id *id)
++{
++
++	char *DRIVER_NAME = "pch_phub";
++	__s32 ret;
++	__u32 rom_size;
++
++	pch_phub_major_no = (pch_phub_major_no < 0 || pch_phub_major_no > 254) ?
++				0 : pch_phub_major_no;
++
++	ret = pci_enable_device(pdev);
++	if (ret) {
++		dev_dbg(&pdev->dev,
++				"\npch_phub_probe : pci_enable_device FAILED");
++		goto err_probe;
++	}
++	dev_dbg(&pdev->dev, "pch_phub_probe : "
++			"pci_enable_device returns %d\n", ret);
++
++	ret = pci_request_regions(pdev, DRIVER_NAME);
++	if (ret) {
++		dev_dbg(&pdev->dev,
++				"pch_phub_probe : pci_request_regions FAILED");
++		pci_disable_device(pdev);
++		goto err_probe;
++	}
++	dev_dbg(&pdev->dev, "pch_phub_probe : "
++		"pci_request_regions returns %d\n", ret);
++
++	pch_phub_reg.pch_phub_base_address = \
++					(void __iomem *)pci_iomap(pdev, 1, 0);
++
++	if (pch_phub_reg.pch_phub_base_address == 0) {
++		dev_dbg(&pdev->dev, "pch_phub_probe : pci_iomap FAILED");
++		pci_release_regions(pdev);
++		pci_disable_device(pdev);
++		ret = -ENOMEM;
++		goto err_probe;
++	}
++	dev_dbg(&pdev->dev, "pch_phub_probe : pci_iomap SUCCESS and value "
++		"in pch_phub_base_address variable is 0x%08x\n",
++		(__u32)pch_phub_reg.pch_phub_base_address);
++
++	pch_phub_reg.pch_phub_extrom_base_address =
++	    (void __iomem *)pci_map_rom(pdev, &rom_size);
++	if (pch_phub_reg.pch_phub_extrom_base_address == 0) {
++		dev_dbg(&pdev->dev, "pch_phub_probe : pci_map_rom FAILED");
++		pci_iounmap(pdev, (void *)pch_phub_reg.pch_phub_base_address);
++		pci_release_regions(pdev);
++		pci_disable_device(pdev);
++		ret = -ENOMEM;
++		goto err_probe;
++	}
++	dev_dbg(&pdev->dev, "pch_phub_probe : "
++		"pci_map_rom SUCCESS and value in "
++		"pch_phub_extrom_base_address variable is 0x%08x\n",
++		(__u32)pch_phub_reg.pch_phub_extrom_base_address);
++
++	if (pch_phub_major_no) {
++		pch_phub_dev_no = MKDEV(pch_phub_major_no, 0);
++		ret = register_chrdev_region(pch_phub_dev_no,
++					   PCH_MINOR_NOS, DRIVER_NAME);
++		if (ret) {
++			dev_dbg(&pdev->dev, "pch_phub_probe : "
++				"register_chrdev_region FAILED");
++			pci_unmap_rom(pdev,
++			(void *)pch_phub_reg.pch_phub_extrom_base_address);
++			pci_iounmap(pdev,
++				(void *)pch_phub_reg.pch_phub_base_address);
++			pci_release_regions(pdev);
++			pci_disable_device(pdev);
++			goto err_probe;
++		}
++		dev_dbg(&pdev->dev, "pch_phub_probe : "
++				"register_chrdev_region returns %d\n", ret);
++	} else {
++		ret = alloc_chrdev_region(&pch_phub_dev_no, 0,
++						PCH_MINOR_NOS, DRIVER_NAME);
++		if (ret) {
++			dev_dbg(&pdev->dev, "pch_phub_probe : "
++					"alloc_chrdev_region FAILED");
++			pci_unmap_rom(pdev,
++			(void *)pch_phub_reg.pch_phub_extrom_base_address);
++			pci_iounmap(pdev,
++				    (void *)pch_phub_reg.pch_phub_base_address);
++			pci_release_regions(pdev);
++			pci_disable_device(pdev);
++			goto err_probe;
++		}
++		dev_dbg(&pdev->dev, "pch_phub_probe : "
++			"alloc_chrdev_region returns %d\n", ret);
++	}
++
++	cdev_init(&pch_phub_dev, &pch_phub_fops);
++	dev_dbg(&pdev->dev,
++			"pch_phub_probe :  cdev_init invoked successfully\n");
++
++	pch_phub_dev.owner = THIS_MODULE;
++	pch_phub_dev.ops = &pch_phub_fops;
++
++	ret = cdev_add(&pch_phub_dev, pch_phub_dev_no, PCH_MINOR_NOS);
++	if (ret) {
++		dev_dbg(&pdev->dev, "pch_phub_probe :  cdev_add FAILED");
++		unregister_chrdev_region(pch_phub_dev_no, PCH_MINOR_NOS);
++		pci_unmap_rom(pdev,
++			(void *)pch_phub_reg.pch_phub_extrom_base_address);
++		pci_iounmap(pdev, (void *)pch_phub_reg.pch_phub_base_address);
++		pci_release_regions(pdev);
++		pci_disable_device(pdev);
++		goto err_probe;
++	}
++	dev_dbg(&pdev->dev, "pch_phub_probe :  cdev_add returns %d\n", ret);
++
++#ifdef CONFIG_PCH_CAN_PCLK_50MHZ
++	/*set the clock config reg if CAN clock is 50Mhz */
++	dev_dbg(&pdev->dev, "pch_phub_probe : invoking "
++		"pch_phub_read_modify_write_reg "
++		"to set CLKCFG reg for CAN clk 50Mhz\n");
++	pch_phub_read_modify_write_reg((__u32)CLKCFG_REG_OFFSET,
++					  CLKCFG_CAN_50MHZ, CLKCFG_CANCLK_MASK);
++#endif
++	/* set the prefech value */
++	PCH_WRITE_REG(0x000ffffa, 0x14);
++	/* set the interrupt delay value */
++	PCH_WRITE_REG(0x25, 0x44);
++	return 0;
++
++err_probe:
++	dev_dbg(&pdev->dev, "pch_phub_probe returns %d\n", ret);
++	return ret;
++}
++
++/** pch_phub_remove - Implements the remove functionality of the module.
++ *  @pdev: Contains the reference of the pci_dev structure
++ */
++static void __devexit pch_phub_remove(struct pci_dev *pdev)
++{
++
++	cdev_del(&pch_phub_dev);
++	dev_dbg(&pdev->dev,
++			"pch_phub_remove - cdev_del Invoked successfully\n");
++
++	unregister_chrdev_region(pch_phub_dev_no, PCH_MINOR_NOS);
++	dev_dbg(&pdev->dev, "pch_phub_remove - "
++		"unregister_chrdev_region Invoked successfully\n");
++
++	pci_unmap_rom(pdev, (void *)pch_phub_reg.pch_phub_extrom_base_address);
++
++	pci_iounmap(pdev, (void *)pch_phub_reg.pch_phub_base_address);
++
++	dev_dbg(&pdev->dev, "pch_phub_remove - "
++			"pci_iounmap Invoked successfully\n");
++
++	pci_release_regions(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_remove - "
++		"pci_release_regions Invoked successfully\n");
++
++	pci_disable_device(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_remove - "
++		"pci_disable_device Invoked successfully\n");
++
++}
++
++#ifdef CONFIG_PM
++
++/** pch_phub_suspend - Implements the suspend functionality of the module.
++ *  @pdev: Contains the reference of the pci_dev structure
++ *  @state: Contains the reference of the pm_message_t structure
++ */
++static __s32 pch_phub_suspend(struct pci_dev *pdev, pm_message_t state)
++{
++	__s32 ret;
++
++	pch_phub_reg.pch_phub_suspended = true;/* For blocking further IOCTLs */
++
++	pch_phub_save_reg_conf(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_suspend - "
++		"pch_phub_save_reg_conf Invoked successfully\n");
++
++	ret = pci_save_state(pdev);
++	if (ret) {
++		dev_dbg(&pdev->dev,
++			" pch_phub_suspend -pci_save_state returns-%d\n", ret);
++		return ret;
++	}
++	dev_dbg(&pdev->dev,
++			"pch_phub_suspend - pci_save_state returns %d\n", ret);
++	pci_enable_wake(pdev, PCI_D3hot, 0);
++	dev_dbg(&pdev->dev, "pch_phub_suspend - "
++			"pci_enable_wake Invoked successfully\n");
++
++	pci_disable_device(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_suspend - "
++			"pci_disable_device Invoked successfully\n");
++
++	pci_set_power_state(pdev, pci_choose_state(pdev, state));
++	dev_dbg(&pdev->dev, "pch_phub_suspend - "
++			"pci_set_power_state Invoked successfully   "
++			"return = %d\n", 0);
++
++	return 0;
++}
++
++/** pch_phub_resume - Implements the resume functionality of the module.
++ *  @pdev: Contains the reference of the pci_dev structure
++ */
++static __s32 pch_phub_resume(struct pci_dev *pdev)
++{
++
++	__s32 ret;
++
++	pci_set_power_state(pdev, PCI_D0);
++	dev_dbg(&pdev->dev, "pch_phub_resume - "
++		"pci_set_power_state Invoked successfully\n");
++
++	pci_restore_state(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_resume - "
++		"pci_restore_state Invoked successfully\n");
++
++	ret = pci_enable_device(pdev);
++	if (ret) {
++		dev_dbg(&pdev->dev,
++				"pch_phub_resume-pci_enable_device failed ");
++		return ret;
++	}
++
++	dev_dbg(&pdev->dev, "pch_phub_resume - "
++			"pci_enable_device returns -%d\n", ret);
++
++	pci_enable_wake(pdev, PCI_D3hot, 0);
++	dev_dbg(&pdev->dev, "pch_phub_resume - "
++			"pci_enable_wake Invoked successfully\n");
++
++	pch_phub_restore_reg_conf(pdev);
++	dev_dbg(&pdev->dev, "pch_phub_resume - "
++		"pch_phub_restore_reg_conf Invoked successfully\n");
++
++	pch_phub_reg.pch_phub_suspended = false;
++
++	dev_dbg(&pdev->dev, "pch_phub_resume  returns- %d\n", 0);
++	return 0;
++}
++#endif /* CONFIG_PM */
++
++static struct pci_device_id pch_phub_pcidev_id[] = {
++
++	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_PCH1_PHUB)},
++	{0,}
++};
++
++
++static struct pci_driver pch_phub_driver = {
++	.name = "pch_phub",
++	.id_table = pch_phub_pcidev_id,
++	.probe = pch_phub_probe,
++	.remove = __devexit_p(pch_phub_remove),
++#ifdef CONFIG_PM
++	.suspend = pch_phub_suspend,
++	.resume = pch_phub_resume
++#endif
++};
++
++/** pch_phub_pci_init - Implements the initialization functionality of
++ *  								 the module.
++ */
++static __s32 __init pch_phub_pci_init(void)
++{
++	__s32 ret;
++	ret = pci_register_driver(&pch_phub_driver);
 +
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(__olpc_ofw);
 +
-+/* OFW cif _should_ be above this address */
-+#define OFW_MIN 0xff000000
-+
-+/* OFW starts on a 1MB boundary */
-+#define OFW_BOUND (1<<20)
-+
-+void __init olpc_ofw_detect(void)
++/** pch_phub_pci_exit - Implements the exit functionality of the module.
++ */
++static void __exit pch_phub_pci_exit(void)
 +{
-+	struct olpc_ofw_header *hdr = &boot_params.olpc_ofw_header;
-+	unsigned long start;
++	pci_unregister_driver(&pch_phub_driver);
 +
-+	/* ensure OFW booted us by checking for "OFW " string */
-+	if (hdr->ofw_magic != OLPC_OFW_SIG)
-+		return;
-+
-+	olpc_ofw_cif = (int (*)(int *))hdr->cif_handler;
-+
-+	if ((unsigned long)olpc_ofw_cif < OFW_MIN) {
-+		printk(KERN_ERR "OFW detected, but cif has invalid address 0x%lx - disabling.\n",
-+				(unsigned long)olpc_ofw_cif);
-+		olpc_ofw_cif = NULL;
-+		return;
-+	}
-+
-+	/* determine where OFW starts in memory */
-+	start = round_down((unsigned long)olpc_ofw_cif, OFW_BOUND);
-+	printk(KERN_INFO "OFW detected in memory, cif @ 0x%lx (reserving top %ldMB)\n",
-+			(unsigned long)olpc_ofw_cif, (-start) >> 20);
-+	reserve_top_address(-start);
 +}
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index b4ae4ac..b008e78 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -102,6 +102,7 @@
- 
- #include <asm/paravirt.h>
- #include <asm/hypervisor.h>
-+#include <asm/olpc_ofw.h>
- 
- #include <asm/percpu.h>
- #include <asm/topology.h>
-@@ -736,10 +737,15 @@ void __init setup_arch(char **cmdline_p)
- 	/* VMI may relocate the fixmap; do this before touching ioremap area */
- 	vmi_init();
- 
-+	/* OFW also may relocate the fixmap */
-+	olpc_ofw_detect();
 +
- 	early_trap_init();
- 	early_cpu_init();
- 	early_ioremap_init();
- 
-+	setup_olpc_ofw_pgd();
++module_init(pch_phub_pci_init);
++module_exit(pch_phub_pci_exit);
++module_param(pch_phub_major_no, int, S_IRUSR | S_IWUSR);
 +
- 	ROOT_DEV = old_decode_dev(boot_params.hdr.root_dev);
- 	screen_info = boot_params.screen_info;
- 	edid_info = boot_params.edid_info;
++MODULE_DESCRIPTION("PCH PACKET HUB PCI Driver");
++MODULE_LICENSE("GPL");
++
+diff --git a/drivers/char/pch_phub/pch_phub.h b/drivers/char/pch_phub/pch_phub.h
+new file mode 100755
+index 0000000..25d7c56
+--- /dev/null
++++ b/drivers/char/pch_phub/pch_phub.h
+@@ -0,0 +1,58 @@
++#ifndef __PCH_PHUB_H__
++#define __PCH_PHUB_H__
++/*!
++ * @file pch_phub.h
++ * @brief Provides all the interfaces pertaining to the Packet Hub module.
++ * @version 1.0.0.0
++ * @section
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
++ */
++
++/*
++ * History:
++ * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
++ *
++ * created:
++ *	OKI SEMICONDUCTOR 04/14/2010
++ * modified:
++ *
++ */
++
++#define PHUB_IOCTL_MAGIC 		(0xf7)
++
++/*Outlines the read mac address function signature. */
++#define IOCTL_PHUB_READ_MAC_ADDR (_IOR(PHUB_IOCTL_MAGIC, 6, __u8[6]))
++
++/*brief Outlines the write mac address function signature. */
++#define IOCTL_PHUB_WRITE_MAC_ADDR (_IOW(PHUB_IOCTL_MAGIC, 7, __u8[6]))
++
++
++/* Registers address offset */
++#define PCH_PHUB_PHUB_ID_REG			0x0000
++#define PCH_PHUB_QUEUE_PRI_VAL_REG		0x0004
++#define PCH_PHUB_RC_QUEUE_MAXSIZE_REG		0x0008
++#define PCH_PHUB_BRI_QUEUE_MAXSIZE_REG		0x000C
++#define PCH_PHUB_COMP_RESP_TIMEOUT_REG		0x0010
++#define PCH_PHUB_BUS_SLAVE_CONTROL_REG		0x0014
++#define PCH_PHUB_DEADLOCK_AVOID_TYPE_REG	0x0018
++#define PCH_PHUB_INTPIN_REG_WPERMIT_REG0	0x0020
++#define PCH_PHUB_INTPIN_REG_WPERMIT_REG1	0x0024
++#define PCH_PHUB_INTPIN_REG_WPERMIT_REG2	0x0028
++#define PCH_PHUB_INTPIN_REG_WPERMIT_REG3	0x002C
++#define PCH_PHUB_INT_REDUCE_CONTROL_REG_BASE	0x0040
++#define CLKCFG_REG_OFFSET           		0x500
++
++#define PCH_PHUB_OROM_SIZE 15360
++
++#endif
 -- 
-1.5.6.5
+1.6.0.6
 
