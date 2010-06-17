@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760084Ab0FQNqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 09:46:37 -0400
-Received: from tundra.namei.org ([65.99.196.166]:38572 "EHLO tundra.namei.org"
+	id S1760094Ab0FQNrB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 09:47:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58474 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759932Ab0FQNqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 09:46:34 -0400
-Date: Thu, 17 Jun 2010 23:45:42 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kees Cook <kees.cook@canonical.com>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org,
-       Stephen Smalley <sds@tycho.nsa.gov>, Daniel J Walsh <dwalsh@redhat.com>,
-       linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
-In-Reply-To: <20100616232230.GP24749@outflux.net>
-Message-ID: <alpine.LRH.2.00.1006172336390.17282@tundra.namei.org>
-References: <20100616221833.GM24749@outflux.net> <20100617000120.13071be8@lxorguk.ukuu.org.uk> <20100616232230.GP24749@outflux.net>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1760056Ab0FQNq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 09:46:59 -0400
+Message-ID: <4C1A2735.304@zytor.com>
+Date: Thu, 17 Jun 2010 06:46:29 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+       Matthew Wilcox <matthew@wil.cx>, tglx@linutronix.de, mingo@redhat.com,
+       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+       macro@linux-mips.org, kamezawa.hiroyu@jp.fujitsu.com,
+       eike-kernel@sf-tec.de
+Subject: Re: [PATCH 1/2] x86: ioremap: fix wrong physical address handling
+References: <4C197A49.6020400@jp.fujitsu.com> <4C197A9E.5040509@jp.fujitsu.com> <20100617025052.GH9298@parisc-linux.org> <4C19A2EE.2010203@zytor.com> <4C19AABA.8000706@jp.fujitsu.com> <4C19BA9A.4010300@zytor.com> <4C19EC57.3000409@goop.org>
+In-Reply-To: <4C19EC57.3000409@goop.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jun 2010, Kees Cook wrote:
-
-[Note: it would be useful to cc: the LSM list on security discussions]
-
-> Certainly.  PTRACE can already be confined by SELinux and AppArmor.  I'm
-> looking for a general approach that doesn't require a system builder to
-> create MAC policies for unknown software.  I want to define a common core
-> behavior.
+On 06/17/2010 02:35 AM, Jeremy Fitzhardinge wrote:
+>>>
+>>> By the way, is there linux kernel limit regarding above 44-bits physical
+>>> address in x86_32 PAE? For example, pfn above 32-bits is not supported?
 > 
-> > And even if you don't care about using the same security stuff the rest
-> > of the world is using to solve the problem this like the other half baked
-> > stuff you posted for links belongs as a security module.
+> That's an awkward situation.  I would tend to suggest that you not
+> support this type of machine with a 32-bit kernel.  Is it a sparse
+> memory system, or is there a device mapped in that range?
 > 
-> The LSM isn't stackable, so I can't put it there and choose this and
-> SELinux (for the case of software-without-a-policy).
+> I guess it would be possible to special-case ioremap to allow the
+> creation of such mappings, but I don't know what kind of system-wide
+> fallout would happen as a result.  The consequences of something trying
+> to extract a pfn from one of those ptes would be
+> 
+>> There are probably places at which PFNs are held in 32-bit numbers,
+>> although it would be good to track them down if it isn't too expensive
+>> to fix them (i.e. doesn't affect generic code.)
+>>   
+> 
+> There are many places which hold pfns in 32 bit variables on 32 bit
+> systems; the standard type for pfns is "unsigned long", pretty much
+> everywhere in the kernel.  It might be worth defining a pfn_t and
+> converting usage over to that, but it would be a pervasive change.
+> 
 
-SELinux already supports a global switch for ptrace via the allow_ptrace 
-boolean.  You don't need to write any policy, just set it to 0.
+I think you're right, and just making 2^44 work correctly would be good
+enough.  Doing special forwarding of all 52 bits of the real physical
+address in the paravirt case (where it is self-contained and doesn't
+spill into the rest of the kernel) would probably be a good thing, though.
 
-Global behavior can be further customized and refined (e.g. create a 
-generic policy module for apps without an existing policy, which allows 
-everything except things like ptrace and dangerous symlinks).
+	-hpa
 
-SELinux users would not need the other LSM, and stacking is thus not 
-required.
-
-
-- James
 -- 
-James Morris
-<jmorris@namei.org>
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
