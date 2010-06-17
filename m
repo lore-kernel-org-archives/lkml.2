@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760775Ab0FQVO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 17:14:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760762Ab0FQVOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 17:14:24 -0400
-Message-ID: <4C1A901F.2010802@redhat.com>
-Date: Thu, 17 Jun 2010 11:14:07 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: avi@redhat.com, mtosatti@redhat.com, glommer@redhat.com,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 17/17] Add timekeeping documentation
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com>	<1276587259-32319-18-git-send-email-zamsden@redhat.com> <87mxuuujgm.fsf@basil.nowhere.org>
-In-Reply-To: <87mxuuujgm.fsf@basil.nowhere.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1760782Ab0FQVPm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 17:15:42 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44313 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759930Ab0FQVPj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 17:15:39 -0400
+Date: Thu, 17 Jun 2010 22:18:15 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>,
+       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org,
+       Stephen Smalley <sds@tycho.nsa.gov>, Daniel J Walsh <dwalsh@redhat.com>,
+       linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
+Message-ID: <20100617221815.68ce30c5@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100617140630.c6ced27a.rdunlap@xenotime.net>
+References: <20100616221833.GM24749@outflux.net>
+	<20100617000120.13071be8@lxorguk.ukuu.org.uk>
+	<20100616232230.GP24749@outflux.net>
+	<alpine.LRH.2.00.1006172336390.17282@tundra.namei.org>
+	<20100617170453.GV24749@outflux.net>
+	<20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
+	<20100617140630.c6ced27a.rdunlap@xenotime.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2010 10:55 PM, Andi Kleen wrote:
-> Zachary Amsden<zamsden@redhat.com>  writes:
->
-> I think listing all the obscure bits in the PIT was an attempt to
-> weed out the weak and weary readers early, right?
->    
+> > Thats a nonsensical configuration so we don't care. If you are using
+> > SELinux you just do it via SELinux. If you are doing it via
+> > UbuntuHasToBeDifferent then you do it via that.
+> 
+> 
+> Well, surely there are people who use something other than Ubuntu
+> and also care about not using SELinux... eh?
 
-Very perceptive of you ;)
+Then they can load UbuntuSecurity and use that, just enabling the
+features they want.
 
->    
->> +this as well.  Several hardware limitations make the problem worse - if it is
->> +not possible to write the full 32-bits of the TSC, it may be impossible to
->> +match the TSC in newly arriving CPUs to that of the rest of the system,
->> +resulting in unsynchronized TSCs.  This may be done by BIOS or system software,
->> +but in practice, getting a perfectly synchronized TSC will not be possible
->> +unless all values are read from the same clock, which generally only is
->> +possible on single socket systems or those with special hardware
->> +support.
->>      
-> That's not true, single crystal for all sockets is very common
-> as long as you only have a single motherboard.
->
-> Of course there might be other reasons why the TSC is unsynchronized
-> (e.g. stop count in C-states), but the single clock is not the problem.
->    
+I'm not against the Ubuntu stuff getting beaten into a security module
+and put where it belongs. Far from it - I just want to see it put where
+it belongs, which is not junk randomly spewed over the tree. Doubly so
+when they do it wrong *because* they are not using the security hooks.
 
-The point is about hotplug CPUs.  Any hotplugged CPU will not have a 
-perfectly synchronized TSC, ever, even on a single socket, single 
-crystal board.
+It seems pretty easy to me. Kees needs to package up the grsecurity
+features that Ubuntu thinks are valuable into security/something/... with
+a set of sysfs entries to turn on/off the various features. Ubuntu is
+happy, people who want a simple set of sysfs feature controls for
+security are happy and nobody else will even notice.
 
->    
->> +3.4) TSC and C-states
->> +
->> +C-states, or idling states of the processor, especially C1E and deeper sleep
->> +states may be problematic for TSC as well.  The TSC may stop advancing in such
->> +a state, resulting in a TSC which is behind that of other CPUs when execution
->> +is resumed.  Such CPUs must be detected and flagged by the operating system
->> +based on CPU and chipset identifications.
->> +
->> +The TSC in such a case may be corrected by catching it up to a known external
->> +clocksource.
->>      
-> ... This is fixed in recent CPUs ...
->    
+It'll appeal to some people because it looks easy to work and it won't
+upset anyone else because its all nicely filed away where it belongs.
 
-And has a CPU flag associated with it (NONSTOP_TSC).  But whether it 
-remains fixed across all models and vendors remains to be seen.
+We don't put MSDOS fs hacks randomly all over the VFS[1], please don't try
+and put security hacks into random bits of kernel code.
 
->> +
->> +3.5) TSC frequency change / P-states
->> +
->> +To make things slightly more interesting, some CPUs may change requency.  They
->> +may or may not run the TSC at the same rate, and because the frequency change
->> +may be staggered or slewed, at some points in time, the TSC rate may not be
->> +known other than falling within a range of values.  In this case, the TSC will
->> +not be a stable time source, and must be calibrated against a known, stable,
->> +external clock to be a usable source of time.
->> +
->> +Whether the TSC runs at a constant rate or scales with the P-state is model
->> +dependent and must be determined by inspecting CPUID, chipset or various MSR
->> +fields.
->>      
-> ... In general newer CPUs should not have problems with this anymore
->    
-
-But that's not the point.  Old CPUs will, and I'm detailing all of the 
-existing issues, relevant to new CPUs or not.  A lot of these "old" CPUs 
-are still in service and will be for quite some time.
-
->    
->> +
->> +4) Virtualization Problems
->> +
->> +Timekeeping is especially problematic for virtualization because a number of
->> +challenges arise.  The most obvious problem is that time is now shared between
->> +the host and, potentially, a number of virtual machines.  This happens
->> +naturally on X86 systems when SMM mode is used by the BIOS, but not to such a
->> +degree nor with such frequency.  However, the fact that SMM mode may cause
->>      
-> The SMM reference here seems at best odd.
->    
-
-SMIs are notorious for frustrating writers of careful timing loops, and 
-several pieces of kernel code take time measurements multiple times to 
-rule out outliers from it.
-
-Seems a perfectly reasonable reference to me, perhaps I should explain 
-it better.
+Alan
+[1] Maybe we should be scarier, like Al ;)
