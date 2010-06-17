@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab0FQDTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 23:19:34 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:39402 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab0FQDTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 23:19:33 -0400
-Date: Wed, 16 Jun 2010 23:19:28 -0400
-From: Andres Salomon <dilinger@queued.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-       hpa@zytor.com, x86@kernel.org, cjb@laptop.org, pgf@laptop.org,
-       richard@laptop.org
-Subject: [PATCH] x86: OLPC: use pr_debug() for EC commands
-Message-ID: <20100616231928.16b539f0@dev.queued.net>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.12.12; i486-pc-linux-gnu)
+	id S1758185Ab0FQDt6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 23:49:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52060 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756910Ab0FQDt5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Jun 2010 23:49:57 -0400
+Date: Wed, 16 Jun 2010 20:48:54 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, jeff@garzik.org,
+       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
+       khali@linux-fr.org
+Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
+Message-ID: <20100616204854.4b036f87@infradead.org>
+In-Reply-To: <1276443098-20653-10-git-send-email-tj@kernel.org>
+References: <1276443098-20653-1-git-send-email-tj@kernel.org>
+	<1276443098-20653-10-git-send-email-tj@kernel.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 13 Jun 2010 17:31:35 +0200
+Tejun Heo <tj@kernel.org> wrote:
+> + */
+> +void expect_irq(struct irq_expect *exp)
 
-Unconditionally printing EC debug messages was helpful when we were actually
-debugging the EC, but during normal operation it can get pretty annoying.
-Using pr_debug allows us finer-grained control.
 
-(Richard, please yell if this shouldn't be done.)
+I would like to suggest an (optional) argument to this with a duration
+within which to expect an interrupt....
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- arch/x86/kernel/olpc.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+that way in the backend we can plumb this also into the idle handler
+for C state selection...
 
-diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
-index 1566052..f5ff390 100644
---- a/arch/x86/kernel/olpc.c
-+++ b/arch/x86/kernel/olpc.c
-@@ -142,7 +142,7 @@ restart:
- 	 * The OBF flag will sometimes misbehave due to what we believe
- 	 * is a hardware quirk..
- 	 */
--	printk(KERN_DEBUG "olpc-ec:  running cmd 0x%x\n", cmd);
-+	pr_devel("olpc-ec:  running cmd 0x%x\n", cmd);
- 	outb(cmd, 0x6c);
- 
- 	if (wait_on_ibf(0x6c, 0)) {
-@@ -159,8 +159,7 @@ restart:
- 						" EC accept data!\n");
- 				goto err;
- 			}
--			printk(KERN_DEBUG "olpc-ec:  sending cmd arg 0x%x\n",
--					inbuf[i]);
-+			pr_devel("olpc-ec:  sending cmd arg 0x%x\n", inbuf[i]);
- 			outb(inbuf[i], 0x68);
- 		}
- 	}
-@@ -173,8 +172,7 @@ restart:
- 				goto restart;
- 			}
- 			outbuf[i] = inb(0x68);
--			printk(KERN_DEBUG "olpc-ec:  received 0x%x\n",
--					outbuf[i]);
-+			pr_devel("olpc-ec:  received 0x%x\n", outbuf[i]);
- 		}
- 	}
- 
+
 -- 
-1.5.6.5
-
-
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
