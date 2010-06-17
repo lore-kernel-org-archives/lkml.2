@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760044Ab0FQXlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 19:41:37 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53761 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab0FQXlf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 19:41:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=IFz2giJkK8hpx0LrKT5kjnoXbm4pfpxWtvguVrVLaHV1FfLGcbw5cwIW7/UINcKyMa
-         huLha9o5s4A+gKpzYfyBFYglTPDYB7v9wMOKdTK7qFIPixhXp7XEE6mwxYD0WVr0Tw3Y
-         TvdT8qHr5qabMh9p/ukhs7TVkYEdK6Enl8OW4=
+	id S1760325Ab0FQXnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 19:43:09 -0400
+Received: from lirone.symas.net ([64.71.152.235]:36983 "EHLO lirone.symas.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754704Ab0FQXnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 19:43:08 -0400
+Message-ID: <4C1AB305.5000602@symas.com>
+Date: Thu, 17 Jun 2010 16:43:01 -0700
+From: Howard Chu <hyc@symas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; rv:1.9.3a5pre) Gecko/20100607 Firefox 3.6
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1006171341420.8191@boston.corp.fedex.com>
-References: <Pine.LNX.4.64.1006171341420.8191@boston.corp.fedex.com>
-Date: Thu, 17 Jun 2010 17:41:35 -0600
-Message-ID: <AANLkTimOjN2CiqGIxh8BClkki8F1SsERaumyy4L1a6Ab@mail.gmail.com>
-Subject: Re: What is HSM violation? Causing ata1.00 hard resetting link
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Jeff Garzik <jgarzik@redhat.com>, Greg KH <greg@kroah.com>,
-       kristen.c.accardi@intel.com, Dely Sy <dely.l.sy@intel.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Wilcox <willy@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] tty: Add EXTPROC support for LINEMODE
+References: <E1OObIu-0004K2-3K@lirone.symas.net> <20100615202924.24446d28@lxorguk.ukuu.org.uk> <4C17DA85.40803@symas.com> <4C1A7F72.6020907@symas.com> <20100617214915.3478e501@lxorguk.ukuu.org.uk> <4C1A923B.4070701@symas.com>
+In-Reply-To: <4C1A923B.4070701@symas.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 12:05 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
->
-> Hi,
->
-> I just got an external e-SATA hard disk, and I'm testing for backup.
->
-> When I tried to "tar" 90GB to it, it caused a HSM violation, and since this
-> is the root file system, system is brain-dead. "Bus error" for every command
-> issued!
->
->
-> Error is (typed as was captured in the screen) ...
->
-> ata1.00: exception Emask 0x2 SAct 0x7 SErr 0x3000400 action 0x6
-> ata1.00: irq_stat 0x44000008
+Howard Chu wrote:
+> Alan Cox wrote:
+>>>>> For Alpha this value should match OSF if possible.
+>>>
+>>> OSF didn't define this flag, nor did it assign that particular bit to any
+>>> purpose. Is that good enough?
+>>
+>> Fine
+>>
+>>>> Are you suggesting that this is completely unfixable/unworkable? Would it be
+>>>> sufficient to use kernel_termios_to_user_termios() ?
+>>
+>> I don't see a way to fix it sanely
+>>
+>>>>
+>>> Actually using kernel_termios_to_user_termios_1(). In all supported
+>>> architectures this structure is basically aligned with but smaller than the
+>>> userland struct termios.
+>>
+>> The relationship isn't quite so simple and it may change in the future,
+>> so this seems to be a very bad idea. Besides which syscalls are *cheap*
+>> so simply notifying someone to reread the terminal data they care about
+>> should be fine. In that sense it seems SVR4 got it right.
 
-The controller is reporting a protocol violation in Serror, and the
-IRQ status reports a taskfile error and unknown FIS received from the
-device.
+> OK. I'm fine with only setting a bit in the packet header, and letting the
+> application do an ioctl/tcgetattr to discover the actual state.
 
-What kind of external drive is this? Seems to me like either it's
-doing something not quite kosher, or there's some other problem (maybe
-the eSATA cable is bad, or it doesn't seat properly in the connector -
-apparently that's not uncommon).
+Just deleting that part of the patch was simple enough. The TIOCPKT_IOCTL bit 
+still gets set in the packet header byte; userspace apps will just have to do 
+an ioctl to retrieve the state when the bit is set.
 
-> ata1.00: cmd 60/30:00:37:b0:84/00:00:17:00:00/40 tag 0 ncq 24576 in
->       res 40/00:08:6f:b0:84/00:00:17:00:00/40 Emask 0x2 (HSM violation)
-> ata1.00: cmd 60/50:08:6f:b0:84/00:00:17:00:00/40 tag 1 ncq 40960 in
->       res 51/04:00:6f:b0:84/00:00:17:00:00/40 Emask 0x403 (HSM violation)
-> ata1.00: cmd 60/00:10:bf:b0:84/01:00:17:00:00/40 tag 2 ncq 131072 in
->       res 40/00:08:6f:b0:84/00:00:17:00:00/40 Emask 0x2 (HSM violation)
-> ata1: hard resetting link
-> ata1: softreset failed (device not ready)
-> ata1: hard resetting link
-> ata1: softreset failed (device not ready)
-> ata1: hard resetting link
-> ata1: link is slow to respond, please be patient (ready=0)
->
->
-> Running on SSD on Linux 2.6.35-rc3.
->
-> This does not happen all the time, but I've seen this if it's copying
-> intensively.
->
-> Thanks,
-> Jeff.
->
+I've also added locking to the pty_signal() function. The check for tty->link
+seems a bit paranoid, but a few other functions do it as well.
+
+/* Send a signal to the slave */
+static int pty_signal(struct tty_struct *tty, int sig)
+{
+          unsigned long flags;
+          struct pid *pgrp;
+
+          if (tty->link) {
+                  spin_lock_irqsave(&tty->link->ctrl_lock, flags);
+                  pgrp = get_pid(tty->link->pgrp);
+                  spin_unlock_irqrestore(&tty->link->ctrl_lock, flags);
+
+                  kill_pgrp(pgrp, sig, 1);
+                  put_pid(pgrp);
+          }
+          return 0;
+}
+
+That covers all the feedback so far. I'll be reposting the entire patch again 
+shortly, unless you have any additional thoughts.
+
+-- 
+   -- Howard Chu
+   CTO, Symas Corp.           http://www.symas.com
+   Director, Highland Sun     http://highlandsun.com/hyc/
+   Chief Architect, OpenLDAP  http://www.openldap.org/project/
