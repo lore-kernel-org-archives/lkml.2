@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760638Ab0FQS2u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 14:28:50 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:46198 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757129Ab0FQS2t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 14:28:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=AyumKoYbasCxNCzWjFmqn8BTbgotPHD2NfY5gxrxmbu0OynJQf5CPA3NAFw5Pfw7Q6
-         R8TgfzzxPPUTxqBkeP3G1sYkCt5eBIzoMMmifCnFt9cjSr555O2HZ2DlU3qIaLyfdWnZ
-         3EBTENzedOBjCKxUxmx8RnHc/mvDnxOZWa/DU=
-Date: Thu, 17 Jun 2010 21:59:47 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Intel MID platform battery driver. (right patch this
- time)
-Message-ID: <20100617175947.GA1655@oksana.dev.rtsoft.ru>
-References: <20100617171219.9624.53710.stgit@localhost.localdomain>
+	id S1760594Ab0FQSgV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 14:36:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44780 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756976Ab0FQSgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 14:36:20 -0400
+Message-ID: <4C1A6AE9.2020307@zytor.com>
+Date: Thu, 17 Jun 2010 11:35:21 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100617171219.9624.53710.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andres Salomon <dilinger@queued.net>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+       Mitch Bradley <wmb@laptop.org>
+Subject: Re: [PATCH] x86: OLPC: add support for calling into OpenFirmware
+ (v4)
+References: <20100616223220.326bee18@dev.queued.net>
+In-Reply-To: <20100616223220.326bee18@dev.queued.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 06:12:36PM +0100, Alan Cox wrote:
-> Oops sorry - try the right version this time.
+On 06/16/2010 07:32 PM, Andres Salomon wrote:
 > 
-> From: Nithish Mahalingam <nithish.mahalingam@intel.com>
+> Add support for saving OFW's cif, and later calling into it to run OFW
+> commands.  OFW remains resident in memory, living within virtual range
+> 0xff800000 - 0xffc00000.  A single page directory entry points to the
+> pgdir that OFW actually uses, so rather than saving the entire page
+> table, we grab and install that one entry permanently in the kernel's
+> page table.
 > 
-> The PMIC Battery driver provides battery charging and battery gauge
-> functionality on Intel MID platforms. This provides the basic functions. There
-> are some USB drivers to merge before the selection of charging between the
-> different USB power levels can be enabled.
+> This is currently only used by the OLPC XO.
 > 
-> Moved to a platform device by Alek Du.
-> 
-> Signed-off-by: Nithish Mahalingam <nithish.mahalingam@intel.com>
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
 
-Applied to battery-2.6.git, thanks.
+OK, down to the nitpick level...
 
-However, note that there's another issue that should be fixed
-both in this driver and in the platform (or SPI device driver)
-code.
+> +
+> +/* page dir entry containing OFW's pgdir table; filled in by head_32.S */
+> +pgd_t *olpc_ofw_pgd __initdata;
+> +
 
-[...]
-> +static __devinit int probe(int irq, struct device *dev)
+This is a physical address, not a pointer.  As such it should be
+physaddr_t or u32.
 
-Notice 'int irq' here.
-
-[...]
-> +static int __devinit platform_pmic_battery_probe(struct platform_device *pdev)
+> +static DEFINE_SPINLOCK(ofw_lock);
+> +
+> +#define MAXARGS 10
+> +
+> +void __init setup_olpc_ofw_pgd(void)
 > +{
-> +	return probe(pdev->id, &pdev->dev);
+> +	pgd_t *base, *pde, *ofw_pde;
+> +
+> +	if (!olpc_ofw_cif)
+> +		return;
+> +
+> +	/* fetch the kernel's current PDE */
+> +	base = __va(read_cr3());
+> +	pde = &base[OLPC_OFW_PDE_NR];
+> +
 
-So the irq number is derived from the platform device ID.
-Which is very bizarre, and not how things supposed to work.
-I guess there should be an IRQ resource for the device
-instead.
+Since you're touching this so early, you already know that you're
+manipulating swapper_pg_dir.  If you *didn't* know that, the above code
+would be wrong, since the change you're about to make wouldn't propagate
+to other kernel tasks.
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+So just use swapper_pg_dir[OLPC_OFW_PDE_NR] directly.
+
+	-hpa
