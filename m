@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933331Ab0FQUc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 16:32:27 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61441 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757508Ab0FQUcZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 16:32:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=akDawxnrbjVoS9tAKRJ0p/CbJ2QnunIwXdA+/Q3mkBk2uaN7XN2fv2tdUmyXw3RFsz
-         /A7dLMFkkNSOM8jUKBcaTVY91u8y630018Cyv936WXqtz6x5bVB7WCZu+hLx/PRQFBcq
-         Ou+AlM3vTWrcOZWD6dUNGgh5F2iM39pamLNkE=
+	id S933339Ab0FQUgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 16:36:50 -0400
+Received: from kroah.org ([198.145.64.141]:57495 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757590Ab0FQUgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 16:36:49 -0400
+Date: Thu, 17 Jun 2010 13:34:24 -0700
+From: Greg KH <greg@kroah.com>
+To: John Sheehan <john.d.sheehan@gmail.com>
+Cc: gregkh@suse.de, wfp5p@virginia.edu, roel.kluin@gmail.com, jkosina@suse.cz,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Staging: comedi: fix code style errors in s626.c
+Message-ID: <20100617203424.GA32523@kroah.com>
+References: <1275060688-18454-1-git-send-email-john.d.sheehan@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20100617183912.GA14389@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
-	<1276627208-17242-18-git-send-email-vaurora@redhat.com>
-	<AANLkTilNAGzn3ZC5eN2ZQMqNhcSWnT-mi_y2TkIkdeUU@mail.gmail.com>
-	<20100617183912.GA14389@shell>
-Date: Thu, 17 Jun 2010 22:32:09 +0200
-Message-ID: <AANLkTilUbzQjEBiZ9LHEvugLXbsaZoEyt9S-v3KQgUQB@mail.gmail.com>
-Subject: Re: [PATCH 17/38] union-mount: Union mounts documentation
-From: Alex Riesen <raa.lkml@gmail.com>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275060688-18454-1-git-send-email-john.d.sheehan@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 20:39, Valerie Aurora <vaurora@redhat.com> wrote:
-> On Thu, Jun 17, 2010 at 10:01:30AM +0200, Alex Riesen wrote:
->> On Tue, Jun 15, 2010 at 20:39, Valerie Aurora <vaurora@redhat.com> wrote:
->> > +git://git.kernel.org/pub/scm/fs/ext2/val/e2fsprogs.git
->> > +
->> > +Currently, whiteout directory entries are not returned to userland.
->> > +While the directory type for whiteouts, DT_WHT, has been defined for
->> > +many years, very little userland code handles them. ??Userland will
->> > +never see fallthru directory entries.
->>
->> This may be a dumb question (I must admit I did only very little research),
->> but how does one cleanup the topmost layer of whiteouts and fallthroughs,
->> so that the entries of lower layer(s) can be made visible again?
->
-> I'm not sure how best to do this.  We don't want to add more system
-> calls.  One thought of mine has been to do this offline, when the file
-> system is unmounted.
+On Fri, May 28, 2010 at 04:31:28PM +0100, John Sheehan wrote:
+> From: John Sheehan <john.d.sheehan@gmail.com>
+> 
+> A patch for s626.c to fix errors reported by
+> checkpatch.pl tool, namely,
+> code indent should use tabs where possible
+> "foo * bar" should be "foo *bar"
+> trailing statements should be on next line
+> 
+> Signed-off-by: John Sheehan <john.d.sheehan@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/s626.c |   67 +++++++++++++++++++--------------
+>  1 files changed, 39 insertions(+), 28 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
+> index a3cc933..83e1bb1 100644
+> --- a/drivers/staging/comedi/drivers/s626.c
+> +++ b/drivers/staging/comedi/drivers/s626.c
+> @@ -60,10 +60,10 @@ INSN_CONFIG instructions:
+>     insn.insn=INSN_CONFIG;   //configuration instruction
+>     insn.n=1;                //number of operation (must be 1)
+>     insn.data=&initialvalue; //initial value loaded into encoder
+> -                            //during configuration
+> +							//during configuration
 
-But that means that if the topmost filesystem is getting full of whiteouts
-and fallthroughs there will be no way to free up the space without taking
-the volume offline! That makes operation of union mount on always-on
-systems difficult. Many personal electronics are always-on today, it
-will be annoying to have to shutdown them on reconfigurations or just
-to free up some space.
+Why change this?
 
-> ... For example, e2fsck could add a feature to
-> delete whiteouts and fallthrus. ...
+>     insn.subdev=5;           //encoder subdevice
+>     insn.chanspec=CR_PACK(encoder_channel,0,AREF_OTHER); //encoder_channel
+> -                                                        //to configure
+> +														//to configure
 
-That makes me think that the cleanup operation will be topmost
-filesystem specific. Maybe this even means that one have to
-have the filesystem specific tools installed on every system
-which happens to use union mounts.
+Why is this line indented so much now?
 
-> Another option is to add a flag to an existing system call.
+Care to resend this without these changes?
 
-Or calls, if the whiteouts (or even fallthroughs) are to be read
-through directory file handles. unlinkat(2) ? It already has
-dirfd and flags arguments.
+thanks,
+
+greg k-h
