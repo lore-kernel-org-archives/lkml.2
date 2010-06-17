@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932823Ab0FQI6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 04:58:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56174 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932804Ab0FQI6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 04:58:40 -0400
-Message-ID: <4C19E3C3.2060900@cn.fujitsu.com>
-Date: Thu, 17 Jun 2010 16:58:43 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] tracing, function graph: Remove the noisy output when use
- function graph filter
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932834Ab0FQI7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 04:59:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37525 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932804Ab0FQI66 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 04:58:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=HCeZT93yqj9kJNvoSu33zXU/5A0mlBPuEWi3If1DBcuRrqvkpjvofkzDR40i7cWXd6
+         UCVZ4fv4CvOX3iU8BcTonPDd0N1Ra17YFV1a0rzcKTVnA1IKswTIUjM3BaqvrPlPs2gV
+         mOjE7ukjPXWQhwD+fw7PMzlKJTRYF9S+a/Eqk=
+From: Matti Lammi <mattij.lammi@gmail.com>
+To: gregkh@suse.de, mattij.lammi@gmail.com, mithlesh@linsyssoft.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Drivers: Staging: Fixed all the space issues
+Date: Thu, 17 Jun 2010 11:58:52 +0300
+Message-Id: <1276765132-15759-1-git-send-email-mattij.lammi@gmail.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we use function graph filter(echo some_functions >> set_graph_function)
-we are only interested in the graph of some_functions.
+Fixed all warning reported by the checkpatch.pl tool by removing unnecessary
+spaces.
 
-But if a interrupt occurs when these functions are being traced(or preparing),
-the graphs of the handlers of this interrupt are also recorded.
-These events that we aren't interested in are totally noisy.
-
-This patch remove them(very very seldom noise is still left,
-It's OK for tracing, doesn't it?).
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Matti Lammi <mattij.lammi@gmail.com>
 ---
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 79f4bac..9c130b3 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -12,6 +12,8 @@
- #include <linux/slab.h>
- #include <linux/fs.h>
- 
-+#include <asm/irq_regs.h>
-+
- #include "trace.h"
- #include "trace_output.h"
- 
-@@ -213,13 +215,19 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
- 	int ret;
- 	int cpu;
- 	int pc;
-+	int depth = trace->depth;
-+	unsigned long long cntxt = (unsigned long)(void *)get_irq_regs();
- 
- 	if (!ftrace_trace_task(current))
- 		return 0;
- 
- 	/* trace it when it is-nested-in or is a function enabled. */
--	if (!(trace->depth || ftrace_graph_addr(trace->func)))
--		return 0;
-+	if (!ftrace_graph_addr(trace->func)) {
-+		if (!depth || current->ret_stack[depth - 1].subtime != cntxt)
-+			return 0;
-+	}
-+	/* We don't use subtime here, reuse it to save context. */
-+	current->ret_stack[depth].subtime = cntxt;
- 
- 	local_irq_save(flags);
- 	cpu = raw_smp_processor_id();
+ drivers/staging/otus/oal_marc.h |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/otus/oal_marc.h b/drivers/staging/otus/oal_marc.h
+index e7a9081..5ee677d 100644
+--- a/drivers/staging/otus/oal_marc.h
++++ b/drivers/staging/otus/oal_marc.h
+@@ -62,0 +62,0 @@
+
+ /***** Byte order converting *****/
+ #ifdef ZM_CONFIG_BIG_ENDIAN
+-#define zmw_cpu_to_le32(v)    	(((v & 0xff000000) >> 24) | 	\
+-				((v & 0x00ff0000) >> 8)  | 	\
+-				((v & 0x0000ff00) << 8)  | 	\
++#define zmw_cpu_to_le32(v)    (((v & 0xff000000) >> 24) |	\
++			       ((v & 0x00ff0000) >> 8)  |	\
++			       ((v & 0x0000ff00) << 8)  |	\
+ 				((v & 0x000000ff) << 24))
+
+-#define zmw_le32_to_cpu(v)    (((v & 0xff000000) >> 24) | 	\
+-				((v & 0x00ff0000) >> 8) | 	\
+-				((v & 0x0000ff00) << 8) | 	\
++#define zmw_le32_to_cpu(v)    (((v & 0xff000000) >> 24) |	\
++			       ((v & 0x00ff0000) >> 8) |	\
++			       ((v & 0x0000ff00) << 8) |	\
+ 				((v & 0x000000ff) << 24))
+
+ #define zmw_cpu_to_le16(v)    (((v & 0xff00) >> 8) | \
+@@ -101,0 +101,0 @@
+
+ #define zmw_buf_readb(dev, buf, offset) zfwBufReadByte(dev, buf, offset)
+ #define zmw_buf_readh(dev, buf, offset) zfwBufReadHalfWord(dev, buf, offset)
+-#define zmw_buf_writeb(dev, buf, offset, value) 			\
++#define zmw_buf_writeb(dev, buf, offset, value)				\
+ 			zfwBufWriteByte(dev, buf, offset, value)
+ #define zmw_buf_writeh(dev, buf, offset, value)				\
+ 			zfwBufWriteHalfWord(dev, buf, offset, value)
+@@ -118,10 +118,9 @@
+ 	msg, (u32_t)val);
+ #define zm_debug_msg_s(msg, val) printk(KERN_DEBUG "%s:%s%s\n", __func__, \
+ 	msg, val);
+-#define zm_debug_msg_p(msg, val1, val2) do { 			\
++#define zm_debug_msg_p(msg, val1, val2) do {			\
+ 			printk(KERN_DEBUG "%s:%s%01ld.%02ld\n",	\
+-						__func__, 	\
++			       __func__,				\
+ 			msg, (val1/val2), (((val1*100)/val2)%100));
+ 			} while (0)
+ #define zm_dbg(S) printk S
+--
+1.6.0.4
+
