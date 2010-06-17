@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759983Ab0FQM7P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 08:59:15 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:35902 "EHLO kernel.dk"
+	id S1759801Ab0FQNKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 09:10:01 -0400
+Received: from mga11.intel.com ([192.55.52.93]:7729 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759969Ab0FQM7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 08:59:12 -0400
-Message-ID: <4C1A1C1F.5030302@fusionio.com>
-Date: Thu, 17 Jun 2010 14:59:11 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH -mm 0/3] remove useless ISA_DMA_THRESHOLD
-References: <20100601182452.GA3564@kernel.dk>	<20100602113022I.fujita.tomonori@lab.ntt.co.jp>	<20100602061815.GH3564@kernel.dk> <20100617214643N.fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100617214643N.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751748Ab0FQNKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 09:10:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,431,1272870000"; 
+   d="scan'208";a="808913379"
+Date: Thu, 17 Jun 2010 13:46:50 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hmc6352: Add driver for the HMC6352 compass
+Message-ID: <20100617134650.501b14bb@linux.intel.com>
+In-Reply-To: <201006171426.08442.oneukum@suse.de>
+References: <20100616121534.26294.12540.stgit@localhost.localdomain>
+	<201006161443.45375.oneukum@suse.de>
+	<20100617122048.142def43@lxorguk.ukuu.org.uk>
+	<201006171426.08442.oneukum@suse.de>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-06-17 14:48, FUJITA Tomonori wrote:
-> On Wed, 2 Jun 2010 08:18:15 +0200
-> Jens Axboe <jaxboe@fusionio.com> wrote:
+> > Its an array anyway - there isn't as such a 'correct macro' nor
+> > does it need to be using one.
 > 
->> On Tue, Jun 01 2010, FUJITA Tomonori wrote:
->>> On Tue, 1 Jun 2010 20:24:52 +0200
->>> Jens Axboe <jaxboe@fusionio.com> wrote:
->>>
->>>> On Mon, May 31 2010, FUJITA Tomonori wrote:
->>>>> This patchset removes useless ISA_DMA_THRESHOLD:
->>>>>
->>>>> - ISA_DMA_THRESHOLD is irrelevant to the majority of architectures but
->>>>>   they have to define it.
->>>>>
->>>>> - ISA_DMA_THRESHOLD definition is inconsistent on architectures; ISA
->>>>>   DMA addressing restriction, DMA addressing restriction or something
->>>>>   else.
->>>>>
->>>>> - Everyone (except for SCSI) uses dma_mask instead of ancient
->>>>>   ISA_DMA_THRESHOLD.
->>>>>
->>>>> Only SCSI uses ISA_DMA_THRESHOLD for ancient drivers with non-zero
->>>>> unchecked_isa_dma. We can safely remove ISA_DMA_THRESHOLD usage in
->>>>> SCSI. So we can clean up ISA_DMA_THRESHOLD on the whole tree.
->>>>
->>>> Looks good. James, it's probably easier if I just carry this patch set.
->>>
->>> Thanks,
->>>
->>> Any tree works for me, I thought about -mm though.
->>>
->>> Can you replace [1/3] with the following?
->>>
->>> I fixed the subject and the body, s/aha1532/aha1542/;
->>>
->>> Somehow I forgot to remove unused BAD_SG_DMA().
->>
->> I'll collect the acks and include this update.
-> 
-> Can you send this to -next via your tree? I want this to be
-> compile-tested on -next on various architectures.
+> So why does he use this unstructured data? Do we just hope the
+> compiler is good enough on big endian architectures?
 
-Yep, going out now.
+Its an array because it comes from an i2c bus which is a bytestream.
+There is no structure on the i2c bus and the device is defined to
+return a pair of bytes in this manner.
 
-
--- 
-Jens Axboe
-
+Alan
