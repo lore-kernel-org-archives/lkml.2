@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760794Ab0FQVVm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 17:21:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46241 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759948Ab0FQVVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 17:21:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=WYg1MqlDFE3cAu4vy6JDfuCKeAf3Qw7wcsHEIClHKA2sU4Uo7vgz+Lp0PBX7Y7VEhi
-         AXbFugD1ayGvKZRkw+FsNXg7YzIJWa9aZK0covUWVL7LQ12UlAF+oSDJwffWzoc2ruCh
-         cJX2Xn6EiPbXE0zfIXBkQTXqUNp5SAafPA0L4=
-Subject: [PATCH] Two fixes for my mmc/sd cardreader
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: linux-mmc <linux-mmc@vger.kernel.org>
+	id S1760813Ab0FQVWK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 17:22:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757635Ab0FQVWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 17:22:07 -0400
+Date: Thu, 17 Jun 2010 23:20:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Louis Rilling <louis.rilling@kerlabs.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Philip Langdale <philipl@overt.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Jun 2010 00:21:35 +0300
-Message-ID: <1276809695.28201.13.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+Message-ID: <20100617212003.GA4182@redhat.com>
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06/16, Louis Rilling wrote:
+>
+> Detached tasks are not seen by zap_pid_ns_processes()->sys_wait4(), so
+> that release_task()->proc_flush_task() of container init can be called
+> before it is for some detached tasks in the namespace.
+>
+> Pin proc_mnt's in copy_process(), so that proc_flush_task() becomes safe
+> whatever the ordering of tasks.
 
-These are 2 fixes for my card reader.
+I must have missed something, but can't we just move mntput() ?
 
+Oleg.
 
-First patch fixes old issue with system hand on suspend to disk/ram with
-mmc card inserted.
-I updated description, and pm notification registration order.
-I think this patch can an should go to 2.6.35, because it fixes long
-standing and nasty regression.
-
-The second patch is a result of my work trying to understand why my card
-reader sometimes dies on resume.
-This reader has a special MMC function which steals MMC cards, and until
-now had no driver. A way to disable it was found, and while it works, it
-has (at least here) a side effect of killing the controller on resume
-from ram/disk (and it happens often, and doesn't depend of whether card
-was in slot or not during suspend).
-
-Fortunately it turned out that MMC part is _almost_ standard SDHCI
-controller.
-This patch adds support for this device to standard sdhci driver.
-Unfortunately, this support still contais small hack.
-It waits 1/2 of a second on resume before initializing the controller.
-Not doing so, and resuming with MMC card present results in confused
-controller. It is not dead though. A card reinsert makes it work again
-with all cards.
-Yet the 1st patch is must for this because otherwise mmc core seeing
-that controller doesn't respond, removes the card, therefore hangs the
-system.
-It doesn't happen when I wait these 1/2 of second though.
-
-I think that this patch is also ok for 2.6.35, because it only adds new
-functionality.
-You are free to disable MMC controller using the same
-CONFIG_MMC_RICOH_MMC.
-
-If you don't disable it though, instead of full lack of functionality
-you will get full featured MMC controller.
-
-Best regards,
-Maxim Levitsky
-
-
+--- x/kernel/pid_namespace.c
++++ x/kernel/pid_namespace.c
+@@ -110,6 +110,9 @@ static void destroy_pid_namespace(struct
+ {
+ 	int i;
+ 
++	if (ns->proc_mount)
++		mntput(ns->proc_mount);
++
+ 	for (i = 0; i < PIDMAP_ENTRIES; i++)
+ 		kfree(ns->pidmap[i].page);
+ 	kmem_cache_free(pid_ns_cachep, ns);
+--- x/fs/proc/base.c
++++ x/fs/proc/base.c
+@@ -2745,10 +2745,6 @@ void proc_flush_task(struct task_struct 
+ 		proc_flush_task_mnt(upid->ns->proc_mnt, upid->nr,
+ 					tgid->numbers[i].nr);
+ 	}
+-
+-	upid = &pid->numbers[pid->level];
+-	if (upid->nr == 1)
+-		pid_ns_release_proc(upid->ns);
+ }
+ 
+ static struct dentry *proc_pid_instantiate(struct inode *dir,
 
