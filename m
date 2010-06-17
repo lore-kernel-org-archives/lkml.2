@@ -1,80 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932810Ab0FQOc6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 10:32:58 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41435 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760106Ab0FQOc5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 10:32:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:subject:from:to:cc:in-reply-to:references:content-type
-         :organization:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=fZmlayMk9O1Tz24WSUAgjGwhgWXGogsE7CqE4mDJY2+o+9PieLFwEJLwiFbe0QKe+l
-         EEizVVCYQfx+RC6H0ORPCDTjB1oEHp4Fv9b/cjSVphBMGC0eFxOrcvDZHPwAXznxnxXH
-         GkhtNGXgSUNrnJjXirDoHJtJywrgsywwZa5hI=
-Subject: Re: [PATCH] Drivers: Staging: Moved one brace to its proper place.
-From: Ben Collins <bcollins@bluecherry.net>
-To: Matti Lammi <mattij.lammi@gmail.com>
-Cc: gregkh@suse.de, mithlesh@linsyssoft.com, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <1276764228-14657-1-git-send-email-mattij.lammi@gmail.com>
-References: <1276764228-14657-1-git-send-email-mattij.lammi@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Bluecherry, LLC
-Date: Thu, 17 Jun 2010 10:32:50 -0400
-Message-ID: <1276785170.2705.13.camel@maclara>
+	id S1760173Ab0FQOgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 10:36:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10559 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755504Ab0FQOgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 10:36:05 -0400
+Date: Thu, 17 Jun 2010 10:37:56 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org,
+       chris@cvine.freeserve.co.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nfsd: have __write_ports_add/delxprt get/put lockd
+ references for transports
+Message-ID: <20100617103756.6eee5a0b@corrin.poochiereds.net>
+In-Reply-To: <1276784267-28500-3-git-send-email-jlayton@redhat.com>
+References: <1276784267-28500-1-git-send-email-jlayton@redhat.com>
+	<1276784267-28500-3-git-send-email-jlayton@redhat.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-17 at 11:43 +0300, Matti Lammi wrote:
-> Another small fix.
+On Thu, 17 Jun 2010 10:17:47 -0400
+Jeff Layton <jlayton@redhat.com> wrote:
+
+> nfsd_last_thread expects that any socket on sv_permsocks will hold a
+> lockd reference. Make sure that __write_ports_addxprt takes a lockd
+> reference for each socket it creates and have __write_ports_delxprt
+> release references when it closes a socket.
 > 
-> Signed-off-by: Matti Lammi <mattij.lammi@gmail.com>
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
 > ---
->  drivers/staging/otus/athr_common.h |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
+>  fs/nfsd/nfsctl.c |   59 ++++++++++++++++++++++++++++++++++++++---------------
+>  1 files changed, 42 insertions(+), 17 deletions(-)
 > 
-> diff --git a/drivers/staging/otus/athr_common.h b/drivers/staging/otus/athr_common.h
-> index 3e32f5b..c58ffee 100644
-> --- a/drivers/staging/otus/athr_common.h
-> +++ b/drivers/staging/otus/athr_common.h
-> @@ -128,2 +128,2 @@ struct athr_wapi_param {
->  	} u;
->  };
-> 
-> -struct athr_wapi_sta_info
-> -{
-> +struct athr_wapi_sta_info{
->  	u16	msg_type;
->  	u16	datalen;
->  	u8	sta_mac[ETH_ALEN];
+> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+> index 9e8645a..365aee0 100644
+> --- a/fs/nfsd/nfsctl.c
+> +++ b/fs/nfsd/nfsctl.c
+> @@ -989,6 +989,21 @@ static ssize_t __write_ports_delfd(char *buf)
+>  	return len;
+>  }
+>  
+> +static int
+> +nfsd_shutdown_xprt(const char *transport, const unsigned short family,
+> +		     const int port)
+> +{
+> +	struct svc_xprt *xprt;
+> +
+> +	xprt = svc_find_xprt(nfsd_serv, transport, family, port);
+> +	if (xprt == NULL)
+> +		return -ENOTCONN;
+> +
+> +	svc_close_xprt(xprt);
+> +	svc_xprt_put(xprt);
+> +	return 0;
+> +}
+> +
+>  /*
+>   * A transport listener is added by writing it's transport name and
+>   * a port number.
+> @@ -996,7 +1011,6 @@ static ssize_t __write_ports_delfd(char *buf)
+>  static ssize_t __write_ports_addxprt(char *buf)
+>  {
+>  	char transport[16];
+> -	struct svc_xprt *xprt;
+>  	int port, err;
+>  
+>  	if (sscanf(buf, "%15s %4u", transport, &port) != 2)
+> @@ -1014,20 +1028,29 @@ static ssize_t __write_ports_addxprt(char *buf)
+>  	if (err < 0)
+>  		goto out_err;
+>  
+> +	err = lockd_up();
+> +	if (err != 0) {
+> +		nfsd_shutdown_xprt(transport, PF_INET, port);
+> +		goto out_err;
+> +	}
+> +
+>  	err = svc_create_xprt(nfsd_serv, transport,
+>  				PF_INET6, port, SVC_SOCK_ANONYMOUS);
+> -	if (err < 0 && err != -EAFNOSUPPORT)
+> -		goto out_close;
+> +	if (err < 0 && err != -EAFNOSUPPORT) {
+> +		nfsd_shutdown_xprt(transport, PF_INET, port);
+> +		goto out_err;
+> +	}
+> +
+> +	err = lockd_up();
+> +	if (err != 0) {
+> +		nfsd_shutdown_xprt(transport, PF_INET6, port);
+> +		nfsd_shutdown_xprt(transport, PF_INET, port);
 
-If you're going to move it, might I suggest:
+Oops, I just realized I made a mistake here. We need to release the
+lockd reference that was taken earlier here. Let me respin and I'll
+resend...
 
-+struct athr_wapi_sta_info {
-
-Note the space between info and {
-
-> --
-> 1.6.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +		goto out_err;
+> +	}
+>  
+>  	/* Decrease the count, but don't shut down the service */
+>  	nfsd_serv->sv_nrthreads--;
+>  	return 0;
+> -out_close:
+> -	xprt = svc_find_xprt(nfsd_serv, transport, PF_INET, port);
+> -	if (xprt != NULL) {
+> -		svc_close_xprt(xprt);
+> -		svc_xprt_put(xprt);
+> -	}
+>  out_err:
+>  	svc_destroy(nfsd_serv);
+>  	return err;
+> @@ -1039,9 +1062,8 @@ out_err:
+>   */
+>  static ssize_t __write_ports_delxprt(char *buf)
+>  {
+> -	struct svc_xprt *xprt;
+>  	char transport[16];
+> -	int port;
+> +	int port, err;
+>  
+>  	if (sscanf(&buf[1], "%15s %4u", transport, &port) != 2)
+>  		return -EINVAL;
+> @@ -1049,13 +1071,16 @@ static ssize_t __write_ports_delxprt(char *buf)
+>  	if (port < 1 || port > USHRT_MAX || nfsd_serv == NULL)
+>  		return -EINVAL;
+>  
+> -	xprt = svc_find_xprt(nfsd_serv, transport, AF_UNSPEC, port);
+> -	if (xprt == NULL)
+> -		return -ENOTCONN;
+> +	/* PF_INET6 sockets are considered optional */
+> +	err = nfsd_shutdown_xprt(transport, PF_INET6, port);
+> +	if (err == 0)
+> +		lockd_down();
+>  
+> -	svc_close_xprt(xprt);
+> -	svc_xprt_put(xprt);
+> -	return 0;
+> +	err = nfsd_shutdown_xprt(transport, PF_INET, port);
+> +	if (err == 0)
+> +		lockd_down();
+> +
+> +	return err;
+>  }
+>  
+>  static ssize_t __write_ports(struct file *file, char *buf, size_t size)
 
 
 -- 
-Bluecherry: http://www.bluecherrydvr.com/
-SwissDisk : http://www.swissdisk.com/
-Ubuntu    : http://www.ubuntu.com/
-My Blog   : http://ben-collins.blogspot.com/
-
+Jeff Layton <jlayton@redhat.com>
