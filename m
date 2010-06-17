@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760182Ab0FQWXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 18:23:39 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57965 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759560Ab0FQWXi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 18:23:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CODskh2OtqHHWSOqlKtImMYJNAwWd1yUEMLMrJInm5uuWuzALCd9a/XRpq1pk+JAyj
-         pC6oiT8TQzu2/pQaZk829BavubDa1SjprRP2lbCdamA/VywllvAv7IPahJ4b73V2f94R
-         zkSuA95AGvq+r7SUjMugJjuo2CGk9S6evkaxA=
+	id S1760243Ab0FQW0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 18:26:21 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:54532 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752976Ab0FQW0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 18:26:18 -0400
+Date: Thu, 17 Jun 2010 15:25:04 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, James Morris <jmorris@namei.org>,
+       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org,
+       Stephen Smalley <sds@tycho.nsa.gov>, Daniel J Walsh <dwalsh@redhat.com>,
+       linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
+Message-ID: <20100617222504.GD24749@outflux.net>
+References: <20100616221833.GM24749@outflux.net>
+ <20100617000120.13071be8@lxorguk.ukuu.org.uk>
+ <20100616232230.GP24749@outflux.net>
+ <alpine.LRH.2.00.1006172336390.17282@tundra.namei.org>
+ <20100617170453.GV24749@outflux.net>
+ <20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
+ <20100617140630.c6ced27a.rdunlap@xenotime.net>
+ <20100617211616.GA24749@outflux.net>
+ <20100617231859.04fcdbde@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1006171500260.4214@localhost.localdomain>
-References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain>
-	<0F1C0B07-60D6-405B-890B-F9C320820CA5@gmail.com>
-	<alpine.LFD.2.00.1006171500260.4214@localhost.localdomain>
-Date: Thu, 17 Jun 2010 17:23:35 -0500
-Message-ID: <AANLkTimWfE0WXr558sOnjZFptxpP4k6IvMWriR3seIKu@mail.gmail.com>
-Subject: Re: [linux-pm] RFC: /sys/power/policy_preference
-From: Victor Lowther <victor.lowther@gmail.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100617231859.04fcdbde@lxorguk.ukuu.org.uk>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 2:02 PM, Len Brown <lenb@kernel.org> wrote:
->
->> On Jun 16, 2010, at 4:05 PM, Len Brown <lenb@kernel.org> wrote:
->>
->> > Create /sys/power/policy_preference, giving user-space
->> > the ability to express its preference for kernel based
->> > power vs. performance decisions in a single place.
->> >
->> > This gives kernel sub-systems and drivers a central place
->> > to discover this system-wide policy preference.
->> > It also allows user-space to not have to be updated
->> > every time a sub-system or driver adds a new power/perf knob.
->>
->> I would prefer documenting all the current knobs and adding them to pm-utils
->> so that pm-powersave knows about and can manage them. Once that is done,
->> creating arbitrary powersave levels should be fairly simple.
->
->
-> The idea here is to not require user-space to need updating
-> whenever a future knob is invented.  We can do a great job
-> at documenting the past, but a poor job of documenting the future:-)
+On Thu, Jun 17, 2010 at 11:18:59PM +0100, Alan Cox wrote:
+> > And for them, it certainly seems like a good idea to be able to turn off
+> > PTRACE without having to fiddle with an LSM.
+> 
+> But that *is* an LSM, its a security policy.
+> 
+> You don't seem to get it - even the default kernel security is a
+> security policy (security/commoncap.c etc)
 
-Well, I would suggest that the habit of not documenting what is
-happening with power management in the kernel needs to change, then.
+I do get it.  I also get that every LSM calls out to commoncap, making
+it effectively stacked with the primary LSM -- the only LSM that gets
+stacked.  In fact, this is how I even started implementing these features:
+as patches to commoncap, but James preferred it to be in core since they
+are of general utility.  But core people want the changes in security/
+instead.
 
-Having the documentation and example code for how to tweak the various
-power management settings from userspace is inherently more flexible
-than trying to expose a single knob from the kernel to userspace for
-power management, with little loss of flexibility.
-> cheers,
-> Len Brown, Intel Open Source Technolgy Center
->
+I don't mind putting them in commoncap at all.  I would just like people
+to agree on what they disagree about.  :)
+
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
