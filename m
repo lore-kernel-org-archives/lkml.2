@@ -1,205 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760872Ab0FQXKA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 19:10:00 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:62119 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757764Ab0FQXJ6 convert rfc822-to-8bit (ORCPT
+	id S932994Ab0FQXLp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 19:11:45 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:47279 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757764Ab0FQXLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 19:09:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vGrUJff7bdBlj9ISWuaMhou9SbJN7NAqUApt/mEC7Ozkdfz3Qhj7i8X1gSZbEKXtIV
-         Af0LeP3vERpQrXuOQSbJ+WwcWp1MeifaI8NkJDVjxI64n6B3hQVUOwGGTXwMqWaWQCnw
-         tAOBTJJ7GI84HtPwS8fX+lZeTLdkjApCAZQsg=
-MIME-Version: 1.0
-In-Reply-To: <201006180102.27658.rjw@sisk.pl>
-References: <201006141653.03879.rjw@sisk.pl>
-	<201006172114.19033.rjw@sisk.pl>
-	<AANLkTimRQLDDyIB0LIE018gR24s593rkMyTvDuF1ntJT@mail.gmail.com>
-	<201006180102.27658.rjw@sisk.pl>
-Date: Thu, 17 Jun 2010 19:09:56 -0400
-Message-ID: <AANLkTinBTc7DEJd9PywNuD5HeIZhqHY4ePK3w78OwVJ4@mail.gmail.com>
-Subject: Re: [PATCH] DRM / radeon / KMS: Fix hibernation regression related to 
-	radeon PM (was: Re: [Regression, post-2.6.34] Hibernation broken on machines 
-	with radeon/KMS and r300)
-From: Matt Turner <mattst88@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>,
-       linux-kernel@vger.kernel.org,
-       dri-devel <dri-devel@lists.freedesktop.org>,
+	Thu, 17 Jun 2010 19:11:43 -0400
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-pm@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-doc@vger.kernel.org, Linux Containers <containers@lists.osdl.org>
+References: <20100616221833.GM24749@outflux.net>
+	<m1hbl1eta6.fsf@fess.ebiederm.org>
+	<20100617165940.GU24749@outflux.net>
+	<m1typ175ip.fsf@fess.ebiederm.org> <20100617225043.GA2492@hallyn.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Thu, 17 Jun 2010 16:11:27 -0700
+In-Reply-To: <20100617225043.GA2492@hallyn.com> (Serge E. Hallyn's message of "Thu\, 17 Jun 2010 17\:50\:43 -0500")
+Message-ID: <m1hbl1p84g.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: serge@hallyn.com, containers@lists.osdl.org, linux-doc@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@elte.hu, dhowells@redhat.com, hpa@zytor.com, oleg@redhat.com, roland@redhat.com, schwidefsky@de.ibm.com, hidave.darkstar@gmail.com, jkosina@suse.cz, akpm@linux-foundation.org, rdunlap@xenotime.net, linux-kernel@vger.kernel.org, kees.cook@canonical.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 7:02 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> There is a regression from 2.6.34 related to the recent radeon power
-> management changes, caused by attempting to cancel a delayed work
-> item that's never been scheduled.  However, the code as is has some
-> other issues potentially leading to visible problems.
->
-> First, the mutex around cancel_delayed_work() in radeon_pm_suspend()
-> doesn't really serve any purpose, because cancel_delayed_work() only
-> tries to delete the work's timer.  Moreover, it doesn't prevent the
-> work handler from running, so the handler can do some wrong things if
-> it wins the race and in that case it will rearm itself to do some
-> more wrong things going forward.  So, I think it's better to wait for
-> the handler to return in case it's already been queued up for
-> execution.  Also, it should be prevented from rearming itself in that
-> case.
->
-> Second, in radeon_set_pm_method() the cancel_delayed_work() is not
-> sufficient to prevent the work handler from running and queing up
-> itself for the next run (the failure scenario is that
-> cancel_delayed_work() returns 0, so the handler is run, it waits on
-> the mutex and then rearms itself after the mutex has been released),
-> so again the work handler should be prevented from rearming itself in
-> that case..
->
-> Finally, there's a potential deadlock in radeon_pm_fini(), because
-> cancel_delayed_work_sync() is called under rdev->pm.mutex, but the
-> work handler tries to acquire the same mutex (if it wins the race).
->
-> Fix the issues described above.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
-> ---
->  drivers/gpu/drm/radeon/radeon.h    |    3 +-
->  drivers/gpu/drm/radeon/radeon_pm.c |   41 ++++++++++++++++++++++++++++++-------
->  2 files changed, 36 insertions(+), 8 deletions(-)
->
-> Index: linux-2.6/drivers/gpu/drm/radeon/radeon_pm.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/gpu/drm/radeon/radeon_pm.c
-> +++ linux-2.6/drivers/gpu/drm/radeon/radeon_pm.c
-> @@ -397,13 +397,20 @@ static ssize_t radeon_set_pm_method(stru
->                rdev->pm.dynpm_planned_action = DYNPM_ACTION_DEFAULT;
->                mutex_unlock(&rdev->pm.mutex);
->        } else if (strncmp("profile", buf, strlen("profile")) == 0) {
-> +               bool flush_wq = false;
-> +
->                mutex_lock(&rdev->pm.mutex);
-> -               rdev->pm.pm_method = PM_METHOD_PROFILE;
-> +               if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
-> +                       cancel_delayed_work(&rdev->pm.dynpm_idle_work);
-> +                       flush_wq = true;
-> +               }
->                /* disable dynpm */
->                rdev->pm.dynpm_state = DYNPM_STATE_DISABLED;
->                rdev->pm.dynpm_planned_action = DYNPM_ACTION_NONE;
-> -               cancel_delayed_work(&rdev->pm.dynpm_idle_work);
-> +               rdev->pm.pm_method = PM_METHOD_PROFILE;
->                mutex_unlock(&rdev->pm.mutex);
-> +               if (flush_wq)
-> +                       flush_workqueue(rdev->wq);
->        } else {
->                DRM_ERROR("invalid power method!\n");
->                goto fail;
-> @@ -418,9 +425,18 @@ static DEVICE_ATTR(power_method, S_IRUGO
->
->  void radeon_pm_suspend(struct radeon_device *rdev)
->  {
-> +       bool flush_wq = false;
-> +
->        mutex_lock(&rdev->pm.mutex);
-> -       cancel_delayed_work(&rdev->pm.dynpm_idle_work);
-> +       if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
-> +               cancel_delayed_work(&rdev->pm.dynpm_idle_work);
-> +               if (rdev->pm.dynpm_state == DYNPM_STATE_ACTIVE)
-> +                       rdev->pm.dynpm_state = DYNPM_STATE_SUSPENDED;
-> +               flush_wq = true;
-> +       }
->        mutex_unlock(&rdev->pm.mutex);
-> +       if (flush_wq)
-> +               flush_workqueue(rdev->wq);
->  }
->
->  void radeon_pm_resume(struct radeon_device *rdev)
-> @@ -432,6 +448,12 @@ void radeon_pm_resume(struct radeon_devi
->        rdev->pm.current_sclk = rdev->clock.default_sclk;
->        rdev->pm.current_mclk = rdev->clock.default_mclk;
->        rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
-> +       if (rdev->pm.pm_method == PM_METHOD_DYNPM
-> +           && rdev->pm.dynpm_state == DYNPM_STATE_SUSPENDED) {
-> +               rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
-> +               queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
-> +                                       msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
-> +       }
->        mutex_unlock(&rdev->pm.mutex);
->        radeon_pm_compute_clocks(rdev);
->  }
-> @@ -486,6 +508,8 @@ int radeon_pm_init(struct radeon_device
->  void radeon_pm_fini(struct radeon_device *rdev)
->  {
->        if (rdev->pm.num_power_states > 1) {
-> +               bool flush_wq = false;
-> +
->                mutex_lock(&rdev->pm.mutex);
->                if (rdev->pm.pm_method == PM_METHOD_PROFILE) {
->                        rdev->pm.profile = PM_PROFILE_DEFAULT;
-> @@ -493,13 +517,16 @@ void radeon_pm_fini(struct radeon_device
->                        radeon_pm_set_clocks(rdev);
->                } else if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
->                        /* cancel work */
-> -                       cancel_delayed_work_sync(&rdev->pm.dynpm_idle_work);
-> +                       cancel_delayed_work(&rdev->pm.dynpm_idle_work);
-> +                       flush_wq = true;
->                        /* reset default clocks */
->                        rdev->pm.dynpm_state = DYNPM_STATE_DISABLED;
->                        rdev->pm.dynpm_planned_action = DYNPM_ACTION_DEFAULT;
->                        radeon_pm_set_clocks(rdev);
->                }
->                mutex_unlock(&rdev->pm.mutex);
-> +               if (flush_wq)
-> +                       flush_workqueue(rdev->wq);
->
->                device_remove_file(rdev->dev, &dev_attr_power_profile);
->                device_remove_file(rdev->dev, &dev_attr_power_method);
-> @@ -720,12 +747,12 @@ static void radeon_dynpm_idle_work_handl
->                        radeon_pm_get_dynpm_state(rdev);
->                        radeon_pm_set_clocks(rdev);
->                }
-> +
-> +               queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
-> +                                       msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
->        }
->        mutex_unlock(&rdev->pm.mutex);
->        ttm_bo_unlock_delayed_workqueue(&rdev->mman.bdev, resched);
-> -
-> -       queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
-> -                                       msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
->  }
->
->  /*
-> Index: linux-2.6/drivers/gpu/drm/radeon/radeon.h
-> ===================================================================
-> --- linux-2.6.orig/drivers/gpu/drm/radeon/radeon.h
-> +++ linux-2.6/drivers/gpu/drm/radeon/radeon.h
-> @@ -619,7 +619,8 @@ enum radeon_dynpm_state {
->        DYNPM_STATE_DISABLED,
->        DYNPM_STATE_MINIMUM,
->        DYNPM_STATE_PAUSED,
-> -       DYNPM_STATE_ACTIVE
-> +       DYNPM_STATE_ACTIVE,
-> +       DYNPM_STATE_SUSPENDED,
->  };
->  enum radeon_dynpm_action {
->        DYNPM_ACTION_NONE,
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-Probably want to shorten the commit title a bit.
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> Kees Cook <kees.cook@canonical.com> writes:
+>> Somewhere Serge has a git tree where he started making the capabilities
+>
+> FWIW I believe the latest one is
+>
+> 	http://git.kernel.org/?p=linux/kernel/git/sergeh/linux-cr.git;a=shortlog;h=refs/heads/userns.feb16.1
 
-Matt
+Cool.
+
+> I (/we) should get back to that...  Though waiting for certain other
+> bits to settle (i.e. tagged sysfs and user-ns-safe SCM_CREDENTIALS)
+> isn't a bad thing.
+
+Tagged sysfs is in 2.6.35-rc1+
+user-ns-safe SCM_CREDENTIALS have merged to net-next.
+
+ns_capable seems to be the next piece easy piece of the user_namespace.
+
+Eric
