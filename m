@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760325Ab0FQXnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 19:43:09 -0400
-Received: from lirone.symas.net ([64.71.152.235]:36983 "EHLO lirone.symas.net"
+	id S1760623Ab0FQXrI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 19:47:08 -0400
+Received: from mail.perches.com ([173.55.12.10]:1185 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754704Ab0FQXnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 19:43:08 -0400
-Message-ID: <4C1AB305.5000602@symas.com>
-Date: Thu, 17 Jun 2010 16:43:01 -0700
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; rv:1.9.3a5pre) Gecko/20100607 Firefox 3.6
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] tty: Add EXTPROC support for LINEMODE
-References: <E1OObIu-0004K2-3K@lirone.symas.net> <20100615202924.24446d28@lxorguk.ukuu.org.uk> <4C17DA85.40803@symas.com> <4C1A7F72.6020907@symas.com> <20100617214915.3478e501@lxorguk.ukuu.org.uk> <4C1A923B.4070701@symas.com>
-In-Reply-To: <4C1A923B.4070701@symas.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1757217Ab0FQXrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 19:47:06 -0400
+Subject: Re: [PATCH] staging:comedi: Fixed coding convention issues.
+From: Joe Perches <joe@perches.com>
+To: Greg KH <greg@kroah.com>, Ian Abbott <abbotti@mev.co.uk>,
+       Frank Mori Hess <fmhess@users.sourceforge.net>
+Cc: Mark Rankilor <reodge@gmail.com>, devel@driverdev.osuosl.org,
+       Henri =?ISO-8859-1?Q?H=E4kkinen?= <henuxd@gmail.com>, gregkh@suse.de,
+       andrea.gelmini@gelma.net, linux-kernel@vger.kernel.org
+In-Reply-To: <20100617232810.GA6821@kroah.com>
+References: <1276337681-4327-1-git-send-email-henuxd@gmail.com>
+	 <AANLkTimUt_Lhk6lG9spM9qjRT8T6PhEDVyOhh745lJhW@mail.gmail.com>
+	 <1276405626.1449.26.camel@Joe-Laptop.home>
+	 <1276407050.1449.28.camel@Joe-Laptop.home>
+	 <20100617225108.GA32334@kroah.com>
+	 <1276816558.1005.93.camel@Joe-Laptop.home>
+	 <20100617232810.GA6821@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Jun 2010 16:47:01 -0700
+Message-ID: <1276818421.1005.99.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howard Chu wrote:
-> Alan Cox wrote:
->>>>> For Alpha this value should match OSF if possible.
->>>
->>> OSF didn't define this flag, nor did it assign that particular bit to any
->>> purpose. Is that good enough?
->>
->> Fine
->>
->>>> Are you suggesting that this is completely unfixable/unworkable? Would it be
->>>> sufficient to use kernel_termios_to_user_termios() ?
->>
->> I don't see a way to fix it sanely
->>
->>>>
->>> Actually using kernel_termios_to_user_termios_1(). In all supported
->>> architectures this structure is basically aligned with but smaller than the
->>> userland struct termios.
->>
->> The relationship isn't quite so simple and it may change in the future,
->> so this seems to be a very bad idea. Besides which syscalls are *cheap*
->> so simply notifying someone to reread the terminal data they care about
->> should be fine. In that sense it seems SVR4 got it right.
+On Thu, 2010-06-17 at 16:28 -0700, Greg KH wrote:
+> On Thu, Jun 17, 2010 at 04:15:58PM -0700, Joe Perches wrote:
+> > On Thu, 2010-06-17 at 15:51 -0700, Greg KH wrote:
+> > > On Sat, Jun 12, 2010 at 10:30:50PM -0700, Joe Perches wrote:
+> > > > On Sat, 2010-06-12 at 22:07 -0700, Joe Perches wrote:
+> > > > > 2: Create some comedi logging functions or macros like:
+> > > > >    	comedi_<level>(fmt, arg...) (ie: comedi_info, comedi_err, etc)
+> > > > >    where "comedi:" is always prefixed and an
+> > > > >    optional #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> > > > >    could be used.
+> > 
+> > > I would prefer the conversion of everything over to the dev_printk()
+> > > versions instead of creating a new macro for every individual subsystem.
+> > > That way you get the advantage of logging everything in the common
+> > > format and the dynamic debug functionality as well.
+> > 
+> > What I posted has dynamic_debug.
+> > 
+> > +#elif defined(CONFIG_DYNAMIC_DEBUG)
+> > +/* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
+> > +#define comedi_debug(fmt, ...)                         \
+> > +       dynamic_pr_debug(fmt, ##__VA_ARGS__)
+> > 
+> > As far as I know, comedi doesn't always take a struct device *.
+> > I believe it's only used when there's a DMA.
+> 
+> No, there's a struct device down in the device almost always.
+> 
+> > In struct comedi_device, there are two struct device *'s.
+> > 
+> > 	struct device *class_dev;
+> > ...
+> > 	struct device *hw_dev;
+> 
+> hw_dev is what we want to use.
 
-> OK. I'm fine with only setting a bit in the packet header, and letting the
-> application do an ioctl/tcgetattr to discover the actual state.
+Perhaps Ian or Frank might clarify if
+that's reasonable.  It doesn't look like
+it to me.
 
-Just deleting that part of the patch was simple enough. The TIOCPKT_IOCTL bit 
-still gets set in the packet header byte; userspace apps will just have to do 
-an ioctl to retrieve the state when the bit is set.
+Look at comedi_set_hw_dev.
+See how often it's used?
 
-I've also added locking to the pty_signal() function. The check for tty->link
-seems a bit paranoid, but a few other functions do it as well.
 
-/* Send a signal to the slave */
-static int pty_signal(struct tty_struct *tty, int sig)
-{
-          unsigned long flags;
-          struct pid *pgrp;
-
-          if (tty->link) {
-                  spin_lock_irqsave(&tty->link->ctrl_lock, flags);
-                  pgrp = get_pid(tty->link->pgrp);
-                  spin_unlock_irqrestore(&tty->link->ctrl_lock, flags);
-
-                  kill_pgrp(pgrp, sig, 1);
-                  put_pid(pgrp);
-          }
-          return 0;
-}
-
-That covers all the feedback so far. I'll be reposting the entire patch again 
-shortly, unless you have any additional thoughts.
-
--- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
