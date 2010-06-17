@@ -1,122 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760260Ab0FQPz1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 11:55:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:34301 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756264Ab0FQPz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 11:55:26 -0400
-X-Authority-Analysis: v=1.1 cv=zLGBfXKW/yOQN1c4qTdQUWouaSiWOaUUjRgOJi1LSJI= c=1 sm=0 a=U6fyK1BqOE0A:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=e7TJZTf_D57YIyi_fUYA:9 a=vHD72SPuxvD7ocCyU6KzViXMDzYA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] tracing, function graph: Remove the noisy output when
- use function graph filter
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <4C19E3C3.2060900@cn.fujitsu.com>
-References: <4C19E3C3.2060900@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 17 Jun 2010 11:55:23 -0400
-Message-ID: <1276790123.3556.111.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1760277Ab0FQPzc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 11:55:32 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36788 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756264Ab0FQPz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 11:55:29 -0400
+Message-ID: <4C1A4548.3020602@kernel.org>
+Date: Thu, 17 Jun 2010 17:54:48 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+       Arjan van de Ven <arjan@infradead.org>, mingo@elte.hu, bphilips@suse.de,
+       yinghai@kernel.org, akpm@linux-foundation.org,
+       torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, linux-ide@vger.kernel.org, stern@rowland.harvard.edu,
+       gregkh@suse.de, khali@linux-fr.org
+Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
+References: <1276443098-20653-1-git-send-email-tj@kernel.org>	<1276443098-20653-10-git-send-email-tj@kernel.org>	<20100616204854.4b036f87@infradead.org>	<4C19DA64.8000409@kernel.org>	<alpine.LFD.2.00.1006171310560.4290@localhost.localdomain>	<4C1A05AF.5010405@kernel.org> <20100617124343.5889067c@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100617124343.5889067c@lxorguk.ukuu.org.uk>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 17 Jun 2010 15:54:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-17 at 16:58 +0800, Lai Jiangshan wrote:
-> If we use function graph filter(echo some_functions >> set_graph_function)
-> we are only interested in the graph of some_functions.
+On 06/17/2010 01:43 PM, Alan Cox wrote:
+> On Thu, 17 Jun 2010 13:23:27 +0200
+> Tejun Heo <tj@kernel.org> wrote:
 > 
-> But if a interrupt occurs when these functions are being traced(or preparing),
-> the graphs of the handlers of this interrupt are also recorded.
-> These events that we aren't interested in are totally noisy.
-
-Umm, sorry, I prefer the noise.  When analyzing the network stack, I
-like to see the interrupts that preempt the code.
-
-What you could do is add an function_graph option that disables it, but
-do not make it the default.
-
+>> On 06/17/2010 01:12 PM, Thomas Gleixner wrote:
+>>>> Hmmm.... oh, I see.  Wouldn't it be much better to use moving avg of
+>>>> IRQ durations instead of letting the driver specify it?  Drivers are
+>>>> most likely to just hard code it and It's never gonna be accurate.
+>>>
+>>> Right, but that's probably more accurate than the core code heuristics
+>>> ever will be.
+>>
+>> Eh, not really.  For ATA at least, there will be three different
+>> classes of devices.  SSDs, hard drives and optical devices
 > 
-> This patch remove them(very very seldom noise is still left,
-> It's OK for tracing, doesn't it?).
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-> index 79f4bac..9c130b3 100644
-> --- a/kernel/trace/trace_functions_graph.c
-> +++ b/kernel/trace/trace_functions_graph.c
-> @@ -12,6 +12,8 @@
->  #include <linux/slab.h>
->  #include <linux/fs.h>
->  
-> +#include <asm/irq_regs.h>
-> +
->  #include "trace.h"
->  #include "trace_output.h"
->  
-> @@ -213,13 +215,19 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
->  	int ret;
->  	int cpu;
->  	int pc;
-> +	int depth = trace->depth;
-> +	unsigned long long cntxt = (unsigned long)(void *)get_irq_regs();
->  
->  	if (!ftrace_trace_task(current))
->  		return 0;
->  
->  	/* trace it when it is-nested-in or is a function enabled. */
-> -	if (!(trace->depth || ftrace_graph_addr(trace->func)))
-> -		return 0;
-> +	if (!ftrace_graph_addr(trace->func)) {
-> +		if (!depth || current->ret_stack[depth - 1].subtime != cntxt)
-> +			return 0;
-> +	}
+> At least four: It may also be battery backed RAM.
 
-This will slow down the tracing when inside the function. You are
-testing every function to see if we should show the trace, even when we
-are inside a function we are tracing.
+Yeah, right, there are those crazy devices too but I think they would
+fall in a single tick any way.  At any rate, let's say I have those
+numbers, how would I feed it into c-state selection?
 
+Thanks.
 
-> +	/* We don't use subtime here, reuse it to save context. */
-> +	current->ret_stack[depth].subtime = cntxt;
-
-This should then be a union if it is used for two things. That documents
-it better.
-
-
->  
->  	local_irq_save(flags);
->  	cpu = raw_smp_processor_id();
-
-If you make the above into an option, then we can have
-
-	int no_irqs = tracer_flags.val & TRACE_GRAPH_NO_IRQS;
-	[...]
-
-	if (!(trace->depth || ftrace_graph_addr(trace->func)))
-		return 0;
-
-	if (no_irqs) {
-		cntx = (unsigned long)(void *)get_irq_regs();
-		if (trace->depth &&
-		    current->ret_stack[depth - 1].subtime != cntxt)
-			return 0;
-		current->ret_stack[depth].subtime = cntxt;
-	}
-
-Also, I'm not really happy about the double use of subtime. It pevents
-the function graph from ever ignoring the time it calls the child
-functions.
-
--- Steve
-
+-- 
+tejun
 
