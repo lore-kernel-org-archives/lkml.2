@@ -1,178 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933437Ab0FQUlc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 16:41:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49940 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342Ab0FQUkN (ORCPT
+	id S1760706Ab0FQUlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 16:41:51 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49314 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933242Ab0FQUkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 16:40:13 -0400
+	Thu, 17 Jun 2010 16:40:12 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Chase Douglas <chase.douglas@canonical.com>,
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
        Peter Zijlstra <peterz@infradead.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 5/7] perf probe: Add kernel source path option
-Date: Thu, 17 Jun 2010 17:40:02 -0300
-Message-Id: <1276807204-22512-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 3/7] perf record: Add option to avoid updating buildid cache
+Date: Thu, 17 Jun 2010 17:40:00 -0300
+Message-Id: <1276807204-22512-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1276807204-22512-1-git-send-email-acme@infradead.org>
 References: <1276807204-22512-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chase Douglas <chase.douglas@canonical.com>
+From: Stephane Eranian <eranian@google.com>
 
-The probe plugin requires access to the source code for some operations.  The
-source code must be in the exact same location as specified by the DWARF tags,
-but sometimes the location is an absolute path that cannot be replicated by a
-normal user. This change adds the -s|--source option to allow the user to
-specify the root of the kernel source tree.
+There are situations where there is enough information in the perf.data
+to process the samples. Updating the buildid cache may add unecessary
+overhead in terms of disk space and time (copying large elf images).
 
+A persistent option to do this already exists via the perfconfig file,
+simply do:
+
+[buildid]
+dir = /dev/null
+
+This patch provides a way to suppress builid cache updates on a per-run
+basis.  It addds a new option, -N, to perf record. Buildids are still
+generated in the perf.data file.
+
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Masami Hiramatsu <mhiramat@redhat.com>
-LKML-Reference: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+LKML-Reference: <4c19ef89.93ecd80a.40dc.fffff8e9@mx.google.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-probe.txt |    4 ++
- tools/perf/builtin-probe.c              |    2 +
- tools/perf/util/probe-finder.c          |   58 +++++++++++++++++++++++++++++--
- tools/perf/util/symbol.h                |    1 +
- 4 files changed, 62 insertions(+), 3 deletions(-)
+ tools/perf/Documentation/perf-record.txt |    6 ++++++
+ tools/perf/builtin-record.c              |    5 +++++
+ tools/perf/util/header.c                 |   10 +++++++++-
+ tools/perf/util/util.h                   |    1 +
+ 4 files changed, 21 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index 94a258c..ea531d9 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -31,6 +31,10 @@ OPTIONS
- --vmlinux=PATH::
- 	Specify vmlinux path which has debuginfo (Dwarf binary).
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 25576b4..3ee27dc 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -110,6 +110,12 @@ comma-sperated list with no space: 0,1. Ranges of CPUs are specified with -: 0-2
+ In per-thread mode with inheritance mode on (default), samples are captured only when
+ the thread executes on the designated CPUs. Default is to monitor all CPUs.
  
-+-s::
-+--source=PATH::
-+	Specify path to kernel source.
++-N::
++--no-buildid-cache::
++Do not update the builid cache. This saves some overhead in situations
++where the information in the perf.data file (which includes buildids)
++is sufficient.
 +
- -v::
- --verbose::
-         Be more verbose (show parsed arguments, etc).
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index e4a4da3..5455186 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -182,6 +182,8 @@ static const struct option options[] = {
- 		     "Show source code lines.", opt_show_lines),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
-+	OPT_STRING('s', "source", &symbol_conf.source_prefix,
-+		   "directory", "path to kernel source"),
- #endif
- 	OPT__DRY_RUN(&probe_event_dry_run),
- 	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index d964cb1..baf6653 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -37,6 +37,7 @@
- #include "event.h"
- #include "debug.h"
- #include "util.h"
-+#include "symbol.h"
- #include "probe-finder.h"
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 5efc3fc..86b1c3b 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -60,6 +60,7 @@ static bool			call_graph			=  false;
+ static bool			inherit_stat			=  false;
+ static bool			no_samples			=  false;
+ static bool			sample_address			=  false;
++static bool			no_buildid			=  false;
  
- /* Kprobe tracer basic type is up to u64 */
-@@ -57,6 +58,55 @@ static int strtailcmp(const char *s1, const char *s2)
+ static long			samples				=      0;
+ static u64			bytes_written			=      0;
+@@ -825,6 +826,8 @@ static const struct option options[] = {
+ 		    "Sample addresses"),
+ 	OPT_BOOLEAN('n', "no-samples", &no_samples,
+ 		    "don't sample"),
++	OPT_BOOLEAN('N', "no-buildid-cache", &no_buildid,
++		    "do not update the buildid cache"),
+ 	OPT_END()
+ };
+ 
+@@ -849,6 +852,8 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 	}
+ 
+ 	symbol__init();
++	if (no_buildid)
++		disable_buildid_cache();
+ 
+ 	if (!nr_counters) {
+ 		nr_counters	= 1;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 4a6a4b3..d7e67b1 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -16,6 +16,8 @@
+ #include "symbol.h"
+ #include "debug.h"
+ 
++static bool no_buildid_cache = false;
++
+ /*
+  * Create new perf.data header attribute:
+  */
+@@ -470,7 +472,8 @@ static int perf_header__adds_write(struct perf_header *self, int fd)
+ 		}
+ 		buildid_sec->size = lseek(fd, 0, SEEK_CUR) -
+ 					  buildid_sec->offset;
+-		perf_session__cache_build_ids(session);
++		if (!no_buildid_cache)
++			perf_session__cache_build_ids(session);
+ 	}
+ 
+ 	lseek(fd, sec_start, SEEK_SET);
+@@ -1189,3 +1192,8 @@ int event__process_build_id(event_t *self,
+ 				 session);
  	return 0;
  }
- 
-+/*
-+ * Find a src file from a DWARF tag path. Prepend optional source path prefix
-+ * and chop off leading directories that do not exist. Result is passed back as
-+ * a newly allocated path on success.
-+ * Return 0 if file was found and readable, -errno otherwise.
-+ */
-+static int get_real_path(const char *raw_path, char **new_path)
++
++void disable_buildid_cache(void)
 +{
-+	if (!symbol_conf.source_prefix) {
-+		if (access(raw_path, R_OK) == 0) {
-+			*new_path = strdup(raw_path);
-+			return 0;
-+		} else
-+			return -errno;
-+	}
-+
-+	*new_path = malloc((strlen(symbol_conf.source_prefix) +
-+			    strlen(raw_path) + 2));
-+	if (!*new_path)
-+		return -ENOMEM;
-+
-+	for (;;) {
-+		sprintf(*new_path, "%s/%s", symbol_conf.source_prefix,
-+			raw_path);
-+
-+		if (access(*new_path, R_OK) == 0)
-+			return 0;
-+
-+		switch (errno) {
-+		case ENAMETOOLONG:
-+		case ENOENT:
-+		case EROFS:
-+		case EFAULT:
-+			raw_path = strchr(++raw_path, '/');
-+			if (!raw_path) {
-+				free(*new_path);
-+				*new_path = NULL;
-+				return -ENOENT;
-+			}
-+			continue;
-+
-+		default:
-+			free(*new_path);
-+			*new_path = NULL;
-+			return -errno;
-+		}
-+	}
++	no_buildid_cache = true;
 +}
-+
- /* Line number list operations */
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index de61441..f380fed 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -154,6 +154,7 @@ extern void set_die_routine(void (*routine)(const char *err, va_list params) NOR
  
- /* Add a line to line number list */
-@@ -1096,11 +1146,13 @@ end:
- static int line_range_add_line(const char *src, unsigned int lineno,
- 			       struct line_range *lr)
+ extern int prefixcmp(const char *str, const char *prefix);
+ extern void set_buildid_dir(void);
++extern void disable_buildid_cache(void);
+ 
+ static inline const char *skip_prefix(const char *str, const char *prefix)
  {
-+	int ret;
-+
- 	/* Copy real path */
- 	if (!lr->path) {
--		lr->path = strdup(src);
--		if (lr->path == NULL)
--			return -ENOMEM;
-+		ret = get_real_path(src, &lr->path);
-+		if (ret != 0)
-+			return ret;
- 	}
- 	return line_list__add_line(&lr->line_list, lineno);
- }
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 10b7ff8..80e569b 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -71,6 +71,7 @@ struct symbol_conf {
- 			full_paths,
- 			show_cpu_utilization;
- 	const char	*vmlinux_name,
-+			*source_prefix,
- 			*field_sep;
- 	const char	*default_guest_vmlinux_name,
- 			*default_guest_kallsyms,
 -- 
 1.6.2.5
 
