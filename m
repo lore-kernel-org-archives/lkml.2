@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276Ab0FQUOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 16:14:23 -0400
-Received: from kroah.org ([198.145.64.141]:51552 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933058Ab0FQUOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 16:14:21 -0400
-Date: Thu, 17 Jun 2010 13:14:17 -0700
-From: Greg KH <greg@kroah.com>
-To: Jeff Dike <jdike@addtoit.com>
-Cc: Alan Cox <alan@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Remove Hayes ESP ioctls
-Message-ID: <20100617201417.GA2873@kroah.com>
-References: <20100617160045.GA13743@c-98-229-117-200.hsd1.ma.comcast.net>
- <20100617172828.GA24362@kroah.com>
- <20100617191516.GA15963@c-98-229-117-200.hsd1.ma.comcast.net>
- <20100617200938.GB25977@kroah.com>
+	id S933283Ab0FQUPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 16:15:36 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61417 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933058Ab0FQUPf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 16:15:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=Gr28YDhpzb+26lWl9+pJ7T2K83xNhg+uT+cxKm6kaPcOpdsxsRWvqXsfe6knd4yAHQ
+         1ZLg79M2EdFRZphsiSU9jzRMBhUhEXiPLo9QKVWugMm5IIVsVjY3twcOnXCtQl9OzU81
+         F5SxPHXhwGWQL9kYgfrZs+ZO49ehOpCSHKNyY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100617200938.GB25977@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201006172140.46203.arnd@arndb.de>
+References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
+	<20100517144130.1d8aa313@lxorguk.ukuu.org.uk>
+	<AANLkTimO08zZV4DenxT0wi3eWp1BngGu14x0GWRyfgO5@mail.gmail.com>
+	<201006172140.46203.arnd@arndb.de>
+Date: Thu, 17 Jun 2010 13:15:32 -0700
+X-Google-Sender-Auth: Itto6P5lp8LeR8uWvr7ahEM9ouI
+Message-ID: <AANLkTinGJJJ4vWvDGCqSPpMnYyE5WKALVmBUAJ_72y-G@mail.gmail.com>
+Subject: Re: [PATCH v3 00/10] BKL conversion in tty layer
+From: Tony Luck <tony.luck@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+       Greg KH <gregkh@suse.de>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 01:09:38PM -0700, Greg KH wrote:
-> On Thu, Jun 17, 2010 at 03:15:16PM -0400, Jeff Dike wrote:
-> > On Thu, Jun 17, 2010 at 10:28:28AM -0700, Greg KH wrote:
-> > > You forgot to put a "Signed-off-by:" line in here.
-> > > 
-> > > Care to add it, and resend it to me?
-> > 
-> > Oops...
-> > 
-> > commit e6b14f5bc9803589241bc2aae1565fa0c5bd0ce1
-> > Author: Jeff Dike <jdike@linux.intel.com>
-> > Date:   Thu Jun 17 11:54:24 2010 -0400
-> > 
-> >     Remove Hayes ESP ioctls
-> >     
-> >     The Hayes ESP driver has been removed from the tree:
-> >         commit f53a2ade0bb9f2a81f473e6469155172a96b7c38
-> >         ("tty: esp: remove broken driver")
-> >     so its ioctls aren't needed any more.
-> > 
-> >     Signed-off-by: Jeff Dike <jdike@linux.intel.com>
-> > 
-> > diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
-> > index a799e20..16218ac 100644
-> > --- a/include/asm-generic/ioctls.h
-> > +++ b/include/asm-generic/ioctls.h
-> > @@ -86,16 +86,6 @@
-> >  #define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
-> >  #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
-> >  
-> > -/*
-> > - * some architectures define FIOQSIZE as 0x545E, which is used for
-> > - * TIOCGHAYESESP on others
-> > - */
-> > -#ifndef FIOQSIZE
-> > -# define TIOCGHAYESESP	0x545E  /* Get Hayes ESP configuration */
-> > -# define TIOCSHAYESESP	0x545F  /* Set Hayes ESP configuration */
-> > -# define FIOQSIZE	0x5460
-> > -#endif
-> 
-> Wait, don't we still need to define FIOQSIZE here if no one else has
-> done it yet?  With this patch I get a build error on fs/ioctl.c:
-> 	fs/ioctl.c: In function ‘do_vfs_ioctl’:
-> 	fs/ioctl.c:573:7: error: ‘FIOQSIZE’ undeclared (first use in this function)
-> 
-> So shouldn't we just remove the TIOCGHAYESESP and TIOCSHAYESESP values,
-> and only set FIOQSIZE if it's not set yet?
+> Does the patch below make this go away? We should probably include
+> the 'misc' branch of my BKL repository in -next to fix this.
 
-How about something like the following:
+That fixes a couple of instances (the tty_open() cases).  I still have:
 
+WARNING: at include/linux/tty.h:589 tty_release+0x90/0xbc0()
+WARNING: at include/linux/tty.h:589 tty_release+0x630/0xbc0()
+WARNING: at include/linux/tty.h:589 tty_release+0x90/0xbc0()
+WARNING: at include/linux/tty.h:589 tty_release+0x630/0xbc0()
+WARNING: at include/linux/tty.h:589 tty_release+0x90/0xbc0()
+WARNING: at include/linux/tty.h:589 tty_release+0x630/0xbc0()
 
- include/asm-generic/ioctls.h |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Stack traces for these all look the same:
 
---- a/include/asm-generic/ioctls.h
-+++ b/include/asm-generic/ioctls.h
-@@ -87,12 +87,10 @@
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
- 
- /*
-- * some architectures define FIOQSIZE as 0x545E, which is used for
-- * TIOCGHAYESESP on others
-+ * Some arches already define FIOQSIZE due to a historical
-+ * conflict with a Hayes modem-specific ioctl value.
-  */
- #ifndef FIOQSIZE
--# define TIOCGHAYESESP	0x545E  /* Get Hayes ESP configuration */
--# define TIOCSHAYESESP	0x545F  /* Set Hayes ESP configuration */
- # define FIOQSIZE	0x5460
- #endif
- 
+Call Trace:
+ [<a000000100015990>] show_stack+0x50/0xa0
+ [<a00000010090f1f0>] dump_stack+0x30/0x50
+ [<a00000010008e280>] warn_slowpath_common+0xc0/0x120
+ [<a00000010008e320>] warn_slowpath_null+0x40/0x60
+ [<a00000010053d910>] tty_release+0x90/0xbc0
+ [<a0000001001ab200>] __fput+0x260/0x420
+ [<a0000001001ab400>] fput+0x40/0x60
+ [<a00000010053b3b0>] tty_vhangup_locked+0x870/0x8a0
+ [<a00000010054f3f0>] pty_close+0x350/0x3a0
+ [<a00000010053ddd0>] tty_release+0x550/0xbc0
+ [<a0000001001ab200>] __fput+0x260/0x420
+ [<a0000001001ab400>] fput+0x40/0x60
+ [<a0000001001a4dc0>] filp_close+0x120/0x140
+ [<a0000001001a4f90>] sys_close+0x1b0/0x2c0
+ [<a00000010000b940>] ia64_ret_from_syscall+0x0/0x20
+
+-Tony
