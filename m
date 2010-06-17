@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107Ab0FQG2E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 02:28:04 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47288 "EHLO
+	id S1755298Ab0FQG3S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 02:29:18 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47357 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753966Ab0FQG2B (ORCPT
+	with ESMTP id S1754805Ab0FQG3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 02:28:01 -0400
+	Thu, 17 Jun 2010 02:29:16 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 17 Jun 2010 15:23:12 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 12/12] vmscan: Do not writeback pages in direct reclaim
-Message-Id: <20100617152312.43e84eb0.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100617061647.GA21277@infradead.org>
-References: <1276514273-27693-13-git-send-email-mel@csn.ul.ie>
-	<4C16A567.4080000@redhat.com>
-	<20100615114510.GE26788@csn.ul.ie>
-	<4C17815A.8080402@redhat.com>
-	<20100615135928.GK26788@csn.ul.ie>
-	<4C178868.2010002@redhat.com>
-	<20100615141601.GL26788@csn.ul.ie>
-	<20100616091755.7121c7d3.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100616050640.GA10687@infradead.org>
-	<20100617092538.c712342b.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100617061647.GA21277@infradead.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Message-ID: <4C19C090.20904@jp.fujitsu.com>
+Date: Thu, 17 Jun 2010 15:28:32 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Matthew Wilcox <matthew@wil.cx>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+       macro@linux-mips.org, kamezawa.hiroyu@jp.fujitsu.com,
+       eike-kernel@sf-tec.de
+Subject: Re: [PATCH 1/2] x86: ioremap: fix wrong physical address handling
+References: <4C197A49.6020400@jp.fujitsu.com> <4C197A9E.5040509@jp.fujitsu.com> <20100617025052.GH9298@parisc-linux.org>
+In-Reply-To: <20100617025052.GH9298@parisc-linux.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010 02:16:47 -0400
-Christoph Hellwig <hch@infradead.org> wrote:
+(2010/06/17 11:50), Matthew Wilcox wrote:
+> On Thu, Jun 17, 2010 at 10:30:06AM +0900, Kenji Kaneshige wrote:
+>> Index: linux-2.6.34/arch/x86/mm/ioremap.c
+>> ===================================================================
+>> --- linux-2.6.34.orig/arch/x86/mm/ioremap.c	2010-06-15 04:43:00.978332015 +0900
+>> +++ linux-2.6.34/arch/x86/mm/ioremap.c	2010-06-15 05:32:59.291693007 +0900
+>> @@ -62,8 +62,8 @@
+>>   static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+>>   		unsigned long size, unsigned long prot_val, void *caller)
+>>   {
+>> -	unsigned long pfn, offset, vaddr;
+>> -	resource_size_t last_addr;
+>> +	unsigned long offset, vaddr;
+>> +	resource_size_t pfn, last_pfn, last_addr;
+>
+> I have a hard time understanding this change.  pfn is always a physical
+> address shifted by PAGE_SHIFT.  So a 32-bit pfn supports up to 44-bit
+> physical addresses.  Are your addresses above 44-bits?
+>
+>> @@ -115,7 +113,7 @@
+>>   	 * Mappings have to be page-aligned
+>>   	 */
+>>   	offset = phys_addr&  ~PAGE_MASK;
+>> -	phys_addr&= PAGE_MASK;
+>> +	phys_addr = (phys_addr>>  PAGE_SHIFT)<<  PAGE_SHIFT;
+>
+> I'd rather see PAGE_MASK fixed.  Would this work?
+>
+>   #define PAGE_SIZE       (_AC(1,UL)<<  PAGE_SHIFT)
+> -#define PAGE_MASK       (~(PAGE_SIZE-1))
+> +#define PAGE_MASK       (~(PAGE_SIZE-1ULL))
+>
 
-> On Thu, Jun 17, 2010 at 09:25:38AM +0900, KAMEZAWA Hiroyuki wrote:
-> > 
-> > BTW, why xbf_buf_create() use GFP_KERNEL even if it can be blocked ?
-> > memory cgroup just limits pages for users, then, doesn't intend to
-> > limit kernel pages.
-> 
-> You mean xfs_buf_allocate?  It doesn't in the end.  It goes through the
-> xfs_kmem helper which clear __GFP_FS if we're currently inside a
-> filesystem transaction (PF_FSTRANS is set) or a caller specificly
-> requested it to be disabled even without that by passig the
-> XBF_DONT_BLOCK flag.
-> 
-Ah, sorry. My question was wrong.
-
-If xfs_buf_allocate() is not for pages on LRU but for kernel memory,
-memory cgroup has no reason to charge against it because we can't reclaim
-memory which is not on LRU.
-
-Then, I wonder I may have to add following check 
-
-	if (!(gfp_mask & __GFP_RECLAIMABLE)) {
-		/* ignore this. we just charge against reclaimable memory on LRU. */
-		return 0;
-	}
-
-to mem_cgroup_charge_cache() which is a hook for accounting page-cache.
-
+I think it should work. But I'm worrying about regressions.
+Now I think using PHYSICAL_PAGE_MASK (as my v.1 patch did) is good idea
+again. What do you think about this?
 
 Thanks,
--Kame
+Kenji Kaneshige
 
