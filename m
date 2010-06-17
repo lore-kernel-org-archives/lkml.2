@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab0FQIkh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 04:40:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932584Ab0FQIkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 04:40:35 -0400
-Message-ID: <4C19DF80.6060909@redhat.com>
-Date: Thu, 17 Jun 2010 11:40:32 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [RFC][PATCH 0/9] rework KVM mmu_shrink() code
-References: <20100615135518.BC244431@kernel.beaverton.ibm.com>	 <4C188D8B.40508@redhat.com> <1276700596.6437.16867.camel@nimitz>
-In-Reply-To: <1276700596.6437.16867.camel@nimitz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932716Ab0FQIln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 04:41:43 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56848 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756059Ab0FQIll (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 04:41:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=cWxqtO/PVKvl99oAF6kgQ2RMzVyEzWVrxxEvPW28nNON8p1c6u1eCLJoKDCO97cTap
+         tcAFTyeS/mPpKKwnQTr9Mq+pvAtAMAZUW8OSw/RUC2whap5eU74q7s0tKdR4twb+Qrin
+         onZZoYSfnKHi5C49D4yE1/AS1yARFLtWneu9c=
+From: Matti Lammi <mattij.lammi@gmail.com>
+To: gregkh@suse.de, mattij.lammi@gmail.com, mithlesh@linsyssoft.com,
+       tfransosi@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Matti Lammi <matti.lammi@gmail.com>
+Subject: [PATCH] Drivers: Staging: Removed one unnecessary space
+Date: Thu, 17 Jun 2010 11:41:33 +0300
+Message-Id: <1276764093-14539-1-git-send-email-mattij.lammi@gmail.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2010 06:03 PM, Dave Hansen wrote:
-> On Wed, 2010-06-16 at 11:38 +0300, Avi Kivity wrote:
->    
->> On 06/15/2010 04:55 PM, Dave Hansen wrote:
->>      
->>> These seem to boot and run fine.  I'm running about 40 VMs at
->>> once, while doing "echo 3>   /proc/sys/vm/drop_caches", and
->>> killing/restarting VMs constantly.
->>>
->>>        
->> Will drop_caches actually shrink the kvm caches too?  If so we probably
->> need to add that to autotest since it's a really good stress test for
->> the mmu.
->>      
-> I'm completely sure.
+Nothing special really, just a small fix.
 
-Yes, easily seen from the code as well.
+Signed-off-by: Matti Lammi <matti.lammi@gmail.com>
+---
+ drivers/staging/otus/apdbg.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> I crashed my machines several times this way
-> during testing.
->    
+diff --git a/drivers/staging/otus/apdbg.c b/drivers/staging/otus/apdbg.c
+index b59028e..32c26e5 100644
+--- a/drivers/staging/otus/apdbg.c
++++ b/drivers/staging/otus/apdbg.c
+@@ -180,6 +180,6 @@ int main(int argc, char **argv)
+ 	if (argc < 3) {
+ 		fprintf(stderr, "%s: usage is \"%s <ifname> <operation>"
+ 				"[<address>] [<value>]\"\n", prgname, prgname);
+-		fprintf(stderr, "valid operation : read, write, mem, reg, \n");
++		fprintf(stderr, "valid operation : read, write, mem, reg,\n");
+ 		fprintf(stderr, "		: txd, rxd, rmem, wmem\n");
+ 		fprintf(stderr, "		: dmat, regt, test\n");
 
-Hopefully only with your patches applied?
-
-I'll try to run autotest from time to time with drop_caches running in 
-the background.  Looks like an excellent way to stress out the mmu.
-
-
--- 
-error compiling committee.c: too many arguments to function
+--
+1.6.0.4
 
