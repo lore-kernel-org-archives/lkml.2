@@ -1,122 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573Ab0FQIHW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 04:07:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39996 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755711Ab0FQIHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 04:07:17 -0400
-Message-ID: <4C19D7B1.6060908@redhat.com>
-Date: Thu, 17 Jun 2010 11:07:13 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1759494Ab0FQIII (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 04:08:08 -0400
+Received: from mail-yw0-f186.google.com ([209.85.211.186]:44567 "EHLO
+	mail-yw0-f186.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317Ab0FQIIF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 04:08:05 -0400
+X-Greylist: delayed 392 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jun 2010 04:08:05 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HuGALubMFLUEkXOSr53HJbL16gX/t8DUXlIkZoTfmEhA6FwEwhPwTQEAAfJznc/jB/
+         fR0zMiIxKVy2RvJPb0KdYGwSEBaCv+szRw2t+oeVbz+cfjA0YejJ218hlhCHE/PLbdSQ
+         m+qhhlASLt3cZnP6iLDQx4xLc6MAwp5p5jgYQ=
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 5/6] KVM: MMU: prefetch ptes when intercepted guest #PF
-References: <4C16E6ED.7020009@cn.fujitsu.com> <4C16E75F.6020003@cn.fujitsu.com> <4C16E7AD.1060101@cn.fujitsu.com> <4C16E7F4.5060801@cn.fujitsu.com> <4C16E82E.5010306@cn.fujitsu.com> <4C16E9A8.10409@cn.fujitsu.com> <4C1766D6.3040000@redhat.com> <4C19CDCC.4060404@cn.fujitsu.com>
-In-Reply-To: <4C19CDCC.4060404@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1276627208-17242-18-git-send-email-vaurora@redhat.com>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
+	<1276627208-17242-18-git-send-email-vaurora@redhat.com>
+Date: Thu, 17 Jun 2010 10:01:30 +0200
+Message-ID: <AANLkTilNAGzn3ZC5eN2ZQMqNhcSWnT-mi_y2TkIkdeUU@mail.gmail.com>
+Subject: Re: [PATCH 17/38] union-mount: Union mounts documentation
+From: Alex Riesen <raa.lkml@gmail.com>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2010 10:25 AM, Xiao Guangrong wrote:
->
->
->> Can this in fact work for level != PT_PAGE_TABLE_LEVEL?  We might start
->> at PT_PAGE_DIRECTORY_LEVEL but get 4k pages while iterating.
->>      
-> Ah, i forgot it. We can't assume that the host also support huge page for
-> next gfn, as Marcelo's suggestion, we should "only map with level>  1 if
-> the host page matches the size".
->
-> Um, the problem is, when we get host page size, we should hold 'mm->mmap_sem',
-> it can't used in atomic context and it's also a slow path, we hope pte prefetch
-> path is fast.
->
-> How about only allow prefetch for sp.leve = 1 now? i'll improve it in the future,
-> i think it need more time :-)
->    
+On Tue, Jun 15, 2010 at 20:39, Valerie Aurora <vaurora@redhat.com> wrote:
+> +git://git.kernel.org/pub/scm/fs/ext2/val/e2fsprogs.git
+> +
+> +Currently, whiteout directory entries are not returned to userland.
+> +While the directory type for whiteouts, DT_WHT, has been defined for
+> +many years, very little userland code handles them.  Userland will
+> +never see fallthru directory entries.
 
-I don't think prefetch for level > 1 is worthwhile.  One fault per 2MB 
-is already very good, no need to optimize it further.
-
->>> +
->>> +        pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
->>> +        if (is_error_pfn(pfn)) {
->>> +            kvm_release_pfn_clean(pfn);
->>> +            break;
->>> +        }
->>> +        if (pte_prefetch_topup_memory_cache(vcpu))
->>> +            break;
->>> +
->>> +        mmu_set_spte(vcpu, spte, ACC_ALL, ACC_ALL, 0, 0, 1, NULL,
->>> +                 sp->role.level, gfn, pfn, true, false);
->>> +    }
->>> +}
->>>
->>>        
->> Nice.  Direct prefetch should usually succeed.
->>
->> Can later augment to call get_users_pages_fast(..., PTE_PREFETCH_NUM,
->> ...) to reduce gup overhead.
->>      
-> But we can't assume the gfn's hva is consecutive, for example, gfn and gfn+1
-> maybe in the different slots.
->    
-
-Right.  We could limit it to one slot then for simplicity.
-
->    
->>> +
->>> +        if (!table) {
->>> +            page = gfn_to_page_atomic(vcpu->kvm, sp->gfn);
->>> +            if (is_error_page(page)) {
->>> +                kvm_release_page_clean(page);
->>> +                break;
->>> +            }
->>> +            table = kmap_atomic(page, KM_USER0);
->>> +            table = (pt_element_t *)((char *)table + offset);
->>> +        }
->>>
->>>        
->> Why not kvm_read_guest_atomic()?  Can do it outside the loop.
->>      
-> Do you mean that read all prefetched sptes at one time?
->    
-
-Yes.
-
-> If prefetch one spte fail, the later sptes that we read is waste, so i
-> choose read next spte only when current spte is prefetched successful.
->
-> But i not have strong opinion on it since it's fast to read all sptes at
-> one time, at the worst case, only 16 * 8 = 128 bytes we need to read.
->    
-
-In general batching is worthwhile, the cost of the extra bytes is low 
-compared to the cost of bringing in the cacheline and error checking.
-
-btw, you could align the prefetch to 16 pte boundary.  That would 
-improve performance for memory that is scanned backwards.
-
-So we can change the fault path to always fault 16 ptes, aligned on 16 
-pte boundary, with the needed pte called with specualtive=false.
->> I think lot of code can be shared with the pte prefetch in invlpg.
->>
->>      
-> Yes, please allow me to cleanup those code after my future patchset:
->
-> [PATCH v4 9/9] KVM MMU: optimize sync/update unsync-page
->
-> it's the last part in the 'allow multiple shadow pages' patchset.
->    
-
-Sure.
-
--- 
-error compiling committee.c: too many arguments to function
-
+This may be a dumb question (I must admit I did only very little research),
+but how does one cleanup the topmost layer of whiteouts and fallthroughs,
+so that the entries of lower layer(s) can be made visible again?
