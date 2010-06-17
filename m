@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751111Ab0FQELI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 00:11:08 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3632 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926Ab0FQELG convert rfc822-to-8bit (ORCPT
+	id S1751101Ab0FQESu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 00:18:50 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:16720 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab0FQESt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 00:11:06 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-From: "Michael Chan" <mchan@broadcom.com>
-To: "'Paul Mundt'" <lethal@linux-sh.org>
-cc: "'Mike Frysinger'" <vapier@gentoo.org>,
-       "James Bottomley" <JBottomley@novell.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>
-Date: Wed, 16 Jun 2010 21:10:57 -0700
-Subject: Re: bnx2 fails to compile on parisc because of missing
- get_dma_ops()
-Thread-Topic: bnx2 fails to compile on parisc because of missing
- get_dma_ops()
-Thread-Index: AcsN0i3xoVlxytTSSsmD3f/+t1jEdwAAJy0A
-Message-ID: <C27F8246C663564A84BB7AB3439772421B79CBCA1D@IRVEXCHCCR01.corp.ad.broadcom.com>
-In-Reply-To: <20100617040356.GA8105@linux-sh.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Thu, 17 Jun 2010 00:18:49 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=JvqKE7qEcJf+KXonsYSAbrCrCln+LixYJe3mlYME8Ab/7NIRKnshmwUT38hFgi+0D
+	lRvPL54W8bO6IN6aFpGRg==
+Date: Wed, 16 Jun 2010 21:18:42 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 6/9] oom: unify CAP_SYS_RAWIO check into other superuser
+ check
+In-Reply-To: <20100617104756.FB8F.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1006162118160.14101@chino.kir.corp.google.com>
+References: <20100617104311.FB7A.A69D9226@jp.fujitsu.com> <20100617104756.FB8F.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-WSS-ID: 60077FD920S160176415-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Mundt wrote:
+On Thu, 17 Jun 2010, KOSAKI Motohiro wrote:
 
-> On Wed, Jun 16, 2010 at 08:53:57PM -0700, Michael Chan wrote:
-> > If sync_single is not defined, that means the CPU has a consistent
-> > view of next_rx_buf and so it makes sense to prefetch it.
-> >
-> Except that's not a valid assertion, there are platforms that
-> implement
-> it for sanity checks yet still have consistent DMA. You are making
-> inherently non-portable assumptions for a PCI driver, which is a good
-> example of why drivers should never be side-stepping the API
-> in the first
-> place. If you want to have a micro-optimization for the consistent DMA
-> case, you can check dma_is_consistent(), which is part of the API and
-> will be variable on certain platform configurations (ie, some may be
-> consistent with PCI but not on other busses, etc.)
->
->
+> 
+> Now, CAP_SYS_RAWIO check is very strange. if the user have both
+> CAP_SYS_ADMIN and CAP_SYS_RAWIO, points will makes 1/16.
+> 
+> Superuser's 1/4 bonus worthness is quite a bit dubious, but
+> considerable. However 1/16 is obviously insane.
+> 
 
-Thanks for the tip.  I didn't know about the dma_is_consistent() API.
-I'll use this to fix it then.
-
+This is already obsoleted by the heuristic rewrite that is already under 
+review.
