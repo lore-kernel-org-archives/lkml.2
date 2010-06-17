@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756125Ab0FQBiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 21:38:55 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:47366 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755448Ab0FQBiy (ORCPT
+	id S1758283Ab0FQBpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 21:45:14 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47328 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756221Ab0FQBpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 21:38:54 -0400
-Message-ID: <4C197CB5.5020907@vflare.org>
-Date: Thu, 17 Jun 2010 07:09:01 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>,
+	Wed, 16 Jun 2010 21:45:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
        Andrew Morton <akpm@linux-foundation.org>,
+       David Rientjes <rientjes@google.com>,
        Minchan Kim <minchan.kim@gmail.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] zram: generic RAM based compressed R/W block devices
-References: <1274710685-2351-1-git-send-email-ngupta@vflare.org> <4BFFEA95.9040505@vflare.org> <20100528162657.GA28781@kroah.com> <4C18337C.3040605@vflare.org> <20100616184355.GA14248@kroah.com>
-In-Reply-To: <20100616184355.GA14248@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 1/9] oom: don't try to kill oom_unkillable child
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100617104311.FB7A.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 17 Jun 2010 10:45:09 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2010 12:13 AM, Greg KH wrote:
-> On Wed, Jun 16, 2010 at 07:44:20AM +0530, Nitin Gupta wrote:
->> Hi Greg,
->>
->> On 05/28/2010 09:56 PM, Greg KH wrote:
->>> On Fri, May 28, 2010 at 09:38:53PM +0530, Nitin Gupta wrote:
->>>>
->>>> On 05/24/2010 07:48 PM, Nitin Gupta wrote:
->>>>> Creates RAM based block devices: /dev/zramX (X = 0, 1, ...).
->>>>> Pages written to these disks are compressed and stored in memory
->>>>> itself. These disks allow very fast I/O and compression provides
->>>>> good amounts of memory savings.
->>>>>
->>>>> This is enhancement over existing ramzswap driver which creates
->>>>> virtual block devices (/dev/ramzswapX) which could be used only
->>>>> as swap disks.
->>>>>
->>>>> Now, with the ability to handle any kind of I/O request, zram
->>>>> devices have lot more use cases:
->>>>>  - /tmp storage
->>>>>  - various caches under /var
->>>>>  - swap disks
->>>>>  - maybe even more! :)
->>>>>
->>>>> Performance numbers can be found at:
->>>>> http://code.google.com/p/compcache/wiki/zramperf
->>>>>
->>>>
->>>> Any reviews/comments, please?
->>>
->>> We are all busy with the .35-rc1 merge work at the moment, sorry.
->>>
->>
->> Can you please apply these patches to linux-next?
-> 
-> Yes, I'm working on it, I should get to it by the end of this week.
-> 
->> or maybe for .35-rc3/rc4 too?
-> 
-> No, this is not a bugfix, why would it be acceptable for the .35 kernel
-> release?
-> 
 
-Since its a staging driver, I thought any kind of changes can be pulled in
-mainline too. Maybe I still don't understand how -staging works :)
+Now, badness() doesn't care neigher CPUSET nor mempolicy. Then
+if the victim child process have disjoint nodemask, __out_of_memory()
+can makes kernel hang eventually.
 
-Anyways, thanks for taking it in linux-next.
+This patch fixes it.
 
-Nitin
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/oom_kill.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 26ae697..0aeacb2 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -429,7 +429,7 @@ static int oom_kill_task(struct task_struct *p)
+ 
+ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 			    unsigned long points, struct mem_cgroup *mem,
+-			    const char *message)
++			    nodemask_t *nodemask, const char *message)
+ {
+ 	struct task_struct *victim = p;
+ 	struct task_struct *child;
+@@ -469,6 +469,8 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 				continue;
+ 			if (mem && !task_in_mem_cgroup(child, mem))
+ 				continue;
++			if (!has_intersects_mems_allowed(child, nodemask))
++				continue;
+ 
+ 			/* badness() returns 0 if the thread is unkillable */
+ 			child_points = badness(child, uptime.tv_sec);
+@@ -519,7 +521,7 @@ retry:
+ 	if (!p || PTR_ERR(p) == -1UL)
+ 		goto out;
+ 
+-	if (oom_kill_process(p, gfp_mask, 0, points, mem,
++	if (oom_kill_process(p, gfp_mask, 0, points, mem, NULL,
+ 				"Memory cgroup out of memory"))
+ 		goto retry;
+ out:
+@@ -678,7 +680,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
+ 		 * non-zero, current could not be killed so we must fallback to
+ 		 * the tasklist scan.
+ 		 */
+-		if (!oom_kill_process(current, gfp_mask, order, 0, NULL,
++		if (!oom_kill_process(current, gfp_mask, order, 0, NULL, nodemask,
+ 				"Out of memory (oom_kill_allocating_task)"))
+ 			return;
+ 	}
+@@ -697,7 +699,7 @@ retry:
+ 		panic("Out of memory and no killable processes...\n");
+ 	}
+ 
+-	if (oom_kill_process(p, gfp_mask, order, points, NULL,
++	if (oom_kill_process(p, gfp_mask, order, points, NULL, nodemask,
+ 			     "Out of memory"))
+ 		goto retry;
+ 	read_unlock(&tasklist_lock);
+-- 
+1.6.5.2
+
+
+
