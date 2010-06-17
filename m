@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760642Ab0FQSj3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 14:39:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21396 "EHLO mx1.redhat.com"
+	id S1760647Ab0FQSnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 14:43:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23561 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757184Ab0FQSj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 14:39:28 -0400
-Date: Thu, 17 Jun 2010 14:39:13 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Alex Riesen <raa.lkml@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 17/38] union-mount: Union mounts documentation
-Message-ID: <20100617183912.GA14389@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-18-git-send-email-vaurora@redhat.com> <AANLkTilNAGzn3ZC5eN2ZQMqNhcSWnT-mi_y2TkIkdeUU@mail.gmail.com>
+	id S1757129Ab0FQSnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 14:43:08 -0400
+Subject: [Patch] Call cond_resched() at bottom of main look in
+	balance_pgdat()
+From: Larry Woodman <lwoodman@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain
+Date: Thu, 17 Jun 2010 14:48:40 -0400
+Message-Id: <1276800520.8736.236.camel@dhcp-100-19-198.bos.redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilNAGzn3ZC5eN2ZQMqNhcSWnT-mi_y2TkIkdeUU@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 10:01:30AM +0200, Alex Riesen wrote:
-> On Tue, Jun 15, 2010 at 20:39, Valerie Aurora <vaurora@redhat.com> wrote:
-> > +git://git.kernel.org/pub/scm/fs/ext2/val/e2fsprogs.git
-> > +
-> > +Currently, whiteout directory entries are not returned to userland.
-> > +While the directory type for whiteouts, DT_WHT, has been defined for
-> > +many years, very little userland code handles them. ??Userland will
-> > +never see fallthru directory entries.
-> 
-> This may be a dumb question (I must admit I did only very little research),
-> but how does one cleanup the topmost layer of whiteouts and fallthroughs,
-> so that the entries of lower layer(s) can be made visible again?
+We are seeing a problem where kswapd gets stuck and hogs the CPU on a
+small single CPU system when an OOM kill should occur.  When this
+happens swap space has been exhausted and the pagecache has been shrunk
+to zero.  Once kswapd gets the CPU it never gives it up because at least
+one zone is below high.  Adding a single cond_resched() at the end of
+the main loop in balance_pgdat() fixes the problem by allowing the
+watchdog and tasks to run and eventually do an OOM kill which frees up
+the resources.
 
-I'm not sure how best to do this.  We don't want to add more system
-calls.  One thought of mine has been to do this offline, when the file
-system is unmounted.  For example, e2fsck could add a feature to
-delete whiteouts and fallthrus.  Another option is to add a flag to an
-existing system call.
 
-Any ideas?
+----------------------------------------------------------------
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 9c7e57c..c5c46b7 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2182,6 +2182,7 @@ loop_again:
+                 */
+                if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
+                        break;
++               cond_resched();
+        }
+ out:
+        /*
 
--VAL
+-----------------------------------------------------------------
+
+Signed-off-by: Larry Woodman <lwoodman@redhat.com>
+
+
+-----------------------------------------------------------------
+BUG: soft lockup - CPU#0 stuck for 61s! [kswapd0:26]
+Modules linked in: sunrpc(U) p4_clockmod(U) ipv6(U) dm_mirror(U)...
+
+Pid: 26, comm: kswapd0 Not tainted (2.6.32-34.el6.i686 #1) HP Compaq dx2300
+EIP: 0060:[<c04e84fb>] EFLAGS: 00000246 CPU: 0
+EIP is at shrink_slab+0x7b/0x170
+EAX: 00000040 EBX: 00000000 ECX: dbf43e54 EDX: 00000000
+ESI: e01c2b30 EDI: 00000000 EBP: c0ad4600 ESP: dbc8dec0
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+CR0: 8005003b CR2: 0805090c CR3: 108eb000 CR4: 000006f0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Call Trace:
+ [<c04eab91>] ? kswapd+0x541/0x830
+ [<c04eae80>] ? isolate_pages_global+0x0/0x220
+ [<c04702d0>] ? autoremove_wake_function+0x0/0x40
+ [<c043d5e0>] ? complete+0x40/0x60
+ [<c04ea650>] ? kswapd+0x0/0x830
+ [<c0470094>] ? kthread+0x74/0x80
+ [<c0470020>] ? kthread+0x0/0x80
+ [<c040a547>] ? kernel_thread_helper+0x7/0x10
+-------------------------------------------------------------------
+Mem-Info:
+DMA per-cpu:
+CPU    0: hi:    0, btch:   1 usd:   0
+Normal per-cpu:
+CPU    0: hi:  186, btch:  31 usd: 152
+active_anon:54902 inactive_anon:54849 isolated_anon:32
+ active_file:0 inactive_file:25 isolated_file:0
+ unevictable:660 dirty:0 writeback:6 unstable:0
+ free:1172 slab_reclaimable:1969 slab_unreclaimable:8322
+ mapped:196 shmem:801 pagetables:1300 bounce:0
+...
+Normal free:2672kB min:2764kB low:3452kB high:4144kB 
+...
+21729 total pagecache pages
+20240 pages in swap cache
+Swap cache stats: add 468211, delete 447971, find 12560445/12560936
+Free swap  = 0kB
+Total swap = 1015800kB
+128720 pages RAM
+0 pages HighMem
+3223 pages reserved
+1206 pages shared
+121413 pages non-shared
+
