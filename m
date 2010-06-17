@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760163Ab0FQO3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 10:29:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58107 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755136Ab0FQO3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 10:29:04 -0400
-Date: Thu, 17 Jun 2010 10:30:43 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Chris Vine <chris@cvine.freeserve.co.uk>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: nfsd hang and kernel bug in 2.6.35-rc3
-Message-ID: <20100617103043.16298e9e@corrin.poochiereds.net>
-In-Reply-To: <20100617113815.7e15d070@boulder.homenet>
-References: <20100615175034.1e015fbc@boulder.homenet>
-	<20100616153603.GH10223@fieldses.org>
-	<20100616123532.569efeb9@tlielax.poochiereds.net>
-	<20100616220824.4e886552@boulder.homenet>
-	<20100616204415.49285875@corrin.poochiereds.net>
-	<20100617113815.7e15d070@boulder.homenet>
+	id S932810Ab0FQOc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 10:32:58 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41435 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760106Ab0FQOc5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 10:32:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:subject:from:to:cc:in-reply-to:references:content-type
+         :organization:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=fZmlayMk9O1Tz24WSUAgjGwhgWXGogsE7CqE4mDJY2+o+9PieLFwEJLwiFbe0QKe+l
+         EEizVVCYQfx+RC6H0ORPCDTjB1oEHp4Fv9b/cjSVphBMGC0eFxOrcvDZHPwAXznxnxXH
+         GkhtNGXgSUNrnJjXirDoHJtJywrgsywwZa5hI=
+Subject: Re: [PATCH] Drivers: Staging: Moved one brace to its proper place.
+From: Ben Collins <bcollins@bluecherry.net>
+To: Matti Lammi <mattij.lammi@gmail.com>
+Cc: gregkh@suse.de, mithlesh@linsyssoft.com, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1276764228-14657-1-git-send-email-mattij.lammi@gmail.com>
+References: <1276764228-14657-1-git-send-email-mattij.lammi@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Bluecherry, LLC
+Date: Thu, 17 Jun 2010 10:32:50 -0400
+Message-ID: <1276785170.2705.13.camel@maclara>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010 11:38:15 +0100
-Chris Vine <chris@cvine.freeserve.co.uk> wrote:
+On Thu, 2010-06-17 at 11:43 +0300, Matti Lammi wrote:
+> Another small fix.
+> 
+> Signed-off-by: Matti Lammi <mattij.lammi@gmail.com>
+> ---
+>  drivers/staging/otus/athr_common.h |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/otus/athr_common.h b/drivers/staging/otus/athr_common.h
+> index 3e32f5b..c58ffee 100644
+> --- a/drivers/staging/otus/athr_common.h
+> +++ b/drivers/staging/otus/athr_common.h
+> @@ -128,2 +128,2 @@ struct athr_wapi_param {
+>  	} u;
+>  };
+> 
+> -struct athr_wapi_sta_info
+> -{
+> +struct athr_wapi_sta_info{
+>  	u16	msg_type;
+>  	u16	datalen;
+>  	u8	sta_mac[ETH_ALEN];
 
-> On Wed, 16 Jun 2010 20:44:15 -0400
-> Jeff Layton <jlayton@redhat.com> wrote:
-> [snip]
-> > I stand corrected then. That's pretty close to the nfsd that I've been
-> > testing. I pulled down the nfsd init script and the only thing that
-> > looks substantially different is that it sends signals to nfsd to shut
-> > it down rather than just running "rpc.nfsd 0". That should work fine,
-> > however.
-> > 
-> > Still I think the problem is basically something like what I've
-> > described. You ended up somehow with sockets on the sv_permsocks list
-> > that didn't hold lockd references. The way I described is one way that
-> > could occur. Another seems to be __write_ports_addxprt (which I think
-> > is clearly broken in light of this)...
-> > 
-> > The root cause of this however is likely to be related to this
-> > problem:
-> > 
-> > > Jun 15 16:07:18 laptop kernel: svc: failed to register lockdv3 RPC
-> > > service (errno 110). Jun 15 16:07:18 laptop kernel: lockd_up:
-> > > makesock failed, error=-110
-> > 
-> > ...which means that the kernel couldn't talk to portmap or rpcbind.
-> > Maybe it wasn't up at the time? Or a problem with firewalling?
-> 
-> My initial reaction was "of course it is up" but your mention of
-> portmap sent me investigating with interesting results. I was going
-> to say "of course its is up" because the standard start-up script for
-> nfsd (rc.nfsd) checks whether rpc.portmap and rpc.statd are running, if
-> not starts them, and then starts exportfs, rpc.rquotad, rpc.nfsd and
-> rpc.mountd.
-> 
-> However, if I start portmap and statd early on so they do not rely on
-> the nfsd start-up script, then nfsd starts fine, so it seems to be a
-> timing thing notwithstanding that they are all started (at user level)
-> sequentially and in the same thread/process.
-> 
-> The timing problem does not arise on kernel-2.6.34 and earlier. Nor
-> does it arise on my pentium uniprocessor machine with kernel 2.6.35-rc3,
-> so it could well be core/thread related.  It looks as if something in
-> the kernel has changed on that in 2.6.35 which provokes the kernel bug
-> report if timing is wrong.  (If timing is wrong and if this is a user
-> tools rather than a kernel deficiency, and I express no view on that,
-> then I suppose it probably needs to be handled more gracefully in the
-> kernel.)
-> 
-> Chris
-> 
-> 
+If you're going to move it, might I suggest:
 
-The timing may help tickle the other bugs in nfsd startup/shutdown.
-I've just sent another couple of patches to Bruce (and cc'ed you) that
-I suspect may help this. With those, it should always be the case that
-a nfsd sv_permsocks entry holds a lockd reference.
++struct athr_wapi_sta_info {
 
-It would be good if you could test the stack of patches in the
-nfsd-error branch of my kernel.org git tree: 
+Note the space between info and {
 
-http://git.kernel.org/?p=linux/kernel/git/jlayton/linux.git;a=summary
+> --
+> 1.6.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Thanks,
+
 -- 
-Jeff Layton <jlayton@redhat.com>
+Bluecherry: http://www.bluecherrydvr.com/
+SwissDisk : http://www.swissdisk.com/
+Ubuntu    : http://www.ubuntu.com/
+My Blog   : http://ben-collins.blogspot.com/
+
