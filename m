@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760071Ab0FQWAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 18:00:07 -0400
-Received: from mailfe05.tele2.ch ([212.247.154.136]:45851 "EHLO swip.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757679Ab0FQWAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 18:00:04 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jun 2010 18:00:04 EDT
-X-Cloudmark-Score: 0.000000 []
-X-Cloudmark-Analysis: v=1.0 c=1 a=Dyoqhi_TatcA:10 a=2caWB_DcjroA:10 a=2X_867Myh0oA:10 a=SIapg4jNq7wA:10 a=Cfj4BQAnxiAA:10 a=IkSM77fP_vwA:10 a=OnH3nSyl2ecaOOZLvzxd1A==:17 a=Zk3OmFfbAAAA:8 a=hgNbo4Nol4jvZ36xoKsA:9 a=3KxPhk59igKGw3MsLUQK8X_65sgA:4 a=Ft8UYL4EG9YA:10 a=x46t9oslO7cA:10 a=BSzhbFdeK9zconUn:21 a=7wNWhkf6TYpzS4At:21
-Reply-To: <claimsdeptonline@live.com>
-From: "UK Online Award Team" <onlineverificationdesk@excite.co.uk>
-Subject: Winning Notification
-Date: Fri, 18 Jun 2010 03:24:59 +0530
+	id S932831Ab0FQWDb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 18:03:31 -0400
+Received: from kroah.org ([198.145.64.141]:47405 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754392Ab0FQWDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 18:03:30 -0400
+Date: Thu, 17 Jun 2010 15:03:25 -0700
+From: Greg KH <greg@kroah.com>
+To: Jeff Dike <jdike@addtoit.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Remove Hayes ESP ioctls
+Message-ID: <20100617220325.GA30984@kroah.com>
+References: <20100617160045.GA13743@c-98-229-117-200.hsd1.ma.comcast.net>
+ <20100617200938.GB25977@kroah.com>
+ <20100617201417.GA2873@kroah.com>
+ <201006172241.05878.arnd@arndb.de>
+ <20100617212936.GA17185@c-98-229-117-200.hsd1.ma.comcast.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <auto-001306418193@mailfe05.swip.net>
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100617212936.GA17185@c-98-229-117-200.hsd1.ma.comcast.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your Email Id has won 1,000,000.00 GBP in the British Online Promotion 2010. send your
+On Thu, Jun 17, 2010 at 05:29:36PM -0400, Jeff Dike wrote:
+> On Thu, Jun 17, 2010 at 10:41:05PM +0200, Arnd Bergmann wrote:
+> > On Thursday 17 June 2010 22:14:17 Greg KH wrote:
+> > > --- a/include/asm-generic/ioctls.h
+> > > +++ b/include/asm-generic/ioctls.h
+> > > @@ -87,12 +87,10 @@
+> > >  #define TIOCGICOUNT    0x545D  /* read serial port inline interrupt counts */
+> > >  
+> > >  /*
+> > > - * some architectures define FIOQSIZE as 0x545E, which is used for
+> > > - * TIOCGHAYESESP on others
+> > > + * Some arches already define FIOQSIZE due to a historical
+> > > + * conflict with a Hayes modem-specific ioctl value.
+> > >   */
+> > >  #ifndef FIOQSIZE
+> > > -# define TIOCGHAYESESP 0x545E  /* Get Hayes ESP configuration */
+> > > -# define TIOCSHAYESESP 0x545F  /* Set Hayes ESP configuration */
+> > >  # define FIOQSIZE      0x5460
+> > >  #endif
+> > 
+> > Yes, that looks right. I had introduced the #ifdef originally, but
+> > did not look closely enough at the patch now.
+> > 
+> > 	Arnd
+> > 
+> 
+> That's better.  I had figured that the whole block was due to the driver,
+> and therefore could be nuked.
 
-Names.
-Age.
-Address.
-Tel.
-Country.
+Next time you might want to build your patches :)
 
-to our claims department :claimsdeptonline@live.com
-+447017038127
+thanks,
 
-UK Online Award Team
+greg k-h
