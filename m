@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932677Ab0FQIXf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 04:23:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34828 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932514Ab0FQIXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 04:23:33 -0400
-Message-ID: <4C19DB7D.5020508@redhat.com>
-Date: Thu, 17 Jun 2010 11:23:25 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [RFC][PATCH 4/9] create aggregate kvm_total_used_mmu_pages value
-References: <20100615135518.BC244431@kernel.beaverton.ibm.com>	 <20100615135523.25D24A73@kernel.beaverton.ibm.com>	 <4C188FC0.3050306@redhat.com> <1276707300.6437.17429.camel@nimitz>
-In-Reply-To: <1276707300.6437.17429.camel@nimitz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S932697Ab0FQIZJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 04:25:09 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58939 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755655Ab0FQIZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 04:25:06 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 17 Jun 2010 17:20:34 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [BUGFIX][PATCH -mm] fix bad call of memcg_oom_recover at cancel
+ move.
+Message-Id: <20100617172034.00ea8835.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2010 07:55 PM, Dave Hansen wrote:
-> On Wed, 2010-06-16 at 11:48 +0300, Avi Kivity wrote:
->    
->>> +static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
->>> +{
->>> +     kvm->arch.n_used_mmu_pages += nr;
->>> +     kvm_total_used_mmu_pages += nr;
->>>
->>>        
->> Needs an atomic operation, since there's no global lock here.  To avoid
->> bouncing this cacheline around, make the variable percpu and make
->> readers take a sum across all cpus.  Side benefit is that you no longer
->> need an atomic but a local_t, which is considerably cheaper.
->>      
-> We do have the stuff in:
->
-> 	include/linux/percpu_counter.h
->
-> the downside being that they're not precise and they're *HUGE* according
-> to the comment. :)
->
-> It's actually fairly difficult to do a counter which is precise,
-> scalable, and works well for small CPU counts when NR_CPUS is large.  Do
-> you mind if we just stick with a plain atomic_t for now?
->    
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Do we really need something precise?
+When cgroup_cancel_attach() is called via cgroup_attach_task(),
+mem_cgroup_clear_mc() can be called even when any migration
+was done. In such case, mc.to and mc.from is NULL.
 
-I'm not excited by adding a global atomic.  So far nothing in the kvm 
-hot paths depends on global shared memory (though we have lots of per-vm 
-shared memory).
+But, memcg-clean-up-waiting-move-acct-v2.patch
+doesn't handle this correctly and pass NULL to memcg_oom_recover.
+fix it.
 
-Can we perhaps query the kmem_cache for a representation of the amount 
-of objects?
+BUG: unable to handle kernel paging request at 000000000000114c
+IP: [<ffffffff81153bb9>] memcg_oom_recover+0x9/0x30
+PGD 61ce4b067 PUD 613ea0067 PMD 0
+Oops: 0000 [#1] SMP
+<snip>
+Call Trace:
+ [<ffffffff81155359>] mem_cgroup_clear_mc+0x119/0x1c0
+ [<ffffffff811554de>] mem_cgroup_cancel_attach+0xe/0x10
+ [<ffffffff810b619c>] cgroup_attach_task+0x26c/0x2c0
+ [<ffffffff810b6257>] cgroup_tasks_write+0x67/0x1c0
+ [<ffffffff81121555>] ? might_fault+0xa5/0xb0
+ [<ffffffff8112150c>] ? might_fault+0x5c/0xb0
+ [<ffffffff810b40a2>] cgroup_file_write+0x2d2/0x330
+ [<ffffffff81093aa2>] ? print_lock_contention_bug+0x22/0xf0
+ [<ffffffff81259fef>] ? security_file_permission+0x1f/0x80
+ [<ffffffff8115d998>] vfs_write+0xc8/0x190
+ [<ffffffff8115e3a1>] sys_write+0x51/0x90
+ [<ffffffff8100b072>] system_call_fastpath+0x16/0x1b
+Code: 20 48 39 43 20 41 bc f0 ff ff ff 75 c7 45 88 ae 48 11 00 00 45 31 e4 eb bb 66 0f 1f 84 00 00 00 00 00 55 48 89 e5 0f 1f 44 00 00 <8b> 87 4c 11 00 00 85 c0 75 05 c9 c3 0f 1f 00 48 89 f9 31 d2 be
+RIP  [<ffffffff81153bb9>] memcg_oom_recover+0x9/0x30
 
--- 
-error compiling committee.c: too many arguments to function
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+Index: mmotm-2.6.35-0611/mm/memcontrol.c
+===================================================================
+--- mmotm-2.6.35-0611.orig/mm/memcontrol.c
++++ mmotm-2.6.35-0611/mm/memcontrol.c
+@@ -4485,8 +4485,10 @@ static void mem_cgroup_clear_mc(void)
+ 	mc.to = NULL;
+ 	mc.moving_task = NULL;
+ 	spin_unlock(&mc.lock);
+-	memcg_oom_recover(from);
+-	memcg_oom_recover(to);
++	if (from)
++		memcg_oom_recover(from);
++	if (to)
++		memcg_oom_recover(to);
+ 	wake_up_all(&mc.waitq);
+ }
+ 
 
