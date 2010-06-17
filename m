@@ -1,132 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932887Ab0FQKBR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 06:01:17 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:21399 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932858Ab0FQKBP (ORCPT
+	id S1757252Ab0FQKJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 06:09:20 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:50786 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756448Ab0FQKJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 06:01:15 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAMKPGUxR9cRp/2dsb2JhbACed3K/bA6FDAQ
-Date: Thu, 17 Jun 2010 12:01:13 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, Baruch Siach <baruch@tkos.co.il>,
-       Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-       Akinobu Mita <akinobu.mita@gmail.com>,
-       Wolfram Sang <w.sang@pengutronix.de>
-Subject: [WATCHDOG] 2.6.35-rc4 patches
-Message-ID: <20100617100113.GB3788@infomag.iguana.be>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 17 Jun 2010 06:09:16 -0400
+Date: Thu, 17 Jun 2010 11:55:49 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: atm: fixed spacing and indentation coding style issues
+Message-ID: <20100617115549.4515e982@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Fixed spacing and indentation coding style issues.
 
-Please pull from 'master' branch of
-	git://git.kernel.org/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
-or if master.kernel.org hasn't synced up yet:
-	master.kernel.org:/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/usb/atm/usbatm.h  |   22 +++++++++++-----------
+ drivers/usb/atm/xusbatm.c |   10 +++++-----
+ 2 files changed, 16 insertions(+), 16 deletions(-)
 
-This will update the following files:
-
- drivers/watchdog/at32ap700x_wdt.c |   16 ++++++++++------
- drivers/watchdog/imx2_wdt.c       |    1 -
- 2 files changed, 10 insertions(+), 7 deletions(-)
-
-with these Changes:
-
-Author: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Date:   Tue Jun 8 08:44:32 2010 +0200
-
-    watchdog: at32ap700x_wdt: register misc device last in probe() function
-    
-    This patch reworks the probe() function in the at32ap700x_wdt driver, this to
-    make sure the miscdev is properly initialized and the driver is ready to be
-    accessed.
-    
-    Reported-by: Akinobu Mita <akinobu.mita@gmail.com>
-    Signed-off-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-    Signed-off-by: Wim Van sebroeck <wim@iguana.be>
-
-Author: Baruch Siach <baruch@tkos.co.il>
-Date:   Wed Jun 9 14:07:02 2010 +0300
-
-    watchdog: [PATCH 3/3] imx2_wdt: fix section mismatch
-    
-    Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-    Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-    Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-
-The Changes can also be looked at on:
-	http://www.kernel.org/git/?p=linux/kernel/git/wim/linux-2.6-watchdog.git;a=summary
-
-For completeness, I added the overal diff below.
-
-Greetings,
-Wim.
-
-================================================================================
-diff --git a/drivers/watchdog/at32ap700x_wdt.c b/drivers/watchdog/at32ap700x_wdt.c
-index 1cddf92..750bc52 100644
---- a/drivers/watchdog/at32ap700x_wdt.c
-+++ b/drivers/watchdog/at32ap700x_wdt.c
-@@ -346,9 +346,13 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
- 	} else {
- 		wdt->users = 0;
- 	}
--	wdt->miscdev.minor = WATCHDOG_MINOR;
--	wdt->miscdev.name = "watchdog";
--	wdt->miscdev.fops = &at32_wdt_fops;
-+
-+	wdt->miscdev.minor	= WATCHDOG_MINOR;
-+	wdt->miscdev.name	= "watchdog";
-+	wdt->miscdev.fops	= &at32_wdt_fops;
-+	wdt->miscdev.parent	= &pdev->dev;
-+
-+	platform_set_drvdata(pdev, wdt);
+diff --git a/drivers/usb/atm/usbatm.h b/drivers/usb/atm/usbatm.h
+index 0863f85..5fc4894 100644
+--- a/drivers/usb/atm/usbatm.h
++++ b/drivers/usb/atm/usbatm.h
+@@ -48,7 +48,7 @@
+ 			dev_warn(&(instance)->usb_intf->dev,		\
+ 				 "failed assertion '%s' at line %d",	\
+ 				 __stringify(x), __LINE__);		\
+-	} while(0)
++	} while (0)
+ #endif
  
- 	if (at32_wdt_settimeout(timeout)) {
- 		at32_wdt_settimeout(TIMEOUT_DEFAULT);
-@@ -360,17 +364,17 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
- 	ret = misc_register(&wdt->miscdev);
- 	if (ret) {
- 		dev_dbg(&pdev->dev, "failed to register wdt miscdev\n");
--		goto err_iounmap;
-+		goto err_register;
- 	}
+ #define usb_err(instance, format, arg...)	\
+@@ -59,7 +59,7 @@
+ 	dev_warn(&(instance)->usb_intf->dev , format , ## arg)
+ #ifdef DEBUG
+ #define usb_dbg(instance, format, arg...)	\
+-        dev_printk(KERN_DEBUG , &(instance)->usb_intf->dev , format , ## arg)
++	dev_printk(KERN_DEBUG , &(instance)->usb_intf->dev , format , ## arg)
+ #else
+ #define usb_dbg(instance, format, arg...)	\
+ 	do {} while (0)
+@@ -104,21 +104,21 @@ struct usbatm_data;
+ /*
+ *  Assuming all methods exist and succeed, they are called in this order:
+ *
+-*  	bind, heavy_init, atm_start, ..., atm_stop, unbind
++*	bind, heavy_init, atm_start, ..., atm_stop, unbind
+ */
  
--	platform_set_drvdata(pdev, wdt);
--	wdt->miscdev.parent = &pdev->dev;
- 	dev_info(&pdev->dev,
- 		"AT32AP700X WDT at 0x%p, timeout %d sec (nowayout=%d)\n",
- 		wdt->regs, wdt->timeout, nowayout);
+ struct usbatm_driver {
+ 	const char *driver_name;
  
- 	return 0;
+ 	/* init device ... can sleep, or cause probe() failure */
+-        int (*bind) (struct usbatm_data *, struct usb_interface *,
++	int (*bind) (struct usbatm_data *, struct usb_interface *,
+ 		     const struct usb_device_id *id);
  
-+err_register:
-+	platform_set_drvdata(pdev, NULL);
- err_iounmap:
- 	iounmap(wdt->regs);
- err_free:
-diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
-index ea25885..2ee7dac 100644
---- a/drivers/watchdog/imx2_wdt.c
-+++ b/drivers/watchdog/imx2_wdt.c
-@@ -330,7 +330,6 @@ static void imx2_wdt_shutdown(struct platform_device *pdev)
+ 	/* additional device initialization that is too slow to be done in probe() */
+-        int (*heavy_init) (struct usbatm_data *, struct usb_interface *);
++	int (*heavy_init) (struct usbatm_data *, struct usb_interface *);
+ 
+ 	/* cleanup device ... can sleep, but can't fail */
+-        void (*unbind) (struct usbatm_data *, struct usb_interface *);
++	void (*unbind) (struct usbatm_data *, struct usb_interface *);
+ 
+ 	/* init ATM device ... can sleep, or cause ATM initialization failure */
+ 	int (*atm_start) (struct usbatm_data *, struct atm_dev *);
+@@ -126,9 +126,9 @@ struct usbatm_driver {
+ 	/* cleanup ATM device ... can sleep, but can't fail */
+ 	void (*atm_stop) (struct usbatm_data *, struct atm_dev *);
+ 
+-        int bulk_in;	/* bulk rx endpoint */
+-        int isoc_in;	/* isochronous rx endpoint */
+-        int bulk_out;	/* bulk tx endpoint */
++	int bulk_in;	/* bulk rx endpoint */
++	int isoc_in;	/* isochronous rx endpoint */
++	int bulk_out;	/* bulk tx endpoint */
+ 
+ 	unsigned rx_padding;
+ 	unsigned tx_padding;
+@@ -156,7 +156,7 @@ struct usbatm_channel {
+ struct usbatm_data {
+ 	/******************
+ 	*  public fields  *
+-        ******************/
++	******************/
+ 
+ 	/* mini driver */
+ 	struct usbatm_driver *driver;
+@@ -174,7 +174,7 @@ struct usbatm_data {
+ 
+ 	/********************************
+ 	*  private fields - do not use  *
+-        ********************************/
++	********************************/
+ 
+ 	struct kref refcount;
+ 	struct mutex serialize;
+diff --git a/drivers/usb/atm/xusbatm.c b/drivers/usb/atm/xusbatm.c
+index 17d167b..48ee0c5 100644
+--- a/drivers/usb/atm/xusbatm.c
++++ b/drivers/usb/atm/xusbatm.c
+@@ -49,13 +49,13 @@ static struct usbatm_driver xusbatm_drivers[XUSBATM_DRIVERS_MAX];
+ static struct usb_device_id xusbatm_usb_ids[XUSBATM_DRIVERS_MAX + 1];
+ static struct usb_driver xusbatm_usb_driver;
+ 
+-static struct usb_interface *xusbatm_find_intf (struct usb_device *usb_dev, int altsetting, u8 ep)
++static struct usb_interface *xusbatm_find_intf(struct usb_device *usb_dev, int altsetting, u8 ep)
+ {
+ 	struct usb_host_interface *alt;
+ 	struct usb_interface *intf;
+ 	int i, j;
+ 
+-	for(i = 0; i < usb_dev->actconfig->desc.bNumInterfaces; i++)
++	for (i = 0; i < usb_dev->actconfig->desc.bNumInterfaces; i++)
+ 		if ((intf = usb_dev->actconfig->interface[i]) && (alt = usb_altnum_to_altsetting(intf, altsetting)))
+ 			for (j = 0; j < alt->desc.bNumEndpoints; j++)
+ 				if (alt->endpoint[j].desc.bEndpointAddress == ep)
+@@ -63,7 +63,7 @@ static struct usb_interface *xusbatm_find_intf (struct usb_device *usb_dev, int
+ 	return NULL;
  }
  
- static struct platform_driver imx2_wdt_driver = {
--	.probe		= imx2_wdt_probe,
- 	.remove		= __exit_p(imx2_wdt_remove),
- 	.shutdown	= imx2_wdt_shutdown,
- 	.driver		= {
+-static int xusbatm_capture_intf (struct usbatm_data *usbatm, struct usb_device *usb_dev,
++static int xusbatm_capture_intf(struct usbatm_data *usbatm, struct usb_device *usb_dev,
+ 		struct usb_interface *intf, int altsetting, int claim)
+ {
+ 	int ifnum = intf->altsetting->desc.bInterfaceNumber;
+@@ -80,7 +80,7 @@ static int xusbatm_capture_intf (struct usbatm_data *usbatm, struct usb_device *
+ 	return 0;
+ }
+ 
+-static void xusbatm_release_intf (struct usb_device *usb_dev, struct usb_interface *intf, int claimed)
++static void xusbatm_release_intf(struct usb_device *usb_dev, struct usb_interface *intf, int claimed)
+ {
+ 	if (claimed) {
+ 		usb_set_intfdata(intf, NULL);
+@@ -147,7 +147,7 @@ static void xusbatm_unbind(struct usbatm_data *usbatm,
+ 
+ 	usb_dbg(usbatm, "%s entered\n", __func__);
+ 
+-	for(i = 0; i < usb_dev->actconfig->desc.bNumInterfaces; i++) {
++	for (i = 0; i < usb_dev->actconfig->desc.bNumInterfaces; i++) {
+ 		struct usb_interface *cur_intf = usb_dev->actconfig->interface[i];
+ 
+ 		if (cur_intf && (usb_get_intfdata(cur_intf) == usbatm)) {
+-- 
+1.6.4.4
