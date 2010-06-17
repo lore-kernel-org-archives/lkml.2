@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759811Ab0FQKqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 06:46:43 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:54252 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756455Ab0FQKqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 06:46:42 -0400
-Date: Thu, 17 Jun 2010 11:46:23 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-       Christoph Hellwig <hch@infradead.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 09/12] vmscan: Setup pagevec as late as possible in
-	shrink_page_list()
-Message-ID: <20100617104623.GB25567@csn.ul.ie>
-References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-10-git-send-email-mel@csn.ul.ie> <20100616164801.9d3c0d99.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100616164801.9d3c0d99.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S932757Ab0FQKuu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 06:50:50 -0400
+Received: from mail.gmx.net ([213.165.64.20]:46196 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932155Ab0FQKus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 06:50:48 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/fgLQRHSrflCb2HCNPCVbCVDDL1pFEoGvZbDgxkl
+	gyR+B9AODanefl
+Subject: Re: Slow pty's (was Re: libdivecomputer interfaces?)
+From: Mike Galbraith <efault@gmx.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Brian Bloniarz <bmb@athenacr.com>, Chris Wedgwood <cw@f00f.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       Jef Driesen <jefdriesen@telenet.be>, linux-kernel@vger.kernel.org,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1276758038.9628.1.camel@marge.simson.net>
+References: <AANLkTinLth4iKXAwszEEsPm_9ZDlj8HtqsiG5cdFE1cZ@mail.gmail.com>
+	 <20100610181042.GA19210@puku.stupidest.org> <4C116652.8010408@athenacr.com>
+	 <alpine.LRH.2.00.1006161702470.2497@twin.jikos.cz>
+	 <1276701411.30669.6.camel@marge.simson.net>
+	 <1276756770.8248.20.camel@marge.simson.net>
+	 <1276758038.9628.1.camel@marge.simson.net>
+Content-Type: text/plain
+Date: Thu, 17 Jun 2010 12:50:44 +0200
+Message-Id: <1276771844.8121.14.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 04:48:01PM -0700, Andrew Morton wrote:
-> On Mon, 14 Jun 2010 12:17:50 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On Thu, 2010-06-17 at 09:00 +0200, Mike Galbraith wrote:
+> On Thu, 2010-06-17 at 08:39 +0200, Mike Galbraith wrote:
 > 
-> > shrink_page_list() sets up a pagevec to release pages as according as they
-> > are free. It uses significant amounts of stack on the pagevec. This
-> > patch adds pages to be freed via pagevec to a linked list which is then
-> > freed en-masse at the end. This avoids using stack in the main path that
-> > potentially calls writepage().
-> > 
+> > I'm not seeing any problem with serial console here, seems to work just
+> > fine P4->Q6600, both running NOHZ kernels with nohz_ratelimit(), 33.5 on
+> > the P4, and tip.today on the Q6600.
 > 
-> hm, spose so.  I cen't see any trivial way to eliminate the local
-> pagevec there.
-> 
-> > +	if (pagevec_count(&freed_pvec))
-> > +		__pagevec_free(&freed_pvec);
-> > ...
-> > -	if (pagevec_count(&freed_pvec))
-> > -		__pagevec_free(&freed_pvec);
-> 
-> That's an open-coded pagevec_free().
-> 
+> Of course, as soon as I say that, the problem appeared.  Hopefully,
+> It'll stick around a while.
 
-Fair point, will correct. Thanks
+Actually, it's fully reproducible, I just have _way_ too many (49)
+kernels to choose from.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+I had to go back to virgin 34, apply 39c0cbe and fixlet to fully test,
+as git/tip network isn't working quite right for me atm.  At any rate,
+the below fixed it up for me, and cross-cpu throughput gain is intact.
+
+sched: do not ratelimit NOHZ when the tick is stopped.
+
+Chris Wedgwood reports that 39c0cbe sched: Rate-limit nohz causes a serial
+console regression, unresponsiveness, and indeed it does.  The below fixes
+it by not skipping out when the tick has been stopped.
+
+Tested that the throughput benefit of ratelimiting is still intact.  It is.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Reported-by: Chris Wedgwood <cw@f00f.org>
+LKML-Reference: <new-submission>
+
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 5f171f0..83c5129 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -315,7 +315,7 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 		goto end;
+ 	}
+ 
+-	if (nohz_ratelimit(cpu))
++	if (!ts->tick_stopped && nohz_ratelimit(cpu))
+ 		goto end;
+ 
+ 	ts->idle_calls++;
+ 
+
