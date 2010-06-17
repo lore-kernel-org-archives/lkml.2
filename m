@@ -1,103 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760121Ab0FQOGb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 10:06:31 -0400
-Received: from sh.osrg.net ([192.16.179.4]:46491 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760107Ab0FQOG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 10:06:27 -0400
-Date: Thu, 17 Jun 2010 23:05:59 +0900
-To: mchan@broadcom.com
-Cc: JBottomley@Novell.com, fujita.tomonori@lab.ntt.co.jp, vapier@gentoo.org,
-       netdev@vger.kernel.org, linux-parisc@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: bnx2 fails to compile on parisc because of missing
- get_dma_ops()
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <C27F8246C663564A84BB7AB3439772421B79CBCA21@IRVEXCHCCR01.corp.ad.broadcom.com>
-References: <1276780336.2789.6.camel@mulgrave.site>
-	<C27F8246C663564A84BB7AB3439772421B79CBCA21@IRVEXCHCCR01.corp.ad.broadcom.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100617230435J.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 17 Jun 2010 23:06:00 +0900 (JST)
+	id S1760116Ab0FQOKl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 10:10:41 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64574 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999Ab0FQOKk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 10:10:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=mT5N6KKt/ysPeZwlDP5Q87loxGcmFhfbrLEgxiH9go+gJKyRfHUsjIcQA4u7bM+5Ww
+         OFIHCFuE0SpluqOkVNoGsHxNui3TYqs69TTOdBwPj/KJZVjoS0FhRzfxTt2NOzJEpi35
+         4D7Cb0dNiLyAs1CfOVruhUOXJUZI6Asa1UyWI=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1006170844300.22997@router.home>
+References: <20100617155420.GB2693@localhost.localdomain>
+	<alpine.DEB.2.00.1006170844300.22997@router.home>
+Date: Thu, 17 Jun 2010 22:10:39 +0800
+Message-ID: <AANLkTimYX9PqGJq3dw2n3FZQiIkX0nOKMEOHdYMndHWo@mail.gmail.com>
+Subject: Re: [PATCH] Slabinfo: Fix display format
+From: wzt wzt <wzt.wzt@gmail.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, penberg@cs.helsinki.fi,
+       mpm@selenic.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010 06:30:39 -0700
-"Michael Chan" <mchan@broadcom.com> wrote:
+On Thu, Jun 17, 2010 at 9:45 PM, Christoph Lameter
+<cl@linux-foundation.org> wrote:
+> On Thu, 17 Jun 2010, wzt.wzt@gmail.com wrote:
 
-> James Bottomley wrote:
-> 
-> > On Thu, 2010-06-17 at 05:54 -0700, Michael Chan wrote:
-> > > This prefetch improves performance noticeably when the driver is
-> > > handling incoming 64-byte packets at a sustained rate.
-> >
-> > So why not do it unconditionally?  The worst that can happen
-> > is that you
-> > pull in a stale cache line which will get cleaned in the
-> > dma_sync, thus
-> > slightly degrading performance on incoherent architectures.
-> 
-> The original patch was an unconditional prefetch.  There was
-> some discussion that it might not be correct if the DMA wasn't
-> sync'ed yet on some archs.  If the concensus is that it is ok to
-> do so, that would be the simplest solution.
+> This one may break user space tools that have assumptions about the length
+> of the field. Or do tools not make that assumption?
+>
 
-As James said, it just adds useless prefetch on incoherent
-architectures. sync_single_for_cpu is called later so we can see the
-correct data. One useless prefetch is unlikely to lead performance
-drop.
-
-You might prefer this v2.
-
-=
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH v2] bnx2: fix dma_get_ops compilation breakage
-
-This removes dma_get_ops() prefetch optimization in bnx2.
-
-bnx2 uses dma_get_ops() to see if dma_sync_single_for_cpu() is
-noop. bnx2 does prefetch if it's noop.
-
-But dma_get_ops() isn't available on all the architectures (only the
-architectures that uses dma_map_ops struct have it). Using
-dma_get_ops() in drivers leads to compilation breakage on many
-archtectures.
-
-This patch removes dma_get_ops() and changes bnx2 to do prefetch on
-all the architectures. This adds useless prefetch on incoherent
-architectures but this is harmless. It is also unlikely to cause the
-performance drop.
-
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- drivers/net/bnx2.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/bnx2.c b/drivers/net/bnx2.c
-index 949d7a9..85f1692 100644
---- a/drivers/net/bnx2.c
-+++ b/drivers/net/bnx2.c
-@@ -3099,12 +3099,10 @@ bnx2_rx_int(struct bnx2 *bp, struct bnx2_napi *bnapi, int budget)
- 		skb = rx_buf->skb;
- 		prefetchw(skb);
- 
--		if (!get_dma_ops(&pdev->dev)->sync_single_for_cpu) {
--			next_rx_buf =
--				&rxr->rx_buf_ring[
--					RX_RING_IDX(NEXT_RX_BD(sw_cons))];
--			prefetch(next_rx_buf->desc);
--		}
-+		next_rx_buf =
-+			&rxr->rx_buf_ring[RX_RING_IDX(NEXT_RX_BD(sw_cons))];
-+		prefetch(next_rx_buf->desc);
-+
- 		rx_buf->skb = NULL;
- 
- 		dma_addr = dma_unmap_addr(rx_buf, mapping);
--- 
-1.6.5
-
+User space tools usually use sscanf() to extract this field like:
+sscanf(buff, "%s %d", name, &num);
+If %-27s can break some user space tools that have assumptions about
+the length of the field, the orig %-17s can also break it.
+The longest name inotify_event_private_data is 26 bytes in 2.6.34-rc2,
+the tools still can't extract it.
