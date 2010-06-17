@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760252Ab0FQP11 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 11:27:27 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51915 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932955Ab0FQP1Z (ORCPT
+	id S1757072Ab0FQPbK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 11:31:10 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:45170 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab0FQPbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 11:27:25 -0400
-Date: Thu, 17 Jun 2010 17:27:34 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Lin Ming <ming.m.lin@intel.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf: Add persistent events
-Message-ID: <20100617152734.GB6115@kryptos.osrc.amd.com>
-References: <20100528155719.GA10141@kryptos.osrc.amd.com>
- <1275070030.1645.362.camel@laptop>
- <20100603134301.GA30880@kryptos.osrc.amd.com>
- <20100603173242.GD29202@ghostprotocols.net>
- <20100614192514.GA7803@kryptos.osrc.amd.com>
- <20100614210116.GA26716@ghostprotocols.net>
- <20100614212426.GA19915@liondog.tnic>
- <20100615010201.GA27077@ghostprotocols.net>
- <20100617134357.GA6115@kryptos.osrc.amd.com>
- <20100617142546.GA563@ghostprotocols.net>
+	Thu, 17 Jun 2010 11:31:08 -0400
+Date: Fri, 18 Jun 2010 00:30:51 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: davem@davemloft.net, mchan@broadcom.com, vapier@gentoo.org,
+       JBottomley@novell.com, netdev@vger.kernel.org,
+       linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: bnx2 fails to compile on parisc because of missing get_dma_ops()
+Message-ID: <20100617153051.GB8964@linux-sh.org>
+References: <C27F8246C663564A84BB7AB3439772421B79CBCA1E@IRVEXCHCCR01.corp.ad.broadcom.com> <20100617211946A.fujita.tomonori@lab.ntt.co.jp> <20100617.073653.193708702.davem@davemloft.net> <20100617234520S.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100617142546.GA563@ghostprotocols.net>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100617234520S.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Thu, Jun 17, 2010 at 11:25:46AM -0300
-
-> Em Thu, Jun 17, 2010 at 03:43:57PM +0200, Borislav Petkov escreveu:
-> > From: Arnaldo Carvalho de Melo <acme@infradead.org>
-> > Date: Mon, Jun 14, 2010 at 10:02:01PM -0300
-> > > > however, this does not differentiate perflib (let's call it that for how
-> > > > :) from libc headers. Do we want a "perf" or "kernel" or "perflib" or
-> > > > whatever prefix here - it might make sense later when this thing grows
-> > > > to differentiate between the namespaces...?
+On Thu, Jun 17, 2010 at 11:50:35PM +0900, FUJITA Tomonori wrote:
+> On Thu, 17 Jun 2010 07:36:53 -0700 (PDT)
+> David Miller <davem@davemloft.net> wrote:
 > 
-> > > Agreed, but the last name this thing will have will be 'perf'something :-)
-> > > One of the goals at least I have with pursuing this path is to separate
-> > > out everything that is not strictly 'perf' into things that can be reused
-> > > by other tools, like yours.
+> > From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> > Date: Thu, 17 Jun 2010 21:21:13 +0900
+> > 
+> > > On Wed, 16 Jun 2010 23:24:44 -0700
+> > > "Michael Chan" <mchan@broadcom.com> wrote:
+> > > 
+> > >> David, why is dma_is_consistent() always returning 1 on sparc?  The
+> > >> streaming DMA is not consistent.
+> > > 
+> > > I think that there are some confusion about dma_is_consistent(). Some
+> > > architectures think that dma_is_consistent() is supposed to return 1
+> > > if they can allocate coherent memory (note that some architectures
+> > > can't allocate coherent memory).
+> > 
+> > Right, and that's why it's defined this way.
+> > 
+> > If the desired meaning is different, just me know and I'll fix the
+> > sparc definition.
 > 
-> > I'm still splitting perf/util into a more or less generic lib.  Now, I
-> > want to reuse as much code as possible and am parsing the
-> > "mce:mce_record" tracepoint using parse_events(). However, this means
-> > that I have to push the not-so-generic perf bits like
-> > util/parse-events.c into the lib. Which, in turn, pulls in
-> > util/trace-event* etc.
+> I think that there are some other architectures do the same. We need
+> to make sure that all the architectures define dma_is_consistent() in
+> the same meaning if drivers need it. However, I'm not sure we really
+> need dma_is_consistent(). There is only one user of it (and I think we
+> could remove it).
 > 
-> I'm not that familiar with the trace bits in perf, but I'd say pick what
-> is needed for your tool and stash it into files in a tools/lib/trace/
-> directory, in a way that can be used by both perf and your tools.
-> 
-> I.e. no need to move files as-is, you can reorganize things to make it
-> useful for both perf and your tool.
+> In the bnx2 case, we can simply prefetch on all the archs (or just
+> remove the optimization).
 
-Right, this is the idea. However, all those header includes pull in
-other stuff. For example, if I want to use parse_events(), it pulls in
-parse-options.* which pulls in header.h, symbol.h etc.
+I think its worthwhile keeping, especially since the consistency can vary
+on a per struct device level. If there's a benefit with these sorts of
+prefetch micro-optimizations in drivers when it doesn't cost us that much
+to provide the hint, I don't really see the harm. If dma_is_consistent()
+is suddenly supposed to take on other meanings, or it's supposed to mean
+something entirely different, then this is something we should deal with
+separately.
 
-What I ended up doing is have
+I don't see any harm in letting drivers know whether we can support
+consistent DMA allocs for a given struct device or not though, even if
+the micro-optimization is marginal at best.
 
-tools/lib/perf/
-	 /trace/
-	 /include/
-	 /lk/
-
-for all the different types of facilities. So lk contains the generic
-perf/util/ stuff, include contains all the linux and asm headers like
-bitops.h, hash.h, kernel.h etc, perf contains parse-events.* because it
-deals with perf stuff and so on.
-
-How's that?
-
-> > What is your preference, do we want to export all perf/util stuff for
-> > other tools to use or rather link other tools together with
-> > compilation modules from perf/util in case those other tools need
-> > them?
-> 
-> If we do it on a as-needed basis, as I suggested, we go eroding the
-> current perf hodgepodge of potentially generic stuff.
-
-I think splitting it in kinda "subsystems" helps keep the modularity.
-
-Opinions, comments?
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis München
-Registergericht Muenchen, HRB Nr. 43632
+At least I've conditionalized the definition on SH, and it seems other
+archictures have done so too. It's not clear what we'd gain from throwing
+that away as long as they're generally in agreement on what it means.
