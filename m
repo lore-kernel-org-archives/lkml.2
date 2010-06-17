@@ -1,92 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab0FQXf5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 19:35:57 -0400
-Received: from claw.goop.org ([74.207.240.146]:46831 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754704Ab0FQXfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 19:35:55 -0400
-Message-ID: <4C1AB152.107@goop.org>
-Date: Fri, 18 Jun 2010 00:35:46 +0100
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       "ddutile@redhat.com" <ddutile@redhat.com>,
-       "sheng@linux.intel.com" <sheng@linux.intel.com>
-Subject: Re: [Xen-devel] [PATCH 12/12] Unplug emulated disks and nics
-References: <1275570645-27189-1-git-send-email-stefano.stabellini@eu.citrix.com> <1275570645-27189-12-git-send-email-stefano.stabellini@eu.citrix.com> <20100614212017.GA8600@phenom.dumpdata.com> <alpine.DEB.2.00.1006171541490.3401@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1006171541490.3401@kaball-desktop>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757727Ab0FQXjW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 19:39:22 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:22710 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756615Ab0FQXjU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 19:39:20 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.0 c=1 a=gq0nvmYvp2cA:10 a=ADBQPqJMlbwA:10 a=VphdPIyG4kEA:10
+ a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=Vt2AcnKqAAAA:8
+ a=mDV3o1hIAAAA:8 a=20KFwNOVAAAA:8 a=KYjeUKazupo3Ttnf_osA:9
+ a=l52A5aXkSjbukWT9NB_7jlUgmrIA:4 a=CjuIK1q_8ugA:10 a=ii61gXl28gQA:10
+ a=jEp0ucaQiEUA:10 a=68aEXZssAjLDeYIt:21 a=NkkU9VJFCHxCcViF:21
+Subject: Re: [PATCH v2] d_ino considered harmful
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <andreas.dilger@oracle.com>
+In-Reply-To: <20100616195359.GA24382@shell>
+Date: Thu, 17 Jun 2010 17:39:17 -0600
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Christoph Hellwig <hch@infradead.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+       Jamie Lokier <jamie@shareable.org>,
+       David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+       "linux-kernel@vger.kernel.org Mailinglist" 
+	<linux-kernel@vger.kernel.org>,
+       linux-fsdevel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2F857D9A-3B76-4309-8967-4405C6D609F0@oracle.com>
+References: <20100616185913.GA15566@shell> <20100616195359.GA24382@shell>
+To: Valerie Aurora <vaurora@redhat.com>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2010 04:42 PM, Stefano Stabellini wrote:
-> On Mon, 14 Jun 2010, Konrad Rzeszutek Wilk wrote:
->   
->>> +#if (defined(CONFIG_XEN_NETDEV_FRONTEND) || \
->>> +		defined(CONFIG_XEN_NETDEV_FRONTEND_MODULE)) && \
->>> +		(defined(CONFIG_XEN_PLATFORM_PCI) || \
->>> +		 defined(CONFIG_XEN_PLATFORM_PCI_MODULE))
->>> +		printk(KERN_INFO "Netfront and the Xen platform PCI driver have "
->>> +				"been compiled for this kernel: unplug emulated NICs.\n");
->>> +		xen_emul_unplug |= XEN_UNPLUG_ALL_NICS;
->>> +#endif
->>> +#if (defined(CONFIG_XEN_BLKDEV_FRONTEND) || \
->>> +		defined(CONFIG_XEN_BLKDEV_FRONTEND_MODULE)) && \
->>> +		(defined(CONFIG_XEN_PLATFORM_PCI) || \
->>> +		 defined(CONFIG_XEN_PLATFORM_PCI_MODULE))
->>> +		printk(KERN_INFO "Blkfront and the Xen platform PCI driver have "
->>> +				"been compiled for this kernel: unplug emulated disks.\n"
->>> +				"You might have to change the root device\n"
->>> +				"from /dev/hd[a-d] to /dev/xvd[a-d]\n"
->>> +				"in your root= kernel command line option\n");
->>> +		xen_emul_unplug |= XEN_UNPLUG_ALL_IDE_DISKS;
->>> +#endif
->>>       
->> Wow. Can you move those checks to the header file and make it deal with
->> the #ifdef and setting of xen_emul_unplug?
->>
->>     
-> I tried, but it didn't improve the elegance of the code, mainly because I
-> want to keep the printk in place, so the code would look very much like
-> this, but instead of being in platform-pci-unplug.c would be in
-> platform_pci.h.
->   
+On 2010-06-16, at 13:54, Valerie Aurora wrote:
+> On Wed, Jun 16, 2010 at 02:59:13PM -0400, Valerie Aurora wrote:
+>> Who needs d_ino anyway?  I am running a kernel with this patch -
+>> Gnome, a browser, IRC, kernel compile, etc. and everything works.
+> 
+> Gosh, maybe it would help to patch the currently used readdir instead
+> of just old_readdir() (thanks, Arnd).  And return 1 instead of 0 so ls
+> doesn't think all files are deleted (thanks, Andreas).
+> 
+> I'm running a kernel with the below patch and everything still works.
+> Apparently "ls -i" is still using the bogus d_ino performance
+> improvement mentioned here because it returns all 1's for inode
+> number.
 
-What about using Kconfig to define an appropriate symbol and just #ifdef
-on that?
+I don't see why the presence of d_ino is a "bogus" performance optimization.  It is useful for some things, and replacing this with "1" by no means helps anything IMHO, and destroys some useful optimizations (e.g. finding which inodes may be hard links), so I'm against this patch.
 
->>> +	}
->>> +	/* Now unplug the emulated devices */
->>> +	if (xen_platform_pci_enabled && !(xen_emul_unplug & XEN_UNPLUG_IGNORE))
->>> +		outw(xen_emul_unplug, XEN_IOPORT_UNPLUG);
->>> +}
->>> +
->>> +static int __init parse_xen_emul_unplug(char *arg)
->>> +{
->>> +	char *p, *q;
->>> +
->>> +	for (p = arg; p; p = q) {
->>> +		q = strchr(arg, ',');
->>> +		if (q)
->>> +			*q++ = '\0';
->>> +		if (!strcmp(p, "all"))
->>> +			xen_emul_unplug |= XEN_UNPLUG_ALL;
->>>       
->> strncmp..
->>
->>     
-> is it really needed considering that we know that both strings are NULL
-> terminated and one of them is a constant?
->   
+> http://www.mail-archive.com/bug-findutils@gnu.org/msg02531.html
+> 
+> -VAL
+> 
+> commit 5902fd7b7407e059c5cea1bf1ea101a1ff8a6072
+> Author: Valerie Aurora <vaurora@redhat.com>
+> Date:   Wed Jun 16 11:05:06 2010 -0700
+> 
+>    VFS: Always return 1 for d_ino
+> 
+>    Use of d_ino without the corresponding st_dev is always buggy in the
+>    presence of submounts, bind mounts, and union mounts.  E.g., the d_ino
+>    of a mountpoint will be the inode number of the directory under the
+>    mountpoint, not the mounted directory.  Correct code must call stat(),
+>    which returns the correct device ID and inode in st_dev and st_ino.
+>    Since no one should be using d_ino anyway, always return 1 to detect
+>    bugs.
+> 
+> diff --git a/fs/readdir.c b/fs/readdir.c
+> index dd3eae1..5ff8f10 100644
+> --- a/fs/readdir.c
+> +++ b/fs/readdir.c
+> @@ -91,11 +91,8 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
+> 
+> 	if (buf->result)
+> 		return -EINVAL;
+> -	d_ino = ino;
+> -	if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
+> -		buf->result = -EOVERFLOW;
+> -		return -EOVERFLOW;
+> -	}
+> +	/* Use of d_ino without st_dev is always buggy. */
+> +	d_ino = 1;
+> 	buf->result++;
+> 	dirent = buf->dirent;
+> 	if (!access_ok(VERIFY_WRITE, dirent,
+> @@ -172,11 +169,8 @@ static int filldir(void * __buf, const char * name, int namlen, loff_t offset,
+> 	buf->error = -EINVAL;	/* only used if we fail.. */
+> 	if (reclen > buf->count)
+> 		return -EINVAL;
+> -	d_ino = ino;
+> -	if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
+> -		buf->error = -EOVERFLOW;
+> -		return -EOVERFLOW;
+> -	}
+> +	/* Use of d_ino without st_dev is always buggy. */
+> +	d_ino = 1;
+> 	dirent = buf->previous;
+> 	if (dirent) {
+> 		if (__put_user(offset, &dirent->d_off))
 
-strncmp would avoid having to modify the string in place.
 
-    J
+Cheers, Andreas
+--
+Andreas Dilger
+Lustre Technical Lead
+Oracle Corporation Canada Inc.
+
