@@ -1,136 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760179Ab0FQOtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 10:49:49 -0400
-Received: from ozlabs.org ([203.10.76.45]:38517 "EHLO ozlabs.org"
+	id S932911Ab0FQOuv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 10:50:51 -0400
+Received: from sh.osrg.net ([192.16.179.4]:50176 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755999Ab0FQOts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 10:49:48 -0400
-Date: Fri, 18 Jun 2010 00:46:08 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Eric B Munson <ebmunson@us.ibm.com>
-Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, paulus@samba.org, acme@redhat.com,
-       linux-kernel@vger.kernel.org, amodra@gmail.com
-Subject: Re: [PATCH] perf lookup of ppc64 symbols
-Message-ID: <20100617144608.GS28295@kryten>
-References: <1276523793-15422-1-git-send-email-ebmunson@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276523793-15422-1-git-send-email-ebmunson@us.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932803Ab0FQOut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 10:50:49 -0400
+Date: Thu, 17 Jun 2010 23:50:35 +0900
+To: davem@davemloft.net
+Cc: fujita.tomonori@lab.ntt.co.jp, mchan@broadcom.com, lethal@linux-sh.org,
+       vapier@gentoo.org, JBottomley@novell.com, netdev@vger.kernel.org,
+       linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: bnx2 fails to compile on parisc because of missing
+ get_dma_ops()
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100617.073653.193708702.davem@davemloft.net>
+References: <C27F8246C663564A84BB7AB3439772421B79CBCA1E@IRVEXCHCCR01.corp.ad.broadcom.com>
+	<20100617211946A.fujita.tomonori@lab.ntt.co.jp>
+	<20100617.073653.193708702.davem@davemloft.net>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100617234520S.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 17 Jun 2010 23:50:36 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 17 Jun 2010 07:36:53 -0700 (PDT)
+David Miller <davem@davemloft.net> wrote:
 
-Hi,
-
-> Currently symbol resolution does not work for 64-bit programs
-> using perf.  For this to work perf needs to lookup symbol names in
-> the OPD.  This patch adds this functionality.  The OPD data is
-> used to find symbol names when available.
-
-To clarify, this is an issue with 64bit architectures that use function
-descriptors (eg ppc64). The problem is that a symbol doesn't point to a text
-address, it points to a data area that contains (amongst other things) a
-pointer to the text address.
-
-We look for a section called ".opd" which is the function descriptor
-area. To create the full symbol table, when we see a symbol in the function
-descriptor section we load the first pointer and use that as the text
-address. The only tricky part here is working out which section the
-text address is in. Right now we have a loop which is sub optimal:
-
-> +	while ((sec = elf_nextscn(elf, sec)) != NULL) {
-> +		gelf_getshdr(sec, &shdr);
-> +
-> +		if ((addr >= shdr.sh_addr) &&
-> +		    (addr < (shdr.sh_addr + shdr.sh_size)))
-> +			return cnt;
-> +
-> +		++cnt;
-> +	}
-
-Anton
-
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> Signed-off-by: Eric B Munson <ebmunson@us.ibm.com>
-> ---
->  tools/perf/util/symbol.c |   37 ++++++++++++++++++++++++++++++++++---
->  1 files changed, 34 insertions(+), 3 deletions(-)
+> From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Date: Thu, 17 Jun 2010 21:21:13 +0900
 > 
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index b63e571..971d0a0 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -933,6 +933,25 @@ static bool elf_sec__is_a(GElf_Shdr *self, Elf_Data *secstrs, enum map_type type
->  	}
->  }
->  
-> +static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
-> +{
-> +	Elf_Scn *sec = NULL;
-> +	GElf_Shdr shdr;
-> +	size_t cnt = 1;
-> +
-> +	while ((sec = elf_nextscn(elf, sec)) != NULL) {
-> +		gelf_getshdr(sec, &shdr);
-> +
-> +		if ((addr >= shdr.sh_addr) &&
-> +		    (addr < (shdr.sh_addr + shdr.sh_size)))
-> +			return cnt;
-> +
-> +		++cnt;
-> +	}
-> +
-> +	return -1;
-> +}
-> +
->  static int dso__load_sym(struct dso *self, struct map *map, const char *name,
->  			 int fd, symbol_filter_t filter, int kmodule)
->  {
-> @@ -944,12 +963,13 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
->  	int err = -1;
->  	uint32_t idx;
->  	GElf_Ehdr ehdr;
-> -	GElf_Shdr shdr;
-> -	Elf_Data *syms;
-> +	GElf_Shdr shdr, opdshdr;
-> +	Elf_Data *syms, *opddata = NULL;
->  	GElf_Sym sym;
-> -	Elf_Scn *sec, *sec_strndx;
-> +	Elf_Scn *sec, *sec_strndx, *opdsec;
->  	Elf *elf;
->  	int nr = 0;
-> +	size_t opdidx = 0;
->  
->  	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
->  	if (elf == NULL) {
-> @@ -969,6 +989,10 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
->  			goto out_elf_end;
->  	}
->  
-> +	opdsec = elf_section_by_name(elf, &ehdr, &opdshdr, ".opd", &opdidx);
-> +	if (opdsec)
-> +		opddata = elf_rawdata(opdsec, NULL);
-> +
->  	syms = elf_getdata(sec, NULL);
->  	if (syms == NULL)
->  		goto out_elf_end;
-> @@ -1013,6 +1037,13 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
->  		if (!is_label && !elf_sym__is_a(&sym, map->type))
->  			continue;
->  
-> +		if (opdsec && sym.st_shndx == opdidx) {
-> +			u32 offset = sym.st_value - opdshdr.sh_addr;
-> +			u64 *opd = opddata->d_buf + offset;
-> +			sym.st_value = *opd;
-> +			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
-> +		}
-> +
->  		sec = elf_getscn(elf, sym.st_shndx);
->  		if (!sec)
->  			goto out_elf_end;
-> -- 
-> 1.7.0.4
+> > On Wed, 16 Jun 2010 23:24:44 -0700
+> > "Michael Chan" <mchan@broadcom.com> wrote:
+> > 
+> >> David, why is dma_is_consistent() always returning 1 on sparc?  The
+> >> streaming DMA is not consistent.
+> > 
+> > I think that there are some confusion about dma_is_consistent(). Some
+> > architectures think that dma_is_consistent() is supposed to return 1
+> > if they can allocate coherent memory (note that some architectures
+> > can't allocate coherent memory).
+> 
+> Right, and that's why it's defined this way.
+> 
+> If the desired meaning is different, just me know and I'll fix the
+> sparc definition.
+
+I think that there are some other architectures do the same. We need
+to make sure that all the architectures define dma_is_consistent() in
+the same meaning if drivers need it. However, I'm not sure we really
+need dma_is_consistent(). There is only one user of it (and I think we
+could remove it).
+
+In the bnx2 case, we can simply prefetch on all the archs (or just
+remove the optimization).
