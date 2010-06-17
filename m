@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab0FQGVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 02:21:52 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:51490 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753307Ab0FQGVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 02:21:50 -0400
-Date: Thu, 17 Jun 2010 08:21:05 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Florian Mickler <florian@mickler.org>
-Cc: Daniel Walker <dwalker@codeaurora.org>, Tejun Heo <tj@kernel.org>,
-       mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-Subject: Re: Overview of concurrency managed workqueue
-Message-ID: <20100617082105.5e723fd0@schatten.dmk.lab>
-In-Reply-To: <20100617072920.2b09912d@schatten.dmk.lab>
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>
-	<4C17C598.7070303@kernel.org>
-	<1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
-	<4C18BF40.40607@kernel.org>
-	<1276694825.9309.12.camel@m0nster>
-	<4C18D1FD.9060804@kernel.org>
-	<1276695665.9309.17.camel@m0nster>
-	<4C18D574.1040903@kernel.org>
-	<1276697146.9309.27.camel@m0nster>
-	<4C18DC69.10704@kernel.org>
-	<1276698880.9309.44.camel@m0nster>
-	<4C18E4B7.5040702@kernel.org>
-	<1276701074.9309.60.camel@m0nster>
-	<4C18F2B8.9060805@kernel.org>
-	<1276705838.9309.94.camel@m0nster>
-	<4C1901E9.2080907@kernel.org>
-	<1276712547.9309.172.camel@m0nster>
-	<4C191BE9.1060400@kernel.org>
-	<4C192404.7000004@kernel.org>
-	<20100617072920.2b09912d@schatten.dmk.lab>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754437Ab0FQGV7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 02:21:59 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47021 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754127Ab0FQGV4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 02:21:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C19BED5.4090801@jp.fujitsu.com>
+Date: Thu, 17 Jun 2010 15:21:09 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Matthew Wilcox <matthew@wil.cx>, tglx@linutronix.de, mingo@redhat.com,
+       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+       macro@linux-mips.org, kamezawa.hiroyu@jp.fujitsu.com,
+       eike-kernel@sf-tec.de, Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [PATCH 1/2] x86: ioremap: fix wrong physical address handling
+References: <4C197A49.6020400@jp.fujitsu.com> <4C197A9E.5040509@jp.fujitsu.com> <20100617025052.GH9298@parisc-linux.org> <4C19A2EE.2010203@zytor.com> <4C19AABA.8000706@jp.fujitsu.com> <4C19BA9A.4010300@zytor.com>
+In-Reply-To: <4C19BA9A.4010300@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010 07:29:20 +0200
-Florian Mickler <florian@mickler.org> wrote:
+(2010/06/17 15:03), H. Peter Anvin wrote:
+> On 06/16/2010 09:55 PM, Kenji Kaneshige wrote:
+>>>
+>>> I think they might be. Kenji?
+>>
+>> No. My addresses are in the 44-bits range (around fc000000000). So it is
+>> not required for my problem. This change assumes that phys_addr can be
+>> above 44-bits (up to 52-bits (and higher in the future?)).
+>>
+>> By the way, is there linux kernel limit regarding above 44-bits physical
+>> address in x86_32 PAE? For example, pfn above 32-bits is not supported?
+>>
+>
+> There are probably places at which PFNs are held in 32-bit numbers,
+> although it would be good to track them down if it isn't too expensive
+> to fix them (i.e. doesn't affect generic code.)
+>
+> This also affects paravirt systems, i.e. right now Xen has to locate all
+> 32-bit guests below 64 GB, which limits its usefulness.
+>
+>> #ifdef CONFIG_X86_PAE
+>> /* 44=32+12, the limit we can fit into an unsigned long pfn */
+>> #define __PHYSICAL_MASK_SHIFT   44
+>> #define __VIRTUAL_MASK_SHIFT    32
+>>
+>> If there is 44-bits physical address limit, I think it's better to use
+>> PHYSICAL_PAGE_MASK for masking physical address, instead of "(phys_addr
+>>>> PAGE_SHIFT)<<  PAGE_SHIFT)". The PHYSICAL_PAGE_MASK would become
+>> greater value when 44-bits physical address limit is eliminated. And
+>> maybe we need to change phys_addr_valid() returns error if physical
+>> address is above (1<<  __PHYSICAL_MASK_SHIFT)?
+>
+> The real question is how much we can fix without an unreasonable cost.
+>
 
-> On Wed, 16 Jun 2010 21:20:36 +0200
-> Tejun Heo <tj@kernel.org> wrote:
-> 
-> > On 06/16/2010 08:46 PM, Tejun Heo wrote:
-> > > * I'm very sorry I'm breaking your hacky workaround but seriously
-> > >   that's another problem to solve.  Let's talk about the problem
-> > >   itself instead of your hacky workaround.  (I think for most cases
-> > >   not using workqueue in RT path would be the right thing to do.)
-> > 
-> > For example, for the actual case of amba-pl022.c you mentioned, where
-> > interrupt handler sometimes offloads to workqueue, convert
-> > amba-pl022.c to use threaded interrupt handler.  That's why it's
-> > there.
-> > 
-> > If you actually _solve_ the problem like this, other users wouldn't
-> > experience the problem at all once the update reaches them and you
-> > won't have to worry about your workaround breaking with the next
-> > kernel update or unexpected suspend/resume and we won't be having this
-> > discussion about adjusting workqueue priorities from userland.
-> > 
-> > There are many wrong things about working around RT latency problems
-> > by setting workqueue priorities from userland.  Please think about why
-> > the driver would have a separate workqueue for itself in the first
-> > place.  It was to work around the limitation of workqueue facility and
-> > you're arguing that, because that work around allows yet another very
-> > fragile workaround, the property which made the original work around
-> > necessary in the first place needs to stay.  That sounds really
-> > perverse to me.
-> > 
-> 
-> For what its worth, IMO the right thing to do would probably be to
-> propagate the priority through the subsystem into the driver. 
+Thank you very much. I understand the situation.
 
-I was thinking about input devices here... anyway, my point is, that
-the user of the workqueue-interface should pass the priority-context to
-the workqueue subsystem... 
+Thanks,
+Kenji Kaneshige
 
-If a userspace needs a driver to have a specific priority... can it
-inform the system about it (thinking sysfs here..)? that would prevent
-userspace having "to kick" the kernel if smth get's stuck....
 
-Cheers,
-Flo
