@@ -1,64 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759416Ab0FQCuz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 22:50:55 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:49861 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab0FQCuy (ORCPT
+	id S1756903Ab0FQDL3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 23:11:29 -0400
+Received: from mail.windriver.com ([147.11.1.11]:53919 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756624Ab0FQDL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 22:50:54 -0400
-Date: Wed, 16 Jun 2010 20:50:52 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-       macro@linux-mips.org, kamezawa.hiroyu@jp.fujitsu.com,
-       eike-kernel@sf-tec.de
-Subject: Re: [PATCH 1/2] x86: ioremap: fix wrong physical address handling
-Message-ID: <20100617025052.GH9298@parisc-linux.org>
-References: <4C197A49.6020400@jp.fujitsu.com> <4C197A9E.5040509@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C197A9E.5040509@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 16 Jun 2010 23:11:28 -0400
+From: Dongdong Deng <dongdong.deng@windriver.com>
+To: jason.wessel@windriver.com, gregkh@suse.de, galak@kernel.crashing.org,
+       bruce.ashfield@windriver.com, dongdong.deng@windriver.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] serial: cpm_uart: implement the cpm_uart_early_write() function for console poll
+Date: Thu, 17 Jun 2010 11:13:40 +0800
+Message-Id: <1276744420-7845-1-git-send-email-dongdong.deng@windriver.com>
+X-Mailer: git-send-email 1.6.0.4
+X-OriginalArrivalTime: 17 Jun 2010 03:11:16.0554 (UTC) FILETIME=[BFF96AA0:01CB0DCA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 10:30:06AM +0900, Kenji Kaneshige wrote:
-> Index: linux-2.6.34/arch/x86/mm/ioremap.c
-> ===================================================================
-> --- linux-2.6.34.orig/arch/x86/mm/ioremap.c	2010-06-15 04:43:00.978332015 +0900
-> +++ linux-2.6.34/arch/x86/mm/ioremap.c	2010-06-15 05:32:59.291693007 +0900
-> @@ -62,8 +62,8 @@
->  static void __iomem *__ioremap_caller(resource_size_t phys_addr,
->  		unsigned long size, unsigned long prot_val, void *caller)
->  {
-> -	unsigned long pfn, offset, vaddr;
-> -	resource_size_t last_addr;
-> +	unsigned long offset, vaddr;
-> +	resource_size_t pfn, last_pfn, last_addr;
+The cpm_uart_early_write() function which was used for console poll
+isn't implemented in the cpm uart driver.
 
-I have a hard time understanding this change.  pfn is always a physical
-address shifted by PAGE_SHIFT.  So a 32-bit pfn supports up to 44-bit
-physical addresses.  Are your addresses above 44-bits?
+Implementing this function both fixes the build and allows
+kgdboc to work via the cpm uart.
 
-> @@ -115,7 +113,7 @@
->  	 * Mappings have to be page-aligned
->  	 */
->  	offset = phys_addr & ~PAGE_MASK;
-> -	phys_addr &= PAGE_MASK;
-> +	phys_addr = (phys_addr >> PAGE_SHIFT) << PAGE_SHIFT;
+Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
+Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ drivers/serial/cpm_uart/cpm_uart_core.c |  143 +++++++++++++++++--------------
+ 1 files changed, 79 insertions(+), 64 deletions(-)
 
-I'd rather see PAGE_MASK fixed.  Would this work?
-
- #define PAGE_SIZE       (_AC(1,UL) << PAGE_SHIFT)
--#define PAGE_MASK       (~(PAGE_SIZE-1))
-+#define PAGE_MASK       (~(PAGE_SIZE-1ULL))
-
+diff --git a/drivers/serial/cpm_uart/cpm_uart_core.c b/drivers/serial/cpm_uart/cpm_uart_core.c
+index 9eb62a2..cd6cf57 100644
+--- a/drivers/serial/cpm_uart/cpm_uart_core.c
++++ b/drivers/serial/cpm_uart/cpm_uart_core.c
+@@ -930,6 +930,83 @@ static void cpm_uart_config_port(struct uart_port *port, int flags)
+ 	}
+ }
+ 
++#if defined(CONFIG_CONSOLE_POLL) || defined(CONFIG_SERIAL_CPM_CONSOLE)
++/*
++ * Write a string to the serial port
++ * Note that this is called with interrupts already disabled
++ */
++static void cpm_uart_early_write(struct uart_cpm_port *pinfo,
++		const char *string, u_int count)
++{
++	unsigned int i;
++	cbd_t __iomem *bdp, *bdbase;
++	unsigned char *cpm_outp_addr;
++
++	/* Get the address of the host memory buffer.
++	 */
++	bdp = pinfo->tx_cur;
++	bdbase = pinfo->tx_bd_base;
++
++	/*
++	 * Now, do each character.  This is not as bad as it looks
++	 * since this is a holding FIFO and not a transmitting FIFO.
++	 * We could add the complexity of filling the entire transmit
++	 * buffer, but we would just wait longer between accesses......
++	 */
++	for (i = 0; i < count; i++, string++) {
++		/* Wait for transmitter fifo to empty.
++		 * Ready indicates output is ready, and xmt is doing
++		 * that, not that it is ready for us to send.
++		 */
++		while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
++			;
++
++		/* Send the character out.
++		 * If the buffer address is in the CPM DPRAM, don't
++		 * convert it.
++		 */
++		cpm_outp_addr = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr),
++					pinfo);
++		*cpm_outp_addr = *string;
++
++		out_be16(&bdp->cbd_datlen, 1);
++		setbits16(&bdp->cbd_sc, BD_SC_READY);
++
++		if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
++			bdp = bdbase;
++		else
++			bdp++;
++
++		/* if a LF, also do CR... */
++		if (*string == 10) {
++			while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
++				;
++
++			cpm_outp_addr = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr),
++						pinfo);
++			*cpm_outp_addr = 13;
++
++			out_be16(&bdp->cbd_datlen, 1);
++			setbits16(&bdp->cbd_sc, BD_SC_READY);
++
++			if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
++				bdp = bdbase;
++			else
++				bdp++;
++		}
++	}
++
++	/*
++	 * Finally, Wait for transmitter & holding register to empty
++	 *  and restore the IER
++	 */
++	while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
++		;
++
++	pinfo->tx_cur = bdp;
++}
++#endif
++
+ #ifdef CONFIG_CONSOLE_POLL
+ /* Serial polling routines for writing and reading from the uart while
+  * in an interrupt or debug context.
+@@ -999,7 +1076,7 @@ static void cpm_put_poll_char(struct uart_port *port,
+ 	static char ch[2];
+ 
+ 	ch[0] = (char)c;
+-	cpm_uart_early_write(pinfo->port.line, ch, 1);
++	cpm_uart_early_write(pinfo, ch, 1);
+ }
+ #endif /* CONFIG_CONSOLE_POLL */
+ 
+@@ -1130,9 +1207,6 @@ static void cpm_uart_console_write(struct console *co, const char *s,
+ 				   u_int count)
+ {
+ 	struct uart_cpm_port *pinfo = &cpm_uart_ports[co->index];
+-	unsigned int i;
+-	cbd_t __iomem *bdp, *bdbase;
+-	unsigned char *cp;
+ 	unsigned long flags;
+ 	int nolock = oops_in_progress;
+ 
+@@ -1142,66 +1216,7 @@ static void cpm_uart_console_write(struct console *co, const char *s,
+ 		spin_lock_irqsave(&pinfo->port.lock, flags);
+ 	}
+ 
+-	/* Get the address of the host memory buffer.
+-	 */
+-	bdp = pinfo->tx_cur;
+-	bdbase = pinfo->tx_bd_base;
+-
+-	/*
+-	 * Now, do each character.  This is not as bad as it looks
+-	 * since this is a holding FIFO and not a transmitting FIFO.
+-	 * We could add the complexity of filling the entire transmit
+-	 * buffer, but we would just wait longer between accesses......
+-	 */
+-	for (i = 0; i < count; i++, s++) {
+-		/* Wait for transmitter fifo to empty.
+-		 * Ready indicates output is ready, and xmt is doing
+-		 * that, not that it is ready for us to send.
+-		 */
+-		while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
+-			;
+-
+-		/* Send the character out.
+-		 * If the buffer address is in the CPM DPRAM, don't
+-		 * convert it.
+-		 */
+-		cp = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr), pinfo);
+-		*cp = *s;
+-
+-		out_be16(&bdp->cbd_datlen, 1);
+-		setbits16(&bdp->cbd_sc, BD_SC_READY);
+-
+-		if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
+-			bdp = bdbase;
+-		else
+-			bdp++;
+-
+-		/* if a LF, also do CR... */
+-		if (*s == 10) {
+-			while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
+-				;
+-
+-			cp = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr), pinfo);
+-			*cp = 13;
+-
+-			out_be16(&bdp->cbd_datlen, 1);
+-			setbits16(&bdp->cbd_sc, BD_SC_READY);
+-
+-			if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
+-				bdp = bdbase;
+-			else
+-				bdp++;
+-		}
+-	}
+-
+-	/*
+-	 * Finally, Wait for transmitter & holding register to empty
+-	 *  and restore the IER
+-	 */
+-	while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
+-		;
+-
+-	pinfo->tx_cur = bdp;
++	cpm_uart_early_write(pinfo, s, count);
+ 
+ 	if (unlikely(nolock)) {
+ 		local_irq_restore(flags);
 -- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+1.6.0.4
+
