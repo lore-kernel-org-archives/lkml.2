@@ -1,58 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760661Ab0FQU2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 16:28:19 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:4490 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757508Ab0FQU2S (ORCPT
+	id S933320Ab0FQU3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 16:29:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27971 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757508Ab0FQU3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 16:28:18 -0400
-From: "Scott J. Goldman" <scottjg@vmware.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: linux-kernel@vger.kernel.org, "Scott J. Goldman" <scottjg@vmware.com>
-Subject: [PATCH] checkpatch: fix false positive on casting to double pointer
-Date: Thu, 17 Jun 2010 13:26:51 -0700
-Message-Id: <1276806411-15176-1-git-send-email-scottjg@vmware.com>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 17 Jun 2010 16:29:04 -0400
+Date: Thu, 17 Jun 2010 13:28:07 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
+       dzickus@redhat.com
+Subject: Re: [PATCH] Add TAINT_HARDWARE_UNSUPPORTED flag
+Message-Id: <20100617132807.f02beb70.randy.dunlap@oracle.com>
+In-Reply-To: <4C1A7D61.8010900@redhat.com>
+References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
+	<20100617091322.b7d21473.randy.dunlap@oracle.com>
+	<4C1A7D61.8010900@redhat.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090206.4C1A8585.002B:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 17 Jun 2010 15:54:09 -0400 Prarit Bhargava wrote:
 
-Signed-off-by: Scott J. Goldman <scottjg@vmware.com>
+> This patch is similar to Theordore Ts'o's TAINT_USER patch,
+> linux-2.6 commit 34f5a39899f3f3e815da64f48ddb72942d86c366.
+> 
+> Individual distributions may enable "generic" features such as X86 support,
+> PPC support, and driver support.
+> 
+> Some of the features that are enabled by these "generic" feature flags may
+> not be considered supported by the individual distribution.
+> 
+> For example, a distribution may want to support PPC but not the Power5
+> chipset, or the e1000e driver but not a card with a specific DeviceID because
+> of known firmware issues.
+> 
+> Typically, one would push a config patch to enable and disable the feature and
+> patch the distribution.  However, in some cases this is not feasible in order
+> to preserve kabi and at the same time maintain parity with the upstream kernel.
+> In some cases the distribution may want to allow booting of these features but
+> explicitly notify a user that they are not "officially" supported.  It is also
+> possible that the hardware is fixed via a firmware update at a later date,
+> making it supported again.
+> 
+> It would be useful for a distribution to notify the installer and
+> bug reporting applications, and notify users that the hardware they are using
+> is unsupported during panic, oops, BUG(), and WARN().
+> 
+> This patch introduces the TAINT_HARDWARE_UNSUPPORTED flag for distributions
+> to use.
+> 
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+Thanks.
+
+> diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
+> index 6fe9001..e337b0a 100644
+> --- a/Documentation/oops-tracing.txt
+> +++ b/Documentation/oops-tracing.txt
+> @@ -263,6 +263,8 @@ characters, each representing a particular tainted value.
+>   12: 'I' if the kernel is working around a severe bug in the platform
+>       firmware (BIOS or similar).
+>  
+> + 13: 'H' if the hardware is unsupported by the distribution
+> +
+>  The primary reason for the 'Tainted: ' string is to tell kernel
+>  debuggers if this is a clean kernel or if anything unusual has
+>  occurred.  Tainting is permanent: even if an offending module is
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 8317ec4..f722b0d 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -347,6 +347,7 @@ extern enum system_states {
+>  #define TAINT_WARN			9
+>  #define TAINT_CRAP			10
+>  #define TAINT_FIRMWARE_WORKAROUND	11
+> +#define TAINT_HARDWARE_UNSUPPORTED	12
+>  
+>  extern void dump_stack(void) __cold;
+>  
+> diff --git a/kernel/panic.c b/kernel/panic.c
+> index 3b16cd9..8d081ff 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -180,6 +180,7 @@ static const struct tnt tnts[] = {
+>  	{ TAINT_WARN,			'W', ' ' },
+>  	{ TAINT_CRAP,			'C', ' ' },
+>  	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
+> +	{ TAINT_HARDWARE_UNSUPPORTED,	'H', ' ' },
+>  };
+>  
+>  /**
+> @@ -197,6 +198,7 @@ static const struct tnt tnts[] = {
+>   *  'W' - Taint on warning.
+>   *  'C' - modules from drivers/staging are loaded.
+>   *  'I' - Working around severe firmware bug.
+> + *  'H' - Hardware is unsupported.
+>   *
+>   *	The string is overwritten by the next call to print_tainted().
+>   */
+> @@ -243,6 +245,9 @@ void add_taint(unsigned flag)
+>  	 */
+>  	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
+>  		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
+> +	if (flag == TAINT_HARDWARE_UNSUPPORTED)
+> +		printk(KERN_CRIT
+> +		       "WARNING: This system's hardware is unsupported.\n");
+>  
+>  	set_bit(flag, &tainted_mask);
+>  }
+> --
+
 ---
- scripts/checkpatch.pl         |    4 +++-
- tests/t/t9190-double-pointers |    6 ++++++
- 2 files changed, 9 insertions(+), 1 deletions(-)
- create mode 100644 tests/t/t9190-double-pointers
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 87bbb8b..687bd6f 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1982,7 +1982,9 @@ sub process {
- 					 $op eq '*' or $op eq '/' or
- 					 $op eq '%')
- 				{
--					if ($ctx =~ /Wx[^WCE]|[^WCE]xW/) {
-+					if ($op eq '*' && $cc =~ /^\*/) {
-+						# double pointer is ok
-+					} elsif ($ctx =~ /Wx[^WCE]|[^WCE]xW/) {
- 						ERROR("need consistent spacing around '$op' $at\n" .
- 							$hereptr);
- 					}
-diff --git a/tests/t/t9190-double-pointers b/tests/t/t9190-double-pointers
-new file mode 100644
-index 0000000..3f3f7f9
---- /dev/null
-+++ b/tests/t/t9190-double-pointers
-@@ -0,0 +1,6 @@
-+pass "foo **x;"
-+pass "x = **y;"
-+pass "x = (foo **)y;"
-+
-+err='"(foo ** )" should be "(foo **)"'
-+fail	"x = (foo ** )y;"	"$err"
--- 
-1.6.0.3
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
