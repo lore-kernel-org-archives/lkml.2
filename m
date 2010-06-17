@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab0FQKJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 06:09:11 -0400
-Received: from server78.greatnet.de ([83.133.96.102]:57668 "EHLO
-	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab0FQKJI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 06:09:08 -0400
-X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jun 2010 06:09:08 EDT
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: JosephChan@via.com.tw, ScottFang@viatech.com.cn
-Cc: corbet@lwn.net, FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [PATCH] fbdev: section cleanup in viafb driver
-Date: Thu, 17 Jun 2010 12:01:24 +0200
-Message-Id: <1276768884-19958-1-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.7.0.4
+	id S1758407Ab0FQKad (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 06:30:33 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:59089 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753986Ab0FQKac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 06:30:32 -0400
+Date: Thu, 17 Jun 2010 11:30:13 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+       Christoph Hellwig <hch@infradead.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 08/12] vmscan: Setup pagevec as late as possible in
+	shrink_inactive_list()
+Message-ID: <20100617103012.GA25567@csn.ul.ie>
+References: <1276514273-27693-1-git-send-email-mel@csn.ul.ie> <1276514273-27693-9-git-send-email-mel@csn.ul.ie> <20100616164309.254b1a0d.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100616164309.254b1a0d.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves two functions from .devexit to .text,
-which are called on the probe error path.
-Also a function which is called by probe is moved
-from .text to .devinit.
+On Wed, Jun 16, 2010 at 04:43:09PM -0700, Andrew Morton wrote:
+> On Mon, 14 Jun 2010 12:17:49 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+> > shrink_inactive_list() sets up a pagevec to release unfreeable pages. It
+> > uses significant amounts of stack doing this. This patch splits
+> > shrink_inactive_list() to take the stack usage out of the main path so
+> > that callers to writepage() do not contain an unused pagevec on the
+> > stack.
+> 
+> You can get the entire pagevec off the stack - just make it a
+> static-to-shrink_inactive_list() pagevec-per-cpu.
+> 
 
-WARNING: vmlinux.o(.devinit.text+0x2ca5): Section mismatch in reference
-from the function via_pci_probe() to the function
-.devexit.text:via_teardown_subdevs()
-The function __devinit via_pci_probe() references
-a function __devexit via_teardown_subdevs().
-This is often seen when error handling in the init function
-uses functionality in the exit path.
-The fix is often to remove the __devexit annotation of
-via_teardown_subdevs() so it may be used outside an exit section.
+That idea has been floated as well. I didn't pursue it because Dave
+said that giving page reclaim a stack diet was never going to be the
+full solution so I didn't think the complexity was justified.
 
-WARNING: vmlinux.o(.devinit.text+0x2cb1): Section mismatch in reference
-from the function via_pci_probe() to the function
-.devexit.text:via_pci_teardown_mmio()
-The function __devinit via_pci_probe() references
-a function __devexit via_pci_teardown_mmio().
-This is often seen when error handling in the init function
-uses functionality in the exit path.
-The fix is often to remove the __devexit annotation of
-via_pci_teardown_mmio() so it may be used outside an exit section.
+I kept some of the stack reduction stuff because a) it was there and b)
+it would give kswapd extra headroom when calling writepage.
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
----
-This patch is compile tested against Linus lastest git kernel.
+> Locking just requires pinning to a CPU.  We could trivially co-opt
+> shrink_inactive_list()'s spin_lock_irq() for that, but
+> pagevec_release() can be relatively expensive so it'd be sad to move
+> that inside spin_lock_irq().  It'd be better to slap a
+> get_cpu()/put_cpu() around the whole thing.
+> 
 
- drivers/video/via/via-core.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+It'd be something interesting to try out when nothing else was happening but
+I'm not going to focus on it for the moment unless I think it will really
+help this stack overflow problem.
 
-diff --git a/drivers/video/via/via-core.c b/drivers/video/via/via-core.c
-index e8cfe83..ec2e5aa 100644
---- a/drivers/video/via/via-core.c
-+++ b/drivers/video/via/via-core.c
-@@ -64,7 +64,7 @@ static inline int viafb_mmio_read(int reg)
-  */
- static u32 viafb_enabled_ints;
- 
--static void viafb_int_init(void)
-+static void __devinit viafb_int_init(void)
- {
- 	viafb_enabled_ints = 0;
- 
-@@ -489,7 +489,7 @@ out_unmap:
- 	return ret;
- }
- 
--static void __devexit via_pci_teardown_mmio(struct viafb_dev *vdev)
-+static void via_pci_teardown_mmio(struct viafb_dev *vdev)
- {
- 	iounmap(vdev->fbmem);
- 	iounmap(vdev->engine_mmio);
-@@ -548,7 +548,7 @@ static int __devinit via_setup_subdevs(struct viafb_dev *vdev)
- 	return 0;
- }
- 
--static void __devexit via_teardown_subdevs(void)
-+static void via_teardown_subdevs(void)
- {
- 	int i;
- 
 -- 
-1.7.0.4
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
