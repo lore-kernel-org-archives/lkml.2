@@ -1,289 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab0FQFMN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 01:12:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60125 "EHLO smtps.tip.net.au"
+	id S1751855Ab0FQFRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 01:17:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38641 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751099Ab0FQFML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 01:12:11 -0400
-Date: Thu, 17 Jun 2010 15:12:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for June 17
-Message-Id: <20100617151205.54be0545.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__17_Jun_2010_15_12_05_+1000_JCB9g0Q6X3M/2D9i"
+	id S1751299Ab0FQFRG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 01:17:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,429,1272870000"; 
+   d="scan'208";a="631125560"
+From: "Shi, Alex" <alex.shi@intel.com>
+To: "Fastabend, John R" <john.r.fastabend@intel.com>,
+       David Miller <davem@davemloft.net>,
+       "markus@trippelsdorf.de" <markus@trippelsdorf.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
+       "Chen, Tim C" <tim.c.chen@intel.com>
+Date: Thu, 17 Jun 2010 13:16:56 +0800
+Subject: RE: mpd client timeouts (bisected) 2.6.35-rc3
+Thread-Topic: mpd client timeouts (bisected) 2.6.35-rc3
+Thread-Index: AcsLOBym1TqeRZEuRwWgKFNKXB7qhgCjafbg
+Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B18EBD46A25@shsmsx502.ccr.corp.intel.com>
+References: <20100612102802.GA1782@arch.tripp.de>
+ <20100612.145835.123986343.davem@davemloft.net> <4C149147.3080808@intel.com>
+ <4C15414E.5090201@intel.com>
+In-Reply-To: <4C15414E.5090201@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_Jun_2010_15_12_05_+1000_JCB9g0Q6X3M/2D9i
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It fixed the aim7/specjbb2005 issues! 
 
-Hi all,
+Tested-by: Alex Shi <alex.shi@intel.com>
 
-Changes since 20100616:
 
-My fixes tree contains:
-      v4l-dvb: update gfp/slab.h includes
-      arm: update gfp/slab.h includes
-      davinci: update gfp/slab.h includes
-      ocfs2: update gfp/slab.h includes
-      acpi: update gfp/slab.h includes
+Regards! 
+Alex  
 
-The rr tree lost its conflict (but one of its patches did not import).
-
-The battery tree lost its conflict.
-
-The usb tree gained a build failure for which I applied a patch.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 163 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/for-linus
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
-Merging galak/next
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-CONFLICT (content): Merge conflict in include/linux/serial_sci.h
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-CONFLICT (content): Merge conflict in fs/ecryptfs/main.c
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
-Merging quilt/jdelvare-hwmon
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging ibft/master
-Merging swiotlb/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-CONFLICT (content): Merge conflict in net/mac80211/mlme.c
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging mmc/next
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/evergreen.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/r600.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_combios=
-.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_pm.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/rv770.c
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
-or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
-eft in tree.
-$ git rm -f fs/notify/inotify/inotify.c
-Applying: fsnotify: update gfp/slab.h includes
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging catalin/for-next
-Merging alacrity/linux-next
-Merging i7core_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging omap_dss2/for-next
-Merging tip/auto-latest
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-CONFLICT (content): Merge conflict in mm/memory-failure.c
-Merging sysctl/master
-Merging bkl-core/bkl/core
-Merging bkl-procfs/bkl/procfs
-Merging bkl-ioctl/bkl/ioctl
-Merging quilt/driver-core
-Merging quilt/tty
-Merging quilt/usb
-Merging staging-next/staging-next
-Merging slabh/slabh
-Merging scsi-post-merge/master
-Applying: usb: using copy_from_user in ehci-hcd requies the include of uacc=
-ess.h
-
---Signature=_Thu__17_Jun_2010_15_12_05_+1000_JCB9g0Q6X3M/2D9i
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwZrqUACgkQjjKRsyhoI8xI4gCeMXjx3nhuXlT7G16w43MZibyr
-qx4AoIdL2EdkkRxIT8GOTd/b/Mr9z4Wk
-=b18q
------END PGP SIGNATURE-----
-
---Signature=_Thu__17_Jun_2010_15_12_05_+1000_JCB9g0Q6X3M/2D9i--
+>
+>Needed to set the wcard bit in copy_skb_header otherwise it will not be cleared
+>when called from skb_clone.  Which then hits the loopback device gets pushed
+>into the rx path and is eventually dropped. The following patch fixes this.
+>Hopefully, this is easy and fast enough for you Dave.
+>
+>
+>[PATCH] net: fix deliver_no_wcard regression on loopback device
+>
+>deliver_no_wcard is not being set in skb_copy_header.
+>In the skb_cloned case it is not being cleared and
+>may cause the skb to be dropped when the loopback device
+>pushes it back up the stack.
+>
+>Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
+>---
+>
+>  net/core/skbuff.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+>diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+>index 9f07e74..bcf2fa3 100644
+>--- a/net/core/skbuff.c
+>+++ b/net/core/skbuff.c
+>@@ -532,6 +532,7 @@ static void __copy_skb_header(struct sk_buff *new, const
+>struct sk_buff *old)
+>  	new->ip_summed		= old->ip_summed;
+>  	skb_copy_queue_mapping(new, old);
+>  	new->priority		= old->priority;
+>+	new->deliver_no_wcard	= old->deliver_no_wcard;
+>  #if defined(CONFIG_IP_VS) || defined(CONFIG_IP_VS_MODULE)
+>  	new->ipvs_property	= old->ipvs_property;
+>  #endif
