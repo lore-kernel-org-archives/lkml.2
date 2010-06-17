@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760842Ab0FQXEf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 19:04:35 -0400
-Received: from ozlabs.org ([203.10.76.45]:33714 "EHLO ozlabs.org"
+	id S1760853Ab0FQXEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 19:04:45 -0400
+Received: from tundra.namei.org ([65.99.196.166]:40507 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756731Ab0FQXEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 19:04:23 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: mingo@redhat.com, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
-       linux-kernel@vger.kernel.org, arjan@linux.intel.com, tglx@linutronix.de,
-       mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched: Fix capacity calculations for SMT4
-In-reply-to: <1276152536.2046.2479.camel@twins>
-References: <20100608045702.21D03CC895@localhost.localdomain> <tip-9d5efe05eb0c904545a28b19c18b949f23334de0@git.kernel.org> <12629.1276124617@neuling.org> <1276152536.2046.2479.camel@twins>
-Comments: In-reply-to Peter Zijlstra <peterz@infradead.org>
-   message dated "Thu, 10 Jun 2010 08:48:56 +0200."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
-Date: Fri, 18 Jun 2010 09:04:22 +1000
-Message-ID: <15364.1276815862@neuling.org>
+	id S1760512Ab0FQXEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 19:04:33 -0400
+Date: Fri, 18 Jun 2010 09:03:38 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Kees Cook <kees.cook@canonical.com>, Randy Dunlap <rdunlap@xenotime.net>,
+       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org,
+       Stephen Smalley <sds@tycho.nsa.gov>, Daniel J Walsh <dwalsh@redhat.com>,
+       linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
+In-Reply-To: <20100617233054.330256cf@lxorguk.ukuu.org.uk>
+Message-ID: <alpine.LRH.2.00.1006180845290.19732@tundra.namei.org>
+References: <20100616221833.GM24749@outflux.net> <20100617000120.13071be8@lxorguk.ukuu.org.uk> <20100616232230.GP24749@outflux.net> <alpine.LRH.2.00.1006172336390.17282@tundra.namei.org> <20100617170453.GV24749@outflux.net> <20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
+ <20100617140630.c6ced27a.rdunlap@xenotime.net> <20100617221815.68ce30c5@lxorguk.ukuu.org.uk> <20100617215105.GB24749@outflux.net> <20100617233054.330256cf@lxorguk.ukuu.org.uk>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In message <1276152536.2046.2479.camel@twins> you wrote:
-> On Thu, 2010-06-10 at 09:03 +1000, Michael Neuling wrote:
-> > Peter,
-> >=20
-> > It looks like when this was pushed to Ingo, some of the logic was
-> > changed.  rt_freq_influence() became fix_small_capacity() but the return
-> > values for these two functions are opposite (return 1 =3D> return 0 and
-> > visa versa]]).
-> >=20
-> > This was changed in the sibling test (return 1 =3D> return 0), but the
-> > check for the change in cpu power due to freq and rt was not.
-> >=20
-> > So either the return values need to be changed at the end of
-> > fix_small_capacity() or the cpu_power test needs to be the other way
-> > around.  Below changes the cpu_power test as it brings it more inline
-> > with the comment above it.
-> >=20
-> > Without this the asymmetric packing doesn't work.
-> 
-> D'oh fully my fault for cleaning up.
-> 
-> Thanks, I'll make sure it gets fixed.
+On Thu, 17 Jun 2010, Alan Cox wrote:
 
-Peter,
+> - You can put it together as a security module - which will make people
+>   happy and get your stuff upstream. After that you can have a meaningful
+>   discussion about stacking
 
-I've not see this fix (or the doc/comment update patch from here
-https://patchwork.kernel.org/patch/105256/) hit Ingo tip tree as yet.
-When you are likely to push it to him?
+It think this approach is worth pursuing, so that we can also see what's 
+there, and determine if there is a need for some form of stacking, or 
+whether we can consolidate some of this into library code which the 
+various LSMs utilize.
 
-Mikey
+People who don't want to run SELinux / AppArmor / Smack / TOMOYO etc., run 
+can still get some protection.
 
-> 
-> > Subject: sched: fix the CPU power test for fix_small_capacity
-> >=20
-> > The CPU power test is the wrong way around in fix_small_capacity.
-> >=20
-> > This was due to a small changes made in the posted patch on lkml to what
-> > was was taken upstream.
-> >=20
-> > This patch fixes asymmetric packing for POWER7.
-> >=20
-> > Signed-off-by: Michael Neuling <mikey@neuling.org>
-> >=20
-> > Index: linux-2.6-ozlabs/kernel/sched_fair.c
-> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > --- linux-2.6-ozlabs.orig/kernel/sched_fair.c
-> > +++ linux-2.6-ozlabs/kernel/sched_fair.c
-> > @@ -2354,7 +2354,7 @@ fix_small_capacity(struct sched_domain *
-> >  	/*
-> >  	 * If ~90% of the cpu_power is still there, we're good.
-> >  	 */
-> > -	if (group->cpu_power * 32 < group->cpu_power_orig * 29)
-> > +	if (group->cpu_power * 32 > group->cpu_power_orig * 29)
-> >  		return 1;
-> > =20
-> >  	return 0;
-> >=20
-> 
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
