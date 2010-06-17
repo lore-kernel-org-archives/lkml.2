@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933319Ab0FQUVA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 16:21:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4923 "EHLO mx1.redhat.com"
+	id S933333Ab0FQUV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 16:21:27 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48722 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933314Ab0FQUU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 16:20:58 -0400
-Date: Thu, 17 Jun 2010 17:20:32 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Ian Munsie <imunsie@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+	id S933243Ab0FQUVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 16:21:23 -0400
+Date: Thu, 17 Jun 2010 13:21:13 -0700
+From: Greg KH <gregkh@suse.de>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
        Frederic Weisbecker <fweisbec@gmail.com>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH] perf: prevent kill(0, SIGTERM);
-Message-ID: <20100617202032.GC1626@ghostprotocols.net>
-References: <1276072680-17378-1-git-send-email-imunsie@au1.ibm.com>
+       John Kacur <jkacur@redhat.com>, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 12/31] tty: serial - fix tty back references in termios
+Message-ID: <20100617202113.GA20666@suse.de>
+References: <1275425591-8803-1-git-send-email-arnd@arndb.de>
+ <1275425591-8803-13-git-send-email-arnd@arndb.de>
+ <AANLkTik7PKE1Ch-15riGMzs9fL-4s_nTXrU2rh0yzq0I@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1276072680-17378-1-git-send-email-imunsie@au1.ibm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTik7PKE1Ch-15riGMzs9fL-4s_nTXrU2rh0yzq0I@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jun 09, 2010 at 06:38:00PM +1000, Ian Munsie escreveu:
-> At exit, perf record will kill the process it was profiling by sending a
-> SIGTERM to child_pid (if it had been initialised), but in certain
-> situations child_pid may be 0 and perf would mistakenly kill more
-> processes than intended.
+On Thu, Jun 17, 2010 at 11:50:57AM -0700, Tony Luck wrote:
+> A couple of build breaks in linux-next (tag: next-20100617)
 > 
-> child_pid is set to the return of fork() to either 0 or the pid of the
-> child. Ordinarily this would not present an issue as the child calls
-> execvp to spawn the process to be profilled and would therefore never
-> run it's sig_atexit and never attempt to kill pid 0.
+> drivers/serial/ioc4_serial.c:1750: error: expected statement before ‘)’ token
+> 
+> Would have a similar one for ioc3_serial.c if my .config included it.
+> 
+> On Tue, Jun 1, 2010 at 1:52 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > diff --git a/drivers/serial/ioc3_serial.c b/drivers/serial/ioc3_serial.c
+> > index f164ba4..bd2e9e6 100644
+> > --- a/drivers/serial/ioc3_serial.c
+> > +++ b/drivers/serial/ioc3_serial.c
+>  ...
+> > -       if (I_IGNPAR(state->port.tty))
+> > +       if (iflag & IGNPAR))
+> 
+> Can we have matching numbers of "(" and ")" here please.
+> 
+> > diff --git a/drivers/serial/ioc4_serial.c b/drivers/serial/ioc4_serial.c
+> > index 8ad28fc..2c30023 100644
+> > --- a/drivers/serial/ioc4_serial.c
+> > +++ b/drivers/serial/ioc4_serial.c
+>  ..
+> .-               if (I_IGNPAR(state->port.tty))
+> +               if (iflag & IGNPAR))
+> 
+> Same here.
 
-before:
+I've fixed these up in my tree so the next linux-next will contain the
+correct ones.
 
-[root@emilia mingo]# perf record bla
-bla: No such file or directory
-Terminated
+thanks,
 
-after:
-
-[root@emilia mingo]# perf record bla
-bla: No such file or directory
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.006 MB perf.data (~259 samples) ]
-[root@emilia mingo]#
-
-Got it, queuing it in perf/urgent,
-
-Thanks!
-
-- Arnaldo
+greg k-h
