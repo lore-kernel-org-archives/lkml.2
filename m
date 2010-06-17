@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760758Ab0FQVGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 17:06:43 -0400
-Received: from xenotime.net ([72.52.115.56]:33956 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1760727Ab0FQVGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 17:06:41 -0400
-Date: Thu, 17 Jun 2010 14:06:30 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>,
-       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org,
-       Stephen Smalley <sds@tycho.nsa.gov>, Daniel J Walsh <dwalsh@redhat.com>,
-       linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
-Message-Id: <20100617140630.c6ced27a.rdunlap@xenotime.net>
-In-Reply-To: <20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
-References: <20100616221833.GM24749@outflux.net>
-	<20100617000120.13071be8@lxorguk.ukuu.org.uk>
-	<20100616232230.GP24749@outflux.net>
-	<alpine.LRH.2.00.1006172336390.17282@tundra.namei.org>
-	<20100617170453.GV24749@outflux.net>
-	<20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1760754Ab0FQVOM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 17:14:12 -0400
+Received: from mail.perches.com ([173.55.12.10]:1169 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752732Ab0FQVOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 17:14:11 -0400
+Subject: Re: [PATCH] Staging: comedi: fix over 80 character coding style
+ issues in ni_labpc.c
+From: Joe Perches <joe@perches.com>
+To: Greg KH <greg@kroah.com>
+Cc: Maurice Dawson <mauricedawson2699@gmail.com>, devel@driverdev.osuosl.org,
+       gregkh@suse.de, stewart_r@aliencamel.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20100617203622.GB32523@kroah.com>
+References: <1275123944-1886-1-git-send-email-mauricedawson2699@gmail.com>
+	 <20100617203622.GB32523@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Jun 2010 14:14:08 -0700
+Message-ID: <1276809248.1005.75.camel@Joe-Laptop.home>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010 21:53:49 +0100 Alan Cox wrote:
-
-> > > SELinux users would not need the other LSM, and stacking is thus not 
-> > > required.
-> > 
-> > But if a user wants to disable ptrace using the SELinux LSM and then
-> > also disable sticky-symlinks via the ItsHideous LSM, they're out of luck.
+On Thu, 2010-06-17 at 13:36 -0700, Greg KH wrote:
+> On Sat, May 29, 2010 at 10:05:44AM +0100, Maurice Dawson wrote:
+> > This is a patch to the ni_labpc.c file that fixes most over 80
+> > character warnings found by the checkpatch.pl tool. Two lines, 4 and
+> > 1035 have not been changed because readability is better and no
+> > information is hidden
+> > --- a/drivers/staging/comedi/drivers/ni_labpc.c
+> > +++ b/drivers/staging/comedi/drivers/ni_labpc.c
+> > @@ -738,7 +738,8 @@ static int labpc_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+> >  		break;
+> >  	case pcmcia_bustype:
+> >  		printk
+> > -		    (" this driver does not support pcmcia cards, use ni_labpc_cs.o\n");
+> > +		    ("this driver does not support pcmcia cards, "
+> > +							"use ni_labpc_cs.o\n");
 > 
-> Thats a nonsensical configuration so we don't care. If you are using
-> SELinux you just do it via SELinux. If you are doing it via
-> UbuntuHasToBeDifferent then you do it via that.
+> Ick, no, don't break these types of strings.  Newer versions of
+> checkpatch will not complain about this.
 
+Hi Greg.
 
-Well, surely there are people who use something other than Ubuntu
-and also care about not using SELinux... eh?
+Unfortunately, currently checkpatch will complain about
+this sort of line because the format string is not on the
+same line as the printk.
 
+This line should become something like:
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+		pr_err(" this driver does not support pcmcia cards, use ni_labpc_cs\n");
+or
+		comedi_err(etc...);
+
+if ever the comedi_<level> printk helper macros are accepted.
+
