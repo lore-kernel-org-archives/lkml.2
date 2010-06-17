@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760746Ab0FQUzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 16:55:38 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:47454 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757100Ab0FQUzh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 16:55:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=V2pLmcF4i2VVdQszONnd19cFX6aAnz7ZXlplq6sXkX5KAmEX5zaXjKdPg7VUovpZg5
-         Fc4oC0vMI+mPleKJELIxIUXSEcgskCUcdA4rHvpd3xtX2qJ8/VEKBcYv0bVekfGvSUt7
-         C6QtxzGcBP4iIBP/qS+SI8XZzUQj1xwnuC2gA=
-MIME-Version: 1.0
-Date: Thu, 17 Jun 2010 14:55:36 -0600
-Message-ID: <AANLkTilR54xU8wpixR4LQyhKG7KV_wCLJNxT1e_3aAqr@mail.gmail.com>
-Subject: [ANNOUNCE] MDB Merkey Debugger for Linux 2.6.34-06-17-2010 (CR3 
-	Fixes)
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760758Ab0FQVGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 17:06:43 -0400
+Received: from xenotime.net ([72.52.115.56]:33956 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1760727Ab0FQVGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 17:06:41 -0400
+Date: Thu, 17 Jun 2010 14:06:30 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>,
+       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org,
+       Stephen Smalley <sds@tycho.nsa.gov>, Daniel J Walsh <dwalsh@redhat.com>,
+       linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
+Message-Id: <20100617140630.c6ced27a.rdunlap@xenotime.net>
+In-Reply-To: <20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
+References: <20100616221833.GM24749@outflux.net>
+	<20100617000120.13071be8@lxorguk.ukuu.org.uk>
+	<20100616232230.GP24749@outflux.net>
+	<alpine.LRH.2.00.1006172336390.17282@tundra.namei.org>
+	<20100617170453.GV24749@outflux.net>
+	<20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://merkeydebugger.googlecode.com/files/mdb-2.6.34-06-17-2010.patch
+On Thu, 17 Jun 2010 21:53:49 +0100 Alan Cox wrote:
 
-FIXES
+> > > SELinux users would not need the other LSM, and stacking is thus not 
+> > > required.
+> > 
+> > But if a user wants to disable ptrace using the SELinux LSM and then
+> > also disable sticky-symlinks via the ItsHideous LSM, they're out of luck.
+> 
+> Thats a nonsensical configuration so we don't care. If you are using
+> SELinux you just do it via SELinux. If you are doing it via
+> UbuntuHasToBeDifferent then you do it via that.
 
-Add
 
-mov cr3,%eax
-mov %eax,cr3
+Well, surely there are people who use something other than Ubuntu
+and also care about not using SELinux... eh?
 
-to main callback from notify_die() function.  Linux in various
-functions will alter page tables in batches without issuing a TLB
-flush command.  Daemonize() is one such function where the .mm is
-deleted and no TLB flush in executed.  Such cases
-require that the debugger always reload CR3 on breakpoint exceptions
-to avoid double and triple faulting, and in this case
-will hand the system in the page fault handler if CR3 is not reloaded
-every exception to make certain the processor has a
-valid view of the TLB and page tables.
 
-Jeff
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
