@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab0FQMga (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 08:36:30 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42765 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab0FQMg2 (ORCPT
+	id S1759931Ab0FQMrs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 08:47:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39830 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752991Ab0FQMrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 08:36:28 -0400
-Date: Thu, 17 Jun 2010 14:36:37 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Dan Carpenter <error27@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [patch] get rid of "cut here" from bug output
-Message-ID: <20100617123637.GA3492@kryptos.osrc.amd.com>
-References: <20100617122156.GK5483@bicker>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100617122156.GK5483@bicker>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 17 Jun 2010 08:47:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=wcxZiTRm/Pu14Rf7I+A8EBi7GZvXLGRl01I6WqIi6HW+q+qYU2xiroxfrQIhapsPi/
+         vRv0oT0kFSNyoRV2zVQhCF/GTWdeHLf4iAIsVWj7R+w/GJ9G6VGHR5HnftiNAiFZv39a
+         WD7ZAZwNdbSXny8MoqSImwdvS8iJ6tKzKf6i0=
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jean Delvare <khali@linux-fr.org>, David Brownell <david-b@pacbell.net>
+Subject: [PATCH] pcf857x: support working w/o platform data
+Date: Thu, 17 Jun 2010 16:47:50 +0400
+Message-Id: <1276778870-1065-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <error27@gmail.com>
-Date: Thu, Jun 17, 2010 at 02:21:56PM +0200
+Provide sane defaults for pcf857x, so the driver can be used w/o
+providing platform data (and thus can be simply bound via OF tree).
 
-> It's annoying to have chunks of dmesg output instead just the whole
-> output.  A lot of times the very interesting information is before
-> the bug happens.
-> 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> 
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index 3b16cd9..2db532a 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -373,7 +373,7 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
->  {
->  	const char *board;
->  
-> -	printk(KERN_WARNING "------------[ cut here ]------------\n");
-> +	printk(KERN_WARNING "-----[ paste whole dmesg to bugzilla ]-----\n");
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+---
+ drivers/gpio/pcf857x.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-Good idea, we end up requesting the whole dmesg most of the time anyway.
-However not all bugs are reported through bugzilla, and, frankly
-bugzilla is kinda sucky when it comes down to communicating with the bug
-reporter. How about the more generic "send whole dmesg when reporting"
-instead?
-
+diff --git a/drivers/gpio/pcf857x.c b/drivers/gpio/pcf857x.c
+index 29f19ce..879b473 100644
+--- a/drivers/gpio/pcf857x.c
++++ b/drivers/gpio/pcf857x.c
+@@ -190,7 +190,6 @@ static int pcf857x_probe(struct i2c_client *client,
+ 	pdata = client->dev.platform_data;
+ 	if (!pdata) {
+ 		dev_dbg(&client->dev, "no platform data\n");
+-		return -EINVAL;
+ 	}
+ 
+ 	/* Allocate, initialize, and register this gpio_chip. */
+@@ -200,7 +199,7 @@ static int pcf857x_probe(struct i2c_client *client,
+ 
+ 	mutex_init(&gpio->lock);
+ 
+-	gpio->chip.base = pdata->gpio_base;
++	gpio->chip.base = pdata ? pdata->gpio_base : -1;
+ 	gpio->chip.can_sleep = 1;
+ 	gpio->chip.dev = &client->dev;
+ 	gpio->chip.owner = THIS_MODULE;
+@@ -278,7 +277,7 @@ static int pcf857x_probe(struct i2c_client *client,
+ 	 * to zero, our software copy of the "latch" then matches the chip's
+ 	 * all-ones reset state.  Otherwise it flags pins to be driven low.
+ 	 */
+-	gpio->out = ~pdata->n_latch;
++	gpio->out = pdata ? ~pdata->n_latch : ~0;
+ 
+ 	status = gpiochip_add(&gpio->chip);
+ 	if (status < 0)
+@@ -299,7 +298,7 @@ static int pcf857x_probe(struct i2c_client *client,
+ 	/* Let platform code set up the GPIOs and their users.
+ 	 * Now is the first time anyone could use them.
+ 	 */
+-	if (pdata->setup) {
++	if (pdata && pdata->setup) {
+ 		status = pdata->setup(client,
+ 				gpio->chip.base, gpio->chip.ngpio,
+ 				pdata->context);
+@@ -322,7 +321,7 @@ static int pcf857x_remove(struct i2c_client *client)
+ 	struct pcf857x			*gpio = i2c_get_clientdata(client);
+ 	int				status = 0;
+ 
+-	if (pdata->teardown) {
++	if (pdata && pdata->teardown) {
+ 		status = pdata->teardown(client,
+ 				gpio->chip.base, gpio->chip.ngpio,
+ 				pdata->context);
 -- 
-Regards/Gruss,
-Boris.
+1.7.1
 
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
