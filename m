@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933255Ab0FQUEz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 16:04:55 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:2841 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933204Ab0FQUEy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 16:04:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6016"; a="44614655"
-Message-ID: <4C1A7FDA.1070607@codeaurora.org>
-Date: Thu, 17 Jun 2010 13:04:42 -0700
-From: Greg Bean <gbean@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S933260Ab0FQUJn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 16:09:43 -0400
+Received: from kroah.org ([198.145.64.141]:53336 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757495Ab0FQUJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 16:09:42 -0400
+Date: Thu, 17 Jun 2010 13:03:28 -0700
+From: Greg KH <greg@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jeff Dike <jdike@addtoit.com>, Alan Cox <alan@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Remove Hayes ESP ioctls
+Message-ID: <20100617200328.GA25977@kroah.com>
+References: <20100617160045.GA13743@c-98-229-117-200.hsd1.ma.comcast.net>
+ <20100617172828.GA24362@kroah.com>
+ <20100617191516.GA15963@c-98-229-117-200.hsd1.ma.comcast.net>
+ <201006172144.31869.arnd@arndb.de>
 MIME-Version: 1.0
-To: Daniel Walker <dwalker@codeaurora.org>
-CC: davidb@codeaurora.org, bryanh@codeaurora.org,
-       linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] arm: msm: Add gpiolib support for MSM7200A-family
- chips.
-References: <1276656228-9376-1-git-send-email-gbean@codeaurora.org>	 <1276656228-9376-2-git-send-email-gbean@codeaurora.org> <1276804850.29614.61.camel@c-dwalke-linux.qualcomm.com>
-In-Reply-To: <1276804850.29614.61.camel@c-dwalke-linux.qualcomm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006172144.31869.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +config MSM7200A_GPIO
->> +	tristate "Qualcomm MSM7200A SoC GPIO support"
->> +	depends on GPIOLIB
->> +	help
->> +	  Say yes here to support GPIO functionality on Qualcomm's
->> +	  MSM chipsets which descend from the MSM7200a:
->> +	  MSM7x01(a), MSM7x25, MSM7x27, MSM7x30, QSD8x50(a).
->
-> Can't we drop this? It's always going to be on right ?
+On Thu, Jun 17, 2010 at 09:44:31PM +0200, Arnd Bergmann wrote:
+> On Thursday 17 June 2010 21:15:16 Jeff Dike wrote:
+> 
+> >     The Hayes ESP driver has been removed from the tree:
+> >         commit f53a2ade0bb9f2a81f473e6469155172a96b7c38
+> >         ("tty: esp: remove broken driver")
+> >     so its ioctls aren't needed any more.
+> > 
+> >     Signed-off-by: Jeff Dike <jdike@linux.intel.com>
+> 
+> There are still eight architectures that define the same values
+> in their private headers, those should probably get removed as well.
 
-Not on all targets.  There will be other drivers for chips from other 
-lines.  However, I would think that it could be entirely reasonable to 
-lose the Kconfig and just hard-wire it in based on ARCH, if you like. 
-Is that preferred?
+Thanks for pointing that out, I'll go remove them as well.
 
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+greg k-h
