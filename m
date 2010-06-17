@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760315Ab0FQQqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 12:46:45 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58727 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab0FQQqo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 12:46:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=cS860Nc7zUeFJPtp7Q6Z0cND7BSEnSEXVe7vbsn77DGZJroqXjA6advduPeASHb5Z7
-         cITThebwtzIRt6Q1Z/2VIM4FRiM3r7NVZEfgSgR0hfj0YICNa5Eynd+eff/kV7hQ5asI
-         uy0gXMJHwOM+DCU5+spnDj8JMvIAZ1jvEuFh8=
+	id S1760332Ab0FQQso (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 12:48:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35353 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756871Ab0FQQsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 12:48:42 -0400
+Message-ID: <4C1A5197.8060409@kernel.org>
+Date: Thu, 17 Jun 2010 18:47:19 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1275008384-17285-1-git-send-email-linus.walleij@stericsson.com>
-References: <1275008384-17285-1-git-send-email-linus.walleij@stericsson.com>
-Date: Thu, 17 Jun 2010 18:46:42 +0200
-X-Google-Sender-Auth: nsep664BEgden3RoY4DQCK6XlTk
-Message-ID: <AANLkTim_j9atBiKb5L536l33UDE_nYVgIbu4gaJcUMu3@mail.gmail.com>
-Subject: Re: [PATCH] MFD: AB8500 mask off irrelevant bits from the SPI message
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-       Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-       Linus Walleij <linus.walleij@stericsson.com>
+To: Arjan van de Ven <arjan@infradead.org>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
+       mingo@elte.hu, bphilips@suse.de, yinghai@kernel.org,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, jeff@garzik.org,
+       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
+       khali@linux-fr.org
+Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
+References: <1276443098-20653-1-git-send-email-tj@kernel.org>	<1276443098-20653-10-git-send-email-tj@kernel.org>	<20100616204854.4b036f87@infradead.org>	<4C19DA64.8000409@kernel.org>	<alpine.LFD.2.00.1006171310560.4290@localhost.localdomain>	<4C1A05AF.5010405@kernel.org>	<20100617124343.5889067c@lxorguk.ukuu.org.uk>	<4C1A4548.3020602@kernel.org> <20100617090229.543af62c@infradead.org>
+In-Reply-To: <20100617090229.543af62c@infradead.org>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 17 Jun 2010 16:47:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/28 Linus Walleij <linus.walleij@stericsson.com>:
+On 06/17/2010 06:02 PM, Arjan van de Ven wrote:
+> On Thu, 17 Jun 2010 17:54:48 +0200
+> Tejun Heo <tj@kernel.org> wrote:
+> 
+>> Crazy devices too but I think they would
+>> fall in a single tick any way. 
+> 
+> not sure what ticks have to do with anything but ok ;)
 
-> The registers on the AB8500 are only 8 bits wide, so the content
-> of the remaining bits is undefined. Let's mask off the undefined
-> stuff when returning a register in an SPI read.
+Eh... right, I was thinking about something else.  IRQ expect code
+originally had a tick based duration estimator to determine poll
+interval which I ripped out later for simpler stepped adjustments.
+c-state would need higher frequency timing measurements than jiffies.
 
-Are you picking this one up Samuel?
+>> At any rate, let's say I have those
+>> numbers, how would I feed it into c-state selection?
+> 
+> if we have this, we need to put a bit of glue in the backend that
+> tracks (per cpu I suppose) the shortest expected interrupt, which
+> the C state code then queries.
+> (and in that regard, it does not matter if shortest expected is
+> computed via heuristic on a per irq basis, or passed in).
+> 
+> mapping an irq to a cpu is not a 100% science (since interrupts can
+> move in theory), but just assuming that the irq will happen on the same
+> CPU it happened last time is more than good enough.
 
-Yours,
-Linus Walleij
+Hmmm... the thing is that there will be many cases which won't fit
+irq_expect() model (why irq_watch() exists in the first place) and for
+the time being libata is the only one providing that data.  Would the
+data still be useful to determine which c-state to use?
+
+Thanks.
+
+-- 
+tejun
