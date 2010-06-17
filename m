@@ -1,110 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760652Ab0FQSpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 14:45:25 -0400
-Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:37566 "EHLO
-	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757259Ab0FQSpX (ORCPT
+	id S933137Ab0FQSvF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 14:51:05 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34655 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757317Ab0FQSvB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 14:45:23 -0400
-Subject: Re: [RFC PATCH] mm: let the bdi_writeout fraction respond more 
- quickly
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-In-Reply-To: <4C1A09DF.9070809@kernel.dk>
-References: <1276523894.1980.85.camel@castor.rsk>
-	 <1276526681.1980.89.camel@castor.rsk>  <1276714466.1745.625.camel@laptop>
-	 <1276774796.1978.11.camel@castor.rsk>  <4C1A09DF.9070809@kernel.dk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Jun 2010 19:45:16 +0100
-Message-ID: <1276800316.1978.67.camel@castor.rsk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-8.fc13) 
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Jun 2010 14:51:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=D1ji06hA4gVIDFB8sFX1VqTFIeYoRFi4EZJY7ZW70HPaNLopMIpCoCNUSirm+aAe4t
+         PuxSzPAW21cxiOoc9HLPig4yJ9OcG8OX3AbdGOtixA+uFkZL2fsnNfxnml6NOr4s8eZZ
+         vHXS1VL719tD26CzdH7/neO4oly6VleHN7zpQ=
+MIME-Version: 1.0
+In-Reply-To: <1275425591-8803-13-git-send-email-arnd@arndb.de>
+References: <1275425591-8803-1-git-send-email-arnd@arndb.de>
+	<1275425591-8803-13-git-send-email-arnd@arndb.de>
+Date: Thu, 17 Jun 2010 11:50:57 -0700
+X-Google-Sender-Auth: NYCSq608kWsvVgnAtGcymfFrRnA
+Message-ID: <AANLkTik7PKE1Ch-15riGMzs9fL-4s_nTXrU2rh0yzq0I@mail.gmail.com>
+Subject: Re: [PATCH 12/31] tty: serial - fix tty back references in termios
+From: Tony Luck <tony.luck@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       John Kacur <jkacur@redhat.com>, Alan Cox <alan@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-17 at 13:41 +0200, Jens Axboe wrote:
-> On 2010-06-17 13:39, Richard Kennedy wrote:
-> > On Wed, 2010-06-16 at 20:54 +0200, Peter Zijlstra wrote:
-> >> On Mon, 2010-06-14 at 15:44 +0100, Richard Kennedy wrote:
-> >>>> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> >>>> index 2fdda90..315dd04 100644
-> >>>> --- a/mm/page-writeback.c
-> >>>> +++ b/mm/page-writeback.c
-> >>>> @@ -144,7 +144,7 @@ static int calc_period_shift(void)
-> >>>>       else
-> >>>>               dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
-> >>>>                               100;
-> >>>> -     return 2 + ilog2(dirty_total - 1);
-> >>>> +     return ilog2(dirty_total - 1) - 4;
-> >>>>  } 
-> >>
-> >> IIRC I suggested similar things in the past and all we needed to do was
-> >> find people doing the measurements on different bits of hardware or so..
-> >>
-> >> I don't have any problems with the approach, all we need to make sure is
-> >> that we never return 0 or a negative number (possibly ensure a minimum
-> >> positive shift value).
-> > 
-> > Yep that sounds reasonable. would minimum shift of 4 be ok ?
-> > 
-> > something like
-> > 
-> > 	max ( (ilog2(dirty_total - 1)- 4) , 4);
-> > 
-> > Unfortunately volunteers don't seem to be leaping out of the woodwork,
-> > maybe Andrew could be persuaded to try this in his tree for a while and
-> > see if any one squeaks ?
-> 
-> I'm pretty sure that most volunteers are curious what to actually test,
-> so they shy away from it. If you added a good explanation of an easy way
-> to test the before and after, then it would be more approachable.
-> 
-> I'll give it a spin here.
-> 
+A couple of build breaks in linux-next (tag: next-20100617)
 
-Ah - sorry. but I thought what it did was obvious ;)
+drivers/serial/ioc4_serial.c:1750: error: expected statement before ‘)’ token
 
-Finding a test that's going to show a difference isn't going to be that
-easy, It isn't going to have any effect on writing to a single bdi, but
-only workloads writing to 2 (or more) disks.
+Would have a similar one for ioc3_serial.c if my .config included it.
 
-Calc_period_shift controls the speed that the bdi dirty threshold gets
-updated, which in turn controls how much of the vm_dirty cache a bdi can
-use.
- The first graph shows that currently it is rather slow in reacting to
-change so that when you switch the writes from sda to sdb, the threshold
-doesn't react quickly enough and sdb isn't allowed to use it's fair
-share of the cache and is forced to write to the spinning disk sooner.
-Therefore it's slower overall. But the speed difference is highly
-dependent on the size of the write v. the size of the cache and the
-speed of the disk v. speed of writing to memory.
+On Tue, Jun 1, 2010 at 1:52 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> diff --git a/drivers/serial/ioc3_serial.c b/drivers/serial/ioc3_serial.c
+> index f164ba4..bd2e9e6 100644
+> --- a/drivers/serial/ioc3_serial.c
+> +++ b/drivers/serial/ioc3_serial.c
+ ...
+> -       if (I_IGNPAR(state->port.tty))
+> +       if (iflag & IGNPAR))
 
-The tests I run here are writing a large file to one disk then after a
-small delay start a small write to the second disk, but it's not easy to
-get repeatable results from them.
+Can we have matching numbers of "(" and ")" here please.
 
-I don't have a simple test, but the patch will improve the fairness of
-the vm_dirty cache sharing. I had in mind the sort of server workloads
-where some disks are dedicated to particular applications and others to
-general use. There may also be some desktop improvements but they are
-difficult to pin down.  
+> diff --git a/drivers/serial/ioc4_serial.c b/drivers/serial/ioc4_serial.c
+> index 8ad28fc..2c30023 100644
+> --- a/drivers/serial/ioc4_serial.c
+> +++ b/drivers/serial/ioc4_serial.c
+ ..
+.-               if (I_IGNPAR(state->port.tty))
++               if (iflag & IGNPAR))
 
-I'm sorry I wasn't clearer before and hope this has explained what I've
-been trying to do.
+Same here.
 
-regards
-Richard
-
-
-
-
- 
-
-
+-Tony
