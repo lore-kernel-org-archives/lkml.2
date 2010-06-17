@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933283Ab0FQUPg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 16:15:36 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61417 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933058Ab0FQUPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 16:15:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Gr28YDhpzb+26lWl9+pJ7T2K83xNhg+uT+cxKm6kaPcOpdsxsRWvqXsfe6knd4yAHQ
-         1ZLg79M2EdFRZphsiSU9jzRMBhUhEXiPLo9QKVWugMm5IIVsVjY3twcOnXCtQl9OzU81
-         F5SxPHXhwGWQL9kYgfrZs+ZO49ehOpCSHKNyY=
+	id S933291Ab0FQUS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 16:18:58 -0400
+Received: from kroah.org ([198.145.64.141]:53350 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933058Ab0FQUS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 16:18:57 -0400
+Subject: patch tty-remove-hayes-esp-ioctls.patch added to gregkh-2.6 tree
+To: jdike@addtoit.com, alan@linux.intel.com, gregkh@suse.de, greg@kroah.com,
+       jdike@linux.intel.com, linux-kernel@vger.kernel.org
+From: <gregkh@suse.de>
+Date: Thu, 17 Jun 2010 13:18:53 -0700
+In-Reply-To: <20100617191516.GA15963@c-98-229-117-200.hsd1.ma.comcast.net>
+Message-ID: <1276805933630@site>
 MIME-Version: 1.0
-In-Reply-To: <201006172140.46203.arnd@arndb.de>
-References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
-	<20100517144130.1d8aa313@lxorguk.ukuu.org.uk>
-	<AANLkTimO08zZV4DenxT0wi3eWp1BngGu14x0GWRyfgO5@mail.gmail.com>
-	<201006172140.46203.arnd@arndb.de>
-Date: Thu, 17 Jun 2010 13:15:32 -0700
-X-Google-Sender-Auth: Itto6P5lp8LeR8uWvr7ahEM9ouI
-Message-ID: <AANLkTinGJJJ4vWvDGCqSPpMnYyE5WKALVmBUAJ_72y-G@mail.gmail.com>
-Subject: Re: [PATCH v3 00/10] BKL conversion in tty layer
-From: Tony Luck <tony.luck@intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-       Greg KH <gregkh@suse.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=ANSI_X3.4-1968
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Does the patch below make this go away? We should probably include
-> the 'misc' branch of my BKL repository in -next to fix this.
 
-That fixes a couple of instances (the tty_open() cases).  I still have:
+This is a note to let you know that I've just added the patch titled
 
-WARNING: at include/linux/tty.h:589 tty_release+0x90/0xbc0()
-WARNING: at include/linux/tty.h:589 tty_release+0x630/0xbc0()
-WARNING: at include/linux/tty.h:589 tty_release+0x90/0xbc0()
-WARNING: at include/linux/tty.h:589 tty_release+0x630/0xbc0()
-WARNING: at include/linux/tty.h:589 tty_release+0x90/0xbc0()
-WARNING: at include/linux/tty.h:589 tty_release+0x630/0xbc0()
+    Subject: tty: Remove Hayes ESP ioctls
 
-Stack traces for these all look the same:
+to my gregkh-2.6 tree.  Its filename is
 
-Call Trace:
- [<a000000100015990>] show_stack+0x50/0xa0
- [<a00000010090f1f0>] dump_stack+0x30/0x50
- [<a00000010008e280>] warn_slowpath_common+0xc0/0x120
- [<a00000010008e320>] warn_slowpath_null+0x40/0x60
- [<a00000010053d910>] tty_release+0x90/0xbc0
- [<a0000001001ab200>] __fput+0x260/0x420
- [<a0000001001ab400>] fput+0x40/0x60
- [<a00000010053b3b0>] tty_vhangup_locked+0x870/0x8a0
- [<a00000010054f3f0>] pty_close+0x350/0x3a0
- [<a00000010053ddd0>] tty_release+0x550/0xbc0
- [<a0000001001ab200>] __fput+0x260/0x420
- [<a0000001001ab400>] fput+0x40/0x60
- [<a0000001001a4dc0>] filp_close+0x120/0x140
- [<a0000001001a4f90>] sys_close+0x1b0/0x2c0
- [<a00000010000b940>] ia64_ret_from_syscall+0x0/0x20
+    tty-remove-hayes-esp-ioctls.patch
 
--Tony
+This tree can be found at 
+    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
+
+
+>From jdike@addtoit.com  Thu Jun 17 13:03:30 2010
+From: Jeff Dike <jdike@addtoit.com>
+Date: Thu, 17 Jun 2010 15:15:16 -0400
+Subject: tty: Remove Hayes ESP ioctls
+To: Greg KH <greg@kroah.com>
+Cc: Alan Cox <alan@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>
+Message-ID: <20100617191516.GA15963@c-98-229-117-200.hsd1.ma.comcast.net>
+Content-Disposition: inline
+
+Remove Hayes ESP ioctls
+
+The Hayes ESP driver has been removed from the tree:
+commit f53a2ade0bb9f2a81f473e6469155172a96b7c38
+("tty: esp: remove broken driver")
+so its ioctls aren't needed any more.
+
+Signed-off-by: Jeff Dike <jdike@linux.intel.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ include/asm-generic/ioctls.h |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+--- a/include/asm-generic/ioctls.h
++++ b/include/asm-generic/ioctls.h
+@@ -87,12 +87,10 @@
+ #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
+ 
+ /*
+- * some architectures define FIOQSIZE as 0x545E, which is used for
+- * TIOCGHAYESESP on others
++ * Some arches already define FIOQSIZE due to a historical
++ * conflict with a Hayes modem-specific ioctl value.
+  */
+ #ifndef FIOQSIZE
+-# define TIOCGHAYESESP	0x545E  /* Get Hayes ESP configuration */
+-# define TIOCSHAYESESP	0x545F  /* Set Hayes ESP configuration */
+ # define FIOQSIZE	0x5460
+ #endif
+ 
+
