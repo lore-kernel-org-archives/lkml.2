@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760028Ab0FQNas (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 09:30:48 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4971 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759762Ab0FQNaq convert rfc822-to-8bit (ORCPT
+	id S1760039Ab0FQNgn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 09:36:43 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:33839 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760024Ab0FQNgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 09:30:46 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-From: "Michael Chan" <mchan@broadcom.com>
-To: "'James Bottomley'" <JBottomley@Novell.com>
-cc: "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
-       "vapier@gentoo.org" <vapier@gentoo.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 17 Jun 2010 06:30:39 -0700
-Subject: Re: bnx2 fails to compile on parisc because of missing
- get_dma_ops()
-Thread-Topic: bnx2 fails to compile on parisc because of missing
- get_dma_ops()
-Thread-Index: AcsOHr+3s97ddtjaTZyzd41c178CUQAAStYA
-Message-ID: <C27F8246C663564A84BB7AB3439772421B79CBCA21@IRVEXCHCCR01.corp.ad.broadcom.com>
-In-Reply-To: <1276780336.2789.6.camel@mulgrave.site>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-X-WSS-ID: 6004FC0A3KC6829834-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 Jun 2010 09:36:41 -0400
+Date: Thu, 17 Jun 2010 15:35:35 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH v3] drivers: regulator: add Maxim 8998 driver
+In-reply-to: <20100616143041.GC24491@rakim.wolfsonmicro.main>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Cc: "'Liam Girdwood'" <lrg@slimlogic.co.uk>,
+       "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kyungmin.park@samsung.com
+Message-id: <000601cb0e21$fa1179b0$ee346d10$%szyprowski@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: AcsNYIPVv8mjLnNkTa6PrGJi4PYnKQAwRxGg
+References: <1276671856-18902-1-git-send-email-m.szyprowski@samsung.com>
+ <20100616143041.GC24491@rakim.wolfsonmicro.main>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley wrote:
+Hello,
 
-> On Thu, 2010-06-17 at 05:54 -0700, Michael Chan wrote:
-> > This prefetch improves performance noticeably when the driver is
-> > handling incoming 64-byte packets at a sustained rate.
->
-> So why not do it unconditionally?  The worst that can happen
-> is that you
-> pull in a stale cache line which will get cleaned in the
-> dma_sync, thus
-> slightly degrading performance on incoherent architectures.
+On Wednesday, June 16, 2010 4:31 PM Mark Brown wrote:
 
-The original patch was an unconditional prefetch.  There was
-some discussion that it might not be correct if the DMA wasn't
-sync'ed yet on some archs.  If the concensus is that it is ok to
-do so, that would be the simplest solution.
+> On Wed, Jun 16, 2010 at 09:04:16AM +0200, Marek Szyprowski wrote:
+> > From: Kyungmin Park <kyungmin.park@samsung.com>
+> >
+> > This patch adds voltage regulator driver for Maxim 8998 chip. This chip
+> > is used on Samsung Aquila and GONI boards and provides following
+> > functionalities:
+> > - 4 BUCK voltage converters, 17 LDO power regulators and 5 other power
+> >   controllers
+> > - battery charger
+> >
+> > This patch adds basic driver for voltage regulators and MAX 8998 MFD core.
+> >
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> 
+> Looks good!
+> 
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
->
-> Alternatively, come up with a dma prefetch infrastructure ...
-> all you're
-> really doing is hinting to the architecture that you'll sync
-> this region
-> next.
->
-> James
->
->
->
->
+I've just noticed one more thing. Shouldn't the max8998-pmic driver depend
+on max8998 mfd driver in Kconfig? Or maybe it would be better to select mfd
+driver from the regulators Kconfig? What do you think? 
+
+Best regards
+--
+Marek Szyprowski
+Samsung Poland R&D Center
+
 
