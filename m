@@ -1,304 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760205Ab0FQOxA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 10:53:00 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:62128 "EHLO poutre.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756173Ab0FQOw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 10:52:58 -0400
-Date: Thu, 17 Jun 2010 16:52:50 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, linux-i2c@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hmc6352: Add driver for the HMC6352 compass
-Message-ID: <20100617165250.5986fbf7@hyperion.delvare>
-In-Reply-To: <20100617141440.030f1de9@lxorguk.ukuu.org.uk>
-References: <20100616121534.26294.12540.stgit@localhost.localdomain>
-	<20100616151056.181234b0@hyperion.delvare>
-	<20100617125056.6d648ee7@lxorguk.ukuu.org.uk>
-	<4C1A12C6.6070704@cam.ac.uk>
-	<20100617141440.030f1de9@lxorguk.ukuu.org.uk>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760213Ab0FQOzE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 10:55:04 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:19129 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756173Ab0FQOzB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 10:55:01 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:date:message-id:subject:from:to:cc:
+	content-type:x-system-of-record;
+	b=pwdMg3+BCHxXnXW/yHN2Pd56SdokKSvt/85UXXNeVzxnFbIpoehcJtmFZEA4UbsR5
+	DcstSO1GFTIb/JKsaVrCw==
+MIME-Version: 1.0
+Date: Thu, 17 Jun 2010 16:54:57 +0200
+Message-ID: <AANLkTinB-0TzyRnjvOwWFetub1-4lhqxXFxYwsOhL3Kl@mail.gmail.com>
+Subject: [BUG] perf: installed python -report scripts have bogus paths
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       fweisbec@gmail.com, acme@infradead.org, perfmon2-devel@lists.sf.net,
+       eranian@gmail.com, eranian@google.com, Tom Zanussi <tzanussi@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+Hi,
 
-On Thu, 17 Jun 2010 14:14:40 +0100, Alan Cox wrote:
-> Ok - cleaning up the sysfs API to match the docs also cleans up the code
-> a tiny bit more so do it that way
-> 
-> --
-> hmc6352: Add driver for the HMC6352 compass
-> 
-> From: Kalhan Trisal <kalhan.trisal@intel.com>
-> 
-> This driver will report the heading values in degrees to the sysfs interface.
-> The values returned are headings . e.g. 245.6
-> 
-> Alan: Cleanups requested now all folded in and a sysfs description to keep
-> Andrew happy. The sysfs description now resembles hwmon.
-> 
-> Signed-off-by: Kalhan Trisal <kalhan.trisal@intel.com>
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
+I was looking at the perf trace and python scripting support.
+But I quickly ran into an issue. I compiled with:
+$ make prefix=/usr
+$ make prefix=/usr install
 
-Code looks nicer, however I fear you introduced a bug in the process...
+All the scripts are installed in /usr/libexec/perf-core/scripts/.....
 
-> ---
-> 
->  .../ABI/testing/sysfs-bus-i2c-devices-hm6352       |   21 +++
->  drivers/misc/Kconfig                               |    7 +
->  drivers/misc/Makefile                              |    1 
->  drivers/misc/hmc6352.c                             |  165 ++++++++++++++++++++
->  4 files changed, 194 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-bus-i2c-devices-hm6352
->  create mode 100644 drivers/misc/hmc6352.c
-> 
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-bus-i2c-devices-hm6352 b/Documentation/ABI/testing/sysfs-bus-i2c-devices-hm6352
-> new file mode 100644
-> index 0000000..feb2e4a
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-bus-i2c-devices-hm6352
-> @@ -0,0 +1,21 @@
-> +Where:		/sys/bus/i2c/devices/.../heading0_input
-> +Date:		April 2010
-> +Kernel Version: 2.6.36?
-> +Contact:	alan.cox@intel.com
-> +Description:	Reports the current heading from the compass as a floating
-> +		point value in degrees.
-> +
-> +Where:		/sys/bus/i2c/devices/.../power_state
-> +Date:		April 2010
-> +Kernel Version: 2.6.36?
-> +Contact:	alan.cox@intel.com
-> +Description:	Sets the power state of the device. 0 sets the device into
-> +		sleep mode, 1 wakes it up.
-> +
-> +Where:		/sys/bus/i2c/devices/.../calibration
-> +Date:		April 2010
-> +Kernel Version: 2.6.36?
-> +Contact:	alan.cox@intel.com
-> +Description:	Sets the calibration on or off (1 = on, 0 = off). See the
-> +		chip data sheet.
-> +
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 26386a9..9e825cb 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -304,6 +304,13 @@ config SENSORS_TSL2550
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called tsl2550.
->  
-> +config HMC6352
-> +	tristate "Honeywell HMC6352 compass"
-> +	depends on I2C
-> +	help
-> +	  This driver provides support for the Honeywell HMC6352 compass,
-> +	  providing configuration and heading data via sysfs.
-> +
->  config EP93XX_PWM
->  	tristate "EP93xx PWM support"
->  	depends on ARCH_EP93XX
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 6ed06a1..48597df 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -28,6 +28,7 @@ obj-$(CONFIG_DS1682)		+= ds1682.o
->  obj-$(CONFIG_TI_DAC7512)	+= ti_dac7512.o
->  obj-$(CONFIG_C2PORT)		+= c2port/
->  obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
-> +obj-$(CONFIG_HMC6352)		+= hmc6352.o
->  obj-y				+= eeprom/
->  obj-y				+= cb710/
->  obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
-> diff --git a/drivers/misc/hmc6352.c b/drivers/misc/hmc6352.c
-> new file mode 100644
-> index 0000000..63d9519
-> --- /dev/null
-> +++ b/drivers/misc/hmc6352.c
-> @@ -0,0 +1,165 @@
-> +/*
-> + * hmc6352.c - Honeywell Compass Driver
-> + *
-> + * Copyright (C) 2009 Intel Corp
-> + *
-> + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-> + * General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, write to the Free Software Foundation, Inc.,
-> + * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/slab.h>
-> +#include <linux/i2c.h>
-> +#include <linux/err.h>
-> +#include <linux/delay.h>
-> +#include <linux/sysfs.h>
-> +
-> +static DEFINE_MUTEX(compass_mutex);
-> +
-> +static int compass_command(struct i2c_client *c, u8 cmd)
-> +{
-> +	int ret = i2c_master_send(c, &cmd, 1);
-> +	if (ret < 0)
-> +		dev_warn(&c->dev, "command '%c' failed.\n", cmd);
-> +	return ret;
-> +}
-> +
-> +static int compass_store(struct device *dev, const char *buf, size_t count,
-> +			const char *map)
-> +{
-> +	struct i2c_client *c = to_i2c_client(dev);
-> +	int ret;
-> +	unsigned long val;
-> +
-> +	if (strict_strtoul(buf, 10, &val))
-> +		return -EINVAL;
-> +	if (val >= strlen(map))
-> +		return -EINVAL;
-> +	mutex_lock(&compass_mutex);
-> +	ret = compass_command(c, map[val]);
-> +	mutex_unlock(&compass_mutex);
-> +	return ret;
-> +}
-> +
-> +static ssize_t compass_calibration_store(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t count)
-> +{
-> +	return compass_store(dev, buf, count, "EC");
-> +}	
-> +
-> +static ssize_t compass_power_mode_store(struct device *dev,
-> +		struct device_attribute *attr, const  char *buf, size_t count)
-> +{
-> +	return compass_store(dev, buf, count, "SW");
-> +}
+The problem is that all the -report scripts have the .py script
+paths hardcoded as ~/libexec/.....
 
-These functions are supposed to return count on success. Instead, you
-are returning 1.
+Here is an example with syscall-counts-report
+perf trace $@ -s ~/libexec/perf-core/scripts/python/syscall-counts.py $comm
 
-> +
-> +static ssize_t compass_heading_data_show(struct device *dev,
-> +			struct device_attribute *attr, char *buf)
-> +{
-> +
-
-Extra blank line.
-
-> +	struct i2c_client *client = to_i2c_client(dev);
-> +	unsigned char i2c_data[2];
-> +	unsigned int ret;
-> +
-> +	mutex_lock(&compass_mutex);
-> +	ret = compass_command(client, 'A');
-> +	if (ret != 1) {
-> +		mutex_unlock(&compass_mutex);
-> +		return ret;
-> +	}
-> +	msleep(10); /* sending 'A' cmd we need to wait for 7-10 millisecs */
-> +	ret = i2c_master_recv(client, i2c_data, 2);
-> +	mutex_unlock(&compass_mutex);
-> +	if (ret != 1) {
-> +		dev_warn(dev, "i2c read data cmd failed\n");
-> +		return ret;
-> +	}
-> +	ret = (i2c_data[0] << 8) | i2c_data[1];
-> +	return sprintf(buf, "%d.%d\n", ret/10, ret%10);
-> +}
-> +
-> +
-> +static DEVICE_ATTR(heading0_input, S_IRUGO, compass_heading_data_show, NULL);
-> +static DEVICE_ATTR(calibration, S_IWUSR, NULL, compass_calibration_store);
-> +static DEVICE_ATTR(power_state, S_IWUSR, NULL, compass_power_mode_store);
-> +
-> +static struct attribute *mid_att_compass[] = {
-> +	&dev_attr_heading0_input.attr,
-> +	&dev_attr_calibration.attr,
-> +	&dev_attr_power_state.attr,
-> +	NULL
-> +};
-> +
-> +static const struct attribute_group m_compass_gr = {
-> +	.name = "hmc6352",
-> +	.attrs = mid_att_compass
-> +};
-> +
-> +static int hmc6352_probe(struct i2c_client *client,
-> +					const struct i2c_device_id *id)
-> +{
-> +	int res;
-> +
-> +	res = sysfs_create_group(&client->dev.kobj, &m_compass_gr);
-> +	if (res) {
-> +		dev_err(&client->dev, "device_create_file failed\n");
-> +		return res;
-> +	}
-> +	dev_info(&client->dev, "%s HMC6352 compass chip found\n",
-> +							client->name);
-> +	return 0;
-> +}
-> +
-> +static int hmc6352_remove(struct i2c_client *client)
-> +{
-> +	sysfs_remove_group(&client->dev.kobj, &m_compass_gr);
-> +	return 0;
-> +}
-> +
-> +static struct i2c_device_id hmc6352_id[] = {
-> +	{ "hmc6352", 0 },
-> +	{ }
-> +};
-> +
-> +MODULE_DEVICE_TABLE(i2c, hmc6352_id);
-> +
-> +static struct i2c_driver hmc6352_driver = {
-> +	.driver = {
-> +		.name = "hmc6352",
-> +	},
-> +	.probe = hmc6352_probe,
-> +	.remove = hmc6352_remove,
-> +	.id_table = hmc6352_id,
-> +};
-> +
-> +static int __init sensor_hmc6352_init(void)
-> +{
-> +	return i2c_add_driver(&hmc6352_driver);
-> +}
-> +
-> +static void  __exit sensor_hmc6352_exit(void)
-> +{
-> +	i2c_del_driver(&hmc6352_driver);
-> +}
-> +
-> +module_init(sensor_hmc6352_init);
-> +module_exit(sensor_hmc6352_exit);
-> +
-> +MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com");
-> +MODULE_DESCRIPTION("hmc6352 Compass Driver");
-> +MODULE_LICENSE("GPL v2");
-
-All the rest looks OK, feel free to add:
-
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
-
--- 
-Jean Delvare
+That should either be stripped to syscall-counts.py and perf trace adds the
+prefix or make install needs to patch the path in. Otherwise I don't see how
+this can work unless I am confused about the usage model.
