@@ -1,171 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762Ab0FQIqf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 04:46:35 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53508 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755936Ab0FQIqe (ORCPT
+	id S932776Ab0FQIty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 04:49:54 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36733 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab0FQItw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 04:46:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=aUborSo/W5InJ985hEjAlAgbcsv2swpQIe3a0v1HE62BDtOqnZToiNjYDtw9amEM1/
-         BJMarWZr2ZvNhzMbG8+nM4HUFZDN2D4Y8+wnsOZeeafrnUPCOvQlDk25w6r5l5/c2q7M
-         nSPsss5zHL0Jn/u18flLjx3cknIVxaGPaBRIg=
-From: Matti Lammi <mattij.lammi@gmail.com>
-To: gregkh@suse.de, horms@verge.net.au, dcb314@hotmail.com, sharms@ubuntu.com
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-       Matti Lammi <mattij.lammi@gmail.com>
-Subject: [PATCH] Drivers: Staging: Fixed several checkpatch.pl issues
-Date: Thu, 17 Jun 2010 11:46:27 +0300
-Message-Id: <1276764387-14791-1-git-send-email-mattij.lammi@gmail.com>
-X-Mailer: git-send-email 1.6.0.4
+	Thu, 17 Jun 2010 04:49:52 -0400
+Subject: Re: [GIT PULL rcu/urgent] yet more lockdep-RCU splat fixes
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, tglx@linutronix.de, daniel.blueman@gmail.com,
+       lizf@cn.fujitsu.com, miles.lane@gmail.com, manfred@colorfullife.com
+In-Reply-To: <20100616224110.GI2457@linux.vnet.ibm.com>
+References: <20100616042224.GA3892@linux.vnet.ibm.com>
+	 <20100616055358.GB17936@elte.hu> <1276669431.1745.595.camel@laptop>
+	 <20100616224110.GI2457@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 17 Jun 2010 10:49:14 +0200
+Message-ID: <1276764554.27822.26.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moved braces and removed some unnecessary spaces. Just small fixes.
+On Wed, 2010-06-16 at 15:41 -0700, Paul E. McKenney wrote:
 
-Signed-off-by: Matti Lammi <mattij.lammi@gmail.com>
----
- drivers/staging/otus/ioctl.c |   41 +++++++++++++++++------------------------
- 1 files changed, 17 insertions(+), 24 deletions(-)
+> Hello, Peter!
+> 
+> Here is the story as I understand it:
+> 
+> o	wake_affine() calls task_group() and uses the resulting
+> 	pointer, for example, passing it to effective_load().
+> 
+> 	This pointer is to a struct task_group, which contains
+> 	a struct rcu_head, which is passed to call_rcu in
+> 	sched_destroy_group().  So some protection really is
+> 	needed -- or is it enough that wake_affine seems to be
+> 	invoked on the current task?  If the latter, we would
+> 	need to add a "task == current" check to task_subsys_state().
+> 
+> o	task_group() calls task_subsys_state(), returning a pointer to
+> 	the enclosing task_group structure.
+> 
+> o	task_subsys_state() returns an rcu_dereference_check()ed
+> 	pointer.  The caller must either be in an RCU read-side
+> 	critical section, hold the ->alloc_lock, or hold the
+> 	cgroup lock.
+> 
+> Now wake_affine() appears to be doing load calculations, so it does not
+> seem reasonable to acquire the lock.  Hence the use of RCU.
+> 
+> So, what should we be doing instead?  ;-)
 
-diff --git a/drivers/staging/otus/ioctl.c b/drivers/staging/otus/ioctl.c
-index a48c8e4..adf3f14 100644
---- a/drivers/staging/otus/ioctl.c
-+++ b/drivers/staging/otus/ioctl.c
-@@ -63,0 +63,0 @@
+Well, start by writing a sane changlog ;-)
 
- extern u16_t zfLnxGetVapId(zdev_t *dev);
+I realise you didn't actually wrote these patches, but you should push
+back to the people feeding you these things (esp when you get gems like:
 
--static const u32_t channel_frequency_11A[] =
--{
-+static const u32_t channel_frequency_11A[] = {
- 	/* Even element for Channel Number, Odd for Frequency */
- 	36, 5180,
- 	40, 5200,
-@@ -1361,1 +1360,1 @@ int usbdrvwext_giwpower(struct net_device *dev,
- }
+  tg = task_group();
+  rcu_read_unlock();
 
- /*int usbdrvwext_setparam(struct net_device *dev, struct iw_request_info *info,
--*		   	 void *w, char *extra)
-+*			void *w, char *extra)
- *{
- *	struct ieee80211vap *vap = dev->ml_priv;
- *	struct ieee80211com *ic = vap->iv_ic;
-@@ -2261,1 +2260,1 @@ int usbdrv_wpa_ioctl(struct net_device *dev, struct athr_wlan_param *zdparm)
- 		printk(KERN_ERR "wd->ap.wpaLen : % d\n", len);
+which is obvious utter garbage).
 
- 		/* DUMP WPA IE */
--		for(ii = 0; ii < len;) {
-+		for (ii = 0; ii < len;) {
- 			printk(KERN_ERR "0x%02x ", wpaie[ii]);
+There's _two_ task_group() users in wake_affine(), at least one should
+be covered by the rq->lock we're holding. It should then explain why the
+other isn't covered (and which the other is).
 
--			if((++ii % 16) == 0)
-+			if ((++ii % 16) == 0)
- 				printk(KERN_ERR "\n");
- 		}
- 		printk(KERN_ERR "\n");
-@@ -2309,2 +2308,2 @@ int usbdrv_cenc_ioctl(struct net_device *dev, struct zydas_cenc_param *zdparm)
- 	/* Get the AP Id */
- 	apId = zfLnxGetVapId(dev);
+It should also explain why using RCU read lock is the right solution,
+and doesn't result in funny races. That is, the current changelog reads
+like: "It whines, this makes it quiet." -- which I totally distrust
+because we already found at least two actual bugs in this area
+(sched-cgroup rcu usage).
 
--	if (apId == 0xffff) {
-+	if (apId == 0xffff)
- 		apId = 0;
--	} else {
-+	else
- 		apId = apId + 1;
--	}
-
- 	switch (zdparm->cmd) {
- 	case ZM_CMD_CENC_SETCENC:
-@@ -2334,0 +2332,0 @@ int usbdrv_cenc_ioctl(struct net_device *dev, struct zydas_cenc_param *zdparm)
-
- 		printk(KERN_ERR "Key Index : % d\n", zdparm->u.crypt.keyid);
- 		printk(KERN_ERR "Encryption key = ");
--		for (ii = 0; ii < 16; ii++) {
-+		for (ii = 0; ii < 16; ii++)
- 			printk(KERN_ERR "0x%02x ", zdparm->u.crypt.key[ii]);
--		}
- 		printk(KERN_ERR "\n");
-
- 		printk(KERN_ERR "MIC key = ");
--		for(ii = 16; ii < ZM_CENC_KEY_SIZE; ii++) {
-+		for (ii = 16; ii < ZM_CENC_KEY_SIZE; ii++)
- 			printk(KERN_ERR "0x%02x ", zdparm->u.crypt.key[ii]);
--		}
- 		printk(KERN_ERR "\n");
-
- 		/* Set up key information */
-@@ -2424,7 +2420,7 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 		break;
- 	case SIOCSIWRTS:
- 		err = usbdrv_ioctl_setrts(dev, &wrq->u.rts);
--		if (! err)
-+		if (!err)
- 			changed = 1;
- 		break;
- 	/* set_auth */
-@@ -2618,7 +2614,7 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 				zfiWlanSetWepStatus(dev, ZM_ENCRYPTION_AES);
- 				}
- 			}
--			//WPA2 or WPA2PSK
-+			/*WPA2 or WPA2PSK*/
- 			if ((macp->supIe[17] == 0xf) ||
- 				(macp->supIe[18] == 0xac)) {
- 				if (macp->supIe[13] == 0x2) {
-@@ -2656,2 +2652,2 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 			printk(KERN_ERR
- 				"****************ZD_PARAM_COUNTERMEASURES : ");
-
--			if(arg) {
-+			if (arg) {
- 				/*    mCounterMeasureState=1; */
- 				printk(KERN_ERR "enable\n");
- 			} else {
-@@ -2667,2 +2663,2 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 		if (op == ZD_PARAM_DROPUNENCRYPTED) {
- 			printk(KERN_ERR "ZD_PARAM_DROPUNENCRYPTED : ");
-
--			if(arg) {
-+			if (arg)
- 				printk(KERN_ERR "enable\n");
--			} else {
-+			else
- 				printk(KERN_ERR "disable\n");
--			}
- 		}
- 		if (op == ZD_PARAM_AUTH_ALGS) {
- 			printk(KERN_ERR "ZD_PARAM_AUTH_ALGS : ");
-
--			if (arg == 0) {
-+			if (arg == 0)
- 				printk(KERN_ERR "OPEN_SYSTEM\n");
--			} else {
-+			else
- 				printk(KERN_ERR "SHARED_KEY\n");
--			}
- 		}
- 		if (op == ZD_PARAM_WPS_FILTER) {
- 			printk(KERN_ERR "ZD_PARAM_WPS_FILTER : ");
-@@ -2705,2 +2699,2 @@ int usbdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 		/* Get the AP Id */
- 		apId = zfLnxGetVapId(dev);
-
--		if (apId == 0xffff) {
-+		if (apId == 0xffff)
- 			apId = 0;
--		} else {
-+		else
- 			apId = apId + 1;
--		}
-
- 		if (copy_from_user(&req_wpaie, ifr->ifr_data,
- 					sizeof(struct ieee80211req_wpaie))) {
---
-1.6.0.4
-
+That said, the two patches together might not be wrong, but its very
+hard to verify without more information.
