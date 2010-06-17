@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283Ab0FQBpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 21:45:14 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47328 "EHLO
+	id S932478Ab0FQBvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 21:51:53 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47633 "EHLO
 	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756221Ab0FQBpM (ORCPT
+	with ESMTP id S1759112Ab0FQBvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 21:45:12 -0400
+	Wed, 16 Jun 2010 21:51:40 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 3/9] oom: oom_kill_process() doesn't select kthread child
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 1/9] oom: don't try to kill oom_unkillable child
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20100617104311.FB7A.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20100616150232.GC9278@barrios-desktop>
+References: <20100616203126.72DD.A69D9226@jp.fujitsu.com> <20100616150232.GC9278@barrios-desktop>
+Message-Id: <20100617084154.FB33.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 17 Jun 2010 10:45:09 +0900 (JST)
+Date: Thu, 17 Jun 2010 10:51:33 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> On Wed, Jun 16, 2010 at 08:32:08PM +0900, KOSAKI Motohiro wrote:
+> > Now, select_bad_process() have PF_KTHREAD check, but oom_kill_process
+> > doesn't. It mean oom_kill_process() may choose wrong task, especially,
+> > when the child are using use_mm().
+> Now oom_kill_process is called by three place. 
+> 
+> 1. mem_cgroup_out_of_memory
+> 2. out_of_memory with sysctl_oom_kill_allocating_task
+> 3. out_of_memory with non-sysctl_oom_kill_allocating_task
+> 
+> I think it's no problem in 1 and 3 since select_bad_process already checks
+> PF_KTHREAD. The problem in in 2. 
+> So How about put the check before calling oom_kill_process in case of
+> sysctl_oom_kill_allocating task?
+> 
+> if (sysctl_oom_kill_allocating_task) {
+>         if (!current->flags & PF_KTHREAD)
+>                 oom_kill_process();
+>                         
+> It can remove duplicated PF_KTHREAD check in select_bad_process and
+> oom_kill_process. 
 
-Now, badness() doesn't care neigher CPUSET nor mempolicy. Then
-if the victim child process have disjoint nodemask, __out_of_memory()
-can makes kernel hang eventually.
-
-This patch fixes it.
-
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 26ae697..0aeacb2 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -429,7 +429,7 @@ static int oom_kill_task(struct task_struct *p)
- 
- static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 			    unsigned long points, struct mem_cgroup *mem,
--			    const char *message)
-+			    nodemask_t *nodemask, const char *message)
- {
- 	struct task_struct *victim = p;
- 	struct task_struct *child;
-@@ -469,6 +469,8 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 				continue;
- 			if (mem && !task_in_mem_cgroup(child, mem))
- 				continue;
-+			if (!has_intersects_mems_allowed(child, nodemask))
-+				continue;
- 
- 			/* badness() returns 0 if the thread is unkillable */
- 			child_points = badness(child, uptime.tv_sec);
-@@ -519,7 +521,7 @@ retry:
- 	if (!p || PTR_ERR(p) == -1UL)
- 		goto out;
- 
--	if (oom_kill_process(p, gfp_mask, 0, points, mem,
-+	if (oom_kill_process(p, gfp_mask, 0, points, mem, NULL,
- 				"Memory cgroup out of memory"))
- 		goto retry;
- out:
-@@ -678,7 +680,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
- 		 * non-zero, current could not be killed so we must fallback to
- 		 * the tasklist scan.
- 		 */
--		if (!oom_kill_process(current, gfp_mask, order, 0, NULL,
-+		if (!oom_kill_process(current, gfp_mask, order, 0, NULL, nodemask,
- 				"Out of memory (oom_kill_allocating_task)"))
- 			return;
- 	}
-@@ -697,7 +699,7 @@ retry:
- 		panic("Out of memory and no killable processes...\n");
- 	}
- 
--	if (oom_kill_process(p, gfp_mask, order, points, NULL,
-+	if (oom_kill_process(p, gfp_mask, order, points, NULL, nodemask,
- 			     "Out of memory"))
- 		goto retry;
- 	read_unlock(&tasklist_lock);
--- 
-1.6.5.2
+This patch changed child selection logic. select_bad_process() doesn't
+check victim's child. IOW, this is necessary when all 1-3.
 
 
 
