@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760076Ab0FQNxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 09:53:31 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55817 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab0FQNxa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 09:53:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=sSMiuUwIkKIvwsxbr9GXr6X+k4xYky6y22bWQdW9luYEoadCp+qQc2pUNnIPVPWH6D
-         BOjjM8r9WEh2/LlMPGthed10gXYnS/QPMCtwf1SpiOuW4NbcfQGZ0Ie3/yDa2yrJnhKz
-         bryVSt0wz0W3/4GO7iLFFS6SZ+ja9FKeDv0IM=
-Date: Thu, 17 Jun 2010 15:45:59 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Xiaotian Feng <dfeng@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-       Jack Steiner <steiner@sgi.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Marcin Slusarz <marcin.slusarz@gmail.com>, linux-kernel@vger.kernel.org,
-       x86@kernel.org
-Subject: [patch] x86, pat: freeing invalid memtype messages
-Message-ID: <20100617134559.GA29824@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Xiaotian Feng <dfeng@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-	Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-	Jack Steiner <steiner@sgi.com>,
-	Suresh Siddha <suresh.b.siddha@intel.com>,
-	Marcin Slusarz <marcin.slusarz@gmail.com>,
-	linux-kernel@vger.kernel.org, x86@kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1760087Ab0FQNys (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 09:54:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753163Ab0FQNyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 09:54:46 -0400
+Date: Thu, 17 Jun 2010 09:54:45 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org, dzickus@redhat.com
+Cc: Prarit Bhargava <prarit@redhat.com>
+Message-Id: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
+Subject: [PATCH] Add TAINT_HARDWARE_UNSUPPORTED flag
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 20413f27163 "x86, pat: Fix memory leak in free_memtype" added an
-error message in free_memtype() if rbt_memtype_erase() returns NULL.  
-The problem is that if CONFIG_X86_PAT is enabled, we use a different
-implimentation of rbt_memtype_erase() that always returns NULL.
+This patch is similar to Theordore Ts'o's TAINT_USER patch,
+linux-2.6 commit 34f5a39899f3f3e815da64f48ddb72942d86c366.
 
-I've modified rbt_memtype_erase() to return an ERR_PTR() on errors and 
-made free_memtype() check for that instead.
+Individual distributions may enable "generic" features such as X86 support,
+PPC support, and driver support.
 
-Addresses:  https://bugzilla.kernel.org/show_bug.cgi?id=16205
+Some of the features that are enabled by these "generic" feature flags may
+not be considered supported by the individual distribution.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+For example, a distribution may want to support PPC but not the Power5
+chipset, or the e1000e driver but not a card with a specific DeviceID because
+of known firmware issues.
 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index acc15b2..81b7735 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -359,10 +359,10 @@ int free_memtype(u64 start, u64 end)
- 	entry = rbt_memtype_erase(start, end);
- 	spin_unlock(&memtype_lock);
+Typically, one would push a config patch to enable and disable the feature and
+patch the distribution.  However, in some cases this is not feasible in order
+to preserve kabi and at the same time maintain parity with the upstream kernel.
+In some cases the distribution may want to allow booting of these features but
+explicitly notify a user that they are not "officially" supported.  It is also
+possible that the hardware is fixed via a firmware update at a later date,
+making it supported again.
+
+It would be useful for a distribution to notify the installer and
+bug reporting applications, and notify users that the hardware they are using
+is unsupported during panic, oops, BUG(), and WARN().
+
+This patch introduces the TAINT_HARDWARE_UNSUPPORTED flag for distributions
+to use.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 8317ec4..f722b0d 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -347,6 +347,7 @@ extern enum system_states {
+ #define TAINT_WARN			9
+ #define TAINT_CRAP			10
+ #define TAINT_FIRMWARE_WORKAROUND	11
++#define TAINT_HARDWARE_UNSUPPORTED	12
  
--	if (!entry) {
-+	if (IS_ERR(entry)) {
- 		printk(KERN_INFO "%s:%d freeing invalid memtype %Lx-%Lx\n",
- 			current->comm, current->pid, start, end);
--		return -EINVAL;
-+		return PTR_ERR(entry);
- 	}
+ extern void dump_stack(void) __cold;
  
- 	kfree(entry);
-diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
-index f537087..90e5cbe 100644
---- a/arch/x86/mm/pat_rbtree.c
-+++ b/arch/x86/mm/pat_rbtree.c
-@@ -236,8 +236,10 @@ struct memtype *rbt_memtype_erase(u64 start, u64 end)
- 	struct memtype *data;
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 3b16cd9..394a5bb 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -180,6 +180,7 @@ static const struct tnt tnts[] = {
+ 	{ TAINT_WARN,			'W', ' ' },
+ 	{ TAINT_CRAP,			'C', ' ' },
+ 	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
++	{ TAINT_HARDWARE_UNSUPPORTED,	'H', ' ' },
+ };
  
- 	data = memtype_rb_exact_match(&memtype_rbroot, start, end);
--	if (!data)
-+	if (!data) {
-+		data = ERR_PTR(-EINVAL);
- 		goto out;
-+	}
+ /**
+@@ -197,6 +198,7 @@ static const struct tnt tnts[] = {
+  *  'W' - Taint on warning.
+  *  'C' - modules from drivers/staging are loaded.
+  *  'I' - Working around severe firmware bug.
++ *  'H' - Hardware is unsupported.
+  *
+  *	The string is overwritten by the next call to print_tainted().
+  */
+@@ -243,6 +245,9 @@ void add_taint(unsigned flag)
+ 	 */
+ 	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
+ 		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
++	if (flag == TAINT_HARDWARE_UNSUPPORTED)
++		printk(KERN_CRIT "WARNING: This system's hardware is "
++		       "unsupported.\n");
  
- 	rb_erase(&data->rb, &memtype_rbroot);
- out:
-
-
+ 	set_bit(flag, &tainted_mask);
+ }
