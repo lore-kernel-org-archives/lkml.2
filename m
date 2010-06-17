@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760782Ab0FQVPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 17:15:42 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44313 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759930Ab0FQVPj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 17:15:39 -0400
-Date: Thu, 17 Jun 2010 22:18:15 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>,
-       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+	id S1760789Ab0FQVQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 17:16:26 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:37867 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753088Ab0FQVQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 17:16:23 -0400
+Date: Thu, 17 Jun 2010 14:14:41 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
        Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
        Martin Schwidefsky <schwidefsky@de.ibm.com>,
        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
        "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org,
-       Stephen Smalley <sds@tycho.nsa.gov>, Daniel J Walsh <dwalsh@redhat.com>,
-       linux-security-module@vger.kernel.org
+       linux-doc@vger.kernel.org, Linux Containers <containers@lists.osdl.org>,
+       "Serge E. Hallyn" <serge@hallyn.com>
 Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
-Message-ID: <20100617221815.68ce30c5@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100617140630.c6ced27a.rdunlap@xenotime.net>
+Message-ID: <20100617211440.GZ24749@outflux.net>
 References: <20100616221833.GM24749@outflux.net>
-	<20100617000120.13071be8@lxorguk.ukuu.org.uk>
-	<20100616232230.GP24749@outflux.net>
-	<alpine.LRH.2.00.1006172336390.17282@tundra.namei.org>
-	<20100617170453.GV24749@outflux.net>
-	<20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
-	<20100617140630.c6ced27a.rdunlap@xenotime.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+ <m1hbl1eta6.fsf@fess.ebiederm.org>
+ <20100617165940.GU24749@outflux.net>
+ <m1typ175ip.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1typ175ip.fsf@fess.ebiederm.org>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Thats a nonsensical configuration so we don't care. If you are using
-> > SELinux you just do it via SELinux. If you are doing it via
-> > UbuntuHasToBeDifferent then you do it via that.
+On Thu, Jun 17, 2010 at 01:45:02PM -0700, Eric W. Biederman wrote:
+> Kees Cook <kees.cook@canonical.com> writes:
+> > On Thu, Jun 17, 2010 at 05:29:53AM -0700, Eric W. Biederman wrote:
+> >> Kees Cook <kees.cook@canonical.com> writes:
+> >> > running state of any of their processes. For example, if one application
+> >> > (e.g. Pidgin) was compromised, it would be possible for an attacker to
+> >> > attach to other running processes (e.g. Firefox, SSH sessions, GPG agent,
+> >> > etc) to extract additional credentials and continue to expand the scope
+> >> > of their attack without resorting to user-assisted phishing.
+> >> 
+> >> This is ineffective.  As an attacker after I gain access to a users
+> >> system on ubuntu I can wait around until a package gets an update,
+> >> and then run sudo and gain the power to do whatever I want.
+> >
+> > I doesn't stop phishing, correct.  But it does stop immediate expansion of
+> > an attack using already-existing credentials.
 > 
-> 
-> Well, surely there are people who use something other than Ubuntu
-> and also care about not using SELinux... eh?
+> sudo last I checked caches your password for a couple of seconds.
+> So if you can probe the system to see when those couple of seconds
+> are.
 
-Then they can load UbuntuSecurity and use that, just enabling the
-features they want.
+Sure, that's a downside of sudo, which is why privilege elevation has been
+tending to move towards PolicyKit, FWIW.
 
-I'm not against the Ubuntu stuff getting beaten into a security module
-and put where it belongs. Far from it - I just want to see it put where
-it belongs, which is not junk randomly spewed over the tree. Doubly so
-when they do it wrong *because* they are not using the security hooks.
+> The archives of the containers list.
+> https://lists.linux-foundation.org/pipermail/containers/ or just
+> looking.
 
-It seems pretty easy to me. Kees needs to package up the grsecurity
-features that Ubuntu thinks are valuable into security/something/... with
-a set of sysfs entries to turn on/off the various features. Ubuntu is
-happy, people who want a simple set of sysfs feature controls for
-security are happy and nobody else will even notice.
+I'll go dig around.
 
-It'll appeal to some people because it looks easy to work and it won't
-upset anyone else because its all nicely filed away where it belongs.
+>   Things like /proc/sys/ will be default stay in the same user_namespace
+>   and root in other user namespaces will only get world permissions when
+>   accessing files.
 
-We don't put MSDOS fs hacks randomly all over the VFS[1], please don't try
-and put security hacks into random bits of kernel code.
+Excellent.  I'll move my questions about this to the containers mailing
+list.
 
-Alan
-[1] Maybe we should be scarier, like Al ;)
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
