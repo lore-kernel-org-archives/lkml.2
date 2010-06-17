@@ -1,92 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760860Ab0FQXJN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 19:09:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38659 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754890Ab0FQXJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 19:09:10 -0400
-Date: Fri, 18 Jun 2010 09:08:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Erik Gilling <konkers@android.com>
-Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-       Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [GIT PULL linux-next] tegra
-Message-Id: <20100618090857.057e0a7a.sfr@canb.auug.org.au>
-In-Reply-To: <AANLkTikXH_UtE95ZGHp5AAm5IRD6dN8cnrNK9A3-MRwY@mail.gmail.com>
-References: <AANLkTikXH_UtE95ZGHp5AAm5IRD6dN8cnrNK9A3-MRwY@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__18_Jun_2010_09_08_57_+1000_q7bRba6C7fkj+HVS"
+	id S1760872Ab0FQXKA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 19:10:00 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:62119 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757764Ab0FQXJ6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 19:09:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vGrUJff7bdBlj9ISWuaMhou9SbJN7NAqUApt/mEC7Ozkdfz3Qhj7i8X1gSZbEKXtIV
+         Af0LeP3vERpQrXuOQSbJ+WwcWp1MeifaI8NkJDVjxI64n6B3hQVUOwGGTXwMqWaWQCnw
+         tAOBTJJ7GI84HtPwS8fX+lZeTLdkjApCAZQsg=
+MIME-Version: 1.0
+In-Reply-To: <201006180102.27658.rjw@sisk.pl>
+References: <201006141653.03879.rjw@sisk.pl>
+	<201006172114.19033.rjw@sisk.pl>
+	<AANLkTimRQLDDyIB0LIE018gR24s593rkMyTvDuF1ntJT@mail.gmail.com>
+	<201006180102.27658.rjw@sisk.pl>
+Date: Thu, 17 Jun 2010 19:09:56 -0400
+Message-ID: <AANLkTinBTc7DEJd9PywNuD5HeIZhqHY4ePK3w78OwVJ4@mail.gmail.com>
+Subject: Re: [PATCH] DRM / radeon / KMS: Fix hibernation regression related to 
+	radeon PM (was: Re: [Regression, post-2.6.34] Hibernation broken on machines 
+	with radeon/KMS and r300)
+From: Matt Turner <mattst88@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>,
+       linux-kernel@vger.kernel.org,
+       dri-devel <dri-devel@lists.freedesktop.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-pm@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__18_Jun_2010_09_08_57_+1000_q7bRba6C7fkj+HVS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Eric,
-
-On Thu, 17 Jun 2010 15:38:19 -0700 Erik Gilling <konkers@android.com> wrote:
+On Thu, Jun 17, 2010 at 7:02 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 >
-> Can you please pull the following into linux-next?
->=20
-> git://android.git.kernel.org/kernel/tegra.git for-next
->=20
-> This tree adds support for the Nvidia Tegra ARM SOCs.  It's received
-> review on linux-arm-kernel.
+> There is a regression from 2.6.34 related to the recent radeon power
+> management changes, caused by attempting to cancel a delayed work
+> item that's never been scheduled.  However, the code as is has some
+> other issues potentially leading to visible problems.
+>
+> First, the mutex around cancel_delayed_work() in radeon_pm_suspend()
+> doesn't really serve any purpose, because cancel_delayed_work() only
+> tries to delete the work's timer.  Moreover, it doesn't prevent the
+> work handler from running, so the handler can do some wrong things if
+> it wins the race and in that case it will rearm itself to do some
+> more wrong things going forward.  So, I think it's better to wait for
+> the handler to return in case it's already been queued up for
+> execution.  Also, it should be prevented from rearming itself in that
+> case.
+>
+> Second, in radeon_set_pm_method() the cancel_delayed_work() is not
+> sufficient to prevent the work handler from running and queing up
+> itself for the next run (the failure scenario is that
+> cancel_delayed_work() returns 0, so the handler is run, it waits on
+> the mutex and then rearms itself after the mutex has been released),
+> so again the work handler should be prevented from rearming itself in
+> that case..
+>
+> Finally, there's a potential deadlock in radeon_pm_fini(), because
+> cancel_delayed_work_sync() is called under rdev->pm.mutex, but the
+> work handler tries to acquire the same mutex (if it wins the race).
+>
+> Fix the issues described above.
+>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
+> ---
+>  drivers/gpu/drm/radeon/radeon.h    |    3 +-
+>  drivers/gpu/drm/radeon/radeon_pm.c |   41 ++++++++++++++++++++++++++++++-------
+>  2 files changed, 36 insertions(+), 8 deletions(-)
+>
+> Index: linux-2.6/drivers/gpu/drm/radeon/radeon_pm.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/gpu/drm/radeon/radeon_pm.c
+> +++ linux-2.6/drivers/gpu/drm/radeon/radeon_pm.c
+> @@ -397,13 +397,20 @@ static ssize_t radeon_set_pm_method(stru
+>                rdev->pm.dynpm_planned_action = DYNPM_ACTION_DEFAULT;
+>                mutex_unlock(&rdev->pm.mutex);
+>        } else if (strncmp("profile", buf, strlen("profile")) == 0) {
+> +               bool flush_wq = false;
+> +
+>                mutex_lock(&rdev->pm.mutex);
+> -               rdev->pm.pm_method = PM_METHOD_PROFILE;
+> +               if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
+> +                       cancel_delayed_work(&rdev->pm.dynpm_idle_work);
+> +                       flush_wq = true;
+> +               }
+>                /* disable dynpm */
+>                rdev->pm.dynpm_state = DYNPM_STATE_DISABLED;
+>                rdev->pm.dynpm_planned_action = DYNPM_ACTION_NONE;
+> -               cancel_delayed_work(&rdev->pm.dynpm_idle_work);
+> +               rdev->pm.pm_method = PM_METHOD_PROFILE;
+>                mutex_unlock(&rdev->pm.mutex);
+> +               if (flush_wq)
+> +                       flush_workqueue(rdev->wq);
+>        } else {
+>                DRM_ERROR("invalid power method!\n");
+>                goto fail;
+> @@ -418,9 +425,18 @@ static DEVICE_ATTR(power_method, S_IRUGO
+>
+>  void radeon_pm_suspend(struct radeon_device *rdev)
+>  {
+> +       bool flush_wq = false;
+> +
+>        mutex_lock(&rdev->pm.mutex);
+> -       cancel_delayed_work(&rdev->pm.dynpm_idle_work);
+> +       if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
+> +               cancel_delayed_work(&rdev->pm.dynpm_idle_work);
+> +               if (rdev->pm.dynpm_state == DYNPM_STATE_ACTIVE)
+> +                       rdev->pm.dynpm_state = DYNPM_STATE_SUSPENDED;
+> +               flush_wq = true;
+> +       }
+>        mutex_unlock(&rdev->pm.mutex);
+> +       if (flush_wq)
+> +               flush_workqueue(rdev->wq);
+>  }
+>
+>  void radeon_pm_resume(struct radeon_device *rdev)
+> @@ -432,6 +448,12 @@ void radeon_pm_resume(struct radeon_devi
+>        rdev->pm.current_sclk = rdev->clock.default_sclk;
+>        rdev->pm.current_mclk = rdev->clock.default_mclk;
+>        rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
+> +       if (rdev->pm.pm_method == PM_METHOD_DYNPM
+> +           && rdev->pm.dynpm_state == DYNPM_STATE_SUSPENDED) {
+> +               rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
+> +               queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
+> +                                       msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
+> +       }
+>        mutex_unlock(&rdev->pm.mutex);
+>        radeon_pm_compute_clocks(rdev);
+>  }
+> @@ -486,6 +508,8 @@ int radeon_pm_init(struct radeon_device
+>  void radeon_pm_fini(struct radeon_device *rdev)
+>  {
+>        if (rdev->pm.num_power_states > 1) {
+> +               bool flush_wq = false;
+> +
+>                mutex_lock(&rdev->pm.mutex);
+>                if (rdev->pm.pm_method == PM_METHOD_PROFILE) {
+>                        rdev->pm.profile = PM_PROFILE_DEFAULT;
+> @@ -493,13 +517,16 @@ void radeon_pm_fini(struct radeon_device
+>                        radeon_pm_set_clocks(rdev);
+>                } else if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
+>                        /* cancel work */
+> -                       cancel_delayed_work_sync(&rdev->pm.dynpm_idle_work);
+> +                       cancel_delayed_work(&rdev->pm.dynpm_idle_work);
+> +                       flush_wq = true;
+>                        /* reset default clocks */
+>                        rdev->pm.dynpm_state = DYNPM_STATE_DISABLED;
+>                        rdev->pm.dynpm_planned_action = DYNPM_ACTION_DEFAULT;
+>                        radeon_pm_set_clocks(rdev);
+>                }
+>                mutex_unlock(&rdev->pm.mutex);
+> +               if (flush_wq)
+> +                       flush_workqueue(rdev->wq);
+>
+>                device_remove_file(rdev->dev, &dev_attr_power_profile);
+>                device_remove_file(rdev->dev, &dev_attr_power_method);
+> @@ -720,12 +747,12 @@ static void radeon_dynpm_idle_work_handl
+>                        radeon_pm_get_dynpm_state(rdev);
+>                        radeon_pm_set_clocks(rdev);
+>                }
+> +
+> +               queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
+> +                                       msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
+>        }
+>        mutex_unlock(&rdev->pm.mutex);
+>        ttm_bo_unlock_delayed_workqueue(&rdev->mman.bdev, resched);
+> -
+> -       queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
+> -                                       msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
+>  }
+>
+>  /*
+> Index: linux-2.6/drivers/gpu/drm/radeon/radeon.h
+> ===================================================================
+> --- linux-2.6.orig/drivers/gpu/drm/radeon/radeon.h
+> +++ linux-2.6/drivers/gpu/drm/radeon/radeon.h
+> @@ -619,7 +619,8 @@ enum radeon_dynpm_state {
+>        DYNPM_STATE_DISABLED,
+>        DYNPM_STATE_MINIMUM,
+>        DYNPM_STATE_PAUSED,
+> -       DYNPM_STATE_ACTIVE
+> +       DYNPM_STATE_ACTIVE,
+> +       DYNPM_STATE_SUSPENDED,
+>  };
+>  enum radeon_dynpm_action {
+>        DYNPM_ACTION_NONE,
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
 
-Added from today.  Should the contact be just you or should I add others
-as well.
+Probably want to shorten the commit title a bit.
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Fri__18_Jun_2010_09_08_57_+1000_q7bRba6C7fkj+HVS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwaqwkACgkQjjKRsyhoI8ygygCcDEHB5CpYn61pjABIVsmdB+ha
-esAAnjkfBKhJ3AGaVjXkEwZOaR/j7XRH
-=ozcT
------END PGP SIGNATURE-----
-
---Signature=_Fri__18_Jun_2010_09_08_57_+1000_q7bRba6C7fkj+HVS--
+Matt
