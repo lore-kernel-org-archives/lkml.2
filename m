@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932994Ab0FQXLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 19:11:45 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:47279 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757764Ab0FQXLn (ORCPT
+	id S1760892Ab0FQXM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 19:12:28 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:4124 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753206Ab0FQXM0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 19:11:43 -0400
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       linux-doc@vger.kernel.org, Linux Containers <containers@lists.osdl.org>
-References: <20100616221833.GM24749@outflux.net>
-	<m1hbl1eta6.fsf@fess.ebiederm.org>
-	<20100617165940.GU24749@outflux.net>
-	<m1typ175ip.fsf@fess.ebiederm.org> <20100617225043.GA2492@hallyn.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Thu, 17 Jun 2010 16:11:27 -0700
-In-Reply-To: <20100617225043.GA2492@hallyn.com> (Serge E. Hallyn's message of "Thu\, 17 Jun 2010 17\:50\:43 -0500")
-Message-ID: <m1hbl1p84g.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Thu, 17 Jun 2010 19:12:26 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=cyhVlZLw5f1gWBEf3WATYxNmLVvgvUNaOoY8ZRmDgRZQitdHh4gAKdk92cRewcN5V
+	tqqet36x9tp023pJTmopQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.5.249
-X-SA-Exim-Rcpt-To: serge@hallyn.com, containers@lists.osdl.org, linux-doc@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@elte.hu, dhowells@redhat.com, hpa@zytor.com, oleg@redhat.com, roland@redhat.com, schwidefsky@de.ibm.com, hidave.darkstar@gmail.com, jkosina@suse.cz, akpm@linux-foundation.org, rdunlap@xenotime.net, linux-kernel@vger.kernel.org, kees.cook@canonical.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 XM_SPF_Neutral SPF-Neutral
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <20100618090857.057e0a7a.sfr@canb.auug.org.au>
+References: <AANLkTikXH_UtE95ZGHp5AAm5IRD6dN8cnrNK9A3-MRwY@mail.gmail.com>
+	<20100618090857.057e0a7a.sfr@canb.auug.org.au>
+Date: Thu, 17 Jun 2010 16:12:23 -0700
+X-Google-Sender-Auth: oK1Fq4eycYALzI3jeC-Jh0CJ7_4
+Message-ID: <AANLkTin7ZT5YyL7vUjiQ-5s9wjmEWEqfw7tnaHP4k5U_@mail.gmail.com>
+Subject: Re: [GIT PULL linux-next] tegra
+From: Erik Gilling <konkers@android.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+       Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Serge E. Hallyn" <serge@hallyn.com> writes:
+Thanks Stephen,
+    Add Colin and Olof as contacts as well.
 
-> Quoting Eric W. Biederman (ebiederm@xmission.com):
->> Kees Cook <kees.cook@canonical.com> writes:
->> Somewhere Serge has a git tree where he started making the capabilities
+Cheers,
+    Erik
+
+On Thu, Jun 17, 2010 at 4:08 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Eric,
 >
-> FWIW I believe the latest one is
+> On Thu, 17 Jun 2010 15:38:19 -0700 Erik Gilling <konkers@android.com> wrote:
+>>
+>> Can you please pull the following into linux-next?
+>>
+>> git://android.git.kernel.org/kernel/tegra.git for-next
+>>
+>> This tree adds support for the Nvidia Tegra ARM SOCs.  It's received
+>> review on linux-arm-kernel.
 >
-> 	http://git.kernel.org/?p=linux/kernel/git/sergeh/linux-cr.git;a=shortlog;h=refs/heads/userns.feb16.1
-
-Cool.
-
-> I (/we) should get back to that...  Though waiting for certain other
-> bits to settle (i.e. tagged sysfs and user-ns-safe SCM_CREDENTIALS)
-> isn't a bad thing.
-
-Tagged sysfs is in 2.6.35-rc1+
-user-ns-safe SCM_CREDENTIALS have merged to net-next.
-
-ns_capable seems to be the next piece easy piece of the user_namespace.
-
-Eric
+> Added from today.  Should the contact be just you or should I add others
+> as well.
+>
+> Thanks for adding your subsystem tree as a participant of linux-next.  As
+> you may know, this is not a judgment of your code.  The purpose of
+> linux-next is for integration testing and to lower the impact of
+> conflicts between subsystems in the next merge window.
+>
+> You will need to ensure that the patches/commits in your tree/series have
+> been:
+>     * submitted under GPL v2 (or later) and include the Contributor's
+>        Signed-off-by,
+>     * posted to the relevant mailing list,
+>     * reviewed by you (or another maintainer of your subsystem tree),
+>     * successfully unit tested, and
+>     * destined for the current or next Linux merge window.
+>
+> Basically, this should be just what you would send to Linus (or ask him
+> to fetch).  It is allowed to be rebased if you deem it necessary.
+>
+> --
+> Cheers,
+> Stephen Rothwell
+> sfr@canb.auug.org.au
+>
+> Legal Stuff:
+> By participating in linux-next, your subsystem tree contributions are
+> public and will be included in the linux-next trees.  You may be sent
+> e-mail messages indicating errors or other issues when the
+> patches/commits from your subsystem tree are merged and tested in
+> linux-next.  These messages may also be cross-posted to the linux-next
+> mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+> project and IBM (my employer) make no warranties regarding the linux-next
+> project, the testing procedures, the results, the e-mails, etc.  If you
+> don't agree to these ground rules, let me know and I'll remove your tree
+> from participation in linux-next.
+>
