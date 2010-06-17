@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103Ab0FQQ4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 12:56:55 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:30722 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933084Ab0FQQ4y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 12:56:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6016"; a="44738637"
-Subject: Re: Overview of concurrency managed workqueue
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Andy Walls <awalls@md.metrocast.net>
-Cc: Tejun Heo <tj@kernel.org>, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-In-Reply-To: <1276776066.2461.15.camel@localhost>
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>
-	 <4C17C598.7070303@kernel.org>
-	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
-	 <4C18BF40.40607@kernel.org> <1276694825.9309.12.camel@m0nster>
-	 <4C18D1FD.9060804@kernel.org> <1276695665.9309.17.camel@m0nster>
-	 <4C18D574.1040903@kernel.org>  <1276697146.9309.27.camel@m0nster>
-	 <1276776066.2461.15.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Jun 2010 09:56:44 -0700
-Message-ID: <1276793804.29614.17.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S933118Ab0FQRAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 13:00:54 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:34829 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933084Ab0FQRAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 13:00:53 -0400
+Date: Thu, 17 Jun 2010 09:59:40 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-doc@vger.kernel.org
+Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
+Message-ID: <20100617165940.GU24749@outflux.net>
+References: <20100616221833.GM24749@outflux.net>
+ <m1hbl1eta6.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1hbl1eta6.fsf@fess.ebiederm.org>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-17 at 08:01 -0400, Andy Walls wrote:
-> On Wed, 2010-06-16 at 07:05 -0700, Daniel Walker wrote:
-> > On Wed, 2010-06-16 at 15:45 +0200, Tejun Heo wrote:
-> > > On 06/16/2010 03:41 PM, Daniel Walker wrote:
-> > > > Any workqueue that has a thread which can be prioritized from userspace.
-> > > > As long as there is a thread it can usually be given a priority from
-> > > > userspace, so any _current_ workqueue which uses a single thread or
-> > > > multiple threads is an example of what I'm talking about.
-> > > 
-> > > Eh... what's the use case for that?  That's just so wrong.  What do
-> > > you do after a suspend/resume cycle?  Reprioritize all of them from
-> > > suspend/resume hooks?
-> > 
-> > The use case is any situation when the user wants to give higher
-> > priority to some set of work items, and there's nothing wrong with that.
-> > In fact there has been a lot of work in the RT kernel related to
-> > workqueue prioritization ..
+Hi,
+
+On Thu, Jun 17, 2010 at 05:29:53AM -0700, Eric W. Biederman wrote:
+> Kees Cook <kees.cook@canonical.com> writes:
+> > running state of any of their processes. For example, if one application
+> > (e.g. Pidgin) was compromised, it would be possible for an attacker to
+> > attach to other running processes (e.g. Firefox, SSH sessions, GPG agent,
+> > etc) to extract additional credentials and continue to expand the scope
+> > of their attack without resorting to user-assisted phishing.
 > 
-> I'm going to agree with Tejun, that tweaking worker thread priorities
-> seems like an odd thing, since they are meant to handle deferable
-> actions - things that can be put off until later.
+> This is ineffective.  As an attacker after I gain access to a users
+> system on ubuntu I can wait around until a package gets an update,
+> and then run sudo and gain the power to do whatever I want.
 
-Running RT threads at all can be thought of as odd , but it's an
-available feature. In order to effectively run RT threads it's best if
-your able to prioritize the system, and that is available with current
-workqueues period ..
+I doesn't stop phishing, correct.  But it does stop immediate expansion of
+an attack using already-existing credentials.
 
-The problem is Tejun is removing that , ok so maybe this feature of
-workqueues is an odd thing to use (just like using RT threads). However,
-people are still doing it, it is useful, and it is available in mainline
-(and has been for a long time) ..
+> Either that or I can inject something nasty into the suid pulse-audio.
 
-All I'm asking Tejun to do is have feature parity with current mainline,
-and it's not even that hard to do that.
+Hmm?
 
-> If one needs to support Real Time deadlines on deferable actions,
-> wouldn't using dedicated kernel threads be more deterministic?
-> Would the user ever up the priority for a workqueue other than a
-> single-threaded workqueue?
+$ ls -la /usr/bin/pulseaudio
+-rwxr-xr-x 1 root root 71712 2010-06-10 11:59 /usr/bin/pulseaudio
 
-It's in a thread and you can prioritize it , so it's only deferable if
-the user defines it that way. What your suggesting with dedicated
-threads _might_ be something you would do in the long run, but to
-satisfy my current of-the-moment needs I would rather re-prioritize the
-workqueue instead of investing a significant amount of time re-writing
-the driver when it's unknown if that would even help..
+But I take your meaning to be "can still exploit other vulnerabilities".
+That'll always be true, but that's why I'm looking to make the attack
+surface smaller.
 
-Daniel
+> I tell you what.  If you really want something effective, help Serge
+> and I finish getting the cross namespace issues fixed for the user
+> namespace.  When complete, it will possible for an unprivileged process
+> to create a new one, and since kernel capabilities along with everything
+> else will be local to it, running pidgin, or firefox, or another network
+> facing potentially buggy application in such a namespace will ensure that
+> even if the process is compromised it won't have privileges to ptrace another
+> process or do much else on the system.
 
+It sounds pretty good, but isolating desktop applications is no simple
+task.  They tend to like to have free reign over a user's entire home
+directory.  But I think that's a bit of a tangent.  That said, I'd like to
+know more; where can I find details?
+
+I'm all for better separations.  In fact, I'd like to see /proc/sys using
+caps instead of DAC so that containers mounting /proc can't fiddle with the
+entire system.  Has anyone done anything with this?  It seems like it's
+only seen sporadic attention (e.g. my patch to test CAP_SYS_RAWIO for
+changing mmap_min_addr).  I would assume there are others that need a
+similar protection?
+
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
