@@ -1,257 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933194Ab0FQTQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 15:16:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49952 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757417Ab0FQTQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933177Ab0FQTQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 15:16:11 -0400
+Received: from [198.99.130.30] ([198.99.130.30]:48223 "EHLO
+	govinda.addtoit.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1760680Ab0FQTQJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Jun 2010 15:16:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [Regression, post-2.6.34] Hibernation broken on machines with radeon/KMS and r300
-Date: Thu, 17 Jun 2010 21:14:18 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Ondrej Zary <linux@rainbow-software.org>, Dave Airlie <airlied@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "dri-devel" <dri-devel@lists.freedesktop.org>
-References: <201006141653.03879.rjw@sisk.pl> <201006171821.37060.rjw@sisk.pl> <AANLkTimxt3An0nSARe71YuMWMgSD07PjU8dNvyJIJu3U@mail.gmail.com>
-In-Reply-To: <AANLkTimxt3An0nSARe71YuMWMgSD07PjU8dNvyJIJu3U@mail.gmail.com>
+Date: Thu, 17 Jun 2010 15:15:16 -0400
+From: Jeff Dike <jdike@addtoit.com>
+To: Greg KH <greg@kroah.com>
+Cc: Alan Cox <alan@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Remove Hayes ESP ioctls
+Message-ID: <20100617191516.GA15963@c-98-229-117-200.hsd1.ma.comcast.net>
+References: <20100617160045.GA13743@c-98-229-117-200.hsd1.ma.comcast.net> <20100617172828.GA24362@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006172114.19033.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100617172828.GA24362@kroah.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 17, 2010, Alex Deucher wrote:
-> 2010/6/17 Rafael J. Wysocki <rjw@sisk.pl>:
-> > On Wednesday, June 16, 2010, Alex Deucher wrote:
-> >> On Wed, Jun 16, 2010 at 4:16 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Wednesday, June 16, 2010, Ondrej Zary wrote:
-> >> >> On Wednesday 16 June 2010, Rafael J. Wysocki wrote:
-> >> >> > On Tuesday, June 15, 2010, Rafael J. Wysocki wrote:
-> >> >> > > On Monday, June 14, 2010, Alex Deucher wrote:
-> >> >> > > > On Mon, Jun 14, 2010 at 3:03 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >> > > > > On Monday, June 14, 2010, Alex Deucher wrote:
-> >> >> > > > >> On Mon, Jun 14, 2010 at 10:53 AM, Rafael J. Wysocki <rjw@sisk.pl>
-> >> >> wrote:
-> >> >> > > > >> > Alex, Dave,
-> >> >> > > > >> >
-> >> >> > > > >> > I'm afraid hibernation is broken on all machines using radeon/KMS
-> >> >> > > > >> > with r300 after commit ce8f53709bf440100cb9d31b1303291551cf517f
-> >> >> > > > >> > (drm/radeon/kms/pm: rework power management).  At least, I'm able
-> >> >> > > > >> > to reproduce the symptom, which is that the machine hangs hard
-> >> >> > > > >> > around the point where an image is created (probably during the
-> >> >> > > > >> > device thaw phase), on two different boxes with r300 (the output
-> >> >> > > > >> > of lspci from one of them is attached for reference, the other one
-> >> >> > > > >> > is HP nx6325).
-> >> >> > > > >> >
-> >> >> > > > >> > Suspend to RAM appears to work fine at least on one of the
-> >> >> > > > >> > affected boxes.
-> >> >> > > > >> >
-> >> >> > > > >> > Unfortunately, the commit above changes a lot of code and it's not
-> >> >> > > > >> > too easy to figure out what's wrong with it and I didn't have the
-> >> >> > > > >> > time to look more into details of this failure.  However, it looks
-> >> >> > > > >> > like you use .suspend() and .resume() callbacks as .freeze() and
-> >> >> > > > >> > .thaw() which may not be 100% correct (in fact it looks like the
-> >> >> > > > >> > "legacy" PCI suspend/resume is used, which is not recommended any
-> >> >> > > > >> > more).
-> >> >> > > > >>
-> >> >> > > > >> Does it work any better after Dave's last drm pull request?
-> >> >> > > > >
-> >> >> > > > > Nope.  The symptom is slightly different, though, because now it
-> >> >> > > > > hangs after turning off the screen.
-> >> >> > > > >
-> >> >> > > > >> With the latest changes, pm should not be a factor unless it's
-> >> >> > > > >> explicitly enabled via sysfs.
-> >> >> > > > >
-> >> >> > > > > Well, I guess the first pm patch changed more than just pm, then.
-> >> >> > > >
-> >> >> > > > Does this patch help?
-> >> >> > > > http://lists.freedesktop.org/archives/dri-devel/2010-June/001314.html
-> >> >> > >
-> >> >> > > No, it doesn't.  I try to hibernate, everything works to the point where
-> >> >> > > the screen goes off and the box hangs (solid).  Normally, it would turn
-> >> >> > > the screen back on and continue with saving the image.
-> >> >> > >
-> >> >> > > But, since that happens with the patch above applied, I think it doesn't
-> >> >> > > really pass the suspend phase (IOW, it probably hangs somewhere in the
-> >> >> > > radeon's suspend routine).
-> >> >> >
-> >> >> > I've just verified that in fact hibernation works on HP nx6325 with
-> >> >> > 2.6.35-rc3, but it takes about 55 sec. to suspend the graphics adapter in
-> >> >> > the "freeze" phase.  Surprisingly enough, during suspend to RAM it works
-> >> >> > normally (as well as in the "poweroff" phase of hibernation).
-> >> >>
-> >> >> It takes 2 minutes on RV530:
-> >> >> https://bugzilla.redhat.com/show_bug.cgi?id=586522
-> >> >
-> >> > Well, my second affected box appears to hang somewhere in the radeon's suspend
-> >> > routine.
-> >>
-> >> Does the attached patch help?
-> >
-> > It helps, but from what I can see in the code, it still has a few problems.
-> >
-> > First, the mutex around cancel_delayed_work() in radeon_pm_suspend()
-> > doesn't really serve any purpose, because rdev->pm.pm_method cannot change
-> > at this point and cancel_delayed_work() only tries to delete the work's timer.
-> > Moreover, it doesn't prevent the work handler from running, in which case the
-> > handler can do some wrong things and will rearm itself to do some more wrong
-> > things going forward.  So, I think it's better to wait for the handler to run in case it's
-> > already been queued up and it should also be prevented from rearming itself in
-> > that case.
-> >
-> > Second, in radeon_set_pm_method() the cancel_delayed_work() is not sufficient
-> > to prevent the work handler from running and queing up itself for the next run
-> > (the failure scenario is that cancel_delayed_work_sync() returns 0, so the
-> > handler is run, it waits on the mutex and then rearms itself after the mutex
-> > has been released), so it looks like cancel_delayed_work_sync()
-> > should be used to make sure it's not going to run again, but calling
-> > that cancel_delayed_work_sync() from under the mutex is not a good idea.
-> >
-> > Finally, there's a potential deadlock in radeon_pm_fini(), where
-> > cancel_delayed_work_sync() is called under rdev->pm.mutex, but the
-> > work handler tries to acquire the same mutex (if it wins the race).
-> >
-> > So, I think something like the appended patch is needed.
-> >
+On Thu, Jun 17, 2010 at 10:28:28AM -0700, Greg KH wrote:
+> You forgot to put a "Signed-off-by:" line in here.
 > 
-> Looks reasonable.  Does it fix the suspend issue?
+> Care to add it, and resend it to me?
 
-Do you mean the $subject one?  Yes, it does.
+Oops...
 
-Rafael
+commit e6b14f5bc9803589241bc2aae1565fa0c5bd0ce1
+Author: Jeff Dike <jdike@linux.intel.com>
+Date:   Thu Jun 17 11:54:24 2010 -0400
 
+    Remove Hayes ESP ioctls
+    
+    The Hayes ESP driver has been removed from the tree:
+        commit f53a2ade0bb9f2a81f473e6469155172a96b7c38
+        ("tty: esp: remove broken driver")
+    so its ioctls aren't needed any more.
 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > ---
-> >  drivers/gpu/drm/radeon/radeon.h    |    3 +-
-> >  drivers/gpu/drm/radeon/radeon_pm.c |   41 ++++++++++++++++++++++++++++++-------
-> >  2 files changed, 36 insertions(+), 8 deletions(-)
-> >
-> > Index: linux-2.6/drivers/gpu/drm/radeon/radeon_pm.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/gpu/drm/radeon/radeon_pm.c
-> > +++ linux-2.6/drivers/gpu/drm/radeon/radeon_pm.c
-> > @@ -397,13 +397,20 @@ static ssize_t radeon_set_pm_method(stru
-> >                rdev->pm.dynpm_planned_action = DYNPM_ACTION_DEFAULT;
-> >                mutex_unlock(&rdev->pm.mutex);
-> >        } else if (strncmp("profile", buf, strlen("profile")) == 0) {
-> > +               bool flush_wq = false;
-> > +
-> >                mutex_lock(&rdev->pm.mutex);
-> > -               rdev->pm.pm_method = PM_METHOD_PROFILE;
-> > +               if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
-> > +                       cancel_delayed_work(&rdev->pm.dynpm_idle_work);
-> > +                       flush_wq = true;
-> > +               }
-> >                /* disable dynpm */
-> >                rdev->pm.dynpm_state = DYNPM_STATE_DISABLED;
-> >                rdev->pm.dynpm_planned_action = DYNPM_ACTION_NONE;
-> > -               cancel_delayed_work(&rdev->pm.dynpm_idle_work);
-> > +               rdev->pm.pm_method = PM_METHOD_PROFILE;
-> >                mutex_unlock(&rdev->pm.mutex);
-> > +               if (flush_wq)
-> > +                       flush_workqueue(rdev->wq);
-> >        } else {
-> >                DRM_ERROR("invalid power method!\n");
-> >                goto fail;
-> > @@ -418,9 +425,18 @@ static DEVICE_ATTR(power_method, S_IRUGO
-> >
-> >  void radeon_pm_suspend(struct radeon_device *rdev)
-> >  {
-> > +       bool flush_wq = false;
-> > +
-> >        mutex_lock(&rdev->pm.mutex);
-> > -       cancel_delayed_work(&rdev->pm.dynpm_idle_work);
-> > +       if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
-> > +               cancel_delayed_work(&rdev->pm.dynpm_idle_work);
-> > +               if (rdev->pm.dynpm_state == DYNPM_STATE_ACTIVE)
-> > +                       rdev->pm.dynpm_state = DYNPM_STATE_SUSPENDED;
-> > +               flush_wq = true;
-> > +       }
-> >        mutex_unlock(&rdev->pm.mutex);
-> > +       if (flush_wq)
-> > +               flush_workqueue(rdev->wq);
-> >  }
-> >
-> >  void radeon_pm_resume(struct radeon_device *rdev)
-> > @@ -432,6 +448,12 @@ void radeon_pm_resume(struct radeon_devi
-> >        rdev->pm.current_sclk = rdev->clock.default_sclk;
-> >        rdev->pm.current_mclk = rdev->clock.default_mclk;
-> >        rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
-> > +       if (rdev->pm.pm_method == PM_METHOD_DYNPM
-> > +           && rdev->pm.dynpm_state == DYNPM_STATE_SUSPENDED) {
-> > +               rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
-> > +               queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
-> > +                                       msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
-> > +       }
-> >        mutex_unlock(&rdev->pm.mutex);
-> >        radeon_pm_compute_clocks(rdev);
-> >  }
-> > @@ -486,6 +508,8 @@ int radeon_pm_init(struct radeon_device
-> >  void radeon_pm_fini(struct radeon_device *rdev)
-> >  {
-> >        if (rdev->pm.num_power_states > 1) {
-> > +               bool flush_wq = false;
-> > +
-> >                mutex_lock(&rdev->pm.mutex);
-> >                if (rdev->pm.pm_method == PM_METHOD_PROFILE) {
-> >                        rdev->pm.profile = PM_PROFILE_DEFAULT;
-> > @@ -493,13 +517,16 @@ void radeon_pm_fini(struct radeon_device
-> >                        radeon_pm_set_clocks(rdev);
-> >                } else if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
-> >                        /* cancel work */
-> > -                       cancel_delayed_work_sync(&rdev->pm.dynpm_idle_work);
-> > +                       cancel_delayed_work(&rdev->pm.dynpm_idle_work);
-> > +                       flush_wq = true;
-> >                        /* reset default clocks */
-> >                        rdev->pm.dynpm_state = DYNPM_STATE_DISABLED;
-> >                        rdev->pm.dynpm_planned_action = DYNPM_ACTION_DEFAULT;
-> >                        radeon_pm_set_clocks(rdev);
-> >                }
-> >                mutex_unlock(&rdev->pm.mutex);
-> > +               if (flush_wq)
-> > +                       flush_workqueue(rdev->wq);
-> >
-> >                device_remove_file(rdev->dev, &dev_attr_power_profile);
-> >                device_remove_file(rdev->dev, &dev_attr_power_method);
-> > @@ -720,12 +747,12 @@ static void radeon_dynpm_idle_work_handl
-> >                        radeon_pm_get_dynpm_state(rdev);
-> >                        radeon_pm_set_clocks(rdev);
-> >                }
-> > +
-> > +               queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
-> > +                                       msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
-> >        }
-> >        mutex_unlock(&rdev->pm.mutex);
-> >        ttm_bo_unlock_delayed_workqueue(&rdev->mman.bdev, resched);
-> > -
-> > -       queue_delayed_work(rdev->wq, &rdev->pm.dynpm_idle_work,
-> > -                                       msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
-> >  }
-> >
-> >  /*
-> > Index: linux-2.6/drivers/gpu/drm/radeon/radeon.h
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/gpu/drm/radeon/radeon.h
-> > +++ linux-2.6/drivers/gpu/drm/radeon/radeon.h
-> > @@ -619,7 +619,8 @@ enum radeon_dynpm_state {
-> >        DYNPM_STATE_DISABLED,
-> >        DYNPM_STATE_MINIMUM,
-> >        DYNPM_STATE_PAUSED,
-> > -       DYNPM_STATE_ACTIVE
-> > +       DYNPM_STATE_ACTIVE,
-> > +       DYNPM_STATE_SUSPENDED,
-> >  };
-> >  enum radeon_dynpm_action {
-> >        DYNPM_ACTION_NONE,
-> >
-> 
-> 
+    Signed-off-by: Jeff Dike <jdike@linux.intel.com>
 
+diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
+index a799e20..16218ac 100644
+--- a/include/asm-generic/ioctls.h
++++ b/include/asm-generic/ioctls.h
+@@ -86,16 +86,6 @@
+ #define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
+ #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
+ 
+-/*
+- * some architectures define FIOQSIZE as 0x545E, which is used for
+- * TIOCGHAYESESP on others
+- */
+-#ifndef FIOQSIZE
+-# define TIOCGHAYESESP	0x545E  /* Get Hayes ESP configuration */
+-# define TIOCSHAYESESP	0x545F  /* Set Hayes ESP configuration */
+-# define FIOQSIZE	0x5460
+-#endif
+-
+ /* Used for packet mode */
+ #define TIOCPKT_DATA		 0
+ #define TIOCPKT_FLUSHREAD	 1
