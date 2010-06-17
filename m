@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543Ab0FQJUt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 05:20:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42206 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab0FQJUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 05:20:48 -0400
-Message-ID: <4C19E8E9.4060602@redhat.com>
-Date: Thu, 17 Jun 2010 12:20:41 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1759428Ab0FQJUz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 05:20:55 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:40939 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757114Ab0FQJUv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 05:20:51 -0400
+Date: Thu, 17 Jun 2010 12:24:19 +0300
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Peter Huewe <PeterHuewe@gmx.de>
+Cc: Russell King <linux@arm.linux.org.uk>,
+       Catalin Marinas <catalin.marinas@arm.com>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm/include: Fix missing semicolon in module.h
+Message-ID: <20100617092419.GI17639@pcarmody-desktop>
+References: <201006161932.00542.PeterHuewe@gmx.de>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 5/6] KVM: MMU: prefetch ptes when intercepted guest #PF
-References: <4C16E6ED.7020009@cn.fujitsu.com> <4C16E75F.6020003@cn.fujitsu.com> <4C16E7AD.1060101@cn.fujitsu.com> <4C16E7F4.5060801@cn.fujitsu.com> <4C16E82E.5010306@cn.fujitsu.com> <4C16E9A8.10409@cn.fujitsu.com> <4C1766D6.3040000@redhat.com> <4C19CDCC.4060404@cn.fujitsu.com> <4C19D7B1.6060908@redhat.com> <4C19E532.4070708@cn.fujitsu.com>
-In-Reply-To: <4C19E532.4070708@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006161932.00542.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 17 Jun 2010 09:19:55.0680 (UTC) FILETIME=[40003200:01CB0DFE]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2010 12:04 PM, Xiao Guangrong wrote:
->
->
->> So we can change the fault path to always fault 16 ptes, aligned on 16
->> pte boundary, with the needed pte called with specualtive=false.
->>      
-> Avi, i not understand it clearly, Could you please explain it? :-(
->    
+On 16/06/10 19:32 +0200, ext Peter Huewe wrote:
+> From: Peter Huewe <peterhuewe@gmx.de>
+> 
+> This patch fixes a missing semicolon which introduced buildfailures [2] for
+> almost every arm defconfig, introduced by patch cecaa4c6b [1]
+> 
+> This issue arises only if CONFIG_ARM_UNWIND is not set.
+> 
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 
-Right now if the fault is in spte i, you prefetch ptes 
-(i+1)..(i+MAX_PREFETCH-1).  I'd like to prefetch ptes (i & 
-~(MAX_PREFETCH-1))..(i | (MAX_PREFETCH - 1)).  Read all those gptes, and 
-map them one by one with speculative = false only for spte i.
+My bad, sorry. 
 
-Perhaps we need to integrate it into walk_addr, there's  no reason to 
-read the gptes twice.
+Acked-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
 
-
--- 
-error compiling committee.c: too many arguments to function
-
+> ---
+> KernelVersion: linux-next-20100616
+> References:
+> [1] cecaa4c6b ARM: 6172/1: module - additional unwind tables for exit/devexit
+> [2] http://kisskb.ellerman.id.au/kisskb/compiler/11/
+> [3] http://kisskb.ellerman.id.au/kisskb/buildresult/2725882/
+> 
+>  arch/arm/include/asm/module.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/module.h b/arch/arm/include/asm/module.h
+> index fcff0d2..cbb0bc2 100644
+> --- a/arch/arm/include/asm/module.h
+> +++ b/arch/arm/include/asm/module.h
+> @@ -26,7 +26,7 @@ struct mod_arch_specific {
+>  };
+>  #else
+>  struct mod_arch_specific {
+> -}
+> +};
+>  #endif
+>  
+>  /*
+> -- 
+> 1.6.4.4
