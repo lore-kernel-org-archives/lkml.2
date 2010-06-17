@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760634Ab0FQSXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 14:23:33 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:44619 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757002Ab0FQSXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 14:23:32 -0400
-Date: Thu, 17 Jun 2010 13:24:53 -0500
-From: Cliff Wickman <cpw@sgi.com>
-To: Tejun Heo <tj@kernel.org>
+	id S1760638Ab0FQS2u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 14:28:50 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:46198 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757129Ab0FQS2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 14:28:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=AyumKoYbasCxNCzWjFmqn8BTbgotPHD2NfY5gxrxmbu0OynJQf5CPA3NAFw5Pfw7Q6
+         R8TgfzzxPPUTxqBkeP3G1sYkCt5eBIzoMMmifCnFt9cjSr555O2HZ2DlU3qIaLyfdWnZ
+         3EBTENzedOBjCKxUxmx8RnHc/mvDnxOZWa/DU=
+Date: Thu, 17 Jun 2010 21:59:47 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Alan Cox <alan@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: Re: per_cpu_ptr_to_phys() failure on UV x86_64
-Message-ID: <20100617182453.GA31478@sgi.com>
-References: <E1OPHpK-0007cw-S5@eag09.americas.sgi.com> <4C1A5679.8010907@kernel.org> <4C1A5CD4.3020802@kernel.org>
+Subject: Re: [PATCH] Intel MID platform battery driver. (right patch this
+ time)
+Message-ID: <20100617175947.GA1655@oksana.dev.rtsoft.ru>
+References: <20100617171219.9624.53710.stgit@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4C1A5CD4.3020802@kernel.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100617171219.9624.53710.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 17, 2010 at 06:12:36PM +0100, Alan Cox wrote:
+> Oops sorry - try the right version this time.
+> 
+> From: Nithish Mahalingam <nithish.mahalingam@intel.com>
+> 
+> The PMIC Battery driver provides battery charging and battery gauge
+> functionality on Intel MID platforms. This provides the basic functions. There
+> are some USB drivers to merge before the selection of charging between the
+> different USB power levels can be enabled.
+> 
+> Moved to a platform device by Alek Du.
+> 
+> Signed-off-by: Nithish Mahalingam <nithish.mahalingam@intel.com>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
 
-On Thu, Jun 17, 2010 at 07:35:16PM +0200, Tejun Heo wrote:
-> On 06/17/2010 07:08 PM, Tejun Heo wrote:
-> > (scratching head...) So, that means it's given an address for which
-> > !pcpu_addr_in_first_chunk() but outside of vmalloc area.  Strange.
-> > I'll find out what's going on.
-> 
-> Does the following patch work?  The original patch assumed that @addr
-> would be the address of the base cpu which isn't true.  I only compile
-> tested the patch so it might be broken (sorry, I gotta go somewhere
-> now) but this should be the right direction.
+Applied to battery-2.6.git, thanks.
 
-Yes, your patch works.  I tested it on a 32p UV system.
+However, note that there's another issue that should be fixed
+both in this driver and in the platform (or SPI device driver)
+code.
 
--Cliff
- 
-> diff --git a/mm/percpu.c b/mm/percpu.c
-> index 46485e1..8956155 100644
-> --- a/mm/percpu.c
-> +++ b/mm/percpu.c
-> @@ -978,14 +978,23 @@ bool is_kernel_percpu_address(unsigned long addr)
->   */
->  phys_addr_t per_cpu_ptr_to_phys(void *addr)
->  {
-> -	if (pcpu_addr_in_first_chunk(addr)) {
-> -		if ((unsigned long)addr < VMALLOC_START ||
-> -		    (unsigned long)addr >= VMALLOC_END)
-> -			return __pa(addr);
-> -		else
-> -			return page_to_phys(vmalloc_to_page(addr));
-> -	} else
-> -		return page_to_phys(pcpu_addr_to_page(addr));
-> +	void __percpu *base = __addr_to_pcpu_ptr(pcpu_base_addr);
-> +	unsigned int cpu;
-> +
-> +	for_each_possible_cpu(cpu) {
-> +		void *start = per_cpu_ptr(base, cpu);
-> +
-> +		if (addr >= start && addr < start + pcpu_unit_size) {
-> +			/* in the first chunk */
-> +			if ((unsigned long)addr < VMALLOC_START ||
-> +			    (unsigned long)addr >= VMALLOC_END)
-> +				return __pa(addr);
-> +			else
-> +				return page_to_phys(vmalloc_to_page(addr));
-> +		}
-> +	}
-> +	/* in one of the other chunks */
-> +	return page_to_phys(pcpu_addr_to_page(addr));
->  }
-> 
->  static inline size_t pcpu_calc_fc_sizes(size_t static_size,
-> 
-> 
-> -- 
-> tejun
+[...]
+> +static __devinit int probe(int irq, struct device *dev)
+
+Notice 'int irq' here.
+
+[...]
+> +static int __devinit platform_pmic_battery_probe(struct platform_device *pdev)
+> +{
+> +	return probe(pdev->id, &pdev->dev);
+
+So the irq number is derived from the platform device ID.
+Which is very bizarre, and not how things supposed to work.
+I guess there should be an IRQ resource for the device
+instead.
 
 -- 
-Cliff Wickman
-SGI
-cpw@sgi.com
-(651) 683-3824
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
