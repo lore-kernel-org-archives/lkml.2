@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759315Ab0FQCrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 22:47:09 -0400
-Received: from stinky.trash.net ([213.144.137.162]:53517 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab0FQCrH (ORCPT
+	id S1759416Ab0FQCuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 22:50:55 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:49861 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab0FQCuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 22:47:07 -0400
-Message-ID: <4C198CA7.4050204@trash.net>
-Date: Thu, 17 Jun 2010 04:47:03 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Wed, 16 Jun 2010 22:50:54 -0400
+Date: Wed, 16 Jun 2010 20:50:52 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+       macro@linux-mips.org, kamezawa.hiroyu@jp.fujitsu.com,
+       eike-kernel@sf-tec.de
+Subject: Re: [PATCH 1/2] x86: ioremap: fix wrong physical address handling
+Message-ID: <20100617025052.GH9298@parisc-linux.org>
+References: <4C197A49.6020400@jp.fujitsu.com> <4C197A9E.5040509@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Dominik Brodowski <linux@dominikbrodowski.net>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: pcmcia: fix 'driver ... did not release config properly' warning
-Content-Type: multipart/mixed;
- boundary="------------060408030509060300010704"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C197A9E.5040509@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060408030509060300010704
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+On Thu, Jun 17, 2010 at 10:30:06AM +0900, Kenji Kaneshige wrote:
+> Index: linux-2.6.34/arch/x86/mm/ioremap.c
+> ===================================================================
+> --- linux-2.6.34.orig/arch/x86/mm/ioremap.c	2010-06-15 04:43:00.978332015 +0900
+> +++ linux-2.6.34/arch/x86/mm/ioremap.c	2010-06-15 05:32:59.291693007 +0900
+> @@ -62,8 +62,8 @@
+>  static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+>  		unsigned long size, unsigned long prot_val, void *caller)
+>  {
+> -	unsigned long pfn, offset, vaddr;
+> -	resource_size_t last_addr;
+> +	unsigned long offset, vaddr;
+> +	resource_size_t pfn, last_pfn, last_addr;
 
+I have a hard time understanding this change.  pfn is always a physical
+address shifted by PAGE_SHIFT.  So a 32-bit pfn supports up to 44-bit
+physical addresses.  Are your addresses above 44-bits?
 
+> @@ -115,7 +113,7 @@
+>  	 * Mappings have to be page-aligned
+>  	 */
+>  	offset = phys_addr & ~PAGE_MASK;
+> -	phys_addr &= PAGE_MASK;
+> +	phys_addr = (phys_addr >> PAGE_SHIFT) << PAGE_SHIFT;
 
---------------060408030509060300010704
-Content-Type: text/plain;
- name="x"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="x"
+I'd rather see PAGE_MASK fixed.  Would this work?
 
-commit b1be4845dffefe212959ee02b783571eead3e350
-Author: Patrick McHardy <kaber@trash.net>
-Date:   Thu Jun 17 04:43:07 2010 +0200
+ #define PAGE_SIZE       (_AC(1,UL) << PAGE_SHIFT)
+-#define PAGE_MASK       (~(PAGE_SIZE-1))
++#define PAGE_MASK       (~(PAGE_SIZE-1ULL))
 
-    pcmcia: fix 'driver ... did not release config properly' warning
-    
-    Up to 2.6.34 pcmcia_release_irq() reset p_dev->_irq to 0 after releasing
-    the irq. The IRQ is now released in pcmcia_disable_device(), however
-    p_dev->_irq is not reset, triggering a warning in pcmcia_device_remove().
-    
-    Signed-off-by: Patrick McHardy <kaber@trash.net>
-
-diff --git a/drivers/pcmcia/pcmcia_resource.c b/drivers/pcmcia/pcmcia_resource.c
-index 29f91fa..a4cd9ad 100644
---- a/drivers/pcmcia/pcmcia_resource.c
-+++ b/drivers/pcmcia/pcmcia_resource.c
-@@ -857,8 +857,10 @@ void pcmcia_disable_device(struct pcmcia_device *p_dev)
- {
- 	pcmcia_release_configuration(p_dev);
- 	pcmcia_release_io(p_dev, &p_dev->io);
--	if (p_dev->_irq)
-+	if (p_dev->_irq) {
- 		free_irq(p_dev->irq, p_dev->priv);
-+		p_dev->_irq = 0;
-+	}
- 	if (p_dev->win)
- 		pcmcia_release_window(p_dev, p_dev->win);
- }
-
---------------060408030509060300010704--
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
