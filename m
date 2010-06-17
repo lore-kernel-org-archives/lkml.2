@@ -1,208 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab0FQHBK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 03:01:10 -0400
-Received: from mga14.intel.com ([143.182.124.37]:6039 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754148Ab0FQHBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 03:01:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,430,1272870000"; 
-   d="scan'208";a="289871913"
-Subject: [patch] Over schedule issue fixing
-From: "Alex,Shi" <alex.shi@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: yanmin.zhang@intel.com, tim.c.chen@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Jun 2010 14:08:13 +0800
-Message-ID: <1276754893.9452.5442.camel@debian>
+	id S1755221Ab0FQHEl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 03:04:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59167 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752996Ab0FQHEk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 03:04:40 -0400
+Date: Thu, 17 Jun 2010 00:04:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Jiri Slaby <jslaby@suse.cz>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpuidle: avoid using smp_processor_id() in preemptible
+ code (nr_iowait_cpu) v4
+Message-Id: <20100617000431.ed186403.akpm@linux-foundation.org>
+In-Reply-To: <20100616235907.eb11dfcc.akpm@linux-foundation.org>
+References: <20100614140941.GA3581@swordfish.minsk.epam.com>
+	<20100614073853.6fa2f91f@infradead.org>
+	<20100614145439.GA3448@swordfish.minsk.epam.com>
+	<20100614080154.7d6a71fc@infradead.org>
+	<20100614151735.GB3448@swordfish.minsk.epam.com>
+	<20100614204021.52c50cdc@infradead.org>
+	<20100615061927.GA3312@swordfish>
+	<20100615072435.5a47d850@infradead.org>
+	<20100615145029.GB3967@swordfish.minsk.epam.com>
+	<20100615080808.6286448b@infradead.org>
+	<20100617062950.GA3979@swordfish>
+	<20100616235907.eb11dfcc.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit e709715915d69b6a929d77e7652c9c3fea61c317 introduced an imbalance
-schedule issue. If we do not use CGROUP, function update_h_load won't
-want to update h_load. When the system has a large number of tasks far
-more than logical CPU number, the incorrect cfs_rq[cpu]->h_load value
-will cause load_balance() to pull too many tasks to local CPU from the
-busiest CPU. So the busiest CPU keeps being in a round robin. That will
-hurt performance. 
-The issue was found originally by a scientific calculation workload that
-developed by Yanmin. with the commit, the workload performance drops
-about 40% from this commit.  We can be reproduced by a short program as
-following.
+On Wed, 16 Jun 2010 23:59:07 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
 
-# gcc -o sl sched-loop.c -lpthread
-# ./sl -n 100 -t 100 & 
-# cat /proc/sched_debug &> sd1 
-# grep -A 1 cpu# sd1
-sd1:cpu#0, 2533.008 MHz
-sd1-  .nr_running                    : 2
---
-sd1:cpu#1, 2533.008 MHz
-sd1-  .nr_running                    : 1
---
-sd1:cpu#2, 2533.008 MHz
-sd1-  .nr_running                    : 11
---
-sd1:cpu#3, 2533.008 MHz
-sd1-  .nr_running                    : 12
---
-sd1:cpu#4, 2533.008 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#5, 2533.008 MHz
-sd1-  .nr_running                    : 11
---
-sd1:cpu#6, 2533.008 MHz
-sd1-  .nr_running                    : 10
---
-sd1:cpu#7, 2533.008 MHz
-sd1-  .nr_running                    : 12
---
-sd1:cpu#8, 2533.008 MHz
-sd1-  .nr_running                    : 11
---
-sd1:cpu#9, 2533.008 MHz
-sd1-  .nr_running                    : 12
---
-sd1:cpu#10, 2533.008 MHz
-sd1-  .nr_running                    : 1
---
-sd1:cpu#11, 2533.008 MHz
-sd1-  .nr_running                    : 1
---
-sd1:cpu#12, 2533.008 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#13, 2533.008 MHz
-sd1-  .nr_running                    : 2
---
-sd1:cpu#14, 2533.008 MHz
-sd1-  .nr_running                    : 2
---
-sd1:cpu#15, 2533.008 MHz
-sd1-  .nr_running                    : 1
+> So how does this look?  If "OK" then would you be able to test it please?
 
-After apply the fixing patch, cfs_rq get balance. 
+I saw it first!
 
-sd1:cpu#0, 2533.479 MHz
-sd1-  .nr_running                    : 7
---
-sd1:cpu#1, 2533.479 MHz
-sd1-  .nr_running                    : 7
---
-sd1:cpu#2, 2533.479 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#3, 2533.479 MHz
-sd1-  .nr_running                    : 7
---
-sd1:cpu#4, 2533.479 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#5, 2533.479 MHz
-sd1-  .nr_running                    : 7
---
-sd1:cpu#6, 2533.479 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#7, 2533.479 MHz
-sd1-  .nr_running                    : 7
---
-sd1:cpu#8, 2533.479 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#9, 2533.479 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#10, 2533.479 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#11, 2533.479 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#12, 2533.479 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#13, 2533.479 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#14, 2533.479 MHz
-sd1-  .nr_running                    : 6
---
-sd1:cpu#15, 2533.479 MHz
-sd1-  .nr_running                    : 6
 
----
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <pthread.h>
+fix !CONFIG_TICK_ONESHOT
 
-volatile int * exiting;
-
-void *idle_loop(){
-        volatile int calc01 = 100;
-        while(*exiting !=1)
-                calc01++;
-}
-int main(int argc, char *argv[]){
-        int                     i, t, c, er=0, num=8;
-        static  char            optstr[] = "n:t:";
-        pthread_t                       ptid[1024];
-
-        while ((c = getopt(argc, argv, optstr)) != EOF)
-                switch (c) {
-                case 'n':
-                        num = atoi(optarg);
-                        break;
-                case 't':
-                        t = atoi(optarg);
-                        break;
-                case '?':
-                        er = 1;
-                        break;
-                }
-
-        if (er) {
-                printf("usage: %s %s\n", argv[0], optstr);
-                exit(1);
-        }
-        exiting = malloc(sizeof(int));
-
-        *exiting = 0;
-        for(i=0; i<num ; i++)
-                pthread_create(&ptid[i], NULL, idle_loop, NULL);
-
-        sleep(t);
-        *exiting = 1;
-
-        for (i=0; i<num; i++)
-                pthread_join(ptid[i], NULL);
-        exit(0);
-
-}
-
-Reviewed-by: Yanmin zhang <yanmin.zhang@intel.com>
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index f8b8996..a18bf93 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1660,9 +1660,6 @@ static void update_shares(struct sched_domain *sd)
+--- a/include/linux/tick.h~cpuidle-avoid-using-smp_processor_id-in-preemptible-code-nr_iowait_cpu-v4-fix-fix
++++ a/include/linux/tick.h
+@@ -71,7 +71,6 @@ struct tick_sched {
+ };
  
- static void update_h_load(long cpu)
- {
--	if (root_task_group_empty())
--		return;
--
- 	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
- }
+ extern void __init tick_init(void);
+-extern void __init tick_sched_init(void);
+ extern int tick_is_oneshot_available(void);
+ extern struct tick_device *tick_get_device(int cpu);
  
-
+@@ -93,6 +92,9 @@ extern struct cpumask *tick_get_broadcas
+ 
+ #  ifdef CONFIG_TICK_ONESHOT
+ extern struct cpumask *tick_get_broadcast_oneshot_mask(void);
++extern void __init tick_sched_init(void);
++#  else
++static inline void tick_sched_init(void) { }
+ #  endif
+ 
+ # endif /* BROADCAST */
+_
 
