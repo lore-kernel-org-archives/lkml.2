@@ -1,136 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760058Ab0FQNmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 09:42:00 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:48029 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759926Ab0FQNl6 (ORCPT
+	id S1760051Ab0FQNnu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 09:43:50 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40495 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070Ab0FQNns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 09:41:58 -0400
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Louis Rilling <louis.rilling@kerlabs.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
+	Thu, 17 Jun 2010 09:43:48 -0400
+Date: Thu, 17 Jun 2010 15:43:57 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Lin Ming <ming.m.lin@intel.com>,
        linux-kernel@vger.kernel.org
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com>
-	<4C19F0A3.2050707@parallels.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Thu, 17 Jun 2010 06:41:49 -0700
-In-Reply-To: <4C19F0A3.2050707@parallels.com> (Pavel Emelyanov's message of "Thu\, 17 Jun 2010 13\:53\:39 +0400")
-Message-ID: <m1631hdbdu.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+Subject: Re: [PATCH 1/2] perf: Add persistent events
+Message-ID: <20100617134357.GA6115@kryptos.osrc.amd.com>
+References: <20100528143311.GB9710@elte.hu>
+ <1275059860.27810.9635.camel@twins>
+ <20100528155719.GA10141@kryptos.osrc.amd.com>
+ <1275070030.1645.362.camel@laptop>
+ <20100603134301.GA30880@kryptos.osrc.amd.com>
+ <20100603173242.GD29202@ghostprotocols.net>
+ <20100614192514.GA7803@kryptos.osrc.amd.com>
+ <20100614210116.GA26716@ghostprotocols.net>
+ <20100614212426.GA19915@liondog.tnic>
+ <20100615010201.GA27077@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.5.249
-X-SA-Exim-Rcpt-To: xemul@parallels.com, linux-kernel@vger.kernel.org, containers@lists.osdl.org, xemul@openvz.org, oleg@redhat.com, akpm@linux-foundation.org, louis.rilling@kerlabs.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Pavel Emelyanov <xemul@parallels.com>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  0.0 XM_SPF_Neutral SPF-Neutral
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100615010201.GA27077@ghostprotocols.net>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Emelyanov <xemul@parallels.com> writes:
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+Date: Mon, Jun 14, 2010 at 10:02:01PM -0300
 
-> On 06/16/2010 08:34 PM, Louis Rilling wrote:
->> [ Resending, hopefully with all pieces ]
->> 
->> Detached tasks are not seen by zap_pid_ns_processes()->sys_wait4(), so
->> that release_task()->proc_flush_task() of container init can be called
->> before it is for some detached tasks in the namespace.
+> > > I thought about suggesting using -I to reduce patch size, but then it is
+> > > using "" :-\
+> > 
+> > Yeah, I have the -I$(CURDIR)/lib for this in the top level Makefile so all
+> > library includes would be like:
+> > 
+> > #include <util.h>
+> > 
+> > however, this does not differentiate perflib (let's call it that for how
+> > :) from libc headers. Do we want a "perf" or "kernel" or "perflib" or
+> > whatever prefix here - it might make sense later when this thing grows
+> > to differentiate between the namespaces...?
+> 
+> Agreed, but the last name this thing will have will be 'perf'something :-)
+> 
+> One of the goals at least I have with pursuing this path is to separate
+> out everything that is not strictly 'perf' into things that can be reused
+> by other tools, like yours.
 
-There are two ways we can go from here.
+I'm still splitting perf/util into a more or less generic lib.
+Now, I want to reuse as much code as possible and am parsing
+the "mce:mce_record" tracepoint using parse_events(). However,
+this means that I have to push the not-so-generic perf bits
+like util/parse-events.c into the lib. Which, in turn, pulls in
+util/trace-event* etc.
 
-- Completely asynchronous children exiting.
-- Waiting for all of our children to exit.
+What is your preference, do we want to export all perf/util stuff for
+other tools to use or rather link other tools together with compilation
+modules from perf/util in case those other tools need them?
 
-Your patch appears to be a weird middle ground, that is hard to
-analyze, abusing the mount count as a thread count.
+I'm leaning towards the first one and am thinking "maximize code reuse"
+but I'm not completely sure, there might be reasons against it...
 
-I have been weighing the options between them, and to me properly
-waiting for all the processes to exit in zap_pid_ns_processes as we
-currently try to do is in our advantage.  It is simple and it means
-one less cache line bounce for a write to global variable in the
-much more common fork/exit path that we have to deal with.
+Hmm...?
 
-The task->children isn't changed until __unhash_process() which runs
-after flush_proc_task().  So we should be able to come up with
-a variant of do_wait() that zap_pid_ns_processes can use that does
-what we need.
+-- 
+Regards/Gruss,
+Boris.
 
-Louis do you want to look at that?
-
->> Pin proc_mnt's in copy_process(), so that proc_flush_task() becomes safe
->> whatever the ordering of tasks.
->
-> See one comment below.
->
->> Signed-off-by: Louis Rilling <louis.rilling@kerlabs.com>
->> ---
->>  fs/proc/base.c          |   18 ++++++++++++++++++
->>  include/linux/proc_fs.h |    4 ++++
->>  kernel/fork.c           |    1 +
->>  3 files changed, 23 insertions(+), 0 deletions(-)
->> 
->> diff --git a/fs/proc/base.c b/fs/proc/base.c
->> index acb7ef8..d6cdd91 100644
->> --- a/fs/proc/base.c
->> +++ b/fs/proc/base.c
->> @@ -2663,6 +2663,23 @@ static const struct inode_operations proc_tgid_base_inode_operations = {
->>  	.setattr	= proc_setattr,
->>  };
->>  
->> +/*
->> + * Pin all proc_mnt so that detached tasks can safely call proc_flush_task()
->> + * after container init calls itself proc_flush_task().
->> + */
->> +void proc_new_task(struct task_struct *task)
->> +{
->> +	struct pid *pid;
->> +	int i;
->> +
->> +	if (!task->pid)
->> +		return;
->> +
->> +	pid = task_pid(task);
->> +	for (i = 0; i <= pid->level; i++)
->> +		mntget(pid->numbers[i].ns->proc_mnt);
->
-> NAK. Pids live their own lives - task can change one, pid will
-> become orphan and will be destroyed, so you'll leak.
-
-There is that nasty case in exec isn't there.  Why we ever made it
-part of the ABI that calling exec on a thread changes the pid of
-that thread to the pid of the thread group is beyond me.
-
-> There's another big problem with proc mount - you can umount proc
-> and the namespace will have a stale pointer.
-
-Not true. pid_ns->proc_mnt is an internal kernel mount. See
-pid_ns_prepare_proc.
-
-> I think we should have a kern_mount-ed proc at the namespace createi
-
-I agree, and we mostly do.  In my queue for the unsharing of the pid
-namespace I have a patch that makes that more explicit.
-
-Eric
-
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis München
+Registergericht Muenchen, HRB Nr. 43632
