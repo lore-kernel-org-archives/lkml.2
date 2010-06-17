@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760672Ab0FQTGK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 15:06:10 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:41402 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759992Ab0FQTGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 15:06:09 -0400
-Date: Thu, 17 Jun 2010 21:04:56 +0200
-From: Jesper Nilsson <jesper@jni.nu>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: MIPS: return after handling coprocessor 2 exception
-Message-ID: <20100617190456.GC24162@jni.nu>
-References: <20100617132554.GB24162@jni.nu> <4C1A57AE.9080706@caviumnetworks.com>
+	id S1760676Ab0FQTLN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 15:11:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757354Ab0FQTLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 15:11:12 -0400
+Date: Thu, 17 Jun 2010 15:10:26 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Christoph Hellwig <hch@infradead.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+       David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+       Andreas Dilger <adilger@sun.com>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2] d_ino considered harmful
+Message-ID: <20100617191026.GE14389@shell>
+References: <20100616185913.GA15566@shell> <20100616195359.GA24382@shell> <20100617175429.GC4979@shareable.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C1A57AE.9080706@caviumnetworks.com>
-User-Agent: Mutt/1.4.2.3i
-X-Originating-IP: 83.249.211.213
-X-Scan-Result: No virus found in message 1OPKOc-0006Gb-Cb.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1OPKOc-0006Gb-Cb 09b7bac309e92e6f7a3833d0165c7858
+In-Reply-To: <20100617175429.GC4979@shareable.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 10:13:18AM -0700, David Daney wrote:
-> On 06/17/2010 06:25 AM, Jesper Nilsson wrote:
-> >Breaking here dropped us to the default code which always sends
-> >a SIGILL to the current process, no matter what the CU2 notifier says.
-> >
-> >Signed-off-by: Jesper Nilsson<jesper@jni.nu>
-> >---
-> >  traps.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> >diff --git a/arch/mips/kernel/traps.c b/arch/mips/kernel/traps.c
-> >index 8bdd6a6..8527808 100644
-> >--- a/arch/mips/kernel/traps.c
-> >+++ b/arch/mips/kernel/traps.c
-> >@@ -976,7 +976,7 @@ asmlinkage void do_cpu(struct pt_regs *regs)
-> >
-> >  	case 2:
-> >  		raw_notifier_call_chain(&cu2_chain, CU2_EXCEPTION, regs);
-> >-		break;
-> >+		return;
-> >
+On Thu, Jun 17, 2010 at 06:54:29PM +0100, Jamie Lokier wrote:
+> Valerie Aurora wrote:
+> >> Who needs d_ino anyway?  I am running a kernel with this patch -
+> >> Gnome, a browser, IRC, kernel compile, etc. and everything works.
+> > I'm running a kernel with the below patch and everything still works.
+> > Apparently "ls -i" is still using the bogus d_ino performance
+> > improvement mentioned here because it returns all 1's for inode
+> > number.
 > 
-> What happens when the call chain is empty, and the proper action *is* 
-> SIGILL?
+> I'm surprised at "ls -i", as a patch to change that has been submitted:
+> 
+>     http://marc.info/?l=linux-kernel&m=125181054102075
+>     http://thread.gmane.org/gmane.comp.gnu.coreutils.bugs/17887
 
-Well, since there is a default notifier installed at the end, it will
-correctly return SIGILL.
+I was surprised too.  I guess people still want to optimize ls -i,
+even at the cost of wrong results.
 
-See the definition of default_cu2_call in the same file.
+> >     Use of d_ino without the corresponding st_dev is always buggy in the
+> >     presence of submounts, bind mounts, and union mounts.  E.g., the d_ino
+> >     of a mountpoint will be the inode number of the directory under the
+> >     mountpoint, not the mounted directory.
+> 
+> It's not surprising everything seems to work.
+> 
+> It can be useful as a performance hint, which you probably didn't test.
 
-> David Daney
+I'm afraid I wasn't entirely serious with that patch. :) But it was an
+interesting exercise.
 
-/^JN - Jesper Nilsson
---
-                  Jesper Nilsson -- jesper_at_jni.nu
+> I strongly disagree that correct code must call stat().  Correct code
+> can check against the list of mountpoints in /proc/mounts, because it
+> is strictly only mountpoints where the number doesn't agree with
+> stat() -- prior to your patch :-)
+
+If you are assuming that the application is parsing /proc/mounts (does
+anyone actually do this?), then the application can also learn about
+union mounts and not trust d_ino in any directory below the union
+mount point. :)
+
+> Anyway, maybe your patch is not allowed by POSIX :-) as follows
+> (posted to linux-kernel some time ago):
+> 
+>     http://marc.info/?l=linux-kernel&m=125181054102075
+>     http://www.gossamer-threads.com/lists/linux/kernel/1124140
+> 
+>     The POSIX readdir spec says this:
+> 
+> 	The structure dirent defined in the <dirent.h> header describes a
+> 	directory entry. The value of the structure's d_ino member shall be set
+> 	to the file serial number of the file named by the d_name member.
+> 
+>     The description for sys/stat.h makes the connection between
+>     "file serial number" and the stat.st_ino member:
+> 
+> 	The <sys/stat.h> header shall define the stat structure, which shall
+> 	include at least the following members:
+> 	...
+> 	    ino_t st_ino                File serial number.
+> 
+> Returning the covered inode's number at a mountpoint is apparently not
+> POSIX compliant either, but is widespread.  (I.e. all unixes except
+> Cygwin apparently.)
+> 
+> > Gosh, maybe it would help to patch the currently used readdir instead
+> > of just old_readdir() (thanks, Arnd).  And return 1 instead of 0 so ls
+> > doesn't think all files are deleted (thanks, Andreas).
+> 
+> It's not just ls.  Bash 3.0 ignores entries for completion if d_ino == 0.
+> 
+> > I'm running a kernel with the below patch and everything still works.
+> > Apparently "ls -i" is still using the bogus d_ino performance
+> > improvement mentioned here because it returns all 1's for inode
+> > number.
+> > 
+> > http://www.mail-archive.com/bug-findutils@gnu.org/msg02531.html
+> 
+> I'm intrigued by the mentioned in that report that Linux bind mounts
+> return the covering inode number in d_ino, not the covered inode number.
+> 
+> If true, that means mounts are already being checked when returning d_ino,
+> and suggests that doing it for all mounts isn't expensive.
+
+This surprises me too.  I will check into it further.
+
+-VAL
