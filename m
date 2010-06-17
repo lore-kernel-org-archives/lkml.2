@@ -1,39 +1,33 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab0FLWYc (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sat, 12 Jun 2010 18:24:32 -0400
-Received: from mail.fdsweb.gr ([62.1.43.102]:62968 "HELO mail.fdsweb.gr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752578Ab0FLWY3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Jun 2010 18:24:29 -0400
-X-Greylist: delayed 748 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Jun 2010 18:24:18 EDT
-Message-ID: <55921.80.239.242.94.1276380567.squirrel@mail.fdsweb.gr>
-Date: Sun, 13 Jun 2010 01:09:27 +0300 (EEST)
-Subject: LOAN @ 1% interest rate
-From: "Alex Fisher Loan Offer" <apply@fdsweb.gr>
-Reply-To: alexfisherloan@mail.net.sa
-User-Agent: SquirrelMail/1.4.10a
+	id S1760257Ab0FQPpX (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 17 Jun 2010 11:45:23 -0400
+Received: from [192.192.59.1] ([192.192.59.1]:2819 "EHLO aidesrv.aide.gov.tw"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754392Ab0FQPpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 11:45:19 -0400
+From: "Mr.Patrick Chan" <info@yahoo.com>
+Reply-To: patrickchan2111@w.cn
+Subject: Hello
+Date: Thu, 17 Jun 2010 15:52:27 +0200
+Message-Id: <20100617132821.M73289@yahoo.com>
+X-Mailer: OpenWebMail 2.52 20060502
+X-OriginatingIP: 84.254.189.80 (chung)
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain;
+	charset=iso-8859-1
 To: undisclosed-recipients:;
-Content-Transfer-Encoding: 8BIT
+X-NetStation-Status: PASS
+X-NetStation-SPAM: 0.00/5.00-10.00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Friend, 
 
+I am Rita Spencer esq., a solicitor at law.the personal attorney /sole  
+executor to the WILL of my late client ? I have a  message for you please 
+return my mail for details.Your Respond should be sent to my Private 
+email:rita1900@sify.com
 
-
-We are presently offering a LOAN @ 1% interest rate,applicant should apply
-with the following details:
-Name...............
-Address..............
-Tell no..............
-Occupation..........
-Monthly income.........
-Loan amount needed.........
-Duration..........
-Reply me via email:(alexfisherloan@mail.net.sa) Alex  Fisher
-
+GodBless You and Your Family.
+Rita Spencer Esq.
