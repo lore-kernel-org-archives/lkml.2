@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab0FQHwh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 03:52:37 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54259 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757048Ab0FQHwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 03:52:35 -0400
-Message-ID: <4C19D36C.30007@cn.fujitsu.com>
-Date: Thu, 17 Jun 2010 15:49:00 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 0/6] KVM: MMU: support pte prefetch when intercepted guest
- #PF
-References: <4C16E974.8000304@cn.fujitsu.com> <4C1767C4.7020506@redhat.com>
-In-Reply-To: <4C1767C4.7020506@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757274Ab0FQHyU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 03:54:20 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:58009 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756824Ab0FQHyT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 03:54:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=XkWzaBUe5nSqTPpSQhDG7uyZU3dwWXzp774XfF4AmgVeIUjSfFMHani6wD2CbHw2rd
+         pwilL6XzXtZi5MyjGXulfbzcBOk61xfgQlx0FvT4Ko5kNg8HgUqMKTfeocy6phSaDXh0
+         ZqxiQvt6yS0lBuWHvm+DytEyYtZgRZCatgsPk=
+Date: Thu, 17 Jun 2010 23:54:20 +0800
+From: wzt.wzt@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, cl@linux-foundation.org, penberg@cs.helsinki.fi,
+       mpm@selenic.com
+Subject: [PATCH] Slabinfo: Fix display format
+Message-ID: <20100617155420.GB2693@localhost.localdomain>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix slabinfo display format, if a structure length > 17, the information display like:
 
+[root@localhost ~]# cat /proc/slabinfo
+flow_cache             0      0     80   48    1 : tunables  120   60    8 : slabdata      0      0      0
+cfq_io_context        40    112     68   56    1 : tunables  120   60    8 : slabdata      2      2      0
+cfq_queue             30     52    152   26    1 : tunables  120   60    8 : slabdata      2      2      0
+bsg_cmd                0      0    284   14    1 : tunables   54   27    8 : slabdata      0      0      0
+mqueue_inode_cache      1      7    576    7    1 : tunables   54   27    8 : slabdata      1      1      0
+isofs_inode_cache      0      0    380   10    1 : tunables   54   27    8 : slabdata      0      0      0
+hugetlbfs_inode_cache      1     11    352   11    1 : tunables   54   27    8 : slabdata      1      1      0
+ext2_inode_cache       0      0    496    8    1 : tunables   54   27    8 : slabdata      0      0      0
+ext2_xattr             0      0     48   78    1 : tunables  120   60    8 : slabdata      0      0      0
+dquot                  0      0    192   20    1 : tunables  120   60    8 : slabdata      0      0      0
+kioctx                 0      0    192   20    1 : tunables  120   60    8 : slabdata      0      0      0
+kiocb                  0      0    128   30    1 : tunables  120   60    8 : slabdata      0      0      0
 
-Avi Kivity wrote:
-> On 06/15/2010 05:46 AM, Xiao Guangrong wrote:
->> Hi Avi, Marcelo,
->>
->> This patchset support pte prefetch when intercepted guest #PF,
->> the aim is to reduce guest #PF which can be intercepted by VMM.
->>
->> If we meet any failure in the prefetch path, we will exit it
->> and not try other ptes to avoid become heavy path.
->>
->> During my performance test, under EPT enabled case, unixbench
->> shows the performance improved ~1.2%,
-> 
-> Once the guest has faulted in all memory, we shouldn't see much
-> improvement, yes?
+Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-I think you are right, this path only prefetch valid/pte.A=1 mapping.
+---
+ mm/slab.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> 
->> user EPT disable case,
->> unixbench shows the performance improved ~3.6%
->>    
-> 
-> I'm a little worried about this.  In some workloads, prefetch can often
-> fail due to gpte.a=0 so we spend effort doing nothing.  
-
-Yes, prefetch is not alway success, but the prefetch path is fast, it not cost
-much time, at the worst case, only 128 bytes we need read form guest pte. Once
-it's successful, much overload can be reduce.
-
-> There is also
-> the issue of marking pages as accessed or even dirty when in fact the
-> guest did not access them.
-
-> 
-> We should map those pages with pte.a=pte.d=0 so we don't confuse host
-> memory management.  On EPT (which lacks a/d bits) we can't enable it
-> (but we can on NPT).
->
-
-You are right, this is the speculative path.
-
-For the pte.A bit:
-we called mmu_set_spte() with speculative = true, so we set pte.a = 0 in this
-path.
-
-For the pte.D bit:
-We should fix also set pte.d = 0 in speculative path, the same problem is in
-invlpg/pte write path, will do it in the next version.
-
+diff --git a/mm/slab.c b/mm/slab.c
+index e49f8f4..3bcba98 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -4181,7 +4181,7 @@ static void print_slabinfo_header(struct seq_file *m)
+ #else
+ 	seq_puts(m, "slabinfo - version: 2.1\n");
+ #endif
+-	seq_puts(m, "# name            <active_objs> <num_objs> <objsize> "
++	seq_puts(m, "# name\t\t\t<active_objs> <num_objs> <objsize> "
+ 		 "<objperslab> <pagesperslab>");
+ 	seq_puts(m, " : tunables <limit> <batchcount> <sharedfactor>");
+ 	seq_puts(m, " : slabdata <active_slabs> <num_slabs> <sharedavail>");
+@@ -4271,7 +4271,7 @@ static int s_show(struct seq_file *m, void *p)
+ 	if (error)
+ 		printk(KERN_ERR "slab: cache %s error: %s\n", name, error);
+ 
+-	seq_printf(m, "%-17s %6lu %6lu %6u %4u %4d",
++	seq_printf(m, "%-27s %6lu %6lu %6u %4u %4d",
+ 		   name, active_objs, num_objs, cachep->buffer_size,
+ 		   cachep->num, (1 << cachep->gfporder));
+ 	seq_printf(m, " : tunables %4u %4u %4u",
+-- 
+1.6.5.3
 
