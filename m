@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933177Ab0FQTQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 15:16:11 -0400
-Received: from [198.99.130.30] ([198.99.130.30]:48223 "EHLO
-	govinda.addtoit.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1760680Ab0FQTQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 15:16:09 -0400
-Date: Thu, 17 Jun 2010 15:15:16 -0400
-From: Jeff Dike <jdike@addtoit.com>
-To: Greg KH <greg@kroah.com>
-Cc: Alan Cox <alan@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Remove Hayes ESP ioctls
-Message-ID: <20100617191516.GA15963@c-98-229-117-200.hsd1.ma.comcast.net>
-References: <20100617160045.GA13743@c-98-229-117-200.hsd1.ma.comcast.net> <20100617172828.GA24362@kroah.com>
+	id S933201Ab0FQTSl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 15:18:41 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37148 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933154Ab0FQTSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 15:18:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,433,1272870000"; 
+   d="scan'208";a="290131561"
+Date: Thu, 17 Jun 2010 21:18:21 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org,
+       Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Subject: Re: [PATCH] MFD: AB8500 mask off irrelevant bits from the SPI
+ message
+Message-ID: <20100617191820.GA17699@sortiz.org>
+References: <1275008384-17285-1-git-send-email-linus.walleij@stericsson.com>
+ <AANLkTim_j9atBiKb5L536l33UDE_nYVgIbu4gaJcUMu3@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100617172828.GA24362@kroah.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <AANLkTim_j9atBiKb5L536l33UDE_nYVgIbu4gaJcUMu3@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 10:28:28AM -0700, Greg KH wrote:
-> You forgot to put a "Signed-off-by:" line in here.
+Hi Linus,
+
+On Thu, Jun 17, 2010 at 06:46:42PM +0200, Linus Walleij wrote:
+> 2010/5/28 Linus Walleij <linus.walleij@stericsson.com>:
 > 
-> Care to add it, and resend it to me?
+> > The registers on the AB8500 are only 8 bits wide, so the content
+> > of the remaining bits is undefined. Let's mask off the undefined
+> > stuff when returning a register in an SPI read.
+> 
+> Are you picking this one up Samuel?
+Yes, sorry for the delay, I've been quite busy with other projects but will go
+through my MFD backlog in a day or 2.
 
-Oops...
+Cheers,
+Samuel.
 
-commit e6b14f5bc9803589241bc2aae1565fa0c5bd0ce1
-Author: Jeff Dike <jdike@linux.intel.com>
-Date:   Thu Jun 17 11:54:24 2010 -0400
 
-    Remove Hayes ESP ioctls
-    
-    The Hayes ESP driver has been removed from the tree:
-        commit f53a2ade0bb9f2a81f473e6469155172a96b7c38
-        ("tty: esp: remove broken driver")
-    so its ioctls aren't needed any more.
+> Yours,
+> Linus Walleij
 
-    Signed-off-by: Jeff Dike <jdike@linux.intel.com>
-
-diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
-index a799e20..16218ac 100644
---- a/include/asm-generic/ioctls.h
-+++ b/include/asm-generic/ioctls.h
-@@ -86,16 +86,6 @@
- #define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
- 
--/*
-- * some architectures define FIOQSIZE as 0x545E, which is used for
-- * TIOCGHAYESESP on others
-- */
--#ifndef FIOQSIZE
--# define TIOCGHAYESESP	0x545E  /* Get Hayes ESP configuration */
--# define TIOCSHAYESESP	0x545F  /* Set Hayes ESP configuration */
--# define FIOQSIZE	0x5460
--#endif
--
- /* Used for packet mode */
- #define TIOCPKT_DATA		 0
- #define TIOCPKT_FLUSHREAD	 1
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
