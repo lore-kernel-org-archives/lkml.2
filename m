@@ -1,360 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760048Ab0FQNlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 09:41:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56024 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872Ab0FQNlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 09:41:11 -0400
-From: Michal Marek <mmarek@suse.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-       Greg Thelen <gthelen@google.com>,
-       Nico Schottelius <nico-linuxsetlocalversion@schottelius.org>
-Subject: [PATCH] kbuild: Clean up and speed up the localversion logic
-Date: Thu, 17 Jun 2010 15:40:38 +0200
-Message-Id: <1276782038-23441-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <4C1764CD.3080402@suse.cz>
-References: <4C1764CD.3080402@suse.cz>
+	id S1760058Ab0FQNmA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 09:42:00 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:48029 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759926Ab0FQNl6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 09:41:58 -0400
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Louis Rilling <louis.rilling@kerlabs.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com>
+	<4C19F0A3.2050707@parallels.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Thu, 17 Jun 2010 06:41:49 -0700
+In-Reply-To: <4C19F0A3.2050707@parallels.com> (Pavel Emelyanov's message of "Thu\, 17 Jun 2010 13\:53\:39 +0400")
+Message-ID: <m1631hdbdu.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: xemul@parallels.com, linux-kernel@vger.kernel.org, containers@lists.osdl.org, xemul@openvz.org, oleg@redhat.com, akpm@linux-foundation.org, louis.rilling@kerlabs.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Pavel Emelyanov <xemul@parallels.com>
+X-Spam-Relay-Country: 
+X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we run scripts/setlocalversion during every build, it makes
-sense to move all the localversion logic there. This cleans up the
-toplevel Makefile and also makes sure that the script is called only
-once in 'make prepare' (previously, it would be called every time due to
-a variable expansion in an ifneq statement). No user-visible change is
-intended, unless one runs the setlocalversion script directly.
+Pavel Emelyanov <xemul@parallels.com> writes:
 
-Reported-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Greg Thelen <gthelen@google.com>
-Cc: Nico Schottelius <nico-linuxsetlocalversion@schottelius.org>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
+> On 06/16/2010 08:34 PM, Louis Rilling wrote:
+>> [ Resending, hopefully with all pieces ]
+>> 
+>> Detached tasks are not seen by zap_pid_ns_processes()->sys_wait4(), so
+>> that release_task()->proc_flush_task() of container init can be called
+>> before it is for some detached tasks in the namespace.
 
-I tried to test this in various scenarios, but if anyone of you could give
-it a try, that would be great. The patch is against 2.6.35-rc3.
+There are two ways we can go from here.
 
----
- Makefile                 |   74 +------------------
- scripts/package/Makefile |    2 +-
- scripts/setlocalversion  |  179 ++++++++++++++++++++++++++++++++++------------
- 3 files changed, 136 insertions(+), 119 deletions(-)
+- Completely asynchronous children exiting.
+- Waiting for all of our children to exit.
 
-diff --git a/Makefile b/Makefile
-index d49d96c..f6d2cb2 100644
---- a/Makefile
-+++ b/Makefile
-@@ -883,80 +883,12 @@ PHONY += $(vmlinux-dirs)
- $(vmlinux-dirs): prepare scripts
- 	$(Q)$(MAKE) $(build)=$@
- 
--# Build the kernel release string
--#
--# The KERNELRELEASE value built here is stored in the file
--# include/config/kernel.release, and is used when executing several
--# make targets, such as "make install" or "make modules_install."
--#
--# The eventual kernel release string consists of the following fields,
--# shown in a hierarchical format to show how smaller parts are concatenated
--# to form the larger and final value, with values coming from places like
--# the Makefile, kernel config options, make command line options and/or
--# SCM tag information.
--#
--#	$(KERNELVERSION)
--#	  $(VERSION)			eg, 2
--#	  $(PATCHLEVEL)			eg, 6
--#	  $(SUBLEVEL)			eg, 18
--#	  $(EXTRAVERSION)		eg, -rc6
--#	$(localver-full)
--#	  $(localver)
--#	    localversion*		(files without backups, containing '~')
--#	    $(CONFIG_LOCALVERSION)	(from kernel config setting)
--#	  $(LOCALVERSION)		(from make command line, if provided)
--#	  $(localver-extra)
--#	    $(scm-identifier)		(unique SCM tag, if one exists)
--#	      ./scripts/setlocalversion	(only with CONFIG_LOCALVERSION_AUTO)
--#	      .scmversion		(only with CONFIG_LOCALVERSION_AUTO)
--#	    +				(only without CONFIG_LOCALVERSION_AUTO
--#					 and without LOCALVERSION= and
--#					 repository is at non-tagged commit)
--#
--# For kernels without CONFIG_LOCALVERSION_AUTO compiled from an SCM that has
--# been revised beyond a tagged commit, `+' is appended to the version string
--# when not overridden by using "make LOCALVERSION=".  This indicates that the
--# kernel is not a vanilla release version and has been modified.
--
--pattern = ".*/localversion[^~]*"
--string  = $(shell cat /dev/null \
--	   `find $(objtree) $(srctree) -maxdepth 1 -regex $(pattern) | sort -u`)
--
--localver = $(subst $(space),, $(string) \
--			      $(patsubst "%",%,$(CONFIG_LOCALVERSION)))
--
--# scripts/setlocalversion is called to create a unique identifier if the source
--# is managed by a known SCM and the repository has been revised since the last
--# tagged (release) commit.  The format of the identifier is determined by the
--# SCM's implementation.
--#
--# .scmversion is used when generating rpm packages so we do not loose
--# the version information from the SCM when we do the build of the kernel
--# from the copied source
--ifeq ($(wildcard .scmversion),)
--        scm-identifier = $(shell $(CONFIG_SHELL) \
--                         $(srctree)/scripts/setlocalversion $(srctree))
--else
--        scm-identifier = $(shell cat .scmversion 2> /dev/null)
--endif
--
--ifdef CONFIG_LOCALVERSION_AUTO
--	localver-extra = $(scm-identifier)
--else
--	ifneq ($(scm-identifier),)
--		ifeq ($(LOCALVERSION),)
--			localver-extra = +
--		endif
--	endif
--endif
--
--localver-full = $(localver)$(LOCALVERSION)$(localver-extra)
--
- # Store (new) KERNELRELASE string in include/config/kernel.release
--kernelrelease = $(KERNELVERSION)$(localver-full)
-+localversion = $(shell $(CONFIG_SHELL) \
-+	       $(srctree)/scripts/setlocalversion $(srctree))
- include/config/kernel.release: include/config/auto.conf FORCE
- 	$(Q)rm -f $@
--	$(Q)echo $(kernelrelease) > $@
-+	$(Q)echo $(KERNELVERSION)$(localversion) > $@
- 
- 
- # Things we need to do before we recursively start building the kernel
-diff --git a/scripts/package/Makefile b/scripts/package/Makefile
-index 62fcc3a..3a681ef 100644
---- a/scripts/package/Makefile
-+++ b/scripts/package/Makefile
-@@ -44,7 +44,7 @@ rpm-pkg rpm: $(objtree)/kernel.spec FORCE
- 	fi
- 	$(MAKE) clean
- 	$(PREV) ln -sf $(srctree) $(KERNELPATH)
--	$(CONFIG_SHELL) $(srctree)/scripts/setlocalversion > $(objtree)/.scmversion
-+	$(CONFIG_SHELL) $(srctree)/scripts/setlocalversion --scm-only > $(objtree)/.scmversion
- 	$(PREV) tar -cz $(RCS_TAR_IGNORE) -f $(KERNELPATH).tar.gz $(KERNELPATH)/.
- 	$(PREV) rm $(KERNELPATH)
- 	rm -f $(objtree)/.scmversion
-diff --git a/scripts/setlocalversion b/scripts/setlocalversion
-index 46989b8..d6a866e 100755
---- a/scripts/setlocalversion
-+++ b/scripts/setlocalversion
-@@ -10,73 +10,158 @@
- #
- 
- usage() {
--	echo "Usage: $0 [srctree]" >&2
-+	echo "Usage: $0 [--scm-only] [srctree]" >&2
- 	exit 1
- }
- 
--cd "${1:-.}" || usage
-+scm_only=false
-+srctree=.
-+if test "$1" = "--scm-only"; then
-+	scm_only=true
-+	shift
-+fi
-+if test $# -gt 0; then
-+	srctree=$1
-+	shift
-+fi
-+if test $# -gt 0 -o ! -d "$srctree"; then
-+	usage
-+fi
- 
--# Check for git and a git repo.
--if head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
-+scm_version()
-+{
-+	local short=false
- 
--	# If we are at a tagged commit (like "v2.6.30-rc6"), we ignore it,
--	# because this version is defined in the top level Makefile.
--	if [ -z "`git describe --exact-match 2>/dev/null`" ]; then
-+	cd "$srctree"
-+	if test -e .scmversion; then
-+		cat "$_"
-+		return
-+	fi
-+	if test "$1" = "--short"; then
-+		short=true
-+	fi
- 
--		# If we are past a tagged commit (like "v2.6.30-rc5-302-g72357d5"),
--		# we pretty print it.
--		if atag="`git describe 2>/dev/null`"; then
--			echo "$atag" | awk -F- '{printf("-%05d-%s", $(NF-1),$(NF))}'
-+	# Check for git and a git repo.
-+	if head=`git rev-parse --verify --short HEAD 2>/dev/null`; then
-+
-+		# If we are at a tagged commit (like "v2.6.30-rc6"), we ignore
-+		# it, because this version is defined in the top level Makefile.
-+		if [ -z "`git describe --exact-match 2>/dev/null`" ]; then
-+
-+			# If only the short version is requested, don't bother
-+			# running further git commands
-+			if $short; then
-+				echo "+"
-+				return
-+			fi
-+			# If we are past a tagged commit (like
-+			# "v2.6.30-rc5-302-g72357d5"), we pretty print it.
-+			if atag="`git describe 2>/dev/null`"; then
-+				echo "$atag" | awk -F- '{printf("-%05d-%s", $(NF-1),$(NF))}'
-+
-+			# If we don't have a tag at all we print -g{commitish}.
-+			else
-+				printf '%s%s' -g $head
-+			fi
-+		fi
- 
--		# If we don't have a tag at all we print -g{commitish}.
--		else
--			printf '%s%s' -g $head
-+		# Is this git on svn?
-+		if git config --get svn-remote.svn.url >/dev/null; then
-+			printf -- '-svn%s' "`git svn find-rev $head`"
- 		fi
--	fi
- 
--	# Is this git on svn?
--	if git config --get svn-remote.svn.url >/dev/null; then
--	        printf -- '-svn%s' "`git svn find-rev $head`"
--	fi
-+		# Update index only on r/w media
-+		[ -w . ] && git update-index --refresh --unmerged > /dev/null
- 
--	# Update index only on r/w media
--	[ -w . ] && git update-index --refresh --unmerged > /dev/null
-+		# Check for uncommitted changes
-+		if git diff-index --name-only HEAD | grep -v "^scripts/package" \
-+		    | read dummy; then
-+			printf '%s' -dirty
-+		fi
- 
--	# Check for uncommitted changes
--	if git diff-index --name-only HEAD | grep -v "^scripts/package" \
--	    | read dummy; then
--		printf '%s' -dirty
-+		# All done with git
-+		return
- 	fi
- 
--	# All done with git
--	exit
--fi
-+	# Check for mercurial and a mercurial repo.
-+	if hgid=`hg id 2>/dev/null`; then
-+		tag=`printf '%s' "$hgid" | cut -d' ' -f2`
-+
-+		# Do we have an untagged version?
-+		if [ -z "$tag" -o "$tag" = tip ]; then
-+			id=`printf '%s' "$hgid" | sed 's/[+ ].*//'`
-+			printf '%s%s' -hg "$id"
-+		fi
- 
--# Check for mercurial and a mercurial repo.
--if hgid=`hg id 2>/dev/null`; then
--	tag=`printf '%s' "$hgid" | cut -d' ' -f2`
-+		# Are there uncommitted changes?
-+		# These are represented by + after the changeset id.
-+		case "$hgid" in
-+			*+|*+\ *) printf '%s' -dirty ;;
-+		esac
- 
--	# Do we have an untagged version?
--	if [ -z "$tag" -o "$tag" = tip ]; then
--		id=`printf '%s' "$hgid" | sed 's/[+ ].*//'`
--		printf '%s%s' -hg "$id"
-+		# All done with mercurial
-+		return
- 	fi
- 
--	# Are there uncommitted changes?
--	# These are represented by + after the changeset id.
--	case "$hgid" in
--		*+|*+\ *) printf '%s' -dirty ;;
--	esac
-+	# Check for svn and a svn repo.
-+	if rev=`svn info 2>/dev/null | grep '^Last Changed Rev'`; then
-+		rev=`echo $rev | awk '{print $NF}'`
-+		printf -- '-svn%s' "$rev"
- 
--	# All done with mercurial
-+		# All done with svn
-+		return
-+	fi
-+}
-+
-+collect_files()
-+{
-+	local file res
-+
-+	for file; do
-+		case "$file" in
-+		*\~*)
-+			continue
-+			;;
-+		esac
-+		if test -e "$file"; then
-+			res="$res$(cat "$file")"
-+		fi
-+	done
-+	echo "$res"
-+}
-+
-+if $scm_only; then
-+	scm_version
- 	exit
- fi
- 
--# Check for svn and a svn repo.
--if rev=`svn info 2>/dev/null | grep '^Last Changed Rev'`; then
--	rev=`echo $rev | awk '{print $NF}'`
--	printf -- '-svn%s' "$rev"
-+if test -e include/config/auto.conf; then
-+	source "$_"
-+else
-+	echo "Error: kernelrelease not valid - run 'make prepare' to update it"
-+	exit 1
-+fi
- 
--	# All done with svn
--	exit
-+# localversion* files in the build and source directory
-+res="$(collect_files localversion*)"
-+if test ! "$srctree" -ef .; then
-+	res="$res$(collect_files "$srctree"/localversion*)"
-+fi
-+
-+# CONFIG_LOCALVERSION and LOCALVERSION (if set)
-+res="${res}${CONFIG_LOCALVERSION}${LOCALVERSION}"
-+
-+# scm version string if not at a tagged commit
-+if test "$CONFIG_LOCALVERSION_AUTO" = "y"; then
-+	# full scm version string
-+	res="$res$(scm_version)"
-+else
-+	# apped a plus sign if the repository is not in a clean tagged
-+	# state and  LOCALVERSION= is not specified
-+	if test "${LOCALVERSION+set}" != "set"; then
-+		scm=$(scm_version --short)
-+		res="$res${scm:++}"
-+	fi
- fi
-+
-+echo "$res"
--- 
-1.7.1
+Your patch appears to be a weird middle ground, that is hard to
+analyze, abusing the mount count as a thread count.
+
+I have been weighing the options between them, and to me properly
+waiting for all the processes to exit in zap_pid_ns_processes as we
+currently try to do is in our advantage.  It is simple and it means
+one less cache line bounce for a write to global variable in the
+much more common fork/exit path that we have to deal with.
+
+The task->children isn't changed until __unhash_process() which runs
+after flush_proc_task().  So we should be able to come up with
+a variant of do_wait() that zap_pid_ns_processes can use that does
+what we need.
+
+Louis do you want to look at that?
+
+>> Pin proc_mnt's in copy_process(), so that proc_flush_task() becomes safe
+>> whatever the ordering of tasks.
+>
+> See one comment below.
+>
+>> Signed-off-by: Louis Rilling <louis.rilling@kerlabs.com>
+>> ---
+>>  fs/proc/base.c          |   18 ++++++++++++++++++
+>>  include/linux/proc_fs.h |    4 ++++
+>>  kernel/fork.c           |    1 +
+>>  3 files changed, 23 insertions(+), 0 deletions(-)
+>> 
+>> diff --git a/fs/proc/base.c b/fs/proc/base.c
+>> index acb7ef8..d6cdd91 100644
+>> --- a/fs/proc/base.c
+>> +++ b/fs/proc/base.c
+>> @@ -2663,6 +2663,23 @@ static const struct inode_operations proc_tgid_base_inode_operations = {
+>>  	.setattr	= proc_setattr,
+>>  };
+>>  
+>> +/*
+>> + * Pin all proc_mnt so that detached tasks can safely call proc_flush_task()
+>> + * after container init calls itself proc_flush_task().
+>> + */
+>> +void proc_new_task(struct task_struct *task)
+>> +{
+>> +	struct pid *pid;
+>> +	int i;
+>> +
+>> +	if (!task->pid)
+>> +		return;
+>> +
+>> +	pid = task_pid(task);
+>> +	for (i = 0; i <= pid->level; i++)
+>> +		mntget(pid->numbers[i].ns->proc_mnt);
+>
+> NAK. Pids live their own lives - task can change one, pid will
+> become orphan and will be destroyed, so you'll leak.
+
+There is that nasty case in exec isn't there.  Why we ever made it
+part of the ABI that calling exec on a thread changes the pid of
+that thread to the pid of the thread group is beyond me.
+
+> There's another big problem with proc mount - you can umount proc
+> and the namespace will have a stale pointer.
+
+Not true. pid_ns->proc_mnt is an internal kernel mount. See
+pid_ns_prepare_proc.
+
+> I think we should have a kern_mount-ed proc at the namespace createi
+
+I agree, and we mostly do.  In my queue for the unsharing of the pid
+namespace I have a patch that makes that more explicit.
+
+Eric
+
 
