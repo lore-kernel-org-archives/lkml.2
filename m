@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055Ab0FQQUE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 12:20:04 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:51451 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932996Ab0FQQUA (ORCPT
+	id S933050Ab0FQQVL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 12:21:11 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:64097 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933008Ab0FQQVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 12:20:00 -0400
-X-Authority-Analysis: v=1.1 cv=zLGBfXKW/yOQN1c4qTdQUWouaSiWOaUUjRgOJi1LSJI= c=1 sm=0 a=PrpqVr8aNvUA:10 a=ood2b7iyd8MA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=AtQ9L6JIVOK_BfpNVJ0A:9 a=xNj9nlK_Z7vfbqB0lsUA:7 a=QPC8KTwRNsl5omXUIhMC5lR4BQoA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 1/2] perf: Add persistent events
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Borislav Petkov <bp@amd64.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Lin Ming <ming.m.lin@intel.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100617134357.GA6115@kryptos.osrc.amd.com>
-References: <20100528143311.GB9710@elte.hu>
-	 <1275059860.27810.9635.camel@twins>
-	 <20100528155719.GA10141@kryptos.osrc.amd.com>
-	 <1275070030.1645.362.camel@laptop>
-	 <20100603134301.GA30880@kryptos.osrc.amd.com>
-	 <20100603173242.GD29202@ghostprotocols.net>
-	 <20100614192514.GA7803@kryptos.osrc.amd.com>
-	 <20100614210116.GA26716@ghostprotocols.net>
-	 <20100614212426.GA19915@liondog.tnic>
-	 <20100615010201.GA27077@ghostprotocols.net>
-	 <20100617134357.GA6115@kryptos.osrc.amd.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 17 Jun 2010 12:19:57 -0400
-Message-ID: <1276791597.3556.118.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 17 Jun 2010 12:21:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=W4D/OYhLeW0a5HamJAvmy1DhSWCQRU/06M4DW2zrbKkyhZ8DiYFakyQHX2uoytIpQK
+         /2vTiBpM5Vtvotu42YAIHxqYmZ2ZEhLjphLi52VLNNSz46bRG3VpperknO2kW7QElXja
+         6fnKscaMEfiHUtZthiEDH4UktEtodB3V0cJBY=
+Message-ID: <4C1A4B70.2010402@gmail.com>
+Date: Thu, 17 Jun 2010 09:21:04 -0700
+From: JD <jd1008@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: udevd high cpu hogging in kernel-2.6.34   git8 to git-13
+References: <4BFF565C.3080108@gmail.com> <4BFF59B5.70002@gmail.com> <4BFF5D6C.3010207@gmail.com> <4BFF5E3B.5060305@gmail.com>
+In-Reply-To: <4BFF5E3B.5060305@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-17 at 15:43 +0200, Borislav Petkov wrote:
 
-> > One of the goals at least I have with pursuing this path is to separate
-> > out everything that is not strictly 'perf' into things that can be reused
-> > by other tools, like yours.
-> 
-> I'm still splitting perf/util into a more or less generic lib.
-> Now, I want to reuse as much code as possible and am parsing
-> the "mce:mce_record" tracepoint using parse_events(). However,
-> this means that I have to push the not-so-generic perf bits
-> like util/parse-events.c into the lib. Which, in turn, pulls in
-> util/trace-event* etc.
 
-Note, I have a separate generic library in trace-cmd that has the
-parsing of trace events as its own library now.
+On 05/27/2010 11:10 PM, Jiri Slaby wrote:
+> Added lkml back to CC.
+>
+> On 05/28/2010 08:06 AM, JD wrote:
+>    
+>> But here goes:
+>> I have seen this behaviour in all the git releases from git8
+>> to the current 2.6.34-git13
+>>
+>> I have some of the analysis based on strace, and kernel stack
+>> trace.
+>> Instead of backing out the whole code for the new udevd, perhaps
+>> it (udevd) should sleep for some time before polling the same fd
+>> again.
+>>      
+> So if you see in the strace output the poll to return immediately with
+> out fd being an anon_inode (check /proc/pid_of_udev/fd/), it is the
+> issue. AFAIK, it was not fixed upstream yet.
+>
+> So could you try to revert a7cf4145b?
+>
+>    
+As promised, I tested the patch submitted by Eric Paris
+(See http://marc.info/?l=linux-kernel&m=127479018618584&w=2).
+I patched kernel-2.6.34-git13 with it, without reverting a7cf4145b.
+The thing is it works and works extremely well.
+The behaviour is back to what it used to be: Only 3 udevd
+threads, as in before git8, and they do not consume any
+cpu bandwidth that I can see. It is well below the threshold
+of 1% .
 
-This is the code that started trace-event-parse.c.
-
-It has evolved quite a bit since then. You can get the code from:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
-
-The files are parse-events.c and parse-events.h. As well as some
-filtering code: parse-filter.c.
-
-It creates a libparsevent library.
-
-I've been meaning to update the perf stuff with it, but just have not
-had the time. Seems that what you are doing might be a good fit for it.
-
--- Steve
-
+Also, it seems that it has been picked up by upstream. Compiled
+and booted 2.6.34-git16 and all is well.
 
