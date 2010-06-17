@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933165Ab0FQSy0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 14:54:26 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56248 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933093Ab0FQSyY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 14:54:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=p4K+pryTTymVl63Sd9Z7h/k4KfXzgBNbHvYFLDqj5rowjkOT03OzDudxc2yfqnSAdG
-         7hSjucRUf4SXLmUxngYrMs5uLPAxe+6FD4zxOlHmM57lEBY5gpbqRNGwSSsACzv72aZD
-         /3H7VDBj7CbNQcAt9Ygs9TMK3jkv1hgmoh8S0=
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.1.10.1006141608550.1248@dr-wily.mit.edu>
-References: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
-	<alpine.DEB.1.10.1006141014360.1432@dr-wily.mit.edu>
-	<87y6ehxvby.fsf@linux-g6p1.site>
-	<1276545951.5374.260.camel@mulgrave.site>
-	<alpine.DEB.1.10.1006141608550.1248@dr-wily.mit.edu>
-Date: Thu, 17 Jun 2010 20:54:23 +0200
-Message-ID: <AANLkTik0QxlSuBk0AKHBMET415vcYhaXSWNQf0GVeBn0@mail.gmail.com>
-Subject: Re: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Tim Abbott <tabbott@ksplice.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-       Matt Fleming <matt@console-pimps.org>, linux-arch@vger.kernel.org,
-       Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-       Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933174Ab0FQS6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 14:58:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59421 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756976Ab0FQS6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 14:58:54 -0400
+Date: Thu, 17 Jun 2010 14:58:29 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: David Dillow <dillowda@ornl.gov>, Alexander Viro <viro@zeniv.linux.org.uk>,
+       Christoph Hellwig <hch@infradead.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+       Jamie Lokier <jamie@shareable.org>,
+       David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+       Andreas Dilger <adilger@sun.com>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2] d_ino considered harmful
+Message-ID: <20100617185828.GC14389@shell>
+References: <20100616185913.GA15566@shell> <20100616195359.GA24382@shell> <1276721084.13788.53.camel@lap75545.ornl.gov> <30568.1276797848@jrobl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <30568.1276797848@jrobl>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 12:02 AM, Tim Abbott <tabbott@ksplice.com> wrote:
-> On Mon, 14 Jun 2010, James Bottomley wrote:
->
->> On Mon, 2010-06-14 at 20:33 +0100, Matt Fleming wrote:
->> > On Mon, 14 Jun 2010 10:32:46 -0400 (EDT), Tim Abbott <tabbott@ksplice.com> wrote:
->> > >
->> > > I was planning to submit in the next couple weeks a change that adds
->> > > support for building the kernel with -ffunction-sections -fdata-sections,
->> > > which would have as a piece of it adding to TEXT_TEXT the following
->> > > expression:
->> > >
->> > >   *(.text.[A-Za-z$_]*)    /* handle -ffunction-sections */\
->>
->> Just as a point of technical interest, that won't handle
->> -ffunction-sections.  At least on parisc, we get a
->> section .text.<function name> for every function.  This means that any
->> character legal in a function name can appear there, not just letters
->> and underscores (we get millicode ones with dollar signs as well for
->> instance).  That's why *(.text.*) is safer
->
-> Hi James,
->
-> I believe that the pattern [A-Za-z$_] matches all valid characters to
-> start a function name (in particular, it includes "$").  If I'm missing
-> any valid characters for the start of a function name, please correct me.
+On Fri, Jun 18, 2010 at 03:04:08AM +0900, J. R. Okajima wrote:
+> 
+> David Dillow:
+> > For example, our main Lustre scratch space has over 285 million files in
+> > it, and using find -inum takes over 72 hours to walk the tree using
+> 	:::
+> > Using ne2scan -- which uses libext2fs and combines the inode scan and
+> > the name lookup -- takes over 48 hours to generate a list of candidate
+> > files for the purge example. With an optimized inode scan and the custom
+> 	:::
+> 
+> While I've never heard of ne2scan, I am interested in this simplified
+> problem such as "find the pathname(s) from an inum in a huge fs."
+> Is ne2scan essentially equivalent to "debugfs ncheck inum"?
+> 
+> About Valeris's patch, as long as "ls -i" is useful/helpful,
+> > +	/* Use of d_ino without st_dev is always buggy. */
+> is not true.
 
-Yes, I think we need to add 0-9 too. C names can't have a digit as a starting
-character, but linker can produce such names when invoked as "ld -r --unique"
-(incremental linking).
+What I'm hearing again and again is that d_ino is useful to improve
+performance.  As Andreas put it to me, if d_ino is the same, the
+referenced file may or may not be the same, but if it's different, the
+files are definitely different.  Only in well-controlled environments
+known not to have submounts or bind mounts do people trust d_ino to be
+from the same file system as the other entries in a directory.
 
-Currently we use just "ld -r" to combine all .o files from a directory
-into one bigger .o file, but this combines all similarly-named sections.
-This not only combines all .text sections from every input .o file
-into one .text section (which isn't surprising), but also combines
-all .text.func sections too. Which we don't want to happen when we
-(eventually) want to link kernel with --gc-sections.
+I only submitted this patch half-seriously - mainly I wanted to find
+out how people are using d_ino, and therefore what I need to do for
+fallthru directory entries in union mounts.
 
-The fix already exists: "ld -r --unique". With --unique, ld
-will create unique sections named .text.1, .text.2, .text.func.1
-and such.
+In order to get the correct inode number for a directory entry
+referring to a lower layer file or directory, we have to do a
+->lookup() from the fs-specific readdir code (or else require that
+fallthrus store an arbitrarily sized integer - which seriously
+restricts the implementation).  Now, doing a ->lookup() to get d_ino
+makes no sense if we are using d_ino as a way to avoid the cost
+stat(), which is mainly the ->lookup().  And you definitely can't use
+d_ino by itself in a union mount.
 
-Therefore, in order to accomodate .text.NUM sections in the future,
-we'd better use .text.[A-Za-z0-9$_]* pattern.
+I'm inclined to save the trouble and just return 1 in d_ino for
+fallthru directory entries, especially now that I've tested it
+system-wide and had no obvious problems.
 
--- 
-vda
+-VAL
