@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760282Ab0FQQC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 12:02:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49130 "EHLO
+	id S1760295Ab0FQQD2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 12:03:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49151 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756416Ab0FQQCy (ORCPT
+	with ESMTP id S1756511Ab0FQQD1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 12:02:54 -0400
-Date: Thu, 17 Jun 2010 09:02:29 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
-       mingo@elte.hu, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, jeff@garzik.org,
-       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
-       khali@linux-fr.org
-Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
-Message-ID: <20100617090229.543af62c@infradead.org>
-In-Reply-To: <4C1A4548.3020602@kernel.org>
-References: <1276443098-20653-1-git-send-email-tj@kernel.org>
-	<1276443098-20653-10-git-send-email-tj@kernel.org>
-	<20100616204854.4b036f87@infradead.org>
-	<4C19DA64.8000409@kernel.org>
-	<alpine.LFD.2.00.1006171310560.4290@localhost.localdomain>
-	<4C1A05AF.5010405@kernel.org>
-	<20100617124343.5889067c@lxorguk.ukuu.org.uk>
-	<4C1A4548.3020602@kernel.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+	Thu, 17 Jun 2010 12:03:27 -0400
+Subject: [PATCH] nohz: Fix nohz ratelimit
+From: Peter Zijlstra <peterz@infradead.org>
+To: Brian Bloniarz <bmb@athenacr.com>
+Cc: Mike Galbraith <efault@gmx.de>, Jiri Kosina <jkosina@suse.cz>,
+       Chris Wedgwood <cw@f00f.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       Jef Driesen <jefdriesen@telenet.be>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <4C1A378F.7070604@athenacr.com>
+References: <AANLkTinLth4iKXAwszEEsPm_9ZDlj8HtqsiG5cdFE1cZ@mail.gmail.com>
+	 <20100610181042.GA19210@puku.stupidest.org> <4C116652.8010408@athenacr.com>
+	 <alpine.LRH.2.00.1006161702470.2497@twin.jikos.cz>
+	 <1276701411.30669.6.camel@marge.simson.net>
+	 <1276756770.8248.20.camel@marge.simson.net>
+	 <1276758038.9628.1.camel@marge.simson.net>
+	 <1276771844.8121.14.camel@marge.simson.net>
+	 <1276781044.27822.309.camel@twins>  <4C1A378F.7070604@athenacr.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 17 Jun 2010 18:02:37 +0200
+Message-ID: <1276790557.27822.516.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010 17:54:48 +0200
-Tejun Heo <tj@kernel.org> wrote:
+Chris Wedgwood reports that 39c0cbe (sched: Rate-limit nohz) causes a
+serial console regression, unresponsiveness, and indeed it does. The
+below fixes it by not skipping out when the tick has been stopped.
 
-> Crazy devices too but I think they would
-> fall in a single tick any way. 
+Reported-by: Chris Wedgwood <cw@f00f.org>
+Tested-by: Brian Bloniarz <bmb@athenacr.com>
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/time/tick-sched.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-not sure what ticks have to do with anything but ok ;)
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 5f171f0..e0707ea 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -315,9 +315,6 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 		goto end;
+ 	}
+ 
+-	if (nohz_ratelimit(cpu))
+-		goto end;
+-
+ 	ts->idle_calls++;
+ 	/* Read jiffies and the time when jiffies were updated last */
+ 	do {
+@@ -328,7 +325,7 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 	} while (read_seqretry(&xtime_lock, seq));
+ 
+ 	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
+-	    arch_needs_cpu(cpu)) {
++	    arch_needs_cpu(cpu) || nohz_ratelimit(cpu)) {
+ 		next_jiffies = last_jiffies + 1;
+ 		delta_jiffies = 1;
+ 	} else {
 
-> At any rate, let's say I have those
-> numbers, how would I feed it into c-state selection?
-
-if we have this, we need to put a bit of glue in the backend that
-tracks (per cpu I suppose) the shortest expected interrupt, which
-the C state code then queries.
-(and in that regard, it does not matter if shortest expected is
-computed via heuristic on a per irq basis, or passed in).
-
-mapping an irq to a cpu is not a 100% science (since interrupts can
-move in theory), but just assuming that the irq will happen on the same
-CPU it happened last time is more than good enough.
-
-
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
