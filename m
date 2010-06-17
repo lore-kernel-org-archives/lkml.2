@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760485Ab0FQRm2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 13:42:28 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:57624 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756923Ab0FQRm1 (ORCPT
+	id S1760498Ab0FQRsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 13:48:12 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:56173 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760366Ab0FQRsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 13:42:27 -0400
-X-IronPort-AV: E=Sophos;i="4.53,432,1272844800"; 
-   d="scan'208";a="465050"
-Date: Thu, 17 Jun 2010 18:40:00 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-       "jeremy@goop.org" <jeremy@goop.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "ddutile@redhat.com" <ddutile@redhat.com>,
-       "sheng@linux.intel.com" <sheng@linux.intel.com>
-Subject: Re: [Xen-devel] [PATCH 03/12] evtchn delivery on HVM
-In-Reply-To: <20100617173817.GA17523@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1006171839510.3401@kaball-desktop>
-References: <1275570645-27189-1-git-send-email-stefano.stabellini@eu.citrix.com> <1275570645-27189-3-git-send-email-stefano.stabellini@eu.citrix.com> <20100614212040.GC8600@phenom.dumpdata.com> <alpine.DEB.2.00.1006171558570.3401@kaball-desktop>
- <20100617173817.GA17523@phenom.dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 17 Jun 2010 13:48:09 -0400
+Date: Fri, 18 Jun 2010 02:48:05 +0900
+From: Norbert Preining <preining@logic.at>
+To: reinette chatre <reinette.chatre@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: iwlagn completely unusable with some AP since 2.6.31
+Message-ID: <20100617174805.GY32359@gamma.logic.tuwien.ac.at>
+References: <20100614160910.GA10738@gandalf.dynalias.org> <1276534722.25793.1425.camel@rchatre-DESK>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276534722.25793.1425.camel@rchatre-DESK>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010, Konrad Rzeszutek Wilk wrote:
-> > /* vector callbacks are better than PCI interrupts to receive event
->      ^V
-> >  * channel notifications because we can receive vector callbacks on any
-> >  * vcpu and we don't need PCI support or APIC interactions */
->                                                             ^.
-> > 
-> > is it good enough?
-> Just two things..
-> 
+Hi Reinette,
 
-Ok
+On Mo, 14 Jun 2010, reinette chatre wrote:
+> ... as I mention above you already submitted a bug report for this issue
+> and we directed you to a patch that addresses this. You have not replied
+
+sorry, I must have missed that entry in the bug report. Please see my
+comment on the bug report, it seeems that 2.6.35-rc3 plus that one patch
+actually helped to get a more stable connection.
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+SKETTY (n.)
+Apparently self-propelled little dance a beer glass performs in its
+own puddle.
+			--- Douglas Adams, The Meaning of Liff
