@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab0FQHqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 03:46:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35655 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756869Ab0FQHqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 03:46:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=A3pCPMmDm8Xx13YC8hOS5yD07GazBuEHT/dESm9OAuI9Htau1hyD927mnInRWUj+f1
-         BDY2u85kdNpCZV1JaY9OM8LIbx3K8/gREw1X/1UaAREiVnNm+jHHn9XMsyci2ekn1iNM
-         /kQrTEyRHTl1h9gUP5Nwre9m4J6/icfRmzYGI=
-Date: Thu, 17 Jun 2010 09:46:15 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ian Munsie <imunsie@au1.ibm.com>
-Cc: Jason Baron <jbaron@redhat.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/14] tracing: add compat syscall support v3
-Message-ID: <20100617074612.GC5530@nowhere>
-References: <cover.1268749695.git.jbaron@redhat.com> <1274433809-sup-5031@au1.ibm.com> <20100521132405.GA2109@redhat.com> <1276759528-sup-4850@au1.ibm.com>
+	id S932220Ab0FQHwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 03:52:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54259 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757048Ab0FQHwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 03:52:35 -0400
+Message-ID: <4C19D36C.30007@cn.fujitsu.com>
+Date: Thu, 17 Jun 2010 15:49:00 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276759528-sup-4850@au1.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 0/6] KVM: MMU: support pte prefetch when intercepted guest
+ #PF
+References: <4C16E974.8000304@cn.fujitsu.com> <4C1767C4.7020506@redhat.com>
+In-Reply-To: <4C1767C4.7020506@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 05:39:07PM +1000, Ian Munsie wrote:
-> Excerpts from Jason Baron's message of Fri May 21 23:24:07 +1000 2010:
-> > On Fri, May 21, 2010 at 07:40:21PM +1000, Ian Munsie wrote:
-> > > Hi Jason,
-> > > 
-> > > I'm currently in the process of implementing syscall tracepoints for
-> > > PowerPC, and a considerable amount of my work is going to end up
-> > > requiring these patches of yours. I've reviewed and tested your patches
-> > > (and spent a good chunk of time rebasing them on top of
-> > > tip/tracing/core) and they all seem pretty good.
-> > > 
-> > > I *particularly* like the way in which they prevent ftrace syscalls from
-> > > reporting that sys_swapoff was constantly firing on x86_64 kernels with
-> > > a 32bit userspace ;)
-> > > 
-> > > Anyway, I'm just wondering if you have an ETA for the v4 patchset to
-> > > address the remaining issues that Frederic raised so that they can be
-> > > merged.
-> > > 
-> > > Cheers,
-> > > -Ian
-> > > 
-> > 
-> > hi Ian,
-> > 
-> > I think the main issue left was that I am using the same meta data for
-> > both the 32-bit and 64-bit table entries, when they reference the same
-> > syscall. for example, for x86 both the compat and underlying 64-bit
-> > kernel reference 'sys_rename'. Thus, i am pointing both perf events at
-> > the same meta data. Frederic was saying they need to be separate. I'm
-> > not sure i completely understand why, since the 32-bit are just sign
-> > extended to 64-bit in this case. Frederic, perhaps, you can explain this
-> > a bit more for me?
-> > 
-> > thanks,
-> > 
-> > -Jason
+
+
+Avi Kivity wrote:
+> On 06/15/2010 05:46 AM, Xiao Guangrong wrote:
+>> Hi Avi, Marcelo,
+>>
+>> This patchset support pte prefetch when intercepted guest #PF,
+>> the aim is to reduce guest #PF which can be intercepted by VMM.
+>>
+>> If we meet any failure in the prefetch path, we will exit it
+>> and not try other ptes to avoid become heavy path.
+>>
+>> During my performance test, under EPT enabled case, unixbench
+>> shows the performance improved ~1.2%,
 > 
-> Hi Jason,
+> Once the guest has faulted in all memory, we shouldn't see much
+> improvement, yes?
+
+I think you are right, this path only prefetch valid/pte.A=1 mapping.
+
 > 
-> I'm currently cleaning up my patch series for ftrace syscalls on PowerPC
-> and want to release it soon.
+>> user EPT disable case,
+>> unixbench shows the performance improved ~3.6%
+>>    
 > 
-> It's probably easiest for me if I release your compat syscall support v3
-> patches as part of the series. You'd still be marked as the author of
-> those commits - the only changes I have made to them was rebasing them
-> against the current tip tree and resolving the conflicts that I came
-> across.
+> I'm a little worried about this.  In some workloads, prefetch can often
+> fail due to gpte.a=0 so we spend effort doing nothing.  
 
+Yes, prefetch is not alway success, but the prefetch path is fast, it not cost
+much time, at the worst case, only 128 bytes we need read form guest pte. Once
+it's successful, much overload can be reduce.
 
+> There is also
+> the issue of marking pages as accessed or even dirty when in fact the
+> guest did not access them.
 
-Perfect! I was about to ask Jason to rebase his patchset against latest -tip.
+> 
+> We should map those pages with pte.a=pte.d=0 so we don't confuse host
+> memory management.  On EPT (which lacks a/d bits) we can't enable it
+> (but we can on NPT).
+>
 
-If you send this set, please also add your own Signed-off-by.
+You are right, this is the speculative path.
 
-Thanks.
+For the pte.A bit:
+we called mmu_set_spte() with speculative = true, so we set pte.a = 0 in this
+path.
+
+For the pte.D bit:
+We should fix also set pte.d = 0 in speculative path, the same problem is in
+invlpg/pte write path, will do it in the next version.
+
 
