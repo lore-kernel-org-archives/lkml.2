@@ -1,41 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760081Ab0FQNs1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 09:48:27 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:50256 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab0FQNs0 (ORCPT
+	id S1760076Ab0FQNxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 09:53:31 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55817 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026Ab0FQNxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 09:48:26 -0400
-Date: Thu, 17 Jun 2010 08:45:09 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: wzt.wzt@gmail.com
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, penberg@cs.helsinki.fi,
-       mpm@selenic.com
-Subject: Re: [PATCH] Slabinfo: Fix display format
-In-Reply-To: <20100617155420.GB2693@localhost.localdomain>
-Message-ID: <alpine.DEB.2.00.1006170844300.22997@router.home>
-References: <20100617155420.GB2693@localhost.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 17 Jun 2010 09:53:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=sSMiuUwIkKIvwsxbr9GXr6X+k4xYky6y22bWQdW9luYEoadCp+qQc2pUNnIPVPWH6D
+         BOjjM8r9WEh2/LlMPGthed10gXYnS/QPMCtwf1SpiOuW4NbcfQGZ0Ie3/yDa2yrJnhKz
+         bryVSt0wz0W3/4GO7iLFFS6SZ+ja9FKeDv0IM=
+Date: Thu, 17 Jun 2010 15:45:59 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Xiaotian Feng <dfeng@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
+       Jack Steiner <steiner@sgi.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Marcin Slusarz <marcin.slusarz@gmail.com>, linux-kernel@vger.kernel.org,
+       x86@kernel.org
+Subject: [patch] x86, pat: freeing invalid memtype messages
+Message-ID: <20100617134559.GA29824@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Xiaotian Feng <dfeng@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
+	Jack Steiner <steiner@sgi.com>,
+	Suresh Siddha <suresh.b.siddha@intel.com>,
+	Marcin Slusarz <marcin.slusarz@gmail.com>,
+	linux-kernel@vger.kernel.org, x86@kernel.org
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010, wzt.wzt@gmail.com wrote:
+Commit 20413f27163 "x86, pat: Fix memory leak in free_memtype" added an
+error message in free_memtype() if rbt_memtype_erase() returns NULL.  
+The problem is that if CONFIG_X86_PAT is enabled, we use a different
+implimentation of rbt_memtype_erase() that always returns NULL.
 
-> @@ -4271,7 +4271,7 @@ static int s_show(struct seq_file *m, void *p)
->  	if (error)
->  		printk(KERN_ERR "slab: cache %s error: %s\n", name, error);
->
-> -	seq_printf(m, "%-17s %6lu %6lu %6u %4u %4d",
-> +	seq_printf(m, "%-27s %6lu %6lu %6u %4u %4d",
->  		   name, active_objs, num_objs, cachep->buffer_size,
->  		   cachep->num, (1 << cachep->gfporder));
->  	seq_printf(m, " : tunables %4u %4u %4u",
+I've modified rbt_memtype_erase() to return an ERR_PTR() on errors and 
+made free_memtype() check for that instead.
 
-This one may break user space tools that have assumptions about the length
-of the field. Or do tools not make that assumption?
+Addresses:  https://bugzilla.kernel.org/show_bug.cgi?id=16205
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index acc15b2..81b7735 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -359,10 +359,10 @@ int free_memtype(u64 start, u64 end)
+ 	entry = rbt_memtype_erase(start, end);
+ 	spin_unlock(&memtype_lock);
+ 
+-	if (!entry) {
++	if (IS_ERR(entry)) {
+ 		printk(KERN_INFO "%s:%d freeing invalid memtype %Lx-%Lx\n",
+ 			current->comm, current->pid, start, end);
+-		return -EINVAL;
++		return PTR_ERR(entry);
+ 	}
+ 
+ 	kfree(entry);
+diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
+index f537087..90e5cbe 100644
+--- a/arch/x86/mm/pat_rbtree.c
++++ b/arch/x86/mm/pat_rbtree.c
+@@ -236,8 +236,10 @@ struct memtype *rbt_memtype_erase(u64 start, u64 end)
+ 	struct memtype *data;
+ 
+ 	data = memtype_rb_exact_match(&memtype_rbroot, start, end);
+-	if (!data)
++	if (!data) {
++		data = ERR_PTR(-EINVAL);
+ 		goto out;
++	}
+ 
+ 	rb_erase(&data->rb, &memtype_rbroot);
+ out:
+
 
