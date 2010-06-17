@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760146Ab0FQO0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 10:26:13 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46014 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999Ab0FQO0M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 10:26:12 -0400
-Date: Thu, 17 Jun 2010 11:25:46 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Lin Ming <ming.m.lin@intel.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf: Add persistent events
-Message-ID: <20100617142546.GA563@ghostprotocols.net>
-References: <1275059860.27810.9635.camel@twins>
- <20100528155719.GA10141@kryptos.osrc.amd.com>
- <1275070030.1645.362.camel@laptop>
- <20100603134301.GA30880@kryptos.osrc.amd.com>
- <20100603173242.GD29202@ghostprotocols.net>
- <20100614192514.GA7803@kryptos.osrc.amd.com>
- <20100614210116.GA26716@ghostprotocols.net>
- <20100614212426.GA19915@liondog.tnic>
- <20100615010201.GA27077@ghostprotocols.net>
- <20100617134357.GA6115@kryptos.osrc.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100617134357.GA6115@kryptos.osrc.amd.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1760163Ab0FQO3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 10:29:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58107 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755136Ab0FQO3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 10:29:04 -0400
+Date: Thu, 17 Jun 2010 10:30:43 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Chris Vine <chris@cvine.freeserve.co.uk>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: nfsd hang and kernel bug in 2.6.35-rc3
+Message-ID: <20100617103043.16298e9e@corrin.poochiereds.net>
+In-Reply-To: <20100617113815.7e15d070@boulder.homenet>
+References: <20100615175034.1e015fbc@boulder.homenet>
+	<20100616153603.GH10223@fieldses.org>
+	<20100616123532.569efeb9@tlielax.poochiereds.net>
+	<20100616220824.4e886552@boulder.homenet>
+	<20100616204415.49285875@corrin.poochiereds.net>
+	<20100617113815.7e15d070@boulder.homenet>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jun 17, 2010 at 03:43:57PM +0200, Borislav Petkov escreveu:
-> From: Arnaldo Carvalho de Melo <acme@infradead.org>
-> Date: Mon, Jun 14, 2010 at 10:02:01PM -0300
-> > > however, this does not differentiate perflib (let's call it that for how
-> > > :) from libc headers. Do we want a "perf" or "kernel" or "perflib" or
-> > > whatever prefix here - it might make sense later when this thing grows
-> > > to differentiate between the namespaces...?
+On Thu, 17 Jun 2010 11:38:15 +0100
+Chris Vine <chris@cvine.freeserve.co.uk> wrote:
 
-> > Agreed, but the last name this thing will have will be 'perf'something :-)
-> > One of the goals at least I have with pursuing this path is to separate
-> > out everything that is not strictly 'perf' into things that can be reused
-> > by other tools, like yours.
+> On Wed, 16 Jun 2010 20:44:15 -0400
+> Jeff Layton <jlayton@redhat.com> wrote:
+> [snip]
+> > I stand corrected then. That's pretty close to the nfsd that I've been
+> > testing. I pulled down the nfsd init script and the only thing that
+> > looks substantially different is that it sends signals to nfsd to shut
+> > it down rather than just running "rpc.nfsd 0". That should work fine,
+> > however.
+> > 
+> > Still I think the problem is basically something like what I've
+> > described. You ended up somehow with sockets on the sv_permsocks list
+> > that didn't hold lockd references. The way I described is one way that
+> > could occur. Another seems to be __write_ports_addxprt (which I think
+> > is clearly broken in light of this)...
+> > 
+> > The root cause of this however is likely to be related to this
+> > problem:
+> > 
+> > > Jun 15 16:07:18 laptop kernel: svc: failed to register lockdv3 RPC
+> > > service (errno 110). Jun 15 16:07:18 laptop kernel: lockd_up:
+> > > makesock failed, error=-110
+> > 
+> > ...which means that the kernel couldn't talk to portmap or rpcbind.
+> > Maybe it wasn't up at the time? Or a problem with firewalling?
+> 
+> My initial reaction was "of course it is up" but your mention of
+> portmap sent me investigating with interesting results. I was going
+> to say "of course its is up" because the standard start-up script for
+> nfsd (rc.nfsd) checks whether rpc.portmap and rpc.statd are running, if
+> not starts them, and then starts exportfs, rpc.rquotad, rpc.nfsd and
+> rpc.mountd.
+> 
+> However, if I start portmap and statd early on so they do not rely on
+> the nfsd start-up script, then nfsd starts fine, so it seems to be a
+> timing thing notwithstanding that they are all started (at user level)
+> sequentially and in the same thread/process.
+> 
+> The timing problem does not arise on kernel-2.6.34 and earlier. Nor
+> does it arise on my pentium uniprocessor machine with kernel 2.6.35-rc3,
+> so it could well be core/thread related.  It looks as if something in
+> the kernel has changed on that in 2.6.35 which provokes the kernel bug
+> report if timing is wrong.  (If timing is wrong and if this is a user
+> tools rather than a kernel deficiency, and I express no view on that,
+> then I suppose it probably needs to be handled more gracefully in the
+> kernel.)
+> 
+> Chris
+> 
+> 
 
-> I'm still splitting perf/util into a more or less generic lib.  Now, I
-> want to reuse as much code as possible and am parsing the
-> "mce:mce_record" tracepoint using parse_events(). However, this means
-> that I have to push the not-so-generic perf bits like
-> util/parse-events.c into the lib. Which, in turn, pulls in
-> util/trace-event* etc.
+The timing may help tickle the other bugs in nfsd startup/shutdown.
+I've just sent another couple of patches to Bruce (and cc'ed you) that
+I suspect may help this. With those, it should always be the case that
+a nfsd sv_permsocks entry holds a lockd reference.
 
-I'm not that familiar with the trace bits in perf, but I'd say pick what
-is needed for your tool and stash it into files in a tools/lib/trace/
-directory, in a way that can be used by both perf and your tools.
+It would be good if you could test the stack of patches in the
+nfsd-error branch of my kernel.org git tree: 
 
-I.e. no need to move files as-is, you can reorganize things to make it
-useful for both perf and your tool.
- 
-> What is your preference, do we want to export all perf/util stuff for
-> other tools to use or rather link other tools together with
-> compilation modules from perf/util in case those other tools need
-> them?
+http://git.kernel.org/?p=linux/kernel/git/jlayton/linux.git;a=summary
 
-If we do it on a as-needed basis, as I suggested, we go eroding the
-current perf hodgepodge of potentially generic stuff.
- 
-> I'm leaning towards the first one and am thinking "maximize code reuse"
-> but I'm not completely sure, there might be reasons against it...
-
-- Arnaldo
+Thanks,
+-- 
+Jeff Layton <jlayton@redhat.com>
