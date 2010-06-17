@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760594Ab0FQSgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 14:36:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44780 "EHLO mail.zytor.com"
+	id S1760642Ab0FQSj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 14:39:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21396 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756976Ab0FQSgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 14:36:20 -0400
-Message-ID: <4C1A6AE9.2020307@zytor.com>
-Date: Thu, 17 Jun 2010 11:35:21 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Andres Salomon <dilinger@queued.net>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-       Mitch Bradley <wmb@laptop.org>
-Subject: Re: [PATCH] x86: OLPC: add support for calling into OpenFirmware
- (v4)
-References: <20100616223220.326bee18@dev.queued.net>
-In-Reply-To: <20100616223220.326bee18@dev.queued.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757184Ab0FQSj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 14:39:28 -0400
+Date: Thu, 17 Jun 2010 14:39:13 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Alex Riesen <raa.lkml@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 17/38] union-mount: Union mounts documentation
+Message-ID: <20100617183912.GA14389@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-18-git-send-email-vaurora@redhat.com> <AANLkTilNAGzn3ZC5eN2ZQMqNhcSWnT-mi_y2TkIkdeUU@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTilNAGzn3ZC5eN2ZQMqNhcSWnT-mi_y2TkIkdeUU@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/16/2010 07:32 PM, Andres Salomon wrote:
+On Thu, Jun 17, 2010 at 10:01:30AM +0200, Alex Riesen wrote:
+> On Tue, Jun 15, 2010 at 20:39, Valerie Aurora <vaurora@redhat.com> wrote:
+> > +git://git.kernel.org/pub/scm/fs/ext2/val/e2fsprogs.git
+> > +
+> > +Currently, whiteout directory entries are not returned to userland.
+> > +While the directory type for whiteouts, DT_WHT, has been defined for
+> > +many years, very little userland code handles them. ??Userland will
+> > +never see fallthru directory entries.
 > 
-> Add support for saving OFW's cif, and later calling into it to run OFW
-> commands.  OFW remains resident in memory, living within virtual range
-> 0xff800000 - 0xffc00000.  A single page directory entry points to the
-> pgdir that OFW actually uses, so rather than saving the entire page
-> table, we grab and install that one entry permanently in the kernel's
-> page table.
-> 
-> This is currently only used by the OLPC XO.
-> 
+> This may be a dumb question (I must admit I did only very little research),
+> but how does one cleanup the topmost layer of whiteouts and fallthroughs,
+> so that the entries of lower layer(s) can be made visible again?
 
-OK, down to the nitpick level...
+I'm not sure how best to do this.  We don't want to add more system
+calls.  One thought of mine has been to do this offline, when the file
+system is unmounted.  For example, e2fsck could add a feature to
+delete whiteouts and fallthrus.  Another option is to add a flag to an
+existing system call.
 
-> +
-> +/* page dir entry containing OFW's pgdir table; filled in by head_32.S */
-> +pgd_t *olpc_ofw_pgd __initdata;
-> +
+Any ideas?
 
-This is a physical address, not a pointer.  As such it should be
-physaddr_t or u32.
-
-> +static DEFINE_SPINLOCK(ofw_lock);
-> +
-> +#define MAXARGS 10
-> +
-> +void __init setup_olpc_ofw_pgd(void)
-> +{
-> +	pgd_t *base, *pde, *ofw_pde;
-> +
-> +	if (!olpc_ofw_cif)
-> +		return;
-> +
-> +	/* fetch the kernel's current PDE */
-> +	base = __va(read_cr3());
-> +	pde = &base[OLPC_OFW_PDE_NR];
-> +
-
-Since you're touching this so early, you already know that you're
-manipulating swapper_pg_dir.  If you *didn't* know that, the above code
-would be wrong, since the change you're about to make wouldn't propagate
-to other kernel tasks.
-
-So just use swapper_pg_dir[OLPC_OFW_PDE_NR] directly.
-
-	-hpa
+-VAL
