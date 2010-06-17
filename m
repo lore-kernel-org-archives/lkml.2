@@ -1,60 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933273Ab0FQUKp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 16:10:45 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19508 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757495Ab0FQUKo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 16:10:44 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6016"; a="44759366"
-Subject: Re: [PATCH 1/2] arm: msm: Add gpiolib support for MSM7200A-family
- chips.
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Greg Bean <gbean@codeaurora.org>
-Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
-       linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4C1A7FDA.1070607@codeaurora.org>
-References: <1276656228-9376-1-git-send-email-gbean@codeaurora.org>
-	 <1276656228-9376-2-git-send-email-gbean@codeaurora.org>
-	 <1276804850.29614.61.camel@c-dwalke-linux.qualcomm.com>
-	 <4C1A7FDA.1070607@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Jun 2010 13:10:35 -0700
-Message-ID: <1276805435.29614.67.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S933276Ab0FQUOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 16:14:23 -0400
+Received: from kroah.org ([198.145.64.141]:51552 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933058Ab0FQUOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 16:14:21 -0400
+Date: Thu, 17 Jun 2010 13:14:17 -0700
+From: Greg KH <greg@kroah.com>
+To: Jeff Dike <jdike@addtoit.com>
+Cc: Alan Cox <alan@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Remove Hayes ESP ioctls
+Message-ID: <20100617201417.GA2873@kroah.com>
+References: <20100617160045.GA13743@c-98-229-117-200.hsd1.ma.comcast.net>
+ <20100617172828.GA24362@kroah.com>
+ <20100617191516.GA15963@c-98-229-117-200.hsd1.ma.comcast.net>
+ <20100617200938.GB25977@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100617200938.GB25977@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-17 at 13:04 -0700, Greg Bean wrote:
-> >> +config MSM7200A_GPIO
-> >> +	tristate "Qualcomm MSM7200A SoC GPIO support"
-> >> +	depends on GPIOLIB
-> >> +	help
-> >> +	  Say yes here to support GPIO functionality on Qualcomm's
-> >> +	  MSM chipsets which descend from the MSM7200a:
-> >> +	  MSM7x01(a), MSM7x25, MSM7x27, MSM7x30, QSD8x50(a).
-> >
-> > Can't we drop this? It's always going to be on right ?
+On Thu, Jun 17, 2010 at 01:09:38PM -0700, Greg KH wrote:
+> On Thu, Jun 17, 2010 at 03:15:16PM -0400, Jeff Dike wrote:
+> > On Thu, Jun 17, 2010 at 10:28:28AM -0700, Greg KH wrote:
+> > > You forgot to put a "Signed-off-by:" line in here.
+> > > 
+> > > Care to add it, and resend it to me?
+> > 
+> > Oops...
+> > 
+> > commit e6b14f5bc9803589241bc2aae1565fa0c5bd0ce1
+> > Author: Jeff Dike <jdike@linux.intel.com>
+> > Date:   Thu Jun 17 11:54:24 2010 -0400
+> > 
+> >     Remove Hayes ESP ioctls
+> >     
+> >     The Hayes ESP driver has been removed from the tree:
+> >         commit f53a2ade0bb9f2a81f473e6469155172a96b7c38
+> >         ("tty: esp: remove broken driver")
+> >     so its ioctls aren't needed any more.
+> > 
+> >     Signed-off-by: Jeff Dike <jdike@linux.intel.com>
+> > 
+> > diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
+> > index a799e20..16218ac 100644
+> > --- a/include/asm-generic/ioctls.h
+> > +++ b/include/asm-generic/ioctls.h
+> > @@ -86,16 +86,6 @@
+> >  #define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
+> >  #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
+> >  
+> > -/*
+> > - * some architectures define FIOQSIZE as 0x545E, which is used for
+> > - * TIOCGHAYESESP on others
+> > - */
+> > -#ifndef FIOQSIZE
+> > -# define TIOCGHAYESESP	0x545E  /* Get Hayes ESP configuration */
+> > -# define TIOCSHAYESESP	0x545F  /* Set Hayes ESP configuration */
+> > -# define FIOQSIZE	0x5460
+> > -#endif
 > 
-> Not on all targets.  There will be other drivers for chips from other 
-> lines.  However, I would think that it could be entirely reasonable to 
-> lose the Kconfig and just hard-wire it in based on ARCH, if you like. 
-> Is that preferred?
+> Wait, don't we still need to define FIOQSIZE here if no one else has
+> done it yet?  With this patch I get a build error on fs/ioctl.c:
+> 	fs/ioctl.c: In function ‘do_vfs_ioctl’:
+> 	fs/ioctl.c:573:7: error: ‘FIOQSIZE’ undeclared (first use in this function)
+> 
+> So shouldn't we just remove the TIOCGHAYESESP and TIOCSHAYESESP values,
+> and only set FIOQSIZE if it's not set yet?
 
-Yeah, it's better not to have Kconfig options like this since it's
-easier for the user if we just encode this into options we know they
-have to select already.
+How about something like the following:
 
-So for example they pick 8x50 via Kconfig, so we select for them the
-right stuff for 8x50 .. Otherwise we have to assume they know what to
-select which may not be the case, plus it could be a pain to go
-selecting all the related Kconfig options for low level stuff.
 
-If you respin this please re-send it privately just to me.
+ include/asm-generic/ioctls.h |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Daniel
-
+--- a/include/asm-generic/ioctls.h
++++ b/include/asm-generic/ioctls.h
+@@ -87,12 +87,10 @@
+ #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
+ 
+ /*
+- * some architectures define FIOQSIZE as 0x545E, which is used for
+- * TIOCGHAYESESP on others
++ * Some arches already define FIOQSIZE due to a historical
++ * conflict with a Hayes modem-specific ioctl value.
+  */
+ #ifndef FIOQSIZE
+-# define TIOCGHAYESESP	0x545E  /* Get Hayes ESP configuration */
+-# define TIOCSHAYESESP	0x545F  /* Set Hayes ESP configuration */
+ # define FIOQSIZE	0x5460
+ #endif
+ 
