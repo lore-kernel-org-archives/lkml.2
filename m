@@ -1,184 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759927Ab0FQMSH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 08:18:07 -0400
-Received: from smtp102.sbc.mail.ac4.yahoo.com ([76.13.13.241]:43451 "HELO
-	smtp102.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752316Ab0FQMSE (ORCPT
+	id S1759937Ab0FQMVR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 08:21:17 -0400
+Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:52093 "EHLO
+	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab0FQMVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 08:18:04 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Jun 2010 08:18:04 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=ameritech.net;
-  h=Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding;
-  b=i7uMsGr8ZgNYwN+rCHkJ8KRs/xxlWkUHl8VKydd9fRIv8YEU0znlvLxGnNm6u1HNPm47Zj86IOh3tjSkJ8LrAI+BzFmEbs+iwiaxyt9XyqPTW66Nxk2bKdYP5veWXwBTnnL2NdmRpW5uQhbDrI8gXWtD2uFgHVnBMdkXud+/4JE=  ;
-X-Yahoo-SMTP: YbXY4QiswBDIwUvpBHqjGlM60e.1oHNBgoHih_YhU30ZyW4-
-X-YMail-OSG: CFx42lgVM1mDEJggVatDGFP0OjVEgHl.pdO2mwRTD_c1gUfWPVw0ij8YwY_47pxe1219Gz28IboObX5LW.fnGaI.4hQTVCvtF_fNb47nTh7Pfdy5Wg2bbLzf3PB3CHsPu5IyYxn_l3i.cyt2Gzk3tCrCsX79FS8TEGT_ucNuapWpB.7HHcDUjGe6URnf4.bgpLEC5CyWCjZcAkHceC48fXN0dfvQS0FEDTPVYToZ1HIb262Dq8VepWb97yGguhofVn_ATOlbGIOZUOyKX9Oq0iWfAjXmK1jEdursUJE-
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4C1A10DA.4080304@ameritech.net>
-Date: Thu, 17 Jun 2010 08:11:06 -0400
-From: "F. Heitkamp" <heitkamp@ameritech.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	Thu, 17 Jun 2010 08:21:15 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C1A12C6.6070704@cam.ac.uk>
+Date: Thu, 17 Jun 2010 13:19:18 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Giuliano Pochini <pochini@shiny.it>
-CC: alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
-       linux-audio-user@lists.linuxaudio.org,
-       Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-       alsa-user@lists.sourceforge.net
-Subject: Re: [Alsa-user] [alsa-devel] Crash 2.6.32.x, Echo 3G, Alsa, SCSI
-References: <73211.74714.qm@web180714.mail.sp1.yahoo.com>	<4B684513.8090201@ladisch.de> <20100202230911.71e8b600@Jay>	<4C040864.8010205@ameritech.net> <20100531225936.4a9344df@Jay>	<4C04FC3F.70905@ameritech.net> <20100603000828.04af4bdc@Jay>
-In-Reply-To: <20100603000828.04af4bdc@Jay>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hmc6352: Add driver for the HMC6352 compass
+References: <20100616121534.26294.12540.stgit@localhost.localdomain>	<20100616151056.181234b0@hyperion.delvare> <20100617125056.6d648ee7@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100617125056.6d648ee7@lxorguk.ukuu.org.uk>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 06/02/10 18:08, Giuliano Pochini wrote:
-> On Tue, 01 Jun 2010 08:25:35 -0400
-> "F. Heitkamp"<heitkamp@ameritech.net>  wrote:
->
->>>> I've tried some newer kernels.  Still having problems with the echo 3G.
->>>> This is kernel version:
->>>> 2.6.32.13.  The above patches posted to the linux kernel list seemed to
->>>> get rid of the crashes, but evidently did not go into the main kernel tree.
->>>>
->>> Indeed. I've just checked 2.6.33 and the patch isn't there. It's in 2.6.34.
->>>
->>> If you need 2.6.32.13 you can apply the above patch to the kernel tree or
->>> download ftp://ftp.alsa-project.org/pub/driver/alsa-driver-1.0.23.tar.bz2,
->>> otherwise just use the latest kernel.
->>>
->> I tried 2.6.34.   I have jack 1.9..5 installed.  I was able to use
->> rhythmbox to play mp3s.  I could not use the echomixer app.  It complained
->> about a channels mismatch.
-> I'm running 2.6.34 now. Both a very old version of echomixer (2005!) and
-> the latest version I just compiled from alsa-tools-1.0.23 work fine with my
-> Gina3G. Please quote the error message.
->
->
->> My goal is to be able to plug in a MIDI keyboard, or USB guitar
->> interface and play along with songs etc.
+On 06/17/10 12:50, Alan Cox wrote:
+>>> +	struct i2c_msg msg1[] = {
+>>> +		{ client->addr, 0, 1, &cmd1 },
+>>> +	};
 >>
->> I plugged in a MIDI keyboard, "/proc/asound/cards" showed the keyboard
->> was recognized.  The keyboard has a USB and MIDI interface.
->> I am not sure if they both work at the same time.  I had the MIDI cable
->> plugged into the Gina3G, but I could not tell if the keyboard was
->> recognized.
->> I compiled csound5.  When I engaged it the system immediately froze and
->> started spitting out:
->> [...]
-> Ok, I compiled csound, but I don't know how to use it. How can I reproduce
-> the problem ?
->
-Sorry I took so long to get back to you.
-It turns out Csound is not related to the problem.
+>> It's quite overkill IMHO to have two messages here. In the end you send
+>> only one. It would make sense if you made these messages static const,
+> 
+> They can't be const but I cleaned it up based on your other suggestions and
+> then jumped up and down on it a bit more.
+> 
+> 
+> hmc6352: Add driver for the HMC6352 compass
+> 
+> From: Kalhan Trisal <kalhan.trisal@intel.com>
+> 
+> This driver will report the heading values in degrees to the sysfs interface.
+> The values returned are headings . e.g. 245.6
+> 
+> Cleanups requested now all folded in and a sysfs description to keep Andrew
+> happy.
+> 
+> Signed-off-by: Kalhan Trisal <kalhan.trisal@intel.com>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+Hi Alan,
 
-In this case I am only using kernel 2.6.33.5-rt23-amd64, alsa lib 1.0.2, 
-but 2.6.34 does it too.
-I bring up firefox.  Web pages attempt to play sound.   The kernel 
-begans doing:
+I guess it is pretty unlikely anyone would ever have more than one compass and
+if they do they can deal with the mutex sharing if they care.
 
-[ 2879.766331] allocate_pipes: ch=1 int=2
-[ 2879.766332] allocate_pipes: channel already open
-[ 2879.766333] allocate_pipes(1) err=-11
-[ 2879.766334] pcm_hw_freed
-[ 2.821190] pcm_analog_out_open  cs=0  oc=2  r=44100
-[ 2879.821266] allocate_pipes: ch=1 int=2
-[ 2879.821267] allocate_pipes: channel already open
+I think there is a small issue where the code and documentation don't match
+for the calibration attribute.  The version in the docs makes more sense to
+me and I think it will slightly simplify the code.  
 
-,infinitely.  The system is unusable at this point and I have to 
-Alt-SysRq-k to get back in.
+Fix that and I'm happy to add:
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 
-Let me know what other information to provide.
+> ---
+> 
+>  .../ABI/testing/sysfs-bus-i2c-devices-hm6352       |   21 +++
+>  drivers/misc/Kconfig                               |    7 +
+>  drivers/misc/Makefile                              |    1 
+>  drivers/misc/hmc6352.c                             |  165 ++++++++++++++++++++
+>  4 files changed, 194 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-bus-i2c-devices-hm6352
+>  create mode 100644 drivers/misc/hmc6352.c
+> 
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-bus-i2c-devices-hm6352 b/Documentation/ABI/testing/sysfs-bus-i2c-devices-hm6352
+> new file mode 100644
+> index 0000000..feb2e4a
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-bus-i2c-devices-hm6352
+> @@ -0,0 +1,21 @@
+> +Where:		/sys/bus/i2c/devices/.../heading0_input
+> +Date:		April 2010
+> +Kernel Version: 2.6.36?
+> +Contact:	alan.cox@intel.com
+> +Description:	Reports the current heading from the compass as a floating
+> +		point value in degrees.
+> +
+> +Where:		/sys/bus/i2c/devices/.../power_state
+> +Date:		April 2010
+> +Kernel Version: 2.6.36?
+> +Contact:	alan.cox@intel.com
+> +Description:	Sets the power state of the device. 0 sets the device into
+> +		sleep mode, 1 wakes it up.
+> +
+> +Where:		/sys/bus/i2c/devices/.../calibration
+> +Date:		April 2010
+> +Kernel Version: 2.6.36?
+> +Contact:	alan.cox@intel.com
+> +Description:	Sets the calibration on or off (1 = on, 0 = off). See the
+> +		chip data sheet.
+I think there is a disrepancy between what is described here and what the code
+does.  Looks to me like values are 1 for on and 2 for off in the code (which
+is a little odd).
 
-Here is hwinfo on the system:
-cpu:
-                        Intel(R) Core(TM)2 CPU          6600  @ 2.40GHz, 
-2400 MHz
-                        Intel(R) Core(TM)2 CPU          6600  @ 2.40GHz, 
-2400 MHz
-keyboard:
-   /dev/input/input0    EzKEY USB-compliant keyboard
-printer:
-                        HP deskjet 5600
-graphics card:
-                        PC Partner VGA compatible controller
-sound:
-                        PC Partner Audio device
-storage:
-                        LSI Logic / Symbios Logic 53c1030 PCI-X 
-Fusion-MPT Dual Ultra320 SCSI
-                        LSI Logic / Symbios Logic 53c1030 PCI-X 
-Fusion-MPT Dual Ultra320 SCSI
-                        Intel 82801G (ICH7 Family) IDE Controller
-network:
-   eth1                 Tyan 82573E Gigabit Ethernet Controller (Copper)
-   eth0                 Tyan 82573E Gigabit Ethernet Controller (Copper)
-network interface:
-   eth1                 Ethernet network interface
-   eth0                 Ethernet network interface
-   lo                   Loopback network interface
-usb controller:
-                        Intel 82801G (ICH7 Family) USB2 EHCI Controller
-                        Intel 82801G (ICH7 Family) USB UHCI #4
-                        Intel 82801G (ICH7 Family) USB UHCI #3
-                        Intel 82801G (ICH7 Family) USB UHCI #2
-                        Intel 82801G (ICH7 Family) USB UHCI #1
-bios:
-                        BIOS
-bridge:
-                        Texas Instruments PCI bridge
-                        Intel 6702PXH PCI Express-to-PCI Bridge A
-                        Intel 82801GB/GR (ICH7 Family) LPC Interface Bridge
-                        Intel 82801 PCI Bridge
-                        Intel 82801GR/GH/GHM (ICH7 Family) PCI Express 
-Port 6
-                        Intel 82801GR/GH/GHM (ICH7 Family) PCI Express 
-Port 5
-                        Intel 82801G (ICH7 Family) PCI Express Port 1
-                        Intel 975X Express PCI Express Root Port
-                        Intel E7230 PCI Express Root Port
-                        Intel E7230 Memory Controller Hub
-hub:
-                        ATEN International Hub
-                        Linux 2.6.33.5-rt23-amd64 uhci_hcd UHCI Host 
-Controller
-                        Linux 2.6.33.5-rt23-amd64 uhci_hcd UHCI Host 
-Controller
-                        Linux 2.6.33.5-rt23-amd64 uhci_hcd UHCI Host 
-Controller
-                        Linux 2.6.33.5-rt23-amd64 uhci_hcd UHCI Host 
-Controller
-                        Linux 2.6.33.5-rt23-amd64 ehci_hcd EHCI Host 
-Controller
-memory:
-                        Main Memory
-firewire controller:
-                        Timedia TSB82AA2 IEEE-1394b Link Layer Controller
-unknown:
-                        FPU
-                        DMA controller
-                        PIC
-                        Timer
-                        Keyboard controller
-   /dev/lp0             Parallel controller
-                        Echo Digital Audio 3G
-                        Intel 82801G (ICH7 Family) SMBus Controller
-                        PnP Unclassified device
-                        PnP Unclassified device
-                        PnP Unclassified device
-                        Unclassified device
-                        PnP Unclassified device
-                        PnP Unclassified device
-                        PnP Unclassified device
-                        PnP Unclassified device
-                        PnP Unclassified device
-                        PnP Unclassified device
-                        PnP Unclassified device
-                        PnP Unclassified device
-                        Serial controller
-   /dev/input/input2    Logitech Trackball
-   /dev/input/input1    EzKEY USB-compliant keyboard
-                        Belkin UPS
+
+> +
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index 26386a9..9e825cb 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -304,6 +304,13 @@ config SENSORS_TSL2550
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called tsl2550.
+>  
+> +config HMC6352
+> +	tristate "Honeywell HMC6352 compass"
+> +	depends on I2C
+> +	help
+> +	  This driver provides support for the Honeywell HMC6352 compass,
+> +	  providing configuration and heading data via sysfs.
+> +
+>  config EP93XX_PWM
+>  	tristate "EP93xx PWM support"
+>  	depends on ARCH_EP93XX
+> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+> index 6ed06a1..48597df 100644
+> --- a/drivers/misc/Makefile
+> +++ b/drivers/misc/Makefile
+> @@ -28,6 +28,7 @@ obj-$(CONFIG_DS1682)		+= ds1682.o
+>  obj-$(CONFIG_TI_DAC7512)	+= ti_dac7512.o
+>  obj-$(CONFIG_C2PORT)		+= c2port/
+>  obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
+> +obj-$(CONFIG_HMC6352)		+= hmc6352.o
+>  obj-y				+= eeprom/
+>  obj-y				+= cb710/
+>  obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
+> diff --git a/drivers/misc/hmc6352.c b/drivers/misc/hmc6352.c
+> new file mode 100644
+> index 0000000..3243c8c
+> --- /dev/null
+> +++ b/drivers/misc/hmc6352.c
+> @@ -0,0 +1,165 @@
+> +/*
+> + * hmc6352.c - Honeywell Compass Driver
+> + *
+> + * Copyright (C) 2009 Intel Corp
+> + *
+> + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, write to the Free Software Foundation, Inc.,
+> + * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/slab.h>
+> +#include <linux/i2c.h>
+> +#include <linux/err.h>
+> +#include <linux/delay.h>
+> +#include <linux/sysfs.h>
+> +
+> +static DEFINE_MUTEX(compass_mutex);
+> +
+> +static int compass_command(struct i2c_client *c, u8 cmd)
+> +{
+> +	int ret = i2c_master_send(c, &cmd, 1);
+> +	if (ret < 0)
+> +		dev_warn(&c->dev, "command '%c' failed.\n", cmd);
+> +	return ret;
+> +}
+> +
+> +static int compass_store(struct device *dev, const char *buf, size_t count,
+> +			const char *map)
+> +{
+> +	struct i2c_client *c = to_i2c_client(dev);
+> +	int ret;
+> +	unsigned long val;
+> +
+> +	if (strict_strtoul(buf, 10, &val))
+> +		return -EINVAL;
+> +	if (val < 0 || val >= strlen(map) || map[val] == ' ')
+> +		return -EINVAL;
+> +	mutex_lock(&compass_mutex);
+> +	ret = compass_command(c, map[val]);
+> +	mutex_unlock(&compass_mutex);
+> +	return ret;
+> +}
+> +
+> +static ssize_t compass_calibration_store(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t count)
+> +{
+> +	return compass_store(dev, buf, count, " CE");
+> +}	
+> +
+> +static ssize_t compass_power_mode_store(struct device *dev,
+> +		struct device_attribute *attr, const  char *buf, size_t count)
+> +{
+> +	return compass_store(dev, buf, count, "SW");
+> +}
+> +
+> +static ssize_t compass_heading_data_show(struct device *dev,
+> +			struct device_attribute *attr, char *buf)
+> +{
+> +
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +	unsigned char i2c_data[2];
+> +	unsigned int ret;
+> +
+> +	mutex_lock(&compass_mutex);
+> +	ret = compass_command(client, 'A');
+> +	if (ret != 1) {
+> +		mutex_unlock(&compass_mutex);
+> +		return ret;
+> +	}
+> +	msleep(10); /* sending 'A' cmd we need to wait for 7-10 millisecs */
+> +	ret = i2c_master_recv(client, i2c_data, 2);
+> +	mutex_unlock(&compass_mutex);
+> +	if (ret != 1) {
+> +		dev_warn(dev, "i2c read data cmd failed\n");
+> +		return ret;
+> +	}
+> +	ret = (i2c_data[0] << 8) | i2c_data[1];
+> +	return sprintf(buf, "%d.%d\n", ret/10, ret%10);
+> +}
+> +
+If we are being ludicrously fussy, no point in 2 blank lines here...
+> +
+> +static DEVICE_ATTR(heading0_input, S_IRUGO, compass_heading_data_show, NULL);
+> +static DEVICE_ATTR(calibration, S_IWUSR, NULL, compass_calibration_store);
+> +static DEVICE_ATTR(power_state, S_IWUSR, NULL, compass_power_mode_store);
+> +
+> +static struct attribute *mid_att_compass[] = {
+> +	&dev_attr_heading0_input.attr,
+> +	&dev_attr_calibration.attr,
+> +	&dev_attr_power_state.attr,
+> +	NULL
+> +};
+> +
+> +static const struct attribute_group m_compass_gr = {
+> +	.name = "hmc6352",
+> +	.attrs = mid_att_compass
+> +};
+> +
+> +static int hmc6352_probe(struct i2c_client *client,
+> +					const struct i2c_device_id *id)
+> +{
+> +	int res;
+> +
+> +	res = sysfs_create_group(&client->dev.kobj, &m_compass_gr);
+> +	if (res) {
+> +		dev_err(&client->dev, "device_create_file failed\n");
+> +		return res;
+> +	}
+> +	dev_info(&client->dev, "%s HMC6352 compass chip found\n",
+> +							client->name);
+> +	return 0;
+> +}
+> +
+> +static int hmc6352_remove(struct i2c_client *client)
+> +{
+> +	sysfs_remove_group(&client->dev.kobj, &m_compass_gr);
+> +	return 0;
+> +}
+> +
+> +static struct i2c_device_id hmc6352_id[] = {
+> +	{ "hmc6352", 0 },
+> +	{ }
+> +};
+> +
+> +MODULE_DEVICE_TABLE(i2c, hmc6352_id);
+> +
+> +static struct i2c_driver hmc6352_driver = {
+> +	.driver = {
+> +		.name = "hmc6352",
+> +	},
+> +	.probe = hmc6352_probe,
+> +	.remove = hmc6352_remove,
+> +	.id_table = hmc6352_id,
+> +};
+> +
+> +static int __init sensor_hmc6352_init(void)
+> +{
+> +	return i2c_add_driver(&hmc6352_driver);
+> +}
+> +
+> +static void  __exit sensor_hmc6352_exit(void)
+> +{
+> +	i2c_del_driver(&hmc6352_driver);
+> +}
+> +
+> +module_init(sensor_hmc6352_init);
+> +module_exit(sensor_hmc6352_exit);
+> +
+> +MODULE_AUTHOR("Kalhan Trisal <kalhan.trisal@intel.com");
+> +MODULE_DESCRIPTION("hmc6352 Compass Driver");
+> +MODULE_LICENSE("GPL v2");
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
