@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab0FQHyU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 03:54:20 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:58009 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756824Ab0FQHyT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 03:54:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=XkWzaBUe5nSqTPpSQhDG7uyZU3dwWXzp774XfF4AmgVeIUjSfFMHani6wD2CbHw2rd
-         pwilL6XzXtZi5MyjGXulfbzcBOk61xfgQlx0FvT4Ko5kNg8HgUqMKTfeocy6phSaDXh0
-         ZqxiQvt6yS0lBuWHvm+DytEyYtZgRZCatgsPk=
-Date: Thu, 17 Jun 2010 23:54:20 +0800
-From: wzt.wzt@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, cl@linux-foundation.org, penberg@cs.helsinki.fi,
-       mpm@selenic.com
-Subject: [PATCH] Slabinfo: Fix display format
-Message-ID: <20100617155420.GB2693@localhost.localdomain>
-Mime-Version: 1.0
+	id S1758686Ab0FQH5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 03:57:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752727Ab0FQH5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 03:57:53 -0400
+Message-ID: <4C19D6D5.7060501@redhat.com>
+Date: Thu, 17 Jun 2010 16:03:33 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+MIME-Version: 1.0
+To: Glauber Costa <glommer@redhat.com>
+CC: Zachary Amsden <zamsden@redhat.com>, avi@redhat.com, mtosatti@redhat.com,
+       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/17] Unify vendor TSC logic
+References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-4-git-send-email-zamsden@redhat.com> <4C1886E2.2060509@redhat.com> <20100616132223.GI19104@mothafucka.localdomain>
+In-Reply-To: <20100616132223.GI19104@mothafucka.localdomain>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix slabinfo display format, if a structure length > 17, the information display like:
-
-[root@localhost ~]# cat /proc/slabinfo
-flow_cache             0      0     80   48    1 : tunables  120   60    8 : slabdata      0      0      0
-cfq_io_context        40    112     68   56    1 : tunables  120   60    8 : slabdata      2      2      0
-cfq_queue             30     52    152   26    1 : tunables  120   60    8 : slabdata      2      2      0
-bsg_cmd                0      0    284   14    1 : tunables   54   27    8 : slabdata      0      0      0
-mqueue_inode_cache      1      7    576    7    1 : tunables   54   27    8 : slabdata      1      1      0
-isofs_inode_cache      0      0    380   10    1 : tunables   54   27    8 : slabdata      0      0      0
-hugetlbfs_inode_cache      1     11    352   11    1 : tunables   54   27    8 : slabdata      1      1      0
-ext2_inode_cache       0      0    496    8    1 : tunables   54   27    8 : slabdata      0      0      0
-ext2_xattr             0      0     48   78    1 : tunables  120   60    8 : slabdata      0      0      0
-dquot                  0      0    192   20    1 : tunables  120   60    8 : slabdata      0      0      0
-kioctx                 0      0    192   20    1 : tunables  120   60    8 : slabdata      0      0      0
-kiocb                  0      0    128   30    1 : tunables  120   60    8 : slabdata      0      0      0
-
-Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
-
----
- mm/slab.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index e49f8f4..3bcba98 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -4181,7 +4181,7 @@ static void print_slabinfo_header(struct seq_file *m)
- #else
- 	seq_puts(m, "slabinfo - version: 2.1\n");
- #endif
--	seq_puts(m, "# name            <active_objs> <num_objs> <objsize> "
-+	seq_puts(m, "# name\t\t\t<active_objs> <num_objs> <objsize> "
- 		 "<objperslab> <pagesperslab>");
- 	seq_puts(m, " : tunables <limit> <batchcount> <sharedfactor>");
- 	seq_puts(m, " : slabdata <active_slabs> <num_slabs> <sharedavail>");
-@@ -4271,7 +4271,7 @@ static int s_show(struct seq_file *m, void *p)
- 	if (error)
- 		printk(KERN_ERR "slab: cache %s error: %s\n", name, error);
- 
--	seq_printf(m, "%-17s %6lu %6lu %6u %4u %4d",
-+	seq_printf(m, "%-27s %6lu %6lu %6u %4u %4d",
- 		   name, active_objs, num_objs, cachep->buffer_size,
- 		   cachep->num, (1 << cachep->gfporder));
- 	seq_printf(m, " : tunables %4u %4u %4u",
--- 
-1.6.5.3
+Glauber Costa wrote:
+> On Wed, Jun 16, 2010 at 04:10:10PM +0800, Jason Wang wrote:
+>   
+>> Zachary Amsden wrote:
+>>     
+>>>  
+>>>  void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>>>  {
+>>> +	kvm_x86_ops->vcpu_load(vcpu, cpu);
+>>>  	if (unlikely(vcpu->cpu != cpu)) {
+>>> +		/* Make sure TSC doesn't go backwards */
+>>> +		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 : 
+>>> +				native_read_tsc() - vcpu->arch.last_host_tsc;
+>>> +		if (tsc_delta < 0 || check_tsc_unstable())
+>>>   
+>>>       
+>> It's better to do the adjustment also when tsc_delta > 0
+>>     
+> And why do you think so? Doing it on tsc_delta > 0 would force us to adjust
+> at every entry but the first. And I guess we want to adjust as few times as 
+> we can.
+>
+>   
+This is not strange and is what current SVM code does. If we do not do
+this, guest may see a jump in the value of TSC when tsc_delta > 0.
+> For example, we would adjust on every cpu bounce even for machines that has
+> a perfectly sync tsc. This could introduce an error not present before.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   
 
