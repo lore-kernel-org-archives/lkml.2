@@ -1,35 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311Ab0FQBvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 21:51:49 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34332 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759277Ab0FQBvl (ORCPT
+	id S932558Ab0FQBv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 21:51:56 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47674 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759305Ab0FQBvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 21:51:41 -0400
+	Wed, 16 Jun 2010 21:51:43 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 To: linux-kernel@vger.kernel.org
-Subject: Re: + oom-improve-commentary-in-dump_tasks.patch added to -mm tree
-Cc: kosaki.motohiro@jp.fujitsu.com, rientjes@google.com,
-       akpm@linux-foundation.org, balbir@in.ibm.com, oleg@redhat.com
-In-Reply-To: <201006092141.o59Lf92B023283@imap1.linux-foundation.org>
-References: <201006092141.o59Lf92B023283@imap1.linux-foundation.org>
-Message-Id: <20100617102556.FB63.A69D9226@jp.fujitsu.com>
+Subject: Re: + oom-select-task-from-tasklist-for-mempolicy-ooms-introduce-find_lock_task_mm-to-fix-mm-false-positives-fix.patch added to -mm tree
+Cc: kosaki.motohiro@jp.fujitsu.com, rientjes@google.com, balbir@in.ibm.com,
+       oleg@redhat.com
+In-Reply-To: <201006092141.o59LfK2S023306@imap1.linux-foundation.org>
+References: <201006092141.o59LfK2S023306@imap1.linux-foundation.org>
+Message-Id: <20100617103034.FB72.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 17 Jun 2010 10:51:39 +0900 (JST)
+Date: Thu, 17 Jun 2010 10:51:40 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 > 
 > The patch titled
->      oom: improve commentary in dump_tasks()
+>      oom: introduce find_lock_task_mm to fix mm false positives fix
 > has been added to the -mm tree.  Its filename is
->      oom-improve-commentary-in-dump_tasks.patch
+>      oom-select-task-from-tasklist-for-mempolicy-ooms-introduce-find_lock_task_mm-to-fix-mm-false-positives-fix.patch
 > 
 > Before you just go and hit "reply", please:
 >    a) Consider who else should be cc'ed
@@ -45,16 +45,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
 > 
 > ------------------------------------------------------
-> Subject: oom: improve commentary in dump_tasks()
+> Subject: oom: introduce find_lock_task_mm to fix mm false positives fix
 > From: David Rientjes <rientjes@google.com>
 > 
-> The comments in dump_tasks() should be updated to be more clear about why
-> tasks are filtered and how they are filtered by its argument.
+> find_lock_task_mm() should be documented so that we clearly understand
+> what it does and why we need it.
 > 
-> An unnecessary comment concerning a check for is_global_init() is removed
-> since it isn't of importance.
+> At the same time, remove a stale coment about dereferencing of a local
+> variable "mm" in badness() which no longer exists and was removed when
+> find_lock_task_mm() was added.
 > 
-> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
 > Signed-off-by: David Rientjes <rientjes@google.com>
 > Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > Cc: Balbir Singh <balbir@in.ibm.com>
@@ -62,6 +62,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
 Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
 
 
 
