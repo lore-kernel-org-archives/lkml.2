@@ -1,144 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760681Ab0FQTLu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 15:11:50 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64199 "EHLO
+	id S1760687Ab0FQTNy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 15:13:54 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40635 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757354Ab0FQTLr convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757417Ab0FQTNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 15:11:47 -0400
+	Thu, 17 Jun 2010 15:13:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=raAeM8NcOePORWDs/p5SWcLpVLn8VsmdBcbL82Uyh0f7cRRzi7NJZsTBuosUAzewoe
-         DVHaFETRMSy5NQq6bDF4oB1hKFdrMK/7PRyQ/zW/833KRQx5iKM8Cc0M0OmpBP+ZMVkA
-         OH+HWgxImtZDEDWSmUILLqotd2Q7Ox+Q2PmMU=
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=msUD1hpN3SHMWqtO43GZtfnX3de73VzttuIom9FKjvyu+bZTCXlg6LWzbGiUO4CvmZ
+         aW7GIvgshUzOFUXcYZYuh4HloSVWh5dPAHoDeLua/K2ed7DhK/B6FIFCV7pFnFTibCjV
+         6fMWA5njpFCZ/VxKKoBc/2wXvr+uWAfUsgqPg=
 MIME-Version: 1.0
-In-Reply-To: <1276724403.2847.453.camel@mulgrave.site>
-References: <1276519112-11649-1-git-send-email-matt@console-pimps.org>
-	<alpine.DEB.1.10.1006141014360.1432@dr-wily.mit.edu>
-	<87y6ehxvby.fsf@linux-g6p1.site>
-	<1276545951.5374.260.camel@mulgrave.site>
-	<alpine.DEB.1.10.1006141608550.1248@dr-wily.mit.edu>
-	<1276556919.5374.822.camel@mulgrave.site>
-	<alpine.DEB.1.10.1006142039250.1248@dr-wily.mit.edu>
-	<1276724403.2847.453.camel@mulgrave.site>
-Date: Thu, 17 Jun 2010 21:11:46 +0200
-Message-ID: <AANLkTikgzvZvb30QhSMs_GQ6MCawl0V6GzixnDYfqmzg@mail.gmail.com>
-Subject: Re: [PATCH 1/5] vmlinux.lds.h: Include *(.text.*) in TEXT_TEXT
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Tim Abbott <tabbott@ksplice.com>, Matt Fleming <matt@console-pimps.org>,
-       linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-       linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-       Michal Marek <mmarek@suse.cz>,
-       Parisc List <linux-parisc@vger.kernel.org>
+In-Reply-To: <20100517144130.1d8aa313@lxorguk.ukuu.org.uk>
+References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
+	<20100517144130.1d8aa313@lxorguk.ukuu.org.uk>
+Date: Thu, 17 Jun 2010 12:13:52 -0700
+X-Google-Sender-Auth: g5d1VTxjwTp2Np_lLFxZSVFfVP4
+Message-ID: <AANLkTimO08zZV4DenxT0wi3eWp1BngGu14x0GWRyfgO5@mail.gmail.com>
+Subject: Re: [PATCH v3 00/10] BKL conversion in tty layer
+From: Tony Luck <tony.luck@intel.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       Greg KH <gregkh@suse.de>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 11:40 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> True ... but I didn't say that it was valid C.  I said the compiler is
-> spitting them out in the assembly ... I suspect it uses invalid C
-> function characters precisely to avoid clashes.
+On Mon, May 17, 2010 at 6:41 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> At this point I think the only way to make further progress is to
+> actually push this stuff into the kernel on top of the BKL removal
+> patches for the drivers and see what happens. Something will no doubt
+> break but we can try and nail them in time or if not revert the series
+> and try again next kernel.
 
-Then we need to add all such chars to that regexp.
+These changes showed up in linux-next (tag: next-20100617) ... and I'm seeing
+a few WARN_ON messages on ia64 while booting:
 
-> The problem is that it's hard to get the linker to distinguish
-> between .text.. and .text. without funny regexp contortions.  However,
-> if the two sections began .text- and .text. they are easy to distinguish
-> because one prefix isn't a subset of the other.
->
->> Both .page_aligned.data and .data-page_aligned are valid choices (and in
->> fact, the first patch series I sent on this topic about 18 months ago did
->> .page_aligned.data, I think).
->>
->> The main technical difference between ".data..page_aligned" and
->> ".page_aligned.data" in my view is that you need to be more careful when
->> writing assembly files with ".page_aligned.data".
->>
->> To give an example, if I run the following:
->>
->> $ cat > foo.s
->> .section .data-page-aligned
->>       .long 0
->> .section .data.page_aligned
->>       .long 1
->> $ gcc -c foo.s -o foo.o
->> $ objdump -h foo.o
->> foo.o:     file format elf32-i386
->>
->> Sections:
->> Idx Name          Size      VMA       LMA       File off  Algn
->>   0 .text         00000000  00000000  00000000  00000034  2**2
->>                   CONTENTS, ALLOC, LOAD, READONLY, CODE
->>   1 .data         00000000  00000000  00000000  00000034  2**2
->>                   CONTENTS, ALLOC, LOAD, DATA
->>   2 .bss          00000000  00000000  00000000  00000034  2**2
->>                   ALLOC
->>   3 .data-page-aligned 00000004  00000000  00000000  00000034  2**0
->>                   CONTENTS, READONLY
->>   4 .data.page_aligned 00000004  00000000  00000000  00000038  2**0
->>                   CONTENTS, ALLOC, LOAD, DATA
->>
->> one can see that the .data-page-aligned section doesn't have the right
->> section flags.  So I'm pretty sure the relevant assembler heuristic is
->> looking for things starting with ".data.", not just ".data".
->>
->> The kernel has a lot of code in assembly files that just does:
->>
->> .section ".data"
->>
->> and so there's a very real risk that folks who are doing pattern-matching
->> development on assembly files will end up creating non-allocated sections
->> by accident (I've certainly made this mistake myself, and there's a bug of
->> this form in arch/x86/lib/thunk.S until commit
->> c6c2d7a084d14a8a701be84872aa1b77d2945f46, so I don't think I'm alone)
->
-> But that commit isn't anything to do with the section not being
-> allocated.  That's actually irrelevant to us, since we sort out the
-> sectional allocations out at link time with the linker script (which
-> ends up completely ignoring the original file flags).  The problem,
-> specifically, is that the linker does a rename of two identically named
-> sections with different flags ... we would also get the same behaviour
-> if the linker thought two sections weren't mergeable even if they did
-> have identical flags.
->
-> In general, I think it's good practise for all use of sections to
-> specify the elf flags.
+WARNING: at include/linux/tty.h:589 tty_open+0x160/0xc60()
+WARNING: at include/linux/tty.h:589 tty_open+0x9d0/0xc60()
+WARNING: at include/linux/tty.h:589 tty_release+0x90/0xbc0()
+WARNING: at include/linux/tty.h:589 tty_release+0x630/0xbc0()
+WARNING: at include/linux/tty.h:589 tty_release+0x90/0xbc0()
+WARNING: at include/linux/tty.h:589 tty_release+0x630/0xbc0()
+WARNING: at include/linux/tty.h:589 tty_release+0x90/0xbc0()
+WARNING: at include/linux/tty.h:589 tty_release+0x630/0xbc0()
 
-This is doable in asm, yes. For .bss, we need to not forget about
-@nobits too: section .bss.foo,"aw",@nobits
+Stack trace for the first of these looks like:
+Call Trace:
+ [<a0000001000159d0>] show_stack+0x50/0xa0
+ [<a00000010090f250>] dump_stack+0x30/0x50
+ [<a00000010008e2c0>] warn_slowpath_common+0xc0/0x120
+ [<a00000010008e360>] warn_slowpath_null+0x40/0x60
+ [<a00000010053ebe0>] tty_open+0x160/0xc60
+ [<a0000001001af9b0>] chrdev_open+0x310/0x360
+ [<a0000001001a58b0>] __dentry_open+0x350/0x680
+ [<a0000001001a5d80>] nameidata_to_filp+0x80/0xc0
+ [<a0000001001bfee0>] finish_open+0x160/0x380
+ [<a0000001001c0cc0>] do_last+0xbc0/0xce0
+ [<a0000001001c5270>] do_filp_open+0x2f0/0xb40
+ [<a0000001001a5290>] do_sys_open+0x90/0x200
+ [<a0000001001a54d0>] sys_open+0x50/0x80
+ [<a000000100b907e0>] kernel_init+0x340/0x420
+ [<a000000100013c10>] kernel_thread_helper+0x30/0x60
+ [<a00000010000a0c0>] start_kernel_thread+0x20/0x40
 
-> Actually, as I said, that would be .data-
->
-> But, to be honest, I don't care that much about the data names because
-> we don't use -fdata-sections, the only objection is that having two
-> separate conventions for text and data is adding needless complexity ...
-> I do care about the text names, and I'd rather we stuck to the existing
-> convention there, or provided a good reason for the change ... and
-> wanting .text. as a prefix for everything is weak at best.
->
-> The specific objection I have to converting everything to the .text..*
-> prefix for linux sections is that the gather all function sections can
-> no longer be *(.text.*), but has to become a regular expression, which
-> is adding fragility.
+Does anyone see anything similar on other architectures?  Or is ia64 doing
+something "special" here?
 
-I agree that it's not pretty, but otherwise we add fragility in other places:
-every section directive must be correct now. These places are more numerous
-than linker scripts.
-
-But, leaving aside the question whether we want to take the risk
-of people forgetting to do it properly everywhere, -
-is it even *possible* to specify these attributes in C - that is,
-in gcc's __attribute__((section(".bss.foo")))?
-
-I think currently gcc does not support it - it guesses attributes
-based on the section name.
-
--- 
-vda
+-Tony
