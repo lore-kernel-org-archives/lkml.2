@@ -1,78 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760113Ab0FQOOy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 10:14:54 -0400
-Received: from mail.gmx.net ([213.165.64.20]:59506 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752999Ab0FQOOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 10:14:52 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+kiqgbAaukEoAqEBLdmLSdH3vA97mldvo4fztUih
-	gZQlG3LLKhz52v
-Subject: Re: Slow pty's (was Re: libdivecomputer interfaces?)
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Brian Bloniarz <bmb@athenacr.com>,
-       Chris Wedgwood <cw@f00f.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Jef Driesen <jefdriesen@telenet.be>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1276781044.27822.309.camel@twins>
-References: <AANLkTinLth4iKXAwszEEsPm_9ZDlj8HtqsiG5cdFE1cZ@mail.gmail.com>
-	 <20100610181042.GA19210@puku.stupidest.org> <4C116652.8010408@athenacr.com>
-	 <alpine.LRH.2.00.1006161702470.2497@twin.jikos.cz>
-	 <1276701411.30669.6.camel@marge.simson.net>
-	 <1276756770.8248.20.camel@marge.simson.net>
-	 <1276758038.9628.1.camel@marge.simson.net>
-	 <1276771844.8121.14.camel@marge.simson.net>
-	 <1276781044.27822.309.camel@twins>
-Content-Type: text/plain
-Date: Thu, 17 Jun 2010 16:14:46 +0200
-Message-Id: <1276784086.8316.17.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S932407Ab0FQOTW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 10:19:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36493 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753288Ab0FQOTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 10:19:21 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: axboe@kernel.dk, carns@mcs.anl.gov
+Subject: [patch] cfq: Don't allow queue merges for queues that have no process references
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 17 Jun 2010 10:19:11 -0400
+Message-ID: <x49ocf9agio.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-17 at 15:24 +0200, Peter Zijlstra wrote:
+Hi,
 
-> Humm,. the code around there suggests something like the below, but I
-> must admit its been a while since I really read all that nohz stuff,
-> Thomas, any preferences?
+A user reported a kernel bug when running a particular program that did
+the following:
 
-Mine works.  Yours fits and works.  -+ vs ----+, you win :)
+created 32 threads
+- each thread took a mutex, grabbed a global offset, added a buffer size
+  to that offset, released the lock
+- read from the given offset in the file
+- created a new thread to do the same
+- exited
 
+The result is that cfq's close cooperator logic would trigger, as the
+threads were issuing I/O within the mean seek distance of one another.
+This workload managed to routinely trigger a use after free bug when
+walking the list of merge candidates for a particular cfqq
+(cfqq->new_cfqq).  The logic used for merging queues looks like this:
+
+static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
+{
+	int process_refs, new_process_refs;
+	struct cfq_queue *__cfqq;
+
+	/* Avoid a circular list and skip interim queue merges */
+	while ((__cfqq = new_cfqq->new_cfqq)) {
+		if (__cfqq == cfqq)
+			return;
+		new_cfqq = __cfqq;
+	}
+
+	process_refs = cfqq_process_refs(cfqq);
+	/*
+	 * If the process for the cfqq has gone away, there is no
+	 * sense in merging the queues.
+	 */
+	if (process_refs == 0)
+		return;
+
+	/*
+	 * Merge in the direction of the lesser amount of work.
+	 */
+	new_process_refs = cfqq_process_refs(new_cfqq);
+	if (new_process_refs >= process_refs) {
+		cfqq->new_cfqq = new_cfqq;
+		atomic_add(process_refs, &new_cfqq->ref);
+	} else {
+		new_cfqq->new_cfqq = cfqq;
+		atomic_add(new_process_refs, &cfqq->ref);
+	}
+}
+
+When a merge candidate is found, we add the process references for the
+queue with less references to the queue with more.  The actual merging
+of queues happens when a new request is issued for a given cfqq.  In the
+case of the test program, it only does a single pread call to read in
+1MB, so the actual merge never happens.
+
+Normally, this is fine, as when the queue exits, we simply drop the
+references we took on the other cfqqs in the merge chain:
+
+	/*
+	 * If this queue was scheduled to merge with another queue, be
+	 * sure to drop the reference taken on that queue (and others in
+	 * the merge chain).  See cfq_setup_merge and cfq_merge_cfqqs.
+	 */
+	__cfqq = cfqq->new_cfqq;
+	while (__cfqq) {
+		if (__cfqq == cfqq) {
+			WARN(1, "cfqq->new_cfqq loop detected\n");
+			break;
+		}
+		next = __cfqq->new_cfqq;
+		cfq_put_queue(__cfqq);
+		__cfqq = next;
+	}
+
+However, there is a hole in this logic.  Consider the following (and
+keep in mind that each I/O keeps a reference to the cfqq):
+
+q1->new_cfqq = q2   // q2 now has 2 process references
+q3->new_cfqq = q2   // q2 now has 3 process references
+
+// the process associated with q2 exits
+// q2 now has 2 process references
+
+// queue 1 exits, drops its reference on q2
+// q2 now has 1 process reference
+
+// q3 exits, so has 0 process references, and hence drops its references
+// to q2, which leaves q2 also with 0 process references
+
+q4 comes along and wants to merge with q3
+
+q3->new_cfqq still points at q2!  We follow that link and end up at an
+already freed cfqq.
+
+So, the fix is to not follow a merge chain if the top-most queue does
+not have a process reference, otherwise any queue in the chain could be
+already freed.  I also changed the logic to disallow merging with a
+queue that does not have any process references.  Previously, we did
+this check for one of the merge candidates, but not the other.  That
+doesn't really make sense.
+
+Without the attached patch, my system would BUG within a couple of
+seconds of running the reproducer program.  With the patch applied, my
+system ran the program for over an hour without issues.
+
+This addresses the following bugzilla:
+    https://bugzilla.kernel.org/show_bug.cgi?id=16217
+
+Thanks a ton to Phil Carns for providing the bug report and an excellent
+reproducer.
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Reported-by: Phil Carns <carns@mcs.anl.gov>
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 5ff4f48..153f627 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1986,6 +1986,15 @@ static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
+ 	int process_refs, new_process_refs;
+ 	struct cfq_queue *__cfqq;
  
-> ---
->  kernel/time/tick-sched.c |    5 +----
->  1 files changed, 1 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 5f171f0..e0707ea 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -315,9 +315,6 @@ void tick_nohz_stop_sched_tick(int inidle)
->  		goto end;
->  	}
->  
-> -	if (nohz_ratelimit(cpu))
-> -		goto end;
-> -
->  	ts->idle_calls++;
->  	/* Read jiffies and the time when jiffies were updated last */
->  	do {
-> @@ -328,7 +325,7 @@ void tick_nohz_stop_sched_tick(int inidle)
->  	} while (read_seqretry(&xtime_lock, seq));
->  
->  	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
-> -	    arch_needs_cpu(cpu)) {
-> +	    arch_needs_cpu(cpu) || nohz_ratelimit(cpu)) {
->  		next_jiffies = last_jiffies + 1;
->  		delta_jiffies = 1;
->  	} else {
-
++	/*
++	 * If there are no process references on the new_cfqq, then it is
++	 * unsafe to follow the ->new_cfqq chain as other cfqq's in the
++	 * chain may have dropped their last reference (not just their
++	 * last process reference).
++	 */
++	if (!cfqq_process_refs(new_cfqq))
++		return;
++
+ 	/* Avoid a circular list and skip interim queue merges */
+ 	while ((__cfqq = new_cfqq->new_cfqq)) {
+ 		if (__cfqq == cfqq)
+@@ -1994,17 +2003,17 @@ static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
+ 	}
+ 
+ 	process_refs = cfqq_process_refs(cfqq);
++	new_process_refs = cfqq_process_refs(new_cfqq);
+ 	/*
+ 	 * If the process for the cfqq has gone away, there is no
+ 	 * sense in merging the queues.
+ 	 */
+-	if (process_refs == 0)
++	if (process_refs == 0 || new_process_refs == 0)
+ 		return;
+ 
+ 	/*
+ 	 * Merge in the direction of the lesser amount of work.
+ 	 */
+-	new_process_refs = cfqq_process_refs(new_cfqq);
+ 	if (new_process_refs >= process_refs) {
+ 		cfqq->new_cfqq = new_cfqq;
+ 		atomic_add(process_refs, &new_cfqq->ref);
