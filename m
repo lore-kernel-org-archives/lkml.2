@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab0FRBkF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 21:40:05 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40777 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936Ab0FRBkD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 21:40:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=g1tu0jIY1w+EtcvWyQj2uEQVA4D69Bxn2voyZbMofq/obxRolKKrWZD6O8LC5Hte/s
-         cBMg9LgKrLZn8bgaCESRYtH3v7/n6S0tfXQFn1vyedpV512abeKqgi9UopPvh7an2eFE
-         H7ZGlk2cplYQJHhjegPvOp7AdEyaxsr1I8UxE=
+	id S1753565Ab0FRBmh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 21:42:37 -0400
+Received: from ozlabs.org ([203.10.76.45]:40444 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752488Ab0FRBmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 21:42:35 -0400
+Date: Fri, 18 Jun 2010 09:31:13 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 3/8] perf: register pmu implementations
+Message-ID: <20100617233113.GA2302@brick.ozlabs.ibm.com>
+References: <20100616160027.590430763@chello.nl>
+ <20100616160238.241599593@chello.nl>
 MIME-Version: 1.0
-In-Reply-To: <1276818988.9661.80.camel@schen9-DESK>
-References: <1276818988.9661.80.camel@schen9-DESK>
-Date: Fri, 18 Jun 2010 10:40:02 +0900
-Message-ID: <AANLkTinxkt_ttN68cLFqS8ubqpyQATIbtRMlILK10g69@mail.gmail.com>
-Subject: Re: [PATCH v3 0/2] tmpfs: Improve tmpfs scalability
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@google.com>,
-       yanmin.zhang@intel.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100616160238.241599593@chello.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 8:56 AM, Tim Chen <tim.c.chen@linux.intel.com> wrote:
-> This patch series helps to resolve scalability problem
-> for tmpfs.  With these patches, Aim7 fserver throughput for tmpfs
-> improved by 270% on a 4 socket, 32 cores NHM-EX system.
->
-> In current implementation of tmpfs, whenever we
-> get a new page, stat_lock in shmem_sb_info needs to be acquired.
-> This causes a lot of lock contentions when multiple
-> threads are using tmpfs simultaneously, which makes
-> system with large number of cpus scale poorly.
-> Almost 75% of cpu time was spent contending on
-> stat_lock when we ran Aim7 fserver load with 128 threads
-> on a 4 socket, 32 cores NHM-EX system.
->
-> We made use of the percpu_counter library for used blocks accounting to
-> speed up the getting and returning of blocks to local per cpu counter
-> without lock acquisition.
->
-> The first patch in the series add a function to provide
-> fast but accurate comparison for the percpu_counter library.
->
-> The second patch update the shmem code of tmpfs to use percpu_counter
-> library to improve tmpfs performance.
->
+On Wed, Jun 16, 2010 at 06:00:30PM +0200, Peter Zijlstra wrote:
 
-Patch series seems good to me.
+> Simple registration interface for struct pmu, this provides the
+> infrastructure for removing all the weak functions.
 
-If you send a patch, please, make sure Cc list.
-tmpfs is related to mm. So when you send patch at next time, please Cc linux-mm.
+Nice idea...
 
-You can use ./script/get_maintainer.pl -f mm/shmem.c
+> @@ -1011,7 +1001,7 @@ static int hw_perf_cache_event(u64 confi
+>  	return 0;
+>  }
+>  
+> -struct pmu *hw_perf_event_init(struct perf_event *event)
+> +static int power_pmu_event_init(struct perf_event *event)
 
-Thanks.
--- 
-Kind regards,
-Minchan Kim
+How does power_pmu_event_init ever get called now?  I don't see any
+other references to it in the patch.  Should struct pmu have a
+reference to it?
+
+Paul.
