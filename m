@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab0FQXQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 19:16:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44290 "EHLO
+	id S933092Ab0FQXR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 19:17:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53744 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933077Ab0FQXQi (ORCPT
+	by vger.kernel.org with ESMTP id S1760881Ab0FQXR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 19:16:38 -0400
-Date: Thu, 17 Jun 2010 16:15:39 -0700
+	Thu, 17 Jun 2010 19:17:28 -0400
+Date: Thu, 17 Jun 2010 16:16:19 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Daniel Walker <dwalker@codeaurora.org>, mingo@elte.hu, awalls@radix.net,
-       linux-kernel@vger.kernel.org, jeff@garzik.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: Daniel Walker <dwalker@codeaurora.org>, Tejun Heo <tj@kernel.org>,
+       mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
+       rusty@rustcorp.com.au, cl@linux-foundation.org, dhowells@redhat.com,
+       arjan@linux.intel.com, johannes@sipsolutions.net, oleg@redhat.com,
+       axboe@kernel.dk
 Subject: Re: Overview of concurrency managed workqueue
-Message-Id: <20100617161539.d4ea62c0.akpm@linux-foundation.org>
-In-Reply-To: <4C1901E9.2080907@kernel.org>
+Message-Id: <20100617161619.d3ebd73d.akpm@linux-foundation.org>
+In-Reply-To: <1276776066.2461.15.camel@localhost>
 References: <1276551467-21246-1-git-send-email-tj@kernel.org>
 	<4C17C598.7070303@kernel.org>
 	<1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
@@ -26,13 +27,7 @@ References: <1276551467-21246-1-git-send-email-tj@kernel.org>
 	<1276695665.9309.17.camel@m0nster>
 	<4C18D574.1040903@kernel.org>
 	<1276697146.9309.27.camel@m0nster>
-	<4C18DC69.10704@kernel.org>
-	<1276698880.9309.44.camel@m0nster>
-	<4C18E4B7.5040702@kernel.org>
-	<1276701074.9309.60.camel@m0nster>
-	<4C18F2B8.9060805@kernel.org>
-	<1276705838.9309.94.camel@m0nster>
-	<4C1901E9.2080907@kernel.org>
+	<1276776066.2461.15.camel@localhost>
 X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -41,42 +36,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Jun 2010 18:55:05 +0200
-Tejun Heo <tj@kernel.org> wrote:
+On Thu, 17 Jun 2010 08:01:06 -0400
+Andy Walls <awalls@md.metrocast.net> wrote:
 
-> It was about using wq for cpu intensive / RT stuff.  Linus said,
-> 
->   So stop arguing about irrelevancies. Nobody uses workqueues for RT
->   or for CPU-intensive crap. It's not what they were designed for, or
->   used for.
+> I'm going to agree with Tejun, that tweaking worker thread priorities
+> seems like an odd thing, since they are meant to handle deferable
+> actions - things that can be put off until later.
 
-kernel/padata.c uses workqueues for cpu-intensive work, as I understand
-it.
+Disagree.  If you're in an interrupt handler and have some work which
+you want done in process context and you want it done RIGHT NOW then
+handing that work off to a realtime-policy worker thread is a fine way of
+doing that.
 
-I share Daniel's concerns here.  Being able to set a worker thread's
-priority or policy isn't a crazy thing.  Also one might want to specify
-that a work item be executed on one of a node's CPUs, or within a
-cpuset's CPUs, maybe other stuff.  I have vague feelings that there's
-already code in the kernel somewhere which does some of these things.
 
-(Please remind me what your patches did about create_rt_workqueue and
-stop_machine?)
-
-(Please note that drivers/media/video/ivtv/ivtv-irq.c is currently
-running sched_setscheduler() against a workqueue thread of its own
-creation, so we have precedent).
-
-If someone wants realtime service for a work item then at present, the
-way to do that is to create your own kernel threads, set their policy
-and start feeding them work items.  That sounds like a sensible
-requirement and implementation to me.  But how does it translate into
-the new implementation?
-
-The priority/policy logically attaches to the work itself, not to the
-thread which serves it.  So one would want to be able to provide that
-info at queue_work()-time.  Could the workqueue core then find a thread,
-set its policy/priority, schedule it and then let the CPU scheduler do
-its usual thing with it?
-
-That doesn't sound too bad?  Add policy/priority/etc fields to the
-work_struct?
