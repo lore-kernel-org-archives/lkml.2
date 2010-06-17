@@ -1,89 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760188Ab0FQOlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 10:41:13 -0400
-Received: from kroah.org ([198.145.64.141]:42694 "EHLO coco.kroah.org"
+	id S932883Ab0FQOms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 10:42:48 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:2273 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756007Ab0FQOlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 10:41:12 -0400
-Date: Thu, 17 Jun 2010 07:40:34 -0700
-From: Greg KH <greg@kroah.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] zram: generic RAM based compressed R/W block
- devices
-Message-ID: <20100617144034.GA9362@kroah.com>
-References: <1274710685-2351-1-git-send-email-ngupta@vflare.org>
- <4BFFEA95.9040505@vflare.org>
- <20100528162657.GA28781@kroah.com>
- <4C18337C.3040605@vflare.org>
- <20100616184355.GA14248@kroah.com>
- <4C197CB5.5020907@vflare.org>
+	id S1756007Ab0FQOmq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 10:42:46 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+From: "Michael Chan" <mchan@broadcom.com>
+To: "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
+       "'davem@davemloft.net'" <davem@davemloft.net>
+cc: "JBottomley@Novell.com" <JBottomley@Novell.com>,
+       "vapier@gentoo.org" <vapier@gentoo.org>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 17 Jun 2010 07:42:29 -0700
+Subject: Re: bnx2 fails to compile on parisc because of missing
+ get_dma_ops()
+Thread-Topic: bnx2 fails to compile on parisc because of missing
+ get_dma_ops()
+Thread-Index: AcsOJkDMIdw3844bScGMb1hnrLyYcwABLX0g
+Message-ID: <C27F8246C663564A84BB7AB3439772421B79CBCA22@IRVEXCHCCR01.corp.ad.broadcom.com>
+In-Reply-To: <20100617230435J.fujita.tomonori@lab.ntt.co.jp>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C197CB5.5020907@vflare.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-WSS-ID: 6004EBDF20S160702127-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 07:09:01AM +0530, Nitin Gupta wrote:
-> On 06/17/2010 12:13 AM, Greg KH wrote:
-> > On Wed, Jun 16, 2010 at 07:44:20AM +0530, Nitin Gupta wrote:
-> >> Hi Greg,
-> >>
-> >> On 05/28/2010 09:56 PM, Greg KH wrote:
-> >>> On Fri, May 28, 2010 at 09:38:53PM +0530, Nitin Gupta wrote:
-> >>>>
-> >>>> On 05/24/2010 07:48 PM, Nitin Gupta wrote:
-> >>>>> Creates RAM based block devices: /dev/zramX (X = 0, 1, ...).
-> >>>>> Pages written to these disks are compressed and stored in memory
-> >>>>> itself. These disks allow very fast I/O and compression provides
-> >>>>> good amounts of memory savings.
-> >>>>>
-> >>>>> This is enhancement over existing ramzswap driver which creates
-> >>>>> virtual block devices (/dev/ramzswapX) which could be used only
-> >>>>> as swap disks.
-> >>>>>
-> >>>>> Now, with the ability to handle any kind of I/O request, zram
-> >>>>> devices have lot more use cases:
-> >>>>>  - /tmp storage
-> >>>>>  - various caches under /var
-> >>>>>  - swap disks
-> >>>>>  - maybe even more! :)
-> >>>>>
-> >>>>> Performance numbers can be found at:
-> >>>>> http://code.google.com/p/compcache/wiki/zramperf
-> >>>>>
-> >>>>
-> >>>> Any reviews/comments, please?
-> >>>
-> >>> We are all busy with the .35-rc1 merge work at the moment, sorry.
-> >>>
-> >>
-> >> Can you please apply these patches to linux-next?
-> > 
-> > Yes, I'm working on it, I should get to it by the end of this week.
-> > 
-> >> or maybe for .35-rc3/rc4 too?
-> > 
-> > No, this is not a bugfix, why would it be acceptable for the .35 kernel
-> > release?
-> > 
-> 
-> Since its a staging driver, I thought any kind of changes can be pulled in
-> mainline too. Maybe I still don't understand how -staging works :)
+FUJITA Tomonori wrote:
 
-staging works like any other part of the kernel tree when it comes to
-merges with Linus, new stuff only goes in for the -rc1 release, bugfixes
-only afterward.
+> On Thu, 17 Jun 2010 06:30:39 -0700
+> "Michael Chan" <mchan@broadcom.com> wrote:
+>
+> > James Bottomley wrote:
+> >
+> > > On Thu, 2010-06-17 at 05:54 -0700, Michael Chan wrote:
+> > > > This prefetch improves performance noticeably when the driver is
+> > > > handling incoming 64-byte packets at a sustained rate.
+> > >
+> > > So why not do it unconditionally?  The worst that can happen
+> > > is that you
+> > > pull in a stale cache line which will get cleaned in the
+> > > dma_sync, thus
+> > > slightly degrading performance on incoherent architectures.
+> >
+> > The original patch was an unconditional prefetch.  There was
+> > some discussion that it might not be correct if the DMA wasn't
+> > sync'ed yet on some archs.  If the concensus is that it is ok to
+> > do so, that would be the simplest solution.
+>
+> As James said, it just adds useless prefetch on incoherent
+> architectures. sync_single_for_cpu is called later so we can see the
+> correct data. One useless prefetch is unlikely to lead performance
+> drop.
+>
+> You might prefer this v2.
 
-thanks,
+Yes, thanks.
+Acked-by: Michael Chan <mchan@broadcom.com>
 
-greg k-h
+>
+> =
+> From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Subject: [PATCH v2] bnx2: fix dma_get_ops compilation breakage
+>
+> This removes dma_get_ops() prefetch optimization in bnx2.
+>
+> bnx2 uses dma_get_ops() to see if dma_sync_single_for_cpu() is
+> noop. bnx2 does prefetch if it's noop.
+>
+> But dma_get_ops() isn't available on all the architectures (only the
+> architectures that uses dma_map_ops struct have it). Using
+> dma_get_ops() in drivers leads to compilation breakage on many
+> archtectures.
+>
+> This patch removes dma_get_ops() and changes bnx2 to do prefetch on
+> all the architectures. This adds useless prefetch on incoherent
+> architectures but this is harmless. It is also unlikely to cause the
+> performance drop.
+>
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> ---
+>  drivers/net/bnx2.c |   10 ++++------
+>  1 files changed, 4 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/net/bnx2.c b/drivers/net/bnx2.c
+> index 949d7a9..85f1692 100644
+> --- a/drivers/net/bnx2.c
+> +++ b/drivers/net/bnx2.c
+> @@ -3099,12 +3099,10 @@ bnx2_rx_int(struct bnx2 *bp, struct
+> bnx2_napi *bnapi, int budget)
+>               skb = rx_buf->skb;
+>               prefetchw(skb);
+>
+> -             if (!get_dma_ops(&pdev->dev)->sync_single_for_cpu) {
+> -                     next_rx_buf =
+> -                             &rxr->rx_buf_ring[
+> -
+> RX_RING_IDX(NEXT_RX_BD(sw_cons))];
+> -                     prefetch(next_rx_buf->desc);
+> -             }
+> +             next_rx_buf =
+> +
+> &rxr->rx_buf_ring[RX_RING_IDX(NEXT_RX_BD(sw_cons))];
+> +             prefetch(next_rx_buf->desc);
+> +
+>               rx_buf->skb = NULL;
+>
+>               dma_addr = dma_unmap_addr(rx_buf, mapping);
+> --
+> 1.6.5
+>
+>
+>
+
