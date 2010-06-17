@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759965Ab0FQMsX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 08:48:23 -0400
-Received: from sh.osrg.net ([192.16.179.4]:40809 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751817Ab0FQMsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 08:48:21 -0400
-Date: Thu, 17 Jun 2010 21:48:05 +0900
-To: jaxboe@fusionio.com
-Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
-       James.Bottomley@suse.de, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH -mm 0/3] remove useless ISA_DMA_THRESHOLD
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100602061815.GH3564@kernel.dk>
-References: <20100601182452.GA3564@kernel.dk>
-	<20100602113022I.fujita.tomonori@lab.ntt.co.jp>
-	<20100602061815.GH3564@kernel.dk>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100617214643N.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 17 Jun 2010 21:48:06 +0900 (JST)
+	id S1759913Ab0FQMvr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 08:51:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57874 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab0FQMvq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 08:51:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=MLyYWIfPPKp3pwO53A8W+YLVCbqeySkHq34sZm4/Kp9Q0pVxzrxK2+1XVCJhMF7F2r
+         d02pRyb9tDFT5Ai1EurxQSMnt36IhkFUFjp+805LNhAifkX9y8bnWhpgfZgo4hySxTHr
+         NOAkryiLTYN3wRl6E2bjrynsFKzUuqiAch3ho=
+MIME-Version: 1.0
+From: Tiago Maluta <tiago.maluta@gmail.com>
+Date: Thu, 17 Jun 2010 12:50:52 +0000
+Message-ID: <AANLkTim2mi0wbJJl17OkbCJbRt-s5phR4sumn5GsJKUp@mail.gmail.com>
+Subject: [PATCH] Fix CONFIG_CROSS_COMPILE issue in .config
+To: linux-kernel@vger.kernel.org
+Cc: Roland McGrath <roland@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010 08:18:15 +0200
-Jens Axboe <jaxboe@fusionio.com> wrote:
+Linux has an recent option to define CROSS_COMPILE in menuconfig.
 
-> On Tue, Jun 01 2010, FUJITA Tomonori wrote:
-> > On Tue, 1 Jun 2010 20:24:52 +0200
-> > Jens Axboe <jaxboe@fusionio.com> wrote:
-> > 
-> > > On Mon, May 31 2010, FUJITA Tomonori wrote:
-> > > > This patchset removes useless ISA_DMA_THRESHOLD:
-> > > > 
-> > > > - ISA_DMA_THRESHOLD is irrelevant to the majority of architectures but
-> > > >   they have to define it.
-> > > > 
-> > > > - ISA_DMA_THRESHOLD definition is inconsistent on architectures; ISA
-> > > >   DMA addressing restriction, DMA addressing restriction or something
-> > > >   else.
-> > > > 
-> > > > - Everyone (except for SCSI) uses dma_mask instead of ancient
-> > > >   ISA_DMA_THRESHOLD.
-> > > > 
-> > > > Only SCSI uses ISA_DMA_THRESHOLD for ancient drivers with non-zero
-> > > > unchecked_isa_dma. We can safely remove ISA_DMA_THRESHOLD usage in
-> > > > SCSI. So we can clean up ISA_DMA_THRESHOLD on the whole tree.
-> > > 
-> > > Looks good. James, it's probably easier if I just carry this patch set.
-> > 
-> > Thanks,
-> > 
-> > Any tree works for me, I thought about -mm though.
-> > 
-> > Can you replace [1/3] with the following?
-> > 
-> > I fixed the subject and the body, s/aha1532/aha1542/;
-> > 
-> > Somehow I forgot to remove unused BAD_SG_DMA().
-> 
-> I'll collect the acks and include this update.
+Typically, one of the options when building for another target is
+('arm' is just an example):
 
-Can you send this to -next via your tree? I want this to be
-compile-tested on -next on various architectures.
+# make ARCH=arm CROSS_COMPILE=arm-cc O=../build
 
-Thanks,
+If I omit CROSS_COMPILE and use the new way in .config:
+CONFIG_CROSS_COMPILE="arm-cc"
+
+I got:
+
+   cc1: error: unrecognized command line option "-mlittle-endian"
+   cc1: error: unrecognized command line option "-mabi=aapcs-linux"
+   cc1: error: unrecognized command line option "-mno-thumb-interwork"
+   /usr/src/linux/kernel/bounds.c:1: error: bad value (armv5t) for
+-march= switch
+   /usr/src/linux/kernel/bounds.c:1: error: bad value (armv5t) for
+-mtune= switch
+   make[2]: *** [kernel/bounds.s] Error 1
+   make[1]: *** [prepare0] Error 2
+   make: *** [sub-make] Error 2
+
+Verbose output clearly says that I'm using the host compiler instead
+cross compiler.
+This patch fixed my problem:
+
+---
+ Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index d49d96c..5a6c7d5 100644
+--- a/Makefile
++++ b/Makefile
+@@ -190,7 +190,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/
+-e s/sun4u/sparc64/ \
+ export KBUILD_BUILDHOST := $(SUBARCH)
+ ARCH           ?= $(SUBARCH)
+ CROSS_COMPILE  ?=
+-CROSS_COMPILE  ?= $(CONFIG_CROSS_COMPILE:"%"=%)
++CROSS_COMPILE  := $(shell grep CONFIG_CROSS_COMPILE .config | cut -d'"' -f2)
+
+ # Architecture as present in compile.h
+ UTS_MACHINE    := $(ARCH)
+--
+1.7.0.2
+
+
+--tm
