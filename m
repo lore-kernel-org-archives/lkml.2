@@ -1,89 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932798Ab0FQIzZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 04:55:25 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:43021 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932663Ab0FQIzX (ORCPT
+	id S932807Ab0FQI4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 04:56:20 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33583 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932663Ab0FQI4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 04:55:23 -0400
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: avi@redhat.com, mtosatti@redhat.com, glommer@redhat.com,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 17/17] Add timekeeping documentation
-From: Andi Kleen <andi@firstfloor.org>
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com>
-	<1276587259-32319-18-git-send-email-zamsden@redhat.com>
-Date: Thu, 17 Jun 2010 10:55:21 +0200
-In-Reply-To: <1276587259-32319-18-git-send-email-zamsden@redhat.com> (Zachary Amsden's message of "Mon\, 14 Jun 2010 21\:34\:19 -1000")
-Message-ID: <87mxuuujgm.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 17 Jun 2010 04:56:18 -0400
+From: Tao Ma <tao.ma@oracle.com>
+To: xfs@oss.sgi.com
+Cc: linux-kernel@vger.kernel.org, Tao Ma <tao.ma@oracle.com>,
+       Dave Chinner <david@fromorbit.com>, Alex Elder <aelder@sgi.com>,
+       Christoph Hellwig <hch@lst.de>, Eric Sandeen <sandeen@redhat.com>
+Subject: Re: [PATCH v2] xfs: Make fiemap works with sparse file.
+Date: Thu, 17 Jun 2010 16:53:19 +0800
+Message-Id: <1276764799-4837-1-git-send-email-tao.ma@oracle.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20100614122912.GD6590@dastard>
+References: <20100614122912.GD6590@dastard>
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4C19E316.0040:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zachary Amsden <zamsden@redhat.com> writes:
+Hi Dave,
+On 06/14/2010 08:29 PM, Dave Chinner wrote:
+> I just had a thought - if you want to avoid holes being reported to
+> fiemap, then add a BMV_IF_NO_HOLES flag to xfs_getbmap() and skip
+> holes in the mappin gloop when this flag is set. That will make
+> fiemap fill in the full number of extents without hacking the
+> extent count...
+Here is the updated one. I have used BVM_IF_NO_HOLES in xfs_getbmap
+to skip increasing index 'cur_ext'. It is a bit ugly, see my commit
+log. I guess maybe we can add another flag in xfs_bmapi so that it
+don't even give us the holes?
 
-I think listing all the obscure bits in the PIT was an attempt to 
-weed out the weak and weary readers early, right?
+Regards,
+Tao
 
-> +this as well.  Several hardware limitations make the problem worse - if it is
-> +not possible to write the full 32-bits of the TSC, it may be impossible to
-> +match the TSC in newly arriving CPUs to that of the rest of the system,
-> +resulting in unsynchronized TSCs.  This may be done by BIOS or system software,
-> +but in practice, getting a perfectly synchronized TSC will not be possible
-> +unless all values are read from the same clock, which generally only is
-> +possible on single socket systems or those with special hardware
-> +support.
+>From cee1765ffd3e2b003b837666b4620b5107ed9ddd Mon Sep 17 00:00:00 2001
+From: Tao Ma <tao.ma@oracle.com>
+Date: Thu, 17 Jun 2010 16:14:22 +0800
+Subject: [PATCH v3] xfs: Make fiemap works with sparse file.
 
-That's not true, single crystal for all sockets is very common
-as long as you only have a single motherboard.
+In xfs_vn_fiemap, we set bvm_count to fi_extent_max + 1 and want
+to return fi_extent_max extents, but actually it won't work for
+a sparse file. The reason is that in xfs_getbmap we will
+calculate holes and set it in 'out', while out is malloced by
+bmv_count(fi_extent_max+1) which didn't consider holes. So in the
+worst case, if 'out' vector looks like
+[hole, extent, hole, extent, hole, ... hole, extent, hole],
+we will only return half of fi_extent_max extents.
 
-Of course there might be other reasons why the TSC is unsynchronized
-(e.g. stop count in C-states), but the single clock is not the problem.
+This patch add a new parameter BMV_IF_NO_HOLES for bvm_iflags.
+So with this flags, we don't use our 'out' in xfs_getbmap for
+a hole. The solution is a bit ugly by just don't increasing
+index of 'out' vector. I felt that it is not easy to skip it
+at the very beginning since we have the complicated check and
+some function like xfs_getbmapx_fix_eof_hole to adjust 'out'.
 
-> +3.4) TSC and C-states
-> +
-> +C-states, or idling states of the processor, especially C1E and deeper sleep
-> +states may be problematic for TSC as well.  The TSC may stop advancing in such
-> +a state, resulting in a TSC which is behind that of other CPUs when execution
-> +is resumed.  Such CPUs must be detected and flagged by the operating system
-> +based on CPU and chipset identifications.
-> +
-> +The TSC in such a case may be corrected by catching it up to a known external
-> +clocksource.
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Alex Elder <aelder@sgi.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Tao Ma <tao.ma@oracle.com>
+---
+ fs/xfs/linux-2.6/xfs_iops.c |    2 +-
+ fs/xfs/xfs_bmap.c           |   14 +++++++++++++-
+ fs/xfs/xfs_fs.h             |    4 +++-
+ 3 files changed, 17 insertions(+), 3 deletions(-)
 
-... This is fixed in recent CPUs ...
-
-> +
-> +3.5) TSC frequency change / P-states
-> +
-> +To make things slightly more interesting, some CPUs may change requency.  They
-> +may or may not run the TSC at the same rate, and because the frequency change
-> +may be staggered or slewed, at some points in time, the TSC rate may not be
-> +known other than falling within a range of values.  In this case, the TSC will
-> +not be a stable time source, and must be calibrated against a known, stable,
-> +external clock to be a usable source of time.
-> +
-> +Whether the TSC runs at a constant rate or scales with the P-state is model
-> +dependent and must be determined by inspecting CPUID, chipset or various MSR
-> +fields.
-
-... In general newer CPUs should not have problems with this anymore
-
-> +
-> +4) Virtualization Problems
-> +
-> +Timekeeping is especially problematic for virtualization because a number of
-> +challenges arise.  The most obvious problem is that time is now shared between
-> +the host and, potentially, a number of virtual machines.  This happens
-> +naturally on X86 systems when SMM mode is used by the BIOS, but not to such a
-> +degree nor with such frequency.  However, the fact that SMM mode may cause
-
-The SMM reference here seems at best odd. 
-
--Andi
+diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
+index 9c8019c..505d5c0 100644
+--- a/fs/xfs/linux-2.6/xfs_iops.c
++++ b/fs/xfs/linux-2.6/xfs_iops.c
+@@ -677,7 +677,7 @@ xfs_vn_fiemap(
+ 					fieinfo->fi_extents_max + 1;
+ 	bm.bmv_count = min_t(__s32, bm.bmv_count,
+ 			     (PAGE_SIZE * 16 / sizeof(struct getbmapx)));
+-	bm.bmv_iflags = BMV_IF_PREALLOC;
++	bm.bmv_iflags = BMV_IF_PREALLOC | BMV_IF_NO_HOLES;
+ 	if (fieinfo->fi_flags & FIEMAP_FLAG_XATTR)
+ 		bm.bmv_iflags |= BMV_IF_ATTRFORK;
+ 	if (!(fieinfo->fi_flags & FIEMAP_FLAG_SYNC))
+diff --git a/fs/xfs/xfs_bmap.c b/fs/xfs/xfs_bmap.c
+index 99587de..d49107d 100644
+--- a/fs/xfs/xfs_bmap.c
++++ b/fs/xfs/xfs_bmap.c
+@@ -5744,12 +5744,24 @@ xfs_getbmap(
+ 					map[i].br_startblock))
+ 				goto out_free_map;
+ 
+-			nexleft--;
+ 			bmv->bmv_offset =
+ 				out[cur_ext].bmv_offset +
+ 				out[cur_ext].bmv_length;
+ 			bmv->bmv_length =
+ 				max_t(__int64_t, 0, bmvend - bmv->bmv_offset);
++
++			/*
++			 * In case we don't want to return the hole,
++			 * don't increase cur_ext so that we can reuse
++			 * it in the next loop.
++			 */
++			if ((iflags & BMV_IF_NO_HOLES) &&
++			    out[cur_ext].bmv_block == -1LL) {
++				memset(&out[cur_ext], 0, sizeof(out[cur_ext]));
++				continue;
++			}
++
++			nexleft--;
+ 			bmv->bmv_entries++;
+ 			cur_ext++;
+ 		}
+diff --git a/fs/xfs/xfs_fs.h b/fs/xfs/xfs_fs.h
+index 7cf7220..87c2e9d 100644
+--- a/fs/xfs/xfs_fs.h
++++ b/fs/xfs/xfs_fs.h
+@@ -114,8 +114,10 @@ struct getbmapx {
+ #define BMV_IF_NO_DMAPI_READ	0x2	/* Do not generate DMAPI read event  */
+ #define BMV_IF_PREALLOC		0x4	/* rtn status BMV_OF_PREALLOC if req */
+ #define BMV_IF_DELALLOC		0x8	/* rtn status BMV_OF_DELALLOC if req */
++#define BMV_IF_NO_HOLES		0x10	/* Do not return holes */
+ #define BMV_IF_VALID	\
+-	(BMV_IF_ATTRFORK|BMV_IF_NO_DMAPI_READ|BMV_IF_PREALLOC|BMV_IF_DELALLOC)
++	(BMV_IF_ATTRFORK|BMV_IF_NO_DMAPI_READ|BMV_IF_PREALLOC|	\
++	 BMV_IF_DELALLOC|BMV_IF_NO_HOLES)
+ 
+ /*	bmv_oflags values - returned for each non-header segment */
+ #define BMV_OF_PREALLOC		0x1	/* segment = unwritten pre-allocation */
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.5.5
+
