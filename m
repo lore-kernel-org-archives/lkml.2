@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab0FQJTx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 05:19:53 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55593 "EHLO mx1.suse.de"
+	id S1756543Ab0FQJUt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 05:20:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42206 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609Ab0FQJTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 05:19:52 -0400
-Date: Thu, 17 Jun 2010 11:19:50 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/10] trivial: fix typos concerning "precedence"
-In-Reply-To: <20100617050626.GA12695@pengutronix.de>
-Message-ID: <alpine.LNX.2.00.1006171119360.12271@pobox.suse.cz>
-References: <20100611101624.GD10894@pengutronix.de> <1276251424-12806-8-git-send-email-u.kleine-koenig@pengutronix.de> <alpine.LNX.2.00.1006161804150.12271@pobox.suse.cz> <20100617050626.GA12695@pengutronix.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751494Ab0FQJUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 05:20:48 -0400
+Message-ID: <4C19E8E9.4060602@redhat.com>
+Date: Thu, 17 Jun 2010 12:20:41 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 5/6] KVM: MMU: prefetch ptes when intercepted guest #PF
+References: <4C16E6ED.7020009@cn.fujitsu.com> <4C16E75F.6020003@cn.fujitsu.com> <4C16E7AD.1060101@cn.fujitsu.com> <4C16E7F4.5060801@cn.fujitsu.com> <4C16E82E.5010306@cn.fujitsu.com> <4C16E9A8.10409@cn.fujitsu.com> <4C1766D6.3040000@redhat.com> <4C19CDCC.4060404@cn.fujitsu.com> <4C19D7B1.6060908@redhat.com> <4C19E532.4070708@cn.fujitsu.com>
+In-Reply-To: <4C19E532.4070708@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010, Uwe Kleine-König wrote:
+On 06/17/2010 12:04 PM, Xiao Guangrong wrote:
+>
+>
+>> So we can change the fault path to always fault 16 ptes, aligned on 16
+>> pte boundary, with the needed pte called with specualtive=false.
+>>      
+> Avi, i not understand it clearly, Could you please explain it? :-(
+>    
 
-> > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > > ---
-> > >  arch/sh/kernel/clkdev.c                  |    2 +-
-> > >  drivers/staging/comedi/drivers/usbdux.c  |    2 +-
-> > >  drivers/staging/octeon/cvmx-cmd-queue.c  |    6 +++---
-> > >  drivers/staging/pohmelfs/inode.c         |    2 +-
-> > >  drivers/staging/rt2860/common/cmm_wpa.c  |    4 ++--
-> > >  drivers/staging/rtl8192e/r8190_rtl8256.c |    6 +++---
-> > 
-> > Hi,
-> > 
-> > please send the staging parts separately to Greg (you did it for other 
-> > patches, but likely forgot for this one).
-> I didn't forget it but messed up the splitting.  Note patch 6 touches
-> staging, too.
+Right now if the fault is in spte i, you prefetch ptes 
+(i+1)..(i+MAX_PREFETCH-1).  I'd like to prefetch ptes (i & 
+~(MAX_PREFETCH-1))..(i | (MAX_PREFETCH - 1)).  Read all those gptes, and 
+map them one by one with speculative = false only for spte i.
 
-Yeah, I have already dropped the staging part of that one.
+Perhaps we need to integrate it into walk_addr, there's  no reason to 
+read the gptes twice.
+
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+error compiling committee.c: too many arguments to function
+
