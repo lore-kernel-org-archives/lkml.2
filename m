@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952Ab0FQPJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 11:09:05 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:54122 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932897Ab0FQPJD (ORCPT
+	id S932958Ab0FQPLD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 11:11:03 -0400
+Received: from v002983.home.net.pl ([212.85.107.189]:55643 "HELO
+	v002983.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932900Ab0FQPLA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 11:09:03 -0400
-Date: Thu, 17 Jun 2010 09:08:54 -0600
-From: Alex Chiang <achiang@canonical.com>
-To: lenb@kernel.org, Jan Pogadl <pogadl.jan@googlemail.com>
-Cc: gong.chen@linux.intel.com, linux-acpi@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ACPI: processor: fix processor_physically_present on UP
-Message-ID: <20100617150853.GF2138@canonical.com>
-Mail-Followup-To: Alex Chiang <achiang@canonical.com>, lenb@kernel.org,
-	Jan Pogadl <pogadl.jan@googlemail.com>, gong.chen@linux.intel.com,
-	linux-acpi@vger.kernel.org,
-	linux-kernel <linux-kernel@vger.kernel.org>
+	Thu, 17 Jun 2010 11:11:00 -0400
+From: Hubert Kario <hka@qbs.com.pl>
+Organization: QBS - Quality Business Software
+To: "David Pottage" <david@electric-spoon.com>
+Subject: Re: [PATCH][RFC] Complex filesystem operations: split and join
+Date: Thu, 17 Jun 2010 17:04:13 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.33-ARCH; KDE/4.4.4; i686; ; )
+Cc: "Nikanth Karthikesan" <knikanth@novell.com>,
+       "OGAWA Hirofumi" <hirofumi@mail.parknet.co.jp>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Alexander Viro" <viro@zeniv.linux.org.uk>,
+       "Christoph Hellwig" <hch@lst.de>,
+       "Chris Mason" <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
+References: <201006092035.46481.knikanth@novell.com> <201006151611.36443.knikanth@novell.com> <e4ea1892f15eaac945c151ea14a5d2d9.squirrel@www.chrestomanci.org>
+In-Reply-To: <e4ea1892f15eaac945c151ea14a5d2d9.squirrel@www.chrestomanci.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006171704.14541.hka@qbs.com.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 5d554a7bb06 (ACPI: processor: add internal
-processor_physically_present()) is broken on uniprocessor (UP)
-configurations, as acpi_get_cpuid() will always return -1.
+On Tuesday 15 June 2010 17:16:06 David Pottage wrote:
+> On 15/06/10 11:41, Nikanth Karthikesan wrote:
+> > I had a one-off use-case, where I had no free-space, which made me
+> > think along this line.
+> > 
+> > 1. We have the GNU split tool for example, which I guess, many of us
+> > use to split larger files to be transfered via smaller thumb drives,
+> > for example. We do cat many files into one, afterwards. [For this
+> > usecase, one can simply dd with seek and skip and avoid split/cat
+> > completely, but we dont.]
+> 
+> I am not sure how you gain here as either way you have to do I/O to get
+> the split files on and off the thumb drive. It might make sense if the
+> thumb drive is formated with btrfs, and the file needs to be copied to
+> another filling system that can't handle large files (eg FAT-16), but I
+> would say that is unlikely.
+> 
 
-We use the value of num_possible_cpus() to tell us whether we got
-an invalid cpuid from acpi_get_cpuid() in the SMP case, or if
-instead, we are UP, in which case num_possible_cpus() is #defined
-as 1.
+But you do have to do only half as much of I/O with those features 
+implemented.
 
-We use num_possible_cpus() instead of num_online_cpus() to
-protect ourselves against the scenario of CPU hotplug, and we've
-taken down all the CPUs except one.
+The old way is:
+1. Have a file
+2. split a file (in effect use twice as much drive space)
+3. copy fragments to flash disks
 
-Thanks to Jan Pogadl for initial report and analysis and Chen
-Gong for review.
+The btrfs way would be:
+1. Have a file
+2. split the file by using COW and referencing blocks in the original file (in 
+effect using only a little more space after splitting)
+3. copy fragments to flash disks
 
-Reported-by: Jan Pogadl <pogadl.jan@googlemail.com>:
-Cc: Chen Gong <gong.chen@linux.intel.com>
-Signed-off-by: Alex Chiang <achiang@canonical.com>
----
-diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-index 5128435..e9699aa 100644
---- a/drivers/acpi/processor_core.c
-+++ b/drivers/acpi/processor_core.c
-@@ -223,7 +223,7 @@ static bool processor_physically_present(acpi_handle handle)
- 	type = (acpi_type == ACPI_TYPE_DEVICE) ? 1 : 0;
- 	cpuid = acpi_get_cpuid(handle, type, acpi_id);
- 
--	if (cpuid == -1)
-+	if ((cpuid == -1) && (num_possible_cpus() > 1))
- 		return false;
- 
- 	return true;
+the amount of I/O in the second case is limited only to metadata operations, 
+in the first case, all data must be duplicated
+
+-- 
+Hubert Kario
+QBS - Quality Business Software
+02-656 Warszawa, ul. Ksawerów 30/85
+tel. +48 (22) 646-61-51, 646-74-24
+www.qbs.com.pl
+
+System Zarządzania Jakością
+zgodny z normą ISO 9001:2000
