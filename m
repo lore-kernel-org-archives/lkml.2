@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760292Ab0FQWeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 18:34:12 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55385 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753543Ab0FQWeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 18:34:10 -0400
-Date: Fri, 18 Jun 2010 08:34:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Alek Du <alek.du@intel.com>, Jacob Pan <jacob.jun.pan@intel.com>
-Subject: Re: linux-next: build failure after merge of the final tree (usb
- tree related)
-Message-Id: <20100618083401.9be07376.sfr@canb.auug.org.au>
-In-Reply-To: <20100617172515.GA20453@kroah.com>
-References: <20100617145331.7bbefc4a.sfr@canb.auug.org.au>
-	<20100617172515.GA20453@kroah.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__18_Jun_2010_08_34_01_+1000_yn1/LahCn+jamTqW"
+	id S1760833Ab0FQWi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 18:38:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:36731 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab0FQWiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 18:38:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:sender:date:x-google-sender-auth:message-id:
+	subject:from:to:cc:content-type:x-system-of-record;
+	b=oMQqB1EhKKG1XMUVK6iAUy0finrv6WHySOY8DerpwmYYfakYIT23jcoE++kBrD+8C
+	CoPPoCZ6/tgWQ6GtkgY7A==
+MIME-Version: 1.0
+Date: Thu, 17 Jun 2010 15:38:19 -0700
+X-Google-Sender-Auth: gAECv94qDkMmHf6dS6T7vVpnjSw
+Message-ID: <AANLkTikXH_UtE95ZGHp5AAm5IRD6dN8cnrNK9A3-MRwY@mail.gmail.com>
+Subject: [GIT PULL linux-next] tegra
+From: Erik Gilling <konkers@android.com>
+To: sfr@canb.auug.org.au
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__18_Jun_2010_08_34_01_+1000_yn1/LahCn+jamTqW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Stephen,
 
-Hi Greg,
+Can you please pull the following into linux-next?
 
-On Thu, 17 Jun 2010 10:25:16 -0700 Greg KH <greg@kroah.com> wrote:
->
-> thanks, I've merged your fix in with the main patch so this problem will
-> not show up, and pushed the updated patches out.
+git://android.git.kernel.org/kernel/tegra.git for-next
 
-Thanks.
+This tree adds support for the Nvidia Tegra ARM SOCs.  It's received
+review on linux-arm-kernel.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__18_Jun_2010_08_34_01_+1000_yn1/LahCn+jamTqW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwaotkACgkQjjKRsyhoI8xaswCdECexa7MBXkX7NwAerujS7H5i
-epsAnRsfP3bnW1PgSf+QTShovARnN7NM
-=7CQU
------END PGP SIGNATURE-----
-
---Signature=_Fri__18_Jun_2010_08_34_01_+1000_yn1/LahCn+jamTqW--
+Thanks,
+    Erik Gilling
