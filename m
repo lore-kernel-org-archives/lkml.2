@@ -1,141 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759889Ab0FQL7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 07:59:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:65059 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759817Ab0FQL7v (ORCPT
+	id S1759902Ab0FQMEw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 08:04:52 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:11035 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759860Ab0FQMEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 07:59:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
-Date: Thu, 17 Jun 2010 13:59:37 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew <andrew.chih.howe.khor@intel.com>,
-       Intel OTC <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
-       "Wang, Yong Y" <yong.y.wang@intel.com>
-References: <4C0CE88C.9050708@dsn.okisemi.com> <4C161BE7.4080805@dsn.okisemi.com> <4C198BD2.8060801@dsn.okisemi.com>
-In-Reply-To: <4C198BD2.8060801@dsn.okisemi.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-2022-jp"
+	Thu, 17 Jun 2010 08:04:51 -0400
+Subject: Re: Overview of concurrency managed workqueue
+From: Andy Walls <awalls@md.metrocast.net>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: Tejun Heo <tj@kernel.org>, mingo@elte.hu, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+In-Reply-To: <1276697146.9309.27.camel@m0nster>
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>
+	 <4C17C598.7070303@kernel.org>
+	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
+	 <4C18BF40.40607@kernel.org> <1276694825.9309.12.camel@m0nster>
+	 <4C18D1FD.9060804@kernel.org> <1276695665.9309.17.camel@m0nster>
+	 <4C18D574.1040903@kernel.org>  <1276697146.9309.27.camel@m0nster>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Jun 2010 08:01:06 -0400
+Message-ID: <1276776066.2461.15.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006171359.37391.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+L34zjgPmEO3ee5UwVZa6LT2Uo2GtjyUKJwF6
- c/yS66yeGrc0wgXTDbmqJgw3NkbYPzY+1OqhF1uxDUpQK6zRYJ
- 5oEoGfXoZkhgcFznaptjw==
+X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
+ definitions=2010-06-17_02:2010-02-06,2010-06-17,2010-06-16 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
+ bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1005130000 definitions=main-1006170039
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks almost good to me now. Some more details (only the -EFAULT return code
-is a real issue, the other ones are cosmetic changes):
+On Wed, 2010-06-16 at 07:05 -0700, Daniel Walker wrote:
+> On Wed, 2010-06-16 at 15:45 +0200, Tejun Heo wrote:
+> > On 06/16/2010 03:41 PM, Daniel Walker wrote:
+> > > Any workqueue that has a thread which can be prioritized from userspace.
+> > > As long as there is a thread it can usually be given a priority from
+> > > userspace, so any _current_ workqueue which uses a single thread or
+> > > multiple threads is an example of what I'm talking about.
+> > 
+> > Eh... what's the use case for that?  That's just so wrong.  What do
+> > you do after a suspend/resume cycle?  Reprioritize all of them from
+> > suspend/resume hooks?
+> 
+> The use case is any situation when the user wants to give higher
+> priority to some set of work items, and there's nothing wrong with that.
+> In fact there has been a lot of work in the RT kernel related to
+> workqueue prioritization ..
 
-On Thursday 17 June 2010, Masayuki Ohtak wrote:
-> +
-> +#define PCH_READ_REG(a)	ioread32(pch_phub_reg.pch_phub_base_address + (a))
-> +
-> +#define PCH_WRITE_REG(a, b) iowrite32((a), pch_phub_reg.pch_phub_base_address +\
-> +									 (b))
+I'm going to agree with Tejun, that tweaking worker thread priorities
+seems like an odd thing, since they are meant to handle deferable
+actions - things that can be put off until later.
 
-I'd recommend just getting rid of these abstractions. You only use
-them in one or two functions each, so you can just as well add a local
-variable there and do
+If one needs to support Real Time deadlines on deferable actions,
+wouldn't using dedicated kernel threads be more deterministic?
+Would the user ever up the priority for a workqueue other than a
+single-threaded workqueue?
 
-	void __iomem *p = pch_phub_reg.pch_phub_base_address;
-	foo = ioread32(p + foo_offset);
-	bar = ioread32(p + bar_offset);
-	...
+Regards,
+Andy
 
-Not really important, but this way it would be more conventional
-without having to write extra code.
+> Daniel
 
-> +/*--------------------------------------------
-> +	global variables
-> +--------------------------------------------*/
-> +/**
-> + * struct pch_phub_reg_t - PHUB register structure
-> + * @phub_id_reg:		 PHUB_ID register val
-> + * @q_pri_val_reg:		 QUEUE_PRI_VAL register val
-> + * @rc_q_maxsize_reg:	 RC_QUEUE_MAXSIZE register val
-> + * @bri_q_maxsize_reg:	 BRI_QUEUE_MAXSIZE register val
-> + * @comp_resp_timeout_reg:	 COMP_RESP_TIMEOUT register val
-> + * @bus_slave_control_reg:	 BUS_SLAVE_CONTROL_REG register val
-> + * @deadlock_avoid_type_reg:  DEADLOCK_AVOID_TYPE register val
-> + * @intpin_reg_wpermit_reg0:  INTPIN_REG_WPERMIT register 0 val
-> + * @intpin_reg_wpermit_reg1:  INTPIN_REG_WPERMIT register 1 val
-> + * @intpin_reg_wpermit_reg2:  INTPIN_REG_WPERMIT register 2 val
-> + * @intpin_reg_wpermit_reg3:  INTPIN_REG_WPERMIT register 3 val
-> + * @int_reduce_control_reg:	 INT_REDUCE_CONTROL registers val
-> + * @clkcfg_reg:		 CLK CFG register val
-> + * @pch_phub_base_address:  register base address
-> + * @pch_phub_extrom_base_address:  external rom base address
-> + * @pch_phub_suspended: PHUB status val
-> + */
-> +struct pch_phub_reg_t {
 
-It would be better to drop the _t postfix on the type name.
-By convention, we use this only for typedefs on simple data
-types like off_t but not for structures.
 
-> +	__u32 phub_id_reg;
-> +	__u32 q_pri_val_reg;
-> +	__u32 rc_q_maxsize_reg;
-
-When I told you to change the ioctl arguments to use __u32 instead
-of u32, I was only referring to those parts that are in the user-visible
-section of the header file. While it does not hurt to use __u32 in
-the kernel, you should understand the distinction.
-
-> +/** pch_phub_write - Implements the write functionality of the Packet Hub
-> + *  									 module.
-> + *  @file: Contains the reference of the file structure
-> + *  @buf: Usermode buffer pointer
-> + *  @size: Usermode buffer size
-> + *  @ppos: Contains the reference of the file structure
-> + */
-> +static ssize_t pch_phub_write(struct file *file, const char __user *buf,
-> +						 size_t size, loff_t *ppos)
-> +{
-> +	static __u32 data;
-
-No need to make data static.
-
-> +	__s32 ret_value;
-> +	__u32 addr_offset = 0;
-> +	loff_t pos = *ppos;
-> +
-> +	if (pos < 0)
-> +		return -EINVAL;
-> +
-> +	for (addr_offset = 0; addr_offset < size; addr_offset++) {
-> +		get_user(data, &buf[addr_offset]);
-> +
-> +		ret_value = pch_phub_write_serial_rom(0x80 + addr_offset + pos,
-> +								 data);
-> +		if (ret_value)
-> +			return -EFAULT;
-
-You should return -EFAULT if the get_user() call fails, otherwise you have
-a possible security hole. If pch_phub_write_serial_rom fails, the correct
-return code would be -EIO.
-
-> +/**
-> + * file_operations structure initialization
-> + */
-> +static const struct file_operations pch_phub_fops = {
-> +	.owner = THIS_MODULE,
-> +	.read = pch_phub_read,
-> +	.write = pch_phub_write,
-> +	.unlocked_ioctl = pch_phub_ioctl,
-> +};
-
-If would be good to add a line of
-	.llseek = default_llseek,
-here. I have a patch to change the default llseek method to one
-that disallows seeking, so if you add this line, there is one
-less driver for me to patch.
-
-	Arnd
