@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758931Ab0FQBRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Jun 2010 21:17:19 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35431 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756268Ab0FQBRR convert rfc822-to-8bit (ORCPT
+	id S1756385Ab0FQB30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Jun 2010 21:29:26 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46551 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754541Ab0FQB3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Jun 2010 21:17:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=qfgH4/9QKV9lP86xryM25HZFALHqMSmG8MyeFQ6tNGsGRYVmyQgtz1SH0oTC8ivjRo
-         ElcNHx1E+4YEragUP4v4HHwio+rCuUN7CvSc8A9+JuBx87V47vgi0x5WLs+1sGGrKReh
-         Ansu9bNIeyKjMkUpsfx2TWBJamT/YBRxjKkDo=
+	Wed, 16 Jun 2010 21:29:25 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C197A49.6020400@jp.fujitsu.com>
+Date: Thu, 17 Jun 2010 10:28:41 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1276737229.2847.853.camel@mulgrave.site>
-References: <1276737229.2847.853.camel@mulgrave.site>
-Date: Wed, 16 Jun 2010 21:17:15 -0400
-X-Google-Sender-Auth: C0EfAic8RjDTBL7BtHwAYIZBN5o
-Message-ID: <AANLkTilSfOwwT87mgDcWBogL4gPnM7VBTOALKpZv_upN@mail.gmail.com>
-Subject: Re: bnx2 fails to compile on parisc because of missing get_dma_ops()
-From: Mike Frysinger <vapier@gentoo.org>
-To: James Bottomley <JBottomley@novell.com>
-Cc: netdev@vger.kernel.org, linux-parisc@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Michael Chan <mchan@broadcom.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+       linux-kernel@vger.kernel.org
+CC: linux-pci@vger.kernel.org, macro@linux-mips.org,
+       kamezawa.hiroyu@jp.fujitsu.com, eike-kernel@sf-tec.de
+Subject: [BUG][PATCH 0/2 (v.2)] x86: ioremap() problem in X86_32 PAE
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 9:13 PM, James Bottomley wrote:
-> I'm not quite sure whose fault this one is.
->
-> However, this code in bnx2.c:
->
->                if (!get_dma_ops(&pdev->dev)->sync_single_for_cpu) {
->                        next_rx_buf =
->                                &rxr->rx_buf_ring[
->                                        RX_RING_IDX(NEXT_RX_BD(sw_cons))];
->                        prefetch(next_rx_buf->desc);
->                }
->
-> Looks remarkably fragile: what exactly is it trying to do?
->
-> The commit that causes the problem:
->
-> commit a33fa66bcf365ffe5b79d1ae1d3582cc261ae56e
-> Author: Michael Chan <mchan@broadcom.com>
-> Date:   Thu May 6 08:58:13 2010 +0000
->
->    bnx2: Add prefetches to rx path.
->
-> Looks fairly innocuous by the description.
->
-> Should parisc have a get_dma_ops()?  We don't need one because our dma
-> ops are per platform not per bus.
+Hi,
 
-looks like it'll be broken on more than just parisc:
-$ grep get_dma_ops arch/*/include/asm/ -rl | cut -d/ -f 2
-alpha
-ia64
-microblaze
-powerpc
-sh
-sparc
-x86
--mike
+Here is a updated version (v.2) of patchset to fix ioremap() problem
+found in x86_32 PAE mode. The problem is that ioremap() maps wrong
+address for the devices to which phisical addresses higer than 32-bit
+are assigned (ioat device in my case).
+
+Changelog
+----
+v.1 => v.2:
+Thanks to the feedbacks, I found that some of my v.1 patches are totally
+wrong because they were based on my mis-understanding about architectural
+limit and linux memory management limit of physical address. In addition,
+it turned out that there are bugs that handles physical address improperly
+(higher 32-bits are cleared unexpectedly) also in the other places in the
+ioremap() code path. Major changes are
+- Removed wrong changes against phys_addr_valid() ([PATCH 2/4] in v.1).
+- Removed wrong changes against wraning message in ioremap() ([PATCH 3/4]
+  in v.1)
+- Changed not to use PHYSICAL_PAGE_MASK because the PHYSICAL_PAGE_MASK
+  would not work for physical address higher than 44-bit.
+- Added fixes for remaining bugs of physical address handling in ioremap()
+  code path according to the feedbacks.
+- Added a fix for s_show() in vmalloc.c to show high physical address properly.
+----
+
+I also found the bug in PCI MSI-X code that handles physical address
+improperly, which causes the problem MSI-X doesn't work on my devices. I'll
+send a patch for this to PCI mail list separately.
+
+The v.2 patches are:
+
+- [PATCH 1/2] x86: ioremap: fix wrong physical address handling
+- [PATCH 2/2] x86: ioremap: fix normal ram range check
+
+Thanks,
+Kenji Kaneshige
+
