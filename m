@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760805Ab0FQVaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 17:30:00 -0400
-Received: from govinda.solana.com ([198.99.130.30]:56919 "EHLO
-	govinda.addtoit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757678Ab0FQV37 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 17:29:59 -0400
-Date: Thu, 17 Jun 2010 17:29:36 -0400
-From: Jeff Dike <jdike@addtoit.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <greg@kroah.com>, Alan Cox <alan@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Remove Hayes ESP ioctls
-Message-ID: <20100617212936.GA17185@c-98-229-117-200.hsd1.ma.comcast.net>
-References: <20100617160045.GA13743@c-98-229-117-200.hsd1.ma.comcast.net> <20100617200938.GB25977@kroah.com> <20100617201417.GA2873@kroah.com> <201006172241.05878.arnd@arndb.de>
+	id S1760752Ab0FQVi2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 17:38:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60730 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757679Ab0FQVi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 17:38:27 -0400
+Date: Thu, 17 Jun 2010 23:36:38 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+       Louis Rilling <louis.rilling@kerlabs.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+Message-ID: <20100617213638.GB4182@redhat.com>
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <4C19F0A3.2050707@parallels.com> <m1631hdbdu.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201006172241.05878.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <m1631hdbdu.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 10:41:05PM +0200, Arnd Bergmann wrote:
-> On Thursday 17 June 2010 22:14:17 Greg KH wrote:
-> > --- a/include/asm-generic/ioctls.h
-> > +++ b/include/asm-generic/ioctls.h
-> > @@ -87,12 +87,10 @@
-> >  #define TIOCGICOUNT    0x545D  /* read serial port inline interrupt counts */
-> >  
-> >  /*
-> > - * some architectures define FIOQSIZE as 0x545E, which is used for
-> > - * TIOCGHAYESESP on others
-> > + * Some arches already define FIOQSIZE due to a historical
-> > + * conflict with a Hayes modem-specific ioctl value.
-> >   */
-> >  #ifndef FIOQSIZE
-> > -# define TIOCGHAYESESP 0x545E  /* Get Hayes ESP configuration */
-> > -# define TIOCSHAYESESP 0x545F  /* Set Hayes ESP configuration */
-> >  # define FIOQSIZE      0x5460
-> >  #endif
-> 
-> Yes, that looks right. I had introduced the #ifdef originally, but
-> did not look closely enough at the patch now.
-> 
-> 	Arnd
-> 
+On 06/17, Eric W. Biederman wrote:
+>
+> The task->children isn't changed until __unhash_process() which runs
+> after flush_proc_task().
 
-That's better.  I had figured that the whole block was due to the driver,
-and therefore could be nuked.
+Yes. But this is only the current implementation detail.
+It would be nice to cleanup the code so that EXIT_DEAD tasks are
+never sit in ->children list.
 
-				Jeff
+> So we should be able to come up with
+> a variant of do_wait() that zap_pid_ns_processes can use that does
+> what we need.
 
+See above...
 
--- 
-Work email - jdike at linux dot intel dot com
+Even if we modify do_wait() or add the new variant, how the caller
+can wait for EXIT_DEAD tasks? I don't think we want to modify
+release_task() to do __wake_up_parent() or something similar.
+
+Oleg.
+
