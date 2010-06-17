@@ -1,153 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759952Ab0FQMyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 08:54:15 -0400
-Received: from coyote.quickmin.net ([217.14.112.24]:50600 "EHLO
-	coyote.quickmin.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402Ab0FQMyO (ORCPT
+	id S1759985Ab0FQMym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 08:54:42 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:3391 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759832Ab0FQMyl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 08:54:14 -0400
-Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=default; d=telemotive.de;
-  b=FvZNL/l9TUHFO7VKY7qJ7iv6x6OCfCiqsxBElVV1ueYteUy5r03j0Pc7GUhvfzaqm3xqWpR14eooj1yC4A0nLGXo7beW0fKrCrSqw6dwxG0MfmWodiK+kNZ7p6FiaO5OQMzDu3Tgaz40ZrWC4AsMv7gRRznFBBDKUJHowKQvlmg=  ;
-From: Roman Fietze <roman.fietze@telemotive.de>
-Organization: Telemotive AG
-To: Wan ZongShun <mcuos.com@gmail.com>
-Subject: Re: [rtc-linux] [PATCH] isl12022: added Intersil ISL12022 RTC
-User-Agent: KMail/1.13.3 (Linux/2.6.31.12-0.2-default; KDE/4.4.3; x86_64; ; )
-Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <201006171123.31484.roman.fietze@telemotive.de> <AANLkTilPqFdeMLSabEkrwIQieJU0vhLnSBVe5_LH8x0G@mail.gmail.com>
-In-Reply-To: <AANLkTilPqFdeMLSabEkrwIQieJU0vhLnSBVe5_LH8x0G@mail.gmail.com>
+	Thu, 17 Jun 2010 08:54:41 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+From: "Michael Chan" <mchan@broadcom.com>
+To: "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>
+cc: "vapier@gentoo.org" <vapier@gentoo.org>,
+       "JBottomley@Novell.com" <JBottomley@Novell.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 17 Jun 2010 05:54:34 -0700
+Subject: Re: bnx2 fails to compile on parisc because of missing
+ get_dma_ops()
+Thread-Topic: bnx2 fails to compile on parisc because of missing
+ get_dma_ops()
+Thread-Index: AcsOFpE3XSyri7ATSHmbS2Ua8PhHFQADJlRQ
+Message-ID: <C27F8246C663564A84BB7AB3439772421B79CBCA1F@IRVEXCHCCR01.corp.ad.broadcom.com>
+In-Reply-To: <20100617211203O.fujita.tomonori@lab.ntt.co.jp>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Message-ID: <201006171454.07593.roman.fietze@telemotive.de>
-Date: Thu, 17 Jun 2010 14:54:06 +0200
-X-MIMETrack: Itemize by SMTP Server on muc/Telemotive(Release 8.0.2FP1|January 12, 2009) at
- 17.06.2010 14:54:08,
-	Serialize by Router on muc/Telemotive(Release 8.0.2FP1|January 12, 2009) at
- 17.06.2010 14:54:09,
-	Serialize complete at 17.06.2010 14:54:09
-Content-Transfer-Encoding: 7bit
-Content-Type: multipart/signed;
-  boundary="nextPart58038543.sL3kjBc6Sc";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+X-WSS-ID: 6004C48120S160598691-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart58038543.sL3kjBc6Sc
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+FUJITA Tomonori wrote:
 
-Hallo Wan,
+> From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Date: Thu, 17 Jun 2010 13:06:15 +0900
+> Subject: [PATCH] bnx2: fix dma_get_ops compilation breakage
+>
+> This removes dma_get_ops() prefetch optimization in bnx2.
+>
+> bnx2 uses dma_get_ops() to see if dma_sync_single_for_cpu() is
+> noop. bnx2 does prefetch if it's noop.
+>
+> But dma_get_ops() isn't available on all the architectures (only the
+> architectures that uses dma_map_ops struct have it). Using
+> dma_get_ops() in drivers leads to compilation breakage on many
+> archtectures.
+>
+> Currently, we don't have a way to see if dma_sync_single_for_cpu() is
+> noop. If it can improve the performance notably, we can add the new
+> DMA API for it.
 
-Thanks for the review. I added an second patch here with the proposed
-changes. Should I better provide an all-in-one patch instead?
+This prefetch improves performance noticeably when the driver is
+handling incoming 64-byte packets at a sustained rate.
 
-On Thursday 17 June 2010 12:28:11 Wan ZongShun wrote:
+>
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
-> There is no need to print your private driver info in Kernel, please
-> get rid of it.
+Acked-by: Michael Chan <mchan@broadcom.com>
 
-Ok, I thought its good habit, just copied that 1:1 from rtc-pcf8563.c
-as well as the stuff with the check for ->rtc beeing zero and the
-order of the module macros. I can of course also provide a patch for
-rtc-pcf8563.c with the same changes.
+Thanks.
 
+> ---
+>  drivers/net/bnx2.c |   10 +---------
+>  1 files changed, 1 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/net/bnx2.c b/drivers/net/bnx2.c
+> index 949d7a9..b3305fc 100644
+> --- a/drivers/net/bnx2.c
+> +++ b/drivers/net/bnx2.c
+> @@ -3073,7 +3073,6 @@ bnx2_rx_int(struct bnx2 *bp, struct
+> bnx2_napi *bnapi, int budget)
+>       u16 hw_cons, sw_cons, sw_ring_cons, sw_prod, sw_ring_prod;
+>       struct l2_fhdr *rx_hdr;
+>       int rx_pkt = 0, pg_ring_used = 0;
+> -     struct pci_dev *pdev = bp->pdev;
+>
+>       hw_cons = bnx2_get_hw_rx_cons(bnapi);
+>       sw_cons = rxr->rx_cons;
+> @@ -3086,7 +3085,7 @@ bnx2_rx_int(struct bnx2 *bp, struct
+> bnx2_napi *bnapi, int budget)
+>       while (sw_cons != hw_cons) {
+>               unsigned int len, hdr_len;
+>               u32 status;
+> -             struct sw_bd *rx_buf, *next_rx_buf;
+> +             struct sw_bd *rx_buf;
+>               struct sk_buff *skb;
+>               dma_addr_t dma_addr;
+>               u16 vtag = 0;
+> @@ -3098,13 +3097,6 @@ bnx2_rx_int(struct bnx2 *bp, struct
+> bnx2_napi *bnapi, int budget)
+>               rx_buf = &rxr->rx_buf_ring[sw_ring_cons];
+>               skb = rx_buf->skb;
+>               prefetchw(skb);
+> -
+> -             if (!get_dma_ops(&pdev->dev)->sync_single_for_cpu) {
+> -                     next_rx_buf =
+> -                             &rxr->rx_buf_ring[
+> -
+> RX_RING_IDX(NEXT_RX_BD(sw_cons))];
+> -                     prefetch(next_rx_buf->desc);
+> -             }
+>               rx_buf->skb = NULL;
+>
+>               dma_addr = dma_unmap_addr(rx_buf, mapping);
+> --
+> 1.5.6.5
+>
+>
+>
 
-=46rom 134f8488933f723489d5cf244c0b54bde1ce3622 Mon Sep 17 00:00:00 2001
-=46rom: Roman Fietze <roman.fietze@telemotive.de>
-Date: Thu, 17 Jun 2010 14:45:36 +0200
-Subject: [PATCH] rtc-isl12022: omit checking ->rtc in remove function, reor=
-der module macros
-
-=2D isl12022->rtc cannot be NULL inside isl12022_remove
-=2D move up module init and exit macros
-=2D be less verbose inside probe function
-
-Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
-=2D--
- drivers/rtc/rtc-isl12022.c |   14 +++++---------
- 1 files changed, 5 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/rtc/rtc-isl12022.c b/drivers/rtc/rtc-isl12022.c
-index e0a340f..293d2c1 100644
-=2D-- a/drivers/rtc/rtc-isl12022.c
-+++ b/drivers/rtc/rtc-isl12022.c
-@@ -236,8 +236,6 @@ static int isl12022_probe(struct i2c_client *client,
-=20
- 	int ret =3D 0;
-=20
-=2D	dev_dbg(&client->dev, "%s\n", __func__);
-=2D
- 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
- 		return -ENODEV;
-=20
-@@ -245,7 +243,7 @@ static int isl12022_probe(struct i2c_client *client,
- 	if (!isl12022)
- 		return -ENOMEM;
-=20
-=2D	dev_info(&client->dev, "chip found, driver version " DRV_VERSION "\n");
-+	dev_dbg(&client->dev, "chip found, driver version " DRV_VERSION "\n");
-=20
- 	i2c_set_clientdata(client, isl12022);
-=20
-@@ -269,9 +267,7 @@ static int isl12022_remove(struct i2c_client *client)
- {
- 	struct isl12022 *isl12022 =3D i2c_get_clientdata(client);
-=20
-=2D	if (isl12022->rtc)
-=2D		rtc_device_unregister(isl12022->rtc);
-=2D
-+	rtc_device_unregister(isl12022->rtc);
- 	kfree(isl12022);
-=20
- 	return 0;
-@@ -303,10 +299,10 @@ static void __exit isl12022_exit(void)
- 	i2c_del_driver(&isl12022_driver);
- }
-=20
-+module_init(isl12022_init);
-+module_exit(isl12022_exit);
-+
- MODULE_AUTHOR("roman.fietze@telemotive.de");
- MODULE_DESCRIPTION("ISL 12022 RTC driver");
- MODULE_LICENSE("GPL");
- MODULE_VERSION(DRV_VERSION);
-=2D
-=2Dmodule_init(isl12022_init);
-=2Dmodule_exit(isl12022_exit);
-=2D-=20
-1.7.1
-
-
-
-
-Roman
-
-=2D-=20
-Roman Fietze                Telemotive AG B=C3=BCro M=C3=BChlhausen
-Breitwiesen                              73347 M=C3=BChlhausen
-Tel.: +49(0)7335/18493-45        http://www.telemotive.de
-
-Amtsgericht Ulm                                HRB 541321
-Vorstand:
-Peter Kersten, Markus Fischer, Franz Diller, Markus Stolz
-
---nextPart58038543.sL3kjBc6Sc
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-
-iEUEABECAAYFAkwaGu8ACgkQp5XY/BK//MJSQQCXZJbm+HWy+hDxlLa0u15UqF1A
-1QCggcXBP0GQ03/JxbzyTLHLVmjzVPc=
-=eQcS
------END PGP SIGNATURE-----
-
---nextPart58038543.sL3kjBc6Sc--
