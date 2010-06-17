@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932608Ab0FQITo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 04:19:44 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54405 "EHLO hera.kernel.org"
+	id S932677Ab0FQIXf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 04:23:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34828 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932514Ab0FQITm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 04:19:42 -0400
-Message-ID: <4C19DA64.8000409@kernel.org>
-Date: Thu, 17 Jun 2010 10:18:44 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S932514Ab0FQIXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 04:23:33 -0400
+Message-ID: <4C19DB7D.5020508@redhat.com>
+Date: Thu, 17 Jun 2010 11:23:25 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@infradead.org>
-CC: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, jeff@garzik.org,
-       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
-       khali@linux-fr.org
-Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
-References: <1276443098-20653-1-git-send-email-tj@kernel.org>	<1276443098-20653-10-git-send-email-tj@kernel.org> <20100616204854.4b036f87@infradead.org>
-In-Reply-To: <20100616204854.4b036f87@infradead.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [RFC][PATCH 4/9] create aggregate kvm_total_used_mmu_pages value
+References: <20100615135518.BC244431@kernel.beaverton.ibm.com>	 <20100615135523.25D24A73@kernel.beaverton.ibm.com>	 <4C188FC0.3050306@redhat.com> <1276707300.6437.17429.camel@nimitz>
+In-Reply-To: <1276707300.6437.17429.camel@nimitz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 17 Jun 2010 08:18:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Arjan.
+On 06/16/2010 07:55 PM, Dave Hansen wrote:
+> On Wed, 2010-06-16 at 11:48 +0300, Avi Kivity wrote:
+>    
+>>> +static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+>>> +{
+>>> +     kvm->arch.n_used_mmu_pages += nr;
+>>> +     kvm_total_used_mmu_pages += nr;
+>>>
+>>>        
+>> Needs an atomic operation, since there's no global lock here.  To avoid
+>> bouncing this cacheline around, make the variable percpu and make
+>> readers take a sum across all cpus.  Side benefit is that you no longer
+>> need an atomic but a local_t, which is considerably cheaper.
+>>      
+> We do have the stuff in:
+>
+> 	include/linux/percpu_counter.h
+>
+> the downside being that they're not precise and they're *HUGE* according
+> to the comment. :)
+>
+> It's actually fairly difficult to do a counter which is precise,
+> scalable, and works well for small CPU counts when NR_CPUS is large.  Do
+> you mind if we just stick with a plain atomic_t for now?
+>    
 
-On 06/17/2010 05:48 AM, Arjan van de Ven wrote:
-> On Sun, 13 Jun 2010 17:31:35 +0200
-> Tejun Heo <tj@kernel.org> wrote:
->> + */
->> +void expect_irq(struct irq_expect *exp)
-> 
-> I would like to suggest an (optional) argument to this with a duration
-> within which to expect an interrupt....
-> 
-> that way in the backend we can plumb this also into the idle handler
-> for C state selection...
+Do we really need something precise?
 
-Hmmm.... oh, I see.  Wouldn't it be much better to use moving avg of
-IRQ durations instead of letting the driver specify it?  Drivers are
-most likely to just hard code it and It's never gonna be accurate.
+I'm not excited by adding a global atomic.  So far nothing in the kvm 
+hot paths depends on global shared memory (though we have lots of per-vm 
+shared memory).
 
-Thanks.
+Can we perhaps query the kmem_cache for a representation of the amount 
+of objects?
 
 -- 
-tejun
+error compiling committee.c: too many arguments to function
+
