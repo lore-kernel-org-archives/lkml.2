@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932716Ab0FQIln (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 04:41:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56848 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756059Ab0FQIll (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 04:41:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=cWxqtO/PVKvl99oAF6kgQ2RMzVyEzWVrxxEvPW28nNON8p1c6u1eCLJoKDCO97cTap
-         tcAFTyeS/mPpKKwnQTr9Mq+pvAtAMAZUW8OSw/RUC2whap5eU74q7s0tKdR4twb+Qrin
-         onZZoYSfnKHi5C49D4yE1/AS1yARFLtWneu9c=
-From: Matti Lammi <mattij.lammi@gmail.com>
-To: gregkh@suse.de, mattij.lammi@gmail.com, mithlesh@linsyssoft.com,
-       tfransosi@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Matti Lammi <matti.lammi@gmail.com>
-Subject: [PATCH] Drivers: Staging: Removed one unnecessary space
-Date: Thu, 17 Jun 2010 11:41:33 +0300
-Message-Id: <1276764093-14539-1-git-send-email-mattij.lammi@gmail.com>
-X-Mailer: git-send-email 1.6.0.4
+	id S932746Ab0FQInO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 04:43:14 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54502 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755806Ab0FQInM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 04:43:12 -0400
+Message-ID: <4C19E01F.2010403@suse.cz>
+Date: Thu, 17 Jun 2010 10:43:11 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Makefile asking for mrproper on new checkout with KBUILD_OUTPUT
+References: <4C194AB2.7050707@panasas.com>
+In-Reply-To: <4C194AB2.7050707@panasas.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nothing special really, just a small fix.
+On 17.6.2010 00:05, Boaz Harrosh wrote:
+> 
+> I get this problem: When a few Header files are changed, like when doing
+> a git checkout the Makefile is complaining about mrproper needed.
+> 
+> Now I'm building a:
+> 	make ARCH=arch KBUILD_OUTPUT=.build_arch/
+> 
+> But a: 
+> 	make ARCH=arch KBUILD_OUTPUT=.build_arch/ mrproper
+> 
+> Will not help. What the Makefile wants is a:
+> 	make mrproper
+> 
+> doing the "make mrproper" does solves it.
+> It used to be fine, I'm not sure when it started to break.
+> 
+> How can I debug this to see what is the offending files?
 
-Signed-off-by: Matti Lammi <matti.lammi@gmail.com>
----
- drivers/staging/otus/apdbg.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The makefile errors out if the source directory is configured (*),
+because having random object files in the source directory would confuse
+the VPATH build.
 
-diff --git a/drivers/staging/otus/apdbg.c b/drivers/staging/otus/apdbg.c
-index b59028e..32c26e5 100644
---- a/drivers/staging/otus/apdbg.c
-+++ b/drivers/staging/otus/apdbg.c
-@@ -180,6 +180,6 @@ int main(int argc, char **argv)
- 	if (argc < 3) {
- 		fprintf(stderr, "%s: usage is \"%s <ifname> <operation>"
- 				"[<address>] [<value>]\"\n", prgname, prgname);
--		fprintf(stderr, "valid operation : read, write, mem, reg, \n");
-+		fprintf(stderr, "valid operation : read, write, mem, reg,\n");
- 		fprintf(stderr, "		: txd, rxd, rmem, wmem\n");
- 		fprintf(stderr, "		: dmat, regt, test\n");
+(*) Means: either .config or include/config exists
 
---
-1.6.0.4
-
+Michal
