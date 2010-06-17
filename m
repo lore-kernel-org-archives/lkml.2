@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab0FQKuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 06:50:50 -0400
-Received: from mail.gmx.net ([213.165.64.20]:46196 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932155Ab0FQKus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 06:50:48 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/fgLQRHSrflCb2HCNPCVbCVDDL1pFEoGvZbDgxkl
-	gyR+B9AODanefl
-Subject: Re: Slow pty's (was Re: libdivecomputer interfaces?)
-From: Mike Galbraith <efault@gmx.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Brian Bloniarz <bmb@athenacr.com>, Chris Wedgwood <cw@f00f.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Jef Driesen <jefdriesen@telenet.be>, linux-kernel@vger.kernel.org,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1276758038.9628.1.camel@marge.simson.net>
-References: <AANLkTinLth4iKXAwszEEsPm_9ZDlj8HtqsiG5cdFE1cZ@mail.gmail.com>
-	 <20100610181042.GA19210@puku.stupidest.org> <4C116652.8010408@athenacr.com>
-	 <alpine.LRH.2.00.1006161702470.2497@twin.jikos.cz>
-	 <1276701411.30669.6.camel@marge.simson.net>
-	 <1276756770.8248.20.camel@marge.simson.net>
-	 <1276758038.9628.1.camel@marge.simson.net>
-Content-Type: text/plain
-Date: Thu, 17 Jun 2010 12:50:44 +0200
-Message-Id: <1276771844.8121.14.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+	id S1759573Ab0FQLFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 07:05:33 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46360 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab0FQLFc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 07:05:32 -0400
+Message-ID: <4C1A0141.5020003@ru.mvista.com>
+Date: Thu, 17 Jun 2010 15:04:33 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>
+CC: linux-usb@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Greg KH <greg@kroah.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 10/11] USB: gadget: composite: addad disconnect callback
+References: <20100615185527.GA22803@kroah.com> <cover.1276681840.git.m.nazarewicz@samsung.com> <7131891c93ac20a3360068e2f4b8fff0de7dfafb.1276681840.git.m.nazarewicz@samsung.com> <1cf0484e46e3b2b5ce0dea8cdc7396d4bfa977c5.1276681840.git.m.nazarewicz@samsung.com> <0022e21e1b622b3a54d1e55aed727e7e429c7c70.1276681840.git.m.nazarewicz@samsung.com> <45fc10256bd2374706e4153360427257d15804a9.1276681840.git.m.nazarewicz@samsung.com> <bb0d9f73c7caae31c0bc291d3dfce44a2f6a3736.1276681840.git.m.nazarewicz@samsung.com> <c7fbb2934e18cfd25df3e00a548ac33e5b0a7353.1276681840.git.m.nazarewicz@samsung.com> <9f32ae2ab133d27642ac4c1e81777b1e34a0c1a1.1276681840.git.m.nazarewicz@samsung.com> <c4143e7fdd0fc61f05118c30a0a9edbbc0a97db4.1276681840.git.m.nazarewicz@samsung.com> <0de8ae564d9a562ee02bfb116b3a6bf0ff19ea3f.1276681840.git.m.nazarewicz@samsung.com> <42fc529dec5034b62c17d00791e4fe8b8d5f19ee.1276681840.git.m.nazarewicz@samsung.com>
+In-Reply-To: <42fc529dec5034b62c17d00791e4fe8b8d5f19ee.1276681840.git.m.nazarewicz@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-17 at 09:00 +0200, Mike Galbraith wrote:
-> On Thu, 2010-06-17 at 08:39 +0200, Mike Galbraith wrote:
-> 
-> > I'm not seeing any problem with serial console here, seems to work just
-> > fine P4->Q6600, both running NOHZ kernels with nohz_ratelimit(), 33.5 on
-> > the P4, and tip.today on the Q6600.
-> 
-> Of course, as soon as I say that, the problem appeared.  Hopefully,
-> It'll stick around a while.
+Hello.
 
-Actually, it's fully reproducible, I just have _way_ too many (49)
-kernels to choose from.
+Michal Nazarewicz wrote:
 
-I had to go back to virgin 34, apply 39c0cbe and fixlet to fully test,
-as git/tip network isn't working quite right for me atm.  At any rate,
-the below fixed it up for me, and cross-cpu throughput gain is intact.
+> Added a disconnect() callback to compasite devices which
 
-sched: do not ratelimit NOHZ when the tick is stopped.
+    Your subject has "addad" -- probably instead of "added".
 
-Chris Wedgwood reports that 39c0cbe sched: Rate-limit nohz causes a serial
-console regression, unresponsiveness, and indeed it does.  The below fixes
-it by not skipping out when the tick has been stopped.
+> is called by composite glue when its disconnect callback
+> is called by gadget.
 
-Tested that the throughput benefit of ratelimiting is still intact.  It is.
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Acked-by: David Brownell <dbrownell@users.sourceforge.net>
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Reported-by: Chris Wedgwood <cw@f00f.org>
-LKML-Reference: <new-submission>
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 5f171f0..83c5129 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -315,7 +315,7 @@ void tick_nohz_stop_sched_tick(int inidle)
- 		goto end;
- 	}
- 
--	if (nohz_ratelimit(cpu))
-+	if (!ts->tick_stopped && nohz_ratelimit(cpu))
- 		goto end;
- 
- 	ts->idle_calls++;
- 
-
+WBR, Sergei
