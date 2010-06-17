@@ -1,125 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760810Ab0FQVRd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 17:17:33 -0400
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:14155 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760763Ab0FQVRa (ORCPT
+	id S1760794Ab0FQVVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 17:21:42 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46241 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759948Ab0FQVVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 17:17:30 -0400
-Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.53,434,1272844800"; 
-   d="scan'208";a="146213582"
-From: Tom Lyon <pugs@lyon-about.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
-Date: Thu, 17 Jun 2010 14:14:00 -0700
-User-Agent: KMail/1.9.9
-Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       chrisw@sous-sol.org, joro@8bytes.org, hjk@linutronix.de, avi@redhat.com,
-       gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
-References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com> <201006111515.53562.pugs@lyon-about.com> <20100613102339.GB4191@redhat.com>
-In-Reply-To: <20100613102339.GB4191@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Thu, 17 Jun 2010 17:21:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=WYg1MqlDFE3cAu4vy6JDfuCKeAf3Qw7wcsHEIClHKA2sU4Uo7vgz+Lp0PBX7Y7VEhi
+         AXbFugD1ayGvKZRkw+FsNXg7YzIJWa9aZK0covUWVL7LQ12UlAF+oSDJwffWzoc2ruCh
+         cJX2Xn6EiPbXE0zfIXBkQTXqUNp5SAafPA0L4=
+Subject: [PATCH] Two fixes for my mmc/sd cardreader
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: linux-mmc <linux-mmc@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Philip Langdale <philipl@overt.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Jun 2010 00:21:35 +0300
+Message-ID: <1276809695.28201.13.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201006171414.00878.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 13 June 2010 03:23:39 am Michael S. Tsirkin wrote:
-> On Fri, Jun 11, 2010 at 03:15:53PM -0700, Tom Lyon wrote:
-> > [ bunch of stuff about MSI-X checking and IOMMUs and config registers...]
-> > 
-> > OK, here's the thing.  The IOMMU API today does not do squat about
-> > dealing with interrupts. Interrupts are special because the APIC
-> > addresses are not each in their own page.  Yes, the IOMMU hardware
-> > supports it (at least Intel), and there's some Intel intr remapping
-> > code (not AMD), but it doesn't look like it is enough.
-> 
-> The iommu book from AMD seems to say that interrupt remapping table
-> address is taken from the device table entry.  So hardware support seems
-> to be there, and to me it looks like it should be enough.
-> Need to look at the iommu/msi code some more to figure out
-> whether what linux does is handling this correctly -
-> if it doesn't we need to fix that.
-> 
-> > Therefore, we must not allow the user level driver to diddle the MSI
-> > or MSI-X areas - either in config space or in the device memory space.
-> 
-> It won't help.
-> Consider that you want to let a userspace driver control
-> the device with DMA capabilities.
-> 
-> So if there is a range of addresses that device
-> can write into that can break host, these writes
-> can be triggered by userspace. Limiting
-> userspace access to MSI registers won't help:
-> you need a way to protect host from the device.
+Hi,
 
-OK, after more investigation, I realize you are right.
-We definitely need the IOMMU protection for interrupts, and
-if we have it, a lot of the code for config space protection is pointless.
-It does seem that the Intel  intr_remapping code does what we want
-(accidentally) but that the AMD iommu code does not yet do any
-interrupt remapping.  Joerg - can you comment? On the roadmap?
+These are 2 fixes for my card reader.
 
-I should have an AMD system w IOMMU in a couple of days, so I
-can check this out.
 
-> 
-> >  If the device doesn't have its MSI-X registers in nice page aligned
-> >  areas, then it is not "well-behaved" and it is S.O.L. The SR-IOV spec
-> >  recommends that devices be designed the well-behaved way.
-> > 
-> > When the code in vfio_pci_config speaks of "virtualization" it means
-> > that there are fake registers which the user driver can read or write,
-> > but do not affect the real registers. BARs are one case, MSI regs
-> > another. The PCI vendor and device ID are virtual because SR-IOV
-> > doesn't supply them but I wanted the user driver to find them in the
-> > same old place.
-> 
-> Sorry, I still don't understand why do we bother.  All this is already
-> implemented in userspace.  Why can't we just use this existing userspace
-> implementation?  It seems that all kernel needs to do is prevent
-> userspace from writing BARs.
+First patch fixes old issue with system hand on suspend to disk/ram with
+mmc card inserted.
+I updated description, and pm notification registration order.
+I think this patch can an should go to 2.6.35, because it fixes long
+standing and nasty regression.
 
-I assume the userspace of which you speak is qemu?  This is not what I'm
-doing with vfio - I'm interested in the HPC networking model of direct 
-user space access to the network. 
+The second patch is a result of my work trying to understand why my card
+reader sometimes dies on resume.
+This reader has a special MMC function which steals MMC cards, and until
+now had no driver. A way to disable it was found, and while it works, it
+has (at least here) a side effect of killing the controller on resume
+from ram/disk (and it happens often, and doesn't depend of whether card
+was in slot or not during suspend).
 
-> Why can't we replace all this complexity with basically:
-> 
-> if (addr <= PCI_BASE_ADDRESS_5 && addr + len >= PCI_BASE_ADDRESS_0)
-> 	return -ENOPERM;
-> 
-> And maybe another register or two. Most registers should be fine.
-> 
-> > [ Re: Hotplug and Suspend/Resume]
-> > There are *plenty* of real drivers - brand new ones - which don't
-> > bother with these today.  Yeah, I can see adding them to the framework
-> > someday - but if there's no urgent need then it is way down the
-> > priority list.
-> 
-> Well, for kernel drivers everything mostly works out of the box, it is
-> handled by the PCI subsystem.  So some kind of framework will need to be
-> added for userspace drivers as well.  And I suspect this issue won't be
-> fixable later without breaking applications.
+Fortunately it turned out that MMC part is _almost_ standard SDHCI
+controller.
+This patch adds support for this device to standard sdhci driver.
+Unfortunately, this support still contais small hack.
+It waits 1/2 of a second on resume before initializing the controller.
+Not doing so, and resuming with MMC card present results in confused
+controller. It is not dead though. A card reinsert makes it work again
+with all cards.
+Yet the 1st patch is must for this because otherwise mmc core seeing
+that controller doesn't respond, removes the card, therefore hangs the
+system.
+It doesn't happen when I wait these 1/2 of second though.
 
-Whatever works out of the box for the kernel drivers which don't implement
-suspend/resume will work for the user level drivers which don't.
-> 
-> > Meanwhile, the other uses beckon.
-> 
-> Which other uses? I thought the whole point was fixing
-> what's broken with current kvm implementation.
-> So it seems to be we should not rush it ignoring existing issues such as
-> hotplug.
-Non-kvm cases.  That don't care about suspend/resume.
+I think that this patch is also ok for 2.6.35, because it only adds new
+functionality.
+You are free to disable MMC controller using the same
+CONFIG_MMC_RICOH_MMC.
 
- 
+If you don't disable it though, instead of full lack of functionality
+you will get full featured MMC controller.
+
+Best regards,
+Maxim Levitsky
+
 
 
