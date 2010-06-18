@@ -1,70 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab0FRGaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 02:30:09 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:47146 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753686Ab0FRGaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 02:30:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=FnKI1ED9STUzhRY80T2QWwejsdQ64ko+tsxZd/hnrYxMZJ3/aRmH6qeyh0aOq91VSa
-         LoSv1K53X7UbfRiiWqOx6hIxdlzHa3/94VIyQ6egi0fn01/RVU+Zt3VWEz1uaqHE/7em
-         WJtlkhJ9X8WzQqZqmkJXsXjAuofFPLxg0fcCU=
+	id S1754257Ab0FRGbn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 02:31:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34895 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753686Ab0FRGbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 02:31:42 -0400
+Message-ID: <4C1B12AC.8060201@zytor.com>
+Date: Thu, 17 Jun 2010 23:31:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Date: Fri, 18 Jun 2010 15:30:02 +0900
-Message-ID: <AANLkTimx1HWYzG0qQqP12ObWQI1eiH5SoFpRic06uN3f@mail.gmail.com>
-Subject: [PATCH] USB: serial: ftdi: correct merge conflict with CONTEC id
-From: Daniel Sangorrin <daniel.sangorrin@gmail.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Radek Liboska <liboska@uochb.cas.cz>,
-       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+CC: tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org,
+       matthew@wil.cx, macro@linux-mips.org, kamezawa.hiroyu@jp.fujitsu.com,
+       eike-kernel@sf-tec.de, jeremy@goop.org, linux-pci@vger.kernel.org
+Subject: Re: [BUG][PATCH 0/2 (v.3)] x86: ioremap() problem in X86_32 PAE
+References: <4C1AE64C.6040609@jp.fujitsu.com>
+In-Reply-To: <4C1AE64C.6040609@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corrects a problem with the merge of a previous
-patch to add the CONTEC identifier.
+On 06/17/2010 08:21 PM, Kenji Kaneshige wrote:
+> Hi,
+>
+> Here is a updated version (v.3) of patchset to fix ioremap() related
+> problem found in x86 32-bit mode. The problem is that ioremap() maps
+> wrong address for the device to which phisical addres higer than
+> 32-bit is assigned (ioat device in my case).
+>
 
-Signed-off-by: Daniel Sangorrin <daniel.sangorrin@gmail.com>
----
- drivers/usb/serial/ftdi_sio.c     |    1 -
- drivers/usb/serial/ftdi_sio_ids.h |    7 -------
- 2 files changed, 0 insertions(+), 8 deletions(-)
+Will look at it first thing in the morning.
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 79dd1ae..da7e334 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -653,7 +653,6 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(EVOLUTION_VID, EVOLUTION_ER1_PID) },
- 	{ USB_DEVICE(EVOLUTION_VID, EVO_HYBRID_PID) },
- 	{ USB_DEVICE(EVOLUTION_VID, EVO_RCM4_PID) },
--	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ARTEMIS_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ATIK_ATK16_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ATIK_ATK16C_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h
-b/drivers/usb/serial/ftdi_sio_ids.h
-index 94d86c3..bbc159a 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -501,13 +501,6 @@
- #define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
-
- /*
-- * Contec products (http://www.contec.com)
-- * Submitted by Daniel Sangorrin
-- */
--#define CONTEC_VID		0x06CE	/* Vendor ID */
--#define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
--
--/*
-  * Definitions for B&B Electronics products.
-  */
- #define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
--- 
-1.7.0.4
+	-hpa
