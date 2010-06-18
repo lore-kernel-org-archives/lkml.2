@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933429Ab0FROMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 10:12:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42201 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932998Ab0FROL6 (ORCPT
+	id S933451Ab0FROUC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 10:20:02 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64257 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933403Ab0FROT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 10:11:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ip6q82ccQjUVSby/Vi93c1i7eytxngan3IKZ5w+yt5sW+VhCSl1H22FxwDillB3AU9
-         sTepa+TI8vCKX/yEywlTXUQHEFpHudxMyluz3v9qXqPfGeeI7ARhIL19FnJELBRdeXdO
-         v/oUly1DfkY2GQ0wC7ZLusXvr7ZtS8viiXqzE=
-Subject: Re: [PATCH] ath5k: disable ASPM
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Bob Copeland <me@bobcopeland.com>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, ath5k-devel@venema.h4ckr.net,
-       linux-wireless@vger.kernel.org,
-       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com>
-References: <20100528100901.14580.1322.stgit@fate.lan>
-	 <1276806785.20754.8.camel@maxim-laptop>
-	 <20100618112026.17623g6uhdjk8hts@naisho.dyndns.info>
-	 <1276856142.9114.1.camel@maxim-laptop>
-	 <20100618134930.124225d4fsi8w1fk@naisho.dyndns.info>
-	 <1276859156.19554.2.camel@maxim-laptop>
-	 <AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Jun 2010 17:11:49 +0300
-Message-ID: <1276870309.23783.3.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 18 Jun 2010 10:19:59 -0400
+Message-ID: <4C1B8055.30904@mvista.com>
+Date: Fri, 18 Jun 2010 18:19:01 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+MIME-Version: 1.0
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>
+CC: linux-usb@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Greg KH <greg@kroah.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv5 10/11] USB: gadget: composite: addad disconnect callback
+References: <20100615185527.GA22803@kroah.com> <cover.1276681840.git.m.nazarewicz@samsung.com> <7131891c93ac20a3360068e2f4b8fff0de7dfafb.1276681840.git.m.nazarewicz@samsung.com> <1cf0484e46e3b2b5ce0dea8cdc7396d4bfa977c5.1276681840.git.m.nazarewicz@samsung.com> <0022e21e1b622b3a54d1e55aed727e7e429c7c70.1276681840.git.m.nazarewicz@samsung.com> <45fc10256bd2374706e4153360427257d15804a9.1276681840.git.m.nazarewicz@samsung.com> <bb0d9f73c7caae31c0bc291d3dfce44a2f6a3736.1276681840.git.m.nazarewicz@samsung.com> <c7fbb2934e18cfd25df3e00a548ac33e5b0a7353.1276681840.git.m.nazarewicz@samsung.com> <9f32ae2ab133d27642ac4c1e81777b1e34a0c1a1.1276681840.git.m.nazarewicz@samsung.com> <c4143e7fdd0fc61f05118c30a0a9edbbc0a97db4.1276681840.git.m.nazarewicz@samsung.com> <0de8ae564d9a562ee02bfb116b3a6bf0ff19ea3f.1276681840.git.m.nazarewicz@samsung.com> <42fc529dec5034b62c17d00791e4fe8b8d5f19ee.1276681840.git.m.nazarewicz@samsung.com> <4C1A0141.5020003@ru.mvista.com>
+In-Reply-To: <4C1A0141.5020003@ru.mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-18 at 09:59 -0400, Bob Copeland wrote: 
-> On Fri, Jun 18, 2010 at 7:05 AM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> >> Patch I made uses GPL code from e1000e, but since ath5k is
-> >> dual-licensed so patch can't be accepted. So if I got it right, patch
-> >> has to be remade from scratch by someone who really knows about pci
-> >> registers etc. I don't, and learning this to fix something that is
-> >> already fixed in my point of view is waste of (my) time.
-> > Sure, regardless of licensing, this patch has to be redone (and e1000
-> > with it)
-> 
-> At any rate, Jussi, thanks a bundle for tracking it down.  I owe you a
-> beer, lots of bugs have been reported on these devices.
-> 
-> Maxim, this device was always broken in the same way, right?  Just
-> curious if anything made it worse recently.
+Hello.
 
-Always was broken, of course even with madwifi.
+I wrote:
 
-Recently I think driver stopped doing reset on RXORN, which sometimes
-helped. This did made things a bit worse.
+> Michal Nazarewicz wrote:
 
-Anyway, just disable L0S, and card works perfectly.
+>> Added a disconnect() callback to compasite devices which
 
-Best regards,
-Maxim Levitsky
+>    Your subject has "addad" -- probably instead of "added".
 
+    Also, there's typo in the first line: "compasite"...
+
+>> is called by composite glue when its disconnect callback
+>> is called by gadget.
+
+>> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> Acked-by: David Brownell <dbrownell@users.sourceforge.net>
+
+WBR, Sergei
