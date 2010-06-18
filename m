@@ -1,127 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab0FRV7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 17:59:52 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:15104 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab0FRV7u (ORCPT
+	id S1753895Ab0FRWBx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 18:01:53 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:20153 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753560Ab0FRWBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 17:59:50 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6017"; a="44876913"
-Subject: Re: [PATCH 3/3] msm: 8x50: add gpio device configuration.
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Gregory Bean <gbean@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1276888375-13221-4-git-send-email-gbean@codeaurora.org>
-References: <1276888375-13221-1-git-send-email-gbean@codeaurora.org>
-	 <1276888375-13221-4-git-send-email-gbean@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Jun 2010 14:59:44 -0700
-Message-ID: <1276898384.30433.75.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 18 Jun 2010 18:01:52 -0400
+Message-ID: <4C1BECC9.7000805@bluewatersys.com>
+Date: Sat, 19 Jun 2010 10:01:45 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: David Brownell <david-b@pacbell.net>
+CC: linux kernel <linux-kernel@vger.kernel.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
+       =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       ext-jani.1.nikula@nokia.com
+Subject: Re: gpiolib and sleeping gpios
+References: <514259.95052.qm@web180315.mail.gq1.yahoo.com>
+In-Reply-To: <514259.95052.qm@web180315.mail.gq1.yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-18 at 12:12 -0700, Gregory Bean wrote:
-> Add device configuration and board-init for gpio support on the QSD8x50.
+David Brownell wrote:
 > 
-> Signed-off-by: Gregory Bean <gbean@codeaurora.org>
-> ---
->  arch/arm/mach-msm/board-qsd8x50.c   |   29 +++++++++++++++++++++++++++--
->  arch/arm/mach-msm/devices-qsd8x50.c |   23 +++++++++++++++++++++++
->  2 files changed, 50 insertions(+), 2 deletions(-)
+> --- On Thu, 6/17/10, Ryan Mallon <ryan@bluewatersys.com> wrote:
+>> Currently implementors of gpiolib must provide
+>> implementations for
+>> gpio_get_value, gpio_set_value and gpio_cansleep. 
 > 
-> diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
-> index e3cc807..9137002 100644
-> --- a/arch/arm/mach-msm/board-qsd8x50.c
-> +++ b/arch/arm/mach-msm/board-qsd8x50.c
-> @@ -40,7 +40,31 @@ static struct msm_gpio uart3_config_data[] = {
->  	{ GPIO_CFG(87, 1, GPIO_OUTPUT,  GPIO_PULL_DOWN, GPIO_2MA), "UART2_Tx"},
->  };
->  
-> -static struct platform_device *devices[] __initdata = {
-> +/*
-> + * Early devices are those which provide a system service which will be
-> + * required by one or more of the function calls in qsd8x50_init.
-> + * These devices must be probed and online first in order for
-> + * the init routine to run successfully.
-> + */
-> +static struct platform_device *early_devices[] __initdata = {
-> +#ifdef CONFIG_GPIOLIB
+> Not true.  There is ONE implementation of gpiolib.
+> 
+> I think you mean "implementors of the GPIO calls".
+> many of those implementors will use gpiolib, to
+> make their lives easier.  They are not, however,
+> re-implementing gpiolib itself...
 
-We can drop the ifdefs I think , cause there's no off state anymore.
+Okay, so I got the semantics wrong. You know what I mean :-).
 
+<snip>
 
-> +	&msm_gpio_devices[0],
-> +	&msm_gpio_devices[1],
-> +	&msm_gpio_devices[2],
-> +	&msm_gpio_devices[3],
-> +	&msm_gpio_devices[4],
-> +	&msm_gpio_devices[5],
-> +	&msm_gpio_devices[6],
-> +	&msm_gpio_devices[7],
-> +#endif
-> +};
-> +
-> +/*
-> + * Late devices are those which are dependent upon services initialized
-> + * by qsd8x50_init, or which simply have no dependents and can have
-> + * their initialization deferred.
-> + */
-> +static struct platform_device *late_devices[] __initdata = {
->  	&msm_device_uart3,
->  };
->  
-> @@ -64,8 +88,9 @@ static void __init qsd8x50_init_irq(void)
->  
->  static void __init qsd8x50_init(void)
->  {
-> +	platform_add_devices(early_devices, ARRAY_SIZE(early_devices));
->  	msm8x50_init_uart3();
-> -	platform_add_devices(devices, ARRAY_SIZE(devices));
-> +	platform_add_devices(late_devices, ARRAY_SIZE(late_devices));
->  }
->  
->  MACHINE_START(QSD8X50_SURF, "QCT QSD8X50 SURF")
-> diff --git a/arch/arm/mach-msm/devices-qsd8x50.c b/arch/arm/mach-msm/devices-qsd8x50.c
-> index 4d4a507..b9f692e 100644
-> --- a/arch/arm/mach-msm/devices-qsd8x50.c
-> +++ b/arch/arm/mach-msm/devices-qsd8x50.c
-> @@ -90,3 +90,26 @@ struct clk msm_clocks_8x50[] = {
->  
->  unsigned msm_num_clocks_8x50 = ARRAY_SIZE(msm_clocks_8x50);
->  
-> +#ifdef CONFIG_GPIOLIB
+> 
+> only the cansleep() versions may be used for
+> GPIOs whose operation requires use of sleeping
+> calls.  Most SoC GPIOs are safe to access with
+> IRQs disabled, spinlocks, held and so on.
+> 
+> That's why only the non-cansleep() versions
+> are documented as being spinlock-safe.
+> 
+> 
+>> the cansleep versions calls might_sleep_if. Most drivers
+> 
+> 
+> That's an implemenation detail, internal to the
+> gpiolib code.
+> 
+> Note that "can" sleep means exactly that...  It
+> doesn't mean "must sleep".  A valid way to
+> implement a cansleep() variant is to 
+> 
+> just call the spinlock-safe routine, so that
+> it never sleeps.
+> 
+> THe converse is not true; the spinlock-safe
+> routine must never call a cansleep() version.
 
-Any this one.
+Right, so it is just an implementation detail. When can easily change
+that to gpio_(set/get)_value is only safe to call from spinlock context
+if the gpio will not sleep. Having the the might_sleep_if check inside
+those calls will give a warning if that condition is not met.
 
-> +static struct msm7200a_gpio_platform_data gpio_platform_data[] = {
-> +	MSM7200A_GPIO_PLATFORM_DATA(0,   0,  15, INT_GPIO_GROUP1),
-> +	MSM7200A_GPIO_PLATFORM_DATA(1,  16,  42, INT_GPIO_GROUP2),
-> +	MSM7200A_GPIO_PLATFORM_DATA(2,  43,  67, INT_GPIO_GROUP1),
-> +	MSM7200A_GPIO_PLATFORM_DATA(3,  68,  94, INT_GPIO_GROUP1),
-> +	MSM7200A_GPIO_PLATFORM_DATA(4,  95, 103, INT_GPIO_GROUP1),
-> +	MSM7200A_GPIO_PLATFORM_DATA(5, 104, 121, INT_GPIO_GROUP1),
-> +	MSM7200A_GPIO_PLATFORM_DATA(6, 122, 152, INT_GPIO_GROUP1),
-> +	MSM7200A_GPIO_PLATFORM_DATA(7, 153, 164, INT_GPIO_GROUP1),
-> +};
-> +
-> +struct platform_device msm_gpio_devices[] = {
-> +	MSM7200A_GPIO_DEVICE(0, gpio_platform_data),
-> +	MSM7200A_GPIO_DEVICE(1, gpio_platform_data),
-> +	MSM7200A_GPIO_DEVICE(2, gpio_platform_data),
-> +	MSM7200A_GPIO_DEVICE(3, gpio_platform_data),
-> +	MSM7200A_GPIO_DEVICE(4, gpio_platform_data),
-> +	MSM7200A_GPIO_DEVICE(5, gpio_platform_data),
-> +	MSM7200A_GPIO_DEVICE(6, gpio_platform_data),
-> +	MSM7200A_GPIO_DEVICE(7, gpio_platform_data),
-> +};
-> +#endif
+> 
+>>  Most drivers call > gpio_(get/set)_value, rather than the cansleep variants. I
+>> haven't done
+>> a full audit of all of the drivers (which is a reasonably
+>> involved
+>> task), but I would hazard a guess that some of these could
+>> be replaced
+>> by the cansleep versions.
+> 
+> 
+> One hopes that the runtime warnings have gotten
+> folk to fix bugs where the cansleep() version
+> should have been used, but wasn't...
 
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+The runtime warnings will only show instances where the non-sleeping
+versions where called instead of the sleeping versions. There is no
+warning to say that we are calling the spinlock safe version, where it
+is possible to sleep.
+
+The point I was trying to make is that there are lots of drivers which
+will not work with gpios on sleeping io expanders because they call the
+spinlock safe gpio calls. Some of these drivers may be able to use the
+sleeping variants. There are two possible ways to fix this:
+
+1) Audit each driver which uses non-sleeping gpio calls and determine
+whether they can use the sleeping versions instead.
+2) Modify the gpiolib calls as I suggested. Any attempts to use a
+sleeping gpio with a driver which cannot support it will result in a
+warning.
+
+> 
+> Better IMO not to make that change except as
+> part
+> of a bugfix:  e.g. remove a runtime warning
+> that boils down to not using the cansleep()
+> version when it should have been used.
+>> Would it not be simpler to combine the calls and have
+>> something like this:
+>>
+>> void __gpio_get_value(unsigned gpio, int value)
+>> {
+>>     struct gpio_chip *chip;
+>>
+>>     chip = gpio_to_chip(gpio);
+>>     might_sleep_if(extra_checks &&
+>> chip->can_sleep);
+>>     chip->set(chip, gpio - chip->base,
+> 
+>> value);
+> 
+> calling chip->set() when  chip->can_sleep
+> and the call context can't be preempted,
+> would be a bug.  So that code is wrong ...
+> it should at least warn about the error
+> made by the caller.  If we had error returns from gpio get/set calls 9sigh), it'd be right to
+> fail that call.
+
+Not quite sure what you mean here? Many drivers are generic in that they
+get passed a gpio to use with the gpiolib calls via some platform/driver
+data. Some drivers will be able to use sleeping gpios, but may not be
+correctly using the cansleep variants.
+
+I agree about the errors from the gpio_(set/get)_value calls. set isn't
+too bad, but returning an error and a value from the get calls is a bit
+of a pain.
+
+Possibly a solution is to have an additional argument to gpio_request
+which specifies whether the driver this gpio is able to be a sleeping
+gpio or not. That way the request can fail immediately if a sleeping
+gpio is passed to a driver that calls gpiolibs calls from sleeping context.
+
+~Ryan
 
