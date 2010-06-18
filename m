@@ -1,56 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760995Ab0FRLVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 07:21:10 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:34098 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760973Ab0FRLVI (ORCPT
+	id S1761004Ab0FRLdp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 07:33:45 -0400
+Received: from ossa.mas.viperplatform.net.au ([202.147.75.25]:58369 "EHLO
+	ossa.mas.viperplatform.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756645Ab0FRLdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 07:21:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=TEP7cXCN3uw2Z8eB2hmKS4e7py5R5LcDS61Pf7vNC4S7+FYugcKx4GLSDWvDl0FVxO
-         awY/ozKRkFn0TBo91H4GjmeVrCP0M6tB2UJPzBFJm2lVltwMr4dPl77CFSs1e85jLYSg
-         fjAxjtNqnbV142/Fv7C259SnXYHvZReNg0ao0=
+	Fri, 18 Jun 2010 07:33:43 -0400
+Date: Fri, 18 Jun 2010 21:33:35 +1000
+From: Stuart Longland <redhatter@gentoo.org>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: ALSA Development List <alsa-devel@alsa-project.org>,
+       Takashi Iwai <tiwai@suse.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ASoC: Add new TI TLV320AIC3204 CODEC driver
+Message-ID: <20100618113335.GB30868@www.longlandclan.yi.org>
+References: <1276833465-31702-1-git-send-email-redhatter@gentoo.org>
+ <1276858862.3054.28.camel@odin>
 MIME-Version: 1.0
-From: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
-Date: Fri, 18 Jun 2010 13:20:46 +0200
-Message-ID: <AANLkTinq_3P-QrTqsEdtyMbBtc9EXhahclER_4s5_Kx2@mail.gmail.com>
-Subject: Wacom based devices and the mt kernel protocol.
-To: Henrik Rydberg <rydberg@euromail.se>, pingc@wacom.com,
-       Chase Douglas <chase.douglas@canonical.com>,
-       Rafi Rubin <rafi@seas.upenn.edu>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276858862.3054.28.camel@odin>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Clarity-Outbound-SpamScanned: YES
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-Now we can find many multitouch devices based on wacom Wacom panel/digitizer
-Bamboo Pen&Touch, HP tm2, Fujitsu LifeBook T4410 & T4310, etc...
+To others: In case you're wondering where the patch is... I pulled it
+from the moderation queue because there were a few style errors, and
+some definitions I forgot to delete.  A fresh one that meets coding
+style requirements is on its way, as soon as scripts/checkpatch.pl is
+finished (this seems to take a while on my hardware).
 
-it seems that these devices are supported in some way in Linux Kernel,
-but I want to know if they are compliant with the MT Linux protocol.
-N-Trig based devices and Stantum ones are the most compliant, so Wacom
-situation needs to be clarified specially considering they are HID
-devices (meaning similar to the others devices which respect the
-protocol). This impact very much the decision of a Linux user wanting
-to buy wacom mt device.
+On Fri, Jun 18, 2010 at 12:01:02PM +0100, Liam Girdwood wrote:
+> On Fri, 2010-06-18 at 13:57 +1000, Stuart Longland wrote:
+> > The TLV320AIC3204 is a low-power stereo audio CODEC capable of sample
+> > rates of up to 192kHz.  This driver implements basic functionality,
+> > using I??C for the control channel.
+> > 
+> > The audio interface supports many data bus formats, including I??S
+> > master/slave, DSP, left/right justified and TDM.
+> 
+> Just had a quick check and the register caching needs addressed.
+> 
+> I agree with your comments, I don't think we really want to cache all
+> 16K of codec registers here as we will probably only ever use a handful
+> of them. I think a smaller lookup table containing only the registers
+> that we care about will do.
 
-Ping can you clarifie the situation of wacom based devices ?
+Yeah, I wasn't sure how to go about it.  It's inefficient, but it's
+simple, and works.  Other options I've considered;
 
-Thanks,
+(1) Mark's suggestion of using per-page arrays
+(2) Using address translation. that is:
+	- Page 0 registers 0-127 stored in cache array elements 0-127
+	- Page 1 registers 0-127 stored in cache array elements 128-255
+	- Page 2..7 are skipped
+	- Page 8 registers 0-127 stored in cache array elements 256-383
+	... etc.
 
-ik.
+> Fwiw, a generic ASoC lookup table would be best as this could be used by
+> other codecs with large register maps too. The table should be ordered
+> (for quick lookup) and also contain a readable/writeable/volatile flag
+> for each register.
 
-On Tue, Jun 15, 2010 at 7:01 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
->
-> g number of intelligent multi-contact and
-> multi-user devices, the need to send digested, filtered information
-> from a set of different sources within the same device is imminent.
-> This patch adds the concept of slots to the MT protocol. The slots
-> enumerate a set of identified sources, such that all MT events
+Indeed, the 'AIC3204 is not the only CODEC to use sparse register maps.
+16KB is not a lot of RAM these days, but it's a lot more RAM than I'm
+comfortable using for an audio driver.  I'll give this some thought, but
+for now I'll press on with what I have since I know it works reliably.
+
+Another thought regarding register cache, rather than hard-coding it the
+way we presently do, we could also build up the cache on demand... that
+is, we maintain a table of previously read registers; if a register
+value is read for the first time, an actual read is done from the CODEC
+(or the value is copied from a static table).  All subsequent reads then
+come from cache.  On suspend; if a register has not been touched, it is
+deemed to be left at default settings, and skipped on resume.
+
+The downside of this is having to maintain a table of what registers
+have been read already; which would possibly be as big as the cache is
+anyway.  But the flip side; if a company brought out a new CODEC which
+had differing power-up defaults to a similar CODEC handled by the same
+driver, it would prevent the wrong default getting assumed or loaded in.
+-- 
+Stuart Longland (aka Redhatter, VK4MSL)      .'''.
+Gentoo Linux/MIPS Cobalt and Docs Developer  '.'` :
+. . . . . . . . . . . . . . . . . . . . . .   .'.'
+http://dev.gentoo.org/~redhatter             :.'
+
+I haven't lost my mind...
+  ...it's backed up on a tape somewhere.
