@@ -1,118 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab0FRITj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 04:19:39 -0400
-Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:55126 "EHLO
-	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757266Ab0FRITh (ORCPT
+	id S1758029Ab0FRIVM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 04:21:12 -0400
+Received: from t111.niisi.ras.ru ([193.232.173.111]:59394 "EHLO
+	t111.niisi.ras.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757491Ab0FRIVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 04:19:37 -0400
-Date: Fri, 18 Jun 2010 10:20:33 +0200
-From: Louis Rilling <Louis.Rilling@kerlabs.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
-Message-ID: <20100618082033.GD16877@hawkmoon.kerlabs.com>
-Mail-Followup-To: Oleg Nesterov <oleg@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Pavel Emelyanov <xemul@openvz.org>,
-	Linux Containers <containers@lists.osdl.org>,
-	linux-kernel@vger.kernel.org
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <20100617212003.GA4182@redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-8946-1276849169-0001-2"
-Content-Disposition: inline
-In-Reply-To: <20100617212003.GA4182@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 18 Jun 2010 04:21:10 -0400
+X-Greylist: delayed 2278 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jun 2010 04:21:09 EDT
+Message-ID: <4C1B263E.7070906@niisi.msk.ru>
+Date: Fri, 18 Jun 2010 11:54:38 +0400
+From: "Gleb O. Raiko" <raiko@niisi.msk.ru>
+Organization: NIISI RAN
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
+MIME-Version: 1.0
+To: David Daney <ddaney@caviumnetworks.com>
+CC: Jesper Nilsson <jesper@jni.nu>, Ralf Baechle <ralf@linux-mips.org>,
+       linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: MIPS: return after handling coprocessor 2 exception
+References: <20100617132554.GB24162@jni.nu> <4C1A57AE.9080706@caviumnetworks.com>
+In-Reply-To: <4C1A57AE.9080706@caviumnetworks.com>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Antivirus: Dr.Web (R) for Mail Servers on t111.niisi.ras.ru host
+X-Antivirus-Code: 100000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+On 17.06.2010 21:13, David Daney wrote:
+> On 06/17/2010 06:25 AM, Jesper Nilsson wrote:
+>> Breaking here dropped us to the default code which always sends
+>> a SIGILL to the current process, no matter what the CU2 notifier says.
+>>
+>> Signed-off-by: Jesper Nilsson<jesper@jni.nu>
+[...]
+>> case 2:
+>> raw_notifier_call_chain(&cu2_chain, CU2_EXCEPTION, regs);
+>> - break;
+>> + return;
+>>
+>
+> What happens when the call chain is empty, and the proper action *is*
+> SIGILL?
 
---=_bohort-8946-1276849169-0001-2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It's never empty, in fact. The default notifier declared at top of 
+traps.c sends SIGILL. The problem that current code is sending SIGILL in 
+all cases.
 
-On 17/06/10 23:20 +0200, Oleg Nesterov wrote:
-> On 06/16, Louis Rilling wrote:
-> >
-> > Detached tasks are not seen by zap_pid_ns_processes()->sys_wait4(), so
-> > that release_task()->proc_flush_task() of container init can be called
-> > before it is for some detached tasks in the namespace.
-> >
-> > Pin proc_mnt's in copy_process(), so that proc_flush_task() becomes safe
-> > whatever the ordering of tasks.
->=20
-> I must have missed something, but can't we just move mntput() ?
-
-See the log of the commit introducing pid_ns_release_proc() (6f4e6433):
-
-    Sice the namespace holds the vfsmnt, vfsmnt holds the superblock and the
-    superblock holds the namespace we must explicitly break this circle to =
-destroy
-    all the stuff.  This is done after the init of the namespace dies.  Run=
-ning a
-    few steps forward - when init exits it will kill all its children, so no
-    proc_mnt will be needed after its death.
-
-Thanks,
-
-Louis
-
->=20
-> Oleg.
->=20
-> --- x/kernel/pid_namespace.c
-> +++ x/kernel/pid_namespace.c
-> @@ -110,6 +110,9 @@ static void destroy_pid_namespace(struct
->  {
->  	int i;
-> =20
-> +	if (ns->proc_mount)
-> +		mntput(ns->proc_mount);
-> +
->  	for (i =3D 0; i < PIDMAP_ENTRIES; i++)
->  		kfree(ns->pidmap[i].page);
->  	kmem_cache_free(pid_ns_cachep, ns);
-> --- x/fs/proc/base.c
-> +++ x/fs/proc/base.c
-> @@ -2745,10 +2745,6 @@ void proc_flush_task(struct task_struct=20
->  		proc_flush_task_mnt(upid->ns->proc_mnt, upid->nr,
->  					tgid->numbers[i].nr);
->  	}
-> -
-> -	upid =3D &pid->numbers[pid->level];
-> -	if (upid->nr =3D=3D 1)
-> -		pid_ns_release_proc(upid->ns);
->  }
-> =20
->  static struct dentry *proc_pid_instantiate(struct inode *dir,
->=20
-
---=20
-Dr Louis Rilling			Kerlabs
-Skype: louis.rilling			Batiment Germanium
-Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
-http://www.kerlabs.com/			35700 Rennes
-
---=_bohort-8946-1276849169-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkwbLFEACgkQVKcRuvQ9Q1TsnACgm8EtzQNDlCvEhIB6XBu3GjAl
-ajUAoL2n1ZFnH9IGzcBwCpJZsZdw2P7Q
-=Xqh6
------END PGP SIGNATURE-----
-
---=_bohort-8946-1276849169-0001-2--
+Gleb.
