@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759221Ab0FRJYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 05:24:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54432 "EHLO hera.kernel.org"
+	id S1759458Ab0FRJkj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 05:40:39 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59704 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758221Ab0FRJYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 05:24:09 -0400
-Message-ID: <4C1B3B02.2040209@kernel.org>
-Date: Fri, 18 Jun 2010 11:23:14 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1753685Ab0FRJki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 05:40:38 -0400
+Date: Fri, 18 Jun 2010 11:40:05 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Corinna Schultz <cschultz@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, coschult@us.ibm.com,
+       akpm@linux-foundation.org, djwong <djwong@linux.vnet.ibm.com>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH RESEND] Calgary: increase max PHB number
+Message-ID: <20100618094005.GC23977@elte.hu>
+References: <20100615161528.wqx1w1y3ok08w88w@imap.linux.ibm.com>
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@infradead.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
-       mingo@elte.hu, bphilips@suse.de, yinghai@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, jeff@garzik.org,
-       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
-       khali@linux-fr.org
-Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
-References: <1276443098-20653-1-git-send-email-tj@kernel.org>	<1276443098-20653-10-git-send-email-tj@kernel.org>	<20100616204854.4b036f87@infradead.org>	<4C19DA64.8000409@kernel.org>	<alpine.LFD.2.00.1006171310560.4290@localhost.localdomain>	<4C1A05AF.5010405@kernel.org>	<20100617124343.5889067c@lxorguk.ukuu.org.uk>	<4C1A4548.3020602@kernel.org>	<20100617090229.543af62c@infradead.org>	<4C1A5197.8060409@kernel.org> <20100617232649.6db5cc55@infradead.org>
-In-Reply-To: <20100617232649.6db5cc55@infradead.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Jun 2010 09:23:17 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100615161528.wqx1w1y3ok08w88w@imap.linux.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 1.0
+X-ELTE-SpamLevel: s
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
+	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
+	[score: 0.4233]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On 06/18/2010 08:26 AM, Arjan van de Ven wrote:
-> On Thu, 17 Jun 2010 18:47:19 +0200
-> Tejun Heo <tj@kernel.org> wrote:
+* Corinna Schultz <cschultz@linux.vnet.ibm.com> wrote:
+
+> Newer systems (x3950M2) can have 48 PHBs per chassis and 8 chassis,
+> so bump the
+> limits up and provide an explanation of the requirements for each class.
 > 
->>
->> Hmmm... the thing is that there will be many cases which won't fit
->> irq_expect() model (why irq_watch() exists in the first place) and for
->> the time being libata is the only one providing that data.  Would the
->> data still be useful to determine which c-state to use?
+> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+> Acked-by: Muli Ben-Yehuda <muli@il.ibm.com>
+> ---
 > 
-> yes absolutely. One of the hard cases right now that the C state code
-> has is that it needs to predict the future. While it has a ton of
-> heuristics, including some is there IO oustanding" ones, libata is a
-> really good case: libata will know generally that within one seek time
-> (5 msec on rotating rust, much less on floating electrons) there'll be
-> an interrupt (give or take, but this is what we can do heuristics for
-> on a per irq level).
-> So it's a good suggestion of what the future will be like, MUCH better
-> than any hint we have right now... all we have right now is some
-> history, and when the next timer is.... 
+>  arch/x86/kernel/pci-calgary_64.c |   13 +++++++++----
+>  1 files changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/pci-calgary_64.c
+> b/arch/x86/kernel/pci-calgary_64.c
+> index e6ec8a2..4b7eb90 100644
+> --- a/arch/x86/kernel/pci-calgary_64.c
+> +++ b/arch/x86/kernel/pci-calgary_64.c
+> @@ -102,10 +102,15 @@ int use_calgary __read_mostly = 0;
+>  #define PMR_SOFTSTOPFAULT		 0x40000000
+>  #define PMR_HARDSTOP		 		 0x20000000
+> 
+> -#define MAX_NUM_OF_PHBS		 		 8 /* how many PHBs in total? */
+> -#define MAX_NUM_CHASSIS		 		 8 /* max number of chassis */
+> -/* MAX_PHB_BUS_NUM is the maximal possible dev->bus->number */
+> -#define MAX_PHB_BUS_NUM		 		 (MAX_NUM_OF_PHBS * MAX_NUM_CHASSIS * 2)
+> +/*
+> + * The maximum PHB bus number.
+> + * x3950M2 (rare): 8 chassis, 48 PHBs per chassis = 384
+> + * x3950M2: 4 chassis, 48 PHBs per chassis        = 192
+> + * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
+> + * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
+> + */
+> +#define MAX_PHB_BUS_NUM		 		 384
+> +
 
-Cool, good to know.  It shouldn't be difficult to at all to add.  Once
-the whole thing gets generally agreed on, I'll work on that.
+Which tree is this against? Doesnt apply to .35-rc3:
 
-Thomas, Ingo, through which tree should these patches routed through?
-Shall I set up a separate branch?
+ Hunk #1 FAILED at 102.
+ 1 out of 1 hunk FAILED -- rejects in file arch/x86/kernel/pci-calgary_64.c
 
-Thanks.
+Thanks,
 
--- 
-tejun
+	Ingo
