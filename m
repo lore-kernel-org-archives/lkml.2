@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab0FRHPs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 03:15:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41267 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab0FRHPr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 03:15:47 -0400
-Subject: Re: [RFC][PATCH 8/8] perf: Rework the PMU methods
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100618042143.GE5345@nowhere>
-References: <20100616160027.590430763@chello.nl>
-	 <20100616160238.721536975@chello.nl>  <20100618042143.GE5345@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 18 Jun 2010 09:15:38 +0200
-Message-ID: <1276845338.27822.1450.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755540Ab0FRHP5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 03:15:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37162 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755369Ab0FRHPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 03:15:55 -0400
+Message-ID: <4C1B1CF5.9020900@kernel.org>
+Date: Fri, 18 Jun 2010 09:15:01 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Joel Becker <Joel.Becker@oracle.com>, mingo@elte.hu, awalls@radix.net,
+       linux-kernel@vger.kernel.org, jeff@garzik.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk,
+       Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: Overview of concurrency managed workqueue
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>	<4C17C598.7070303@kernel.org>	<20100617161412.08337bc6.akpm@linux-foundation.org>	<20100617232502.GB7981@mail.oracle.com> <20100617165655.757d221a.akpm@linux-foundation.org>
+In-Reply-To: <20100617165655.757d221a.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Jun 2010 07:15:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-18 at 06:21 +0200, Frederic Weisbecker wrote:
-> On Wed, Jun 16, 2010 at 06:00:35PM +0200, Peter Zijlstra wrote:
-> > -static void x86_pmu_stop(struct perf_event *event)
-> > +static void x86_pmu_stop(struct perf_event *event, int flags)
-> >  {
-> > -	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-> > -	struct hw_perf_event *hwc = &event->hw;
-> > -	int idx = hwc->idx;
-> > -
-> >  	if (!__test_and_clear_bit(idx, cpuc->active_mask))
-> > -		return;
+On 06/18/2010 01:56 AM, Andrew Morton wrote:
+> On Thu, 17 Jun 2010 16:25:03 -0700
+> Joel Becker <Joel.Becker@oracle.com> wrote:
 > 
+>> On Thu, Jun 17, 2010 at 04:14:12PM -0700, Andrew Morton wrote:
+>>> flush_workqueue() sucks.  It's a stupid, accidental,
+>>> internal-implementation-dependent interface.  We should deprecate it
+>>> and try to get rid of it, migrating to the eminently more sensible
+>>> flush_work().
+>>>
+>>> I guess the first step is to add a dont-do-that checkpatch warning when
+>>> people try to add new flush_workqueue() calls.
+>>>
+>>> 165 instances tree-wide, sigh.
+>>
+>> 	What would the API be for "I want this workqueue emptied before
+>> I shut this thing down?"
 > 
-> 
-> Do you still need active_mask now that you have HES_STOPPED?
+> Um, yeah.  flush_workqueue() is legitimate.  I was thinking of
+> flush_scheduled_work() - the one which operates on the keventd queue.
 
-there still were some users, but yeah, we cuold probably clean that up,
-bit since the patch is large enough as is, I didn't attempt that.
+With cmwq, each wq now costs much less, so we should be able to
+convert them to use their own workqueues without too much problem and
+deprecate flushing of system workqueues.
 
-> > +static void perf_swevent_start(struct perf_event *event, int flags)
-> > +{
-> > +	event->hw.state = 0;
-> > +}
-> > +
-> > +static void perf_swevent_stop(struct perf_event *event, int flags)
-> >  {
-> > +	event->hw.state = 1;
-> >  }
-> 
-> 
-> So, instead of doing this and add yet another check in the fast path,
-> what about just playing with the hlist insertion and deletion?
+Thanks.
 
-I wanted to avoid too much trickery, first make a simple one work, then
-try something fancy.
-
-> It would be nice to have a PERF_EF_STOP as well in ->del, so that
-> each pmu don't need to maintain an internal state.
-
-You have to track it since we can stop the thing outselves without the
-caller knowing.
-
-> >  }
-> >  #endif
-> > @@ -4591,12 +4582,12 @@ static void perf_swevent_start_hrtimer(s
-> >  	if (hwc->sample_period) {
-> >  		u64 period;
-> >  
-> > -		if (hwc->remaining) {
-> > -			if (hwc->remaining < 0)
-> > +		if (hwc->period_left) {
-> > +			if (hwc->period_left < 0)
-> >  				period = 10000;
-> >  			else
-> > -				period = hwc->remaining;
-> > -			hwc->remaining = 0;
-> > +				period = hwc->period_left;
-> > +			hwc->period_left = 0;
-> 
-> 
-> 
-> If remaining can be replaced by period_left, it should probably be done
-> in another patch.
-
-true.
+-- 
+tejun
