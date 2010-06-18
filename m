@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759670Ab0FRAdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 20:33:25 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55606 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756540Ab0FRAdX (ORCPT
+	id S1757628Ab0FRArg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 20:47:36 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:35173 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752772Ab0FRArf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 20:33:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C1ABEA5.9090701@jp.fujitsu.com>
-Date: Fri, 18 Jun 2010 09:32:37 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Thu, 17 Jun 2010 20:47:35 -0400
+Date: Fri, 18 Jun 2010 10:47:08 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>,
+       Christoph Hellwig <hch@lst.de>, Eric Sandeen <sandeen@redhat.com>
+Subject: Re: [PATCH v2] xfs: Make fiemap works with sparse file.
+Message-ID: <20100618004708.GZ6590@dastard>
+References: <20100614122912.GD6590@dastard>
+ <1276764799-4837-1-git-send-email-tao.ma@oracle.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Matthew Wilcox <matthew@wil.cx>,
-       tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org,
-       linux-pci@vger.kernel.org, macro@linux-mips.org,
-       kamezawa.hiroyu@jp.fujitsu.com, eike-kernel@sf-tec.de
-Subject: Re: [PATCH 1/2] x86: ioremap: fix wrong physical address handling
-References: <4C197A49.6020400@jp.fujitsu.com> <4C197A9E.5040509@jp.fujitsu.com> <20100617025052.GH9298@parisc-linux.org> <4C19A2EE.2010203@zytor.com> <4C19AABA.8000706@jp.fujitsu.com> <4C19BA9A.4010300@zytor.com> <4C19EC57.3000409@goop.org> <4C1A2735.304@zytor.com>
-In-Reply-To: <4C1A2735.304@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276764799-4837-1-git-send-email-tao.ma@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/06/17 22:46), H. Peter Anvin wrote:
-> On 06/17/2010 02:35 AM, Jeremy Fitzhardinge wrote:
->>>>
->>>> By the way, is there linux kernel limit regarding above 44-bits physical
->>>> address in x86_32 PAE? For example, pfn above 32-bits is not supported?
->>
->> That's an awkward situation.  I would tend to suggest that you not
->> support this type of machine with a 32-bit kernel.  Is it a sparse
->> memory system, or is there a device mapped in that range?
->>
->> I guess it would be possible to special-case ioremap to allow the
->> creation of such mappings, but I don't know what kind of system-wide
->> fallout would happen as a result.  The consequences of something trying
->> to extract a pfn from one of those ptes would be
->>
->>> There are probably places at which PFNs are held in 32-bit numbers,
->>> although it would be good to track them down if it isn't too expensive
->>> to fix them (i.e. doesn't affect generic code.)
->>>
->>
->> There are many places which hold pfns in 32 bit variables on 32 bit
->> systems; the standard type for pfns is "unsigned long", pretty much
->> everywhere in the kernel.  It might be worth defining a pfn_t and
->> converting usage over to that, but it would be a pervasive change.
->>
->
-> I think you're right, and just making 2^44 work correctly would be good
-> enough.  Doing special forwarding of all 52 bits of the real physical
-> address in the paravirt case (where it is self-contained and doesn't
-> spill into the rest of the kernel) would probably be a good thing, though.
->
-> 	-hpa
->
+On Thu, Jun 17, 2010 at 04:53:19PM +0800, Tao Ma wrote:
+> Hi Dave,
+> On 06/14/2010 08:29 PM, Dave Chinner wrote:
+> > I just had a thought - if you want to avoid holes being reported to
+> > fiemap, then add a BMV_IF_NO_HOLES flag to xfs_getbmap() and skip
+> > holes in the mappin gloop when this flag is set. That will make
+> > fiemap fill in the full number of extents without hacking the
+> > extent count...
+> Here is the updated one. I have used BVM_IF_NO_HOLES in xfs_getbmap
+> to skip increasing index 'cur_ext'. It is a bit ugly, see my commit
+> log. I guess maybe we can add another flag in xfs_bmapi so that it
+> don't even give us the holes?
 
-I'll focus on making 2^44 work correctly. Then, I'll do the following
-change in the next version of my patch.
+No need...
 
-- The v.2 patch uses resource_size_t for pfn. I'll keep using
-   resource_size_t for pfn also in v.3, because there is no reason to
-   leave it being "unsigned long".
+> 
+> Regards,
+> Tao
+> 
+> From cee1765ffd3e2b003b837666b4620b5107ed9ddd Mon Sep 17 00:00:00 2001
+> From: Tao Ma <tao.ma@oracle.com>
+> Date: Thu, 17 Jun 2010 16:14:22 +0800
+> Subject: [PATCH v3] xfs: Make fiemap works with sparse file.
+> 
+> In xfs_vn_fiemap, we set bvm_count to fi_extent_max + 1 and want
+> to return fi_extent_max extents, but actually it won't work for
+> a sparse file. The reason is that in xfs_getbmap we will
+> calculate holes and set it in 'out', while out is malloced by
+> bmv_count(fi_extent_max+1) which didn't consider holes. So in the
+> worst case, if 'out' vector looks like
+> [hole, extent, hole, extent, hole, ... hole, extent, hole],
+> we will only return half of fi_extent_max extents.
+> 
+> This patch add a new parameter BMV_IF_NO_HOLES for bvm_iflags.
+> So with this flags, we don't use our 'out' in xfs_getbmap for
+> a hole. The solution is a bit ugly by just don't increasing
+> index of 'out' vector. I felt that it is not easy to skip it
+> at the very beginning since we have the complicated check and
+> some function like xfs_getbmapx_fix_eof_hole to adjust 'out'.
 
-- Use PHYSICAL_PAGE_MASK for masking physical address as v.1 patch
-   did. I think changing the definition of PAGE_MASK is a little risky.
+... because I think we can safely skip xfs_getbmapx_fix_eof_hole()
+it only modifies the hole. Hence  just adding a check after the
+attribute fork end check (which needs to detect a hole to terminate)
+should be fine: e.g something like:
 
-Thanks,
-Kenji Kaneshige
+			if (map[i].br_startblock == HOLESTARTBLOCK &&
+			    whichfork == XFS_ATTR_FORK) {
+				/* came to the end of attribute fork */
+				out[cur_ext].bmv_oflags |= BMV_OF_LAST;
+				goto out_free_map;
+			}
++			if (map[i].br_startblock == HOLESTARTBLOCK &&
++				 (iflags & BMV_IF_NO_HOLES)) {
++				memset(&out[cur_ext], 0, sizeof(out[cur_ext]));
++				continue;
++			}
 
+Should work and avoid the worst of the ugliness.
 
+The rest of the patch looks fine.
+
+Cheers,
+
+Dave.
+
+-- 
+Dave Chinner
+david@fromorbit.com
