@@ -1,195 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab0FRWd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 18:33:59 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:34409 "EHLO e1.ny.us.ibm.com"
+	id S1754295Ab0FRWe4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 18:34:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34308 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753266Ab0FRWd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 18:33:57 -0400
-Date: Fri, 18 Jun 2010 15:33:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Jerome Marchand <jmarchan@redhat.com>,
-       Mandeep Singh Baines <msb@google.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: while_each_thread() under rcu_read_lock() is broken?
-Message-ID: <20100618223354.GL2365@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100618190251.GA17297@redhat.com>
- <20100618193403.GA17314@redhat.com>
+	id S1753263Ab0FRWez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 18:34:55 -0400
+Message-ID: <4C1BF04E.2040803@redhat.com>
+Date: Fri, 18 Jun 2010 18:16:46 -0400
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100618193403.GA17314@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Edward Shishkin <edward@redhat.com>
+CC: Chris Mason <chris.mason@oracle.com>, Jamie Lokier <jamie@shareable.org>,
+       Edward Shishkin <edward.shishkin@gmail.com>, Mat <jackdachef@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       The development of BTRFS <linux-btrfs@vger.kernel.org>
+Subject: Re: Balancing leaves when walking from top to down (was Btrfs:...)
+References: <4C07C321.8010000@redhat.com> <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com> <4C1B7560.1000806@gmail.com> <20100618155653.GC10919@shareable.org> <4C1BC924.30604@redhat.com> <20100618193555.GV27466@think> <4C1BED56.9010300@redhat.com>
+In-Reply-To: <4C1BED56.9010300@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 09:34:03PM +0200, Oleg Nesterov wrote:
-> (add cc's)
-> 
-> Hmm. Once I sent this patch, I suddenly realized with horror that
-> while_each_thread() is NOT safe under rcu_read_lock(). Both
-> do_each_thread/while_each_thread or do/while_each_thread() can
-> race with exec().
-> 
-> Yes, it is safe to do next_thread() or next_task(). But:
-> 
-> 	#define while_each_thread(g, t) \
-> 		while ((t = next_thread(t)) != g)
-> 
-> suppose that t is not the group leader, and it does de_thread() and then
-> release_task(g). After that next_thread(t) returns t, not g, and the loop
-> will never stop.
-> 
-> I _really_ hope I missed something, will recheck tomorrow with the fresh
-> head. Still I'd like to share my concerns...
-> 
-> If I am right, probably we can fix this, something like
-> 
-> 	#define while_each_thread(g, t) \
-> 		while ((t = next_thread(t)) != g && pid_alive(g))
-> 
-> [we can't do while (!thread_group_leadr(t = next_thread(t)))].
-> but this needs barrires, and we should validate the callers anyway.
-> 
-> Or, perhaps,
-> 
-> 	#define XXX(t)	({
-> 		struct task_struct *__prev = t;
-> 		t = next_thread(t);
-> 		t != g && t != __prev;
-> 	})
-> 
-> 	#define while_each_thread(g, t) \
-> 		while (XXX(t))
+On 06/18/2010 06:04 PM, Edward Shishkin wrote:
+> Chris Mason wrote:
+>> On Fri, Jun 18, 2010 at 09:29:40PM +0200, Edward Shishkin wrote:
+>>> Jamie Lokier wrote:
+>>>> Edward Shishkin wrote:
+>>>>> If you decide to base your file system on some algorithms then please
+>>>>> use the original ones from proper academic papers. DO NOT modify the
+>>>>> algorithms in solitude: this is very fragile thing! All such
+>>>>> modifications must be reviewed by specialists in the theory of
+>>>>> algorithms. Such review can be done in various scientific magazines of
+>>>>> proper level.
+>>>>>
+>>>>> Personally I don't see any way to improve the situation with Btrfs
+>>>>> except full redesigning the last one. If you want to base your file
+>>>>> system on the paper of Ohad Rodeh, then please, use *exactly* the
+>>>>> Bayer's B-trees that he refers to. That said, make sure that all
+>>>>> records you put to the tree has equal length and all non-root nodes of
+>>>>> your tree are at least half filled.
+>>>> First, thanks Edward for identifying a specific problem with the
+>>>> current btrfs implementation.
+>>> Hello Jamie.
+>>>
+>>>> I've studied modified B-trees quite a lot and know enough to be sure
+>>>> that they are quite robust when you modify them in all sorts of ways.
+>>> Which property is robust?
+>>>
+>>>> Moreover, you are incorrect to say there's an intrinsic algorithmic
+>>>> problem with variable-length records. It is not true; if Knuth said
+>>>> so, Knuth was mistaken.
+>>> I didn't say about intrinsic algorithmic problems :)
+>>> I just repeat (after Knuth et al) that B-trees with variable-length
+>>> records don't
+>>> have any sane boundary for internal fragmentation. The common idea
+>>> is that if we
+>>> don't want Btrfs to be in infinite development stage, then we should
+>>> choose some
+>>> *sane* strategy (for example the paper of Ohad Rodeh) and strictly
+>>> adhere this in
+>>> future.
+>>
+>> Again, other than the inline file data, what exactly do you believe
+>> needs to change?
+>
+> 1. getting rid of inline extents;
+> 2. new formats for directory and xattr items to not look like a train,
+> which is able to occupy the whole leaf;
+> 3. make sure we do pro-active balancing like it is described in the paper.
+>
+> Sorry, I don't see other ways for now..
+>
+>> Top down balancing vs balancing on insertion doesn't
+>> impact our ability to maintain full leaves. The current code is clearly
+>> choosing not to merge two leaves that it should have merged, which is
+>> just a plain old bug.
+>
+> How are you going to balance leaves when walking from top to down?
+> Suppose 1) and 2) above are not satisfied and having arrived to the leaf
+> level we see a number of items of variable length. What will we do to
+> keep leaves full?
+>
+> Could you please provide a sketch of the algorithm?
+>
+> Thanks!
+>
 
-Isn't the above vulnerable to a pthread_create() immediately following
-the offending exec()?  Especially if the task doing the traversal is
-preempted?
+Hi Edward,
 
-I cannot claim to understand the task-list code, but here are some
-techniques that might (or might not) help:
+Is it really a requirement to have 100% full leaves? Most DB's (assuming I 
+remember correctly) have deliberate strategies around this kind of thing. You 
+might want to leave room in leaf nodes so that future insertions can be 
+contiguous on the media with older data.
 
-o	Check ACCESS_ONCE(p->group_leader == g), if false, restart
-	the traversal.  Any race on update of p->group_leader would
-	sort itself out on later iterations.  This of course might
-	require careful attention of the order of updates to ->group_leader
-	and the list pointers.  I also don't like it much from a
-	worst-case response-time viewpoint.  ;-)
+Regards,
 
-	Plus it requires all operations on the tasks be idempotent,
-	which is a bit ugly and restrictive.
+Ric
 
-o	Maintain an ->oldnext field that tracks the old pointer to
-	the next task for one RCU grace period after a de_thread()
-	operation.  When the grace period expires (presumably via
-	call_rcu()), the ->oldnext field is set to NULL.
 
-	If the ->oldnext field is non-NULL, any subsequent de_thread()
-	operations wait until it is NULL.  (I convinced myself that
-	pthread_create() need -not- wait, but perhaps mistakenly --
-	the idea is that any recent de_thread() victim remains group
-	leader, so is skipped by while_each_thread(), but you would
-	know better than I.)
-
-	Then while_each_thread() does checks similar to what you have
-	above, possibly with the addition of the ->group_leader check,
-	but follows the ->oldnext pointer if the checks indicate that
-	this task has de_thread()ed itself.  The ->oldnext access will
-	need to be preceded by a memory barrier, but this is off the
-	fast path, so should be OK.  There would also need to be
-	memory barriers on the update side.
-
-o	Do the de_thread() incrementally.  So if the list is tasks A,
-	B, and C, in that order, and if we are de-thread()ing B,
-	then make A's pointer refer to C, wait a grace period, then
-	complete the de_thread() operation.  I would be surprised if
-	people would actually be happy with the resulting increase in
-	exec() overhead, but mentioning it for completeness.  Of course,
-	synchronize_rcu_expedited() has much shorter latency, and might
-	work in this situation.  (Though please do let me know if you
-	choose this approach -- it will mean that I need to worry about
-	synchronize_rcu_expedited() scalability sooner rather than
-	later!  Which is OK as long as I know.)
-
-	This all assumes that is OK for de_thread() to block, but I have
-	no idea if this is the case.
-
-> Please tell me I am wrong!
-
-It would take a braver man than me to say that Oleg Nesterov is wrong!
-
-							Thanx, Paul
-
-> Oleg.
-> 
-> On 06/18, Oleg Nesterov wrote:
-> >
-> > check_hung_uninterruptible_tasks()->rcu_lock_break() introduced by
-> > "softlockup: check all tasks in hung_task" commit ce9dbe24 looks
-> > absolutely wrong.
-> >
-> > 	- rcu_lock_break() does put_task_struct(). If the task has exited
-> > 	  it is not safe to even read its ->state, nothing protects this
-> > 	  task_struct.
-> >
-> > 	- The TASK_DEAD checks are wrong too. Contrary to the comment, we
-> > 	  can't use it to check if the task was unhashed. It can be unhashed
-> > 	  without TASK_DEAD, or it can be valid with TASK_DEAD.
-> >
-> > 	  For example, an autoreaping task can do release_task(current)
-> > 	  long before it sets TASK_DEAD in do_exit().
-> >
-> > 	  Or, a zombie task can have ->state == TASK_DEAD but release_task()
-> > 	  was not called, and in this case we must not break the loop.
-> >
-> > Change this code to check pid_alive() instead, and do this before we
-> > drop the reference to the task_struct.
-> >
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> > ---
-> >
-> >  kernel/hung_task.c |   11 +++++++----
-> >  1 file changed, 7 insertions(+), 4 deletions(-)
-> >
-> > --- 35-rc2/kernel/hung_task.c~CHT_FIX_RCU_LOCK_BREAK	2009-12-18 19:05:38.000000000 +0100
-> > +++ 35-rc2/kernel/hung_task.c	2010-06-18 20:06:11.000000000 +0200
-> > @@ -113,15 +113,20 @@ static void check_hung_task(struct task_
-> >   * For preemptible RCU it is sufficient to call rcu_read_unlock in order
-> >   * exit the grace period. For classic RCU, a reschedule is required.
-> >   */
-> > -static void rcu_lock_break(struct task_struct *g, struct task_struct *t)
-> > +static bool rcu_lock_break(struct task_struct *g, struct task_struct *t)
-> >  {
-> > +	bool can_cont;
-> > +
-> >  	get_task_struct(g);
-> >  	get_task_struct(t);
-> >  	rcu_read_unlock();
-> >  	cond_resched();
-> >  	rcu_read_lock();
-> > +	can_cont = pid_alive(g) && pid_alive(t);
-> >  	put_task_struct(t);
-> >  	put_task_struct(g);
-> > +
-> > +	return can_cont;
-> >  }
-> >
-> >  /*
-> > @@ -148,9 +153,7 @@ static void check_hung_uninterruptible_t
-> >  			goto unlock;
-> >  		if (!--batch_count) {
-> >  			batch_count = HUNG_TASK_BATCHING;
-> > -			rcu_lock_break(g, t);
-> > -			/* Exit if t or g was unhashed during refresh. */
-> > -			if (t->state == TASK_DEAD || g->state == TASK_DEAD)
-> > +			if (!rcu_lock_break(g, t))
-> >  				goto unlock;
-> >  		}
-> >  		/* use "==" to skip the TASK_KILLABLE tasks waiting on NFS */
-> 
