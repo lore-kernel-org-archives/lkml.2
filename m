@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab0FRX3a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 19:29:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44404 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751247Ab0FRX33 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 19:29:29 -0400
-Date: Fri, 18 Jun 2010 16:28:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [4/23] pagemap: Avoid unused-but-set variable
-Message-Id: <20100618162851.c0878f22.akpm@linux-foundation.org>
-In-Reply-To: <20100610111039.ED2B2B1A2B@basil.firstfloor.org>
-References: <20100610110.764742110@firstfloor.org>
-	<20100610111039.ED2B2B1A2B@basil.firstfloor.org>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753095Ab0FRXhG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 19:37:06 -0400
+Received: from kroah.org ([198.145.64.141]:56214 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752866Ab0FRXhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 19:37:05 -0400
+Date: Fri, 18 Jun 2010 16:36:41 -0700
+From: Greg KH <greg@kroah.com>
+To: Matti Lammi <mattij.lammi@gmail.com>
+Cc: gregkh@suse.de, horms@verge.net.au, dcb314@hotmail.com, sharms@ubuntu.com,
+       linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] Drivers: Staging: Fixed several checkpatch.pl issues
+Message-ID: <20100618233641.GA5435@kroah.com>
+References: <1276764387-14791-1-git-send-email-mattij.lammi@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276764387-14791-1-git-send-email-mattij.lammi@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Jun 2010 13:10:39 +0200 (CEST)
-Andi Kleen <andi@firstfloor.org> wrote:
-
+On Thu, Jun 17, 2010 at 11:46:27AM +0300, Matti Lammi wrote:
+> Moved braces and removed some unnecessary spaces. Just small fixes.
 > 
-> Avoid quite a lot of warnings in header files in a gcc 4.6 -Wall builds
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> 
+> Signed-off-by: Matti Lammi <mattij.lammi@gmail.com>
 > ---
->  include/linux/pagemap.h |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+>  drivers/staging/otus/ioctl.c |   41 +++++++++++++++++------------------------
+>  1 files changed, 17 insertions(+), 24 deletions(-)
 > 
-> Index: linux-2.6.35-rc2-gcc/include/linux/pagemap.h
-> ===================================================================
-> --- linux-2.6.35-rc2-gcc.orig/include/linux/pagemap.h
-> +++ linux-2.6.35-rc2-gcc/include/linux/pagemap.h
-> @@ -423,8 +423,10 @@ static inline int fault_in_pages_readabl
->  		const char __user *end = uaddr + size - 1;
->  
->  		if (((unsigned long)uaddr & PAGE_MASK) !=
-> -				((unsigned long)end & PAGE_MASK))
-> +				((unsigned long)end & PAGE_MASK)) {
->  		 	ret = __get_user(c, end);
-> +			(void)c;
-> +		}
->  	}
->  	return ret;
->  }
+> diff --git a/drivers/staging/otus/ioctl.c b/drivers/staging/otus/ioctl.c
+> index a48c8e4..adf3f14 100644
+> --- a/drivers/staging/otus/ioctl.c
+> +++ b/drivers/staging/otus/ioctl.c
+> @@ -63,0 +63,0 @@
+> 
 
-urgh.  In fact I'd urgh the whole patchset.
+Something is really wrong here, this patch is saying it is corrupted,
+yet I can't figure out why.
 
-Problem is, anyone who looks at all these random (void) casts is going
-to have a hard time working out why they're there.  This is worsened by
-the long-standing practice wherein some people put unneeded (void) casts all
-over the place due to being traumatised by lint 15 years ago (I think).
+Care to resend all of the otus patches again after verifying that you
+can apply them yourself?
 
-Wouldn't it be better to make this stuff self-documenting, so anyone
-who reads the code can immediately see what it's doing, rather than
-scratching their heads over random, seemingly-unneeded casts?
+thanks,
 
-#define gcc_46_is_a_pita(expr)	((void)(expr))
-
-?
+greg k-h
