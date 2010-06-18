@@ -1,154 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933461Ab0FRO1e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 10:27:34 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:53917 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933265Ab0FRO1c convert rfc822-to-8bit (ORCPT
+	id S933478Ab0FRO3c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 10:29:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:41553 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933443Ab0FRO3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 10:27:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=AUFekIBxIh/IXIbR1MSd3ytW+Jq7a17tXoG7Qpt54ZY0Xt90RnXVdhGcXSBaUYsxmN
-         peBF0B5rT6FS2IIH4C6TyemVxlqUkNgasIEcEkXVuXkAfq4ZWwZOeePng3bsEfBEcrI5
-         321pevo2lsBt8zQjd58XhFpwEvL/SxakqiVPE=
+	Fri, 18 Jun 2010 10:29:30 -0400
+X-Authority-Analysis: v=1.1 cv=GMC9ctHN+mfn2UjahXKMz1Fs9q6RIMVHs8P/za7PD7k= c=1 sm=0 a=_xeo1-vZUxgA:10 a=hO-oPbc3tlwA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=PtDNVHqPAAAA:8 a=QEZcXR8dAAAA:8 a=07d9gI8wAAAA:8 a=VwQbUJbxAAAA:8 a=Kp59qSWk7wTLoRNwmH0A:9 a=8gl9viaUj1UGe8oFna8A:7 a=McHZEHsJFb39eJcAi8YZSzUtbKMA:4 a=CjuIK1q_8ugA:10 a=wYE_KDyynt4A:10 a=h4rWJa_47w3ngFjH:21 a=yAde6fAbfTK2IFOW:21 a=Nqdp4+S2FArj7gZzHVn+tA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.120.198.24
+Date: Fri, 18 Jun 2010 09:29:46 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Theodore Tso <tytso@MIT.EDU>, Casey Schaufler <casey@schaufler-ca.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Kees Cook <kees.cook@canonical.com>,
+       Randy Dunlap <rdunlap@xenotime.net>, James Morris <jmorris@namei.org>,
+       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-doc@vger.kernel.org, Stephen Smalley <sds@tycho.nsa.gov>,
+       Daniel J Walsh <dwalsh@redhat.com>,
+       linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
+Message-ID: <20100618142946.GA6343@hallyn.com>
+References: <alpine.LRH.2.00.1006172336390.17282@tundra.namei.org>
+ <20100617170453.GV24749@outflux.net>
+ <20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
+ <20100617140630.c6ced27a.rdunlap@xenotime.net>
+ <20100617221815.68ce30c5@lxorguk.ukuu.org.uk>
+ <20100617215105.GB24749@outflux.net>
+ <20100617233054.330256cf@lxorguk.ukuu.org.uk>
+ <4C1AE3A8.2020104@schaufler-ca.com>
+ <E1FEE555-566E-4698-8FD8-240076A4F850@mit.edu>
+ <m1wrtwwiua.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinji7n8Hd1Ldci_ruH0r8qglGjC00YQkb-MEwoV@mail.gmail.com>
-References: <alpine.DEB.1.10.1001041421450.4942@dr-wily.mit.edu>
-	<AANLkTinji7n8Hd1Ldci_ruH0r8qglGjC00YQkb-MEwoV@mail.gmail.com>
-Date: Fri, 18 Jun 2010 16:27:31 +0200
-X-Google-Sender-Auth: jkd-GSGelkJNaVhWx2tUQo63fVI
-Message-ID: <AANLkTilcHe8jnIBcTC_FjLPGxIbuZV3snU4u0FtdoeDi@mail.gmail.com>
-Subject: Re: [RESEND][REGRESSION] um: CONFIG_STATIC_LINK=y broken
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: akpm@linux-foundation.org, tabbott@ksplice.com,
-       linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
-       user-mode-linux-devel@lists.sourceforge.net, stable@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1wrtwwiua.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 15:49, richard -rw- weinberger
-<richard.weinberger@gmail.com> wrote:
-> Andrew, Linus, Jeff, ... anyone?
-> Please apply this patch.
->
-> CONFIG_STATIC_LINK is still broken. :(
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> Theodore Tso <tytso@MIT.EDU> writes:
+> 
+> > i think we really need to have stacked LSM's, because there is a large set
+> > of people who will never use SELinux.  Every few years, I take another 
+> > look at SELinux, my head explodes with the (IMHO unneeded complexity),
+> > and I go away again...
+> >
+> > Yet I would really like a number of features such as this ptrace scope idea ---
+> > which I think is a useful feature, and it may be that stacking is the only
+> > way we can resolve this debate.   The SELinux people will never believe that
+> > their system is too complicated, and I don't like using things that are impossible
+> > for me to understand or configure, and that doesn't seem likely to change anytime
+> > in the near future.
+> >
+> > I mean, even IPSEC RFC's are easier for me to understand, and that's saying
+> > a lot...
+> 
+> 
+> If anyone is going to work on this let me make a concrete suggestion.
+> Let's aim at not stacked lsm's but chained lsm's, and put the chaining
+> logic in the lsm core.
+> 
+> The core difficulty appears to be how do you multiplex the security pointers
+> on various objects out there.
 
-I wanted to verify Tim's patch, but after enabling CONFIG_STATIC_LINK,
-it fails to link
-(with or without your patch):
+Here ya go, chaining for lsm security pointers:
 
-  LD      .tmp_vmlinux1
-/usr/lib/gcc/x86_64-linux-gnu/4.4.3/../../../../lib/libc.a(elf-init.o):
-In function `__libc_csu_irel':(.text+0xd4): undefined reference to
-`__rela_iplt_end'
-/usr/lib/gcc/x86_64-linux-gnu/4.4.3/../../../../lib/libc.a(elf-init.o):
-In function `__libc_csu_irel':
-(.text+0xe5): undefined reference to `__rela_iplt_start'
-/usr/lib/gcc/x86_64-linux-gnu/4.4.3/../../../../lib/libc.a(elf-init.o):
-In function `__libc_csu_irel':
-(.text+0x100): undefined reference to `__rela_iplt_start'
-/usr/lib/gcc/x86_64-linux-gnu/4.4.3/../../../../lib/libc.a(elf-init.o):
-In function `__libc_csu_irel':
-(.text+0x10a): undefined reference to `__rela_iplt_start'
-/usr/lib/gcc/x86_64-linux-gnu/4.4.3/../../../../lib/libc.a(elf-init.o):
-In function `__libc_csu_irel':
-(.text+0x10f): undefined reference to `__rela_iplt_start'
-/usr/lib/gcc/x86_64-linux-gnu/4.4.3/../../../../lib/libc.a(elf-init.o):
-In function `__libc_csu_irel':
-(.text+0x114): undefined reference to `__rela_iplt_start'
-collect2: ld returned 1 exit status
-  KSYM    .tmp_kallsyms1.S
-nm: '.tmp_vmlinux1': No such file
-No valid symbol.
-make[3]: *** [.tmp_kallsyms1.S] Error 1
-make[2]: *** [sub-make] Error 2
-make[1]: *** [all] Error 2
-make: *** [all] Error 2
+http://lists.jammed.com/linux-security-module/2004/11/
+http://lwn.net/Articles/114588/
 
-This is 2.6.35-rc3 with the hweight fix.
-With CONFIG_STATIC_LINK=n, it works fine.
+:)
 
->
-> //richard
-> ---------- Forwarded message ----------
-> From: Tim Abbott <tabbott@ksplice.com>
-> Date: Mon, Jan 4, 2010 at 10:08 PM
-> Subject: [REGRESSION] um: CONFIG_STATIC_LINK=y broken
-> To: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
-> user-mode-linux-devel@lists.sourceforge.net, stable@kernel.org,
-> richard -rw- weinberger <richard.weinberger@gmail.com>, Sam Ravnborg
-> <sam@ravnborg.org>
->
->
-> Hi Linus,
->
-> The following patch fixes a regression that I caused in 2.6.32 when
-> cleaning up the um architecture's linker scripts.
->
-> I've not heard anything from the um maintainers (they have had since
-> Richard Weinberger reported that this patch fixed the problem on December
-> 22), so I'm sending this to you now (and CCing stable@ since it affects
-> 2.6.32).
->
->        -Tim Abbott
->
-> --
->
-> um: remove PAGE_SIZE alignment in linker script causing kernel segfault.
->
-> The linker script cleanup that I did in commit
-> 5d150a97f9391f5bcd7ba0d59d7a11c3de3cea80 accidentally introduced an
-> ALIGN(PAGE_SIZE) when converting to use INIT_TEXT_SECTION; Richard
-> Weinberger reported that this causes the kernel to segfault with
-> CONFIG_STATIC_LINK=y.
->
-> I'm not certain why this extra alignment is a problem, but it seems likely
-> it is because previously
->
-> __init_begin = _stext = _text = _sinittext
->
-> and with the extra ALIGN(PAGE_SIZE), _sinittext becomes different from the
-> rest.  So there is likely a bug here where something is assuming that
-> _sinittext is the same as one of those other symbols.  But reverting the
-> accidental change fixes the regression, so it seems worth committing that
-> now.
->
-> Signed-off-by: Tim Abbott <tabbott@ksplice.com>
-> Reported-by: richard -rw- weinberger <richard.weinberger@gmail.com>
-> Cc: Jeff Dike <jdike@addtoit.com>
-> Cc: user-mode-linux-devel@lists.sourceforge.net
-> ---
->  arch/um/kernel/uml.lds.S |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/um/kernel/uml.lds.S b/arch/um/kernel/uml.lds.S
-> index e7a6cca..664f942 100644
-> --- a/arch/um/kernel/uml.lds.S
-> +++ b/arch/um/kernel/uml.lds.S
-> @@ -22,7 +22,7 @@ SECTIONS
->   _text = .;
->   _stext = .;
->   __init_begin = .;
-> -  INIT_TEXT_SECTION(PAGE_SIZE)
-> +  INIT_TEXT_SECTION(0)
->   . = ALIGN(PAGE_SIZE);
+> My wishlist has this working so that I can logically have a local security
+> policy in a container, restricted by the global policy but with additional
+> restrictions.
 
-Gr{oetje,eeting}s,
+At the upcoming linux security summit[1], colocated with linuxcon, Kees is going
+to be doing a talk 'widely used but out of tree', where presumably the topic
+of stacking LSMs will come back up.
 
-						Geert
+If we were going to seriously consider stacking LSMs again, I'd want to
+dig through archives to produce a precise list of previous issues, so we
+can build on that to try and design something which might work.  So
+I guess I'm suggesting a beer BOF for the evening or next day for
+discussing design in more detail.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+The general answer tends to be "generic stacking doesn't work, LSMs
+need to know about each other."  But even for that (as evidenced by
+the selinux+commoncap experience with stacking) is hairy, and more
+to the point it probably does not scale when we have 5-10 small
+LSMs.  I.e. LSM 1 wants to prevent some action while LSM 2 requires
+that action to succeed so that it can properly prevent another
+action.  Concrete examples are buried in the stacker discussions
+on the lsm list from 2004-2005.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Mind you, I'm not interested in doing a stacking patchset myself again,
+would prefer to spend my time on user namespaces.  I'm not even sure
+which side of the stacking-vs-nostacking fence I'll be on, except that I
+always prefer to discuss based on experience with real code than
+pie-in-the-skie arguments, so would encourage patches.  I do suspect
+once we better understand user namespaces we may have want for fewer
+little LSMs.  So someone else can have all the fun to themselves  :)
+
+-serge
+
+[1] https://security.wiki.kernel.org/index.php/LinuxSecuritySummit2010
