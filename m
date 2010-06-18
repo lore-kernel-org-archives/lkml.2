@@ -1,119 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933703Ab0FRPWd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 11:22:33 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50176 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932475Ab0FRPWb (ORCPT
+	id S933716Ab0FRPWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 11:22:51 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56357 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475Ab0FRPWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 11:22:31 -0400
-Date: Fri, 18 Jun 2010 11:22:14 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Christian Stroetmann <stroetmann@ontolab.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: Re: Btrfs: broken file system design (was Unbound(?) internal
- fragmentation in Btrfs)
-Message-ID: <20100618152214.GP27466@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Christian Stroetmann <stroetmann@ontolab.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org
-References: <4C07C321.8010000@redhat.com>
- <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
- <4C1B7560.1000806@gmail.com>
- <20100618134755.GG27466@think>
- <4C1B8EF1.7080602@ontolab.com>
+	Fri, 18 Jun 2010 11:22:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=LbpC6TfVVZuqJP5ZP636HP3em/lk9iqjZHFHNU6E2Uz64vFwlkGWPYU2zcfzSy/JOz
+         kzpCa+EWsxjtCDI0m73T5DigVcdxpvTSSSqirAED1gxrGhIRnmhExPGqSd1PYFeMmzq5
+         sW94NjKOkKKbVHltRo45eX4KL4gd0Zd+t6akE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C1B8EF1.7080602@ontolab.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4C1B8F35.0158:SCFMA922111,ss=1,fgs=0
+In-Reply-To: <AANLkTilcHe8jnIBcTC_FjLPGxIbuZV3snU4u0FtdoeDi@mail.gmail.com>
+References: <alpine.DEB.1.10.1001041421450.4942@dr-wily.mit.edu>
+	<AANLkTinji7n8Hd1Ldci_ruH0r8qglGjC00YQkb-MEwoV@mail.gmail.com>
+	<AANLkTilcHe8jnIBcTC_FjLPGxIbuZV3snU4u0FtdoeDi@mail.gmail.com>
+Date: Fri, 18 Jun 2010 17:22:47 +0200
+Message-ID: <AANLkTim4Tn74BSTqpXMfZeAG9eLDYEKUbcN_wiw2HpBY@mail.gmail.com>
+Subject: Re: [RESEND][REGRESSION] um: CONFIG_STATIC_LINK=y broken
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: akpm@linux-foundation.org, tabbott@ksplice.com,
+       linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
+       user-mode-linux-devel@lists.sourceforge.net, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 05:21:21PM +0200, Christian Stroetmann wrote:
-> Chris Mason wrote:
-> >On Fri, Jun 18, 2010 at 03:32:16PM +0200, Edward Shishkin wrote:
-> >>Mat wrote:
-> >>>On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin<edward@redhat.com>  wrote:
-> >>>>Hello everyone.
-> >>>>
-> >>>>I was asked to review/evaluate Btrfs for using in enterprise
-> >>>>systems and the below are my first impressions (linux-2.6.33).
-> >>>>
-> >>>>The first test I have made was filling an empty 659M (/dev/sdb2)
-> >>>>btrfs partition (mounted to /mnt) with 2K files:
-> >>>>
-> >>>># for i in $(seq 1000000); \
-> >>>>do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
-> >>>>(terminated after getting "No space left on device" reports).
-> >>>>
-> >>>># ls /mnt | wc -l
-> >>>>59480
-> >>>>
-> >>>>So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
-> >>>>and the first obvious question is "hey, where are other 83% of my
-> >>>>disk space???" I looked at the btrfs storage tree (fs_tree) and was
-> >>>>shocked with the situation on the leaf level. The Appendix B shows
-> >>>>5 adjacent btrfs leafs, which have the same parent.
-> >>>>
-> >>>>For example, look at the leaf 29425664: "items 1 free space 3892"
-> >>>>(of 4096!!). Note, that this "free" space (3892) is _dead_: any
-> >>>>attempts to write to the file system will result in "No space left
-> >>>>on device".
-> >There are two easy ways to fix this problem.  Turn off the inline
-> >extents (max_inline=0) or allow splitting of the inline extents.  I
-> >didn't put in the splitting simply because the complexity was high while
-> >the benefits were low (in comparison with just turning off the inline
-> >extents).
-> But then the benefits of splitting must be high, because it solves
-> this problem if inline extents are turned on.
+On Fri, Jun 18, 2010 at 4:27 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Fri, Jun 18, 2010 at 15:49, richard -rw- weinberger
+> <richard.weinberger@gmail.com> wrote:
+>> Andrew, Linus, Jeff, ... anyone?
+>> Please apply this patch.
+>>
+>> CONFIG_STATIC_LINK is still broken. :(
+>
+> I wanted to verify Tim's patch, but after enabling CONFIG_STATIC_LINK,
+> it fails to link
+> (with or without your patch):
+>
 
-It depends, we might also argue that for larger inline extents like this
-we are better off with much larger leaves or with using max_inline=0
-instead.
+BTW: Does CONFIG_STATIC_LINK work for you when you revert commit
+5d150a97f9391f5bcd7ba0d59d7a11c3de3cea80 (um: Clean up linker script
+using standard macros)?
 
-> >>It must be a highly unexpected and difficult question for file system
-> >>developers: "how efficiently does your file system manage disk space"?
-> >>
-> >>In the meanwhile I confirm that Btrfs design is completely broken:
-> >>records stored in the B-tree differ greatly from each other (it is
-> >>unacceptable!), and the balancing algorithms have been modified in
-> >>insane manner. All these factors has led to loss of *all* boundaries
-> >>holding internal fragmentation and to exhaustive waste of disk space
-> >>(and memory!) in spite of the property "scaling in their ability to
-> >>address large storage".
-> >>
-> >>This is not a large storage, this is a "scalable sieve": you can not
-> >>rely on finding there some given amount of water even after infinite
-> >>increasing the size of the sieve (read escalating the pool of Btrfs
-> >>devices).
-> >>
-> >>It seems that nobody have reviewed Btrfs before its inclusion to the
-> >>mainline. I have only found a pair of recommendations with a common
-> >>idea that Btrfs maintainer is "not a crazy man". Plus a number of
-> >>papers which admire with the "Btrfs phenomena". Sigh.
-> >>
-> >>Well, let's decide what can we do in current situation..
-> >>The first obvious point here is that we *can not* put such file system
-> >>to production. Just because it doesn't provide any guarantees for our
-> >>users regarding disk space utilization.
-> >Are you basing all of this on inline extents?  The other extents of
-> >variable size are more flexible (taking up the room in the leaf), but
-> >they can also easy be split during balancing.
-> If we have to split everywhere, hasn't it then some (dramatic)
-> impact on the performance of the Btrfs filesystem?
-> As it was said above: splitting has a high complexity.
-
-Yes.  Both Edward and I have worked on the reiserfs sources where inline
-extents were split during balancing.  It made for a few surprises in the
-file read/write code.  They aren't impossible by any means, but I wanted
-to avoid them.
-
--chris
-
+Cheers,
+//richard
