@@ -1,55 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab0FRP5D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 11:57:03 -0400
-Received: from kroah.org ([198.145.64.141]:47203 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755251Ab0FRP5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 11:57:00 -0400
-Date: Fri, 18 Jun 2010 08:52:44 -0700
-From: Greg KH <greg@kroah.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6.1 09/11] USB: gadget: g_multi: added documentation
- and INF files
-Message-ID: <20100618155244.GB17971@kroah.com>
-References: <20100617175221.GE3644@kroah.com>
- <2809a031d19ac6ef793d7fe343e225b8d80099c3.1276864406.git.m.nazarewicz@samsung.com>
- <f4efaf12033f1e402303b60555c26f3779ba4aa1.1276864406.git.m.nazarewicz@samsung.com>
- <f8062cc154f51fc2a0812cda14deea0678644af9.1276864406.git.m.nazarewicz@samsung.com>
- <7337838b49bb102126eb678d330d7853ee55c5c6.1276864406.git.m.nazarewicz@samsung.com>
- <5e932f9348ec343254c91918d2c5d3d46fc2fe99.1276866168.git.m.nazarewicz@samsung.com>
+	id S1759539Ab0FRP5L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 11:57:11 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:37643 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758398Ab0FRP5G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 11:57:06 -0400
+Date: Fri, 18 Jun 2010 16:56:53 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Edward Shishkin <edward.shishkin@gmail.com>
+Cc: Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+       Ric Wheeler <rwheeler@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       The development of BTRFS <linux-btrfs@vger.kernel.org>
+Subject: Re: Btrfs: broken file system design (was Unbound(?) internal fragmentation in Btrfs)
+Message-ID: <20100618155653.GC10919@shareable.org>
+References: <4C07C321.8010000@redhat.com> <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com> <4C1B7560.1000806@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5e932f9348ec343254c91918d2c5d3d46fc2fe99.1276866168.git.m.nazarewicz@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C1B7560.1000806@gmail.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 03:07:19PM +0200, Michal Nazarewicz wrote:
-> A short documentation of the g_multi driver along with INF
-> files for Windows XP SP3 are provided.
+Edward Shishkin wrote:
+> If you decide to base your file system on some algorithms then please
+> use the original ones from proper academic papers. DO NOT modify the
+> algorithms in solitude: this is very fragile thing! All such
+> modifications must be reviewed by specialists in the theory of
+> algorithms. Such review can be done in various scientific magazines of
+> proper level.
 > 
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> Sorry about the previous patch -- it was missing the gadget_multi.txt
-> file.  Sending corrected version.  Maybe I should start drinking coffee
-> after all...
+> Personally I don't see any way to improve the situation with Btrfs
+> except full redesigning the last one. If you want to base your file
+> system on the paper of Ohad Rodeh, then please, use *exactly* the
+> Bayer's B-trees that he refers to. That said, make sure that all
+> records you put to the tree has equal length and all non-root nodes of
+> your tree are at least half filled.
 
-Nah, I finally kicked my coffee habit :)
+First, thanks Edward for identifying a specific problem with the
+current btrfs implementation.
 
-But could you resend all of these again, so I make sure to get the right
-ones, I see a few v6.1 for some of these patches.
+I've studied modified B-trees quite a lot and know enough to be sure
+that they are quite robust when you modify them in all sorts of ways.
 
-Seventh time is a charm...
+Moreover, you are incorrect to say there's an intrinsic algorithmic
+problem with variable-length records.  It is not true; if Knuth said
+so, Knuth was mistaken.
 
-thanks,
+This is easily shown by modelling variable-length records (key ->
+string) as a range of fixed length records ([key,index] -> byte) and
+apply the standard B-tree algorithms to that, which guarantees
+algorithm properties such as space utilisation and time; then you can
+substitute a "compressed" representation of contiguous index runs,
+which amounts to nothing more than just storing the strings (split
+where the algorithm says to do so) and endpoint indexes , and because
+this compression does not expand (in any way that matters), classic
+algorithmic properties are still guaranteed.
 
-greg k-h
+Variable-length keys are a different business.  Those are trickier,
+but as far as I know, btrfs doesn't use them.
+
+> As to current Btrfs code: *NOT ACK*!!! I don't think we need such
+> "file systems".
+
+Btrfs provides many useful features that other filesystems don't.  We
+definitely need it, or something like it.  You have identified a bug.
+It's not a corruption bug, but it's definitely a bug, and probably
+affects performance as well as space utilisation.
+
+It is not deep design bug; it is just a result of the packing and
+balancing heuristics.
+
+If you are still interested, please apply your knowledge of B-tree
+algorithms to understanding why btrfs fails to balance the tree
+sufficiently well, and then propose a fix.
+
+Note that it's not necessarily a problem to have a few nodes with low
+utilisation.  Deliberate violation of the classic balancing heuristic
+is often useful for performance.[*]  The problem you've found is only a
+real problem when there are _too many_ nodes with low utilisation.
+
+[*] For example when filling a tree by inserting contiguously
+ascending keys, the classic "split into two when full" heuristic gives
+the worst possible results (50% lost space), and deliberately
+underfilling the most actively updated nodes, which is not permitted
+at all by the classic algorithm, gives denser packing in the end
+(almost zero lost space).  It's also faster.  The trick is to make
+sure there's just the right number of underfilled nodes...
+
+-- Jamie
