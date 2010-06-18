@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759262Ab0FRUXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 16:23:54 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54052 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754898Ab0FRUXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 16:23:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dave Airlie <airlied@redhat.com>
-Subject: [PATCH] DRM / radeon / PM: Do not evict VRAM during freeze phase of hibernation
-Date: Fri, 18 Jun 2010 22:21:57 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-       "dri-devel" <dri-devel@lists.freedesktop.org>,
-       linux-pm@lists.linux-foundation.org,
-       Alex Deucher <alexdeucher@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ondrej Zary <linux@rainbow-software.org>
+	id S933422Ab0FRUZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 16:25:25 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62534 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754898Ab0FRUZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 16:25:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=Uy1u5tx9Yk1AJHIbUI2ssZKW+MdjA09nSDVJ80qhOKccAfFMgi6JEYIH4TscccUlsR
+         R/oO4+FaZ5zdC5ROj1Lh8KyIuNS2ZZ73NoP0kTvUxFyRXfcfQUSzlGZ3aVRlU73XSeeq
+         J/m3o+Osc7n1FbS8mpiL12Yblh++cOtdy1ZRE=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006182221.57333.rjw@sisk.pl>
+In-Reply-To: <201006182035.17394.arnd@arndb.de>
+References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
+	<20100618172121.528f2e09@lxorguk.ukuu.org.uk>
+	<AANLkTikfqHO1x0P_iyYTsGGjDcZGCEmZFPUDWiKzk2SQ@mail.gmail.com>
+	<201006182035.17394.arnd@arndb.de>
+Date: Fri, 18 Jun 2010 13:25:22 -0700
+X-Google-Sender-Auth: sVUyv9mbVft8LEOwXUDyiajQ9bA
+Message-ID: <AANLkTim4dHj_3ftAVD35DD-Cc7ZntHRi1YTRPup2wfJc@mail.gmail.com>
+Subject: Re: [PATCH] tty: avoid recursive BTM in pty_close
+From: Tony Luck <tony.luck@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       Greg KH <gregkh@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Fri, Jun 18, 2010 at 11:35 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> Ok, this is the same one you reported at first. I forgot to
+> mention that the other patch I sent as a reply to your report
+> is still needed and not yet in -next since I'm trying to
+> sort through the other BKL removal patches now.
+> This instance of the WARN_ON is completely harmless though,
+> you could consider this one a false positive.
 
-I have recently noticed a 55 sec. delay during the "device freeze"
-phase of hibernation on my test-bed HP nx6325.  Due to the 100%
-reproducibility of it I was able to narrow it down to
-radeon_suspend_kms() and then it turned out that the delay occured
-somewhere in radeon_bo_evict_vram().  However, it doesn't seem really
-necessary or even very useful to me to evict VRAM at this particular
-point, because we're going to create an image and bring the device
-back to the fully functional state in a little while.  Thus, I think
-the VRAM evicition can be skipped for state.event == PM_EVENT_FREEZE,
-which makes the delay go away.
+Ok. Adding your first patch into todays mix cleaned away
+these messages,
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/gpu/drm/radeon/radeon_device.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+> Do you know if this was a problem with the original series or
+> something that got introduced by my last patch?
 
-Index: linux-2.6/drivers/gpu/drm/radeon/radeon_device.c
-===================================================================
---- linux-2.6.orig/drivers/gpu/drm/radeon/radeon_device.c
-+++ linux-2.6/drivers/gpu/drm/radeon/radeon_device.c
-@@ -750,8 +750,11 @@ int radeon_suspend_kms(struct drm_device
- 			}
- 		}
- 	}
--	/* evict vram memory */
--	radeon_bo_evict_vram(rdev);
-+
-+	if (state.event != PM_EVENT_FREEZE) {
-+		/* evict vram memory */
-+		radeon_bo_evict_vram(rdev);
-+	}
- 	/* wait for gpu to finish processing current batch */
- 	radeon_fence_wait_last(rdev);
- 
+Problem was there before. Looks like it was not in next-20100616
+but began with next-20100617.
+
+> Also, if you don't mind, could you try if the problem also exists
+> with CONFIG_TTY_MUTEX enabled?
+With CONFIG_TTY_MUTEX=y kernel with both your patches builds
+and boots with no unusual messages.  Application output still gets
+garbled.
+
+> Which serial driver do you use?
+I boot with a "console=uart,io,0x3f8" argument, so I start out using
+8250_early.c. Looks like it switched to 8250.c based on seeing
+this:
+
+Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+
+on the console log.
+
+-Tony
