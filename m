@@ -1,96 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757643Ab0FRIPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 04:15:19 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59143 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756860Ab0FRIPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 04:15:16 -0400
-Message-ID: <4C1B2B0E.1050101@cn.fujitsu.com>
-Date: Fri, 18 Jun 2010 16:15:10 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH V2] tracing, function graph: Remove the noisy output when
- use function graph filter
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757850Ab0FRITj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 04:19:39 -0400
+Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:55126 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757266Ab0FRITh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 04:19:37 -0400
+Date: Fri, 18 Jun 2010 10:20:33 +0200
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+Message-ID: <20100618082033.GD16877@hawkmoon.kerlabs.com>
+Mail-Followup-To: Oleg Nesterov <oleg@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Pavel Emelyanov <xemul@openvz.org>,
+	Linux Containers <containers@lists.osdl.org>,
+	linux-kernel@vger.kernel.org
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <20100617212003.GA4182@redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-8946-1276849169-0001-2"
+Content-Disposition: inline
+In-Reply-To: <20100617212003.GA4182@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we use function graph filter(echo some_functions >> set_graph_function)
-we are only interested in the graph of some_functions.
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
-But if a interrupt occurs when these functions are being traced(or preparing),
-the graphs of the handlers of this interrupt are also recorded.
-These events that we aren't interested in are totally noisy.
+--=_bohort-8946-1276849169-0001-2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch skip the noise when TRACE_GRAPH_FILTER_SKIP_INTR flag is on
-(very very seldom noise is still left, It's OK for tracing, doesn't it?).
+On 17/06/10 23:20 +0200, Oleg Nesterov wrote:
+> On 06/16, Louis Rilling wrote:
+> >
+> > Detached tasks are not seen by zap_pid_ns_processes()->sys_wait4(), so
+> > that release_task()->proc_flush_task() of container init can be called
+> > before it is for some detached tasks in the namespace.
+> >
+> > Pin proc_mnt's in copy_process(), so that proc_flush_task() becomes safe
+> > whatever the ordering of tasks.
+>=20
+> I must have missed something, but can't we just move mntput() ?
 
-changed from v1:
-Add a TRACE_GRAPH_FILTER_SKIP_INTR flag which is default off
-to control it.
+See the log of the commit introducing pid_ns_release_proc() (6f4e6433):
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 79f4bac..d4fa4a4 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -12,6 +12,8 @@
- #include <linux/slab.h>
- #include <linux/fs.h>
- 
-+#include <asm/irq_regs.h>
-+
- #include "trace.h"
- #include "trace_output.h"
- 
-@@ -41,6 +43,7 @@ struct fgraph_data {
- #define TRACE_GRAPH_PRINT_PROC		0x8
- #define TRACE_GRAPH_PRINT_DURATION	0x10
- #define TRACE_GRAPH_PRINT_ABS_TIME	0x20
-+#define TRACE_GRAPH_FILTER_SKIP_INTR	0x40
- 
- static struct tracer_opt trace_opts[] = {
- 	/* Display overruns? (for self-debug purpose) */
-@@ -55,6 +58,8 @@ static struct tracer_opt trace_opts[] = {
- 	{ TRACER_OPT(funcgraph-duration, TRACE_GRAPH_PRINT_DURATION) },
- 	/* Display absolute time of an entry */
- 	{ TRACER_OPT(funcgraph-abstime, TRACE_GRAPH_PRINT_ABS_TIME) },
-+	/* Skip the graph nested in interrupts when funcgraph filter enabled */
-+	{ TRACER_OPT(funcgraph-filter-skip-intr, TRACE_GRAPH_FILTER_SKIP_INTR) },
- 	{ } /* Empty entry */
- };
- 
-@@ -213,13 +218,22 @@ int trace_graph_entry(struct ftrace_graph_ent *trace)
- 	int ret;
- 	int cpu;
- 	int pc;
-+	int depth = trace->depth;
-+	unsigned long long cntxt = (unsigned long)(void *)get_irq_regs();
- 
- 	if (!ftrace_trace_task(current))
- 		return 0;
- 
- 	/* trace it when it is-nested-in or is a function enabled. */
--	if (!(trace->depth || ftrace_graph_addr(trace->func)))
--		return 0;
-+	if (!ftrace_graph_addr(trace->func)) {
-+		if (!depth)
-+			return 0;
-+		if ((tracer_flags.val & TRACE_GRAPH_FILTER_SKIP_INTR)
-+		    && (current->ret_stack[depth - 1].subtime != cntxt))
-+			return 0;
-+	}
-+	/* We don't use subtime here, reuse it to save context. */
-+	current->ret_stack[depth].subtime = cntxt;
- 
- 	local_irq_save(flags);
- 	cpu = raw_smp_processor_id();
+    Sice the namespace holds the vfsmnt, vfsmnt holds the superblock and the
+    superblock holds the namespace we must explicitly break this circle to =
+destroy
+    all the stuff.  This is done after the init of the namespace dies.  Run=
+ning a
+    few steps forward - when init exits it will kill all its children, so no
+    proc_mnt will be needed after its death.
 
+Thanks,
+
+Louis
+
+>=20
+> Oleg.
+>=20
+> --- x/kernel/pid_namespace.c
+> +++ x/kernel/pid_namespace.c
+> @@ -110,6 +110,9 @@ static void destroy_pid_namespace(struct
+>  {
+>  	int i;
+> =20
+> +	if (ns->proc_mount)
+> +		mntput(ns->proc_mount);
+> +
+>  	for (i =3D 0; i < PIDMAP_ENTRIES; i++)
+>  		kfree(ns->pidmap[i].page);
+>  	kmem_cache_free(pid_ns_cachep, ns);
+> --- x/fs/proc/base.c
+> +++ x/fs/proc/base.c
+> @@ -2745,10 +2745,6 @@ void proc_flush_task(struct task_struct=20
+>  		proc_flush_task_mnt(upid->ns->proc_mnt, upid->nr,
+>  					tgid->numbers[i].nr);
+>  	}
+> -
+> -	upid =3D &pid->numbers[pid->level];
+> -	if (upid->nr =3D=3D 1)
+> -		pid_ns_release_proc(upid->ns);
+>  }
+> =20
+>  static struct dentry *proc_pid_instantiate(struct inode *dir,
+>=20
+
+--=20
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
+
+--=_bohort-8946-1276849169-0001-2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkwbLFEACgkQVKcRuvQ9Q1TsnACgm8EtzQNDlCvEhIB6XBu3GjAl
+ajUAoL2n1ZFnH9IGzcBwCpJZsZdw2P7Q
+=Xqh6
+-----END PGP SIGNATURE-----
+
+--=_bohort-8946-1276849169-0001-2--
