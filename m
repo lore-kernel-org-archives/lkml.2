@@ -1,93 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761017Ab0FRLe5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 07:34:57 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:59785 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756645Ab0FRLe4 convert rfc822-to-8bit (ORCPT
+	id S1761015Ab0FRLjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 07:39:15 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:1753 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758137Ab0FRLjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 07:34:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=If4evaj0CPRheOoSGyue7m4AB+O6SLbjwXtvjYk8oscjlscpkU38oU2cicLDILehYc
-         MY1kYPLRS1D8S+xkOC3fVeexA3ZPcZ4+nSU1boG7wTnBxVPEhU3IKsY+iNQNspUasvpV
-         ZoIzM6lKBeJXRWf9MK/AYfwELzwfAGtD6Imcc=
-MIME-Version: 1.0
-In-Reply-To: <20100618094838.GD23977@elte.hu>
-References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
-	<20100612102558.GA4000@elte.hu>
-	<4C15A5D1.1040104@jp.fujitsu.com>
-	<20100618094838.GD23977@elte.hu>
-Date: Fri, 18 Jun 2010 19:34:55 +0800
-Message-ID: <AANLkTimqRwAjrQ_b8BZ28lEn_Gaz5-SpLULWASHD1fVn@mail.gmail.com>
-Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Huang Ying <ying.huang@intel.com>,
-       "Fr??d??ric Weisbecker" <fweisbec@gmail.com>,
-       Don Zickus <dzickus@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-       Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 18 Jun 2010 07:39:13 -0400
+Message-ID: <000401cb0eda$df624590$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Wang, Yong Y" <yong.y.wang@intel.com>
+Cc: "Wang, Qi" <qi.wang@intel.com>, "Clark, Joel" <joel.clark@intel.com>,
+       "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
+       "LKML" <linux-kernel@vger.kernel.org>
+References: <4C0CE88C.9050708@dsn.okisemi.com> <4C161BE7.4080805@dsn.okisemi.com> <4C198BD2.8060801@dsn.okisemi.com> <FC2FB65B4D919844ADE4BE3C2BB739AD2077C837@shsmsx501.ccr.corp.intel.com>
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+Date: Fri, 18 Jun 2010 20:39:09 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Ingo,
+Hi Yong Y
 
-On Fri, Jun 18, 2010 at 5:48 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>> +config PCH_IEEE1588
+>> + tristate "PCH IEEE1588"
+>> + depends on PCI
+>> + help
+>> +   If you say yes to this option, support will be included for the
+>> +   PCH IEEE1588 Host controller.
+>> +
+
+>Is this really supposed to be part of this patch?
+
+> +obj-$(CONFIG_PCH_IEEE1588) += pch_ieee1588/
+> +
+
+Yes, the above is true.
+Our driver under 'drivers/char' has patch order restriction.
+Firstly, ieee1588 must be patched.
+After the above, Phub is able to be patched.
+
+Thus, our Phub patch includes ieee1588 code.
+
+> Ohtak-san, I remember you said PCH_CAN_PCLK_50MHZ was in the patch
+> because you used to have a hw bug. If that hw bug has been fixed, this config
+> option shall also be removed. Otherwise, you have to build multiple kernel
+> binaries for different hardware configurations as Alan pointed out.
+Sorry, I gave wrong information to you.
+Our CAN HW spec is that works only 50MHz.(Not HW bug)
+According to our CAN hw spec, we will delete  'PCH_CAN_PCLK_50MHZ'.
+
+Thanks,
+Ohtake
+
+----- Original Message ----- 
+From: "Wang, Yong Y" <yong.y.wang@intel.com>
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Cc: "LKML" <linux-kernel@vger.kernel.org>; "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>; "Clark, Joel"
+<joel.clark@intel.com>; "Wang, Qi" <qi.wang@intel.com>
+Sent: Friday, June 18, 2010 5:08 PM
+Subject: RE: [PATCH] Topcliff PHUB: Generate PacketHub driver
+
+
+> +config PCH_IEEE1588
+> + tristate "PCH IEEE1588"
+> + depends on PCI
+> + help
+> +   If you say yes to this option, support will be included for the
+> +   PCH IEEE1588 Host controller.
+> +
+
+Is this really supposed to be part of this patch?
+
+> +config PCH_PHUB
+> + tristate "PCH PHUB"
+> + depends on PCI
+> + help
+> +   If you say yes to this option, support will be included for the
+> +   PCH Packet Hub Host controller.
+> +   This driver is for PCH Packet hub driver for Topcliff.
+> +   This driver is integrated as built-in.
+> +   This driver can access GbE MAC address.
+> +   This driver can access HW register.
+> +   You can also be integrated as module.
+> +
+> +config PCH_CAN_PCLK_50MHZ
+> + bool "CAN PCLK 50MHz"
+> + depends on PCH_PHUB
+> +        help
+> +          If you say yes to this option, clock is set to 50MHz.(For CAN
+> control)
+> +
+
+Ohtak-san, I remember you said PCH_CAN_PCLK_50MHZ was in the patch
+because you used to have a hw bug. If that hw bug has been fixed, this config
+option shall also be removed. Otherwise, you have to build multiple kernel
+binaries for different hardware configurations as Alan pointed out.
+
+> diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+> index f957edf..dc092d0 100644
+> --- a/drivers/char/Makefile
+> +++ b/drivers/char/Makefile
+> @@ -111,6 +111,10 @@ obj-$(CONFIG_PS3_FLASH) += ps3flash.o
+>  obj-$(CONFIG_JS_RTC) += js-rtc.o
+>  js-rtc-y = rtc.o
 >
-> * Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com> wrote:
->
->> (2010/06/12 19:25), Ingo Molnar wrote:
->> >
->> > * Huang Ying <ying.huang@intel.com> wrote:
->> >
->> >> NMI can be triggered even when IRQ is masked. So it is not safe for NMI
->> >> handler to call some functions. One solution is to delay the call via self
->> >> interrupt, so that the delayed call can be done once the interrupt is
->> >> enabled again. This has been implemented in MCE and perf event. This patch
->> >> provides a unified version and make it easier for other NMI semantic handler
->> >> to take use of the delayed call.
->> >
->> > Instead of introducing this extra intermediate facility please use the same
->> > approach the unified NMI watchdog is using (see latest -tip): a perf event
->> > callback gives all the extra functionality needed.
->> >
->> > The MCE code needs to be updated to use that - and then it will be integrated
->> > into the events framework.
->>
->> Hi Ingo,
->>
->> I think this "NMI delayed call mechanism" could be a part of "the events
->> framework" that we are planning to get in kernel soon. [...]
->
-> My request was to make it part of perf events - which is a generic event
-> logging framework. We dont really need/want a second 'events framework'
-> as we have one already ;-)
+> +obj-$(CONFIG_PCH_IEEE1588) += pch_ieee1588/
+> +
 
-This patchset is simple and straightforward, it is just a delayed
-execution mechanism, not another 'events framework'. There are several
-other NMI users other than perf, should we integrate all NMI users
-into perf framework?
+Ditto
 
->> [...]  At least APEI will use NMI to report some hardware events (likely
->> error) to kernel.  So I suppose we will go to have a delayed call as an
->> event handler for APEI.
->
-> Yep, that makes sense. I wasnt arguing against the functionality itself, i was
-> arguing against the illogical layering that limits its utility. By making it
-> part of perf events it becomes a generic part of that framework and can be
-> used by anything that deals with events and uses that framework.
 
-I think the the 'layering' in the patchset helps instead of 'limits'
-its utility. It is designed to be as general as possible, so that it
-can be used by both perf and other NMI users. Do you think so?
-
-Best Regards,
-Huang Ying
