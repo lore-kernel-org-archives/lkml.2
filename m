@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933793Ab0FRRKM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 13:10:12 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:36874 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933745Ab0FRRKJ (ORCPT
+	id S933805Ab0FRRQq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 13:16:46 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:60859 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933739Ab0FRRQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 13:10:09 -0400
+	Fri, 18 Jun 2010 13:16:45 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
 	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=FXmYjahNLA1B2N5EX7nb2Q3hWR/Ur6mSqYNtejkGKod4vNlU6l+F1zgL2OnSsSStPdh2wIXrAnj+1Gt1GXnXrGJAqU3P881CSEvw2zSpiYD2clSY4FeaTBP96xchYAJ3;
-Date: Fri, 18 Jun 2010 10:08:32 -0700
+	b=VMc3Az1GCIih9x7c+8pffms9zpK4TzG8u3WqBJb/SvxhRUU3moDRmgnWEbuXJmk/ZwQK8CkhXngHwOx53V8raoHKuoDXDPzkEX/nmJ2yCIpRJGNZhCJ6L3vW4bqM77sW;
+Date: Fri, 18 Jun 2010 10:15:06 -0700
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
 To: Maxim Levitsky <maximlevitsky@gmail.com>
 Cc: Matthew Garrett <mjg@redhat.com>,
@@ -19,7 +19,7 @@ Cc: Matthew Garrett <mjg@redhat.com>,
        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] pci: Don't enable aspm before drivers have had a chance
  to veto it
-Message-ID: <20100618100832.25e5a5fd@virtuousgeek.org>
+Message-ID: <20100618101506.0c585617@virtuousgeek.org>
 In-Reply-To: <1276880742.23783.7.camel@maxim-laptop>
 References: <1276113907-22432-1-git-send-email-mjg@redhat.com>
 	<1276862811.19918.10.camel@maxim-laptop>
@@ -81,10 +81,10 @@ Maxim Levitsky <maximlevitsky@gmail.com> wrote:
 > 
 > What do you think?
 
-I do like the idea of getting rid of config options.  I just want to
-make sure we don't regress people, so I need to double check the
-default behavior, especially for non-x86 and see whether it'll
-generally be a no-op or not.
+So unless a device is *really* broken, it seems like the default policy
+should be ok across the board.  So let's get a CONFIG_PCIEASPM removal
+patch into the 2.6.36 merge window early to flush out any potential
+problems.
 
 -- 
 Jesse Barnes, Intel Open Source Technology Center
