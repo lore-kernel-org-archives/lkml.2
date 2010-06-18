@@ -1,115 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab0FRNpM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 09:45:12 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63539 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758020Ab0FRNpJ (ORCPT
+	id S932960Ab0FRNta (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 09:49:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25804 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932416Ab0FRNt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 09:45:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=XDfBjSuZLFqhP6qSsuG50WLPFqs3om3Bfeurd4yG/k3jm8bUV57Apaf8GKIbdhvykD
-         Puk27XoJyw2YCCWI6cgkkwuARxUgXd5Y6bNc3YREe6vVW6bYyx/YZIzyVaGwc7ho8awL
-         OFoG23IEcT6aSeK6HOTDlzKMbwPF+CG6YbN/M=
-MIME-Version: 1.0
-In-Reply-To: <4C1B7560.1000806@gmail.com>
-References: <4C07C321.8010000@redhat.com>
-	<AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
-	<4C1B7560.1000806@gmail.com>
-Date: Fri, 18 Jun 2010 13:45:07 +0000
-Message-ID: <AANLkTilQm8VGAvc1XNW4EaHd1FLd6dXIXwJ9-yT-joQ8@mail.gmail.com>
-Subject: Re: Btrfs: broken file system design (was Unbound(?) internal 
-	fragmentation in Btrfs)
-From: Daniel J Blueman <daniel.blueman@gmail.com>
+	Fri, 18 Jun 2010 09:49:29 -0400
+Date: Fri, 18 Jun 2010 09:47:55 -0400
+From: Chris Mason <chris.mason@oracle.com>
 To: Edward Shishkin <edward.shishkin@gmail.com>
 Cc: Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-       Ric Wheeler <rwheeler@redhat.com>,
+       linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
        Andrew Morton <akpm@linux-foundation.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        The development of BTRFS <linux-btrfs@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: Btrfs: broken file system design (was Unbound(?) internal
+ fragmentation in Btrfs)
+Message-ID: <20100618134755.GG27466@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Edward Shishkin <edward.shishkin@gmail.com>,
+	Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+	linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	The development of BTRFS <linux-btrfs@vger.kernel.org>
+References: <4C07C321.8010000@redhat.com>
+ <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
+ <4C1B7560.1000806@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C1B7560.1000806@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090206.4C1B7955.023F:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 1:32 PM, Edward Shishkin
-<edward.shishkin@gmail.com> wrote:
+On Fri, Jun 18, 2010 at 03:32:16PM +0200, Edward Shishkin wrote:
 > Mat wrote:
->>
->> On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin <edward@redhat.com> wrote:
->>>
->>> Hello everyone.
->>>
->>> I was asked to review/evaluate Btrfs for using in enterprise
->>> systems and the below are my first impressions (linux-2.6.33).
->>>
->>> The first test I have made was filling an empty 659M (/dev/sdb2)
->>> btrfs partition (mounted to /mnt) with 2K files:
->>>
->>> # for i in $(seq 1000000); \
->>> do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
->>> (terminated after getting "No space left on device" reports).
->>>
->>> # ls /mnt | wc -l
->>> 59480
->>>
->>> So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
->>> and the first obvious question is "hey, where are other 83% of my
->>> disk space???" I looked at the btrfs storage tree (fs_tree) and was
->>> shocked with the situation on the leaf level. The Appendix B shows
->>> 5 adjacent btrfs leafs, which have the same parent.
->>>
->>> For example, look at the leaf 29425664: "items 1 free space 3892"
->>> (of 4096!!). Note, that this "free" space (3892) is _dead_: any
->>> attempts to write to the file system will result in "No space left
->>> on device".
->>>
->>> Internal fragmentation (see Appendix A) of those 5 leafs is
->>> (1572+3892+1901+3666+1675)/4096*5 = 0.62. This is even worse then
->>> ext4 and xfs: The last ones in this example will show fragmentation
->>> near zero with blocksize <= 2K. Even with 4K blocksize they will
->>> show better utilization 0.50 (against 0.38 in btrfs)!
->>>
->>> I have a small question for btrfs developers: Why do you folks put
->>> "inline extents", xattr, etc items of variable size to the B-tree
->>> in spite of the fact that B-tree is a data structure NOT for variable
->>> sized records? This disadvantage of B-trees was widely discussed.
->>> For example, maestro D. Knuth warned about this issue long time
->>> ago (see Appendix C).
->>>
->>> It is a well known fact that internal fragmentation of classic Bayer's
->>> B-trees is restricted by the value 0.50 (see Appendix C). However it
->>> takes place only if your tree contains records of the _same_ length
->>> (for example, extent pointers). Once you put to your B-tree records
->>> of variable length (restricted only by leaf size, like btrfs "inline
->>> extents"), your tree LOSES this boundary. Moreover, even worse:
->>> it is clear, that in this case utilization of B-tree scales as zero(!).
->>> That said, for every small E and for every amount of data N we
->>> can construct a consistent B-tree, which contains data N and has
->>> utilization worse then E. I.e. from the standpoint of utilization
->>> such trees can be completely degenerated.
->>>
->>> That said, the very important property of B-trees, which guarantees
->>> non-zero utilization, has been lost, and I don't see in Btrfs code any
->>> substitution for this property. In other words, where is a formal
->>> guarantee that all disk space of our users won't be eaten by internal
->>> fragmentation? I consider such guarantee as a *necessary* condition
->>> for putting a file system to production.
+> >On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin <edward@redhat.com> wrote:
+> >>Hello everyone.
+> >>
+> >>I was asked to review/evaluate Btrfs for using in enterprise
+> >>systems and the below are my first impressions (linux-2.6.33).
+> >>
+> >>The first test I have made was filling an empty 659M (/dev/sdb2)
+> >>btrfs partition (mounted to /mnt) with 2K files:
+> >>
+> >># for i in $(seq 1000000); \
+> >>do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
+> >>(terminated after getting "No space left on device" reports).
+> >>
+> >># ls /mnt | wc -l
+> >>59480
+> >>
+> >>So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
+> >>and the first obvious question is "hey, where are other 83% of my
+> >>disk space???" I looked at the btrfs storage tree (fs_tree) and was
+> >>shocked with the situation on the leaf level. The Appendix B shows
+> >>5 adjacent btrfs leafs, which have the same parent.
+> >>
+> >>For example, look at the leaf 29425664: "items 1 free space 3892"
+> >>(of 4096!!). Note, that this "free" space (3892) is _dead_: any
+> >>attempts to write to the file system will result in "No space left
+> >>on device".
 
-Wow...a small part of me says 'well said', on the basis that your
-assertions are true, but I do think there needs to be more
-constructivity in such critique; it is almost impossible to be a great
-engineer and a great academic at once in a time-pressured environment.
+There are two easy ways to fix this problem.  Turn off the inline
+extents (max_inline=0) or allow splitting of the inline extents.  I
+didn't put in the splitting simply because the complexity was high while
+the benefits were low (in comparison with just turning off the inline
+extents).
 
-If you can produce some specific and suggestions with code references,
-I'm sure we'll get some good discussion with potential to improve from
-where we are.
+> 
+> It must be a highly unexpected and difficult question for file system
+> developers: "how efficiently does your file system manage disk space"?
+> 
+> In the meanwhile I confirm that Btrfs design is completely broken:
+> records stored in the B-tree differ greatly from each other (it is
+> unacceptable!), and the balancing algorithms have been modified in
+> insane manner. All these factors has led to loss of *all* boundaries
+> holding internal fragmentation and to exhaustive waste of disk space
+> (and memory!) in spite of the property "scaling in their ability to
+> address large storage".
+> 
+> This is not a large storage, this is a "scalable sieve": you can not
+> rely on finding there some given amount of water even after infinite
+> increasing the size of the sieve (read escalating the pool of Btrfs
+> devices).
+> 
+> It seems that nobody have reviewed Btrfs before its inclusion to the
+> mainline. I have only found a pair of recommendations with a common
+> idea that Btrfs maintainer is "not a crazy man". Plus a number of
+> papers which admire with the "Btrfs phenomena". Sigh.
+> 
+> Well, let's decide what can we do in current situation..
+> The first obvious point here is that we *can not* put such file system
+> to production. Just because it doesn't provide any guarantees for our
+> users regarding disk space utilization.
 
-Thanks,
-  Daniel
--- 
-Daniel J Blueman
+Are you basing all of this on inline extents?  The other extents of
+variable size are more flexible (taking up the room in the leaf), but
+they can also easy be split during balancing.
+
+-chris
