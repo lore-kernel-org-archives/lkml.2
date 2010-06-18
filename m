@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760245Ab0FRK33 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 06:29:29 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52933 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759218Ab0FRK31 (ORCPT
+	id S1760402Ab0FRKaN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 06:30:13 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:30491 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759978Ab0FRKaK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 06:29:27 -0400
-Subject: Re: [PATCH] ASoC: Fix overflow bug in SOC_DOUBLE_R_SX_TLV
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Stuart Longland <redhatter@gentoo.org>
-Cc: ALSA Development List <alsa-devel@alsa-project.org>,
-       Takashi Iwai <tiwai@suse.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1276829770-31557-1-git-send-email-redhatter@gentoo.org>
-References: <20100618023810.GS7759@www.longlandclan.yi.org>
-	 <1276829770-31557-1-git-send-email-redhatter@gentoo.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Jun 2010 11:29:24 +0100
-Message-ID: <1276856964.3054.1.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Jun 2010 06:30:10 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Fri, 18 Jun 2010 12:31:02 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv5 06/11] USB: gadget: g_multi: code clean up and refactoring
+In-reply-to: <20100617175101.GD3644@kroah.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-usb@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <op.vehrh0lu7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <20100615185527.GA22803@kroah.com>
+ <cover.1276681840.git.m.nazarewicz@samsung.com>
+ <7131891c93ac20a3360068e2f4b8fff0de7dfafb.1276681840.git.m.nazarewicz@samsung.com>
+ <1cf0484e46e3b2b5ce0dea8cdc7396d4bfa977c5.1276681840.git.m.nazarewicz@samsung.com>
+ <0022e21e1b622b3a54d1e55aed727e7e429c7c70.1276681840.git.m.nazarewicz@samsung.com>
+ <45fc10256bd2374706e4153360427257d15804a9.1276681840.git.m.nazarewicz@samsung.com>
+ <bb0d9f73c7caae31c0bc291d3dfce44a2f6a3736.1276681840.git.m.nazarewicz@samsung.com>
+ <c7fbb2934e18cfd25df3e00a548ac33e5b0a7353.1276681840.git.m.nazarewicz@samsung.com>
+ <20100617175101.GD3644@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-18 at 12:56 +1000, Stuart Longland wrote:
-> When SX_TLV widgets are read, if the gain is set to a value below 0dB,
-> the mixer control is erroniously read as being at maximum volume.
-> 
-> The value read out of the CODEC register is never sign-extended, and
-> when the minimum value is subtracted (read; added, since the minimum is
-> negative) the result is a number greater than the maximum allowed value
-> for the control, and hence it saturates.
-> 
-> Solution: Mask the result so that it "wraps around", emulating
-> sign-extension.
-> 
-> Signed-off-by: Stuart Longland <redhatter@gentoo.org>
-> ---
->  sound/soc/soc-core.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-> index a82a797..0470288 100644
-> --- a/sound/soc/soc-core.c
-> +++ b/sound/soc/soc-core.c
-> @@ -2400,8 +2400,8 @@ int snd_soc_get_volsw_2r_sx(struct snd_kcontrol *kcontrol,
->  	int val = snd_soc_read(codec, mc->reg) & mask;
->  	int valr = snd_soc_read(codec, mc->rreg) & mask;
->  
-> -	ucontrol->value.integer.value[0] = ((val & 0xff)-min);
-> -	ucontrol->value.integer.value[1] = ((valr & 0xff)-min);
-> +	ucontrol->value.integer.value[0] = ((val & 0xff)-min) & mask;
-> +	ucontrol->value.integer.value[1] = ((valr & 0xff)-min) & mask;
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(snd_soc_get_volsw_2r_sx);
+On Thu, 17 Jun 2010 19:51:01 +0200, Greg KH <greg@kroah.com> wrote:
 
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+> On Wed, Jun 16, 2010 at 12:08:01PM +0200, Michal Nazarewicz wrote:
+>> The Multifunction Compasite Gadget have been cleaned up
+>> and refactored so hopefully it looks prettier and works
+>> at least as good as before changes.
+>>
+>> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  drivers/usb/gadget/Kconfig |    1 +
+>>  drivers/usb/gadget/multi.c |  262 +++++++++++++++++++++++++-------------------
+>>  2 files changed, 148 insertions(+), 115 deletions(-)
+>>
+>> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+>> index 591ae9f..027f61b 100644
+>> --- a/drivers/usb/gadget/Kconfig
+>> +++ b/drivers/usb/gadget/Kconfig
+>> @@ -863,6 +863,7 @@ config USB_G_NOKIA
+>>  config USB_G_MULTI
+>>  	tristate "Multifunction Composite Gadget (EXPERIMENTAL)"
+>>  	depends on BLOCK && NET
+>> +	select USB_G_MULTI_CDC if !USB_G_MULTI_RNDIS
+>>  	help
+>>  	  The Multifunction Composite Gadget provides Ethernet (RNDIS
+>>  	  and/or CDC Ethernet), mass storage and ACM serial link
+>
+> Why is this change needed?  Did you do something else in this patch that
+> requires it?
+
+Without this select it is possible to choose neither RNDIS nor CDC ECM which
+in turns builds a module with no configurations.
+
+I've also realised recently that one does not need to specify
+bNumConfigurations in usb_device_descriptor since composite counts that for
+us so I'll resend this patch with that fixed as well.
+
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
