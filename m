@@ -1,177 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab0FRU7x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 16:59:53 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:50684 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750971Ab0FRU7w convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 16:59:52 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>,
-       "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
-CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-       "'akpm@osdl.org'" <akpm@osdl.org>,
-       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Jun 2010 14:59:36 -0600
-Subject: [PATCH 7/12] scsi: megaraid_sas - Online Controller Reset (OCR):
- Pending cmds will be stored in diffeent queue
-Thread-Topic: [PATCH 7/12] scsi: megaraid_sas - Online Controller Reset
- (OCR): Pending cmds will be stored in diffeent queue
-Thread-Index: AcsIUs7sdIl9C0r7T1+T03e9i9uQ0gG1ew4A
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3D092749C@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804558@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D0804558@cosmail02.lsi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752186Ab0FRVBA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 17:01:00 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35268
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751771Ab0FRVA6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 17:00:58 -0400
+Date: Fri, 18 Jun 2010 14:01:10 -0700 (PDT)
+Message-Id: <20100618.140110.246534188.davem@davemloft.net>
+To: bmb@athenacr.com
+Cc: jbarnes@virtuousgeek.org, rjw@sisk.pl, mikpe@it.uu.se,
+       linux-kernel@vger.kernel.org, kernel-testers@vger.kernel.org,
+       maciej.rutecki@gmail.com, achiang@canonical.com
+Subject: Re: [Bug #16161] [2.6.35-rc1 regression] sysfs: cannot create
+ duplicate filename ... XVR-600 related?
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C1BD9CC.5060300@athenacr.com>
+References: <20100618131049.462ca7ce@virtuousgeek.org>
+	<20100618.132655.260090086.davem@davemloft.net>
+	<4C1BD9CC.5060300@athenacr.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RESUBMIT:
+From: Brian Bloniarz <bmb@athenacr.com>
+Date: Fri, 18 Jun 2010 16:40:44 -0400
 
-When driver is doing the OCR, driver will store the pending cmds (in FW not return) to different queue.  Those cmds will
-Be re-issued to FW after OCR finished.
+> In the patch, 2 individual code paths were trying to
+> create the same symlinks:
+> pci-sysfs.c:pci_create_slot_links(struct pci_dev *dev)
+> and
+> slot.c:create_sysfs_files(struct pci_slot *slot).
+> I think some archs managed to call those both during
+> initialization, and some not.
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
-
----
-drivers/scsi/megaraid/megaraid_sas.c |  101 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 100 insertions(+), 1 deletion(-)
-
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
---- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-17 08:43:34.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-17 07:51:23.000000000 -0400
-@@ -2100,10 +2100,106 @@ megasas_issue_pending_cmds_again(struct 
-  * did not complete in time, the kernel reset handler would flush
-  * these commands.
-  **/
--
- static void
- megasas_internal_reset_defer_cmds(struct megasas_instance *instance)
- {
-+	struct megasas_cmd *cmd;
-+	int i;
-+	u32 max_cmd = instance->max_fw_cmds;
-+	u32 defer_index;
-+	unsigned long flags;
-+
-+	defer_index     = 0;
-+	spin_lock_irqsave(&instance->cmd_pool_lock, flags);
-+	for (i = 0; i < max_cmd; i++) {
-+		cmd = instance->cmd_list[i];
-+		if (cmd->sync_cmd == 1 || cmd->scmd) {
-+			printk(KERN_NOTICE "megasas: moving cmd[%d]:%p:%d:%p"
-+					"on the defer queue as internal\n",
-+				defer_index, cmd, cmd->sync_cmd, cmd->scmd);
-+
-+			if (!list_empty(&cmd->list)) {
-+				printk(KERN_NOTICE "megaraid_sas: ERROR while"
-+					" moving this cmd:%p, %d %p, it was"
-+					"discovered on some list?\n",
-+					cmd, cmd->sync_cmd, cmd->scmd);
-+
-+				list_del_init(&cmd->list);
-+			}
-+			defer_index++;
-+			list_add_tail(&cmd->list,
-+				&instance->internal_reset_pending_q);
-+		}
-+	}
-+	spin_unlock_irqrestore(&instance->cmd_pool_lock, flags);
-+}
-+
-+
-+static void
-+process_fw_state_change_wq(struct work_struct *work)
-+{
-+	struct megasas_instance *instance =
-+		container_of(work, struct megasas_instance, work_init);
-+	u32 wait;
-+	unsigned long flags;
-+
-+	if (instance->adprecovery != MEGASAS_ADPRESET_SM_INFAULT) {
-+		printk(KERN_NOTICE "megaraid_sas: error, recovery st %x \n",
-+				instance->adprecovery);
-+		return ;
-+	}
-+
-+	if (instance->adprecovery == MEGASAS_ADPRESET_SM_INFAULT) {
-+		printk(KERN_NOTICE "megaraid_sas: FW detected to be in fault"
-+					"state, restarting it...\n");
-+
-+		instance->instancet->disable_intr(instance->reg_set);
-+		atomic_set(&instance->fw_outstanding, 0);
-+
-+		atomic_set(&instance->fw_reset_no_pci_access, 1);
-+		instance->instancet->adp_reset(instance, instance->reg_set);
-+		atomic_set(&instance->fw_reset_no_pci_access, 0 );
-+
-+		printk(KERN_NOTICE "megaraid_sas: FW restarted successfully,"
-+					"initiating next stage...\n");
-+
-+		printk(KERN_NOTICE "megaraid_sas: HBA recovery state machine,"
-+					"state 2 starting...\n");
-+
-+		/*waitting for about 20 second before start the second init*/
-+		for (wait = 0; wait < 30; wait++) {
-+			msleep(1000);
-+		}
-+
-+		if (megasas_transition_to_ready(instance)) {
-+			printk(KERN_NOTICE "megaraid_sas:adapter not ready\n");
-+
-+			megaraid_sas_kill_hba(instance);
-+			instance->adprecovery	= MEGASAS_HW_CRITICAL_ERROR;
-+			return ;
-+		}
-+
-+		if ((instance->pdev->device == PCI_DEVICE_ID_LSI_SAS1064R) ||
-+			(instance->pdev->device == PCI_DEVICE_ID_DELL_PERC5) ||
-+			(instance->pdev->device == PCI_DEVICE_ID_LSI_VERDE_ZCR)
-+			) {
-+			*instance->consumer = *instance->producer;
-+		} else {
-+			*instance->consumer = 0;
-+			*instance->producer = 0;
-+		}
-+
-+		megasas_issue_init_mfi(instance);
-+
-+		spin_lock_irqsave(&instance->hba_lock, flags);
-+		instance->adprecovery	= MEGASAS_HBA_OPERATIONAL;
-+		spin_unlock_irqrestore(&instance->hba_lock, flags);
-+		instance->instancet->enable_intr(instance->reg_set);
-+
-+		megasas_issue_pending_cmds_again(instance);
-+		instance->issuepend_done = 1;
-+	}
-+	return ;
- }
- 
- /**
-@@ -2169,6 +2265,7 @@ megasas_deplete_reply_queue(struct megas
- 			printk(KERN_NOTICE "megasas: fwState=%x, stage:%d\n",
- 					fw_state, instance->adprecovery);
- 
-+			schedule_work(&instance->work_init);
- 			return IRQ_HANDLED;
- 
- 		} else {
-@@ -3573,6 +3670,8 @@ megasas_probe_one(struct pci_dev *pdev, 
- 	instance->last_time = 0;
- 	instance->disableOnlineCtrlReset = 1;
- 
-+	INIT_WORK(&instance->work_init, process_fw_state_change_wq);
-+
- 	/*
- 	 * Initialize MFI Firmware
- 	 */
+Right, and if I recall correctly when adding sparc64 support for
+the sysfs slot stuff if you wanted to create the slots in a
+non-hotplug situation (which all of the sparc64 cases are) you
+had to defer the sysfs node creation to later in the boot than
+when the PCI buses are actually probed and populated.
