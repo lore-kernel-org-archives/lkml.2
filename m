@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933655Ab0FRPMx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 11:12:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51932 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932443Ab0FRPMv (ORCPT
+	id S933560Ab0FRPQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 11:16:26 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:37760 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932219Ab0FRPQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 11:12:51 -0400
-Date: Fri, 18 Jun 2010 11:10:17 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Edward Shishkin <edward.shishkin@gmail.com>
-Cc: Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: Btrfs: broken file system design (was Unbound(?) internal
- fragmentation in Btrfs)
-Message-ID: <20100618151017.GN27466@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Edward Shishkin <edward.shishkin@gmail.com>,
-	Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-	linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	The development of BTRFS <linux-btrfs@vger.kernel.org>
-References: <4C07C321.8010000@redhat.com>
- <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
- <4C1B7560.1000806@gmail.com>
- <20100618134755.GG27466@think>
- <4C1B8B4A.9060308@gmail.com>
+	Fri, 18 Jun 2010 11:16:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=EChBAVelFNMOh3OT9auAbfqy4CuIR9sifkxA0n07xXGhjyjkb/yKHldCIuHNJm5BKI
+         N7lm0wCWsovsrAppnSPnC7/eJUfg21b23RHnSNWaufYzEIXKzRR8W3DmbuQzRl40nz47
+         Uym45OUYSD03pWPRGZWJQu4Z+oSU9eJFOs7d8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C1B8B4A.9060308@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090201.4C1B8CC6.014B:SCFMA4539811,ss=1,fgs=0
+In-Reply-To: <20100618143532.GA10886@elte.hu>
+References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
+	<20100612102558.GA4000@elte.hu>
+	<4C15A5D1.1040104@jp.fujitsu.com>
+	<20100618094838.GD23977@elte.hu>
+	<AANLkTimqRwAjrQ_b8BZ28lEn_Gaz5-SpLULWASHD1fVn@mail.gmail.com>
+	<20100618124551.GC7612@elte.hu>
+	<AANLkTinaPhAcGra6JdmHCVcj9HrNyG2TP91-A8AnQMZE@mail.gmail.com>
+	<20100618143532.GA10886@elte.hu>
+Date: Fri, 18 Jun 2010 23:16:23 +0800
+Message-ID: <AANLkTimI7efmGNeUkCVT2mUYD8LkYsLAS9chkPhZVA1E@mail.gmail.com>
+Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Huang Ying <ying.huang@intel.com>,
+       "Fr??d??ric Weisbecker" <fweisbec@gmail.com>,
+       Don Zickus <dzickus@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+       Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 05:05:46PM +0200, Edward Shishkin wrote:
-> Chris Mason wrote:
-> >On Fri, Jun 18, 2010 at 03:32:16PM +0200, Edward Shishkin wrote:
-> >>Mat wrote:
-> >>>On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin <edward@redhat.com> wrote:
-> >>>>Hello everyone.
-> >>>>
-> >>>>I was asked to review/evaluate Btrfs for using in enterprise
-> >>>>systems and the below are my first impressions (linux-2.6.33).
-> >>>>
-> >>>>The first test I have made was filling an empty 659M (/dev/sdb2)
-> >>>>btrfs partition (mounted to /mnt) with 2K files:
-> >>>>
-> >>>># for i in $(seq 1000000); \
-> >>>>do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
-> >>>>(terminated after getting "No space left on device" reports).
-> >>>>
-> >>>># ls /mnt | wc -l
-> >>>>59480
-> >>>>
-> >>>>So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
-> >>>>and the first obvious question is "hey, where are other 83% of my
-> >>>>disk space???" I looked at the btrfs storage tree (fs_tree) and was
-> >>>>shocked with the situation on the leaf level. The Appendix B shows
-> >>>>5 adjacent btrfs leafs, which have the same parent.
-> >>>>
-> >>>>For example, look at the leaf 29425664: "items 1 free space 3892"
-> >>>>(of 4096!!). Note, that this "free" space (3892) is _dead_: any
-> >>>>attempts to write to the file system will result in "No space left
-> >>>>on device".
-> >
-> >There are two easy ways to fix this problem.  Turn off the inline
-> >extents (max_inline=0) or allow splitting of the inline extents.  I
-> >didn't put in the splitting simply because the complexity was high while
-> >the benefits were low (in comparison with just turning off the inline
-> >extents).
-> 
-> Hello, Chris. Thanks for response!
-> I afraid that both ways won't fix the problem. Look at this leaf:
-> 
-> [...]
-> leaf 29425664 items 1 free space 3892 generation 8 owner 5
-> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
-> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
->        item 0 key (320 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
->                location key (0 UNKNOWN 0) type 8
->                namelen 16 datalen 32 name: security.selinux
-> [...]
-> 
-> There is no inline extents, and what are you going to split here?
-> All leafs must be at least a half filled, otherwise we loose all
-> boundaries, which provides non-zero utilization..
+On Fri, Jun 18, 2010 at 10:35 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * huang ying <huang.ying.caritas@gmail.com> wrote:
+>
+>> On Fri, Jun 18, 2010 at 8:45 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>> >> >> [...] ??At least APEI will use NMI to report some hardware events (likely
+>> >> >> error) to kernel. ??So I suppose we will go to have a delayed call as an
+>> >> >> event handler for APEI.
+>> >> >
+>> >> > Yep, that makes sense. I wasnt arguing against the functionality itself, i
+>> >> > was arguing against the illogical layering that limits its utility. By
+>> >> > making it part of perf events it becomes a generic part of that framework
+>> >> > and can be used by anything that deals with events and uses that
+>> >> > framework.
+>> >>
+>> >> I think the the 'layering' in the patchset helps instead of 'limits' its
+>> >> utility. It is designed to be as general as possible, so that it can be used
+>> >> by both perf and other NMI users. Do you think so?
+>> >
+>> > What other NMI users do you mean? EDAC/MCE is going to go utilize events
+>> > as well (away from the horrible /dev/mcelog interface), the NMI watchdog
+>> > already did it and the perf tool obviously does as well. There's a few
+>> > leftovers like kcrash which isnt really event centric and i dont think it
+>> > needs to be converted.
+>>
+>> But why not just make it more general? It does not hurt anyone including
+>> perf.
+>
+> Because it's not actually more generic that way - just look at the code. It's
+> x86 specific, plus it ties it to NMI delivery while the concept of delayed
+> execution has nothing to do with NMIs.
 
-Right, there is no inline extent because we require them to fit entirely
-in the leaf.  So we end up with mostly empty leaves because the inline
-item is large enough to make it difficult to push around but not large
-enough to fill the leaf.
+soft_irq is a delayed mechanism for IRQ, a self interrupt can be a
+delayed mechanism for NMI. If we can make soft_irq NMI-safe, we can
+use soft_irq as a backup of self interrupt (for systems without APIC
+and maybe for other architectures).
 
--chris
+Best Regards,
+Huang Ying
