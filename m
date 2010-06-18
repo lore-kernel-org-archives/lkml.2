@@ -1,89 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933907Ab0FRR6Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 13:58:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37359 "EHLO mx1.redhat.com"
+	id S933920Ab0FRR6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 13:58:50 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:47920 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754961Ab0FRR6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 13:58:23 -0400
-Date: Fri, 18 Jun 2010 19:55:41 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org, Louis Rilling <louis.rilling@kerlabs.com>
-Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
-Message-ID: <20100618175541.GA13680@redhat.com>
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com>
+	id S1754832Ab0FRR6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 13:58:48 -0400
+Message-ID: <4C1BB3D7.5060301@kernel.dk>
+Date: Fri, 18 Jun 2010 19:58:47 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100618173320.GG16877@hawkmoon.kerlabs.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Divyesh Shah <dpshah@google.com>
+Subject: Re: [PATCH] cfq-iosched: Fixed boot warning with BLK_CGROUP=y and
+  CFQ_GROUP_IOSCHED=n
+References: <20100618143947.GA8431@redhat.com>
+In-Reply-To: <20100618143947.GA8431@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18, Louis Rilling wrote:
->
-> On 18/06/10 18:08 +0200, Oleg Nesterov wrote:
-> >
-> > Not sure I ever understood this code. Certainly I can't say I understand
-> > it now. Still, do we really need this circle? I am almost sure the patch
-> > below is not right (and it wasn't tested at all), but could you take a
-> > look?
->
-> I won't pretend understanding better than you do. Still I can try to give my 2
-> cents.
->
-> Overall, I don't feel comfortable at being able to have a living proc_mnt
-> with a dead pid_ns.
+On 2010-06-18 16:39, Vivek Goyal wrote:
+> Hi Jens,
+> 
+> Few days back Ingo noticed a CFQ boot time warning. This patch fixes it.
+> The issue here is that with CFQ_GROUP_IOSCHED=n, CFQ should not really
+> be making blkio stat related calls.
 
-Yes, this should be fixed, I already realized this. work->func(ns) is
-called when ns is already fixed.
+Thanks applied. Still hoping to eventually get a better variant done,
+but at least this fixes the problemf or now.
 
-Otherwise, nobody should use ns->proc_mount when ns is already dead/freed.
-
-> > Note: afaics we have another problem. What if copy_process(CLONE_NEWPID)
-> > fails after pid_ns_prepare_proc() ? Who will do mntput() ? This patch
-> > should fix this too (again, ___if___ it correct).
->
-> Sounds true.
-
-Good.
-
-> > @@ -74,7 +74,7 @@ static int proc_get_sb(struct file_syste
-> >  		ei = PROC_I(sb->s_root->d_inode);
-> >  		if (!ei->pid) {
-> >  			rcu_read_lock();
-> > -			ei->pid = get_pid(find_pid_ns(1, ns));
-> > +			ei->pid = find_pid_ns(1, ns);
->
-> I don't think that this is correct. IIUC, proc_delete_inode() calls put_pid() on
-> ei->pid.
-
-Yes,
-
-> So either a special case is added in proc_delete_inode(), or we try to
-> live with get_pid() here. I'm actually not sure that we can pretend that this
-> pid remains valid if we don't get_pid() here.
-
-But please see another change below,
-
-> > +static void proc_mntput(struct work_struct *work)
-> >  {
-> > +	struct pid_namespace *ns = container_of(work, struct pid_namespace, proc_put);
-> > +
-> > +	PROC_I(ns->proc_mnt->mnt_sb->s_root->d_inode)->pid = NULL;
-> >  	mntput(ns->proc_mnt);
-> >  }
-
-it clears ei->pid.
-
-We are called from free_pid_ns() path, this ->pid must not have any reference.
-Any get_pid() implies get_pid_ns().
-
-What do you think?
-
-Oleg.
+-- 
+Jens Axboe
 
