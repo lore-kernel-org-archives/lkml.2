@@ -1,86 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206Ab0FRMgf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 08:36:35 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:37845 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170Ab0FRMgd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 08:36:33 -0400
-X-Authority-Analysis: v=1.1 cv=GMC9ctHN+mfn2UjahXKMz1Fs9q6RIMVHs8P/za7PD7k= c=1 sm=0 a=_xeo1-vZUxgA:10 a=hO-oPbc3tlwA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=20KFwNOVAAAA:8 a=DfNHnWVPAAAA:8 a=jdlfCpmRHRKfWezIqOkA:9 a=7WEOXm7nsFuc0qo20-oA:7 a=dWSqtB15hUsXEImff2a5wv8jya8A:4 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=lBRciGGoxdUA:10 a=pobgSg4GrmgARGDm:21 a=KX59jSY6W4RboyHU:21 a=Nqdp4+S2FArj7gZzHVn+tA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.120.198.24
-Date: Fri, 18 Jun 2010 07:36:53 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Roland McGrath <roland@redhat.com>
-Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+	id S932230Ab0FRMqK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 08:46:10 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35807 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932178Ab0FRMqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 08:46:08 -0400
+Date: Fri, 18 Jun 2010 14:45:51 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Huang Ying <ying.huang@intel.com>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Don Zickus <dzickus@redhat.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
-Message-ID: <20100618123653.GA5427@hallyn.com>
-References: <20100616221833.GM24749@outflux.net>
- <20100616231006.34A28403D2@magilla.sf.frob.com>
- <20100616233937.GQ24749@outflux.net>
- <20100617001114.A90F5403D2@magilla.sf.frob.com>
+       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+       Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
+Message-ID: <20100618124551.GC7612@elte.hu>
+References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
+ <20100612102558.GA4000@elte.hu>
+ <4C15A5D1.1040104@jp.fujitsu.com>
+ <20100618094838.GD23977@elte.hu>
+ <AANLkTimqRwAjrQ_b8BZ28lEn_Gaz5-SpLULWASHD1fVn@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100617001114.A90F5403D2@magilla.sf.frob.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimqRwAjrQ_b8BZ28lEn_Gaz5-SpLULWASHD1fVn@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Roland McGrath (roland@redhat.com):
-> > Though, honestly, just trying to get rid of PTRACE seems like the better
-> > place to spend time.
+
+* huang ying <huang.ying.caritas@gmail.com> wrote:
+
+> Hi, Ingo,
 > 
-> Crushing irony of telling *me* this duly noted.  ;-)
-> I am not really sure what deeply different set of security constraints
-> you envision on any other kind of new debugger interface that would be
-> any different for the concerns you've expressed, though.
+> On Fri, Jun 18, 2010 at 5:48 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com> wrote:
+> >
+> >> (2010/06/12 19:25), Ingo Molnar wrote:
+> >> >
+> >> > * Huang Ying <ying.huang@intel.com> wrote:
+> >> >
+> >> >> NMI can be triggered even when IRQ is masked. So it is not safe for NMI
+> >> >> handler to call some functions. One solution is to delay the call via self
+> >> >> interrupt, so that the delayed call can be done once the interrupt is
+> >> >> enabled again. This has been implemented in MCE and perf event. This patch
+> >> >> provides a unified version and make it easier for other NMI semantic handler
+> >> >> to take use of the delayed call.
+> >> >
+> >> > Instead of introducing this extra intermediate facility please use the same
+> >> > approach the unified NMI watchdog is using (see latest -tip): a perf event
+> >> > callback gives all the extra functionality needed.
+> >> >
+> >> > The MCE code needs to be updated to use that - and then it will be integrated
+> >> > into the events framework.
+> >>
+> >> Hi Ingo,
+> >>
+> >> I think this "NMI delayed call mechanism" could be a part of "the events
+> >> framework" that we are planning to get in kernel soon. [...]
+> >
+> > My request was to make it part of perf events - which is a generic event 
+> > logging framework. We dont really need/want a second 'events framework' as 
+> > we have one already ;-)
 > 
-> > > I don't think "task->pid > 0" is a sort of check that is used elsewhere in
-> > > the kernel for this.  Perhaps "task == &init_task" would be better.
-> > 
-> > Is this correct for pid_ns?  I thought pid 1 (regardless of NS) would have
-> > a NULL parent?
+> This patchset is simple and straightforward, [...]
+
+We wouldnt want to add another workqueue or memory allocation mechanism 
+either, even if it was 'simple and straightforward'. We try to make things 
+more generally useful.
+
+> [...] it is just a delayed execution mechanism, not another 'events 
+> framework'. There are several other NMI users other than perf, should we 
+> integrate all NMI users into perf framework?
+
+We already did so with the NMI watchdog. What other significant NMI event 
+users do you have in mind?
+
+> >> [...] ??At least APEI will use NMI to report some hardware events (likely 
+> >> error) to kernel. ??So I suppose we will go to have a delayed call as an 
+> >> event handler for APEI.
+> >
+> > Yep, that makes sense. I wasnt arguing against the functionality itself, i 
+> > was arguing against the illogical layering that limits its utility. By 
+> > making it part of perf events it becomes a generic part of that framework 
+> > and can be used by anything that deals with events and uses that 
+> > framework.
 > 
-> Don't ask me.  I just mentioned pid_ns to get those who really know about
-> it to feel obliged to review your code.
+> I think the the 'layering' in the patchset helps instead of 'limits' its 
+> utility. It is designed to be as general as possible, so that it can be used 
+> by both perf and other NMI users. Do you think so?
 
-task->pid always holds the global pid, so 0 and 1 will be the global idle
-and init tasks.
+What other NMI users do you mean? EDAC/MCE is going to go utilize events as 
+well (away from the horrible /dev/mcelog interface), the NMI watchdog already 
+did it and the perf tool obviously does as well. There's a few leftovers like 
+kcrash which isnt really event centric and i dont think it needs to be 
+converted.
 
-As for this particular patch,
+Thanks,
 
-Quoting Kees Cook (kees.cook@canonical.com):
-
->> running state of any of their processes. For example, if one application
->>(e.g. Pidgin) was compromised, it would be possible for an attacker to
->>attach to other running processes (e.g. Firefox, SSH sessions, GPG agent,
->>etc) to extract additional credentials and continue to expand the scope
->>of their attack without resorting to user-assisted phishing.
-
-Well that's why I like to run things like firefox, irc clients, etc each
-as their own userid.  That also protects my ssh keys from irc client.  But
-things like clicking urls in terminals to fire them up in a browser
-aren't usually hooked up right when you do that.  Not that it'd be
-impossible to do right.
-
-Anyway, if you're going to do this (sounds like, as a tiny-lsm?), how
-about replacing the sysctl with a per-task flag which, once set,
-can't be unset?  Then firefox can mark itself unable-to-ptrace (or I
-can do so in a wrapper before calling firefox.real), after which it
-cannot strace anything which isn't its descendent, but I can still
-strace firefox from my shell.  Of course, don't bother with that
-change unless someone seconds the suggestion, in case ppl don't like
-it and ask you to change it back :)
-
--serge
+	Ingo
