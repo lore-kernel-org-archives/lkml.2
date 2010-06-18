@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab0FRC7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 22:59:50 -0400
-Received: from mtoichi12.ns.itscom.net ([219.110.2.182]:37436 "EHLO
-	mtoichi12.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755537Ab0FRC7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 22:59:49 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: [PATCH v2] d_ino considered harmful
-To: Andreas Dilger <andreas.dilger@oracle.com>
-Cc: David Dillow <dillowda@ornl.gov>, Valerie Aurora <vaurora@redhat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Christoph Hellwig <hch@infradead.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-       Jamie Lokier <jamie@shareable.org>,
-       David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-       Andreas Dilger <adilger@sun.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <A8B216D0-06C5-4D85-9AA6-EB4C9E87D26B@oracle.com>
-References: <20100616185913.GA15566@shell> <20100616195359.GA24382@shell> <1276721084.13788.53.camel@lap75545.ornl.gov> <30568.1276797848@jrobl> <A8B216D0-06C5-4D85-9AA6-EB4C9E87D26B@oracle.com>
-Date: Fri, 18 Jun 2010 11:57:52 +0900
-Message-ID: <7385.1276829872@jrobl>
+	id S1756658Ab0FRDEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 23:04:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56049 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753478Ab0FRDEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Jun 2010 23:04:30 -0400
+X-User-Agent: K-9 Mail for Android
+References: <20100617221318.GC24749@outflux.net>,<4C1AA15E.3050205@zytor.com> <SNT125-W601D37A89A8CBFFDFFF40EC3C00@phx.gbl>
+In-Reply-To: <SNT125-W601D37A89A8CBFFDFFF40EC3C00@phx.gbl>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: RE: [PATCH] x86: clear XD_DISABLED flag on Intel to regain NX
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 17 Jun 2010 20:03:48 -0700
+To: Yuhong Bao <yuhongbao_386@hotmail.com>, kees.cook@canonical.com
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+       mingo@redhat.com, tabbott@ksplice.com, sam@ravnborg.org,
+       heukelum@fastmail.fm
+Message-ID: <c426f516-7a1c-49bd-a05e-da98171f1c5a@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Yes, I mentally flipped the sense of the bit... talked to Kees already.
 
-Andreas Dilger:
-> As the name implies, it is very extN specific. For Lustre 2.0 we use a  
-> different method to get O(1) FID (inode number) to pathname(s)  
-> lookup.  Each file stores an xattr with the {parent FID, filename}  
-> tuples for each link to the file, whenever an inode is created,  
-> linked, unlinked, or renamed.
+"Yuhong Bao" <yuhongbao_386@hotmail.com> wrote:
 
-Honestly speaking, this approach is the one which came to my mind when I
-read David's mail. Andreas's approach and explanation is perfect as I
-should admire.
+>
+>> a) Not all Intel CPUs with extended CPUID levels have
+>> MSR_IA32_MISC_ENABLE bit 34. Since we can't take traps here we would
+>> have to know positively that we aren't going to trip on anything.
+>It won't as these older Intel CPUs are always going to read this bit as zero, and even if no checking for this is include all the wrmsr would do is write the same value back, which won't cause a trap.
+>
+>Yuhong Bao
+> 		 	   		  
+>_________________________________________________________________
+>Hotmail has tools for the New Busy. Search, chat and e-mail from your inbox.
+>http://www.windowslive.com/campaign/thenewbusy?ocid=PID28326::T:WLMTAGL:ON:WL:en-US:WM_HMP:042010_1
 
-Thank you
-J. R. Okajima
+-- 
+Sent from my mobile phone.  Please pardon any lack of formatting.
