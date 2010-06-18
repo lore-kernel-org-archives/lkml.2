@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab0FRVzi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 17:55:38 -0400
-Received: from imr1.ericy.com ([198.24.6.9]:36411 "EHLO imr1.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753682Ab0FRVzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 17:55:36 -0400
-X-Greylist: delayed 8536 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jun 2010 17:55:36 EDT
-Subject: Re: [lm-sensors] [PATCH 1/3] hwmon: Driver for SMM665 Six-Channel
- Active DC Output Controller/Monitor
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-       Hans de Goede <hdegoede@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <4C1BE722.3000006@jic23.retrosnub.co.uk>
-References: <1276877194-28214-1-git-send-email-guenter.roeck@ericsson.com>
-	 <1276877194-28214-2-git-send-email-guenter.roeck@ericsson.com>
-	 <4C1BB2AC.4090308@jic23.retrosnub.co.uk>
-	 <1276894613.2631.535.camel@groeck-laptop>
-	 <4C1BE722.3000006@jic23.retrosnub.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Fri, 18 Jun 2010 14:54:08 -0700
-Message-ID: <1276898048.2631.544.camel@groeck-laptop>
+	id S1753836Ab0FRV4g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 17:56:36 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:47801 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753565Ab0FRV4f convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 17:56:35 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+       "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+       "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+       "akpm@osdl.org" <akpm@osdl.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Jun 2010 15:56:24 -0600
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ 	Enable Online Controller Reset Bit in register related functions
+Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ 	Enable Online Controller Reset Bit in register related functions
+Thread-Index: AcsPLnJwtaRbKeDzS/qeA4pH1e6Z8AAAC5PA
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3D09274EA@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+	<AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
+	<4B6A08C587958942AA3002690DD4F8C3D09274C4@cosmail02.lsi.com>
+ <AANLkTilNX7_IDjw5lFYpkzlGGPHeRsswWZCXslw5GsjQ@mail.gmail.com>
+In-Reply-To: <AANLkTilNX7_IDjw5lFYpkzlGGPHeRsswWZCXslw5GsjQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-18 at 17:37 -0400, Jonathan Cameron wrote:
-> On 06/18/10 21:56, Guenter Roeck wrote:
-> > [...]
-> >>> +             /*
-> >>> +              * Algorithm for reading ADC, per SMM665 datasheet
-> >>> +              *
-> >>> +              *  {[S][addr][W][Ack]} {[offset][Ack]} {[S][addr][R][Nack]}
-> >>> +              * [wait 70 uS]
-> >>> +              *  {[S][addr][R][Ack]} {[datahi][Ack]} {[datalo][Ack][P]}
-> >>> +              *
-> >>> +              * To implement the first part of this exchange,
-> >>> +              * do a full read transaction and expect a failure/Nack.
-> >>> +              * This sets up the address pointer on the SMM665
-> >>> +              * and starts the ADC conversion.
-> >>> +              * Then do a two-byte read transaction.
-> >>> +              */
-> >> Is there no better way of handling this? There are protocol mangling hacks
-> >> to tell the i2c core to ignore a NAKs under some circumstances.
-> >>
-> >>> +             rv = i2c_smbus_read_byte_data(client, adc << 3);
-> >>> +             if (rv >= 0) {
-> >>> +                     /* No error, something is wrong. Retry. */
-> >>> +                     rv = -1;
-> >>> +                     continue;
-> >>> +             }
-> > 
-> > I looked through the core i2c code, but did not find anything I can
-> > use. 
-> > 
-> > Problem is that per smm665 specification, the first NACK is expected. So
-> > we do not just want to ignore this NACK, we want to actively check if
-> > the command "failed" as expected, and report an error if it did _not_
-> > fail.
-> > 
-> > Guenter
-> To my mind this looks like a case for adding another 'mangling' flag
-> to the core, but I guess that might require bus driver implementation
-> which would obviously be a pain.  Perhaps the approach you have taken
-> is the best plan.  My issue with it at the moment is that you are
-> detecting any error rather than specifically an unexpected NACK.
+Thanks, Yinghai.  It is possible James didn't push (patches 5-12) yet.
 
-Yes, but looking through bus implementations, I don't think there is a
-consistent way to detect the exact error reason. How about if I weed out
--EOPNOTSUPP, -ETIMEDOUT, and -EINVAL ? 
+Regards,
 
-Guenter
+Bo Yang
+
+-----Original Message-----
+From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of Yinghai Lu
+Sent: Friday, June 18, 2010 5:37 PM
+To: Yang, Bo
+Cc: James.Bottomley@HansenPartnership.com; James.Bottomley@suse.de; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
+
+On Fri, Jun 18, 2010 at 2:21 PM, Yang, Bo <Bo.Yang@lsi.com> wrote:
+> Yinghai,
+>
+> You need to apply patches 1/12 to 8/12 for this online controller reset (OCR) support.
+
+current scsi-next only have
+
+commit 6faad24ad989798475e9ab4a2a809008fff6e872
+Author: Yang, Bo <Bo.Yang@lsi.com>
+Date:   Wed Jun 9 20:34:43 2010 -0600
+
+    [SCSI] megaraid_sas: Enable Online Controller Reset Bit in
+register related functions
 
 
+commit 4f3a268eca4e7073d315e7f9b0a4dc94a38da560
+Author: Yang, Bo <Bo.Yang@lsi.com>
+Date:   Wed Jun 9 20:51:48 2010 -0600
+
+    [SCSI] megaraid_sas: Add the Chip reset functions to the driver
+
+commit baf13c9440869a55d2493190dbc68c2bb165dad5
+Author: Yang, Bo <Bo.Yang@lsi.com>
+Date:   Wed Jun 9 20:59:43 2010 -0600
+
+    [SCSI] megaraid_sas: add the reset function for Gen2 related chip
+
+commit 449ee85225f9f41f2475f16b41d035000c8ee395
+Author: Yang, Bo <Bo.Yang@lsi.com>
+Date:   Wed Jun 9 21:25:17 2010 -0600
+
+    [SCSI] megaraid_sas: return RESET in timeout routine
+
+
+
+so looks like James didn't put
+[PATCH 8/12] scsi: megaraid_sas - Online Controller Reset (OCR):
+Driver re-issue the pending cmds to FW
+
+in the tree yet.
+
+or your patchset will break the bisecting?
+
+Thanks
+
+Yinghai
