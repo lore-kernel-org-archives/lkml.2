@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756421Ab0FRC4V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 22:56:21 -0400
-Received: from ossa.mas.viperplatform.net.au ([202.147.75.25]:60495 "EHLO
-	ossa.mas.viperplatform.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756188Ab0FRC4T (ORCPT
+	id S1756303Ab0FRC7u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 22:59:50 -0400
+Received: from mtoichi12.ns.itscom.net ([219.110.2.182]:37436 "EHLO
+	mtoichi12.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755537Ab0FRC7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 22:56:19 -0400
-From: Stuart Longland <redhatter@gentoo.org>
-To: ALSA Development List <alsa-devel@alsa-project.org>
-Cc: alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ASoC: Fix overflow bug in SOC_DOUBLE_R_SX_TLV
-Date: Fri, 18 Jun 2010 12:56:10 +1000
-Message-Id: <1276829770-31557-1-git-send-email-redhatter@gentoo.org>
-X-Mailer: git-send-email 1.6.4.4
-In-Reply-To: <20100618023810.GS7759@www.longlandclan.yi.org>
-References: <20100618023810.GS7759@www.longlandclan.yi.org>
+	Thu, 17 Jun 2010 22:59:49 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH v2] d_ino considered harmful
+To: Andreas Dilger <andreas.dilger@oracle.com>
+Cc: David Dillow <dillowda@ornl.gov>, Valerie Aurora <vaurora@redhat.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Christoph Hellwig <hch@infradead.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+       Jamie Lokier <jamie@shareable.org>,
+       David Woodhouse <dwmw2@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+       Andreas Dilger <adilger@sun.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <A8B216D0-06C5-4D85-9AA6-EB4C9E87D26B@oracle.com>
+References: <20100616185913.GA15566@shell> <20100616195359.GA24382@shell> <1276721084.13788.53.camel@lap75545.ornl.gov> <30568.1276797848@jrobl> <A8B216D0-06C5-4D85-9AA6-EB4C9E87D26B@oracle.com>
+Date: Fri, 18 Jun 2010 11:57:52 +0900
+Message-ID: <7385.1276829872@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When SX_TLV widgets are read, if the gain is set to a value below 0dB,
-the mixer control is erroniously read as being at maximum volume.
 
-The value read out of the CODEC register is never sign-extended, and
-when the minimum value is subtracted (read; added, since the minimum is
-negative) the result is a number greater than the maximum allowed value
-for the control, and hence it saturates.
+Andreas Dilger:
+> As the name implies, it is very extN specific. For Lustre 2.0 we use a  
+> different method to get O(1) FID (inode number) to pathname(s)  
+> lookup.  Each file stores an xattr with the {parent FID, filename}  
+> tuples for each link to the file, whenever an inode is created,  
+> linked, unlinked, or renamed.
 
-Solution: Mask the result so that it "wraps around", emulating
-sign-extension.
+Honestly speaking, this approach is the one which came to my mind when I
+read David's mail. Andreas's approach and explanation is perfect as I
+should admire.
 
-Signed-off-by: Stuart Longland <redhatter@gentoo.org>
----
- sound/soc/soc-core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index a82a797..0470288 100644
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -2400,8 +2400,8 @@ int snd_soc_get_volsw_2r_sx(struct snd_kcontrol *kcontrol,
- 	int val = snd_soc_read(codec, mc->reg) & mask;
- 	int valr = snd_soc_read(codec, mc->rreg) & mask;
- 
--	ucontrol->value.integer.value[0] = ((val & 0xff)-min);
--	ucontrol->value.integer.value[1] = ((valr & 0xff)-min);
-+	ucontrol->value.integer.value[0] = ((val & 0xff)-min) & mask;
-+	ucontrol->value.integer.value[1] = ((valr & 0xff)-min) & mask;
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(snd_soc_get_volsw_2r_sx);
--- 
-1.6.4.4
-
+Thank you
+J. R. Okajima
