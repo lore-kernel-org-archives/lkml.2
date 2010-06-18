@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab0FRVd1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 17:33:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23057 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab0FRVd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 17:33:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,441,1272870000"; 
-   d="scan'208";a="528238435"
-Date: Fri, 18 Jun 2010 23:32:51 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Ian Molton <spyro@f2s.com>, Dmitry Baryshkov <dbaryshkov@gmail.com>
-Subject: Re: [PATCH] mfd-core: properly handle
- platform_device_add_resources fail in mfd_add_device
-Message-ID: <20100618213250.GG3582@sortiz.org>
-References: <1275298255.23779.2.camel@mola>
+	id S1753393Ab0FRVhV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 17:37:21 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42223 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084Ab0FRVhS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 17:37:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=TF3g3uCHv6UeKwIQEA7OsuscguV/rQHnbuNDgS52uhWZWLI7TouGtlscipQzjBxUyO
+         k+uI1XTPrGwv0iUCJsCstTg0rPfUVFTW4aSCSKpDxNxgOt7ls/9pYB7KkbDfT2n9rIww
+         tjyFYjPTSqwQ6zwjS6P6VjSlfMRY5apgziYrY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275298255.23779.2.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D09274C4@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+	<AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
+	<4B6A08C587958942AA3002690DD4F8C3D09274C4@cosmail02.lsi.com>
+Date: Fri, 18 Jun 2010 14:37:18 -0700
+X-Google-Sender-Auth: OKReZFLaMuNDF4b3_AgStVO0L74
+Message-ID: <AANLkTilNX7_IDjw5lFYpkzlGGPHeRsswWZCXslw5GsjQ@mail.gmail.com>
+Subject: Re: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: 
+	Enable Online Controller Reset Bit in register related functions
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Yang, Bo" <Bo.Yang@lsi.com>
+Cc: "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+       "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+       "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+       "akpm@osdl.org" <akpm@osdl.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 05:30:55PM +0800, Axel Lin wrote:
-> platform_device_add_resources may fail, thus add error checking for it.
-Thanks Axel, patch applied.
+On Fri, Jun 18, 2010 at 2:21 PM, Yang, Bo <Bo.Yang@lsi.com> wrote:
+> Yinghai,
+>
+> You need to apply patches 1/12 to 8/12 for this online controller reset (OCR) support.
 
-Cheers,
-Samuel.
+current scsi-next only have
 
- 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/mfd-core.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-> index 7dd76bc..1823a57 100644
-> --- a/drivers/mfd/mfd-core.c
-> +++ b/drivers/mfd/mfd-core.c
-> @@ -70,7 +70,9 @@ static int mfd_add_device(struct device *parent, int id,
->  			goto fail_res;
->  	}
->  
-> -	platform_device_add_resources(pdev, res, cell->num_resources);
-> +	ret = platform_device_add_resources(pdev, res, cell->num_resources);
-> +	if (ret)
-> +		goto fail_res;
->  
->  	ret = platform_device_add(pdev);
->  	if (ret)
-> -- 
-> 1.5.4.3
-> 
-> 
-> 
+commit 6faad24ad989798475e9ab4a2a809008fff6e872
+Author: Yang, Bo <Bo.Yang@lsi.com>
+Date:   Wed Jun 9 20:34:43 2010 -0600
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+    [SCSI] megaraid_sas: Enable Online Controller Reset Bit in
+register related functions
+
+
+commit 4f3a268eca4e7073d315e7f9b0a4dc94a38da560
+Author: Yang, Bo <Bo.Yang@lsi.com>
+Date:   Wed Jun 9 20:51:48 2010 -0600
+
+    [SCSI] megaraid_sas: Add the Chip reset functions to the driver
+
+commit baf13c9440869a55d2493190dbc68c2bb165dad5
+Author: Yang, Bo <Bo.Yang@lsi.com>
+Date:   Wed Jun 9 20:59:43 2010 -0600
+
+    [SCSI] megaraid_sas: add the reset function for Gen2 related chip
+
+commit 449ee85225f9f41f2475f16b41d035000c8ee395
+Author: Yang, Bo <Bo.Yang@lsi.com>
+Date:   Wed Jun 9 21:25:17 2010 -0600
+
+    [SCSI] megaraid_sas: return RESET in timeout routine
+
+
+
+so looks like James didn't put
+[PATCH 8/12] scsi: megaraid_sas - Online Controller Reset (OCR):
+Driver re-issue the pending cmds to FW
+
+in the tree yet.
+
+or your patchset will break the bisecting?
+
+Thanks
+
+Yinghai
