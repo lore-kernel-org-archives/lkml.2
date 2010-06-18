@@ -1,126 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761267Ab0FRNcZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 09:32:25 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:55816 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761089Ab0FRNcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 09:32:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=EfLmngI9/hm5to2KZWYU7L5OjzDJQhE+vV2mdLR9AyR0pHU3xYO0MzdhZ14gPrg5M5
-         9NBtOEFDlfq6f4EVDSf7r1Ljc+y/MmoDpIdQwwy6fdX4aqLwyMdNxqxbNJ/mxZyK4ArS
-         bU40t6E3hpRPRQvekUvvoPlVHg+RqSSwMvwxg=
-Date: Fri, 18 Jun 2010 17:32:12 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Barry Song <21cnbao@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-       uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH 1/2] mtd: m25p80: Rework probing/JEDEC code
-Message-ID: <20100618133212.GA5276@oksana.dev.rtsoft.ru>
-References: <20090818214449.GA12848@oksana.dev.rtsoft.ru>
- <20090818214622.GA22651@oksana.dev.rtsoft.ru>
- <AANLkTikg60s6ZRSEDCq9PQK1z7hJtBDk6t4VE1lYDv8u@mail.gmail.com>
+	id S1761283Ab0FRNcm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 09:32:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47274 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761153Ab0FRNcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 09:32:39 -0400
+Message-ID: <4C1B7560.1000806@gmail.com>
+Date: Fri, 18 Jun 2010 15:32:16 +0200
+From: Edward Shishkin <edward.shishkin@gmail.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <AANLkTikg60s6ZRSEDCq9PQK1z7hJtBDk6t4VE1lYDv8u@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mat <jackdachef@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+       Chris Mason <chris.mason@oracle.com>, Ric Wheeler <rwheeler@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       The development of BTRFS <linux-btrfs@vger.kernel.org>
+Subject: Btrfs: broken file system design (was Unbound(?) internal fragmentation
+ in Btrfs)
+References: <4C07C321.8010000@redhat.com> <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
+In-Reply-To: <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 12, 2010 at 02:27:12PM +0800, Barry Song wrote:
-> On Wed, Aug 19, 2009 at 5:46 AM, Anton Vorontsov
-> <avorontsov@ru.mvista.com> wrote:
-> >
-> > Previosly the driver always tried JEDEC probing, assuming that non-JEDEC
-> > chips will return '0'. But truly non-JEDEC chips (like CAT25) won't do
-> > that, their behaviour on RDID command is undefined, so the driver should
-> > not call jedec_probe() for these chips.
-> >
-> > Also, be less strict on error conditions, don't fail to probe if JEDEC
-> > found a chip that is different from what platform code told, instead
-> > just print some warnings and use an information obtained via JEDEC. In
-> This patch caused a problem:
-> even though the external flash doesn't exist, it will still pass the
-> probe() and be registerred into kernel and given the partition table.
-> You may refer to this bug report:
-> http://blackfin.uclinux.org/gf/project/uclinux-dist/tracker/?action=TrackerItemEdit&tracker_item_id=5975&start=0
+Mat wrote:
+> On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin <edward@redhat.com> wrote:
+>   
+>> Hello everyone.
+>>
+>> I was asked to review/evaluate Btrfs for using in enterprise
+>> systems and the below are my first impressions (linux-2.6.33).
+>>
+>> The first test I have made was filling an empty 659M (/dev/sdb2)
+>> btrfs partition (mounted to /mnt) with 2K files:
+>>
+>> # for i in $(seq 1000000); \
+>> do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
+>> (terminated after getting "No space left on device" reports).
+>>
+>> # ls /mnt | wc -l
+>> 59480
+>>
+>> So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
+>> and the first obvious question is "hey, where are other 83% of my
+>> disk space???" I looked at the btrfs storage tree (fs_tree) and was
+>> shocked with the situation on the leaf level. The Appendix B shows
+>> 5 adjacent btrfs leafs, which have the same parent.
+>>
+>> For example, look at the leaf 29425664: "items 1 free space 3892"
+>> (of 4096!!). Note, that this "free" space (3892) is _dead_: any
+>> attempts to write to the file system will result in "No space left
+>> on device".
+>>
+>> Internal fragmentation (see Appendix A) of those 5 leafs is
+>> (1572+3892+1901+3666+1675)/4096*5 = 0.62. This is even worse then
+>> ext4 and xfs: The last ones in this example will show fragmentation
+>> near zero with blocksize <= 2K. Even with 4K blocksize they will
+>> show better utilization 0.50 (against 0.38 in btrfs)!
+>>
+>> I have a small question for btrfs developers: Why do you folks put
+>> "inline extents", xattr, etc items of variable size to the B-tree
+>> in spite of the fact that B-tree is a data structure NOT for variable
+>> sized records? This disadvantage of B-trees was widely discussed.
+>> For example, maestro D. Knuth warned about this issue long time
+>> ago (see Appendix C).
+>>
+>> It is a well known fact that internal fragmentation of classic Bayer's
+>> B-trees is restricted by the value 0.50 (see Appendix C). However it
+>> takes place only if your tree contains records of the _same_ length
+>> (for example, extent pointers). Once you put to your B-tree records
+>> of variable length (restricted only by leaf size, like btrfs "inline
+>> extents"), your tree LOSES this boundary. Moreover, even worse:
+>> it is clear, that in this case utilization of B-tree scales as zero(!).
+>> That said, for every small E and for every amount of data N we
+>> can construct a consistent B-tree, which contains data N and has
+>> utilization worse then E. I.e. from the standpoint of utilization
+>> such trees can be completely degenerated.
+>>
+>> That said, the very important property of B-trees, which guarantees
+>> non-zero utilization, has been lost, and I don't see in Btrfs code any
+>> substitution for this property. In other words, where is a formal
+>> guarantee that all disk space of our users won't be eaten by internal
+>> fragmentation? I consider such guarantee as a *necessary* condition
+>> for putting a file system to production.
+>>
+>> Any technical comments are welcome.
+>>
+>> Thanks,
+>> Edward.
+>>
+>>
+>> Appendix A.
+>> -----------
+>> Glossary
+>>
+>> 1. Utilization of data and(or) metadata storage.
+>>
+>> The fraction A/B, where
+>> A is total size in bytes of stored data and(or) metadata.
+>> B = N * S, where
+>> N is number of blocks occupied by stored data and(or) metadata.
+>> S is block size in bytes.
+>>
+>> 2. Internal fragmentation of data and(or) metadata storage.
+>>
+>> difference (1 - U), where U is utilization.
+>>
+>>
+>> Appendix B.
+>> -----------
+>> a "period" in the dump of the fs_tree (btrfs-debug-tree /dev/sdb2)
+>>
+>> ...
+>>
+>> leaf 29982720 items 4 free space 1572 generation 8 owner 5
+>> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+>> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+>>       item 0 key (319 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
+>>               location key (0 UNKNOWN 0) type 8
+>>               namelen 16 datalen 32 name: security.selinux
+>>       item 1 key (319 EXTENT_DATA 0) itemoff 1848 itemsize 2069
+>>               inline extent data size 2048 ram 2048 compress 0
+>>       item 2 key (320 INODE_ITEM 0) itemoff 1688 itemsize 160
+>>               inode generation 8 size 2048 block group 29360128 mode 100644
+>> links 1
+>>       item 3 key (320 INODE_REF 256) itemoff 1672 itemsize 16
+>>               inode ref index 65 namelen 6 name: file64
+>> leaf 29425664 items 1 free space 3892 generation 8 owner 5
+>> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+>> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+>>       item 0 key (320 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
+>>               location key (0 UNKNOWN 0) type 8
+>>               namelen 16 datalen 32 name: security.selinux
+>> leaf 29990912 items 1 free space 1901 generation 8 owner 5
+>> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+>> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+>>       item 0 key (320 EXTENT_DATA 0) itemoff 1926 itemsize 2069
+>>               inline extent data size 2048 ram 2048 compress 0
+>> leaf 29986816 items 3 free space 3666 generation 8 owner 5
+>> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+>> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+>>       item 0 key (321 INODE_ITEM 0) itemoff 3835 itemsize 160
+>>               inode generation 8 size 2048 block group 29360128 mode 100644
+>> links 1
+>>       item 1 key (321 INODE_REF 256) itemoff 3819 itemsize 16
+>>               inode ref index 66 namelen 6 name: file65
+>>       item 2 key (321 XATTR_ITEM 3817753667) itemoff 3741 itemsize 78
+>>               location key (0 UNKNOWN 0) type 8
+>>               namelen 16 datalen 32 name: security.selinux
+>> leaf 29995008 items 3 free space 1675 generation 8 owner 5
+>> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+>> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+>>       item 0 key (321 EXTENT_DATA 0) itemoff 1926 itemsize 2069
+>>               inline extent data size 2048 ram 2048 compress 0
+>>       item 1 key (322 INODE_ITEM 0) itemoff 1766 itemsize 160
+>>               inode generation 8 size 2048 block group 29360128 mode 100644
+>> links 1
+>>       item 2 key (322 INODE_REF 256) itemoff 1750 itemsize 16
+>>               inode ref index 67 namelen 6 name: file66
+>> ...
+>>
+>> Appendix C.
+>> -----------
+>>
+>> D.E. Knuth, The Art of Computer Programming, vol. 3 (Sorting and Searching),
+>> Addison-Wesley, Reading, MA, 1973.
+>>
+>> --
+>> Edward O. Shishkin
+>> Principal Software Engineer
+>> Red Hat Czech
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>     
+>
+> Hi to all,
+>
+> First of let me say: Btrfs really has matured a lot in the last months
+> and this is thanks to you guys (the developers !)
+>
+> More and more people are making it their dedicated filesystem (MeeGo)
+> or an option (Ubuntu, Fedora)
+>
+> So thank you very very much for your on-going efforts on making this
+> more and more a viable (and usable !) alternative/competition to zfs
+> :)
+>
+> The problems Edward mentioned sound like some very important points
+> (issues ?) to investigate
+>
+> I find it somewhat surprising that none of you guys commented on his mail
+>   
 
-Thanks for the report.
+It must be a highly unexpected and difficult question for file system
+developers: "how efficiently does your file system manage disk space"?
 
-There's little we can do about it. Platform code asked us
-to register the device, and JEDEC probing of M25Pxx chips isn't
-reliable (thanks to various vendors that make these JEDEC and
-non-JEDEC variants), so the best thing we can do is to register
-the chip anyway.
+In the meanwhile I confirm that Btrfs design is completely broken:
+records stored in the B-tree differ greatly from each other (it is
+unacceptable!), and the balancing algorithms have been modified in
+insane manner. All these factors has led to loss of *all* boundaries
+holding internal fragmentation and to exhaustive waste of disk space
+(and memory!) in spite of the property "scaling in their ability to
+address large storage".
 
-OTOH, if the board pulls MISO line up, then the following patch
-should help.
+This is not a large storage, this is a "scalable sieve": you can not
+rely on finding there some given amount of water even after infinite
+increasing the size of the sieve (read escalating the pool of Btrfs
+devices).
 
-If this won't work, we'll have to add some flag to the platform
-data, i.e. to force JEDEC probing, and not trust platform data.
+It seems that nobody have reviewed Btrfs before its inclusion to the
+mainline. I have only found a pair of recommendations with a common
+idea that Btrfs maintainer is "not a crazy man". Plus a number of
+papers which admire with the "Btrfs phenomena". Sigh.
 
-Not-yet-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
----
+Well, let's decide what can we do in current situation..
+The first obvious point here is that we *can not* put such file system
+to production. Just because it doesn't provide any guarantees for our
+users regarding disk space utilization.
 
-diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-index 81e49a9..a307929 100644
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
-@@ -16,6 +16,7 @@
-  */
- 
- #include <linux/init.h>
-+#include <linux/errno.h>
- #include <linux/module.h>
- #include <linux/device.h>
- #include <linux/interrupt.h>
-@@ -723,7 +724,7 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)
- 	if (tmp < 0) {
- 		DEBUG(MTD_DEBUG_LEVEL0, "%s: error %d reading JEDEC ID\n",
- 			dev_name(&spi->dev), tmp);
--		return NULL;
-+		return ERR_PTR(tmp);
- 	}
- 	jedec = id[0];
- 	jedec = jedec << 8;
-@@ -737,7 +738,7 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)
- 	 * exist for non-JEDEC chips, but for compatibility they return ID 0.
- 	 */
- 	if (jedec == 0)
--		return NULL;
-+		return ERR_PTR(-EEXIST);
- 
- 	ext_jedec = id[3] << 8 | id[4];
- 
-@@ -749,7 +750,7 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)
- 			return &m25p_ids[tmp];
- 		}
- 	}
--	return NULL;
-+	return ERR_PTR(-ENODEV);
- }
- 
- 
-@@ -794,9 +795,11 @@ static int __devinit m25p_probe(struct spi_device *spi)
- 		const struct spi_device_id *jid;
- 
- 		jid = jedec_probe(spi);
--		if (!jid) {
-+		if (IS_ERR(jid) && PTR_ERR(jid) == -EEXIST) {
- 			dev_info(&spi->dev, "non-JEDEC variant of %s\n",
- 				 id->name);
-+		} else if (IS_ERR(jid)) {
-+			return PTR_ERR(jid);
- 		} else if (jid != id) {
- 			/*
- 			 * JEDEC knows better, so overwrite platform ID. We
+I'll explain on a simple example, why is it important. Think of a file
+system as a bank, which deducts an interest q. I.e. amount of money N
+that you put on your account can be reduced to (N - qN). That said,
+in order to buy a suit which costs M you should put to your account
+not less than M/(1-q). Now imagine that the bank deducts 100% (q=1).
+Will you bring your money to such bank? No. Not just because you are
+greedy, but also because you won't be able to schedule your purchases.
+So why should we push our users to keep money in such bank?
+
+I should remind for developers that we work for *users*. They want a
+*good* environment to run programs. Our subsystems should provide
+*efficient* management of user's resources (such as memory and disk
+space). A subsystem which is going to send all user's resources to the
+toilet is *bad*!!!
+
+If you decide to base your file system on some algorithms then please
+use the original ones from proper academic papers. DO NOT modify the
+algorithms in solitude: this is very fragile thing! All such
+modifications must be reviewed by specialists in the theory of
+algorithms. Such review can be done in various scientific magazines of
+proper level.
+
+Personally I don't see any way to improve the situation with Btrfs
+except full redesigning the last one. If you want to base your file
+system on the paper of Ohad Rodeh, then please, use *exactly* the
+Bayer's B-trees that he refers to. That said, make sure that all
+records you put to the tree has equal length and all non-root nodes of
+your tree are at least half filled.
+
+As to current Btrfs code: *NOT ACK*!!! I don't think we need such
+"file systems".
+
+Thanks!
