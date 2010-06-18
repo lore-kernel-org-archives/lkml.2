@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933759Ab0FRUS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 16:18:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54128 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933515Ab0FRUSY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 16:18:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=taHuvLpCBPg9sHjlAhvSBpHH9UPtcgLI22hXwlm2GeDZURGHF+NsaponksTeiL0/Ch
-         JWXcNmuABlznz5gAl5T8xwWRB3Zk2Bpjm3/0aWo7Wk5/xozIkeOCzbIgmh6zxsGlaRCB
-         uxfdRToHgzK8zehY+yzEqd8R1qAlUlQKW+OiE=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTilrk4mzoKIGIWTElkdMnoWwEjXgAMOEZpdLvuz0@mail.gmail.com>
-References: <alpine.DEB.1.10.1001041421450.4942@dr-wily.mit.edu>
-	<AANLkTinji7n8Hd1Ldci_ruH0r8qglGjC00YQkb-MEwoV@mail.gmail.com>
-	<AANLkTilcHe8jnIBcTC_FjLPGxIbuZV3snU4u0FtdoeDi@mail.gmail.com>
-	<AANLkTim4Tn74BSTqpXMfZeAG9eLDYEKUbcN_wiw2HpBY@mail.gmail.com>
-	<AANLkTikU23ID2LWjAOAeGnnhhV5wulXeRghVG20PFPje@mail.gmail.com>
-	<AANLkTilqSSfV3vR-fI1LxrsuSMt_M7_zaeT_xQuNVJL4@mail.gmail.com>
-	<AANLkTilrk4mzoKIGIWTElkdMnoWwEjXgAMOEZpdLvuz0@mail.gmail.com>
-Date: Fri, 18 Jun 2010 22:18:22 +0200
-Message-ID: <AANLkTikQXNFVJY4ZKEhS3ZHu7KSRPpOU5PdvACjRkx_7@mail.gmail.com>
-Subject: Re: [RESEND][REGRESSION] um: CONFIG_STATIC_LINK=y broken
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: akpm@linux-foundation.org, tabbott@ksplice.com,
-       linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
-       user-mode-linux-devel@lists.sourceforge.net, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759024Ab0FRUT7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 16:19:59 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:47030 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753887Ab0FRUT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 16:19:58 -0400
+Date: Fri, 18 Jun 2010 16:19:53 -0400
+From: Andres Salomon <dilinger@queued.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+       Mitch Bradley <wmb@laptop.org>
+Subject: Re: [PATCH] x86: OLPC: add support for calling into OpenFirmware
+ (v5)
+Message-ID: <20100618161953.4a72a126@dev.queued.net>
+In-Reply-To: <4C1BCDD5.5040805@zytor.com>
+References: <20100618154245.2e00af2a@dev.queued.net>
+	<4C1BCDD5.5040805@zytor.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.12.12; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 10:01 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Fri, Jun 18, 2010 at 19:50, richard -rw- weinberger
-> <richard.weinberger@gmail.com> wrote:
->> On Fri, Jun 18, 2010 at 7:17 PM, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->>> On Fri, Jun 18, 2010 at 17:22, richard -rw- weinberger
->>> <richard.weinberger@gmail.com> wrote:
->>>> On Fri, Jun 18, 2010 at 4:27 PM, Geert Uytterhoeven
->>>> <geert@linux-m68k.org> wrote:
->>>>> On Fri, Jun 18, 2010 at 15:49, richard -rw- weinberger
->>>>> <richard.weinberger@gmail.com> wrote:
->>>>>> Andrew, Linus, Jeff, ... anyone?
->>>>>> Please apply this patch.
->>>>>>
->>>>>> CONFIG_STATIC_LINK is still broken. :(
->>>>>
->>>>> I wanted to verify Tim's patch, but after enabling CONFIG_STATIC_LINK,
->>>>> it fails to link
->>>>> (with or without your patch):
->>>>>
->>>>
->>>> BTW: Does CONFIG_STATIC_LINK work for you when you revert commit
->>>> 5d150a97f9391f5bcd7ba0d59d7a11c3de3cea80 (um: Clean up linker script
->>>> using standard macros)?
->>>
->>> Still the same linking errors ;-(
->>>
->>
->> Are you using a non-x86 environment?
->> Maybe CONFIG_STATIC_LINK is more broken than i thought.
->
-> I'm using amd64 on Ubuntu 10.04.
->
+On Fri, 18 Jun 2010 12:49:41 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-On my CentOS 5 x86_64 i get no linking error.
-Sadly I don't have a 64bits Ubuntu machine.
+> On 06/18/2010 12:42 PM, Andres Salomon wrote:
+> > +
+> > +	/* install OFW's PDE permanently into the kernel's pgtable
+> > */
+> > +	set_pgd(&swapper_pg_dir[OLPC_OFW_PDE_NR], *ofw_pde);
+> > +	flush_tlb();
+> > +	early_iounmap(base, sizeof(olpc_ofw_pgd) * PTRS_PER_PGD);
+> 
+> I just realized... this flush_tlb() is actually not necessary since on
+> x86 it is always legal to go from a less permissive configuration to a
+> more permissive, and the initial configuration is "not present" which
+> is maximally nonpermissive.
+> 
+> Could you take it out and make sure it still works?
+> 
+> 	-hpa
 
--- 
-Cheers,
-//richard
+Yep, seems to work fine w/out it.  Anything else before I send off v6
+of the patch?
