@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760986Ab0FRLSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 07:18:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758357Ab0FRLSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 07:18:21 -0400
-Date: Fri, 18 Jun 2010 13:15:54 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
-Message-ID: <20100618111554.GA3252@redhat.com>
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com>
+	id S1760995Ab0FRLVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 07:21:10 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:34098 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760973Ab0FRLVI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 07:21:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=TEP7cXCN3uw2Z8eB2hmKS4e7py5R5LcDS61Pf7vNC4S7+FYugcKx4GLSDWvDl0FVxO
+         awY/ozKRkFn0TBo91H4GjmeVrCP0M6tB2UJPzBFJm2lVltwMr4dPl77CFSs1e85jLYSg
+         fjAxjtNqnbV142/Fv7C259SnXYHvZReNg0ao0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100618082033.GD16877@hawkmoon.kerlabs.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
+Date: Fri, 18 Jun 2010 13:20:46 +0200
+Message-ID: <AANLkTinq_3P-QrTqsEdtyMbBtc9EXhahclER_4s5_Kx2@mail.gmail.com>
+Subject: Wacom based devices and the mt kernel protocol.
+To: Henrik Rydberg <rydberg@euromail.se>, pingc@wacom.com,
+       Chase Douglas <chase.douglas@canonical.com>,
+       Rafi Rubin <rafi@seas.upenn.edu>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18, Louis Rilling wrote:
+Hi,
+
+Now we can find many multitouch devices based on wacom Wacom panel/digitizer
+Bamboo Pen&Touch, HP tm2, Fujitsu LifeBook T4410 & T4310, etc...
+
+it seems that these devices are supported in some way in Linux Kernel,
+but I want to know if they are compliant with the MT Linux protocol.
+N-Trig based devices and Stantum ones are the most compliant, so Wacom
+situation needs to be clarified specially considering they are HID
+devices (meaning similar to the others devices which respect the
+protocol). This impact very much the decision of a Linux user wanting
+to buy wacom mt device.
+
+Ping can you clarifie the situation of wacom based devices ?
+
+Thanks,
+
+ik.
+
+On Tue, Jun 15, 2010 at 7:01 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
 >
-> On 17/06/10 23:20 +0200, Oleg Nesterov wrote:
-> > On 06/16, Louis Rilling wrote:
-> > >
-> > > Detached tasks are not seen by zap_pid_ns_processes()->sys_wait4(), so
-> > > that release_task()->proc_flush_task() of container init can be called
-> > > before it is for some detached tasks in the namespace.
-> > >
-> > > Pin proc_mnt's in copy_process(), so that proc_flush_task() becomes safe
-> > > whatever the ordering of tasks.
-> >
-> > I must have missed something, but can't we just move mntput() ?
->
-> See the log of the commit introducing pid_ns_release_proc() (6f4e6433):
->
->     Sice the namespace holds the vfsmnt, vfsmnt holds the superblock and the
->     superblock holds the namespace we must explicitly break this circle to destroy
->     all the stuff.  This is done after the init of the namespace dies.
-
-I see thanks.
-
-Besides, put_pid_ns() can be called in any context...
-
-Oleg.
-
+> g number of intelligent multi-contact and
+> multi-user devices, the need to send digested, filtered information
+> from a set of different sources within the same device is imminent.
+> This patch adds the concept of slots to the MT protocol. The slots
+> enumerate a set of identified sources, such that all MT events
