@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759667Ab0FRJqe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 05:46:34 -0400
-Received: from www.tglx.de ([62.245.132.106]:39635 "EHLO www.tglx.de"
+	id S1759805Ab0FRJsy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 05:48:54 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47052 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757353Ab0FRJqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 05:46:32 -0400
-Date: Fri, 18 Jun 2010 11:45:16 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <tj@kernel.org>
-cc: Arjan van de Ven <arjan@infradead.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, mingo@elte.hu, bphilips@suse.de,
-       yinghai@kernel.org, akpm@linux-foundation.org,
-       torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, linux-ide@vger.kernel.org, stern@rowland.harvard.edu,
-       gregkh@suse.de, khali@linux-fr.org
-Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
-In-Reply-To: <4C1B3B02.2040209@kernel.org>
-Message-ID: <alpine.LFD.2.00.1006181144390.4290@localhost.localdomain>
-References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-10-git-send-email-tj@kernel.org> <20100616204854.4b036f87@infradead.org> <4C19DA64.8000409@kernel.org> <alpine.LFD.2.00.1006171310560.4290@localhost.localdomain>
- <4C1A05AF.5010405@kernel.org> <20100617124343.5889067c@lxorguk.ukuu.org.uk> <4C1A4548.3020602@kernel.org> <20100617090229.543af62c@infradead.org> <4C1A5197.8060409@kernel.org> <20100617232649.6db5cc55@infradead.org> <4C1B3B02.2040209@kernel.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757190Ab0FRJsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 05:48:52 -0400
+Date: Fri, 18 Jun 2010 11:48:38 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Huang Ying <ying.huang@intel.com>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Don Zickus <dzickus@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+       Andi Kleen <andi@firstfloor.org>
+Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
+Message-ID: <20100618094838.GD23977@elte.hu>
+References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
+ <20100612102558.GA4000@elte.hu>
+ <4C15A5D1.1040104@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C15A5D1.1040104@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jun 2010, Tejun Heo wrote:
-> Hello,
-> 
-> On 06/18/2010 08:26 AM, Arjan van de Ven wrote:
-> > On Thu, 17 Jun 2010 18:47:19 +0200
-> > Tejun Heo <tj@kernel.org> wrote:
-> > 
-> >>
-> >> Hmmm... the thing is that there will be many cases which won't fit
-> >> irq_expect() model (why irq_watch() exists in the first place) and for
-> >> the time being libata is the only one providing that data.  Would the
-> >> data still be useful to determine which c-state to use?
-> > 
-> > yes absolutely. One of the hard cases right now that the C state code
-> > has is that it needs to predict the future. While it has a ton of
-> > heuristics, including some is there IO oustanding" ones, libata is a
-> > really good case: libata will know generally that within one seek time
-> > (5 msec on rotating rust, much less on floating electrons) there'll be
-> > an interrupt (give or take, but this is what we can do heuristics for
-> > on a per irq level).
-> > So it's a good suggestion of what the future will be like, MUCH better
-> > than any hint we have right now... all we have right now is some
-> > history, and when the next timer is.... 
-> 
-> Cool, good to know.  It shouldn't be difficult to at all to add.  Once
-> the whole thing gets generally agreed on, I'll work on that.
-> 
-> Thomas, Ingo, through which tree should these patches routed through?
 
-I'm going to pull that into tip/genirq I guess
+* Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com> wrote:
+
+> (2010/06/12 19:25), Ingo Molnar wrote:
+> > 
+> > * Huang Ying <ying.huang@intel.com> wrote:
+> > 
+> >> NMI can be triggered even when IRQ is masked. So it is not safe for NMI 
+> >> handler to call some functions. One solution is to delay the call via self 
+> >> interrupt, so that the delayed call can be done once the interrupt is 
+> >> enabled again. This has been implemented in MCE and perf event. This patch 
+> >> provides a unified version and make it easier for other NMI semantic handler 
+> >> to take use of the delayed call.
+> > 
+> > Instead of introducing this extra intermediate facility please use the same 
+> > approach the unified NMI watchdog is using (see latest -tip): a perf event 
+> > callback gives all the extra functionality needed.
+> > 
+> > The MCE code needs to be updated to use that - and then it will be integrated 
+> > into the events framework.
+> 
+> Hi Ingo,
+> 
+> I think this "NMI delayed call mechanism" could be a part of "the events 
+> framework" that we are planning to get in kernel soon. [...]
+
+My request was to make it part of perf events - which is a generic event 
+logging framework. We dont really need/want a second 'events framework'
+as we have one already ;-)
+
+> [...]  At least APEI will use NMI to report some hardware events (likely 
+> error) to kernel.  So I suppose we will go to have a delayed call as an 
+> event handler for APEI.
+
+Yep, that makes sense. I wasnt arguing against the functionality itself, i was 
+arguing against the illogical layering that limits its utility. By making it 
+part of perf events it becomes a generic part of that framework and can be 
+used by anything that deals with events and uses that framework.
 
 Thanks,
 
-	tglx
+	Ingo
