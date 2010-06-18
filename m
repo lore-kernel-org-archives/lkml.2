@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761144Ab0FRQOB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 12:14:01 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:55297 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758041Ab0FRQN7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 12:13:59 -0400
-From: Scott Goldman <scottjg@vmware.com>
-To: Andy Whitcroft <apw@canonical.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Jun 2010 09:11:27 -0700
-Subject: RE: [PATCH] checkpatch: fix false positive on casting to double
- 	pointer
-Thread-Topic: [PATCH] checkpatch: fix false positive on casting to double
- 	pointer
-Thread-Index: AcsO6OdbwDD7SPG1QsyOmVSyV3VxbgAGABgV
-Message-ID: <F78BCF638F95D74A99D036114107EDB50235BBE9B3@EXCH-MBX-3.vmware.com>
-References: <1276806411-15176-1-git-send-email-scottjg@vmware.com>
-	<AANLkTilrWSOoias64UGAnkV1RtIkVKiwapCnOYc2cS0_@mail.gmail.com>,<AANLkTinhcJAphiOo6Gj3pl7NY2oGkAwEw3xJZY_nvOxw@mail.gmail.com>
-In-Reply-To: <AANLkTinhcJAphiOo6Gj3pl7NY2oGkAwEw3xJZY_nvOxw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1761263Ab0FRQOe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 12:14:34 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:37800 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1761165Ab0FRQOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 12:14:32 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=HALbmtgPa72UgFuEYz4tfD6jOnbhu3Hpz8Utj5FgPnmfFnFWDMyiQc0yEcyGuS8PhM9dDn1Xc+g3hkJHTwHFY/bnlCfFWg794HYz3OK2ARRgHXU5yzAm+Qq1kUH1k5hC;
+Date: Fri, 18 Jun 2010 09:12:55 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>,
+       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+       linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pci: Don't enable aspm before drivers have had a chance
+ to veto it
+Message-ID: <20100618091255.2db036ea@virtuousgeek.org>
+In-Reply-To: <1276862811.19918.10.camel@maxim-laptop>
+References: <1276113907-22432-1-git-send-email-mjg@redhat.com>
+	<1276862811.19918.10.camel@maxim-laptop>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Hrm, I would expect any number of levels of pointers to be detected
-> > already correctly.
-> >
-> > /me goes check.
->
-> We already have tests for both types which are passing generally, in
-> t730-* and t7020-* so I think this is more likely a failure to detect
-> the type as a type.  If you could send on the sample that triggers
-> this I will have a look.
+On Fri, 18 Jun 2010 15:06:51 +0300
+Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+
+> On Wed, 2010-06-09 at 16:05 -0400, Matthew Garrett wrote: 
+> > The aspm code will currently set the configured aspm policy before drivers
+> > have had an opportunity to indicate that their hardware doesn't support it.
+> > Unfortunately, putting some hardware in L0 or L1 can result in the hardware
+> > no longer responding to any requests, even after aspm is disabled. It makes
+> > more sense to leave aspm policy at the BIOS defaults at initial setup time,
+> > reconfiguring it after pci_enable_device() is called. This allows the
+> > driver to blacklist individual devices beforehand.
+> > 
+> > Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> > ---
 > 
-> -apw
+> Hi,
+> 
+> I recently discovered that my aspire one wireless troubles (card just
+> dies after a while) are caused by ASPM L0S state.
+> The device (AR5001) seems to have a hardware bug, and it also disables
+> L0S in windows driver.
+> 
+> Unfortenuly BIOS (news at 11) enables L0S.
+> 
+> Its easy to disable ASPM from driver. It just a matter of calling
+> pci_disable_link_state.
+> 
+> However, that depends on CONFIG_PCIEASPM.
+> 
+> How about making pci_disable_link_state always available or even better,
+> just make CONFIG_PCIEASPM unconditional?
 
-Yikes! you're right, lousy tests on my part. The part of my patch that triggered it was:
-+  return snmp_fold_field((void __percpu **)net->mib.udp_statistics,
-+           UDP_MIB_RCVBUFERRORS) +
-+     snmp_fold_field((void __percpu **)net->mib.udplite_statistics,
-+           UDP_MIB_RCVBUFERRORS);
+The former is ok with me.  Care to post a patch?
 
-
-ERROR: need consistent spacing around '*' (ctx:WxO)
-#115: FILE: drivers/net/vmxnet3/vmxnet3_drv.c:1784:
-+       return snmp_fold_field((void __percpu **)net->mib.udp_statistics,
-                                              ^
-Maybe caused by the __percpu attr?
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
