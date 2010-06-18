@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933451Ab0FROUC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 10:20:02 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64257 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933403Ab0FROT7 (ORCPT
+	id S933456Ab0FROYN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 10:24:13 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47301 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933265Ab0FROYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 10:19:59 -0400
-Message-ID: <4C1B8055.30904@mvista.com>
-Date: Fri, 18 Jun 2010 18:19:01 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Fri, 18 Jun 2010 10:24:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=DeS+ISsEGKkBhii6eoVE6DfwpNKqNDCIrRhmx9HPUYfLoDmbQ93mpACN1QEn0T2jNu
+         xHvpAMMhDYbdOKGz9WVQiW7+zgt8ktIp2EnBiRE9XNWx3GhikYAnWWxkyOuLJQ7aSxO/
+         gouca8P5dgle6iSh7+lOJCKdHaAtzkOtsqWUs=
+Date: Fri, 18 Jun 2010 11:24:05 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Tom Zanussi <tzanussi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+       mingo@elte.hu, fweisbec@gmail.com
+Subject: Re: [PATCH] perf: Makefile fix for Perl scripting
+Message-ID: <20100618142405.GA2645@ghostprotocols.net>
+References: <1276836006.7762.15.camel@tropicana>
 MIME-Version: 1.0
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-CC: linux-usb@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Greg KH <greg@kroah.com>, Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv5 10/11] USB: gadget: composite: addad disconnect callback
-References: <20100615185527.GA22803@kroah.com> <cover.1276681840.git.m.nazarewicz@samsung.com> <7131891c93ac20a3360068e2f4b8fff0de7dfafb.1276681840.git.m.nazarewicz@samsung.com> <1cf0484e46e3b2b5ce0dea8cdc7396d4bfa977c5.1276681840.git.m.nazarewicz@samsung.com> <0022e21e1b622b3a54d1e55aed727e7e429c7c70.1276681840.git.m.nazarewicz@samsung.com> <45fc10256bd2374706e4153360427257d15804a9.1276681840.git.m.nazarewicz@samsung.com> <bb0d9f73c7caae31c0bc291d3dfce44a2f6a3736.1276681840.git.m.nazarewicz@samsung.com> <c7fbb2934e18cfd25df3e00a548ac33e5b0a7353.1276681840.git.m.nazarewicz@samsung.com> <9f32ae2ab133d27642ac4c1e81777b1e34a0c1a1.1276681840.git.m.nazarewicz@samsung.com> <c4143e7fdd0fc61f05118c30a0a9edbbc0a97db4.1276681840.git.m.nazarewicz@samsung.com> <0de8ae564d9a562ee02bfb116b3a6bf0ff19ea3f.1276681840.git.m.nazarewicz@samsung.com> <42fc529dec5034b62c17d00791e4fe8b8d5f19ee.1276681840.git.m.nazarewicz@samsung.com> <4C1A0141.5020003@ru.mvista.com>
-In-Reply-To: <4C1A0141.5020003@ru.mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276836006.7762.15.camel@tropicana>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Em Thu, Jun 17, 2010 at 11:40:06PM -0500, Tom Zanussi escreveu:
+> Fix a typo introduced by recent Makefile changes.  Without it, Perl
+> scripting support won't get compiled in.
+> 
+> Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
 
-I wrote:
+Right, sorry about that, applying,
 
-> Michal Nazarewicz wrote:
+- Arnaldo
 
->> Added a disconnect() callback to compasite devices which
-
->    Your subject has "addad" -- probably instead of "added".
-
-    Also, there's typo in the first line: "compasite"...
-
->> is called by composite glue when its disconnect callback
->> is called by gadget.
-
->> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Acked-by: David Brownell <dbrownell@users.sourceforge.net>
-
-WBR, Sergei
+> ---
+>  tools/perf/Makefile |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 6aa2fe3..17a3692 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -577,7 +577,7 @@ ifdef NO_LIBPERL
+>  else
+>  	PERL_EMBED_LDOPTS = `perl -MExtUtils::Embed -e ldopts 2>/dev/null`
+>  	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
+> -	PERL_EMBED_FLAGS=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
+> +	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
+>  
+>  	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED)),y)
+>  		BASIC_CFLAGS += -DNO_LIBPERL
+> -- 
+> 1.6.4.GIT
+> 
+> 
