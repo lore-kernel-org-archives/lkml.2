@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760452Ab0FRKbR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 06:31:17 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52853 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759218Ab0FRKbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 06:31:15 -0400
-Date: Fri, 18 Jun 2010 12:30:58 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Don Zickus <dzickus@redhat.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Huang Ying <ying.huang@intel.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
-Message-ID: <20100618103058.GA8934@elte.hu>
-References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
- <20100612102558.GA4000@elte.hu>
- <4C15A5D1.1040104@jp.fujitsu.com>
- <20100614135403.GH4894@redhat.com>
- <20100614144403.GA369@basil.fritz.box>
-MIME-Version: 1.0
+	id S1760379Ab0FRKzO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 06:55:14 -0400
+Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:64849 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751178Ab0FRKzM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 06:55:12 -0400
+X-AuditID: 1209190e-b7b82ae000005260-8a-4c1b508e85aa
+Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
+Mime-Version: 1.0 (Apple Message framework v1078)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100614144403.GA369@basil.fritz.box>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 1.0
-X-ELTE-SpamLevel: s
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
-	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
-	[score: 0.4509]
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <4C1AE3A8.2020104@schaufler-ca.com>
+Date: Fri, 18 Jun 2010 06:54:57 -0400
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Kees Cook <kees.cook@canonical.com>,
+       Randy Dunlap <rdunlap@xenotime.net>, James Morris <jmorris@namei.org>,
+       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org,
+       Stephen Smalley <sds@tycho.nsa.gov>, Daniel J Walsh <dwalsh@redhat.com>,
+       linux-security-module@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E1FEE555-566E-4698-8FD8-240076A4F850@mit.edu>
+References: <20100616221833.GM24749@outflux.net>	<20100617000120.13071be8@lxorguk.ukuu.org.uk>	<20100616232230.GP24749@outflux.net>	<alpine.LRH.2.00.1006172336390.17282@tundra.namei.org>	<20100617170453.GV24749@outflux.net>	<20100617215349.2fac02f5@lxorguk.ukuu.org.uk>	<20100617140630.c6ced27a.rdunlap@xenotime.net>	<20100617221815.68ce30c5@lxorguk.ukuu.org.uk>	<20100617215105.GB24749@outflux.net> <20100617233054.330256cf@lxorguk.ukuu.org.uk> <4C1AE3A8.2020104@schaufler-ca.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+X-Mailer: Apple Mail (2.1078)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+i think we really need to have stacked LSM's, because there is a large set
+of people who will never use SELinux.  Every few years, I take another 
+look at SELinux, my head explodes with the (IMHO unneeded complexity),
+and I go away again...
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+Yet I would really like a number of features such as this ptrace scope idea ---
+which I think is a useful feature, and it may be that stacking is the only
+way we can resolve this debate.   The SELinux people will never believe that
+their system is too complicated, and I don't like using things that are impossible
+for me to understand or configure, and that doesn't seem likely to change anytime
+in the near future.
 
-> > I think the perf event subsytem can log events in NMI context already and 
-> > deliver them to userspace when the NMI is done.  This is why I think Ingo 
-> > wants MCE to be updated to sit on top of the perf event subsytem to avoid 
-> > re-invent everything again.
-> 
-> perf is not solving the problem this is trying to solve.
+I mean, even IPSEC RFC's are easier for me to understand, and that's saying
+a lot...
 
-That is why i requested to extend the events backend. That will unify more of 
-the code than the first few steps achieved by these three patches - and offers 
-the functionality to all code that uses the events framework.
+-- Ted
 
-> [...]
->
-> perf does not fit into this because it has no way to process such an event 
-> inside the kernel.
-
-It 'does not fit' into the events backend only if you pretend that it is 
-impossible or undesirable to have a delayed, in-context callback mechanism 
-implemented there.
-
-If you look at it more closely you'll notice that in reality it's not only 
-possible but that it is also a pretty natural fit.
-
-Thanks,
-
-	Ingo
