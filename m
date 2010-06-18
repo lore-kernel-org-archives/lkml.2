@@ -1,65 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758180Ab0FRI0a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 04:26:30 -0400
-Received: from mga14.intel.com ([143.182.124.37]:3927 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757926Ab0FRI02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 04:26:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,437,1272870000"; 
-   d="scan'208";a="290340414"
-From: "Zhang, Yanmin" <yanmin.zhang@intel.com>
-To: "Shi, Alex" <alex.shi@intel.com>,
-       "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-       "davem@davemloft.net" <davem@davemloft.net>
-CC: "Chen, Tim C" <tim.c.chen@intel.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Jun 2010 16:26:23 +0800
-Subject: RE: TCP stream performance regression due to
- c377411f2494a931ff7facdbb3a6839b1266bcf6
-Thread-Topic: TCP stream performance regression due to
- c377411f2494a931ff7facdbb3a6839b1266bcf6
-Thread-Index: AcsOv0SUslvWGBkZQEeIBAgbXmyIcgAAE10Q
-Message-ID: <33AB447FBD802F4E932063B962385B351F483A15@shsmsx501.ccr.corp.intel.com>
-References: <1276845448.2118.346.camel@debian>
-In-Reply-To: <1276845448.2118.346.camel@debian>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	id S1758481Ab0FRI0o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 04:26:44 -0400
+Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:38999 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758209Ab0FRI0m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 04:26:42 -0400
+Date: Fri, 18 Jun 2010 10:27:38 +0200
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Pavel Emelyanov <xemul@parallels.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+Message-ID: <20100618082738.GE16877@hawkmoon.kerlabs.com>
+Mail-Followup-To: Oleg Nesterov <oleg@redhat.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Pavel Emelyanov <xemul@parallels.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Pavel Emelyanov <xemul@openvz.org>,
+	Linux Containers <containers@lists.osdl.org>,
+	linux-kernel@vger.kernel.org
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <4C19F0A3.2050707@parallels.com> <m1631hdbdu.fsf@fess.ebiederm.org> <20100617213638.GB4182@redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-9188-1276849594-0001-2"
+Content-Disposition: inline
+In-Reply-To: <20100617213638.GB4182@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5I8Qfim026894
 
-More info about the testing:
-It's a loopback testing. We start one client netperf process to communicate with netserver process in a stream TCP testing. To reduce the cpu cache effect, we bind the 2 processes on 2 different physical cpus.
-#taskset -c 0 ./netserver
-#taskset -c 15 ./netperf -t TCP_STREAM -l 60 -H 127.0.0.1 -i 50,3 -I 99,5 -- -s 57344 -S 57344 -m 4096
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
->>-----Original Message-----
->>From: Shi, Alex
->>Sent: 2010Äê6ÔÂ18ÈÕ 15:17
->>To: eric.dumazet@gmail.com; davem@davemloft.net
->>Cc: Chen, Tim C; Zhang, Yanmin; linux-kernel@vger.kernel.org
->>Subject: TCP stream performance regression due to
->>c377411f2494a931ff7facdbb3a6839b1266bcf6
->>
->>In our netperf testing, TCP_STREAM56 shows about 20% or more performance
->>regression on WSM/NHM and tigerton machines. The testing boot up both
->>netserver and client on localhost. The testing command like this:
->>./snapshot_script_net TC_STREAM56 127.0.0.1
->>
->>We found the following commit causes this issue.
->>c377411f2494a931ff7facdbb3a6839b1266bcf6
->>Revert this commit will recover this regression on all machine.
->>
->>Regards!
->>Alex
+--=_bohort-9188-1276849594-0001-2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On 17/06/10 23:36 +0200, Oleg Nesterov wrote:
+> On 06/17, Eric W. Biederman wrote:
+> >
+> > The task->children isn't changed until __unhash_process() which runs
+> > after flush_proc_task().
+>=20
+> Yes. But this is only the current implementation detail.
+> It would be nice to cleanup the code so that EXIT_DEAD tasks are
+> never sit in ->children list.
+>=20
+> > So we should be able to come up with
+> > a variant of do_wait() that zap_pid_ns_processes can use that does
+> > what we need.
+>=20
+> See above...
+>=20
+> Even if we modify do_wait() or add the new variant, how the caller
+> can wait for EXIT_DEAD tasks? I don't think we want to modify
+> release_task() to do __wake_up_parent() or something similar.
+
+Indeed, I was thinking about calling __wake_up_parent() from release_task()
+once parent->children becomes empty.
+
+Not sure about the performance impact though. Maybe some WAIT_NO_CHILDREN f=
+lag
+in parent->signal could limit it. But if EXIT_DEAD children are removed from
+->children before release_task(), I'm afraid that this becomes impossible.
+
+Thanks,
+
+Louis
+
+--=20
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
+
+--=_bohort-9188-1276849594-0001-2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkwbLfoACgkQVKcRuvQ9Q1SQBgCfZgPTVMU0uatEqwfbhKVwocIr
+MIkAn2Ai6o8YIJ/PvAddBZ+DAvf2pzXi
+=Yg5/
+-----END PGP SIGNATURE-----
+
+--=_bohort-9188-1276849594-0001-2--
