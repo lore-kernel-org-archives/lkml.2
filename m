@@ -1,159 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767Ab0FRQLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 12:11:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34168 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760984Ab0FRQLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 12:11:35 -0400
-Date: Fri, 18 Jun 2010 18:08:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org, Louis Rilling <Louis.Rilling@kerlabs.com>
-Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
-Message-ID: <20100618160849.GA7404@redhat.com>
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100618111554.GA3252@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1761068Ab0FRQNL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 12:13:11 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:52165 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab0FRQNK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 12:13:10 -0400
+Date: Fri, 18 Jun 2010 18:14:03 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv6.1 09/11] USB: gadget: g_multi: added documentation and
+ INF files
+In-reply-to: <20100618155244.GB17971@kroah.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-usb@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <op.veh7dpps7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <20100617175221.GE3644@kroah.com>
+ <2809a031d19ac6ef793d7fe343e225b8d80099c3.1276864406.git.m.nazarewicz@samsung.com>
+ <f4efaf12033f1e402303b60555c26f3779ba4aa1.1276864406.git.m.nazarewicz@samsung.com>
+ <f8062cc154f51fc2a0812cda14deea0678644af9.1276864406.git.m.nazarewicz@samsung.com>
+ <7337838b49bb102126eb678d330d7853ee55c5c6.1276864406.git.m.nazarewicz@samsung.com>
+ <5e932f9348ec343254c91918d2c5d3d46fc2fe99.1276866168.git.m.nazarewicz@samsung.com>
+ <20100618155244.GB17971@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18, Oleg Nesterov wrote:
+> On Fri, Jun 18, 2010 at 03:07:19PM +0200, Michal Nazarewicz wrote:
+>> A short documentation of the g_multi driver along with INF
+>> files for Windows XP SP3 are provided.
+>>
+>> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>> Sorry about the previous patch -- it was missing the gadget_multi.txt
+>> file.  Sending corrected version.  Maybe I should start drinking coffee
+>> after all...
+
+On Fri, 18 Jun 2010 17:52:44 +0200, Greg KH <greg@kroah.com> wrote:
+> Nah, I finally kicked my coffee habit :)
 >
-> On 06/18, Louis Rilling wrote:
-> >
-> > On 17/06/10 23:20 +0200, Oleg Nesterov wrote:
-> > > On 06/16, Louis Rilling wrote:
-> > > >
-> > > > Detached tasks are not seen by zap_pid_ns_processes()->sys_wait4(), so
-> > > > that release_task()->proc_flush_task() of container init can be called
-> > > > before it is for some detached tasks in the namespace.
-> > > >
-> > > > Pin proc_mnt's in copy_process(), so that proc_flush_task() becomes safe
-> > > > whatever the ordering of tasks.
-> > >
-> > > I must have missed something, but can't we just move mntput() ?
-> >
-> > See the log of the commit introducing pid_ns_release_proc() (6f4e6433):
-> >
-> >     Sice the namespace holds the vfsmnt, vfsmnt holds the superblock and the
-> >     superblock holds the namespace we must explicitly break this circle to destroy
-> >     all the stuff.  This is done after the init of the namespace dies.
+> But could you resend all of these again, so I make sure to get the right
+> ones, I see a few v6.1 for some of these patches.
 >
-> I see thanks.
+> Seventh time is a charm...
 
-Not sure I ever understood this code. Certainly I can't say I understand
-it now. Still, do we really need this circle? I am almost sure the patch
-below is not right (and it wasn't tested at all), but could you take a
-look?
+I guess I'll send them on Monday.  Maybe someone will have some
+comments over the weekend.  I'd like to avoid any v7.1 patches
+-- did enough mass on the list for one week. ;)
 
-Note: afaics we have another problem. What if copy_process(CLONE_NEWPID)
-fails after pid_ns_prepare_proc() ? Who will do mntput() ? This patch
-should fix this too (again, ___if___ it correct).
-
-Oleg.
-
- include/linux/pid_namespace.h |    1 +
- kernel/pid_namespace.c        |    3 +++
- fs/proc/base.c                |    4 ----
- fs/proc/root.c                |   18 ++++++++++++++----
- 4 files changed, 18 insertions(+), 8 deletions(-)
-
---- 34-rc1/include/linux/pid_namespace.h~PID_NS	2010-06-18 17:48:56.000000000 +0200
-+++ 34-rc1/include/linux/pid_namespace.h	2010-06-18 17:53:11.000000000 +0200
-@@ -26,6 +26,7 @@ struct pid_namespace {
- 	struct pid_namespace *parent;
- #ifdef CONFIG_PROC_FS
- 	struct vfsmount *proc_mnt;
-+	struct work_struct proc_put;
- #endif
- #ifdef CONFIG_BSD_PROCESS_ACCT
- 	struct bsd_acct_struct *bacct;
---- 34-rc1/kernel/pid_namespace.c~PID_NS	2010-06-18 17:48:56.000000000 +0200
-+++ 34-rc1/kernel/pid_namespace.c	2010-06-18 17:53:44.000000000 +0200
-@@ -10,6 +10,7 @@
- 
- #include <linux/pid.h>
- #include <linux/pid_namespace.h>
-+#include <linux/proc_fs.h>
- #include <linux/syscalls.h>
- #include <linux/err.h>
- #include <linux/acct.h>
-@@ -109,6 +110,8 @@ static void destroy_pid_namespace(struct
- {
- 	int i;
- 
-+	pid_ns_release_proc(ns);
-+
- 	for (i = 0; i < PIDMAP_ENTRIES; i++)
- 		kfree(ns->pidmap[i].page);
- 	kmem_cache_free(pid_ns_cachep, ns);
---- 34-rc1/fs/proc/base.c~PID_NS	2010-06-18 17:48:56.000000000 +0200
-+++ 34-rc1/fs/proc/base.c	2010-06-18 17:49:45.000000000 +0200
-@@ -2720,10 +2720,6 @@ void proc_flush_task(struct task_struct 
- 		proc_flush_task_mnt(upid->ns->proc_mnt, upid->nr,
- 					tgid->numbers[i].nr);
- 	}
--
--	upid = &pid->numbers[pid->level];
--	if (upid->nr == 1)
--		pid_ns_release_proc(upid->ns);
- }
- 
- static struct dentry *proc_pid_instantiate(struct inode *dir,
---- 34-rc1/fs/proc/root.c~PID_NS	2010-06-18 17:48:56.000000000 +0200
-+++ 34-rc1/fs/proc/root.c	2010-06-18 17:56:57.000000000 +0200
-@@ -31,7 +31,7 @@ static int proc_set_super(struct super_b
- 	struct pid_namespace *ns;
- 
- 	ns = (struct pid_namespace *)data;
--	sb->s_fs_info = get_pid_ns(ns);
-+	sb->s_fs_info = ns;
- 	return set_anon_super(sb, NULL);
- }
- 
-@@ -74,7 +74,7 @@ static int proc_get_sb(struct file_syste
- 		ei = PROC_I(sb->s_root->d_inode);
- 		if (!ei->pid) {
- 			rcu_read_lock();
--			ei->pid = get_pid(find_pid_ns(1, ns));
-+			ei->pid = find_pid_ns(1, ns);
- 			rcu_read_unlock();
- 		}
- 
-@@ -92,7 +92,6 @@ static void proc_kill_sb(struct super_bl
- 
- 	ns = (struct pid_namespace *)sb->s_fs_info;
- 	kill_anon_super(sb);
--	put_pid_ns(ns);
- }
- 
- static struct file_system_type proc_fs_type = {
-@@ -216,7 +215,18 @@ int pid_ns_prepare_proc(struct pid_names
- 	return 0;
- }
- 
--void pid_ns_release_proc(struct pid_namespace *ns)
-+static void proc_mntput(struct work_struct *work)
- {
-+	struct pid_namespace *ns = container_of(work, struct pid_namespace, proc_put);
-+
-+	PROC_I(ns->proc_mnt->mnt_sb->s_root->d_inode)->pid = NULL;
- 	mntput(ns->proc_mnt);
- }
-+
-+void pid_ns_release_proc(struct pid_namespace *ns)
-+{
-+	if (ns->proc_mnt) {
-+		INIT_WORK(&ns->proc_put, proc_mntput);
-+		schedule_work(&ns->proc_put);
-+	}
-+}
-
-
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
