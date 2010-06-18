@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933378Ab0FRN7H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 09:59:07 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:44249 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932422Ab0FRN7F (ORCPT
+	id S933417Ab0FRN7Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 09:59:25 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52720 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933011Ab0FRN7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 09:59:05 -0400
-Date: Fri, 18 Jun 2010 15:59:43 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH] USB: gadget: f_mass_storage: dead code removed
-To: linux-usb@vger.kernel.org
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-       linux-kernel@vger.kernel.org
-Message-id: <51bd2ee9463ebc8665480baac702645c4947b37a.1276868197.git.m.nazarewicz@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.1
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
+	Fri, 18 Jun 2010 09:59:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=P0UaTx+wtTdtsdiDvksE75KcSf+XHu9fR+M3Bggz2oHETMHBj8d1F+26MlPBcI9QEp
+         XWplyks2956vRf/mDtwZV9HjA3O7VHZgJGSjvMrObrPI7dLb4An4nKBVpAV6pFOHJsxP
+         QHkgf45HS5xHlLJo+HBo7PhU/b38UfB0/k9Io=
+MIME-Version: 1.0
+In-Reply-To: <1276859156.19554.2.camel@maxim-laptop>
+References: <20100528100901.14580.1322.stgit@fate.lan>
+	<1276806785.20754.8.camel@maxim-laptop>
+	<20100618112026.17623g6uhdjk8hts@naisho.dyndns.info>
+	<1276856142.9114.1.camel@maxim-laptop>
+	<20100618134930.124225d4fsi8w1fk@naisho.dyndns.info>
+	<1276859156.19554.2.camel@maxim-laptop>
+Date: Fri, 18 Jun 2010 09:59:20 -0400
+X-Google-Sender-Auth: Cma1BdUmXkPdiFjVTOqUV1YFEAw
+Message-ID: <AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com>
+Subject: Re: [PATCH] ath5k: disable ASPM
+From: Bob Copeland <me@bobcopeland.com>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, ath5k-devel@venema.h4ckr.net,
+       linux-wireless@vger.kernel.org,
+       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ep0req_name was never used in f_mass_storage hence it may
-be safely removed from the code.  It was a leftover from File
-Storage Gadget which used it for debug messages.
+On Fri, Jun 18, 2010 at 7:05 AM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+>> Patch I made uses GPL code from e1000e, but since ath5k is
+>> dual-licensed so patch can't be accepted. So if I got it right, patch
+>> has to be remade from scratch by someone who really knows about pci
+>> registers etc. I don't, and learning this to fix something that is
+>> already fixed in my point of view is waste of (my) time.
+> Sure, regardless of licensing, this patch has to be redone (and e1000
+> with it)
 
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
----
- drivers/usb/gadget/f_mass_storage.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+At any rate, Jussi, thanks a bundle for tracking it down.  I owe you a
+beer, lots of bugs have been reported on these devices.
 
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index 7d05a0b..44dbb29 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -333,7 +333,6 @@ struct fsg_common {
- 	struct usb_ep		*ep0;		/* Copy of gadget->ep0 */
- 	struct usb_request	*ep0req;	/* Copy of cdev->req */
- 	unsigned int		ep0_req_tag;
--	const char		*ep0req_name;
- 
- 	struct fsg_buffhd	*next_buffhd_to_fill;
- 	struct fsg_buffhd	*next_buffhd_to_drain;
-@@ -624,8 +623,6 @@ static int fsg_setup(struct usb_function *f,
- 
- 		/* Respond with data/status */
- 		req->length = min((u16)1, w_length);
--		fsg->common->ep0req_name =
--			ctrl->bRequestType & USB_DIR_IN ? "ep0-in" : "ep0-out";
- 		return ep0_queue(fsg->common);
- 	}
- 
+Maxim, this device was always broken in the same way, right?  Just
+curious if anything made it worse recently.
+
 -- 
-1.7.1
-
+Bob Copeland %% www.bobcopeland.com
