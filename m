@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760620Ab0FRKac (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 06:30:32 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:29102 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759941Ab0FRKaM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 06:30:12 -0400
-Date: Fri, 18 Jun 2010 12:31:04 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv5 00/11] g_multi & other improvements and cleanpus
-In-reply-to: <20100617175221.GE3644@kroah.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Xiaofan Chen <xiaofanc@gmail.com>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <op.vehrh2ye7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <20100615185527.GA22803@kroah.com>
- <cover.1276681840.git.m.nazarewicz@samsung.com>
- <20100617175221.GE3644@kroah.com>
+	id S1760452Ab0FRKbR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 06:31:17 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52853 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759218Ab0FRKbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 06:31:15 -0400
+Date: Fri, 18 Jun 2010 12:30:58 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Don Zickus <dzickus@redhat.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Huang Ying <ying.huang@intel.com>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
+Message-ID: <20100618103058.GA8934@elte.hu>
+References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
+ <20100612102558.GA4000@elte.hu>
+ <4C15A5D1.1040104@jp.fujitsu.com>
+ <20100614135403.GH4894@redhat.com>
+ <20100614144403.GA369@basil.fritz.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100614144403.GA369@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 1.0
+X-ELTE-SpamLevel: s
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
+	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
+	[score: 0.4509]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010 19:52:21 +0200, Greg KH <greg@kroah.com> wrote:
 
-> On Wed, Jun 16, 2010 at 12:07:55PM +0200, Michal Nazarewicz wrote:
->> On Tue, 15 Jun 2010 20:55:27 +0200, Greg KH <greg@kroah.com> wrote:
->> > Can you resend this the 5th time so I know I have all of the proper
->> > versions?
->>
->> As requested resending the whole patchset again.
->>
->>
->> Compared to the previous comments in RNDIS and CDC ACM INF files have
->> been updated (the RNDIS fix was previously sent as v4.1 but this
->> patchset includes a bit updated version) and a little fix to patch 01
->> has been applied (already sent as version v4.1).
->>
->> The g_multi "more configuration" and install mode has been exluded
->> from this patches -- they weren't ment for inclusien in the kernel in
->> th elast patchset (just to show them), so no point in including here
->> (if aynone interested refer to v4 patches 10/13 and 13/13).
->>
->>
->> I wasn't sure 100% sure what wording to use in the CDC ACM INF file so
->> I put something that is likely to be true and safe. ;) I posted
->> on m.p.d.d.d and contactec Microchip so maybe there will be some more
->> info.
+* Andi Kleen <andi@firstfloor.org> wrote:
+
+> > I think the perf event subsytem can log events in NMI context already and 
+> > deliver them to userspace when the NMI is done.  This is why I think Ingo 
+> > wants MCE to be updated to sit on top of the perf event subsytem to avoid 
+> > re-invent everything again.
+> 
+> perf is not solving the problem this is trying to solve.
+
+That is why i requested to extend the events backend. That will unify more of 
+the code than the first few steps achieved by these three patches - and offers 
+the functionality to all code that uses the events framework.
+
+> [...]
 >
-> I've applied the first 5 patches, as I had a question about the 6th one,
-> and David doesn't seem happy with the 7th.
+> perf does not fit into this because it has no way to process such an event 
+> inside the kernel.
 
-Thanks!
+It 'does not fit' into the events backend only if you pretend that it is 
+impossible or undesirable to have a delayed, in-context callback mechanism 
+implemented there.
 
-> Care to resolve those issues and just resend the remaining?
+If you look at it more closely you'll notice that in reality it's not only 
+possible but that it is also a pretty natural fit.
 
-The issue with 6th was just a mistake in commit message.  I resubmitted
-corrected patch (marked as v5.1) which David should (I hope) find no
-problems with.
+Thanks,
 
-As requested I'll resend patches from 6 to 11 in a second.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+	Ingo
