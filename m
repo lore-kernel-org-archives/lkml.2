@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761004Ab0FRLdp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 07:33:45 -0400
-Received: from ossa.mas.viperplatform.net.au ([202.147.75.25]:58369 "EHLO
-	ossa.mas.viperplatform.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756645Ab0FRLdn (ORCPT
+	id S1761017Ab0FRLe5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 07:34:57 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:59785 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756645Ab0FRLe4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 07:33:43 -0400
-Date: Fri, 18 Jun 2010 21:33:35 +1000
-From: Stuart Longland <redhatter@gentoo.org>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: ALSA Development List <alsa-devel@alsa-project.org>,
-       Takashi Iwai <tiwai@suse.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: Add new TI TLV320AIC3204 CODEC driver
-Message-ID: <20100618113335.GB30868@www.longlandclan.yi.org>
-References: <1276833465-31702-1-git-send-email-redhatter@gentoo.org>
- <1276858862.3054.28.camel@odin>
+	Fri, 18 Jun 2010 07:34:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=If4evaj0CPRheOoSGyue7m4AB+O6SLbjwXtvjYk8oscjlscpkU38oU2cicLDILehYc
+         MY1kYPLRS1D8S+xkOC3fVeexA3ZPcZ4+nSU1boG7wTnBxVPEhU3IKsY+iNQNspUasvpV
+         ZoIzM6lKBeJXRWf9MK/AYfwELzwfAGtD6Imcc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276858862.3054.28.camel@odin>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Clarity-Outbound-SpamScanned: YES
+In-Reply-To: <20100618094838.GD23977@elte.hu>
+References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
+	<20100612102558.GA4000@elte.hu>
+	<4C15A5D1.1040104@jp.fujitsu.com>
+	<20100618094838.GD23977@elte.hu>
+Date: Fri, 18 Jun 2010 19:34:55 +0800
+Message-ID: <AANLkTimqRwAjrQ_b8BZ28lEn_Gaz5-SpLULWASHD1fVn@mail.gmail.com>
+Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Huang Ying <ying.huang@intel.com>,
+       "Fr??d??ric Weisbecker" <fweisbec@gmail.com>,
+       Don Zickus <dzickus@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+       Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi, Ingo,
 
-To others: In case you're wondering where the patch is... I pulled it
-from the moderation queue because there were a few style errors, and
-some definitions I forgot to delete.  A fresh one that meets coding
-style requirements is on its way, as soon as scripts/checkpatch.pl is
-finished (this seems to take a while on my hardware).
+On Fri, Jun 18, 2010 at 5:48 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com> wrote:
+>
+>> (2010/06/12 19:25), Ingo Molnar wrote:
+>> >
+>> > * Huang Ying <ying.huang@intel.com> wrote:
+>> >
+>> >> NMI can be triggered even when IRQ is masked. So it is not safe for NMI
+>> >> handler to call some functions. One solution is to delay the call via self
+>> >> interrupt, so that the delayed call can be done once the interrupt is
+>> >> enabled again. This has been implemented in MCE and perf event. This patch
+>> >> provides a unified version and make it easier for other NMI semantic handler
+>> >> to take use of the delayed call.
+>> >
+>> > Instead of introducing this extra intermediate facility please use the same
+>> > approach the unified NMI watchdog is using (see latest -tip): a perf event
+>> > callback gives all the extra functionality needed.
+>> >
+>> > The MCE code needs to be updated to use that - and then it will be integrated
+>> > into the events framework.
+>>
+>> Hi Ingo,
+>>
+>> I think this "NMI delayed call mechanism" could be a part of "the events
+>> framework" that we are planning to get in kernel soon. [...]
+>
+> My request was to make it part of perf events - which is a generic event
+> logging framework. We dont really need/want a second 'events framework'
+> as we have one already ;-)
 
-On Fri, Jun 18, 2010 at 12:01:02PM +0100, Liam Girdwood wrote:
-> On Fri, 2010-06-18 at 13:57 +1000, Stuart Longland wrote:
-> > The TLV320AIC3204 is a low-power stereo audio CODEC capable of sample
-> > rates of up to 192kHz.  This driver implements basic functionality,
-> > using I??C for the control channel.
-> > 
-> > The audio interface supports many data bus formats, including I??S
-> > master/slave, DSP, left/right justified and TDM.
-> 
-> Just had a quick check and the register caching needs addressed.
-> 
-> I agree with your comments, I don't think we really want to cache all
-> 16K of codec registers here as we will probably only ever use a handful
-> of them. I think a smaller lookup table containing only the registers
-> that we care about will do.
+This patchset is simple and straightforward, it is just a delayed
+execution mechanism, not another 'events framework'. There are several
+other NMI users other than perf, should we integrate all NMI users
+into perf framework?
 
-Yeah, I wasn't sure how to go about it.  It's inefficient, but it's
-simple, and works.  Other options I've considered;
+>> [...]  At least APEI will use NMI to report some hardware events (likely
+>> error) to kernel.  So I suppose we will go to have a delayed call as an
+>> event handler for APEI.
+>
+> Yep, that makes sense. I wasnt arguing against the functionality itself, i was
+> arguing against the illogical layering that limits its utility. By making it
+> part of perf events it becomes a generic part of that framework and can be
+> used by anything that deals with events and uses that framework.
 
-(1) Mark's suggestion of using per-page arrays
-(2) Using address translation. that is:
-	- Page 0 registers 0-127 stored in cache array elements 0-127
-	- Page 1 registers 0-127 stored in cache array elements 128-255
-	- Page 2..7 are skipped
-	- Page 8 registers 0-127 stored in cache array elements 256-383
-	... etc.
+I think the the 'layering' in the patchset helps instead of 'limits'
+its utility. It is designed to be as general as possible, so that it
+can be used by both perf and other NMI users. Do you think so?
 
-> Fwiw, a generic ASoC lookup table would be best as this could be used by
-> other codecs with large register maps too. The table should be ordered
-> (for quick lookup) and also contain a readable/writeable/volatile flag
-> for each register.
-
-Indeed, the 'AIC3204 is not the only CODEC to use sparse register maps.
-16KB is not a lot of RAM these days, but it's a lot more RAM than I'm
-comfortable using for an audio driver.  I'll give this some thought, but
-for now I'll press on with what I have since I know it works reliably.
-
-Another thought regarding register cache, rather than hard-coding it the
-way we presently do, we could also build up the cache on demand... that
-is, we maintain a table of previously read registers; if a register
-value is read for the first time, an actual read is done from the CODEC
-(or the value is copied from a static table).  All subsequent reads then
-come from cache.  On suspend; if a register has not been touched, it is
-deemed to be left at default settings, and skipped on resume.
-
-The downside of this is having to maintain a table of what registers
-have been read already; which would possibly be as big as the cache is
-anyway.  But the flip side; if a company brought out a new CODEC which
-had differing power-up defaults to a similar CODEC handled by the same
-driver, it would prevent the wrong default getting assumed or loaded in.
--- 
-Stuart Longland (aka Redhatter, VK4MSL)      .'''.
-Gentoo Linux/MIPS Cobalt and Docs Developer  '.'` :
-. . . . . . . . . . . . . . . . . . . . . .   .'.'
-http://dev.gentoo.org/~redhatter             :.'
-
-I haven't lost my mind...
-  ...it's backed up on a tape somewhere.
+Best Regards,
+Huang Ying
