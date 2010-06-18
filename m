@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab0FRWjE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 18:39:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28634 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753585Ab0FRWjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 18:39:01 -0400
-Date: Sat, 19 Jun 2010 00:37:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Roland McGrath <roland@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Jerome Marchand <jmarchan@redhat.com>,
-       Mandeep Singh Baines <msb@google.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: while_each_thread() under rcu_read_lock() is broken?
-Message-ID: <20100618223713.GA3233@redhat.com>
-References: <20100618190251.GA17297@redhat.com> <20100618193403.GA17314@redhat.com> <20100618210801.61B4540162@magilla.sf.frob.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100618210801.61B4540162@magilla.sf.frob.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754183Ab0FRWkl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 18:40:41 -0400
+Received: from xenotime.net ([72.52.115.56]:52650 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753589Ab0FRWkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 18:40:39 -0400
+Date: Fri, 18 Jun 2010 15:40:33 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: Kulikov Vasiliy <segooon@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Rik van Riel <riel@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Minchan Kim <minchan.kim@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-doc@vger.kernel.org
+Subject: Re: [PATCH] Documentation/sysctl/vm.txt typo
+Message-Id: <20100618154033.1e949749.rdunlap@xenotime.net>
+In-Reply-To: <20100618142252.GA31086@elliptictech.com>
+References: <1276859270.3159.5.camel@shinshilla>
+	<20100618142252.GA31086@elliptictech.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18, Roland McGrath wrote:
->
-> I think you're right.  I can't see what would prevent that race.
+On Fri, 18 Jun 2010 10:22:52 -0400 Nick Bowler wrote:
 
-How sad.
+> On 15:07 Fri 18 Jun     , Kulikov Vasiliy wrote:
+> > --- a/Documentation/sysctl/vm.txt
+> > +++ b/Documentation/sysctl/vm.txt
+> > @@ -196,7 +196,7 @@ controlled by this knob are discussed in
+> > Documentation/laptops/laptop-mode.txt.
+> >  
+> >  legacy_va_layout
+> >  
+> > -If non-zero, this sysctl disables the new 32-bit mmap mmap layout - the
+> > kernel
+> > +If non-zero, this sysctl disables the new 32-bit mmap layout - the
+> > kernel
+> >  will use the legacy (2.4) layout for all processes.
+> 
+> You might want to check your mailer settings: this patch has been
+> mangled.
 
-> So for_each_process
+Yep.
 
-for_each_process() looks fine. It uses init_task as the anchor,
-it can't go away, it is swapper.
+There are some mail client clues in Documentation/email-clients.txt.
 
-> and do_each_thread are safe only under
-> read_lock(&tasklist_lock) and while_each_thread is only safe under
-> either that or siglock.
-
-Yes,
-
-(Also a few places using next_thread in
-> similar loops outside those macros.)
-
-I hope that most (all?) of next_thread() users can be converted to
-use while_each_thread().
-
-> Perhaps we could move those del's from __unhash_process to
-> __put_task_struct (or just delayed_put_task_struct?)
-
-This needs write_lock_irq(tasklist), we can't take it in atomic
-context. And I bet this change (at least right now) has other
-implications.
-
-> I think de_thread() in exec-by-nonleader is the only case where this
-> can happen, right?  So then perhaps we could make it call release_task
-> only via call_rcu?
-
-Hmm, perhaps...  I am already sleeping, will try to check this idea
-tomorrow. At first glance, it looks promising to me. And I see the
-email from Paul which is too late to read for me today ;)
-
-In any case, I _think_ we can fix while_each_thread(), say XXX(t)
-from the previous email. But then we should audit the users like
-zap_threads() which assume we should not miss any "interesting" task.
-Probably zap_threads() is fine because of mmap_sem, but I can't
-think properly now.
-
-Oleg.
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
