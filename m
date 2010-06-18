@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761059Ab0FRL4J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 07:56:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36370 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761036Ab0FRL4H convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 07:56:07 -0400
-Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
-From: Peter Zijlstra <peterz@infradead.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H.PeterA" <"nvin hpa"@zytor.com>,
-       linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-       Chris Mason <chris.mason@oracle.com>
-In-Reply-To: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
-References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 18 Jun 2010 13:55:30 +0200
-Message-ID: <1276862130.1875.7.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1761074Ab0FRL72 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 07:59:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33814 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761043Ab0FRL70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 07:59:26 -0400
+Date: Fri, 18 Jun 2010 13:59:23 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Ott <alan@signal11.us>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] HID: Documentation for hidraw
+In-Reply-To: <1276832283-12084-1-git-send-email-alan@signal11.us>
+Message-ID: <alpine.LNX.2.00.1006181353120.13809@pobox.suse.cz>
+References: <1276832283-12084-1-git-send-email-alan@signal11.us>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-06-12 at 17:28 +0800, Huang Ying wrote:
-> +#define NMI_DELAYED_CALL_ID_MAX                32
-> +#define NMI_DELAYED_CALL_RESTART_MAX   5
+On Thu, 17 Jun 2010, Alan Ott wrote:
+
+> Documenation for the hidraw driver.
+
+Thanks a lot for writing this up, Alan. It's something that has been 
+lingering on my TODO for just too long, it's great that someone finally 
+got fed up with it and wrote it :)
+
+> 
+> Signed-off-by: Alan Ott <alan@signal11.us>
+> ---
+>  The information in this patch relies on:
+>   [PATCH v2] HID: Add Support for Setting and Getting Feature  Reports from hidraw
+>   which has been applied by Jiri Kosina.
+> 
+>  Please provide comments. I'm sure someone here will have a better idea where
+>  to put this than the root of Documentation/. I didn't see a better place, as
+>  hidraw is used for both Bluetooth and USB.
+
+Either Documentation/input comes to mind, or we could even establish 
+Documentation/hid directory as well.
+
+>  Documentation/hidraw.txt |  283 ++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 283 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/hidraw.txt
+> 
+> diff --git a/Documentation/hidraw.txt b/Documentation/hidraw.txt
+> new file mode 100644
+> index 0000000..7153a06
+> --- /dev/null
+> +++ b/Documentation/hidraw.txt
+> @@ -0,0 +1,283 @@
+> +      HIDRAW - Raw Access to USB and Bluetooth Human Interface Devices 
+> +     ==================================================================
 > +
-> +static nmi_delayed_call_func_t nmi_delayed_call_funcs[NMI_DELAYED_CALL_ID_MAX];
-> +static DEFINE_SPINLOCK(nmi_delayed_call_lock);
+> +The hidraw driver provides a raw interface to USB and Bluetooth Human
+> +Interface Devices (HIDs).  It differs from hiddev in that reports sent and
+> +received are not parsed by the HID parser, but are sent to and received from
+> +the device unmodified.
+
+The important point behind hidraw (compared to hiddev), always has been 
+that it's in fact completely independent on underlying hardware transport 
+protocol. Currently there are no other implementations of HID than the 
+ones using Bluetooth or USB, but there is no general obstacle to using 
+hidraw once any vendor comes with HID-over-FibreChannel :) for example.
+
+This basic principle might be worth mentioning as well.
+
+> +Hidraw should be used if the userspace application knows exactly how to
+> +communicate with the hardware device, and is able to construct the HID
+> +reports manually.  This is often the case when making userspace drivers for
+> +custom HID devices.
 > +
-> +static DEFINE_PER_CPU(unsigned long, nmi_delayed_call_pending);
-> +
-> +static void nmi_delayed_call_run(void)
-> +{
-> +       int cpu, restart = NMI_DELAYED_CALL_RESTART_MAX;
-> +       unsigned long pending, *ppending;
-> +       nmi_delayed_call_func_t *pfunc, func;
-> +
-> +       cpu = smp_processor_id();
-> +       ppending = per_cpu_ptr(&nmi_delayed_call_pending, cpu);
-> +       while (*ppending && restart--) {
-> +               pending = xchg(ppending, 0);
-> +               pfunc = nmi_delayed_call_funcs;
-> +               do {
-> +                       if (pending & 1) {
-> +                               func = *pfunc;
-> +                               if (func)
-> +                                       func();
-> +                       }
-> +                       pfunc++;
-> +                       pending >>= 1;
-> +               } while (pending);
-> +       }
-> +}
+> +Hidraw is also useful for communicating with non-conformant HID devices
+> +which send and receive data in a way that is inconsistent with their report
+> +descriptors.  Because hiddev parses reports which are sent and received
+> +through it and checks them against the device's report descriptor, such
+> +communication with these non-conformant devices is impossible using hiddev.
 
-So aside from the should this be perf or not, the above is utter
-gibberish. Whoever came up with this nonsense?
+hidraw is just one of the alternatives here of course. Writing in-kernel 
+driver also can be done to overcome these obstacles.
 
-Why not make a work_struct like thing and enqueue it using cmpxchg on a
-percpu list, then have the interrupt process them. Read
-perf_pending_queue() and __perf_pending_run().
+Thanks,
 
-That way you don't need this whole register/id/limit crap.
-
-> +#ifdef CONFIG_X86_LOCAL_APIC
-
-What's the point of the rest of this code if we don't have a lapic?
-
-> +asmlinkage void smp_nmi_delayed_call_interrupt(struct pt_regs *regs)
-> +{
-> +       ack_APIC_irq();
-> +       irq_enter();
-
-You're missing inc_irq_stat() there.
-
-> +       nmi_delayed_call_run();
-> +       irq_exit();
-> +}
-> +#endif 
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
