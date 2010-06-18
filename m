@@ -1,97 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761409Ab0FRSRd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 14:17:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:12444 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761393Ab0FRSRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 14:17:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,440,1272870000"; 
-   d="scan'208";a="809357610"
-Date: Fri, 18 Jun 2010 20:17:11 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: ab3100-otp: fix memory leak in ab3100_otp_probe
-Message-ID: <20100618181710.GD3582@sortiz.org>
-References: <1274770191.6998.3.camel@mola>
+	id S1761400Ab0FRSWY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 14:22:24 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:52147 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754707Ab0FRSWX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 14:22:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: =?utf-8?q?Micha=C5=82_Nazarewicz?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH 5/6] usb/gadget: Do not take BKL for gadget->ops->ioctl
+Date: Fri, 18 Jun 2010 20:22:13 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+       linux-usb@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+       John Kacur <jkacur@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+       David Brownell <dbrownell@users.sourceforge.net>
+References: <1275426285-9088-1-git-send-email-arnd@arndb.de> <1275426285-9088-6-git-send-email-arnd@arndb.de> <op.veh043ad7p4s8u@pikus>
+In-Reply-To: <op.veh043ad7p4s8u@pikus>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274770191.6998.3.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201006182022.13778.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19i1cgd+GztOYPOO2xweDB9wOMhIPxLtDDM9o0
+ 80riM0PDGBXmpsWUmRvaiKvHGbyjitexyEwZDXcCXnJkaoIq3w
+ G6FzWjS5CsV5kRp4TBp+g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
-
-On Tue, May 25, 2010 at 02:49:51PM +0800, Axel Lin wrote:
-> In current implementation, there is a memory leak if ab3100_otp_read fail.
-> And in the case of ab3100_otp_init_debugfs fail, it does not properly remove
-> sysfs entries.
-> This patch properly handle above failure cases.
-Patch applied, thanks a lot.
-
-Cheers,
-Samuel.
-
-
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/ab3100-otp.c |   16 ++++++++--------
->  1 files changed, 8 insertions(+), 8 deletions(-)
+On Friday 18 June 2010, Michał Nazarewicz wrote:
+> On Tue, 01 Jun 2010 23:04:44 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+> > There is no gadget driver in the tree that
+> > actually implements the ioctl operation, so
+> > obviously it is not necessary to hold the
+> > BKL around the call.
 > 
-> diff --git a/drivers/mfd/ab3100-otp.c b/drivers/mfd/ab3100-otp.c
-> index 2d14655..939b876 100644
-> --- a/drivers/mfd/ab3100-otp.c
-> +++ b/drivers/mfd/ab3100-otp.c
-> @@ -202,7 +202,7 @@ static int __init ab3100_otp_probe(struct platform_device *pdev)
->  
->  	err = ab3100_otp_read(otp);
->  	if (err)
-> -		return err;
-> +		goto err_otp_read;
->  
->  	dev_info(&pdev->dev, "AB3100 OTP readout registered\n");
->  
-> @@ -211,21 +211,21 @@ static int __init ab3100_otp_probe(struct platform_device *pdev)
->  		err = device_create_file(&pdev->dev,
->  					 &ab3100_otp_attrs[i]);
->  		if (err)
-> -			goto out_no_sysfs;
-> +			goto err_create_file;
->  	}
->  
->  	/* debugfs entries */
->  	err = ab3100_otp_init_debugfs(&pdev->dev, otp);
->  	if (err)
-> -		goto out_no_debugfs;
-> +		goto err_init_debugfs;
->  
->  	return 0;
->  
-> -out_no_sysfs:
-> -	for (i = 0; i < ARRAY_SIZE(ab3100_otp_attrs); i++)
-> -		device_remove_file(&pdev->dev,
-> -				   &ab3100_otp_attrs[i]);
-> -out_no_debugfs:
-> +err_init_debugfs:
-> +err_create_file:
-> +	while (--i >= 0)
-> +		device_remove_file(&pdev->dev, &ab3100_otp_attrs[i]);
-> +err_otp_read:
->  	kfree(otp);
->  	return err;
->  }
-> -- 
-> 1.5.4.3
-> 
-> 
-> 
+> Should the callback in ops be renamed to unlocked_ioctl then as to not
+> create confusion? Just a thought.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+No, we decided that the .unlocked_ioctl naming was a bad idea in the other
+places after all and they should eventually get renamed back to .ioctl
+once all the locked versions are gone.
+
+	Arnd
