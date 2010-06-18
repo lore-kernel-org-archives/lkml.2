@@ -1,39 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761389Ab0FRSMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 14:12:33 -0400
-Received: from mail-yw0-f198.google.com ([209.85.211.198]:54969 "EHLO
-	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756784Ab0FRSMX (ORCPT
+	id S1761376Ab0FRSMV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 14:12:21 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60294 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756784Ab0FRSMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 14:12:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=KQy//mmxQO+FYadqcS4QpL0GB7z9HvQjmWdU8JPA6zZ4JrYbuLG2THjcWxqA7Asff6
-         ZmoQHt2JzuM0WVT7sC1yg681MXxqzpJFx404J+ItxdFnrVI9VRdC/a/UmTfrzPK1aK0F
-         87j3YuM9H13Fs8tVfy7mSPxjnNXmmQzqQHwMU=
+	Fri, 18 Jun 2010 14:12:19 -0400
+Date: Fri, 18 Jun 2010 14:10:11 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Edward Shishkin <edward.shishkin@gmail.com>
+Cc: Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       The development of BTRFS <linux-btrfs@vger.kernel.org>
+Subject: Re: Btrfs: broken file system design (was Unbound(?) internal
+ fragmentation in Btrfs)
+Message-ID: <20100618181011.GS27466@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Edward Shishkin <edward.shishkin@gmail.com>,
+	Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+	linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	The development of BTRFS <linux-btrfs@vger.kernel.org>
+References: <4C07C321.8010000@redhat.com>
+ <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
+ <4C1B7560.1000806@gmail.com>
+ <20100618134755.GG27466@think>
+ <4C1B8B4A.9060308@gmail.com>
+ <20100618151017.GN27466@think>
+ <4C1B9D4F.6010008@gmail.com>
 MIME-Version: 1.0
-Date: Fri, 18 Jun 2010 14:12:22 -0400
-Message-ID: <AANLkTilWguh4IrDHVgtTxjoiAeSy23SK_M1dWapgvSDt@mail.gmail.com>
-Subject: idea about internal fragmentation in Btrfs
-From: Zhihui Zhang <zzhsuny@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C1B9D4F.6010008@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090207.4C1BB6EE.0252:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I wish Btrfs well, so I would venture an idea for this specific case
-mentioned by Edward Shishkin today.
+On Fri, Jun 18, 2010 at 06:22:39PM +0200, Edward Shishkin wrote:
+> Chris Mason wrote:
+> >On Fri, Jun 18, 2010 at 05:05:46PM +0200, Edward Shishkin wrote:
+> >>Chris Mason wrote:
+> >>>On Fri, Jun 18, 2010 at 03:32:16PM +0200, Edward Shishkin wrote:
+> >>>>Mat wrote:
+> >>>>>On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin <edward@redhat.com> wrote:
+> >>>>>>Hello everyone.
+> >>>>>>
+> >>>>>>I was asked to review/evaluate Btrfs for using in enterprise
+> >>>>>>systems and the below are my first impressions (linux-2.6.33).
+> >>>>>>
+> >>>>>>The first test I have made was filling an empty 659M (/dev/sdb2)
+> >>>>>>btrfs partition (mounted to /mnt) with 2K files:
+> >>>>>>
+> >>>>>># for i in $(seq 1000000); \
+> >>>>>>do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
+> >>>>>>(terminated after getting "No space left on device" reports).
+> >>>>>>
+> >>>>>># ls /mnt | wc -l
+> >>>>>>59480
+> >>>>>>
+> >>>>>>So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
+> >>>>>>and the first obvious question is "hey, where are other 83% of my
+> >>>>>>disk space???" I looked at the btrfs storage tree (fs_tree) and was
+> >>>>>>shocked with the situation on the leaf level. The Appendix B shows
+> >>>>>>5 adjacent btrfs leafs, which have the same parent.
+> >>>>>>
+> >>>>>>For example, look at the leaf 29425664: "items 1 free space 3892"
+> >>>>>>(of 4096!!). Note, that this "free" space (3892) is _dead_: any
+> >>>>>>attempts to write to the file system will result in "No space left
+> >>>>>>on device".
+> >>>There are two easy ways to fix this problem.  Turn off the inline
+> >>>extents (max_inline=0) or allow splitting of the inline extents.  I
+> >>>didn't put in the splitting simply because the complexity was high while
+> >>>the benefits were low (in comparison with just turning off the inline
+> >>>extents).
+> >>Hello, Chris. Thanks for response!
+> >>I afraid that both ways won't fix the problem. Look at this leaf:
+> >>
+> >>[...]
+> >>leaf 29425664 items 1 free space 3892 generation 8 owner 5
+> >>fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+> >>chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+> >>       item 0 key (320 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
+> >>               location key (0 UNKNOWN 0) type 8
+> >>               namelen 16 datalen 32 name: security.selinux
+> >>[...]
+> >>
+> >>There is no inline extents, and what are you going to split here?
+> >>All leafs must be at least a half filled, otherwise we loose all
+> >>boundaries, which provides non-zero utilization..
+> >
+> >Right, there is no inline extent because we require them to fit entirely
+> >in the leaf.  So we end up with mostly empty leaves because the inline
+> >item is large enough to make it difficult to push around but not large
+> >enough to fill the leaf.
+> 
+> How about left and right neighbors? They contain a lot of
+> free space (1572 and 1901 respectively).
+> I am not happy with the very fact of such shallow leafs which
+> contain only one small (xattr) item..
 
-Everyone knows that B-tree has internal and leaf nodes.  Can we make
-the root as the leaf?  In other words, if you
-create a 2K file, the B-tree will have only one node, which is both
-the root and the leaf. Of course, you need some flag to
-say this is a "degenerated" form of B-tree. Please cc me if you want
-my response.
+Sure, the balancing can also be made more aggressive.  This should be
+very easy to fix.
 
-thanks,
+-chris
 
--Zhihui
