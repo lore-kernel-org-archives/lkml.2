@@ -1,122 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933520Ab0FROmd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 10:42:33 -0400
-Received: from mail-in-17.arcor-online.net ([151.189.21.57]:60463 "EHLO
-	mail-in-17.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932449Ab0FROmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 10:42:31 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-08.arcor-online.net 2B0A8205553
-Subject: [PATCH] HID: removing obsolete kone_abi_version sysfs attr for
- roccat kone
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Randy Dunlap <rdunlap@xenotime.net>,
-       Stefan Achatz <erazor_de@users.sourceforge.net>,
-       Jiri Kosina <jkosina@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
-       Tejun Heo <tj@kernel.org>, linux-doc@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Jun 2010 16:42:25 +0200
-Message-ID: <1276872145.2358.1.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S933535Ab0FROpZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 10:45:25 -0400
+Received: from core.signal11.us ([64.251.29.136]:60223 "EHLO core.signal11.us"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933496Ab0FROpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 10:45:23 -0400
+Message-ID: <4C1B8682.7050901@signal11.us>
+Date: Fri, 18 Jun 2010 10:45:22 -0400
+From: Alan Ott <alan@signal11.us>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+       Antonio Ospite <ospite@studenti.unina.it>
+Subject: Re: [PATCH] HID: Documentation for hidraw
+References: <1276832283-12084-1-git-send-email-alan@signal11.us> <alpine.LNX.2.00.1006181353120.13809@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1006181353120.13809@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Jun 18 10:45:23 2010
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4c1b8683288337036184582
+X-DSPAM-Factors: 27,
+	could, 0.01000,
+	but, 0.01000,
+	but, 0.01000,
+	reports, 0.01000,
+	reports, 0.01000,
+	Received*26+177, 0.01000,
+	AM, 0.01000,
+	or, 0.01000,
+	or, 0.01000,
+	how+to, 0.01000,
+	the+device, 0.01000,
+	References*git, 0.01000,
+	interface, 0.01000,
+	from, 0.01000,
+	from, 0.01000,
+	of, 0.01000,
+	of, 0.01000,
+	Thanks+Alan, 0.01000,
+	User-Agent*Mozilla/5.0, 0.01000,
+	References*alan+signal11.us>, 0.01000,
+	send, 0.01000,
+	Received*ESMTP, 0.01000,
+	User-Agent*rv+1.9.1.9), 0.01000,
+	), 0.01000,
+	), 0.01000,
+	To*suse.cz>, 0.01000,
+	Received*(c+76, 0.01000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The newest version of the accompanying userland tools cuts backward
-compatibility and uses libudev to find its devices superseding the
-quirky kone_abi_version sysfs attribute. Therefore it should be removed.
+On 06/18/2010 07:59 AM, Jiri Kosina wrote:
+>> Documenation for the hidraw driver.
+>>      
+> Thanks a lot for writing this up, Alan. It's something that has been
+> lingering on my TODO for just too long, it's great that someone finally
+> got fed up with it and wrote it :)
+>
+>    
+I wouldn't say I was fed up :)
+>>   I'm sure someone here will have a better idea where
+>>   to put this than the root of Documentation/. I didn't see a better place, as
+>>   hidraw is used for both Bluetooth and USB.
+>>      
+> Either Documentation/input comes to mind, or we could even establish
+> Documentation/hid directory as well.
+>
+>    
+Antonio suggested the same, putting hidraw.txt and hiddev.txt into a new 
+Documentation/hid/ directory. I'll do this for the next rev unless I 
+hear otherwise.
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
----
- .../ABI/testing/sysfs-driver-hid-roccat-kone       |   12 ------------
- drivers/hid/hid-roccat-kone.c                      |   16 ----------------
- drivers/hid/hid-roccat-kone.h                      |    2 --
- 3 files changed, 0 insertions(+), 30 deletions(-)
+>>   Documentation/hidraw.txt |  283 ++++++++++++++++++++++++++++++++++++++++++++++
+>>   1 files changed, 283 insertions(+), 0 deletions(-)
+>>   create mode 100644 Documentation/hidraw.txt
+>>
+>> diff --git a/Documentation/hidraw.txt b/Documentation/hidraw.txt
+>> new file mode 100644
+>> index 0000000..7153a06
+>> --- /dev/null
+>> +++ b/Documentation/hidraw.txt
+>> @@ -0,0 +1,283 @@
+>> +      HIDRAW - Raw Access to USB and Bluetooth Human Interface Devices
+>> +     ==================================================================
+>> +
+>> +The hidraw driver provides a raw interface to USB and Bluetooth Human
+>> +Interface Devices (HIDs).  It differs from hiddev in that reports sent and
+>> +received are not parsed by the HID parser, but are sent to and received from
+>> +the device unmodified.
+>>      
+> The important point behind hidraw (compared to hiddev), always has been
+> that it's in fact completely independent on underlying hardware transport
+> protocol. Currently there are no other implementations of HID than the
+> ones using Bluetooth or USB, but there is no general obstacle to using
+> hidraw once any vendor comes with HID-over-FibreChannel :) for example.
+>
+> This basic principle might be worth mentioning as well.
+>
+>    
+I'll make sure to put that in.
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-hid-roccat-kone b/Documentation/ABI/testing/sysfs-driver-hid-roccat-kone
-index 36bfa23..063bda7 100644
---- a/Documentation/ABI/testing/sysfs-driver-hid-roccat-kone
-+++ b/Documentation/ABI/testing/sysfs-driver-hid-roccat-kone
-@@ -33,18 +33,6 @@ Description:	When read, this file returns the raw integer version number of the
- 		left. E.g. a returned value of 138 means 1.38
- 		This file is readonly.
- 
--What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/kone_abi_version
--Date:		May 2010
--Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
--Description:	When read, this file returns the abi version as an integer value.
--		This attribute is used by the userland tools to find the sysfs-
--		paths of installed kone-mice and determine the capabilites of
--		the driver. Versions of this driver for old kernels replace
--		usbhid instead of generic-usb. The way to scan for this file
--		has been chosen to provide a consistent way for all supported
--		kernel versions.
--		This file is readonly.
--
- What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/profile[1-5]
- Date:		March 2010
- Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-index 0ab1df9..fcc2ccc 100644
---- a/drivers/hid/hid-roccat-kone.c
-+++ b/drivers/hid/hid-roccat-kone.c
-@@ -618,18 +618,6 @@ static ssize_t kone_sysfs_set_startup_profile(struct device *dev,
- }
- 
- /*
-- * This file is used by userland software to find devices that are handled by
-- * this driver. This provides a consistent way for actual and older kernels
-- * where this driver replaced usbhid instead of generic-usb.
-- * Driver capabilities are determined by returned number.
-- */
--static ssize_t kone_sysfs_show_abi_version(struct device *dev,
--		struct device_attribute *attr, char *buf)
--{
--	return snprintf(buf, PAGE_SIZE, ROCCAT_KONE_ABI_VERSION "\n");
--}
--
--/*
-  * Read actual dpi settings.
-  * Returns raw value for further processing. Refer to enum kone_polling_rates to
-  * get real value.
-@@ -666,9 +654,6 @@ static DEVICE_ATTR(startup_profile, 0660,
- 		kone_sysfs_show_startup_profile,
- 		kone_sysfs_set_startup_profile);
- 
--static DEVICE_ATTR(kone_abi_version, 0440,
--		kone_sysfs_show_abi_version, NULL);
--
- static struct attribute *kone_attributes[] = {
- 		&dev_attr_actual_dpi.attr,
- 		&dev_attr_actual_profile.attr,
-@@ -676,7 +661,6 @@ static struct attribute *kone_attributes[] = {
- 		&dev_attr_firmware_version.attr,
- 		&dev_attr_tcu.attr,
- 		&dev_attr_startup_profile.attr,
--		&dev_attr_kone_abi_version.attr,
- 		NULL
- };
- 
-diff --git a/drivers/hid/hid-roccat-kone.h b/drivers/hid/hid-roccat-kone.h
-index 71b14fa..130d656 100644
---- a/drivers/hid/hid-roccat-kone.h
-+++ b/drivers/hid/hid-roccat-kone.h
-@@ -14,8 +14,6 @@
- 
- #include <linux/types.h>
- 
--#define ROCCAT_KONE_ABI_VERSION "1"
--
- #pragma pack(push)
- #pragma pack(1)
- 
--- 
-1.6.6.1
+>> +Hidraw should be used if the userspace application knows exactly how to
+>> +communicate with the hardware device, and is able to construct the HID
+>> +reports manually.  This is often the case when making userspace drivers for
+>> +custom HID devices.
+>> +
+>> +Hidraw is also useful for communicating with non-conformant HID devices
+>> +which send and receive data in a way that is inconsistent with their report
+>> +descriptors.  Because hiddev parses reports which are sent and received
+>> +through it and checks them against the device's report descriptor, such
+>> +communication with these non-conformant devices is impossible using hiddev.
+>>      
+> hidraw is just one of the alternatives here of course. Writing in-kernel
+> driver also can be done to overcome these obstacles.
+>
+>    
+Also true. I'll add it.
 
+Thanks,
+
+Alan.
 
 
