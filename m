@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933749Ab0FRQvK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 12:51:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37180 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932104Ab0FRQvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 12:51:08 -0400
-Message-ID: <4C1BA3E5.7020400@gmail.com>
-Date: Fri, 18 Jun 2010 18:50:45 +0200
-From: Edward Shishkin <edward.shishkin@gmail.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	id S933757Ab0FRQwq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 12:52:46 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52190 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933736Ab0FRQwp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 12:52:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=o/vZECl+k76+QlO7wINXdLh/IE7fqS9HZ3zP23ZWw3MIB1fh/NPLi7bfLrVoylij+W
+         DwUU2Nc11ydsGvyq5AUeCZOvQHWjeDb9cfr0eydcgK/gJfSdfEwepu4UE/KttyObmdwm
+         xnbGnvZYAdUKNyYqnKDvICujNQaW2wPYCGylQ=
 MIME-Version: 1.0
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-CC: Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-       Ric Wheeler <rwheeler@redhat.com>,
+In-Reply-To: <20100618172121.528f2e09@lxorguk.ukuu.org.uk>
+References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
+	<201006172348.08180.arnd@arndb.de>
+	<20100617220926.GC5345@nowhere>
+	<201006181458.07687.arnd@arndb.de>
+	<20100618172121.528f2e09@lxorguk.ukuu.org.uk>
+Date: Fri, 18 Jun 2010 09:52:44 -0700
+X-Google-Sender-Auth: YaESmd7pEU1oh0HYVKsN-8K4ZsM
+Message-ID: <AANLkTikfqHO1x0P_iyYTsGGjDcZGCEmZFPUDWiKzk2SQ@mail.gmail.com>
+Subject: Re: [PATCH] tty: avoid recursive BTM in pty_close
+From: Tony Luck <tony.luck@intel.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Frederic Weisbecker <fweisbec@gmail.com>,
+       linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
+       Thomas Gleixner <tglx@linutronix.de>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: Btrfs: broken file system design (was Unbound(?) internal 	fragmentation
- in Btrfs)
-References: <4C07C321.8010000@redhat.com>	<AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>	<4C1B7560.1000806@gmail.com> <AANLkTilQm8VGAvc1XNW4EaHd1FLd6dXIXwJ9-yT-joQ8@mail.gmail.com>
-In-Reply-To: <AANLkTilQm8VGAvc1XNW4EaHd1FLd6dXIXwJ9-yT-joQ8@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel J Blueman wrote:
-> On Fri, Jun 18, 2010 at 1:32 PM, Edward Shishkin
-> <edward.shishkin@gmail.com> wrote:
->   
->> Mat wrote:
->>     
->>> On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin <edward@redhat.com> wrote:
->>>       
->>>> Hello everyone.
->>>>
->>>> I was asked to review/evaluate Btrfs for using in enterprise
->>>> systems and the below are my first impressions (linux-2.6.33).
->>>>
->>>> The first test I have made was filling an empty 659M (/dev/sdb2)
->>>> btrfs partition (mounted to /mnt) with 2K files:
->>>>
->>>> # for i in $(seq 1000000); \
->>>> do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
->>>> (terminated after getting "No space left on device" reports).
->>>>
->>>> # ls /mnt | wc -l
->>>> 59480
->>>>
->>>> So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
->>>> and the first obvious question is "hey, where are other 83% of my
->>>> disk space???" I looked at the btrfs storage tree (fs_tree) and was
->>>> shocked with the situation on the leaf level. The Appendix B shows
->>>> 5 adjacent btrfs leafs, which have the same parent.
->>>>
->>>> For example, look at the leaf 29425664: "items 1 free space 3892"
->>>> (of 4096!!). Note, that this "free" space (3892) is _dead_: any
->>>> attempts to write to the file system will result in "No space left
->>>> on device".
->>>>
->>>> Internal fragmentation (see Appendix A) of those 5 leafs is
->>>> (1572+3892+1901+3666+1675)/4096*5 = 0.62. This is even worse then
->>>> ext4 and xfs: The last ones in this example will show fragmentation
->>>> near zero with blocksize <= 2K. Even with 4K blocksize they will
->>>> show better utilization 0.50 (against 0.38 in btrfs)!
->>>>
->>>> I have a small question for btrfs developers: Why do you folks put
->>>> "inline extents", xattr, etc items of variable size to the B-tree
->>>> in spite of the fact that B-tree is a data structure NOT for variable
->>>> sized records? This disadvantage of B-trees was widely discussed.
->>>> For example, maestro D. Knuth warned about this issue long time
->>>> ago (see Appendix C).
->>>>
->>>> It is a well known fact that internal fragmentation of classic Bayer's
->>>> B-trees is restricted by the value 0.50 (see Appendix C). However it
->>>> takes place only if your tree contains records of the _same_ length
->>>> (for example, extent pointers). Once you put to your B-tree records
->>>> of variable length (restricted only by leaf size, like btrfs "inline
->>>> extents"), your tree LOSES this boundary. Moreover, even worse:
->>>> it is clear, that in this case utilization of B-tree scales as zero(!).
->>>> That said, for every small E and for every amount of data N we
->>>> can construct a consistent B-tree, which contains data N and has
->>>> utilization worse then E. I.e. from the standpoint of utilization
->>>> such trees can be completely degenerated.
->>>>
->>>> That said, the very important property of B-trees, which guarantees
->>>> non-zero utilization, has been lost, and I don't see in Btrfs code any
->>>> substitution for this property. In other words, where is a formal
->>>> guarantee that all disk space of our users won't be eaten by internal
->>>> fragmentation? I consider such guarantee as a *necessary* condition
->>>> for putting a file system to production.
->>>>         
->
-> Wow...a small part of me says 'well said', on the basis that your
-> assertions are true, but I do think there needs to be more
-> constructivity in such critique; it is almost impossible to be a great
-> engineer and a great academic at once in a time-pressured environment.
->   
+On Fri, Jun 18, 2010 at 9:21 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> So I ack this patch - it's the only way to find out 8)
 
-Sure it is impossible. I believe in division of labour:
-academics writes algorithms, and we (engineers) encode them.
+Here's the results from this patch on top of next-20100618
 
-I have noticed that events in Btrfs develop by scenario not predicted
-by the paper of academic Ohad Rodeh (in spite of the announce that
-Btrfs is based on this paper). This is why I have started to grumble..
+The "WARNING: at include/linux/tty.h:589 tty_open+0x9d0/0xc60()" messages
+are back, two of them, both with same stack trace:
 
-Thanks.
 
-> If you can produce some specific and suggestions with code references,
-> I'm sure we'll get some good discussion with potential to improve from
-> where we are.
->
-> Thanks,
->   Daniel
->   
+Call Trace:
+ [<a0000001000159d0>] show_stack+0x50/0xa0
+ [<a00000010090f270>] dump_stack+0x30/0x50
+ [<a00000010008e2c0>] warn_slowpath_common+0xc0/0x120
+ [<a00000010008e360>] warn_slowpath_null+0x40/0x60
+ [<a00000010053eb40>] tty_open+0x160/0xc60
+ [<a0000001001af9b0>] chrdev_open+0x310/0x360
+ [<a0000001001a58b0>] __dentry_open+0x350/0x680
+ [<a0000001001a5d80>] nameidata_to_filp+0x80/0xc0
+ [<a0000001001bfee0>] finish_open+0x160/0x380
+ [<a0000001001c0cc0>] do_last+0xbc0/0xce0
+ [<a0000001001c5270>] do_filp_open+0x2f0/0xb40
+ [<a0000001001a5290>] do_sys_open+0x90/0x200
+ [<a0000001001a54d0>] sys_open+0x50/0x80
+ [<a000000100b907e0>] kernel_init+0x340/0x420
+ [<a000000100013c10>] kernel_thread_helper+0x30/0x60
+ [<a00000010000a0c0>] start_kernel_thread+0x20/0x40
 
+The tty_release() ones have all gone though.
+
+I've also just noticed that the serial console output gets garbled
+(like it is at the wrong baud rate) when userland code starts
+printing messages. Stays garbled until /sbin/agetty starts up
+to print the "Welcome ... login:" banner.
+
+Similar garbage when shutting down with "reboot" command.
+I can see "INIT", then it all goes to pieces until I see the kernel
+print "Restarting system".
+
+-Tony
