@@ -1,48 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932838Ab0FRTQt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 15:16:49 -0400
-Received: from kroah.org ([198.145.64.141]:47385 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752704Ab0FRTQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 15:16:48 -0400
-Date: Fri, 18 Jun 2010 12:16:42 -0700
-From: Greg KH <greg@kroah.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [STAGING] Spectra Flash Translation Layer
-Message-ID: <20100618191642.GA23428@kroah.com>
-References: <1276019010.22896.13.camel@macbook.infradead.org>
+	id S932989Ab0FRTWj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 15:22:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64780 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030Ab0FRTWh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 15:22:37 -0400
+Message-ID: <4C1BC832.4080809@ontolab.com>
+Date: Fri, 18 Jun 2010 21:25:38 +0200
+From: Christian Stroetmann <stroetmann@ontolab.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1276019010.22896.13.camel@macbook.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jamie Lokier <jamie@shareable.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: Btrfs: broken file system design (was Unbound(?) internal fragmentation
+ in Btrfs)
+References: <4C07C321.8010000@redhat.com> <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com> <4C1B7560.1000806@gmail.com> <20100618155653.GC10919@shareable.org>
+In-Reply-To: <20100618155653.GC10919@shareable.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V01U2FsdGVkX19R3xZb1tx/molwksT/G5ceK20HdFjLeeDZ+P/
+ iGpm22SHxygVMz9/SVgKmZvYj+2jrK2sBrba9ue9kRujhYyJx4
+ YTkkB/8CulpsRCcphN8Pw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 06:43:30PM +0100, David Woodhouse wrote:
-> Greg, please pull from
-> 	git://git.infradead.org/users/dwmw2/spectra-2.6.git
-> 
-> This was previously known as the 'Moorestown NAND flash driver'.
+Jamie Lokier wrote:
+> Edward Shishkin wrote:
+>    
+>> If you decide to base your file system on some algorithms then please
+>> use the original ones from proper academic papers. DO NOT modify the
+>> algorithms in solitude: this is very fragile thing! All such
+>> modifications must be reviewed by specialists in the theory of
+>> algorithms. Such review can be done in various scientific magazines of
+>> proper level.
+>>
+>> Personally I don't see any way to improve the situation with Btrfs
+>> except full redesigning the last one. If you want to base your file
+>> system on the paper of Ohad Rodeh, then please, use *exactly* the
+>> Bayer's B-trees that he refers to. That said, make sure that all
+>> records you put to the tree has equal length and all non-root nodes of
+>> your tree are at least half filled.
+>>      
+> First, thanks Edward for identifying a specific problem with the
+> current btrfs implementation.
+>
+> I've studied modified B-trees quite a lot and know enough to be sure
+> that they are quite robust when you modify them in all sorts of ways.
+>    
 
-Now pulled.
+This is the point: Which kind of modified B-tree data structure is best 
+suited?
 
-Note I do get some warnings when building the code:
+> Moreover, you are incorrect to say there's an intrinsic algorithmic
+> problem with variable-length records.  It is not true; if Knuth said
+> so, Knuth was mistaken.
+>
+> This is easily shown by modelling variable-length records (key ->
+> string) as a range of fixed length records ([key,index] ->  byte) and
+> apply the standard B-tree algorithms to that, which guarantees
+> algorithm properties such as space utilisation and time; then you can
+> substitute a "compressed" representation of contiguous index runs,
+> which amounts to nothing more than just storing the strings (split
+> where the algorithm says to do so) and endpoint indexes , and because
+> this compression does not expand (in any way that matters), classic
+> algorithmic properties are still guaranteed.
+>
+> Variable-length keys are a different business.  Those are trickier,
+> but as far as I know, btrfs doesn't use them.
+>
+>    
+>> As to current Btrfs code: *NOT ACK*!!! I don't think we need such
+>> "file systems".
+>>      
+> Btrfs provides many useful features that other filesystems don't.  We
+> definitely need it, or something like it.  You have identified a bug.
+> It's not a corruption bug, but it's definitely a bug, and probably
+> affects performance as well as space utilisation.
+>
+> It is not deep design bug; it is just a result of the packing and
+> balancing heuristics.
+>    
 
-drivers/staging/spectra/ffsport.c:116:0: warning: "GLOB_VERSION" redefined
-drivers/staging/spectra/spectraswconfig.h:24:0: note: this is the location of the previous definition
-drivers/staging/spectra/flash.c: In function ‘dump_cache_l2_table’:
-drivers/staging/spectra/flash.c:778:9: warning: unused variable ‘i’
-drivers/staging/spectra/flash.c: At top level:
-drivers/staging/spectra/flash.c:2015:12: warning: ‘FTL_Cache_Write_Back’ defined but not used
-drivers/staging/spectra/flash.c:2396:13: warning: ‘FTL_Format_Flash’ defined but not used
+I think this is the most important design question in relation with 
+filesystems that use some kind of B-trees, which means, if the wrong 
+modified B-tree as the fundamental data structure was chosen, then this 
+is a deep design bug.
 
-Are those to be expected?
+> If you are still interested, please apply your knowledge of B-tree
+> algorithms to understanding why btrfs fails to balance the tree
+> sufficiently well, and then propose a fix.
+>    
 
-thanks,
+This is a general problem of filesystem design, especially the packing 
+and balancing heurisitcs, and a special problem of the Btrfs filesystem. 
+You can't simply say do it in this or that way. That's why another 
+filesystem uses something exotic like a B*-tree in conjunction with 
+dancing trees as fundamental data structure, which leads back to the 
+deep design question/problem/decision/bug/.... And after I followed the 
+explanations of this exotic B-tree version by the main developer I knew 
+just right from the start of the development of the Btrfs filesystem 
+that it wasn't chosen the right modified B-tree data structure, because 
+it was too simple and too general. And since some days I have the 
+impression that there wasn't made a design decision at all with the only 
+exception that there has to be some kind of a B-tree algorithm/data 
+structure in the Btrfs filesystem.
 
-greg k-h
+And I also think that such a deep desgin decision can't simply be 
+corrected in general (subjective opinion).
+
+> Note that it's not necessarily a problem to have a few nodes with low
+> utilisation.  Deliberate violation of the classic balancing heuristic
+> is often useful for performance.[*]  The problem you've found is only a
+> real problem when there are _too many_ nodes with low utilisation.
+>    
+
+The found problem is the first problem with the chosen modified B-tree 
+data structure. I wouldn't call it only a problem in a special case.
+
+> [*] For example when filling a tree by inserting contiguously
+> ascending keys, the classic "split into two when full" heuristic gives
+> the worst possible results (50% lost space), and deliberately
+> underfilling the most actively updated nodes, which is not permitted
+> at all by the classic algorithm, gives denser packing in the end
+> (almost zero lost space).  It's also faster.  The trick is to make
+> sure there's just the right number of underfilled nodes...
+>    
+
+Yes, but ....
+Firstly, maybe you are too focused on the classic B-tree algorithm here.
+Secondly, a trick here, a split there, turning off a feature and then? 
+Then we have complexity at then end, which brings us back to the start, 
+the design decision.
+
+But if you say there are no deep problems, then I will believe you for now.
+
+> -- Jamie
+>    
+With all the best
+Christian Stroetmann
+
+
