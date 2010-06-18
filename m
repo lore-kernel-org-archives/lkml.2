@@ -1,109 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960Ab0FRNta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 09:49:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25804 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932416Ab0FRNt3 (ORCPT
+	id S933020Ab0FRNth (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 09:49:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60717 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932973Ab0FRNte convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 09:49:29 -0400
-Date: Fri, 18 Jun 2010 09:47:55 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Edward Shishkin <edward.shishkin@gmail.com>
-Cc: Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: Btrfs: broken file system design (was Unbound(?) internal
- fragmentation in Btrfs)
-Message-ID: <20100618134755.GG27466@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Edward Shishkin <edward.shishkin@gmail.com>,
-	Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-	linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	The development of BTRFS <linux-btrfs@vger.kernel.org>
-References: <4C07C321.8010000@redhat.com>
- <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
- <4C1B7560.1000806@gmail.com>
+	Fri, 18 Jun 2010 09:49:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=a1yVQGdVqhnwlRZUf/5yBrreFxacWI2yx9e5TPMx1AwpThjn41uR84Z3P0+vieievf
+         UYEZ8Nj8hqqOsLZvKzmVMnjx60b7EElERiacZGvCaymoOORLQvfjC+zBPHBy4YkNdu1X
+         W55KRaClDNu6R/gFfFf7RsbHEgbRtCguAwNYg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C1B7560.1000806@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090206.4C1B7955.023F:SCFMA4539811,ss=1,fgs=0
+In-Reply-To: <alpine.DEB.1.10.1001041421450.4942@dr-wily.mit.edu>
+References: <alpine.DEB.1.10.1001041421450.4942@dr-wily.mit.edu>
+Date: Fri, 18 Jun 2010 15:49:32 +0200
+Message-ID: <AANLkTinji7n8Hd1Ldci_ruH0r8qglGjC00YQkb-MEwoV@mail.gmail.com>
+Subject: [RESEND][REGRESSION] um: CONFIG_STATIC_LINK=y broken
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: akpm@linux-foundation.org
+Cc: tabbott@ksplice.com, linux-kernel@vger.kernel.org,
+       Jeff Dike <jdike@addtoit.com>,
+       user-mode-linux-devel@lists.sourceforge.net, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 03:32:16PM +0200, Edward Shishkin wrote:
-> Mat wrote:
-> >On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin <edward@redhat.com> wrote:
-> >>Hello everyone.
-> >>
-> >>I was asked to review/evaluate Btrfs for using in enterprise
-> >>systems and the below are my first impressions (linux-2.6.33).
-> >>
-> >>The first test I have made was filling an empty 659M (/dev/sdb2)
-> >>btrfs partition (mounted to /mnt) with 2K files:
-> >>
-> >># for i in $(seq 1000000); \
-> >>do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
-> >>(terminated after getting "No space left on device" reports).
-> >>
-> >># ls /mnt | wc -l
-> >>59480
-> >>
-> >>So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
-> >>and the first obvious question is "hey, where are other 83% of my
-> >>disk space???" I looked at the btrfs storage tree (fs_tree) and was
-> >>shocked with the situation on the leaf level. The Appendix B shows
-> >>5 adjacent btrfs leafs, which have the same parent.
-> >>
-> >>For example, look at the leaf 29425664: "items 1 free space 3892"
-> >>(of 4096!!). Note, that this "free" space (3892) is _dead_: any
-> >>attempts to write to the file system will result in "No space left
-> >>on device".
+Andrew, Linus, Jeff, ... anyone?
+Please apply this patch.
 
-There are two easy ways to fix this problem.  Turn off the inline
-extents (max_inline=0) or allow splitting of the inline extents.  I
-didn't put in the splitting simply because the complexity was high while
-the benefits were low (in comparison with just turning off the inline
-extents).
+CONFIG_STATIC_LINK is still broken. :(
 
-> 
-> It must be a highly unexpected and difficult question for file system
-> developers: "how efficiently does your file system manage disk space"?
-> 
-> In the meanwhile I confirm that Btrfs design is completely broken:
-> records stored in the B-tree differ greatly from each other (it is
-> unacceptable!), and the balancing algorithms have been modified in
-> insane manner. All these factors has led to loss of *all* boundaries
-> holding internal fragmentation and to exhaustive waste of disk space
-> (and memory!) in spite of the property "scaling in their ability to
-> address large storage".
-> 
-> This is not a large storage, this is a "scalable sieve": you can not
-> rely on finding there some given amount of water even after infinite
-> increasing the size of the sieve (read escalating the pool of Btrfs
-> devices).
-> 
-> It seems that nobody have reviewed Btrfs before its inclusion to the
-> mainline. I have only found a pair of recommendations with a common
-> idea that Btrfs maintainer is "not a crazy man". Plus a number of
-> papers which admire with the "Btrfs phenomena". Sigh.
-> 
-> Well, let's decide what can we do in current situation..
-> The first obvious point here is that we *can not* put such file system
-> to production. Just because it doesn't provide any guarantees for our
-> users regarding disk space utilization.
+//richard
+---------- Forwarded message ----------
+From: Tim Abbott <tabbott@ksplice.com>
+Date: Mon, Jan 4, 2010 at 10:08 PM
+Subject: [REGRESSION] um: CONFIG_STATIC_LINK=y broken
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
+user-mode-linux-devel@lists.sourceforge.net, stable@kernel.org,
+richard -rw- weinberger <richard.weinberger@gmail.com>, Sam Ravnborg
+<sam@ravnborg.org>
 
-Are you basing all of this on inline extents?  The other extents of
-variable size are more flexible (taking up the room in the leaf), but
-they can also easy be split during balancing.
 
--chris
+Hi Linus,
+
+The following patch fixes a regression that I caused in 2.6.32 when
+cleaning up the um architecture's linker scripts.
+
+I've not heard anything from the um maintainers (they have had since
+Richard Weinberger reported that this patch fixed the problem on December
+22), so I'm sending this to you now (and CCing stable@ since it affects
+2.6.32).
+
+       -Tim Abbott
+
+--
+
+um: remove PAGE_SIZE alignment in linker script causing kernel segfault.
+
+The linker script cleanup that I did in commit
+5d150a97f9391f5bcd7ba0d59d7a11c3de3cea80 accidentally introduced an
+ALIGN(PAGE_SIZE) when converting to use INIT_TEXT_SECTION; Richard
+Weinberger reported that this causes the kernel to segfault with
+CONFIG_STATIC_LINK=y.
+
+I'm not certain why this extra alignment is a problem, but it seems likely
+it is because previously
+
+__init_begin = _stext = _text = _sinittext
+
+and with the extra ALIGN(PAGE_SIZE), _sinittext becomes different from the
+rest.  So there is likely a bug here where something is assuming that
+_sinittext is the same as one of those other symbols.  But reverting the
+accidental change fixes the regression, so it seems worth committing that
+now.
+
+Signed-off-by: Tim Abbott <tabbott@ksplice.com>
+Reported-by: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Jeff Dike <jdike@addtoit.com>
+Cc: user-mode-linux-devel@lists.sourceforge.net
+---
+ arch/um/kernel/uml.lds.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/um/kernel/uml.lds.S b/arch/um/kernel/uml.lds.S
+index e7a6cca..664f942 100644
+--- a/arch/um/kernel/uml.lds.S
++++ b/arch/um/kernel/uml.lds.S
+@@ -22,7 +22,7 @@ SECTIONS
+  _text = .;
+  _stext = .;
+  __init_begin = .;
+-  INIT_TEXT_SECTION(PAGE_SIZE)
++  INIT_TEXT_SECTION(0)
+  . = ALIGN(PAGE_SIZE);
+
+  .text      :
+--
+1.6.5.7
