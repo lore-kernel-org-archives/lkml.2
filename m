@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761068Ab0FRQNL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 12:13:11 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:52165 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918Ab0FRQNK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 12:13:10 -0400
-Date: Fri, 18 Jun 2010 18:14:03 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv6.1 09/11] USB: gadget: g_multi: added documentation and
- INF files
-In-reply-to: <20100618155244.GB17971@kroah.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <op.veh7dpps7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <20100617175221.GE3644@kroah.com>
- <2809a031d19ac6ef793d7fe343e225b8d80099c3.1276864406.git.m.nazarewicz@samsung.com>
- <f4efaf12033f1e402303b60555c26f3779ba4aa1.1276864406.git.m.nazarewicz@samsung.com>
- <f8062cc154f51fc2a0812cda14deea0678644af9.1276864406.git.m.nazarewicz@samsung.com>
- <7337838b49bb102126eb678d330d7853ee55c5c6.1276864406.git.m.nazarewicz@samsung.com>
- <5e932f9348ec343254c91918d2c5d3d46fc2fe99.1276866168.git.m.nazarewicz@samsung.com>
- <20100618155244.GB17971@kroah.com>
+	id S1761144Ab0FRQOB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 12:14:01 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:55297 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758041Ab0FRQN7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 12:13:59 -0400
+From: Scott Goldman <scottjg@vmware.com>
+To: Andy Whitcroft <apw@canonical.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Jun 2010 09:11:27 -0700
+Subject: RE: [PATCH] checkpatch: fix false positive on casting to double
+ 	pointer
+Thread-Topic: [PATCH] checkpatch: fix false positive on casting to double
+ 	pointer
+Thread-Index: AcsO6OdbwDD7SPG1QsyOmVSyV3VxbgAGABgV
+Message-ID: <F78BCF638F95D74A99D036114107EDB50235BBE9B3@EXCH-MBX-3.vmware.com>
+References: <1276806411-15176-1-git-send-email-scottjg@vmware.com>
+	<AANLkTilrWSOoias64UGAnkV1RtIkVKiwapCnOYc2cS0_@mail.gmail.com>,<AANLkTinhcJAphiOo6Gj3pl7NY2oGkAwEw3xJZY_nvOxw@mail.gmail.com>
+In-Reply-To: <AANLkTinhcJAphiOo6Gj3pl7NY2oGkAwEw3xJZY_nvOxw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Jun 18, 2010 at 03:07:19PM +0200, Michal Nazarewicz wrote:
->> A short documentation of the g_multi driver along with INF
->> files for Windows XP SP3 are provided.
->>
->> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->> Sorry about the previous patch -- it was missing the gadget_multi.txt
->> file.  Sending corrected version.  Maybe I should start drinking coffee
->> after all...
-
-On Fri, 18 Jun 2010 17:52:44 +0200, Greg KH <greg@kroah.com> wrote:
-> Nah, I finally kicked my coffee habit :)
+> > Hrm, I would expect any number of levels of pointers to be detected
+> > already correctly.
+> >
+> > /me goes check.
 >
-> But could you resend all of these again, so I make sure to get the right
-> ones, I see a few v6.1 for some of these patches.
->
-> Seventh time is a charm...
+> We already have tests for both types which are passing generally, in
+> t730-* and t7020-* so I think this is more likely a failure to detect
+> the type as a type.  If you could send on the sample that triggers
+> this I will have a look.
+> 
+> -apw
 
-I guess I'll send them on Monday.  Maybe someone will have some
-comments over the weekend.  I'd like to avoid any v7.1 patches
--- did enough mass on the list for one week. ;)
+Yikes! you're right, lousy tests on my part. The part of my patch that triggered it was:
++  return snmp_fold_field((void __percpu **)net->mib.udp_statistics,
++           UDP_MIB_RCVBUFERRORS) +
++     snmp_fold_field((void __percpu **)net->mib.udplite_statistics,
++           UDP_MIB_RCVBUFERRORS);
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+
+ERROR: need consistent spacing around '*' (ctx:WxO)
+#115: FILE: drivers/net/vmxnet3/vmxnet3_drv.c:1784:
++       return snmp_fold_field((void __percpu **)net->mib.udp_statistics,
+                                              ^
+Maybe caused by the __percpu attr?
