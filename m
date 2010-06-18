@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933849Ab0FRR33 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 13:29:29 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46936 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933834Ab0FRR32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 13:29:28 -0400
-Message-ID: <4C1BACC6.5020602@kernel.org>
-Date: Fri, 18 Jun 2010 19:28:38 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Andy Walls <awalls@md.metrocast.net>,
-       Daniel Walker <dwalker@codeaurora.org>, mingo@elte.hu,
+	id S933861Ab0FRR3g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 13:29:36 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:4628 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933842Ab0FRR3d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 13:29:33 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6017"; a="44704518"
+Subject: Re: Overview of concurrency managed workqueue
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu, awalls@radix.net,
        linux-kernel@vger.kernel.org, jeff@garzik.org, rusty@rustcorp.com.au,
        cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
        johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-Subject: Re: Overview of concurrency managed workqueue
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>	<4C17C598.7070303@kernel.org>	<1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>	<4C18BF40.40607@kernel.org>	<1276694825.9309.12.camel@m0nster>	<4C18D1FD.9060804@kernel.org>	<1276695665.9309.17.camel@m0nster>	<4C18D574.1040903@kernel.org>	<1276697146.9309.27.camel@m0nster>	<1276776066.2461.15.camel@localhost>	<20100617161619.d3ebd73d.akpm@linux-foundation.org>	<4C1B1D3F.8030509@kernel.org>	<20100618003127.10d9e6c8.akpm@linux-foundation.org>	<4C1B29BF.7080404@kernel.org> <20100618100228.093ec17b.akpm@linux-foundation.org>
-In-Reply-To: <20100618100228.093ec17b.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4C1B2864.6010305@kernel.org>
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>
+	 <4C17C598.7070303@kernel.org>
+	 <1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
+	 <4C18BF40.40607@kernel.org>	<1276694825.9309.12.camel@m0nster>
+	 <4C18D1FD.9060804@kernel.org>	<1276695665.9309.17.camel@m0nster>
+	 <4C18D574.1040903@kernel.org>	<1276697146.9309.27.camel@m0nster>
+	 <4C18DC69.10704@kernel.org>	<1276698880.9309.44.camel@m0nster>
+	 <4C18E4B7.5040702@kernel.org>	<1276701074.9309.60.camel@m0nster>
+	 <4C18F2B8.9060805@kernel.org>	<1276705838.9309.94.camel@m0nster>
+	 <4C1901E9.2080907@kernel.org>
+	 <20100617161539.d4ea62c0.akpm@linux-foundation.org>
+	 <4C1B2864.6010305@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Jun 2010 10:29:26 -0700
+Message-ID: <1276882166.30433.49.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Jun 2010 17:28:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 2010-06-18 at 10:03 +0200, Tejun Heo wrote:
 
-On 06/18/2010 07:02 PM, Andrew Morton wrote:
-> um.  We've *already* engineered a mechanism which serves the
-> requirements which we've been discussing.  Then Tejun came along,
-> called it "niche" and busted it!
+> > I share Daniel's concerns here.  Being able to set a worker thread's
+> > priority or policy isn't a crazy thing.
+> 
+> Well, priority itself isn't but doing that from userland is and most
+> of the conversation was about cmwq taking away the ability to do that
+> from userland.
 
-Andrew, can we turn down dramatization a little bit?  I'll try to
-explain my viewpoint again, hopefully in clearer manner.
+I did a little test of this on v2.6.31 with my laptop.
 
-Workqueue is primarily an async mechanism.  It's designed to be that
-way and most of its current users don't care that much about execution
-priority.  As everything else in the kernel, it started simple and
-continued to evolve.  Up until now, workqueue - thread association has
-been largely fixed and it naturally grew some number of users which
-depended on that property.  Whether you like the term "niche" or not,
-they are few by large proportion.
+I used this test along with "fio" ,
 
-Please note that such association isn't something workqueue strives to
-achieve.  For example, tryinig to exploit the association on MT
-workqueue will be cumbersome over suspend/resume cycles and there's no
-provision to manage such events.
+[random-read]
+rw=randread
+size=128m
+directory=/tmp/
 
-Workqueues have become quite popular and grew a lot of users.
-Compounded by the increasing number of CPU cores, it's also showing
-various limitations, some of which affect ease of use while others
-scalability or unexpectedly long latencies.  Many of these issues for
-most workqueue users can be addressed by sharing workers and managing
-work execution centrally, which is what cmwq does.
+and I got these results,
 
-Sharing workers does cause problems for users which have assumed fixed
-workqueue - thread association, but as mentioned earlier, they're few
-and converting them to directly use kthread or a (yet non-existing)
-facility which guarantees fixed thread association wouldn't be
-difficult.
+clat (usec): min=196, max=185962, avg=11820.81, stdev=5961.96
+bw (KB/s) : min=   67, max=  665, per=100.20%, avg=337.68, stdev=36.55
 
-So, it seems logical to move those few cases over to kthread or a new
-facility and improve workqueue for the majority of users.  I'm not
-planning on "busting" anything.  All such users of course will be
-converted so that they keep working properly.
+then I raise the priority of kblockd to FIFO priority 50 with the
+following results,
 
-> Oh well.  Kernel threads should not be running with RT policy anyway. 
-> RT is a userspace feature, and whenever a kernel thread uses RT it
-> degrades userspace RT qos.  But I expect that using RT in kernel
-> threads is sometimes the best tradeoff, so let's not pretend that we're
-> getting something for nothing here!
+clat (usec): min=198, max=118528, avg=11749.48, stdev=5280.79
+bw (KB/s) : min=  184, max=  696, per=100.20%, avg=339.66, stdev=32.98
 
-Such use is limited to ST workqueues and I can write up a simple
-wrapper around kthread in a few hundred lines if necessary.  So, yes,
-we're losing one way of using ST workqueues but it sure wasn't very
-popular way to use it and it can easily be replaced.
+We ended up with a %36 max latency reduction, a slight increase in the
+min latency (~%2) and a slight decrease in the average latency. The
+latency became more deterministic ..
 
-Thanks.
+Now for the bandwidth we have a ~%5 maximum bandwidth increase, a huge
+increase in minimum bandwidth (%174 am I calculating that right?), and a
+slight increase in the average (%0.5) ..
+
+These results are just one off, so please re-test and check up on me.
+I'm not very familiar with "fio" or kblockd in general.
+
+However, these results seem far from crazy to me .. In fact I think
+people who really care about this sort of stuff might want to look into
+this type of tuning .. You get more deterministic latency, and you get
+slightly better performance in the average but way better performance in
+the corner cases.
+
+Daniel
 
 -- 
-tejun
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
