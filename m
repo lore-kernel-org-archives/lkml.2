@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab0FRGWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 02:22:55 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:39816 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753529Ab0FRGWy (ORCPT
+	id S1753866Ab0FRGZL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 02:25:11 -0400
+Received: from vms173013pub.verizon.net ([206.46.173.13]:58280 "EHLO
+	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753012Ab0FRGZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 02:22:54 -0400
-Date: Fri, 18 Jun 2010 16:22:25 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Tao Ma <tao.ma@oracle.com>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>,
-       Christoph Hellwig <hch@lst.de>, Eric Sandeen <sandeen@redhat.com>
-Subject: Re: [PATCH v2] xfs: Make fiemap works with sparse file.
-Message-ID: <20100618062225.GC6590@dastard>
-References: <20100614122912.GD6590@dastard>
- <1276764799-4837-1-git-send-email-tao.ma@oracle.com>
- <20100618004708.GZ6590@dastard>
- <4C1AD9A5.8010600@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C1AD9A5.8010600@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 18 Jun 2010 02:25:07 -0400
+Date: Fri, 18 Jun 2010 02:25:01 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Mike Chan <mike@android.com>
+Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-acpi@vger.kernel.org
+Subject: Re: RFC: /sys/power/policy_preference
+In-reply-to: <AANLkTilkblF0tfSnvLdVZVOi0r-dc32uAMuaiUlKesdn@mail.gmail.com>
+Message-id: <alpine.LFD.2.00.1006180156460.7628@localhost.localdomain>
+References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain>
+ <AANLkTilkblF0tfSnvLdVZVOi0r-dc32uAMuaiUlKesdn@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 10:27:49AM +0800, Tao Ma wrote:
-> >>This patch add a new parameter BMV_IF_NO_HOLES for bvm_iflags.
-> >>So with this flags, we don't use our 'out' in xfs_getbmap for
-> >>a hole. The solution is a bit ugly by just don't increasing
-> >>index of 'out' vector. I felt that it is not easy to skip it
-> >>at the very beginning since we have the complicated check and
-> >>some function like xfs_getbmapx_fix_eof_hole to adjust 'out'.
+On Thu, 17 Jun 2010, Mike Chan wrote:
+
+> On Wed, Jun 16, 2010 at 2:05 PM, Len Brown <lenb@kernel.org> wrote:
+> > Create /sys/power/policy_preference, giving user-space
+> > the ability to express its preference for kernel based
+> > power vs. performance decisions in a single place.
 > >
-> >... because I think we can safely skip xfs_getbmapx_fix_eof_hole()
-> >it only modifies the hole. Hence  just adding a check after the
-> >attribute fork end check (which needs to detect a hole to terminate)
-> >should be fine: e.g something like:
+> > This gives kernel sub-systems and drivers a central place
+> > to discover this system-wide policy preference.
+> > It also allows user-space to not have to be updated
+> > every time a sub-system or driver adds a new power/perf knob.
 > >
-> >			if (map[i].br_startblock == HOLESTARTBLOCK&&
-> >			whichfork == XFS_ATTR_FORK) {
-> >				/* came to the end of attribute fork */
-> >				out[cur_ext].bmv_oflags |= BMV_OF_LAST;
-> >				goto out_free_map;
-> >			}
-> >+			if (map[i].br_startblock == HOLESTARTBLOCK&&
-> >+				 (iflags&  BMV_IF_NO_HOLES)) {
-> >+				memset(&out[cur_ext], 0, sizeof(out[cur_ext]));
-> >+				continue;
-> >+			}
-> >
-> >Should work and avoid the worst of the ugliness.
-> I am afraid it doesn't work, at least from my test. It enters a dead loop.
-> I think the root cause is that your change doesn't update bmv_offset
-> and bmv_length for a hole. So in the large loop,
+> 
+> This might be ok as a convince feature for userspace, but if that is
+> the sole intention, is 5 states enough?
+>
+> Are these values sufficient? I
+> can say at least for Android this will probably won't be as useful
+> (but perhaps on your platforms it makes sense).
 
-Yes, you are right - I didn't consider the outer loop termination
-properly. My bad.
+Honestly, my first thought was to use 100 values -- a percentage.
+But I got quickly taked out of it by people much wiser than me.
 
-I'll add your patch to my qa list and move it onwards. Thanks.
+Consider that the vendors that are cleaning Linux's clock
+on laptops seem quite content with 3 values at the user-interface.
+So one might argue that 5 levels is already 66% more complexity
+than needed:-)
 
-Cheers,
+Some suggested special case states, eg for HPC.
+But those needs didn't fit into this simple power vs performance
+continuum, and every consumer of this interface needs to undertand
+every state, so adding special states would be a mistake.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+The folks that do HPC and the folks that do embedded devices
+are smart enough to tune their systems without using this
+rather blunt instrument.  They should continue to do so,
+and this mechanism should not get in their way.
+
+For example, if this mechanism is used to update powersave_bias
+inside ondemand, but at the same time somebody tunes powersave_bias
+by hand, the by-hand tuning must win.
+
+> As for a place for subsystems and drivers to check for what
+> performance mode you're in, do my driver how to check two places now?
+> Whats stopping someone from overriding cpufreq, or cpuidle? I might be
+> confused here (if I am someone please correct me) but isn't this
+> somewhat along he lines of pm runtime / pm qos if drivers want to
+> check what power / performance state the system is in?
+
+pm runtime and pm qos are much bigger hammers, and this
+mechanism is intended to complement them, not replace them.
+
+Simply stated, this mechanism is intended just to give
+a global hint of the user's power vs. performance preference
+at a given time.  There are places in the kernel and drivers
+where power vs performance decisions are made with zero
+concept of user preference, and this hint can help there.
+
+Other parts of the kernel don't care, or have sufficient
+information to make informed decisions, and thus they
+simply wouldn't need to make use of this hint.
+
+thanks,
+Len Brown, Intel Open Source Technology Center
+
