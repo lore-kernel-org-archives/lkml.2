@@ -1,134 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758156Ab0FRKQt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 06:16:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46801 "EHLO hera.kernel.org"
+	id S1758967Ab0FRKRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 06:17:49 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46867 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756850Ab0FRKQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 06:16:47 -0400
-Date: Fri, 18 Jun 2010 10:16:23 GMT
-From: tip-bot for Eric B Munson <ebmunson@us.ibm.com>
-Cc: acme@redhat.com, anton@samba.org, linux-kernel@vger.kernel.org,
-       paulus@samba.org, hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
-       ebmunson@us.ibm.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, anton@samba.org, acme@redhat.com,
-       ebmunson@us.ibm.com, peterz@infradead.org, tglx@linutronix.de,
+	id S1757267Ab0FRKRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 06:17:47 -0400
+Date: Fri, 18 Jun 2010 10:17:18 GMT
+From: tip-bot for Chase Douglas <chase.douglas@canonical.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+       hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
+       tglx@linutronix.de, chase.douglas@canonical.com, mhiramat@redhat.com,
        mingo@elte.hu
-In-Reply-To: <1276523793-15422-1-git-send-email-ebmunson@us.ibm.com>
-References: <1276523793-15422-1-git-send-email-ebmunson@us.ibm.com>
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+       linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+       tglx@linutronix.de, chase.douglas@canonical.com, mhiramat@redhat.com,
+       mingo@elte.hu
+In-Reply-To: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
+References: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols: Function descriptor symbol lookup
-Message-ID: <tip-70c3856b2f1304e0abc65f1b96a8c60ddfc0fb9e@git.kernel.org>
-Git-Commit-ID: 70c3856b2f1304e0abc65f1b96a8c60ddfc0fb9e
+Subject: [tip:perf/core] perf probe: Add kernel source path option
+Message-ID: <tip-9ed7e1b85cd55dc46cb9410a23086bdaa2ff3eb9@git.kernel.org>
+Git-Commit-ID: 9ed7e1b85cd55dc46cb9410a23086bdaa2ff3eb9
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Jun 2010 10:16:24 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Jun 2010 10:17:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  70c3856b2f1304e0abc65f1b96a8c60ddfc0fb9e
-Gitweb:     http://git.kernel.org/tip/70c3856b2f1304e0abc65f1b96a8c60ddfc0fb9e
-Author:     Eric B Munson <ebmunson@us.ibm.com>
-AuthorDate: Mon, 14 Jun 2010 14:56:33 +0100
+Commit-ID:  9ed7e1b85cd55dc46cb9410a23086bdaa2ff3eb9
+Gitweb:     http://git.kernel.org/tip/9ed7e1b85cd55dc46cb9410a23086bdaa2ff3eb9
+Author:     Chase Douglas <chase.douglas@canonical.com>
+AuthorDate: Mon, 14 Jun 2010 15:26:30 -0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 17 Jun 2010 10:06:27 -0300
+CommitDate: Thu, 17 Jun 2010 10:27:57 -0300
 
-perf symbols: Function descriptor symbol lookup
+perf probe: Add kernel source path option
 
-Currently symbol resolution does not work for 64-bit programs on architectures
-that use function descriptors such as ppc64.
-
-The problem is that a symbol doesn't point to a text address, it points to a
-data area that contains (amongst other things) a pointer to the text address.
-
-We look for a section called ".opd" which is the function descriptor area. To
-create the full symbol table, when we see a symbol in the function descriptor
-section we load the first pointer and use that as the text address.
+The probe plugin requires access to the source code for some operations.  The
+source code must be in the exact same location as specified by the DWARF tags,
+but sometimes the location is an absolute path that cannot be replicated by a
+normal user. This change adds the -s|--source option to allow the user to
+specify the root of the kernel source tree.
 
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <1276523793-15422-1-git-send-email-ebmunson@us.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Eric B Munson <ebmunson@us.ibm.com>
+Cc: Masami Hiramatsu <mhiramat@redhat.com>
+LKML-Reference: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c |   37 ++++++++++++++++++++++++++++++++++---
- 1 files changed, 34 insertions(+), 3 deletions(-)
+ tools/perf/Documentation/perf-probe.txt |    4 ++
+ tools/perf/builtin-probe.c              |    2 +
+ tools/perf/util/probe-finder.c          |   58 +++++++++++++++++++++++++++++--
+ tools/perf/util/symbol.h                |    1 +
+ 4 files changed, 62 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index b63e571..971d0a0 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -933,6 +933,25 @@ static bool elf_sec__is_a(GElf_Shdr *self, Elf_Data *secstrs, enum map_type type
- 	}
+diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+index 94a258c..ea531d9 100644
+--- a/tools/perf/Documentation/perf-probe.txt
++++ b/tools/perf/Documentation/perf-probe.txt
+@@ -31,6 +31,10 @@ OPTIONS
+ --vmlinux=PATH::
+ 	Specify vmlinux path which has debuginfo (Dwarf binary).
+ 
++-s::
++--source=PATH::
++	Specify path to kernel source.
++
+ -v::
+ --verbose::
+         Be more verbose (show parsed arguments, etc).
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index e4a4da3..5455186 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -182,6 +182,8 @@ static const struct option options[] = {
+ 		     "Show source code lines.", opt_show_lines),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
++	OPT_STRING('s', "source", &symbol_conf.source_prefix,
++		   "directory", "path to kernel source"),
+ #endif
+ 	OPT__DRY_RUN(&probe_event_dry_run),
+ 	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index d964cb1..baf6653 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -37,6 +37,7 @@
+ #include "event.h"
+ #include "debug.h"
+ #include "util.h"
++#include "symbol.h"
+ #include "probe-finder.h"
+ 
+ /* Kprobe tracer basic type is up to u64 */
+@@ -57,6 +58,55 @@ static int strtailcmp(const char *s1, const char *s2)
+ 	return 0;
  }
  
-+static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
++/*
++ * Find a src file from a DWARF tag path. Prepend optional source path prefix
++ * and chop off leading directories that do not exist. Result is passed back as
++ * a newly allocated path on success.
++ * Return 0 if file was found and readable, -errno otherwise.
++ */
++static int get_real_path(const char *raw_path, char **new_path)
 +{
-+	Elf_Scn *sec = NULL;
-+	GElf_Shdr shdr;
-+	size_t cnt = 1;
-+
-+	while ((sec = elf_nextscn(elf, sec)) != NULL) {
-+		gelf_getshdr(sec, &shdr);
-+
-+		if ((addr >= shdr.sh_addr) &&
-+		    (addr < (shdr.sh_addr + shdr.sh_size)))
-+			return cnt;
-+
-+		++cnt;
++	if (!symbol_conf.source_prefix) {
++		if (access(raw_path, R_OK) == 0) {
++			*new_path = strdup(raw_path);
++			return 0;
++		} else
++			return -errno;
 +	}
 +
-+	return -1;
++	*new_path = malloc((strlen(symbol_conf.source_prefix) +
++			    strlen(raw_path) + 2));
++	if (!*new_path)
++		return -ENOMEM;
++
++	for (;;) {
++		sprintf(*new_path, "%s/%s", symbol_conf.source_prefix,
++			raw_path);
++
++		if (access(*new_path, R_OK) == 0)
++			return 0;
++
++		switch (errno) {
++		case ENAMETOOLONG:
++		case ENOENT:
++		case EROFS:
++		case EFAULT:
++			raw_path = strchr(++raw_path, '/');
++			if (!raw_path) {
++				free(*new_path);
++				*new_path = NULL;
++				return -ENOENT;
++			}
++			continue;
++
++		default:
++			free(*new_path);
++			*new_path = NULL;
++			return -errno;
++		}
++	}
 +}
 +
- static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 			 int fd, symbol_filter_t filter, int kmodule)
+ /* Line number list operations */
+ 
+ /* Add a line to line number list */
+@@ -1096,11 +1146,13 @@ end:
+ static int line_range_add_line(const char *src, unsigned int lineno,
+ 			       struct line_range *lr)
  {
-@@ -944,12 +963,13 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 	int err = -1;
- 	uint32_t idx;
- 	GElf_Ehdr ehdr;
--	GElf_Shdr shdr;
--	Elf_Data *syms;
-+	GElf_Shdr shdr, opdshdr;
-+	Elf_Data *syms, *opddata = NULL;
- 	GElf_Sym sym;
--	Elf_Scn *sec, *sec_strndx;
-+	Elf_Scn *sec, *sec_strndx, *opdsec;
- 	Elf *elf;
- 	int nr = 0;
-+	size_t opdidx = 0;
- 
- 	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
- 	if (elf == NULL) {
-@@ -969,6 +989,10 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 			goto out_elf_end;
++	int ret;
++
+ 	/* Copy real path */
+ 	if (!lr->path) {
+-		lr->path = strdup(src);
+-		if (lr->path == NULL)
+-			return -ENOMEM;
++		ret = get_real_path(src, &lr->path);
++		if (ret != 0)
++			return ret;
  	}
- 
-+	opdsec = elf_section_by_name(elf, &ehdr, &opdshdr, ".opd", &opdidx);
-+	if (opdsec)
-+		opddata = elf_rawdata(opdsec, NULL);
-+
- 	syms = elf_getdata(sec, NULL);
- 	if (syms == NULL)
- 		goto out_elf_end;
-@@ -1013,6 +1037,13 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 		if (!is_label && !elf_sym__is_a(&sym, map->type))
- 			continue;
- 
-+		if (opdsec && sym.st_shndx == opdidx) {
-+			u32 offset = sym.st_value - opdshdr.sh_addr;
-+			u64 *opd = opddata->d_buf + offset;
-+			sym.st_value = *opd;
-+			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
-+		}
-+
- 		sec = elf_getscn(elf, sym.st_shndx);
- 		if (!sec)
- 			goto out_elf_end;
+ 	return line_list__add_line(&lr->line_list, lineno);
+ }
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 10b7ff8..80e569b 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -71,6 +71,7 @@ struct symbol_conf {
+ 			full_paths,
+ 			show_cpu_utilization;
+ 	const char	*vmlinux_name,
++			*source_prefix,
+ 			*field_sep;
+ 	const char	*default_guest_vmlinux_name,
+ 			*default_guest_kallsyms,
