@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760183Ab0FRKYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 06:24:17 -0400
-Received: from t111.niisi.ras.ru ([193.232.173.111]:34968 "EHLO
-	t111.niisi.ras.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759218Ab0FRKYP (ORCPT
+	id S1760245Ab0FRK33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 06:29:29 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52933 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759218Ab0FRK31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 06:24:15 -0400
-Message-ID: <4C1B4C0A.9070506@niisi.msk.ru>
-Date: Fri, 18 Jun 2010 14:35:54 +0400
-From: "Gleb O. Raiko" <raiko@niisi.msk.ru>
-Organization: NIISI RAN
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
-MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: David Daney <ddaney@caviumnetworks.com>, Jesper Nilsson <jesper@jni.nu>,
-       linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: MIPS: return after handling coprocessor 2 exception
-References: <20100617132554.GB24162@jni.nu> <4C1A57AE.9080706@caviumnetworks.com> <4C1B263E.7070906@niisi.msk.ru> <20100618100053.GA4466@linux-mips.org>
-In-Reply-To: <20100618100053.GA4466@linux-mips.org>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
+	Fri, 18 Jun 2010 06:29:27 -0400
+Subject: Re: [PATCH] ASoC: Fix overflow bug in SOC_DOUBLE_R_SX_TLV
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Stuart Longland <redhatter@gentoo.org>
+Cc: ALSA Development List <alsa-devel@alsa-project.org>,
+       Takashi Iwai <tiwai@suse.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1276829770-31557-1-git-send-email-redhatter@gentoo.org>
+References: <20100618023810.GS7759@www.longlandclan.yi.org>
+	 <1276829770-31557-1-git-send-email-redhatter@gentoo.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Jun 2010 11:29:24 +0100
+Message-ID: <1276856964.3054.1.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Antivirus: Dr.Web (R) for Mail Servers on t111.niisi.ras.ru host
-X-Antivirus-Code: 100000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.06.2010 14:00, Ralf Baechle wrote:
-> static int default_cu2_call(struct notifier_block *nfb, unsigned long action,
->          void *data)
-> {
-> 	...
->
-> 	return NOTIFY_OK | NOTIFY_STOP;
-NOTIFY_STOP implies NOTIFY_OK, so
-	return NOTIFY_STOP;
-shall be enough.
-> }
+On Fri, 2010-06-18 at 12:56 +1000, Stuart Longland wrote:
+> When SX_TLV widgets are read, if the gain is set to a value below 0dB,
+> the mixer control is erroniously read as being at maximum volume.
+> 
+> The value read out of the CODEC register is never sign-extended, and
+> when the minimum value is subtracted (read; added, since the minimum is
+> negative) the result is a number greater than the maximum allowed value
+> for the control, and hence it saturates.
+> 
+> Solution: Mask the result so that it "wraps around", emulating
+> sign-extension.
+> 
+> Signed-off-by: Stuart Longland <redhatter@gentoo.org>
+> ---
+>  sound/soc/soc-core.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+> index a82a797..0470288 100644
+> --- a/sound/soc/soc-core.c
+> +++ b/sound/soc/soc-core.c
+> @@ -2400,8 +2400,8 @@ int snd_soc_get_volsw_2r_sx(struct snd_kcontrol *kcontrol,
+>  	int val = snd_soc_read(codec, mc->reg) & mask;
+>  	int valr = snd_soc_read(codec, mc->rreg) & mask;
+>  
+> -	ucontrol->value.integer.value[0] = ((val & 0xff)-min);
+> -	ucontrol->value.integer.value[1] = ((valr & 0xff)-min);
+> +	ucontrol->value.integer.value[0] = ((val & 0xff)-min) & mask;
+> +	ucontrol->value.integer.value[1] = ((valr & 0xff)-min) & mask;
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(snd_soc_get_volsw_2r_sx);
 
-> The notifier list could also be used for example by perf
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
-Or octeon cop2 handler that just sends NOTIFY_BAD for getting the same 
-behavior.
-
-Gleb.
