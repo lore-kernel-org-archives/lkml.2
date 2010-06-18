@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab0FRCOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 22:14:11 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:42814 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754509Ab0FRCOJ (ORCPT
+	id S1755337Ab0FRCWE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 22:22:04 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:60762 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754509Ab0FRCWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 22:14:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=VPOb+xrFHVnFDANazuA2NK1H7YvarNzHXGfrpW8NFblt1HSjwzKzSFz3/NFEvo+oBi
-         8dNzz5LvCN2HXKoqWGQZ7GGcv6eTSFlGqZRuRGN/i5nioB9B8JGnB+XKJqV3WR3sswl5
-         vwEOtQPLuoJg/tznE3XqPS4vpc3HZf2Fplcc4=
-Date: Fri, 18 Jun 2010 04:14:07 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 6/8] perf: Per PMU disable
-Message-ID: <20100618021405.GD5345@nowhere>
-References: <20100616160027.590430763@chello.nl> <20100616160238.529009255@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100616160238.529009255@chello.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 17 Jun 2010 22:22:01 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 18 Jun 2010 11:17:35 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: balbir@linux.vnet.ibm.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX][PATCH -mm] fix bad call of memcg_oom_recover at cancel
+ move.
+Message-Id: <20100618111735.b3d64d95.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100618105741.4e596ea7.nishimura@mxp.nes.nec.co.jp>
+References: <20100617172034.00ea8835.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100617092442.GJ4306@balbir.in.ibm.com>
+	<20100618105741.4e596ea7.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 06:00:33PM +0200, Peter Zijlstra wrote:
-> +static void armpmu_pmu_enable(struct pmu *pmu)
->  {
-> +static void powerpc_pmu_pmu_disable(struct pmu *pmu)
->  {
-> +static void fsl_emb_pmu_pmu_disable(struct pmu *pmu)
->  {
-> +static void sh_pmu_pmu_enable(struct pmu *pmu)
-> +{
-> +static void sparc_pmu_pmu_enable(struct pmu *pmu)
->  {
-> +static void x86_pmu_pmu_disable(struct pmu *pmu)
->  {
+On Fri, 18 Jun 2010 10:57:41 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+
+> > May I recommend the following change instead
+> > 
+> > 
+> > Don't crash on a null memcg being passed, check if memcg
+> > is NULL and handle the condition gracefully
+> > 
+> > Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+> > ---
+> >  mm/memcontrol.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index c6ece0a..d71c488 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -1370,7 +1370,7 @@ static void memcg_wakeup_oom(struct mem_cgroup *mem)
+> >  
+> >  static void memcg_oom_recover(struct mem_cgroup *mem)
+> >  {
+> > -	if (mem->oom_kill_disable && atomic_read(&mem->oom_lock))
+> > +	if (mem && mem->oom_kill_disable && atomic_read(&mem->oom_lock))
+> >  		memcg_wakeup_oom(mem);
+> >  }
+> >  
+> I agree to this fix.
+> 
+> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> 
+
+I tend to dislike band-aid in callee. but it's not important here.
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
 
-These namings are really bad. Why not just using pmu once
-in each names? x86_pmu_enable, etc...
+
 
