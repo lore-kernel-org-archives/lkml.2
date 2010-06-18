@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab0FRHkL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 03:40:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41022 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756433Ab0FRHkE (ORCPT
+	id S1757043Ab0FRHk3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 03:40:29 -0400
+Received: from server78.greatnet.de ([83.133.96.102]:45324 "EHLO
+	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756267Ab0FRHkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 03:40:04 -0400
-Date: Fri, 18 Jun 2010 09:39:50 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-       Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Paul Mundt <lethal@linux-sh.org>, Dmitry Torokhov <dtor@mail.ru>,
-       Eric Miao <eric.y.miao@gmail.com>, netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] Driver core: reduce duplicated code
-Message-ID: <20100618073950.GA12822@pengutronix.de>
-References: <1276591677-4678-1-git-send-email-u.kleine-koenig@pengutronix.de> <1276591677-4678-2-git-send-email-u.kleine-koenig@pengutronix.de> <20100615090500.GA17595@pengutronix.de> <20100616205332.GB15837@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100616205332.GB15837@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 18 Jun 2010 03:40:24 -0400
+From: Henrik Kretzschmar <henne@nachtwindheim.de>
+To: akpm@linux-foundation.org
+Cc: pjones@redhat.com, marcin.slusarz@gmail.com, arnaud.patard@rtp-net.org,
+       jayakumar.lkml@gmail.com, linux-kernel@vger.kernel.org,
+       linux-fbdev@vger.kernel.org,
+       Henrik Kretzschmar <henne@nachtwindheim.de>
+Subject: [PATCH] fbdev: section cleanup in efifb
+Date: Fri, 18 Jun 2010 09:40:15 +0200
+Message-Id: <1276846815-26550-1-git-send-email-henne@nachtwindheim.de>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+This patch removes 43 section mismatches by moving
+the two structures efifb_defined and efifb_fix
+from .init.data to .devinit.data.
 
-On Wed, Jun 16, 2010 at 01:53:32PM -0700, Greg KH wrote:
-> On Tue, Jun 15, 2010 at 11:05:00AM +0200, Uwe Kleine-König wrote:
-> > On Tue, Jun 15, 2010 at 10:47:56AM +0200, Uwe Kleine-König wrote:
-> > > This makes the two similar functions platform_device_register_simple
-> > > and platform_device_register_data one line inline functions using a new
-> > > generic function platform_device_register_resndata.
-> > I forgot to add some comments to this mail, ... sorry.
-> > 
-> >  - I'm not completely happy with the name of the new function.  If
-> >    someone has a better name please tell me.
-> 
-> I don't like it either, what is "resndata" supposed to stand for?
-resources and data -> res'n'data -> resndata.
+Also the two structure arrays dmi_system_table[] and dmi_list[]
+have been moved from .data to .init.rodata and .init.data,
+which saves, if built-in, some space.
 
-> >  - can platform_device_register_resndata be moved to __init_or_module?
-> 
-> I doubt it, but try it and see if a build warns about it.
-for x86_64_defconfig + MODULES=n there are two section mismatches:
-	dock_add
-	regulatory_init
+On x86_64 'size -A' showed that these sections changed size:
 
-regulatory_init is only called from
+efifb.o:
+section                     size-old        size-new
+.data                       1200            688
+.init.data                  7840            512
+.init.rodata                0               7568
+.devinit.data               0               256
 
-	static int __init cfg80211_init(void)
+Total                       11927           11911
 
-.  (I just sent a patch[1] that moves regulatory_init to .init.text.)
+Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+---
+This patch is:
+* diffed against Linus tree
+* compile tested
+* carefully reviewed (by me)
 
-dock_add (in drivers/acpi/dock.c) is a bit harder.  I will take a look
-later if it can go to .init.text (together with a few more functions),
-too.
+ drivers/video/efifb.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-> >  - I moved the kernel docs to the header but didn't test if they are
-> >    picked up when generating docs.  Even if not, there is no better
-> >    place, is there?
-> 
-> No, that's the proper place, but make sure the docbook source is also
-> picking up the .h file, I don't know if it currently does.
-It does not, will fix in a v2.
-
-Thanks
-Uwe
-
-[1] http://mid.gmane.org/1276846735-12105-2-git-send-email-u.kleine-koenig@pengutronix.de
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index 4a56f46..815f84b 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -16,7 +16,7 @@
+ 
+ #include <video/vga.h>
+ 
+-static struct fb_var_screeninfo efifb_defined __initdata = {
++static struct fb_var_screeninfo efifb_defined __devinitdata = {
+ 	.activate		= FB_ACTIVATE_NOW,
+ 	.height			= -1,
+ 	.width			= -1,
+@@ -27,7 +27,7 @@ static struct fb_var_screeninfo efifb_defined __initdata = {
+ 	.vmode			= FB_VMODE_NONINTERLACED,
+ };
+ 
+-static struct fb_fix_screeninfo efifb_fix __initdata = {
++static struct fb_fix_screeninfo efifb_fix __devinitdata = {
+ 	.id			= "EFI VGA",
+ 	.type			= FB_TYPE_PACKED_PIXELS,
+ 	.accel			= FB_ACCEL_NONE,
+@@ -59,7 +59,7 @@ static struct efifb_dmi_info {
+ 	int stride;
+ 	int width;
+ 	int height;
+-} dmi_list[] = {
++} dmi_list[] __initdata = {
+ 	[M_I17] = { "i17", 0x80010000, 1472 * 4, 1440, 900 },
+ 	[M_I20] = { "i20", 0x80010000, 1728 * 4, 1680, 1050 }, /* guess */
+ 	[M_I20_SR] = { "imac7", 0x40010000, 1728 * 4, 1680, 1050 },
+@@ -83,7 +83,7 @@ static int set_system(const struct dmi_system_id *id);
+ 		DMI_MATCH(DMI_PRODUCT_NAME, name) },		\
+ 	  &dmi_list[enumid] }
+ 
+-static struct dmi_system_id __initdata dmi_system_table[] = {
++static const struct dmi_system_id dmi_system_table[] __initconst = {
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac4,1", M_I17),
+ 	/* At least one of these two will be right; maybe both? */
+ 	EFIFB_DMI_SYSTEM_ID("Apple Computer, Inc.", "iMac5,1", M_I20),
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.0.4
+
