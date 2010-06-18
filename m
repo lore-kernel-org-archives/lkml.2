@@ -1,79 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933757Ab0FRQwq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 12:52:46 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52190 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933736Ab0FRQwp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 12:52:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=o/vZECl+k76+QlO7wINXdLh/IE7fqS9HZ3zP23ZWw3MIB1fh/NPLi7bfLrVoylij+W
-         DwUU2Nc11ydsGvyq5AUeCZOvQHWjeDb9cfr0eydcgK/gJfSdfEwepu4UE/KttyObmdwm
-         xnbGnvZYAdUKNyYqnKDvICujNQaW2wPYCGylQ=
+	id S933769Ab0FRQxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 12:53:15 -0400
+Received: from kroah.org ([198.145.64.141]:53784 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757675Ab0FRQxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 12:53:13 -0400
+Subject: patch staging-hv-fix-hv_utils-module-to-properly-autoload.patch added to gregkh-2.6 tree
+To: haiyangz@microsoft.com, devel@driverdev.osuosl.org, gregkh@suse.de,
+       hjanssen@microsoft.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+       virtualization@lists.osdl.org
+From: <gregkh@suse.de>
+Date: Fri, 18 Jun 2010 09:53:08 -0700
+In-Reply-To: <1FB5E1D5CA062146B38059374562DF7266B8931E@TK5EX14MBXC128.redmond.corp.microsoft.com>
+Message-ID: <12768799881800@site>
 MIME-Version: 1.0
-In-Reply-To: <20100618172121.528f2e09@lxorguk.ukuu.org.uk>
-References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
-	<201006172348.08180.arnd@arndb.de>
-	<20100617220926.GC5345@nowhere>
-	<201006181458.07687.arnd@arndb.de>
-	<20100618172121.528f2e09@lxorguk.ukuu.org.uk>
-Date: Fri, 18 Jun 2010 09:52:44 -0700
-X-Google-Sender-Auth: YaESmd7pEU1oh0HYVKsN-8K4ZsM
-Message-ID: <AANLkTikfqHO1x0P_iyYTsGGjDcZGCEmZFPUDWiKzk2SQ@mail.gmail.com>
-Subject: Re: [PATCH] tty: avoid recursive BTM in pty_close
-From: Tony Luck <tony.luck@intel.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-       linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=ANSI_X3.4-1968
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 9:21 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> So I ack this patch - it's the only way to find out 8)
 
-Here's the results from this patch on top of next-20100618
+This is a note to let you know that I've just added the patch titled
 
-The "WARNING: at include/linux/tty.h:589 tty_open+0x9d0/0xc60()" messages
-are back, two of them, both with same stack trace:
+    Subject: Staging: hv: fix hv_utils module to properly autoload
+
+to my gregkh-2.6 tree.  Its filename is
+
+    staging-hv-fix-hv_utils-module-to-properly-autoload.patch
+
+This tree can be found at 
+    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
 
 
-Call Trace:
- [<a0000001000159d0>] show_stack+0x50/0xa0
- [<a00000010090f270>] dump_stack+0x30/0x50
- [<a00000010008e2c0>] warn_slowpath_common+0xc0/0x120
- [<a00000010008e360>] warn_slowpath_null+0x40/0x60
- [<a00000010053eb40>] tty_open+0x160/0xc60
- [<a0000001001af9b0>] chrdev_open+0x310/0x360
- [<a0000001001a58b0>] __dentry_open+0x350/0x680
- [<a0000001001a5d80>] nameidata_to_filp+0x80/0xc0
- [<a0000001001bfee0>] finish_open+0x160/0x380
- [<a0000001001c0cc0>] do_last+0xbc0/0xce0
- [<a0000001001c5270>] do_filp_open+0x2f0/0xb40
- [<a0000001001a5290>] do_sys_open+0x90/0x200
- [<a0000001001a54d0>] sys_open+0x50/0x80
- [<a000000100b907e0>] kernel_init+0x340/0x420
- [<a000000100013c10>] kernel_thread_helper+0x30/0x60
- [<a00000010000a0c0>] start_kernel_thread+0x20/0x40
+>From haiyangz@microsoft.com Wed May 19 08:56:34 2010
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Wed, 19 May 2010 15:56:28 +0000
+Subject: Staging: hv: fix hv_utils module to properly autoload
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>, "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>, "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>, "'gregkh@suse.de'" <gregkh@suse.de>
+Cc: Hank Janssen <hjanssen@microsoft.com>
+Message-ID: <1FB5E1D5CA062146B38059374562DF7266B8931E@TK5EX14MBXC128.redmond.corp.microsoft.com>
 
-The tty_release() ones have all gone though.
 
-I've also just noticed that the serial console output gets garbled
-(like it is at the wrong baud rate) when userland code starts
-printing messages. Stays garbled until /sbin/agetty starts up
-to print the "Welcome ... login:" banner.
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-Similar garbage when shutting down with "reboot" command.
-I can see "INIT", then it all goes to pieces until I see the kernel
-print "Restarting system".
+Added autoloading based on pci id and dmi strings.
 
--Tony
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Cc: stable <stable@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/staging/hv/hv_utils.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+--- a/drivers/staging/hv/hv_utils.c
++++ b/drivers/staging/hv/hv_utils.c
+@@ -24,6 +24,8 @@
+ #include <linux/slab.h>
+ #include <linux/sysctl.h>
+ #include <linux/reboot.h>
++#include <linux/dmi.h>
++#include <linux/pci.h>
+ 
+ #include "logging.h"
+ #include "osd.h"
+@@ -251,10 +253,36 @@ static void heartbeat_onchannelcallback(
+ 	DPRINT_EXIT(VMBUS);
+ }
+ 
++static const struct pci_device_id __initconst
++hv_utils_pci_table[] __maybe_unused = {
++	{ PCI_DEVICE(0x1414, 0x5353) }, /* Hyper-V emulated VGA controller */
++	{ 0 }
++};
++MODULE_DEVICE_TABLE(pci, hv_utils_pci_table);
++
++
++static const struct dmi_system_id __initconst
++hv_utils_dmi_table[] __maybe_unused  = {
++	{
++		.ident = "Hyper-V",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Microsoft Corporation"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Virtual Machine"),
++			DMI_MATCH(DMI_BOARD_NAME, "Virtual Machine"),
++		},
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(dmi, hv_utils_dmi_table);
++
++
+ static int __init init_hyperv_utils(void)
+ {
+ 	printk(KERN_INFO "Registering HyperV Utility Driver\n");
+ 
++	if (!dmi_check_system(hv_utils_dmi_table))
++		return -ENODEV;
++
+ 	hv_cb_utils[HV_SHUTDOWN_MSG].channel->OnChannelCallback =
+ 		&shutdown_onchannelcallback;
+ 	hv_cb_utils[HV_SHUTDOWN_MSG].callback = &shutdown_onchannelcallback;
+
