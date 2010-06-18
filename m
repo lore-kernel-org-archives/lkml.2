@@ -1,57 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab0FRF11 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 01:27:27 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47754 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455Ab0FRF1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 01:27:12 -0400
-Date: Fri, 18 Jun 2010 07:27:09 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Ryan Mallon <ryan@bluewatersys.com>
-Cc: linux kernel <linux-kernel@vger.kernel.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
-       ext-jani.1.nikula@nokia.com
-Subject: Re: gpiolib and sleeping gpios
-Message-ID: <20100618052709.GA6392@pengutronix.de>
-References: <4C1A980F.8080908@bluewatersys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C1A980F.8080908@bluewatersys.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752739Ab0FRF1l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 01:27:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:48017 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751906Ab0FRF1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 01:27:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,436,1272870000"; 
+   d="scan'208";a="809175843"
+Subject: Re: [patch] Over schedule issue fixing
+From: "Alex,Shi" <alex.shi@intel.com>
+To: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com,
+       a.p.zijlstra@chello.nl
+Cc: yanmin.zhang@intel.com, tim.c.chen@intel.com
+In-Reply-To: <1276754893.9452.5442.camel@debian>
+References: <1276754893.9452.5442.camel@debian>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Jun 2010 12:25:01 +0800
+Message-ID: <1276835101.2118.185.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ryan,
+Add Suresh and Peter into thread. 
+Would you like to give some comments of this issue? 
 
-On Fri, Jun 18, 2010 at 09:47:59AM +1200, Ryan Mallon wrote:
-> Then all drivers can just call gpio_(set/get)_value and any attempts to
-> use sleeping gpios from an non-sleeping context will be caught by the
-> might_sleep_if check. Is there something I am missing about this?
-The downside is that you change the semantic of gpio_get_value (and
-gpio_set_value I assume?).  But as calling gpio_get_value with a gpio
-that gpio_cansleep() is an error anyhow, so I think that's OK.  The big
-pro is that the API is simplified.
- 
-> I can prepare a patch which combines the non-sleeping and sleeping
-> variants, but I wanted to check that I'm not missing something
-> fundamental first.
-I will happily look at such a patch and give my comments.
+Thanks!
+Alex 
 
-Best regards
-Uwe
+On Thu, 2010-06-17 at 14:08 +0800, Alex,Shi wrote:
+> commit e709715915d69b6a929d77e7652c9c3fea61c317 introduced an imbalance
+> schedule issue. If we do not use CGROUP, function update_h_load won't
+> want to update h_load. When the system has a large number of tasks far
+> more than logical CPU number, the incorrect cfs_rq[cpu]->h_load value
+> will cause load_balance() to pull too many tasks to local CPU from the
+> busiest CPU. So the busiest CPU keeps being in a round robin. That will
+> hurt performance. 
+> The issue was found originally by a scientific calculation workload that
+> developed by Yanmin. with the commit, the workload performance drops
+> about 40% from this commit.  We can be reproduced by a short program as
+> following.
+> 
+> # gcc -o sl sched-loop.c -lpthread
+> # ./sl -n 100 -t 100 & 
+> # cat /proc/sched_debug &> sd1 
+> # grep -A 1 cpu# sd1
+> sd1:cpu#0, 2533.008 MHz
+> sd1-  .nr_running                    : 2
+> --
+> sd1:cpu#1, 2533.008 MHz
+> sd1-  .nr_running                    : 1
+> --
+> sd1:cpu#2, 2533.008 MHz
+> sd1-  .nr_running                    : 11
+> --
+> sd1:cpu#3, 2533.008 MHz
+> sd1-  .nr_running                    : 12
+> --
+> sd1:cpu#4, 2533.008 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#5, 2533.008 MHz
+> sd1-  .nr_running                    : 11
+> --
+> sd1:cpu#6, 2533.008 MHz
+> sd1-  .nr_running                    : 10
+> --
+> sd1:cpu#7, 2533.008 MHz
+> sd1-  .nr_running                    : 12
+> --
+> sd1:cpu#8, 2533.008 MHz
+> sd1-  .nr_running                    : 11
+> --
+> sd1:cpu#9, 2533.008 MHz
+> sd1-  .nr_running                    : 12
+> --
+> sd1:cpu#10, 2533.008 MHz
+> sd1-  .nr_running                    : 1
+> --
+> sd1:cpu#11, 2533.008 MHz
+> sd1-  .nr_running                    : 1
+> --
+> sd1:cpu#12, 2533.008 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#13, 2533.008 MHz
+> sd1-  .nr_running                    : 2
+> --
+> sd1:cpu#14, 2533.008 MHz
+> sd1-  .nr_running                    : 2
+> --
+> sd1:cpu#15, 2533.008 MHz
+> sd1-  .nr_running                    : 1
+> 
+> After apply the fixing patch, cfs_rq get balance. 
+> 
+> sd1:cpu#0, 2533.479 MHz
+> sd1-  .nr_running                    : 7
+> --
+> sd1:cpu#1, 2533.479 MHz
+> sd1-  .nr_running                    : 7
+> --
+> sd1:cpu#2, 2533.479 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#3, 2533.479 MHz
+> sd1-  .nr_running                    : 7
+> --
+> sd1:cpu#4, 2533.479 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#5, 2533.479 MHz
+> sd1-  .nr_running                    : 7
+> --
+> sd1:cpu#6, 2533.479 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#7, 2533.479 MHz
+> sd1-  .nr_running                    : 7
+> --
+> sd1:cpu#8, 2533.479 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#9, 2533.479 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#10, 2533.479 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#11, 2533.479 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#12, 2533.479 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#13, 2533.479 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#14, 2533.479 MHz
+> sd1-  .nr_running                    : 6
+> --
+> sd1:cpu#15, 2533.479 MHz
+> sd1-  .nr_running                    : 6
+> 
+> ---
+> #include <stdlib.h>
+> #include <stdio.h>
+> #include <unistd.h>
+> #include <pthread.h>
+> 
+> volatile int * exiting;
+> 
+> void *idle_loop(){
+>         volatile int calc01 = 100;
+>         while(*exiting !=1)
+>                 calc01++;
+> }
+> int main(int argc, char *argv[]){
+>         int                     i, t, c, er=0, num=8;
+>         static  char            optstr[] = "n:t:";
+>         pthread_t                       ptid[1024];
+> 
+>         while ((c = getopt(argc, argv, optstr)) != EOF)
+>                 switch (c) {
+>                 case 'n':
+>                         num = atoi(optarg);
+>                         break;
+>                 case 't':
+>                         t = atoi(optarg);
+>                         break;
+>                 case '?':
+>                         er = 1;
+>                         break;
+>                 }
+> 
+>         if (er) {
+>                 printf("usage: %s %s\n", argv[0], optstr);
+>                 exit(1);
+>         }
+>         exiting = malloc(sizeof(int));
+> 
+>         *exiting = 0;
+>         for(i=0; i<num ; i++)
+>                 pthread_create(&ptid[i], NULL, idle_loop, NULL);
+> 
+>         sleep(t);
+>         *exiting = 1;
+> 
+>         for (i=0; i<num; i++)
+>                 pthread_join(ptid[i], NULL);
+>         exit(0);
+> 
+> }
+> 
+> Reviewed-by: Yanmin zhang <yanmin.zhang@intel.com>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> 
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index f8b8996..a18bf93 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -1660,9 +1660,6 @@ static void update_shares(struct sched_domain *sd)
+>  
+>  static void update_h_load(long cpu)
+>  {
+> -	if (root_task_group_empty())
+> -		return;
+> -
+>  	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
+>  }
+>  
+> 
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
