@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759921Ab0FRJwO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 05:52:14 -0400
-Received: from mail.ntou.edu.tw ([140.121.99.220]:54134 "EHLO mail.ntou.edu.tw"
+	id S1759669Ab0FRJwN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 05:52:13 -0400
+Received: from mail.ntou.edu.tw ([140.121.99.220]:54133 "EHLO mail.ntou.edu.tw"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759361Ab0FRJwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757913Ab0FRJwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Jun 2010 05:52:11 -0400
-Message-ID: <20100618171815.2y4smnkyoks4ww0g@webmail.ntou.edu.tw>
-Date: Fri, 18 Jun 2010 17:18:15 +0800
+X-Greylist: delayed 2059 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jun 2010 05:52:11 EDT
+Message-ID: <20100618171757.kp33e03g4cs0c0cw@webmail.ntou.edu.tw>
+Date: Fri, 18 Jun 2010 17:17:57 +0800
 From: Webmail Helpdest Support <digitalsuportteam@live.com>
 To: undisclosed-recipients:;
 Subject: You have exceeded your email quota limit
