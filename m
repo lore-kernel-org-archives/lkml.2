@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207Ab0FRN60 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 09:58:26 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:45522 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932422Ab0FRN6Y convert rfc822-to-8bit (ORCPT
+	id S933378Ab0FRN7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 09:59:07 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:44249 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932422Ab0FRN7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 09:58:24 -0400
+	Fri, 18 Jun 2010 09:59:05 -0400
+Date: Fri, 18 Jun 2010 15:59:43 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCH] USB: gadget: f_mass_storage: dead code removed
+To: linux-usb@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+       linux-kernel@vger.kernel.org
+Message-id: <51bd2ee9463ebc8665480baac702645c4947b37a.1276868197.git.m.nazarewicz@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Fri, 18 Jun 2010 15:59:17 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 5/6] usb/gadget: Do not take BKL for gadget->ops->ioctl
-In-reply-to: <1275426285-9088-6-git-send-email-arnd@arndb.de>
-To: Greg KH <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       John Kacur <jkacur@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-       David Brownell <dbrownell@users.sourceforge.net>
-Message-id: <op.veh043ad7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <1275426285-9088-1-git-send-email-arnd@arndb.de>
- <1275426285-9088-6-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 Jun 2010 23:04:44 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
-> There is no gadget driver in the tree that
-> actually implements the ioctl operation, so
-> obviously it is not necessary to hold the
-> BKL around the call.
+The ep0req_name was never used in f_mass_storage hence it may
+be safely removed from the code.  It was a leftover from File
+Storage Gadget which used it for debug messages.
 
-Should the callback in ops be renamed to unlocked_ioctl then as to not
-create confusion? Just a thought.
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+---
+ drivers/usb/gadget/f_mass_storage.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-> --- a/drivers/usb/gadget/f_fs.c
-> +++ b/drivers/usb/gadget/f_fs.c
-> @@ -714,9 +714,7 @@ static long ffs_ep0_ioctl(struct file *file, unsigned code, unsigned long value)
->  		struct ffs_function *func = ffs->func;
->  		ret = func ? ffs_func_revmap_intf(func, value) : -ENODEV;
->  	} else if (gadget->ops->ioctl) {
-> -		lock_kernel();
->  		ret = gadget->ops->ioctl(gadget, code, value);
-> -		unlock_kernel();
->  	} else {
->  		ret = -ENOTTY;
->  	}
-
-> --- a/drivers/usb/gadget/inode.c
-> +++ b/drivers/usb/gadget/inode.c
-> @@ -1299,11 +1299,9 @@ static long dev_ioctl (struct file *fd, unsigned code, unsigned long value)
->  	struct usb_gadget	*gadget = dev->gadget;
->  	long ret = -ENOTTY;
->-	if (gadget->ops->ioctl) {
-> -		lock_kernel();
-> +	if (gadget->ops->ioctl)
->  		ret = gadget->ops->ioctl (gadget, code, value);
-> -		unlock_kernel();
-> -	}
-> +
->  	return ret;
->  }
-
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index 7d05a0b..44dbb29 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -333,7 +333,6 @@ struct fsg_common {
+ 	struct usb_ep		*ep0;		/* Copy of gadget->ep0 */
+ 	struct usb_request	*ep0req;	/* Copy of cdev->req */
+ 	unsigned int		ep0_req_tag;
+-	const char		*ep0req_name;
+ 
+ 	struct fsg_buffhd	*next_buffhd_to_fill;
+ 	struct fsg_buffhd	*next_buffhd_to_drain;
+@@ -624,8 +623,6 @@ static int fsg_setup(struct usb_function *f,
+ 
+ 		/* Respond with data/status */
+ 		req->length = min((u16)1, w_length);
+-		fsg->common->ep0req_name =
+-			ctrl->bRequestType & USB_DIR_IN ? "ep0-in" : "ep0-out";
+ 		return ep0_queue(fsg->common);
+ 	}
+ 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+1.7.1
+
