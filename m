@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab0FRTEs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 15:04:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754834Ab0FRTEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 15:04:47 -0400
-Date: Fri, 18 Jun 2010 21:02:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Don Zickus <dzickus@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Jerome Marchand <jmarchan@redhat.com>,
-       Mandeep Singh Baines <msb@google.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org
-Subject: [PATCH] fix the racy
-	check_hung_uninterruptible_tasks()->rcu_lock_break() logic
-Message-ID: <20100618190251.GA17297@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755166Ab0FRTNB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 15:13:01 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:55857 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab0FRTM6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 15:12:58 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6017"; a="44863404"
+From: Gregory Bean <gbean@codeaurora.org>
+To: dwalker@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Gregory Bean <gbean@codeaurora.org>
+Subject: [PATCH 0/3] msm: Add gpiolib devices to MSM7x30 and QSD8x50.
+Date: Fri, 18 Jun 2010 12:12:52 -0700
+Message-Id: <1276888375-13221-1-git-send-email-gbean@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-check_hung_uninterruptible_tasks()->rcu_lock_break() introduced by
-"softlockup: check all tasks in hung_task" commit ce9dbe24 looks
-absolutely wrong.
+Hi folks:
 
-	- rcu_lock_break() does put_task_struct(). If the task has exited
-	  it is not safe to even read its ->state, nothing protects this
-	  task_struct.
+Here is a proposed patch series which adds the configuration and devices
+needed to enable gpiolib on the MSM7x30 and QSD8x50 chipsets.
 
-	- The TASK_DEAD checks are wrong too. Contrary to the comment, we
-	  can't use it to check if the task was unhashed. It can be unhashed
-	  without TASK_DEAD, or it can be valid with TASK_DEAD.
+Patch 1 adds the register mapping information for all supported
+MSM/QSD targets.  I wasn't sure about adding register definitions for boards
+which weren't yet using those definitions, but the alternative was to have
+each following patch change gpio_hw.h over and over, so I put all the
+definitions in at once.  Thoughts?
 
-	  For example, an autoreaping task can do release_task(current)
-	  long before it sets TASK_DEAD in do_exit().
+Patch 2 adds the first target, the 7x30, as well as some generic macros
+to ease the definition of the gpio devices and their platform data,
+as this is long-winded, but mindless and repetitive work.  I considered
+putting the generic macro-definitions in their own patch, but without
+any targets to use them it seemed a little silly to leave them on their
+own and I ended up attaching them to the first patch to use them - 
+what do y'all think?  Does it warrant being split up?
 
-	  Or, a zombie task can have ->state == TASK_DEAD but release_task()
-	  was not called, and in this case we must not break the loop.
+Patch 3 adds device configuration for the 8x50.
 
-Change this code to check pid_alive() instead, and do this before we
-drop the reference to the task_struct.
+Thanks,
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
+G
 
- kernel/hung_task.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+Gregory Bean (3):
+  msm: Add gpio register address mapping information.
+  msm: 7x30: Add gpio device configuration.
+  msm: 8x50: add gpio device configuration.
 
---- 35-rc2/kernel/hung_task.c~CHT_FIX_RCU_LOCK_BREAK	2009-12-18 19:05:38.000000000 +0100
-+++ 35-rc2/kernel/hung_task.c	2010-06-18 20:06:11.000000000 +0200
-@@ -113,15 +113,20 @@ static void check_hung_task(struct task_
-  * For preemptible RCU it is sufficient to call rcu_read_unlock in order
-  * exit the grace period. For classic RCU, a reschedule is required.
-  */
--static void rcu_lock_break(struct task_struct *g, struct task_struct *t)
-+static bool rcu_lock_break(struct task_struct *g, struct task_struct *t)
- {
-+	bool can_cont;
-+
- 	get_task_struct(g);
- 	get_task_struct(t);
- 	rcu_read_unlock();
- 	cond_resched();
- 	rcu_read_lock();
-+	can_cont = pid_alive(g) && pid_alive(t);
- 	put_task_struct(t);
- 	put_task_struct(g);
-+
-+	return can_cont;
- }
- 
- /*
-@@ -148,9 +153,7 @@ static void check_hung_uninterruptible_t
- 			goto unlock;
- 		if (!--batch_count) {
- 			batch_count = HUNG_TASK_BATCHING;
--			rcu_lock_break(g, t);
--			/* Exit if t or g was unhashed during refresh. */
--			if (t->state == TASK_DEAD || g->state == TASK_DEAD)
-+			if (!rcu_lock_break(g, t))
- 				goto unlock;
- 		}
- 		/* use "==" to skip the TASK_KILLABLE tasks waiting on NFS */
+ arch/arm/mach-msm/board-msm7x30.c     |   29 ++++++++-
+ arch/arm/mach-msm/board-qsd8x50.c     |   29 ++++++++-
+ arch/arm/mach-msm/devices-msm7x30.c   |   23 +++++++
+ arch/arm/mach-msm/devices-qsd8x50.c   |   23 +++++++
+ arch/arm/mach-msm/devices.h           |   35 ++++++++++
+ arch/arm/mach-msm/gpio_hw-7x30.h      |  112 +++++++++++++++++++++++++++++++++
+ arch/arm/mach-msm/gpio_hw-7xxx.h      |   97 ++++++++++++++++++++++++++++
+ arch/arm/mach-msm/gpio_hw-8x50.h      |  112 +++++++++++++++++++++++++++++++++
+ arch/arm/mach-msm/gpio_hw.h           |   35 ++++++++++
+ arch/arm/mach-msm/include/mach/gpio.h |    2 +
+ 10 files changed, 493 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/mach-msm/gpio_hw-7x30.h
+ create mode 100644 arch/arm/mach-msm/gpio_hw-7xxx.h
+ create mode 100644 arch/arm/mach-msm/gpio_hw-8x50.h
+ create mode 100644 arch/arm/mach-msm/gpio_hw.h
 
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
