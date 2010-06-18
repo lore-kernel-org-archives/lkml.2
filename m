@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761074Ab0FRL72 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 07:59:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33814 "EHLO mx2.suse.de"
+	id S932126Ab0FRMCM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 08:02:12 -0400
+Received: from smtp209.alice.it ([82.57.200.105]:59325 "EHLO smtp209.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761043Ab0FRL70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 07:59:26 -0400
-Date: Fri, 18 Jun 2010 13:59:23 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Ott <alan@signal11.us>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] HID: Documentation for hidraw
-In-Reply-To: <1276832283-12084-1-git-send-email-alan@signal11.us>
-Message-ID: <alpine.LNX.2.00.1006181353120.13809@pobox.suse.cz>
-References: <1276832283-12084-1-git-send-email-alan@signal11.us>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1761073Ab0FRMCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 08:02:10 -0400
+X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jun 2010 08:02:09 EDT
+Date: Fri, 18 Jun 2010 13:55:09 +0200
+From: Giuliano Pochini <pochini@shiny.it>
+To: "F. Heitkamp" <heitkamp@ameritech.net>
+Cc: alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
+       linux-audio-user@lists.linuxaudio.org,
+       Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
+       alsa-user@lists.sourceforge.net
+Subject: Re: [Alsa-user] [alsa-devel] Crash 2.6.32.x, Echo 3G, Alsa, SCSI
+Message-ID: <20100618135509.08a51fe8@Jay>
+In-Reply-To: <4C1A10DA.4080304@ameritech.net>
+References: <73211.74714.qm@web180714.mail.sp1.yahoo.com>
+	<4B684513.8090201@ladisch.de>
+	<20100202230911.71e8b600@Jay>
+	<4C040864.8010205@ameritech.net>
+	<20100531225936.4a9344df@Jay>
+	<4C04FC3F.70905@ameritech.net>
+	<20100603000828.04af4bdc@Jay>
+	<4C1A10DA.4080304@ameritech.net>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.14.7; powerpc-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010, Alan Ott wrote:
+On Thu, 17 Jun 2010 08:11:06 -0400
+"F. Heitkamp" <heitkamp@ameritech.net> wrote:
 
-> Documenation for the hidraw driver.
-
-Thanks a lot for writing this up, Alan. It's something that has been 
-lingering on my TODO for just too long, it's great that someone finally 
-got fed up with it and wrote it :)
-
+> >> My goal is to be able to plug in a MIDI keyboard, or USB guitar
+> >> interface and play along with songs etc.
+> >>
+> >> I plugged in a MIDI keyboard, "/proc/asound/cards" showed the keyboard
+> >> was recognized.  The keyboard has a USB and MIDI interface.
+> >> I am not sure if they both work at the same time.  I had the MIDI cable
+> >> plugged into the Gina3G, but I could not tell if the keyboard was
+> >> recognized.
+> >> I compiled csound5.  When I engaged it the system immediately froze and
+> >> started spitting out:
+> >> [...]
+> > Ok, I compiled csound, but I don't know how to use it. How can I reproduce
+> > the problem ?
+> >
+> Sorry I took so long to get back to you.
+> It turns out Csound is not related to the problem.
 > 
-> Signed-off-by: Alan Ott <alan@signal11.us>
-> ---
->  The information in this patch relies on:
->   [PATCH v2] HID: Add Support for Setting and Getting Feature  Reports from hidraw
->   which has been applied by Jiri Kosina.
+> In this case I am only using kernel 2.6.33.5-rt23-amd64, alsa lib 1.0.2, 
+> but 2.6.34 does it too.
+> I bring up firefox.  Web pages attempt to play sound.   The kernel 
+> begans doing:
 > 
->  Please provide comments. I'm sure someone here will have a better idea where
->  to put this than the root of Documentation/. I didn't see a better place, as
->  hidraw is used for both Bluetooth and USB.
-
-Either Documentation/input comes to mind, or we could even establish 
-Documentation/hid directory as well.
-
->  Documentation/hidraw.txt |  283 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 283 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/hidraw.txt
+> [ 2879.766331] allocate_pipes: ch=1 int=2
+> [ 2879.766332] allocate_pipes: channel already open
+> [ 2879.766333] allocate_pipes(1) err=-11
+> [ 2879.766334] pcm_hw_freed
+> [ 2.821190] pcm_analog_out_open  cs=0  oc=2  r=44100
+> [ 2879.821266] allocate_pipes: ch=1 int=2
+> [ 2879.821267] allocate_pipes: channel already open
 > 
-> diff --git a/Documentation/hidraw.txt b/Documentation/hidraw.txt
-> new file mode 100644
-> index 0000000..7153a06
-> --- /dev/null
-> +++ b/Documentation/hidraw.txt
-> @@ -0,0 +1,283 @@
-> +      HIDRAW - Raw Access to USB and Bluetooth Human Interface Devices 
-> +     ==================================================================
-> +
-> +The hidraw driver provides a raw interface to USB and Bluetooth Human
-> +Interface Devices (HIDs).  It differs from hiddev in that reports sent and
-> +received are not parsed by the HID parser, but are sent to and received from
-> +the device unmodified.
+> ,infinitely.  The system is unusable at this point and I have to 
+> Alt-SysRq-k to get back in.
+> 
+> Let me know what other information to provide.
 
-The important point behind hidraw (compared to hiddev), always has been 
-that it's in fact completely independent on underlying hardware transport 
-protocol. Currently there are no other implementations of HID than the 
-ones using Bluetooth or USB, but there is no general obstacle to using 
-hidraw once any vendor comes with HID-over-FibreChannel :) for example.
+Perhaps is it related with the OSS emulation ?  Do you know if the browser
+plays the sound itself or if it is using an external program or plugin ?
 
-This basic principle might be worth mentioning as well.
-
-> +Hidraw should be used if the userspace application knows exactly how to
-> +communicate with the hardware device, and is able to construct the HID
-> +reports manually.  This is often the case when making userspace drivers for
-> +custom HID devices.
-> +
-> +Hidraw is also useful for communicating with non-conformant HID devices
-> +which send and receive data in a way that is inconsistent with their report
-> +descriptors.  Because hiddev parses reports which are sent and received
-> +through it and checks them against the device's report descriptor, such
-> +communication with these non-conformant devices is impossible using hiddev.
-
-hidraw is just one of the alternatives here of course. Writing in-kernel 
-driver also can be done to overcome these obstacles.
-
-Thanks,
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Giuliano.
