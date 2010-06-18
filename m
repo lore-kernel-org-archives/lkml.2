@@ -1,163 +1,437 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299Ab0FRF05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 01:26:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:15531 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165Ab0FRF0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 01:26:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,436,1272870000"; 
-   d="diff'?scan'208";a="528021274"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: Stephen Hemminger <shemminger@vyatta.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
-       "davem@davemloft.net" <davem@davemloft.net>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>
-Date: Fri, 18 Jun 2010 13:26:49 +0800
-Subject: RE: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
-	external.
-Thread-Topic: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
-	external.
-Thread-Index: AcsODzkxPK6uVz5GQIqMA0G8bjeaHAAlw28g
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com>
-References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
- <20100606161348.427822fb@nehalam>
- <20100608052744.GA21547@gondor.apana.org.au>
- <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com>
- <20100611052112.GA25649@gondor.apana.org.au>
- <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com>
- <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com>
- <20100617112119.GB1515@gondor.apana.org.au>
-In-Reply-To: <20100617112119.GB1515@gondor.apana.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: multipart/mixed;
-	boundary="_002_F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CCshsmsx502ccrc_"
+	id S1752597Ab0FRF1N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 01:27:13 -0400
+Received: from coyote.quickmin.net ([217.14.112.24]:54966 "EHLO
+	coyote.quickmin.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab0FRF1K convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 01:27:10 -0400
+Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=default; d=telemotive.de;
+  b=eCKjXKhRFny8SgOT5wYibi1EwxvC308K2kCwCBZZ2SkgKOS3n69C1iO8u4x1b1HIm/cfrsr//Ie4Ipr8TOs+Gxksv1JwlHIbmGvxdgYgZvWY7ShMVtwLUiDILYlysfFhyVir/f2bpa4Fn5n/C5vuPjri3Nc45uiKoJnGoUEJoAI=  ;
+From: Roman Fietze <roman.fietze@telemotive.de>
+Organization: Telemotive AG
+To: Wan ZongShun <mcuos.com@gmail.com>
+Subject: Re: [rtc-linux] [PATCH] isl12022: added Intersil ISL12022 RTC
+User-Agent: KMail/1.13.3 (Linux/2.6.31.12-0.2-default; KDE/4.4.3; x86_64; ; )
+Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <201006171123.31484.roman.fietze@telemotive.de> <4C1ACCCF.1050605@gmail.com> <AANLkTikvYWFRthn5gyppxYExKs8C-5FC-7ybnqO_sWTk@mail.gmail.com>
+In-Reply-To: <AANLkTikvYWFRthn5gyppxYExKs8C-5FC-7ybnqO_sWTk@mail.gmail.com>
 MIME-Version: 1.0
+Message-ID: <201006180727.06274.roman.fietze@telemotive.de>
+Date: Fri, 18 Jun 2010 07:27:05 +0200
+X-MIMETrack: Itemize by SMTP Server on muc/Telemotive(Release 8.0.2FP1|January 12, 2009) at
+ 18.06.2010 07:27:06,
+	Serialize by Router on muc/Telemotive(Release 8.0.2FP1|January 12, 2009) at
+ 18.06.2010 07:27:06,
+	Serialize complete at 18.06.2010 07:27:06
+Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CCshsmsx502ccrc_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+Hallo Wan,
 
->-----Original Message-----
->From: Herbert Xu [mailto:herbert@gondor.apana.org.au]
->Sent: Thursday, June 17, 2010 7:21 PM
->To: Xin, Xiaohui
->Cc: Stephen Hemminger; netdev@vger.kernel.org; kvm@vger.kernel.org;
->linux-kernel@vger.kernel.org; mst@redhat.com; mingo@elte.hu; davem@davemlo=
-ft.net;
->jdike@linux.intel.com
->Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from =
-external.
->
->On Sun, Jun 13, 2010 at 04:58:36PM +0800, Xin, Xiaohui wrote:
->>
->> Herbert,
->> In this way, I think we should create 3 functions at least in drivers to=
- allocate rx buffer, to
->receive the rx buffers, and to clean the rx buffers.
->>
->> We can also have another way here. We can provide a function to only sub=
-stitute
->> alloc_page(), and a function to release the pages when cleaning the rx b=
-uffers.
->
->Yes that's exactly what I had in mind.
->
-Herbert,
-I have questions about the idea above:
-1) Since netdev_alloc_skb() is still there, and we only modify alloc_page()=
-,=20
-then we don't need napi_gro_frags() any more, the driver's original receivi=
-ng=20
-function is ok. Right?
+On Friday 18 June 2010 04:08:02 Wan ZongShun wrote:
 
-2) Is napi_gro_frags() only suitable for TCP protocol packet?=20
-I have done a small test for ixgbe driver to let it only allocate paged buf=
-fers=20
-and found kernel hangs when napi_gro_frags() receives an ARP packet.
+> I have to remind you to use scripts/checkpatch.pl' to check your
+> patch format. There are more warning and errors in your patch.
 
-3) As I have mentioned above, with this idea, netdev_alloc_skb() will alloc=
-ate=20
-as usual, the data pointed by skb->data will be copied into the first guest=
- buffer.=20
-That means we should reserve sufficient room in guest buffer. For PS mode=20
-supported driver (for example ixgbe), the room will be more than 128. After=
- 128bytes,=20
-we will put the first frag data. Look into virtio-net.c the function page_t=
-o_skb() =20
-and receive_mergeable(), that means we should modify guest virtio-net drive=
-r to=20
-compute the offset as the parameter for skb_set_frag().
+Ok, all done. One patch and checkpatch.pl tells me it's ok.
 
-How do you think about this? Attached is a patch to how to modify the guest=
- driver.
-I reserve 512 bytes as an example, and transfer the header len of the skb i=
-n hdr->hdr_len.
 
-Thanks
-Xiaohui
->Cheers,
->--
->Visit Openswan at http://www.openswan.org/
->Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
->Home Page: http://gondor.apana.org.au/~herbert/
->PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+>From 62d43961b73aafe10d1b33b0702b378cc29d0881 Mon Sep 17 00:00:00 2001
+From: Roman Fietze <roman.fietze@telemotive.de>
+Date: Fri, 18 Jun 2010 07:20:44 +0200
+Subject: [PATCH] isl12022: add Intersil ISL12022 RTC driver
 
---_002_F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CCshsmsx502ccrc_
-Content-Type: application/octet-stream; name="mod-guest.diff"
-Content-Description: mod-guest.diff
-Content-Disposition: attachment; filename="mod-guest.diff"; size=2031;
-	creation-date="Fri, 18 Jun 2010 10:46:31 GMT";
-	modification-date="Fri, 18 Jun 2010 10:46:31 GMT"
-Content-Transfer-Encoding: base64
+- derived from rtc-pcf8563
+- no SRAM driver
 
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvbmV0L3ZpcnRpb19uZXQuYyBiL2RyaXZlcnMvbmV0L3ZpcnRp
-b19uZXQuYwppbmRleCBiMDU3N2RkLi5hNGU2OTg4IDEwMDY0NAotLS0gYS9kcml2ZXJzL25ldC92
-aXJ0aW9fbmV0LmMKKysrIGIvZHJpdmVycy9uZXQvdmlydGlvX25ldC5jCkBAIC0zNiw3ICszNiw5
-IEBAIG1vZHVsZV9wYXJhbShnc28sIGJvb2wsIDA0NDQpOwogCiAvKiBGSVhNRTogTVRVIGluIGNv
-bmZpZy4gKi8KICNkZWZpbmUgTUFYX1BBQ0tFVF9MRU4gKEVUSF9ITEVOICsgVkxBTl9ITEVOICsg
-RVRIX0RBVEFfTEVOKQotI2RlZmluZSBHT09EX0NPUFlfTEVOCTEyOAorI2RlZmluZSBHT09EX0NP
-UFlfTEVOIAk1MTIJCiAKICNkZWZpbmUgVklSVE5FVF9TRU5EX0NPTU1BTkRfU0dfTUFYICAgIDIK
-IApAQCAtMTQ3LDExICsxNDksMTIgQEAgc3RhdGljIHN0cnVjdCBza19idWZmICpwYWdlX3RvX3Nr
-YihzdHJ1Y3QgdmlydG5ldF9pbmZvICp2aSwKIHsKIAlzdHJ1Y3Qgc2tfYnVmZiAqc2tiOwogCXN0
-cnVjdCBza2Jfdm5ldF9oZHIgKmhkcjsKLQl1bnNpZ25lZCBpbnQgY29weSwgaGRyX2xlbiwgb2Zm
-c2V0OworCXVuc2lnbmVkIGludCBjb3B5LCBoZHJfbGVuLCBvZmZzZXQsIGVuZDsKIAljaGFyICpw
-OwogCiAJcCA9IHBhZ2VfYWRkcmVzcyhwYWdlKTsKQEAgLTE3MiwxNCArMTc1LDI1IEBAIHN0YXRp
-YyBzdHJ1Y3Qgc2tfYnVmZiAqcGFnZV90b19za2Ioc3RydWN0IHZpcnRuZXRfaW5mbyAqdmksCiAJ
-bGVuIC09IGhkcl9sZW47CiAJcCArPSBvZmZzZXQ7CiAKLQljb3B5ID0gbGVuOworCWlmICghaGRy
-LT5oZHIuaGRyX2xlbikKKwkJY29weSA9IGxlbjsKKwllbHNlIHsKKwkJY29weSA9IGhkci0+aGRy
-Lmhkcl9sZW47CisJCWVuZCA9IHNrYl90YWlscm9vbShza2IpOworCQlwcmludGsoS0VSTl9JTkZP
-ICJjICVkLCBlICVkXG4iLCBjb3B5LCBlbmQpOworCX0KKwogCWlmIChjb3B5ID4gc2tiX3RhaWxy
-b29tKHNrYikpCiAJCWNvcHkgPSBza2JfdGFpbHJvb20oc2tiKTsKIAltZW1jcHkoc2tiX3B1dChz
-a2IsIGNvcHkpLCBwLCBjb3B5KTsKIAogCWxlbiAtPSBjb3B5OwotCW9mZnNldCArPSBjb3B5Owor
-CWlmICghaGRyLT5oZHIuaGRyX2xlbikKKwkJb2Zmc2V0ICs9IGNvcHk7CisJZWxzZQorCQlvZmZz
-ZXQgPSBlbmQ7CiAKKwlwcmludGsoS0VSTl9JTkZPICJvZmYgJWRcbiIsIG9mZnNldCk7CiAJd2hp
-bGUgKGxlbikgewogCQlzZXRfc2tiX2ZyYWcoc2tiLCBwYWdlLCBvZmZzZXQsICZsZW4pOwogCQlw
-YWdlID0gKHN0cnVjdCBwYWdlICopcGFnZS0+cHJpdmF0ZTsKQEAgLTIxOCw3ICsyMzgsMTIgQEAg
-c3RhdGljIGludCByZWNlaXZlX21lcmdlYWJsZShzdHJ1Y3QgdmlydG5ldF9pbmZvICp2aSwgc3Ry
-dWN0IHNrX2J1ZmYgKnNrYikKIAkJCWxlbiA9IFBBR0VfU0laRTsKIAogCQlzZXRfc2tiX2ZyYWco
-c2tiLCBwYWdlLCAwLCAmbGVuKTsKLQorCQlpZiAoaGRyLT5oZHIuaGRyX2xlbikKKwkJCXNldF9z
-a2JfZnJhZyhza2IsIHBhZ2UsIDU0MiwgJmxlbik7CisJCWVsc2UKKwkJCXNldF9za2JfZnJhZyhz
-a2IsIHBhZ2UsIDAsICZsZW4pOwogCQktLXZpLT5udW07CiAJfQogCXJldHVybiAwOwpAQCAtMzEx
-LDcgKzM0MCwxNSBAQCBzdGF0aWMgdm9pZCByZWNlaXZlX2J1ZihzdHJ1Y3QgbmV0X2RldmljZSAq
-ZGV2LCB2b2lkICpidWYsIHVuc2lnbmVkIGludCBsZW4pCiAJCXNrYl9zaGluZm8oc2tiKS0+Z3Nv
-X3R5cGUgfD0gU0tCX0dTT19ET0RHWTsKIAkJc2tiX3NoaW5mbyhza2IpLT5nc29fc2VncyA9IDA7
-CiAJfQotCisJc2tiLT5pcF9zdW1tZWQgPSAxOwogCW5ldGlmX3JlY2VpdmVfc2tiKHNrYik7CiAJ
-cmV0dXJuOwogCkBAIC00NzksNyArNTE2LDggQEAgYWdhaW46CiAJCXJlY2VpdmVkKys7CiAJfQog
-Ci0JaWYgKHZpLT5udW0gPCB2aS0+bWF4IC8gMikgeworCWlmICh2aS0+bnVtIDwgdmktPm1heCAt
-IDEwKSB7CiAJCWlmICghdHJ5X2ZpbGxfcmVjdih2aSwgR0ZQX0FUT01JQykpCiAJCQlzY2hlZHVs
-ZV9kZWxheWVkX3dvcmsoJnZpLT5yZWZpbGwsIDApOwogCX0K
+Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
+---
+ drivers/rtc/Kconfig        |    9 ++
+ drivers/rtc/Makefile       |    1 +
+ drivers/rtc/rtc-isl12022.c |  327 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 337 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-isl12022.c
 
---_002_F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CCshsmsx502ccrc_--
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 6a13037..ade6427 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -203,6 +203,15 @@ config RTC_DRV_ISL1208
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-isl1208.
+ 
++config RTC_DRV_ISL12022
++	tristate "Intersil ISL12022"
++	help
++	  If you say yes here you get support for the
++	  Intersil ISL12022 RTC chip.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-isl12022.
++
+ config RTC_DRV_X1205
+ 	tristate "Xicor/Intersil X1205"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 44ef194..782d516 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -45,6 +45,7 @@ obj-$(CONFIG_RTC_DRV_EP93XX)	+= rtc-ep93xx.o
+ obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm3130.o
+ obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
+ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
++obj-$(CONFIG_RTC_DRV_ISL12022)	+= rtc-isl12022.o
+ obj-$(CONFIG_RTC_DRV_M41T80)	+= rtc-m41t80.o
+ obj-$(CONFIG_RTC_DRV_M41T94)	+= rtc-m41t94.o
+ obj-$(CONFIG_RTC_DRV_M48T35)	+= rtc-m48t35.o
+diff --git a/drivers/rtc/rtc-isl12022.c b/drivers/rtc/rtc-isl12022.c
+new file mode 100644
+index 0000000..4a8c9dd
+--- /dev/null
++++ b/drivers/rtc/rtc-isl12022.c
+@@ -0,0 +1,327 @@
++/*
++ * An I2C driver for the Intersil ISL 12022
++ *
++ * Author: Roman Fietze <roman.fietze@telemotive.de>
++ *
++ * Based on the Philips PCF8563 RTC
++ * by Alessandro Zummo <a.zummo@towertech.it>.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation.
++ */
++
++#include <linux/i2c.h>
++#include <linux/bcd.h>
++#include <linux/rtc.h>
++#include <linux/slab.h>
++
++#define DRV_VERSION "0.1"
++
++/* ISL register offsets */
++#define ISL12022_REG_SC		0x00
++#define ISL12022_REG_MN		0x01
++#define ISL12022_REG_HR		0x02
++#define ISL12022_REG_DT		0x03
++#define ISL12022_REG_MO		0x04
++#define ISL12022_REG_YR		0x05
++#define ISL12022_REG_DW		0x06
++
++#define ISL12022_REG_SR		0x07
++#define ISL12022_REG_INT	0x08
++
++/* ISL register bits */
++#define ISL12022_HR_MIL		(1 << 7)	/* military or 24 hour time */
++
++#define ISL12022_SR_LBAT85	(1 << 2)
++#define ISL12022_SR_LBAT75	(1 << 1)
++
++#define ISL12022_INT_WRTC	(1 << 6)
++
++
++static struct i2c_driver isl12022_driver;
++
++struct isl12022 {
++	struct rtc_device *rtc;
++
++	bool write_enabled;	/* true if write enable is set */
++};
++
++
++static int isl12022_read_regs(struct i2c_client *client, uint8_t reg,
++			      uint8_t *data, size_t n)
++{
++	struct i2c_msg msgs[] = {
++		{
++			.addr	= client->addr,
++			.flags	= 0,
++			.len	= 1,
++			.buf	= data
++		},		/* setup read ptr */
++		{
++			.addr	= client->addr,
++			.flags	= I2C_M_RD,
++			.len	= n,
++			.buf	= data
++		}
++	};
++
++	int ret;
++
++	data[0] = reg;
++	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
++	if (ret != ARRAY_SIZE(msgs)) {
++		dev_err(&client->dev, "%s: read error, ret=%d\n",
++			__func__, ret);
++		return -EIO;
++	}
++
++	return 0;
++}
++
++
++static int isl12022_write_reg(struct i2c_client *client,
++			      uint8_t reg, uint8_t val)
++{
++	uint8_t data[2] = { reg, val };
++	int err;
++
++	err = i2c_master_send(client, data, sizeof(data));
++	if (err != sizeof(data)) {
++		dev_err(&client->dev,
++			"%s: err=%d addr=%02x, data=%02x\n",
++			__func__, err, data[0], data[1]);
++		return -EIO;
++	}
++
++	return 0;
++}
++
++
++/*
++ * In the routines that deal directly with the isl12022 hardware, we use
++ * rtc_time -- month 0-11, hour 0-23, yr = calendar year-epoch.
++ */
++static int isl12022_get_datetime(struct i2c_client *client, struct rtc_time *tm)
++{
++	uint8_t buf[ISL12022_REG_INT + 1];
++	int ret;
++
++	ret = isl12022_read_regs(client, ISL12022_REG_SC, buf, sizeof(buf));
++	if (ret)
++		return ret;
++
++	if (buf[ISL12022_REG_SR] & (ISL12022_SR_LBAT85 | ISL12022_SR_LBAT75)) {
++		dev_warn(&client->dev,
++			 "voltage dropped below %u%%, "
++			 "date and time is not reliable.\n",
++			 buf[ISL12022_REG_SR] & ISL12022_SR_LBAT85 ? 85 : 75);
++	}
++
++	dev_dbg(&client->dev,
++		"%s: raw data is sec=%02x, min=%02x, hr=%02x, "
++		"mday=%02x, mon=%02x, year=%02x, wday=%02x, "
++		"sr=%02x, int=%02x",
++		__func__,
++		buf[ISL12022_REG_SC],
++		buf[ISL12022_REG_MN],
++		buf[ISL12022_REG_HR],
++		buf[ISL12022_REG_DT],
++		buf[ISL12022_REG_MO],
++		buf[ISL12022_REG_YR],
++		buf[ISL12022_REG_DW],
++		buf[ISL12022_REG_SR],
++		buf[ISL12022_REG_INT]);
++
++	tm->tm_sec = bcd2bin(buf[ISL12022_REG_SC] & 0x7F);
++	tm->tm_min = bcd2bin(buf[ISL12022_REG_MN] & 0x7F);
++	tm->tm_hour = bcd2bin(buf[ISL12022_REG_HR] & 0x3F);
++	tm->tm_mday = bcd2bin(buf[ISL12022_REG_DT] & 0x3F);
++	tm->tm_wday = buf[ISL12022_REG_DW] & 0x07;
++	tm->tm_mon = bcd2bin(buf[ISL12022_REG_MO] & 0x1F) - 1;
++	tm->tm_year = bcd2bin(buf[ISL12022_REG_YR]) + 100;
++
++	dev_dbg(&client->dev, "%s: secs=%d, mins=%d, hours=%d, "
++		"mday=%d, mon=%d, year=%d, wday=%d\n",
++		__func__,
++		tm->tm_sec, tm->tm_min, tm->tm_hour,
++		tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
++
++	/* The clock can give out invalid datetime, but we cannot return
++	 * -EINVAL otherwise hwclock will refuse to set the time on bootup. */
++	if (rtc_valid_tm(tm) < 0)
++		dev_err(&client->dev, "retrieved date and time is invalid.\n");
++
++	return 0;
++}
++
++static int isl12022_set_datetime(struct i2c_client *client, struct rtc_time *tm)
++{
++	struct isl12022 *isl12022 = i2c_get_clientdata(client);
++	size_t i;
++	int ret;
++	uint8_t buf[ISL12022_REG_DW + 1];
++
++	dev_dbg(&client->dev, "%s: secs=%d, mins=%d, hours=%d, "
++		"mday=%d, mon=%d, year=%d, wday=%d\n",
++		__func__,
++		tm->tm_sec, tm->tm_min, tm->tm_hour,
++		tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
++
++	if (!isl12022->write_enabled) {
++
++		ret = isl12022_read_regs(client, ISL12022_REG_INT, buf, 1);
++		if (ret)
++			return ret;
++
++		/* Check if WRTC (write rtc enable) is set factory default is
++		 * 0 (not set) */
++		if (!(buf[0] & ISL12022_INT_WRTC)) {
++			dev_info(&client->dev,
++				 "init write enable and 24 hour format\n");
++
++			/* Set the write enable bit. */
++			ret = isl12022_write_reg(client,
++						 ISL12022_REG_INT,
++						 buf[0] | ISL12022_INT_WRTC);
++			if (ret)
++				return ret;
++
++			/* Write to any RTC register to start RTC, we use the
++			 * HR register, setting the MIL bit to use the 24 hour
++			 * format. */
++			ret = isl12022_read_regs(client, ISL12022_REG_HR,
++						 buf, 1);
++			if (ret)
++				return ret;
++
++			ret = isl12022_write_reg(client,
++						 ISL12022_REG_HR,
++						 buf[0] | ISL12022_HR_MIL);
++			if (ret)
++				return ret;
++		}
++
++		isl12022->write_enabled = 1;
++	}
++
++	/* hours, minutes and seconds */
++	buf[ISL12022_REG_SC] = bin2bcd(tm->tm_sec);
++	buf[ISL12022_REG_MN] = bin2bcd(tm->tm_min);
++	buf[ISL12022_REG_HR] = bin2bcd(tm->tm_hour);
++
++	buf[ISL12022_REG_DT] = bin2bcd(tm->tm_mday);
++
++	/* month, 1 - 12 */
++	buf[ISL12022_REG_MO] = bin2bcd(tm->tm_mon + 1);
++
++	/* year and century */
++	buf[ISL12022_REG_YR] = bin2bcd(tm->tm_year % 100);
++
++	buf[ISL12022_REG_DW] = tm->tm_wday & 0x07;
++
++	/* write register's data */
++	for (i = 0; i < ARRAY_SIZE(buf); i++) {
++		ret = isl12022_write_reg(client, ISL12022_REG_SC + i,
++					 buf[ISL12022_REG_SC + i]);
++		if (ret)
++			return -EIO;
++	};
++
++	return 0;
++}
++
++static int isl12022_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	return isl12022_get_datetime(to_i2c_client(dev), tm);
++}
++
++static int isl12022_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	return isl12022_set_datetime(to_i2c_client(dev), tm);
++}
++
++static const struct rtc_class_ops isl12022_rtc_ops = {
++	.read_time	= isl12022_rtc_read_time,
++	.set_time	= isl12022_rtc_set_time,
++};
++
++static int isl12022_probe(struct i2c_client *client,
++			  const struct i2c_device_id *id)
++{
++	struct isl12022 *isl12022;
++
++	int ret = 0;
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
++		return -ENODEV;
++
++	isl12022 = kzalloc(sizeof(struct isl12022), GFP_KERNEL);
++	if (!isl12022)
++		return -ENOMEM;
++
++	dev_dbg(&client->dev, "chip found, driver version " DRV_VERSION "\n");
++
++	i2c_set_clientdata(client, isl12022);
++
++	isl12022->rtc = rtc_device_register(isl12022_driver.driver.name,
++					    &client->dev,
++					    &isl12022_rtc_ops,
++					    THIS_MODULE);
++
++	if (IS_ERR(isl12022->rtc)) {
++		ret = PTR_ERR(isl12022->rtc);
++		goto exit_kfree;
++	}
++
++	return 0;
++
++exit_kfree:
++	kfree(isl12022);
++
++	return ret;
++}
++
++static int isl12022_remove(struct i2c_client *client)
++{
++	struct isl12022 *isl12022 = i2c_get_clientdata(client);
++
++	rtc_device_unregister(isl12022->rtc);
++	kfree(isl12022);
++
++	return 0;
++}
++
++static const struct i2c_device_id isl12022_id[] = {
++	{ "isl12022", 0 },
++	{ "rtc8564", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, isl12022_id);
++
++static struct i2c_driver isl12022_driver = {
++	.driver		= {
++		.name	= "rtc-isl12022",
++	},
++	.probe		= isl12022_probe,
++	.remove		= isl12022_remove,
++	.id_table	= isl12022_id,
++};
++
++static int __init isl12022_init(void)
++{
++	return i2c_add_driver(&isl12022_driver);
++}
++
++static void __exit isl12022_exit(void)
++{
++	i2c_del_driver(&isl12022_driver);
++}
++
++module_init(isl12022_init);
++module_exit(isl12022_exit);
++
++MODULE_AUTHOR("roman.fietze@telemotive.de");
++MODULE_DESCRIPTION("ISL 12022 RTC driver");
++MODULE_LICENSE("GPL");
++MODULE_VERSION(DRV_VERSION);
+-- 
+1.7.1
+
+
+-- 
+Roman Fietze                Telemotive AG Büro Mühlhausen
+Breitwiesen                              73347 Mühlhausen
+Tel.: +49(0)7335/18493-45        http://www.telemotive.de
