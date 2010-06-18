@@ -1,279 +1,480 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933591Ab0FRPAH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 11:00:07 -0400
-Received: from verein.lst.de ([213.95.11.210]:47653 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933531Ab0FRPAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 11:00:05 -0400
-Date: Fri, 18 Jun 2010 16:59:42 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: axboe@kernel.dk, snitzer@redhat.com
-Cc: martin.petersen@oracle.com, James.Bottomley@suse.de,
+	id S933604Ab0FRPD6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 11:03:58 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:49744 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933496Ab0FRPD4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 11:03:56 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 18 Jun 2010 17:04:19 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCHv6.1 06/11] USB: gadget: g_multi: code clean up and refactoring
+In-reply-to: <20100617175221.GE3644@kroah.com>
+To: linux-usb@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>, Greg KH <greg@kroah.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
        linux-kernel@vger.kernel.org
-Subject: [PATCH, RFC] block: don't allocate a payload for discard request
-Message-ID: <20100618145942.GA1148@lst.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+Message-id: <2809a031d19ac6ef793d7fe343e225b8d80099c3.1276871819.git.m.nazarewicz@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Multifunction Compasite Gadget have been cleaned up
+and refactored so hopefully it looks prettier and works
+at least as good as before changes.
 
-Allocating a fixed payload for discard requests always was a horrible hack,
-and it's not coming to byte us when adding support for discard in DM/MD.
+Among other things this also prevents the possibility to
+select no configuration with Kconfig options which would
+result in an unusable driver.
 
-So change the code to leave the allocation of a payload to the lowlevel
-driver.  Unfortunately that means we'll need another hack, which allows
-us to update the various block layer length fields indicating that we
-have a payload.  Instead of hiding this in sd.c, which we already partially
-do for UNMAP support add a documented helper in the core block layer for it.
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+On Fri, 18 Jun 2010 16:39:01 +0200, Greg KH <greg@kroah.com> wrote:
+> Then you need to say that in the changelog portion of the patch
+> submission :)
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+As you wish.
 
-Index: linux-2.6/block/blk-lib.c
-===================================================================
---- linux-2.6.orig/block/blk-lib.c	2010-06-18 11:33:37.313260457 +0200
-+++ linux-2.6/block/blk-lib.c	2010-06-18 16:49:20.854319055 +0200
-@@ -19,7 +19,6 @@ static void blkdev_discard_end_io(struct
+ drivers/usb/gadget/Kconfig |    1 +
+ drivers/usb/gadget/multi.c |  262 ++++++++++++++++++++++++-------------------
+ 2 files changed, 147 insertions(+), 116 deletions(-)
+
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index 591ae9f..027f61b 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -863,6 +863,7 @@ config USB_G_NOKIA
+ config USB_G_MULTI
+ 	tristate "Multifunction Composite Gadget (EXPERIMENTAL)"
+ 	depends on BLOCK && NET
++	select USB_G_MULTI_CDC if !USB_G_MULTI_RNDIS
+ 	help
+ 	  The Multifunction Composite Gadget provides Ethernet (RNDIS
+ 	  and/or CDC Ethernet), mass storage and ACM serial link
+diff --git a/drivers/usb/gadget/multi.c b/drivers/usb/gadget/multi.c
+index d3d3140..795d762 100644
+--- a/drivers/usb/gadget/multi.c
++++ b/drivers/usb/gadget/multi.c
+@@ -24,6 +24,7 @@
  
- 	if (bio->bi_private)
- 		complete(bio->bi_private);
--	__free_page(bio_page(bio));
+ #include <linux/kernel.h>
+ #include <linux/utsname.h>
++#include <linux/module.h>
  
- 	bio_put(bio);
- }
-@@ -43,7 +42,6 @@ int blkdev_issue_discard(struct block_de
- 	int type = flags & BLKDEV_IFL_BARRIER ?
- 		DISCARD_BARRIER : DISCARD_NOBARRIER;
- 	struct bio *bio;
--	struct page *page;
- 	int ret = 0;
  
- 	if (!q)
-@@ -53,35 +51,21 @@ int blkdev_issue_discard(struct block_de
- 		return -EOPNOTSUPP;
+ #if defined USB_ETH_RNDIS
+@@ -35,14 +36,13 @@
  
- 	while (nr_sects && !ret) {
--		unsigned int sector_size = q->limits.logical_block_size;
- 		unsigned int max_discard_sectors =
- 			min(q->limits.max_discard_sectors, UINT_MAX >> 9);
  
- 		bio = bio_alloc(gfp_mask, 1);
--		if (!bio)
--			goto out;
-+		if (!bio) {
-+			ret = -ENOMEM;
-+			break;
-+		}
+ #define DRIVER_DESC		"Multifunction Composite Gadget"
+-#define DRIVER_VERSION		"2009/07/21"
+ 
+-/*-------------------------------------------------------------------------*/
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_AUTHOR("Michal Nazarewicz");
++MODULE_LICENSE("GPL");
+ 
+-#define MULTI_VENDOR_NUM	0x0525	/* XXX NetChip */
+-#define MULTI_PRODUCT_NUM	0xa4ab	/* XXX */
+ 
+-/*-------------------------------------------------------------------------*/
++/***************************** All the files... *****************************/
+ 
+ /*
+  * kbuild is not very cooperative with respect to linking separately
+@@ -57,6 +57,8 @@
+ #include "config.c"
+ #include "epautoconf.c"
+ 
++#include "f_mass_storage.c"
 +
- 		bio->bi_sector = sector;
- 		bio->bi_end_io = blkdev_discard_end_io;
- 		bio->bi_bdev = bdev;
- 		if (flags & BLKDEV_IFL_WAIT)
- 			bio->bi_private = &wait;
+ #include "u_serial.c"
+ #include "f_acm.c"
  
--		/*
--		 * Add a zeroed one-sector payload as that's what
--		 * our current implementations need.  If we'll ever need
--		 * more the interface will need revisiting.
--		 */
--		page = alloc_page(gfp_mask | __GFP_ZERO);
--		if (!page)
--			goto out_free_bio;
--		if (bio_add_pc_page(q, bio, page, sector_size, 0) < sector_size)
--			goto out_free_page;
+@@ -68,13 +70,24 @@
+ #endif
+ #include "u_ether.c"
+ 
+-#undef DBG     /* u_ether.c has broken idea about macros */
+-#undef VDBG    /* so clean up after it */
+-#undef ERROR
+-#undef INFO
+-#include "f_mass_storage.c"
+ 
+-/*-------------------------------------------------------------------------*/
++
++/***************************** Device Descriptor ****************************/
++
++#define MULTI_VENDOR_NUM	0x0525	/* XXX NetChip */
++#define MULTI_PRODUCT_NUM	0xa4ab	/* XXX */
++
++
++enum {
++	__MULTI_NO_CONFIG,
++#ifdef CONFIG_USB_G_MULTI_RNDIS
++	MULTI_RNDIS_CONFIG_NUM,
++#endif
++#ifdef CONFIG_USB_G_MULTI_CDC
++	MULTI_CDC_CONFIG_NUM,
++#endif
++};
++
+ 
+ static struct usb_device_descriptor device_desc = {
+ 	.bLength =		sizeof device_desc,
+@@ -82,80 +95,82 @@ static struct usb_device_descriptor device_desc = {
+ 
+ 	.bcdUSB =		cpu_to_le16(0x0200),
+ 
+-	/* .bDeviceClass =		USB_CLASS_COMM, */
+-	/* .bDeviceSubClass =	0, */
+-	/* .bDeviceProtocol =	0, */
+-	.bDeviceClass =		0xEF,
++	.bDeviceClass =		USB_CLASS_MISC /* 0xEF */,
+ 	.bDeviceSubClass =	2,
+ 	.bDeviceProtocol =	1,
+-	/* .bMaxPacketSize0 = f(hardware) */
+ 
+ 	/* Vendor and product id can be overridden by module parameters.  */
+ 	.idVendor =		cpu_to_le16(MULTI_VENDOR_NUM),
+ 	.idProduct =		cpu_to_le16(MULTI_PRODUCT_NUM),
+-	/* .bcdDevice = f(hardware) */
+-	/* .iManufacturer = DYNAMIC */
+-	/* .iProduct = DYNAMIC */
+-	/* NO SERIAL NUMBER */
+-	.bNumConfigurations =	1,
+ };
+ 
+-static struct usb_otg_descriptor otg_descriptor = {
+-	.bLength =		sizeof otg_descriptor,
+-	.bDescriptorType =	USB_DT_OTG,
 -
--		/*
--		 * And override the bio size - the way discard works we
--		 * touch many more blocks on disk than the actual payload
--		 * length.
--		 */
- 		if (nr_sects > max_discard_sectors) {
- 			bio->bi_size = max_discard_sectors << 9;
- 			nr_sects -= max_discard_sectors;
-@@ -103,13 +87,8 @@ int blkdev_issue_discard(struct block_de
- 			ret = -EIO;
- 		bio_put(bio);
- 	}
+-	/* REVISIT SRP-only hardware is possible, although
+-	 * it would not be called "OTG" ...
+-	 */
+-	.bmAttributes =		USB_OTG_SRP | USB_OTG_HNP,
+-};
+ 
+ static const struct usb_descriptor_header *otg_desc[] = {
+-	(struct usb_descriptor_header *) &otg_descriptor,
++	(struct usb_descriptor_header *) &(struct usb_otg_descriptor){
++		.bLength =		sizeof(struct usb_otg_descriptor),
++		.bDescriptorType =	USB_DT_OTG,
 +
- 	return ret;
--out_free_page:
--	__free_page(page);
--out_free_bio:
--	bio_put(bio);
--out:
--	return -ENOMEM;
- }
- EXPORT_SYMBOL(blkdev_issue_discard);
++		/*
++		 * REVISIT SRP-only hardware is possible, although
++		 * it would not be called "OTG" ...
++		 */
++		.bmAttributes =		USB_OTG_SRP | USB_OTG_HNP,
++	},
+ 	NULL,
+ };
  
-Index: linux-2.6/drivers/scsi/sd.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/sd.c	2010-06-18 11:33:37.322253892 +0200
-+++ linux-2.6/drivers/scsi/sd.c	2010-06-18 16:50:04.790255778 +0200
-@@ -411,22 +411,25 @@ static void sd_prot_op(struct scsi_cmnd
- }
  
- /**
-- * sd_prepare_discard - unmap blocks on thinly provisioned device
-+ * scsi_setup_discard_cmnd - unmap blocks on thinly provisioned device
-+ * @sdp: scsi device to operate one
-  * @rq: Request to prepare
-  *
-  * Will issue either UNMAP or WRITE SAME(16) depending on preference
-  * indicated by target device.
-  **/
--static int sd_prepare_discard(struct request *rq)
-+static int scsi_setup_discard_cmnd(struct scsi_device *sdp, struct request *rq)
+-/* string IDs are assigned dynamically */
+-
+-#define STRING_MANUFACTURER_IDX		0
+-#define STRING_PRODUCT_IDX		1
++enum {
++	MULTI_STRING_MANUFACTURER_IDX,
++	MULTI_STRING_PRODUCT_IDX,
++#ifdef CONFIG_USB_G_MULTI_RNDIS
++	MULTI_STRING_RNDIS_CONFIG_IDX,
++#endif
++#ifdef CONFIG_USB_G_MULTI_CDC
++	MULTI_STRING_CDC_CONFIG_IDX,
++#endif
++};
+ 
+ static char manufacturer[50];
+ 
+ static struct usb_string strings_dev[] = {
+-	[STRING_MANUFACTURER_IDX].s = manufacturer,
+-	[STRING_PRODUCT_IDX].s = DRIVER_DESC,
++	[MULTI_STRING_MANUFACTURER_IDX].s = manufacturer,
++	[MULTI_STRING_PRODUCT_IDX].s      = DRIVER_DESC,
++#ifdef CONFIG_USB_G_MULTI_RNDIS
++	[MULTI_STRING_RNDIS_CONFIG_IDX].s = "Multifunction with RNDIS",
++#endif
++#ifdef CONFIG_USB_G_MULTI_CDC
++	[MULTI_STRING_CDC_CONFIG_IDX].s   = "Multifunction with CDC ECM",
++#endif
+ 	{  } /* end of list */
+ };
+ 
+-static struct usb_gadget_strings stringtab_dev = {
+-	.language	= 0x0409,	/* en-us */
+-	.strings	= strings_dev,
+-};
+-
+ static struct usb_gadget_strings *dev_strings[] = {
+-	&stringtab_dev,
++	&(struct usb_gadget_strings){
++		.language	= 0x0409,	/* en-us */
++		.strings	= strings_dev,
++	},
+ 	NULL,
+ };
+ 
+-static u8 hostaddr[ETH_ALEN];
+ 
+ 
+ 
+ /****************************** Configurations ******************************/
+ 
+-static struct fsg_module_parameters mod_data = {
+-	.stall = 1
+-};
+-FSG_MODULE_PARAMETERS(/* no prefix */, mod_data);
++static struct fsg_module_parameters fsg_mod_data = { .stall = 1 };
++FSG_MODULE_PARAMETERS(/* no prefix */, fsg_mod_data);
++
++static struct fsg_common fsg_common;
++
++static u8 hostaddr[ETH_ALEN];
+ 
+-static struct fsg_common *fsg_common;
+ 
++/********** RNDIS **********/
+ 
+ #ifdef USB_ETH_RNDIS
+ 
+-static int __init rndis_do_config(struct usb_configuration *c)
++static __ref int rndis_do_config(struct usb_configuration *c)
  {
- 	struct scsi_disk *sdkp = scsi_disk(rq->rq_disk);
- 	struct bio *bio = rq->bio;
- 	sector_t sector = bio->bi_sector;
--	unsigned int num = bio_sectors(bio);
-+	unsigned int nr_sectors = bio_sectors(bio);
-+	unsigned int len;
-+	struct page *page;
+ 	int ret;
  
- 	if (sdkp->device->sector_size == 4096) {
- 		sector >>= 3;
--		num >>= 3;
-+		nr_sectors >>= 3;
- 	}
+@@ -172,26 +187,42 @@ static int __init rndis_do_config(struct usb_configuration *c)
+ 	if (ret < 0)
+ 		return ret;
  
- 	rq->cmd_type = REQ_TYPE_BLOCK_PC;
-@@ -434,31 +437,35 @@ static int sd_prepare_discard(struct req
+-	ret = fsg_bind_config(c->cdev, c, fsg_common);
++	ret = fsg_bind_config(c->cdev, c, &fsg_common);
+ 	if (ret < 0)
+ 		return ret;
  
- 	memset(rq->cmd, 0, rq->cmd_len);
- 
-+	page = alloc_page(GFP_ATOMIC | __GFP_ZERO);
-+	if (!page)
-+		return BLKPREP_DEFER;
-+
- 	if (sdkp->unmap) {
--		char *buf = kmap_atomic(bio_page(bio), KM_USER0);
-+		char *buf = page_address(page);
- 
-+		rq->cmd_len = 10;
- 		rq->cmd[0] = UNMAP;
- 		rq->cmd[8] = 24;
--		rq->cmd_len = 10;
--
--		/* Ensure that data length matches payload */
--		rq->__data_len = bio->bi_size = bio->bi_io_vec->bv_len = 24;
- 
- 		put_unaligned_be16(6 + 16, &buf[0]);
- 		put_unaligned_be16(16, &buf[2]);
- 		put_unaligned_be64(sector, &buf[8]);
--		put_unaligned_be32(num, &buf[16]);
-+		put_unaligned_be32(nr_sectors, &buf[16]);
- 
--		kunmap_atomic(buf, KM_USER0);
-+		len = 24;
- 	} else {
-+		rq->cmd_len = 16;
- 		rq->cmd[0] = WRITE_SAME_16;
- 		rq->cmd[1] = 0x8; /* UNMAP */
- 		put_unaligned_be64(sector, &rq->cmd[2]);
--		put_unaligned_be32(num, &rq->cmd[10]);
--		rq->cmd_len = 16;
-+		put_unaligned_be32(nr_sectors, &rq->cmd[10]);
-+
-+		len = sdkp->device->sector_size;
- 	}
- 
--	return BLKPREP_OK;
-+	blk_add_request_payload(rq, page, len);
-+	return scsi_setup_blk_pc_cmnd(sdp, rq);
+ 	return 0;
  }
  
- /**
-@@ -485,10 +492,10 @@ static int sd_prep_fn(struct request_que
- 	 * Discard request come in as REQ_TYPE_FS but we turn them into
- 	 * block PC requests to make life easier.
- 	 */
--	if (rq->cmd_flags & REQ_DISCARD)
--		ret = sd_prepare_discard(rq);
--
--	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
-+	if (rq->cmd_flags & REQ_DISCARD) {
-+		ret = scsi_setup_discard_cmnd(sdp, rq);
-+		goto out;
-+	} else if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
- 		ret = scsi_setup_blk_pc_cmnd(sdp, rq);
- 		goto out;
- 	} else if (rq->cmd_type != REQ_TYPE_FS) {
-@@ -1163,6 +1170,15 @@ static int sd_done(struct scsi_cmnd *SCp
- 	int sense_valid = 0;
- 	int sense_deferred = 0;
- 
-+	/*
-+	 * If this is a discard request that originated from the kernel
-+	 * we need to free our payload here.  Note that we need to check
-+	 * the request flag as the normal payload rules apply for
-+	 * pass-through UNMAP / WRITE SAME requests.
-+	 */
-+	if (SCpnt->request->cmd_flags & REQ_DISCARD)
-+		__free_page(bio_page(SCpnt->request->bio));
-+
- 	if (result) {
- 		sense_valid = scsi_command_normalize_sense(SCpnt, &sshdr);
- 		if (sense_valid)
-Index: linux-2.6/block/blk-core.c
-===================================================================
---- linux-2.6.orig/block/blk-core.c	2010-06-18 16:43:23.711273168 +0200
-+++ linux-2.6/block/blk-core.c	2010-06-18 16:48:17.392256056 +0200
-@@ -1135,6 +1135,38 @@ void blk_put_request(struct request *req
- }
- EXPORT_SYMBOL(blk_put_request);
- 
-+/**
-+ * blk_add_request_payload - add a payload to a request
-+ * @rq: request to update
-+ * @page: page backing the payload
-+ * @len: length of the payload.
-+ *
-+ * This allows to later add a payload to an already submitted request by
-+ * a block driver.  The driver needs to take care of freeing the payload
-+ * itself.
-+ *
-+ * Note that this is a quite horrible hack and nothing but handling of
-+ * discard requests should ever use it.
-+ */
-+void blk_add_request_payload(struct request *rq, struct page *page,
-+		unsigned int len)
+-static struct usb_configuration rndis_config_driver = {
+-	.label			= "Multifunction Composite (RNDIS + MS + ACM)",
+-	.bind			= rndis_do_config,
+-	.bConfigurationValue	= 2,
+-	/* .iConfiguration = DYNAMIC */
+-	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
+-};
++static int rndis_config_register(struct usb_composite_dev *cdev)
 +{
-+	struct bio *bio = rq->bio;
++	static struct usb_configuration config = {
++		.bind			= rndis_do_config,
++		.bConfigurationValue	= MULTI_RNDIS_CONFIG_NUM,
++		.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
++	};
 +
-+	bio->bi_io_vec->bv_page = page;
-+	bio->bi_io_vec->bv_offset = 0;
-+	bio->bi_io_vec->bv_len = len;
++	config.label          = strings_dev[MULTI_STRING_RNDIS_CONFIG_IDX].s;
++	config.iConfiguration = strings_dev[MULTI_STRING_RNDIS_CONFIG_IDX].id;
 +
-+	bio->bi_size = len;
-+	bio->bi_vcnt = 1;
-+	bio->bi_phys_segments = 1;
-+
-+	rq->__data_len = rq->resid_len = len;
-+	rq->nr_phys_segments = 1;
-+	rq->buffer = bio_data(bio);
++	return usb_add_config(cdev, &config);
 +}
-+EXPORT_SYMBOL_GPL(blk_add_request_payload);
 +
- void init_request_from_bio(struct request *req, struct bio *bio)
++#else
++
++static int rndis_config_register(struct usb_composite_dev *cdev)
++{
++	return 0;
++}
+ 
+ #endif
+ 
++
++/********** CDC ECM **********/
++
+ #ifdef CONFIG_USB_G_MULTI_CDC
+ 
+-static int __init cdc_do_config(struct usb_configuration *c)
++static __ref int cdc_do_config(struct usb_configuration *c)
  {
- 	req->cpu = bio->bi_comp_cpu;
-Index: linux-2.6/include/linux/blkdev.h
-===================================================================
---- linux-2.6.orig/include/linux/blkdev.h	2010-06-18 16:45:29.223003718 +0200
-+++ linux-2.6/include/linux/blkdev.h	2010-06-18 16:47:25.894005813 +0200
-@@ -702,6 +702,8 @@ extern struct request *blk_make_request(
- 					gfp_t);
- extern void blk_insert_request(struct request_queue *, struct request *, int, void *);
- extern void blk_requeue_request(struct request_queue *, struct request *);
-+extern void blk_add_request_payload(struct request *rq, struct page *page,
-+		unsigned int len);
- extern int blk_rq_check_limits(struct request_queue *q, struct request *rq);
- extern int blk_lld_busy(struct request_queue *q);
- extern int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
+ 	int ret;
+ 
+@@ -208,20 +239,33 @@ static int __init cdc_do_config(struct usb_configuration *c)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = fsg_bind_config(c->cdev, c, fsg_common);
++	ret = fsg_bind_config(c->cdev, c, &fsg_common);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	return 0;
+ }
+ 
+-static struct usb_configuration cdc_config_driver = {
+-	.label			= "Multifunction Composite (CDC + MS + ACM)",
+-	.bind			= cdc_do_config,
+-	.bConfigurationValue	= 1,
+-	/* .iConfiguration = DYNAMIC */
+-	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
+-};
++static int cdc_config_register(struct usb_composite_dev *cdev)
++{
++	static struct usb_configuration config = {
++		.bind			= cdc_do_config,
++		.bConfigurationValue	= MULTI_CDC_CONFIG_NUM,
++		.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
++	};
++
++	config.label          = strings_dev[MULTI_STRING_CDC_CONFIG_IDX].s;
++	config.iConfiguration = strings_dev[MULTI_STRING_CDC_CONFIG_IDX].id;
++
++	return usb_add_config(cdev, &config);
++}
++
++#else
++
++static int cdc_config_register(struct usb_composite_dev *cdev)
++{
++	return 0;
++}
+ 
+ #endif
+ 
+@@ -230,7 +274,7 @@ static struct usb_configuration cdc_config_driver = {
+ /****************************** Gadget Bind ******************************/
+ 
+ 
+-static int __init multi_bind(struct usb_composite_dev *cdev)
++static int __ref multi_bind(struct usb_composite_dev *cdev)
+ {
+ 	struct usb_gadget *gadget = cdev->gadget;
+ 	int status, gcnum;
+@@ -252,67 +296,56 @@ static int __init multi_bind(struct usb_composite_dev *cdev)
+ 		goto fail0;
+ 
+ 	/* set up mass storage function */
+-	fsg_common = fsg_common_from_params(0, cdev, &mod_data);
+-	if (IS_ERR(fsg_common)) {
+-		status = PTR_ERR(fsg_common);
+-		goto fail1;
++	{
++		void *retp;
++		retp = fsg_common_from_params(&fsg_common, cdev, &fsg_mod_data);
++		if (IS_ERR(retp)) {
++			status = PTR_ERR(retp);
++			goto fail1;
++		}
+ 	}
+ 
+-
++	/* set bcdDevice */
+ 	gcnum = usb_gadget_controller_number(gadget);
+-	if (gcnum >= 0)
++	if (gcnum >= 0) {
+ 		device_desc.bcdDevice = cpu_to_le16(0x0300 | gcnum);
+-	else {
+-		/* We assume that can_support_ecm() tells the truth;
+-		 * but if the controller isn't recognized at all then
+-		 * that assumption is a bit more likely to be wrong.
+-		 */
+-		WARNING(cdev, "controller '%s' not recognized\n",
+-		        gadget->name);
++	} else {
++		WARNING(cdev, "controller '%s' not recognized\n", gadget->name);
+ 		device_desc.bcdDevice = cpu_to_le16(0x0300 | 0x0099);
+ 	}
+ 
+-
+-	/* Allocate string descriptor numbers ... note that string
+-	 * contents can be overridden by the composite_dev glue.
+-	 */
+-
+-	/* device descriptor strings: manufacturer, product */
++	/* allocate string descriptor numbers */
+ 	snprintf(manufacturer, sizeof manufacturer, "%s %s with %s",
+ 	         init_utsname()->sysname, init_utsname()->release,
+ 	         gadget->name);
+-	status = usb_string_id(cdev);
+-	if (status < 0)
+-		goto fail2;
+-	strings_dev[STRING_MANUFACTURER_IDX].id = status;
+-	device_desc.iManufacturer = status;
+ 
+-	status = usb_string_id(cdev);
+-	if (status < 0)
++	status = usb_string_ids_tab(cdev, strings_dev);
++	if (unlikely(status < 0))
+ 		goto fail2;
+-	strings_dev[STRING_PRODUCT_IDX].id = status;
+-	device_desc.iProduct = status;
+ 
+-#ifdef USB_ETH_RNDIS
+-	/* register our first configuration */
+-	status = usb_add_config(cdev, &rndis_config_driver);
+-	if (status < 0)
++	device_desc.iManufacturer =
++		strings_dev[MULTI_STRING_MANUFACTURER_IDX].id;
++	device_desc.iProduct      =
++		strings_dev[MULTI_STRING_PRODUCT_IDX].id;
++
++	/* register configurations */
++	status = rndis_config_register(cdev);
++	if (unlikely(status < 0))
+ 		goto fail2;
+-#endif
+ 
+-#ifdef CONFIG_USB_G_MULTI_CDC
+-	/* register our second configuration */
+-	status = usb_add_config(cdev, &cdc_config_driver);
+-	if (status < 0)
++	status = cdc_config_register(cdev);
++	if (unlikely(status < 0))
+ 		goto fail2;
+-#endif
+ 
+-	dev_info(&gadget->dev, DRIVER_DESC ", version: " DRIVER_VERSION "\n");
+-	fsg_common_put(fsg_common);
++	/* we're done */
++	dev_info(&gadget->dev, DRIVER_DESC "\n");
++	fsg_common_put(&fsg_common);
+ 	return 0;
+ 
++
++	/* error recovery */
+ fail2:
+-	fsg_common_put(fsg_common);
++	fsg_common_put(&fsg_common);
+ fail1:
+ 	gserial_cleanup();
+ fail0:
+@@ -339,18 +372,15 @@ static struct usb_composite_driver multi_driver = {
+ 	.unbind		= __exit_p(multi_unbind),
+ };
+ 
+-MODULE_DESCRIPTION(DRIVER_DESC);
+-MODULE_AUTHOR("Michal Nazarewicz");
+-MODULE_LICENSE("GPL");
+ 
+-static int __init g_multi_init(void)
++static int __init multi_init(void)
+ {
+ 	return usb_composite_register(&multi_driver);
+ }
+-module_init(g_multi_init);
++module_init(multi_init);
+ 
+-static void __exit g_multi_cleanup(void)
++static void __exit multi_exit(void)
+ {
+ 	usb_composite_unregister(&multi_driver);
+ }
+-module_exit(g_multi_cleanup);
++module_exit(multi_exit);
+-- 
+1.7.1
+
