@@ -1,84 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab0FRVGc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 17:06:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12499 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751646Ab0FRVGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 17:06:30 -0400
-Date: Fri, 18 Jun 2010 17:06:12 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Alex Riesen <raa.lkml@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 17/38] union-mount: Union mounts documentation
-Message-ID: <20100618210612.GB24188@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-18-git-send-email-vaurora@redhat.com> <AANLkTilNAGzn3ZC5eN2ZQMqNhcSWnT-mi_y2TkIkdeUU@mail.gmail.com> <20100617183912.GA14389@shell> <AANLkTilUbzQjEBiZ9LHEvugLXbsaZoEyt9S-v3KQgUQB@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilUbzQjEBiZ9LHEvugLXbsaZoEyt9S-v3KQgUQB@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1752559Ab0FRVIO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 17:08:14 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:47901 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752245Ab0FRVIN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 17:08:13 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+       "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+       "'akpm@osdl.org'" <akpm@osdl.org>,
+       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Fri, 18 Jun 2010 15:07:59 -0600
+Subject: [PATCH 10/12] scsi: megaraid_sas - Add input parameter for
+ max_sectors 
+Thread-Topic: [PATCH 10/12] scsi: megaraid_sas - Add input parameter for
+ max_sectors 
+Thread-Index: AcsIVC3Rc9Jg0oxHQFaCp6By1ck5EgG1cnvA
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3D09274AC@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D080455E@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D080455E@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 10:32:09PM +0200, Alex Riesen wrote:
-> On Thu, Jun 17, 2010 at 20:39, Valerie Aurora <vaurora@redhat.com> wrote:
-> > On Thu, Jun 17, 2010 at 10:01:30AM +0200, Alex Riesen wrote:
-> >> On Tue, Jun 15, 2010 at 20:39, Valerie Aurora <vaurora@redhat.com> wrote:
-> >> > +git://git.kernel.org/pub/scm/fs/ext2/val/e2fsprogs.git
-> >> > +
-> >> > +Currently, whiteout directory entries are not returned to userland.
-> >> > +While the directory type for whiteouts, DT_WHT, has been defined for
-> >> > +many years, very little userland code handles them. ??Userland will
-> >> > +never see fallthru directory entries.
-> >>
-> >> This may be a dumb question (I must admit I did only very little research),
-> >> but how does one cleanup the topmost layer of whiteouts and fallthroughs,
-> >> so that the entries of lower layer(s) can be made visible again?
-> >
-> > I'm not sure how best to do this. ??We don't want to add more system
-> > calls. ??One thought of mine has been to do this offline, when the file
-> > system is unmounted.
-> 
-> But that means that if the topmost filesystem is getting full of whiteouts
-> and fallthroughs there will be no way to free up the space without taking
-> the volume offline! That makes operation of union mount on always-on
-> systems difficult. Many personal electronics are always-on today, it
-> will be annoying to have to shutdown them on reconfigurations or just
-> to free up some space.
+RESUBMIT:
+Driver add the input parameters support for max_sectors for our gen2 chip.  Customer can
+Set the max_sectors support to 1MB for gen2 chip during the driver load.
 
-Whiteouts and fallthrus go away when a directory is deleted.  So, "rm
--rf /trash/" will actually free up disk space.  You can also move the
-files you want to keep to a temp directory, rmdir the old one, and
-move that dir back.
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
-Unfortunately, union mounts runs into a lot of bizarre ENOSPC
-problems.  But in the degenerate case in which you delete every single
-file from the lower layer file system, that information will take up
-only one whiteout per top-level subdir.  You don't keep whiteouts for
-anything below a deleted directory.
+---
+drivers/scsi/megaraid/megaraid_sas.c |   74 +++++++++++++++++++++++++++++++++++
+ drivers/scsi/megaraid/megaraid_sas.h |    1
+ 2 files changed, 75 insertions(+)
 
-> >??... For example, e2fsck could add a feature to
-> > delete whiteouts and fallthrus. ...
-> 
-> That makes me think that the cleanup operation will be topmost
-> filesystem specific. Maybe this even means that one have to
-> have the filesystem specific tools installed on every system
-> which happens to use union mounts.
-
-Any union mount utilities would be distributed as part of the normal
-file system utilities package.
-
-> >??Another option is to add a flag to an existing system call.
-> 
-> Or calls, if the whiteouts (or even fallthroughs) are to be read
-> through directory file handles. unlinkat(2) ? It already has
-> dirfd and flags arguments.
-
-Yeah, unlinkat() looks promising.
-
--VAL
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
+--- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 09:04:38.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 09:51:56.000000000 -0400
+@@ -57,6 +57,15 @@ module_param_named(poll_mode_io, poll_mo
+ MODULE_PARM_DESC(poll_mode_io,
+ 	"Complete cmds from IO path, (default=0)");
+ 
++/*
++ * Number of sectors per IO command
++ * Will be set in megasas_init_mfi if user does not provide
++ */
++static unsigned int max_sectors;
++module_param_named(max_sectors, max_sectors, int, 0);
++MODULE_PARM_DESC(max_sectors,
++	"Maximum number of sectors per IO command");
++
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(MEGASAS_VERSION);
+ MODULE_AUTHOR("megaraidlinux@lsi.com");
+@@ -3566,6 +3575,32 @@ static int megasas_start_aen(struct mega
+ 				    class_locale.word);
+ }
+ 
++static ssize_t
++sysfs_max_sectors_read(struct kobject *kobj, struct bin_attribute *bin_attr,
++			char *buf, loff_t off, size_t count)
++{
++	struct device *dev = container_of(kobj, struct device, kobj);
++
++	struct Scsi_Host *host = class_to_shost(dev);
++
++	struct megasas_instance *instance =
++				(struct megasas_instance *)host->hostdata;
++
++	count = sprintf(buf, "%u\n", instance->max_sectors_per_req);
++
++	return count+1;
++}
++
++static struct bin_attribute sysfs_max_sectors_attr = {
++	.attr = {
++		.name = "max_sectors",
++		.mode = S_IRUSR|S_IRGRP|S_IROTH,
++		.owner = THIS_MODULE,
++	},
++	.size = 7,
++	.read = sysfs_max_sectors_read,
++};
++
+ /**
+  * megasas_io_attach -	Attaches this driver to SCSI mid-layer
+  * @instance:		Adapter soft state
+@@ -3573,6 +3608,7 @@ static int megasas_start_aen(struct mega
+ static int megasas_io_attach(struct megasas_instance *instance)
+ {
+ 	struct Scsi_Host *host = instance->host;
++	u32		error;
+ 
+ 	/*
+ 	 * Export parameters required by SCSI mid-layer
+@@ -3588,6 +3624,27 @@ static int megasas_io_attach(struct mega
+ 			instance->max_fw_cmds - MEGASAS_INT_CMDS;
+ 	host->this_id = instance->init_id;
+ 	host->sg_tablesize = instance->max_num_sge;
++	/*
++	 * Check if the module parameter value for max_sectors can be used
++	 */
++	if (max_sectors && max_sectors < instance->max_sectors_per_req)
++		instance->max_sectors_per_req = max_sectors;
++	else {
++		if (max_sectors) {
++			if (((instance->pdev->device ==
++				PCI_DEVICE_ID_LSI_SAS1078GEN2) ||
++				(instance->pdev->device ==
++				PCI_DEVICE_ID_LSI_SAS0079GEN2)) &&
++				(max_sectors <= MEGASAS_MAX_SECTORS)) {
++				instance->max_sectors_per_req = max_sectors;
++			} else {
++			printk(KERN_INFO "megasas: max_sectors should be > 0"
++				"and <= %d (or < 1MB for GEN2 controller)\n",
++				instance->max_sectors_per_req);
++			}
++		}
++	}
++
+ 	host->max_sectors = instance->max_sectors_per_req;
+ 	host->cmd_per_lun = 128;
+ 	host->max_channel = MEGASAS_MAX_CHANNELS - 1;
+@@ -3604,10 +3661,27 @@ static int megasas_io_attach(struct mega
+ 	}
+ 
+ 	/*
++	 * Create sysfs entries for module paramaters
++	 */
++	error = sysfs_create_bin_file(&instance->host->shost_dev.kobj,
++			&sysfs_max_sectors_attr);
++
++	if (error) {
++		printk(KERN_INFO "megasas: Error in creating the sysfs entry"
++				" max_sectors.\n");
++		goto out_remove_host;
++	}
++
++	/*
+ 	 * Trigger SCSI to scan our drives
+ 	 */
+ 	scsi_scan_host(host);
+ 	return 0;
++
++out_remove_host:
++	scsi_remove_host(host);
++	return error;
++
+ }
+ 
+ static int
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.h new/drivers/scsi/megaraid/megaraid_sas.h
+--- old/drivers/scsi/megaraid/megaraid_sas.h	2010-06-08 09:04:38.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.h	2010-06-08 09:04:38.000000000 -0400
+@@ -706,6 +706,7 @@ struct megasas_ctrl_info {
+ #define MEGASAS_MAX_LD_IDS			(MEGASAS_MAX_LD_CHANNELS * \
+ 						MEGASAS_MAX_DEV_PER_CHANNEL)
+ 
++#define MEGASAS_MAX_SECTORS                    (2*1024)
+ #define MEGASAS_DBG_LVL				1
+ 
+ #define MEGASAS_FW_BUSY				1
