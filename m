@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236Ab0FREQJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 00:16:09 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42891 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab0FREQG (ORCPT
+	id S1751194Ab0FRESP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 00:18:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47290 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750757Ab0FRESN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 00:16:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=a8ghwOnfNz+Mf2nYgItGGiPjxTw6EmDtxkm4VElBes78OR4D90TxeRjCpl1Ou77mE/
-         X7BCGx7DTCMvPgwno2pminUd9MywadAgn4Us6raVJDWkQJp0yt00xfp8TRJvA1XjSs8h
-         wI+qYARk1WjafUYgt93YdwymOIEtQ0x5SByhM=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinXqVqe9xWQYj-CyzPHl9k7qAqxX6ueOqB3qTve@mail.gmail.com>
-References: <AANLkTinXqVqe9xWQYj-CyzPHl9k7qAqxX6ueOqB3qTve@mail.gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Fri, 18 Jun 2010 12:15:45 +0800
-Message-ID: <AANLkTimmvPMG0GFEXfgFlXgC7V4dIWmW8vEC5gegsKSE@mail.gmail.com>
-Subject: Re: [Question] SuspendToDisk Feature on ARM ?
-To: sumeet linux <sumeet4linux@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       linux-arm-kernel@lists.arm.linux.org.uk
-Content-Type: text/plain; charset=UTF-8
+	Fri, 18 Jun 2010 00:18:13 -0400
+Date: Thu, 17 Jun 2010 21:17:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Neil Brown <neilb@suse.de>
+Cc: Sage Weil <sage@newdream.net>, Alexey Dobriyan <adobriyan@gmail.com>,
+       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org, hch@lst.de,
+       bfields@citi.umich.edu
+Subject: Re: weird umem vs nfsd regression
+Message-Id: <20100617211759.84eccaa3.akpm@linux-foundation.org>
+In-Reply-To: <20100618125420.46fda9d6@notabene.brown>
+References: <Pine.LNX.4.64.1006171305320.8387@cobra.newdream.net>
+	<20100617134706.6c5ad7f1.akpm@linux-foundation.org>
+	<20100618125420.46fda9d6@notabene.brown>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 10:08 PM, sumeet linux <sumeet4linux@gmail.com> wrote:
-> Hi List,
->
-> Does there exists a support for Suspend To Disk (Hibernate) for ARM
-> platforms?
-> I have been googling for it but could not find any information other than
-> some links to the suspend2 support for some ancient kernels.
-> Can anyone provide any clue on how much effort is required to implement this
-> feature to ARM architecture ?
->
+On Fri, 18 Jun 2010 12:54:20 +1000 Neil Brown <neilb@suse.de> wrote:
 
-Marvell has done a great job on this for a preliminary enabling on their Dove
-processor, please have a look into:
+> > There may also be bugs in the umem driver.  Even if the IO errors are
+> > bogus, the kernel shouldn't hang up waiting for IO completion as it's
+> > doing here.
+> > 
+> 
+> No?  Even if it is due to faulty hardware?
+> Do you think the driver should set a timer and disable the card if it hasn't
+> heard back for a while?
+> I guess that might be reasonable, though if it turns out to be faulty
+> hardware I wouldn't trust it on the buss at all...
 
-http://kernel.ubuntu.com/git?p=ubuntu/ubuntu-lucid.git;a=shortlog;h=refs/heads/mvl-dove
+hm, yes, if a DMA controller goes haywire then adding a timeout
+specifically to catch and recover from that one particular hardware
+failure mode doesn't seem justified.
 
-arch/arm/mach-dove/swsusp.S
+If we were going to do that then it should be done centrally at the
+block layer with a timer-per-request, tunable on a max(all-end-devices)
+basis.  blah.
 
-The code, mostly, is generic enough to be made common if you are
-interested and have other platforms (with HDD or large NAND) to
-test. x86 is, of course, the reference.
+As long as the softlockup detector or NMI watchdog or whatever gives a
+useful trace pointing at the problem (as it does) then that's
+sufficient.
+
