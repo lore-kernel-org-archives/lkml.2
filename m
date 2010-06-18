@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758481Ab0FRI0o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 04:26:44 -0400
-Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:38999 "EHLO
-	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758209Ab0FRI0m (ORCPT
+	id S932074Ab0FRIlQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 04:41:16 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41975 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757937Ab0FRIlP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 04:26:42 -0400
-Date: Fri, 18 Jun 2010 10:27:38 +0200
-From: Louis Rilling <Louis.Rilling@kerlabs.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Pavel Emelyanov <xemul@parallels.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
-Message-ID: <20100618082738.GE16877@hawkmoon.kerlabs.com>
-Mail-Followup-To: Oleg Nesterov <oleg@redhat.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Pavel Emelyanov <xemul@parallels.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Pavel Emelyanov <xemul@openvz.org>,
-	Linux Containers <containers@lists.osdl.org>,
-	linux-kernel@vger.kernel.org
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <4C19F0A3.2050707@parallels.com> <m1631hdbdu.fsf@fess.ebiederm.org> <20100617213638.GB4182@redhat.com>
+	Fri, 18 Jun 2010 04:41:15 -0400
+Subject: Re: [RFC][PATCH 3/8] perf: register pmu implementations
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Mackerras <paulus@samba.org>
+Cc: stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100617233113.GA2302@brick.ozlabs.ibm.com>
+References: <20100616160027.590430763@chello.nl>
+	 <20100616160238.241599593@chello.nl>
+	 <20100617233113.GA2302@brick.ozlabs.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 18 Jun 2010 10:40:46 +0200
+Message-ID: <1276850446.1975.1.camel@laptop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-9188-1276849594-0001-2"
-Content-Disposition: inline
-In-Reply-To: <20100617213638.GB4182@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+On Fri, 2010-06-18 at 09:31 +1000, Paul Mackerras wrote:
+> 
+> > @@ -1011,7 +1001,7 @@ static int hw_perf_cache_event(u64 confi
+> >       return 0;
+> >  }
+> >  
+> > -struct pmu *hw_perf_event_init(struct perf_event *event)
+> > +static int power_pmu_event_init(struct perf_event *event)
+> 
+> How does power_pmu_event_init ever get called now?  I don't see any
+> other references to it in the patch.  Should struct pmu have a
+> reference to it? 
 
---=_bohort-9188-1276849594-0001-2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Uhm yeah.. looks like that went pear-shaped. Fixed it.
 
-On 17/06/10 23:36 +0200, Oleg Nesterov wrote:
-> On 06/17, Eric W. Biederman wrote:
-> >
-> > The task->children isn't changed until __unhash_process() which runs
-> > after flush_proc_task().
->=20
-> Yes. But this is only the current implementation detail.
-> It would be nice to cleanup the code so that EXIT_DEAD tasks are
-> never sit in ->children list.
->=20
-> > So we should be able to come up with
-> > a variant of do_wait() that zap_pid_ns_processes can use that does
-> > what we need.
->=20
-> See above...
->=20
-> Even if we modify do_wait() or add the new variant, how the caller
-> can wait for EXIT_DEAD tasks? I don't think we want to modify
-> release_task() to do __wake_up_parent() or something similar.
+---
+Index: linux-2.6/arch/powerpc/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/kernel/perf_event.c
++++ linux-2.6/arch/powerpc/kernel/perf_event.c
+@@ -1125,6 +1125,7 @@ static int power_pmu_event_init(struct p
+ }
+ 
+ struct pmu power_pmu = {
++	.event_init	= power_pmu_event_init,
+ 	.enable		= power_pmu_enable,
+ 	.disable	= power_pmu_disable,
+ 	.read		= power_pmu_read,
 
-Indeed, I was thinking about calling __wake_up_parent() from release_task()
-once parent->children becomes empty.
-
-Not sure about the performance impact though. Maybe some WAIT_NO_CHILDREN f=
-lag
-in parent->signal could limit it. But if EXIT_DEAD children are removed from
-->children before release_task(), I'm afraid that this becomes impossible.
-
-Thanks,
-
-Louis
-
---=20
-Dr Louis Rilling			Kerlabs
-Skype: louis.rilling			Batiment Germanium
-Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
-http://www.kerlabs.com/			35700 Rennes
-
---=_bohort-9188-1276849594-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkwbLfoACgkQVKcRuvQ9Q1SQBgCfZgPTVMU0uatEqwfbhKVwocIr
-MIkAn2Ai6o8YIJ/PvAddBZ+DAvf2pzXi
-=Yg5/
------END PGP SIGNATURE-----
-
---=_bohort-9188-1276849594-0001-2--
