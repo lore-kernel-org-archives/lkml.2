@@ -1,35 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab0FRHtn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 03:49:43 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:33123 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647Ab0FRHtm (ORCPT
+	id S1757020Ab0FRIAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 04:00:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57888 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab0FRIAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 03:49:42 -0400
-Date: Fri, 18 Jun 2010 09:49:37 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, avi@redhat.com, mtosatti@redhat.com,
-       glommer@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 17/17] Add timekeeping documentation
-Message-ID: <20100618074937.GA9045@basil.fritz.box>
-References: <1276587259-32319-1-git-send-email-zamsden@redhat.com> <1276587259-32319-18-git-send-email-zamsden@redhat.com> <87mxuuujgm.fsf@basil.nowhere.org> <4C1A901F.2010802@redhat.com>
+	Fri, 18 Jun 2010 04:00:19 -0400
+Message-ID: <4C1B2841.7020903@ontolab.com>
+Date: Fri, 18 Jun 2010 10:03:13 +0200
+From: Christian Stroetmann <stroetmann@ontolab.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C1A901F.2010802@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Mat <jackdachef@gmail.com>, linux-btrfs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Unbound(?) internal fragmentation in Btrfs
+References: <4C07C321.8010000@redhat.com> <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
+In-Reply-To: <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V01U2FsdGVkX1+uDwF3zNi387QRTAuVxNurO2yE6655XzTKgyt
+ XouOoLPGUQJ8bR4OrEe+51Emgjtu5JSbZG4DOeHvQfTQd+9WEK
+ 7n97BYFZWypshfP/ulaPg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The point is about hotplug CPUs.  Any hotplugged CPU will not have a 
-> perfectly synchronized TSC, ever, even on a single socket, single crystal 
-> board.
+Aloha Mat:
+> On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin<edward@redhat.com>  wrote:
+>    
+>> Hello everyone.
+>>
+>> I was asked to review/evaluate Btrfs for using in enterprise
+>> systems and the below are my first impressions (linux-2.6.33).
+>>
+>> The first test I have made was filling an empty 659M (/dev/sdb2)
+>> btrfs partition (mounted to /mnt) with 2K files:
+>>
+>> # for i in $(seq 1000000); \
+>> do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
+>> (terminated after getting "No space left on device" reports).
+>>
+>> # ls /mnt | wc -l
+>> 59480
+>>
+>> So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
+>> and the first obvious question is "hey, where are other 83% of my
+>> disk space???" I looked at the btrfs storage tree (fs_tree) and was
+>> shocked with the situation on the leaf level. The Appendix B shows
+>> 5 adjacent btrfs leafs, which have the same parent.
+>>
+>> For example, look at the leaf 29425664: "items 1 free space 3892"
+>> (of 4096!!). Note, that this "free" space (3892) is _dead_: any
+>> attempts to write to the file system will result in "No space left
+>> on device".
+>>
+>> Internal fragmentation (see Appendix A) of those 5 leafs is
+>> (1572+3892+1901+3666+1675)/4096*5 = 0.62. This is even worse then
+>> ext4 and xfs: The last ones in this example will show fragmentation
+>> near zero with blocksize<= 2K. Even with 4K blocksize they will
+>> show better utilization 0.50 (against 0.38 in btrfs)!
+>>
+>> I have a small question for btrfs developers: Why do you folks put
+>> "inline extents", xattr, etc items of variable size to the B-tree
+>> in spite of the fact that B-tree is a data structure NOT for variable
+>> sized records? This disadvantage of B-trees was widely discussed.
+>> For example, maestro D. Knuth warned about this issue long time
+>> ago (see Appendix C).
+>>
+>> It is a well known fact that internal fragmentation of classic Bayer's
+>> B-trees is restricted by the value 0.50 (see Appendix C). However it
+>> takes place only if your tree contains records of the _same_ length
+>> (for example, extent pointers). Once you put to your B-tree records
+>> of variable length (restricted only by leaf size, like btrfs "inline
+>> extents"), your tree LOSES this boundary. Moreover, even worse:
+>> it is clear, that in this case utilization of B-tree scales as zero(!).
+>> That said, for every small E and for every amount of data N we
+>> can construct a consistent B-tree, which contains data N and has
+>> utilization worse then E. I.e. from the standpoint of utilization
+>> such trees can be completely degenerated.
+>>
+>> That said, the very important property of B-trees, which guarantees
+>> non-zero utilization, has been lost, and I don't see in Btrfs code any
+>> substitution for this property. In other words, where is a formal
+>> guarantee that all disk space of our users won't be eaten by internal
+>> fragmentation? I consider such guarantee as a *necessary* condition
+>> for putting a file system to production.
+>>
+>> Any technical comments are welcome.
+>>
+>> Thanks,
+>> Edward.
+>>
+>>
+>> Appendix A.
+>> -----------
+>> Glossary
+>>
+>> 1. Utilization of data and(or) metadata storage.
+>>
+>> The fraction A/B, where
+>> A is total size in bytes of stored data and(or) metadata.
+>> B = N * S, where
+>> N is number of blocks occupied by stored data and(or) metadata.
+>> S is block size in bytes.
+>>
+>> 2. Internal fragmentation of data and(or) metadata storage.
+>>
+>> difference (1 - U), where U is utilization.
+>>
+>>
+>> Appendix B.
+>> -----------
+>> a "period" in the dump of the fs_tree (btrfs-debug-tree /dev/sdb2)
+>>
+>> ...
+>>
+>> leaf 29982720 items 4 free space 1572 generation 8 owner 5
+>> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+>> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+>>        item 0 key (319 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
+>>                location key (0 UNKNOWN 0) type 8
+>>                namelen 16 datalen 32 name: security.selinux
+>>        item 1 key (319 EXTENT_DATA 0) itemoff 1848 itemsize 2069
+>>                inline extent data size 2048 ram 2048 compress 0
+>>        item 2 key (320 INODE_ITEM 0) itemoff 1688 itemsize 160
+>>                inode generation 8 size 2048 block group 29360128 mode 100644
+>> links 1
+>>        item 3 key (320 INODE_REF 256) itemoff 1672 itemsize 16
+>>                inode ref index 65 namelen 6 name: file64
+>> leaf 29425664 items 1 free space 3892 generation 8 owner 5
+>> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+>> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+>>        item 0 key (320 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
+>>                location key (0 UNKNOWN 0) type 8
+>>                namelen 16 datalen 32 name: security.selinux
+>> leaf 29990912 items 1 free space 1901 generation 8 owner 5
+>> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+>> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+>>        item 0 key (320 EXTENT_DATA 0) itemoff 1926 itemsize 2069
+>>                inline extent data size 2048 ram 2048 compress 0
+>> leaf 29986816 items 3 free space 3666 generation 8 owner 5
+>> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+>> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+>>        item 0 key (321 INODE_ITEM 0) itemoff 3835 itemsize 160
+>>                inode generation 8 size 2048 block group 29360128 mode 100644
+>> links 1
+>>        item 1 key (321 INODE_REF 256) itemoff 3819 itemsize 16
+>>                inode ref index 66 namelen 6 name: file65
+>>        item 2 key (321 XATTR_ITEM 3817753667) itemoff 3741 itemsize 78
+>>                location key (0 UNKNOWN 0) type 8
+>>                namelen 16 datalen 32 name: security.selinux
+>> leaf 29995008 items 3 free space 1675 generation 8 owner 5
+>> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+>> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+>>        item 0 key (321 EXTENT_DATA 0) itemoff 1926 itemsize 2069
+>>                inline extent data size 2048 ram 2048 compress 0
+>>        item 1 key (322 INODE_ITEM 0) itemoff 1766 itemsize 160
+>>                inode generation 8 size 2048 block group 29360128 mode 100644
+>> links 1
+>>        item 2 key (322 INODE_REF 256) itemoff 1750 itemsize 16
+>>                inode ref index 67 namelen 6 name: file66
+>> ...
+>>
+>> Appendix C.
+>> -----------
+>>
+>> D.E. Knuth, The Art of Computer Programming, vol. 3 (Sorting and Searching),
+>> Addison-Wesley, Reading, MA, 1973.
+>>
+>> --
+>> Edward O. Shishkin
+>> Principal Software Engineer
+>> Red Hat Czech
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>      
+> Hi to all,
+>
+> First of let me say: Btrfs really has matured a lot in the last months
+> and this is thanks to you guys (the developers !)
+>
+> More and more people are making it their dedicated filesystem (MeeGo)
+> or an option (Ubuntu, Fedora)
+>
+> So thank you very very much for your on-going efforts on making this
+> more and more a viable (and usable !) alternative/competition to zfs
+> :)
+>
+> The problems Edward mentioned sound like some very important points
+> (issues ?) to investigate
+>
+> I find it somewhat surprising that none of you guys commented on his mail
+>    
+Me too.
+> I'm in no way a developer (in fact a power-user) but would
+> nevertheless be interested in your opinions on this matter -
+> especially Chris'
+>
+> Thanks !
+>
+> Mat
+>
+>    
+With all the best
+Christian Stroetmann
 
-hotplug was in the next section, not in this.
-
-Besides most systems do not support hotplug CPUs.
-
--Andi
