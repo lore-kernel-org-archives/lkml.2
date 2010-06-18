@@ -1,160 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab0FRVLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 17:11:14 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:58364 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752125Ab0FRVLM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 17:11:12 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>,
-       "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
-CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-       "'akpm@osdl.org'" <akpm@osdl.org>,
-       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Fri, 18 Jun 2010 15:11:03 -0600
-Subject: [PATCH 11/12] scsi: megaraid_sas - Add three times Online
- controller reset
-Thread-Topic: [PATCH 11/12] scsi: megaraid_sas - Add three times Online
- controller reset
-Thread-Index: Aco28IhK0BCwqEkwToSTDcG+BIA9kwDb1hagAACJvwADF6mW4AvxomIAHahLLtAAA8xQAAbHLQFQAbWKG4A=
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3D09274B2@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>
- <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3CDB80C32@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3D0804561@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D0804561@cosmail02.lsi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752738Ab0FRVML (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 17:12:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44306 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752471Ab0FRVMI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 17:12:08 -0400
+Date: Fri, 18 Jun 2010 14:10:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+       Haojian Zhuang <haojian.zhuang@marvell.com>,
+       Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [PATCH] backlight: fix 88pm860x_bl macro collision
+Message-Id: <20100618141058.9044b83d.akpm@linux-foundation.org>
+In-Reply-To: <20100614170122.b44df729.randy.dunlap@oracle.com>
+References: <20100614170122.b44df729.randy.dunlap@oracle.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RESUBMIT:
+On Mon, 14 Jun 2010 17:01:22 -0700
+Randy Dunlap <randy.dunlap@oracle.com> wrote:
 
-If fw didn't raise the interrupt with the fw state change to driver and fw goes to failure state, driver
-Will check the FW state in driver's timeout routine and issue the reset if need.  Driver will do the OCR upto three
-Times until kill adapter.  Also driver will issue OCR before driver kill adapter even if fw in operational state.   
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Fix collision with kernel-supplied #define:
+> 
+> drivers/video/backlight/88pm860x_bl.c:24:1: warning: "CURRENT_MASK" redefined
+> arch/x86/include/asm/page_64_types.h:6:1: warning: this is the location of the previous definition
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
+> ---
+>  drivers/video/backlight/88pm860x_bl.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- lnx-2634-rc5.orig/drivers/video/backlight/88pm860x_bl.c
+> +++ lnx-2634-rc5/drivers/video/backlight/88pm860x_bl.c
+> @@ -21,7 +21,7 @@
+>  #define MAX_BRIGHTNESS		(0xFF)
+>  #define MIN_BRIGHTNESS		(0)
+>  
+> -#define CURRENT_MASK		(0x1F << 1)
+> +#define CURRENT_BITMASK		(0x1F << 1)
+>  
+>  struct pm860x_backlight_data {
+>  	struct pm860x_chip *chip;
+> @@ -85,7 +85,7 @@ static int pm860x_backlight_set(struct b
+>  	if ((data->current_brightness == 0) && brightness) {
+>  		if (data->iset) {
+>  			ret = pm860x_set_bits(data->i2c, wled_idc(data->port),
+> -					      CURRENT_MASK, data->iset);
+> +					      CURRENT_BITMASK, data->iset);
+>  			if (ret < 0)
+>  				goto out;
+>  		}
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+mutter.  "CURRENT_BITMASK" isn't a lot better.  And look at
+"MAX_BRIGHTNESS" and "MIN_BRIGHTNESS" up there (five instances of
+MAX_BRIGHTNESS in the tree).
 
----
-drivers/scsi/megaraid/megaraid_sas.c |   66 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 65 insertions(+), 1 deletion(-)
+Just because a definition resides in a .c file doesn't mena that it's
+"private"!  We should be more defensive about these things.  And
+picking better identifiers gets you more ctags-friendliness for free.
 
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
---- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-17 07:51:23.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-17 09:09:07.000000000 -0400
-@@ -942,6 +942,7 @@ megasas_make_sgl_skinny(struct megasas_i
- 			mfi_sgl->sge_skinny[i].length = sg_dma_len(os_sgl);
- 			mfi_sgl->sge_skinny[i].phys_addr =
- 						sg_dma_address(os_sgl);
-+			mfi_sgl->sge_skinny[i].flag = 0;
- 		}
- 	}
- 	return sge_count;
-@@ -1569,6 +1570,28 @@ static void megasas_complete_cmd_dpc(uns
- 	}
- }
- 
-+static void
-+megasas_internal_reset_defer_cmds(struct megasas_instance *instance);
-+
-+static void
-+process_fw_state_change_wq(struct work_struct *work);
-+
-+void megasas_do_ocr(struct megasas_instance *instance)
-+{
-+	if ((instance->pdev->device == PCI_DEVICE_ID_LSI_SAS1064R) ||
-+	(instance->pdev->device == PCI_DEVICE_ID_DELL_PERC5) ||
-+	(instance->pdev->device == PCI_DEVICE_ID_LSI_VERDE_ZCR)) {
-+		*instance->consumer     = MEGASAS_ADPRESET_INPROG_SIGN;
-+	}
-+	instance->instancet->disable_intr(instance->reg_set);
-+	instance->adprecovery   = MEGASAS_ADPRESET_SM_INFAULT;
-+	instance->issuepend_done = 0;
-+
-+	atomic_set(&instance->fw_outstanding, 0);
-+	megasas_internal_reset_defer_cmds(instance);
-+	process_fw_state_change_wq(&instance->work_init);
-+}
-+
- /**
-  * megasas_wait_for_outstanding -	Wait for all outstanding cmds
-  * @instance:				Adapter soft state
-@@ -1586,6 +1609,8 @@ static int megasas_wait_for_outstanding(
- 	unsigned long flags;
- 	struct list_head clist_local;
- 	struct megasas_cmd *reset_cmd;
-+	u32 fw_state;
-+	u8 kill_adapter_flag;
- 
- 	spin_lock_irqsave(&instance->hba_lock, flags);
- 	adprecovery = instance->adprecovery;
-@@ -1671,7 +1696,45 @@ static int megasas_wait_for_outstanding(
- 		msleep(1000);
- 	}
- 
--	if (atomic_read(&instance->fw_outstanding)) {
-+	i = 0;
-+	kill_adapter_flag = 0;
-+	do {
-+		fw_state = instance->instancet->read_fw_status_reg(
-+					instance->reg_set) & MFI_STATE_MASK;
-+		if ((fw_state == MFI_STATE_FAULT) &&
-+			(instance->disableOnlineCtrlReset == 0)) {
-+			if (i == 3) {
-+				kill_adapter_flag = 2;
-+				break;
-+			}
-+			megasas_do_ocr(instance);
-+			kill_adapter_flag = 1;
-+
-+			/* wait for 1 secs to let FW finish the pending cmds */
-+			msleep(1000);
-+		}
-+		i++;
-+	} while (i <= 3);
-+
-+	if (atomic_read(&instance->fw_outstanding) &&
-+					!kill_adapter_flag) {
-+		if (instance->disableOnlineCtrlReset == 0) {
-+
-+			megasas_do_ocr(instance);
-+
-+			/* wait for 5 secs to let FW finish the pending cmds */
-+			for (i = 0; i < wait_time; i++) {
-+				int outstanding =
-+					atomic_read(&instance->fw_outstanding);
-+				if (!outstanding)
-+					return SUCCESS;
-+				msleep(1000);
-+			}
-+		}
-+	}
-+
-+	if (atomic_read(&instance->fw_outstanding) ||
-+					(kill_adapter_flag == 2)) {
- 		printk(KERN_NOTICE "megaraid_sas: pending cmds after reset\n");
- 		/*
- 		* Send signal to FW to stop processing any pending cmds.
-@@ -2681,6 +2744,7 @@ static int megasas_create_frame_pool(str
- 			return -ENOMEM;
- 		}
- 
-+		memset(cmd->frame, 0, total_sz);
- 		cmd->frame->io.context = cmd->index;
- 		cmd->frame->io.pad_0 = 0;
- 	}
+
