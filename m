@@ -1,187 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758967Ab0FRKRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 06:17:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46867 "EHLO hera.kernel.org"
+	id S1759914Ab0FRKSN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 06:18:13 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46888 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757267Ab0FRKRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 06:17:47 -0400
-Date: Fri, 18 Jun 2010 10:17:18 GMT
-From: tip-bot for Chase Douglas <chase.douglas@canonical.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-       hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
-       tglx@linutronix.de, chase.douglas@canonical.com, mhiramat@redhat.com,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-       tglx@linutronix.de, chase.douglas@canonical.com, mhiramat@redhat.com,
-       mingo@elte.hu
-In-Reply-To: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
-References: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
+	id S1758222Ab0FRKSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 06:18:11 -0400
+Date: Fri, 18 Jun 2010 10:17:00 GMT
+From: tip-bot for Kirill Smelkov <kirr@landau.phys.spbu.ru>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+       mingo@redhat.com, kirr@landau.phys.spbu.ru, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       acme@redhat.com, kirr@landau.phys.spbu.ru, tglx@linutronix.de
+In-Reply-To: <1276516847-25817-1-git-send-email-kirr@landau.phys.spbu.ru>
+References: <1276516847-25817-1-git-send-email-kirr@landau.phys.spbu.ru>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Add kernel source path option
-Message-ID: <tip-9ed7e1b85cd55dc46cb9410a23086bdaa2ff3eb9@git.kernel.org>
-Git-Commit-ID: 9ed7e1b85cd55dc46cb9410a23086bdaa2ff3eb9
+Subject: [tip:perf/core] perf tools: .gitignore += config.make config.make.autogen
+Message-ID: <tip-cfc21cc641dae17a4ebda29ed093134358449577@git.kernel.org>
+Git-Commit-ID: cfc21cc641dae17a4ebda29ed093134358449577
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Jun 2010 10:17:19 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Jun 2010 10:17:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9ed7e1b85cd55dc46cb9410a23086bdaa2ff3eb9
-Gitweb:     http://git.kernel.org/tip/9ed7e1b85cd55dc46cb9410a23086bdaa2ff3eb9
-Author:     Chase Douglas <chase.douglas@canonical.com>
-AuthorDate: Mon, 14 Jun 2010 15:26:30 -0400
+Commit-ID:  cfc21cc641dae17a4ebda29ed093134358449577
+Gitweb:     http://git.kernel.org/tip/cfc21cc641dae17a4ebda29ed093134358449577
+Author:     Kirill Smelkov <kirr@landau.phys.spbu.ru>
+AuthorDate: Mon, 14 Jun 2010 16:00:47 +0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 17 Jun 2010 10:27:57 -0300
+CommitDate: Thu, 17 Jun 2010 10:24:31 -0300
 
-perf probe: Add kernel source path option
+perf tools: .gitignore += config.make config.make.autogen
 
-The probe plugin requires access to the source code for some operations.  The
-source code must be in the exact same location as specified by the DWARF tags,
-but sometimes the location is an absolute path that cannot be replicated by a
-normal user. This change adds the -s|--source option to allow the user to
-specify the root of the kernel source tree.
+These are local-configuration files and should be ignored.
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Masami Hiramatsu <mhiramat@redhat.com>
-LKML-Reference: <1276543590-10486-1-git-send-email-chase.douglas@canonical.com>
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+LKML-Reference: <1276516847-25817-1-git-send-email-kirr@landau.phys.spbu.ru>
+Signed-off-by: Kirill Smelkov <kirr@landau.phys.spbu.ru>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-probe.txt |    4 ++
- tools/perf/builtin-probe.c              |    2 +
- tools/perf/util/probe-finder.c          |   58 +++++++++++++++++++++++++++++--
- tools/perf/util/symbol.h                |    1 +
- 4 files changed, 62 insertions(+), 3 deletions(-)
+ tools/perf/.gitignore |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index 94a258c..ea531d9 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -31,6 +31,10 @@ OPTIONS
- --vmlinux=PATH::
- 	Specify vmlinux path which has debuginfo (Dwarf binary).
- 
-+-s::
-+--source=PATH::
-+	Specify path to kernel source.
-+
- -v::
- --verbose::
-         Be more verbose (show parsed arguments, etc).
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index e4a4da3..5455186 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -182,6 +182,8 @@ static const struct option options[] = {
- 		     "Show source code lines.", opt_show_lines),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
-+	OPT_STRING('s', "source", &symbol_conf.source_prefix,
-+		   "directory", "path to kernel source"),
- #endif
- 	OPT__DRY_RUN(&probe_event_dry_run),
- 	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index d964cb1..baf6653 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -37,6 +37,7 @@
- #include "event.h"
- #include "debug.h"
- #include "util.h"
-+#include "symbol.h"
- #include "probe-finder.h"
- 
- /* Kprobe tracer basic type is up to u64 */
-@@ -57,6 +58,55 @@ static int strtailcmp(const char *s1, const char *s2)
- 	return 0;
- }
- 
-+/*
-+ * Find a src file from a DWARF tag path. Prepend optional source path prefix
-+ * and chop off leading directories that do not exist. Result is passed back as
-+ * a newly allocated path on success.
-+ * Return 0 if file was found and readable, -errno otherwise.
-+ */
-+static int get_real_path(const char *raw_path, char **new_path)
-+{
-+	if (!symbol_conf.source_prefix) {
-+		if (access(raw_path, R_OK) == 0) {
-+			*new_path = strdup(raw_path);
-+			return 0;
-+		} else
-+			return -errno;
-+	}
-+
-+	*new_path = malloc((strlen(symbol_conf.source_prefix) +
-+			    strlen(raw_path) + 2));
-+	if (!*new_path)
-+		return -ENOMEM;
-+
-+	for (;;) {
-+		sprintf(*new_path, "%s/%s", symbol_conf.source_prefix,
-+			raw_path);
-+
-+		if (access(*new_path, R_OK) == 0)
-+			return 0;
-+
-+		switch (errno) {
-+		case ENAMETOOLONG:
-+		case ENOENT:
-+		case EROFS:
-+		case EFAULT:
-+			raw_path = strchr(++raw_path, '/');
-+			if (!raw_path) {
-+				free(*new_path);
-+				*new_path = NULL;
-+				return -ENOENT;
-+			}
-+			continue;
-+
-+		default:
-+			free(*new_path);
-+			*new_path = NULL;
-+			return -errno;
-+		}
-+	}
-+}
-+
- /* Line number list operations */
- 
- /* Add a line to line number list */
-@@ -1096,11 +1146,13 @@ end:
- static int line_range_add_line(const char *src, unsigned int lineno,
- 			       struct line_range *lr)
- {
-+	int ret;
-+
- 	/* Copy real path */
- 	if (!lr->path) {
--		lr->path = strdup(src);
--		if (lr->path == NULL)
--			return -ENOMEM;
-+		ret = get_real_path(src, &lr->path);
-+		if (ret != 0)
-+			return ret;
- 	}
- 	return line_list__add_line(&lr->line_list, lineno);
- }
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 10b7ff8..80e569b 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -71,6 +71,7 @@ struct symbol_conf {
- 			full_paths,
- 			show_cpu_utilization;
- 	const char	*vmlinux_name,
-+			*source_prefix,
- 			*field_sep;
- 	const char	*default_guest_vmlinux_name,
- 			*default_guest_kallsyms,
+diff --git a/tools/perf/.gitignore b/tools/perf/.gitignore
+index e1d60d7..cb43289 100644
+--- a/tools/perf/.gitignore
++++ b/tools/perf/.gitignore
+@@ -18,3 +18,5 @@ perf-archive
+ tags
+ TAGS
+ cscope*
++config.mak
++config.mak.autogen
