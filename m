@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab0FRGZL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 02:25:11 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:58280 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753012Ab0FRGZH (ORCPT
+	id S1754010Ab0FRG1V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 02:27:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37250 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841Ab0FRG1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 02:25:07 -0400
-Date: Fri, 18 Jun 2010 02:25:01 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Mike Chan <mike@android.com>
-Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-acpi@vger.kernel.org
-Subject: Re: RFC: /sys/power/policy_preference
-In-reply-to: <AANLkTilkblF0tfSnvLdVZVOi0r-dc32uAMuaiUlKesdn@mail.gmail.com>
-Message-id: <alpine.LFD.2.00.1006180156460.7628@localhost.localdomain>
-References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain>
- <AANLkTilkblF0tfSnvLdVZVOi0r-dc32uAMuaiUlKesdn@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 18 Jun 2010 02:27:20 -0400
+Date: Thu, 17 Jun 2010 23:26:49 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
+       mingo@elte.hu, bphilips@suse.de, yinghai@kernel.org,
+       akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, jeff@garzik.org,
+       linux-ide@vger.kernel.org, stern@rowland.harvard.edu, gregkh@suse.de,
+       khali@linux-fr.org
+Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
+Message-ID: <20100617232649.6db5cc55@infradead.org>
+In-Reply-To: <4C1A5197.8060409@kernel.org>
+References: <1276443098-20653-1-git-send-email-tj@kernel.org>
+	<1276443098-20653-10-git-send-email-tj@kernel.org>
+	<20100616204854.4b036f87@infradead.org>
+	<4C19DA64.8000409@kernel.org>
+	<alpine.LFD.2.00.1006171310560.4290@localhost.localdomain>
+	<4C1A05AF.5010405@kernel.org>
+	<20100617124343.5889067c@lxorguk.ukuu.org.uk>
+	<4C1A4548.3020602@kernel.org>
+	<20100617090229.543af62c@infradead.org>
+	<4C1A5197.8060409@kernel.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010, Mike Chan wrote:
+On Thu, 17 Jun 2010 18:47:19 +0200
+Tejun Heo <tj@kernel.org> wrote:
 
-> On Wed, Jun 16, 2010 at 2:05 PM, Len Brown <lenb@kernel.org> wrote:
-> > Create /sys/power/policy_preference, giving user-space
-> > the ability to express its preference for kernel based
-> > power vs. performance decisions in a single place.
-> >
-> > This gives kernel sub-systems and drivers a central place
-> > to discover this system-wide policy preference.
-> > It also allows user-space to not have to be updated
-> > every time a sub-system or driver adds a new power/perf knob.
-> >
 > 
-> This might be ok as a convince feature for userspace, but if that is
-> the sole intention, is 5 states enough?
->
-> Are these values sufficient? I
-> can say at least for Android this will probably won't be as useful
-> (but perhaps on your platforms it makes sense).
+> Hmmm... the thing is that there will be many cases which won't fit
+> irq_expect() model (why irq_watch() exists in the first place) and for
+> the time being libata is the only one providing that data.  Would the
+> data still be useful to determine which c-state to use?
 
-Honestly, my first thought was to use 100 values -- a percentage.
-But I got quickly taked out of it by people much wiser than me.
+yes absolutely. One of the hard cases right now that the C state code
+has is that it needs to predict the future. While it has a ton of
+heuristics, including some is there IO oustanding" ones, libata is a
+really good case: libata will know generally that within one seek time
+(5 msec on rotating rust, much less on floating electrons) there'll be
+an interrupt (give or take, but this is what we can do heuristics for
+on a per irq level).
+So it's a good suggestion of what the future will be like, MUCH better
+than any hint we have right now... all we have right now is some
+history, and when the next timer is.... 
 
-Consider that the vendors that are cleaning Linux's clock
-on laptops seem quite content with 3 values at the user-interface.
-So one might argue that 5 levels is already 66% more complexity
-than needed:-)
 
-Some suggested special case states, eg for HPC.
-But those needs didn't fit into this simple power vs performance
-continuum, and every consumer of this interface needs to undertand
-every state, so adding special states would be a mistake.
-
-The folks that do HPC and the folks that do embedded devices
-are smart enough to tune their systems without using this
-rather blunt instrument.  They should continue to do so,
-and this mechanism should not get in their way.
-
-For example, if this mechanism is used to update powersave_bias
-inside ondemand, but at the same time somebody tunes powersave_bias
-by hand, the by-hand tuning must win.
-
-> As for a place for subsystems and drivers to check for what
-> performance mode you're in, do my driver how to check two places now?
-> Whats stopping someone from overriding cpufreq, or cpuidle? I might be
-> confused here (if I am someone please correct me) but isn't this
-> somewhat along he lines of pm runtime / pm qos if drivers want to
-> check what power / performance state the system is in?
-
-pm runtime and pm qos are much bigger hammers, and this
-mechanism is intended to complement them, not replace them.
-
-Simply stated, this mechanism is intended just to give
-a global hint of the user's power vs. performance preference
-at a given time.  There are places in the kernel and drivers
-where power vs performance decisions are made with zero
-concept of user preference, and this hint can help there.
-
-Other parts of the kernel don't care, or have sufficient
-information to make informed decisions, and thus they
-simply wouldn't need to make use of this hint.
-
-thanks,
-Len Brown, Intel Open Source Technology Center
-
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
