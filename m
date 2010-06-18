@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab0FRHj5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 03:39:57 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48974 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab0FRHjz (ORCPT
+	id S1756942Ab0FRHkL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 03:40:11 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41022 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756433Ab0FRHkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 03:39:55 -0400
-Reply-To: <nick.cheng@areca.com.tw>
-From: "Nick Cheng" <nick.cheng@areca.com.tw>
-To: <linux-scsi@vger.kernel.org>
-Cc: <James.Bottomley@HansenPartnership.com>, <linux-kernel@vger.kernel.org>
-References: 
-Subject: [PATCH 3/3 ] SCSI: Remove the AER section in kconfig file
-Date: Fri, 18 Jun 2010 15:39:48 +0800
-Organization: Areca Technology
-Message-ID: <6F6F4FA10B6F48AD96B4CC8CAABB4963@areca4e4f859d4>
+	Fri, 18 Jun 2010 03:40:04 -0400
+Date: Fri, 18 Jun 2010 09:39:50 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Paul Mundt <lethal@linux-sh.org>, Dmitry Torokhov <dtor@mail.ru>,
+       Eric Miao <eric.y.miao@gmail.com>, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/2] Driver core: reduce duplicated code
+Message-ID: <20100618073950.GA12822@pengutronix.de>
+References: <1276591677-4678-1-git-send-email-u.kleine-koenig@pengutronix.de> <1276591677-4678-2-git-send-email-u.kleine-koenig@pengutronix.de> <20100615090500.GA17595@pengutronix.de> <20100616205332.GB15837@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0006_01CB0EFC.7EEED580"
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Acowc/JWqUJly33gTDCpllU+Tsu/7SPlji1QBeB6xMAE6weakA==
-In-Reply-To: 
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100616205332.GB15837@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Hi Greg,
 
-------=_NextPart_000_0006_01CB0EFC.7EEED580
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+On Wed, Jun 16, 2010 at 01:53:32PM -0700, Greg KH wrote:
+> On Tue, Jun 15, 2010 at 11:05:00AM +0200, Uwe Kleine-König wrote:
+> > On Tue, Jun 15, 2010 at 10:47:56AM +0200, Uwe Kleine-König wrote:
+> > > This makes the two similar functions platform_device_register_simple
+> > > and platform_device_register_data one line inline functions using a new
+> > > generic function platform_device_register_resndata.
+> > I forgot to add some comments to this mail, ... sorry.
+> > 
+> >  - I'm not completely happy with the name of the new function.  If
+> >    someone has a better name please tell me.
+> 
+> I don't like it either, what is "resndata" supposed to stand for?
+resources and data -> res'n'data -> resndata.
 
-1. Remove the AER section of Areca driver in kconfig file of scsi folder
-Signed-off-by: Nick Cheng< nick.cheng@areca.com.tw >
----
+> >  - can platform_device_register_resndata be moved to __init_or_module?
+> 
+> I doubt it, but try it and see if a build warns about it.
+for x86_64_defconfig + MODULES=n there are two section mismatches:
+	dock_add
+	regulatory_init
 
-------=_NextPart_000_0006_01CB0EFC.7EEED580
-Content-Type: application/octet-stream;
-	name="patch_kconfig"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="patch_kconfig"
+regulatory_init is only called from
 
-diff -Naurp --ignore-blank-lines --ignore-all-space =
---ignore-space-change a/linux/drivers/scsi/Kconfig =
-b/linux/drivers/scsi/Kconfig=0A=
---- a/linux/drivers/scsi/Kconfig	2010-06-18 22:33:19.000000000 +0800=0A=
-+++ b/linux/drivers/scsi/Kconfig	2010-06-18 23:24:54.000000000 +0800=0A=
-@@ -585,32 +585,18 @@ config SCSI_IN2000=0A=
- 	  module will be called in2000.=0A=
- =0A=
- config SCSI_ARCMSR=0A=
--	tristate "ARECA (ARC11xx/12xx/13xx/16xx) SATA/SAS RAID Host Adapter"=0A=
-+	tristate "ARECA (ARC11xx/12xx/16xx/18xx) SATA/SAS RAID Host Adapter"=0A=
- 	depends on PCI && SCSI=0A=
- 	help=0A=
- 	  This driver supports all of ARECA's SATA/SAS RAID controller cards.=0A=
--	  This is an ARECA-maintained driver by Erich Chen.=0A=
--	  If you have any problems, please mail to: <erich@areca.com.tw>.=0A=
-+	  This is an ARECA-maintained driver by Nick Cheng.=0A=
-+	  If you have any problems, please mail to: <support@areca.com.tw>.=0A=
- 	  Areca supports Linux RAID config tools.=0A=
- 	  Please link <http://www.areca.com.tw>=0A=
- =0A=
- 	  To compile this driver as a module, choose M here: the=0A=
- 	  module will be called arcmsr (modprobe arcmsr).=0A=
- =0A=
--config SCSI_ARCMSR_AER=0A=
--	bool "Enable PCI Error Recovery Capability in Areca Driver(ARCMSR)"=0A=
--	depends on SCSI_ARCMSR && PCIEAER=0A=
--	default n=0A=
--	help=0A=
--	  The advanced error reporting(AER) capability is "NOT" provided by=0A=
--	  ARC1200/1201/1202 SATA RAID controllers cards.=0A=
--	  If your card is one of ARC1200/1201/1202, please use the default =
-setting, n.=0A=
--	  If your card is other models, you could pick it=0A=
--	  on condition that the kernel version is greater than 2.6.19.=0A=
--	  This function is maintained driver by Nick Cheng. If you have any=0A=
--	  problems or suggestion, you are welcome to contact with =
-<nick.cheng@areca.com.tw>.=0A=
--	  To enable this function, choose Y here.=0A=
--=0A=
- source "drivers/scsi/megaraid/Kconfig.megaraid"=0A=
- source "drivers/scsi/mpt2sas/Kconfig"=0A=
- =0A=
+	static int __init cfg80211_init(void)
 
-------=_NextPart_000_0006_01CB0EFC.7EEED580--
+.  (I just sent a patch[1] that moves regulatory_init to .init.text.)
 
+dock_add (in drivers/acpi/dock.c) is a bit harder.  I will take a look
+later if it can go to .init.text (together with a few more functions),
+too.
+
+> >  - I moved the kernel docs to the header but didn't test if they are
+> >    picked up when generating docs.  Even if not, there is no better
+> >    place, is there?
+> 
+> No, that's the proper place, but make sure the docbook source is also
+> picking up the .h file, I don't know if it currently does.
+It does not, will fix in a v2.
+
+Thanks
+Uwe
+
+[1] http://mid.gmane.org/1276846735-12105-2-git-send-email-u.kleine-koenig@pengutronix.de
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
