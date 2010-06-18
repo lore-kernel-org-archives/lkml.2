@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab0FRPpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 11:45:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29603 "EHLO mx1.redhat.com"
+	id S1755247Ab0FRPtV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 11:49:21 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:60349 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753046Ab0FRPpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 11:45:50 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <201006180308.o5I38O34094551@www262.sakura.ne.jp>
-References: <201006180308.o5I38O34094551@www262.sakura.ne.jp>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-       linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 2.6.29.6 - 2.6.35-rc3] CRED: Release spinlock before commit_creds().
-Date: Fri, 18 Jun 2010 16:45:43 +0100
-Message-ID: <21796.1276875943@redhat.com>
+	id S1753036Ab0FRPtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 11:49:20 -0400
+Subject: Re: [RFC][PATCH 9/9] make kvm mmu shrinker more aggressive
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+In-Reply-To: <1276701911.6437.16973.camel@nimitz>
+References: <20100615135518.BC244431@kernel.beaverton.ibm.com>
+	 <20100615135530.4565745D@kernel.beaverton.ibm.com>
+	 <4C189830.2070300@redhat.com>  <1276701911.6437.16973.camel@nimitz>
+Content-Type: text/plain
+Date: Fri, 18 Jun 2010 08:49:16 -0700
+Message-Id: <1276876156.6437.23323.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-06-16 at 08:25 -0700, Dave Hansen wrote:
+> On Wed, 2010-06-16 at 12:24 +0300, Avi Kivity wrote:
+> > On 06/15/2010 04:55 PM, Dave Hansen wrote:
+> > > In a previous patch, we removed the 'nr_to_scan' tracking.
+> > > It was not being used to track the number of objects
+> > > scanned, so we stopped using it entirely.  Here, we
+> > > strart using it again.
+> > >
+> > > The theory here is simple; if we already have the refcount
+> > > and the kvm->mmu_lock, then we should do as much work as
+> > > possible under the lock.  The downside is that we're less
+> > > fair about the KVM instances from which we reclaim.  Each
+> > > call to mmu_shrink() will tend to "pick on" one instance,
+> > > after which it gets moved to the end of the list and left
+> > > alone for a while.
+> > >    
+> > 
+> > That also increases the latency hit, as well as a potential fault storm, 
+> > on that instance.  Spreading out is less efficient, but smoother.
+> 
+> This is probably something that we need to go back and actually measure.
+> My suspicion is that, when memory fills up and this shrinker is getting
+> called a lot, it will be naturally fair.  That list gets shuffled around
+> enough, and mmu_shrink() called often enough that no VMs get picked on
+> too unfairly.
+> 
+> I'll go back and see if I can quantify this a bit, though.
 
-Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
+The shrink _query_ (mmu_shrink() with nr_to_scan=0) code is called
+really, really often.  Like 5,000-10,000 times a second during lots of
+VM pressure.  But, it's almost never called on to actually shrink
+anything.
 
-> reparent_to_kthreadd() is calling commit_creds() with tasklist_lock held.
-> But commit_creds() calls
-> key_fsuid_changed()/key_fsgid_changed()/proc_id_connector() which may sleep.
-> Release tasklist_lock before calling commit_creds().
+Over the 20 minutes or so that I tested, I saw about 700k calls to
+mmu_shrink().  But, only 6 (yes, six) calls that had a non-zero
+nr_to_scan.  I'm not sure whether this is because of the .seeks argument
+to the shrinker or what, but the slab code stays far, far away from
+making mmu_shrink() do much real work.
 
-Hmmm...  Does this change leave a hole in which the thread can be accessed as
-it's not locked away, but still has the old credentials?
+That changes a few things.  I bet all the contention we were seeing was
+just from nr_to_scan=0 calls and not from actual shrink operations.
+Perhaps we should just stop this set after patch 4.
 
-I wonder if we should have an internal CLONE_KTHREAD flag to achieve this in
-do_fork() rather than daemonize()'ing the thread later.
+Any thoughts?
 
-Also, key_fsuid_changed() and key_fsgid_changed() should be skipped in
-commit_creds() if the thread-keyring pointer in the new creds is not the same
-as that in the old creds (as will be the case if we're shifting to init_cred),
-so they shouldn't really be a problem.
+-- Dave
 
-However, I can't see an easy way around proc_id_connector() sleeping - unless
-we just don't call it if new == &init_cred in commit_creds().
-
-I suppose it also leaves a hole if we call commit_creds() first, before
-getting the write_lock()... :-/
-
-David
