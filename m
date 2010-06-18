@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab0FRF4r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 01:56:47 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:43226 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab0FRF4q (ORCPT
+	id S1752914Ab0FRF7k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 01:59:40 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:53483 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752355Ab0FRF7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 01:56:46 -0400
-Date: Fri, 18 Jun 2010 01:56:27 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Victor Lowther <victor.lowther@gmail.com>
-Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [linux-pm] RFC: /sys/power/policy_preference
-In-reply-to: <AANLkTimWfE0WXr558sOnjZFptxpP4k6IvMWriR3seIKu@mail.gmail.com>
-Message-id: <alpine.LFD.2.00.1006180149120.7628@localhost.localdomain>
-References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain>
- <0F1C0B07-60D6-405B-890B-F9C320820CA5@gmail.com>
- <alpine.LFD.2.00.1006171500260.4214@localhost.localdomain>
- <AANLkTimWfE0WXr558sOnjZFptxpP4k6IvMWriR3seIKu@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: MULTIPART/MIXED; BOUNDARY="8323328-1548819180-1276840588=:7628"
+	Fri, 18 Jun 2010 01:59:38 -0400
+Date: Fri, 18 Jun 2010 15:59:29 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Message-ID: <20100618055929.GA11333@gondor.apana.org.au>
+References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com> <20100606161348.427822fb@nehalam> <20100608052744.GA21547@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com> <20100611052112.GA25649@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com> <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Fri, Jun 18, 2010 at 01:26:49PM +0800, Xin, Xiaohui wrote:
+>
+> Herbert,
+> I have questions about the idea above:
+> 1) Since netdev_alloc_skb() is still there, and we only modify alloc_page(), 
+> then we don't need napi_gro_frags() any more, the driver's original receiving 
+> function is ok. Right?
 
---8323328-1548819180-1276840588=:7628
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Well I was actually thinking about converting all drivers that
+need this to napi_gro_frags.  But now that you mention it, yes
+we could still keep the old interface to minimise the work.
 
-On Thu, 17 Jun 2010, Victor Lowther wrote:
+> 2) Is napi_gro_frags() only suitable for TCP protocol packet? 
+> I have done a small test for ixgbe driver to let it only allocate paged buffers 
+> and found kernel hangs when napi_gro_frags() receives an ARP packet.
 
-> > The idea here is to not require user-space to need updating
-> > whenever a future knob is invented.  We can do a great job
-> > at documenting the past, but a poor job of documenting the future:-)
+It should work with any packet.  In fact, I'm pretty sure the
+other drivers (e.g., cxgb3) use that interface for all packets.
+
+> 3) As I have mentioned above, with this idea, netdev_alloc_skb() will allocate 
+> as usual, the data pointed by skb->data will be copied into the first guest buffer. 
+> That means we should reserve sufficient room in guest buffer. For PS mode 
+> supported driver (for example ixgbe), the room will be more than 128. After 128bytes, 
+> we will put the first frag data. Look into virtio-net.c the function page_to_skb()  
+> and receive_mergeable(), that means we should modify guest virtio-net driver to 
+> compute the offset as the parameter for skb_set_frag().
 > 
-> Well, I would suggest that the habit of not documenting what is
-> happening with power management in the kernel needs to change, then.
+> How do you think about this? Attached is a patch to how to modify the guest driver.
+> I reserve 512 bytes as an example, and transfer the header len of the skb in hdr->hdr_len.
 
-Actually some of the knobs I showed in the examples
-have been documented for *years*, yet are ignored
-by user-space today.  I don't want to insult user-space
-programmers, but the reality is that simpler is usually better.
+Expanding the buffer size to 512 bytes to accomodate PS mode
+looks reasonable to me.
 
-> Having the documentation and example code for how to tweak the various
-> power management settings from userspace is inherently more flexible
-> than trying to expose a single knob from the kernel to userspace for
-> power management, with little loss of flexibility.
+However, I don't think we should increase the copy threshold to
+512 bytes at the same time.  I don't have any figures myself but
+I think if we are to make such a change it should be a separate
+one and come with supporting numbers.
 
-Yes, the ultimate in flexibility is to update user-space whenever
-some new driver or new knob appears in the kernel.  I'm not proposing
-that ability be taken away.  I'm proposing that in many cases it
-is unnecessary.
-
-The idea is to have the ability to add something to the 
-kernel and avoid the need to make any change to user-space.
-
-thanks,
--Len Brown, Intel Open Source Technology Center
-
---8323328-1548819180-1276840588=:7628--
+Cheers,
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
