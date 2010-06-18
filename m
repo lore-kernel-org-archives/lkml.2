@@ -1,119 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761015Ab0FRLjP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 07:39:15 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:1753 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758137Ab0FRLjN (ORCPT
+	id S1761050Ab0FRLzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 07:55:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41301 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761035Ab0FRLzH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 07:39:13 -0400
-Message-ID: <000401cb0eda$df624590$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Wang, Yong Y" <yong.y.wang@intel.com>
-Cc: "Wang, Qi" <qi.wang@intel.com>, "Clark, Joel" <joel.clark@intel.com>,
-       "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
-       "LKML" <linux-kernel@vger.kernel.org>
-References: <4C0CE88C.9050708@dsn.okisemi.com> <4C161BE7.4080805@dsn.okisemi.com> <4C198BD2.8060801@dsn.okisemi.com> <FC2FB65B4D919844ADE4BE3C2BB739AD2077C837@shsmsx501.ccr.corp.intel.com>
-Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
-Date: Fri, 18 Jun 2010 20:39:09 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	Fri, 18 Jun 2010 07:55:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=r/boULnbmP0mu52nLSep2izxiDIioKnbrCai/VGrOvgdhX1oqTcwcL124UnHym+A5B
+         ic78RyaKryLWyRnY93eYFXQ8AT0MvA2t24Pfmuo1Mkdn53uXip4HI/RiCfSLoXZ4wxTk
+         f+A9pJUCHm5Cf6IkDkNbxP4BhShz/VRZdTS9U=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1006180149120.7628@localhost.localdomain>
+References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain>
+	<0F1C0B07-60D6-405B-890B-F9C320820CA5@gmail.com>
+	<alpine.LFD.2.00.1006171500260.4214@localhost.localdomain>
+	<AANLkTimWfE0WXr558sOnjZFptxpP4k6IvMWriR3seIKu@mail.gmail.com>
+	<alpine.LFD.2.00.1006180149120.7628@localhost.localdomain>
+Date: Fri, 18 Jun 2010 06:55:04 -0500
+Message-ID: <AANLkTimufQp-Mc1QP1w1YxlkfQQZq0t4e_oK_B3O2YBl@mail.gmail.com>
+Subject: Re: [linux-pm] RFC: /sys/power/policy_preference
+From: Victor Lowther <victor.lowther@gmail.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yong Y
-
->> +config PCH_IEEE1588
->> + tristate "PCH IEEE1588"
->> + depends on PCI
->> + help
->> +   If you say yes to this option, support will be included for the
->> +   PCH IEEE1588 Host controller.
->> +
-
->Is this really supposed to be part of this patch?
-
-> +obj-$(CONFIG_PCH_IEEE1588) += pch_ieee1588/
-> +
-
-Yes, the above is true.
-Our driver under 'drivers/char' has patch order restriction.
-Firstly, ieee1588 must be patched.
-After the above, Phub is able to be patched.
-
-Thus, our Phub patch includes ieee1588 code.
-
-> Ohtak-san, I remember you said PCH_CAN_PCLK_50MHZ was in the patch
-> because you used to have a hw bug. If that hw bug has been fixed, this config
-> option shall also be removed. Otherwise, you have to build multiple kernel
-> binaries for different hardware configurations as Alan pointed out.
-Sorry, I gave wrong information to you.
-Our CAN HW spec is that works only 50MHz.(Not HW bug)
-According to our CAN hw spec, we will delete  'PCH_CAN_PCLK_50MHZ'.
-
-Thanks,
-Ohtake
-
------ Original Message ----- 
-From: "Wang, Yong Y" <yong.y.wang@intel.com>
-To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
-Cc: "LKML" <linux-kernel@vger.kernel.org>; "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>; "Clark, Joel"
-<joel.clark@intel.com>; "Wang, Qi" <qi.wang@intel.com>
-Sent: Friday, June 18, 2010 5:08 PM
-Subject: RE: [PATCH] Topcliff PHUB: Generate PacketHub driver
-
-
-> +config PCH_IEEE1588
-> + tristate "PCH IEEE1588"
-> + depends on PCI
-> + help
-> +   If you say yes to this option, support will be included for the
-> +   PCH IEEE1588 Host controller.
-> +
-
-Is this really supposed to be part of this patch?
-
-> +config PCH_PHUB
-> + tristate "PCH PHUB"
-> + depends on PCI
-> + help
-> +   If you say yes to this option, support will be included for the
-> +   PCH Packet Hub Host controller.
-> +   This driver is for PCH Packet hub driver for Topcliff.
-> +   This driver is integrated as built-in.
-> +   This driver can access GbE MAC address.
-> +   This driver can access HW register.
-> +   You can also be integrated as module.
-> +
-> +config PCH_CAN_PCLK_50MHZ
-> + bool "CAN PCLK 50MHz"
-> + depends on PCH_PHUB
-> +        help
-> +          If you say yes to this option, clock is set to 50MHz.(For CAN
-> control)
-> +
-
-Ohtak-san, I remember you said PCH_CAN_PCLK_50MHZ was in the patch
-because you used to have a hw bug. If that hw bug has been fixed, this config
-option shall also be removed. Otherwise, you have to build multiple kernel
-binaries for different hardware configurations as Alan pointed out.
-
-> diff --git a/drivers/char/Makefile b/drivers/char/Makefile
-> index f957edf..dc092d0 100644
-> --- a/drivers/char/Makefile
-> +++ b/drivers/char/Makefile
-> @@ -111,6 +111,10 @@ obj-$(CONFIG_PS3_FLASH) += ps3flash.o
->  obj-$(CONFIG_JS_RTC) += js-rtc.o
->  js-rtc-y = rtc.o
+On Fri, Jun 18, 2010 at 12:56 AM, Len Brown <lenb@kernel.org> wrote:
+> On Thu, 17 Jun 2010, Victor Lowther wrote:
 >
-> +obj-$(CONFIG_PCH_IEEE1588) += pch_ieee1588/
-> +
+>> > The idea here is to not require user-space to need updating
+>> > whenever a future knob is invented.  We can do a great job
+>> > at documenting the past, but a poor job of documenting the future:-)
+>>
+>> Well, I would suggest that the habit of not documenting what is
+>> happening with power management in the kernel needs to change, then.
+>
+> Actually some of the knobs I showed in the examples
+> have been documented for *years*, yet are ignored
+> by user-space today.  I don't want to insult user-space
+> programmers, but the reality is that simpler is usually better.
 
-Ditto
+Let me explain where I am coming from, then.  I maintain pm-utils, one
+of the main low-level bodies of userspace code that concerns itself
+with power management.  I am currently in the process of standardizing
+some of the more common power management tweaks so that they will work
+in a cross distro manner, and know from this that the documentation we
+have is badly fragmented -- if you know exactly what you are looking
+for, you can google or grep for it, but if you do not, there is no
+easy way to find a list of all the power management settings you can
+tune.
 
+>> Having the documentation and example code for how to tweak the various
+>> power management settings from userspace is inherently more flexible
+>> than trying to expose a single knob from the kernel to userspace for
+>> power management, with little loss of flexibility.
+>
+> Yes, the ultimate in flexibility is to update user-space whenever
+> some new driver or new knob appears in the kernel.  I'm not proposing
+> that ability be taken away.  I'm proposing that in many cases it
+> is unnecessary.
 
+I disagree.  Most of userspace does not care about how the system is
+trying to save power.  I maintain one that does, and I do not like the
+idea of adding another knob whose entire purpose is to map other,
+already existing knobs onto a line, especially when we can do that in
+userspace easily enough if anyone actually wants it.
+
+> The idea is to have the ability to add something to the
+> kernel and avoid the need to make any change to user-space.
+
+Userspace in this case consists mainly of
+acpi-scripts/pm-utils/laptop-mode-tools, upower,
+g-p-m/kpowersave/x-p-m, and X. I can only speak for pm-utils, but the
+model pm-utils, acpi-scripts, and laptop-mode-tools use does not map
+to your proposed knob at all.  We use a two-state model -- either we
+are on AC power and use the kernel's default power state, or we are on
+battery power and set power management to a set of distro or user
+chosen set of parameters.  I am working on making pm-utils contain
+some predefined powersaving policies, but I do not expect them to
+change the two-state model much more than changing which power
+management tweaks are used in the on-ac and on-battery states.
+
+> thanks,
+> -Len Brown, Intel Open Source Technology Center
+>
