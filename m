@@ -1,103 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761207Ab0FRNEz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 09:04:55 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65504 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761196Ab0FRNEy (ORCPT
+	id S1761223Ab0FRNGz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 09:06:55 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:57731 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761201Ab0FRNGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 09:04:54 -0400
-Subject: Re: Probable Bug (or configuration error) in kmemleak
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Sankar P <sankar.curiosity@gmail.com>
-Cc: "Luis R. Rodriguez" <lrodriguez@atheros.com>, rnagarajan@novell.com,
-       teheo@novell.com, Pekka Enberg <penberg@cs.helsinki.fi>,
-       Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <AANLkTimb7rP0rS0OU8nan5uNEhHx_kEYL99ImZ3c8o0D@mail.gmail.com>
-References: <AANLkTimb7rP0rS0OU8nan5uNEhHx_kEYL99ImZ3c8o0D@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Fri, 18 Jun 2010 14:00:58 +0100
-Message-ID: <1276866058.28780.48.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Jun 2010 13:00:58.0508 (UTC) FILETIME=[4BACE4C0:01CB0EE6]
+	Fri, 18 Jun 2010 09:06:53 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 18 Jun 2010 15:07:19 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCHv6.1 09/11] USB: gadget: g_multi: added documentation and INF
+ files
+In-reply-to: <7337838b49bb102126eb678d330d7853ee55c5c6.1276864406.git.m.nazarewicz@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>, Greg KH <greg@kroah.com>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <5e932f9348ec343254c91918d2c5d3d46fc2fe99.1276866168.git.m.nazarewicz@samsung.com>
+X-Mailer: git-send-email 1.7.1
+References: <20100617175221.GE3644@kroah.com>
+ <2809a031d19ac6ef793d7fe343e225b8d80099c3.1276864406.git.m.nazarewicz@samsung.com>
+ <f4efaf12033f1e402303b60555c26f3779ba4aa1.1276864406.git.m.nazarewicz@samsung.com>
+ <f8062cc154f51fc2a0812cda14deea0678644af9.1276864406.git.m.nazarewicz@samsung.com>
+ <7337838b49bb102126eb678d330d7853ee55c5c6.1276864406.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-18 at 09:11 +0100, Sankar P wrote:
-> On Thu, Jun 17, 2010 at 11:06 PM, Luis R. Rodriguez
-> <lrodriguez@atheros.com> wrote:
-> > On Thu, Jun 17, 2010 at 02:21:56AM -0700, Sankar P wrote:
-> >> Hi,
-> >>
-> >> I wanted to detect memory leaks in one of my kernel modules. So I
-> >> built Linus' tree  with the following config options enabled (on top
-> >> of make defconfig)
-> >>
-> >> CONFIG_DEBUG_KMEMLEAK=y
-> >> CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=400
-> >> CONFIG_DEBUG_KMEMLEAK_TEST=y
-> >>
-> >> If I boot with this kernel, debugfs is automatically mounted. But I do
-> >> not have the file:
-> >>
-> >> /sys/kernel/debug/kmemleak
-> >>
-> >> created at all. There are other files like kprobes in the mounted
-> >> /sys/kernel/debug directory btw. So I am not able to detect any of the
-> >> memory leaks. Is there anything I am doing wrong or missing (or) is
-> >> this a bug in kmemleak ?
-> >>
-> >> Please let me know your suggestions to fix this and get memory leaks
-> >> reporting working. Thanks.
-> >>
-> >> The full .config file is also attached with this mail. Sorry for the
-> >> attachment, I did not want to paste 5k lines in the mail. Sorry if it
-> >> is wrong.
-> >
-> >
-> > This is odd.. Do you see this message on your kernel ring buffer?
-> >
-> > Failed to create the debugfs kmemleak file
-> >
-> 
-> I dont see such an error in the dmesg output. But I got another
-> interesting error:
-> 
-> [    0.000000] kmemleak: Early log buffer exceeded, please increase
-> DEBUG_KMEMLEAK_EARLY_LOG_SIZE
-> [    0.000000] kmemleak: Kernel memory leak detector disabled
+A short documentation of the g_multi driver along with INF
+files for Windows XP SP3 are provided.
 
-You would need to increase DEBUG_KMEMLEAK_EARLY_LOG_SIZE. The default of
-400 seems ok for me but it may not work with some other kernel
-configurations (that's a static array for logging memory allocations
-before the kmemleak is fully initialised and can start tracking them).
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+Sorry about the previous patch -- it was missing the gadget_multi.txt
+file.  Sending corrected version.  Maybe I should start drinking coffee
+after all...
 
-> But after that also, I see some other lines like:
-> 
-> [    0.511641] kmemleak: vmalloc(64) = f7857000
-> [    0.511645] kmemleak: vmalloc(64) = f785a000
+ Documentation/usb/gadget_multi.txt  |  150 +++++++++++++++++++++++++++++++++++
+ Documentation/usb/linux-cdc-acm.inf |    4 +-
+ Documentation/usb/linux.inf         |    6 +-
+ 3 files changed, 155 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/usb/gadget_multi.txt
 
-This is because you compiler the test module into the kernel
-(DEBUG_KMEMLEAK_TEST). It's not kmemleak printing this but it's testing
-module (which leaks memory on purpose).
-
-> The variable  DEBUG_KMEMLEAK_EARLY_LOG_SIZE was set to 400 by default.
-> I changed it to 4000 and then 40000 (may be should try < 32567 ?) but
-> still I get the same error message and the file
-> /sys/kernel/debug/kmem* is never created at all.
-
-This shouldn't usually happen with values greater than 2000. From your
-kernel log, the version seems to be 2.6.32. Do you have the same
-problems with 2.6.35-rc3?
-
-Your .config seems to refer to the 2.6.35-rc3 kernel - are you checking
-the right image?
-
+diff --git a/Documentation/usb/gadget_multi.txt b/Documentation/usb/gadget_multi.txt
+new file mode 100644
+index 0000000..008c69f
+--- /dev/null
++++ b/Documentation/usb/gadget_multi.txt
+@@ -0,0 +1,150 @@
++                                                             -*- org -*-
++
++* Overview
++
++The Multifunction Composite Gadget (or g_multi) is a composite gadget
++that makes extensive use of the composite framework to provide
++a... multifunction gadget.
++
++In it's standard configuration it provides a single USB configuration
++with RNDIS[1] (that is Ethernet), USB CDC[2] ACM (that is serial) and
++USB Mass Storage functions.
++
++A CDC ECM (Ethernet) function may be turned on via a Kconfig option
++and RNDIS can be turned off.  If they are both enabled the gadget will
++have two configurations -- one with RNDIS and another with CDC ECM[3].
++
++Please not that if you use non-standard configuration (that is enable
++CDC ECM) you may need to change vendor and/or product ID.
++
++* Host drivers
++
++To make use of the gadget one needs to make it work on host side --
++without that there's no hope of achieving anything with the gadget.
++As one might expect, things one need to do very from system to system.
++
++** Linux host drivers
++
++Since the gadget uses standard composite framework and appears as such
++to Linux host it does not need any additional drivers on Linux host
++side.  All the functions are handled by respective drivers developed
++for them.
++
++This is also true for two configuration set-up with RNDIS
++configuration being the first one.  Linux host will use the second
++configuration with CDC ECM which should work better under Linux.
++
++** Windows host drivers
++
++For the gadget two work under Windown two conditions have to be met:
++
++*** Detecting as composite gadget
++
++First of all, Windows need to detect the gadget as an USB composite
++gadget which on its own have some conditions[4].  If they are met,
++Windows lets USB Generic Parent Driver[5] handle the device which then
++tries to much drivers for each individual interface (sort of, don't
++get into too many details).
++
++The good news is: you do not have to worry about most of the
++conditions!
++
++The only thing to worry is that the gadget has to have a single
++configuration so a dual RNDIS and CDC ECM gadget won't work unless you
++create a proper INF -- and of course, if you do submit it!
++
++*** Installing drivers for each function
++
++The other, trickier thing is making Windows install drivers for each
++individual function.
++
++For mass storage it is trivial since Windows detect it's an interface
++implementing USB Mass Storage class and selects appropriate driver.
++
++Things are harder with RDNIS and CDC ACM.
++
++**** RNDIS
++
++To make Windows select RNDIS drivers for the first function in the
++gadget, one needs to use the [[file:linux.inf]] file provided with this
++document.  It "attaches" Window's RNDIS driver to the first interface
++of the gadget.
++
++Please note, that while testing we encountered some issues[6] when
++RNDIS was not the first interface.  You do not need to worry abut it
++unless you are trying to develop your own gadget in which case watch
++out for this bug.
++
++**** CDC ACM
++
++Similarly, [[file:linux-cdc-acm.inf]] is provided for CDC ACM.
++
++**** Customising the gadget
++
++If you intend to hack the g_multi gadget be advised that rearranging
++functions will obviously change interface numbers for each of the
++functionality.  As an effect provided INFs won't work since they have
++interface numbers hard-coded in them (it's not hard to change those
++though[7]).
++
++This also means, that after experimenting with g_multi and changing
++provided functions one should change gadget's vendor and/or product ID
++so there will be no collision with other customised gadgets or the
++original gadget.
++
++Failing to comply may cause brain damage after wondering for hours why
++things don't work as intended before realising Windows have cached
++some drivers information (changing USB port may sometimes help plus
++you might try using USBDeview[8] to remove the phantom device).
++
++**** INF testing
++
++Provided INF files have been tested on Windows XP SP3, Windows Vista
++and Windows 7, all 32-bit versions.  It should work on 64-bit versions
++as well.  It most likesy won't work on Windows prior to Windows XP
++SP2.
++
++** Other systems
++
++At this moment, drivers for any other systems have not been tested.
++Knowing how MacOS is based on BSD and BSD is an Open Source it is
++believed that it should (read: "I have no idea whether it will") work
++out-of-the-box.
++
++For more exotic systems I have even less to say...
++
++Any testing and drivers *are* *welcome*!
++
++* Authors
++
++This document has been written by Michal Nazarewicz
++([[mailto:mina86@mina86.com]]).  INF files have been hacked with
++support of Marek Szyprowski ([[mailto:m.szyprowski@samsung.com]]) and
++Xiaofan Chen ([[mailto:xiaofanc@gmail.com]]) basing on the MS RNDIS
++template[9], Microchip's CDC ACM INF file and David Brownell's
++([[mailto:dbrownell@users.sourceforge.net]]) original INF files.
++
++* Footnotes
++
++[1] Remote Network Driver Interface Specification,
++[[http://msdn.microsoft.com/en-us/library/ee484414.aspx]].
++
++[2] Communications Device Class Abstract Control Model, spec for this
++and other USB classes can be found at
++[[http://www.usb.org/developers/devclass_docs/]].
++
++[3] CDC Ethernet Control Model.
++
++[4] [[http://msdn.microsoft.com/en-us/library/ff537109(v=VS.85).aspx]]
++
++[5] [[http://msdn.microsoft.com/en-us/library/ff539234(v=VS.85).aspx]]
++
++[6] To put it in some other nice words, Windows failed to respond to
++any user input.
++
++[7] You may find [[http://www.cygnal.org/ubb/Forum9/HTML/001050.html]]
++useful.
++
++[8] http://www.nirsoft.net/utils/usb_devices_view.html
++
++[9] [[http://msdn.microsoft.com/en-us/library/ff570620.aspx]]
+diff --git a/Documentation/usb/linux-cdc-acm.inf b/Documentation/usb/linux-cdc-acm.inf
+index 77636dd..d4a1a5e 100644
+--- a/Documentation/usb/linux-cdc-acm.inf
++++ b/Documentation/usb/linux-cdc-acm.inf
+@@ -90,10 +90,10 @@ end of the line.
+ [SourceDisksFiles]
+ [SourceDisksNames]
+ [DeviceList]
+-%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7
++%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7, USB\VID_0525&PID_A4AB&MI_02
+ 
+ [DeviceList.NTamd64]
+-%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7
++%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7, USB\VID_0525&PID_A4AB&MI_02
+ 
+ 
+ ;------------------------------------------------------------------------------
+diff --git a/Documentation/usb/linux.inf b/Documentation/usb/linux.inf
+index b9e538c..4dee958 100644
+--- a/Documentation/usb/linux.inf
++++ b/Documentation/usb/linux.inf
+@@ -18,15 +18,15 @@ DriverVer           = 06/21/2006,6.0.6000.16384
+ 
+ ; Decoration for x86 architecture
+ [LinuxDevices.NTx86]
+-%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2
++%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_0525&PID_a4ab&MI_00
+ 
+ ; Decoration for x64 architecture
+ [LinuxDevices.NTamd64]
+-%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2
++%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_0525&PID_a4ab&MI_00
+ 
+ ; Decoration for ia64 architecture
+ [LinuxDevices.NTia64]
+-%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2
++%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2, USB\VID_0525&PID_a4ab&MI_00
+ 
+ ;@@@ This is the common setting for setup
+ [ControlFlags]
 -- 
-Catalin
+1.7.1
 
