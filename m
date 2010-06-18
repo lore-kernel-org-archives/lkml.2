@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab0FRF7k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 01:59:40 -0400
-Received: from ringil.hengli.com.au ([216.59.3.182]:53483 "EHLO
-	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752355Ab0FRF7i (ORCPT
+	id S1753088Ab0FRGEj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 02:04:39 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:62329 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab0FRGEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 01:59:38 -0400
-Date: Fri, 18 Jun 2010 15:59:29 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
-       "davem@davemloft.net" <davem@davemloft.net>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>,
-       Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
-	external.
-Message-ID: <20100618055929.GA11333@gondor.apana.org.au>
-References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com> <20100606161348.427822fb@nehalam> <20100608052744.GA21547@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com> <20100611052112.GA25649@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com> <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 18 Jun 2010 02:04:38 -0400
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+To: linux-kernel@vger.kernel.org
+Cc: catalin.marinas@arm.com, ext-phil.2.carmody@nokia.com,
+       linux-omap@vger.kernel.org, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+Subject: [RFC][PATCH 0/1] kmemleak: Fix false positive with alias
+Date: Fri, 18 Jun 2010 09:04:14 +0300
+Message-Id: <1276841055-13843-1-git-send-email-Hiroshi.DOYU@nokia.com>
+X-Mailer: git-send-email 1.7.1.rc2
+In-Reply-To: <20100602.143458.232754971.Hiroshi.DOYU@nokia.com>
+References: <20100602.143458.232754971.Hiroshi.DOYU@nokia.com>
+X-OriginalArrivalTime: 18 Jun 2010 06:04:29.0994 (UTC) FILETIME=[1D5C40A0:01CB0EAC]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 01:26:49PM +0800, Xin, Xiaohui wrote:
->
-> Herbert,
-> I have questions about the idea above:
-> 1) Since netdev_alloc_skb() is still there, and we only modify alloc_page(), 
-> then we don't need napi_gro_frags() any more, the driver's original receiving 
-> function is ok. Right?
+Hi,
 
-Well I was actually thinking about converting all drivers that
-need this to napi_gro_frags.  But now that you mention it, yes
-we could still keep the old interface to minimise the work.
+This is another version of "kmemleak: Fix false positive", which
+introduces another alias tree to keep track of all alias address of
+each objects, based on the discussion(*1)
 
-> 2) Is napi_gro_frags() only suitable for TCP protocol packet? 
-> I have done a small test for ixgbe driver to let it only allocate paged buffers 
-> and found kernel hangs when napi_gro_frags() receives an ARP packet.
+You can also find the previous one(*2), which uses special scan area
+for alias addresses with a conversion function.
 
-It should work with any packet.  In fact, I'm pretty sure the
-other drivers (e.g., cxgb3) use that interface for all packets.
+Compared with both methods, it seems that the current one takes a bit
+longer to scan as below, tested with 512 elementes of (*3).
 
-> 3) As I have mentioned above, with this idea, netdev_alloc_skb() will allocate 
-> as usual, the data pointed by skb->data will be copied into the first guest buffer. 
-> That means we should reserve sufficient room in guest buffer. For PS mode 
-> supported driver (for example ixgbe), the room will be more than 128. After 128bytes, 
-> we will put the first frag data. Look into virtio-net.c the function page_to_skb()  
-> and receive_mergeable(), that means we should modify guest virtio-net driver to 
-> compute the offset as the parameter for skb_set_frag().
-> 
-> How do you think about this? Attached is a patch to how to modify the guest driver.
-> I reserve 512 bytes as an example, and transfer the header len of the skb in hdr->hdr_len.
+"kmemleak: Fix false positive with alias":
+# time echo scan > /mnt/kmemleak
+real    0m 8.40s
+user    0m 0.00s
+sys     0m 8.40s
 
-Expanding the buffer size to 512 bytes to accomodate PS mode
-looks reasonable to me.
+"kmemleak: Fix false positive with special scan":
+# time echo scan > /mnt/kmemleak 
+real    0m 3.96s
+user    0m 0.00s
+sys     0m 3.96s
 
-However, I don't think we should increase the copy threshold to
-512 bytes at the same time.  I don't have any figures myself but
-I think if we are to make such a change it should be a separate
-one and come with supporting numbers.
+For our case(*4) to reduce false positives for the 2nd level IOMMU
+pagetable allocation, the previous special scan  seems to be enough
+lightweight, although there might be possiblity to improve alias
+one and also I might misunderstand the original proposal of aliasing.
 
-Cheers,
--- 
-Visit Openswan at http://www.openswan.org/
-Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Any comment would be appreciated.
+
+*1: http://lkml.org/lkml/2010/6/2/282
+*2: kmemleak: Fix false positive with special scan
+    http://lkml.org/lkml/2010/6/1/137
+*3: kmemleak: Add special scan test case
+    http://lkml.org/lkml/2010/6/1/134
+*4: http://lkml.org/lkml/2010/6/1/136
+
+Hiroshi DOYU (1):
+  kmemleak: Fix false positive with alias
+
+ include/linux/kmemleak.h |    4 +
+ mm/kmemleak.c            |  198 ++++++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 168 insertions(+), 34 deletions(-)
+
+
