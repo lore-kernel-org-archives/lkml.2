@@ -1,213 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020Ab0FRIAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 04:00:21 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57888 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314Ab0FRIAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 04:00:19 -0400
-Message-ID: <4C1B2841.7020903@ontolab.com>
-Date: Fri, 18 Jun 2010 10:03:13 +0200
-From: Christian Stroetmann <stroetmann@ontolab.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1757294Ab0FRIEf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 04:04:35 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54127 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756409Ab0FRIEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 04:04:31 -0400
+Message-ID: <4C1B2864.6010305@kernel.org>
+Date: Fri, 18 Jun 2010 10:03:48 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Mat <jackdachef@gmail.com>, linux-btrfs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Unbound(?) internal fragmentation in Btrfs
-References: <4C07C321.8010000@redhat.com> <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
-In-Reply-To: <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Daniel Walker <dwalker@codeaurora.org>, mingo@elte.hu, awalls@radix.net,
+       linux-kernel@vger.kernel.org, jeff@garzik.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: Overview of concurrency managed workqueue
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>	<4C17C598.7070303@kernel.org>	<1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>	<4C18BF40.40607@kernel.org>	<1276694825.9309.12.camel@m0nster>	<4C18D1FD.9060804@kernel.org>	<1276695665.9309.17.camel@m0nster>	<4C18D574.1040903@kernel.org>	<1276697146.9309.27.camel@m0nster>	<4C18DC69.10704@kernel.org>	<1276698880.9309.44.camel@m0nster>	<4C18E4B7.5040702@kernel.org>	<1276701074.9309.60.camel@m0nster>	<4C18F2B8.9060805@kernel.org>	<1276705838.9309.94.camel@m0nster>	<4C1901E9.2080907@kernel.org> <20100617161539.d4ea62c0.akpm@linux-foundation.org>
+In-Reply-To: <20100617161539.d4ea62c0.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX1+uDwF3zNi387QRTAuVxNurO2yE6655XzTKgyt
- XouOoLPGUQJ8bR4OrEe+51Emgjtu5JSbZG4DOeHvQfTQd+9WEK
- 7n97BYFZWypshfP/ulaPg==
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Jun 2010 08:03:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aloha Mat:
-> On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin<edward@redhat.com>  wrote:
->    
->> Hello everyone.
->>
->> I was asked to review/evaluate Btrfs for using in enterprise
->> systems and the below are my first impressions (linux-2.6.33).
->>
->> The first test I have made was filling an empty 659M (/dev/sdb2)
->> btrfs partition (mounted to /mnt) with 2K files:
->>
->> # for i in $(seq 1000000); \
->> do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
->> (terminated after getting "No space left on device" reports).
->>
->> # ls /mnt | wc -l
->> 59480
->>
->> So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
->> and the first obvious question is "hey, where are other 83% of my
->> disk space???" I looked at the btrfs storage tree (fs_tree) and was
->> shocked with the situation on the leaf level. The Appendix B shows
->> 5 adjacent btrfs leafs, which have the same parent.
->>
->> For example, look at the leaf 29425664: "items 1 free space 3892"
->> (of 4096!!). Note, that this "free" space (3892) is _dead_: any
->> attempts to write to the file system will result in "No space left
->> on device".
->>
->> Internal fragmentation (see Appendix A) of those 5 leafs is
->> (1572+3892+1901+3666+1675)/4096*5 = 0.62. This is even worse then
->> ext4 and xfs: The last ones in this example will show fragmentation
->> near zero with blocksize<= 2K. Even with 4K blocksize they will
->> show better utilization 0.50 (against 0.38 in btrfs)!
->>
->> I have a small question for btrfs developers: Why do you folks put
->> "inline extents", xattr, etc items of variable size to the B-tree
->> in spite of the fact that B-tree is a data structure NOT for variable
->> sized records? This disadvantage of B-trees was widely discussed.
->> For example, maestro D. Knuth warned about this issue long time
->> ago (see Appendix C).
->>
->> It is a well known fact that internal fragmentation of classic Bayer's
->> B-trees is restricted by the value 0.50 (see Appendix C). However it
->> takes place only if your tree contains records of the _same_ length
->> (for example, extent pointers). Once you put to your B-tree records
->> of variable length (restricted only by leaf size, like btrfs "inline
->> extents"), your tree LOSES this boundary. Moreover, even worse:
->> it is clear, that in this case utilization of B-tree scales as zero(!).
->> That said, for every small E and for every amount of data N we
->> can construct a consistent B-tree, which contains data N and has
->> utilization worse then E. I.e. from the standpoint of utilization
->> such trees can be completely degenerated.
->>
->> That said, the very important property of B-trees, which guarantees
->> non-zero utilization, has been lost, and I don't see in Btrfs code any
->> substitution for this property. In other words, where is a formal
->> guarantee that all disk space of our users won't be eaten by internal
->> fragmentation? I consider such guarantee as a *necessary* condition
->> for putting a file system to production.
->>
->> Any technical comments are welcome.
->>
->> Thanks,
->> Edward.
->>
->>
->> Appendix A.
->> -----------
->> Glossary
->>
->> 1. Utilization of data and(or) metadata storage.
->>
->> The fraction A/B, where
->> A is total size in bytes of stored data and(or) metadata.
->> B = N * S, where
->> N is number of blocks occupied by stored data and(or) metadata.
->> S is block size in bytes.
->>
->> 2. Internal fragmentation of data and(or) metadata storage.
->>
->> difference (1 - U), where U is utilization.
->>
->>
->> Appendix B.
->> -----------
->> a "period" in the dump of the fs_tree (btrfs-debug-tree /dev/sdb2)
->>
->> ...
->>
->> leaf 29982720 items 4 free space 1572 generation 8 owner 5
->> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
->> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
->>        item 0 key (319 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
->>                location key (0 UNKNOWN 0) type 8
->>                namelen 16 datalen 32 name: security.selinux
->>        item 1 key (319 EXTENT_DATA 0) itemoff 1848 itemsize 2069
->>                inline extent data size 2048 ram 2048 compress 0
->>        item 2 key (320 INODE_ITEM 0) itemoff 1688 itemsize 160
->>                inode generation 8 size 2048 block group 29360128 mode 100644
->> links 1
->>        item 3 key (320 INODE_REF 256) itemoff 1672 itemsize 16
->>                inode ref index 65 namelen 6 name: file64
->> leaf 29425664 items 1 free space 3892 generation 8 owner 5
->> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
->> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
->>        item 0 key (320 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
->>                location key (0 UNKNOWN 0) type 8
->>                namelen 16 datalen 32 name: security.selinux
->> leaf 29990912 items 1 free space 1901 generation 8 owner 5
->> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
->> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
->>        item 0 key (320 EXTENT_DATA 0) itemoff 1926 itemsize 2069
->>                inline extent data size 2048 ram 2048 compress 0
->> leaf 29986816 items 3 free space 3666 generation 8 owner 5
->> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
->> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
->>        item 0 key (321 INODE_ITEM 0) itemoff 3835 itemsize 160
->>                inode generation 8 size 2048 block group 29360128 mode 100644
->> links 1
->>        item 1 key (321 INODE_REF 256) itemoff 3819 itemsize 16
->>                inode ref index 66 namelen 6 name: file65
->>        item 2 key (321 XATTR_ITEM 3817753667) itemoff 3741 itemsize 78
->>                location key (0 UNKNOWN 0) type 8
->>                namelen 16 datalen 32 name: security.selinux
->> leaf 29995008 items 3 free space 1675 generation 8 owner 5
->> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
->> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
->>        item 0 key (321 EXTENT_DATA 0) itemoff 1926 itemsize 2069
->>                inline extent data size 2048 ram 2048 compress 0
->>        item 1 key (322 INODE_ITEM 0) itemoff 1766 itemsize 160
->>                inode generation 8 size 2048 block group 29360128 mode 100644
->> links 1
->>        item 2 key (322 INODE_REF 256) itemoff 1750 itemsize 16
->>                inode ref index 67 namelen 6 name: file66
->> ...
->>
->> Appendix C.
->> -----------
->>
->> D.E. Knuth, The Art of Computer Programming, vol. 3 (Sorting and Searching),
->> Addison-Wesley, Reading, MA, 1973.
->>
->> --
->> Edward O. Shishkin
->> Principal Software Engineer
->> Red Hat Czech
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>      
-> Hi to all,
->
-> First of let me say: Btrfs really has matured a lot in the last months
-> and this is thanks to you guys (the developers !)
->
-> More and more people are making it their dedicated filesystem (MeeGo)
-> or an option (Ubuntu, Fedora)
->
-> So thank you very very much for your on-going efforts on making this
-> more and more a viable (and usable !) alternative/competition to zfs
-> :)
->
-> The problems Edward mentioned sound like some very important points
-> (issues ?) to investigate
->
-> I find it somewhat surprising that none of you guys commented on his mail
->    
-Me too.
-> I'm in no way a developer (in fact a power-user) but would
-> nevertheless be interested in your opinions on this matter -
-> especially Chris'
->
-> Thanks !
->
-> Mat
->
->    
-With all the best
-Christian Stroetmann
+Helo,
 
+On 06/18/2010 01:15 AM, Andrew Morton wrote:
+> On Wed, 16 Jun 2010 18:55:05 +0200
+> Tejun Heo <tj@kernel.org> wrote:
+> 
+>> It was about using wq for cpu intensive / RT stuff.  Linus said,
+>>
+>>   So stop arguing about irrelevancies. Nobody uses workqueues for RT
+>>   or for CPU-intensive crap. It's not what they were designed for, or
+>>   used for.
+> 
+> kernel/padata.c uses workqueues for cpu-intensive work, as I understand
+> it.
+
+Replied in the other mail but supporting padata isn't hard and I think
+padata is actually the right way to support cpu intensive workload.
+wq works as (coneceptually) simple concurrency provider and another
+core layer can manage its priority and re-export it as necessary.
+
+> I share Daniel's concerns here.  Being able to set a worker thread's
+> priority or policy isn't a crazy thing.
+
+Well, priority itself isn't but doing that from userland is and most
+of the conversation was about cmwq taking away the ability to do that
+from userland.
+
+> Also one might want to specify that a work item be executed on one
+> of a node's CPUs, or within a cpuset's CPUs, maybe other stuff.  I
+> have vague feelings that there's already code in the kernel
+> somewhere which does some of these things.
+
+There was virtual driver which wanted to use put workers into cpusets.
+I'll talk about it below w/ ivtv.
+
+> (Please remind me what your patches did about create_rt_workqueue and
+> stop_machine?)
+
+stop_machine was using wq as frontend to threads and repeatedly
+creating and destroying them on demand which caused scalability issues
+on machines with a lot of cpus.  Scheduler had per-cpu persistent RT
+threads which were multiplexed in ad-hoc way to serve other purposes
+too.  cpu_stop implements per-cpu persistent RT workers with proper
+interface and now both scheduler and stop_machine use them.
+
+> (Please note that drivers/media/video/ivtv/ivtv-irq.c is currently
+> running sched_setscheduler() against a workqueue thread of its own
+> creation, so we have precedent).
+
+Oooh... missed that.
+
+> If someone wants realtime service for a work item then at present, the
+> way to do that is to create your own kernel threads, set their policy
+> and start feeding them work items.  That sounds like a sensible
+> requirement and implementation to me.  But how does it translate into
+> the new implementation?
+> 
+> The priority/policy logically attaches to the work itself, not to the
+> thread which serves it.  So one would want to be able to provide that
+> info at queue_work()-time.  Could the workqueue core then find a thread,
+> set its policy/priority, schedule it and then let the CPU scheduler do
+> its usual thing with it?
+> 
+> That doesn't sound too bad?  Add policy/priority/etc fields to the
+> work_struct?
+
+Yeah, sure, we can do that but I think it would be an over engineering
+effort.  Vast majority of use cases use workqueues as simple execution
+context provider and work much better with the worker sharing
+implemented by cmwq (generally lower latency, much less restrictions).
+
+Cases where special per-thread attribute adjustments are necessary can
+be better served in more flexible way by making kthread easier to use.
+Priority is one thing but someone wants cpuset affinity, there's no
+way to do that with shared workers and it's silly to not share workers
+at all for those few exceptions.
+
+ST wq essentially worked as simple thread wrapper and it grew a few of
+those usages but they can be counted with one hand in the whole
+kernel.  Converting to kthread is usually okay to do but getting the
+kthread_stop() and memory barriers right can be pain in the ass, so
+having a easier wrapper there would be pretty helpful.
+
+Thanks.
+
+-- 
+tejun
