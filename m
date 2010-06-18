@@ -1,293 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828Ab0FRMsH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 08:48:07 -0400
+	id S932264Ab0FRMrV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 08:47:21 -0400
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:40297 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761173Ab0FRMrV (ORCPT
+	with ESMTP id S1758549Ab0FRMrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 08:47:21 -0400
+	Fri, 18 Jun 2010 08:47:20 -0400
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Fri, 18 Jun 2010 14:48:06 +0200
+Date: Fri, 18 Jun 2010 14:48:09 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv6 07/11] USB: gadget: g_ether: updated INF file
-In-reply-to: <2809a031d19ac6ef793d7fe343e225b8d80099c3.1276864406.git.m.nazarewicz@samsung.com>
+Subject: [PATCHv6 10/11] USB: gadget: composite: added disconnect callback
+In-reply-to: <7337838b49bb102126eb678d330d7853ee55c5c6.1276864406.git.m.nazarewicz@samsung.com>
 To: linux-usb@vger.kernel.org
 Cc: David Brownell <dbrownell@users.sourceforge.net>, Greg KH <greg@kroah.com>,
        Kyungmin Park <kyungmin.park@samsung.com>,
        Marek Szyprowski <m.szyprowski@samsung.com>,
        linux-kernel@vger.kernel.org
-Message-id: <f4efaf12033f1e402303b60555c26f3779ba4aa1.1276864406.git.m.nazarewicz@samsung.com>
+Message-id: <72a1ab93557746c55fe75d844c69bcca7f7c5121.1276864406.git.m.nazarewicz@samsung.com>
 X-Mailer: git-send-email 1.7.1
 References: <20100617175221.GE3644@kroah.com>
  <2809a031d19ac6ef793d7fe343e225b8d80099c3.1276864406.git.m.nazarewicz@samsung.com>
+ <f4efaf12033f1e402303b60555c26f3779ba4aa1.1276864406.git.m.nazarewicz@samsung.com>
+ <f8062cc154f51fc2a0812cda14deea0678644af9.1276864406.git.m.nazarewicz@samsung.com>
+ <7337838b49bb102126eb678d330d7853ee55c5c6.1276864406.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated the INF file for the g_ether gadegt.  It should work with most
-recent Windows systems now.
+Added a disconnect() callback to compasite devices which
+is called by composite glue when its disconnect callback
+is called by gadget.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: David Brownell <dbrownell@users.sourceforge.net>
 ---
- Documentation/usb/linux.inf |  228 +++++++++----------------------------------
- 1 files changed, 47 insertions(+), 181 deletions(-)
+ drivers/usb/gadget/composite.c |    2 ++
+ include/linux/usb/composite.h  |    2 ++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/usb/linux.inf b/Documentation/usb/linux.inf
-index 8e7e793..b9e538c 100644
---- a/Documentation/usb/linux.inf
-+++ b/Documentation/usb/linux.inf
-@@ -1,200 +1,66 @@
--; MS-Windows driver config matching some basic modes of the
--; Linux-USB Ethernet/RNDIS gadget firmware:
--;
--;  - RNDIS plus CDC Ethernet ... this may be familiar as a DOCSIS
--;    cable modem profile, and supports most non-Microsoft USB hosts
--;
--;  - RNDIS plus CDC Subset ... used by hardware that incapable of
--;    full CDC Ethernet support.
--;
--; Microsoft only directly supports RNDIS drivers, and bundled them into XP.
--; The Microsoft "Remote NDIS USB Driver Kit" is currently found at:
--;   http://www.microsoft.com/whdc/hwdev/resources/HWservices/rndis.mspx
--
-+; Based on template INF file found at
-+;    <http://msdn.microsoft.com/en-us/library/ff570620.aspx>
-+; which was:
-+;    Copyright (c) Microsoft Corporation
-+; and released under the MLPL as found at:
-+;    <http://msdn.microsoft.com/en-us/cc300389.aspx#MLPL>.
-+; For use only on Windows operating systems.
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index 125167e..e483f80 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -956,6 +956,8 @@ static void composite_disconnect(struct usb_gadget *gadget)
+ 	spin_lock_irqsave(&cdev->lock, flags);
+ 	if (cdev->config)
+ 		reset_config(cdev);
++	if (composite->disconnect)
++		composite->disconnect(cdev);
+ 	spin_unlock_irqrestore(&cdev->lock, flags);
+ }
  
- [Version]
--Signature           = "$CHICAGO$"
-+Signature           = "$Windows NT$"
- Class               = Net
- ClassGUID           = {4d36e972-e325-11ce-bfc1-08002be10318}
- Provider            = %Linux%
--Compatible          = 1
--MillenniumPreferred = .ME
--DriverVer           = 03/30/2004,0.0.0.0
--; catalog file would be used by WHQL
--;CatalogFile         = Linux.cat
-+DriverVer           = 06/21/2006,6.0.6000.16384
+diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
+index f378075..890bc14 100644
+--- a/include/linux/usb/composite.h
++++ b/include/linux/usb/composite.h
+@@ -276,6 +276,8 @@ struct usb_composite_driver {
+ 	int			(*bind)(struct usb_composite_dev *);
+ 	int			(*unbind)(struct usb_composite_dev *);
  
- [Manufacturer]
--%Linux%          = LinuxDevices,NT.5.1
-+%Linux%             = LinuxDevices,NTx86,NTamd64,NTia64
++	void			(*disconnect)(struct usb_composite_dev *);
 +
-+; Decoration for x86 architecture
-+[LinuxDevices.NTx86]
-+%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2
- 
--[LinuxDevices]
--; NetChip IDs, used by both firmware modes
--%LinuxDevice%    = RNDIS, USB\VID_0525&PID_a4a2
-+; Decoration for x64 architecture
-+[LinuxDevices.NTamd64]
-+%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2
- 
--[LinuxDevices.NT.5.1]
--%LinuxDevice%    = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2
-+; Decoration for ia64 architecture
-+[LinuxDevices.NTia64]
-+%LinuxDevice%       = RNDIS.NT.5.1, USB\VID_0525&PID_a4a2
- 
-+;@@@ This is the common setting for setup
- [ControlFlags]
- ExcludeFromSelect=*
- 
--; Windows 98, Windows 98 Second Edition specific sections --------
--
--[RNDIS]
--DeviceID        = usb8023
--MaxInstance     = 512
--DriverVer           = 03/30/2004,0.0.0.0
--AddReg          = RNDIS_AddReg_98, RNDIS_AddReg_Common
--
--[RNDIS_AddReg_98]
--HKR, ,               DevLoader,        0, *ndis
--HKR, ,               DeviceVxDs,       0, usb8023.sys
--HKR, NDIS,           LogDriverName,    0, "usb8023"
--HKR, NDIS,           MajorNdisVersion, 1, 5
--HKR, NDIS,           MinorNdisVersion, 1, 0
--HKR, Ndi\Interfaces, DefUpper,         0, "ndis3,ndis4,ndis5"
--HKR, Ndi\Interfaces, DefLower,         0, "ethernet"
--HKR, Ndi\Interfaces, UpperRange,       0, "ndis3,ndis4,ndis5"
--HKR, Ndi\Interfaces, LowerRange,       0, "ethernet"
--HKR, Ndi\Install,    ndis3,            0, "RNDIS_Install_98"
--HKR, Ndi\Install,    ndis4,            0, "RNDIS_Install_98"
--HKR, Ndi\Install,    ndis5,            0, "RNDIS_Install_98"
--HKR, Ndi,            DeviceId,         0, "USB\VID_0525&PID_a4a2"
--
--[RNDIS_Install_98]
--CopyFiles=RNDIS_CopyFiles_98
--
--[RNDIS_CopyFiles_98]
--usb8023.sys, usb8023w.sys, , 0
--rndismp.sys, rndismpw.sys, , 0
--
--; Windows Millennium Edition specific sections --------------------
--
--[RNDIS.ME]
--DeviceID        = usb8023
--MaxInstance     = 512
--DriverVer           = 03/30/2004,0.0.0.0
--AddReg          = RNDIS_AddReg_ME, RNDIS_AddReg_Common
--Characteristics = 0x84   ; NCF_PHYSICAL + NCF_HAS_UI
--BusType         = 15
--
--[RNDIS_AddReg_ME]
--HKR, ,               DevLoader,        0, *ndis
--HKR, ,               DeviceVxDs,       0, usb8023.sys
--HKR, NDIS,           LogDriverName,    0, "usb8023"
--HKR, NDIS,           MajorNdisVersion, 1, 5
--HKR, NDIS,           MinorNdisVersion, 1, 0
--HKR, Ndi\Interfaces, DefUpper,         0, "ndis3,ndis4,ndis5"
--HKR, Ndi\Interfaces, DefLower,         0, "ethernet"
--HKR, Ndi\Interfaces, UpperRange,       0, "ndis3,ndis4,ndis5"
--HKR, Ndi\Interfaces, LowerRange,       0, "ethernet"
--HKR, Ndi\Install,    ndis3,            0, "RNDIS_Install_ME"
--HKR, Ndi\Install,    ndis4,            0, "RNDIS_Install_ME"
--HKR, Ndi\Install,    ndis5,            0, "RNDIS_Install_ME"
--HKR, Ndi,            DeviceId,         0, "USB\VID_0525&PID_a4a2"
--
--[RNDIS_Install_ME]
--CopyFiles=RNDIS_CopyFiles_ME
--
--[RNDIS_CopyFiles_ME]
--usb8023.sys, usb8023m.sys, , 0
--rndismp.sys, rndismpm.sys, , 0
--
--; Windows 2000 specific sections ---------------------------------
--
--[RNDIS.NT]
--Characteristics = 0x84   ; NCF_PHYSICAL + NCF_HAS_UI
--BusType         = 15
--DriverVer           = 03/30/2004,0.0.0.0
--AddReg          = RNDIS_AddReg_NT, RNDIS_AddReg_Common
--CopyFiles       = RNDIS_CopyFiles_NT
--
--[RNDIS.NT.Services]
--AddService = USB_RNDIS, 2, RNDIS_ServiceInst_NT, RNDIS_EventLog
--
--[RNDIS_CopyFiles_NT]
--; no rename of files on Windows 2000, use the 'k' names as is
--usb8023k.sys, , , 0
--rndismpk.sys, , , 0
--
--[RNDIS_ServiceInst_NT]
--DisplayName     = %ServiceDisplayName%
--ServiceType     = 1
--StartType       = 3
--ErrorControl    = 1
--ServiceBinary   = %12%\usb8023k.sys
--LoadOrderGroup  = NDIS
--AddReg          = RNDIS_WMI_AddReg_NT
--
--[RNDIS_WMI_AddReg_NT]
--HKR, , MofImagePath, 0x00020000, "System32\drivers\rndismpk.sys"
--
--; Windows XP specific sections -----------------------------------
--
-+; DDInstall section
-+; References the in-build Netrndis.inf
- [RNDIS.NT.5.1]
--Characteristics = 0x84   ; NCF_PHYSICAL + NCF_HAS_UI
--BusType         = 15
--DriverVer           = 03/30/2004,0.0.0.0
--AddReg          = RNDIS_AddReg_NT, RNDIS_AddReg_Common
--; no copyfiles - the files are already in place
--
-+Characteristics     = 0x84   ; NCF_PHYSICAL + NCF_HAS_UI
-+BusType             = 15
-+; NEVER REMOVE THE FOLLOWING REFERENCE FOR NETRNDIS.INF
-+include             = netrndis.inf
-+needs               = Usb_Rndis.ndi
-+AddReg              = Rndis_AddReg_Vista
-+
-+; DDInstal.Services section
- [RNDIS.NT.5.1.Services]
--AddService      = USB_RNDIS, 2, RNDIS_ServiceInst_51, RNDIS_EventLog
--
--[RNDIS_ServiceInst_51]
--DisplayName     = %ServiceDisplayName%
--ServiceType     = 1
--StartType       = 3
--ErrorControl    = 1
--ServiceBinary   = %12%\usb8023.sys
--LoadOrderGroup  = NDIS
--AddReg          = RNDIS_WMI_AddReg_51
--
--[RNDIS_WMI_AddReg_51]
--HKR, , MofImagePath, 0x00020000, "System32\drivers\rndismp.sys"
--
--; Windows 2000 and Windows XP common sections --------------------
--
--[RNDIS_AddReg_NT]
--HKR, Ndi,               Service,        0, "USB_RNDIS"
--HKR, Ndi\Interfaces,    UpperRange,     0, "ndis5"
--HKR, Ndi\Interfaces,    LowerRange,     0, "ethernet"
--
--[RNDIS_EventLog]
--AddReg = RNDIS_EventLog_AddReg
--
--[RNDIS_EventLog_AddReg]
--HKR, , EventMessageFile, 0x00020000, "%%SystemRoot%%\System32\netevent.dll"
--HKR, , TypesSupported,   0x00010001, 7
--
--; Common Sections -------------------------------------------------
--
--[RNDIS_AddReg_Common]
--HKR, NDI\params\NetworkAddress, ParamDesc,  0, %NetworkAddress%
--HKR, NDI\params\NetworkAddress, type,       0, "edit"
--HKR, NDI\params\NetworkAddress, LimitText,  0, "12"
--HKR, NDI\params\NetworkAddress, UpperCase,  0, "1"
--HKR, NDI\params\NetworkAddress, default,    0, " "
--HKR, NDI\params\NetworkAddress, optional,   0, "1"
--
--[SourceDisksNames]
--1=%SourceDisk%,,1
--
--[SourceDisksFiles]
--usb8023m.sys=1
--rndismpm.sys=1
--usb8023w.sys=1
--rndismpw.sys=1
--usb8023k.sys=1
--rndismpk.sys=1
--
--[DestinationDirs]
--RNDIS_CopyFiles_98    = 10, system32/drivers
--RNDIS_CopyFiles_ME    = 10, system32/drivers
--RNDIS_CopyFiles_NT    = 12
-+include             = netrndis.inf
-+needs               = Usb_Rndis.ndi.Services
-+
-+; Optional registry settings. You can modify as needed.
-+[RNDIS_AddReg_Vista]
-+HKR, NDI\params\VistaProperty, ParamDesc,  0, %Vista_Property%
-+HKR, NDI\params\VistaProperty, type,       0, "edit"
-+HKR, NDI\params\VistaProperty, LimitText,  0, "12"
-+HKR, NDI\params\VistaProperty, UpperCase,  0, "1"
-+HKR, NDI\params\VistaProperty, default,    0, " "
-+HKR, NDI\params\VistaProperty, optional,   0, "1"
-+
-+; No sys copyfiles - the sys files are already in-build
-+; (part of the operating system).
-+; We do not support XP SP1-, 2003 SP1-, ME, 9x.
- 
- [Strings]
--ServiceDisplayName    = "USB Remote NDIS Network Device Driver"
--NetworkAddress        = "Network Address"
- Linux                 = "Linux Developer Community"
- LinuxDevice           = "Linux USB Ethernet/RNDIS Gadget"
--SourceDisk            = "Ethernet/RNDIS Gadget Driver Install Disk"
--
-+Vista_Property        = "Optional Vista Property"
+ 	/* global suspend hooks */
+ 	void			(*suspend)(struct usb_composite_dev *);
+ 	void			(*resume)(struct usb_composite_dev *);
 -- 
 1.7.1
 
