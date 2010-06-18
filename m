@@ -1,169 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933031Ab0FRTas (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 15:30:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12918 "EHLO mx1.redhat.com"
+	id S1756434Ab0FRTgJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 15:36:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2294 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752030Ab0FRTaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 15:30:46 -0400
-Message-ID: <4C1BC924.30604@redhat.com>
-Date: Fri, 18 Jun 2010 21:29:40 +0200
-From: Edward Shishkin <edward@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	id S1753333Ab0FRTgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 15:36:07 -0400
+Date: Fri, 18 Jun 2010 21:34:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Don Zickus <dzickus@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Jerome Marchand <jmarchan@redhat.com>,
+       Mandeep Singh Baines <msb@google.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: while_each_thread() under rcu_read_lock() is broken?
+Message-ID: <20100618193403.GA17314@redhat.com>
+References: <20100618190251.GA17297@redhat.com>
 MIME-Version: 1.0
-To: Jamie Lokier <jamie@shareable.org>
-CC: Edward Shishkin <edward.shishkin@gmail.com>, Mat <jackdachef@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Chris Mason <chris.mason@oracle.com>, Ric Wheeler <rwheeler@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: Btrfs: broken file system design (was Unbound(?) internal fragmentation
- in Btrfs)
-References: <4C07C321.8010000@redhat.com> <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com> <4C1B7560.1000806@gmail.com> <20100618155653.GC10919@shareable.org>
-In-Reply-To: <20100618155653.GC10919@shareable.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100618190251.GA17297@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jamie Lokier wrote:
-> Edward Shishkin wrote:
->   
->> If you decide to base your file system on some algorithms then please
->> use the original ones from proper academic papers. DO NOT modify the
->> algorithms in solitude: this is very fragile thing! All such
->> modifications must be reviewed by specialists in the theory of
->> algorithms. Such review can be done in various scientific magazines of
->> proper level.
->>
->> Personally I don't see any way to improve the situation with Btrfs
->> except full redesigning the last one. If you want to base your file
->> system on the paper of Ohad Rodeh, then please, use *exactly* the
->> Bayer's B-trees that he refers to. That said, make sure that all
->> records you put to the tree has equal length and all non-root nodes of
->> your tree are at least half filled.
->>     
+(add cc's)
+
+Hmm. Once I sent this patch, I suddenly realized with horror that
+while_each_thread() is NOT safe under rcu_read_lock(). Both
+do_each_thread/while_each_thread or do/while_each_thread() can
+race with exec().
+
+Yes, it is safe to do next_thread() or next_task(). But:
+
+	#define while_each_thread(g, t) \
+		while ((t = next_thread(t)) != g)
+
+suppose that t is not the group leader, and it does de_thread() and then
+release_task(g). After that next_thread(t) returns t, not g, and the loop
+will never stop.
+
+I _really_ hope I missed something, will recheck tomorrow with the fresh
+head. Still I'd like to share my concerns...
+
+If I am right, probably we can fix this, something like
+
+	#define while_each_thread(g, t) \
+		while ((t = next_thread(t)) != g && pid_alive(g))
+
+[we can't do while (!thread_group_leadr(t = next_thread(t)))].
+but this needs barrires, and we should validate the callers anyway.
+
+Or, perhaps,
+
+	#define XXX(t)	({
+		struct task_struct *__prev = t;
+		t = next_thread(t);
+		t != g && t != __prev;
+	})
+
+	#define while_each_thread(g, t) \
+		while (XXX(t))
+
+Please tell me I am wrong!
+
+Oleg.
+
+On 06/18, Oleg Nesterov wrote:
 >
-> First, thanks Edward for identifying a specific problem with the
-> current btrfs implementation.
->   
-
-Hello Jamie.
-
-> I've studied modified B-trees quite a lot and know enough to be sure
-> that they are quite robust when you modify them in all sorts of ways.
->   
-
-Which property is robust?
-
-> Moreover, you are incorrect to say there's an intrinsic algorithmic
-> problem with variable-length records.  It is not true; if Knuth said
-> so, Knuth was mistaken.
->   
-
-I didn't say about intrinsic algorithmic problems :)
-I just repeat (after Knuth et al) that B-trees with variable-length 
-records don't
-have any sane boundary for internal fragmentation. The common idea is 
-that if we
-don't want Btrfs to be in infinite development stage, then we should 
-choose some
-*sane* strategy (for example the paper of Ohad Rodeh) and strictly 
-adhere this in
-future.
-
-> This is easily shown by modelling variable-length records (key ->
-> string) as a range of fixed length records ([key,index] -> byte) and
-> apply the standard B-tree algorithms to that, which guarantees
-> algorithm properties such as space utilisation and time; then you can
-> substitute a "compressed" representation of contiguous index runs,
-> which amounts to nothing more than just storing the strings (split
-> where the algorithm says to do so) and endpoint indexes , and because
-> this compression does not expand (in any way that matters), classic
-> algorithmic properties are still guaranteed.
+> check_hung_uninterruptible_tasks()->rcu_lock_break() introduced by
+> "softlockup: check all tasks in hung_task" commit ce9dbe24 looks
+> absolutely wrong.
 >
-> Variable-length keys are a different business.  Those are trickier,
-> but as far as I know, btrfs doesn't use them.
+> 	- rcu_lock_break() does put_task_struct(). If the task has exited
+> 	  it is not safe to even read its ->state, nothing protects this
+> 	  task_struct.
 >
->   
->> As to current Btrfs code: *NOT ACK*!!! I don't think we need such
->> "file systems".
->>     
+> 	- The TASK_DEAD checks are wrong too. Contrary to the comment, we
+> 	  can't use it to check if the task was unhashed. It can be unhashed
+> 	  without TASK_DEAD, or it can be valid with TASK_DEAD.
 >
-> Btrfs provides many useful features that other filesystems don't.  We
-> definitely need it, or something like it.  You have identified a bug.
-> It's not a corruption bug, but it's definitely a bug, and probably
-> affects performance as well as space utilisation.
+> 	  For example, an autoreaping task can do release_task(current)
+> 	  long before it sets TASK_DEAD in do_exit().
 >
-> It is not deep design bug; it is just a result of the packing and
-> balancing heuristics.
->   
-
-Frankly, I would like to believe to such end, taking into account amount 
-of my
-contributions to the Btrfs project. At least to make sure I didn't do 
-useless
-work..
-
-> If you are still interested, please apply your knowledge of B-tree
-> algorithms to understanding why btrfs fails to balance the tree
-> sufficiently well,
-
-Because of top-down balancing. It doesn't like "clever" things like 
-"splitting"
-and "merging". Currently top-down works properly only with stupid classic
-Bayer's B-trees.
-
->  and then propose a fix.
->   
-
-I'll try to help, but I am rather pessimistic here: working out 
-algorithms is
-something, which doesn't like timelines..
-
-> Note that it's not necessarily a problem to have a few nodes with low
-> utilisation.  Deliberate violation of the classic balancing heuristic
-> is often useful for performance.[*]
-
-Ok, let's violate this, but not in the detriment of utilisation:
-Internal fragmentation is a horror for file systems, the enemy #1
-(which is completely defeated in the last century BTW).
-
->   The problem you've found is only a
-> real problem when there are _too many_ nodes with low utilisation.
->   
-
-IMHO this is a problem, as we can not estimate number of such nodes.
-Do you have any sane upper boundary for this number? I don't know such one.
-Maybe I have missed something?
-
-> [*] For example when filling a tree by inserting contiguously
-> ascending keys, the classic "split into two when full" heuristic gives
-> the worst possible results (50% lost space), and deliberately
-> underfilling the most actively updated nodes, which is not permitted
-> at all by the classic algorithm, gives denser packing in the end
-> (almost zero lost space).
-
-At the end of what? I hope you don't speak about on-line defragmentation?
-Can you point me to the paper (if any)?
-
-Thanks!
-
->   It's also faster.  The trick is to make
-> sure there's just the right number of underfilled nodes...
+> 	  Or, a zombie task can have ->state == TASK_DEAD but release_task()
+> 	  was not called, and in this case we must not break the loop.
 >
-> -- Jamie
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->   
-
-
--- 
-Edward O. Shishkin
-Principal Software Engineer
-Red Hat Czech
+> Change this code to check pid_alive() instead, and do this before we
+> drop the reference to the task_struct.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>
+>  kernel/hung_task.c |   11 +++++++----
+>  1 file changed, 7 insertions(+), 4 deletions(-)
+>
+> --- 35-rc2/kernel/hung_task.c~CHT_FIX_RCU_LOCK_BREAK	2009-12-18 19:05:38.000000000 +0100
+> +++ 35-rc2/kernel/hung_task.c	2010-06-18 20:06:11.000000000 +0200
+> @@ -113,15 +113,20 @@ static void check_hung_task(struct task_
+>   * For preemptible RCU it is sufficient to call rcu_read_unlock in order
+>   * exit the grace period. For classic RCU, a reschedule is required.
+>   */
+> -static void rcu_lock_break(struct task_struct *g, struct task_struct *t)
+> +static bool rcu_lock_break(struct task_struct *g, struct task_struct *t)
+>  {
+> +	bool can_cont;
+> +
+>  	get_task_struct(g);
+>  	get_task_struct(t);
+>  	rcu_read_unlock();
+>  	cond_resched();
+>  	rcu_read_lock();
+> +	can_cont = pid_alive(g) && pid_alive(t);
+>  	put_task_struct(t);
+>  	put_task_struct(g);
+> +
+> +	return can_cont;
+>  }
+>
+>  /*
+> @@ -148,9 +153,7 @@ static void check_hung_uninterruptible_t
+>  			goto unlock;
+>  		if (!--batch_count) {
+>  			batch_count = HUNG_TASK_BATCHING;
+> -			rcu_lock_break(g, t);
+> -			/* Exit if t or g was unhashed during refresh. */
+> -			if (t->state == TASK_DEAD || g->state == TASK_DEAD)
+> +			if (!rcu_lock_break(g, t))
+>  				goto unlock;
+>  		}
+>  		/* use "==" to skip the TASK_KILLABLE tasks waiting on NFS */
 
