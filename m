@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761243Ab0FRNNK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 09:13:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41635 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760958Ab0FRNNH convert rfc822-to-8bit (ORCPT
+	id S1761247Ab0FRNPi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 09:15:38 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56460 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758698Ab0FRNPg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 09:13:07 -0400
-Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       "H.PeterA" <"nvin hpa"@zytor.com>, linux-kernel@vger.kernel.org,
-       Chris Mason <chris.mason@oracle.com>
-In-Reply-To: <20100618130921.GC9045@basil.fritz.box>
-References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
-	 <1276862130.1875.7.camel@laptop> <20100618122532.GB9045@basil.fritz.box>
-	 <1276865304.1875.12.camel@laptop>  <20100618130921.GC9045@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 18 Jun 2010 09:15:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=U5THxHc83iw7I/ow89br8nmoucXWvWmZT7AnntLsg1t7bkNLyEhbMVBnBTCYQmRaje
+         UFnElzhNexz75Snx3fjz79Va1pJo7g615idAECWKsJGEiyEqIzouk8IZeQBjv8tv2FDv
+         cheVAiI1MaNf3zFuUxE+3xrw3+jNLtPBEO0EE=
+MIME-Version: 1.0
+In-Reply-To: <1276806411-15176-1-git-send-email-scottjg@vmware.com>
+References: <1276806411-15176-1-git-send-email-scottjg@vmware.com>
+Date: Fri, 18 Jun 2010 14:15:35 +0100
+X-Google-Sender-Auth: -VUVPLyM1GdGr8_gM6vV_RrpxMQ
+Message-ID: <AANLkTilrWSOoias64UGAnkV1RtIkVKiwapCnOYc2cS0_@mail.gmail.com>
+Subject: Re: [PATCH] checkpatch: fix false positive on casting to double 
+	pointer
+From: Andy Whitcroft <apw@canonical.com>
+To: "Scott J. Goldman" <scottjg@vmware.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 18 Jun 2010 15:12:49 +0200
-Message-ID: <1276866769.1875.14.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-18 at 15:09 +0200, Andi Kleen wrote:
-> > You generally want to pass more information along anyway, now your
-> > callback function needs to go look for it. Much better to pass a
-> > work_struct like thing around that is contained in the state it needs.
-> 
-> But how would you allocate the work queue in an NMI?
-> 
-> If it's only a single instance (like this bit) it can be always put
-> into a per cpu variable.
+On Thu, Jun 17, 2010 at 9:26 PM, Scott J. Goldman <scottjg@vmware.com> wrote:
+>
+> Signed-off-by: Scott J. Goldman <scottjg@vmware.com>
+> ---
+>  scripts/checkpatch.pl         |    4 +++-
+>  tests/t/t9190-double-pointers |    6 ++++++
+>  2 files changed, 9 insertions(+), 1 deletions(-)
+>  create mode 100644 tests/t/t9190-double-pointers
+>
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 87bbb8b..687bd6f 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -1982,7 +1982,9 @@ sub process {
+>                                         $op eq '*' or $op eq '/' or
+>                                         $op eq '%')
+>                                {
+> -                                       if ($ctx =~ /Wx[^WCE]|[^WCE]xW/) {
+> +                                       if ($op eq '*' && $cc =~ /^\*/) {
+> +                                               # double pointer is ok
+> +                                       } elsif ($ctx =~ /Wx[^WCE]|[^WCE]xW/) {
+>                                                ERROR("need consistent spacing around '$op' $at\n" .
+>                                                        $hereptr);
 
-Pre-allocate. For the perf-event stuff we use the perf_event allocated
-at creation time. But yeah, per-cpu storage also works.
+Hrm, I would expect any number of levels of pointers to be detected
+already correctly.
+
+/me goes check.
+
+-apw
