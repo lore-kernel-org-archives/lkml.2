@@ -1,103 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab0FRHWl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 03:22:41 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46043 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab0FRHWk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 03:22:40 -0400
-Subject: Re: [RFC][PATCH 0/8] perf pmu interface
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20100618043540.GF5345@nowhere>
-References: <20100616160027.590430763@chello.nl>
-	 <1276712372.1745.619.camel@laptop>  <20100618043540.GF5345@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 18 Jun 2010 09:22:24 +0200
-Message-ID: <1276845744.27822.1465.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755555Ab0FRHcf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 03:32:35 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54948 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754121Ab0FRHce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 03:32:34 -0400
+Message-ID: <4C1B20E8.2000004@kernel.org>
+Date: Fri, 18 Jun 2010 09:31:52 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: mingo@elte.hu, awalls@radix.net, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, rusty@rustcorp.com.au, cl@linux-foundation.org,
+       dhowells@redhat.com, arjan@linux.intel.com, johannes@sipsolutions.net,
+       oleg@redhat.com, axboe@kernel.dk, Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: Overview of concurrency managed workqueue
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>	<4C17C598.7070303@kernel.org> <20100617161412.08337bc6.akpm@linux-foundation.org>
+In-Reply-To: <20100617161412.08337bc6.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Jun 2010 07:31:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-18 at 06:35 +0200, Frederic Weisbecker wrote:
+Hello,
 
-> > Another idea I was kicking about was to push find_get_context()
-> > partially into struct pmu, so that we can have context's per pmu.
-> > 
-> > For cpu-wide contexts its easy, for per-task contexts we need more
-> > pointers in task_struct, so I was thinking of something like:
-> > 
-> > enum {
-> >   perf_swevent_context = 0,
-> >   perf_cpu_context,
-> > #ifdef HW_BREAKPOINT
-> >   perf_bp_context,
-> > #endif
-> >   perf_nr_task_context
-> > };
-> > 
-> > struct task_struct {
-> >   ...
-> >   struct perf_event_context *perf_event_ctxs[perf_nr_task_context];
-> >   ...
-> > };
-> > 
-> > and have add for loops over the struct pmu list for the cpu-wide
-> > contexts and for loops over perf_nr_task_context for the task contexts.
-> > 
-> > It would add some extra code to the hot-paths, but its the best I can
-> > come up with.
+On 06/18/2010 01:14 AM, Andrew Morton wrote:
+> Thanks for doing this.  It helps.  And look at all the interest and
+> helpful suggestions!
+
+Yay!
+
+>> One such problem is possible deadlock through dependency on the same
+>> execution resource.  These can be detected quite reliably with lockdep
+>> these days but in most cases the only solution is to create a
+>> dedicated wq for one of the parties involved in the deadlock, which
+>> feeds back into the waste of resources.  Also, when creating such
+>> dedicated wq to avoid deadlock, to avoid wasting large number of
+>> threads just for that work, ST wqs are often used but in most cases ST
+>> wqs are suboptimal compared to MT wqs.
 > 
+> Does this approach actually *solve* the deadlocks due to work
+> dependencies?  Or does it just make the deadlocks harder to hit by
+> throwing more threads at the problem?
 > 
-> I'm not sure what you mean. Would that be to optimize the start_txn / commit_txn ?
-> Then that sounds a good idea. 
+> ah, from reading on I see it's the make-them-harder-to-hit approach.
 
-Not really, its for pmu_disable/enable, because if you know what pmu is
-associated with the context, you can easily disable/enable it while
-you're operating on it for doing the lazy machine writes.
+Yeah, the latter, much harder.
 
-It also solves another problem, we currently stop adding new events to a
-context on the first failure, this gives very odd effect with software
-events which are always schedulable.
+> Deos lockdep still tell us that we're in a potentially deadlockable
+> situation?
 
-If we were to add another hardware pmu the story would get even more
-complex, since you could easily get into the situation where one pmu
-would still be empty but the other is full and stop adding counters.
+Lockdep wouldn't apply as-is.  I _think_ it's possible to calculate
+the possibility of simultaneous works hitting the limit by extending
+lockdep but given the use cases we currently have (all are very
+shallow dependency chains, most of them being 2), I don't think it's
+urgent.
 
-> But you'd only need two groups I think:
+> There are places where code creates workqueue threads and then fiddles
+> with those threads' scheduling priority or scheduling policy or
+> whatever.  I'll address that in a different email.
+
+Alright.
+
+> flush_workqueue() sucks.  It's a stupid, accidental,
+> internal-implementation-dependent interface.  We should deprecate it
+> and try to get rid of it, migrating to the eminently more sensible
+> flush_work().
 > 
-> enum {
->    perf_swevent_context = 0,
->    perf_cpu_context,
->    perf_nr_task_context
-> };
+> I guess the first step is to add a dont-do-that checkpatch warning when
+> people try to add new flush_workqueue() calls.
 > 
+> 165 instances tree-wide, sigh.
+
+I would prefer sweeping fix followed by deprecation of the function.
+Gradual changes sound nice but in most cases they just result in
+postponing what needs to be done anyway.
+
+>> == Automatically regulated shared worker pool
+>>
+>> For any worker pool, managing the concurrency level (how many workers
+>> are executing simultaneously) is an important issue.
 > 
-> As only the cpu pmu needs the txn game, at least for now.
+> Why?  What are we trying to avoid here?
 
-Well yeah, but breakpoint really should be a hardware pmu
-implementation.
+Unnecessary heuristics which may sometimes schedule too many wasting
+resources and polluting cachelines while other times schedules too
+few introducing unnecessary latencies.
 
-> It seems that would drop the ability to gather hardware and software
-> events in a same group though.
+>>  cmwq tries to
+>> keep the concurrency at minimum but sufficient level.
+> 
+> I don't have a hope of remembering what all the new three-letter and
+> four-letter acronyms mean :(
 
-Almost, we could allow mixing software events with any hardware event in
-a group, but disallow mixing hardware events from different pmus.
+It stands for Concurrency Managed WorkQueue.  Eh well, as long as it
+works as an identifier.
 
-The only tricky bit is when the group-leader is a sofrware event, but we
-could migrate to the hardware context on adding the first hardware
-event.
+>> Concurrency management is implemented by hooking into the scheduler.
+>> gcwq is notified whenever a busy worker wakes up or sleeps and thus
+> 
+> <tries to work out what gcwq means, and not just "what it expands to">
 
+Global cpu workqueue.  It's the actual percpu workqueue which does all
+the hard work.  Workqueues and their associated cpu workqueues works
+as frontends to gcwqs.
 
+>> can keep track of the current level of concurrency.  Works aren't
+>> supposed to be cpu cycle hogs and maintaining just enough concurrency
+>> to prevent work processing from stalling due to lack of processing
+>> context should be optimal.  gcwq keeps the number of concurrent active
+>> workers to minimum but no less.
+> 
+> Is that "the number of concurrent active workers per cpu"?
+
+I don't really understand your question.
+
+>> As long as there's one or more
+>> running workers on the cpu, no new worker is scheduled so that works
+>> can be processed in batch as much as possible but when the last
+>> running worker blocks, gcwq immediately schedules new worker so that
+>> the cpu doesn't sit idle while there are works to be processed.
+> 
+> "immediately schedules": I assume that this means that the thread is
+> made runnable, but isn't necessarily immediately executed?
+> 
+> If it _is_ immediately given the CPU then it sounds locky uppy?
+
+It's made runnable.
+
+>> This allows using minimal number of workers without losing execution
+>> bandwidth.  Keeping idle workers around doesn't cost much other than
+>> the memory space, so cmwq holds onto idle ones for a while before
+>> killing them.
+>>
+>> As multiple execution contexts are available for each wq, deadlocks
+>> around execution contexts is much harder to create.  The default
+>> workqueue, system_wq, has maximum concurrency level of 256 and unless
+>> there is a use case which can result in a dependency loop involving
+>> more than 254 workers, it won't deadlock.
+> 
+> ah, there we go.
+> 
+> hm.
+> 
+>> Such forward progress guarantee relies on that workers can be created
+>> when more execution contexts are necessary.  This is guaranteed by
+>> using emergency workers.  All wqs which can be used in allocation path
+> 
+> allocation of what?
+
+Memory to create new kthreads.
+
+>> == Numbers (this is with the third take but nothing which could affect
+>>    performance has changed since then.  Eh well, very little has
+>>    changed since then in fact.)
+> 
+> yes, it's hard to see how any of these changes could affect CPU
+> consumption in any way.  Perhaps something like padata might care.  Did
+> you look at padata much?
+
+I've read about it.  Haven't read the code yet tho.  Accomodating it
+isn't difficult.  We just need an interface which works used by padata
+can call which tell wq not to track concurrency for the worker as it's
+serving cpu intensive job.
+
+Thanks.
+
+-- 
+tejun
