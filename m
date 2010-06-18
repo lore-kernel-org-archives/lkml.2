@@ -1,117 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab0FRVFV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 17:05:21 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:35990 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751655Ab0FRVFU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 17:05:20 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>,
-       "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
-CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-       "'akpm@osdl.org'" <akpm@osdl.org>,
-       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Fri, 18 Jun 2010 15:05:04 -0600
-Subject: [PATCH 9/12] scsi: megaraid_sas - support devices update flag
-Thread-Topic: [PATCH 9/12] scsi: megaraid_sas - support devices update flag
-Thread-Index: Aco28IhK0BCwqEkwToSTDcG+BIA9kwDb1hagAACJvwADF6mW4AvxomIAHahLLtAAAvN9QAbH1CmgAbWFgKA=
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3D09274A6@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>
- <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3CDB80BFF@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3D080455B@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D080455B@cosmail02.lsi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752525Ab0FRVGc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 17:06:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12499 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751646Ab0FRVGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 17:06:30 -0400
+Date: Fri, 18 Jun 2010 17:06:12 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Alex Riesen <raa.lkml@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 17/38] union-mount: Union mounts documentation
+Message-ID: <20100618210612.GB24188@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-18-git-send-email-vaurora@redhat.com> <AANLkTilNAGzn3ZC5eN2ZQMqNhcSWnT-mi_y2TkIkdeUU@mail.gmail.com> <20100617183912.GA14389@shell> <AANLkTilUbzQjEBiZ9LHEvugLXbsaZoEyt9S-v3KQgUQB@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTilUbzQjEBiZ9LHEvugLXbsaZoEyt9S-v3KQgUQB@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RESUBMIT:
-Driver added the Device update flag to tell LSI application driver will do the device
-Update.  LSI MegaRAID SAS application will check this flag to decide if it is need to
-update the Device or not. 
+On Thu, Jun 17, 2010 at 10:32:09PM +0200, Alex Riesen wrote:
+> On Thu, Jun 17, 2010 at 20:39, Valerie Aurora <vaurora@redhat.com> wrote:
+> > On Thu, Jun 17, 2010 at 10:01:30AM +0200, Alex Riesen wrote:
+> >> On Tue, Jun 15, 2010 at 20:39, Valerie Aurora <vaurora@redhat.com> wrote:
+> >> > +git://git.kernel.org/pub/scm/fs/ext2/val/e2fsprogs.git
+> >> > +
+> >> > +Currently, whiteout directory entries are not returned to userland.
+> >> > +While the directory type for whiteouts, DT_WHT, has been defined for
+> >> > +many years, very little userland code handles them. ??Userland will
+> >> > +never see fallthru directory entries.
+> >>
+> >> This may be a dumb question (I must admit I did only very little research),
+> >> but how does one cleanup the topmost layer of whiteouts and fallthroughs,
+> >> so that the entries of lower layer(s) can be made visible again?
+> >
+> > I'm not sure how best to do this. ??We don't want to add more system
+> > calls. ??One thought of mine has been to do this offline, when the file
+> > system is unmounted.
+> 
+> But that means that if the topmost filesystem is getting full of whiteouts
+> and fallthroughs there will be no way to free up the space without taking
+> the volume offline! That makes operation of union mount on always-on
+> systems difficult. Many personal electronics are always-on today, it
+> will be annoying to have to shutdown them on reconfigurations or just
+> to free up some space.
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+Whiteouts and fallthrus go away when a directory is deleted.  So, "rm
+-rf /trash/" will actually free up disk space.  You can also move the
+files you want to keep to a temp directory, rmdir the old one, and
+move that dir back.
 
---- 
-drivers/scsi/megaraid/megaraid_sas.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+Unfortunately, union mounts runs into a lot of bizarre ENOSPC
+problems.  But in the degenerate case in which you delete every single
+file from the lower layer file system, that information will take up
+only one whiteout per top-level subdir.  You don't keep whiteouts for
+anything below a deleted directory.
 
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
---- old/drivers/scsi/megaraid/megaraid_sas.c	2010-05-03 03:50:44.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-05-03 05:46:37.000000000 -0400
-@@ -99,6 +99,7 @@ static int megasas_poll_wait_aen;
- static DECLARE_WAIT_QUEUE_HEAD(megasas_poll_wait);
- static u32 support_poll_for_event;
- static u32 megasas_dbg_lvl;
-+static u32 support_device_change;
- 
- /* define lock for aen poll */
- spinlock_t poll_aen_lock;
-@@ -4660,6 +4661,15 @@ megasas_sysfs_show_support_poll_for_even
- static DRIVER_ATTR(support_poll_for_event, S_IRUGO,
- 			megasas_sysfs_show_support_poll_for_event, NULL);
- 
-+ static ssize_t
-+megasas_sysfs_show_support_device_change(struct device_driver *dd, char *buf)
-+{
-+	return sprintf(buf, "%u\n", support_device_change);
-+}
-+
-+static DRIVER_ATTR(support_device_change, S_IRUGO,
-+			megasas_sysfs_show_support_device_change, NULL);
-+
- static ssize_t
- megasas_sysfs_show_dbg_lvl(struct device_driver *dd, char *buf)
- {
-@@ -4980,6 +4990,7 @@ static int __init megasas_init(void)
- 	       MEGASAS_EXT_VERSION);
- 
- 	support_poll_for_event = 2;
-+	support_device_change = 1;
- 
- 	memset(&megasas_mgmt_info, 0, sizeof(megasas_mgmt_info));
- 
-@@ -5028,8 +5039,17 @@ static int __init megasas_init(void)
- 	if (rval)
- 		goto err_dcf_poll_mode_io;
- 
-+	rval = driver_create_file(&megasas_pci_driver.driver,
-+				&driver_attr_support_device_change);
-+	if (rval)
-+		goto err_dcf_support_device_change;
-+
- 	return rval;
- 
-+err_dcf_support_device_change:
-+	driver_remove_file(&megasas_pci_driver.driver,
-+		  &driver_attr_poll_mode_io);
-+
- err_dcf_poll_mode_io:
- 	driver_remove_file(&megasas_pci_driver.driver,
- 			   &driver_attr_dbg_lvl);
-@@ -5060,6 +5080,10 @@ static void __exit megasas_exit(void)
- 	driver_remove_file(&megasas_pci_driver.driver,
- 			   &driver_attr_dbg_lvl);
- 	driver_remove_file(&megasas_pci_driver.driver,
-+			&driver_attr_support_poll_for_event);
-+	driver_remove_file(&megasas_pci_driver.driver,
-+			&driver_attr_support_device_change);
-+	driver_remove_file(&megasas_pci_driver.driver,
- 			   &driver_attr_release_date);
- 	driver_remove_file(&megasas_pci_driver.driver, &driver_attr_version);
+> >??... For example, e2fsck could add a feature to
+> > delete whiteouts and fallthrus. ...
+> 
+> That makes me think that the cleanup operation will be topmost
+> filesystem specific. Maybe this even means that one have to
+> have the filesystem specific tools installed on every system
+> which happens to use union mounts.
 
+Any union mount utilities would be distributed as part of the normal
+file system utilities package.
+
+> >??Another option is to add a flag to an existing system call.
+> 
+> Or calls, if the whiteouts (or even fallthroughs) are to be read
+> through directory file handles. unlinkat(2) ? It already has
+> dirfd and flags arguments.
+
+Yeah, unlinkat() looks promising.
+
+-VAL
