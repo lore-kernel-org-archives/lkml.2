@@ -1,112 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933632Ab0FRPGM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 11:06:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53289 "EHLO ogre.sisk.pl"
+	id S933651Ab0FRPGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 11:06:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55989 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933594Ab0FRPGI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 11:06:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] PCI / PM: Do not use native PCIe PME by default
-Date: Fri, 18 Jun 2010 17:04:22 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       linux-pm@lists.linux-foundation.org,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-pci@vger.kernel.org
+	id S933615Ab0FRPGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 11:06:40 -0400
+Message-ID: <4C1B8B4A.9060308@gmail.com>
+Date: Fri, 18 Jun 2010 17:05:46 +0200
+From: Edward Shishkin <edward.shishkin@gmail.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201006181704.22550.rjw@sisk.pl>
+To: Chris Mason <chris.mason@oracle.com>,
+       Edward Shishkin <edward.shishkin@gmail.com>, Mat <jackdachef@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+       Ric Wheeler <rwheeler@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       The development of BTRFS <linux-btrfs@vger.kernel.org>
+Subject: Re: Btrfs: broken file system design (was Unbound(?) internal fragmentation
+ in Btrfs)
+References: <4C07C321.8010000@redhat.com> <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com> <4C1B7560.1000806@gmail.com> <20100618134755.GG27466@think>
+In-Reply-To: <20100618134755.GG27466@think>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+Chris Mason wrote:
+> On Fri, Jun 18, 2010 at 03:32:16PM +0200, Edward Shishkin wrote:
+>   
+>> Mat wrote:
+>>     
+>>> On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin <edward@redhat.com> wrote:
+>>>       
+>>>> Hello everyone.
+>>>>
+>>>> I was asked to review/evaluate Btrfs for using in enterprise
+>>>> systems and the below are my first impressions (linux-2.6.33).
+>>>>
+>>>> The first test I have made was filling an empty 659M (/dev/sdb2)
+>>>> btrfs partition (mounted to /mnt) with 2K files:
+>>>>
+>>>> # for i in $(seq 1000000); \
+>>>> do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
+>>>> (terminated after getting "No space left on device" reports).
+>>>>
+>>>> # ls /mnt | wc -l
+>>>> 59480
+>>>>
+>>>> So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
+>>>> and the first obvious question is "hey, where are other 83% of my
+>>>> disk space???" I looked at the btrfs storage tree (fs_tree) and was
+>>>> shocked with the situation on the leaf level. The Appendix B shows
+>>>> 5 adjacent btrfs leafs, which have the same parent.
+>>>>
+>>>> For example, look at the leaf 29425664: "items 1 free space 3892"
+>>>> (of 4096!!). Note, that this "free" space (3892) is _dead_: any
+>>>> attempts to write to the file system will result in "No space left
+>>>> on device".
+>>>>         
+>
+> There are two easy ways to fix this problem.  Turn off the inline
+> extents (max_inline=0) or allow splitting of the inline extents.  I
+> didn't put in the splitting simply because the complexity was high while
+> the benefits were low (in comparison with just turning off the inline
+> extents).
+>   
 
-Commit c7f486567c1d0acd2e4166c47069835b9f75e77b
-(PCI PM: PCIe PME root port service driver) causes the native PCIe
-PME signaling to be used by default, if the BIOS allows the kernel to
-control the standard configuration registers of PCIe root ports.
-However, the native PCIe PME is coupled to the native PCIe hotplug
-and calling pcie_pme_acpi_setup() makes some BIOSes expect that
-the native PCIe hotplug will be used as well.  That, in turn, causes
-problems to appear on systems where the PCIe hotplug driver is not
-loaded.  The usual symptom, as reported by Jaroslav Kameník and
-others, is that the ACPI GPE associated with PCIe hotplug keeps
-firing continuously causing kacpid to take substantial percentage
-of CPU time.
+Hello, Chris. Thanks for response!
+I afraid that both ways won't fix the problem. Look at this leaf:
 
-To work around this issue, change the default so that the native
-PCIe PME signaling is only used if directly requested with the help
-of the pcie_pme= command line switch.
+[...]
+leaf 29425664 items 1 free space 3892 generation 8 owner 5
+fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+        item 0 key (320 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
+                location key (0 UNKNOWN 0) type 8
+                namelen 16 datalen 32 name: security.selinux
+[...]
 
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=15924 , which is
-a listed regression from 2.6.33.
+There is no inline extents, and what are you going to split here?
+All leafs must be at least a half filled, otherwise we loose all
+boundaries, which provides non-zero utilization..
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Reported-by: Jaroslav Kameník <jaroslav@kamenik.cz>
-Tested-by: Antoni Grzymala <antekgrzymala@gmail.com> 
----
- Documentation/kernel-parameters.txt |    4 +++-
- drivers/pci/pcie/pme/pcie_pme.c     |   19 +++++++++++++------
- 2 files changed, 16 insertions(+), 7 deletions(-)
+Any ideas?
 
-Index: linux-2.6/drivers/pci/pcie/pme/pcie_pme.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pcie/pme/pcie_pme.c
-+++ linux-2.6/drivers/pci/pcie/pme/pcie_pme.c
-@@ -34,7 +34,7 @@
-  * being registered.  Consequently, the interrupt-based PCIe PME signaling will
-  * not be used by any PCIe root ports in that case.
-  */
--static bool pcie_pme_disabled;
-+static bool pcie_pme_disabled = true;
- 
- /*
-  * The PCI Express Base Specification 2.0, Section 6.1.8, states the following:
-@@ -64,12 +64,19 @@ bool pcie_pme_msi_disabled;
- 
- static int __init pcie_pme_setup(char *str)
- {
--	if (!strcmp(str, "off"))
--		pcie_pme_disabled = true;
--	else if (!strcmp(str, "force"))
-+	if (!strncmp(str, "auto", 4))
-+		pcie_pme_disabled = false;
-+	else if (!strncmp(str, "force", 5))
- 		pcie_pme_force_enable = true;
--	else if (!strcmp(str, "nomsi"))
--		pcie_pme_msi_disabled = true;
-+
-+	str = strchr(str, ',');
-+	if (str) {
-+		str++;
-+		str += strspn(str, " \t");
-+		if (*str && !strcmp(str, "nomsi"))
-+			pcie_pme_msi_disabled = true;
-+	}
-+
- 	return 1;
- }
- __setup("pcie_pme=", pcie_pme_setup);
-Index: linux-2.6/Documentation/kernel-parameters.txt
-===================================================================
---- linux-2.6.orig/Documentation/kernel-parameters.txt
-+++ linux-2.6/Documentation/kernel-parameters.txt
-@@ -2048,7 +2048,9 @@ and is between 256 and 4096 characters. 
- 			WARNING: Forcing ASPM on may cause system lockups.
- 
- 	pcie_pme=	[PCIE,PM] Native PCIe PME signaling options:
--		off	Do not use native PCIe PME signaling.
-+			Format: {auto|force}[,nomsi]
-+		auto	Use native PCIe PME signaling if the BIOS allows the
-+			kernel to control PCIe config registers of root ports.
- 		force	Use native PCIe PME signaling even if the BIOS refuses
- 			to allow the kernel to control the relevant PCIe config
- 			registers.
+Thanks,
+Edward.
+
+>   
+>> It must be a highly unexpected and difficult question for file system
+>> developers: "how efficiently does your file system manage disk space"?
+>>
+>> In the meanwhile I confirm that Btrfs design is completely broken:
+>> records stored in the B-tree differ greatly from each other (it is
+>> unacceptable!), and the balancing algorithms have been modified in
+>> insane manner. All these factors has led to loss of *all* boundaries
+>> holding internal fragmentation and to exhaustive waste of disk space
+>> (and memory!) in spite of the property "scaling in their ability to
+>> address large storage".
+>>
+>> This is not a large storage, this is a "scalable sieve": you can not
+>> rely on finding there some given amount of water even after infinite
+>> increasing the size of the sieve (read escalating the pool of Btrfs
+>> devices).
+>>
+>> It seems that nobody have reviewed Btrfs before its inclusion to the
+>> mainline. I have only found a pair of recommendations with a common
+>> idea that Btrfs maintainer is "not a crazy man". Plus a number of
+>> papers which admire with the "Btrfs phenomena". Sigh.
+>>
+>> Well, let's decide what can we do in current situation..
+>> The first obvious point here is that we *can not* put such file system
+>> to production. Just because it doesn't provide any guarantees for our
+>> users regarding disk space utilization.
+>>     
+>
+> Are you basing all of this on inline extents?  The other extents of
+> variable size are more flexible (taking up the room in the leaf), but
+> they can also easy be split during balancing.
+>
+> -chris
+>
+>   
+
