@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759743Ab0FRJ7l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 05:59:41 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:56423 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab0FRJ7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 05:59:39 -0400
-Date: Fri, 18 Jun 2010 12:00:42 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dan Carpenter <error27@gmail.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] get rid of "cut here" from bug output
-Message-ID: <20100618100042.GA1905@aftab>
-References: <20100617122156.GK5483@bicker>
- <20100617123637.GA3492@kryptos.osrc.amd.com>
- <20100617231902.9ce1e33e.akpm@linux-foundation.org>
+	id S1759658Ab0FRKBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 06:01:22 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:39865 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753046Ab0FRKBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 06:01:21 -0400
+Date: Fri, 18 Jun 2010 11:00:53 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: "Gleb O. Raiko" <raiko@niisi.msk.ru>
+Cc: David Daney <ddaney@caviumnetworks.com>, Jesper Nilsson <jesper@jni.nu>,
+       linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: MIPS: return after handling coprocessor 2 exception
+Message-ID: <20100618100053.GA4466@linux-mips.org>
+References: <20100617132554.GB24162@jni.nu>
+ <4C1A57AE.9080706@caviumnetworks.com>
+ <4C1B263E.7070906@niisi.msk.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100617231902.9ce1e33e.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C1B263E.7070906@niisi.msk.ru>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, Jun 18, 2010 at 02:19:02AM -0400
+On Fri, Jun 18, 2010 at 11:54:38AM +0400, Gleb O. Raiko wrote:
 
-> On Thu, 17 Jun 2010 14:36:37 +0200 Borislav Petkov <bp@amd64.org> wrote:
+> >What happens when the call chain is empty, and the proper action *is*
+> >SIGILL?
 > 
-> > From: Dan Carpenter <error27@gmail.com>
-> > Date: Thu, Jun 17, 2010 at 02:21:56PM +0200
-> > 
-> > > It's annoying to have chunks of dmesg output instead just the whole
-> > > output.  A lot of times the very interesting information is before
-> > > the bug happens.
-> > > 
-> > > Signed-off-by: Dan Carpenter <error27@gmail.com>
-> > > 
-> > > diff --git a/kernel/panic.c b/kernel/panic.c
-> > > index 3b16cd9..2db532a 100644
-> > > --- a/kernel/panic.c
-> > > +++ b/kernel/panic.c
-> > > @@ -373,7 +373,7 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
-> > >  {
-> > >  	const char *board;
-> > >  
-> > > -	printk(KERN_WARNING "------------[ cut here ]------------\n");
-> > > +	printk(KERN_WARNING "-----[ paste whole dmesg to bugzilla ]-----\n");
-> > 
-> > Good idea, we end up requesting the whole dmesg most of the time anyway.
-> > However not all bugs are reported through bugzilla, and, frankly
-> > bugzilla is kinda sucky when it comes down to communicating with the bug
-> > reporter. How about the more generic "send whole dmesg when reporting"
-> > instead?
-> 
-> And the pestiferous thing wordwraps the dmesg output to death, making
-> it amazingly hard to read.  s/paste/attach/ maybe.
+> It's never empty, in fact. The default notifier declared at top of
+> traps.c sends SIGILL. The problem that current code is sending
+> SIGILL in all cases.
 
-Right, good point.
+That's not really a problem.  The design idea is that a the default
+notifier has the lowest priority, that is any user notifier installed
+should have higher priority resulting in it getting run first.  To avoid
+the default notifier from getting executed such an extra notifier should
+set NOTIFY_STOP_MASK in its return like:
 
--- 
-Regards/Gruss,
-Boris.
+static int default_cu2_call(struct notifier_block *nfb, unsigned long action,
+        void *data)
+{
+	...
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+	return NOTIFY_OK | NOTIFY_STOP;
+}
+
+The notifier list could also be used for example by perf but there it
+we'd want the notifier function not to return NOTIFY_STOP as the result;
+
+Arguably sending the signal for CU2 instructions has been delegated to the
+hook so the I agree that the break stateement should be replaced with a
+return and will apply the patch.
+
+  Ralf
