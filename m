@@ -1,141 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab0FRVVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 17:21:18 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:44220 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752829Ab0FRVVQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 17:21:16 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "James.Bottomley@HansenPartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-       "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-       "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-       "akpm@osdl.org" <akpm@osdl.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Jun 2010 15:21:02 -0600
-Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
- 	Enable Online Controller Reset Bit in register related functions
-Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
- 	Enable Online Controller Reset Bit in register related functions
-Thread-Index: AcsPK97h31REpE+7QJOZKWxkLEv74wAABoFA
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3D09274C4@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
- <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
-In-Reply-To: <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1753245Ab0FRVZm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 17:25:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753158Ab0FRVZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 17:25:41 -0400
+Date: Fri, 18 Jun 2010 23:23:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org, Louis Rilling <louis.rilling@kerlabs.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+Message-ID: <20100618212355.GA29478@redhat.com>
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100618175541.GA13680@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai,
-
-You need to apply patches 1/12 to 8/12 for this online controller reset (OCR) support.
-
-Regards,
-
-Bo Yang
-
------Original Message-----
-From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of Yinghai Lu
-Sent: Friday, June 18, 2010 5:19 PM
-To: Yang, Bo
-Cc: James.Bottomley@HansenPartnership.com; James.Bottomley@suse.de; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
-
-On Wed, Jun 9, 2010 at 7:34 PM, Yang, Bo <Bo.Yang@lsi.com> wrote:
-> Enable the Online Controller reset bit in the register related functions.  This is first part of the Online Controller Reset.
-> The driver supports XScle and Gen2 chips.  Driver need to read the FW state register to see if there is FW state change
-> Happen.
+On 06/18, Oleg Nesterov wrote:
 >
-> Signed-off-by Bo Yang<bo.yang@lsi.com>
+> work->func(ns) is
+> called when ns is already fixed.
+                            ^^^^^
+(I meant freed)
 
-This patch cause kernel hang just after
-[  136.996297] megasas: FW now in Ready state
+We can move kmem_cache_free(ns) into work->func(), or we can optimize
+the usage of schedule_work(), something like the patch below.
 
-# lspci -vvxxx -s 01:00.0
-01:00.0 RAID bus controller: LSI Logic / Symbios Logic LSI MegaSAS 9260 (rev 03)
-	Subsystem: LSI Logic / Symbios Logic MegaRAID SAS 9262-8i
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+
-Stepping- SERR+ FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 256 bytes
-	Interrupt: pin A routed to IRQ 28
-	Region 0: I/O ports at 1c00 [size=256]
-	Region 1: Memory at aaefc000 (64-bit, non-prefetchable) [size=16K]
-	Region 3: Memory at aae80000 (64-bit, non-prefetchable) [size=256K]
-	Expansion ROM at aae40000 [disabled] [size=256K]
-	Capabilities: [50] Power Management version 3
-		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
-	Capabilities: [68] Express (v2) Endpoint, MSI 00
-		DevCap:	MaxPayload 4096 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
-			ExtTag+ AttnBtn- AttnInd- PwrInd- RBE+ FLReset+
-		DevCtl:	Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported-
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+ FLReset-
-			MaxPayload 128 bytes, MaxReadReq 512 bytes
-		DevSta:	CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
-		LnkCap:	Port #0, Speed 5GT/s, Width x8, ASPM L0s, Latency L0 <64ns, L1 <1us
-			ClockPM- Surprise- LLActRep- BwNot-
-		LnkCtl:	ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 5GT/s, Width x4, TrErr- Train- SlotClk+ DLActive-
-BWMgmt- ABWMgmt-
-		DevCap2: Completion Timeout: Range BC, TimeoutDis+
-		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
-		LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance- SpeedDis-,
-Selectable De-emphasis: -6dB
-			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance-
-ComplianceSOS-
-			 Compliance De-emphasis: -6dB
-		LnkSta2: Current De-emphasis Level: -6dB
-	Capabilities: [d0] Vital Product Data
-pcilib: sysfs_read_vpd: read failed: Connection timed out
-		Not readable
-	Capabilities: [a8] MSI: Enable- Count=1/1 Maskable- 64bit+
-		Address: 0000000000000000  Data: 0000
-	Capabilities: [c0] MSI-X: Enable- Count=15 Masked-
-		Vector table: BAR=1 offset=00002000
-		PBA: BAR=1 offset=00003800
-	Capabilities: [100] Advanced Error Reporting
-		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF-
-MalfTLP- ECRC- UnsupReq- ACSViol-
-		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF-
-MalfTLP- ECRC- UnsupReq- ACSViol-
-		UESvrt:	DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+
-MalfTLP+ ECRC- UnsupReq- ACSViol-
-		CESta:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
-		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-		AERCap:	First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
-	Capabilities: [138] Power Budgeting <?>
-	Kernel driver in use: megaraid_sas
-00: 00 10 79 00 47 01 10 00 03 00 04 01 40 00 00 00
-10: 01 1c 00 00 04 c0 ef aa 00 00 00 00 04 00 e8 aa
-20: 00 00 00 00 00 00 00 00 00 00 00 00 00 10 62 92
-30: 00 00 e4 aa 50 00 00 00 00 00 00 00 0a 01 00 00
-40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-50: 01 68 03 06 08 00 00 00 00 00 00 00 00 00 00 00
-60: 00 00 00 00 00 01 00 00 10 d0 02 00 25 80 00 10
-70: 17 28 00 00 82 04 00 00 40 00 42 10 00 00 00 00
-80: 00 00 00 00 00 00 00 00 00 00 00 00 16 00 00 00
-90: 00 00 00 00 00 00 00 00 02 00 00 00 00 00 00 00
-a0: 00 00 00 00 00 00 00 00 05 c0 80 00 00 00 00 00
-b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c0: 11 00 0e 00 01 20 00 00 01 38 00 00 00 00 00 00
-d0: 03 a8 ff 1f 82 00 00 00 00 00 00 00 00 00 00 00
-e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+Once again, it is completely untested, I do not pretend I understand
+this code today, and I am sure the patch is wrong. I only try to discuss
+the idea to break the circular reference. In any case, I am not proud
+of this patch ;)
 
+Or we should do the more sophisticated change suggested by Pavel. But
+I'd like to avoid the changes in do_wait/release_task, this doesn't
+look right to me.
 
+Oleg.
 
-YH
+ include/linux/pid_namespace.h |    1 +
+ kernel/pid_namespace.c        |   35 ++++++++++++++++++++++++++++++++++-
+ fs/proc/base.c                |    4 ----
+ fs/proc/root.c                |   10 ++++++----
+ 4 files changed, 41 insertions(+), 9 deletions(-)
+
+--- 34-rc1/include/linux/pid_namespace.h~PID_NS	2010-06-18 17:48:56.000000000 +0200
++++ 34-rc1/include/linux/pid_namespace.h	2010-06-18 22:37:45.000000000 +0200
+@@ -26,6 +26,7 @@ struct pid_namespace {
+ 	struct pid_namespace *parent;
+ #ifdef CONFIG_PROC_FS
+ 	struct vfsmount *proc_mnt;
++	struct list_head dead_node;
+ #endif
+ #ifdef CONFIG_BSD_PROCESS_ACCT
+ 	struct bsd_acct_struct *bacct;
+--- 34-rc1/kernel/pid_namespace.c~PID_NS	2010-06-18 17:48:56.000000000 +0200
++++ 34-rc1/kernel/pid_namespace.c	2010-06-18 22:52:41.000000000 +0200
+@@ -10,6 +10,7 @@
+ 
+ #include <linux/pid.h>
+ #include <linux/pid_namespace.h>
++#include <linux/proc_fs.h>
+ #include <linux/syscalls.h>
+ #include <linux/err.h>
+ #include <linux/acct.h>
+@@ -105,15 +106,47 @@ out:
+ 	return ERR_PTR(-ENOMEM);
+ }
+ 
+-static void destroy_pid_namespace(struct pid_namespace *ns)
++static LIST_HEAD(dead_list);
++static DEFINE_SPINLOCK(dead_lock);
++
++static void do_destroy_pid_namespace(struct pid_namespace *ns)
+ {
+ 	int i;
+ 
++	pid_ns_release_proc(ns);
++
+ 	for (i = 0; i < PIDMAP_ENTRIES; i++)
+ 		kfree(ns->pidmap[i].page);
+ 	kmem_cache_free(pid_ns_cachep, ns);
+ }
+ 
++static void dead_work_func(struct work_struct *unused)
++{
++	LIST_HEAD(list);
++	unsigned long flags;
++	struct pid_namespace *ns, *tmp;
++
++	spin_lock_irqsave(&dead_lock, flags);
++	list_splice_init(&dead_list, &list);
++	spin_unlock_irqrestore(&dead_lock, flags);
++
++	list_for_each_entry_safe(ns, tmp, &list, dead_node)
++		do_destroy_pid_namespace(ns);
++}
++
++static DECLARE_WORK(dead_work, dead_work_func);
++
++static void destroy_pid_namespace(struct pid_namespace *ns)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&dead_lock, flags);
++	list_add(&ns->dead_node, &dead_list);
++	spin_unlock_irqrestore(&dead_lock, flags);
++
++	schedule_work(&dead_work);
++}
++
+ struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *old_ns)
+ {
+ 	if (!(flags & CLONE_NEWPID))
+--- 34-rc1/fs/proc/base.c~PID_NS	2010-06-18 17:48:56.000000000 +0200
++++ 34-rc1/fs/proc/base.c	2010-06-18 17:49:45.000000000 +0200
+@@ -2720,10 +2720,6 @@ void proc_flush_task(struct task_struct 
+ 		proc_flush_task_mnt(upid->ns->proc_mnt, upid->nr,
+ 					tgid->numbers[i].nr);
+ 	}
+-
+-	upid = &pid->numbers[pid->level];
+-	if (upid->nr == 1)
+-		pid_ns_release_proc(upid->ns);
+ }
+ 
+ static struct dentry *proc_pid_instantiate(struct inode *dir,
+--- 34-rc1/fs/proc/root.c~PID_NS	2010-06-18 17:48:56.000000000 +0200
++++ 34-rc1/fs/proc/root.c	2010-06-18 22:54:03.000000000 +0200
+@@ -31,7 +31,7 @@ static int proc_set_super(struct super_b
+ 	struct pid_namespace *ns;
+ 
+ 	ns = (struct pid_namespace *)data;
+-	sb->s_fs_info = get_pid_ns(ns);
++	sb->s_fs_info = ns;
+ 	return set_anon_super(sb, NULL);
+ }
+ 
+@@ -74,7 +74,7 @@ static int proc_get_sb(struct file_syste
+ 		ei = PROC_I(sb->s_root->d_inode);
+ 		if (!ei->pid) {
+ 			rcu_read_lock();
+-			ei->pid = get_pid(find_pid_ns(1, ns));
++			ei->pid = find_pid_ns(1, ns);
+ 			rcu_read_unlock();
+ 		}
+ 
+@@ -92,7 +92,6 @@ static void proc_kill_sb(struct super_bl
+ 
+ 	ns = (struct pid_namespace *)sb->s_fs_info;
+ 	kill_anon_super(sb);
+-	put_pid_ns(ns);
+ }
+ 
+ static struct file_system_type proc_fs_type = {
+@@ -218,5 +217,8 @@ int pid_ns_prepare_proc(struct pid_names
+ 
+ void pid_ns_release_proc(struct pid_namespace *ns)
+ {
+-	mntput(ns->proc_mnt);
++	if (ns->proc_mnt) {
++		PROC_I(ns->proc_mnt->mnt_sb->s_root->d_inode)->pid = NULL;
++		mntput(ns->proc_mnt);
++	}
+ }
+
