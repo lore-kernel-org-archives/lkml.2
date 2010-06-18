@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029Ab0FRIVM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 04:21:12 -0400
-Received: from t111.niisi.ras.ru ([193.232.173.111]:59394 "EHLO
-	t111.niisi.ras.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757491Ab0FRIVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 04:21:10 -0400
-X-Greylist: delayed 2278 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Jun 2010 04:21:09 EDT
-Message-ID: <4C1B263E.7070906@niisi.msk.ru>
-Date: Fri, 18 Jun 2010 11:54:38 +0400
-From: "Gleb O. Raiko" <raiko@niisi.msk.ru>
-Organization: NIISI RAN
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
-MIME-Version: 1.0
-To: David Daney <ddaney@caviumnetworks.com>
-CC: Jesper Nilsson <jesper@jni.nu>, Ralf Baechle <ralf@linux-mips.org>,
-       linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: MIPS: return after handling coprocessor 2 exception
-References: <20100617132554.GB24162@jni.nu> <4C1A57AE.9080706@caviumnetworks.com>
-In-Reply-To: <4C1A57AE.9080706@caviumnetworks.com>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
+	id S1758109Ab0FRIVZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 04:21:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:14056 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758065Ab0FRIVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 04:21:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,437,1272870000"; 
+   d="scan'208";a="809215038"
+Subject: TCP stream performance regression due to
+ c377411f2494a931ff7facdbb3a6839b1266bcf6
+From: "Alex,Shi" <alex.shi@intel.com>
+To: eric.dumazet@gmail.com, davem@davemloft.net
+Cc: "Chen, Tim C" <tim.c.chen@intel.com>,
+       "Zhang, Yanmin" <yanmin.zhang@intel.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 18 Jun 2010 15:17:28 +0800
+Message-ID: <1276845448.2118.346.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-Antivirus: Dr.Web (R) for Mail Servers on t111.niisi.ras.ru host
-X-Antivirus-Code: 100000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.06.2010 21:13, David Daney wrote:
-> On 06/17/2010 06:25 AM, Jesper Nilsson wrote:
->> Breaking here dropped us to the default code which always sends
->> a SIGILL to the current process, no matter what the CU2 notifier says.
->>
->> Signed-off-by: Jesper Nilsson<jesper@jni.nu>
-[...]
->> case 2:
->> raw_notifier_call_chain(&cu2_chain, CU2_EXCEPTION, regs);
->> - break;
->> + return;
->>
->
-> What happens when the call chain is empty, and the proper action *is*
-> SIGILL?
+In our netperf testing, TCP_STREAM56 shows about 20% or more performance
+regression on WSM/NHM and tigerton machines. The testing boot up both
+netserver and client on localhost. The testing command like this:
+./snapshot_script_net TC_STREAM56 127.0.0.1 
 
-It's never empty, in fact. The default notifier declared at top of 
-traps.c sends SIGILL. The problem that current code is sending SIGILL in 
-all cases.
+We found the following commit causes this issue.
+c377411f2494a931ff7facdbb3a6839b1266bcf6  
+Revert this commit will recover this regression on all machine. 
 
-Gleb.
+Regards!
+Alex 
+
