@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab0FRC4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Jun 2010 22:56:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:53650 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517Ab0FRC4E (ORCPT
+	id S1756421Ab0FRC4V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Jun 2010 22:56:21 -0400
+Received: from ossa.mas.viperplatform.net.au ([202.147.75.25]:60495 "EHLO
+	ossa.mas.viperplatform.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756188Ab0FRC4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Jun 2010 22:56:04 -0400
-Message-ID: <4C1AE0CE.3040901@windriver.com>
-Date: Fri, 18 Jun 2010 10:58:22 +0800
-From: DDD <dongdong.deng@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Greg KH <greg@kroah.com>, jason.wessel@windriver.com,
-       galak@kernel.crashing.org, bruce.ashfield@windriver.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serial: cpm_uart: implement the cpm_uart_early_write()
- function for console poll
-References: <1276744420-7845-1-git-send-email-dongdong.deng@windriver.com> <20100617173101.GB24362@kroah.com> <4C1AD5A8.1030203@windriver.com> <20100618023758.GA10393@suse.de>
-In-Reply-To: <20100618023758.GA10393@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Jun 2010 02:55:58.0964 (UTC) FILETIME=[C7760B40:01CB0E91]
+	Thu, 17 Jun 2010 22:56:19 -0400
+From: Stuart Longland <redhatter@gentoo.org>
+To: ALSA Development List <alsa-devel@alsa-project.org>
+Cc: alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ASoC: Fix overflow bug in SOC_DOUBLE_R_SX_TLV
+Date: Fri, 18 Jun 2010 12:56:10 +1000
+Message-Id: <1276829770-31557-1-git-send-email-redhatter@gentoo.org>
+X-Mailer: git-send-email 1.6.4.4
+In-Reply-To: <20100618023810.GS7759@www.longlandclan.yi.org>
+References: <20100618023810.GS7759@www.longlandclan.yi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> On Fri, Jun 18, 2010 at 10:10:48AM +0800, DDD wrote:
->> Greg KH wrote:
->>> On Thu, Jun 17, 2010 at 11:13:40AM +0800, Dongdong Deng wrote:
->>>> The cpm_uart_early_write() function which was used for console poll
->>>> isn't implemented in the cpm uart driver.
->>>>
->>>> Implementing this function both fixes the build and allows
->>>> kgdboc to work via the cpm uart.
->>> So this is needed for the .35 release, right?  Any older kernel releases
->>> as well?
->> Yes, it is needed for the .35 release.
->>
->> The cpm_uart_early_write() of cpm_uart was introduced at 2.6.27,
->> so this patch is needed from 2.6.27.
-> 
-> So no one has noticed that the driver doesn't build at all since the .27
-> kernel release?  Over 2 years?  I hardly think that it's a rush to fix
-> it over the next few weeks then :)
->
+When SX_TLV widgets are read, if the gain is set to a value below 0dB,
+the mixer control is erroniously read as being at maximum volume.
 
-Hi greg,
+The value read out of the CODEC register is never sign-extended, and
+when the minimum value is subtracted (read; added, since the minimum is
+negative) the result is a number greater than the maximum allowed value
+for the control, and hence it saturates.
 
-The build error just happens when enable the CONFIG_CONSOLE_POLL option.
+Solution: Mask the result so that it "wraps around", emulating
+sign-extension.
 
-> I'll go queue it up.
+Signed-off-by: Stuart Longland <redhatter@gentoo.org>
+---
+ sound/soc/soc-core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-
-Dongdong
-
-> 
-> thanks,
-> 
-> greg k-h
-> 
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index a82a797..0470288 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -2400,8 +2400,8 @@ int snd_soc_get_volsw_2r_sx(struct snd_kcontrol *kcontrol,
+ 	int val = snd_soc_read(codec, mc->reg) & mask;
+ 	int valr = snd_soc_read(codec, mc->rreg) & mask;
+ 
+-	ucontrol->value.integer.value[0] = ((val & 0xff)-min);
+-	ucontrol->value.integer.value[1] = ((valr & 0xff)-min);
++	ucontrol->value.integer.value[0] = ((val & 0xff)-min) & mask;
++	ucontrol->value.integer.value[1] = ((valr & 0xff)-min) & mask;
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_get_volsw_2r_sx);
+-- 
+1.6.4.4
 
