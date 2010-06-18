@@ -1,46 +1,435 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab0FRXzr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 19:55:47 -0400
-Received: from kroah.org ([198.145.64.141]:42027 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753682Ab0FRXzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 19:55:46 -0400
-Date: Fri, 18 Jun 2010 16:52:42 -0700
-From: Greg KH <greg@kroah.com>
-To: Mike Gilks <mike.kernel@gilksonline.com>
-Cc: gregkh@suse.de, mchehab@redhat.com, julia@diku.dk, joe@perches.com,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: your mail
-Message-ID: <20100618235242.GA1128@kroah.com>
-References: <1276409811-16682-1-git-send-email-mike.kernel@gilksonline.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276409811-16682-1-git-send-email-mike.kernel@gilksonline.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754082Ab0FRX5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 19:57:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47472 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752936Ab0FRX5D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 19:57:03 -0400
+Date: Fri, 18 Jun 2010 16:54:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wan ZongShun <mcuos.com@gmail.com>
+Cc: Roman Fietze <roman.fietze@telemotive.de>, rtc-linux@googlegroups.com,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [rtc-linux] [PATCH] isl12022: added Intersil ISL12022 RTC
+Message-Id: <20100618165445.dc721a62.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTiknH-VRNcR_KereBB4l3CZk_oimaqScg3o1fJBg@mail.gmail.com>
+References: <201006171123.31484.roman.fietze@telemotive.de>
+	<4C1ACCCF.1050605@gmail.com>
+	<AANLkTikvYWFRthn5gyppxYExKs8C-5FC-7ybnqO_sWTk@mail.gmail.com>
+	<201006180727.06274.roman.fietze@telemotive.de>
+	<AANLkTiknH-VRNcR_KereBB4l3CZk_oimaqScg3o1fJBg@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 13, 2010 at 02:16:47PM +0800, Mike Gilks wrote:
-> Subject:r8192U_core.c Last pass
-> In-Reply-To: 
+On Fri, 18 Jun 2010 13:33:46 +0800
+Wan ZongShun <mcuos.com@gmail.com> wrote:
+
+> 2010/6/18 Roman Fietze <roman.fietze@telemotive.de>:
+> > Hallo Wan,
+> >
+> > On Friday 18 June 2010 04:08:02 Wan ZongShun wrote:
+> >
+> >> I have to remind you to use scripts/checkpatch.pl' to check your
+> >> patch format. There are more warning and errors in your patch.
+> >
+> > Ok, all done. One patch and checkpatch.pl tells me it's ok.
+> >
 > 
+> Hmmm, which mail client was used by you?
+> It seem to have destroyed your patch.
 > 
-> This is the last patch I can manage for this file.
-> Everything else to do with checkpatch.pl issues may require an actual developer to look at it.
+> Would you mind sending your patch to me as attached file?
+> I will help you fix this issue.
 
-I have a whole bunch of series of patches from you (one duplicating
-Linus's patch, I don't think you ment to send that...)  So, which should
-I apply?
+It came through OK for me.
 
-How about I delete them all and you send me the latest ones that you
-want me to apply, as I'm totally confused which is your latest version
-and which isn't and I see lots of duplicates.
 
-Sound good?
 
-thanks,
+From: Roman Fietze <roman.fietze@telemotive.de>
 
-greg k-h
+- derived from rtc-pcf8563
+
+- no SRAM driver
+
+Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
+Cc: Wan ZongShun <mcuos.com@gmail.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ drivers/rtc/Kconfig        |    9 
+ drivers/rtc/Makefile       |    1 
+ drivers/rtc/rtc-isl12022.c |  327 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 337 insertions(+)
+
+diff -puN drivers/rtc/Kconfig~isl12022-added-intersil-isl12022-rtc drivers/rtc/Kconfig
+--- a/drivers/rtc/Kconfig~isl12022-added-intersil-isl12022-rtc
++++ a/drivers/rtc/Kconfig
+@@ -203,6 +203,15 @@ config RTC_DRV_ISL1208
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-isl1208.
+ 
++config RTC_DRV_ISL12022
++	tristate "Intersil ISL12022"
++	help
++	  If you say yes here you get support for the
++	  Intersil ISL12022 RTC chip.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-isl12022.
++
+ config RTC_DRV_X1205
+ 	tristate "Xicor/Intersil X1205"
+ 	help
+diff -puN drivers/rtc/Makefile~isl12022-added-intersil-isl12022-rtc drivers/rtc/Makefile
+--- a/drivers/rtc/Makefile~isl12022-added-intersil-isl12022-rtc
++++ a/drivers/rtc/Makefile
+@@ -48,6 +48,7 @@ obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm31
+ obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
+ obj-$(CONFIG_RTC_DRV_IMXDI)	+= rtc-imxdi.o
+ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
++obj-$(CONFIG_RTC_DRV_ISL12022)	+= rtc-isl12022.o
+ obj-$(CONFIG_RTC_DRV_M41T80)	+= rtc-m41t80.o
+ obj-$(CONFIG_RTC_DRV_M41T94)	+= rtc-m41t94.o
+ obj-$(CONFIG_RTC_DRV_M48T35)	+= rtc-m48t35.o
+diff -puN /dev/null drivers/rtc/rtc-isl12022.c
+--- /dev/null
++++ a/drivers/rtc/rtc-isl12022.c
+@@ -0,0 +1,327 @@
++/*
++ * An I2C driver for the Intersil ISL 12022
++ *
++ * Author: Roman Fietze <roman.fietze@telemotive.de>
++ *
++ * Based on the Philips PCF8563 RTC
++ * by Alessandro Zummo <a.zummo@towertech.it>.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation.
++ */
++
++#include <linux/i2c.h>
++#include <linux/bcd.h>
++#include <linux/rtc.h>
++#include <linux/slab.h>
++
++#define DRV_VERSION "0.1"
++
++/* ISL register offsets */
++#define ISL12022_REG_SC		0x00
++#define ISL12022_REG_MN		0x01
++#define ISL12022_REG_HR		0x02
++#define ISL12022_REG_DT		0x03
++#define ISL12022_REG_MO		0x04
++#define ISL12022_REG_YR		0x05
++#define ISL12022_REG_DW		0x06
++
++#define ISL12022_REG_SR		0x07
++#define ISL12022_REG_INT	0x08
++
++/* ISL register bits */
++#define ISL12022_HR_MIL		(1 << 7)	/* military or 24 hour time */
++
++#define ISL12022_SR_LBAT85	(1 << 2)
++#define ISL12022_SR_LBAT75	(1 << 1)
++
++#define ISL12022_INT_WRTC	(1 << 6)
++
++
++static struct i2c_driver isl12022_driver;
++
++struct isl12022 {
++	struct rtc_device *rtc;
++
++	bool write_enabled;	/* true if write enable is set */
++};
++
++
++static int isl12022_read_regs(struct i2c_client *client, uint8_t reg,
++			      uint8_t *data, size_t n)
++{
++	struct i2c_msg msgs[] = {
++		{
++			.addr	= client->addr,
++			.flags	= 0,
++			.len	= 1,
++			.buf	= data
++		},		/* setup read ptr */
++		{
++			.addr	= client->addr,
++			.flags	= I2C_M_RD,
++			.len	= n,
++			.buf	= data
++		}
++	};
++
++	int ret;
++
++	data[0] = reg;
++	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
++	if (ret != ARRAY_SIZE(msgs)) {
++		dev_err(&client->dev, "%s: read error, ret=%d\n",
++			__func__, ret);
++		return -EIO;
++	}
++
++	return 0;
++}
++
++
++static int isl12022_write_reg(struct i2c_client *client,
++			      uint8_t reg, uint8_t val)
++{
++	uint8_t data[2] = { reg, val };
++	int err;
++
++	err = i2c_master_send(client, data, sizeof(data));
++	if (err != sizeof(data)) {
++		dev_err(&client->dev,
++			"%s: err=%d addr=%02x, data=%02x\n",
++			__func__, err, data[0], data[1]);
++		return -EIO;
++	}
++
++	return 0;
++}
++
++
++/*
++ * In the routines that deal directly with the isl12022 hardware, we use
++ * rtc_time -- month 0-11, hour 0-23, yr = calendar year-epoch.
++ */
++static int isl12022_get_datetime(struct i2c_client *client, struct rtc_time *tm)
++{
++	uint8_t buf[ISL12022_REG_INT + 1];
++	int ret;
++
++	ret = isl12022_read_regs(client, ISL12022_REG_SC, buf, sizeof(buf));
++	if (ret)
++		return ret;
++
++	if (buf[ISL12022_REG_SR] & (ISL12022_SR_LBAT85 | ISL12022_SR_LBAT75)) {
++		dev_warn(&client->dev,
++			 "voltage dropped below %u%%, "
++			 "date and time is not reliable.\n",
++			 buf[ISL12022_REG_SR] & ISL12022_SR_LBAT85 ? 85 : 75);
++	}
++
++	dev_dbg(&client->dev,
++		"%s: raw data is sec=%02x, min=%02x, hr=%02x, "
++		"mday=%02x, mon=%02x, year=%02x, wday=%02x, "
++		"sr=%02x, int=%02x",
++		__func__,
++		buf[ISL12022_REG_SC],
++		buf[ISL12022_REG_MN],
++		buf[ISL12022_REG_HR],
++		buf[ISL12022_REG_DT],
++		buf[ISL12022_REG_MO],
++		buf[ISL12022_REG_YR],
++		buf[ISL12022_REG_DW],
++		buf[ISL12022_REG_SR],
++		buf[ISL12022_REG_INT]);
++
++	tm->tm_sec = bcd2bin(buf[ISL12022_REG_SC] & 0x7F);
++	tm->tm_min = bcd2bin(buf[ISL12022_REG_MN] & 0x7F);
++	tm->tm_hour = bcd2bin(buf[ISL12022_REG_HR] & 0x3F);
++	tm->tm_mday = bcd2bin(buf[ISL12022_REG_DT] & 0x3F);
++	tm->tm_wday = buf[ISL12022_REG_DW] & 0x07;
++	tm->tm_mon = bcd2bin(buf[ISL12022_REG_MO] & 0x1F) - 1;
++	tm->tm_year = bcd2bin(buf[ISL12022_REG_YR]) + 100;
++
++	dev_dbg(&client->dev, "%s: secs=%d, mins=%d, hours=%d, "
++		"mday=%d, mon=%d, year=%d, wday=%d\n",
++		__func__,
++		tm->tm_sec, tm->tm_min, tm->tm_hour,
++		tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
++
++	/* The clock can give out invalid datetime, but we cannot return
++	 * -EINVAL otherwise hwclock will refuse to set the time on bootup. */
++	if (rtc_valid_tm(tm) < 0)
++		dev_err(&client->dev, "retrieved date and time is invalid.\n");
++
++	return 0;
++}
++
++static int isl12022_set_datetime(struct i2c_client *client, struct rtc_time *tm)
++{
++	struct isl12022 *isl12022 = i2c_get_clientdata(client);
++	size_t i;
++	int ret;
++	uint8_t buf[ISL12022_REG_DW + 1];
++
++	dev_dbg(&client->dev, "%s: secs=%d, mins=%d, hours=%d, "
++		"mday=%d, mon=%d, year=%d, wday=%d\n",
++		__func__,
++		tm->tm_sec, tm->tm_min, tm->tm_hour,
++		tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
++
++	if (!isl12022->write_enabled) {
++
++		ret = isl12022_read_regs(client, ISL12022_REG_INT, buf, 1);
++		if (ret)
++			return ret;
++
++		/* Check if WRTC (write rtc enable) is set factory default is
++		 * 0 (not set) */
++		if (!(buf[0] & ISL12022_INT_WRTC)) {
++			dev_info(&client->dev,
++				 "init write enable and 24 hour format\n");
++
++			/* Set the write enable bit. */
++			ret = isl12022_write_reg(client,
++						 ISL12022_REG_INT,
++						 buf[0] | ISL12022_INT_WRTC);
++			if (ret)
++				return ret;
++
++			/* Write to any RTC register to start RTC, we use the
++			 * HR register, setting the MIL bit to use the 24 hour
++			 * format. */
++			ret = isl12022_read_regs(client, ISL12022_REG_HR,
++						 buf, 1);
++			if (ret)
++				return ret;
++
++			ret = isl12022_write_reg(client,
++						 ISL12022_REG_HR,
++						 buf[0] | ISL12022_HR_MIL);
++			if (ret)
++				return ret;
++		}
++
++		isl12022->write_enabled = 1;
++	}
++
++	/* hours, minutes and seconds */
++	buf[ISL12022_REG_SC] = bin2bcd(tm->tm_sec);
++	buf[ISL12022_REG_MN] = bin2bcd(tm->tm_min);
++	buf[ISL12022_REG_HR] = bin2bcd(tm->tm_hour);
++
++	buf[ISL12022_REG_DT] = bin2bcd(tm->tm_mday);
++
++	/* month, 1 - 12 */
++	buf[ISL12022_REG_MO] = bin2bcd(tm->tm_mon + 1);
++
++	/* year and century */
++	buf[ISL12022_REG_YR] = bin2bcd(tm->tm_year % 100);
++
++	buf[ISL12022_REG_DW] = tm->tm_wday & 0x07;
++
++	/* write register's data */
++	for (i = 0; i < ARRAY_SIZE(buf); i++) {
++		ret = isl12022_write_reg(client, ISL12022_REG_SC + i,
++					 buf[ISL12022_REG_SC + i]);
++		if (ret)
++			return -EIO;
++	};
++
++	return 0;
++}
++
++static int isl12022_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	return isl12022_get_datetime(to_i2c_client(dev), tm);
++}
++
++static int isl12022_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	return isl12022_set_datetime(to_i2c_client(dev), tm);
++}
++
++static const struct rtc_class_ops isl12022_rtc_ops = {
++	.read_time	= isl12022_rtc_read_time,
++	.set_time	= isl12022_rtc_set_time,
++};
++
++static int isl12022_probe(struct i2c_client *client,
++			  const struct i2c_device_id *id)
++{
++	struct isl12022 *isl12022;
++
++	int ret = 0;
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
++		return -ENODEV;
++
++	isl12022 = kzalloc(sizeof(struct isl12022), GFP_KERNEL);
++	if (!isl12022)
++		return -ENOMEM;
++
++	dev_dbg(&client->dev, "chip found, driver version " DRV_VERSION "\n");
++
++	i2c_set_clientdata(client, isl12022);
++
++	isl12022->rtc = rtc_device_register(isl12022_driver.driver.name,
++					    &client->dev,
++					    &isl12022_rtc_ops,
++					    THIS_MODULE);
++
++	if (IS_ERR(isl12022->rtc)) {
++		ret = PTR_ERR(isl12022->rtc);
++		goto exit_kfree;
++	}
++
++	return 0;
++
++exit_kfree:
++	kfree(isl12022);
++
++	return ret;
++}
++
++static int isl12022_remove(struct i2c_client *client)
++{
++	struct isl12022 *isl12022 = i2c_get_clientdata(client);
++
++	rtc_device_unregister(isl12022->rtc);
++	kfree(isl12022);
++
++	return 0;
++}
++
++static const struct i2c_device_id isl12022_id[] = {
++	{ "isl12022", 0 },
++	{ "rtc8564", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, isl12022_id);
++
++static struct i2c_driver isl12022_driver = {
++	.driver		= {
++		.name	= "rtc-isl12022",
++	},
++	.probe		= isl12022_probe,
++	.remove		= isl12022_remove,
++	.id_table	= isl12022_id,
++};
++
++static int __init isl12022_init(void)
++{
++	return i2c_add_driver(&isl12022_driver);
++}
++
++static void __exit isl12022_exit(void)
++{
++	i2c_del_driver(&isl12022_driver);
++}
++
++module_init(isl12022_init);
++module_exit(isl12022_exit);
++
++MODULE_AUTHOR("roman.fietze@telemotive.de");
++MODULE_DESCRIPTION("ISL 12022 RTC driver");
++MODULE_LICENSE("GPL");
++MODULE_VERSION(DRV_VERSION);
+_
+
