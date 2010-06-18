@@ -1,219 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab0FRF1l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 01:27:41 -0400
-Received: from mga01.intel.com ([192.55.52.88]:48017 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751906Ab0FRF1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 01:27:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,436,1272870000"; 
-   d="scan'208";a="809175843"
-Subject: Re: [patch] Over schedule issue fixing
-From: "Alex,Shi" <alex.shi@intel.com>
-To: linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com,
-       a.p.zijlstra@chello.nl
-Cc: yanmin.zhang@intel.com, tim.c.chen@intel.com
-In-Reply-To: <1276754893.9452.5442.camel@debian>
-References: <1276754893.9452.5442.camel@debian>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Jun 2010 12:25:01 +0800
-Message-ID: <1276835101.2118.185.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1752483Ab0FRFdu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 01:33:50 -0400
+Received: from ey-out-2122.google.com ([74.125.78.27]:22706 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab0FRFds (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 01:33:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FaUZ7g7GkaBNV9l+UhxrJVcvEJdPNqiPlQl5OGCPIZ3lUDXiKzJ9OSF8A7Yep5xGPB
+         GTStbKl4Nzs0mACiYuGC5fpka6p8OgUD5tcKlO3bpyo6xC2nTyHUlcM+7bUw7RcENhHm
+         PzSDd9Mm/EDBeybsjBdVKOWQp0QAccQ8yQFn0=
+MIME-Version: 1.0
+In-Reply-To: <201006180727.06274.roman.fietze@telemotive.de>
+References: <201006171123.31484.roman.fietze@telemotive.de>
+	<4C1ACCCF.1050605@gmail.com>
+	<AANLkTikvYWFRthn5gyppxYExKs8C-5FC-7ybnqO_sWTk@mail.gmail.com>
+	<201006180727.06274.roman.fietze@telemotive.de>
+Date: Fri, 18 Jun 2010 13:33:46 +0800
+Message-ID: <AANLkTiknH-VRNcR_KereBB4l3CZk_oimaqScg3o1fJBg@mail.gmail.com>
+Subject: Re: [rtc-linux] [PATCH] isl12022: added Intersil ISL12022 RTC
+From: Wan ZongShun <mcuos.com@gmail.com>
+To: Roman Fietze <roman.fietze@telemotive.de>
+Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5I5YBim025863
 
-Add Suresh and Peter into thread. 
-Would you like to give some comments of this issue? 
-
-Thanks!
-Alex 
-
-On Thu, 2010-06-17 at 14:08 +0800, Alex,Shi wrote:
-> commit e709715915d69b6a929d77e7652c9c3fea61c317 introduced an imbalance
-> schedule issue. If we do not use CGROUP, function update_h_load won't
-> want to update h_load. When the system has a large number of tasks far
-> more than logical CPU number, the incorrect cfs_rq[cpu]->h_load value
-> will cause load_balance() to pull too many tasks to local CPU from the
-> busiest CPU. So the busiest CPU keeps being in a round robin. That will
-> hurt performance. 
-> The issue was found originally by a scientific calculation workload that
-> developed by Yanmin. with the commit, the workload performance drops
-> about 40% from this commit.  We can be reproduced by a short program as
-> following.
-> 
-> # gcc -o sl sched-loop.c -lpthread
-> # ./sl -n 100 -t 100 & 
-> # cat /proc/sched_debug &> sd1 
-> # grep -A 1 cpu# sd1
-> sd1:cpu#0, 2533.008 MHz
-> sd1-  .nr_running                    : 2
-> --
-> sd1:cpu#1, 2533.008 MHz
-> sd1-  .nr_running                    : 1
-> --
-> sd1:cpu#2, 2533.008 MHz
-> sd1-  .nr_running                    : 11
-> --
-> sd1:cpu#3, 2533.008 MHz
-> sd1-  .nr_running                    : 12
-> --
-> sd1:cpu#4, 2533.008 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#5, 2533.008 MHz
-> sd1-  .nr_running                    : 11
-> --
-> sd1:cpu#6, 2533.008 MHz
-> sd1-  .nr_running                    : 10
-> --
-> sd1:cpu#7, 2533.008 MHz
-> sd1-  .nr_running                    : 12
-> --
-> sd1:cpu#8, 2533.008 MHz
-> sd1-  .nr_running                    : 11
-> --
-> sd1:cpu#9, 2533.008 MHz
-> sd1-  .nr_running                    : 12
-> --
-> sd1:cpu#10, 2533.008 MHz
-> sd1-  .nr_running                    : 1
-> --
-> sd1:cpu#11, 2533.008 MHz
-> sd1-  .nr_running                    : 1
-> --
-> sd1:cpu#12, 2533.008 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#13, 2533.008 MHz
-> sd1-  .nr_running                    : 2
-> --
-> sd1:cpu#14, 2533.008 MHz
-> sd1-  .nr_running                    : 2
-> --
-> sd1:cpu#15, 2533.008 MHz
-> sd1-  .nr_running                    : 1
-> 
-> After apply the fixing patch, cfs_rq get balance. 
-> 
-> sd1:cpu#0, 2533.479 MHz
-> sd1-  .nr_running                    : 7
-> --
-> sd1:cpu#1, 2533.479 MHz
-> sd1-  .nr_running                    : 7
-> --
-> sd1:cpu#2, 2533.479 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#3, 2533.479 MHz
-> sd1-  .nr_running                    : 7
-> --
-> sd1:cpu#4, 2533.479 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#5, 2533.479 MHz
-> sd1-  .nr_running                    : 7
-> --
-> sd1:cpu#6, 2533.479 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#7, 2533.479 MHz
-> sd1-  .nr_running                    : 7
-> --
-> sd1:cpu#8, 2533.479 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#9, 2533.479 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#10, 2533.479 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#11, 2533.479 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#12, 2533.479 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#13, 2533.479 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#14, 2533.479 MHz
-> sd1-  .nr_running                    : 6
-> --
-> sd1:cpu#15, 2533.479 MHz
-> sd1-  .nr_running                    : 6
-> 
-> ---
-> #include <stdlib.h>
-> #include <stdio.h>
-> #include <unistd.h>
-> #include <pthread.h>
-> 
-> volatile int * exiting;
-> 
-> void *idle_loop(){
->         volatile int calc01 = 100;
->         while(*exiting !=1)
->                 calc01++;
-> }
-> int main(int argc, char *argv[]){
->         int                     i, t, c, er=0, num=8;
->         static  char            optstr[] = "n:t:";
->         pthread_t                       ptid[1024];
-> 
->         while ((c = getopt(argc, argv, optstr)) != EOF)
->                 switch (c) {
->                 case 'n':
->                         num = atoi(optarg);
->                         break;
->                 case 't':
->                         t = atoi(optarg);
->                         break;
->                 case '?':
->                         er = 1;
->                         break;
->                 }
-> 
->         if (er) {
->                 printf("usage: %s %s\n", argv[0], optstr);
->                 exit(1);
->         }
->         exiting = malloc(sizeof(int));
-> 
->         *exiting = 0;
->         for(i=0; i<num ; i++)
->                 pthread_create(&ptid[i], NULL, idle_loop, NULL);
-> 
->         sleep(t);
->         *exiting = 1;
-> 
->         for (i=0; i<num; i++)
->                 pthread_join(ptid[i], NULL);
->         exit(0);
-> 
-> }
-> 
-> Reviewed-by: Yanmin zhang <yanmin.zhang@intel.com>
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index f8b8996..a18bf93 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -1660,9 +1660,6 @@ static void update_shares(struct sched_domain *sd)
->  
->  static void update_h_load(long cpu)
->  {
-> -	if (root_task_group_empty())
-> -		return;
-> -
->  	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
->  }
->  
-> 
+2010/6/18 Roman Fietze <roman.fietze@telemotive.de>:> Hallo Wan,>> On Friday 18 June 2010 04:08:02 Wan ZongShun wrote:>>> I have to remind you to use scripts/checkpatch.pl' to check your>> patch format. There are more warning and errors in your patch.>> Ok, all done. One patch and checkpatch.pl tells me it's ok.>
+Hmmm, which mail client was used by you?It seem to have destroyed your patch.
+Would you mind sending your patch to me as attached file?I will help you fix this issue.
+>> From 62d43961b73aafe10d1b33b0702b378cc29d0881 Mon Sep 17 00:00:00 2001> From: Roman Fietze <roman.fietze@telemotive.de>> Date: Fri, 18 Jun 2010 07:20:44 +0200> Subject: [PATCH] isl12022: add Intersil ISL12022 RTC driver>> - derived from rtc-pcf8563> - no SRAM driver>> Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>> --->  drivers/rtc/Kconfig        |    9 ++>  drivers/rtc/Makefile       |    1 +>  drivers/rtc/rtc-isl12022.c |  327 ++++++++++++++++++++++++++++++++++++++++++++>  3 files changed, 337 insertions(+), 0 deletions(-)>  create mode 100644 drivers/rtc/rtc-isl12022.c>> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig> index 6a13037..ade6427 100644> --- a/drivers/rtc/Kconfig> +++ b/drivers/rtc/Kconfig> @@ -203,6 +203,15 @@ config RTC_DRV_ISL1208>          This driver can also be built as a module. If so, the module>          will be called rtc-isl1208.>> +config RTC_DRV_ISL12022> +       tristate "Intersil ISL12022"> +       help> +         If you say yes here you get support for the> +         Intersil ISL12022 RTC chip.> +> +         This driver can also be built as a module. If so, the module> +         will be called rtc-isl12022.> +>  config RTC_DRV_X1205>        tristate "Xicor/Intersil X1205">        help> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile> index 44ef194..782d516 100644> --- a/drivers/rtc/Makefile> +++ b/drivers/rtc/Makefile> @@ -45,6 +45,7 @@ obj-$(CONFIG_RTC_DRV_EP93XX)  += rtc-ep93xx.o>  obj-$(CONFIG_RTC_DRV_FM3130)   += rtc-fm3130.o>  obj-$(CONFIG_RTC_DRV_GENERIC)  += rtc-generic.o>  obj-$(CONFIG_RTC_DRV_ISL1208)  += rtc-isl1208.o> +obj-$(CONFIG_RTC_DRV_ISL12022) += rtc-isl12022.o>  obj-$(CONFIG_RTC_DRV_M41T80)   += rtc-m41t80.o>  obj-$(CONFIG_RTC_DRV_M41T94)   += rtc-m41t94.o>  obj-$(CONFIG_RTC_DRV_M48T35)   += rtc-m48t35.o> diff --git a/drivers/rtc/rtc-isl12022.c b/drivers/rtc/rtc-isl12022.c> new file mode 100644> index 0000000..4a8c9dd> --- /dev/null> +++ b/drivers/rtc/rtc-isl12022.c> @@ -0,0 +1,327 @@> +/*> + * An I2C driver for the Intersil ISL 12022> + *> + * Author: Roman Fietze <roman.fietze@telemotive.de>> + *> + * Based on the Philips PCF8563 RTC> + * by Alessandro Zummo <a.zummo@towertech.it>.> + *> + * This program is free software; you can redistribute it and/or> + * modify it under the terms of the GNU General Public License version> + * 2 as published by the Free Software Foundation.> + */> +> +#include <linux/i2c.h>> +#include <linux/bcd.h>> +#include <linux/rtc.h>> +#include <linux/slab.h>> +> +#define DRV_VERSION "0.1"> +> +/* ISL register offsets */> +#define ISL12022_REG_SC                0x00> +#define ISL12022_REG_MN                0x01> +#define ISL12022_REG_HR                0x02> +#define ISL12022_REG_DT                0x03> +#define ISL12022_REG_MO                0x04> +#define ISL12022_REG_YR                0x05> +#define ISL12022_REG_DW                0x06> +> +#define ISL12022_REG_SR                0x07> +#define ISL12022_REG_INT       0x08> +> +/* ISL register bits */> +#define ISL12022_HR_MIL                (1 << 7)        /* military or 24 hour time */> +> +#define ISL12022_SR_LBAT85     (1 << 2)> +#define ISL12022_SR_LBAT75     (1 << 1)> +> +#define ISL12022_INT_WRTC      (1 << 6)> +> +> +static struct i2c_driver isl12022_driver;> +> +struct isl12022 {> +       struct rtc_device *rtc;> +> +       bool write_enabled;     /* true if write enable is set */> +};> +> +> +static int isl12022_read_regs(struct i2c_client *client, uint8_t reg,> +                             uint8_t *data, size_t n)> +{> +       struct i2c_msg msgs[] = {> +               {> +                       .addr   = client->addr,> +                       .flags  = 0,> +                       .len    = 1,> +                       .buf    = data> +               },              /* setup read ptr */> +               {> +                       .addr   = client->addr,> +                       .flags  = I2C_M_RD,> +                       .len    = n,> +                       .buf    = data> +               }> +       };> +> +       int ret;> +> +       data[0] = reg;> +       ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));> +       if (ret != ARRAY_SIZE(msgs)) {> +               dev_err(&client->dev, "%s: read error, ret=%d\n",> +                       __func__, ret);> +               return -EIO;> +       }> +> +       return 0;> +}> +> +> +static int isl12022_write_reg(struct i2c_client *client,> +                             uint8_t reg, uint8_t val)> +{> +       uint8_t data[2] = { reg, val };> +       int err;> +> +       err = i2c_master_send(client, data, sizeof(data));> +       if (err != sizeof(data)) {> +               dev_err(&client->dev,> +                       "%s: err=%d addr=%02x, data=%02x\n",> +                       __func__, err, data[0], data[1]);> +               return -EIO;> +       }> +> +       return 0;> +}> +> +> +/*> + * In the routines that deal directly with the isl12022 hardware, we use> + * rtc_time -- month 0-11, hour 0-23, yr = calendar year-epoch.> + */> +static int isl12022_get_datetime(struct i2c_client *client, struct rtc_time *tm)> +{> +       uint8_t buf[ISL12022_REG_INT + 1];> +       int ret;> +> +       ret = isl12022_read_regs(client, ISL12022_REG_SC, buf, sizeof(buf));> +       if (ret)> +               return ret;> +> +       if (buf[ISL12022_REG_SR] & (ISL12022_SR_LBAT85 | ISL12022_SR_LBAT75)) {> +               dev_warn(&client->dev,> +                        "voltage dropped below %u%%, "> +                        "date and time is not reliable.\n",> +                        buf[ISL12022_REG_SR] & ISL12022_SR_LBAT85 ? 85 : 75);> +       }> +> +       dev_dbg(&client->dev,> +               "%s: raw data is sec=%02x, min=%02x, hr=%02x, "> +               "mday=%02x, mon=%02x, year=%02x, wday=%02x, "> +               "sr=%02x, int=%02x",> +               __func__,> +               buf[ISL12022_REG_SC],> +               buf[ISL12022_REG_MN],> +               buf[ISL12022_REG_HR],> +               buf[ISL12022_REG_DT],> +               buf[ISL12022_REG_MO],> +               buf[ISL12022_REG_YR],> +               buf[ISL12022_REG_DW],> +               buf[ISL12022_REG_SR],> +               buf[ISL12022_REG_INT]);> +> +       tm->tm_sec = bcd2bin(buf[ISL12022_REG_SC] & 0x7F);> +       tm->tm_min = bcd2bin(buf[ISL12022_REG_MN] & 0x7F);> +       tm->tm_hour = bcd2bin(buf[ISL12022_REG_HR] & 0x3F);> +       tm->tm_mday = bcd2bin(buf[ISL12022_REG_DT] & 0x3F);> +       tm->tm_wday = buf[ISL12022_REG_DW] & 0x07;> +       tm->tm_mon = bcd2bin(buf[ISL12022_REG_MO] & 0x1F) - 1;> +       tm->tm_year = bcd2bin(buf[ISL12022_REG_YR]) + 100;> +> +       dev_dbg(&client->dev, "%s: secs=%d, mins=%d, hours=%d, "> +               "mday=%d, mon=%d, year=%d, wday=%d\n",> +               __func__,> +               tm->tm_sec, tm->tm_min, tm->tm_hour,> +               tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);> +> +       /* The clock can give out invalid datetime, but we cannot return> +        * -EINVAL otherwise hwclock will refuse to set the time on bootup. */> +       if (rtc_valid_tm(tm) < 0)> +               dev_err(&client->dev, "retrieved date and time is invalid.\n");> +> +       return 0;> +}> +> +static int isl12022_set_datetime(struct i2c_client *client, struct rtc_time *tm)> +{> +       struct isl12022 *isl12022 = i2c_get_clientdata(client);> +       size_t i;> +       int ret;> +       uint8_t buf[ISL12022_REG_DW + 1];> +> +       dev_dbg(&client->dev, "%s: secs=%d, mins=%d, hours=%d, "> +               "mday=%d, mon=%d, year=%d, wday=%d\n",> +               __func__,> +               tm->tm_sec, tm->tm_min, tm->tm_hour,> +               tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);> +> +       if (!isl12022->write_enabled) {> +> +               ret = isl12022_read_regs(client, ISL12022_REG_INT, buf, 1);> +               if (ret)> +                       return ret;> +> +               /* Check if WRTC (write rtc enable) is set factory default is> +                * 0 (not set) */> +               if (!(buf[0] & ISL12022_INT_WRTC)) {> +                       dev_info(&client->dev,> +                                "init write enable and 24 hour format\n");> +> +                       /* Set the write enable bit. */> +                       ret = isl12022_write_reg(client,> +                                                ISL12022_REG_INT,> +                                                buf[0] | ISL12022_INT_WRTC);> +                       if (ret)> +                               return ret;> +> +                       /* Write to any RTC register to start RTC, we use the> +                        * HR register, setting the MIL bit to use the 24 hour> +                        * format. */> +                       ret = isl12022_read_regs(client, ISL12022_REG_HR,> +                                                buf, 1);> +                       if (ret)> +                               return ret;> +> +                       ret = isl12022_write_reg(client,> +                                                ISL12022_REG_HR,> +                                                buf[0] | ISL12022_HR_MIL);> +                       if (ret)> +                               return ret;> +               }> +> +               isl12022->write_enabled = 1;> +       }> +> +       /* hours, minutes and seconds */> +       buf[ISL12022_REG_SC] = bin2bcd(tm->tm_sec);> +       buf[ISL12022_REG_MN] = bin2bcd(tm->tm_min);> +       buf[ISL12022_REG_HR] = bin2bcd(tm->tm_hour);> +> +       buf[ISL12022_REG_DT] = bin2bcd(tm->tm_mday);> +> +       /* month, 1 - 12 */> +       buf[ISL12022_REG_MO] = bin2bcd(tm->tm_mon + 1);> +> +       /* year and century */> +       buf[ISL12022_REG_YR] = bin2bcd(tm->tm_year % 100);> +> +       buf[ISL12022_REG_DW] = tm->tm_wday & 0x07;> +> +       /* write register's data */> +       for (i = 0; i < ARRAY_SIZE(buf); i++) {> +               ret = isl12022_write_reg(client, ISL12022_REG_SC + i,> +                                        buf[ISL12022_REG_SC + i]);> +               if (ret)> +                       return -EIO;> +       };> +> +       return 0;> +}> +> +static int isl12022_rtc_read_time(struct device *dev, struct rtc_time *tm)> +{> +       return isl12022_get_datetime(to_i2c_client(dev), tm);> +}> +> +static int isl12022_rtc_set_time(struct device *dev, struct rtc_time *tm)> +{> +       return isl12022_set_datetime(to_i2c_client(dev), tm);> +}> +> +static const struct rtc_class_ops isl12022_rtc_ops = {> +       .read_time      = isl12022_rtc_read_time,> +       .set_time       = isl12022_rtc_set_time,> +};> +> +static int isl12022_probe(struct i2c_client *client,> +                         const struct i2c_device_id *id)> +{> +       struct isl12022 *isl12022;> +> +       int ret = 0;> +> +       if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))> +               return -ENODEV;> +> +       isl12022 = kzalloc(sizeof(struct isl12022), GFP_KERNEL);> +       if (!isl12022)> +               return -ENOMEM;> +> +       dev_dbg(&client->dev, "chip found, driver version " DRV_VERSION "\n");> +> +       i2c_set_clientdata(client, isl12022);> +> +       isl12022->rtc = rtc_device_register(isl12022_driver.driver.name,> +                                           &client->dev,> +                                           &isl12022_rtc_ops,> +                                           THIS_MODULE);> +> +       if (IS_ERR(isl12022->rtc)) {> +               ret = PTR_ERR(isl12022->rtc);> +               goto exit_kfree;> +       }> +> +       return 0;> +> +exit_kfree:> +       kfree(isl12022);> +> +       return ret;> +}> +> +static int isl12022_remove(struct i2c_client *client)> +{> +       struct isl12022 *isl12022 = i2c_get_clientdata(client);> +> +       rtc_device_unregister(isl12022->rtc);> +       kfree(isl12022);> +> +       return 0;> +}> +> +static const struct i2c_device_id isl12022_id[] = {> +       { "isl12022", 0 },> +       { "rtc8564", 0 },> +       { }> +};> +MODULE_DEVICE_TABLE(i2c, isl12022_id);> +> +static struct i2c_driver isl12022_driver = {> +       .driver         = {> +               .name   = "rtc-isl12022",> +       },> +       .probe          = isl12022_probe,> +       .remove         = isl12022_remove,> +       .id_table       = isl12022_id,> +};> +> +static int __init isl12022_init(void)> +{> +       return i2c_add_driver(&isl12022_driver);> +}> +> +static void __exit isl12022_exit(void)> +{> +       i2c_del_driver(&isl12022_driver);> +}> +> +module_init(isl12022_init);> +module_exit(isl12022_exit);> +> +MODULE_AUTHOR("roman.fietze@telemotive.de");> +MODULE_DESCRIPTION("ISL 12022 RTC driver");> +MODULE_LICENSE("GPL");> +MODULE_VERSION(DRV_VERSION);> --> 1.7.1>>> --> Roman Fietze                Telemotive AG Büro Mühlhausen> Breitwiesen                              73347 Mühlhausen> Tel.: +49(0)7335/18493-45        http://www.telemotive.de>
 
 
+-- *linux-arm-kernel mailing listmail addr:linux-arm-kernel@lists.infradead.orgyou can subscribe by:http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+* linux-arm-NUC900 mailing listmail addr:NUC900@googlegroups.commain web: https://groups.google.com/group/NUC900you can subscribe it by sending me mail:mcuos.com@gmail.com���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
