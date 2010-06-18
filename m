@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab0FRIIl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 04:08:41 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53267 "EHLO mga02.intel.com"
+	id S1757563Ab0FRIKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 04:10:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51726 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754672Ab0FRIIj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 04:08:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,437,1272870000"; 
-   d="scan'208";a="631494095"
-From: "Wang, Yong Y" <yong.y.wang@intel.com>
-To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-       "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
-       "Clark, Joel" <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>
-Date: Fri, 18 Jun 2010 16:08:32 +0800
-Subject: RE: [PATCH] Topcliff PHUB: Generate PacketHub driver
-Thread-Topic: [PATCH] Topcliff PHUB: Generate PacketHub driver
-Thread-Index: AcsNxugTzTSoCiwYS6GJQagGMuBhJwA9bcgw
-Message-ID: <FC2FB65B4D919844ADE4BE3C2BB739AD2077C837@shsmsx501.ccr.corp.intel.com>
-References: <4C0CE88C.9050708@dsn.okisemi.com>
- <4C161BE7.4080805@dsn.okisemi.com> <4C198BD2.8060801@dsn.okisemi.com>
-In-Reply-To: <4C198BD2.8060801@dsn.okisemi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757243Ab0FRIKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 04:10:48 -0400
+Message-ID: <4C1B29BF.7080404@kernel.org>
+Date: Fri, 18 Jun 2010 10:09:35 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Andy Walls <awalls@md.metrocast.net>,
+       Daniel Walker <dwalker@codeaurora.org>, mingo@elte.hu,
+       linux-kernel@vger.kernel.org, jeff@garzik.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: Overview of concurrency managed workqueue
+References: <1276551467-21246-1-git-send-email-tj@kernel.org>	<4C17C598.7070303@kernel.org>	<1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>	<4C18BF40.40607@kernel.org>	<1276694825.9309.12.camel@m0nster>	<4C18D1FD.9060804@kernel.org>	<1276695665.9309.17.camel@m0nster>	<4C18D574.1040903@kernel.org>	<1276697146.9309.27.camel@m0nster>	<1276776066.2461.15.camel@localhost>	<20100617161619.d3ebd73d.akpm@linux-foundation.org>	<4C1B1D3F.8030509@kernel.org> <20100618003127.10d9e6c8.akpm@linux-foundation.org>
+In-Reply-To: <20100618003127.10d9e6c8.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 18 Jun 2010 08:09:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +config PCH_IEEE1588
-> +	tristate "PCH IEEE1588"
-> +	depends on PCI
-> +	help
-> +	  If you say yes to this option, support will be included for the
-> +	  PCH IEEE1588 Host controller.
-> +
+Hello,
 
-Is this really supposed to be part of this patch?
-
-> +config PCH_PHUB
-> +	tristate "PCH PHUB"
-> +	depends on PCI
-> +	help
-> +	  If you say yes to this option, support will be included for the
-> +	  PCH Packet Hub Host controller.
-> +	  This driver is for PCH Packet hub driver for Topcliff.
-> +	  This driver is integrated as built-in.
-> +	  This driver can access GbE MAC address.
-> +	  This driver can access HW register.
-> +	  You can also be integrated as module.
-> +
-> +config PCH_CAN_PCLK_50MHZ
-> +	bool "CAN PCLK 50MHz"
-> +	depends on PCH_PHUB
-> +        help
-> +          If you say yes to this option, clock is set to 50MHz.(For CAN
-> control)
-> +
-
-Ohtak-san, I remember you said PCH_CAN_PCLK_50MHZ was in the patch
-because you used to have a hw bug. If that hw bug has been fixed, this config
-option shall also be removed. Otherwise, you have to build multiple kernel
-binaries for different hardware configurations as Alan pointed out.
-
-> diff --git a/drivers/char/Makefile b/drivers/char/Makefile
-> index f957edf..dc092d0 100644
-> --- a/drivers/char/Makefile
-> +++ b/drivers/char/Makefile
-> @@ -111,6 +111,10 @@ obj-$(CONFIG_PS3_FLASH)		+= ps3flash.o
->  obj-$(CONFIG_JS_RTC)		+= js-rtc.o
->  js-rtc-y = rtc.o
+On 06/18/2010 09:31 AM, Andrew Morton wrote:
+> On Fri, 18 Jun 2010 09:16:15 +0200 Tejun Heo <tj@kernel.org> wrote:
+> Nope.  Consider a simple byte-at-a-time rx handler.  The ISR grabs the
+> byte, stashes it away, bangs on the hardware a bit then signals
+> userspace to promptly start processing that byte.  Very simple,
+> legitimate and a valid thing to do.
 > 
-> +obj-$(CONFIG_PCH_IEEE1588)		+= pch_ieee1588/
-> +
+> Also the "interrupt" code might be running from a timer handler.  Or it
+> might just be in process context, buried in a forest of locks and wants
+> to punt further processing into a separate process.
 
-Ditto
+Sure, there'll be cases which would be better served that way but
+things which fit neither the traditional interrupt handler nor the
+threaded one are in very small minority.  I think having niche
+solutions for those niche problems would be far better than trying to
+engineer generic async mechanism to serve all of them.
 
+Thanks.
+
+-- 
+tejun
