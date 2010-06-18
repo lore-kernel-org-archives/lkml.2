@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab0FRXPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 19:15:34 -0400
-Received: from kroah.org ([198.145.64.141]:59220 "EHLO coco.kroah.org"
+	id S1752265Ab0FRXV2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 19:21:28 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54398 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751603Ab0FRXPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 19:15:33 -0400
-Date: Fri, 18 Jun 2010 16:15:13 -0700
-From: Greg KH <greg@kroah.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Giangiacomo Mariotti <giangiacomo.mariotti@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de, bzolnier@gmail.com,
-       roel.kluin@gmail.com, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] remove pointless debug printk in rt_ioctl_giwscan()
-Message-ID: <20100618231513.GB17831@kroah.com>
-References: <1275712909.8509.25.camel@debian-hell>
- <201006051207.40040.arnd@arndb.de>
+	id S1751603Ab0FRXV1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 19:21:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: =?utf-8?q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Subject: Re: [PATCH] DRM / radeon / PM: Do not evict VRAM during freeze phase of hibernation
+Date: Sat, 19 Jun 2010 01:19:33 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Dave Airlie <airlied@redhat.com>, linux-kernel@vger.kernel.org,
+       "dri-devel" <dri-devel@lists.freedesktop.org>,
+       linux-pm@lists.linux-foundation.org,
+       Andrew Morton <akpm@linux-foundation.org>
+References: <201006182221.57333.rjw@sisk.pl> <AANLkTim0QKSs9nrBnl847XhdM9YiKBEyNATPCscgcT5M@mail.gmail.com>
+In-Reply-To: <AANLkTim0QKSs9nrBnl847XhdM9YiKBEyNATPCscgcT5M@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006051207.40040.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006190119.33759.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 05, 2010 at 12:07:39PM +0200, Arnd Bergmann wrote:
-> On Saturday 05 June 2010, Giangiacomo Mariotti wrote:
-> > This debug printk is only useful if you're debugging the staging drivers
-> > 2860 e 2870, but, if you're just using them, it becomes really annoying, because
-> > it uselessly clobbers the kernel log. I guess this patch shouldn't really get merged,
-> > but it's more like a request to remove these annoying debugging messages for normal users.
-> > If I get any suggestion on how to implement this in a way acceptable to get it merged, I'll
-> > be happy to create the "good" version  of the patch.
+On Friday, June 18, 2010, Rafał Miłecki wrote:
+> 2010/6/18 Rafael J. Wysocki <rjw@sisk.pl>:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> Ideally, drivers should not have their own debugging macros like this, but
-> instead use the kernel's own pr_debug() and (preferrably) dev_dbg() macros,
-> which are disabled by default.
-> For many of these debugging outputs, it's even better to kill them entirely
-> instead of converting to dev_dbg().
-> Do not put the line in comments though.
+> Thanks for you recent involvement in radeon driver!
 
-I agree, just use dev_dbg() instead.
+Well, I'm just trying to address the issues I see on my test boxes.
 
-thanks,
+> I can see you used way shorter commit title this time ;) Just as a minor
+> note, maybe you could follow prefix-style we used to see around? Like simple
+> "drm/radeon/pm"? Or eventually something different instead of "pm" to
+> match difference between s/r and pm as engine/memory/voltage ops.
 
-greg k-h
+Sure, I can use whatever is suitable to you guys.
+
+Thanks,
+Rafael
