@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933927Ab0FRR7V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 13:59:21 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:49070 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755402Ab0FRR7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 13:59:19 -0400
-Date: Fri, 18 Jun 2010 10:58:29 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, James Morris <jmorris@namei.org>,
-       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org,
-       Stephen Smalley <sds@tycho.nsa.gov>, Daniel J Walsh <dwalsh@redhat.com>,
-       linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
-Message-ID: <20100618175829.GI24749@outflux.net>
-References: <20100616221833.GM24749@outflux.net>
- <20100617000120.13071be8@lxorguk.ukuu.org.uk>
- <20100616232230.GP24749@outflux.net>
- <alpine.LRH.2.00.1006172336390.17282@tundra.namei.org>
- <20100617170453.GV24749@outflux.net>
- <20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
- <20100617140630.c6ced27a.rdunlap@xenotime.net>
- <20100617221815.68ce30c5@lxorguk.ukuu.org.uk>
- <20100617215105.GB24749@outflux.net>
- <20100617233054.330256cf@lxorguk.ukuu.org.uk>
+	id S933942Ab0FRR73 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 13:59:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46520 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933932Ab0FRR7X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 13:59:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=AkJQAmfDkO4eYKoybXAGHDlNCS4CWHM9whvwdjcmCW4V6xCG+VKi6P9DyTuGlpNx2Z
+         54kMyo71GVD46da1QFcbb0nQkHPFkTDOqM6/BgOXNmPQhgfrdiPOhOsJTa3jS1QSsUGH
+         AP8hLJ9+WeaNLfFhyxKWGAjPSCsoe8y/K5bzw=
+Date: Fri, 18 Jun 2010 19:57:26 +0200
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Xiaotian Feng <dfeng@redhat.com>
+Cc: Dan Carpenter <error27@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
+       Jack Steiner <steiner@sgi.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
+       x86@kernel.org
+Subject: Re: [patch] x86, pat: freeing invalid memtype messages
+Message-ID: <20100618175726.GA2785@joi.lan>
+References: <20100617134559.GA29824@bicker>
+ <20100617161728.GA2741@joi.lan>
+ <4C1B1691.6020809@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100617233054.330256cf@lxorguk.ukuu.org.uk>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <4C1B1691.6020809@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Jun 17, 2010 at 11:30:54PM +0100, Alan Cox wrote:
-> - You can give up now.
-
-Failure is always an option!  :)  Nah, I was never deluded into thinking
-these patches were going to be universally-loved and easy to upstream.
-I posted them because I want them in, and I'm going to stick with it.
-
-> - You can put it together as a security module - which will make people
->   happy and get your stuff upstream. After that you can have a meaningful
->   discussion about stacking, although I think you'll find that stacking
->   is really really hard because you get conflicting behaviour between
->   security modules and ignoring those conflicts ends up violating at least
->   one of the security models leaving you worse not better off.
+On Fri, Jun 18, 2010 at 02:47:45PM +0800, Xiaotian Feng wrote:
+> On 06/18/2010 12:17 AM, Marcin Slusarz wrote:
+> > On Thu, Jun 17, 2010 at 03:45:59PM +0200, Dan Carpenter wrote:
+> >> Commit 20413f27163 "x86, pat: Fix memory leak in free_memtype" added an
+> >> error message in free_memtype() if rbt_memtype_erase() returns NULL.
+> >> The problem is that if CONFIG_X86_PAT is enabled, we use a different
+> >> implimentation of rbt_memtype_erase() that always returns NULL.
+> >>
+> >> I've modified rbt_memtype_erase() to return an ERR_PTR() on errors and
+> >> made free_memtype() check for that instead.
+> >>
+> >> Addresses:  https://bugzilla.kernel.org/show_bug.cgi?id=16205
+> >>
+> >> Signed-off-by: Dan Carpenter<error27@gmail.com>
+> >
+> > This patch is probably ok, but it does not address my bug.
+> > I have CONFIG_X86_PAT=y, so rbt_memtype_erase does not always return NULL.
 > 
-> Your path to making any of the stuff you want happen is via the security
-> layer and the LSM hooks. Even if you want them stackable and usable with
-> other modules your starting point is still a security module.
+> Could you please try boot with kernel parameter "debugpat", and
+> show me the output of reserve_memtype/free_memtype ?
+> 
 
-Sounds like this really is the only path, with the idea of finding a
-chaining solution later.  Without chaining, it's only useful for people
-that aren't using a full MAC.
+reserve_memtype added 0xfed00000-0xfed01000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf780000-0xbf78d000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf79a000-0xbf79d000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf798000-0xbf799000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf780000-0xbf781000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf798000-0xbf799000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf7dc000-0xbf7dd000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf780000-0xbf781000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf798000-0xbf799000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf780000-0xbf781000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf798000-0xbf799000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf78f000-0xbf790000, track uncached-minus, req uncached-minus, ret uncached-minus
+reserve_memtype added 0xbf78f000-0xbf790000, track uncached-minus, req uncached-minus, ret uncached-minus
+free_memtype request 0xbf798000-0xbf799000
+reserve_memtype added 0xbf798000-0xbf799000, track uncached-minus, req uncached-minus, ret uncached-minus
+free_memtype request 0xbf798000-0xbf799000
+reserve_memtype added 0xbf798000-0xbf799000, track uncached-minus, req uncached-minus, ret uncached-minus
+free_memtype request 0xbf798000-0xbf799000
+reserve_memtype added 0xbf798000-0xbf799000, track uncached-minus, req uncached-minus, ret uncached-minus
+free_memtype request 0xbf798000-0xbf799000
+reserve_memtype added 0xbf799000-0xbf79a000, track uncached-minus, req uncached-minus, ret uncached-minus
+free_memtype request 0xbf799000-0xbf79a000
+reserve_memtype added 0xbf799000-0xbf79a000, track uncached-minus, req uncached-minus, ret uncached-minus
+swapper:1 freeing invalid memtype bf799000-bf79a000
 
--Kees
 
--- 
-Kees Cook
-Ubuntu Security Team
+http://kadu.net/~joi/kernel/2010.06.09/2.6.35-rc3-debugpat.txt
+
+Marcin
