@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab0FRVhV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 17:37:21 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42223 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084Ab0FRVhS (ORCPT
+	id S1753425Ab0FRVj1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 17:39:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43839 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753084Ab0FRVjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 17:37:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=TF3g3uCHv6UeKwIQEA7OsuscguV/rQHnbuNDgS52uhWZWLI7TouGtlscipQzjBxUyO
-         k+uI1XTPrGwv0iUCJsCstTg0rPfUVFTW4aSCSKpDxNxgOt7ls/9pYB7KkbDfT2n9rIww
-         tjyFYjPTSqwQ6zwjS6P6VjSlfMRY5apgziYrY=
-MIME-Version: 1.0
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D09274C4@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
-	<AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
-	<4B6A08C587958942AA3002690DD4F8C3D09274C4@cosmail02.lsi.com>
-Date: Fri, 18 Jun 2010 14:37:18 -0700
-X-Google-Sender-Auth: OKReZFLaMuNDF4b3_AgStVO0L74
-Message-ID: <AANLkTilNX7_IDjw5lFYpkzlGGPHeRsswWZCXslw5GsjQ@mail.gmail.com>
-Subject: Re: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: 
-	Enable Online Controller Reset Bit in register related functions
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Yang, Bo" <Bo.Yang@lsi.com>
-Cc: "James.Bottomley@HansenPartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-       "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-       "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-       "akpm@osdl.org" <akpm@osdl.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 18 Jun 2010 17:39:25 -0400
+Date: Fri, 18 Jun 2010 14:38:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mempolicy: reduce stack size of migrate_pages()
+Message-Id: <20100618143851.0661daa2.akpm@linux-foundation.org>
+In-Reply-To: <20100616130040.3831.A69D9226@jp.fujitsu.com>
+References: <20100616130040.3831.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 2:21 PM, Yang, Bo <Bo.Yang@lsi.com> wrote:
-> Yinghai,
+On Wed, 16 Jun 2010 13:36:57 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+
+> 
+> Now, migrate_pages() are using >500 bytes stack. This patch reduce it.
+> 
+>    mm/mempolicy.c: In function 'sys_migrate_pages':
+>    mm/mempolicy.c:1344: warning: the frame size of 528 bytes is larger than
+>    512 bytes
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> ---
+>  mm/mempolicy.c |   35 ++++++++++++++++++++++-------------
+>  1 files changed, 22 insertions(+), 13 deletions(-)
+> 
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 13b09bd..1116427 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -1275,33 +1275,39 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
+>  		const unsigned long __user *, new_nodes)
+>  {
+>  	const struct cred *cred = current_cred(), *tcred;
+> -	struct mm_struct *mm;
+> +	struct mm_struct *mm = NULL;
+>  	struct task_struct *task;
+> -	nodemask_t old;
+> -	nodemask_t new;
+>  	nodemask_t task_nodes;
+>  	int err;
+> +	NODEMASK_SCRATCH(scratch);
+> +	nodemask_t *old = &scratch->mask1;
+> +	nodemask_t *new = &scratch->mask2;
 >
-> You need to apply patches 1/12 to 8/12 for this online controller reset (OCR) support.
+> +	if (!scratch)
+> +		return -ENOMEM;
 
-current scsi-next only have
+It doesn't matter in practice, but it makes me all queazy to see code
+which plays with pointers which might be NULL.
 
-commit 6faad24ad989798475e9ab4a2a809008fff6e872
-Author: Yang, Bo <Bo.Yang@lsi.com>
-Date:   Wed Jun 9 20:34:43 2010 -0600
+--- a/mm/mempolicy.c~mempolicy-reduce-stack-size-of-migrate_pages-fix
++++ a/mm/mempolicy.c
+@@ -1279,13 +1279,16 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pi
+ 	struct task_struct *task;
+ 	nodemask_t task_nodes;
+ 	int err;
++	nodemask_t *old;
++	nodemask_t *new;
+ 	NODEMASK_SCRATCH(scratch);
+-	nodemask_t *old = &scratch->mask1;
+-	nodemask_t *new = &scratch->mask2;
+ 
+ 	if (!scratch)
+ 		return -ENOMEM;
+ 
++	old = &scratch->mask1;
++	new = &scratch->mask2;
++
+ 	err = get_nodes(old, old_nodes, maxnode);
+ 	if (err)
+ 		goto out;
+_
 
-    [SCSI] megaraid_sas: Enable Online Controller Reset Bit in
-register related functions
-
-
-commit 4f3a268eca4e7073d315e7f9b0a4dc94a38da560
-Author: Yang, Bo <Bo.Yang@lsi.com>
-Date:   Wed Jun 9 20:51:48 2010 -0600
-
-    [SCSI] megaraid_sas: Add the Chip reset functions to the driver
-
-commit baf13c9440869a55d2493190dbc68c2bb165dad5
-Author: Yang, Bo <Bo.Yang@lsi.com>
-Date:   Wed Jun 9 20:59:43 2010 -0600
-
-    [SCSI] megaraid_sas: add the reset function for Gen2 related chip
-
-commit 449ee85225f9f41f2475f16b41d035000c8ee395
-Author: Yang, Bo <Bo.Yang@lsi.com>
-Date:   Wed Jun 9 21:25:17 2010 -0600
-
-    [SCSI] megaraid_sas: return RESET in timeout routine
-
-
-
-so looks like James didn't put
-[PATCH 8/12] scsi: megaraid_sas - Online Controller Reset (OCR):
-Driver re-issue the pending cmds to FW
-
-in the tree yet.
-
-or your patchset will break the bisecting?
-
-Thanks
-
-Yinghai
