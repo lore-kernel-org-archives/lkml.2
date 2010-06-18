@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379Ab0FRSf3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 14:35:29 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64829 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab0FRSf1 (ORCPT
+	id S1752953Ab0FRSiq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 14:38:46 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:62519 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab0FRSin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 14:35:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH] tty: avoid recursive BTM in pty_close
-Date: Fri, 18 Jun 2010 20:35:17 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       Greg KH <gregkh@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-References: <1273957196-13768-1-git-send-email-arnd@arndb.de> <20100618172121.528f2e09@lxorguk.ukuu.org.uk> <AANLkTikfqHO1x0P_iyYTsGGjDcZGCEmZFPUDWiKzk2SQ@mail.gmail.com>
-In-Reply-To: <AANLkTikfqHO1x0P_iyYTsGGjDcZGCEmZFPUDWiKzk2SQ@mail.gmail.com>
+	Fri, 18 Jun 2010 14:38:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=NrPHWdJfeCfIjak9+Yl4OIvuBoPRGDGkKEiVfTs+4Wv5JmzB6wEFyJsyQvmkTFf0nx
+         lapzbWjAeosMuY3mbIvEXuZBMW00uvZ/XfF/q3hyCgig/86dPWcwRg/vP+mdBBM/uMLi
+         VzrL9LBpmHijhszoU7hIt67vSBcmkZKkzZRUk=
+Message-ID: <4C1BBD31.8010609@gmail.com>
+Date: Fri, 18 Jun 2010 11:38:41 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+       linux-pci@vger.kernel.org, linux-scsi@vger.kernel.org,
+       Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 4/5]pci:setup_bus.c Fix warning: variable 'retval' set
+ but not used
+References: <1276666434-11227-1-git-send-email-justinmattock@gmail.com>	<1276666434-11227-5-git-send-email-justinmattock@gmail.com> <20100618102330.29eccb5b@virtuousgeek.org>
+In-Reply-To: <20100618102330.29eccb5b@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006182035.17394.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+KOrm8P3Ssqca3Yrg/F23fimEsj7Fmfe1pGjh
- VzoSquaUddIeTO4lIYOPfiTn6GDeVHBGqkhYX5gUn2ppiBNkJb
- L1nmhkU8J5WDIeSvewKJg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 June 2010, Tony Luck wrote:
-> On Fri, Jun 18, 2010 at 9:21 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> > So I ack this patch - it's the only way to find out 8)
-> 
-> Here's the results from this patch on top of next-20100618
-> 
-> The "WARNING: at include/linux/tty.h:589 tty_open+0x9d0/0xc60()" messages
-> are back, two of them, both with same stack trace:
-> 
-> 
-> Call Trace:
->  [<a0000001000159d0>] show_stack+0x50/0xa0
->  [<a00000010090f270>] dump_stack+0x30/0x50
->  [<a00000010008e2c0>] warn_slowpath_common+0xc0/0x120
->  [<a00000010008e360>] warn_slowpath_null+0x40/0x60
->  [<a00000010053eb40>] tty_open+0x160/0xc60
->  [<a0000001001af9b0>] chrdev_open+0x310/0x360
->  [<a0000001001a58b0>] __dentry_open+0x350/0x680
->  [<a0000001001a5d80>] nameidata_to_filp+0x80/0xc0
->  [<a0000001001bfee0>] finish_open+0x160/0x380
->  [<a0000001001c0cc0>] do_last+0xbc0/0xce0
->  [<a0000001001c5270>] do_filp_open+0x2f0/0xb40
->  [<a0000001001a5290>] do_sys_open+0x90/0x200
->  [<a0000001001a54d0>] sys_open+0x50/0x80
->  [<a000000100b907e0>] kernel_init+0x340/0x420
->  [<a000000100013c10>] kernel_thread_helper+0x30/0x60
->  [<a00000010000a0c0>] start_kernel_thread+0x20/0x40
+ From b07231ddb853e9388cea77a82da210e36ab79aad Mon Sep 17 00:00:00 2001
+From: Justin P. Mattock <justinmattock@gmail.com>
+Date: Fri, 18 Jun 2010 11:32:20 -0700
+Subject: [PATCH 2/2] setup-bus_test
+  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Ok, this is the same one you reported at first. I forgot to
-mention that the other patch I sent as a reply to your report
-is still needed and not yet in -next since I'm trying to
-sort through the other BKL removal patches now.
-This instance of the WARN_ON is completely harmless though,
-you could consider this one a false positive.
+---
+  drivers/pci/setup-bus.c |    1 +
+  1 files changed, 1 insertions(+), 0 deletions(-)
 
-> The tty_release() ones have all gone though.
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 19b1113..7b57dd0 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -875,6 +875,7 @@ again:
+  	pci_bus_size_bridges(parent);
+  	__pci_bridge_assign_resources(bridge, &head);
+  	retval = pci_reenable_device(bridge);
++	printk(KERN_DEBUG "PCI%d: re-enabling device\n", retval);
+  	pci_set_master(bridge);
+  	pci_enable_bridges(parent);
 
-ok, good.
+-- 
+1.7.1.rc1.21.gf3bd6
 
-> I've also just noticed that the serial console output gets garbled
-> (like it is at the wrong baud rate) when userland code starts
-> printing messages. Stays garbled until /sbin/agetty starts up
-> to print the "Welcome ... login:" banner.
->
-> Similar garbage when shutting down with "reboot" command.
-> I can see "INIT", then it all goes to pieces until I see the kernel
-> print "Restarting system".
 
-Do you know if this was a problem with the original series or
-something that got introduced by my last patch?
-Also, if you don't mind, could you try if the problem also exists
-with CONFIG_TTY_MUTEX enabled?
-Which serial driver do you use?
+o.k. I went through this as you had requested to the best of my 
+knowledge(bit confused with this, but will try).
 
-I'll try to set up a serial console here to reproduce and bisect
-this problem on my own system.
+let me know if more should be added and/or it's totally wrong
+then I'll try again until correct..
 
-	Arnd
+Justin P. Mattock
