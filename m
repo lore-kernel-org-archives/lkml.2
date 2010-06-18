@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933404Ab0FRQXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 12:23:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757365Ab0FRQXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 12:23:34 -0400
-Message-ID: <4C1B9D4F.6010008@gmail.com>
-Date: Fri, 18 Jun 2010 18:22:39 +0200
-From: Edward Shishkin <edward.shishkin@gmail.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
-MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>,
-       Edward Shishkin <edward.shishkin@gmail.com>, Mat <jackdachef@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Ric Wheeler <rwheeler@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: Btrfs: broken file system design (was Unbound(?) internal fragmentation
- in Btrfs)
-References: <4C07C321.8010000@redhat.com> <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com> <4C1B7560.1000806@gmail.com> <20100618134755.GG27466@think> <4C1B8B4A.9060308@gmail.com> <20100618151017.GN27466@think>
-In-Reply-To: <20100618151017.GN27466@think>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1761295Ab0FRQim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 12:38:42 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:47458 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757348Ab0FRQik convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 12:38:40 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=YYF95cujtJ4CjcCAJ/vZqjqPtd+Fj0KC8SCiqjVlbl6IX0aAdH5SUpcNykM6KzwiePKGJsSDTgage9Mxudr78rp5e2m6KECpDd40St3rR2iP+0ciKZopEGUrxsVebUsh;
+Date: Fri, 18 Jun 2010 09:37:01 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <lenb@kernel.org>,
+       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       linux-pm@lists.linux-foundation.org,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-pci@vger.kernel.org
+Subject: Re: [PATCH] PCI / PM: Do not use native PCIe PME by default
+Message-ID: <20100618093701.681dc238@virtuousgeek.org>
+In-Reply-To: <201006181704.22550.rjw@sisk.pl>
+References: <201006181704.22550.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris Mason wrote:
-> On Fri, Jun 18, 2010 at 05:05:46PM +0200, Edward Shishkin wrote:
->   
->> Chris Mason wrote:
->>     
->>> On Fri, Jun 18, 2010 at 03:32:16PM +0200, Edward Shishkin wrote:
->>>       
->>>> Mat wrote:
->>>>         
->>>>> On Thu, Jun 3, 2010 at 4:58 PM, Edward Shishkin <edward@redhat.com> wrote:
->>>>>           
->>>>>> Hello everyone.
->>>>>>
->>>>>> I was asked to review/evaluate Btrfs for using in enterprise
->>>>>> systems and the below are my first impressions (linux-2.6.33).
->>>>>>
->>>>>> The first test I have made was filling an empty 659M (/dev/sdb2)
->>>>>> btrfs partition (mounted to /mnt) with 2K files:
->>>>>>
->>>>>> # for i in $(seq 1000000); \
->>>>>> do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
->>>>>> (terminated after getting "No space left on device" reports).
->>>>>>
->>>>>> # ls /mnt | wc -l
->>>>>> 59480
->>>>>>
->>>>>> So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
->>>>>> and the first obvious question is "hey, where are other 83% of my
->>>>>> disk space???" I looked at the btrfs storage tree (fs_tree) and was
->>>>>> shocked with the situation on the leaf level. The Appendix B shows
->>>>>> 5 adjacent btrfs leafs, which have the same parent.
->>>>>>
->>>>>> For example, look at the leaf 29425664: "items 1 free space 3892"
->>>>>> (of 4096!!). Note, that this "free" space (3892) is _dead_: any
->>>>>> attempts to write to the file system will result in "No space left
->>>>>> on device".
->>>>>>             
->>> There are two easy ways to fix this problem.  Turn off the inline
->>> extents (max_inline=0) or allow splitting of the inline extents.  I
->>> didn't put in the splitting simply because the complexity was high while
->>> the benefits were low (in comparison with just turning off the inline
->>> extents).
->>>       
->> Hello, Chris. Thanks for response!
->> I afraid that both ways won't fix the problem. Look at this leaf:
->>
->> [...]
->> leaf 29425664 items 1 free space 3892 generation 8 owner 5
->> fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
->> chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
->>        item 0 key (320 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
->>                location key (0 UNKNOWN 0) type 8
->>                namelen 16 datalen 32 name: security.selinux
->> [...]
->>
->> There is no inline extents, and what are you going to split here?
->> All leafs must be at least a half filled, otherwise we loose all
->> boundaries, which provides non-zero utilization..
->>     
->
-> Right, there is no inline extent because we require them to fit entirely
-> in the leaf.  So we end up with mostly empty leaves because the inline
-> item is large enough to make it difficult to push around but not large
-> enough to fill the leaf.
->   
+On Fri, 18 Jun 2010 17:04:22 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-How about left and right neighbors? They contain a lot of
-free space (1572 and 1901 respectively).
-I am not happy with the very fact of such shallow leafs which
-contain only one small (xattr) item..
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Commit c7f486567c1d0acd2e4166c47069835b9f75e77b
+> (PCI PM: PCIe PME root port service driver) causes the native PCIe
+> PME signaling to be used by default, if the BIOS allows the kernel to
+> control the standard configuration registers of PCIe root ports.
+> However, the native PCIe PME is coupled to the native PCIe hotplug
+> and calling pcie_pme_acpi_setup() makes some BIOSes expect that
+> the native PCIe hotplug will be used as well.  That, in turn, causes
+> problems to appear on systems where the PCIe hotplug driver is not
+> loaded.  The usual symptom, as reported by Jaroslav Kameník and
+> others, is that the ACPI GPE associated with PCIe hotplug keeps
+> firing continuously causing kacpid to take substantial percentage
+> of CPU time.
+> 
+> To work around this issue, change the default so that the native
+> PCIe PME signaling is only used if directly requested with the help
+> of the pcie_pme= command line switch.
+> 
+> Fixes https://bugzilla.kernel.org/show_bug.cgi?id=15924 , which is
+> a listed regression from 2.6.33.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Reported-by: Jaroslav Kameník <jaroslav@kamenik.cz>
+> Tested-by: Antoni Grzymala <antekgrzymala@gmail.com> 
+> ---
+
+Applied to my for-linus tree, thanks.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
