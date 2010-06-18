@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab0FRNiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 09:38:05 -0400
-Received: from core.signal11.us ([64.251.29.136]:56477 "EHLO core.signal11.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932341Ab0FRNiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 09:38:00 -0400
-Message-ID: <4C1B76B5.10806@signal11.us>
-Date: Fri, 18 Jun 2010 09:37:57 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S932874Ab0FRNkp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 09:40:45 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:59621 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932525Ab0FRNko (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 09:40:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=XqXkD4nn+aejI3tXyiRKQy/sQZtPuDhWNt1nht/flwRvomMjDagIUm8BT6CCktlB4K
+         a2j/8x3ojLQznU7CIuC9g7q0agj7JkQ2X4lZBhNh4fuyv/Jb/H2zIDxuvLg/+SmtJsZn
+         dTTLtAOJMCwlwQhqmZfQZ4wrmEWJwr13j3E2o=
 MIME-Version: 1.0
-To: Antonio Ospite <ospite@studenti.unina.it>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-doc@vger.kernel.org
-Subject: Re: [PATCH] HID: Documentation for hidraw
-References: <1276832283-12084-1-git-send-email-alan@signal11.us> <20100618115738.c3dfb81b.ospite@studenti.unina.it>
-In-Reply-To: <20100618115738.c3dfb81b.ospite@studenti.unina.it>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Jun 18 09:37:59 2010
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4c1b76b7284451132650553
-X-DSPAM-Factors: 27,
-	Received*26+177, 0.01000,
-	the+device, 0.01000,
-	To*Ospite+<ospite, 0.01000,
-	References*git, 0.01000,
-	of, 0.01000,
-	User-Agent*Mozilla/5.0, 0.01000,
-	References*alan+signal11.us>, 0.01000,
-	Received*ESMTP, 0.01000,
-	User-Agent*rv+1.9.1.9), 0.01000,
-	Received*(c+76, 0.01000,
-	Received*242.hsd1.fl.comcast.net+[76.26.177.242]), 0.01000,
-	User-Agent*US+rv, 0.01000,
-	References*send+email, 0.01000,
-	From*<alan, 0.01000,
-	would, 0.01000,
-	ioctl, 0.01000,
-	References*1+git, 0.01000,
-	References*email+alan, 0.01000,
-	Content-Type*8859+1, 0.01000,
-	User-Agent*U, 0.01000,
-	return, 0.01000,
-	User-Agent*Thunderbird/3.0.4, 0.01000,
-	Cc*vger.kernel.org+linux, 0.01000,
-	Subject*for, 0.01000,
-	User-Agent*en+US, 0.01000,
-	Date*18, 0.01000,
-	Received*core.signal11.us, 0.01000
+In-Reply-To: <20100618124551.GC7612@elte.hu>
+References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
+	<20100612102558.GA4000@elte.hu>
+	<4C15A5D1.1040104@jp.fujitsu.com>
+	<20100618094838.GD23977@elte.hu>
+	<AANLkTimqRwAjrQ_b8BZ28lEn_Gaz5-SpLULWASHD1fVn@mail.gmail.com>
+	<20100618124551.GC7612@elte.hu>
+Date: Fri, 18 Jun 2010 21:40:41 +0800
+Message-ID: <AANLkTinaPhAcGra6JdmHCVcj9HrNyG2TP91-A8AnQMZE@mail.gmail.com>
+Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Huang Ying <ying.huang@intel.com>,
+       "Fr??d??ric Weisbecker" <fweisbec@gmail.com>,
+       Don Zickus <dzickus@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+       Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18/2010 05:57 AM, Antonio Ospite wrote:
+On Fri, Jun 18, 2010 at 8:45 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>> >> [...] ??At least APEI will use NMI to report some hardware events (likely
+>> >> error) to kernel. ??So I suppose we will go to have a delayed call as an
+>> >> event handler for APEI.
+>> >
+>> > Yep, that makes sense. I wasnt arguing against the functionality itself, i
+>> > was arguing against the illogical layering that limits its utility. By
+>> > making it part of perf events it becomes a generic part of that framework
+>> > and can be used by anything that deals with events and uses that
+>> > framework.
+>>
+>> I think the the 'layering' in the patchset helps instead of 'limits' its
+>> utility. It is designed to be as general as possible, so that it can be used
+>> by both perf and other NMI users. Do you think so?
 >
-> Maybe both hidraw.txt and hiddev.txt can be moved to
-> Documentation/hid/?
->
->    
-Antonio,
+> What other NMI users do you mean? EDAC/MCE is going to go utilize events as
+> well (away from the horrible /dev/mcelog interface), the NMI watchdog already
+> did it and the perf tool obviously does as well. There's a few leftovers like
+> kcrash which isnt really event centric and i dont think it needs to be
+> converted.
 
-You and Jiri seem to have the same idea on this one. Sounds good to me.
->> +
->> +HIDIOCGRAWNAME(len): Get Raw Name
->> +This ioctl returns a string containing the vendor and product strings of
->> +the device.  The returned string is Unicode, UTF-8 encoded.
->> +
->>      
-> Is the encoding specified in the HID spec?
->    
-USB returns strings to the host as Unicode, UTF16LE encoded. The kernel 
-converts them to UTF-8. See usb_string() in drivers/usb/core/message.c.
+But why not just make it more general? It does not hurt anyone including perf.
 
->
-> Just a very minimal remark, maybe the code should follow the kernel
-> coding style (early return on error, no braces for one line conditional
-> blocks) even if it is a userspace application. Being it in the
-> kernel Documentation I assume people reading it would be used to kernel
-> style more.
->
->    
-Good point. I'll run the style check on it and fix it up.
-
-Alan.
-
+Best Regards,
+Huang Ying
