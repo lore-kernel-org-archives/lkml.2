@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab0FSICP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 04:02:15 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:37058 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853Ab0FSICM (ORCPT
+	id S1754606Ab0FSIGJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 04:06:09 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35934 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986Ab0FSIGC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 04:02:12 -0400
-Date: Sat, 19 Jun 2010 10:02:10 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: huang ying <huang.ying.caritas@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Huang Ying <ying.huang@intel.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Don Zickus <dzickus@redhat.com>, "H.PeterA" <"nvin hpa"@zytor.com>,
-       linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
-Message-ID: <20100619080210.GC18946@basil.fritz.box>
-References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
- <20100612102558.GA4000@elte.hu>
- <4C15A5D1.1040104@jp.fujitsu.com>
- <20100618094838.GD23977@elte.hu>
- <AANLkTimqRwAjrQ_b8BZ28lEn_Gaz5-SpLULWASHD1fVn@mail.gmail.com>
- <20100618124551.GC7612@elte.hu>
- <AANLkTinaPhAcGra6JdmHCVcj9HrNyG2TP91-A8AnQMZE@mail.gmail.com>
- <20100618143532.GA10886@elte.hu>
- <AANLkTimI7efmGNeUkCVT2mUYD8LkYsLAS9chkPhZVA1E@mail.gmail.com>
- <1276875067.1875.133.camel@laptop>
+	Sat, 19 Jun 2010 04:06:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=f44GdhN9UMbTEOIenDtJQXxIH0ZwAQOON0+16Z4vmu2e31Hu/DKNx7X/L5zISUyImk
+         L5kdjS2g7TdlKh0ZTMAXp7SdLDQdRLK9oI8gWnFVOrRT/ePpftOQXkItuBwgYOg1ycii
+         9l81jXWD1FFuPH0QjhCx5Ae372bGar7Gnb5qc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276875067.1875.133.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C1C4B55.8070209@gmail.com>
+References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>
+	<1276288869-16815-3-git-send-email-justinmattock@gmail.com>
+	<AANLkTildzUcfd6GghHbO53ebPAc4m4BahJrXUr8B7SQF@mail.gmail.com>
+	<4C1C4B55.8070209@gmail.com>
+Date: Sat, 19 Jun 2010 10:06:00 +0200
+X-Google-Sender-Auth: nxFKtdK3CPtYKnmVivUOFV8y1LY
+Message-ID: <AANLkTimqF_gsNxddtUIjQwBaju2N4B7FyNTXoy5RArk4@mail.gmail.com>
+Subject: Re: [PATCH 2/6]kernel:audit.c Fix warning: variable 'nlh' set but not 
+	used
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+       zippel@linux-m68k.org, linux-fsdevel@vger.kernel.org,
+       rusty@rustcorp.com.au
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > we can
-> > use soft_irq as a backup of self interrupt (for systems without APIC
-> > and maybe for other architectures). 
-> 
-> Whatever would you want to do that for.
+On Sat, Jun 19, 2010 at 06:45, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+>> This is not dead code. NLMSG_NEW() sets up an nlmsg in ab->skb.
+>> If you remove the code, it's no longer initialized.
+>
+> I played around with this code some more, but am still getting confused with
+> nlmsg_new and NLMSG_NEW. if I remove the nlmsghdr struct I can get a clean
 
-The idea is that the work would be done latest on the next
-timer interrupt as a fallback if APIC is not available.
+nlmsg_new() allocates a new nlmsg.
+NLMSG_NEW() initializes a nlmsg inside an already allocated skbuff.
 
-That's what mce does already and it's probably approbiate
-for most other users too.
+> build without a warning, but still am a bit confused.
+>
+> here is an updated patch let me know if it still needs work..
+> or if it's legit I can resend this.
 
--Andi
+Looks OK to me, thanks!
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+> From 7515a08ba921d3beed33fa5c6b1fbe59cf52e069 Mon Sep 17 00:00:00 2001
+> From: Justin P. Mattock <justinmattock@gmail.com>
+> Date: Fri, 18 Jun 2010 19:44:30 -0700
+> Subject: [PATCH 4/4] audit
+>  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+>
+> ---
+>  kernel/audit.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index c71bd26..1d51258 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -1041,7 +1041,6 @@ static struct audit_buffer * audit_buffer_alloc(struct
+> audit_context *ctx,
+>  {
+>        unsigned long flags;
+>        struct audit_buffer *ab = NULL;
+> -       struct nlmsghdr *nlh;
+>
+>        spin_lock_irqsave(&audit_freelist_lock, flags);
+>        if (!list_empty(&audit_freelist)) {
+> @@ -1065,7 +1064,7 @@ static struct audit_buffer * audit_buffer_alloc(struct
+> audit_context *ctx,
+>        if (!ab->skb)
+>                goto nlmsg_failure;
+>
+> -       nlh = NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
+> +       NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
+>
+>        return ab;
+>
+> --
+> 1.7.1.rc1.21.gf3bd6
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
