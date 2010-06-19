@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab0FSTxs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 15:53:48 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:52037 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756748Ab0FSTxr (ORCPT
+	id S1756875Ab0FSUB0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 16:01:26 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:36598 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756794Ab0FSUBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 15:53:47 -0400
-Date: Sat, 19 Jun 2010 21:53:45 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Andi Kleen <andi@firstfloor.org>, ebiederm@xmission.com,
-       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] use kexec_kernel.h for the kernel-only stuff [Was:
- [PATCH] Export kexec.h]
-Message-ID: <20100619195345.GT18946@basil.fritz.box>
-References: <20100619132235.GA24200@basil.fritz.box>
- <20100619182419.GA22079@merkur.ravnborg.org>
+	Sat, 19 Jun 2010 16:01:25 -0400
+Date: Sat, 19 Jun 2010 22:02:49 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Gregory Bean <gbean@codeaurora.org>
+Cc: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] msm: Add gpio register address mapping information.
+Message-ID: <20100619200249.GA2507@elf.ucw.cz>
+References: <1276888375-13221-1-git-send-email-gbean@codeaurora.org>
+ <1276888375-13221-2-git-send-email-gbean@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100619182419.GA22079@merkur.ravnborg.org>
+In-Reply-To: <1276888375-13221-2-git-send-email-gbean@codeaurora.org>
+X-Warning: Reading this can be dangerous to your mental health.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 19, 2010 at 08:24:19PM +0200, Sam Ravnborg wrote:
-> On Sat, Jun 19, 2010 at 03:22:35PM +0200, Andi Kleen wrote:
-> > Export kexec.h
-> >     
-> > kexec_load is a system call and it needs a header
-> > file with its input arguments.
-> > 
-> > Export the parts of kexec.h needed for this.
-> 
-> Rather than introducing yet another file where
-> only a fraction is exported how about a split
-> where we put the kernel specific definitions in kexec_kernel.h.
-> And kexec.h is the userspace interface (which is included
-> by kexec_kernel.h).
-> 
-> We did it like this for pps some time ago.
+Hi!
 
-Would work for me too, I have no strong opinion either way.
+> --- /dev/null
+> +++ b/arch/arm/mach-msm/gpio_hw-7x30.h
+> @@ -0,0 +1,112 @@
+> +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+> + *
+> + * Redistribution and use in source and binary forms, with or without
+> + * modification, are permitted provided that the following conditions are
+> + * met:
+> + *     * Redistributions of source code must retain the above copyright
+> + *       notice, this list of conditions and the following disclaimer.
+> + *     * Redistributions in binary form must reproduce the above
+> + *       copyright notice, this list of conditions and the following
+> + *       disclaimer in the documentation and/or other materials provided
+> + *       with the distribution.
+> + *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
+> + *       contributors may be used to endorse or promote products derived
+> + *       from this software without specific prior written permission.
 
-Being naturally lazy, I just went with the simpler patch
-myself.
+Yeah. Either this can be replaced with GPL, and it such case just do
+so, or it can not, and then it can not be applied to kernel.
 
--Andi
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
