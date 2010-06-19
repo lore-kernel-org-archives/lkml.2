@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab0FSDYw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 23:24:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:39586 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165Ab0FSDYu (ORCPT
+	id S1752741Ab0FSDtS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 23:49:18 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38491 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752137Ab0FSDtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 23:24:50 -0400
-X-Authority-Analysis: v=1.1 cv=CgZcVGhTQjO/Ps/WuM8OsaKfzS+Ps8TRNnlzkE3q20U= c=1 sm=0 a=aUrcRhM0H-cA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=NSoQ8D5cw0FRVz2B-Z4A:9 a=1eMW7bsRqe01f6b4qIgA:7 a=bVe1KGBDNZQUu9WScBfuBFUDGtsA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 06/13] jump label v9: move ftrace_dyn_arch_init to
- common code
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
-       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
-       fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-       vgoyal@redhat.com, sam@ravnborg.org,
-       Abhishek Sagar <sagar.abhishek@gmail.com>
-In-Reply-To: <f634fd6470edf471c88923b1af7cdc7f41b67723.1276116186.git.jbaron@redhat.com>
-References: <cover.1276116186.git.jbaron@redhat.com>
-	 <f634fd6470edf471c88923b1af7cdc7f41b67723.1276116186.git.jbaron@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Fri, 18 Jun 2010 23:24:38 -0400
-Message-ID: <1276917879.27873.18.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 18 Jun 2010 23:49:17 -0400
+Message-ID: <4C1C3E17.10702@metafoo.de>
+Date: Sat, 19 Jun 2010 05:48:39 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Ralf Baechle <ralf@linux-mips.org>,
+       Anton Vorontsov <cbouatmailru@gmail.com>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, lrg@slimlogic.co.uk
+Subject: Re: [RFC][PATCH 23/26] power: Add JZ4740 battery driver.
+References: <1275505397-16758-1-git-send-email-lars@metafoo.de> <1275505950-17334-7-git-send-email-lars@metafoo.de> <20100614155108.GA30552@oksana.dev.rtsoft.ru> <20100615173432.GA27904@linux-mips.org> <20100616122042.GB31387@sirena.org.uk>
+In-Reply-To: <20100616122042.GB31387@sirena.org.uk>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 17:39 -0400, Jason Baron wrote:
-> Move Steve's code for finding the best 5-byte no-op from ftrace.c to alternative.c.
-> The idea is that other consumers (in this case jump label) want to make use of
-> that code. I've created a global: 'char ideal_nop[5]', that is setup during
-> setup_arch that can be used.
-> 
-> Signed-off-by: Jason Baron <jbaron@redhat.com>
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 0d88ce9..1a1cc47 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -2749,20 +2749,9 @@ extern unsigned long __stop_mcount_loc[];
->  
->  void __init ftrace_init(void)
->  {
-> -	unsigned long count, addr, flags;
-> +	unsigned long count;
->  	int ret;
->  
-> -	/* Keep the ftrace pointer to the stub */
-> -	addr = (unsigned long)ftrace_stub;
-> -
-> -	local_irq_save(flags);
-> -	ftrace_dyn_arch_init(&addr);
-> -	local_irq_restore(flags);
-> -
-> -	/* ftrace_dyn_arch_init places the return code in addr */
-> -	if (addr)
-> -		goto failed;
-> -
->  	count = __stop_mcount_loc - __start_mcount_loc;
->  
->  	ret = ftrace_dyn_table_alloc(count);
+Hi
+Mark Brown wrote:
+> On Tue, Jun 15, 2010 at 06:34:32PM +0100, Ralf Baechle wrote:
+>> To allow for reasonable testing while this patchset is getting
+>> integrated I suggest I apply all the patches that were acked by
+>> the respective maintainers to the MIPS tree, feed them to -next
+>> for testing  and once that phase is complete send the whole thing
+>> to Linus.
+>
+> Due to major pending changes in the audio subsystem at least the
+> audio subsystem changes will have merge issues in -next from that.
+> To avoid these I suggest putting the audio changes on a branch
+> which can be pulled into both trees.
+In my opinion the ASoC drivers can go through the ASoC tree. The core
+patches will build without the ASoC patches and the ASoC drivers wont
+be selectable without the core patches. Thus we wont see any build
+failures due to merging both parts individually. And given that there
+will be some changes required when the multi-component branch is
+merged it will simplify things if the patches only go through one tree.
+I've talked to Ralf and he said he is ok with it.
 
-Um, you just removed the ftrace arch specific setup call for dynamic
-ftrace. Although, I'm thinking this may not be needed since all archs
-currently have just a stub. With the exception of ARM which seems to
-call a "ftrace_mcount_set()" that git grep can not find.
+- - Lars
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org
 
-Thus, if you remove this, then remove it from all archs.
-
--- Steve
-
+iEYEARECAAYFAkwcPhcACgkQBX4mSR26RiOJSgCfScB+QFGTbzAqfbmvAVntvqDb
+Xv8An1672tE+ZkLqBBYuhU18AEZdVmkT
+=n6/A
+-----END PGP SIGNATURE-----
 
