@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab0FSFLK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 01:11:10 -0400
-Received: from smtp-out-037.synserver.de ([212.40.180.37]:1054 "HELO
+	id S1754826Ab0FSFKt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 01:10:49 -0400
+Received: from smtp-out-037.synserver.de ([212.40.180.37]:1036 "HELO
 	smtp-out-036.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754879Ab0FSFLD (ORCPT
+	by vger.kernel.org with SMTP id S1754772Ab0FSFKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 01:11:03 -0400
+	Sat, 19 Jun 2010 01:10:43 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 13414
@@ -14,11 +14,10 @@ From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
        Lars-Peter Clausen <lars@metafoo.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
-Subject: [PATCH v2 20/26] alsa: ASoC: Add JZ4740 codec driver
-Date: Sat, 19 Jun 2010 07:08:25 +0200
-Message-Id: <1276924111-11158-21-git-send-email-lars@metafoo.de>
+       David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+Subject: [PATCH v2 17/26] MTD: Nand: Add JZ4740 NAND driver
+Date: Sat, 19 Jun 2010 07:08:22 +0200
+Message-Id: <1276924111-11158-18-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1276924111-11158-1-git-send-email-lars@metafoo.de>
 References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
@@ -26,604 +25,547 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the JZ4740 internal codec.
+This patch adds support for the NAND controller on JZ4740 SoCs.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: alsa-devel@alsa-project.org
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-mtd@lists.infradead.org
 
 ---
 Changes since v1
-- Put Kconfig entry in alphabetic order
-- Drop codec_set_fmt since the codec supports only one format
-- Rename "Capture Volume" control to "Master Capture Volume"
-- Drop unnecessary format checks
-- Add suspend/resume
-- Cleanup jz4740_codec_set_bias_level
+- JZ4740: Remove debug macro
+- Fix platform driver remove callback
+- Add custom nand read/write callback since we need to support more then 64 ecc
+  bytes
 ---
- sound/soc/codecs/Kconfig        |    4 +
- sound/soc/codecs/Makefile       |    2 +
- sound/soc/codecs/jz4740-codec.c |  514 +++++++++++++++++++++++++++++++++++++++
- sound/soc/codecs/jz4740-codec.h |   20 ++
- 4 files changed, 540 insertions(+), 0 deletions(-)
- create mode 100644 sound/soc/codecs/jz4740-codec.c
- create mode 100644 sound/soc/codecs/jz4740-codec.h
+ drivers/mtd/nand/Kconfig        |    6 +
+ drivers/mtd/nand/Makefile       |    1 +
+ drivers/mtd/nand/jz4740_nand.c  |  474 +++++++++++++++++++++++++++++++++++++++
+ include/linux/mtd/jz4740_nand.h |   34 +++
+ 4 files changed, 515 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mtd/nand/jz4740_nand.c
+ create mode 100644 include/linux/mtd/jz4740_nand.h
 
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index c37c844..00d347d 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -24,6 +24,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_CQ0093VC if MFD_DAVINCI_VOICECODEC
- 	select SND_SOC_CS42L51 if I2C
- 	select SND_SOC_CS4270 if I2C
-+	select SND_SOC_JZ4740 if SOC_JZ4740
- 	select SND_SOC_MAX9877 if I2C
- 	select SND_SOC_DA7210 if I2C
- 	select SND_SOC_PCM3008
-@@ -142,6 +143,9 @@ config SND_SOC_CS4270_VD33_ERRATA
- config SND_SOC_CX20442
- 	tristate
+diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+index ffc3720..362d177 100644
+--- a/drivers/mtd/nand/Kconfig
++++ b/drivers/mtd/nand/Kconfig
+@@ -526,4 +526,10 @@ config MTD_NAND_NUC900
+ 	  This enables the driver for the NAND Flash on evaluation board based
+ 	  on w90p910 / NUC9xx.
  
-+config SND_SOC_JZ4740_CODEC
-+	tristate
++config MTD_NAND_JZ4740
++	tristate "Support for JZ4740 SoC NAND controller"
++	depends on MACH_JZ4740
++	help
++		Enables support for NAND Flash on JZ4740 SoC based boards.
 +
- config SND_SOC_L3
-        tristate
+ endif # MTD_NAND
+diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
+index e8ab884..ac83dcd 100644
+--- a/drivers/mtd/nand/Makefile
++++ b/drivers/mtd/nand/Makefile
+@@ -46,5 +46,6 @@ obj-$(CONFIG_MTD_NAND_NOMADIK)		+= nomadik_nand.o
+ obj-$(CONFIG_MTD_NAND_BCM_UMI)		+= bcm_umi_nand.o nand_bcm_umi.o
+ obj-$(CONFIG_MTD_NAND_MPC5121_NFC)	+= mpc5121_nfc.o
+ obj-$(CONFIG_MTD_NAND_RICOH)		+= r852.o
++obj-$(CONFIG_MTD_NAND_JZ4740)		+= jz4740_nand.o
  
-diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
-index 4a9c205..301b131 100644
---- a/sound/soc/codecs/Makefile
-+++ b/sound/soc/codecs/Makefile
-@@ -57,6 +57,7 @@ snd-soc-wm9705-objs := wm9705.o
- snd-soc-wm9712-objs := wm9712.o
- snd-soc-wm9713-objs := wm9713.o
- snd-soc-wm-hubs-objs := wm_hubs.o
-+snd-soc-jz4740-codec-objs := jz4740-codec.o
- 
- # Amp
- snd-soc-max9877-objs := max9877.o
-@@ -80,6 +81,7 @@ obj-$(CONFIG_SND_SOC_CS4270)	+= snd-soc-cs4270.o
- obj-$(CONFIG_SND_SOC_CX20442)	+= snd-soc-cx20442.o
- obj-$(CONFIG_SND_SOC_DA7210)	+= snd-soc-da7210.o
- obj-$(CONFIG_SND_SOC_L3)	+= snd-soc-l3.o
-+obj-$(CONFIG_SND_SOC_JZ4740_CODEC)	+= snd-soc-jz4740-codec.o
- obj-$(CONFIG_SND_SOC_PCM3008)	+= snd-soc-pcm3008.o
- obj-$(CONFIG_SND_SOC_SPDIF)	+= snd-soc-spdif.o
- obj-$(CONFIG_SND_SOC_SSM2602)	+= snd-soc-ssm2602.o
-diff --git a/sound/soc/codecs/jz4740-codec.c b/sound/soc/codecs/jz4740-codec.c
+ nand-objs := nand_base.o nand_bbt.o
+diff --git a/drivers/mtd/nand/jz4740_nand.c b/drivers/mtd/nand/jz4740_nand.c
 new file mode 100644
-index 0000000..35848b6
+index 0000000..8c55f8a
 --- /dev/null
-+++ b/sound/soc/codecs/jz4740-codec.c
-@@ -0,0 +1,514 @@
++++ b/drivers/mtd/nand/jz4740_nand.c
+@@ -0,0 +1,474 @@
 +/*
-+ * Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  JZ4740 SoC NAND controller driver
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under  the terms of the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the License, or (at your
++ *  option) any later version.
 + *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
 + *  675 Mass Ave, Cambridge, MA 02139, USA.
 + *
 + */
 +
++#include <linux/ioport.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
 +#include <linux/slab.h>
 +
-+#include <linux/delay.h>
++#include <linux/mtd/mtd.h>
++#include <linux/mtd/nand.h>
++#include <linux/mtd/partitions.h>
 +
-+#include <sound/core.h>
-+#include <sound/pcm.h>
-+#include <sound/pcm_params.h>
-+#include <sound/initval.h>
-+#include <sound/soc-dapm.h>
-+#include <sound/soc.h>
++#include <linux/mtd/jz4740_nand.h>
++#include <linux/gpio.h>
 +
-+#define JZ4740_REG_CODEC_1 0x0
-+#define JZ4740_REG_CODEC_2 0x1
++#define JZ_REG_NAND_CTRL	0x50
++#define JZ_REG_NAND_ECC_CTRL	0x100
++#define JZ_REG_NAND_DATA	0x104
++#define JZ_REG_NAND_PAR0	0x108
++#define JZ_REG_NAND_PAR1	0x10C
++#define JZ_REG_NAND_PAR2	0x110
++#define JZ_REG_NAND_IRQ_STAT	0x114
++#define JZ_REG_NAND_IRQ_CTRL	0x118
++#define JZ_REG_NAND_ERR(x)	(0x11C + (x << 2))
 +
-+#define JZ4740_CODEC_1_LINE_ENABLE BIT(29)
-+#define JZ4740_CODEC_1_MIC_ENABLE BIT(28)
-+#define JZ4740_CODEC_1_SW1_ENABLE BIT(27)
-+#define JZ4740_CODEC_1_ADC_ENABLE BIT(26)
-+#define JZ4740_CODEC_1_SW2_ENABLE BIT(25)
-+#define JZ4740_CODEC_1_DAC_ENABLE BIT(24)
-+#define JZ4740_CODEC_1_VREF_DISABLE BIT(20)
-+#define JZ4740_CODEC_1_VREF_AMP_DISABLE BIT(19)
-+#define JZ4740_CODEC_1_VREF_PULLDOWN BIT(18)
-+#define JZ4740_CODEC_1_VREF_LOW_CURRENT BIT(17)
-+#define JZ4740_CODEC_1_VREF_HIGH_CURRENT BIT(16)
-+#define JZ4740_CODEC_1_HEADPHONE_DISABLE BIT(14)
-+#define JZ4740_CODEC_1_HEADPHONE_AMP_CHANGE_ANY BIT(13)
-+#define JZ4740_CODEC_1_HEADPHONE_CHARGE BIT(12)
-+#define JZ4740_CODEC_1_HEADPHONE_PULLDOWN (BIT(11) | BIT(10))
-+#define JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M BIT(9)
-+#define JZ4740_CODEC_1_HEADPHONE_POWERDOWN BIT(8)
-+#define JZ4740_CODEC_1_SUSPEND BIT(1)
-+#define JZ4740_CODEC_1_RESET BIT(0)
++#define JZ_NAND_ECC_CTRL_PAR_READY	BIT(4)
++#define JZ_NAND_ECC_CTRL_ENCODING	BIT(3)
++#define JZ_NAND_ECC_CTRL_RS		BIT(2)
++#define JZ_NAND_ECC_CTRL_RESET		BIT(1)
++#define JZ_NAND_ECC_CTRL_ENABLE		BIT(0)
 +
-+#define JZ4740_CODEC_1_LINE_ENABLE_OFFSET 29
-+#define JZ4740_CODEC_1_MIC_ENABLE_OFFSET 28
-+#define JZ4740_CODEC_1_SW1_ENABLE_OFFSET 27
-+#define JZ4740_CODEC_1_ADC_ENABLE_OFFSET 26
-+#define JZ4740_CODEC_1_SW2_ENABLE_OFFSET 25
-+#define JZ4740_CODEC_1_DAC_ENABLE_OFFSET 24
-+#define JZ4740_CODEC_1_HEADPHONE_DISABLE_OFFSET 14
-+#define JZ4740_CODEC_1_HEADPHONE_POWERDOWN_OFFSET 8
++#define JZ_NAND_STATUS_ERR_COUNT	(BIT(31) | BIT(30) | BIT(29))
++#define JZ_NAND_STATUS_PAD_FINISH	BIT(4)
++#define JZ_NAND_STATUS_DEC_FINISH	BIT(3)
++#define JZ_NAND_STATUS_ENC_FINISH	BIT(2)
++#define JZ_NAND_STATUS_UNCOR_ERROR	BIT(1)
++#define JZ_NAND_STATUS_ERROR		BIT(0)
 +
-+#define JZ4740_CODEC_2_INPUT_VOLUME_MASK		0x1f0000
-+#define JZ4740_CODEC_2_SAMPLE_RATE_MASK			0x000f00
-+#define JZ4740_CODEC_2_MIC_BOOST_GAIN_MASK		0x000030
-+#define JZ4740_CODEC_2_HEADPHONE_VOLUME_MASK	0x000003
++#define JZ_NAND_CTRL_ENABLE_CHIP(x) BIT(x << 1)
++#define JZ_NAND_CTRL_ASSERT_CHIP(x) BIT((x << 1) + 1)
 +
-+#define JZ4740_CODEC_2_INPUT_VOLUME_OFFSET		16
-+#define JZ4740_CODEC_2_SAMPLE_RATE_OFFSET		 8
-+#define JZ4740_CODEC_2_MIC_BOOST_GAIN_OFFSET	 4
-+#define JZ4740_CODEC_2_HEADPHONE_VOLUME_OFFSET	 0
++#define JZ_NAND_DATA_ADDR ((void __iomem *)0xB8000000)
++#define JZ_NAND_CMD_ADDR (JZ_NAND_DATA_ADDR + 0x8000)
++#define JZ_NAND_ADDR_ADDR (JZ_NAND_DATA_ADDR + 0x10000)
 +
-+static const uint32_t jz4740_codec_regs[] = {
-+	0x021b2302, 0x00170803,
-+};
-+
-+struct jz4740_codec {
++struct jz_nand {
++	struct mtd_info mtd;
++	struct nand_chip chip;
 +	void __iomem *base;
 +	struct resource *mem;
 +
-+	uint32_t reg_cache[2];
-+	struct snd_soc_codec codec;
++	struct jz_nand_platform_data *pdata;
++	bool is_reading;
 +};
 +
-+static inline struct jz4740_codec *codec_to_jz4740(struct snd_soc_codec *codec)
++static inline struct jz_nand *mtd_to_jz_nand(struct mtd_info *mtd)
 +{
-+	return container_of(codec, struct jz4740_codec, codec);
++	return container_of(mtd, struct jz_nand, mtd);
 +}
 +
-+static unsigned int jz4740_codec_read(struct snd_soc_codec *codec,
-+	unsigned int reg)
++static void jz_nand_cmd_ctrl(struct mtd_info *mtd, int dat, unsigned int ctrl)
 +{
-+	struct jz4740_codec *jz4740_codec = codec_to_jz4740(codec);
-+	return readl(jz4740_codec->base + (reg << 2));
++	struct jz_nand *nand = mtd_to_jz_nand(mtd);
++	struct nand_chip *chip = mtd->priv;
++	uint32_t reg;
++
++	if (ctrl & NAND_CTRL_CHANGE) {
++		BUG_ON((ctrl & NAND_ALE) && (ctrl & NAND_CLE));
++		if (ctrl & NAND_ALE)
++			chip->IO_ADDR_W = JZ_NAND_ADDR_ADDR;
++		else if (ctrl & NAND_CLE)
++			chip->IO_ADDR_W = JZ_NAND_CMD_ADDR;
++		else
++			chip->IO_ADDR_W = JZ_NAND_DATA_ADDR;
++
++		reg = readl(nand->base + JZ_REG_NAND_CTRL);
++		if (ctrl & NAND_NCE)
++			reg |= JZ_NAND_CTRL_ASSERT_CHIP(0);
++		else
++			reg &= ~JZ_NAND_CTRL_ASSERT_CHIP(0);
++		writel(reg, nand->base + JZ_REG_NAND_CTRL);
++	}
++	if (dat != NAND_CMD_NONE)
++		writeb(dat, chip->IO_ADDR_W);
 +}
 +
-+static int jz4740_codec_write(struct snd_soc_codec *codec, unsigned int reg,
-+	unsigned int val)
++static int jz_nand_dev_ready(struct mtd_info *mtd)
 +{
-+	struct jz4740_codec *jz4740_codec = codec_to_jz4740(codec);
-+
-+	jz4740_codec->reg_cache[reg] = val;
-+	writel(val, jz4740_codec->base + (reg << 2));
-+
-+	return 0;
++	struct jz_nand *nand = mtd_to_jz_nand(mtd);
++	return gpio_get_value_cansleep(nand->pdata->busy_gpio);
 +}
 +
-+static const struct snd_kcontrol_new jz4740_codec_controls[] = {
-+	SOC_SINGLE("Master Playback Volume", JZ4740_REG_CODEC_2,
-+			JZ4740_CODEC_2_HEADPHONE_VOLUME_OFFSET, 3, 0),
-+	SOC_SINGLE("Master Capture Volume", JZ4740_REG_CODEC_2,
-+			JZ4740_CODEC_2_INPUT_VOLUME_OFFSET, 31, 0),
-+	SOC_SINGLE("Master Playback Switch", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_HEADPHONE_DISABLE_OFFSET, 1, 1),
-+	SOC_SINGLE("Mic Capture Volume", JZ4740_REG_CODEC_2,
-+			JZ4740_CODEC_2_MIC_BOOST_GAIN_OFFSET, 3, 0),
-+};
-+
-+static const struct snd_kcontrol_new jz4740_codec_output_controls[] = {
-+	SOC_DAPM_SINGLE("Bypass Switch", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_SW1_ENABLE_OFFSET, 1, 0),
-+	SOC_DAPM_SINGLE("DAC Switch", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_SW2_ENABLE_OFFSET, 1, 0),
-+};
-+
-+static const struct snd_kcontrol_new jz4740_codec_input_controls[] = {
-+	SOC_DAPM_SINGLE("Line Capture Switch", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_LINE_ENABLE_OFFSET, 1, 0),
-+	SOC_DAPM_SINGLE("Mic Capture Switch", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_MIC_ENABLE_OFFSET, 1, 0),
-+};
-+
-+static const struct snd_soc_dapm_widget jz4740_codec_dapm_widgets[] = {
-+	SND_SOC_DAPM_ADC("ADC", "Capture", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_ADC_ENABLE_OFFSET, 0),
-+	SND_SOC_DAPM_DAC("DAC", "Playback", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_DAC_ENABLE_OFFSET, 0),
-+
-+	SND_SOC_DAPM_MIXER("Output Mixer", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_HEADPHONE_POWERDOWN_OFFSET, 1,
-+			jz4740_codec_output_controls,
-+			ARRAY_SIZE(jz4740_codec_output_controls)),
-+
-+	SND_SOC_DAPM_MIXER_NAMED_CTL("Input Mixer", SND_SOC_NOPM, 0, 0,
-+			jz4740_codec_input_controls,
-+			ARRAY_SIZE(jz4740_codec_input_controls)),
-+	SND_SOC_DAPM_MIXER("Line Input", SND_SOC_NOPM, 0, 0, NULL, 0),
-+
-+	SND_SOC_DAPM_OUTPUT("LOUT"),
-+	SND_SOC_DAPM_OUTPUT("ROUT"),
-+
-+	SND_SOC_DAPM_INPUT("MIC"),
-+	SND_SOC_DAPM_INPUT("LIN"),
-+	SND_SOC_DAPM_INPUT("RIN"),
-+};
-+
-+static const struct snd_soc_dapm_route jz4740_codec_dapm_routes[] = {
-+	{"Line Input", NULL, "LIN"},
-+	{"Line Input", NULL, "RIN"},
-+
-+	{"Input Mixer", "Line Capture Switch", "Line Input"},
-+	{"Input Mixer", "Mic Capture Switch", "MIC"},
-+
-+	{"ADC", NULL, "Input Mixer"},
-+
-+	{"Output Mixer", "Bypass Switch", "Input Mixer"},
-+	{"Output Mixer", "DAC Switch", "DAC"},
-+
-+	{"LOUT", NULL, "Output Mixer"},
-+	{"ROUT", NULL, "Output Mixer"},
-+};
-+
-+static int jz4740_codec_hw_params(struct snd_pcm_substream *substream,
-+	struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
++static void jz_nand_hwctl(struct mtd_info *mtd, int mode)
 +{
-+	uint32_t val;
-+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-+	struct snd_soc_device *socdev = rtd->socdev;
-+	struct snd_soc_codec *codec = socdev->card->codec;
++	struct jz_nand *nand = mtd_to_jz_nand(mtd);
++	uint32_t reg;
 +
-+	switch (params_rate(params)) {
-+	case 8000:
-+		val = 0;
++	writel(0, nand->base + JZ_REG_NAND_IRQ_STAT);
++	reg = readl(nand->base + JZ_REG_NAND_ECC_CTRL);
++
++	reg |= JZ_NAND_ECC_CTRL_RESET;
++	reg |= JZ_NAND_ECC_CTRL_ENABLE;
++	reg |= JZ_NAND_ECC_CTRL_RS;
++
++	switch (mode) {
++	case NAND_ECC_READ:
++		reg &= ~JZ_NAND_ECC_CTRL_ENCODING;
++		nand->is_reading = true;
 +		break;
-+	case 11025:
-+		val = 1;
-+		break;
-+	case 12000:
-+		val = 2;
-+		break;
-+	case 16000:
-+		val = 3;
-+		break;
-+	case 22050:
-+		val = 4;
-+		break;
-+	case 24000:
-+		val = 5;
-+		break;
-+	case 32000:
-+		val = 6;
-+		break;
-+	case 44100:
-+		val = 7;
-+		break;
-+	case 48000:
-+		val = 8;
++	case NAND_ECC_WRITE:
++		reg |= JZ_NAND_ECC_CTRL_ENCODING;
++		nand->is_reading = false;
 +		break;
 +	default:
-+		return -EINVAL;
++		break;
 +	}
 +
-+	val <<= JZ4740_CODEC_2_SAMPLE_RATE_OFFSET;
-+
-+	snd_soc_update_bits(codec, JZ4740_REG_CODEC_2,
-+				JZ4740_CODEC_2_SAMPLE_RATE_MASK, val);
-+
-+	return 0;
++	writel(reg, nand->base + JZ_REG_NAND_ECC_CTRL);
 +}
 +
-+static struct snd_soc_dai_ops jz4740_codec_dai_ops = {
-+	.hw_params = jz4740_codec_hw_params,
-+};
-+
-+struct snd_soc_dai jz4740_codec_dai = {
-+	.name = "jz4740",
-+	.playback = {
-+		.stream_name = "Playback",
-+		.channels_min = 2,
-+		.channels_max = 2,
-+		.rates = SNDRV_PCM_RATE_8000_48000,
-+		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
-+	},
-+	.capture = {
-+		.stream_name = "Capture",
-+		.channels_min = 2,
-+		.channels_max = 2,
-+		.rates = SNDRV_PCM_RATE_8000_48000,
-+		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
-+	},
-+	.ops = &jz4740_codec_dai_ops,
-+	.symmetric_rates = 1,
-+};
-+EXPORT_SYMBOL_GPL(jz4740_codec_dai);
-+
-+static void jz4740_codec_wakeup(struct snd_soc_codec *codec)
++static int jz_nand_calculate_ecc_rs(struct mtd_info *mtd, const uint8_t *dat,
++	uint8_t *ecc_code)
 +{
++	struct jz_nand *nand = mtd_to_jz_nand(mtd);
++	uint32_t reg, status;
 +	int i;
-+	uint32_t *cache = codec->reg_cache;
++	static uint8_t empty_block_ecc[] = {0xcd, 0x9d, 0x90, 0x58, 0xf4,
++						0x8b, 0xff, 0xb7, 0x6f};
 +
-+	snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
-+		JZ4740_CODEC_1_RESET, JZ4740_CODEC_1_RESET);
-+	udelay(2);
++	if (nand->is_reading)
++		return 0;
 +
-+	snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
-+		JZ4740_CODEC_1_SUSPEND | JZ4740_CODEC_1_RESET, 0);
++	do {
++		status = readl(nand->base + JZ_REG_NAND_IRQ_STAT);
++	} while (!(status & JZ_NAND_STATUS_ENC_FINISH));
 +
-+	for (i = 0; i < ARRAY_SIZE(jz4740_codec_regs); ++i)
-+		jz4740_codec_write(codec, i, cache[i]);
++	reg = readl(nand->base + JZ_REG_NAND_ECC_CTRL);
++	reg &= ~JZ_NAND_ECC_CTRL_ENABLE;
++	writel(reg, nand->base + JZ_REG_NAND_ECC_CTRL);
++
++	for (i = 0; i < 9; ++i)
++		ecc_code[i] = readb(nand->base + JZ_REG_NAND_PAR0 + i);
++
++	/* If the written data is completly 0xff, we also want to write 0xff as
++	 * ecc, otherwise we will get in trouble when doing subpage writes. */
++	if (memcmp(ecc_code, empty_block_ecc, 9) == 0)
++		memset(ecc_code, 0xff, 9);
++
++	return 0;
 +}
 +
-+static int jz4740_codec_set_bias_level(struct snd_soc_codec *codec,
-+	enum snd_soc_bias_level level)
++static void correct_data(uint8_t *dat, int index, int mask)
 +{
-+	unsigned int mask;
-+	unsigned int value;
++	int offset = index & 0x7;
++	uint16_t data;
 +
-+	switch (level) {
-+	case SND_SOC_BIAS_ON:
-+		break;
-+	case SND_SOC_BIAS_PREPARE:
-+		mask = JZ4740_CODEC_1_VREF_DISABLE |
-+				JZ4740_CODEC_1_VREF_AMP_DISABLE |
-+				JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M;
-+		value = 0;
++	index += (index >> 3);
 +
-+		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1, mask, value);
-+		break;
-+	case SND_SOC_BIAS_STANDBY:
-+		/* The only way to clear the suspend flag is to reset the codec */
-+		if (codec->bias_level == SND_SOC_BIAS_OFF)
-+			jz4740_codec_wakeup(codec);
++	data = dat[index];
++	data |= dat[index+1] << 8;
 +
-+		mask = JZ4740_CODEC_1_VREF_DISABLE |
-+			JZ4740_CODEC_1_VREF_AMP_DISABLE |
-+			JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M;
-+		value = JZ4740_CODEC_1_VREF_DISABLE |
-+			JZ4740_CODEC_1_VREF_AMP_DISABLE |
-+			JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M;
++	mask ^= (data >> offset) & 0x1ff;
++	data &= ~(0x1ff << offset);
++	data |= (mask << offset);
 +
-+		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1, mask, value);
-+		break;
-+	case SND_SOC_BIAS_OFF:
-+		mask = JZ4740_CODEC_1_SUSPEND;
-+		value = JZ4740_CODEC_1_SUSPEND;
++	dat[index] = data & 0xff;
++	dat[index+1] = (data >> 8) & 0xff;
++}
 +
-+		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1, mask, value);
-+		break;
-+	default:
-+		break;
++static int jz_nand_correct_ecc_rs(struct mtd_info *mtd, uint8_t *dat,
++	uint8_t *read_ecc, uint8_t *calc_ecc)
++{
++	struct jz_nand *nand = mtd_to_jz_nand(mtd);
++	int i, error_count, index;
++	uint32_t reg, status, error;
++	uint32_t t;
++
++	t = read_ecc[0];
++
++	if (t == 0xff) {
++		for (i = 1; i < 9; ++i)
++			t &= read_ecc[i];
++
++		t &= dat[0];
++		t &= dat[nand->chip.ecc.size / 2];
++		t &= dat[nand->chip.ecc.size - 1];
++
++		if (t == 0xff) {
++			for (i = 1; i < nand->chip.ecc.size - 1; ++i)
++				t &= dat[i];
++			if (t == 0xff)
++				return 0;
++		}
 +	}
 +
-+	codec->bias_level = level;
++	for (i = 0; i < 9; ++i)
++		writeb(read_ecc[i], nand->base + JZ_REG_NAND_PAR0 + i);
 +
-+	return 0;
-+}
++	reg = readl(nand->base + JZ_REG_NAND_ECC_CTRL);
++	reg |= JZ_NAND_ECC_CTRL_PAR_READY;
++	writel(reg, nand->base + JZ_REG_NAND_ECC_CTRL);
 +
-+static struct snd_soc_codec *jz4740_codec_codec;
++	do {
++		status = readl(nand->base + JZ_REG_NAND_IRQ_STAT);
++	} while (!(status & JZ_NAND_STATUS_DEC_FINISH));
 +
-+static int jz4740_codec_dev_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
-+	struct snd_soc_codec *codec = jz4740_codec_codec;
++	reg = readl(nand->base + JZ_REG_NAND_ECC_CTRL);
++	reg &= ~JZ_NAND_ECC_CTRL_ENABLE;
++	writel(reg, nand->base + JZ_REG_NAND_ECC_CTRL);
 +
-+	BUG_ON(!codec);
++	if (status & JZ_NAND_STATUS_ERROR) {
++		if (status & JZ_NAND_STATUS_UNCOR_ERROR)
++			return -1;
 +
-+	socdev->card->codec = codec;
++		error_count = (status & JZ_NAND_STATUS_ERR_COUNT) >> 29;
 +
-+	ret = snd_soc_new_pcms(socdev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to create pcms: %d\n", ret);
-+		return ret;
++		for (i = 0; i < error_count; ++i) {
++			error = readl(nand->base + JZ_REG_NAND_ERR(i));
++			index = ((error >> 16) & 0x1ff) - 1;
++			if (index >= 0 && index < 512)
++				correct_data(dat, index, error & 0x1ff);
++		}
++
++		return error_count;
 +	}
 +
-+	snd_soc_add_controls(codec, jz4740_codec_controls,
-+		ARRAY_SIZE(jz4740_codec_controls));
-+
-+	snd_soc_dapm_new_controls(codec, jz4740_codec_dapm_widgets,
-+		ARRAY_SIZE(jz4740_codec_dapm_widgets));
-+
-+	snd_soc_dapm_add_routes(codec, jz4740_codec_dapm_routes,
-+		ARRAY_SIZE(jz4740_codec_dapm_routes));
-+
-+	snd_soc_dapm_new_widgets(codec);
-+
 +	return 0;
 +}
 +
-+static int jz4740_codec_dev_remove(struct platform_device *pdev)
++
++/* Copy paste of nand_read_page_hwecc_oob_first except for different eccpos
++ * handling. The ecc area is for 4k chips 72 bytes long and thus does not fit
++ * into the eccpos array. */
++static int jz_nand_read_page_hwecc_oob_first(struct mtd_info *mtd,
++	struct nand_chip *chip, uint8_t *buf, int page)
 +{
-+	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
++	int i, eccsize = chip->ecc.size;
++	int eccbytes = chip->ecc.bytes;
++	int eccsteps = chip->ecc.steps;
++	uint8_t *p = buf;
++	unsigned int ecc_offset = chip->page_shift;
 +
-+	snd_soc_free_pcms(socdev);
-+	snd_soc_dapm_free(socdev);
++	/* Read the OOB area first */
++	chip->cmdfunc(mtd, NAND_CMD_READOOB, 0, page);
++	chip->read_buf(mtd, chip->oob_poi, mtd->oobsize);
++	chip->cmdfunc(mtd, NAND_CMD_READ0, 0, page);
 +
++	for (i = ecc_offset; eccsteps; eccsteps--, i += eccbytes, p += eccsize) {
++		int stat;
++
++		chip->ecc.hwctl(mtd, NAND_ECC_READ);
++		chip->read_buf(mtd, p, eccsize);
++
++		stat = chip->ecc.correct(mtd, p, &chip->oob_poi[i], NULL);
++		if (stat < 0)
++			mtd->ecc_stats.failed++;
++		else
++			mtd->ecc_stats.corrected += stat;
++	}
 +	return 0;
 +}
 +
-+struct snd_soc_codec_device soc_codec_dev_jz4740_codec = {
-+	.probe = jz4740_codec_dev_probe,
-+	.remove = jz4740_codec_dev_remove,
-+};
-+EXPORT_SYMBOL_GPL(soc_codec_dev_jz4740_codec);
-+
-+#ifdef CONFIG_PM_SLEEP
-+
-+static int jz4740_codec_suspend(struct device *dev)
++/* Copy-and-paste of nand_write_page_hwecc with different eccpos handling. */
++static void jz_nand_write_page_hwecc(struct mtd_info *mtd,
++	struct nand_chip *chip, const uint8_t *buf)
 +{
-+	struct jz4740_codec *jz4740_codec = dev_get_drvdata(dev);
-+	return jz4740_codec_set_bias_level(&jz4740_codec->codec,
-+		SND_SOC_BIAS_OFF);
++	int i, eccsize = chip->ecc.size;
++	int eccbytes = chip->ecc.bytes;
++	int eccsteps = chip->ecc.steps;
++	const uint8_t *p = buf;
++	unsigned int ecc_offset = chip->page_shift;
++
++	for (i = ecc_offset; eccsteps; eccsteps--, i += eccbytes, p += eccsize) {
++		chip->ecc.hwctl(mtd, NAND_ECC_WRITE);
++		chip->write_buf(mtd, p, eccsize);
++		chip->ecc.calculate(mtd, p, &chip->oob_poi[i]);
++	}
++
++	chip->write_buf(mtd, chip->oob_poi, mtd->oobsize);
 +}
 +
-+static int jz4740_codec_resume(struct device *dev)
-+{
-+	struct jz4740_codec *jz4740_codec = dev_get_drvdata(dev);
-+	return jz4740_codec_set_bias_level(&jz4740_codec->codec,
-+		SND_SOC_BIAS_STANDBY);
-+}
-+
-+static const struct dev_pm_ops jz4740_pm_ops = {
-+	.suspend = jz4740_codec_suspend,
-+	.resume = jz4740_codec_resume,
-+};
-+
-+#define JZ4740_CODEC_PM_OPS (&jz4740_pm_ops)
-+
-+#else
-+#define JZ4740_CODEC_PM_OPS NULL
++#ifdef CONFIG_MTD_CMDLINE_PARTS
++static const char *part_probes[] = {"cmdline", NULL};
 +#endif
 +
-+static int __devinit jz4740_codec_probe(struct platform_device *pdev)
++static int __devinit jz_nand_probe(struct platform_device *pdev)
 +{
 +	int ret;
-+	struct jz4740_codec *jz4740_codec;
-+	struct snd_soc_codec *codec;
-+	struct resource *mem;
++	struct jz_nand *nand;
++	struct nand_chip *chip;
++	struct mtd_info *mtd;
++	struct jz_nand_platform_data *pdata = pdev->dev.platform_data;
++#ifdef CONFIG_MTD_PARTITIONS
++	struct mtd_partition *partition_info;
++	int num_partitions = 0;
++#endif
 +
-+	jz4740_codec = kzalloc(sizeof(*jz4740_codec), GFP_KERNEL);
-+	if (!jz4740_codec)
++	nand = kzalloc(sizeof(*nand), GFP_KERNEL);
++	if (!nand) {
++		dev_err(&pdev->dev, "Failed to allocate device structure.\n");
 +		return -ENOMEM;
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem) {
-+		dev_err(&pdev->dev, "Failed to get mmio memory resource\n");
-+		ret = -ENOENT;
-+		goto err_free_codec;
 +	}
 +
-+	mem = request_mem_region(mem->start, resource_size(mem), pdev->name);
-+	if (!mem) {
++	nand->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!nand->mem) {
++		dev_err(&pdev->dev, "Failed to get platform mmio memory\n");
++		ret = -ENOENT;
++		goto err_free;
++	}
++
++	nand->mem = request_mem_region(nand->mem->start,
++					resource_size(nand->mem), pdev->name);
++	if (!nand->mem) {
 +		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
 +		ret = -EBUSY;
-+		goto err_free_codec;
++		goto err_free;
 +	}
 +
-+	jz4740_codec->base = ioremap(mem->start, resource_size(mem));
-+	if (!jz4740_codec->base) {
-+		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
++	nand->base = ioremap(nand->mem->start, resource_size(nand->mem));
++	if (!nand->base) {
++		dev_err(&pdev->dev, "Failed to ioremap mmio memory region\n");
 +		ret = -EBUSY;
-+		goto err_release_mem_region;
++		goto err_release_mem;
 +	}
-+	jz4740_codec->mem = mem;
 +
-+	jz4740_codec_dai.dev = &pdev->dev;
++	if (pdata && gpio_is_valid(pdata->busy_gpio)) {
++		ret = gpio_request(pdata->busy_gpio, "NAND busy pin");
++		if (ret) {
++			dev_err(&pdev->dev,
++				"Failed to request busy gpio %d: %d\n",
++				pdata->busy_gpio, ret);
++			goto err_iounmap;
++		}
++	}
 +
-+	codec = &jz4740_codec->codec;
++	mtd		= &nand->mtd;
++	chip		= &nand->chip;
++	mtd->priv	= chip;
++	mtd->owner	= THIS_MODULE;
++	mtd->name	= "jz4740-nand";
 +
-+	codec->dev		= &pdev->dev;
-+	codec->name		= "jz4740";
-+	codec->owner		= THIS_MODULE;
++	chip->ecc.hwctl		= jz_nand_hwctl;
++	chip->ecc.calculate	= jz_nand_calculate_ecc_rs;
++	chip->ecc.correct	= jz_nand_correct_ecc_rs;
++	chip->ecc.mode		= NAND_ECC_HW_OOB_FIRST;
++	chip->ecc.size		= 512;
++	chip->ecc.bytes		= 9;
 +
-+	codec->read		= jz4740_codec_read;
-+	codec->write		= jz4740_codec_write;
-+	codec->set_bias_level	= jz4740_codec_set_bias_level;
-+	codec->bias_level	= SND_SOC_BIAS_OFF;
++	chip->ecc.read_page	= jz_nand_read_page_hwecc_oob_first;
++	chip->ecc.write_page	= jz_nand_write_page_hwecc;
 +
-+	codec->dai		= &jz4740_codec_dai;
-+	codec->num_dai		= 1;
++	if (pdata)
++		chip->ecc.layout = pdata->ecc_layout;
 +
-+	codec->reg_cache	= jz4740_codec->reg_cache;
-+	codec->reg_cache_size	= 2;
-+	memcpy(codec->reg_cache, jz4740_codec_regs, sizeof(jz4740_codec_regs));
++	chip->chip_delay = 50;
++	chip->cmd_ctrl = jz_nand_cmd_ctrl;
 +
-+	mutex_init(&codec->mutex);
-+	INIT_LIST_HEAD(&codec->dapm_widgets);
-+	INIT_LIST_HEAD(&codec->dapm_paths);
++	if (pdata && gpio_is_valid(pdata->busy_gpio))
++		chip->dev_ready = jz_nand_dev_ready;
 +
-+	jz4740_codec_codec = codec;
++	chip->IO_ADDR_R = JZ_NAND_DATA_ADDR;
++	chip->IO_ADDR_W = JZ_NAND_DATA_ADDR;
 +
-+	snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_SW2_ENABLE, JZ4740_CODEC_1_SW2_ENABLE);
++	nand->pdata = pdata;
++	platform_set_drvdata(pdev, nand);
 +
-+	platform_set_drvdata(pdev, jz4740_codec);
-+
-+	ret = snd_soc_register_codec(codec);
++	ret = nand_scan_ident(mtd, 1, NULL);
 +	if (ret) {
-+		dev_err(&pdev->dev, "Failed to register codec\n");
-+		goto err_iounmap;
++		dev_err(&pdev->dev,  "Failed to scan nand\n");
++		goto err_gpio_free;
 +	}
 +
-+	ret = snd_soc_register_dai(&jz4740_codec_dai);
++	if (pdata && pdata->ident_callback) {
++		pdata->ident_callback(pdev, chip, &pdata->partitions,
++					&pdata->num_partitions);
++	}
++
++	ret = nand_scan_tail(mtd);
 +	if (ret) {
-+		dev_err(&pdev->dev, "Failed to register codec dai\n");
-+		goto err_unregister_codec;
++		dev_err(&pdev->dev,  "Failed to scan nand\n");
++		goto err_gpio_free;
 +	}
 +
-+	jz4740_codec_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
++#ifdef CONFIG_MTD_PARTITIONS
++#ifdef CONFIG_MTD_CMDLINE_PARTS
++	num_partitions = parse_mtd_partitions(mtd, part_probes,
++						&partition_info, 0);
++#endif
++	if (num_partitions <= 0 && pdata) {
++		num_partitions = pdata->num_partitions;
++		partition_info = pdata->partitions;
++	}
++
++	if (num_partitions > 0)
++		ret = add_mtd_partitions(mtd, partition_info, num_partitions);
++	else
++#endif
++	ret = add_mtd_device(mtd);
++
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to add mtd device\n");
++		goto err_nand_release;
++	}
++
++	dev_info(&pdev->dev, "Successfully registered JZ4740 NAND driver\n");
 +
 +	return 0;
-+
-+err_unregister_codec:
-+	snd_soc_unregister_codec(codec);
++err_nand_release:
++	nand_release(&nand->mtd);
++err_gpio_free:
++	platform_set_drvdata(pdev, NULL);
++	gpio_free(pdata->busy_gpio);
 +err_iounmap:
-+	iounmap(jz4740_codec->base);
-+err_release_mem_region:
-+	release_mem_region(mem->start, resource_size(mem));
-+err_free_codec:
-+	kfree(jz4740_codec);
-+
++	iounmap(nand->base);
++err_release_mem:
++	release_mem_region(nand->mem->start, resource_size(nand->mem));
++err_free:
++	kfree(nand);
 +	return ret;
 +}
 +
-+static int __devexit jz4740_codec_remove(struct platform_device *pdev)
++static int __devexit jz_nand_remove(struct platform_device *pdev)
 +{
-+	struct jz4740_codec *jz4740_codec = platform_get_drvdata(pdev);
-+	struct resource *mem = jz4740_codec->mem;
++	struct jz_nand *nand = platform_get_drvdata(pdev);
 +
-+	snd_soc_unregister_dai(&jz4740_codec_dai);
-+	snd_soc_unregister_codec(&jz4740_codec->codec);
++	nand_release(&nand->mtd);
 +
-+	iounmap(jz4740_codec->base);
-+	release_mem_region(mem->start, resource_size(mem));
++	iounmap(nand->base);
++	release_mem_region(nand->mem->start, resource_size(nand->mem));
 +
 +	platform_set_drvdata(pdev, NULL);
-+	kfree(jz4740_codec);
++	kfree(nand);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver jz4740_codec_driver = {
-+	.probe = jz4740_codec_probe,
-+	.remove = __devexit_p(jz4740_codec_remove),
++struct platform_driver jz_nand_driver = {
++	.probe = jz_nand_probe,
++	.remove = __devexit_p(jz_nand_remove),
 +	.driver = {
-+		.name = "jz4740-codec",
++		.name = "jz4740-nand",
 +		.owner = THIS_MODULE,
-+		.pm = JZ4740_CODEC_PM_OPS,
 +	},
 +};
 +
-+static int __init jz4740_codec_init(void)
++static int __init jz_nand_init(void)
 +{
-+	return platform_driver_register(&jz4740_codec_driver);
++	return platform_driver_register(&jz_nand_driver);
 +}
-+module_init(jz4740_codec_init);
++module_init(jz_nand_init);
 +
-+static void __exit jz4740_codec_exit(void)
++static void __exit jz_nand_exit(void)
 +{
-+	platform_driver_unregister(&jz4740_codec_driver);
++	platform_driver_unregister(&jz_nand_driver);
 +}
-+module_exit(jz4740_codec_exit);
++module_exit(jz_nand_exit);
 +
-+MODULE_DESCRIPTION("JZ4740 SoC internal codec driver");
++MODULE_LICENSE("GPL");
 +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:jz4740-codec");
-diff --git a/sound/soc/codecs/jz4740-codec.h b/sound/soc/codecs/jz4740-codec.h
++MODULE_DESCRIPTION("NAND controller driver for JZ4740 SoC");
++MODULE_ALIAS("platform:jz4740-nand");
+diff --git a/include/linux/mtd/jz4740_nand.h b/include/linux/mtd/jz4740_nand.h
 new file mode 100644
-index 0000000..b5a0691
+index 0000000..379f9b6
 --- /dev/null
-+++ b/sound/soc/codecs/jz4740-codec.h
-@@ -0,0 +1,20 @@
++++ b/include/linux/mtd/jz4740_nand.h
+@@ -0,0 +1,34 @@
 +/*
-+ * Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
++ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  JZ4740 SoC NAND controller driver
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ *  This program is free software; you can redistribute	 it and/or modify it
++ *  under  the terms of	 the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
++ *  option) any later version.
 + *
 + *  You should have received a copy of the  GNU General Public License along
 + *  with this program; if not, write  to the Free Software Foundation, Inc.,
@@ -631,11 +573,23 @@ index 0000000..b5a0691
 + *
 + */
 +
-+#ifndef __SND_SOC_CODECS_JZ4740_CODEC_H__
-+#define __SND_SOC_CODECS_JZ4740_CODEC_H__
++#ifndef __JZ_NAND_H__
++#define __JZ_NAND_H__
 +
-+extern struct snd_soc_dai jz4740_codec_dai;
-+extern struct snd_soc_codec_device soc_codec_dev_jz4740_codec;
++#include <linux/mtd/nand.h>
++#include <linux/mtd/partitions.h>
++
++struct jz_nand_platform_data {
++	int			num_partitions;
++	struct mtd_partition	*partitions;
++
++	struct nand_ecclayout	*ecc_layout;
++
++	unsigned int busy_gpio;
++
++	void (*ident_callback)(struct platform_device *, struct nand_chip *,
++				struct mtd_partition **, int *num_partitions);
++};
 +
 +#endif
 -- 
