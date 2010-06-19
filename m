@@ -1,264 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab0FSPy6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 11:54:58 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35172 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756356Ab0FSPy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 11:54:56 -0400
-Message-ID: <4C1CE813.8080701@kernel.org>
-Date: Sat, 19 Jun 2010 17:53:55 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1756473Ab0FSP7g (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 11:59:36 -0400
+Received: from fg-out-1718.google.com ([72.14.220.154]:14967 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756384Ab0FSP7d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 11:59:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=XHi40sxbBFTXwVL5DVrQbSXgOUH4db5D2D7yYoK63WtJExDofnSVurcVpOW6aqa7Wl
+         GLYgamrQFjljFiKDo9Svoy7FlRHbfjZ7qa4nzZbAkyFBhIFsNqpWxSrNiSw1+fPLY6bL
+         b36eVy5m2aD2DjqiAsS0bYlmp4/emAsf606U0=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH] hid Logitech G13 Driver 0.0.5
+Date: Sat, 19 Jun 2010 17:57:21 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.33-2-amd64; KDE/4.4.3; x86_64; ; )
+Cc: "Rick L. Vinyard, Jr." <rvinyard@cs.nmsu.edu>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>, linux-kernel@vger.kernel.org,
+       felipe.balbi@nokia.com, linux-usb@vger.kernel.org, oliver@neukum.org,
+       linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+       npavel@ituner.com, tomi.valkeinen@nokia.com, tony@atomide.com,
+       florianschandinat@gmx.de, krzysztof.h1@wp.pl, akpm@linux-foundation.org,
+       linux-fbdev@vger.kernel.org, jkosina@suse.cz, bonbons@linux-vserver.org
+References: <201003021848.o22ImLSS004394@mustang.cs.nmsu.edu> <24ab70ff629c48b6d10ce0cf6dc5d64b.squirrel@intranet.cs.nmsu.edu> <20100303051311.GA4651@elf.ucw.cz>
+In-Reply-To: <20100303051311.GA4651@elf.ucw.cz>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Andy Walls <awalls@md.metrocast.net>,
-       Daniel Walker <dwalker@codeaurora.org>, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, jeff@garzik.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk,
-       mst@redhat.com, samudrala.sridhar@gmail.com
-Subject: [PATCH] kthread: implement kthread_worker
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>	<4C17C598.7070303@kernel.org>	<1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>	<4C18BF40.40607@kernel.org>	<1276694825.9309.12.camel@m0nster>	<4C18D1FD.9060804@kernel.org>	<1276695665.9309.17.camel@m0nster>	<4C18D574.1040903@kernel.org>	<1276697146.9309.27.camel@m0nster>	<1276776066.2461.15.camel@localhost>	<20100617161619.d3ebd73d.akpm@linux-foundation.org>	<4C1B1D3F.8030509@kernel.org>	<20100618003127.10d9e6c8.akpm@linux-foundation.org>	<4C1B29BF.7080404@kernel.org> <20100618100228.093ec17b.akpm@linux-foundation.org> <4C1BACC6.5020602@kernel.org>
-In-Reply-To: <4C1BACC6.5020602@kernel.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Jun 2010 15:53:58 +0000 (UTC)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006191757.22035.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement simple work processor for kthread.  This is to ease using
-kthread.  Single thread workqueue used to be used for things like this
-but workqueue won't guarantee fixed kthread association anymore to
-enable worker sharing.
+Dne St 3. března 2010 06:13:12 Pavel Machek napsal(a):
+> Hi!
+> 
+> > >> +/*
+> > >> + * This is a default logo to be loaded upon driver initialization
+> > >> + * replacing the default Logitech G13 image loaded on device
+> > >> + * initialization. This is to provide the user a cue that the
+> > >> + * Linux driver is loaded and ready.
+> > >> + *
+> > >> + * This logo contains the text G13 in the center with two penguins
+> > >> + * on each side of the text. The penguins are a 33x40 rendition of
+> > >> + * the default framebuffer 80x80 monochrome image scaled down and
+> > >> + * cleaned up to retain something that looks a little better than
+> > >> + * a simple scaling.
+> > >> + *
+> > >> + * This logo is a simple xbm image created in GIMP and exported.
+> > >> + * To view the image copy the following two #defines plus the
+> > >> + * g13_lcd_bits to an ASCII text file and save with extension
+> > >> + * .xbm, then open with GIMP or any other graphical editor
+> > >> + * such as eog that recognizes the .xbm format.
+> > >> + */
+> > > 
+> > > ...
+> > > 
+> > >> +static unsigned char g13_lcd_bits[] = {
+> > >> + 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+> > >> 0x00,
+> > > 
+> > > I think you'll agree above is not an elegant solution.
+> > 
+> > I could make it a config option.
+> 
+> You get about 10 complains already, but you are not willing to solve
+> it. No, config option does not help.
+> 
+> If you want to, make it separate patch so we can reject it separately.
+> 
+> > >> +static DEVICE_ATTR(rgb, 0666, g13_rgb_show, g13_rgb_store);
+> > > 
+> > > Reading above code, it looks like this new userspace sysfs attribute
+> > > is for backlight control. Could that be better exposed using the
+> > > existing backlight class?
+> > 
+> > I looked at the backlight class and it didn't seem to be a very good fit.
+> > 
+> > /* This structure defines all the properties of a backlight */
+> > struct backlight_properties {
+> > 
+> > 	/* Current User requested brightness (0 - max_brightness) */
+> > 	int brightness;
+> > 	/* Maximal value for brightness (read-only) */
+> > 	int max_brightness;
+> > 	/* Current FB Power mode (0: full on, 1..3: power saving
+> > 	
+> > 	   modes; 4: full off), see FB_BLANK_XXX */
+> > 	
+> > 	int power;
+> > 	/* FB Blanking active? (values as for power) */
+> > 	/* Due to be removed, please use (state & BL_CORE_FBBLANK) */
+> > 	int fb_blank;
+> > 	/* Flags used to signal drivers of state changes */
+> > 	/* Upper 4 bits are reserved for driver internal use */
+> > 	unsigned int state;
+> > 
+> > };
+> > 
+> > The g13's backlight doesn't support any of these properties. All you can
+> > set is an rgb value on the g13; no power modes, no brightness, etc. I
+> > could add a brightness attribute by scaling the rgb values, but I would
+> > prefer to do that from userspace rather than the driver since it's not
+> > supported in the device itself.
+> > 
+> > And, we'd still have to have the rgb attribute since the backlight class
+> > doesn't have color.
+> 
+> Or you could pretend you have 3 different backlights? ....which is
+> actually what you have...?
+> 									Pavel
 
-This can be used in cases where specific kthread association is
-necessary, for example, when it should have RT priority or be assigned
-to certain cgroup.
+Any updates on this?
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-So, basically something like this.  This doesn't support all the
-features of workqueue but should be enough for most cases and we can
-always add missing bits as necessary.  This is basically the same
-logic that I wrote for vhost (vhost people cc'd) and vhost should be
-able to switch easily.  It's simple but efficient and makes using
-kthread a lot easier.
-
-Andrew, does this look like a reasonable compromise?  If so, I'll put
-it in the series, convert ivtv and integrate padata and post another
-round.
-
-Thanks.
-
- include/linux/kthread.h |   63 +++++++++++++++++++++++++
- kernel/kthread.c        |  118 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 181 insertions(+)
-
-Index: work/kernel/kthread.c
-===================================================================
---- work.orig/kernel/kthread.c
-+++ work/kernel/kthread.c
-@@ -14,6 +14,8 @@
- #include <linux/file.h>
- #include <linux/module.h>
- #include <linux/mutex.h>
-+#include <linux/slab.h>
-+#include <linux/freezer.h>
- #include <trace/events/sched.h>
-
- static DEFINE_SPINLOCK(kthread_create_lock);
-@@ -247,3 +249,119 @@ int kthreadd(void *unused)
-
- 	return 0;
- }
-+
-+/**
-+ * kthread_worker_fn - kthread function to process kthread_worker
-+ * @data: pointer to initialized kthread_worker
-+ *
-+ * This function can be used as @threadfn to kthread_create() or
-+ * kthread_run() with @data argument pointing to an initialized
-+ * kthread_worker.  The started kthread will process work_list until
-+ * the it is stopped with kthread_stop().  A kthread can also call
-+ * this function directly after extra initialization.
-+ *
-+ * Different kthreads can be used for the same kthread_worker as long
-+ * as there's only one kthread attached to it at any given time.  A
-+ * kthread_worker without an attached kthread simply collects queued
-+ * kthread_works.
-+ */
-+int kthread_worker_fn(void *worker_ptr)
-+{
-+	struct kthread_worker *worker = worker_ptr;
-+	struct kthread_work *work;
-+
-+	WARN_ON(worker->task);
-+	worker->task = current;
-+repeat:
-+	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
-+
-+	if (kthread_should_stop()) {
-+		__set_current_state(TASK_RUNNING);
-+		spin_lock_irq(&worker->lock);
-+		worker->task = NULL;
-+		spin_unlock_irq(&worker->lock);
-+		return 0;
-+	}
-+
-+	work = NULL;
-+	spin_lock_irq(&worker->lock);
-+	if (!list_empty(&worker->work_list)) {
-+		work = list_first_entry(&worker->work_list,
-+					struct kthread_work, node);
-+		list_del_init(&work->node);
-+	}
-+	spin_unlock_irq(&worker->lock);
-+
-+	if (work) {
-+		__set_current_state(TASK_RUNNING);
-+		work->func(work);
-+		smp_wmb();	/* wmb worker-b0 paired with flush-b1 */
-+		work->done_seq = work->queue_seq;
-+		smp_mb();	/* mb worker-b1 paired with flush-b0 */
-+		if (atomic_read(&work->flushing))
-+			wake_up_all(&work->done);
-+	} else if (!freezing(current))
-+		schedule();
-+
-+	try_to_freeze();
-+	goto repeat;
-+}
-+EXPORT_SYMBOL_GPL(kthread_worker_fn);
-+
-+/**
-+ * queue_kthread_work - queue a kthread_work
-+ * @worker: target kthread_worker
-+ * @work: kthread_work to queue
-+ *
-+ * Queue @work to work processor @task for async execution.  @task
-+ * must have been created with kthread_worker_create().  Returns %true
-+ * if @work was successfully queued, %false if it was already pending.
-+ */
-+bool queue_kthread_work(struct kthread_worker *worker,
-+			struct kthread_work *work)
-+{
-+	bool ret = false;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&worker->lock, flags);
-+	if (list_empty(&work->node)) {
-+		list_add_tail(&work->node, &worker->work_list);
-+		work->queue_seq++;
-+		if (likely(worker->task))
-+			wake_up_process(worker->task);
-+		ret = true;
-+	}
-+	spin_unlock_irqrestore(&worker->lock, flags);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(queue_kthread_work);
-+
-+/**
-+ * flush_kthread_work - flush a kthread_work
-+ * @work: work to flush
-+ *
-+ * If @work is queued or executing, wait for it to finish execution.
-+ */
-+void flush_kthread_work(struct kthread_work *work)
-+{
-+	int seq = work->queue_seq;
-+
-+	atomic_inc(&work->flushing);
-+
-+	/*
-+	 * mb flush-b0 paired with worker-b1, to make sure either
-+	 * worker sees the above increment or we see done_seq update.
-+	 */
-+	smp_mb__after_atomic_inc();
-+
-+	/* A - B <= 0 tests whether B is in front of A regardless of overflow */
-+	wait_event(work->done, seq - work->done_seq <= 0);
-+	atomic_dec(&work->flushing);
-+
-+	/*
-+	 * rmb flush-b1 paired with worker-b0, to make sure our caller
-+	 * sees every change made by work->func().
-+	 */
-+	smp_mb__after_atomic_dec();
-+}
-+EXPORT_SYMBOL_GPL(flush_kthread_work);
-Index: work/include/linux/kthread.h
-===================================================================
---- work.orig/include/linux/kthread.h
-+++ work/include/linux/kthread.h
-@@ -34,4 +34,67 @@ int kthread_should_stop(void);
- int kthreadd(void *unused);
- extern struct task_struct *kthreadd_task;
-
-+/*
-+ * Simple work processor based on kthread.
-+ *
-+ * This provides easier way to make use of kthreads.  A kthread_work
-+ * can be queued and flushed using queue/flush_kthread_work()
-+ * respectively.  Queued kthread_works are processed by a kthread
-+ * running kthread_worker_fn().
-+ *
-+ * A kthread_work can't be freed while it is executing.
-+ */
-+struct kthread_work;
-+typedef void (*kthread_work_func_t)(struct kthread_work *work);
-+
-+struct kthread_worker {
-+	spinlock_t		lock;
-+	struct list_head	work_list;
-+	struct task_struct	*task;
-+};
-+
-+struct kthread_work {
-+	struct list_head	node;
-+	kthread_work_func_t	func;
-+	wait_queue_head_t	done;
-+	atomic_t		flushing;
-+	int			queue_seq;
-+	int			done_seq;
-+};
-+
-+#define KTHREAD_WORKER_INIT(worker)	{				\
-+	.lock = SPIN_LOCK_UNLOCKED,					\
-+	.work_list = LIST_HEAD_INIT((worker).work_list),		\
-+	}
-+
-+#define KTHREAD_WORK_INIT(work, fn)	{				\
-+	.node = LIST_HEAD_INIT((work).node),				\
-+	.func = (fn),							\
-+	.done = __WAIT_QUEUE_HEAD_INITIALIZER((work).done),		\
-+	.flushing = ATOMIC_INIT(0),					\
-+	}
-+
-+#define DEFINE_KTHREAD_WORKER(worker)					\
-+	struct kthread_worker worker = KTHREAD_WORKER_INIT(worker)
-+
-+#define DEFINE_KTHREAD_WORK(work, fn)					\
-+	struct kthread_work work = KTHREAD_WORK_INIT(work, fn)
-+
-+static inline void init_kthread_worker(struct kthread_worker *worker)
-+{
-+	*worker = (struct kthread_worker)KTHREAD_WORKER_INIT(*worker);
-+}
-+
-+static inline void init_kthread_work(struct kthread_work *work,
-+				     kthread_work_func_t fn)
-+{
-+	*work = (struct kthread_work)KTHREAD_WORK_INIT(*work, fn);
-+}
-+
-+int kthread_worker_fn(void *worker_ptr);
-+
-+bool queue_kthread_work(struct kthread_worker *worker,
-+			struct kthread_work *work);
-+void flush_kthread_work(struct kthread_work *work);
-+
- #endif /* _LINUX_KTHREAD_H */
+btw. it'd be good if we could use the g13fb on G15 ... would that be possible?
+Cheers!
