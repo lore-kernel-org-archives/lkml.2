@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab0FSRvu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 13:51:50 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39717 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754121Ab0FSRvs (ORCPT
+	id S1756462Ab0FSRxm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 13:53:42 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37002 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754549Ab0FSRxk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 13:51:48 -0400
+	Sat, 19 Jun 2010 13:53:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=N80G1bkRUitliFXbUwuK+XfM9bzjmF2DYu1MSokk9eSHWzbYdCD2SYWzcyiF5pWPpP
-         55LGQnToE78MEbXQTSCVvP/wPSd41c4KvGws++7CLViCROXH1X9c+n83LpHTF3wRl1ZZ
-         popIwZTmmydBGoghKL2vdpvg2gO1WCHotftUQ=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-audit@redhat.com
-Cc: linux-kernel@vger.kernel.org, geert@linux-m68k.org,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 2/6 v2]kernel:audit.c Fix warning: variable 'nlh' set but not used
-Date: Sat, 19 Jun 2010 10:51:40 -0700
-Message-Id: <1276969900-11408-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=RaKB5AW0UUI5JTTjUXgLGKL2f6qbH4TS4SV+WTyN5EjZI0R0PlxnSJuYZGOPV2UYL4
+         2i//l8oVy+6lw693zJzoow5rOfGF4H1i9cInokCDiDqmdlrwSXRLkO2qwqveMmPei9mp
+         sIW9pRm0QthNltJ8fzJyP3qI8hUN6YYnqPWkQ=
+MIME-Version: 1.0
+In-Reply-To: <4C1D0189.6050803@metafoo.de>
+References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
+	<201006191243.39793.marek.vasut@gmail.com>
+	<4C1CC08E.5050009@metafoo.de>
+	<201006191604.25329.marek.vasut@gmail.com>
+	<4C1D0189.6050803@metafoo.de>
+Date: Sat, 19 Jun 2010 19:53:38 +0200
+X-Google-Sender-Auth: _f17mx37Pm0Xnf9P4usEA5Go9gM
+Message-ID: <AANLkTim1AEoIAFKq4so7GP6zwxUPJLslWjeIKgNOP8yA@mail.gmail.com>
+Subject: Re: [PATCH v2 15/26] RTC: Add JZ4740 RTC driver
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Marek Vasut <marek.vasut@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+       linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Wan ZongShun <mcuos.com@gmail.com>, rtc-linux@googlegroups.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a resend from the original due to some whitespace issues,
-and done incorrectly.
- 
-The below patch fixes this warning from gcc 4.6.0
-  CC      kernel/audit.o
-kernel/audit.c: In function 'audit_buffer_alloc':
-kernel/audit.c:1044:19: warning: variable 'nlh' set but not used
+On Sat, Jun 19, 2010 at 19:42, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> Marek Vasut wrote:
+>> Dne So 19. června 2010 15:05:18 Lars-Peter Clausen napsal(a):
+>>> Marek Vasut wrote:
+>>>> Dne So 19. června 2010 07:08:20 Lars-Peter Clausen napsal(a):
+>>>>> This patch adds support for the RTC unit on JZ4740 SoCs.
 
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+>>>>> +static void jz4740_rtc_ctrl_set_bits(struct jz4740_rtc *rtc, uint32_t
+>>>>> mask, +    uint32_t val)
+>>>>> +{
+>>>>> +  unsigned long flags;
+>>>>> +  uint32_t ctrl;
+>>>>> +
+>>>>> +  spin_lock_irqsave(&rtc->lock, flags);
+>>>>>
+>>>> Can't we use local_irq_save()/local_irq_restore() ?
+>>>>
+>>> Why would that be preferable? In the non-debug, non-rt case this will
+>>> expand to local_irq_{save,restore} anyway, but you'll lose the semantics
+>>> of an lock.
+>>>
+>>
+>> I believe on SMP systems, local_irq_save will give you finer locking
+>> granularity.
+>>
+> Hm, not sure about that. But this is on a non SMP system anyway.
 
----
- kernel/audit.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+If the driver will ever be used on a SMP system, local_irq_save() will
+not protect
+against concurrent accesses on different CPUs. So it's better to use
+spin_lock_irqsave().
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index c71bd26..1d51258 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1041,7 +1041,6 @@ static struct audit_buffer * audit_buffer_alloc(struct audit_context *ctx,
- {
- 	unsigned long flags;
- 	struct audit_buffer *ab = NULL;
--	struct nlmsghdr *nlh;
- 
- 	spin_lock_irqsave(&audit_freelist_lock, flags);
- 	if (!list_empty(&audit_freelist)) {
-@@ -1065,7 +1064,7 @@ static struct audit_buffer * audit_buffer_alloc(struct audit_context *ctx,
- 	if (!ab->skb)
- 		goto nlmsg_failure;
- 
--	nlh = NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
-+	NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
- 
- 	return ab;
- 
--- 
-1.7.1.rc1.21.gf3bd6
+Gr{oetje,eeting}s,
 
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
