@@ -1,139 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994Ab0FSU0u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 16:26:50 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:50069 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755856Ab0FSU0t (ORCPT
+	id S1756939Ab0FSUaA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 16:30:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:55720 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756856Ab0FSU37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 16:26:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Fse8yVg7IK+/LmmfKHC2re4+hZXtajZDLaIchAd2BsLt1+vz4ieM5IbKTpa+XIfdnI
-         iwM1pAdpleDkREyd2rwxB1xA4BX+YTUcYOKsDSyUUlpijSD13vgDukamP4TKPhUXkv6O
-         hCbAiNcUyfsLag3CEHEU8XPAxXyptWVyp71dk=
-Message-ID: <4C1D280A.5060601@gmail.com>
-Date: Sat, 19 Jun 2010 13:26:50 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Sat, 19 Jun 2010 16:29:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tony Luck <tony.luck@intel.com>
+Subject: [PATCH] serial: revert "Use block_til_ready helper"
+Date: Sat, 19 Jun 2010 22:29:21 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.35-rc3-00053-g34ffc96; KDE/4.4.2; x86_64; ; )
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       Greg KH <gregkh@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+References: <1273957196-13768-1-git-send-email-arnd@arndb.de> <AANLkTim4dHj_3ftAVD35DD-Cc7ZntHRi1YTRPup2wfJc@mail.gmail.com> <201006191432.04685.arnd@arndb.de>
+In-Reply-To: <201006191432.04685.arnd@arndb.de>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-       zippel@linux-m68k.org, linux-fsdevel@vger.kernel.org,
-       rusty@rustcorp.com.au
-Subject: Re: [PATCH 5/6]kernel:module.c variable 'nowarn' set but not used
-References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>	<1276288869-16815-6-git-send-email-justinmattock@gmail.com>	<AANLkTilZLOGXpZxHUklA8iHMj8HsJap2BvWMrWMmeyu3@mail.gmail.com>	<4C1C4FDE.2090101@gmail.com>	<AANLkTin5ovxSSsIM-1R-u7mmoqxp8UnxgtkuVJfZU2ES@mail.gmail.com>	<4C1D160D.5030303@gmail.com>	<AANLkTikOP99vtHOmfLZ05TkGFK8ffVNSSDoBvgCaIMCi@mail.gmail.com>	<4C1D243D.2070302@gmail.com> <AANLkTilavruQtdEH2L_BBkEGlCWKHYyxMze18uw0vsP2@mail.gmail.com>
-In-Reply-To: <AANLkTilavruQtdEH2L_BBkEGlCWKHYyxMze18uw0vsP2@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006192229.21971.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/sNFRcVQ08zqrdt6wnXX8jjqG2n12UiV7M3S/
+ z4mOnY9fD2tNRz0qUzz+yW6dsjMC3z5K2wnDrHmWahj2UfMrJZ
+ meyqd3RzEJzjTQo6Nmkow==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2010 01:23 PM, Geert Uytterhoeven wrote:
-> On Sat, Jun 19, 2010 at 22:10, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
->> On 06/19/2010 12:45 PM, Geert Uytterhoeven wrote:
->>>
->>> On Sat, Jun 19, 2010 at 21:10, Justin P. Mattock
->>> <justinmattock@gmail.com>    wrote:
->>>>
->>>> On 06/19/2010 01:08 AM, Geert Uytterhoeven wrote:
->>>>>
->>>>> On Sat, Jun 19, 2010 at 07:04, Justin P. Mattock
->>>>> <justinmattock@gmail.com>      wrote:
->>>>>>>
->>>>>>> Also wrong, you removed the creation of the links in sysfs.
->>>>>>>
->>>>>>> The assignment to nowarn was there to avoid another compiler warning,
->>>>>>> as sysfs_create_link() is marked __must_check.
->>>>>>
->>>>>> I also went back to this one and made the following changes.. let me
->>>>>> know
->>>>>> if
->>>>>> it's wrong etc..
->>>>>>
->>>>>>   From 4f45beed80627d2bb32fb021bb6d22d88089557b Mon Sep 17 00:00:00 2001
->>>>>> From: Justin P. Mattock<justinmattock@gmail.com>
->>>>>> Date: Fri, 18 Jun 2010 22:01:07 -0700
->>>>>> Subject: [PATCH 5/5] module.c
->>>>>>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>>>>>
->>>>>> ---
->>>>>>   kernel/module.c |    3 +--
->>>>>>   1 files changed, 1 insertions(+), 2 deletions(-)
->>>>>>
->>>>>> diff --git a/kernel/module.c b/kernel/module.c
->>>>>> index 8c6b428..48fc5c8 100644
->>>>>> --- a/kernel/module.c
->>>>>> +++ b/kernel/module.c
->>>>>> @@ -1340,11 +1340,10 @@ static void add_usage_links(struct module *mod)
->>>>>>   {
->>>>>>   #ifdef CONFIG_MODULE_UNLOAD
->>>>>>         struct module_use *use;
->>>>>> -       int nowarn;
->>>>>>
->>>>>>         mutex_lock(&module_mutex);
->>>>>>         list_for_each_entry(use,&mod->target_list, target_list) {
->>>>>> -               nowarn = sysfs_create_link(use->target->holders_dir,
->>>>>> +               sysfs_create_link(use->target->holders_dir,
->>>>>>                                            &mod->mkobj.kobj, mod->name);
->>>>>>         }
->>>>>>         mutex_unlock(&module_mutex);
->>>>>> --
->>>>>> 1.7.1.rc1.21.gf3bd6
->>>>>>
->>>>>> if it looks good, then I can resend it out.
->>>>>
->>>>> Have you compile-tested this?
->>>>> As sysfs_create_link() is marked __must_check, that will cause another
->>>>> compiler
->>>>> warning, but only if CONFIG_SYSFS=y.
->>>>>
->>>>> Perhaps you can just mark the nowarn variable __unused?
->>>>
->>>>
->>>> o.k. this builds cleanly without a warning, but is it the right thing
->>>> todo?
->>>> i.g. rather leave the warning message there and file a bug than just
->>>> silence
->>>> the issue. Anyways here is what I have:
->>>>
->>>>   From edbeb2b1ee051218f9e5b93fcb8bbdbf1119a6e4 Mon Sep 17 00:00:00 2001
->>>> From: Justin P. Mattock<justinmattock@gmail.com>
->>>> Date: Sat, 19 Jun 2010 12:07:32 -0700
->>>> Subject: [PATCH 5/5] module.c
->>>>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>>>
->>>> ---
->>>>   kernel/module.c |    2 +-
->>>>   1 files changed, 1 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/kernel/module.c b/kernel/module.c
->>>> index 8c6b428..765bac5 100644
->>>> --- a/kernel/module.c
->>>> +++ b/kernel/module.c
->>>> @@ -1340,7 +1340,7 @@ static void add_usage_links(struct module *mod)
->>>>   {
->>>>   #ifdef CONFIG_MODULE_UNLOAD
->>>>         struct module_use *use;
->>>> -       int nowarn;
->>>> +       int nowarn __attribute__((unused));
->>>
->>> The `__attribute__((unused))' should be `__used'.
->>>
->>
->> I'm confused now. how should I write that out?
->> (google is not giving me vary many examples on this)
->
-> Sorry, I misrememberd there was a #define for it, and could find only __used.
-> But on closer look, the `__attribute__((unused)` is correct.
->
+On Saturday 19 June 2010 14:32:04 Arnd Bergmann wrote:
+> > I boot with a "console=uart,io,0x3f8" argument, so I start out using
+> > 8250_early.c. Looks like it switched to 8250.c based on seeing
+> > this:
+> > 
+> > Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+> > 
+> > on the console log.
+> 
+> Good, so it's something I should be able to reproduce on a PC.
 
-alright!! then I'll resend this with the above change.
+I could reproduce the problem now and bisected it down to a cleanup
+patch that can fortunately get reverted. The symptom that I saw
+is that when I open a serial port for the second time (e.g. starting
+getty and logging in), the output gets garbled, while the first one
+worked fine. This does not rely on the console code at all.
 
-Thanks for looking at this!!
+Original commit message:
+    Our code now rather closely resembles the helper, so switch to it.
 
-Justin P. Mattock
+Apparently, the two functions are not really doing the same,
+so revert the commit for now. This includes the addition of
+a tty_unlock()/tty_lock() pair when blocking on the wait queue.
+
+Greg, do you want to apply this patch on top of the series, or
+do you prefer to get a replacement for the original patch, once
+we know what's wrong with it?
+
+Tony, can you confirm that with this patch added, everything's
+fine for you?
+
+Alan, any idea where the problem may be with the broken patch?
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/serial/serial_core.c |   89 +++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 88 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index 78b1eac..55e5769 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -1539,6 +1539,93 @@ static void uart_dtr_rts(struct tty_port *port, int onoff)
+ 		uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
+ }
+ 
++/*
++ * Block the open until the port is ready.  We must be called with
++ * the per-port semaphore held.
++ */
++static int
++uart_block_til_ready(struct file *filp, struct uart_state *state)
++{
++	DECLARE_WAITQUEUE(wait, current);
++	struct tty_port *port = &state->port;
++	unsigned long flags;
++
++	spin_lock_irqsave(&port->lock, flags);
++	if (!tty_hung_up_p(filp))
++		port->count--;
++	port->blocked_open++;
++	spin_unlock_irqrestore(&port->lock, flags);
++
++	add_wait_queue(&port->open_wait, &wait);
++	while (1) {
++		set_current_state(TASK_INTERRUPTIBLE);
++
++		/*
++		 * If we have been hung up, tell userspace/restart open.
++		 */
++		if (tty_hung_up_p(filp) || port->tty == NULL)
++			break;
++
++		/*
++		 * If the port has been closed, tell userspace/restart open.
++		 */
++		if (!(port->flags & ASYNC_INITIALIZED))
++			break;
++
++		/*
++		 * If non-blocking mode is set, or CLOCAL mode is set,
++		 * we don't want to wait for the modem status lines to
++		 * indicate that the port is ready.
++		 *
++		 * Also, if the port is not enabled/configured, we want
++		 * to allow the open to succeed here.  Note that we will
++		 * have set TTY_IO_ERROR for a non-existant port.
++		 */
++		if ((filp->f_flags & O_NONBLOCK) ||
++		    (port->tty->termios->c_cflag & CLOCAL) ||
++		    (port->tty->flags & (1 << TTY_IO_ERROR)))
++			break;
++
++		/*
++		 * Set DTR to allow modem to know we're waiting.  Do
++		 * not set RTS here - we want to make sure we catch
++		 * the data from the modem.
++		 */
++		if (port->tty->termios->c_cflag & CBAUD)
++			tty_port_raise_dtr_rts(port);
++
++		/*
++		 * and wait for the carrier to indicate that the
++		 * modem is ready for us.
++		 */
++		if (tty_port_carrier_raised(port))
++			break;
++
++		tty_unlock();
++		schedule();
++		tty_lock();
++
++		if (signal_pending(current))
++			break;
++	}
++	set_current_state(TASK_RUNNING);
++	remove_wait_queue(&port->open_wait, &wait);
++
++	spin_lock_irqsave(&port->lock, flags);
++	if (!tty_hung_up_p(filp))
++		port->count++;
++	port->blocked_open--;
++	spin_unlock_irqrestore(&port->lock, flags);
++
++	if (signal_pending(current))
++		return -ERESTARTSYS;
++
++	if (!port->tty || tty_hung_up_p(filp))
++		return -EAGAIN;
++
++	return 0;
++}
++
+ static struct uart_state *uart_get(struct uart_driver *drv, int line)
+ {
+ 	struct uart_state *state;
+@@ -1647,7 +1734,7 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
+ 	 */
+ 	mutex_unlock(&port->mutex);
+ 	if (retval == 0)
+-		retval = tty_port_block_til_ready(port, tty, filp);
++		retval = uart_block_til_ready(filp, state);
+ 
+ 	/*
+ 	 * If this is the first open to succeed, adjust things to suit.
+-- 
+1.7.0.4
+
