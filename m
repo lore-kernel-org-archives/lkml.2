@@ -1,124 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab0FSP7g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 11:59:36 -0400
-Received: from fg-out-1718.google.com ([72.14.220.154]:14967 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756384Ab0FSP7d convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 11:59:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=XHi40sxbBFTXwVL5DVrQbSXgOUH4db5D2D7yYoK63WtJExDofnSVurcVpOW6aqa7Wl
-         GLYgamrQFjljFiKDo9Svoy7FlRHbfjZ7qa4nzZbAkyFBhIFsNqpWxSrNiSw1+fPLY6bL
-         b36eVy5m2aD2DjqiAsS0bYlmp4/emAsf606U0=
-From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH] hid Logitech G13 Driver 0.0.5
-Date: Sat, 19 Jun 2010 17:57:21 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.33-2-amd64; KDE/4.4.3; x86_64; ; )
-Cc: "Rick L. Vinyard, Jr." <rvinyard@cs.nmsu.edu>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>, linux-kernel@vger.kernel.org,
-       felipe.balbi@nokia.com, linux-usb@vger.kernel.org, oliver@neukum.org,
-       linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-       npavel@ituner.com, tomi.valkeinen@nokia.com, tony@atomide.com,
-       florianschandinat@gmx.de, krzysztof.h1@wp.pl, akpm@linux-foundation.org,
-       linux-fbdev@vger.kernel.org, jkosina@suse.cz, bonbons@linux-vserver.org
-References: <201003021848.o22ImLSS004394@mustang.cs.nmsu.edu> <24ab70ff629c48b6d10ce0cf6dc5d64b.squirrel@intranet.cs.nmsu.edu> <20100303051311.GA4651@elf.ucw.cz>
-In-Reply-To: <20100303051311.GA4651@elf.ucw.cz>
+	id S1755353Ab0FSQWb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 12:22:31 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:33325 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753986Ab0FSQWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 12:22:30 -0400
+Date: Sat, 19 Jun 2010 09:21:56 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       Alexander Potashev <aspotashev@gmail.com>,
+       Tim Abbott <tabbott@ksplice.com>, Sam Ravnborg <sam@ravnborg.org>,
+       Jan Beulich <jbeulich@novell.com>,
+       Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] x86: clear XD_DISABLED flag on Intel to regain
+ NX
+Message-ID: <20100619162156.GW24749@outflux.net>
+References: <20100619055010.GR24749@outflux.net>
+ <874ogzph4m.fsf@basil.nowhere.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201006191757.22035.marek.vasut@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <874ogzph4m.fsf@basil.nowhere.org>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne St 3. března 2010 06:13:12 Pavel Machek napsal(a):
-> Hi!
-> 
-> > >> +/*
-> > >> + * This is a default logo to be loaded upon driver initialization
-> > >> + * replacing the default Logitech G13 image loaded on device
-> > >> + * initialization. This is to provide the user a cue that the
-> > >> + * Linux driver is loaded and ready.
-> > >> + *
-> > >> + * This logo contains the text G13 in the center with two penguins
-> > >> + * on each side of the text. The penguins are a 33x40 rendition of
-> > >> + * the default framebuffer 80x80 monochrome image scaled down and
-> > >> + * cleaned up to retain something that looks a little better than
-> > >> + * a simple scaling.
-> > >> + *
-> > >> + * This logo is a simple xbm image created in GIMP and exported.
-> > >> + * To view the image copy the following two #defines plus the
-> > >> + * g13_lcd_bits to an ASCII text file and save with extension
-> > >> + * .xbm, then open with GIMP or any other graphical editor
-> > >> + * such as eog that recognizes the .xbm format.
-> > >> + */
-> > > 
-> > > ...
-> > > 
-> > >> +static unsigned char g13_lcd_bits[] = {
-> > >> + 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-> > >> 0x00,
-> > > 
-> > > I think you'll agree above is not an elegant solution.
-> > 
-> > I could make it a config option.
-> 
-> You get about 10 complains already, but you are not willing to solve
-> it. No, config option does not help.
-> 
-> If you want to, make it separate patch so we can reject it separately.
-> 
-> > >> +static DEVICE_ATTR(rgb, 0666, g13_rgb_show, g13_rgb_store);
-> > > 
-> > > Reading above code, it looks like this new userspace sysfs attribute
-> > > is for backlight control. Could that be better exposed using the
-> > > existing backlight class?
-> > 
-> > I looked at the backlight class and it didn't seem to be a very good fit.
-> > 
-> > /* This structure defines all the properties of a backlight */
-> > struct backlight_properties {
-> > 
-> > 	/* Current User requested brightness (0 - max_brightness) */
-> > 	int brightness;
-> > 	/* Maximal value for brightness (read-only) */
-> > 	int max_brightness;
-> > 	/* Current FB Power mode (0: full on, 1..3: power saving
-> > 	
-> > 	   modes; 4: full off), see FB_BLANK_XXX */
-> > 	
-> > 	int power;
-> > 	/* FB Blanking active? (values as for power) */
-> > 	/* Due to be removed, please use (state & BL_CORE_FBBLANK) */
-> > 	int fb_blank;
-> > 	/* Flags used to signal drivers of state changes */
-> > 	/* Upper 4 bits are reserved for driver internal use */
-> > 	unsigned int state;
-> > 
-> > };
-> > 
-> > The g13's backlight doesn't support any of these properties. All you can
-> > set is an rgb value on the g13; no power modes, no brightness, etc. I
-> > could add a brightness attribute by scaling the rgb values, but I would
-> > prefer to do that from userspace rather than the driver since it's not
-> > supported in the device itself.
-> > 
-> > And, we'd still have to have the rgb attribute since the backlight class
-> > doesn't have color.
-> 
-> Or you could pretend you have 3 different backlights? ....which is
-> actually what you have...?
-> 									Pavel
+Hi,
 
-Any updates on this?
+On Sat, Jun 19, 2010 at 10:21:29AM +0200, Andi Kleen wrote:
+> Kees Cook <kees.cook@canonical.com> writes:
+> 
+> > This will clear the MSR_IA32_MISC_ENABLE_XD_DISABLE bit so that NX cannot
+> > be inappropriately controlled by the BIOS on Intel CPUs.  If NX actually
+> > needs to be disabled, "noexec=off" can be used.
+> 
+> The patch still seems like a bad idea to me. What happens if 
+> the NX bit is broken for some reason and the BIOS is right
+> to disable it?
 
-btw. it'd be good if we could use the g13fb on G15 ... would that be possible?
-Cheers!
+I would think this would be the exception; such broken systems should be
+worked around when they are discovered.
+
+> If there's some VM which doesn't ignore unknown MSR writes
+> it could also break early, and at best you get an ugly
+> message and at worst a crash.
+
+That would be a bug in the VM, but since intel_early_init() already does
+the MSR call, such a problem would already exist (and this patch wouldn't
+make it worse).
+
+> Do you have evidence for a lot of systems where NX is disabled
+> this way without BIOS option? Really such information
+> should be in the patch description.
+
+All Dell systems shipping Ubuntu (and RedHat before then) until maybe
+mid-2009 had XD_DISABLE set, and several bare boards with AMI BIOSes
+have shipped with it too.  It is an unfortunately common scenario from
+what I've seen.  Note that both have an option, but most users don't know
+or care about it.  Since Linux handles NX fine, it should clear the bit.
+
+> If you really need to apply it apply it in some place where
+> exception handling is possible at least.
+
+I think this needs to happen before the EFER gets set, which happens very
+early.  If this can be moved somewhere else, I would be very happy to put
+it there; I'd like to avoid any possible glitches (though clearing an MSR
+bit seems safe, and using that MSR is already known to be safe).
+
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
