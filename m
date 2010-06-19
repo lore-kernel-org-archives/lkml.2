@@ -1,82 +1,525 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab0FSKK0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 06:10:26 -0400
-Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:48573 "EHLO
-	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353Ab0FSKKZ (ORCPT
+	id S1755410Ab0FSKbc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 06:31:32 -0400
+Received: from ppsw-30.csi.cam.ac.uk ([131.111.8.130]:36609 "EHLO
+	ppsw-30.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637Ab0FSKba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 06:10:25 -0400
+	Sat, 19 Jun 2010 06:31:30 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C1C9707.3060703@jic23.retrosnub.co.uk>
-Date: Sat, 19 Jun 2010 11:08:07 +0100
+Message-ID: <4C1C9BFD.9060409@jic23.retrosnub.co.uk>
+Date: Sat, 19 Jun 2010 11:29:17 +0100
 From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: guenter.roeck@ericsson.com, Jonathan Cameron <jic23@cam.ac.uk>,
-       Hans de Goede <hdegoede@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 1/3] hwmon: Driver for SMM665 Six-Channel
-  Active DC Output Controller/Monitor
-References: <1276877194-28214-1-git-send-email-guenter.roeck@ericsson.com>	<1276877194-28214-2-git-send-email-guenter.roeck@ericsson.com>	<4C1BB2AC.4090308@jic23.retrosnub.co.uk>	<4C1BB698.2090003@cam.ac.uk>	<1276888405.2631.495.camel@groeck-laptop> <20100619102729.2ce12447@hyperion.delvare>
-In-Reply-To: <20100619102729.2ce12447@hyperion.delvare>
+To: Christoph Mair <christoph.mair@gmail.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Stefan Schmidt <stefan@datenfreihafen.org>,
+       Datta Shubhrajyoti <shubhrajyoti@ti.com>
+Subject: Re: [PATCH] Support for the pressure sensor BMP085 from Bosch Sensortec.
+References: <1276912723-7153-1-git-send-email-christoph.mair@gmail.com>
+In-Reply-To: <1276912723-7153-1-git-send-email-christoph.mair@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/10 09:27, Jean Delvare wrote:
-> On Fri, 18 Jun 2010 12:13:25 -0700, Guenter Roeck wrote:
->> On Fri, 2010-06-18 at 14:10 -0400, Jonathan Cameron wrote:
->>> Another quick query.  Are the _min / _max attributes as defined in the
->>> abi meant for alarms?  I always thought they were to tell userspace the
->>> limits on measurement?
->>>
->> Good question. I thought it is supposed to refer to alarm limits, but I
->> may be wrong. 
->>
->> Browsing through a couple of drivers, it _looks_ like the values are
->> used for alarm limits (eg adm1025 or lm85). Limits are not always set to
+On 06/19/10 02:58, Christoph Mair wrote:
+> This driver adds support for the BMP085 digital pressure sensor
+> from Bosch Sensortec. It exposes a sysfs api to userspace where
+> pressure and temperature measurement results can be read from the
+> pressure0_input and temp0_input file. The chip is able to calculate
+> the average of up to eight samples to increase the accuracy.
+> This feature can be controlled by writing to the oversampling file.
 > 
-> Yes, these are alarms. _min and _max are really misnomers, these should
-> have been _low and _high but by the time I realized it, _min and _max
-> were already de facto standards and it was too late to change this.
+> Signed-off-by: Christoph Mair <christoph.mair@gmail.com>
+
+Hi Chrisoph,
+
+Couple of queries inline.  One array that looks twice as big
+as it needs to be and a few suggestions about passing errors
+up to userspace.
+> ---
+>  drivers/misc/Kconfig  |   10 ++
+>  drivers/misc/Makefile |    1 +
+>  drivers/misc/bmp085.c |  412 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 423 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/misc/bmp085.c
 > 
-> Documentation/hwmon/sysfs-interface says:
-> 
-> Usual items are "input" (measured value), "max" (high threshold,
-> "min" (low threshold).
-Ah, I missed that general defining of terms.  It's fine as is unless we end
-up with lots of people not reading it properly like me ;)
-> 
-> Specific occurrences are then left without details. If you think this
-> document can be improved, I welcome patches.
-> 
->> useful values, though. This is what my CPU board returns:
->>
->> lm85-i2c-0-2e
->> Adapter: SMBus PIIX4 adapter at 0580
->> V1.5:        +1.80 V  (min =  +0.00 V, max =  +3.32 V)   
->> VCore:       +1.29 V  (min =  +0.00 V, max =  +2.99 V)   
->> V3.3:        +3.32 V  (min =  +0.00 V, max =  +4.38 V)   
->> V5:          +5.00 V  (min =  +0.00 V, max =  +6.64 V)   
->> V12:        +12.12 V  (min =  +0.00 V, max = +15.94 V)   
->>
->> The lm85 datasheet says: "If a voltage input either exceeds the value
->> set in the voltage high limit register or falls below the value set in
->> the voltage low limit register, the corresponding bit will be set
->> automatically by the LM85 in the interrupt status registers (41-42h)."
->>
->>> Either way, one of us has misunderstood so perhaps the documentation needs
->>> to be more specific....
->>
->> Agreed.
-> 
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index 26386a9..9df8d3e 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -353,6 +353,16 @@ config VMWARE_BALLOON
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called vmware_balloon.
+>  
+> +config BMP085
+> +	tristate "BMP085 digital pressure sensor"
+> +	depends on I2C && SYSFS
+> +	help
+> +	  If you say yes here you get support for the Bosch Sensortec
+> +	  BMP086 digital pressure sensor.
+> +
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called bmp085.
+> +
+>  source "drivers/misc/c2port/Kconfig"
+>  source "drivers/misc/eeprom/Kconfig"
+>  source "drivers/misc/cb710/Kconfig"
+> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+> index 6ed06a1..5623c54 100644
+> --- a/drivers/misc/Makefile
+> +++ b/drivers/misc/Makefile
+> @@ -31,3 +31,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
+>  obj-y				+= eeprom/
+>  obj-y				+= cb710/
+>  obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
+> +obj-$(CONFIG_BMP085)		+= bmp085.o
+> diff --git a/drivers/misc/bmp085.c b/drivers/misc/bmp085.c
+> new file mode 100644
+> index 0000000..e7ee91e
+> --- /dev/null
+> +++ b/drivers/misc/bmp085.c
+> @@ -0,0 +1,412 @@
+> +/*  Copyright (c) 2010  Christoph Mair <christoph.mair@gmail.com>
+> +
+> +    This program is free software; you can redistribute it and/or modify
+> +    it under the terms of the GNU General Public License as published by
+> +    the Free Software Foundation; either version 2 of the License, or
+> +    (at your option) any later version.
+> +
+> +    This program is distributed in the hope that it will be useful,
+> +    but WITHOUT ANY WARRANTY; without even the implied warranty of
+> +    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> +    GNU General Public License for more details.
+> +
+> +    You should have received a copy of the GNU General Public License
+> +    along with this program; if not, write to the Free Software
+> +    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> +*/
+> +
+> +
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/i2c.h>
+> +#include <linux/slab.h>
+> +#include <linux/delay.h>
+> +
+> +
+> +#define BMP085_I2C_ADDRESS		0x77
+> +#define BMP085_CHIP_ID			0x55
+> +
+> +#define BMP085_CALIBRATION_DATA_START	0xAA
+> +#define BMP085_CALIBRATION_DATA_LENGTH	22
+> +#define BMP085_CHIP_ID_REG		0xD0
+> +#define BMP085_VERSION_REG		0xD1
+> +#define BMP085_CTRL_REG			0xF4
+> +#define BMP085_TEMP_MEASUREMENT		0x2E
+> +#define BMP085_PRESSURE_MEASUREMENT	0x34
+> +#define BMP085_CONVERSION_REGISTER_MSB	0xF6
+> +#define BMP085_CONVERSION_REGISTER_LSB	0xF7
+> +#define BMP085_CONVERSION_REGISTER_XLSB	0xF8
+> +#define BMP085_TEMP_CONVERSION_TIME	5
+> +
+> +#define BMP085_MIN_TEMP			-400	/* tenth of a degree celsius */
+> +#define BMP085_MAX_TEMP			850
+> +#define BMP085_MIN_PRESSURE		30000	/* pascal (millibar) */
+> +#define BMP085_MAX_PRESSURE		110000
+> +#define BMP085_INPUT_POLL_INTERVAL	1000	/* ms */
+> +
+> +#define BMP085_CLIENT_NAME		"bmp085"
+> +
+> +
+> +static const unsigned short normal_i2c[] = { BMP085_I2C_ADDRESS,
+> +							I2C_CLIENT_END };
+> +
+> +struct bmp085_calibration_data {
+> +	s16 AC1, AC2, AC3;
+> +	u16 AC4, AC5, AC6;
+> +	s16 B1, B2;
+> +	s16 MB, MC, MD;
+> +};
+> +
+> +
+> +/* Each client has this additional data */
+> +struct bmp085_data {
+> +	struct i2c_client *client;
+> +	struct mutex lock;
+> +	struct bmp085_calibration_data calibration;
+> +	u32 raw_temperature;
+> +	u32 raw_pressure;
+> +	unsigned char oversampling_setting;
+> +	unsigned long last_temp_measurement;
+> +	s32 b6; /* calculated temperature correction coefficient */
+> +};
+> +
+> +
+Why not simply reorder the code to have the init function defined before the probe?
+
+> +static void bmp085_init_client(struct i2c_client *client);
+> +
+> +
+> +static s32 bmp085_read_calibration_data(struct i2c_client *client)
+> +{
+Why is this so big?  You only ever use the first 11 of the 22 elements.
+I guess the data type of this changed at some point???
+
+> +	u16 tmp[BMP085_CALIBRATION_DATA_LENGTH];
+> +	struct bmp085_data *data = i2c_get_clientdata(client);
+> +	struct bmp085_calibration_data *cali = &(data->calibration);
+> +	s32 status = i2c_smbus_read_i2c_block_data(client,
+> +				BMP085_CALIBRATION_DATA_START,
+> +				BMP085_CALIBRATION_DATA_LENGTH, (u8 *)tmp);
+I guess an error here probably means all hell has broken loose anyway...
+However it would be more conventional to handle any error before trying
+to use the data.
+> +
+> +	cali->AC1 =  be16_to_cpu(tmp[0]);
+> +	cali->AC2 =  be16_to_cpu(tmp[1]);
+> +	cali->AC3 =  be16_to_cpu(tmp[2]);
+> +	cali->AC4 =  be16_to_cpu(tmp[3]);
+> +	cali->AC5 =  be16_to_cpu(tmp[4]);
+> +	cali->AC6 = be16_to_cpu(tmp[5]);
+> +	cali->B1 = be16_to_cpu(tmp[6]);
+> +	cali->B2 = be16_to_cpu(tmp[7]);
+> +	cali->MB = be16_to_cpu(tmp[8]);
+> +	cali->MC = be16_to_cpu(tmp[9]);
+> +	cali->MD = be16_to_cpu(tmp[10]);
+> +	return status;
+> +}
+> +
+> +
+> +static s32 bmp085_update_raw_temperature(struct bmp085_data *data)
+> +{
+> +	u16 tmp;
+> +	s32 status;
+> +
+> +	mutex_lock(&data->lock);
+> +	status = i2c_smbus_write_byte_data(data->client, BMP085_CTRL_REG,
+> +						BMP085_TEMP_MEASUREMENT);
+> +	if (status != 0) {
+Splitting error messages like this is frowned up as it makes it difficult
+to grep the code for where a given message came from. If other reorganizations
+don't make checkpatch happy then ignore line length warnings if the alternative
+is to do this.
+> +		dev_err(&data->client->dev, "Error while requesting"
+> +						" temperature measurement.\n");
+> +		goto exit;
+> +	}
+> +	msleep(BMP085_TEMP_CONVERSION_TIME);
+> +
+> +	status = i2c_smbus_read_i2c_block_data(data->client,
+> +			BMP085_CONVERSION_REGISTER_MSB, sizeof(tmp), (u8 *)&tmp);
+> +	if (status != sizeof(tmp)) {
+> +		dev_err(&data->client->dev, "Error while requesting"
+> +				" temperature measurement (II): %d\n", status);
+> +		goto exit;
+> +	}
+> +	data->raw_temperature = be16_to_cpu(tmp);
+> +	data->last_temp_measurement = jiffies;
+> +
+> +exit:
+> +	mutex_unlock(&data->lock);
+> +	return status;
+> +}
+> +
+> +static s32 bmp085_update_raw_pressure(struct bmp085_data *data)
+> +{
+> +	u32 tmp = 0;
+> +	s32 status;
+> +
+> +	mutex_lock(&data->lock);
+> +	status = i2c_smbus_write_byte_data(data->client, BMP085_CTRL_REG,
+> +		BMP085_PRESSURE_MEASUREMENT + (data->oversampling_setting<<6));
+> +	if (status != 0) {
+> +		dev_err(&data->client->dev, "Error while requesting"
+> +						"pressure measurement.\n");
+> +		goto exit;
+> +	}
+> +
+> +	/* wait for the end of conversion */
+> +	msleep(2+(3 << data->oversampling_setting<<1));
+> +
+> +	/* copy data into a u32 (4 bytes), but leave skip the first byte. */
+> +	status = i2c_smbus_read_i2c_block_data(
+> +					data->client, 0xF6, 3, ((u8 *)&tmp)+1);
+> +	if (status != 3) {
+> +		dev_err(&data->client->dev, "Error while reading"
+> +				"pressure measurement results: %d\n", status);
+> +		goto exit;
+> +	}
+> +	data->raw_pressure = be32_to_cpu((tmp));
+> +	data->raw_pressure >>= (8-data->oversampling_setting);
+> +
+> +exit:
+> +	mutex_unlock(&data->lock);
+> +	return status;
+> +}
+> +
+> +
+> +/*
+> + * This function starts the temperature measurement and returns the value
+> + * in tenth of a degree celsius.
+> + */
+> +static s32 bmp085_get_temperature(struct bmp085_data *data)
+> +{
+> +	struct bmp085_calibration_data *cali = &data->calibration;
+> +	long x1, x2;
+> +
+Obviously it will make life more complex, but it would be good to see any
+error returned by this function handled properly.  If you get an error the
+ideal is to pass it all the way up to userspace.
+> +	bmp085_update_raw_temperature(data);
+> +
+> +	x1 = ((data->raw_temperature - cali->AC6) * cali->AC5) >> 15;
+> +	x2 = (cali->MC << 11) / (x1 + cali->MD);
+> +	data->b6 = x1 + x2 - 4000;
+> +	return (x1+x2+8) >> 4;
+> +}
+> +
+> +/*
+> + * This function starts the pressure measurement and returns the value
+> + * in millibar. Since the pressure depends on the ambient temperature,
+> + * a temperature measurement is executed if the last known value is older
+> + * than one second.
+> + */
+> +static s32 bmp085_get_pressure(struct bmp085_data *data)
+> +{
+> +	struct bmp085_calibration_data *cali = &data->calibration;
+> +	s32 x1, x2, x3, b3;
+> +	u32 b4, b7;
+> +	s32 p;
+> +
+> +	/* alt least every second force an update of the ambient temperature */
+> +	if (data->last_temp_measurement + 1*HZ < jiffies)
+> +		bmp085_get_temperature(data);
+> +
+Same here wrt to error handling.
+> +	bmp085_update_raw_pressure(data);
+> +
+> +	x1 = (data->b6 * data->b6) >> 12;
+> +	x1 *= cali->B2;
+> +	x1 >>= 11;
+> +
+> +	x2 = cali->AC2 * data->b6;
+> +	x2 >>= 11;
+> +
+> +	x3 = x1 + x2;
+> +
+> +	b3 = (((((s32)cali->AC1) * 4 + x3) << data->oversampling_setting) + 2);
+> +	b3 >>= 2;
+> +
+> +	x1 = (cali->AC3 * data->b6) >> 13;
+> +	x2 = (cali->B1 * ((data->b6 * data->b6) >> 12)) >> 16;
+> +	x3 = (x1 + x2 + 2) >> 2;
+> +	b4 = (cali->AC4 * (u32)(x3 + 32768)) >> 15;
+> +
+> +	b7 = ((u32)data->raw_pressure - b3) *
+> +					(50000 >> data->oversampling_setting);
+> +	p = ((b7 < 0x80000000) ? ((b7 << 1) / b4) : ((b7 / b4) * 2));
+> +
+> +	x1 = p >> 8;
+> +	x1 *= x1;
+> +	x1 = (x1 * 3038) >> 16;
+> +	x2 = (-7357 * p) >> 16;
+> +	p += (x1 + x2 + 3791) >> 4;
+> +	return p;
+> +}
+> +
+> +/*
+> + * This function sets the chip-internal oversampling. Valid values are 0..3.
+> + * The chip will use 2^oversampling samples for interlan averaging.
+> + * This influences the measurement time and the accuracy; larger values
+> + * increase both. The datasheet gives on overview on how measurement time,
+> + * accuracy and noise correlate.
+> + */
+
+Given this is only used in the set_oversampling sysfs funciton below, I'd personally
+just roll this code in there.  Might be preferable to return -EINVAL from the sysfs
+function rather than rounding down to a valid value. 
+
+> +static void bmp085_set_oversampling(struct bmp085_data *data,
+> +						unsigned char oversampling)
+> +{
+> +	if (oversampling > 3)
+> +		oversampling = 3;
+> +	data->oversampling_setting = oversampling;
+> +}
+> +
+> +/*
+> + * Returns the currently selected oversampling. Range: 0..3
+> + */
+> +static unsigned char bmp085_get_oversampling(struct bmp085_data *data)
+> +{
+> +	return data->oversampling_setting;
+> +}
+> +
+> +/* sysfs callbacks */
+> +static ssize_t set_oversampling(struct device *dev,
+> +				struct device_attribute *attr,
+> +				const char *buf, size_t count)
+> +{
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +	struct bmp085_data *data = i2c_get_clientdata(client);
+> +	unsigned long oversampling;
+> +	int success = strict_strtoul(buf, 10, &oversampling);
+> +	if (success == 0) {
+> +		bmp085_set_oversampling(data, oversampling);
+> +		return count;
+> +	}
+> +	return success;
+> +}
+> +
+> +static ssize_t show_oversampling(struct device *dev,
+> +				 struct device_attribute *attr, char *buf)
+> +{
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +	struct bmp085_data *data = i2c_get_clientdata(client);
+> +	return sprintf(buf, "%u\n", bmp085_get_oversampling(data));
+> +}
+> +static DEVICE_ATTR(oversampling, S_IWUSR | S_IRUGO,
+> +					show_oversampling, set_oversampling);
+> +
+> +
+> +static ssize_t show_temperature(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +	struct bmp085_data *data = i2c_get_clientdata(client);
+> +	return sprintf(buf, "%d\n", bmp085_get_temperature(data));
+> +}
+> +static DEVICE_ATTR(temp0_input, S_IRUGO, show_temperature, NULL);
+> +
+> +
+> +static ssize_t show_pressure(struct device *dev,
+> +			     struct device_attribute *attr, char *buf)
+> +{
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +	struct bmp085_data *data = i2c_get_clientdata(client);
+For the error handling comment above, you would want to return the relevant
+error here rather than just eating it as currently occurs and returning
+garbage.
+> +	return sprintf(buf, "%d\n", bmp085_get_pressure(data));
+> +}
+> +static DEVICE_ATTR(pressure0_input, S_IRUGO, show_pressure, NULL);
+> +
+> +
+> +static struct attribute *bmp085_attributes[] = {
+> +	&dev_attr_temp0_input.attr,
+> +	&dev_attr_pressure0_input.attr,
+> +	&dev_attr_oversampling.attr,
+> +	NULL
+> +};
+> +
+> +static const struct attribute_group bmp085_attr_group = {
+> +	.attrs = bmp085_attributes,
+> +};
+> +
+> +static int bmp085_detect(struct i2c_client *client, struct i2c_board_info *info)
+> +{
+> +	if (client->addr != BMP085_I2C_ADDRESS)
+> +		return -ENODEV;
+> +
+> +	if (i2c_smbus_read_byte_data(client, BMP085_CHIP_ID_REG) != BMP085_CHIP_ID)
+> +		return -ENODEV;
+> +
+> +	return 0;
+> +}
+> +
+> +static int bmp085_probe(struct i2c_client *client,
+> +			 const struct i2c_device_id *id)
+> +{
+> +	struct bmp085_data *data;
+> +	int err = 0;
+> +
+> +	data = kzalloc(sizeof(struct bmp085_data), GFP_KERNEL);
+> +	if (!data) {
+> +		err = -ENOMEM;
+> +		goto exit;
+> +	}
+> +
+> +	/* default settings after POR */
+> +	data->oversampling_setting = 0x00;
+> +
+> +	i2c_set_clientdata(client, data);
+> +
+> +	/* Initialize the BMP085 chip */
+> +	bmp085_init_client(client);
+> +
+> +	/* Register sysfs hooks */
+> +	err = sysfs_create_group(&client->dev.kobj, &bmp085_attr_group);
+> +	if (err)
+> +		goto exit_free;
+> +
+> +	dev_info(&data->client->dev, "succesfully initialized bmp085!\n");
+> +	goto exit;
+> +
+> +exit_free:
+> +	kfree(data);
+> +exit:
+> +	return err;
+> +}
+> +
+> +static int bmp085_remove(struct i2c_client *client)
+> +{
+> +	sysfs_remove_group(&client->dev.kobj, &bmp085_attr_group);
+> +	kfree(i2c_get_clientdata(client));
+> +	return 0;
+> +}
+> +
+> +/* Called when we have found a new HMC5843. */
+> +static void bmp085_init_client(struct i2c_client *client)
+> +{
+> +	unsigned char version;
+> +	struct bmp085_data *data = i2c_get_clientdata(client);
+> +	data->client = client;
+> +	bmp085_read_calibration_data(client);
+> +	version = i2c_smbus_read_byte_data(client, BMP085_VERSION_REG);
+> +	data->last_temp_measurement = 0;
+> +	data->oversampling_setting = 3;
+> +	mutex_init(&data->lock);
+> +	dev_info(&data->client->dev, "BMP085 ver. %d.%d initialized\n",
+> +			(version & 0x0F), (version & 0xF0) >> 4);
+> +}
+> +
+> +static const struct i2c_device_id bmp085_id[] = {
+> +	{ "bmp085", 0 },
+> +	{ }
+> +};
+> +
+> +static struct i2c_driver bmp085_driver = {
+> +	.driver = {
+> +		.owner = THIS_MODULE,
+> +		.name	= "bmp085"
+> +	},
+> +	.id_table	= bmp085_id,
+> +	.probe		= bmp085_probe,
+> +	.remove		= bmp085_remove,
+> +
+> +	.detect		= bmp085_detect,
+> +	.address_list	= normal_i2c
+> +};
+> +
+> +static int __init bmp085_init(void)
+> +{
+> +	return i2c_add_driver(&bmp085_driver);
+> +}
+> +
+> +static void __exit bmp085_exit(void)
+> +{
+> +	i2c_del_driver(&bmp085_driver);
+> +}
+> +
+> +
+> +MODULE_AUTHOR("Christoph Mair <christoph.mair@gmail.com");
+> +MODULE_DESCRIPTION("BMP085 driver");
+> +MODULE_LICENSE("GPL");
+> +
+> +module_init(bmp085_init);
+> +module_exit(bmp085_exit);
 
