@@ -1,160 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab0FSONi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 10:13:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65522 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978Ab0FSONh (ORCPT
+	id S1756075Ab0FSOR1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 10:17:27 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:45800 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978Ab0FSOR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 10:13:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:reply-to:from:date:x-google-sender-auth
-         :message-id:subject:to:content-type;
-        b=KS5sWKiBp2nByYsszg6k3cujamhydJJDakoTjMSesvCfUEiJBNT1GXXjO8BiyshVhY
-         LDPlWnlzHKq4SkZMuZs8zAASohW+TK/tmUH/N6umw+TcfdHMb7fmp6eeLbGSa9i1mpWv
-         3loqnA9N8ms6uQsOXmGFrUgAkybe5CuzC92A8=
+	Sat, 19 Jun 2010 10:17:26 -0400
+Date: Sat, 19 Jun 2010 16:17:24 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
+       Huang Ying <ying.huang@intel.com>, "H.PeterA" <"nvin hpa"@zytor.com>,
+       linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Subject: Re: [RFC 1/3] Unified NMI delayed call mechanism
+Message-ID: <20100619141724.GN18946@basil.fritz.box>
+References: <1276334896-7075-1-git-send-email-ying.huang@intel.com>
+ <1276862130.1875.7.camel@laptop>
+ <20100618122532.GB9045@basil.fritz.box>
+ <20100618143749.GA14034@elte.hu>
 MIME-Version: 1.0
-Reply-To: linux@schou.dk
-From: Hans Schou <linux@schou.dk>
-Date: Sat, 19 Jun 2010 16:13:14 +0200
-X-Google-Sender-Auth: alCtsNbsm3BsV1W5SNS84sXRGDA
-Message-ID: <AANLkTimO5PXmJiIPDw82MTA53mLSl-OC0e1SOEh7v8pH@mail.gmail.com>
-Subject: PROBLEM: SIS7019 stops recording after 42 min
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100618143749.GA14034@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+> Nope - the softirq code was written by Alexey Kuznetsov and David S. Miller. 
 
-I have a problem with recording sound when using the sound chip
-SIS7019 with both kernel 2.6.26 and 2.6.34. After recording about 42
-minutes it kind a stops recording, more precisely it is taking a pause
-of exactly 10 seconds between each reading.
+It was based on the design of the previous bottom halves in case you
+missed it. I believe BHs were there from nearly the beginning.
 
-As recorder I have tried several programs and all of them fails after
-42 minutes. Some programs uses Alsa and some uses the old deprecated
-method. In this example I have logged sox rec.
+(softirqs were basically just per cpu bottom halves, otherwise
+being very similar)
 
-Recording method in a script:
-  strace -tt -o strace.log rec -c 1 -r 44100 -2 sox.wav &
-  sleep 3000
-  kill $?
-
-Recording start 17:41:29 and undtil 18:23:38.977278 it writes about
-6-7 times per second to disk. Then it begin only writing every 10
-seconds. At this point it had written 27222 times to disk and the
-amount of data written so far is 28684288 bytes (including
-wav-header).
-
-WorkARound: When the recording stops, one can just exit 'rec' and
-start it again and record another 42 minutes. Reboot is not necessary.
-Apparently, the re-init of the sound chip fixes the problem.
-
-On other systems with nVidia CK804 or emu10k I do not have the same problem.
-
-I have looked at sound/pci/sis7019.c but I do not really know what I
-should look for. None of the numbers in my observations is in the
-power of 2 which I would expect it was. Like, I expected it stopped
-recording after 64MB or so, but that is not the case.
-
-Linux version 2.6.34-norhtec-sis (root@norh) (gcc version 4.1.2
-20061115 (prerelease) (Debian 4.1.1-21)) #7 Wed Jun 16 00:32:56 CEST
-2010
-(the kernel used was compiled on this system.)
-
-# scripts/ver_linux
-Gnu C                  4.1.2
-Gnu make               3.81
-binutils               2.17
-util-linux             2.12r
-mount                  2.12r
-module-init-tools      3.3-pre2
-e2fsprogs              1.40-WIP
-Linux C Library        scripts/ver_linux: line 63: /proc/self/maps: No
-such file or directory
-Dynamic linker (ldd)   2.3.6
-Net-tools              1.60
-Console-tools          0.2.3
-Sh-utils               5.97
-udev                   105
-
-# lspci -vvv
-00:01.4 Multimedia audio controller: Silicon Integrated Systems [SiS]
-SiS7019 Audio Accelerator
-        Subsystem: Silicon Integrated Systems [SiS] SiS7019 Audio
-Accelerator
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
-ParErr- Stepping- SERR- FastB2B- DisINTx-
-        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium
->TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 64 (500ns min, 6000ns max)
-        Interrupt: pin B routed to IRQ 10
-        Region 0: I/O ports at dc00 [size=256]
-        Region 1: Memory at dfff8000 (32-bit, non-prefetchable)
-[size=16K]
-        Capabilities: [60] Power Management version 2
-                Flags: PMEClk- DSI+ D1+ D2+ AuxCurrent=0mA
-PME(D0+,D1+,D2+,D3hot+,D3cold+)
-                Status: D0 PME-Enable- DSel=0 DScale=0 PME-
-        Kernel driver in use: SiS7019
-        Kernel modules: snd-sis7019
-
-Here is a snip from the log file when it goes from reading 7 times per
-second to every 10th second. Note two times "ioctl" within a second
-and then it goes over to a delay with 10 seconds between each "ioctl":
-
-18:23:38.611877 ioctl(4, 0x800c4151, 0xbf96b1d0) = 0
-18:23:38.784635 gettimeofday({1276446218, 785207}, NULL) = 0
-18:23:38.786609 write(2, "\rTime: 42:08.19 [00:00.00] of 00:"..., 78)= 78
-18:23:38.789354
-write(3,"p\377q\377n\377k\377l\377p\377o\377o\377k\377n\377p\377q\377n\377o\377k\377l\377p"...,4096)
-= 4096
-18:23:38.791590
-write(3,"j\377l\377l\377j\377l\377k\377m\377k\377l\377n\377j\377l\377l\377n\377n\377g\377m"...,12288)
-= 12288
-18:23:38.794425 gettimeofday({1276446218, 795024}, NULL) = 0
-18:23:38.795762 ioctl(4, 0x800c4151, 0xbf96b1d0) = 0
-18:23:38.970451 gettimeofday({1276446218, 971018}, NULL) = 0
-18:23:38.972293 write(2, "\rTime: 42:08.37 [00:00.00] of 00:"..., 78)= 78
-18:23:38.975134
-write(3,"k\377m\377o\377k\377i\377j\377m\377o\377o\377m\377k\377m\377o\377k\377p\377n\377o"...,4096)
-= 4096
-18:23:38.977278
-write(3,"m\377j\377p\377n\377n\377r\377m\377o\377o\377o\377l\377h\377l\377l\377m\377o\377o"...,12288)
-= 12288
-18:23:38.980176 gettimeofday({1276446218, 980773}, NULL) = 0
-18:23:38.981516 ioctl(4, 0x800c4151, 0xbf96b1d0) = 0
-18:23:48.983347 ioctl(4, 0x800c4151, 0xbf96b1d0) = 0
-18:23:48.985710 gettimeofday({1276446228, 986317}, NULL) = 0
-18:23:48.987784 write(2, "\rTime: 42:08.56 [00:00.00] of 00:"..., 78) = 78
-18:23:48.990733
-write(3,"j\377k\377l\377l\377l\377n\377l\377q\377q\377j\377l\377m\377m\377p\377o\377o\377q"...,4096)
-= 4096
-18:23:48.992814
-write(3,"p\377m\377k\377s\377r\377m\377o\377m\377k\377k\377j\377j\377l\377p\377o\377r\377l"...,12288)
-= 12288
-18:23:48.995694 gettimeofday({1276446228, 996297}, NULL) = 0
-18:23:48.997046 ioctl(4, 0x800c4151, 0xbf96b1d0) = 0
-18:23:48.999574 gettimeofday({1276446229, 186}, NULL) = 0
-18:23:49.003421
-write(3,"l\377l\377m\377o\377q\377q\377n\377m\377q\377r\377s\377p\377n\377t\377r\377m\377n"...,4096)
-= 4096
-18:23:49.005517
-write(3,"o\377m\377l\377p\377m\377p\377o\377m\377p\377p\377q\377o\377j\377m\377r\377m\377r"...,12288)
-= 12288
-18:23:49.008337 gettimeofday({1276446229, 8945}, NULL) = 0
-18:23:49.009699 ioctl(4, 0x800c4151, 0xbf96b1d0) = 0
-18:23:59.007878 ioctl(4, 0x800c4151, 0xbf96b1d0) = 0
-
-Version of sox: SoX v14.0.1
-
-Full log file is 780KB compressed:
-http://schou.dk/linux/sis7019/strace.sis7019.sox-rec.2010-06-13.log.bz2
-
-Hardware system used is a Norhtec MicroClient Jr with SIS550 CPU:
-http://www.norhtec.com/products/mcjrmx/index.html
-
-best regards/hans
+-Andi
