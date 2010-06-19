@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab0FSDtS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 23:49:18 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38491 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752137Ab0FSDtR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 23:49:17 -0400
-Message-ID: <4C1C3E17.10702@metafoo.de>
-Date: Sat, 19 Jun 2010 05:48:39 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	id S1752942Ab0FSD4K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 23:56:10 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52751 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752427Ab0FSD4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 23:56:08 -0400
+Message-ID: <4C1C3F7C.4030607@cn.fujitsu.com>
+Date: Sat, 19 Jun 2010 11:54:36 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Ralf Baechle <ralf@linux-mips.org>,
-       Anton Vorontsov <cbouatmailru@gmail.com>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, lrg@slimlogic.co.uk
-Subject: Re: [RFC][PATCH 23/26] power: Add JZ4740 battery driver.
-References: <1275505397-16758-1-git-send-email-lars@metafoo.de> <1275505950-17334-7-git-send-email-lars@metafoo.de> <20100614155108.GA30552@oksana.dev.rtsoft.ru> <20100615173432.GA27904@linux-mips.org> <20100616122042.GB31387@sirena.org.uk>
-In-Reply-To: <20100616122042.GB31387@sirena.org.uk>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
+To: acme@ghostprotocols.net, mingo@elte.hu
+CC: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+       linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf: close the opened directories.
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+When I ran "perf kvm ... top", I encountered the following error output.
 
-Hi
-Mark Brown wrote:
-> On Tue, Jun 15, 2010 at 06:34:32PM +0100, Ralf Baechle wrote:
->> To allow for reasonable testing while this patchset is getting
->> integrated I suggest I apply all the patches that were acked by
->> the respective maintainers to the MIPS tree, feed them to -next
->> for testing  and once that phase is complete send the whole thing
->> to Linus.
->
-> Due to major pending changes in the audio subsystem at least the
-> audio subsystem changes will have merge issues in -next from that.
-> To avoid these I suggest putting the audio changes on a branch
-> which can be pulled into both trees.
-In my opinion the ASoC drivers can go through the ASoC tree. The core
-patches will build without the ASoC patches and the ASoC drivers wont
-be selectable without the core patches. Thus we wont see any build
-failures due to merging both parts individually. And given that there
-will be some changes required when the multi-component branch is
-merged it will simplify things if the patches only go through one tree.
-I've talked to Ralf and he said he is ok with it.
+  Error: perfcounter syscall returned with -1 (Too many open files)
 
-- - Lars
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org
+  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
 
-iEYEARECAAYFAkwcPhcACgkQBX4mSR26RiOJSgCfScB+QFGTbzAqfbmvAVntvqDb
-Xv8An1672tE+ZkLqBBYuhU18AEZdVmkT
-=n6/A
------END PGP SIGNATURE-----
+Looking into perf, I found perf opens too many direcotries at initialization
+time, but forgets to close them. Here is the fix.
+
+Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+---
+ tools/perf/util/symbol.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 7fd6b15..a00dcad 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1443,6 +1443,7 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
+ {
+ 	struct dirent *dent;
+ 	DIR *dir = opendir(dir_name);
++	int ret = 0;
+ 
+ 	if (!dir) {
+ 		pr_debug("%s: cannot open %s dir\n", __func__, dir_name);
+@@ -1465,8 +1466,10 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
+ 
+ 			snprintf(path, sizeof(path), "%s/%s",
+ 				 dir_name, dent->d_name);
+-			if (map_groups__set_modules_path_dir(self, path) < 0)
+-				goto failure;
++			if (map_groups__set_modules_path_dir(self, path) < 0) {
++				ret = -1;
++				goto out;
++			}
+ 		} else {
+ 			char *dot = strrchr(dent->d_name, '.'),
+ 			     dso_name[PATH_MAX];
+@@ -1487,17 +1490,18 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
+ 				 dir_name, dent->d_name);
+ 
+ 			long_name = strdup(path);
+-			if (long_name == NULL)
+-				goto failure;
++			if (long_name == NULL) {
++				ret = -1;
++				goto out;
++			}
+ 			dso__set_long_name(map->dso, long_name);
+ 			dso__kernel_module_get_build_id(map->dso, "");
+ 		}
+ 	}
+ 
+-	return 0;
+-failure:
++out:
+ 	closedir(dir);
+-	return -1;
++	return ret;
+ }
+ 
+ static char *get_kernel_version(const char *root_dir)
+-- 
+1.6.5.2
 
