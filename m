@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab0FSFKE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 01:10:04 -0400
-Received: from smtp-out-037.synserver.de ([212.40.180.37]:1039 "HELO
+	id S1755079Ab0FSFOk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 01:14:40 -0400
+Received: from smtp-out-037.synserver.de ([212.40.180.37]:1056 "HELO
 	smtp-out-036.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754264Ab0FSFKA (ORCPT
+	by vger.kernel.org with SMTP id S1752669Ab0FSFJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 01:10:00 -0400
+	Sat, 19 Jun 2010 01:09:08 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 13414
@@ -14,9 +14,9 @@ From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v2 10/26] MIPS: JZ4740: Add PWM support
-Date: Sat, 19 Jun 2010 07:08:15 +0200
-Message-Id: <1276924111-11158-11-git-send-email-lars@metafoo.de>
+Subject: [PATCH v2 01/26] MIPS: Add base support for Ingenic JZ4740 System-on-a-Chip
+Date: Sat, 19 Jun 2010 07:08:06 +0200
+Message-Id: <1276924111-11158-2-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1276924111-11158-1-git-send-email-lars@metafoo.de>
 References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
@@ -24,189 +24,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the PWM part of the timer unit on a JZ4740 SoC.
+This patch adds a new cpu type for the JZ4740 to the Linux MIPS architecture code.
+It also adds the iomem addresses for the different components found on a JZ4740
+SoC.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- arch/mips/jz4740/pwm.c |  169 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 169 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/jz4740/pwm.c
 
-diff --git a/arch/mips/jz4740/pwm.c b/arch/mips/jz4740/pwm.c
-new file mode 100644
-index 0000000..f28369c
---- /dev/null
-+++ b/arch/mips/jz4740/pwm.c
-@@ -0,0 +1,169 @@
+---
+Changes since v1
+- Use physical addresses for the base addresses
+---
+ arch/mips/include/asm/bootinfo.h         |    6 ++++++
+ arch/mips/include/asm/cpu.h              |    9 ++++++++-
+ arch/mips/include/asm/mach-jz4740/base.h |   26 ++++++++++++++++++++++++++
+ arch/mips/include/asm/mach-jz4740/war.h  |   25 +++++++++++++++++++++++++
+ arch/mips/kernel/cpu-probe.c             |   20 ++++++++++++++++++++
+ arch/mips/mm/tlbex.c                     |    5 +++++
+ 6 files changed, 90 insertions(+), 1 deletions(-)
+ create mode 100644 arch/mips/include/asm/mach-jz4740/base.h
+ create mode 100644 arch/mips/include/asm/mach-jz4740/war.h
+
+diff --git a/arch/mips/include/asm/bootinfo.h b/arch/mips/include/asm/bootinfo.h
+index 09eee09..15a8ef0 100644
+--- a/arch/mips/include/asm/bootinfo.h
++++ b/arch/mips/include/asm/bootinfo.h
+@@ -71,6 +71,12 @@
+ #define MACH_LEMOTE_LL2F       7
+ #define MACH_LOONGSON_END      8
+ 
 +/*
-+ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *  JZ4740 platform PWM support
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
++ * Valid machtype for group INGENIC
++ */
++#define  MACH_INGENIC_JZ4730	0	/* JZ4730 SOC		*/
++#define  MACH_INGENIC_JZ4740	1	/* JZ4740 SOC		*/
++
+ extern char *system_type;
+ const char *get_system_type(void);
+ 
+diff --git a/arch/mips/include/asm/cpu.h b/arch/mips/include/asm/cpu.h
+index a5acda4..b201a8f 100644
+--- a/arch/mips/include/asm/cpu.h
++++ b/arch/mips/include/asm/cpu.h
+@@ -34,7 +34,7 @@
+ #define PRID_COMP_LSI		0x080000
+ #define PRID_COMP_LEXRA		0x0b0000
+ #define PRID_COMP_CAVIUM	0x0d0000
+-
++#define PRID_COMP_INGENIC	0xd00000
+ 
+ /*
+  * Assigned values for the product ID register.  In order to detect a
+@@ -133,6 +133,12 @@
+ #define PRID_IMP_CAVIUM_CN52XX 0x0700
+ 
+ /*
++ * These are the PRID's for when 23:16 == PRID_COMP_INGENIC
 + */
 +
-+#include <linux/kernel.h>
++#define PRID_IMP_JZRISC        0x0200
 +
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/pwm.h>
-+#include <linux/gpio.h>
++/*
+  * Definitions for 7:0 on legacy processors
+  */
+ 
+@@ -219,6 +225,7 @@ enum cpu_type_enum {
+ 	CPU_4KC, CPU_4KEC, CPU_4KSC, CPU_24K, CPU_34K, CPU_1004K, CPU_74K,
+ 	CPU_ALCHEMY, CPU_PR4450, CPU_BCM3302, CPU_BCM4710,
+ 	CPU_BCM6338, CPU_BCM6345, CPU_BCM6348, CPU_BCM6358,
++	CPU_JZRISC,
+ 
+ 	/*
+ 	 * MIPS64 class processors
+diff --git a/arch/mips/include/asm/mach-jz4740/base.h b/arch/mips/include/asm/mach-jz4740/base.h
+new file mode 100644
+index 0000000..f373186
+--- /dev/null
++++ b/arch/mips/include/asm/mach-jz4740/base.h
+@@ -0,0 +1,26 @@
++#ifndef __ASM_MACH_JZ4740_BASE_H__
++#define __ASM_MACH_JZ4740_BASE_H__
 +
-+#include <asm/mach-jz4740/gpio.h>
-+#include "timer.h"
++#define JZ4740_CPM_BASE_ADDR	0x10000000
++#define JZ4740_INTC_BASE_ADDR	0x10001000
++#define JZ4740_WDT_BASE_ADDR	0x10002000
++#define JZ4740_TCU_BASE_ADDR	0x10002010
++#define JZ4740_RTC_BASE_ADDR	0x10003000
++#define JZ4740_GPIO_BASE_ADDR	0x10010000
++#define JZ4740_AIC_BASE_ADDR	0x10020000
++#define JZ4740_MSC_BASE_ADDR	0x10021000
++#define JZ4740_UART0_BASE_ADDR	0x10030000
++#define JZ4740_UART1_BASE_ADDR	0x10031000
++#define JZ4740_I2C_BASE_ADDR	0x10042000
++#define JZ4740_SSI_BASE_ADDR	0x10043000
++#define JZ4740_SADC_BASE_ADDR	0x10070000
++#define JZ4740_EMC_BASE_ADDR	0x13010000
++#define JZ4740_DMAC_BASE_ADDR	0x13020000
++#define JZ4740_UHC_BASE_ADDR	0x13030000
++#define JZ4740_UDC_BASE_ADDR	0x13040000
++#define JZ4740_LCD_BASE_ADDR	0x13050000
++#define JZ4740_SLCD_BASE_ADDR	0x13050000
++#define JZ4740_CIM_BASE_ADDR	0x13060000
++#define JZ4740_IPU_BASE_ADDR	0x13080000
 +
-+static struct clk *jz4740_pwm_clk;
++#endif
+diff --git a/arch/mips/include/asm/mach-jz4740/war.h b/arch/mips/include/asm/mach-jz4740/war.h
+new file mode 100644
+index 0000000..3a5bc17
+--- /dev/null
++++ b/arch/mips/include/asm/mach-jz4740/war.h
+@@ -0,0 +1,25 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 2002, 2004, 2007 by Ralf Baechle <ralf@linux-mips.org>
++ */
++#ifndef __ASM_MIPS_MACH_JZ4740_WAR_H
++#define __ASM_MIPS_MACH_JZ4740_WAR_H
 +
-+DEFINE_MUTEX(jz4740_pwm_mutex);
++#define R4600_V1_INDEX_ICACHEOP_WAR	0
++#define R4600_V1_HIT_CACHEOP_WAR	0
++#define R4600_V2_HIT_CACHEOP_WAR	0
++#define R5432_CP0_INTERRUPT_WAR		0
++#define BCM1250_M3_WAR			0
++#define SIBYTE_1956_WAR			0
++#define MIPS4K_ICACHE_REFILL_WAR	0
++#define MIPS_CACHE_SYNC_WAR		0
++#define TX49XX_ICACHE_INDEX_INV_WAR	0
++#define RM9000_CDEX_SMP_WAR		0
++#define ICACHE_REFILLS_WORKAROUND_WAR	0
++#define R10000_LLSC_WAR			0
++#define MIPS34K_MISSED_ITLB_WAR		0
 +
-+struct pwm_device {
-+	unsigned int id;
-+	unsigned int gpio;
-+	bool used;
-+};
-+
-+static struct pwm_device jz4740_pwm_list[] = {
-+	{ 2, JZ_GPIO_PWM2, false },
-+	{ 3, JZ_GPIO_PWM3, false },
-+	{ 4, JZ_GPIO_PWM4, false },
-+	{ 5, JZ_GPIO_PWM5, false },
-+	{ 6, JZ_GPIO_PWM6, false },
-+	{ 7, JZ_GPIO_PWM7, false },
-+};
-+
-+struct pwm_device *pwm_request(int id, const char *label)
++#endif /* __ASM_MIPS_MACH_JZ4740_WAR_H */
+diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
+index 3562b85..9b66331 100644
+--- a/arch/mips/kernel/cpu-probe.c
++++ b/arch/mips/kernel/cpu-probe.c
+@@ -187,6 +187,7 @@ void __init check_wait(void)
+ 	case CPU_BCM6358:
+ 	case CPU_CAVIUM_OCTEON:
+ 	case CPU_CAVIUM_OCTEON_PLUS:
++	case CPU_JZRISC:
+ 		cpu_wait = r4k_wait;
+ 		break;
+ 
+@@ -956,6 +957,22 @@ platform:
+ 	}
+ }
+ 
++static inline void cpu_probe_ingenic(struct cpuinfo_mips *c, unsigned int cpu)
 +{
-+	int ret = 0;
-+	struct pwm_device *pwm;
-+
-+	if (!jz4740_pwm_clk) {
-+		jz4740_pwm_clk = clk_get(NULL, "ext");
-+
-+		if (IS_ERR(jz4740_pwm_clk))
-+			return ERR_CAST(jz4740_pwm_clk);
++	decode_configs(c);
++	/* JZRISC does not implement the CP0 counter. */
++	c->options &= ~MIPS_CPU_COUNTER;
++	switch (c->processor_id & 0xff00) {
++	case PRID_IMP_JZRISC:
++		c->cputype = CPU_JZRISC;
++		__cpu_name[cpu] = "Ingenic JZRISC";
++		break;
++	default:
++		panic("Unknown Ingenic Processor ID!");
++		break;
 +	}
-+
-+	if (id < 2 || id > 7)
-+		return ERR_PTR(-ENOENT);
-+
-+	mutex_lock(&jz4740_pwm_mutex);
-+
-+	pwm = &jz4740_pwm_list[id - 2];
-+	if (pwm->used)
-+		ret = -EBUSY;
-+	else
-+		pwm->used = true;
-+
-+	mutex_unlock(&jz4740_pwm_mutex);
-+
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = gpio_request(pwm->gpio, label);
-+
-+	if (ret) {
-+		printk(KERN_ERR "Failed to request pwm gpio: %d\n", ret);
-+		pwm->used = false;
-+		return ERR_PTR(ret);
-+	}
-+
-+	jz_gpio_set_function(pwm->gpio, JZ_GPIO_FUNC_PWM);
-+
-+	jz4740_timer_start(id);
-+
-+	return pwm;
 +}
 +
-+void pwm_free(struct pwm_device *pwm)
-+{
-+	pwm_disable(pwm);
-+	jz4740_timer_set_ctrl(pwm->id, 0);
+ const char *__cpu_name[NR_CPUS];
+ const char *__elf_platform;
+ 
+@@ -994,6 +1011,9 @@ __cpuinit void cpu_probe(void)
+ 	case PRID_COMP_CAVIUM:
+ 		cpu_probe_cavium(c, cpu);
+ 		break;
++	case PRID_COMP_INGENIC:
++		cpu_probe_ingenic(c, cpu);
++		break;
+ 	}
+ 
+ 	BUG_ON(!__cpu_name[cpu]);
+diff --git a/arch/mips/mm/tlbex.c b/arch/mips/mm/tlbex.c
+index 86f004d..4510e61 100644
+--- a/arch/mips/mm/tlbex.c
++++ b/arch/mips/mm/tlbex.c
+@@ -409,6 +409,11 @@ static void __cpuinit build_tlb_write_entry(u32 **p, struct uasm_label **l,
+ 		tlbw(p);
+ 		break;
+ 
++	case CPU_JZRISC:
++		tlbw(p);
++		uasm_i_nop(p);
++		break;
 +
-+	jz_gpio_set_function(pwm->gpio, JZ_GPIO_FUNC_NONE);
-+	gpio_free(pwm->gpio);
-+
-+	jz4740_timer_stop(pwm->id);
-+
-+	pwm->used = false;
-+}
-+
-+int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-+{
-+	unsigned long long tmp;
-+	unsigned long period, duty;
-+	unsigned int prescaler = 0;
-+	unsigned int id = pwm->id;
-+	uint16_t ctrl;
-+	bool is_enabled;
-+
-+	if (duty_ns < 0 || duty_ns > period_ns)
-+		return -EINVAL;
-+
-+	tmp = (unsigned long long)clk_get_rate(jz4740_pwm_clk) * period_ns;
-+	do_div(tmp, 1000000000);
-+	period = tmp;
-+
-+	while (period > 0xffff && prescaler < 6) {
-+		period >>= 2;
-+		++prescaler;
-+	}
-+
-+	if (prescaler == 6)
-+		return -EINVAL;
-+
-+	tmp = (unsigned long long)period * duty_ns;
-+	do_div(tmp, period_ns);
-+	duty = period - tmp;
-+
-+	if (duty >= period)
-+		duty = period - 1;
-+
-+	is_enabled = jz4740_timer_is_enabled(id);
-+	if (is_enabled)
-+		pwm_disable(pwm);
-+
-+	jz4740_timer_set_count(id, 0);
-+	jz4740_timer_set_duty(id, duty);
-+	jz4740_timer_set_period(id, period);
-+
-+	ctrl = JZ_TIMER_CTRL_PRESCALER(prescaler) | JZ_TIMER_CTRL_SRC_EXT |
-+		JZ_TIMER_CTRL_PWM_ABBRUPT_SHUTDOWN;
-+
-+	jz4740_timer_set_ctrl(id, ctrl);
-+
-+	if (is_enabled)
-+		pwm_enable(pwm);
-+
-+	return 0;
-+}
-+
-+int pwm_enable(struct pwm_device *pwm)
-+{
-+	uint32_t ctrl = jz4740_timer_get_ctrl(pwm->id);
-+
-+	ctrl |= JZ_TIMER_CTRL_PWM_ENABLE;
-+	jz4740_timer_set_ctrl(pwm->id, ctrl);
-+	jz4740_timer_enable(pwm->id);
-+
-+	return 0;
-+}
-+
-+void pwm_disable(struct pwm_device *pwm)
-+{
-+	uint32_t ctrl = jz4740_timer_get_ctrl(pwm->id);
-+
-+	ctrl &= ~JZ_TIMER_CTRL_PWM_ENABLE;
-+	jz4740_timer_disable(pwm->id);
-+	jz4740_timer_set_ctrl(pwm->id, ctrl);
-+}
+ 	default:
+ 		panic("No TLB refill handler yet (CPU type: %d)",
+ 		      current_cpu_data.cputype);
 -- 
 1.5.6.5
 
