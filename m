@@ -1,438 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab0FSTan (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 15:30:43 -0400
-Received: from smtp-out-057.synserver.de ([212.40.180.57]:1049 "HELO
-	smtp-out-055.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1756460Ab0FSTal (ORCPT
+	id S1756776Ab0FSTdk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 15:33:40 -0400
+Received: from blue-ld-261.synserver.de ([217.119.54.83]:39370 "EHLO
+	smtp-out-036.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756623Ab0FSTdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 15:30:41 -0400
+	Sat, 19 Jun 2010 15:33:39 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 29306
+X-SynServer-PPID: 19717
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       Paul Gortmaker <p_gortmaker@yahoo.com>, rtc-linux@googlegroups.com
-Subject: [PATCH v3] RTC: Add JZ4740 RTC driver
-Date: Sat, 19 Jun 2010 21:29:50 +0200
-Message-Id: <1276975790-25623-1-git-send-email-lars@metafoo.de>
+       Lars-Peter Clausen <lars@metafoo.de>, lm-sensors@lm-sensors.org
+Subject: [PATCH v4] hwmon: Add JZ4740 ADC driver
+Date: Sat, 19 Jun 2010 21:32:58 +0200
+Message-Id: <1276975978-25778-1-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1276924111-11158-16-git-send-email-lars@metafoo.de>
-References: <1276924111-11158-16-git-send-email-lars@metafoo.de>
+In-Reply-To: <1276958820-8862-1-git-send-email-lars@metafoo.de>
+References: <1276958820-8862-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the RTC unit on JZ4740 SoCs.
+This patch adds support for reading the ADCIN pin of ADC unit on JZ4740 SoCs.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
-Cc: rtc-linux@googlegroups.com
+Cc: lm-sensors@lm-sensors.org
 
 --
 Changes since v1
-- Use dev_get_drvdata directly instead of wrapping it in dev_to_rtc
-- Add common implementation for jz4740_rtc_{alarm,update}_irq_enable
-- Check whether rtc structure could be allocated
-- Remove deadlocks which could occur if the HW was broken
+- Move ADC core access synchronizing from the HWMON driver to a MFD driver. The
+  ADC driver now only reads the adcin value.
 
 Changes since v2
-- Use kzalloc instead of kmalloc
-- Propagate errors in jz4740_rtc_reg_write up to its callers
----
- drivers/rtc/Kconfig      |   11 ++
- drivers/rtc/Makefile     |    1 +
- drivers/rtc/rtc-jz4740.c |  345 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 357 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-jz4740.c
+  - Add name sysfs attribute
+  - Report adcin in value in millivolts
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 10ba12c..d0ed7e6 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -905,4 +905,15 @@ config RTC_DRV_MPC5121
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-mpc5121.
+Changes since v3
+  - Fix Kconfig entry
+  - Add include to completion.h
+  - Break overlong lines
+  - Use DEVICE_ATTR instead of SENSOR_DEVICE_ATTR for the adcin sys file.
+---
+ drivers/hwmon/Kconfig        |   10 ++
+ drivers/hwmon/Makefile       |    1 +
+ drivers/hwmon/jz4740-hwmon.c |  226 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 237 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwmon/jz4740-hwmon.c
+
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 569082c..a01f32f 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -446,6 +446,16 @@ config SENSORS_IT87
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called it87.
  
-+config RTC_DRV_JZ4740
-+	tristate "Ingenic JZ4740 SoC"
-+	depends on RTC_CLASS
-+	depends on MACH_JZ4740
++config SENSORS_JZ4740
++	tristate "Ingenic JZ4740 SoC ADC driver"
++	depends on MACH_JZ4740 && MFD_JZ4740_ADC
 +	help
-+	  If you say yes here you get support for the Ingenic JZ4740 SoC RTC
-+	  controller.
++	  If you say yes here you get support for reading adc values from the ADCIN
++	  pin on Ingenic JZ4740 SoC based boards.
 +
-+	  This driver can also be buillt as a module. If so, the module
-+	  will be called rtc-jz4740.
++	  This driver can also be build as a module. If so, the module will be
++	  called jz4740-hwmon.
 +
- endif # RTC_CLASS
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 5adbba7..fedf9bb 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -47,6 +47,7 @@ obj-$(CONFIG_RTC_DRV_EP93XX)	+= rtc-ep93xx.o
- obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm3130.o
- obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
- obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
-+obj-$(CONFIG_RTC_DRV_JZ4740)	+= rtc-jz4740.o
- obj-$(CONFIG_RTC_DRV_M41T80)	+= rtc-m41t80.o
- obj-$(CONFIG_RTC_DRV_M41T94)	+= rtc-m41t94.o
- obj-$(CONFIG_RTC_DRV_M48T35)	+= rtc-m48t35.o
-diff --git a/drivers/rtc/rtc-jz4740.c b/drivers/rtc/rtc-jz4740.c
+ config SENSORS_LM63
+ 	tristate "National Semiconductor LM63 and LM64"
+ 	depends on I2C
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index bca0d45..dffbdff 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -55,6 +55,7 @@ obj-$(CONFIG_SENSORS_I5K_AMB)	+= i5k_amb.o
+ obj-$(CONFIG_SENSORS_IBMAEM)	+= ibmaem.o
+ obj-$(CONFIG_SENSORS_IBMPEX)	+= ibmpex.o
+ obj-$(CONFIG_SENSORS_IT87)	+= it87.o
++obj-$(CONFIG_SENSORS_JZ4740)	+= jz4740-hwmon.o
+ obj-$(CONFIG_SENSORS_K8TEMP)	+= k8temp.o
+ obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
+ obj-$(CONFIG_SENSORS_LIS3LV02D) += lis3lv02d.o hp_accel.o
+diff --git a/drivers/hwmon/jz4740-hwmon.c b/drivers/hwmon/jz4740-hwmon.c
 new file mode 100644
-index 0000000..10b59fc
+index 0000000..72a4335
 --- /dev/null
-+++ b/drivers/rtc/rtc-jz4740.c
-@@ -0,0 +1,345 @@
++++ b/drivers/hwmon/jz4740-hwmon.c
+@@ -0,0 +1,226 @@
 +/*
-+ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *	 JZ4740 SoC RTC driver
++ * Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
++ * JZ4740 SoC HWMON driver
 + *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of  the GNU General Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
++ * This program is free software; you can redistribute it and/or modify it
++ * under  the terms of the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the License, or (at your
++ * option) any later version.
 + *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 675 Mass Ave, Cambridge, MA 02139, USA.
 + *
 + */
 +
++#include <linux/err.h>
++#include <linux/interrupt.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
++#include <linux/mutex.h>
 +#include <linux/platform_device.h>
-+#include <linux/rtc.h>
 +#include <linux/slab.h>
-+#include <linux/spinlock.h>
 +
-+#define JZ_REG_RTC_CTRL		0x00
-+#define JZ_REG_RTC_SEC		0x04
-+#define JZ_REG_RTC_SEC_ALARM	0x08
-+#define JZ_REG_RTC_REGULATOR	0x0C
-+#define JZ_REG_RTC_HIBERNATE	0x20
-+#define JZ_REG_RTC_SCRATCHPAD	0x34
++#include <linux/completion.h>
++#include <linux/mfd/core.h>
 +
-+#define JZ_RTC_CTRL_WRDY	BIT(7)
-+#define JZ_RTC_CTRL_1HZ		BIT(6)
-+#define JZ_RTC_CTRL_1HZ_IRQ	BIT(5)
-+#define JZ_RTC_CTRL_AF		BIT(4)
-+#define JZ_RTC_CTRL_AF_IRQ	BIT(3)
-+#define JZ_RTC_CTRL_AE		BIT(2)
-+#define JZ_RTC_CTRL_ENABLE	BIT(0)
++#include <linux/hwmon.h>
 +
-+struct jz4740_rtc {
++struct jz4740_hwmon {
 +	struct resource *mem;
 +	void __iomem *base;
 +
-+	struct rtc_device *rtc;
++	int irq;
 +
-+	unsigned int irq;
++	struct mfd_cell *cell;
++	struct device *hwmon;
 +
-+	spinlock_t lock;
++	struct completion read_completion;
++
++	struct mutex lock;
 +};
 +
-+static inline uint32_t jz4740_rtc_reg_read(struct jz4740_rtc *rtc, size_t reg)
++static ssize_t jz4740_hwmon_show_name(struct device *dev,
++	struct device_attribute *dev_attr, char *buf)
 +{
-+	return readl(rtc->base + reg);
++	return sprintf(buf, "jz4740\n");
 +}
 +
-+static int jz4740_rtc_wait_write_ready(struct jz4740_rtc *rtc)
++static irqreturn_t jz4740_hwmon_irq(int irq, void *data)
 +{
-+	uint32_t ctrl;
-+	int timeout = 1000;
++	struct jz4740_hwmon *hwmon = data;
 +
-+	do {
-+		ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
-+	} while (!(ctrl & JZ_RTC_CTRL_WRDY) && --timeout);
-+
-+	return timeout ? 0 : -EIO;
-+}
-+
-+static inline int jz4740_rtc_reg_write(struct jz4740_rtc *rtc, size_t reg,
-+	uint32_t val)
-+{
-+	int ret;
-+	ret = jz4740_rtc_wait_write_ready(rtc);
-+	if (ret == 0)
-+		writel(val, rtc->base + reg);
-+
-+	return ret;
-+}
-+
-+static int jz4740_rtc_ctrl_set_bits(struct jz4740_rtc *rtc, uint32_t mask,
-+	bool set)
-+{
-+	int ret;
-+	unsigned long flags;
-+	uint32_t ctrl;
-+
-+	spin_lock_irqsave(&rtc->lock, flags);
-+
-+	ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
-+
-+	/* Don't clear interrupt flags by accident */
-+	ctrl |= JZ_RTC_CTRL_1HZ | JZ_RTC_CTRL_AF;
-+
-+	if (set)
-+		ctrl |= mask;
-+	else
-+		ctrl &= ~mask;
-+
-+	ret = jz4740_rtc_reg_write(rtc, JZ_REG_RTC_CTRL, ctrl);
-+
-+	spin_unlock_irqrestore(&rtc->lock, flags);
-+
-+	return ret;
-+}
-+
-+static int jz4740_rtc_read_time(struct device *dev, struct rtc_time *time)
-+{
-+	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
-+	uint32_t secs, secs2;
-+	int timeout = 5;
-+
-+	/* If the seconds register is read while it is updated, it can contain a
-+	 * bogus value. This can be avoided by making sure that two consecutive
-+	 * reads have the same value.
-+	 */
-+	secs = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC);
-+	secs2 = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC);
-+
-+	while (secs != secs2 && --timeout) {
-+		secs = secs2;
-+		secs2 = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC);
-+	}
-+
-+	if (timeout == 0)
-+		return -EIO;
-+
-+	rtc_time_to_tm(secs, time);
-+
-+	return rtc_valid_tm(time);
-+}
-+
-+static int jz4740_rtc_set_mmss(struct device *dev, unsigned long secs)
-+{
-+	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
-+
-+	return jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SEC, secs);
-+}
-+
-+static int jz4740_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
-+	uint32_t secs;
-+	uint32_t ctrl;
-+
-+	secs = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC_ALARM);
-+
-+	ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
-+
-+	alrm->enabled = !!(ctrl & JZ_RTC_CTRL_AE);
-+	alrm->pending = !!(ctrl & JZ_RTC_CTRL_AF);
-+
-+	rtc_time_to_tm(secs, &alrm->time);
-+
-+	return rtc_valid_tm(&alrm->time);
-+}
-+
-+static int jz4740_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
-+{
-+	int ret;
-+	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
-+	unsigned long secs;
-+
-+	rtc_tm_to_time(&alrm->time, &secs);
-+
-+	ret = jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SEC_ALARM, secs);
-+	if (!ret)
-+		ret = jz4740_rtc_ctrl_set_bits(rtc, JZ_RTC_CTRL_AE, alrm->enabled);
-+
-+	return ret;
-+}
-+
-+static int jz4740_rtc_update_irq_enable(struct device *dev, unsigned int enable)
-+{
-+	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
-+	return jz4740_rtc_ctrl_set_bits(rtc, JZ_RTC_CTRL_1HZ_IRQ, enable);
-+}
-+
-+static int jz4740_rtc_alarm_irq_enable(struct device *dev, unsigned int enable)
-+{
-+	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
-+	return jz4740_rtc_ctrl_set_bits(rtc, JZ_RTC_CTRL_AF_IRQ, enable);
-+}
-+
-+static struct rtc_class_ops jz4740_rtc_ops = {
-+	.read_time	= jz4740_rtc_read_time,
-+	.set_mmss	= jz4740_rtc_set_mmss,
-+	.read_alarm	= jz4740_rtc_read_alarm,
-+	.set_alarm	= jz4740_rtc_set_alarm,
-+	.update_irq_enable = jz4740_rtc_update_irq_enable,
-+	.alarm_irq_enable = jz4740_rtc_alarm_irq_enable,
-+};
-+
-+static irqreturn_t jz4740_rtc_irq(int irq, void *data)
-+{
-+	struct jz4740_rtc *rtc = data;
-+	uint32_t ctrl;
-+	unsigned long events = 0;
-+
-+	ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
-+
-+	if (ctrl & JZ_RTC_CTRL_1HZ)
-+		events |= (RTC_UF | RTC_IRQF);
-+
-+	if (ctrl & JZ_RTC_CTRL_AF)
-+		events |= (RTC_AF | RTC_IRQF);
-+
-+	rtc_update_irq(rtc->rtc, 1, events);
-+
-+	jz4740_rtc_ctrl_set_bits(rtc, JZ_RTC_CTRL_1HZ | JZ_RTC_CTRL_AF, false);
-+
++	complete(&hwmon->read_completion);
 +	return IRQ_HANDLED;
 +}
 +
-+void jz4740_rtc_poweroff(struct device *dev)
++static ssize_t jz4740_hwmon_read_adcin(struct device *dev,
++	struct device_attribute *dev_attr, char *buf)
 +{
-+	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
-+	jz4740_rtc_reg_write(rtc, JZ_REG_RTC_HIBERNATE, 1);
-+}
-+EXPORT_SYMBOL_GPL(jz4740_rtc_poweroff);
++	struct jz4740_hwmon *hwmon = dev_get_drvdata(dev);
++	struct completion *completion = &hwmon->read_completion;
++	unsigned long t;
++	unsigned long val;
++	int ret;
 +
-+static int __devinit jz4740_rtc_probe(struct platform_device *pdev)
++	mutex_lock(&hwmon->lock);
++
++	INIT_COMPLETION(*completion);
++
++	enable_irq(hwmon->irq);
++	hwmon->cell->enable(to_platform_device(dev));
++
++	t = wait_for_completion_interruptible_timeout(completion, HZ);
++
++	if (t > 0) {
++		val = readw(hwmon->base) & 0xfff;
++		val = (val * 3300) >> 12;
++		ret = sprintf(buf, "%lu\n", val);
++	} else {
++		ret = t ? t : -ETIMEDOUT;
++	}
++
++	hwmon->cell->disable(to_platform_device(dev));
++	disable_irq(hwmon->irq);
++
++	mutex_unlock(&hwmon->lock);
++
++	return ret;
++}
++
++static DEVICE_ATTR(name, S_IRUGO, jz4740_hwmon_show_name, NULL);
++static DEVICE_ATTR(in0_input, S_IRUGO, jz4740_hwmon_read_adcin, NULL);
++
++static struct attribute *jz4740_hwmon_attributes[] = {
++	&dev_attr_name.attr,
++	&dev_attr_in0_input.attr,
++	NULL
++};
++
++static const struct attribute_group jz4740_hwmon_attr_group = {
++	.attrs = jz4740_hwmon_attributes,
++};
++
++static int __devinit jz4740_hwmon_probe(struct platform_device *pdev)
 +{
 +	int ret;
-+	struct jz4740_rtc *rtc;
-+	uint32_t scratchpad;
++	struct jz4740_hwmon *hwmon;
 +
-+	rtc = kzalloc(sizeof(*rtc), GFP_KERNEL);
-+	if (!rtc)
-+		return -ENOMEM;
++	hwmon = kmalloc(sizeof(*hwmon), GFP_KERNEL);
 +
-+	rtc->irq = platform_get_irq(pdev, 0);
-+	if (rtc->irq < 0) {
-+		ret = -ENOENT;
-+		dev_err(&pdev->dev, "Failed to get platform irq\n");
++	hwmon->cell = pdev->dev.platform_data;
++
++	hwmon->irq = platform_get_irq(pdev, 0);
++	if (hwmon->irq < 0) {
++		ret = hwmon->irq;
++		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
 +		goto err_free;
 +	}
 +
-+	rtc->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!rtc->mem) {
++	hwmon->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!hwmon->mem) {
 +		ret = -ENOENT;
-+		dev_err(&pdev->dev, "Failed to get platform mmio memory\n");
++		dev_err(&pdev->dev, "Failed to get platform mmio resource\n");
 +		goto err_free;
 +	}
 +
-+	rtc->mem = request_mem_region(rtc->mem->start, resource_size(rtc->mem),
-+					pdev->name);
-+	if (!rtc->mem) {
++	hwmon->mem = request_mem_region(hwmon->mem->start,
++			resource_size(hwmon->mem), pdev->name);
++	if (!hwmon->mem) {
 +		ret = -EBUSY;
 +		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
 +		goto err_free;
 +	}
 +
-+	rtc->base = ioremap_nocache(rtc->mem->start, resource_size(rtc->mem));
-+	if (!rtc->base) {
++	hwmon->base = ioremap_nocache(hwmon->mem->start,
++			resource_size(hwmon->mem));
++	if (!hwmon->base) {
 +		ret = -EBUSY;
 +		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
 +		goto err_release_mem_region;
 +	}
 +
-+	spin_lock_init(&rtc->lock);
++	init_completion(&hwmon->read_completion);
++	mutex_init(&hwmon->lock);
 +
-+	platform_set_drvdata(pdev, rtc);
++	platform_set_drvdata(pdev, hwmon);
 +
-+	rtc->rtc = rtc_device_register(pdev->name, &pdev->dev, &jz4740_rtc_ops,
-+					THIS_MODULE);
-+	if (IS_ERR(rtc->rtc)) {
-+		ret = PTR_ERR(rtc->rtc);
-+		dev_err(&pdev->dev, "Failed to register rtc device: %d\n", ret);
++	ret = request_irq(hwmon->irq, jz4740_hwmon_irq, 0, pdev->name, hwmon);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to request irq: %d\n", ret);
 +		goto err_iounmap;
 +	}
++	disable_irq(hwmon->irq);
 +
-+	ret = request_irq(rtc->irq, jz4740_rtc_irq, 0,
-+				pdev->name, rtc);
++	ret = sysfs_create_group(&pdev->dev.kobj, &jz4740_hwmon_attr_group);
 +	if (ret) {
-+		dev_err(&pdev->dev, "Failed to request rtc irq: %d\n", ret);
-+		goto err_unregister_rtc;
++		dev_err(&pdev->dev, "Failed to create sysfs group: %d\n", ret);
++		goto err_free_irq;
 +	}
 +
-+	scratchpad = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SCRATCHPAD);
-+	if (scratchpad != 0x12345678) {
-+		ret = jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SCRATCHPAD, 0x12345678);
-+		ret = jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SEC, 0);
-+		if (ret) {
-+			dev_err(&pdev->dev, "Could not write write to RTC registers\n");
-+			goto err_free_irq;
-+		}
++	hwmon->hwmon = hwmon_device_register(&pdev->dev);
++	if (IS_ERR(hwmon->hwmon)) {
++		ret = PTR_ERR(hwmon->hwmon);
++		goto err_remove_file;
 +	}
 +
 +	return 0;
 +
++err_remove_file:
++	sysfs_remove_group(&pdev->dev.kobj, &jz4740_hwmon_attr_group);
 +err_free_irq:
-+	free_irq(rtc->irq, rtc);
-+err_unregister_rtc:
-+	rtc_device_unregister(rtc->rtc);
++	free_irq(hwmon->irq, hwmon);
 +err_iounmap:
 +	platform_set_drvdata(pdev, NULL);
-+	iounmap(rtc->base);
++	iounmap(hwmon->base);
 +err_release_mem_region:
-+	release_mem_region(rtc->mem->start, resource_size(rtc->mem));
++	release_mem_region(hwmon->mem->start, resource_size(hwmon->mem));
 +err_free:
-+	kfree(rtc);
++	kfree(hwmon);
 +
 +	return ret;
 +}
 +
-+static int __devexit jz4740_rtc_remove(struct platform_device *pdev)
++static int __devexit jz4740_hwmon_remove(struct platform_device *pdev)
 +{
-+	struct jz4740_rtc *rtc = platform_get_drvdata(pdev);
++	struct jz4740_hwmon *hwmon = platform_get_drvdata(pdev);
 +
-+	free_irq(rtc->irq, rtc);
++	hwmon_device_unregister(hwmon->hwmon);
++	sysfs_remove_group(&pdev->dev.kobj, &jz4740_hwmon_attr_group);
 +
-+	rtc_device_unregister(rtc->rtc);
++	free_irq(hwmon->irq, hwmon);
 +
-+	iounmap(rtc->base);
-+	release_mem_region(rtc->mem->start, resource_size(rtc->mem));
-+
-+	kfree(rtc);
++	iounmap(hwmon->base);
++	release_mem_region(hwmon->mem->start, resource_size(hwmon->mem));
 +
 +	platform_set_drvdata(pdev, NULL);
++	kfree(hwmon);
 +
 +	return 0;
 +}
 +
-+struct platform_driver jz4740_rtc_driver = {
-+	.probe = jz4740_rtc_probe,
-+	.remove = __devexit_p(jz4740_rtc_remove),
++struct platform_driver jz4740_hwmon_driver = {
++	.probe	= jz4740_hwmon_probe,
++	.remove = __devexit_p(jz4740_hwmon_remove),
 +	.driver = {
-+		.name = "jz4740-rtc",
++		.name = "jz4740-hwmon",
 +		.owner = THIS_MODULE,
 +	},
 +};
 +
-+static int __init jz4740_rtc_init(void)
++static int __init jz4740_hwmon_init(void)
 +{
-+	return platform_driver_register(&jz4740_rtc_driver);
++	return platform_driver_register(&jz4740_hwmon_driver);
 +}
-+module_init(jz4740_rtc_init);
++module_init(jz4740_hwmon_init);
 +
-+static void __exit jz4740_rtc_exit(void)
++static void __exit jz4740_hwmon_exit(void)
 +{
-+	platform_driver_unregister(&jz4740_rtc_driver);
++	platform_driver_unregister(&jz4740_hwmon_driver);
 +}
-+module_exit(jz4740_rtc_exit);
++module_exit(jz4740_hwmon_exit);
 +
++MODULE_DESCRIPTION("JZ4740 SoC HWMON driver");
 +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
 +MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("RTC driver for the JZ4740 SoC\n");
-+MODULE_ALIAS("platform:jz4740-rtc");
++MODULE_ALIAS("platform:jz4740-hwmon");
 -- 
 1.5.6.5
 
