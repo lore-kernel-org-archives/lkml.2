@@ -1,312 +1,648 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab0FSOrf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 10:47:35 -0400
-Received: from smtp-out-047.synserver.de ([212.40.180.47]:1024 "HELO
-	smtp-out-047.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756081Ab0FSOre (ORCPT
+	id S1756147Ab0FSOu1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 10:50:27 -0400
+Received: from smtp-out-047.synserver.de ([212.40.180.47]:1077 "HELO
+	smtp-out-044.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1756081Ab0FSOuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 10:47:34 -0400
+	Sat, 19 Jun 2010 10:50:25 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 13707
+X-SynServer-PPID: 16178
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>, lm-sensors@lm-sensors.org
-Subject: [PATCH v3] hwmon: Add JZ4740 ADC driver
-Date: Sat, 19 Jun 2010 16:47:00 +0200
-Message-Id: <1276958820-8862-1-git-send-email-lars@metafoo.de>
+       Lars-Peter Clausen <lars@metafoo.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
+Subject: [PATCH v3] alsa: ASoC: Add JZ4740 codec driver
+Date: Sat, 19 Jun 2010 16:49:53 +0200
+Message-Id: <1276958993-9012-1-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1276924111-11158-24-git-send-email-lars@metafoo.de>
-References: <1276924111-11158-24-git-send-email-lars@metafoo.de>
+In-Reply-To: <1276924111-11158-21-git-send-email-lars@metafoo.de>
+References: <1276924111-11158-21-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for reading the ADCIN pin of ADC unit on JZ4740 SoCs.
+This patch adds support for the JZ4740 internal codec.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: lm-sensors@lm-sensors.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: alsa-devel@alsa-project.org
 
 --
 Changes since v1
-- Move ADC core access synchronizing from the HWMON driver to a MFD driver. The
-  ADC driver now only reads the adcin value.
-Changes since v2
-- Add name sysfs attribute
-- Report adcin in value in millivolts
----
- drivers/hwmon/Kconfig        |   11 ++
- drivers/hwmon/Makefile       |    1 +
- drivers/hwmon/jz4740-hwmon.c |  224 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 236 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hwmon/jz4740-hwmon.c
+- Put Kconfig entry in alphabetic order
+- Drop codec_set_fmt since the codec supports only one format
+- Rename "Capture Volume" control to "Master Capture Volume"
+- Drop unnecessary format checks
+- Add suspend/resume
+- Cleanup jz4740_codec_set_bias_level
 
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 569082c..51fc2f6 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -446,6 +446,17 @@ config SENSORS_IT87
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called it87.
+Changes since v2
+- Drop codec prefix from the filename. Note that I keeped it for the object
+  name, because otherwise when build as a module it will clash with the ASoC
+  JZ4740 platform support.
+---
+ sound/soc/codecs/Kconfig  |    4 +
+ sound/soc/codecs/Makefile |    2 +
+ sound/soc/codecs/jz4740.c |  514 +++++++++++++++++++++++++++++++++++++++++++++
+ sound/soc/codecs/jz4740.h |   20 ++
+ 4 files changed, 540 insertions(+), 0 deletions(-)
+ create mode 100644 sound/soc/codecs/jz4740.c
+ create mode 100644 sound/soc/codecs/jz4740.h
+
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index c37c844..00d347d 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -24,6 +24,7 @@ config SND_SOC_ALL_CODECS
+ 	select SND_SOC_CQ0093VC if MFD_DAVINCI_VOICECODEC
+ 	select SND_SOC_CS42L51 if I2C
+ 	select SND_SOC_CS4270 if I2C
++	select SND_SOC_JZ4740 if SOC_JZ4740
+ 	select SND_SOC_MAX9877 if I2C
+ 	select SND_SOC_DA7210 if I2C
+ 	select SND_SOC_PCM3008
+@@ -142,6 +143,9 @@ config SND_SOC_CS4270_VD33_ERRATA
+ config SND_SOC_CX20442
+ 	tristate
  
-+config SENSORS_JZ4740
-+	tristate "Ingenic JZ4740 SoC ADC driver"
-+	depends on MACH_JZ4740
-+    help
-+      If you say yes here you get support for the Ingenic JZ4740 SoC ADC core.
-+      It is required for the JZ4740 battery and touchscreen driver and is used
-+      to synchronize access to the adc module between those two.
++config SND_SOC_JZ4740_CODEC
++	tristate
 +
-+      This driver can also be build as a module. If so, the module will be
-+      called jz4740-adc.
-+
- config SENSORS_LM63
- 	tristate "National Semiconductor LM63 and LM64"
- 	depends on I2C
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index bca0d45..dffbdff 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -55,6 +55,7 @@ obj-$(CONFIG_SENSORS_I5K_AMB)	+= i5k_amb.o
- obj-$(CONFIG_SENSORS_IBMAEM)	+= ibmaem.o
- obj-$(CONFIG_SENSORS_IBMPEX)	+= ibmpex.o
- obj-$(CONFIG_SENSORS_IT87)	+= it87.o
-+obj-$(CONFIG_SENSORS_JZ4740)	+= jz4740-hwmon.o
- obj-$(CONFIG_SENSORS_K8TEMP)	+= k8temp.o
- obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
- obj-$(CONFIG_SENSORS_LIS3LV02D) += lis3lv02d.o hp_accel.o
-diff --git a/drivers/hwmon/jz4740-hwmon.c b/drivers/hwmon/jz4740-hwmon.c
+ config SND_SOC_L3
+        tristate
+ 
+diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
+index 4a9c205..d8d9eeb 100644
+--- a/sound/soc/codecs/Makefile
++++ b/sound/soc/codecs/Makefile
+@@ -57,6 +57,7 @@ snd-soc-wm9705-objs := wm9705.o
+ snd-soc-wm9712-objs := wm9712.o
+ snd-soc-wm9713-objs := wm9713.o
+ snd-soc-wm-hubs-objs := wm_hubs.o
++snd-soc-jz4740-codec-objs := jz4740.o
+ 
+ # Amp
+ snd-soc-max9877-objs := max9877.o
+@@ -80,6 +81,7 @@ obj-$(CONFIG_SND_SOC_CS4270)	+= snd-soc-cs4270.o
+ obj-$(CONFIG_SND_SOC_CX20442)	+= snd-soc-cx20442.o
+ obj-$(CONFIG_SND_SOC_DA7210)	+= snd-soc-da7210.o
+ obj-$(CONFIG_SND_SOC_L3)	+= snd-soc-l3.o
++obj-$(CONFIG_SND_SOC_JZ4740_CODEC)	+= snd-soc-jz4740-codec.o
+ obj-$(CONFIG_SND_SOC_PCM3008)	+= snd-soc-pcm3008.o
+ obj-$(CONFIG_SND_SOC_SPDIF)	+= snd-soc-spdif.o
+ obj-$(CONFIG_SND_SOC_SSM2602)	+= snd-soc-ssm2602.o
+diff --git a/sound/soc/codecs/jz4740.c b/sound/soc/codecs/jz4740.c
 new file mode 100644
-index 0000000..a448d78
+index 0000000..35848b6
 --- /dev/null
-+++ b/drivers/hwmon/jz4740-hwmon.c
-@@ -0,0 +1,224 @@
++++ b/sound/soc/codecs/jz4740.c
+@@ -0,0 +1,514 @@
 +/*
 + * Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
-+ * JZ4740 SoC HWMON driver
 + *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under  the terms of the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the License, or (at your
-+ * option) any later version.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 675 Mass Ave, Cambridge, MA 02139, USA.
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
 + *
 + */
 +
-+#include <linux/err.h>
-+#include <linux/interrupt.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/mutex.h>
 +#include <linux/platform_device.h>
 +#include <linux/slab.h>
 +
-+#include <linux/mfd/core.h>
++#include <linux/delay.h>
 +
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
++#include <sound/core.h>
++#include <sound/pcm.h>
++#include <sound/pcm_params.h>
++#include <sound/initval.h>
++#include <sound/soc-dapm.h>
++#include <sound/soc.h>
 +
-+struct jz4740_hwmon {
-+	struct resource *mem;
++#define JZ4740_REG_CODEC_1 0x0
++#define JZ4740_REG_CODEC_2 0x1
++
++#define JZ4740_CODEC_1_LINE_ENABLE BIT(29)
++#define JZ4740_CODEC_1_MIC_ENABLE BIT(28)
++#define JZ4740_CODEC_1_SW1_ENABLE BIT(27)
++#define JZ4740_CODEC_1_ADC_ENABLE BIT(26)
++#define JZ4740_CODEC_1_SW2_ENABLE BIT(25)
++#define JZ4740_CODEC_1_DAC_ENABLE BIT(24)
++#define JZ4740_CODEC_1_VREF_DISABLE BIT(20)
++#define JZ4740_CODEC_1_VREF_AMP_DISABLE BIT(19)
++#define JZ4740_CODEC_1_VREF_PULLDOWN BIT(18)
++#define JZ4740_CODEC_1_VREF_LOW_CURRENT BIT(17)
++#define JZ4740_CODEC_1_VREF_HIGH_CURRENT BIT(16)
++#define JZ4740_CODEC_1_HEADPHONE_DISABLE BIT(14)
++#define JZ4740_CODEC_1_HEADPHONE_AMP_CHANGE_ANY BIT(13)
++#define JZ4740_CODEC_1_HEADPHONE_CHARGE BIT(12)
++#define JZ4740_CODEC_1_HEADPHONE_PULLDOWN (BIT(11) | BIT(10))
++#define JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M BIT(9)
++#define JZ4740_CODEC_1_HEADPHONE_POWERDOWN BIT(8)
++#define JZ4740_CODEC_1_SUSPEND BIT(1)
++#define JZ4740_CODEC_1_RESET BIT(0)
++
++#define JZ4740_CODEC_1_LINE_ENABLE_OFFSET 29
++#define JZ4740_CODEC_1_MIC_ENABLE_OFFSET 28
++#define JZ4740_CODEC_1_SW1_ENABLE_OFFSET 27
++#define JZ4740_CODEC_1_ADC_ENABLE_OFFSET 26
++#define JZ4740_CODEC_1_SW2_ENABLE_OFFSET 25
++#define JZ4740_CODEC_1_DAC_ENABLE_OFFSET 24
++#define JZ4740_CODEC_1_HEADPHONE_DISABLE_OFFSET 14
++#define JZ4740_CODEC_1_HEADPHONE_POWERDOWN_OFFSET 8
++
++#define JZ4740_CODEC_2_INPUT_VOLUME_MASK		0x1f0000
++#define JZ4740_CODEC_2_SAMPLE_RATE_MASK			0x000f00
++#define JZ4740_CODEC_2_MIC_BOOST_GAIN_MASK		0x000030
++#define JZ4740_CODEC_2_HEADPHONE_VOLUME_MASK	0x000003
++
++#define JZ4740_CODEC_2_INPUT_VOLUME_OFFSET		16
++#define JZ4740_CODEC_2_SAMPLE_RATE_OFFSET		 8
++#define JZ4740_CODEC_2_MIC_BOOST_GAIN_OFFSET	 4
++#define JZ4740_CODEC_2_HEADPHONE_VOLUME_OFFSET	 0
++
++static const uint32_t jz4740_codec_regs[] = {
++	0x021b2302, 0x00170803,
++};
++
++struct jz4740_codec {
 +	void __iomem *base;
++	struct resource *mem;
 +
-+	int irq;
-+
-+	struct mfd_cell *cell;
-+	struct device *hwmon;
-+
-+	struct completion read_completion;
-+
-+	struct mutex lock;
++	uint32_t reg_cache[2];
++	struct snd_soc_codec codec;
 +};
 +
-+static ssize_t jz4740_hwmon_show_name(struct device *dev,
-+	struct device_attribute *dev_attr, char *buf)
++static inline struct jz4740_codec *codec_to_jz4740(struct snd_soc_codec *codec)
 +{
-+	return sprintf(buf, "jz4740\n");
++	return container_of(codec, struct jz4740_codec, codec);
 +}
 +
-+static irqreturn_t jz4740_hwmon_irq(int irq, void *data)
++static unsigned int jz4740_codec_read(struct snd_soc_codec *codec,
++	unsigned int reg)
 +{
-+	struct jz4740_hwmon *hwmon = data;
-+
-+	complete(&hwmon->read_completion);
-+	return IRQ_HANDLED;
++	struct jz4740_codec *jz4740_codec = codec_to_jz4740(codec);
++	return readl(jz4740_codec->base + (reg << 2));
 +}
 +
-+static ssize_t jz4740_hwmon_read_adcin(struct device *dev,
-+	struct device_attribute *dev_attr, char *buf)
++static int jz4740_codec_write(struct snd_soc_codec *codec, unsigned int reg,
++	unsigned int val)
 +{
-+	struct jz4740_hwmon *hwmon = dev_get_drvdata(dev);
-+	unsigned long t;
-+	unsigned long val;
-+	int ret;
++	struct jz4740_codec *jz4740_codec = codec_to_jz4740(codec);
 +
-+	mutex_lock(&hwmon->lock);
++	jz4740_codec->reg_cache[reg] = val;
++	writel(val, jz4740_codec->base + (reg << 2));
 +
-+	INIT_COMPLETION(hwmon->read_completion);
++	return 0;
++}
 +
-+	enable_irq(hwmon->irq);
-+	hwmon->cell->enable(to_platform_device(dev));
++static const struct snd_kcontrol_new jz4740_codec_controls[] = {
++	SOC_SINGLE("Master Playback Volume", JZ4740_REG_CODEC_2,
++			JZ4740_CODEC_2_HEADPHONE_VOLUME_OFFSET, 3, 0),
++	SOC_SINGLE("Master Capture Volume", JZ4740_REG_CODEC_2,
++			JZ4740_CODEC_2_INPUT_VOLUME_OFFSET, 31, 0),
++	SOC_SINGLE("Master Playback Switch", JZ4740_REG_CODEC_1,
++			JZ4740_CODEC_1_HEADPHONE_DISABLE_OFFSET, 1, 1),
++	SOC_SINGLE("Mic Capture Volume", JZ4740_REG_CODEC_2,
++			JZ4740_CODEC_2_MIC_BOOST_GAIN_OFFSET, 3, 0),
++};
 +
-+	t = wait_for_completion_interruptible_timeout(&hwmon->read_completion, HZ);
++static const struct snd_kcontrol_new jz4740_codec_output_controls[] = {
++	SOC_DAPM_SINGLE("Bypass Switch", JZ4740_REG_CODEC_1,
++			JZ4740_CODEC_1_SW1_ENABLE_OFFSET, 1, 0),
++	SOC_DAPM_SINGLE("DAC Switch", JZ4740_REG_CODEC_1,
++			JZ4740_CODEC_1_SW2_ENABLE_OFFSET, 1, 0),
++};
 +
-+	if (t > 0) {
-+		val = readw(hwmon->base) & 0xfff;
-+		val = (val * 3300) >> 12;
-+		ret = sprintf(buf, "%lu\n", val);
-+	} else {
-+		ret = t ? t : -ETIMEDOUT;
++static const struct snd_kcontrol_new jz4740_codec_input_controls[] = {
++	SOC_DAPM_SINGLE("Line Capture Switch", JZ4740_REG_CODEC_1,
++			JZ4740_CODEC_1_LINE_ENABLE_OFFSET, 1, 0),
++	SOC_DAPM_SINGLE("Mic Capture Switch", JZ4740_REG_CODEC_1,
++			JZ4740_CODEC_1_MIC_ENABLE_OFFSET, 1, 0),
++};
++
++static const struct snd_soc_dapm_widget jz4740_codec_dapm_widgets[] = {
++	SND_SOC_DAPM_ADC("ADC", "Capture", JZ4740_REG_CODEC_1,
++			JZ4740_CODEC_1_ADC_ENABLE_OFFSET, 0),
++	SND_SOC_DAPM_DAC("DAC", "Playback", JZ4740_REG_CODEC_1,
++			JZ4740_CODEC_1_DAC_ENABLE_OFFSET, 0),
++
++	SND_SOC_DAPM_MIXER("Output Mixer", JZ4740_REG_CODEC_1,
++			JZ4740_CODEC_1_HEADPHONE_POWERDOWN_OFFSET, 1,
++			jz4740_codec_output_controls,
++			ARRAY_SIZE(jz4740_codec_output_controls)),
++
++	SND_SOC_DAPM_MIXER_NAMED_CTL("Input Mixer", SND_SOC_NOPM, 0, 0,
++			jz4740_codec_input_controls,
++			ARRAY_SIZE(jz4740_codec_input_controls)),
++	SND_SOC_DAPM_MIXER("Line Input", SND_SOC_NOPM, 0, 0, NULL, 0),
++
++	SND_SOC_DAPM_OUTPUT("LOUT"),
++	SND_SOC_DAPM_OUTPUT("ROUT"),
++
++	SND_SOC_DAPM_INPUT("MIC"),
++	SND_SOC_DAPM_INPUT("LIN"),
++	SND_SOC_DAPM_INPUT("RIN"),
++};
++
++static const struct snd_soc_dapm_route jz4740_codec_dapm_routes[] = {
++	{"Line Input", NULL, "LIN"},
++	{"Line Input", NULL, "RIN"},
++
++	{"Input Mixer", "Line Capture Switch", "Line Input"},
++	{"Input Mixer", "Mic Capture Switch", "MIC"},
++
++	{"ADC", NULL, "Input Mixer"},
++
++	{"Output Mixer", "Bypass Switch", "Input Mixer"},
++	{"Output Mixer", "DAC Switch", "DAC"},
++
++	{"LOUT", NULL, "Output Mixer"},
++	{"ROUT", NULL, "Output Mixer"},
++};
++
++static int jz4740_codec_hw_params(struct snd_pcm_substream *substream,
++	struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
++{
++	uint32_t val;
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct snd_soc_device *socdev = rtd->socdev;
++	struct snd_soc_codec *codec = socdev->card->codec;
++
++	switch (params_rate(params)) {
++	case 8000:
++		val = 0;
++		break;
++	case 11025:
++		val = 1;
++		break;
++	case 12000:
++		val = 2;
++		break;
++	case 16000:
++		val = 3;
++		break;
++	case 22050:
++		val = 4;
++		break;
++	case 24000:
++		val = 5;
++		break;
++	case 32000:
++		val = 6;
++		break;
++	case 44100:
++		val = 7;
++		break;
++	case 48000:
++		val = 8;
++		break;
++	default:
++		return -EINVAL;
 +	}
 +
-+	hwmon->cell->disable(to_platform_device(dev));
-+	disable_irq(hwmon->irq);
++	val <<= JZ4740_CODEC_2_SAMPLE_RATE_OFFSET;
 +
-+	mutex_unlock(&hwmon->lock);
++	snd_soc_update_bits(codec, JZ4740_REG_CODEC_2,
++				JZ4740_CODEC_2_SAMPLE_RATE_MASK, val);
 +
-+	return ret;
++	return 0;
 +}
 +
-+static DEVICE_ATTR(name, S_IRUGO, jz4740_hwmon_show_name, NULL);
-+static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, jz4740_hwmon_read_adcin, NULL, 0);
-+
-+static struct attribute jz4740_hwmon_attributes[] = {
-+	&dev_attr_name.attr,
-+	&sensor_dev_attr_in0_input.dev_attr.attr,
-+	NULL
++static struct snd_soc_dai_ops jz4740_codec_dai_ops = {
++	.hw_params = jz4740_codec_hw_params,
 +};
 +
-+static const struct attribute_group jz4740_hwmon_attr_group = {
-+	.attrs = jz4740_hwmon_attributes,
++struct snd_soc_dai jz4740_codec_dai = {
++	.name = "jz4740",
++	.playback = {
++		.stream_name = "Playback",
++		.channels_min = 2,
++		.channels_max = 2,
++		.rates = SNDRV_PCM_RATE_8000_48000,
++		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
++	},
++	.capture = {
++		.stream_name = "Capture",
++		.channels_min = 2,
++		.channels_max = 2,
++		.rates = SNDRV_PCM_RATE_8000_48000,
++		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
++	},
++	.ops = &jz4740_codec_dai_ops,
++	.symmetric_rates = 1,
 +};
++EXPORT_SYMBOL_GPL(jz4740_codec_dai);
 +
-+static int __devinit jz4740_hwmon_probe(struct platform_device *pdev)
++static void jz4740_codec_wakeup(struct snd_soc_codec *codec)
 +{
-+	int ret;
-+	struct jz4740_hwmon *hwmon;
++	int i;
++	uint32_t *cache = codec->reg_cache;
 +
-+	hwmon = kmalloc(sizeof(*hwmon), GFP_KERNEL);
++	snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
++		JZ4740_CODEC_1_RESET, JZ4740_CODEC_1_RESET);
++	udelay(2);
 +
-+	hwmon->cell = pdev->dev.platform_data;
++	snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
++		JZ4740_CODEC_1_SUSPEND | JZ4740_CODEC_1_RESET, 0);
 +
-+	hwmon->irq = platform_get_irq(pdev, 0);
-+	if (hwmon->irq < 0) {
-+		ret = hwmon->irq;
-+		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
-+		goto err_free;
++	for (i = 0; i < ARRAY_SIZE(jz4740_codec_regs); ++i)
++		jz4740_codec_write(codec, i, cache[i]);
++}
++
++static int jz4740_codec_set_bias_level(struct snd_soc_codec *codec,
++	enum snd_soc_bias_level level)
++{
++	unsigned int mask;
++	unsigned int value;
++
++	switch (level) {
++	case SND_SOC_BIAS_ON:
++		break;
++	case SND_SOC_BIAS_PREPARE:
++		mask = JZ4740_CODEC_1_VREF_DISABLE |
++				JZ4740_CODEC_1_VREF_AMP_DISABLE |
++				JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M;
++		value = 0;
++
++		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1, mask, value);
++		break;
++	case SND_SOC_BIAS_STANDBY:
++		/* The only way to clear the suspend flag is to reset the codec */
++		if (codec->bias_level == SND_SOC_BIAS_OFF)
++			jz4740_codec_wakeup(codec);
++
++		mask = JZ4740_CODEC_1_VREF_DISABLE |
++			JZ4740_CODEC_1_VREF_AMP_DISABLE |
++			JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M;
++		value = JZ4740_CODEC_1_VREF_DISABLE |
++			JZ4740_CODEC_1_VREF_AMP_DISABLE |
++			JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M;
++
++		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1, mask, value);
++		break;
++	case SND_SOC_BIAS_OFF:
++		mask = JZ4740_CODEC_1_SUSPEND;
++		value = JZ4740_CODEC_1_SUSPEND;
++
++		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1, mask, value);
++		break;
++	default:
++		break;
 +	}
 +
-+	hwmon->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!hwmon->mem) {
++	codec->bias_level = level;
++
++	return 0;
++}
++
++static struct snd_soc_codec *jz4740_codec_codec;
++
++static int jz4740_codec_dev_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
++	struct snd_soc_codec *codec = jz4740_codec_codec;
++
++	BUG_ON(!codec);
++
++	socdev->card->codec = codec;
++
++	ret = snd_soc_new_pcms(socdev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to create pcms: %d\n", ret);
++		return ret;
++	}
++
++	snd_soc_add_controls(codec, jz4740_codec_controls,
++		ARRAY_SIZE(jz4740_codec_controls));
++
++	snd_soc_dapm_new_controls(codec, jz4740_codec_dapm_widgets,
++		ARRAY_SIZE(jz4740_codec_dapm_widgets));
++
++	snd_soc_dapm_add_routes(codec, jz4740_codec_dapm_routes,
++		ARRAY_SIZE(jz4740_codec_dapm_routes));
++
++	snd_soc_dapm_new_widgets(codec);
++
++	return 0;
++}
++
++static int jz4740_codec_dev_remove(struct platform_device *pdev)
++{
++	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
++
++	snd_soc_free_pcms(socdev);
++	snd_soc_dapm_free(socdev);
++
++	return 0;
++}
++
++struct snd_soc_codec_device soc_codec_dev_jz4740_codec = {
++	.probe = jz4740_codec_dev_probe,
++	.remove = jz4740_codec_dev_remove,
++};
++EXPORT_SYMBOL_GPL(soc_codec_dev_jz4740_codec);
++
++#ifdef CONFIG_PM_SLEEP
++
++static int jz4740_codec_suspend(struct device *dev)
++{
++	struct jz4740_codec *jz4740_codec = dev_get_drvdata(dev);
++	return jz4740_codec_set_bias_level(&jz4740_codec->codec,
++		SND_SOC_BIAS_OFF);
++}
++
++static int jz4740_codec_resume(struct device *dev)
++{
++	struct jz4740_codec *jz4740_codec = dev_get_drvdata(dev);
++	return jz4740_codec_set_bias_level(&jz4740_codec->codec,
++		SND_SOC_BIAS_STANDBY);
++}
++
++static const struct dev_pm_ops jz4740_pm_ops = {
++	.suspend = jz4740_codec_suspend,
++	.resume = jz4740_codec_resume,
++};
++
++#define JZ4740_CODEC_PM_OPS (&jz4740_pm_ops)
++
++#else
++#define JZ4740_CODEC_PM_OPS NULL
++#endif
++
++static int __devinit jz4740_codec_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct jz4740_codec *jz4740_codec;
++	struct snd_soc_codec *codec;
++	struct resource *mem;
++
++	jz4740_codec = kzalloc(sizeof(*jz4740_codec), GFP_KERNEL);
++	if (!jz4740_codec)
++		return -ENOMEM;
++
++	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!mem) {
++		dev_err(&pdev->dev, "Failed to get mmio memory resource\n");
 +		ret = -ENOENT;
-+		dev_err(&pdev->dev, "Failed to get platform mmio resource\n");
-+		goto err_free;
++		goto err_free_codec;
 +	}
 +
-+	hwmon->mem = request_mem_region(hwmon->mem->start,
-+					resource_size(hwmon->mem), pdev->name);
-+	if (!hwmon->mem) {
-+		ret = -EBUSY;
++	mem = request_mem_region(mem->start, resource_size(mem), pdev->name);
++	if (!mem) {
 +		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
-+		goto err_free;
++		ret = -EBUSY;
++		goto err_free_codec;
 +	}
 +
-+	hwmon->base = ioremap_nocache(hwmon->mem->start, resource_size(hwmon->mem));
-+	if (!hwmon->base) {
-+		ret = -EBUSY;
++	jz4740_codec->base = ioremap(mem->start, resource_size(mem));
++	if (!jz4740_codec->base) {
 +		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
++		ret = -EBUSY;
 +		goto err_release_mem_region;
 +	}
++	jz4740_codec->mem = mem;
 +
-+	init_completion(&hwmon->read_completion);
-+	mutex_init(&hwmon->lock);
++	jz4740_codec_dai.dev = &pdev->dev;
 +
-+	platform_set_drvdata(pdev, hwmon);
++	codec = &jz4740_codec->codec;
 +
-+	ret = request_irq(hwmon->irq, jz4740_hwmon_irq, 0, pdev->name, hwmon);
++	codec->dev		= &pdev->dev;
++	codec->name		= "jz4740";
++	codec->owner		= THIS_MODULE;
++
++	codec->read		= jz4740_codec_read;
++	codec->write		= jz4740_codec_write;
++	codec->set_bias_level	= jz4740_codec_set_bias_level;
++	codec->bias_level	= SND_SOC_BIAS_OFF;
++
++	codec->dai		= &jz4740_codec_dai;
++	codec->num_dai		= 1;
++
++	codec->reg_cache	= jz4740_codec->reg_cache;
++	codec->reg_cache_size	= 2;
++	memcpy(codec->reg_cache, jz4740_codec_regs, sizeof(jz4740_codec_regs));
++
++	mutex_init(&codec->mutex);
++	INIT_LIST_HEAD(&codec->dapm_widgets);
++	INIT_LIST_HEAD(&codec->dapm_paths);
++
++	jz4740_codec_codec = codec;
++
++	snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
++			JZ4740_CODEC_1_SW2_ENABLE, JZ4740_CODEC_1_SW2_ENABLE);
++
++	platform_set_drvdata(pdev, jz4740_codec);
++
++	ret = snd_soc_register_codec(codec);
 +	if (ret) {
-+		dev_err(&pdev->dev, "Failed to request irq: %d\n", ret);
++		dev_err(&pdev->dev, "Failed to register codec\n");
 +		goto err_iounmap;
 +	}
-+	disable_irq(hwmon->irq);
 +
-+	ret = sysfs_create_group(&pdev->dev.kobj, &jz4740_hwmon_attr_group);
++	ret = snd_soc_register_dai(&jz4740_codec_dai);
 +	if (ret) {
-+		dev_err(&pdev->dev, "Failed to create sysfs group: %d\n", ret);
-+		goto err_free_irq;
++		dev_err(&pdev->dev, "Failed to register codec dai\n");
++		goto err_unregister_codec;
 +	}
 +
-+	hwmon->hwmon = hwmon_device_register(&pdev->dev);
-+	if (IS_ERR(hwmon->hwmon)) {
-+		ret = PTR_ERR(hwmon->hwmon);
-+		goto err_remove_file;
-+	}
++	jz4740_codec_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 +
 +	return 0;
 +
-+err_remove_file:
-+	sysfs_remove_group(&pdev->dev.kobj, &jz4740_hwmon_attr_group);
-+err_free_irq:
-+	free_irq(hwmon->irq, hwmon);
++err_unregister_codec:
++	snd_soc_unregister_codec(codec);
 +err_iounmap:
-+	platform_set_drvdata(pdev, NULL);
-+	iounmap(hwmon->base);
++	iounmap(jz4740_codec->base);
 +err_release_mem_region:
-+	release_mem_region(hwmon->mem->start, resource_size(hwmon->mem));
-+err_free:
-+	kfree(hwmon);
++	release_mem_region(mem->start, resource_size(mem));
++err_free_codec:
++	kfree(jz4740_codec);
 +
 +	return ret;
 +}
 +
-+static int __devexit jz4740_hwmon_remove(struct platform_device *pdev)
++static int __devexit jz4740_codec_remove(struct platform_device *pdev)
 +{
-+	struct jz4740_hwmon *hwmon = platform_get_drvdata(pdev);
++	struct jz4740_codec *jz4740_codec = platform_get_drvdata(pdev);
++	struct resource *mem = jz4740_codec->mem;
 +
-+	hwmon_device_unregister(hwmon->hwmon);
-+	sysfs_remove_group(&pdev->dev.kobj, &jz4740_hwmon_attr_group);
++	snd_soc_unregister_dai(&jz4740_codec_dai);
++	snd_soc_unregister_codec(&jz4740_codec->codec);
 +
-+	free_irq(hwmon->irq, hwmon);
-+
-+	iounmap(hwmon->base);
-+	release_mem_region(hwmon->mem->start, resource_size(hwmon->mem));
++	iounmap(jz4740_codec->base);
++	release_mem_region(mem->start, resource_size(mem));
 +
 +	platform_set_drvdata(pdev, NULL);
-+	kfree(hwmon);
++	kfree(jz4740_codec);
 +
 +	return 0;
 +}
 +
-+struct platform_driver jz4740_hwmon_driver = {
-+	.probe	= jz4740_hwmon_probe,
-+	.remove = __devexit_p(jz4740_hwmon_remove),
++static struct platform_driver jz4740_codec_driver = {
++	.probe = jz4740_codec_probe,
++	.remove = __devexit_p(jz4740_codec_remove),
 +	.driver = {
-+		.name = "jz4740-hwmon",
++		.name = "jz4740-codec",
 +		.owner = THIS_MODULE,
++		.pm = JZ4740_CODEC_PM_OPS,
 +	},
 +};
 +
-+static int __init jz4740_hwmon_init(void)
++static int __init jz4740_codec_init(void)
 +{
-+	return platform_driver_register(&jz4740_hwmon_driver);
++	return platform_driver_register(&jz4740_codec_driver);
 +}
-+module_init(jz4740_hwmon_init);
++module_init(jz4740_codec_init);
 +
-+static void __exit jz4740_hwmon_exit(void)
++static void __exit jz4740_codec_exit(void)
 +{
-+	platform_driver_unregister(&jz4740_hwmon_driver);
++	platform_driver_unregister(&jz4740_codec_driver);
 +}
-+module_exit(jz4740_hwmon_exit);
++module_exit(jz4740_codec_exit);
 +
-+MODULE_DESCRIPTION("JZ4740 SoC HWMON driver");
++MODULE_DESCRIPTION("JZ4740 SoC internal codec driver");
 +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:jz4740-hwmon");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:jz4740-codec");
+diff --git a/sound/soc/codecs/jz4740.h b/sound/soc/codecs/jz4740.h
+new file mode 100644
+index 0000000..b5a0691
+--- /dev/null
++++ b/sound/soc/codecs/jz4740.h
+@@ -0,0 +1,20 @@
++/*
++ * Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#ifndef __SND_SOC_CODECS_JZ4740_CODEC_H__
++#define __SND_SOC_CODECS_JZ4740_CODEC_H__
++
++extern struct snd_soc_dai jz4740_codec_dai;
++extern struct snd_soc_codec_device soc_codec_dev_jz4740_codec;
++
++#endif
 -- 
 1.5.6.5
 
