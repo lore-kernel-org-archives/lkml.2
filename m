@@ -1,173 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab0FSTOK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 15:14:10 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:34118 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756711Ab0FSTOI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 15:14:08 -0400
-To: Andi Kleen <andi@firstfloor.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       Kexec Mailing List <kexec@lists.infradead.org>,
-       Sam Ravnborg <sam@ravnborg.org>
-References: <20100619132235.GA24200@basil.fritz.box>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Sat, 19 Jun 2010 12:13:56 -0700
-In-Reply-To: <20100619132235.GA24200@basil.fritz.box> (Andi Kleen's message of "Sat\, 19 Jun 2010 15\:22\:35 +0200")
-Message-ID: <m1y6eau96z.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1756827Ab0FSTOV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 15:14:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18740 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756737Ab0FSTOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 15:14:19 -0400
+Date: Sat, 19 Jun 2010 21:11:31 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Louis Rilling <louis.rilling@kerlabs.com>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND 4/4] sys_unshare: simplify the
+	not-really-implemented CLONE_THREAD/SIGHAND/VM code
+Message-ID: <20100619191131.GE3424@redhat.com>
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.5.249
-X-SA-Exim-Rcpt-To: andi@firstfloor.org, sam@ravnborg.org, kexec@lists.infradead.org, linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 0; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: ; sa07 0; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andi Kleen <andi@firstfloor.org>
-X-Spam-Relay-Country: _RELAYCOUNTRY_
-Subject: Re: [PATCH] Export kexec.h
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Disposition: inline
+In-Reply-To: <20100619190840.GA3424@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
+Cleanup: kill the dead code which does nothing but complicates the code
+and confuses the reader.
 
-> Export kexec.h
->     
-> kexec_load is a system call and it needs a header
-> file with its input arguments.
->
-> Export the parts of kexec.h needed for this.
->
-> Cc: ebiederm@xmission.com
->
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+sys_unshare(CLONE_THREAD/SIGHAND/VM) is not really implemented, and I doubt
+very much it will ever work. At least, nobody even tried since the original
+"unshare system call -v5: system call handler function" commit
+99d1419d96d7df9cfa56bc977810be831bd5ef64 was applied more than 4 years ago.
 
-Is there a corresponding patch for /sbin/kexec ?
-What is the reason for wanting to export a currently kernel only header?
+And the code is not consistent. unshare_thread() always fails unconditionally,
+while unshare_sighand() and unshare_vm() pretend to work if there is nothing
+to unshare.
 
-Not that I am really opposed but without a bit more context I can't
-make a reasonable review of these patches.
+Remove unshare_thread(), unshare_sighand(), unshare_vm() helpers and related
+variables and add a simple CLONE_THREAD | CLONE_SIGHAND| CLONE_VM check into
+check_unshare_flags().
 
-Eric
+Also, move the "CLONE_NEWNS needs CLONE_FS" check from check_unshare_flags()
+to sys_unshare(). This looks more consistent and matches the similar
+do_sysvsem check in sys_unshare().
 
+Note: with or without this patch "atomic_read(mm->mm_users) > 1" can give
+a false positive due to get_task_mm().
 
-> diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-> index 2fc8e14..8fd5d09 100644
-> --- a/include/linux/Kbuild
-> +++ b/include/linux/Kbuild
-> @@ -389,3 +389,5 @@ unifdef-y += xfrm.h
->  objhdr-y += version.h
->  header-y += wimax.h
->  header-y += wimax/
-> +
-> +unifdef-y += kexec.h
-> diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-> index 03e8e8d..f4c5a0e 100644
-> --- a/include/linux/kexec.h
-> +++ b/include/linux/kexec.h
-> @@ -1,8 +1,46 @@
->  #ifndef LINUX_KEXEC_H
->  #define LINUX_KEXEC_H
->  
-> -#ifdef CONFIG_KEXEC
-> +/* Kexec: one kernel loading another */
-> +
-> +#ifdef __KERNEL__
-> +#include <linux/compiler.h>
->  #include <linux/types.h>
-> +#endif
-> +
-> +#define KEXEC_ON_CRASH		0x00000001
-> +#define KEXEC_PRESERVE_CONTEXT	0x00000002
-> +#define KEXEC_ARCH_MASK		0xffff0000
-> +
-> +/* These values match the ELF architecture values.
-> + * Unless there is a good reason that should continue to be the case.
-> + */
-> +#define KEXEC_ARCH_DEFAULT ( 0 << 16)
-> +#define KEXEC_ARCH_386     ( 3 << 16)
-> +#define KEXEC_ARCH_X86_64  (62 << 16)
-> +#define KEXEC_ARCH_PPC     (20 << 16)
-> +#define KEXEC_ARCH_PPC64   (21 << 16)
-> +#define KEXEC_ARCH_IA_64   (50 << 16)
-> +#define KEXEC_ARCH_ARM     (40 << 16)
-> +#define KEXEC_ARCH_S390    (22 << 16)
-> +#define KEXEC_ARCH_SH      (42 << 16)
-> +#define KEXEC_ARCH_MIPS_LE (10 << 16)
-> +#define KEXEC_ARCH_MIPS    ( 8 << 16)
-> +
-> +#define KEXEC_SEGMENT_MAX 16
-> +struct kexec_segment {
-> +	void __user *buf;
-> +	size_t bufsz;
-> +#ifdef __KERNEL__
-> +	unsigned long mem;	/* User space sees this as a (void *) ... */
-> +#else
-> +	void *mem;
-> +#endif
-> +	size_t memsz;
-> +};
-> +
-> +#ifdef __KERNEL__
-> +#ifdef CONFIG_KEXEC
->  #include <linux/list.h>
->  #include <linux/linkage.h>
->  #include <linux/compat.h>
-> @@ -57,14 +95,6 @@ typedef unsigned long kimage_entry_t;
->  #define IND_DONE         0x4
->  #define IND_SOURCE       0x8
->  
-> -#define KEXEC_SEGMENT_MAX 16
-> -struct kexec_segment {
-> -	void __user *buf;
-> -	size_t bufsz;
-> -	unsigned long mem;	/* User space sees this as a (void *) ... */
-> -	size_t memsz;
-> -};
-> -
->  #ifdef CONFIG_COMPAT
->  struct compat_kexec_segment {
->  	compat_uptr_t buf;
-> @@ -163,25 +193,6 @@ extern struct kimage *kexec_crash_image;
->  #define kexec_flush_icache_page(page)
->  #endif
->  
-> -#define KEXEC_ON_CRASH		0x00000001
-> -#define KEXEC_PRESERVE_CONTEXT	0x00000002
-> -#define KEXEC_ARCH_MASK		0xffff0000
-> -
-> -/* These values match the ELF architecture values.
-> - * Unless there is a good reason that should continue to be the case.
-> - */
-> -#define KEXEC_ARCH_DEFAULT ( 0 << 16)
-> -#define KEXEC_ARCH_386     ( 3 << 16)
-> -#define KEXEC_ARCH_X86_64  (62 << 16)
-> -#define KEXEC_ARCH_PPC     (20 << 16)
-> -#define KEXEC_ARCH_PPC64   (21 << 16)
-> -#define KEXEC_ARCH_IA_64   (50 << 16)
-> -#define KEXEC_ARCH_ARM     (40 << 16)
-> -#define KEXEC_ARCH_S390    (22 << 16)
-> -#define KEXEC_ARCH_SH      (42 << 16)
-> -#define KEXEC_ARCH_MIPS_LE (10 << 16)
-> -#define KEXEC_ARCH_MIPS    ( 8 << 16)
-> -
->  /* List of defined/legal kexec flags */
->  #ifndef CONFIG_KEXEC_JUMP
->  #define KEXEC_FLAGS    KEXEC_ON_CRASH
-> @@ -215,4 +226,5 @@ struct task_struct;
->  static inline void crash_kexec(struct pt_regs *regs) { }
->  static inline int kexec_should_crash(struct task_struct *p) { return 0; }
->  #endif /* CONFIG_KEXEC */
-> +#endif
->  #endif /* LINUX_KEXEC_H */
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Roland McGrath <roland@redhat.com>
+---
+
+ kernel/fork.c |  119 ++++++++++++----------------------------------------------
+ 1 file changed, 25 insertions(+), 94 deletions(-)
+
+--- 35-rc3/kernel/fork.c~PNS_4_UNSHARE_IS_REALLY_REALLY_UGLY	2010-06-19 20:17:35.000000000 +0200
++++ 35-rc3/kernel/fork.c	2010-06-19 20:17:51.000000000 +0200
+@@ -1500,38 +1500,24 @@ void __init proc_caches_init(void)
+ }
+ 
+ /*
+- * Check constraints on flags passed to the unshare system call and
+- * force unsharing of additional process context as appropriate.
++ * Check constraints on flags passed to the unshare system call.
+  */
+-static void check_unshare_flags(unsigned long *flags_ptr)
++static int check_unshare_flags(unsigned long unshare_flags)
+ {
++	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
++				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
++				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
++		return -EINVAL;
+ 	/*
+-	 * If unsharing a thread from a thread group, must also
+-	 * unshare vm.
+-	 */
+-	if (*flags_ptr & CLONE_THREAD)
+-		*flags_ptr |= CLONE_VM;
+-
+-	/*
+-	 * If unsharing vm, must also unshare signal handlers.
+-	 */
+-	if (*flags_ptr & CLONE_VM)
+-		*flags_ptr |= CLONE_SIGHAND;
+-
+-	/*
+-	 * If unsharing namespace, must also unshare filesystem information.
++	 * Not implemented, but pretend it works if there is nothing to
++	 * unshare. Note that unsharing CLONE_THREAD or CLONE_SIGHAND
++	 * needs to unshare vm.
+ 	 */
+-	if (*flags_ptr & CLONE_NEWNS)
+-		*flags_ptr |= CLONE_FS;
+-}
+-
+-/*
+- * Unsharing of tasks created with CLONE_THREAD is not supported yet
+- */
+-static int unshare_thread(unsigned long unshare_flags)
+-{
+-	if (unshare_flags & CLONE_THREAD)
+-		return -EINVAL;
++	if (unshare_flags & (CLONE_THREAD | CLONE_SIGHAND | CLONE_VM)) {
++		/* FIXME: get_task_mm() increments ->mm_users */
++		if (atomic_read(&current->mm->mm_users) > 1)
++			return -EINVAL;
++	}
+ 
+ 	return 0;
+ }
+@@ -1558,34 +1544,6 @@ static int unshare_fs(unsigned long unsh
+ }
+ 
+ /*
+- * Unsharing of sighand is not supported yet
+- */
+-static int unshare_sighand(unsigned long unshare_flags, struct sighand_struct **new_sighp)
+-{
+-	struct sighand_struct *sigh = current->sighand;
+-
+-	if ((unshare_flags & CLONE_SIGHAND) && atomic_read(&sigh->count) > 1)
+-		return -EINVAL;
+-	else
+-		return 0;
+-}
+-
+-/*
+- * Unshare vm if it is being shared
+- */
+-static int unshare_vm(unsigned long unshare_flags, struct mm_struct **new_mmp)
+-{
+-	struct mm_struct *mm = current->mm;
+-
+-	if ((unshare_flags & CLONE_VM) &&
+-	    (mm && atomic_read(&mm->mm_users) > 1)) {
+-		return -EINVAL;
+-	}
+-
+-	return 0;
+-}
+-
+-/*
+  * Unshare file descriptor table if it is being shared
+  */
+ static int unshare_fd(unsigned long unshare_flags, struct files_struct **new_fdp)
+@@ -1613,45 +1571,37 @@ static int unshare_fd(unsigned long unsh
+  */
+ SYSCALL_DEFINE1(unshare, unsigned long, unshare_flags)
+ {
+-	int err = 0;
+ 	struct fs_struct *fs, *new_fs = NULL;
+-	struct sighand_struct *new_sigh = NULL;
+-	struct mm_struct *mm, *new_mm = NULL, *active_mm = NULL;
+ 	struct files_struct *fd, *new_fd = NULL;
+ 	struct nsproxy *new_nsproxy = NULL;
+ 	int do_sysvsem = 0;
++	int err;
+ 
+-	check_unshare_flags(&unshare_flags);
+-
+-	/* Return -EINVAL for all unsupported flags */
+-	err = -EINVAL;
+-	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
+-				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
+-				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
++	err = check_unshare_flags(unshare_flags);
++	if (err)
+ 		goto bad_unshare_out;
+ 
+ 	/*
++	 * If unsharing namespace, must also unshare filesystem information.
++	 */
++	if (unshare_flags & CLONE_NEWNS)
++		unshare_flags |= CLONE_FS;
++	/*
+ 	 * CLONE_NEWIPC must also detach from the undolist: after switching
+ 	 * to a new ipc namespace, the semaphore arrays from the old
+ 	 * namespace are unreachable.
+ 	 */
+ 	if (unshare_flags & (CLONE_NEWIPC|CLONE_SYSVSEM))
+ 		do_sysvsem = 1;
+-	if ((err = unshare_thread(unshare_flags)))
+-		goto bad_unshare_out;
+ 	if ((err = unshare_fs(unshare_flags, &new_fs)))
+-		goto bad_unshare_cleanup_thread;
+-	if ((err = unshare_sighand(unshare_flags, &new_sigh)))
+-		goto bad_unshare_cleanup_fs;
+-	if ((err = unshare_vm(unshare_flags, &new_mm)))
+-		goto bad_unshare_cleanup_sigh;
++		goto bad_unshare_out;
+ 	if ((err = unshare_fd(unshare_flags, &new_fd)))
+-		goto bad_unshare_cleanup_vm;
++		goto bad_unshare_cleanup_fs;
+ 	if ((err = unshare_nsproxy_namespaces(unshare_flags, &new_nsproxy,
+ 			new_fs)))
+ 		goto bad_unshare_cleanup_fd;
+ 
+-	if (new_fs ||  new_mm || new_fd || do_sysvsem || new_nsproxy) {
++	if (new_fs || new_fd || do_sysvsem || new_nsproxy) {
+ 		if (do_sysvsem) {
+ 			/*
+ 			 * CLONE_SYSVSEM is equivalent to sys_exit().
+@@ -1677,15 +1627,6 @@ SYSCALL_DEFINE1(unshare, unsigned long, 
+ 			write_unlock(&fs->lock);
+ 		}
+ 
+-		if (new_mm) {
+-			mm = current->mm;
+-			active_mm = current->active_mm;
+-			current->mm = new_mm;
+-			current->active_mm = new_mm;
+-			activate_mm(active_mm, new_mm);
+-			new_mm = mm;
+-		}
+-
+ 		if (new_fd) {
+ 			fd = current->files;
+ 			current->files = new_fd;
+@@ -1702,20 +1643,10 @@ bad_unshare_cleanup_fd:
+ 	if (new_fd)
+ 		put_files_struct(new_fd);
+ 
+-bad_unshare_cleanup_vm:
+-	if (new_mm)
+-		mmput(new_mm);
+-
+-bad_unshare_cleanup_sigh:
+-	if (new_sigh)
+-		if (atomic_dec_and_test(&new_sigh->count))
+-			kmem_cache_free(sighand_cachep, new_sigh);
+-
+ bad_unshare_cleanup_fs:
+ 	if (new_fs)
+ 		free_fs_struct(new_fs);
+ 
+-bad_unshare_cleanup_thread:
+ bad_unshare_out:
+ 	return err;
+ }
+
