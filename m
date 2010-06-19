@@ -1,70 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab0FSUWO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 16:22:14 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34537 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755856Ab0FSUWN (ORCPT
+	id S1756962Ab0FSUXx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 16:23:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56149 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756867Ab0FSUXv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 16:22:13 -0400
+	Sat, 19 Jun 2010 16:23:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=dDJ7pLgjSs3NQj+N9498sJdqYQqQkYLQFkw/+DcO1pi+SIvtw4l9JIwB482b/fiTof
-         ceyIt84z7ZNyGNKp+APzYBAdVbPgKO6lUbHFJoxYhJCMzx9MIfx59Xh1uS1+bHv6fPw8
-         jLk8X9X65t6wZ2BBmFpvV6Wb88bw2+OVci8Ok=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ccT7CzVOsc1arQWGRD1JT0pJ/UPp4Jtk/Kg1jNTzmkOSouqyn3Csgzle2HRenxImwV
+         kusLOv+8Us7aYdAtwsR/nwXneUSlUSY3NGyGtbGB8nSWf1V9F8nkOPtx5561W2HsgLoX
+         5vQSdQa0FJmMJWL0h0/dSD+11AHYRG65Y3PvU=
 MIME-Version: 1.0
-Date: Sat, 19 Jun 2010 16:22:12 -0400
-Message-ID: <AANLkTim7_OzJfwbtk0fE5ScH8zZwZ_uJeo5pJFOhkHu_@mail.gmail.com>
-Subject: Dell PowerEdge 4200 scsi, worked in 2.6.18, not in 2.6.26 (LOW 
-	PRIORITY help request)
-From: trouble daemon <troubledaemon@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4C1D243D.2070302@gmail.com>
+References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>
+	<1276288869-16815-6-git-send-email-justinmattock@gmail.com>
+	<AANLkTilZLOGXpZxHUklA8iHMj8HsJap2BvWMrWMmeyu3@mail.gmail.com>
+	<4C1C4FDE.2090101@gmail.com>
+	<AANLkTin5ovxSSsIM-1R-u7mmoqxp8UnxgtkuVJfZU2ES@mail.gmail.com>
+	<4C1D160D.5030303@gmail.com>
+	<AANLkTikOP99vtHOmfLZ05TkGFK8ffVNSSDoBvgCaIMCi@mail.gmail.com>
+	<4C1D243D.2070302@gmail.com>
+Date: Sat, 19 Jun 2010 22:23:49 +0200
+X-Google-Sender-Auth: r9QdUymAQ5QSQ6VJwfW5l1tTElk
+Message-ID: <AANLkTilavruQtdEH2L_BBkEGlCWKHYyxMze18uw0vsP2@mail.gmail.com>
+Subject: Re: [PATCH 5/6]kernel:module.c variable 'nowarn' set but not used
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+       zippel@linux-m68k.org, linux-fsdevel@vger.kernel.org,
+       rusty@rustcorp.com.au
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel hackers,
+On Sat, Jun 19, 2010 at 22:10, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+> On 06/19/2010 12:45 PM, Geert Uytterhoeven wrote:
+>>
+>> On Sat, Jun 19, 2010 at 21:10, Justin P. Mattock
+>> <justinmattock@gmail.com>  wrote:
+>>>
+>>> On 06/19/2010 01:08 AM, Geert Uytterhoeven wrote:
+>>>>
+>>>> On Sat, Jun 19, 2010 at 07:04, Justin P. Mattock
+>>>> <justinmattock@gmail.com>    wrote:
+>>>>>>
+>>>>>> Also wrong, you removed the creation of the links in sysfs.
+>>>>>>
+>>>>>> The assignment to nowarn was there to avoid another compiler warning,
+>>>>>> as sysfs_create_link() is marked __must_check.
+>>>>>
+>>>>> I also went back to this one and made the following changes.. let me
+>>>>> know
+>>>>> if
+>>>>> it's wrong etc..
+>>>>>
+>>>>>  From 4f45beed80627d2bb32fb021bb6d22d88089557b Mon Sep 17 00:00:00 2001
+>>>>> From: Justin P. Mattock<justinmattock@gmail.com>
+>>>>> Date: Fri, 18 Jun 2010 22:01:07 -0700
+>>>>> Subject: [PATCH 5/5] module.c
+>>>>>  Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>>>>
+>>>>> ---
+>>>>>  kernel/module.c |    3 +--
+>>>>>  1 files changed, 1 insertions(+), 2 deletions(-)
+>>>>>
+>>>>> diff --git a/kernel/module.c b/kernel/module.c
+>>>>> index 8c6b428..48fc5c8 100644
+>>>>> --- a/kernel/module.c
+>>>>> +++ b/kernel/module.c
+>>>>> @@ -1340,11 +1340,10 @@ static void add_usage_links(struct module *mod)
+>>>>>  {
+>>>>>  #ifdef CONFIG_MODULE_UNLOAD
+>>>>>        struct module_use *use;
+>>>>> -       int nowarn;
+>>>>>
+>>>>>        mutex_lock(&module_mutex);
+>>>>>        list_for_each_entry(use,&mod->target_list, target_list) {
+>>>>> -               nowarn = sysfs_create_link(use->target->holders_dir,
+>>>>> +               sysfs_create_link(use->target->holders_dir,
+>>>>>                                           &mod->mkobj.kobj, mod->name);
+>>>>>        }
+>>>>>        mutex_unlock(&module_mutex);
+>>>>> --
+>>>>> 1.7.1.rc1.21.gf3bd6
+>>>>>
+>>>>> if it looks good, then I can resend it out.
+>>>>
+>>>> Have you compile-tested this?
+>>>> As sysfs_create_link() is marked __must_check, that will cause another
+>>>> compiler
+>>>> warning, but only if CONFIG_SYSFS=y.
+>>>>
+>>>> Perhaps you can just mark the nowarn variable __unused?
+>>>
+>>>
+>>> o.k. this builds cleanly without a warning, but is it the right thing
+>>> todo?
+>>> i.g. rather leave the warning message there and file a bug than just
+>>> silence
+>>> the issue. Anyways here is what I have:
+>>>
+>>>  From edbeb2b1ee051218f9e5b93fcb8bbdbf1119a6e4 Mon Sep 17 00:00:00 2001
+>>> From: Justin P. Mattock<justinmattock@gmail.com>
+>>> Date: Sat, 19 Jun 2010 12:07:32 -0700
+>>> Subject: [PATCH 5/5] module.c
+>>>  Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>>
+>>> ---
+>>>  kernel/module.c |    2 +-
+>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/kernel/module.c b/kernel/module.c
+>>> index 8c6b428..765bac5 100644
+>>> --- a/kernel/module.c
+>>> +++ b/kernel/module.c
+>>> @@ -1340,7 +1340,7 @@ static void add_usage_links(struct module *mod)
+>>>  {
+>>>  #ifdef CONFIG_MODULE_UNLOAD
+>>>        struct module_use *use;
+>>> -       int nowarn;
+>>> +       int nowarn __attribute__((unused));
+>>
+>> The `__attribute__((unused))' should be `__used'.
+>>
+>
+> I'm confused now. how should I write that out?
+> (google is not giving me vary many examples on this)
 
-I consider this to be of rather low priority given the age of the
-hardware, so ignore unless you feel like helping a fellow out, thanks!
+Sorry, I misrememberd there was a #define for it, and could find only __used.
+But on closer look, the `__attribute__((unused)` is correct.
 
-I have a pair of Dell PowerEdge 4200's (dual 300 SMP, 512mb, SCA
-hotswap scsi, have AMI MegaRaid but removed, same problem with or
-without). I am using Debian Lenny, but have used etch (and in fact
-bootstrap via FAI from etch currently). The 2.6.18 kernel that comes
-with etch works fine in etch and Lenny, but when I tried to use the
-2.6.26 kernel in Lenny, the kernel starts to panic (see "dmesg pastes"
-below for output).
+Gr{oetje,eeting}s,
 
-Ultimately, I was wondering if anyone might be able to take a look at
-my dmesg's that might have any idea as to what feature might be new in
-.26 that could be responsible for the panic. Sadly, it takes about 5
-hours to do a clean run of make-kpkg in debian on these machines, and
-I am not setup for distcc or cross compile on my x64 machine yet, so
-it is a painful experience to recompile over and over to try figure
-out what kernel feature it might be that is causing this.
+						Geert
 
-I should note that I have tried one recompile of 2.6.26 (debianized)
-to disable the new aic7xxx module and only use the old driver, but to
-no avail. I am looking to try the 2.6.34 vanilla kernel next however.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
-dmesg pastes
----------------------
-I have uploaded the panic dmesg to pastebin at (never expires):
-http://pastebin.ca/1886636
-I have uploaded the working 2.6.18 dmesg to pastbin at (never
-expires): http://pastebin.ca/1886641
-
-
-I think that about does it as far as pastebins go, but feel free to
-ask for more information if you think you might have any idea. Since I
-am not an LKML subscriber yet, I would please ask that any replies be
-sent to this email address directly. Much appreciated for any help in
-advance, thanks!
-
-
-
-troubled
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
