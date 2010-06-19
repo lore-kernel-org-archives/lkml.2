@@ -1,257 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab0FSO6i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 10:58:38 -0400
-Received: from blue-ld-261.synserver.de ([217.119.54.83]:33249 "EHLO
-	smtp-out-036.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756142Ab0FSO6g (ORCPT
+	id S1756207Ab0FSPRU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 11:17:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33491 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756157Ab0FSPRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 10:58:36 -0400
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Jun 2010 10:58:36 EDT
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 17533
-From: 1276924111-11158-27-git-send-email-lars@metafoo.de
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
-Subject: [PATCH v3] alsa: ASoC: JZ4740: Add qi_lb60 board driver
-Date: Sat, 19 Jun 2010 16:51:22 +0200
-Message-Id: <1276959082-9184-1-git-send-email-1276924111-11158-27-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.5.6.5
+	Sat, 19 Jun 2010 11:17:19 -0400
+Date: Sat, 19 Jun 2010 08:16:42 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Kees Cook <kees.cook@canonical.com>, x86@kernel.org,
+       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>,
+       Alexander Potashev <aspotashev@gmail.com>,
+       Tim Abbott <tabbott@ksplice.com>, Sam Ravnborg <sam@ravnborg.org>,
+       Jan Beulich <jbeulich@novell.com>,
+       Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] x86: clear XD_DISABLED flag on Intel to regain
+ NX
+Message-ID: <20100619081642.33b37676@infradead.org>
+In-Reply-To: <874ogzph4m.fsf@basil.nowhere.org>
+References: <20100619055010.GR24749@outflux.net>
+	<874ogzph4m.fsf@basil.nowhere.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+On Sat, 19 Jun 2010 10:21:29 +0200
+Andi Kleen <andi@firstfloor.org> wrote:
 
-This patch adds ASoC support for the qi_lb60 board.
+> Kees Cook <kees.cook@canonical.com> writes:
+> 
+> > This will clear the MSR_IA32_MISC_ENABLE_XD_DISABLE bit so that NX
+> > cannot be inappropriately controlled by the BIOS on Intel CPUs.  If
+> > NX actually needs to be disabled, "noexec=off" can be used.
+> 
+> The patch still seems like a bad idea to me. What happens if 
+> the NX bit is broken for some reason and the BIOS is right
+> to disable it?
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: alsa-devel@alsa-project.org
 
---
-Changes since v1
-- Refer to AMP gpios always by their define
-- Do not try to set codecs format, since the set_fmt callback for the codec was
-  dropped.
+overriding the bios like this is almost always a bad idea.
+(you're doing a blanket override, not a specific, verified override)
 
-Changes since v2
-- The codec prefix was removed from jz4740 codec include file
-- This patch accidentally contained a few bits meant for ASoC JZ4740 platform
-  support patch. Removed them.
----
- sound/soc/jz4740/Kconfig   |    9 +++
- sound/soc/jz4740/Makefile  |    4 +
- sound/soc/jz4740/qi_lb60.c |  166 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 179 insertions(+), 0 deletions(-)
- create mode 100644 sound/soc/jz4740/qi_lb60.c
+you have no idea if the SMM code can deal with NX, etc etc.
 
-diff --git a/sound/soc/jz4740/Kconfig b/sound/soc/jz4740/Kconfig
-index 27480f2..5351cba 100644
---- a/sound/soc/jz4740/Kconfig
-+++ b/sound/soc/jz4740/Kconfig
-@@ -12,3 +12,12 @@ config SND_JZ4740_SOC_I2S
- 	help
- 	  Say Y if you want to use I2S protocol and I2S codec on Ingenic JZ4740
- 	  based boards.
-+
-+config SND_JZ4740_SOC_QI_LB60
-+	tristate "SoC Audio support for Qi LB60"
-+	depends on SND_JZ4740_SOC && JZ4740_QI_LB60
-+	select SND_JZ4740_SOC_I2S
-+    select SND_SOC_JZ4740_CODEC
-+	help
-+	  Say Y if you want to add support for ASoC audio on the Qi LB60 board
-+	  a.k.a Qi Ben NanoNote.
-diff --git a/sound/soc/jz4740/Makefile b/sound/soc/jz4740/Makefile
-index 1be8d19..be873c1 100644
---- a/sound/soc/jz4740/Makefile
-+++ b/sound/soc/jz4740/Makefile
-@@ -7,3 +7,7 @@ snd-soc-jz4740-i2s-objs := jz4740-i2s.o
- obj-$(CONFIG_SND_JZ4740_SOC) += snd-soc-jz4740.o
- obj-$(CONFIG_SND_JZ4740_SOC_I2S) += snd-soc-jz4740-i2s.o
- 
-+# Jz4740 Machine Support
-+snd-soc-qi-lb60-objs := qi_lb60.o
-+
-+obj-$(CONFIG_SND_JZ4740_SOC_QI_LB60) += snd-soc-qi-lb60.o
-diff --git a/sound/soc/jz4740/qi_lb60.c b/sound/soc/jz4740/qi_lb60.c
-new file mode 100644
-index 0000000..f15f491
---- /dev/null
-+++ b/sound/soc/jz4740/qi_lb60.c
-@@ -0,0 +1,166 @@
-+/*
-+ * Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/timer.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <sound/core.h>
-+#include <sound/pcm.h>
-+#include <sound/soc.h>
-+#include <sound/soc-dapm.h>
-+#include <linux/gpio.h>
-+
-+#include "../codecs/jz4740.h"
-+#include "jz4740-pcm.h"
-+#include "jz4740-i2s.h"
-+
-+
-+#define QI_LB60_SND_GPIO JZ_GPIO_PORTB(29)
-+#define QI_LB60_AMP_GPIO JZ_GPIO_PORTD(4)
-+
-+static int qi_lb60_spk_event(struct snd_soc_dapm_widget *widget,
-+			     struct snd_kcontrol *ctrl, int event)
-+{
-+	int on = 0;
-+	if (event & SND_SOC_DAPM_POST_PMU)
-+		on = 1;
-+	else if (event & SND_SOC_DAPM_PRE_PMD)
-+		on = 0;
-+
-+	gpio_set_value(QI_LB60_SND_GPIO, on);
-+	gpio_set_value(QI_LB60_AMP_GPIO, on);
-+
-+	return 0;
-+}
-+
-+static const struct snd_soc_dapm_widget qi_lb60_widgets[] = {
-+	SND_SOC_DAPM_SPK("Speaker", qi_lb60_spk_event),
-+	SND_SOC_DAPM_MIC("Mic", NULL),
-+};
-+
-+static const struct snd_soc_dapm_route qi_lb60_routes[] = {
-+	{"Mic", NULL, "MIC"},
-+	{"Speaker", NULL, "LOUT"},
-+	{"Speaker", NULL, "ROUT"},
-+};
-+
-+#define QI_LB60_DAIFMT (SND_SOC_DAIFMT_I2S | \
-+			SND_SOC_DAIFMT_NB_NF | \
-+			SND_SOC_DAIFMT_CBM_CFM)
-+
-+static int qi_lb60_codec_init(struct snd_soc_codec *codec)
-+{
-+	int ret;
-+	struct snd_soc_dai *cpu_dai = codec->socdev->card->dai_link->cpu_dai;
-+
-+	snd_soc_dapm_nc_pin(codec, "LIN");
-+	snd_soc_dapm_nc_pin(codec, "RIN");
-+
-+	ret = snd_soc_dai_set_fmt(cpu_dai, QI_LB60_DAIFMT);
-+	if (ret < 0) {
-+		dev_err(codec->dev, "Failed to set cpu dai format: %d\n", ret);
-+		return ret;
-+	}
-+
-+	snd_soc_dapm_new_controls(codec, qi_lb60_widgets, ARRAY_SIZE(qi_lb60_widgets));
-+	snd_soc_dapm_add_routes(codec, qi_lb60_routes, ARRAY_SIZE(qi_lb60_routes));
-+	snd_soc_dapm_sync(codec);
-+
-+	return 0;
-+}
-+
-+static struct snd_soc_dai_link qi_lb60_dai = {
-+	.name = "jz4740",
-+	.stream_name = "jz4740",
-+	.cpu_dai = &jz4740_i2s_dai,
-+	.codec_dai = &jz4740_codec_dai,
-+	.init = qi_lb60_codec_init,
-+};
-+
-+static struct snd_soc_card qi_lb60 = {
-+	.name = "QI LB60",
-+	.dai_link = &qi_lb60_dai,
-+	.num_links = 1,
-+	.platform = &jz4740_soc_platform,
-+};
-+
-+static struct snd_soc_device qi_lb60_snd_devdata = {
-+	.card = &qi_lb60,
-+	.codec_dev = &soc_codec_dev_jz4740_codec,
-+};
-+
-+static struct platform_device *qi_lb60_snd_device;
-+
-+static int __init qi_lb60_init(void)
-+{
-+	int ret;
-+
-+	qi_lb60_snd_device = platform_device_alloc("soc-audio", -1);
-+
-+	if (!qi_lb60_snd_device)
-+		return -ENOMEM;
-+
-+	ret = gpio_request(QI_LB60_SND_GPIO, "SND");
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to request SND GPIO(%d): %d\n",
-+				QI_LB60_SND_GPIO, ret);
-+		goto err_device_put;
-+	}
-+
-+	ret = gpio_request(QI_LB60_AMP_GPIO, "AMP");
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to request AMP GPIO(%d): %d\n",
-+				QI_LB60_AMP_GPIO, ret);
-+		goto err_gpio_free_snd;
-+	}
-+
-+	gpio_direction_output(QI_LB60_SND_GPIO, 0);
-+	gpio_direction_output(QI_LB60_AMP_GPIO, 0);
-+
-+	platform_set_drvdata(qi_lb60_snd_device, &qi_lb60_snd_devdata);
-+	qi_lb60_snd_devdata.dev = &qi_lb60_snd_device->dev;
-+
-+	ret = platform_device_add(qi_lb60_snd_device);
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to add snd soc device: %d\n", ret);
-+		goto err_unset_pdata;
-+	}
-+
-+	 return 0;
-+
-+err_unset_pdata:
-+	platform_set_drvdata(qi_lb60_snd_device, NULL);
-+/*err_gpio_free_amp:*/
-+	gpio_free(QI_LB60_AMP_GPIO);
-+err_gpio_free_snd:
-+	gpio_free(QI_LB60_SND_GPIO);
-+err_device_put:
-+	platform_device_put(qi_lb60_snd_device);
-+
-+	return ret;
-+}
-+module_init(qi_lb60_init);
-+
-+static void __exit qi_lb60_exit(void)
-+{
-+	gpio_free(QI_LB60_AMP_GPIO);
-+	gpio_free(QI_LB60_SND_GPIO);
-+	platform_device_unregister(qi_lb60_snd_device);
-+}
-+module_exit(qi_lb60_exit);
-+
-+MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-+MODULE_DESCRIPTION("ALSA SoC QI LB60 Audio support");
-+MODULE_LICENSE("GPL v2");
+the real answer is "fix your bios setting".
+Don't as owner of the machine turn something off in the bios that you
+actually want.
+
+
 -- 
-1.5.6.5
-
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
