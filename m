@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab0FSTwo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 15:52:44 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:55007 "EHLO
+	id S1756864Ab0FSTxs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 15:53:48 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:52037 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756782Ab0FSTwn (ORCPT
+	with ESMTP id S1756748Ab0FSTxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 15:52:43 -0400
-Date: Sat, 19 Jun 2010 21:52:42 +0200
+	Sat, 19 Jun 2010 15:53:47 -0400
+Date: Sat, 19 Jun 2010 21:53:45 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, fengguang.wu@intel.com,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] [31/31] HWPOISON: Add a madvise() injector for soft
- page offlining
-Message-ID: <20100619195242.GS18946@basil.fritz.box>
-References: <200912081016.198135742@firstfloor.org>
- <20091208211647.9B032B151F@basil.firstfloor.org>
- <AANLkTimBhQAYn7BDXd1ykSN90v0ClWybIe2Pe1qv_6vA@mail.gmail.com>
- <20100619132055.GK18946@basil.fritz.box>
- <AANLkTin-lj5ZgtcvJhWcNiMuWSCQ39N8mqe_2fm8DDVR@mail.gmail.com>
- <20100619133000.GL18946@basil.fritz.box>
- <AANLkTiloIXtCwBeBvP32hLBBvxCWrZMMwWTZwSj475wi@mail.gmail.com>
- <20100619140933.GM18946@basil.fritz.box>
- <AANLkTilF6m5YKMiDGaTNuoW6LxiA44oss3HyvkavwrOK@mail.gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Andi Kleen <andi@firstfloor.org>, ebiederm@xmission.com,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] use kexec_kernel.h for the kernel-only stuff [Was:
+ [PATCH] Export kexec.h]
+Message-ID: <20100619195345.GT18946@basil.fritz.box>
+References: <20100619132235.GA24200@basil.fritz.box>
+ <20100619182419.GA22079@merkur.ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTilF6m5YKMiDGaTNuoW6LxiA44oss3HyvkavwrOK@mail.gmail.com>
+In-Reply-To: <20100619182419.GA22079@merkur.ravnborg.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> .TP
-> .BR MADV_SOFT_OFFLINE " (Since Linux 2.6.33)
-> Soft offline the pages in the range specified by
-> .I addr
-> and
-> .IR length .
-> This memory of each page in the specified range is copied to a new page,
+On Sat, Jun 19, 2010 at 08:24:19PM +0200, Sam Ravnborg wrote:
+> On Sat, Jun 19, 2010 at 03:22:35PM +0200, Andi Kleen wrote:
+> > Export kexec.h
+> >     
+> > kexec_load is a system call and it needs a header
+> > file with its input arguments.
+> > 
+> > Export the parts of kexec.h needed for this.
+> 
+> Rather than introducing yet another file where
+> only a fraction is exported how about a split
+> where we put the kernel specific definitions in kexec_kernel.h.
+> And kexec.h is the userspace interface (which is included
+> by kexec_kernel.h).
+> 
+> We did it like this for pps some time ago.
 
-Actually there are some cases where it's also dropped if it's cached page.
+Would work for me too, I have no strong opinion either way.
 
-Perhaps better would be something more fuzzy like
-
-"the contents are preserved"
-
-> and the original page is offlined
-> (i.e., no longer used, and taken out of normal memory management).
+Being naturally lazy, I just went with the simpler patch
+myself.
 
 -Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
