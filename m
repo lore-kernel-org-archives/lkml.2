@@ -1,96 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab0FSI0T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 04:26:19 -0400
-Received: from smtp204.alice.it ([82.57.200.100]:44393 "EHLO smtp204.alice.it"
+	id S1754898Ab0FSI1d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 04:27:33 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:62204 "EHLO poutre.nerim.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754711Ab0FSI0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 04:26:17 -0400
-Date: Sat, 19 Jun 2010 10:25:58 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Alan Ott <alan@signal11.us>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] HID: hidraw documentation
-Message-Id: <20100619102558.86fa43dc.ospite@studenti.unina.it>
-In-Reply-To: <1276913623-6126-1-git-send-email-alan@signal11.us>
-References: <1276832283-12084-1-git-send-email-alan@signal11.us>
-	<1276913623-6126-1-git-send-email-alan@signal11.us>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+	id S1754803Ab0FSI1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 04:27:31 -0400
+Date: Sat, 19 Jun 2010 10:27:29 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: guenter.roeck@ericsson.com
+Cc: Jonathan Cameron <jic23@cam.ac.uk>, Hans de Goede <hdegoede@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH 1/3] hwmon: Driver for SMM665 Six-Channel 
+ Active DC Output Controller/Monitor
+Message-ID: <20100619102729.2ce12447@hyperion.delvare>
+In-Reply-To: <1276888405.2631.495.camel@groeck-laptop>
+References: <1276877194-28214-1-git-send-email-guenter.roeck@ericsson.com>
+	<1276877194-28214-2-git-send-email-guenter.roeck@ericsson.com>
+	<4C1BB2AC.4090308@jic23.retrosnub.co.uk>
+	<4C1BB698.2090003@cam.ac.uk>
+	<1276888405.2631.495.camel@groeck-laptop>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__19_Jun_2010_10_25_58_+0200_Qu=KyNXjGTH+P0_b"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__19_Jun_2010_10_25_58_+0200_Qu=KyNXjGTH+P0_b
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 18 Jun 2010 12:13:25 -0700, Guenter Roeck wrote:
+> On Fri, 2010-06-18 at 14:10 -0400, Jonathan Cameron wrote:
+> > Another quick query.  Are the _min / _max attributes as defined in the
+> > abi meant for alarms?  I always thought they were to tell userspace the
+> > limits on measurement?
+> > 
+> Good question. I thought it is supposed to refer to alarm limits, but I
+> may be wrong. 
+> 
+> Browsing through a couple of drivers, it _looks_ like the values are
+> used for alarm limits (eg adm1025 or lm85). Limits are not always set to
 
-On Fri, 18 Jun 2010 22:13:41 -0400
-Alan Ott <alan@signal11.us> wrote:
+Yes, these are alarms. _min and _max are really misnomers, these should
+have been _low and _high but by the time I realized it, _min and _max
+were already de facto standards and it was too late to change this.
 
-> These patches add the hidraw.txt file to a new Documentation/hid/ directo=
-ry.
->=20
-> The example program has been moved out of the document and fixed up for s=
-tyle
-> (it's now checkpatch.pl clean), and a Makefile has been created for it.
->=20
-> I integrated the comments provided.
->=20
-> hiddev.txt has been moved from Documentation/usb/ to Documentation/hid/
->=20
->=20
-> Alan Ott (2):
->   HID: Documentation for hidraw
->   HID: Move hiddev.txt to the new Documentation/HID directory
->
+Documentation/hwmon/sysfs-interface says:
 
-Acked-by: Antonio Ospite <ospite@studenti.unina.it>
+Usual items are "input" (measured value), "max" (high threshold,
+"min" (low threshold).
 
->  Documentation/hid/Makefile            |    8 ++
->  Documentation/hid/hid-example.c       |  167 +++++++++++++++++++++++++++=
-++++++
->  Documentation/{usb =3D> hid}/hiddev.txt |    0
->  Documentation/hid/hidraw.txt          |  119 +++++++++++++++++++++++
->  4 files changed, 294 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/hid/Makefile
->  create mode 100644 Documentation/hid/hid-example.c
->  rename Documentation/{usb =3D> hid}/hiddev.txt (100%)
->  create mode 100644 Documentation/hid/hidraw.txt
->=20
->=20
->=20
+Specific occurrences are then left without details. If you think this
+document can be improved, I welcome patches.
 
+> useful values, though. This is what my CPU board returns:
+> 
+> lm85-i2c-0-2e
+> Adapter: SMBus PIIX4 adapter at 0580
+> V1.5:        +1.80 V  (min =  +0.00 V, max =  +3.32 V)   
+> VCore:       +1.29 V  (min =  +0.00 V, max =  +2.99 V)   
+> V3.3:        +3.32 V  (min =  +0.00 V, max =  +4.38 V)   
+> V5:          +5.00 V  (min =  +0.00 V, max =  +6.64 V)   
+> V12:        +12.12 V  (min =  +0.00 V, max = +15.94 V)   
+> 
+> The lm85 datasheet says: "If a voltage input either exceeds the value
+> set in the voltage high limit register or falls below the value set in
+> the voltage low limit register, the corresponding bit will be set
+> automatically by the LM85 in the interrupt status registers (41-42h)."
+> 
+> > Either way, one of us has misunderstood so perhaps the documentation needs
+> > to be more specific....
+> 
+> Agreed.
 
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-A: Top-posting.
-Q: What is the most annoying thing in e-mail?
-
---Signature=_Sat__19_Jun_2010_10_25_58_+0200_Qu=KyNXjGTH+P0_b
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwcfxYACgkQ5xr2akVTsAHP7ACeJuxVcJK+dI2uZpoNhh9jLEUL
-E5MAoJGZCiFVsXsY6ZpKwzbARRWUA2Us
-=6IdX
------END PGP SIGNATURE-----
-
---Signature=_Sat__19_Jun_2010_10_25_58_+0200_Qu=KyNXjGTH+P0_b--
+-- 
+Jean Delvare
