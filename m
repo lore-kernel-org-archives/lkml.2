@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab0FSVyG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 17:54:06 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50693 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751868Ab0FSVyE (ORCPT
+	id S1752661Ab0FSWCo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 18:02:44 -0400
+Received: from nikam-dmz.ms.mff.cuni.cz ([195.113.20.16]:57688 "EHLO
+	nikam.ms.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752017Ab0FSWCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 17:54:04 -0400
-Date: Sat, 19 Jun 2010 22:57:06 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Tony Luck <tony.luck@intel.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] serial: revert "Use block_til_ready helper"
-Message-ID: <20100619225706.340eda52@lxorguk.ukuu.org.uk>
-In-Reply-To: <201006192229.21971.arnd@arndb.de>
-References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
-	<AANLkTim4dHj_3ftAVD35DD-Cc7ZntHRi1YTRPup2wfJc@mail.gmail.com>
-	<201006191432.04685.arnd@arndb.de>
-	<201006192229.21971.arnd@arndb.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 19 Jun 2010 18:02:43 -0400
+X-Greylist: delayed 610 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Jun 2010 18:02:42 EDT
+Date: Sat, 19 Jun 2010 23:52:30 +0200
+From: Martin Mares <mj@ucw.cz>
+To: linux-kernel@vger.kernel.org
+Subject: Tracing of syscalls on x86
+Message-ID: <mj+md-20100619.213111.21845.nikam@ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-O> I could reproduce the problem now and bisected it down to a cleanup
-> patch that can fortunately get reverted. The symptom that I saw
-> is that when I open a serial port for the second time (e.g. starting
-> getty and logging in), the output gets garbled, while the first one
-> worked fine. This does not rely on the console code at all.
+Hello, world!\n
 
-So the init code isn't getting run somewhere for some reason. Almost
-certainly a count bug.
+I am playing with a simple ptrace-based sandbox for use in programming
+contest (see git://git.ucw.cz/moe.git, box/box.c). It works pretty well
+on the i386, but I got stuck when porting it to amd64.
 
-> Alan, any idea where the problem may be with the broken patch?
+The problem is that anytime ptrace reports a system call, I do not know how
+to determine whether it is a 32-bit syscall or a 64-bit one -- both sets
+of syscalls use different numbering, but they seem to be reported in exactly
+the same way. For example, when a 64-bit process uses int 0x80 to issue
+a 32-bit syscall, it cannot be distinguished from the same process using
+the syscall instruction for a 64-bit syscall.
 
-I'll take a look. We really don't want to revert this as it fixes some
-nasty things the BKL covers over so I'd be worried the races would become
-exposed (and it possibly allows NULL->func() calls if it can which would
-be bad)
+The same problem was present in auditing of syscalls, but it got fixed
+in 2008 by Michael Davidson (see http://dunedin.lug.net.nz/forums/showthread.php?t=325963).
+The auditing code path now checks the TS_COMPAT flag, which faithfully
+represents the real syscall type. However, I do not see any possibility
+of reading this flag from user space.
 
-First guess would be something in port->count going astray and the port
-not getting re-initialised.
+The strace utility currently checks the CS register to determine whether
+the process runs in 32- or 64-bit mode, which is wrong (in case of int 0x80
+issued in 64-bit mode). It also contains commented-out code which tries
+to check the instruction code immediately preceding the current EIP,
+which is ugly and potentially unreliable (as we do not have a pointer
+to the start of the instruction, so that the detection might be fooled
+by one instruction code being a suffix of another; it does not seem
+to happen on current CPU's, but it could in the future).
 
-Important question - does it need a getty or will a simple cat < /dev/foo
-twice get garbled (or cat > if its garbling the other way)
+Is there anything I have overlooked?
 
-Which direction matters and whether a hangup is needed matters
+If not, would you welcome a patch allowing to read TS_COMPAT from user space?
+
+				Have a nice fortnight
+-- 
+Martin `MJ' Mares                          <mj@ucw.cz>   http://mj.ucw.cz/
+Faculty of Math and Physics, Charles University, Prague, Czech Rep., Earth
+Lisp Users: Due to the holiday, there will be no garbage collection on Monday.
