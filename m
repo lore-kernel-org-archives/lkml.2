@@ -1,136 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab0FSADo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 20:03:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18844 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753158Ab0FSADm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 20:03:42 -0400
-Message-ID: <4C1C0942.5020500@redhat.com>
-Date: Sat, 19 Jun 2010 02:03:14 +0200
-From: Edward Shishkin <edward@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
-MIME-Version: 1.0
-To: Ric Wheeler <rwheeler@redhat.com>
-CC: Chris Mason <chris.mason@oracle.com>, Jamie Lokier <jamie@shareable.org>,
-       Edward Shishkin <edward.shishkin@gmail.com>, Mat <jackdachef@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: Balancing leaves when walking from top to down (was Btrfs:...)
-References: <4C07C321.8010000@redhat.com> <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com> <4C1B7560.1000806@gmail.com> <20100618155653.GC10919@shareable.org> <4C1BC924.30604@redhat.com> <20100618193555.GV27466@think> <4C1BED56.9010300@redhat.com> <4C1BF04E.2040803@redhat.com>
-In-Reply-To: <4C1BF04E.2040803@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754287Ab0FSAbL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 20:31:11 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:2798 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab0FSAbE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 20:31:04 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=T5pcwGM/+BM1MFv+q+N2xh08J0eF0muEciLf2ZyDr7CXx65dWhkqXcLXsUXRZ8BBp
+	P+wBc+Tj18HApCDqCl/uQ==
+From: Michael Rubin <mrubin@google.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org
+Cc: jack@suse.cz, akpm@linux-foundation.org, david@fromorbit.com, hch@lst.de,
+       axboe@kernel.dk, Michael Rubin <mrubin@google.com>
+Subject: [PATCH 1/3] writeback: Creating /sys/kernel/mm/writeback/writeback
+Date: Fri, 18 Jun 2010 17:30:13 -0700
+Message-Id: <1276907415-504-2-git-send-email-mrubin@google.com>
+X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <1276907415-504-1-git-send-email-mrubin@google.com>
+References: <1276907415-504-1-git-send-email-mrubin@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ric Wheeler wrote:
-> On 06/18/2010 06:04 PM, Edward Shishkin wrote:
->> Chris Mason wrote:
->>> On Fri, Jun 18, 2010 at 09:29:40PM +0200, Edward Shishkin wrote:
->>>> Jamie Lokier wrote:
->>>>> Edward Shishkin wrote:
->>>>>> If you decide to base your file system on some algorithms then 
->>>>>> please
->>>>>> use the original ones from proper academic papers. DO NOT modify the
->>>>>> algorithms in solitude: this is very fragile thing! All such
->>>>>> modifications must be reviewed by specialists in the theory of
->>>>>> algorithms. Such review can be done in various scientific 
->>>>>> magazines of
->>>>>> proper level.
->>>>>>
->>>>>> Personally I don't see any way to improve the situation with Btrfs
->>>>>> except full redesigning the last one. If you want to base your file
->>>>>> system on the paper of Ohad Rodeh, then please, use *exactly* the
->>>>>> Bayer's B-trees that he refers to. That said, make sure that all
->>>>>> records you put to the tree has equal length and all non-root 
->>>>>> nodes of
->>>>>> your tree are at least half filled.
->>>>> First, thanks Edward for identifying a specific problem with the
->>>>> current btrfs implementation.
->>>> Hello Jamie.
->>>>
->>>>> I've studied modified B-trees quite a lot and know enough to be sure
->>>>> that they are quite robust when you modify them in all sorts of ways.
->>>> Which property is robust?
->>>>
->>>>> Moreover, you are incorrect to say there's an intrinsic algorithmic
->>>>> problem with variable-length records. It is not true; if Knuth said
->>>>> so, Knuth was mistaken.
->>>> I didn't say about intrinsic algorithmic problems :)
->>>> I just repeat (after Knuth et al) that B-trees with variable-length
->>>> records don't
->>>> have any sane boundary for internal fragmentation. The common idea
->>>> is that if we
->>>> don't want Btrfs to be in infinite development stage, then we should
->>>> choose some
->>>> *sane* strategy (for example the paper of Ohad Rodeh) and strictly
->>>> adhere this in
->>>> future.
->>>
->>> Again, other than the inline file data, what exactly do you believe
->>> needs to change?
->>
->> 1. getting rid of inline extents;
->> 2. new formats for directory and xattr items to not look like a train,
->> which is able to occupy the whole leaf;
->> 3. make sure we do pro-active balancing like it is described in the 
->> paper.
->>
->> Sorry, I don't see other ways for now..
->>
->>> Top down balancing vs balancing on insertion doesn't
->>> impact our ability to maintain full leaves. The current code is clearly
->>> choosing not to merge two leaves that it should have merged, which is
->>> just a plain old bug.
->>
->> How are you going to balance leaves when walking from top to down?
->> Suppose 1) and 2) above are not satisfied and having arrived to the leaf
->> level we see a number of items of variable length. What will we do to
->> keep leaves full?
->>
->> Could you please provide a sketch of the algorithm?
->>
->> Thanks!
->>
->
-> Hi Edward,
->
-> Is it really a requirement to have 100% full leaves? Most DB's 
-> (assuming I remember correctly) have deliberate strategies around this 
-> kind of thing. You might want to leave room in leaf nodes so that 
-> future insertions can be contiguous on the media with older data.
->
-> Regards,
->
-> Ric
+Adding the /sys/kernel/mm/writeback/writeback file.  It contains data
+to help developers and applications gain visibility into writeback
+behaviour.
 
-Hello Ric.
+    # cat /sys/kernel/mm/writeback/writeback
+    pages_dirtied:    3747
+    pages_cleaned:    3618
+    dirty_threshold:  816673
+    bg_threshold:     408336
 
-No, every leaf shouldn't be necessarily 100% full.
-We may require every L-vicinity(*) of every leaf to be full in
-some sense. And this local condition sometimes brings the (global)
-boundary for utilization of the whole tree.
+The motivation of a sys file as opposed to debugfs is that applications
+that do not have permissions to mount file systems often need this data.
 
-In the classic Bayer's B-trees we have so-called "S(0)" balancing
-condition implicitly satisfied, which requires every leaf to be at
-least half full. It provides the low boundary 0.5 for utilization
-of the whole tree.
+In order to track the "cleaned" and "dirtied" counts we added two
+vm_stat_items.  Per memory node stats have been added also. So we can
+see per node granularity:
 
-Next example is ReiserFS file system, which uses so-called "S(1)"
-balancing condition on the leaf level, which requires every 1-vicinity
-of every leaf to be "incompressible" (i.e. two leaves can not be
-squeezed to a single one). This local incompressibility brings the
-sweet low utilization boundary 0.5-E for the whole tree (E is a small
-number, which is back proportional to the tree branching).
+    # cat /sys/devices/system/node/node20/writebackstat
+    Node 20 pages_writeback: 0 times
+    Node 20 pages_dirtied: 0 times
 
-(*) any set of L+1 neighboring nodes, which contains the leaf.
+Signed-off-by: Michael Rubin <mrubin@google.com>
+---
+ drivers/base/node.c    |   14 ++++++++++++++
+ fs/nilfs2/segment.c    |    4 +++-
+ include/linux/mmzone.h |    2 ++
+ mm/mm_init.c           |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/page-writeback.c    |    6 ++++--
+ mm/vmstat.c            |    2 ++
+ 6 files changed, 73 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 2bdd8a9..b321d32 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -160,6 +160,18 @@ static ssize_t node_read_numastat(struct sys_device * dev,
+ }
+ static SYSDEV_ATTR(numastat, S_IRUGO, node_read_numastat, NULL);
+ 
++static ssize_t node_read_writebackstat(struct sys_device *dev,
++				struct sysdev_attribute *attr, char *buf)
++{
++	int nid = dev->id;
++	return sprintf(buf,
++		"Node %d pages_writeback: %lu times\n"
++		"Node %d pages_dirtied: %lu times\n",
++		nid, node_page_state(nid, NR_PAGES_ENTERED_WRITEBACK),
++		nid, node_page_state(nid, NR_FILE_PAGES_DIRTIED));
++}
++static SYSDEV_ATTR(writebackstat, S_IRUGO, node_read_writebackstat, NULL);
++
+ static ssize_t node_read_distance(struct sys_device * dev,
+ 			struct sysdev_attribute *attr, char * buf)
+ {
+@@ -243,6 +255,7 @@ int register_node(struct node *node, int num, struct node *parent)
+ 		sysdev_create_file(&node->sysdev, &attr_meminfo);
+ 		sysdev_create_file(&node->sysdev, &attr_numastat);
+ 		sysdev_create_file(&node->sysdev, &attr_distance);
++		sysdev_create_file(&node->sysdev, &attr_writebackstat);
+ 
+ 		scan_unevictable_register_node(node);
+ 
+@@ -267,6 +280,7 @@ void unregister_node(struct node *node)
+ 	sysdev_remove_file(&node->sysdev, &attr_meminfo);
+ 	sysdev_remove_file(&node->sysdev, &attr_numastat);
+ 	sysdev_remove_file(&node->sysdev, &attr_distance);
++	sysdev_remove_file(&node->sysdev, &attr_writebackstat);
+ 
+ 	scan_unevictable_unregister_node(node);
+ 	hugetlb_unregister_node(node);		/* no-op, if memoryless node */
+diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
+index c920164..84b0181 100644
+--- a/fs/nilfs2/segment.c
++++ b/fs/nilfs2/segment.c
+@@ -1598,8 +1598,10 @@ nilfs_copy_replace_page_buffers(struct page *page, struct list_head *out)
+ 	} while (bh = bh->b_this_page, bh2 = bh2->b_this_page, bh != head);
+ 	kunmap_atomic(kaddr, KM_USER0);
+ 
+-	if (!TestSetPageWriteback(clone_page))
++	if (!TestSetPageWriteback(clone_page)) {
+ 		inc_zone_page_state(clone_page, NR_WRITEBACK);
++		inc_zone_page_state(clone_page, NR_PAGES_ENTERED_WRITEBACK);
++	}
+ 	unlock_page(clone_page);
+ 
+ 	return 0;
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index b4d109e..c0cd2bd 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -112,6 +112,8 @@ enum zone_stat_item {
+ 	NUMA_LOCAL,		/* allocation from local node */
+ 	NUMA_OTHER,		/* allocation from other node */
+ #endif
++	NR_PAGES_ENTERED_WRITEBACK, /* number of times pages enter writeback */
++	NR_FILE_PAGES_DIRTIED,    /* number of times pages get dirtied */
+ 	NR_VM_ZONE_STAT_ITEMS };
+ 
+ /*
+diff --git a/mm/mm_init.c b/mm/mm_init.c
+index 4e0e265..8f2ebdb 100644
+--- a/mm/mm_init.c
++++ b/mm/mm_init.c
+@@ -9,6 +9,7 @@
+ #include <linux/init.h>
+ #include <linux/kobject.h>
+ #include <linux/module.h>
++#include <linux/writeback.h>
+ #include "internal.h"
+ 
+ #ifdef CONFIG_DEBUG_MEMORY_INIT
+@@ -137,6 +138,52 @@ static __init int set_mminit_loglevel(char *str)
+ early_param("mminit_loglevel", set_mminit_loglevel);
+ #endif /* CONFIG_DEBUG_MEMORY_INIT */
+ 
++#define KERNEL_ATTR_RO(_name) \
++static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
++
++static ssize_t writeback_show(struct kobject *kobj,
++			      struct kobj_attribute *attr, char *buf)
++{
++	unsigned long dirty, background;
++	get_dirty_limits(&background, &dirty, NULL, NULL);
++	return sprintf(buf,
++		       "pages_dirtied:    %lu\n"
++		       "pages_cleaned:    %lu\n"
++		       "dirty_threshold:  %lu\n"
++		       "bg_threshold:     %lu\n",
++		       global_page_state(NR_FILE_PAGES_DIRTIED),
++		       global_page_state(NR_PAGES_ENTERED_WRITEBACK),
++		       dirty, background);
++}
++
++KERNEL_ATTR_RO(writeback);
++
++static struct attribute *writeback_attrs[] = {
++	&writeback_attr.attr,
++	NULL,
++};
++
++static struct attribute_group writeback_attr_group = {
++	.attrs = writeback_attrs,
++};
++
++static int mm_sysfs_writeback_init(void)
++{
++	int error;
++
++	struct kobject *writeback_kobj =
++		kobject_create_and_add("writeback", mm_kobj);
++	if (writeback_kobj == NULL)
++		return -ENOMEM;
++
++	error = sysfs_create_group(writeback_kobj, &writeback_attr_group);
++	if (error) {
++		kobject_put(mm_kobj);
++		return -ENOMEM;
++	}
++	return 0;
++}
++
+ struct kobject *mm_kobj;
+ EXPORT_SYMBOL_GPL(mm_kobj);
+ 
+@@ -146,6 +193,7 @@ static int __init mm_sysfs_init(void)
+ 	if (!mm_kobj)
+ 		return -ENOMEM;
+ 
++	mm_sysfs_writeback_init();
+ 	return 0;
+ }
+ 
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index bbd396a..4cea5c0 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1093,6 +1093,7 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
+ {
+ 	if (mapping_cap_account_dirty(mapping)) {
+ 		__inc_zone_page_state(page, NR_FILE_DIRTY);
++		__inc_zone_page_state(page, NR_FILE_PAGES_DIRTIED);
+ 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+ 		task_dirty_inc(current);
+ 		task_io_account_write(PAGE_CACHE_SIZE);
+@@ -1333,10 +1334,11 @@ int test_set_page_writeback(struct page *page)
+ 	} else {
+ 		ret = TestSetPageWriteback(page);
+ 	}
+-	if (!ret)
++	if (!ret) {
+ 		inc_zone_page_state(page, NR_WRITEBACK);
++		inc_zone_page_state(page, NR_PAGES_ENTERED_WRITEBACK);
++	}
+ 	return ret;
+-
+ }
+ EXPORT_SYMBOL(test_set_page_writeback);
+ 
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 7759941..e177a40 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -740,6 +740,8 @@ static const char * const vmstat_text[] = {
+ 	"numa_local",
+ 	"numa_other",
+ #endif
++	"nr_pages_entered_writeback",
++	"nr_file_pages_dirtied",
+ 
+ #ifdef CONFIG_VM_EVENT_COUNTERS
+ 	"pgpgin",
 -- 
-Edward O. Shishkin
-Principal Software Engineer
-Red Hat Czech
+1.7.0.1
 
