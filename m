@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab0FSFKn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 01:10:43 -0400
-Received: from smtp-out-037.synserver.de ([212.40.180.37]:1028 "HELO
+	id S1754739Ab0FSFKf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 01:10:35 -0400
+Received: from smtp-out-037.synserver.de ([212.40.180.37]:1051 "HELO
 	smtp-out-036.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754676Ab0FSFKi (ORCPT
+	by vger.kernel.org with SMTP id S1754676Ab0FSFKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 01:10:38 -0400
+	Sat, 19 Jun 2010 01:10:31 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 13414
@@ -14,10 +14,13 @@ From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
        Lars-Peter Clausen <lars@metafoo.de>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org
-Subject: [PATCH v2 16/26] fbdev: Add JZ4740 framebuffer driver
-Date: Sat, 19 Jun 2010 07:08:21 +0200
-Message-Id: <1276924111-11158-17-git-send-email-lars@metafoo.de>
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Wan ZongShun <mcuos.com@gmail.com>, Marek Vasut <marek.vasut@gmail.com>,
+       rtc-linux@googlegroups.com
+Subject: [PATCH v2 15/26] RTC: Add JZ4740 RTC driver
+Date: Sat, 19 Jun 2010 07:08:20 +0200
+Message-Id: <1276924111-11158-16-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1276924111-11158-1-git-send-email-lars@metafoo.de>
 References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
@@ -25,67 +28,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the LCD controller on JZ4740 SoCs.
+This patch adds support for the RTC unit on JZ4740 SoCs.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fbdev@vger.kernel.org
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+Cc: Wan ZongShun <mcuos.com@gmail.com>
+Cc: Marek Vasut <marek.vasut@gmail.com>
+Cc: rtc-linux@googlegroups.com
 
 ---
 Changes since v1
-- Use __packed instead of __attribute__((packed))
-- Make jzfb_fix const
-- Only set mode in set_par if it has changed
+- Use dev_get_drvdata directly instead of wrapping it in dev_to_rtc
+- Add common implementation for jz4740_rtc_{alarm,update}_irq_enable
+- Check whether rtc structure could be allocated
+- Fix deadlocks which could occur if the HW was broken
 ---
- drivers/video/Kconfig     |    9 +
- drivers/video/Makefile    |    1 +
- drivers/video/jz4740_fb.c |  817 +++++++++++++++++++++++++++++++++++++++++++++
- include/linux/jz4740_fb.h |   58 ++++
- 4 files changed, 885 insertions(+), 0 deletions(-)
- create mode 100644 drivers/video/jz4740_fb.c
- create mode 100644 include/linux/jz4740_fb.h
+ drivers/rtc/Kconfig      |   11 ++
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-jz4740.c |  341 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 353 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-jz4740.c
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index a9f9e5e..eae4c8a 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -2237,6 +2237,15 @@ config FB_BROADSHEET
- 	  and could also have been called by other names when coupled with
- 	  a bridge adapter.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 10ba12c..d0ed7e6 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -905,4 +905,15 @@ config RTC_DRV_MPC5121
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-mpc5121.
  
-+config FB_JZ4740
-+	tristate "JZ4740 LCD framebuffer support"
-+	depends on FB
-+	select FB_SYS_FILLRECT
-+	select FB_SYS_COPYAREA
-+	select FB_SYS_IMAGEBLIT
++config RTC_DRV_JZ4740
++	tristate "Ingenic JZ4740 SoC"
++	depends on RTC_CLASS
++	depends on MACH_JZ4740
 +	help
-+	  Framebuffer support for the JZ4740 SoC.
++	  If you say yes here you get support for the Ingenic JZ4740 SoC RTC
++	  controller.
 +
- source "drivers/video/omap/Kconfig"
- source "drivers/video/omap2/Kconfig"
- 
-diff --git a/drivers/video/Makefile b/drivers/video/Makefile
-index 3c3bf86..fd2df57 100644
---- a/drivers/video/Makefile
-+++ b/drivers/video/Makefile
-@@ -132,6 +132,7 @@ obj-$(CONFIG_FB_CARMINE)          += carminefb.o
- obj-$(CONFIG_FB_MB862XX)	  += mb862xx/
- obj-$(CONFIG_FB_MSM)              += msm/
- obj-$(CONFIG_FB_NUC900)           += nuc900fb.o
-+obj-$(CONFIG_FB_JZ4740)		  += jz4740_fb.o
- 
- # Platform or fallback drivers go here
- obj-$(CONFIG_FB_UVESA)            += uvesafb.o
-diff --git a/drivers/video/jz4740_fb.c b/drivers/video/jz4740_fb.c
++	  This driver can also be buillt as a module. If so, the module
++	  will be called rtc-jz4740.
++
+ endif # RTC_CLASS
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 5adbba7..fedf9bb 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -47,6 +47,7 @@ obj-$(CONFIG_RTC_DRV_EP93XX)	+= rtc-ep93xx.o
+ obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm3130.o
+ obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
+ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
++obj-$(CONFIG_RTC_DRV_JZ4740)	+= rtc-jz4740.o
+ obj-$(CONFIG_RTC_DRV_M41T80)	+= rtc-m41t80.o
+ obj-$(CONFIG_RTC_DRV_M41T94)	+= rtc-m41t94.o
+ obj-$(CONFIG_RTC_DRV_M48T35)	+= rtc-m48t35.o
+diff --git a/drivers/rtc/rtc-jz4740.c b/drivers/rtc/rtc-jz4740.c
 new file mode 100644
-index 0000000..8d03181
+index 0000000..720afb2
 --- /dev/null
-+++ b/drivers/video/jz4740_fb.c
-@@ -0,0 +1,817 @@
++++ b/drivers/rtc/rtc-jz4740.c
+@@ -0,0 +1,341 @@
 +/*
 + *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *	JZ4740 SoC LCD framebuffer driver
++ *	JZ4740 SoC RTC driver
 + *
 + *  This program is free software; you can redistribute it and/or modify it
 + *  under  the terms of  the GNU General Public License as published by the
@@ -100,870 +105,330 @@ index 0000000..8d03181
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/mutex.h>
 +#include <linux/platform_device.h>
++#include <linux/rtc.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
 +
-+#include <linux/clk.h>
-+#include <linux/delay.h>
++#define JZ_REG_RTC_CTRL		0x00
++#define JZ_REG_RTC_SEC		0x04
++#define JZ_REG_RTC_SEC_ALARM	0x08
++#define JZ_REG_RTC_REGULATOR	0x0C
++#define JZ_REG_RTC_HIBERNATE	0x20
++#define JZ_REG_RTC_SCRATCHPAD	0x34
 +
-+#include <linux/console.h>
-+#include <linux/fb.h>
++#define JZ_RTC_CTRL_WRDY	BIT(7)
++#define JZ_RTC_CTRL_1HZ		BIT(6)
++#define JZ_RTC_CTRL_1HZ_IRQ	BIT(5)
++#define JZ_RTC_CTRL_AF		BIT(4)
++#define JZ_RTC_CTRL_AF_IRQ	BIT(3)
++#define JZ_RTC_CTRL_AE		BIT(2)
++#define JZ_RTC_CTRL_ENABLE	BIT(0)
 +
-+#include <linux/dma-mapping.h>
-+
-+#include <linux/jz4740_fb.h>
-+#include <asm/mach-jz4740/gpio.h>
-+
-+#define JZ_REG_LCD_CFG		0x00
-+#define JZ_REG_LCD_VSYNC	0x04
-+#define JZ_REG_LCD_HSYNC	0x08
-+#define JZ_REG_LCD_VAT		0x0C
-+#define JZ_REG_LCD_DAH		0x10
-+#define JZ_REG_LCD_DAV		0x14
-+#define JZ_REG_LCD_PS		0x18
-+#define JZ_REG_LCD_CLS		0x1C
-+#define JZ_REG_LCD_SPL		0x20
-+#define JZ_REG_LCD_REV		0x24
-+#define JZ_REG_LCD_CTRL		0x30
-+#define JZ_REG_LCD_STATE	0x34
-+#define JZ_REG_LCD_IID		0x38
-+#define JZ_REG_LCD_DA0		0x40
-+#define JZ_REG_LCD_SA0		0x44
-+#define JZ_REG_LCD_FID0		0x48
-+#define JZ_REG_LCD_CMD0		0x4C
-+#define JZ_REG_LCD_DA1		0x50
-+#define JZ_REG_LCD_SA1		0x54
-+#define JZ_REG_LCD_FID1		0x58
-+#define JZ_REG_LCD_CMD1		0x5C
-+
-+#define JZ_LCD_CFG_SLCD			BIT(31)
-+#define JZ_LCD_CFG_PS_DISABLE		BIT(23)
-+#define JZ_LCD_CFG_CLS_DISABLE		BIT(22)
-+#define JZ_LCD_CFG_SPL_DISABLE		BIT(21)
-+#define JZ_LCD_CFG_REV_DISABLE		BIT(20)
-+#define JZ_LCD_CFG_HSYNCM		BIT(19)
-+#define JZ_LCD_CFG_PCLKM		BIT(18)
-+#define JZ_LCD_CFG_INV			BIT(17)
-+#define JZ_LCD_CFG_SYNC_DIR		BIT(16)
-+#define JZ_LCD_CFG_PS_POLARITY		BIT(15)
-+#define JZ_LCD_CFG_CLS_POLARITY		BIT(14)
-+#define JZ_LCD_CFG_SPL_POLARITY		BIT(13)
-+#define JZ_LCD_CFG_REV_POLARITY		BIT(12)
-+#define JZ_LCD_CFG_HSYNC_ACTIVE_LOW	BIT(11)
-+#define JZ_LCD_CFG_PCLK_FALLING_EDGE	BIT(10)
-+#define JZ_LCD_CFG_DE_ACTIVE_LOW	BIT(9)
-+#define JZ_LCD_CFG_VSYNC_ACTIVE_LOW	BIT(8)
-+#define JZ_LCD_CFG_18_BIT		BIT(7)
-+#define JZ_LCD_CFG_PDW			(BIT(5) | BIT(4))
-+#define JZ_LCD_CFG_MODE_MASK 0xf
-+
-+#define JZ_LCD_CTRL_BURST_4		(0x0 << 28)
-+#define JZ_LCD_CTRL_BURST_8		(0x1 << 28)
-+#define JZ_LCD_CTRL_BURST_16		(0x2 << 28)
-+#define JZ_LCD_CTRL_RGB555		BIT(27)
-+#define JZ_LCD_CTRL_OFUP		BIT(26)
-+#define JZ_LCD_CTRL_FRC_GRAYSCALE_16	(0x0 << 24)
-+#define JZ_LCD_CTRL_FRC_GRAYSCALE_4	(0x1 << 24)
-+#define JZ_LCD_CTRL_FRC_GRAYSCALE_2	(0x2 << 24)
-+#define JZ_LCD_CTRL_PDD_MASK		(0xff << 16)
-+#define JZ_LCD_CTRL_EOF_IRQ		BIT(13)
-+#define JZ_LCD_CTRL_SOF_IRQ		BIT(12)
-+#define JZ_LCD_CTRL_OFU_IRQ		BIT(11)
-+#define JZ_LCD_CTRL_IFU0_IRQ		BIT(10)
-+#define JZ_LCD_CTRL_IFU1_IRQ		BIT(9)
-+#define JZ_LCD_CTRL_DD_IRQ		BIT(8)
-+#define JZ_LCD_CTRL_QDD_IRQ		BIT(7)
-+#define JZ_LCD_CTRL_REVERSE_ENDIAN	BIT(6)
-+#define JZ_LCD_CTRL_LSB_FISRT		BIT(5)
-+#define JZ_LCD_CTRL_DISABLE		BIT(4)
-+#define JZ_LCD_CTRL_ENABLE		BIT(3)
-+#define JZ_LCD_CTRL_BPP_1		0x0
-+#define JZ_LCD_CTRL_BPP_2		0x1
-+#define JZ_LCD_CTRL_BPP_4		0x2
-+#define JZ_LCD_CTRL_BPP_8		0x3
-+#define JZ_LCD_CTRL_BPP_15_16		0x4
-+#define JZ_LCD_CTRL_BPP_18_24		0x5
-+
-+#define JZ_LCD_CMD_SOF_IRQ BIT(15)
-+#define JZ_LCD_CMD_EOF_IRQ BIT(16)
-+#define JZ_LCD_CMD_ENABLE_PAL BIT(12)
-+
-+#define JZ_LCD_SYNC_MASK 0x3ff
-+
-+#define JZ_LCD_STATE_DISABLED BIT(0)
-+
-+struct jzfb_framedesc {
-+	uint32_t next;
-+	uint32_t addr;
-+	uint32_t id;
-+	uint32_t cmd;
-+} __packed;
-+
-+struct jzfb {
-+	struct fb_info *fb;
-+	struct platform_device *pdev;
-+	void __iomem *base;
++struct jz4740_rtc {
 +	struct resource *mem;
-+	struct jz4740_fb_platform_data *pdata;
++	void __iomem *base;
 +
-+	size_t vidmem_size;
-+	void *vidmem;
-+	dma_addr_t vidmem_phys;
-+	struct jzfb_framedesc *framedesc;
-+	dma_addr_t framedesc_phys;
++	struct rtc_device *rtc;
 +
-+	struct clk *ldclk;
-+	struct clk *lpclk;
++	unsigned int irq;
 +
-+	unsigned is_enabled:1;
-+	struct mutex lock;
-+
-+	uint32_t pseudo_palette[16];
++	spinlock_t lock;
 +};
 +
-+static const struct fb_fix_screeninfo jzfb_fix __devinitdata = {
-+	.id		= "JZ4740 FB",
-+	.type		= FB_TYPE_PACKED_PIXELS,
-+	.visual		= FB_VISUAL_TRUECOLOR,
-+	.xpanstep	= 0,
-+	.ypanstep	= 0,
-+	.ywrapstep	= 0,
-+	.accel		= FB_ACCEL_NONE,
-+};
-+
-+static const struct jz_gpio_bulk_request jz_lcd_ctrl_pins[] = {
-+	JZ_GPIO_BULK_PIN(LCD_PCLK),
-+	JZ_GPIO_BULK_PIN(LCD_HSYNC),
-+	JZ_GPIO_BULK_PIN(LCD_VSYNC),
-+	JZ_GPIO_BULK_PIN(LCD_DE),
-+	JZ_GPIO_BULK_PIN(LCD_PS),
-+	JZ_GPIO_BULK_PIN(LCD_REV),
-+};
-+
-+static const struct jz_gpio_bulk_request jz_lcd_data_pins[] = {
-+	JZ_GPIO_BULK_PIN(LCD_DATA0),
-+	JZ_GPIO_BULK_PIN(LCD_DATA1),
-+	JZ_GPIO_BULK_PIN(LCD_DATA2),
-+	JZ_GPIO_BULK_PIN(LCD_DATA3),
-+	JZ_GPIO_BULK_PIN(LCD_DATA4),
-+	JZ_GPIO_BULK_PIN(LCD_DATA5),
-+	JZ_GPIO_BULK_PIN(LCD_DATA6),
-+	JZ_GPIO_BULK_PIN(LCD_DATA7),
-+	JZ_GPIO_BULK_PIN(LCD_DATA8),
-+	JZ_GPIO_BULK_PIN(LCD_DATA9),
-+	JZ_GPIO_BULK_PIN(LCD_DATA10),
-+	JZ_GPIO_BULK_PIN(LCD_DATA11),
-+	JZ_GPIO_BULK_PIN(LCD_DATA12),
-+	JZ_GPIO_BULK_PIN(LCD_DATA13),
-+	JZ_GPIO_BULK_PIN(LCD_DATA14),
-+	JZ_GPIO_BULK_PIN(LCD_DATA15),
-+	JZ_GPIO_BULK_PIN(LCD_DATA16),
-+	JZ_GPIO_BULK_PIN(LCD_DATA17),
-+};
-+
-+static unsigned int jzfb_num_ctrl_pins(struct jzfb *jzfb)
++static inline uint32_t jz4740_rtc_reg_read(struct jz4740_rtc *rtc, size_t reg)
 +{
-+	unsigned int num;
-+
-+	switch (jzfb->pdata->lcd_type) {
-+	case JZ_LCD_TYPE_GENERIC_16_BIT:
-+		num = 4;
-+		break;
-+	case JZ_LCD_TYPE_GENERIC_18_BIT:
-+		num = 4;
-+		break;
-+	case JZ_LCD_TYPE_8BIT_SERIAL:
-+		num = 3;
-+		break;
-+	default:
-+		num = 0;
-+		break;
-+	}
-+	return num;
++	return readl(rtc->base + reg);
 +}
 +
-+static unsigned int jzfb_num_data_pins(struct jzfb *jzfb)
-+{
-+	unsigned int num;
-+
-+	switch (jzfb->pdata->lcd_type) {
-+	case JZ_LCD_TYPE_GENERIC_16_BIT:
-+		num = 16;
-+		break;
-+	case JZ_LCD_TYPE_GENERIC_18_BIT:
-+		num = 18;
-+		break;
-+	case JZ_LCD_TYPE_8BIT_SERIAL:
-+		num = 8;
-+		break;
-+	default:
-+		num = 0;
-+		break;
-+	}
-+	return num;
-+}
-+
-+/* Based on CNVT_TOHW macro from skeletonfb.c */
-+static inline uint32_t jzfb_convert_color_to_hw(unsigned val,
-+	struct fb_bitfield *bf)
-+{
-+	return (((val << bf->length) + 0x7FFF - val) >> 16) << bf->offset;
-+}
-+
-+static int jzfb_setcolreg(unsigned regno, unsigned red, unsigned green,
-+			unsigned blue, unsigned transp, struct fb_info *fb)
-+{
-+	uint32_t color;
-+
-+	if (regno >= 16)
-+		return -EINVAL;
-+
-+	color = jzfb_convert_color_to_hw(red, &fb->var.red);
-+	color |= jzfb_convert_color_to_hw(green, &fb->var.green);
-+	color |= jzfb_convert_color_to_hw(blue, &fb->var.blue);
-+	color |= jzfb_convert_color_to_hw(transp, &fb->var.transp);
-+
-+	((uint32_t *)(fb->pseudo_palette))[regno] = color;
-+
-+	return 0;
-+}
-+
-+static int jzfb_get_controller_bpp(struct jzfb *jzfb)
-+{
-+	switch (jzfb->pdata->bpp) {
-+	case 18:
-+	case 24:
-+		return 32;
-+	case 15:
-+		return 16;
-+	default:
-+		return jzfb->pdata->bpp;
-+	}
-+}
-+
-+static struct fb_videomode *jzfb_get_mode(struct jzfb *jzfb,
-+	struct fb_var_screeninfo *var)
-+{
-+	size_t i;
-+	struct fb_videomode *mode = jzfb->pdata->modes;
-+
-+	for (i = 0; i < jzfb->pdata->num_modes; ++i, ++mode) {
-+		if (mode->xres == var->xres && mode->yres == var->yres)
-+			return mode;
-+	}
-+
-+	return NULL;
-+}
-+
-+static int jzfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fb)
-+{
-+	struct jzfb *jzfb = fb->par;
-+	struct fb_videomode *mode;
-+
-+	if (var->bits_per_pixel != jzfb_get_controller_bpp(jzfb) &&
-+		var->bits_per_pixel != jzfb->pdata->bpp)
-+		return -EINVAL;
-+
-+	mode = jzfb_get_mode(jzfb, var);
-+	if (mode == NULL)
-+		return -EINVAL;
-+
-+	fb_videomode_to_var(var, mode);
-+
-+	switch (jzfb->pdata->bpp) {
-+	case 8:
-+		break;
-+	case 15:
-+		var->red.offset = 10;
-+		var->red.length = 5;
-+		var->green.offset = 6;
-+		var->green.length = 5;
-+		var->blue.offset = 0;
-+		var->blue.length = 5;
-+		break;
-+	case 16:
-+		var->red.offset = 11;
-+		var->red.length = 5;
-+		var->green.offset = 5;
-+		var->green.length = 6;
-+		var->blue.offset = 0;
-+		var->blue.length = 5;
-+		break;
-+	case 18:
-+		var->red.offset = 16;
-+		var->red.length = 6;
-+		var->green.offset = 8;
-+		var->green.length = 6;
-+		var->blue.offset = 0;
-+		var->blue.length = 6;
-+		var->bits_per_pixel = 32;
-+		break;
-+	case 32:
-+	case 24:
-+		var->transp.offset = 24;
-+		var->transp.length = 8;
-+		var->red.offset = 16;
-+		var->red.length = 8;
-+		var->green.offset = 8;
-+		var->green.length = 8;
-+		var->blue.offset = 0;
-+		var->blue.length = 8;
-+		var->bits_per_pixel = 32;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static int jzfb_set_par(struct fb_info *info)
-+{
-+	struct jzfb *jzfb = info->par;
-+	struct fb_var_screeninfo *var = &info->var;
-+	struct fb_videomode *mode;
-+	uint16_t hds, vds;
-+	uint16_t hde, vde;
-+	uint16_t ht, vt;
-+	uint32_t ctrl;
-+	uint32_t cfg;
-+	unsigned long rate;
-+
-+	mode = jzfb_get_mode(jzfb, var);
-+	if (mode == NULL)
-+		return -EINVAL;
-+
-+	if (mode == info->mode)
-+		return 0;
-+
-+	info->mode = mode;
-+
-+	hds = mode->hsync_len + mode->left_margin;
-+	hde = hds + mode->xres;
-+	ht = hde + mode->right_margin;
-+
-+	vds = mode->vsync_len + mode->upper_margin;
-+	vde = vds + mode->yres;
-+	vt = vde + mode->lower_margin;
-+
-+	ctrl = JZ_LCD_CTRL_OFUP | JZ_LCD_CTRL_BURST_16;
-+
-+	switch (jzfb->pdata->bpp) {
-+	case 1:
-+		ctrl |= JZ_LCD_CTRL_BPP_1;
-+		break;
-+	case 2:
-+		ctrl |= JZ_LCD_CTRL_BPP_2;
-+		break;
-+	case 4:
-+		ctrl |= JZ_LCD_CTRL_BPP_4;
-+		break;
-+	case 8:
-+		ctrl |= JZ_LCD_CTRL_BPP_8;
-+	break;
-+	case 15:
-+		ctrl |= JZ_LCD_CTRL_RGB555; /* Falltrough */
-+	case 16:
-+		ctrl |= JZ_LCD_CTRL_BPP_15_16;
-+		break;
-+	case 18:
-+	case 24:
-+	case 32:
-+		ctrl |= JZ_LCD_CTRL_BPP_18_24;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	cfg = JZ_LCD_CFG_PS_DISABLE | JZ_LCD_CFG_CLS_DISABLE |
-+		JZ_LCD_CFG_SPL_DISABLE | JZ_LCD_CFG_REV_DISABLE;
-+
-+	if (!(mode->sync & FB_SYNC_HOR_HIGH_ACT))
-+		cfg |= JZ_LCD_CFG_HSYNC_ACTIVE_LOW;
-+
-+	if (!(mode->sync & FB_SYNC_VERT_HIGH_ACT))
-+		cfg |= JZ_LCD_CFG_VSYNC_ACTIVE_LOW;
-+
-+	if (jzfb->pdata->pixclk_falling_edge)
-+		cfg |= JZ_LCD_CFG_PCLK_FALLING_EDGE;
-+
-+	if (jzfb->pdata->date_enable_active_low)
-+		cfg |= JZ_LCD_CFG_DE_ACTIVE_LOW;
-+
-+	if (jzfb->pdata->lcd_type == JZ_LCD_TYPE_GENERIC_18_BIT)
-+		cfg |= JZ_LCD_CFG_18_BIT;
-+
-+	cfg |= jzfb->pdata->lcd_type & 0xf;
-+
-+	if (mode->pixclock) {
-+		rate = PICOS2KHZ(mode->pixclock) * 1000;
-+		mode->refresh = rate / vt / ht;
-+	} else {
-+		if (jzfb->pdata->lcd_type == JZ_LCD_TYPE_8BIT_SERIAL)
-+			rate = mode->refresh * (vt + 2 * mode->xres) * ht;
-+		else
-+			rate = mode->refresh * vt * ht;
-+
-+		mode->pixclock = KHZ2PICOS(rate / 1000);
-+	}
-+
-+	mutex_lock(&jzfb->lock);
-+	if (!jzfb->is_enabled)
-+		clk_enable(jzfb->ldclk);
-+	else
-+		ctrl |= JZ_LCD_CTRL_ENABLE;
-+
-+	writel(mode->hsync_len, jzfb->base + JZ_REG_LCD_HSYNC);
-+	writel(mode->vsync_len, jzfb->base + JZ_REG_LCD_VSYNC);
-+
-+	writel((ht << 16) | vt, jzfb->base + JZ_REG_LCD_VAT);
-+
-+	writel((hds << 16) | hde, jzfb->base + JZ_REG_LCD_DAH);
-+	writel((vds << 16) | vde, jzfb->base + JZ_REG_LCD_DAV);
-+
-+	writel(cfg, jzfb->base + JZ_REG_LCD_CFG);
-+
-+	writel(ctrl, jzfb->base + JZ_REG_LCD_CTRL);
-+
-+	if (!jzfb->is_enabled)
-+		clk_disable(jzfb->ldclk);
-+
-+	mutex_unlock(&jzfb->lock);
-+
-+	clk_set_rate(jzfb->lpclk, rate);
-+	clk_set_rate(jzfb->ldclk, rate * 3);
-+
-+	return 0;
-+}
-+
-+static void jzfb_enable(struct jzfb *jzfb)
++static inline void jz4740_rtc_wait_write_ready(struct jz4740_rtc *rtc)
 +{
 +	uint32_t ctrl;
++	int timeout = 1000;
 +
-+	clk_enable(jzfb->ldclk);
-+
-+	jz_gpio_bulk_resume(jz_lcd_ctrl_pins, jzfb_num_ctrl_pins(jzfb));
-+	jz_gpio_bulk_resume(jz_lcd_data_pins, jzfb_num_data_pins(jzfb));
-+
-+	writel(0, jzfb->base + JZ_REG_LCD_STATE);
-+
-+	writel(jzfb->framedesc->next, jzfb->base + JZ_REG_LCD_DA0);
-+
-+	ctrl = readl(jzfb->base + JZ_REG_LCD_CTRL);
-+	ctrl |= JZ_LCD_CTRL_ENABLE;
-+	ctrl &= ~JZ_LCD_CTRL_DISABLE;
-+	writel(ctrl, jzfb->base + JZ_REG_LCD_CTRL);
-+}
-+
-+static void jzfb_disable(struct jzfb *jzfb)
-+{
-+	uint32_t ctrl;
-+
-+	ctrl = readl(jzfb->base + JZ_REG_LCD_CTRL);
-+	ctrl |= JZ_LCD_CTRL_DISABLE;
-+	writel(ctrl, jzfb->base + JZ_REG_LCD_CTRL);
 +	do {
-+		ctrl = readl(jzfb->base + JZ_REG_LCD_STATE);
-+	} while (!(ctrl & JZ_LCD_STATE_DISABLED));
-+
-+	jz_gpio_bulk_suspend(jz_lcd_ctrl_pins, jzfb_num_ctrl_pins(jzfb));
-+	jz_gpio_bulk_suspend(jz_lcd_data_pins, jzfb_num_data_pins(jzfb));
-+
-+	clk_disable(jzfb->ldclk);
++		ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
++	} while (!(ctrl & JZ_RTC_CTRL_WRDY) && --timeout);
 +}
 +
-+static int jzfb_blank(int blank_mode, struct fb_info *info)
++static inline void jz4740_rtc_reg_write(struct jz4740_rtc *rtc, size_t reg,
++	uint32_t val)
 +{
-+	struct jzfb *jzfb = info->par;
++	jz4740_rtc_wait_write_ready(rtc);
++	writel(val, rtc->base + reg);
++}
 +
-+	switch (blank_mode) {
-+	case FB_BLANK_UNBLANK:
-+		mutex_lock(&jzfb->lock);
-+		if (jzfb->is_enabled) {
-+			mutex_unlock(&jzfb->lock);
-+			return 0;
-+		}
++static void jz4740_rtc_ctrl_set_bits(struct jz4740_rtc *rtc, uint32_t mask,
++	uint32_t val)
++{
++	unsigned long flags;
++	uint32_t ctrl;
 +
-+		jzfb_enable(jzfb);
-+		jzfb->is_enabled = 1;
++	spin_lock_irqsave(&rtc->lock, flags);
 +
-+		mutex_unlock(&jzfb->lock);
-+		break;
-+	default:
-+		mutex_lock(&jzfb->lock);
-+		if (!jzfb->is_enabled) {
-+			mutex_unlock(&jzfb->lock);
-+			return 0;
-+		}
++	ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
 +
-+		jzfb_disable(jzfb);
-+		jzfb->is_enabled = 0;
++	/* Don't clear interrupt flags by accident */
++	ctrl |= JZ_RTC_CTRL_1HZ | JZ_RTC_CTRL_AF;
 +
-+		mutex_unlock(&jzfb->lock);
-+		break;
++	ctrl &= ~mask;
++	ctrl |= val;
++
++	jz4740_rtc_reg_write(rtc, JZ_REG_RTC_CTRL, ctrl);
++
++	spin_unlock_irqrestore(&rtc->lock, flags);
++}
++
++static int jz4740_rtc_read_time(struct device *dev, struct rtc_time *time)
++{
++	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
++	uint32_t secs, secs2;
++	int timeout = 5;
++
++	/* If the seconds register is read while it is updated, it can contain a
++	 * bogus value. This can be avoided by making sure that two consecutive
++	 * reads have the same value.
++	 */
++	secs = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC);
++	secs2 = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC);
++
++	while (secs != secs2 && --timeout) {
++		secs = secs2;
++		secs2 = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC);
 +	}
++
++	if (timeout == 0)
++		return -EIO;
++
++	rtc_time_to_tm(secs, time);
++
++	return rtc_valid_tm(time);
++}
++
++static int jz4740_rtc_set_mmss(struct device *dev, unsigned long secs)
++{
++	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
++
++	if ((uint32_t)secs != secs)
++		return -EINVAL;
++
++	jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SEC, secs);
 +
 +	return 0;
 +}
 +
-+static int jzfb_alloc_devmem(struct jzfb *jzfb)
++static int jz4740_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 +{
-+	int max_videosize = 0;
-+	struct fb_videomode *mode = jzfb->pdata->modes;
-+	void *page;
-+	int i;
++	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
++	uint32_t secs;
++	uint32_t ctrl;
 +
-+	for (i = 0; i < jzfb->pdata->num_modes; ++mode, ++i) {
-+		if (max_videosize < mode->xres * mode->yres)
-+			max_videosize = mode->xres * mode->yres;
-+	}
++	secs = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC_ALARM);
 +
-+	max_videosize *= jzfb_get_controller_bpp(jzfb) >> 3;
++	ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
 +
-+	jzfb->framedesc = dma_alloc_coherent(&jzfb->pdev->dev,
-+					sizeof(*jzfb->framedesc),
-+					&jzfb->framedesc_phys, GFP_KERNEL);
++	alrm->enabled = !!(ctrl & JZ_RTC_CTRL_AE);
++	alrm->pending = !!(ctrl & JZ_RTC_CTRL_AF);
 +
-+	if (!jzfb->framedesc)
-+		return -ENOMEM;
++	rtc_time_to_tm(secs, &alrm->time);
 +
-+	jzfb->vidmem_size = PAGE_ALIGN(max_videosize);
-+	jzfb->vidmem = dma_alloc_coherent(&jzfb->pdev->dev,
-+					jzfb->vidmem_size,
-+					&jzfb->vidmem_phys, GFP_KERNEL);
++	return rtc_valid_tm(&alrm->time);
++}
 +
-+	if (!jzfb->vidmem)
-+		goto err_free_framedesc;
++static int jz4740_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
++	unsigned long secs;
 +
-+	for (page = jzfb->vidmem;
-+		 page < jzfb->vidmem + PAGE_ALIGN(jzfb->vidmem_size);
-+		 page += PAGE_SIZE) {
-+		SetPageReserved(virt_to_page(page));
-+	}
++	rtc_tm_to_time(&alrm->time, &secs);
 +
-+	jzfb->framedesc->next = jzfb->framedesc_phys;
-+	jzfb->framedesc->addr = jzfb->vidmem_phys;
-+	jzfb->framedesc->id = 0xdeafbead;
-+	jzfb->framedesc->cmd = 0;
-+	jzfb->framedesc->cmd |= max_videosize / 4;
++	if ((uint32_t)secs != secs)
++		return -EINVAL;
++
++	jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SEC_ALARM, (uint32_t)secs);
++	jz4740_rtc_ctrl_set_bits(rtc, JZ_RTC_CTRL_AE,
++					alrm->enabled ? JZ_RTC_CTRL_AE : 0);
 +
 +	return 0;
-+
-+err_free_framedesc:
-+	dma_free_coherent(&jzfb->pdev->dev, sizeof(*jzfb->framedesc),
-+				jzfb->framedesc, jzfb->framedesc_phys);
-+	return -ENOMEM;
 +}
 +
-+static void jzfb_free_devmem(struct jzfb *jzfb)
++static inline int jz4740_irq_enable(struct device *dev, int irq,
++	unsigned int enable)
 +{
-+	dma_free_coherent(&jzfb->pdev->dev, jzfb->vidmem_size,
-+				jzfb->vidmem, jzfb->vidmem_phys);
-+	dma_free_coherent(&jzfb->pdev->dev, sizeof(*jzfb->framedesc),
-+				jzfb->framedesc, jzfb->framedesc_phys);
++	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
++	jz4740_rtc_ctrl_set_bits(rtc, irq, enable ? irq : 0);
++
++	return 0;
 +}
 +
-+static struct  fb_ops jzfb_ops = {
-+	.owner = THIS_MODULE,
-+	.fb_check_var = jzfb_check_var,
-+	.fb_set_par = jzfb_set_par,
-+	.fb_blank = jzfb_blank,
-+	.fb_fillrect	= sys_fillrect,
-+	.fb_copyarea	= sys_copyarea,
-+	.fb_imageblit	= sys_imageblit,
-+	.fb_setcolreg = jzfb_setcolreg,
++static int jz4740_rtc_update_irq_enable(struct device *dev, unsigned int enable)
++{
++	return jz4740_irq_enable(dev, JZ_RTC_CTRL_1HZ_IRQ, enable);
++}
++
++static int jz4740_rtc_alarm_irq_enable(struct device *dev, unsigned int enable)
++{
++	return jz4740_irq_enable(dev, JZ_RTC_CTRL_AF_IRQ, enable);
++}
++
++static struct rtc_class_ops jz4740_rtc_ops = {
++	.read_time	= jz4740_rtc_read_time,
++	.set_mmss	= jz4740_rtc_set_mmss,
++	.read_alarm	= jz4740_rtc_read_alarm,
++	.set_alarm	= jz4740_rtc_set_alarm,
++	.update_irq_enable = jz4740_rtc_update_irq_enable,
++	.alarm_irq_enable = jz4740_rtc_alarm_irq_enable,
 +};
 +
-+static int __devinit jzfb_probe(struct platform_device *pdev)
++static irqreturn_t jz4740_rtc_irq(int irq, void *data)
++{
++	struct jz4740_rtc *rtc = data;
++	uint32_t ctrl;
++	unsigned long events = 0;
++	ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
++
++	if (ctrl & JZ_RTC_CTRL_1HZ)
++		events |= (RTC_UF | RTC_IRQF);
++
++	if (ctrl & JZ_RTC_CTRL_AF)
++		events |= (RTC_AF | RTC_IRQF);
++
++	rtc_update_irq(rtc->rtc, 1, events);
++
++	jz4740_rtc_ctrl_set_bits(rtc, JZ_RTC_CTRL_1HZ | JZ_RTC_CTRL_AF, 0);
++
++	return IRQ_HANDLED;
++}
++
++void jz4740_rtc_poweroff(struct device *dev)
++{
++	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
++	jz4740_rtc_reg_write(rtc, JZ_REG_RTC_HIBERNATE, 1);
++}
++EXPORT_SYMBOL_GPL(jz4740_rtc_poweroff);
++
++static int __devinit jz4740_rtc_probe(struct platform_device *pdev)
 +{
 +	int ret;
-+	struct jzfb *jzfb;
-+	struct fb_info *fb;
-+	struct jz4740_fb_platform_data *pdata = pdev->dev.platform_data;
-+	struct resource *mem;
++	struct jz4740_rtc *rtc;
++	uint32_t scratchpad;
 +
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "Missing platform data\n");
-+		return -ENOENT;
++	rtc = kmalloc(sizeof(*rtc), GFP_KERNEL);
++	if (!rtc)
++		return -ENOMEM;
++
++	rtc->irq = platform_get_irq(pdev, 0);
++	if (rtc->irq < 0) {
++		ret = -ENOENT;
++		dev_err(&pdev->dev, "Failed to get platform irq\n");
++		goto err_free;
 +	}
 +
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem) {
-+		dev_err(&pdev->dev, "Failed to get register memory resource\n");
-+		return -ENOENT;
++	rtc->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!rtc->mem) {
++		ret = -ENOENT;
++		dev_err(&pdev->dev, "Failed to get platform mmio memory\n");
++		goto err_free;
 +	}
 +
-+	mem = request_mem_region(mem->start, resource_size(mem), pdev->name);
-+	if (!mem) {
-+		dev_err(&pdev->dev, "Failed to request register memory region\n");
-+		return -EBUSY;
++	rtc->mem = request_mem_region(rtc->mem->start, resource_size(rtc->mem),
++					pdev->name);
++	if (!rtc->mem) {
++		ret = -EBUSY;
++		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
++		goto err_free;
 +	}
 +
-+	fb = framebuffer_alloc(sizeof(struct jzfb), &pdev->dev);
-+	if (!fb) {
-+		dev_err(&pdev->dev, "Failed to allocate framebuffer device\n");
-+		ret = -ENOMEM;
++	rtc->base = ioremap_nocache(rtc->mem->start, resource_size(rtc->mem));
++	if (!rtc->base) {
++		ret = -EBUSY;
++		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
 +		goto err_release_mem_region;
 +	}
 +
-+	fb->fbops = &jzfb_ops;
-+	fb->flags = FBINFO_DEFAULT;
++	spin_lock_init(&rtc->lock);
 +
-+	jzfb = fb->par;
-+	jzfb->pdev = pdev;
-+	jzfb->pdata = pdata;
-+	jzfb->mem = mem;
++	platform_set_drvdata(pdev, rtc);
 +
-+	jzfb->ldclk = clk_get(&pdev->dev, "lcd");
-+	if (IS_ERR(jzfb->ldclk)) {
-+		ret = PTR_ERR(jzfb->ldclk);
-+		dev_err(&pdev->dev, "Failed to get lcd clock: %d\n", ret);
-+		goto err_framebuffer_release;
-+	}
-+
-+	jzfb->lpclk = clk_get(&pdev->dev, "lcd_pclk");
-+	if (IS_ERR(jzfb->lpclk)) {
-+		ret = PTR_ERR(jzfb->lpclk);
-+		dev_err(&pdev->dev, "Failed to get lcd pixel clock: %d\n", ret);
-+		goto err_put_ldclk;
-+	}
-+
-+	jzfb->base = ioremap(mem->start, resource_size(mem));
-+	if (!jzfb->base) {
-+		dev_err(&pdev->dev, "Failed to ioremap register memory region\n");
-+		ret = -EBUSY;
-+		goto err_put_lpclk;
-+	}
-+
-+	platform_set_drvdata(pdev, jzfb);
-+
-+	mutex_init(&jzfb->lock);
-+
-+	fb_videomode_to_modelist(pdata->modes, pdata->num_modes,
-+				 &fb->modelist);
-+	fb_videomode_to_var(&fb->var, pdata->modes);
-+	fb->var.bits_per_pixel = pdata->bpp;
-+	jzfb_check_var(&fb->var, fb);
-+
-+	ret = jzfb_alloc_devmem(jzfb);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to allocate video memory\n");
++	rtc->rtc = rtc_device_register(pdev->name, &pdev->dev, &jz4740_rtc_ops,
++					THIS_MODULE);
++	if (IS_ERR(rtc->rtc)) {
++		ret = PTR_ERR(rtc->rtc);
++		dev_err(&pdev->dev, "Failed to register rtc device: %d\n", ret);
 +		goto err_iounmap;
 +	}
 +
-+	fb->fix = jzfb_fix;
-+	fb->fix.line_length = fb->var.bits_per_pixel * fb->var.xres / 8;
-+	fb->fix.mmio_start = mem->start;
-+	fb->fix.mmio_len = resource_size(mem);
-+	fb->fix.smem_start = jzfb->vidmem_phys;
-+	fb->fix.smem_len =  fb->fix.line_length * fb->var.yres;
-+	fb->screen_base = jzfb->vidmem;
-+	fb->pseudo_palette = jzfb->pseudo_palette;
-+
-+	fb_alloc_cmap(&fb->cmap, 256, 0);
-+
-+	clk_enable(jzfb->ldclk);
-+	jzfb->is_enabled = 1;
-+
-+	writel(jzfb->framedesc->next, jzfb->base + JZ_REG_LCD_DA0);
-+
-+	fb->mode = NULL;
-+	jzfb_set_par(fb);
-+
-+	jz_gpio_bulk_request(jz_lcd_ctrl_pins, jzfb_num_ctrl_pins(jzfb));
-+	jz_gpio_bulk_request(jz_lcd_data_pins, jzfb_num_data_pins(jzfb));
-+
-+	ret = register_framebuffer(fb);
++	ret = request_irq(rtc->irq, jz4740_rtc_irq, 0,
++				pdev->name, rtc);
 +	if (ret) {
-+		dev_err(&pdev->dev, "Failed to register framebuffer: %d\n", ret);
-+		goto err_free_devmem;
++		dev_err(&pdev->dev, "Failed to request rtc irq: %d\n", ret);
++		goto err_unregister_rtc;
 +	}
 +
-+	jzfb->fb = fb;
++	scratchpad = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SCRATCHPAD);
++	if (scratchpad != 0x12345678) {
++		jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SCRATCHPAD, 0x12345678);
++		jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SEC, 0);
++	}
 +
 +	return 0;
 +
-+err_free_devmem:
-+	jz_gpio_bulk_free(jz_lcd_ctrl_pins, jzfb_num_ctrl_pins(jzfb));
-+	jz_gpio_bulk_free(jz_lcd_data_pins, jzfb_num_data_pins(jzfb));
-+
-+	fb_dealloc_cmap(&fb->cmap);
-+	jzfb_free_devmem(jzfb);
++err_unregister_rtc:
++	rtc_device_unregister(rtc->rtc);
 +err_iounmap:
-+	iounmap(jzfb->base);
-+err_put_lpclk:
-+	clk_put(jzfb->lpclk);
-+err_put_ldclk:
-+	clk_put(jzfb->ldclk);
-+err_framebuffer_release:
-+	framebuffer_release(fb);
++	platform_set_drvdata(pdev, NULL);
++	iounmap(rtc->base);
 +err_release_mem_region:
-+	release_mem_region(mem->start, resource_size(mem));
++	release_mem_region(rtc->mem->start, resource_size(rtc->mem));
++err_free:
++	kfree(rtc);
++
 +	return ret;
 +}
 +
-+static int __devexit jzfb_remove(struct platform_device *pdev)
++static int __devexit jz4740_rtc_remove(struct platform_device *pdev)
 +{
-+	struct jzfb *jzfb = platform_get_drvdata(pdev);
++	struct jz4740_rtc *rtc = platform_get_drvdata(pdev);
 +
-+	jzfb_blank(FB_BLANK_POWERDOWN, jzfb->fb);
++	free_irq(rtc->irq, rtc);
 +
-+	jz_gpio_bulk_free(jz_lcd_ctrl_pins, jzfb_num_ctrl_pins(jzfb));
-+	jz_gpio_bulk_free(jz_lcd_data_pins, jzfb_num_data_pins(jzfb));
++	rtc_device_unregister(rtc->rtc);
 +
-+	iounmap(jzfb->base);
-+	release_mem_region(jzfb->mem->start, resource_size(jzfb->mem));
++	iounmap(rtc->base);
++	release_mem_region(rtc->mem->start, resource_size(rtc->mem));
 +
-+	fb_dealloc_cmap(&jzfb->fb->cmap);
-+	jzfb_free_devmem(jzfb);
++	kfree(rtc);
 +
 +	platform_set_drvdata(pdev, NULL);
 +
-+	clk_put(jzfb->lpclk);
-+	clk_put(jzfb->ldclk);
-+
-+	framebuffer_release(jzfb->fb);
-+
 +	return 0;
 +}
 +
-+#ifdef CONFIG_PM
-+
-+static int jzfb_suspend(struct device *dev)
-+{
-+	struct jzfb *jzfb = dev_get_drvdata(dev);
-+
-+	acquire_console_sem();
-+	fb_set_suspend(jzfb->fb, 1);
-+	release_console_sem();
-+
-+	mutex_lock(&jzfb->lock);
-+	if (jzfb->is_enabled)
-+		jzfb_disable(jzfb);
-+	mutex_unlock(&jzfb->lock);
-+
-+	return 0;
-+}
-+
-+static int jzfb_resume(struct device *dev)
-+{
-+	struct jzfb *jzfb = dev_get_drvdata(dev);
-+	clk_enable(jzfb->ldclk);
-+
-+	mutex_lock(&jzfb->lock);
-+	if (jzfb->is_enabled)
-+		jzfb_enable(jzfb);
-+	mutex_unlock(&jzfb->lock);
-+
-+	acquire_console_sem();
-+	fb_set_suspend(jzfb->fb, 0);
-+	release_console_sem();
-+
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops jzfb_pm_ops = {
-+	.suspend	= jzfb_suspend,
-+	.resume		= jzfb_resume,
-+	.poweroff	= jzfb_suspend,
-+	.restore	= jzfb_resume,
-+};
-+
-+#define JZFB_PM_OPS (&jzfb_pm_ops)
-+
-+#else
-+#define JZFB_PM_OPS NULL
-+#endif
-+
-+static struct platform_driver jzfb_driver = {
-+	.probe = jzfb_probe,
-+	.remove = __devexit_p(jzfb_remove),
++struct platform_driver jz4740_rtc_driver = {
++	.probe = jz4740_rtc_probe,
++	.remove = __devexit_p(jz4740_rtc_remove),
 +	.driver = {
-+		.name = "jz4740-fb",
-+		.pm = JZFB_PM_OPS,
++		.name = "jz4740-rtc",
++		.owner = THIS_MODULE,
 +	},
 +};
 +
-+static int __init jzfb_init(void)
++static int __init jz4740_rtc_init(void)
 +{
-+	return platform_driver_register(&jzfb_driver);
++	return platform_driver_register(&jz4740_rtc_driver);
 +}
-+module_init(jzfb_init);
++module_init(jz4740_rtc_init);
 +
-+static void __exit jzfb_exit(void)
++static void __exit jz4740_rtc_exit(void)
 +{
-+	platform_driver_unregister(&jzfb_driver);
++	platform_driver_unregister(&jz4740_rtc_driver);
 +}
-+module_exit(jzfb_exit);
++module_exit(jz4740_rtc_exit);
 +
-+MODULE_LICENSE("GPL");
 +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-+MODULE_DESCRIPTION("JZ4740 SoC LCD framebuffer driver");
-+MODULE_ALIAS("platform:jz4740-fb");
-diff --git a/include/linux/jz4740_fb.h b/include/linux/jz4740_fb.h
-new file mode 100644
-index 0000000..ab4c963
---- /dev/null
-+++ b/include/linux/jz4740_fb.h
-@@ -0,0 +1,58 @@
-+/*
-+ *  Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
-+ *
-+ *  This program is free software; you can redistribute	 it and/or modify it
-+ *  under  the terms of	 the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the	License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#ifndef __LINUX_JZ4740_FB_H
-+#define __LINUX_JZ4740_FB_H
-+
-+#include <linux/fb.h>
-+
-+enum jz4740_fb_lcd_type {
-+	JZ_LCD_TYPE_GENERIC_16_BIT = 0,
-+	JZ_LCD_TYPE_GENERIC_18_BIT = 0 | (1 << 4),
-+	JZ_LCD_TYPE_SPECIAL_TFT_1 = 1,
-+	JZ_LCD_TYPE_SPECIAL_TFT_2 = 2,
-+	JZ_LCD_TYPE_SPECIAL_TFT_3 = 3,
-+	JZ_LCD_TYPE_NON_INTERLACED_CCIR656 = 5,
-+	JZ_LCD_TYPE_INTERLACED_CCIR656 = 7,
-+	JZ_LCD_TYPE_SINGLE_COLOR_STN = 8,
-+	JZ_LCD_TYPE_SINGLE_MONOCHROME_STN = 9,
-+	JZ_LCD_TYPE_DUAL_COLOR_STN = 10,
-+	JZ_LCD_TYPE_DUAL_MONOCHROME_STN = 11,
-+	JZ_LCD_TYPE_8BIT_SERIAL = 12,
-+};
-+
-+/*
-+* width: width of the lcd display in mm
-+* height: height of the lcd display in mm
-+* num_modes: size of modes
-+* modes: list of valid video modes
-+* bpp: bits per pixel for the lcd
-+* lcd_type: lcd type
-+*/
-+
-+struct jz4740_fb_platform_data {
-+	unsigned int width;
-+	unsigned int height;
-+
-+	size_t num_modes;
-+	struct fb_videomode *modes;
-+
-+	unsigned int bpp;
-+	enum jz4740_fb_lcd_type lcd_type;
-+
-+	unsigned pixclk_falling_edge:1;
-+	unsigned date_enable_active_low:1;
-+};
-+
-+#endif
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("RTC driver for the JZ4740 SoC\n");
++MODULE_ALIAS("platform:jz4740-rtc");
 -- 
 1.5.6.5
 
