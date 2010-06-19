@@ -1,133 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab0FSMgb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 08:36:31 -0400
-Received: from fg-out-1718.google.com ([72.14.220.156]:43841 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755602Ab0FSMga convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 08:36:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=NW95tis7OStmFlSEHtjNRNcEzDdDEVSL1lgPiE3VsgcA3rkJZN/bNP5l6+ScHPZQaQ
-         SDdmjfZYytVzv3P2K25pBCtZAkiTdhgz+hxUBJoYd04SykDyPNtIp54YKJU33VXyo4L+
-         IBQfEPWEbstoFRdJ/cV9fuqFCAv4AzewjVvxU=
+	id S1755719Ab0FSMhE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 08:37:04 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:52011 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755610Ab0FSMhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 08:37:00 -0400
+Date: Sat, 19 Jun 2010 14:36:47 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Another PCMCIA regression
+Message-ID: <20100619123647.GC5575@comet.dominikbrodowski.net>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	Mikulas Patocka <mpatocka@redhat.com>, linux-kernel@vger.kernel.org
+References: <Pine.LNX.4.64.1005251619020.12278@hs20-bc2-1.build.redhat.com>
+ <20100526113515.GA7219@comet.dominikbrodowski.net>
+ <20100602143822.GA11506@isilmar-3.linta.de>
+ <Pine.LNX.4.64.1006141335540.24598@hs20-bc2-1.build.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20091208211647.9B032B151F@basil.firstfloor.org>
-References: <200912081016.198135742@firstfloor.org>
-	<20091208211647.9B032B151F@basil.firstfloor.org>
-Date: Sat, 19 Jun 2010 14:36:28 +0200
-X-Google-Sender-Auth: xxkGIXZ11VzsZOqOTO0M7F4rSno
-Message-ID: <AANLkTimBhQAYn7BDXd1ykSN90v0ClWybIe2Pe1qv_6vA@mail.gmail.com>
-Subject: Re: [PATCH] [31/31] HWPOISON: Add a madvise() injector for soft page 
-	offlining
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: fengguang.wu@intel.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Michael Kerrisk <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1006141335540.24598@hs20-bc2-1.build.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
+Mikulas,
 
-On Tue, Dec 8, 2009 at 11:16 PM, Andi Kleen <andi@firstfloor.org> wrote:
->
-> Process based injection is much easier to handle for test programs,
-> who can first bring a page into a specific state and then test.
-> So add a new MADV_SOFT_OFFLINE to soft offline a page, similar
-> to the existing hard offline injector.
+many thanks for tracking down this issue. Does the following patch
+(instead of the one you provided) help, too?
 
-I see that this made its way into 2.6.33. Could you write a short
-piece on it for the madvise.2 man page?
-
-Thanks,
-
-Michael
+Thanks & best,
+	Dominik
 
 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
->
-> ---
->  include/asm-generic/mman-common.h |    1 +
->  mm/madvise.c                      |   15 ++++++++++++---
->  2 files changed, 13 insertions(+), 3 deletions(-)
->
-> Index: linux/include/asm-generic/mman-common.h
-> ===================================================================
-> --- linux.orig/include/asm-generic/mman-common.h
-> +++ linux/include/asm-generic/mman-common.h
-> @@ -35,6 +35,7 @@
->  #define MADV_DONTFORK  10              /* don't inherit across fork */
->  #define MADV_DOFORK    11              /* do inherit across fork */
->  #define MADV_HWPOISON  100             /* poison a page for testing */
-> +#define MADV_SOFT_OFFLINE 101          /* soft offline page for testing */
->
->  #define MADV_MERGEABLE   12            /* KSM may merge identical pages */
->  #define MADV_UNMERGEABLE 13            /* KSM may not merge identical pages */
-> Index: linux/mm/madvise.c
-> ===================================================================
-> --- linux.orig/mm/madvise.c
-> +++ linux/mm/madvise.c
-> @@ -9,6 +9,7 @@
->  #include <linux/pagemap.h>
->  #include <linux/syscalls.h>
->  #include <linux/mempolicy.h>
-> +#include <linux/page-isolation.h>
->  #include <linux/hugetlb.h>
->  #include <linux/sched.h>
->  #include <linux/ksm.h>
-> @@ -222,7 +223,7 @@ static long madvise_remove(struct vm_are
->  /*
->  * Error injection support for memory error handling.
->  */
-> -static int madvise_hwpoison(unsigned long start, unsigned long end)
-> +static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
->  {
->        int ret = 0;
->
-> @@ -233,6 +234,14 @@ static int madvise_hwpoison(unsigned lon
->                int ret = get_user_pages_fast(start, 1, 0, &p);
->                if (ret != 1)
->                        return ret;
-> +               if (bhv == MADV_SOFT_OFFLINE) {
-> +                       printk(KERN_INFO "Soft offlining page %lx at %lx\n",
-> +                               page_to_pfn(p), start);
-> +                       ret = soft_offline_page(p, MF_COUNT_INCREASED);
-> +                       if (ret)
-> +                               break;
-> +                       continue;
-> +               }
->                printk(KERN_INFO "Injecting memory failure for page %lx at %lx\n",
->                       page_to_pfn(p), start);
->                /* Ignore return value for now */
-> @@ -333,8 +342,8 @@ SYSCALL_DEFINE3(madvise, unsigned long,
->        size_t len;
->
->  #ifdef CONFIG_MEMORY_FAILURE
-> -       if (behavior == MADV_HWPOISON)
-> -               return madvise_hwpoison(start, start+len_in);
-> +       if (behavior == MADV_HWPOISON || behavior == MADV_SOFT_OFFLINE)
-> +               return madvise_hwpoison(behavior, start, start+len_in);
->  #endif
->        if (!madvise_behavior_valid(behavior))
->                return error;
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+Date: Sat, 19 Jun 2010 14:33:56 +0200
+Subject: [PATCH] pcmcia: do not initialize the present flag too late.
 
+The "present" flag was initialized too late -- possibly, a card
+was already registered at this time, so re-setting the flag to 0
+caused pcmcia_dev_present() to fail.
 
+Reported-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
 
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
+diff --git a/drivers/pcmcia/ds.c b/drivers/pcmcia/ds.c
+index 9fc3398..eac9614 100644
+--- a/drivers/pcmcia/ds.c
++++ b/drivers/pcmcia/ds.c
+@@ -1356,6 +1356,7 @@ static int __devinit pcmcia_bus_add_socket(struct device *dev,
+ 	INIT_LIST_HEAD(&socket->devices_list);
+ 	memset(&socket->pcmcia_state, 0, sizeof(u8));
+ 	socket->device_count = 0;
++	atomic_set(&socket->present, 0);
+ 
+ 	ret = pccard_register_pcmcia(socket, &pcmcia_bus_callback);
+ 	if (ret) {
+@@ -1364,8 +1365,6 @@ static int __devinit pcmcia_bus_add_socket(struct device *dev,
+ 		return ret;
+ 	}
+ 
+-	atomic_set(&socket->present, 0);
+-
+ 	return 0;
+ }
+ 
