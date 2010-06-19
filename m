@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab0FSFf1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 01:35:27 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38529 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab0FSFfZ (ORCPT
+	id S1753328Ab0FSFqK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 01:46:10 -0400
+Received: from ey-out-2122.google.com ([74.125.78.27]:21067 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab0FSFqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 01:35:25 -0400
+	Sat, 19 Jun 2010 01:46:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=Tvi0/J15pDDBrSpMOCirnLOjgAQPBCEEu9EsE+rJMJ3nxknogvR9CO220EqbeTkTTL
-         ONMsH598e2j5qQE2IaS8KpqTuOUuxxA5l8C0DutNYDcngkq5sIEnooEviWO2rLQ0t5/4
-         DmxNsjKoNa+aLfXDQMg5bSzWHexUFCV3KtFSE=
-Date: Sat, 19 Jun 2010 07:35:25 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mandeep Baines <msb@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Jerome Marchand <jmarchan@redhat.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: while_each_thread() under rcu_read_lock() is broken?
-Message-ID: <20100619053522.GA11264@nowhere>
-References: <20100618190251.GA17297@redhat.com> <20100618193403.GA17314@redhat.com> <AANLkTimh-7F4VK8FI6j-JQ4EDnxtEI3ZlGY-2X-lq6iM@mail.gmail.com>
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type;
+        b=J/JmSlrp4771uPpy/e6BrzuOgDqHjHcyuXbSYQjDc6Oga9mtmf1MXyKG2672RIG8GH
+         x/B+mWlKxMzptqwwHQGC1aPlPdeRR0dWFyAMqJP4x558+M8sJ92wOe5jdVL0IBEHtrvn
+         CKq8PZSJnQ5ETE84UoWrElvajFVR6zDiJQ/hI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimh-7F4VK8FI6j-JQ4EDnxtEI3ZlGY-2X-lq6iM@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <4C07A51E.6090604@fusionio.com>
+References: <20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> 
+	<20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> 
+	<20100524175649.GV23411@kernel.dk> <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com> 
+	<20100601074534.GL1660@kernel.dk> <AANLkTinGfonivZvofBkMzv53IJZeKbFAEMVpv96BiJ30@mail.gmail.com> 
+	<20100603061039.GD3564@kernel.dk> <AANLkTint7OJvmTn7d7bqTJzsCxV-VlVT46PQWVH-m73g@mail.gmail.com> 
+	<20100603070126.GJ3564@kernel.dk> <AANLkTilwyuE-HiY0vX5askTNi1KoeuKIldmE85WrfIqU@mail.gmail.com> 
+	<AANLkTin2b7qE1zo0fQWIhYIzdV26zNBjHRcNAOELpUfK@mail.gmail.com> 
+	<4C078610.6020901@fusionio.com> <AANLkTinhO5oRDPXyXaeAOZU3i55eBKsx4iFMOzwm98na@mail.gmail.com> 
+	<AANLkTin_8MU3AbJ_KeXr2uTxtRFJ5ABmBAyigU6m-C6u@mail.gmail.com> 
+	<4C078E2B.7090107@fusionio.com> <E1OK8fK-0007Wa-BU@pomaz-ex.szeredi.hu> 
+	<4C0793F6.4070107@fusionio.com> <E1OK9nN-0007gB-LB@pomaz-ex.szeredi.hu> 
+	<4C07A51E.6090604@fusionio.com>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Sat, 19 Jun 2010 07:45:45 +0200
+Message-ID: <AANLkTim3VzQVp3d6FIytYcf_H1Y8kjGELr9hehIeobAU@mail.gmail.com>
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 10:00:54PM -0700, Mandeep Baines wrote:
-> On Fri, Jun 18, 2010 at 12:34 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > (add cc's)
-> >
-> > Hmm. Once I sent this patch, I suddenly realized with horror that
-> > while_each_thread() is NOT safe under rcu_read_lock(). Both
-> > do_each_thread/while_each_thread or do/while_each_thread() can
-> > race with exec().
-> >
-> > Yes, it is safe to do next_thread() or next_task(). But:
-> >
-> >        #define while_each_thread(g, t) \
-> >                while ((t = next_thread(t)) != g)
-> >
-> > suppose that t is not the group leader, and it does de_thread() and then
-> > release_task(g). After that next_thread(t) returns t, not g, and the loop
-> > will never stop.
-> >
-> > I _really_ hope I missed something, will recheck tomorrow with the fresh
-> > head. Still I'd like to share my concerns...
-> >
-> 
-> Yep. You're right. Not sure what I was thinking. This is only case
-> where do_each_thread
-> is protected by an rcu_read_lock. All others, correctly use read_lock.
+Hello Jens,
 
+I've tested this F_SETPIPE_SZ code as it appears in 2.6.35-rc3, and
+things seem to work as advertised, if the text below is the correct
+advertisement. Could you please review the following man-pages text,
+and let me know if it's okay.
 
+fcntl.2:
+       F_SETPIPE_SZ (long; since Linux 2.6.35)
+              Change  the  capacity of the pipe referred to by
+              fd to be at least arg  bytes.   An  unprivileged
+              process  can  adjust  the  pipe  capacity to any
+              value between the system page size and the limit
+              defined   in   /proc/sys/fs/pipe-size-max   (see
+              proc(5)).  Attempts to  set  the  pipe  capacity
+              below  the  page size are silently rounded up to
+              the page size.  Attempts by an unprivileged pro-
+              cess to set the pipe capacity above the limit in
+              /proc/sys/fs/pipe-size-max   yield   the   error
+              EPERM;  a  privileged process (CAP_SYS_RESOURCE)
+              can override the  limit.   When  allocating  the
+              buffer for the pipe, the kernel may use a capac-
+              ity larger than arg, if that is  convenient  for
+              the  implementation.  The F_GETPIPE_SZ operation
+              returns the actual size used.  Attempting to set
+              the  pipe  capacity  smaller  than the amount of
+              buffer space currently used to store  data  pro-
+              duces the error EBUSY.
 
-cgroup does too.
-taskstats also uses rcu with while_each_threads, and may be some
-others.
+       F_GETPIPE_SZ (void; since Linux 2.6.35)
+              Return  (as the function result) the capacity of
+              the pipe referred to by fd.
 
-It's not your fault, theses iterators are supposed to be rcu safe,
-we are just encountering a bad race :)
+And in proc.5:
+       /proc/sys/fs/pipe-max-size (since Linux 2.6.35)
+              The value in this file defines  an  upper  limit
+              for  raising  the  capacity  of a pipe using the
+              fcntl(2)  F_SETPIPE_SZ  operation.   This  limit
+              applies  only  to  unprivileged  processes.  The
+              default value for this file is  1,048,576.   The
+              value  assigned  to  this  file  may  be rounded
+              upward, to reflect the value  actually  employed
+              for  a  convenient implementation.  To determine
+              the rounded-up value, display  the  contents  of
+              this  file  after  assigning a value to it.  The
+              minimum value that can be assigned to this  file
+              is the system page size.
 
+Cheers,
 
- 
-> > If I am right, probably we can fix this, something like
-> >
-> >        #define while_each_thread(g, t) \
-> >                while ((t = next_thread(t)) != g && pid_alive(g))
-> >
-> 
-> This seems like a reasonable approach. Maybe call it:
-> 
-> while_each_thread_maybe_rcu() :)
-
-
-
-Hmm, no while_each_thread must really be rcu_safe.
-
-
-
-> 
-> This makes hung_task a little less useful for failure fencing since
-> this (and rcu_lock_break)
-> increases the potential for never examining all threads but its still
-> a nice lightweight diagnostic
-> for finding bugs.
-
-
-
-In fact may be we could just drop the rcu break, people who really
-care about latencies can use the preemptable version.
-
-I know the worry is more about delaying too much the grace period if
-we walk a too long task list, but I don't think it's really a problem.
-
+Michael
