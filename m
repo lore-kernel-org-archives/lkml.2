@@ -1,256 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab0FSOx1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 10:53:27 -0400
-Received: from smtp-out-047.synserver.de ([212.40.180.47]:1057 "HELO
-	smtp-out-047.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756111Ab0FSOx0 (ORCPT
+	id S1756182Ab0FSOzR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 10:55:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46171 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756111Ab0FSOzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 10:53:26 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 25949
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
-Subject: [PATCH v3] alsa: ASoC: JZ4740: Add qi_lb60 board driver
-Date: Sat, 19 Jun 2010 16:52:51 +0200
-Message-Id: <1276959171-9261-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1276924111-11158-27-git-send-email-lars@metafoo.de>
-References: <1276924111-11158-27-git-send-email-lars@metafoo.de>
+	Sat, 19 Jun 2010 10:55:15 -0400
+Date: Sat, 19 Jun 2010 07:54:51 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Tejun Heo <tj@kernel.org>, mingo@elte.hu, tglx@linutronix.de,
+       bphilips@suse.de, yinghai@kernel.org, akpm@linux-foundation.org,
+       torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, linux-ide@vger.kernel.org, stern@rowland.harvard.edu,
+       gregkh@suse.de, khali@linux-fr.org
+Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
+Message-ID: <20100619075451.48c13589@infradead.org>
+In-Reply-To: <20100619090031.GE18946@basil.fritz.box>
+References: <1276443098-20653-1-git-send-email-tj@kernel.org>
+	<1276443098-20653-10-git-send-email-tj@kernel.org>
+	<20100616204854.4b036f87@infradead.org>
+	<87zkyro1xl.fsf@basil.nowhere.org>
+	<4C1C830B.5020806@kernel.org>
+	<20100619090031.GE18946@basil.fritz.box>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds ASoC support for the qi_lb60 board.
+On Sat, 19 Jun 2010 11:00:31 +0200
+Andi Kleen <andi@firstfloor.org> wrote:
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: alsa-devel@alsa-project.org
+> > IIUC, it's not to help or optimize polling itself.  It just gives
+> > us a way to estimate when the next interrupt would be so that power
+> > can be optimized for non polling cases.
+> 
+> Shouldn't the idle governour estimate this already?
 
---
-Changes since v1
-- Refer to AMP gpios always by their define
-- Do not try to set codecs format, since the set_fmt callback for the codec was
-  dropped.
+we have a set of heuristics in the idle governor to try to predict the
+future. For patterns that are regular in some shape of form we can do
+this.
 
-Changes since v2
-- The codec prefix was removed from jz4740 codec include file
-- This patch accidentally contained a few bits meant for ASoC JZ4740 platform
-  support patch. Removed them.
----
- sound/soc/jz4740/Kconfig   |    9 +++
- sound/soc/jz4740/Makefile  |    4 +
- sound/soc/jz4740/qi_lb60.c |  166 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 179 insertions(+), 0 deletions(-)
- create mode 100644 sound/soc/jz4740/qi_lb60.c
+Here we have the opportunity to get real good information.. we KNOW
+now an interrupt is coming, and we can even estimate how long it'll
+be...  Even for the first few after a long time, before a pattern
+emerges.
 
-diff --git a/sound/soc/jz4740/Kconfig b/sound/soc/jz4740/Kconfig
-index 27480f2..5351cba 100644
---- a/sound/soc/jz4740/Kconfig
-+++ b/sound/soc/jz4740/Kconfig
-@@ -12,3 +12,12 @@ config SND_JZ4740_SOC_I2S
- 	help
- 	  Say Y if you want to use I2S protocol and I2S codec on Ingenic JZ4740
- 	  based boards.
-+
-+config SND_JZ4740_SOC_QI_LB60
-+	tristate "SoC Audio support for Qi LB60"
-+	depends on SND_JZ4740_SOC && JZ4740_QI_LB60
-+	select SND_JZ4740_SOC_I2S
-+    select SND_SOC_JZ4740_CODEC
-+	help
-+	  Say Y if you want to add support for ASoC audio on the Qi LB60 board
-+	  a.k.a Qi Ben NanoNote.
-diff --git a/sound/soc/jz4740/Makefile b/sound/soc/jz4740/Makefile
-index 1be8d19..be873c1 100644
---- a/sound/soc/jz4740/Makefile
-+++ b/sound/soc/jz4740/Makefile
-@@ -7,3 +7,7 @@ snd-soc-jz4740-i2s-objs := jz4740-i2s.o
- obj-$(CONFIG_SND_JZ4740_SOC) += snd-soc-jz4740.o
- obj-$(CONFIG_SND_JZ4740_SOC_I2S) += snd-soc-jz4740-i2s.o
- 
-+# Jz4740 Machine Support
-+snd-soc-qi-lb60-objs := qi_lb60.o
-+
-+obj-$(CONFIG_SND_JZ4740_SOC_QI_LB60) += snd-soc-qi-lb60.o
-diff --git a/sound/soc/jz4740/qi_lb60.c b/sound/soc/jz4740/qi_lb60.c
-new file mode 100644
-index 0000000..f15f491
---- /dev/null
-+++ b/sound/soc/jz4740/qi_lb60.c
-@@ -0,0 +1,166 @@
-+/*
-+ * Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/timer.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <sound/core.h>
-+#include <sound/pcm.h>
-+#include <sound/soc.h>
-+#include <sound/soc-dapm.h>
-+#include <linux/gpio.h>
-+
-+#include "../codecs/jz4740.h"
-+#include "jz4740-pcm.h"
-+#include "jz4740-i2s.h"
-+
-+
-+#define QI_LB60_SND_GPIO JZ_GPIO_PORTB(29)
-+#define QI_LB60_AMP_GPIO JZ_GPIO_PORTD(4)
-+
-+static int qi_lb60_spk_event(struct snd_soc_dapm_widget *widget,
-+			     struct snd_kcontrol *ctrl, int event)
-+{
-+	int on = 0;
-+	if (event & SND_SOC_DAPM_POST_PMU)
-+		on = 1;
-+	else if (event & SND_SOC_DAPM_PRE_PMD)
-+		on = 0;
-+
-+	gpio_set_value(QI_LB60_SND_GPIO, on);
-+	gpio_set_value(QI_LB60_AMP_GPIO, on);
-+
-+	return 0;
-+}
-+
-+static const struct snd_soc_dapm_widget qi_lb60_widgets[] = {
-+	SND_SOC_DAPM_SPK("Speaker", qi_lb60_spk_event),
-+	SND_SOC_DAPM_MIC("Mic", NULL),
-+};
-+
-+static const struct snd_soc_dapm_route qi_lb60_routes[] = {
-+	{"Mic", NULL, "MIC"},
-+	{"Speaker", NULL, "LOUT"},
-+	{"Speaker", NULL, "ROUT"},
-+};
-+
-+#define QI_LB60_DAIFMT (SND_SOC_DAIFMT_I2S | \
-+			SND_SOC_DAIFMT_NB_NF | \
-+			SND_SOC_DAIFMT_CBM_CFM)
-+
-+static int qi_lb60_codec_init(struct snd_soc_codec *codec)
-+{
-+	int ret;
-+	struct snd_soc_dai *cpu_dai = codec->socdev->card->dai_link->cpu_dai;
-+
-+	snd_soc_dapm_nc_pin(codec, "LIN");
-+	snd_soc_dapm_nc_pin(codec, "RIN");
-+
-+	ret = snd_soc_dai_set_fmt(cpu_dai, QI_LB60_DAIFMT);
-+	if (ret < 0) {
-+		dev_err(codec->dev, "Failed to set cpu dai format: %d\n", ret);
-+		return ret;
-+	}
-+
-+	snd_soc_dapm_new_controls(codec, qi_lb60_widgets, ARRAY_SIZE(qi_lb60_widgets));
-+	snd_soc_dapm_add_routes(codec, qi_lb60_routes, ARRAY_SIZE(qi_lb60_routes));
-+	snd_soc_dapm_sync(codec);
-+
-+	return 0;
-+}
-+
-+static struct snd_soc_dai_link qi_lb60_dai = {
-+	.name = "jz4740",
-+	.stream_name = "jz4740",
-+	.cpu_dai = &jz4740_i2s_dai,
-+	.codec_dai = &jz4740_codec_dai,
-+	.init = qi_lb60_codec_init,
-+};
-+
-+static struct snd_soc_card qi_lb60 = {
-+	.name = "QI LB60",
-+	.dai_link = &qi_lb60_dai,
-+	.num_links = 1,
-+	.platform = &jz4740_soc_platform,
-+};
-+
-+static struct snd_soc_device qi_lb60_snd_devdata = {
-+	.card = &qi_lb60,
-+	.codec_dev = &soc_codec_dev_jz4740_codec,
-+};
-+
-+static struct platform_device *qi_lb60_snd_device;
-+
-+static int __init qi_lb60_init(void)
-+{
-+	int ret;
-+
-+	qi_lb60_snd_device = platform_device_alloc("soc-audio", -1);
-+
-+	if (!qi_lb60_snd_device)
-+		return -ENOMEM;
-+
-+	ret = gpio_request(QI_LB60_SND_GPIO, "SND");
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to request SND GPIO(%d): %d\n",
-+				QI_LB60_SND_GPIO, ret);
-+		goto err_device_put;
-+	}
-+
-+	ret = gpio_request(QI_LB60_AMP_GPIO, "AMP");
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to request AMP GPIO(%d): %d\n",
-+				QI_LB60_AMP_GPIO, ret);
-+		goto err_gpio_free_snd;
-+	}
-+
-+	gpio_direction_output(QI_LB60_SND_GPIO, 0);
-+	gpio_direction_output(QI_LB60_AMP_GPIO, 0);
-+
-+	platform_set_drvdata(qi_lb60_snd_device, &qi_lb60_snd_devdata);
-+	qi_lb60_snd_devdata.dev = &qi_lb60_snd_device->dev;
-+
-+	ret = platform_device_add(qi_lb60_snd_device);
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to add snd soc device: %d\n", ret);
-+		goto err_unset_pdata;
-+	}
-+
-+	 return 0;
-+
-+err_unset_pdata:
-+	platform_set_drvdata(qi_lb60_snd_device, NULL);
-+/*err_gpio_free_amp:*/
-+	gpio_free(QI_LB60_AMP_GPIO);
-+err_gpio_free_snd:
-+	gpio_free(QI_LB60_SND_GPIO);
-+err_device_put:
-+	platform_device_put(qi_lb60_snd_device);
-+
-+	return ret;
-+}
-+module_init(qi_lb60_init);
-+
-+static void __exit qi_lb60_exit(void)
-+{
-+	gpio_free(QI_LB60_AMP_GPIO);
-+	gpio_free(QI_LB60_SND_GPIO);
-+	platform_device_unregister(qi_lb60_snd_device);
-+}
-+module_exit(qi_lb60_exit);
-+
-+MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-+MODULE_DESCRIPTION("ALSA SoC QI LB60 Audio support");
-+MODULE_LICENSE("GPL v2");
+
+
 -- 
-1.5.6.5
-
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
