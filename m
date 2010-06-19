@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab0FSJEZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 05:04:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34496 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754834Ab0FSJEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 05:04:24 -0400
-Message-ID: <4C1C87DC.6060405@kernel.org>
-Date: Sat, 19 Jun 2010 11:03:24 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1755283Ab0FSJIy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 05:08:54 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:55696 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754429Ab0FSJIx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 05:08:53 -0400
+Date: Sat, 19 Jun 2010 11:08:51 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Andy Walls <awalls@md.metrocast.net>,
+       Daniel Walker <dwalker@codeaurora.org>, mingo@elte.hu,
+       linux-kernel@vger.kernel.org, jeff@garzik.org,
+       akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: Overview of concurrency managed workqueue
+Message-ID: <20100619090851.GF18946@basil.fritz.box>
+References: <1276694825.9309.12.camel@m0nster>
+ <4C18D1FD.9060804@kernel.org>
+ <1276695665.9309.17.camel@m0nster>
+ <4C18D574.1040903@kernel.org>
+ <1276697146.9309.27.camel@m0nster>
+ <1276776066.2461.15.camel@localhost>
+ <87vd9fo1sk.fsf@basil.nowhere.org>
+ <4C1C8263.9040404@kernel.org>
+ <87fx0jo0z6.fsf@basil.nowhere.org>
+ <4C1C8772.8090406@kernel.org>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Arjan van de Ven <arjan@infradead.org>, mingo@elte.hu, tglx@linutronix.de,
-       bphilips@suse.de, yinghai@kernel.org, akpm@linux-foundation.org,
-       torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, linux-ide@vger.kernel.org, stern@rowland.harvard.edu,
-       gregkh@suse.de, khali@linux-fr.org
-Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
-References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-10-git-send-email-tj@kernel.org> <20100616204854.4b036f87@infradead.org> <87zkyro1xl.fsf@basil.nowhere.org> <4C1C830B.5020806@kernel.org> <20100619090031.GE18946@basil.fritz.box>
-In-Reply-To: <20100619090031.GE18946@basil.fritz.box>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Jun 2010 09:03:25 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C1C8772.8090406@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> I see.  The thing is that if you have "as soon as possible" + "high
+> priority", you're basically required to have a dedicated worker or
+> dedicated pool of them.  Making cmwq to support some level of priority
+> definitely is possible (multiple prioritized queues or pushing work at
+> the front at the simplest) but for such emergency works it doesn't
+> make sense to share the usual worker pool, as resource pressure can
+> easily make any work wait regardless of where they're in the queue.
 
-On 06/19/2010 11:00 AM, Andi Kleen wrote:
->> IIUC, it's not to help or optimize polling itself.  It just gives us a
->> way to estimate when the next interrupt would be so that power can be
->> optimized for non polling cases.
-> 
-> Shouldn't the idle governour estimate this already?
+I think it's reasonable to just put on front. The individual
+items shouldn't take that long, right?
 
-I'm not an expert on the subject.  According to Arjan,
+(in fact I have an older patch for work queues which implemented
+that) 
 
-  One of the hard cases right now that the C state code has is that it
-  needs to predict the future. While it has a ton of heuristics,
-  including some is there IO oustanding" ones, libata is a really good
-  case: libata will know generally that within one seek time (5 msec
-  on rotating rust, much less on floating electrons) there'll be an
-  interrupt (give or take, but this is what we can do heuristics for
-  on a per irq level).  So it's a good suggestion of what the future
-  will be like, MUCH better than any hint we have right now... all we
-  have right now is some history, and when the next timer is....
+> If there are multiple of such use cases, it would make sense to create
+> a prioritized worker pools along with prioritized per-cpu queues but
+> if there are only a few of them, I think it makes more sense to use
+> dedicated threads for them.  Do those threads need to be per-cpu?
 
-So, it seems like it would help.
+Not strictly, although it might be useful on a error flood when
+a whole DIMM goes bad.
 
-Thanks.
+-Andi
 
 -- 
-tejun
+ak@linux.intel.com -- Speaking for myself only.
