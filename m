@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab0FSFLn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 01:11:43 -0400
-Received: from smtp-out-037.synserver.de ([212.40.180.37]:1055 "HELO
+	id S1755221Ab0FSFMA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 01:12:00 -0400
+Received: from smtp-out-037.synserver.de ([212.40.180.37]:1049 "HELO
 	smtp-out-036.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1753195Ab0FSFLj (ORCPT
+	by vger.kernel.org with SMTP id S1755061Ab0FSFLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 01:11:39 -0400
+	Sat, 19 Jun 2010 01:11:33 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 13414
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
-Subject: [PATCH v2 26/26] alsa: ASoC: JZ4740: Add qi_lb60 board driver
-Date: Sat, 19 Jun 2010 07:08:31 +0200
-Message-Id: <1276924111-11158-27-git-send-email-lars@metafoo.de>
+       Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH v2 25/26] MIPS: JZ4740: Add qi_lb60 board support
+Date: Sat, 19 Jun 2010 07:08:30 +0200
+Message-Id: <1276924111-11158-26-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1276924111-11158-1-git-send-email-lars@metafoo.de>
 References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
@@ -26,278 +24,539 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds ASoC support for the qi_lb60 board.
+This patch adds support for the qi_lb60 (a.k.a QI Ben NanoNote) clamshell
+device.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: alsa-devel@alsa-project.org
 
 ---
 Changes since v1
-- Refer to AMP gpios always by their define
-- Do not try to set codecs format, since the set_fmt callback for the codec was
-  dropped.
+- Register jz4740 pcm device
+- Battery device is now registered by the ADC MFD device
 ---
- sound/soc/jz4740/Kconfig      |    9 ++
- sound/soc/jz4740/Makefile     |    4 +
- sound/soc/jz4740/jz4740-pcm.c |   25 ++++++-
- sound/soc/jz4740/qi_lb60.c    |  167 +++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 203 insertions(+), 2 deletions(-)
- create mode 100644 sound/soc/jz4740/qi_lb60.c
+ arch/mips/jz4740/Kconfig         |    4 +
+ arch/mips/jz4740/Makefile        |    2 +
+ arch/mips/jz4740/board-qi_lb60.c |  483 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 489 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/jz4740/board-qi_lb60.c
 
-diff --git a/sound/soc/jz4740/Kconfig b/sound/soc/jz4740/Kconfig
-index 27480f2..5351cba 100644
---- a/sound/soc/jz4740/Kconfig
-+++ b/sound/soc/jz4740/Kconfig
-@@ -12,3 +12,12 @@ config SND_JZ4740_SOC_I2S
- 	help
- 	  Say Y if you want to use I2S protocol and I2S codec on Ingenic JZ4740
- 	  based boards.
+diff --git a/arch/mips/jz4740/Kconfig b/arch/mips/jz4740/Kconfig
+index 8a5e850..3e7141f 100644
+--- a/arch/mips/jz4740/Kconfig
++++ b/arch/mips/jz4740/Kconfig
+@@ -1,6 +1,10 @@
+ choice
+ 	prompt "Machine type"
+ 	depends on MACH_JZ4740
++	default JZ4740_QI_LB60
 +
-+config SND_JZ4740_SOC_QI_LB60
-+	tristate "SoC Audio support for Qi LB60"
-+	depends on SND_JZ4740_SOC && JZ4740_QI_LB60
-+	select SND_JZ4740_SOC_I2S
-+    select SND_SOC_JZ4740_CODEC
-+	help
-+	  Say Y if you want to add support for ASoC audio on the Qi LB60 board
-+	  a.k.a Qi Ben NanoNote.
-diff --git a/sound/soc/jz4740/Makefile b/sound/soc/jz4740/Makefile
-index 1be8d19..be873c1 100644
---- a/sound/soc/jz4740/Makefile
-+++ b/sound/soc/jz4740/Makefile
-@@ -7,3 +7,7 @@ snd-soc-jz4740-i2s-objs := jz4740-i2s.o
- obj-$(CONFIG_SND_JZ4740_SOC) += snd-soc-jz4740.o
- obj-$(CONFIG_SND_JZ4740_SOC_I2S) += snd-soc-jz4740-i2s.o
++config JZ4740_QI_LB60
++	bool "Qi Hardware Ben NanoNote"
  
-+# Jz4740 Machine Support
-+snd-soc-qi-lb60-objs := qi_lb60.o
-+
-+obj-$(CONFIG_SND_JZ4740_SOC_QI_LB60) += snd-soc-qi-lb60.o
-diff --git a/sound/soc/jz4740/jz4740-pcm.c b/sound/soc/jz4740/jz4740-pcm.c
-index 67b6cf2..ee68d85 100644
---- a/sound/soc/jz4740/jz4740-pcm.c
-+++ b/sound/soc/jz4740/jz4740-pcm.c
-@@ -16,6 +16,7 @@
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/platform_device.h>
- #include <linux/slab.h>
+ endchoice
  
- #include <linux/dma-mapping.h>
-@@ -335,15 +336,35 @@ struct snd_soc_platform jz4740_soc_platform = {
- };
- EXPORT_SYMBOL_GPL(jz4740_soc_platform);
+diff --git a/arch/mips/jz4740/Makefile b/arch/mips/jz4740/Makefile
+index a803ccb..a604eae 100644
+--- a/arch/mips/jz4740/Makefile
++++ b/arch/mips/jz4740/Makefile
+@@ -11,6 +11,8 @@ obj-$(CONFIG_DEBUG_FS) += clock-debugfs.o
  
--static int __init jz4740_soc_platform_init(void)
-+static int __devinit jz4740_pcm_probe(struct platform_device *pdev)
- {
- 	return snd_soc_register_platform(&jz4740_soc_platform);
- }
+ # board specific support
+ 
++obj-$(CONFIG_JZ4740_QI_LB60)	+= board-qi_lb60.o
 +
-+static int __devexit jz4740_pcm_remove(struct platform_device *pdev)
-+{
-+	snd_soc_unregister_platform(&jz4740_soc_platform);
-+	return 0;
-+}
+ # PM support
+ 
+ obj-$(CONFIG_PM) += pm.o
+diff --git a/arch/mips/jz4740/board-qi_lb60.c b/arch/mips/jz4740/board-qi_lb60.c
+new file mode 100644
+index 0000000..77b191a
+--- /dev/null
++++ b/arch/mips/jz4740/board-qi_lb60.c
+@@ -0,0 +1,483 @@
++/*
++ * linux/arch/mips/jz4740/board-qi_lb60.c
++ *
++ * QI_LB60 board support
++ *
++ * Copyright (c) 2009 Qi Hardware inc.,
++ * Author: Xiangfu Liu <xiangfu@qi-hardware.com>
++ * Copyright 2010, Lars-Petrer Clausen <lars@metafoo.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 or later
++ * as published by the Free Software Foundation.
++ */
 +
-+static struct platform_driver jz4740_pcm_driver = {
-+	.probe = jz4740_pcm_probe,
-+	.remove = __devexit_p(jz4740_pcm_remove),
-+	.driver = {
-+		.name = "jz4740-pcm",
-+		.owner = THIS_MODULE,
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/gpio.h>
++
++#include <linux/input.h>
++#include <linux/gpio_keys.h>
++#include <linux/mtd/jz4740_nand.h>
++#include <linux/jz4740_fb.h>
++#include <linux/input/matrix_keypad.h>
++#include <linux/mtd/jz4740_nand.h>
++#include <linux/spi/spi.h>
++#include <linux/spi/spi_gpio.h>
++#include <linux/power_supply.h>
++#include <linux/power/jz4740-battery.h>
++#include <linux/mmc/jz4740_mmc.h>
++
++#include <linux/regulator/fixed.h>
++#include <linux/regulator/machine.h>
++
++#include <linux/leds_pwm.h>
++
++#include <asm/mach-jz4740/platform.h>
++
++#include "clock.h"
++
++static bool is_avt2;
++
++/* GPIOs */
++#define QI_LB60_GPIO_SD_CD		JZ_GPIO_PORTD(0)
++#define QI_LB60_GPIO_SD_VCC_EN_N	JZ_GPIO_PORTD(2)
++
++#define QI_LB60_GPIO_KEYOUT(x)		(JZ_GPIO_PORTC(10) + (x))
++#define QI_LB60_GPIO_KEYIN(x)		(JZ_GPIO_PORTD(18) + (x))
++#define QI_LB60_GPIO_KEYIN8		JZ_GPIO_PORTD(26)
++
++/* NAND */
++static struct nand_ecclayout qi_lb60_ecclayout_1gb = {
++/*	.eccbytes = 36,
++	.eccpos = {
++		6,  7,  8,  9,  10, 11, 12, 13,
++		14, 15, 16, 17, 18, 19, 20, 21,
++		22, 23, 24, 25, 26, 27, 28, 29,
++		30, 31, 32, 33, 34, 35, 36, 37,
++		38, 39, 40, 41
++	},*/
++	.oobfree = {
++		{ .offset = 2, .length = 4 },
++		{ .offset = 42, .length = 22 }
 +	},
 +};
 +
-+static int __init jz4740_soc_platform_init(void)
++/* Early prototypes of the QI LB60 had only 1GB of NAND.
++ * In order to support these devices aswell the partition and ecc layout is
++ * initalized depending on the NAND size */
++static struct mtd_partition qi_lb60_partitions_1gb[] = {
++	{
++		.name = "NAND BOOT partition",
++		.offset = 0 * 0x100000,
++		.size = 4 * 0x100000,
++	},
++	{
++		.name = "NAND KERNEL partition",
++		.offset = 4 * 0x100000,
++		.size = 4 * 0x100000,
++	},
++	{
++		.name = "NAND ROOTFS partition",
++		.offset = 8 * 0x100000,
++		.size = (504 + 512) * 0x100000,
++	},
++};
++
++static struct nand_ecclayout qi_lb60_ecclayout_2gb = {
++/*	.eccbytes = 72,
++	.eccpos = {
++		12, 13, 14, 15, 16, 17, 18, 19,
++		20, 21, 22, 23, 24, 25, 26, 27,
++		28, 29, 30, 31, 32, 33, 34, 35,
++		36, 37, 38, 39, 40, 41, 42, 43,
++		44, 45, 46, 47, 48, 49, 50, 51,
++		52, 53, 54, 55, 56, 57, 58, 59,
++		60, 61, 62, 63, 64, 65, 66, 67,
++		68, 69, 70, 71, 72, 73, 74, 75,
++		76, 77, 78, 79, 80, 81, 82, 83
++	},*/
++	.oobfree = {
++		{ .offset = 2, .length = 10 },
++		{ .offset = 84, .length = 44 },
++	},
++};
++
++static struct mtd_partition qi_lb60_partitions_2gb[] = {
++	{
++		.name = "NAND BOOT partition",
++		.offset = 0 * 0x100000,
++		.size = 4 * 0x100000,
++	},
++	{
++		.name = "NAND KERNEL partition",
++		.offset = 4 * 0x100000,
++		.size = 4 * 0x100000,
++	},
++	{
++		.name = "NAND ROOTFS partition",
++		.offset = 8 * 0x100000,
++		.size = (504 + 512 + 1024) * 0x100000,
++	},
++};
++
++static void qi_lb60_nand_ident(struct platform_device *pdev,
++		struct nand_chip *chip, struct mtd_partition **partitions,
++		int *num_partitions)
 +{
-+	return platform_driver_register(&jz4740_pcm_driver);
++	if (chip->page_shift == 12) {
++		chip->ecc.layout = &qi_lb60_ecclayout_2gb;
++		*partitions = qi_lb60_partitions_2gb;
++		*num_partitions = ARRAY_SIZE(qi_lb60_partitions_2gb);
++	} else {
++		chip->ecc.layout = &qi_lb60_ecclayout_1gb;
++		*partitions = qi_lb60_partitions_1gb;
++		*num_partitions = ARRAY_SIZE(qi_lb60_partitions_1gb);
++	}
 +}
- module_init(jz4740_soc_platform_init);
- 
- static void __exit jz4740_soc_platform_exit(void)
- {
--	snd_soc_unregister_platform(&jz4740_soc_platform);
-+	return platform_driver_unregister(&jz4740_pcm_driver);
- }
- module_exit(jz4740_soc_platform_exit);
- 
-diff --git a/sound/soc/jz4740/qi_lb60.c b/sound/soc/jz4740/qi_lb60.c
-new file mode 100644
-index 0000000..829bc45
---- /dev/null
-+++ b/sound/soc/jz4740/qi_lb60.c
-@@ -0,0 +1,167 @@
-+/*
-+ * Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
 +
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/timer.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <sound/core.h>
-+#include <sound/pcm.h>
-+#include <sound/soc.h>
-+#include <sound/soc-dapm.h>
-+#include <linux/gpio.h>
++static struct jz_nand_platform_data qi_lb60_nand_pdata = {
++	.ident_callback = qi_lb60_nand_ident,
++	.busy_gpio = 94,
++};
 +
-+#include "../codecs/jz4740-codec.h"
-+#include "jz4740-pcm.h"
-+#include "jz4740-i2s.h"
++/* Keyboard*/
 +
++#define KEY_QI_QI	KEY_F13
++#define KEY_QI_UPRED	KEY_RIGHTALT
++#define KEY_QI_VOLUP	KEY_VOLUMEUP
++#define KEY_QI_VOLDOWN	KEY_VOLUMEDOWN
++#define KEY_QI_FN	KEY_LEFTCTRL
 +
-+#define QI_LB60_SND_GPIO JZ_GPIO_PORTB(29)
-+#define QI_LB60_AMP_GPIO JZ_GPIO_PORTD(4)
++static const uint32_t qi_lb60_keymap[] = {
++	KEY(0, 0, KEY_F1),	/* S2 */
++	KEY(0, 1, KEY_F2),	/* S3 */
++	KEY(0, 2, KEY_F3),	/* S4 */
++	KEY(0, 3, KEY_F4),	/* S5 */
++	KEY(0, 4, KEY_F5),	/* S6 */
++	KEY(0, 5, KEY_F6),	/* S7 */
++	KEY(0, 6, KEY_F7),	/* S8 */
 +
-+static int qi_lb60_spk_event(struct snd_soc_dapm_widget *widget,
-+			     struct snd_kcontrol *ctrl, int event)
++	KEY(1, 0, KEY_Q),	/* S10 */
++	KEY(1, 1, KEY_W),	/* S11 */
++	KEY(1, 2, KEY_E),	/* S12 */
++	KEY(1, 3, KEY_R),	/* S13 */
++	KEY(1, 4, KEY_T),	/* S14 */
++	KEY(1, 5, KEY_Y),	/* S15 */
++	KEY(1, 6, KEY_U),	/* S16 */
++	KEY(1, 7, KEY_I),	/* S17 */
++	KEY(2, 0, KEY_A),	/* S18 */
++	KEY(2, 1, KEY_S),	/* S19 */
++	KEY(2, 2, KEY_D),	/* S20 */
++	KEY(2, 3, KEY_F),	/* S21 */
++	KEY(2, 4, KEY_G),	/* S22 */
++	KEY(2, 5, KEY_H),	/* S23 */
++	KEY(2, 6, KEY_J),	/* S24 */
++	KEY(2, 7, KEY_K),	/* S25 */
++	KEY(3, 0, KEY_ESC),	/* S26 */
++	KEY(3, 1, KEY_Z),	/* S27 */
++	KEY(3, 2, KEY_X),	/* S28 */
++	KEY(3, 3, KEY_C),	/* S29 */
++	KEY(3, 4, KEY_V),	/* S30 */
++	KEY(3, 5, KEY_B),	/* S31 */
++	KEY(3, 6, KEY_N),	/* S32 */
++	KEY(3, 7, KEY_M),	/* S33 */
++	KEY(4, 0, KEY_TAB),	/* S34 */
++	KEY(4, 1, KEY_CAPSLOCK),	/* S35 */
++	KEY(4, 2, KEY_BACKSLASH),	/* S36 */
++	KEY(4, 3, KEY_APOSTROPHE),	/* S37 */
++	KEY(4, 4, KEY_COMMA),	/* S38 */
++	KEY(4, 5, KEY_DOT),	/* S39 */
++	KEY(4, 6, KEY_SLASH),	/* S40 */
++	KEY(4, 7, KEY_UP),	/* S41 */
++	KEY(5, 0, KEY_O),	/* S42 */
++	KEY(5, 1, KEY_L),	/* S43 */
++	KEY(5, 2, KEY_EQUAL),	/* S44 */
++	KEY(5, 3, KEY_QI_UPRED),	/* S45 */
++	KEY(5, 4, KEY_SPACE),	/* S46 */
++	KEY(5, 5, KEY_QI_QI),	/* S47 */
++	KEY(5, 6, KEY_RIGHTCTRL),	/* S48 */
++	KEY(5, 7, KEY_LEFT),	/* S49 */
++	KEY(6, 0, KEY_F8),	/* S50 */
++	KEY(6, 1, KEY_P),	/* S51 */
++	KEY(6, 2, KEY_BACKSPACE),/* S52 */
++	KEY(6, 3, KEY_ENTER),	/* S53 */
++	KEY(6, 4, KEY_QI_VOLUP),	/* S54 */
++	KEY(6, 5, KEY_QI_VOLDOWN),	/* S55 */
++	KEY(6, 6, KEY_DOWN),	/* S56 */
++	KEY(6, 7, KEY_RIGHT),	/* S57 */
++
++	KEY(7, 0, KEY_LEFTSHIFT),	/* S58 */
++	KEY(7, 1, KEY_LEFTALT),	/* S59 */
++	KEY(7, 2, KEY_QI_FN),	/* S60 */
++};
++
++static const struct matrix_keymap_data qi_lb60_keymap_data = {
++	.keymap		= qi_lb60_keymap,
++	.keymap_size	= ARRAY_SIZE(qi_lb60_keymap),
++};
++
++static const unsigned int qi_lb60_keypad_cols[] = {
++	QI_LB60_GPIO_KEYOUT(0),
++	QI_LB60_GPIO_KEYOUT(1),
++	QI_LB60_GPIO_KEYOUT(2),
++	QI_LB60_GPIO_KEYOUT(3),
++	QI_LB60_GPIO_KEYOUT(4),
++	QI_LB60_GPIO_KEYOUT(5),
++	QI_LB60_GPIO_KEYOUT(6),
++	QI_LB60_GPIO_KEYOUT(7),
++};
++
++static const unsigned int qi_lb60_keypad_rows[] = {
++	QI_LB60_GPIO_KEYIN(0),
++	QI_LB60_GPIO_KEYIN(1),
++	QI_LB60_GPIO_KEYIN(2),
++	QI_LB60_GPIO_KEYIN(3),
++	QI_LB60_GPIO_KEYIN(4),
++	QI_LB60_GPIO_KEYIN(5),
++	QI_LB60_GPIO_KEYIN(7),
++	QI_LB60_GPIO_KEYIN8,
++};
++
++static struct matrix_keypad_platform_data qi_lb60_pdata = {
++	.keymap_data = &qi_lb60_keymap_data,
++	.col_gpios	= qi_lb60_keypad_cols,
++	.row_gpios	= qi_lb60_keypad_rows,
++	.num_col_gpios	= ARRAY_SIZE(qi_lb60_keypad_cols),
++	.num_row_gpios	= ARRAY_SIZE(qi_lb60_keypad_rows),
++	.col_scan_delay_us	= 10,
++	.debounce_ms		= 10,
++	.wakeup			= 1,
++	.active_low		= 1,
++};
++
++static struct platform_device qi_lb60_keypad = {
++	.name		= "matrix-keypad",
++	.id		= -1,
++	.dev		= {
++		.platform_data = &qi_lb60_pdata,
++	},
++};
++
++/* Display */
++static struct fb_videomode qi_lb60_video_modes[] = {
++	{
++		.name = "320x240",
++		.xres = 320,
++		.yres = 240,
++		.refresh = 30,
++		.left_margin = 140,
++		.right_margin = 273,
++		.upper_margin = 20,
++		.lower_margin = 2,
++		.hsync_len = 1,
++		.vsync_len = 1,
++		.sync = 0,
++		.vmode = FB_VMODE_NONINTERLACED,
++	},
++};
++
++static struct jz4740_fb_platform_data qi_lb60_fb_pdata = {
++	.width		= 60,
++	.height		= 45,
++	.num_modes	= ARRAY_SIZE(qi_lb60_video_modes),
++	.modes		= qi_lb60_video_modes,
++	.bpp		= 24,
++	.lcd_type	= JZ_LCD_TYPE_8BIT_SERIAL,
++	.pixclk_falling_edge = 1,
++};
++
++struct spi_gpio_platform_data spigpio_platform_data = {
++	.sck = JZ_GPIO_PORTC(23),
++	.mosi = JZ_GPIO_PORTC(22),
++	.miso = -1,
++	.num_chipselect = 1,
++};
++
++static struct platform_device spigpio_device = {
++	.name = "spi_gpio",
++	.id   = 1,
++	.dev = {
++		.platform_data = &spigpio_platform_data,
++	},
++};
++
++static struct spi_board_info qi_lb60_spi_board_info[] = {
++	{
++		.modalias = "ili8960",
++		.controller_data = (void *)JZ_GPIO_PORTC(21),
++		.chip_select = 0,
++		.bus_num = 1,
++		.max_speed_hz = 30 * 1000,
++		.mode = SPI_3WIRE,
++	},
++};
++
++/* Battery */
++static struct jz_battery_platform_data qi_lb60_battery_pdata = {
++	.gpio_charge =  JZ_GPIO_PORTC(27),
++	.gpio_charge_active_low = 1,
++	.info = {
++		.name = "battery",
++		.technology = POWER_SUPPLY_TECHNOLOGY_LIPO,
++		.voltage_max_design = 4200000,
++		.voltage_min_design = 3600000,
++	},
++};
++
++/* GPIO Key: power */
++static struct gpio_keys_button qi_lb60_gpio_keys_buttons[] = {
++	[0] = {
++		.code		= KEY_POWER,
++		.gpio		= JZ_GPIO_PORTD(29),
++		.active_low	= 1,
++		.desc		= "Power",
++		.wakeup		= 1,
++	},
++};
++
++static struct gpio_keys_platform_data qi_lb60_gpio_keys_data = {
++	.nbuttons = ARRAY_SIZE(qi_lb60_gpio_keys_buttons),
++	.buttons = qi_lb60_gpio_keys_buttons,
++};
++
++static struct platform_device qi_lb60_gpio_keys = {
++	.name =	"gpio-keys",
++	.id =	-1,
++	.dev = {
++		.platform_data = &qi_lb60_gpio_keys_data,
++	}
++};
++
++static struct jz4740_mmc_platform_data qi_lb60_mmc_pdata = {
++	.gpio_card_detect	= QI_LB60_GPIO_SD_CD,
++	.gpio_read_only		= -1,
++	.gpio_power		= QI_LB60_GPIO_SD_VCC_EN_N,
++	.power_active_low	= 1,
++};
++
++/* OHCI */
++static struct regulator_consumer_supply avt2_usb_regulator_consumer =
++	REGULATOR_SUPPLY("vbus", "jz4740-ohci");
++
++static struct regulator_init_data avt2_usb_regulator_init_data = {
++	.num_consumer_supplies = 1,
++	.consumer_supplies = &avt2_usb_regulator_consumer,
++	.constraints = {
++		.name = "USB power",
++		.min_uV = 5000000,
++		.max_uV = 5000000,
++		.valid_modes_mask = REGULATOR_MODE_NORMAL,
++		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++	},
++};
++
++static struct fixed_voltage_config avt2_usb_regulator_data = {
++	.supply_name = "USB power",
++	.microvolts = 5000000,
++	.gpio = JZ_GPIO_PORTB(17),
++	.init_data = &avt2_usb_regulator_init_data,
++};
++
++static struct platform_device avt2_usb_regulator_device = {
++	.name = "reg-fixed-voltage",
++	.id = -1,
++	.dev = {
++		.platform_data = &avt2_usb_regulator_data,
++	}
++};
++
++/* pizo */
++static struct led_pwm qi_lb60_pizo_led = {
++	.name = "nanonote::pizo",
++	.pwm_id = 4,
++	.max_brightness = 255,
++	.pwm_period_ns = 1000000,
++};
++
++static struct led_pwm_platform_data qi_lb60_pizo_data = {
++	.num_leds = 1,
++	.leds = &qi_lb60_pizo_led,
++};
++
++static struct platform_device qi_lb60_pizo_device = {
++	.name = "leds_pwm",
++	.id = -1,
++	.dev = {
++		.platform_data = &qi_lb60_pizo_data,
++	}
++};
++
++static struct platform_device *jz_platform_devices[] __initdata = {
++	&jz4740_udc_device,
++	&jz4740_mmc_device,
++	&jz4740_nand_device,
++	&qi_lb60_keypad,
++	&spigpio_device,
++	&jz4740_framebuffer_device,
++	&jz4740_pcm_device,
++	&jz4740_i2s_device,
++	&jz4740_codec_device,
++	&jz4740_rtc_device,
++	&jz4740_adc_device,
++	&qi_lb60_gpio_keys,
++	&qi_lb60_pizo_device,
++};
++
++static void __init board_gpio_setup(void)
 +{
-+	int on = 0;
-+	if (event & SND_SOC_DAPM_POST_PMU)
-+		on = 1;
-+	else if (event & SND_SOC_DAPM_PRE_PMD)
-+		on = 0;
++	/* We only need to enable/disable pullup here for pins used in generic
++	 * drivers. Everything else is done by the drivers themselfs. */
++	jz_gpio_disable_pullup(QI_LB60_GPIO_SD_VCC_EN_N);
++	jz_gpio_disable_pullup(QI_LB60_GPIO_SD_CD);
++}
 +
-+	gpio_set_value(QI_LB60_SND_GPIO, on);
-+	gpio_set_value(QI_LB60_AMP_GPIO, on);
++static int __init qi_lb60_init_platform_devices(void)
++{
++	jz4740_framebuffer_device.dev.platform_data = &qi_lb60_fb_pdata;
++	jz4740_nand_device.dev.platform_data = &qi_lb60_nand_pdata;
++	jz4740_adc_device.dev.platform_data = &qi_lb60_battery_pdata;
++	jz4740_mmc_device.dev.platform_data = &qi_lb60_mmc_pdata;
++
++	jz4740_serial_device_register();
++
++	spi_register_board_info(qi_lb60_spi_board_info,
++				ARRAY_SIZE(qi_lb60_spi_board_info));
++
++	if (is_avt2) {
++		platform_device_register(&avt2_usb_regulator_device);
++		platform_device_register(&jz4740_usb_ohci_device);
++	}
++
++	return platform_add_devices(jz_platform_devices,
++					ARRAY_SIZE(jz_platform_devices));
++
++}
++
++struct jz4740_clock_board_data jz4740_clock_bdata = {
++	.ext_rate = 12000000,
++	.rtc_rate = 32768,
++};
++
++static __init int board_avt2(char *str)
++{
++	qi_lb60_mmc_pdata.card_detect_active_low = 1;
++	is_avt2 = true;
++
++	return 1;
++}
++__setup("avt2", board_avt2);
++
++static int __init qi_lb60_board_setup(void)
++{
++	printk(KERN_INFO "Qi Hardware JZ4740 QI %s setup\n",
++		is_avt2 ? "AVT2" : "LB60");
++
++	board_gpio_setup();
++
++	if (qi_lb60_init_platform_devices())
++		panic("Failed to initalize platform devices\n");
 +
 +	return 0;
 +}
-+
-+static const struct snd_soc_dapm_widget qi_lb60_widgets[] = {
-+	SND_SOC_DAPM_SPK("Speaker", qi_lb60_spk_event),
-+	SND_SOC_DAPM_MIC("Mic", NULL),
-+};
-+
-+static const struct snd_soc_dapm_route qi_lb60_routes[] = {
-+	{"Mic", NULL, "MIC"},
-+	{"Speaker", NULL, "LOUT"},
-+	{"Speaker", NULL, "ROUT"},
-+};
-+
-+#define QI_LB60_DAIFMT (SND_SOC_DAIFMT_I2S | \
-+			SND_SOC_DAIFMT_NB_NF | \
-+			SND_SOC_DAIFMT_CBM_CFM)
-+
-+static int qi_lb60_codec_init(struct snd_soc_codec *codec)
-+{
-+	int ret;
-+	struct snd_soc_dai *cpu_dai = codec->socdev->card->dai_link->cpu_dai;
-+	struct snd_soc_dai *codec_dai = codec->socdev->card->dai_link->codec_dai;
-+
-+	snd_soc_dapm_nc_pin(codec, "LIN");
-+	snd_soc_dapm_nc_pin(codec, "RIN");
-+
-+	ret = snd_soc_dai_set_fmt(cpu_dai, QI_LB60_DAIFMT);
-+	if (ret < 0) {
-+		dev_err(codec->dev, "Failed to set cpu dai format: %d\n", ret);
-+		return ret;
-+	}
-+
-+	snd_soc_dapm_new_controls(codec, qi_lb60_widgets, ARRAY_SIZE(qi_lb60_widgets));
-+	snd_soc_dapm_add_routes(codec, qi_lb60_routes, ARRAY_SIZE(qi_lb60_routes));
-+	snd_soc_dapm_sync(codec);
-+
-+	return 0;
-+}
-+
-+static struct snd_soc_dai_link qi_lb60_dai = {
-+	.name = "jz4740",
-+	.stream_name = "jz4740",
-+	.cpu_dai = &jz4740_i2s_dai,
-+	.codec_dai = &jz4740_codec_dai,
-+	.init = qi_lb60_codec_init,
-+};
-+
-+static struct snd_soc_card qi_lb60 = {
-+	.name = "QI LB60",
-+	.dai_link = &qi_lb60_dai,
-+	.num_links = 1,
-+	.platform = &jz4740_soc_platform,
-+};
-+
-+static struct snd_soc_device qi_lb60_snd_devdata = {
-+	.card = &qi_lb60,
-+	.codec_dev = &soc_codec_dev_jz4740_codec,
-+};
-+
-+static struct platform_device *qi_lb60_snd_device;
-+
-+static int __init qi_lb60_init(void)
-+{
-+	int ret;
-+
-+	qi_lb60_snd_device = platform_device_alloc("soc-audio", -1);
-+
-+	if (!qi_lb60_snd_device)
-+		return -ENOMEM;
-+
-+	ret = gpio_request(QI_LB60_SND_GPIO, "SND");
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to request SND GPIO(%d): %d\n",
-+				QI_LB60_SND_GPIO, ret);
-+		goto err_device_put;
-+	}
-+
-+	ret = gpio_request(QI_LB60_AMP_GPIO, "AMP");
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to request AMP GPIO(%d): %d\n",
-+				QI_LB60_AMP_GPIO, ret);
-+		goto err_gpio_free_snd;
-+	}
-+
-+	gpio_direction_output(QI_LB60_SND_GPIO, 0);
-+	gpio_direction_output(QI_LB60_AMP_GPIO, 0);
-+
-+	platform_set_drvdata(qi_lb60_snd_device, &qi_lb60_snd_devdata);
-+	qi_lb60_snd_devdata.dev = &qi_lb60_snd_device->dev;
-+
-+	ret = platform_device_add(qi_lb60_snd_device);
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to add snd soc device: %d\n", ret);
-+		goto err_unset_pdata;
-+	}
-+
-+	 return 0;
-+
-+err_unset_pdata:
-+	platform_set_drvdata(qi_lb60_snd_device, NULL);
-+/*err_gpio_free_amp:*/
-+	gpio_free(QI_LB60_AMP_GPIO);
-+err_gpio_free_snd:
-+	gpio_free(QI_LB60_SND_GPIO);
-+err_device_put:
-+	platform_device_put(qi_lb60_snd_device);
-+
-+	return ret;
-+}
-+module_init(qi_lb60_init);
-+
-+static void __exit qi_lb60_exit(void)
-+{
-+	gpio_free(QI_LB60_AMP_GPIO);
-+	gpio_free(QI_LB60_SND_GPIO);
-+	platform_device_unregister(qi_lb60_snd_device);
-+}
-+module_exit(qi_lb60_exit);
-+
-+MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-+MODULE_DESCRIPTION("ALSA SoC QI LB60 Audio support");
-+MODULE_LICENSE("GPL v2");
++arch_initcall(qi_lb60_board_setup);
 -- 
 1.5.6.5
 
