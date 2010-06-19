@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab0FSMtG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 08:49:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48775 "EHLO hera.kernel.org"
+	id S1755766Ab0FSMzp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 08:55:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55669 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753320Ab0FSMtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 08:49:04 -0400
-Message-ID: <4C1CBC8C.8060004@kernel.org>
-Date: Sat, 19 Jun 2010 14:48:12 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1755667Ab0FSMzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 08:55:43 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dave Airlie <airlied@redhat.com>
+Subject: Re: [PATCH] DRM / radeon / PM: Do not evict VRAM during freeze phase of hibernation
+Date: Sat, 19 Jun 2010 14:53:58 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+       "dri-devel" <dri-devel@lists.freedesktop.org>,
+       linux-pm@lists.linux-foundation.org,
+       Alex Deucher <alexdeucher@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ondrej Zary <linux@rainbow-software.org>
+References: <201006182221.57333.rjw@sisk.pl> <201006190123.00694.rjw@sisk.pl> <1276904995.6513.7.camel@t60prh>
+In-Reply-To: <1276904995.6513.7.camel@t60prh>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Andy Walls <awalls@md.metrocast.net>,
-       Daniel Walker <dwalker@codeaurora.org>, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, jeff@garzik.org,
-       akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-Subject: Re: Overview of concurrency managed workqueue
-References: <87vd9fo1sk.fsf@basil.nowhere.org> <4C1C8263.9040404@kernel.org> <87fx0jo0z6.fsf@basil.nowhere.org> <4C1C8772.8090406@kernel.org> <20100619090851.GF18946@basil.fritz.box> <4C1C8A18.2030709@kernel.org> <20100619091518.GG18946@basil.fritz.box> <4C1C8B32.1040007@kernel.org> <20100619092758.GH18946@basil.fritz.box> <4C1C911B.6040601@kernel.org> <20100619122010.GI18946@basil.fritz.box>
-In-Reply-To: <20100619122010.GI18946@basil.fritz.box>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Jun 2010 12:48:13 +0000 (UTC)
+Message-Id: <201006191453.58379.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2010 02:20 PM, Andi Kleen wrote:
->> * Do machines ever report that many MCE errors?  The usual rate seems
->>   like one per weeks or months even when they're frequent.
+On Saturday, June 19, 2010, Dave Airlie wrote:
+> On Sat, 2010-06-19 at 01:23 +0200, Rafael J. Wysocki wrote:
+> > On Friday, June 18, 2010, Dave Airlie wrote:
+> > > On Fri, 2010-06-18 at 22:21 +0200, Rafael J. Wysocki wrote:
+> > > > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > > > 
+> > > > I have recently noticed a 55 sec. delay during the "device freeze"
+> > > > phase of hibernation on my test-bed HP nx6325.  Due to the 100%
+> > > > reproducibility of it I was able to narrow it down to
+> > > > radeon_suspend_kms() and then it turned out that the delay occured
+> > > > somewhere in radeon_bo_evict_vram().  However, it doesn't seem really
+> > > > necessary or even very useful to me to evict VRAM at this particular
+> > > > point, because we're going to create an image and bring the device
+> > > > back to the fully functional state in a little while.  Thus, I think
+> > > > the VRAM evicition can be skipped for state.event == PM_EVENT_FREEZE,
+> > > > which makes the delay go away.
+> > > 
+> > > I'm not 100% sure of the hibernate sequencing and its early in the
+> > > morning, but we want to evict VRAM before image building so we can have
+> > > the contents of VRAM in the image so we can restore them on resume. Does
+> > > this just avoid evicting them a second time after we created the image?
+> > 
+> > No, it's the first time, before creating the image, but I didn't seen any
+> > difference on resume with and without the patch, so I thought it was a good
+> > idea. :-)
 > 
-> Yes you can even get a flood when the system or parts 
-> of the system is dying. There's some throttling in the error handling, 
-> but yes in some cases you can get high rates.
-> 
->> * If a machine is actually reporting enough errors to overwhelm single
->>   error handling thread, does it even matter what we do?
-> 
-> There are cases where you can have many errors but still survive.
+> On the machine you have its most likely not going to show up unless you
+> are running a 3D app or something across suspend, since currently X
+> re-exposes most apps on VT switch, so they just redraw.
 
-Alright, adding to todo list.
+Yes.  Moreover, hibernation is always done after a VT switch.  That's why
+I said I thought the eviction wasn't necessary in the changelog.
 
-Thanks.
+BTW, I have three different test boxes with radeon hardware and the
+$subject patch is not a problem on any of them.
 
--- 
-tejun
+> Was it always this slow?
+
+Nope.  It definitely is a regression, although I'm not sure what's the last
+good kernel.
+
+> you can see how many objects are in vram using
+> debugfs (/sys/kernel/debug/dri/0/radeon_vram_mm), it sounds like the TTM
+> eviction process is blocking on something,
+
+Yup.
+
+> we shouldn't be using any UC/WC memory on that machine so I can't imagine
+> the new pool allocator stuff would get in the way. Maybe its the lack of
+> GFP_USER, (Jerome posted a patch).
+
+Can you give me a pointer to that patch, please?
+
+Rafael
