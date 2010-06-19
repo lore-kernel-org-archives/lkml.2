@@ -1,64 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab0FSMcm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 08:32:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49787 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755571Ab0FSMcl (ORCPT
+	id S1755653Ab0FSMgb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 08:36:31 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:43841 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab0FSMga convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 08:32:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH] tty: avoid recursive BTM in pty_close
-Date: Sat, 19 Jun 2010 14:32:04 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.35-rc1-00033-gd4ce942-dirty; KDE/4.4.2; x86_64; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       Greg KH <gregkh@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-References: <1273957196-13768-1-git-send-email-arnd@arndb.de> <201006182035.17394.arnd@arndb.de> <AANLkTim4dHj_3ftAVD35DD-Cc7ZntHRi1YTRPup2wfJc@mail.gmail.com>
-In-Reply-To: <AANLkTim4dHj_3ftAVD35DD-Cc7ZntHRi1YTRPup2wfJc@mail.gmail.com>
+	Sat, 19 Jun 2010 08:36:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NW95tis7OStmFlSEHtjNRNcEzDdDEVSL1lgPiE3VsgcA3rkJZN/bNP5l6+ScHPZQaQ
+         SDdmjfZYytVzv3P2K25pBCtZAkiTdhgz+hxUBJoYd04SykDyPNtIp54YKJU33VXyo4L+
+         IBQfEPWEbstoFRdJ/cV9fuqFCAv4AzewjVvxU=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006191432.04685.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19ach5Q7Xpkj+As3Trb7e1URHU618nLp23X1ra
- sksYY++bB7qKQt366r/z4CDScOQOa+fXTfwPW+jIwqADg748ah
- ieJprEbhIjlCMU7x0KFgw==
+In-Reply-To: <20091208211647.9B032B151F@basil.firstfloor.org>
+References: <200912081016.198135742@firstfloor.org>
+	<20091208211647.9B032B151F@basil.firstfloor.org>
+Date: Sat, 19 Jun 2010 14:36:28 +0200
+X-Google-Sender-Auth: xxkGIXZ11VzsZOqOTO0M7F4rSno
+Message-ID: <AANLkTimBhQAYn7BDXd1ykSN90v0ClWybIe2Pe1qv_6vA@mail.gmail.com>
+Subject: Re: [PATCH] [31/31] HWPOISON: Add a madvise() injector for soft page 
+	offlining
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: fengguang.wu@intel.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Michael Kerrisk <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 June 2010 22:25:22 Tony Luck wrote:
-> On Fri, Jun 18, 2010 at 11:35 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > Do you know if this was a problem with the original series or
-> > something that got introduced by my last patch?
-> 
-> Problem was there before. Looks like it was not in next-20100616
-> but began with next-20100617.
+Hi Andi,
 
-Ok, so it's certainly in one of the patches from Alan or me.
+On Tue, Dec 8, 2009 at 11:16 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>
+> Process based injection is much easier to handle for test programs,
+> who can first bring a page into a specific state and then test.
+> So add a new MADV_SOFT_OFFLINE to soft offline a page, similar
+> to the existing hard offline injector.
 
-> > Also, if you don't mind, could you try if the problem also exists
-> > with CONFIG_TTY_MUTEX enabled?
-> With CONFIG_TTY_MUTEX=y kernel with both your patches builds
-> and boots with no unusual messages.  Application output still gets
-> garbled.
+I see that this made its way into 2.6.33. Could you write a short
+piece on it for the madvise.2 man page?
 
-ok.
- 
-> > Which serial driver do you use?
-> I boot with a "console=uart,io,0x3f8" argument, so I start out using
-> 8250_early.c. Looks like it switched to 8250.c based on seeing
-> this:
-> 
-> Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
-> 
-> on the console log.
+Thanks,
 
-Good, so it's something I should be able to reproduce on a PC.
+Michael
 
-	Arnd
+
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+>
+> ---
+>  include/asm-generic/mman-common.h |    1 +
+>  mm/madvise.c                      |   15 ++++++++++++---
+>  2 files changed, 13 insertions(+), 3 deletions(-)
+>
+> Index: linux/include/asm-generic/mman-common.h
+> ===================================================================
+> --- linux.orig/include/asm-generic/mman-common.h
+> +++ linux/include/asm-generic/mman-common.h
+> @@ -35,6 +35,7 @@
+>  #define MADV_DONTFORK  10              /* don't inherit across fork */
+>  #define MADV_DOFORK    11              /* do inherit across fork */
+>  #define MADV_HWPOISON  100             /* poison a page for testing */
+> +#define MADV_SOFT_OFFLINE 101          /* soft offline page for testing */
+>
+>  #define MADV_MERGEABLE   12            /* KSM may merge identical pages */
+>  #define MADV_UNMERGEABLE 13            /* KSM may not merge identical pages */
+> Index: linux/mm/madvise.c
+> ===================================================================
+> --- linux.orig/mm/madvise.c
+> +++ linux/mm/madvise.c
+> @@ -9,6 +9,7 @@
+>  #include <linux/pagemap.h>
+>  #include <linux/syscalls.h>
+>  #include <linux/mempolicy.h>
+> +#include <linux/page-isolation.h>
+>  #include <linux/hugetlb.h>
+>  #include <linux/sched.h>
+>  #include <linux/ksm.h>
+> @@ -222,7 +223,7 @@ static long madvise_remove(struct vm_are
+>  /*
+>  * Error injection support for memory error handling.
+>  */
+> -static int madvise_hwpoison(unsigned long start, unsigned long end)
+> +static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
+>  {
+>        int ret = 0;
+>
+> @@ -233,6 +234,14 @@ static int madvise_hwpoison(unsigned lon
+>                int ret = get_user_pages_fast(start, 1, 0, &p);
+>                if (ret != 1)
+>                        return ret;
+> +               if (bhv == MADV_SOFT_OFFLINE) {
+> +                       printk(KERN_INFO "Soft offlining page %lx at %lx\n",
+> +                               page_to_pfn(p), start);
+> +                       ret = soft_offline_page(p, MF_COUNT_INCREASED);
+> +                       if (ret)
+> +                               break;
+> +                       continue;
+> +               }
+>                printk(KERN_INFO "Injecting memory failure for page %lx at %lx\n",
+>                       page_to_pfn(p), start);
+>                /* Ignore return value for now */
+> @@ -333,8 +342,8 @@ SYSCALL_DEFINE3(madvise, unsigned long,
+>        size_t len;
+>
+>  #ifdef CONFIG_MEMORY_FAILURE
+> -       if (behavior == MADV_HWPOISON)
+> -               return madvise_hwpoison(start, start+len_in);
+> +       if (behavior == MADV_HWPOISON || behavior == MADV_SOFT_OFFLINE)
+> +               return madvise_hwpoison(behavior, start, start+len_in);
+>  #endif
+>        if (!madvise_behavior_valid(behavior))
+>                return error;
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+
+
+
+-- 
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
