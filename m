@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab0FSMpN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 08:45:13 -0400
-Received: from mail.deathmatch.net ([72.66.92.28]:3122 "EHLO
-	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755633Ab0FSMpL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 08:45:11 -0400
-Date: Sat, 19 Jun 2010 08:38:41 -0400
-From: Bob Copeland <me@bobcopeland.com>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, ath5k-devel@venema.h4ckr.net,
-       linux-wireless@vger.kernel.org,
-       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ath5k: disable ASPM
-Message-ID: <20100619123841.GA31838@hash.localnet>
-References: <20100528100901.14580.1322.stgit@fate.lan> <1276806785.20754.8.camel@maxim-laptop> <20100618112026.17623g6uhdjk8hts@naisho.dyndns.info> <1276856142.9114.1.camel@maxim-laptop> <20100618134930.124225d4fsi8w1fk@naisho.dyndns.info> <1276859156.19554.2.camel@maxim-laptop> <AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com> <1276870309.23783.3.camel@maxim-laptop> <1276933774.16697.11.camel@maxim-laptop>
+	id S1755734Ab0FSMtG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 08:49:06 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48775 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753320Ab0FSMtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 08:49:04 -0400
+Message-ID: <4C1CBC8C.8060004@kernel.org>
+Date: Sat, 19 Jun 2010 14:48:12 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276933774.16697.11.camel@maxim-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andi Kleen <andi@firstfloor.org>
+CC: Andy Walls <awalls@md.metrocast.net>,
+       Daniel Walker <dwalker@codeaurora.org>, mingo@elte.hu,
+       linux-kernel@vger.kernel.org, jeff@garzik.org,
+       akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: Overview of concurrency managed workqueue
+References: <87vd9fo1sk.fsf@basil.nowhere.org> <4C1C8263.9040404@kernel.org> <87fx0jo0z6.fsf@basil.nowhere.org> <4C1C8772.8090406@kernel.org> <20100619090851.GF18946@basil.fritz.box> <4C1C8A18.2030709@kernel.org> <20100619091518.GG18946@basil.fritz.box> <4C1C8B32.1040007@kernel.org> <20100619092758.GH18946@basil.fritz.box> <4C1C911B.6040601@kernel.org> <20100619122010.GI18946@basil.fritz.box>
+In-Reply-To: <20100619122010.GI18946@basil.fritz.box>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Jun 2010 12:48:13 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 19, 2010 at 10:49:34AM +0300, Maxim Levitsky wrote:
-> How this patch?
+On 06/19/2010 02:20 PM, Andi Kleen wrote:
+>> * Do machines ever report that many MCE errors?  The usual rate seems
+>>   like one per weeks or months even when they're frequent.
+> 
+> Yes you can even get a flood when the system or parts 
+> of the system is dying. There's some throttling in the error handling, 
+> but yes in some cases you can get high rates.
+> 
+>> * If a machine is actually reporting enough errors to overwhelm single
+>>   error handling thread, does it even matter what we do?
+> 
+> There are cases where you can have many errors but still survive.
 
-Looks fine to me.  Some nitpicking below but feel free to add my
+Alright, adding to todo list.
 
-Acked-by: Bob Copeland <me@bobcopeland.com>
-
-to this or a later version.
-
->     Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
->     Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-
-I believe maintaining the s-o-b is usually reserved for the case when the
-patch only has minor edits; here your patch while same in spirit has
-some 30 fewer lines.  Maybe should use "From:" or mention Jussi in the
-commit log to maintain attribution instead?
-
-> +	/* Disable PCIE ASPM L0S. It is never enabled by windows driver */
-> +	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S);
-> +
-
-Would be good to expand this comment as to why (just copy another
-sentence from the commit log or so).
-
->  	ret = pci_enable_device(pdev);
->  	if (ret) {
->  		dev_err(&pdev->dev, "can't enable device\n");
-> @@ -722,6 +726,8 @@ static int ath5k_pci_resume(struct device *dev)
->  	struct ieee80211_hw *hw = pci_get_drvdata(pdev);
->  	struct ath5k_softc *sc = hw->priv;
->  
-> +	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S);
-> +
-
-Did you test that it did get lost over suspend/resume?  A glance at
-pci_save_pcie_state seems to indicate it's saved.
+Thanks.
 
 -- 
-Bob Copeland %% www.bobcopeland.com
-
+tejun
