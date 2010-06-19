@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab0FSOnQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 10:43:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36385 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756031Ab0FSOnP (ORCPT
+	id S1756128Ab0FSOq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 10:46:28 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:53190 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756081Ab0FSOq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 10:43:15 -0400
-Message-ID: <4C1CD791.101@colorfullife.com>
-Date: Sat, 19 Jun 2010 16:43:29 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	Sat, 19 Jun 2010 10:46:27 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+       Lars-Peter Clausen <lars@metafoo.de>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mmc@vger.kernel.org,
+       Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH v2 18/26] MMC: Add JZ4740 mmc driver
+In-Reply-To: <1276924111-11158-19-git-send-email-lars@metafoo.de>
+References: <1276924111-11158-1-git-send-email-lars@metafoo.de> <1276924111-11158-19-git-send-email-lars@metafoo.de>
+User-Agent: Notmuch/0.3.1-61-g3f63bb6 (http://notmuchmail.org) Emacs/23.1.90.2 (x86_64-unknown-linux-gnu)
+Date: Sat, 19 Jun 2010 15:46:25 +0100
+Message-ID: <87ocf7ozb2.fsf@linux-g6p1.site>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.35-rc3 deadlocks on semaphore operations
-References: <alpine.DEB.2.00.1006180940140.11575@router.home> <alpine.DEB.2.00.1006180955141.11575@router.home>
-In-Reply-To: <alpine.DEB.2.00.1006180955141.11575@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Christoph,
+On Sat, 19 Jun 2010 07:08:23 +0200, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> This patch adds support for the mmc controller on JZ4740 SoCs.
+> 
 
-On 06/18/2010 04:56 PM, Christoph Lameter wrote:
-> One important fact that I forgot to mention: This is on a dual quad core
-> dell box (8 hardware threads) with CONCURRENCY_LEVEL set to 9.
->    
+Hey Lars-Peter,
 
-- Which version of make do you use? That would be one suspect that might 
-use semop().
+I had a quick look over this patch and it looks OK. Just a few comments.
 
-- If I run make -j5 bzImage, then no semaphore arrays are used.
-Could you try to figure out which executable is doing the 'semop()' call?
-Or: what's the output of ps xawwwww_
+> +static void jz4740_mmc_timeout(unsigned long data)
+> +{
+> +	struct jz4740_mmc_host *host = (struct jz4740_mmc_host *)data;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&host->lock, flags);
+> +	if (!host->waiting) {
+> +		spin_unlock_irqrestore(&host->lock, flags);
+> +		return;
+> +	}
+> +
+> +	host->waiting = 0;
+> +
+> +	spin_unlock_irqrestore(&host->lock, flags);
+> +
+> +	host->req->cmd->error = -ETIMEDOUT;
+> +	jz4740_mmc_request_done(host);
+> +}
+> +
 
-- You are able to attach to the sleeping process with strace - and the 
-process continues to wait.
-I think this means that the semaphore counter is really 0: Somehow, we 
-leak semaphore values.
+Taking a spinlock and disabling interrupts seems like too much overhead
+to simply test and clear a bit. Wouldn't it be better to implement this
+with test_and_clear_bit(), which on MIPS will likely be implemented with
+ll/sc instructions? It's particularly important to keep this
+low-overhead since this bit is modified in the interrupt handler.
 
-But I did not change this code, what was changed was the wake-up code.
+> +static void jz4740_mmc_request_done(struct jz4740_mmc_host *host)
+> +{
+> +	struct mmc_request *req;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&host->lock, flags);
+> +	req = host->req;
+> +	host->req = NULL;
+> +	host->waiting = 0;
+> +	spin_unlock_irqrestore(&host->lock, flags);
+> +
+> +	if (!unlikely(req))
+> +		return;
+> +
+> +	mmc_request_done(host->mmc, req);
+> +}
+> +
 
---
-     Manfred
+Am I right in thinking that this spinlock guards against the interrupt
+handler and the timeout function running at the same time? So it's not
+really possible to drop the spinlock from here?
