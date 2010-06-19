@@ -1,47 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952Ab0FSUZz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 16:25:55 -0400
-Received: from www.tglx.de ([62.245.132.106]:58743 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756847Ab0FSUZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 16:25:53 -0400
-From: John Ogness <john.ogness@linutronix.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>, linux-arm-kernel@lists.infradead.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Ivo Clarysse <ivo.clarysse@gmail.com>
-Subject: Re: [PATCH 4/5] mtd: mxc_nand fixups
-References: <804oh0b7gx.fsf@merkur.tec.linutronix.de>
-	<20100618205401.GA12115@pengutronix.de>
-Date: Sat, 19 Jun 2010 22:25:25 +0200
-In-Reply-To: <20100618205401.GA12115@pengutronix.de> (Sascha Hauer's message
-	of "Fri, 18 Jun 2010 22:54:01 +0200")
-Message-ID: <80sk4ivkga.fsf@merkur.tec.linutronix.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1756994Ab0FSU0u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 16:26:50 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:50069 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755856Ab0FSU0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 16:26:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Fse8yVg7IK+/LmmfKHC2re4+hZXtajZDLaIchAd2BsLt1+vz4ieM5IbKTpa+XIfdnI
+         iwM1pAdpleDkREyd2rwxB1xA4BX+YTUcYOKsDSyUUlpijSD13vgDukamP4TKPhUXkv6O
+         hCbAiNcUyfsLag3CEHEU8XPAxXyptWVyp71dk=
+Message-ID: <4C1D280A.5060601@gmail.com>
+Date: Sat, 19 Jun 2010 13:26:50 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+       zippel@linux-m68k.org, linux-fsdevel@vger.kernel.org,
+       rusty@rustcorp.com.au
+Subject: Re: [PATCH 5/6]kernel:module.c variable 'nowarn' set but not used
+References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>	<1276288869-16815-6-git-send-email-justinmattock@gmail.com>	<AANLkTilZLOGXpZxHUklA8iHMj8HsJap2BvWMrWMmeyu3@mail.gmail.com>	<4C1C4FDE.2090101@gmail.com>	<AANLkTin5ovxSSsIM-1R-u7mmoqxp8UnxgtkuVJfZU2ES@mail.gmail.com>	<4C1D160D.5030303@gmail.com>	<AANLkTikOP99vtHOmfLZ05TkGFK8ffVNSSDoBvgCaIMCi@mail.gmail.com>	<4C1D243D.2070302@gmail.com> <AANLkTilavruQtdEH2L_BBkEGlCWKHYyxMze18uw0vsP2@mail.gmail.com>
+In-Reply-To: <AANLkTilavruQtdEH2L_BBkEGlCWKHYyxMze18uw0vsP2@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-06-18, Sascha Hauer <s.hauer@pengutronix.de> wrote:
->> This patch reverts the driver to enabling/disabling the NFC interrupt
->> mask rather than enabling/disabling the system interrupt. This cleans
->> up the driver so that it doesn't rely on interrupts being disabled
->> within the interrupt handler.
+On 06/19/2010 01:23 PM, Geert Uytterhoeven wrote:
+> On Sat, Jun 19, 2010 at 22:10, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
+>> On 06/19/2010 12:45 PM, Geert Uytterhoeven wrote:
+>>>
+>>> On Sat, Jun 19, 2010 at 21:10, Justin P. Mattock
+>>> <justinmattock@gmail.com>    wrote:
+>>>>
+>>>> On 06/19/2010 01:08 AM, Geert Uytterhoeven wrote:
+>>>>>
+>>>>> On Sat, Jun 19, 2010 at 07:04, Justin P. Mattock
+>>>>> <justinmattock@gmail.com>      wrote:
+>>>>>>>
+>>>>>>> Also wrong, you removed the creation of the links in sysfs.
+>>>>>>>
+>>>>>>> The assignment to nowarn was there to avoid another compiler warning,
+>>>>>>> as sysfs_create_link() is marked __must_check.
+>>>>>>
+>>>>>> I also went back to this one and made the following changes.. let me
+>>>>>> know
+>>>>>> if
+>>>>>> it's wrong etc..
+>>>>>>
+>>>>>>   From 4f45beed80627d2bb32fb021bb6d22d88089557b Mon Sep 17 00:00:00 2001
+>>>>>> From: Justin P. Mattock<justinmattock@gmail.com>
+>>>>>> Date: Fri, 18 Jun 2010 22:01:07 -0700
+>>>>>> Subject: [PATCH 5/5] module.c
+>>>>>>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>>>>>
+>>>>>> ---
+>>>>>>   kernel/module.c |    3 +--
+>>>>>>   1 files changed, 1 insertions(+), 2 deletions(-)
+>>>>>>
+>>>>>> diff --git a/kernel/module.c b/kernel/module.c
+>>>>>> index 8c6b428..48fc5c8 100644
+>>>>>> --- a/kernel/module.c
+>>>>>> +++ b/kernel/module.c
+>>>>>> @@ -1340,11 +1340,10 @@ static void add_usage_links(struct module *mod)
+>>>>>>   {
+>>>>>>   #ifdef CONFIG_MODULE_UNLOAD
+>>>>>>         struct module_use *use;
+>>>>>> -       int nowarn;
+>>>>>>
+>>>>>>         mutex_lock(&module_mutex);
+>>>>>>         list_for_each_entry(use,&mod->target_list, target_list) {
+>>>>>> -               nowarn = sysfs_create_link(use->target->holders_dir,
+>>>>>> +               sysfs_create_link(use->target->holders_dir,
+>>>>>>                                            &mod->mkobj.kobj, mod->name);
+>>>>>>         }
+>>>>>>         mutex_unlock(&module_mutex);
+>>>>>> --
+>>>>>> 1.7.1.rc1.21.gf3bd6
+>>>>>>
+>>>>>> if it looks good, then I can resend it out.
+>>>>>
+>>>>> Have you compile-tested this?
+>>>>> As sysfs_create_link() is marked __must_check, that will cause another
+>>>>> compiler
+>>>>> warning, but only if CONFIG_SYSFS=y.
+>>>>>
+>>>>> Perhaps you can just mark the nowarn variable __unused?
+>>>>
+>>>>
+>>>> o.k. this builds cleanly without a warning, but is it the right thing
+>>>> todo?
+>>>> i.g. rather leave the warning message there and file a bug than just
+>>>> silence
+>>>> the issue. Anyways here is what I have:
+>>>>
+>>>>   From edbeb2b1ee051218f9e5b93fcb8bbdbf1119a6e4 Mon Sep 17 00:00:00 2001
+>>>> From: Justin P. Mattock<justinmattock@gmail.com>
+>>>> Date: Sat, 19 Jun 2010 12:07:32 -0700
+>>>> Subject: [PATCH 5/5] module.c
+>>>>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>>>
+>>>> ---
+>>>>   kernel/module.c |    2 +-
+>>>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/kernel/module.c b/kernel/module.c
+>>>> index 8c6b428..765bac5 100644
+>>>> --- a/kernel/module.c
+>>>> +++ b/kernel/module.c
+>>>> @@ -1340,7 +1340,7 @@ static void add_usage_links(struct module *mod)
+>>>>   {
+>>>>   #ifdef CONFIG_MODULE_UNLOAD
+>>>>         struct module_use *use;
+>>>> -       int nowarn;
+>>>> +       int nowarn __attribute__((unused));
+>>>
+>>> The `__attribute__((unused))' should be `__used'.
+>>>
+>>
+>> I'm confused now. how should I write that out?
+>> (google is not giving me vary many examples on this)
 >
-> This behaviour was introduced in
-> a47bfd2eb66837653dc3b42541dfe4283dd41251 mxc_nand: support i.MX21
+> Sorry, I misrememberd there was a #define for it, and could find only __used.
+> But on closer look, the `__attribute__((unused)` is correct.
 >
-> I guess this won't work on i.MX21.
 
-I just downloaded the i.MX21 reference manual and its NFC interrupts can
-also be masked with INT_MASK (bit 4) of NFC_Flash_Config1 (0xdf003e1a).
+alright!! then I'll resend this with the above change.
 
-IMHO we should revert the driver to masking the NFC interrupts. The
-current linux-next version with nosync irq disabling within the
-interrupt handler is a bit silly. Especially since the interrupt handler
-does nothing except signal a wait queue.
+Thanks for looking at this!!
 
-John Ogness
+Justin P. Mattock
