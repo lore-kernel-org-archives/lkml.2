@@ -1,163 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab0FSLFv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 07:05:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38289 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994Ab0FSLFu (ORCPT
+	id S1755511Ab0FSLsg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 07:48:36 -0400
+Received: from smtprelay04.ispgateway.de ([80.67.31.42]:55141 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755486Ab0FSLsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 07:05:50 -0400
-Message-ID: <4C1CA49B.7020104@colorfullife.com>
-Date: Sat, 19 Jun 2010 13:06:03 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
-Subject: Re: 2.6.35-rc3 deadlocks on semaphore operations
-References: <alpine.DEB.2.00.1006180940140.11575@router.home>
-In-Reply-To: <alpine.DEB.2.00.1006180940140.11575@router.home>
-Content-Type: multipart/mixed;
- boundary="------------090108050203040708000600"
+	Sat, 19 Jun 2010 07:48:35 -0400
+X-Greylist: delayed 357 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Jun 2010 07:48:34 EDT
+Date: Sat, 19 Jun 2010 13:43:43 +0200
+From: Peter Feuerer <peter@piie.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <petkovbb@googlemail.com>,
+       lenb@kernel.org, Andreas Mohr <andi@lisas.de>,
+       Peter Feuerer <peter@piie.net>
+Subject: [PATCH 2/4] Removed "chk_off" as it was only needed for T31
+ netbooks
+Message-Id: <20100619134343.46564310.peter@piie.net>
+In-Reply-To: <20100619134232.7fedd2f1.peter@piie.net>
+References: <20100619134232.7fedd2f1.peter@piie.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: 650477
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090108050203040708000600
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Removed "chk_off" as it was only needed for T31 netbooks. But those
+netbooks can also be handled just with "cmd_off" register (0x9e) for reading
+the state back.
 
-On 06/18/2010 04:49 PM, Christoph Lameter wrote:
-> linux-2.6$ strace -p21561
-> Process 21561 attached - interrupt to quit
-> semop(32768, {{0, -1, SEM_UNDO}}, 1
->
-> linux-2.6$ strace -p21751
-> Process 21751 attached - interrupt to quit
-> semop(32768, {{0, -1, SEM_UNDO}}, 1
->
-> linux-2.6$ strace -p21792
-> Process 21792 attached - interrupt to quit
-> semop(32768, {{0, -1, SEM_UNDO}}, 1
->
-> linux-2.6$ strace -p21793
-> Process 21793 attached - interrupt to quit
-> semop(32768, {{0, -1, SEM_UNDO}}, 1
->
->    
-What are the semaphore values?
+Signed-off-by: Peter Feuerer <peter@piie.net>
+Cc: Borislav Petkov <petkovbb@gmail.com>
+Cc: Andreas Mohr <andi@lisas.de>
+Cc: Len Brown <lenb@kernel.org>
 
-Could you run
-$ ipcs
-$ cat /proc/sysvipc/sem
-$ ./getall 32768 -v
+---
+ drivers/platform/x86/acerhdf.c |   92 +++++++++++++++++++--------------------
+ 1 files changed, 45 insertions(+), 47 deletions(-)
 
-getall is attached.
+diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+index 40be6a4..9226838 100644
+--- a/drivers/platform/x86/acerhdf.c
++++ b/drivers/platform/x86/acerhdf.c
+@@ -112,14 +112,12 @@ module_param_string(force_product, force_product, 16, 0);
+ MODULE_PARM_DESC(force_product, "Force BIOS product and omit BIOS check");
+ 
+ /*
+- * cmd_off: to switch the fan completely off
+- * chk_off: to check if the fan is off
++ * cmd_off: to switch the fan completely off and check if the fan is off
+  *	cmd_auto: to set the BIOS in control of the fan. The BIOS regulates then
+  *		the fan speed depending on the temperature
+  */
+ struct fancmd {
+ 	u8 cmd_off;
+-	u8 chk_off;
+ 	u8 cmd_auto;
+ };
+ 
+@@ -136,55 +134,55 @@ struct bios_settings_t {
+ /* Register addresses and values for different BIOS versions */
+ static const struct bios_settings_t bios_tbl[] = {
+ 	/* AOA110 */
+-	{"Acer", "AOA110", "v0.3109", 0x55, 0x58, {0x1f, 0x1f, 0x00} },
+-	{"Acer", "AOA110", "v0.3114", 0x55, 0x58, {0x1f, 0x1f, 0x00} },
+-	{"Acer", "AOA110", "v0.3301", 0x55, 0x58, {0xaf, 0xaf, 0x00} },
+-	{"Acer", "AOA110", "v0.3304", 0x55, 0x58, {0xaf, 0xaf, 0x00} },
+-	{"Acer", "AOA110", "v0.3305", 0x55, 0x58, {0xaf, 0xaf, 0x00} },
+-	{"Acer", "AOA110", "v0.3307", 0x55, 0x58, {0xaf, 0xaf, 0x00} },
+-	{"Acer", "AOA110", "v0.3308", 0x55, 0x58, {0x21, 0x21, 0x00} },
+-	{"Acer", "AOA110", "v0.3309", 0x55, 0x58, {0x21, 0x21, 0x00} },
+-	{"Acer", "AOA110", "v0.3310", 0x55, 0x58, {0x21, 0x21, 0x00} },
++	{"Acer", "AOA110", "v0.3109", 0x55, 0x58, {0x1f, 0x00} },
++	{"Acer", "AOA110", "v0.3114", 0x55, 0x58, {0x1f, 0x00} },
++	{"Acer", "AOA110", "v0.3301", 0x55, 0x58, {0xaf, 0x00} },
++	{"Acer", "AOA110", "v0.3304", 0x55, 0x58, {0xaf, 0x00} },
++	{"Acer", "AOA110", "v0.3305", 0x55, 0x58, {0xaf, 0x00} },
++	{"Acer", "AOA110", "v0.3307", 0x55, 0x58, {0xaf, 0x00} },
++	{"Acer", "AOA110", "v0.3308", 0x55, 0x58, {0x21, 0x00} },
++	{"Acer", "AOA110", "v0.3309", 0x55, 0x58, {0x21, 0x00} },
++	{"Acer", "AOA110", "v0.3310", 0x55, 0x58, {0x21, 0x00} },
+ 	/* AOA150 */
+-	{"Acer", "AOA150", "v0.3114", 0x55, 0x58, {0x1f, 0x1f, 0x00} },
+-	{"Acer", "AOA150", "v0.3301", 0x55, 0x58, {0x20, 0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3304", 0x55, 0x58, {0x20, 0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3305", 0x55, 0x58, {0x20, 0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3307", 0x55, 0x58, {0x20, 0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3308", 0x55, 0x58, {0x20, 0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3309", 0x55, 0x58, {0x20, 0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3310", 0x55, 0x58, {0x20, 0x20, 0x00} },
++	{"Acer", "AOA150", "v0.3114", 0x55, 0x58, {0x1f, 0x00} },
++	{"Acer", "AOA150", "v0.3301", 0x55, 0x58, {0x20, 0x00} },
++	{"Acer", "AOA150", "v0.3304", 0x55, 0x58, {0x20, 0x00} },
++	{"Acer", "AOA150", "v0.3305", 0x55, 0x58, {0x20, 0x00} },
++	{"Acer", "AOA150", "v0.3307", 0x55, 0x58, {0x20, 0x00} },
++	{"Acer", "AOA150", "v0.3308", 0x55, 0x58, {0x20, 0x00} },
++	{"Acer", "AOA150", "v0.3309", 0x55, 0x58, {0x20, 0x00} },
++	{"Acer", "AOA150", "v0.3310", 0x55, 0x58, {0x20, 0x00} },
+ 	/* Acer 1410 */
+-	{"Acer", "Aspire 1410", "v0.3115", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v0.3120", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v1.3303", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
++	{"Acer", "Aspire 1410", "v0.3115", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1410", "v0.3120", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1410", "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
+ 	/* Acer 1810xx */
+-	{"Acer", "Aspire 1810TZ", "v0.3115", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T", "v0.3115", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v0.3119", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T", "v0.3119", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v0.3120", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T", "v0.3120", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v1.3204", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T", "v1.3204", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v1.3303", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T", "v1.3303", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
++	{"Acer", "Aspire 1810TZ", "v0.3115", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1810T",  "v0.3115", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1810TZ", "v0.3119", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1810T",  "v0.3119", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1810TZ", "v0.3120", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1810T",  "v0.3120", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1810TZ", "v1.3204", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1810T",  "v1.3204", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1810TZ", "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1810T",  "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
+ 	/* Gateway */
+-	{"Gateway", "AOA110", "v0.3103", 0x55, 0x58, {0x21, 0x21, 0x00} },
+-	{"Gateway", "AOA150", "v0.3103", 0x55, 0x58, {0x20, 0x20, 0x00} },
+-	{"Gateway", "LT31", "v1.3103", 0x55, 0x58, {0x10, 0x0f, 0x00} },
+-	{"Gateway", "LT31", "v1.3201", 0x55, 0x58, {0x10, 0x0f, 0x00} },
+-	{"Gateway", "LT31", "v1.3302", 0x55, 0x58, {0x10, 0x0f, 0x00} },
++	{"Gateway", "AOA110", "v0.3103", 0x55, 0x58, {0x21, 0x00} },
++	{"Gateway", "AOA150", "v0.3103", 0x55, 0x58, {0x20, 0x00} },
++	{"Gateway", "LT31",   "v1.3103", 0x55, 0x58, {0x9e, 0x00} },
++	{"Gateway", "LT31",   "v1.3201", 0x55, 0x58, {0x9e, 0x00} },
++	{"Gateway", "LT31",   "v1.3302", 0x55, 0x58, {0x9e, 0x00} },
+ 	/* Packard Bell */
+-	{"Packard Bell", "DOA150", "v0.3104", 0x55, 0x58, {0x21, 0x21, 0x00} },
+-	{"Packard Bell", "DOA150", "v0.3105", 0x55, 0x58, {0x20, 0x20, 0x00} },
+-	{"Packard Bell", "AOA110", "v0.3105", 0x55, 0x58, {0x21, 0x21, 0x00} },
+-	{"Packard Bell", "AOA150", "v0.3105", 0x55, 0x58, {0x20, 0x20, 0x00} },
+-	{"Packard Bell", "DOTMU", "v1.3303", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Packard Bell", "DOTMU", "v0.3120", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
+-	{"Packard Bell", "DOTMA", "v1.3201", 0x55, 0x58, {0x9e, 0x9e, 0x00} },
++	{"Packard Bell", "DOA150", "v0.3104", 0x55, 0x58, {0x21, 0x00} },
++	{"Packard Bell", "DOA150", "v0.3105", 0x55, 0x58, {0x20, 0x00} },
++	{"Packard Bell", "AOA110", "v0.3105", 0x55, 0x58, {0x21, 0x00} },
++	{"Packard Bell", "AOA150", "v0.3105", 0x55, 0x58, {0x20, 0x00} },
++	{"Packard Bell", "DOTMU",  "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
++	{"Packard Bell", "DOTMU",  "v0.3120", 0x55, 0x58, {0x9e, 0x00} },
++	{"Packard Bell", "DOTMA",  "v1.3201", 0x55, 0x58, {0x9e, 0x00} },
+ 	/* pewpew-terminator */
+-	{"", "", "", 0, 0, {0, 0, 0} }
++	{"", "", "", 0, 0, {0, 0} }
+ };
+ 
+ static const struct bios_settings_t *bios_cfg __read_mostly;
+@@ -208,7 +206,7 @@ static int acerhdf_get_fanstate(int *state)
+ 	if (ec_read(bios_cfg->fanreg, &fan))
+ 		return -EINVAL;
+ 
+-	if (fan != bios_cfg->cmd.chk_off)
++	if (fan != bios_cfg->cmd.cmd_off)
+ 		*state = ACERHDF_FAN_AUTO;
+ 	else
+ 		*state = ACERHDF_FAN_OFF;
+-- 
+1.7.1
 
---
-     Manfred
-
-
---------------090108050203040708000600
-Content-Type: text/plain;
- name="getall.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="getall.c"
-
-/*
- * Copyright (C) 1999 by Manfred Spraul.
- * 
- * Redistribution of this file is permitted under the terms of the GNU 
- * General Public License (GPL)
- * $Header: /home/manfred/cvs-tree/manfred/ipcsem/getall.c,v 1.2 2001/02/27 15:44:32 manfred Exp $
- */
-
-#include <sys/sem.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <assert.h>
-
-#define TRUE	1
-#define FALSE	0
-
-union semun {
-	int val;
-	struct semid_ds *buf;
-	unsigned short int *array;
-	struct seminfo* __buf;
-};
-
-
-int main(int argc,char** argv)
-{
-	int id;
-	int key;
-	int res;
-	int nsems;
-
-	printf("getall <id> [-v]\n");
-	if(argc < 2 || argc > 3) {
-		printf("Invalid parameters.\n");
-		return 1;
-	}
-	if (argc == 3 && strcmp(argv[2], "-v")) {
-		printf("Invalid parameters.\n");
-		return 1;
-	}
-	key = atoi(argv[1]);
-	if(key < 0) {
-		printf("Invalid parameters.\n");
-		return 1;
-	}
-/*	id = semget(key,1,0);
-	if(id == -1) {
-		printf(" findkey() failed.\n");
-		return 1;
-	} */
-	id = key;
-	{
-		union semun arg;
-		struct semid_ds info;
-
-		arg.buf = &info;
-		res = semctl(id,0,2,arg);
-
-		if(res==-1) {
-			printf("semctl(2) failed (%d).\n",errno);
-			return 1;
-		}
-		nsems = info.sem_nsems;
-		printf("found %d semaphores.\n",nsems);
-	}
-	{
-		union semun arg;
-		unsigned short *pv;
-		int i;
-		pv = malloc(sizeof(unsigned short)*nsems);
-		arg.array = pv;
-		res = semctl(id,nsems, GETALL, arg);
-		if(res==-1) {
-			printf("GETALL failed.\n");
-			return 1;
-		}
-		for(i=0;i<nsems;i++) {
-			if (argc == 3) {
-				printf(" %3d: %3d (cnt %3d zcnt %3d)\n",
-					i, pv[i], semctl(id, i, GETNCNT),
-					semctl(id, i, GETZCNT));
-			} else {
-				if(i%16 == 0)
-					printf("\n 0x%4.4x:",i);
-				printf(" %3d",pv[i]);
-			}
-		}
-		printf("\n");
-	}
-	return 0;
-}
-
---------------090108050203040708000600--
