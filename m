@@ -1,113 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab0FSN3K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 09:29:10 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:37787 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755854Ab0FSN3I (ORCPT
+	id S1755945Ab0FSNaF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 09:30:05 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53770 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755854Ab0FSNaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 09:29:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=EhyX10p2QJF+Rd6l6jFO81S5dIzLQgk5bZmQzyxzN5irS1kF4f3CaIH5Zr9h6wgRG6
-         niJL4ea/uHaB9UOHQkcBMKTWqw02FKfYSFn7lvnr+I8ArNXYnZ6qVmTciTzhb4A/tRYB
-         0uYNHgLomvpnExwjjHLA2fEpv55FsB643yBhs=
-Message-ID: <4C1CC623.7050303@gmail.com>
-Date: Sat, 19 Jun 2010 06:29:07 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Sat, 19 Jun 2010 09:30:02 -0400
+Date: Sat, 19 Jun 2010 15:30:00 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, fengguang.wu@intel.com,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] [31/31] HWPOISON: Add a madvise() injector for soft
+ page offlining
+Message-ID: <20100619133000.GL18946@basil.fritz.box>
+References: <200912081016.198135742@firstfloor.org>
+ <20091208211647.9B032B151F@basil.firstfloor.org>
+ <AANLkTimBhQAYn7BDXd1ykSN90v0ClWybIe2Pe1qv_6vA@mail.gmail.com>
+ <20100619132055.GK18946@basil.fritz.box>
+ <AANLkTin-lj5ZgtcvJhWcNiMuWSCQ39N8mqe_2fm8DDVR@mail.gmail.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-       zippel@linux-m68k.org, linux-fsdevel@vger.kernel.org,
-       rusty@rustcorp.com.au
-Subject: Re: [PATCH 2/6]kernel:audit.c Fix warning: variable 'nlh' set but
- not 	used
-References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>	<1276288869-16815-3-git-send-email-justinmattock@gmail.com>	<AANLkTildzUcfd6GghHbO53ebPAc4m4BahJrXUr8B7SQF@mail.gmail.com>	<4C1C4B55.8070209@gmail.com> <AANLkTimqF_gsNxddtUIjQwBaju2N4B7FyNTXoy5RArk4@mail.gmail.com>
-In-Reply-To: <AANLkTimqF_gsNxddtUIjQwBaju2N4B7FyNTXoy5RArk4@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTin-lj5ZgtcvJhWcNiMuWSCQ39N8mqe_2fm8DDVR@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19/2010 01:06 AM, Geert Uytterhoeven wrote:
-> On Sat, Jun 19, 2010 at 06:45, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
->>> This is not dead code. NLMSG_NEW() sets up an nlmsg in ab->skb.
->>> If you remove the code, it's no longer initialized.
->>
->> I played around with this code some more, but am still getting confused with
->> nlmsg_new and NLMSG_NEW. if I remove the nlmsghdr struct I can get a clean
->
-> nlmsg_new() allocates a new nlmsg.
-> NLMSG_NEW() initializes a nlmsg inside an already allocated skbuff.
->
+On Sat, Jun 19, 2010 at 03:25:16PM +0200, Michael Kerrisk wrote:
+> Hi Andi,
+> 
+> Thanks for this. Some comments below.
+> 
+> On Sat, Jun 19, 2010 at 3:20 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> > On Sat, Jun 19, 2010 at 02:36:28PM +0200, Michael Kerrisk wrote:
+> >> Hi Andi,
+> >>
+> >> On Tue, Dec 8, 2009 at 11:16 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> >> >
+> >> > Process based injection is much easier to handle for test programs,
+> >> > who can first bring a page into a specific state and then test.
+> >> > So add a new MADV_SOFT_OFFLINE to soft offline a page, similar
+> >> > to the existing hard offline injector.
+> >>
+> >> I see that this made its way into 2.6.33. Could you write a short
+> >> piece on it for the madvise.2 man page?
+> >
+> > Also fixed the previous snippet slightly.
+> 
+> (thanks)
+> 
+> > commit edb43354f0ffc04bf4f23f01261f9ea9f43e0d3d
+> > Author: Andi Kleen <ak@linux.intel.com>
+> > Date:   Sat Jun 19 15:19:28 2010 +0200
+> >
+> >    MADV_SOFT_OFFLINE
+> >
+> >    Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> >
+> > diff --git a/man2/madvise.2 b/man2/madvise.2
+> > index db29feb..9dccd97 100644
+> > --- a/man2/madvise.2
+> > +++ b/man2/madvise.2
+> > @@ -154,7 +154,15 @@ processes.
+> >  This operation may result in the calling process receiving a
+> >  .B SIGBUS
+> >  and the page being unmapped.
+> > -This feature is intended for memory testing.
+> > +This feature is intended for testing of memory error handling code.
+> > +This feature is only available if the kernel was configured with
+> > +.BR CONFIG_MEMORY_FAILURE .
+> > +.TP
+> > +.BR MADV_SOFT_OFFLINE " (Since Linux 2.6.33)
+> > +Soft offline a page. This will result in the memory of the page
+> > +being copied to a new page and original page be offlined. The operation
+> 
+> Can you explain the term "offlined" please.
 
-o.k.. now I see what those two are doing a bit better now nlmsg_new
-is the start of a netlink messg, and NLMSG_NEW is a new netlink messg 
-thats already been started.
+The memory is not used anymore and taken out of normal
+memory management (until unpoisoned) 
+and the "HardwareCorrupted:" counter in /proc/meminfo increases
 
->> build without a warning, but still am a bit confused.
->>
->> here is an updated patch let me know if it still needs work..
->> or if it's legit I can resend this.
->
-> Looks OK to me, thanks!
->
+(don't put the later in, I'm thinking about changing that)
 
-I'll resend it out with the proper subject, and proper intro to it.
+> 
+> > +should be transparent to the calling process.
+> 
+> Does "should be transparent" mean "is normally invisible"?
 
->>  From 7515a08ba921d3beed33fa5c6b1fbe59cf52e069 Mon Sep 17 00:00:00 2001
->> From: Justin P. Mattock<justinmattock@gmail.com>
->> Date: Fri, 18 Jun 2010 19:44:30 -0700
->> Subject: [PATCH 4/4] audit
->>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>
->> ---
->>   kernel/audit.c |    3 +--
->>   1 files changed, 1 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/audit.c b/kernel/audit.c
->> index c71bd26..1d51258 100644
->> --- a/kernel/audit.c
->> +++ b/kernel/audit.c
->> @@ -1041,7 +1041,6 @@ static struct audit_buffer * audit_buffer_alloc(struct
->> audit_context *ctx,
->>   {
->>         unsigned long flags;
->>         struct audit_buffer *ab = NULL;
->> -       struct nlmsghdr *nlh;
->>
->>         spin_lock_irqsave(&audit_freelist_lock, flags);
->>         if (!list_empty(&audit_freelist)) {
->> @@ -1065,7 +1064,7 @@ static struct audit_buffer * audit_buffer_alloc(struct
->> audit_context *ctx,
->>         if (!ab->skb)
->>                 goto nlmsg_failure;
->>
->> -       nlh = NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
->> +       NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
->>
->>         return ab;
->>
->> --
->> 1.7.1.rc1.21.gf3bd6
->
-> Gr{oetje,eeting}s,
->
-> 						Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
-> 							    -- Linus Torvalds
->
+Yes. It's similar to being swapped out and swapped in again.
 
-thanks for taking the time to look at this.
-
-Justin P. Mattock
+-Andi
