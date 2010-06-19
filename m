@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab0FSUB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 16:01:26 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:36598 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756794Ab0FSUBZ (ORCPT
+	id S1756878Ab0FSUHt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 16:07:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53302 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756794Ab0FSUHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 16:01:25 -0400
-Date: Sat, 19 Jun 2010 22:02:49 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Gregory Bean <gbean@codeaurora.org>
-Cc: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] msm: Add gpio register address mapping information.
-Message-ID: <20100619200249.GA2507@elf.ucw.cz>
-References: <1276888375-13221-1-git-send-email-gbean@codeaurora.org>
- <1276888375-13221-2-git-send-email-gbean@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276888375-13221-2-git-send-email-gbean@codeaurora.org>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 19 Jun 2010 16:07:47 -0400
+Date: Sat, 19 Jun 2010 13:07:30 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Tejun Heo <tj@kernel.org>, mingo@elte.hu, tglx@linutronix.de,
+       bphilips@suse.de, yinghai@kernel.org, akpm@linux-foundation.org,
+       torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, linux-ide@vger.kernel.org, stern@rowland.harvard.edu,
+       gregkh@suse.de, khali@linux-fr.org
+Subject: Re: [PATCH 09/12] irq: implement IRQ expecting
+Message-ID: <20100619130730.36f8d567@infradead.org>
+In-Reply-To: <20100619194937.GR18946@basil.fritz.box>
+References: <1276443098-20653-1-git-send-email-tj@kernel.org>
+	<1276443098-20653-10-git-send-email-tj@kernel.org>
+	<20100616204854.4b036f87@infradead.org>
+	<87zkyro1xl.fsf@basil.nowhere.org>
+	<4C1C830B.5020806@kernel.org>
+	<20100619090031.GE18946@basil.fritz.box>
+	<20100619075451.48c13589@infradead.org>
+	<20100619194937.GR18946@basil.fritz.box>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sat, 19 Jun 2010 21:49:37 +0200
+Andi Kleen <andi@firstfloor.org> wrote:
 
-> --- /dev/null
-> +++ b/arch/arm/mach-msm/gpio_hw-7x30.h
-> @@ -0,0 +1,112 @@
-> +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-> + *
-> + * Redistribution and use in source and binary forms, with or without
-> + * modification, are permitted provided that the following conditions are
-> + * met:
-> + *     * Redistributions of source code must retain the above copyright
-> + *       notice, this list of conditions and the following disclaimer.
-> + *     * Redistributions in binary form must reproduce the above
-> + *       copyright notice, this list of conditions and the following
-> + *       disclaimer in the documentation and/or other materials provided
-> + *       with the distribution.
-> + *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
-> + *       contributors may be used to endorse or promote products derived
-> + *       from this software without specific prior written permission.
+> > Here we have the opportunity to get real good information.. we KNOW
+> > now an interrupt is coming, and we can even estimate how long it'll
+> > be...  Even for the first few after a long time, before a pattern
+> > emerges.
+> 
+> Ok but I thought the driver would just fill in a single number 
+> likely. Is that really that good information?
 
-Yeah. Either this can be replaced with GPL, and it such case just do
-so, or it can not, and then it can not be applied to kernel.
+Tejun suggested tracking this per handler, I'm assuming that instead of
+the driver passed number
+
+> 
+> Alternatively each driver would need to implement some dynamic
+> estimation algorithm, but that would be just mostly equivalent
+> to having it all in the idle governour?
+
+that's the whole point... let the irq layer track this stuff, and
+inform the governor. the governor does not know irqs are expected..
+with tejun's change, the irq layer at least will.
+
+
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
