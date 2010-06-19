@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284Ab0FSDUg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 23:20:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39690 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165Ab0FSDUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 23:20:34 -0400
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Randy Dunlap <rdunlap@xenotime.net>,
-       James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org,
-       Stephen Smalley <sds@tycho.nsa.gov>, Daniel J Walsh <dwalsh@redhat.com>,
-       linux-security-module@vger.kernel.org, systemtap@sourceware.org
-Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
-References: <20100616221833.GM24749@outflux.net>
-	<20100617000120.13071be8@lxorguk.ukuu.org.uk>
-	<20100616232230.GP24749@outflux.net>
-	<alpine.LRH.2.00.1006172336390.17282@tundra.namei.org>
-	<20100617170453.GV24749@outflux.net>
-	<20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
-	<20100617140630.c6ced27a.rdunlap@xenotime.net>
-	<20100617221815.68ce30c5@lxorguk.ukuu.org.uk>
-	<20100617215105.GB24749@outflux.net>
-From: fche@redhat.com (Frank Ch. Eigler)
-Date: Fri, 18 Jun 2010 23:19:53 -0400
-In-Reply-To: <20100617215105.GB24749@outflux.net> (Kees Cook's message of "Thu, 17 Jun 2010 14:51:05 -0700")
-Message-ID: <y0mk4pvvhd2.fsf@fche.csb>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752152Ab0FSDYw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 23:24:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:39586 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165Ab0FSDYu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 23:24:50 -0400
+X-Authority-Analysis: v=1.1 cv=CgZcVGhTQjO/Ps/WuM8OsaKfzS+Ps8TRNnlzkE3q20U= c=1 sm=0 a=aUrcRhM0H-cA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=NSoQ8D5cw0FRVz2B-Z4A:9 a=1eMW7bsRqe01f6b4qIgA:7 a=bVe1KGBDNZQUu9WScBfuBFUDGtsA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 06/13] jump label v9: move ftrace_dyn_arch_init to
+ common code
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Jason Baron <jbaron@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
+       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+       fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+       vgoyal@redhat.com, sam@ravnborg.org,
+       Abhishek Sagar <sagar.abhishek@gmail.com>
+In-Reply-To: <f634fd6470edf471c88923b1af7cdc7f41b67723.1276116186.git.jbaron@redhat.com>
+References: <cover.1276116186.git.jbaron@redhat.com>
+	 <f634fd6470edf471c88923b1af7cdc7f41b67723.1276116186.git.jbaron@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Fri, 18 Jun 2010 23:24:38 -0400
+Message-ID: <1276917879.27873.18.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <kees.cook@canonical.com> writes:
+On Wed, 2010-06-09 at 17:39 -0400, Jason Baron wrote:
+> Move Steve's code for finding the best 5-byte no-op from ftrace.c to alternative.c.
+> The idea is that other consumers (in this case jump label) want to make use of
+> that code. I've created a global: 'char ideal_nop[5]', that is setup during
+> setup_arch that can be used.
+> 
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
 
-> [...]  At present, I'm aware of global PTRACE control being possible
-> in SELinux, AppArmor, grsecurity, and as a patch in Ubuntu's kernel.
-> I don't know about TOMOYO or Smack, but configuring the default
-> scope of PTRACE in at least 4 different ways so far (or not being
-> able to change it at all) just seems crazy. [...]
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 0d88ce9..1a1cc47 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -2749,20 +2749,9 @@ extern unsigned long __stop_mcount_loc[];
+>  
+>  void __init ftrace_init(void)
+>  {
+> -	unsigned long count, addr, flags;
+> +	unsigned long count;
+>  	int ret;
+>  
+> -	/* Keep the ftrace pointer to the stub */
+> -	addr = (unsigned long)ftrace_stub;
+> -
+> -	local_irq_save(flags);
+> -	ftrace_dyn_arch_init(&addr);
+> -	local_irq_restore(flags);
+> -
+> -	/* ftrace_dyn_arch_init places the return code in addr */
+> -	if (addr)
+> -		goto failed;
+> -
+>  	count = __stop_mcount_loc - __start_mcount_loc;
+>  
+>  	ret = ftrace_dyn_table_alloc(count);
 
-For the curious, below is a demonstration an interactive systemtap
-script that can implement this sort of local policy, independently of
-the other security APIs.
+Um, you just removed the ftrace arch specific setup call for dynamic
+ftrace. Although, I'm thinking this may not be needed since all archs
+currently have just a stub. With the exception of ARM which seems to
+call a "ftrace_mcount_set()" that git grep can not find.
 
-http://sourceware.org/systemtap/examples/keyword-index.html#SECURITY
+Thus, if you remove this, then remove it from all archs.
 
-just a user         sammy sysadmin
-===========         ==============
-
-8232% echo $$
-8232
-
-                    root# noptrace.stp -x 8232 &
-
-8232% do-stuff &
-[1] 8888
-                    root# cat /proc/systemtap/stap_*/blocked
-                    8232 /bin/bash
-                    8888 /usr/local/bin/do-stuff
-
-8232% strace ls
-strace: ptrace(PTRACE_TRACEME, ...): No such process
-8232% gdb do-stuff 8888
-Attaching to program: /usr/local/bin/do-stuff, process 8888
-ptrace: No such process.
-
-                    root# echo 8232 > /proc/systemtap/stap_*/unblock
-
-8232% strace ls
-[...working again...]
+-- Steve
 
 
-- FChE
