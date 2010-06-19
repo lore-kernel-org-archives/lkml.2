@@ -1,311 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab0FSFJR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 01:09:17 -0400
-Received: from smtp-out-037.synserver.de ([212.40.180.37]:1038 "HELO
+	id S1753118Ab0FSFJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 01:09:09 -0400
+Received: from smtp-out-037.synserver.de ([212.40.180.37]:1049 "HELO
 	smtp-out-036.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1752706Ab0FSFJO (ORCPT
+	by vger.kernel.org with SMTP id S1752706Ab0FSFJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 01:09:14 -0400
+	Sat, 19 Jun 2010 01:09:07 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 13414
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v2 02/26] MIPS: jz4740: Add IRQ handler code
-Date: Sat, 19 Jun 2010 07:08:07 +0200
-Message-Id: <1276924111-11158-3-git-send-email-lars@metafoo.de>
+       Lars-Peter Clausen <lars@metafoo.de>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Anton Vorontsov <cbouatmailru@gmail.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
+       linux-fbdev@vger.kernel.org, linux-mmc@vger.kernel.org,
+       linux-mtd@lists.infradead.org, linux-usb@vger.kernel.org,
+       lm-sensors@lm-sensors.org, rtc-linux@googlegroups.com
+Subject: [PATCH v2 00/26] Add support for the Ingenic JZ4740 System-on-a-Chip
+Date: Sat, 19 Jun 2010 07:08:05 +0200
+Message-Id: <1276924111-11158-1-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1276924111-11158-1-git-send-email-lars@metafoo.de>
-References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for IRQ handling on a JZ4740 SoC.
+Foreword:
+Ralf suggested that it might be a good idea in order to allow for reasonable
+testing and to avoid build failures due to two-way dependencies in different
+parts of the kernel, that he applies all the patches once they have been acked
+by their respective maintainers, feeds them into -next and eventually sends the
+whole series to Linus. One exception will be the ASoC patches which will, due to
+major changes in the ASoC subsystem, go through the ASoC tree.
+So if you are a maintainer for one of the subsystem touched by this series and
+would rather see the patch going through your tree (given the patch is ok)
+please tell.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
----
-Changes since v1
-- Reserve IRQ numbers for ADC IRQ demultiplexing
----
- arch/mips/include/asm/mach-jz4740/irq.h |   57 ++++++++++
- arch/mips/jz4740/irq.c                  |  170 +++++++++++++++++++++++++++++++
- arch/mips/jz4740/irq.h                  |   21 ++++
- 3 files changed, 248 insertions(+), 0 deletions(-)
+This patch series adds support for the Ingenic JZ4740 System-on-a-Chip.
+
+The JZ4740 has a mostly MIPS32 compatible core (no on cpu timers) and many on
+chip peripherals like RTC, NAND, MMC, OHCI, UDC, ADC, I2C, SPI, AC97, I2S, I2S
+Codec, UART and LCD controller.
+
+The JZ4740 is mostly used in eBooks, PMPs and hand-held consoles.
+This series contains patches for the Qi Ben NanoNote clamshell device as the
+inital supported device.
+
+Changes since v1:
+There have been some minor changes since v1, mostly code cleanup and some
+functional changes. One bigger change is that there is now a MFD driver for
+the ADC core which does IRQ demultiplexing for the ADC unit and synchronizes
+access to shared registers between the different users of the ADC core.
+The patch adding a defconfig for the Qi LB60 has been dropped.
+A detailed list of changes is present in each patch.
+
+- Lars
+
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: alsa-devel@alsa-project.org
+Cc: linux-fbdev@vger.kernel.org
+Cc: linux-mmc@vger.kernel.org
+Cc: linux-mtd@lists.infradead.org
+Cc: linux-usb@vger.kernel.org
+Cc: lm-sensors@lm-sensors.org
+Cc: rtc-linux@googlegroups.com
+
+Lars-Peter Clausen (26):
+  MIPS: Add base support for Ingenic JZ4740 System-on-a-Chip
+  MIPS: jz4740: Add IRQ handler code
+  MIPS: JZ4740: Add clock API support.
+  MIPS: JZ4740: Add timer support
+  MIPS: JZ4740: Add clocksource/clockevent support.
+  MIPS: JZ4740: Add power-management and system reset support
+  MIPS: JZ4740: Add setup code
+  MIPS: JZ4740: Add gpio support
+  MIPS: JZ4740: Add DMA support.
+  MIPS: JZ4740: Add PWM support
+  MIPS: JZ4740: Add serial support
+  MIPS: JZ4740: Add prom support
+  MIPS: JZ4740: Add platform devices
+  MIPS: JZ4740: Add Kbuild files
+  RTC: Add JZ4740 RTC driver
+  fbdev: Add JZ4740 framebuffer driver
+  MTD: Nand: Add JZ4740 NAND driver
+  MMC: Add JZ4740 mmc driver
+  USB: Add JZ4740 ohci support
+  alsa: ASoC: Add JZ4740 codec driver
+  alsa: ASoC: Add JZ4740 ASoC support
+  MFD: Add JZ4740 ADC driver
+  hwmon: Add JZ4740 ADC driver
+  power: Add JZ4740 battery driver.
+  MIPS: JZ4740: Add qi_lb60 board support
+  alsa: ASoC: JZ4740: Add qi_lb60 board driver
+
+ arch/mips/Kbuild.platforms                   |    1 +
+ arch/mips/Kconfig                            |   13 +
+ arch/mips/include/asm/bootinfo.h             |    6 +
+ arch/mips/include/asm/cpu.h                  |    9 +-
+ arch/mips/include/asm/mach-jz4740/base.h     |   26 +
+ arch/mips/include/asm/mach-jz4740/clock.h    |   28 +
+ arch/mips/include/asm/mach-jz4740/dma.h      |   90 +++
+ arch/mips/include/asm/mach-jz4740/gpio.h     |  398 +++++++++++
+ arch/mips/include/asm/mach-jz4740/irq.h      |   57 ++
+ arch/mips/include/asm/mach-jz4740/platform.h |   36 +
+ arch/mips/include/asm/mach-jz4740/timer.h    |   22 +
+ arch/mips/include/asm/mach-jz4740/war.h      |   25 +
+ arch/mips/jz4740/Kconfig                     |   12 +
+ arch/mips/jz4740/Makefile                    |   20 +
+ arch/mips/jz4740/Platform                    |    5 +
+ arch/mips/jz4740/board-qi_lb60.c             |  483 +++++++++++++
+ arch/mips/jz4740/clock-debugfs.c             |  109 +++
+ arch/mips/jz4740/clock.c                     |  920 ++++++++++++++++++++++++
+ arch/mips/jz4740/clock.h                     |   76 ++
+ arch/mips/jz4740/dma.c                       |  289 ++++++++
+ arch/mips/jz4740/gpio.c                      |  601 ++++++++++++++++
+ arch/mips/jz4740/irq.c                       |  169 +++++
+ arch/mips/jz4740/irq.h                       |   21 +
+ arch/mips/jz4740/platform.c                  |  284 ++++++++
+ arch/mips/jz4740/pm.c                        |   56 ++
+ arch/mips/jz4740/prom.c                      |   68 ++
+ arch/mips/jz4740/pwm.c                       |  169 +++++
+ arch/mips/jz4740/reset.c                     |   79 ++
+ arch/mips/jz4740/reset.h                     |    7 +
+ arch/mips/jz4740/serial.c                    |   33 +
+ arch/mips/jz4740/serial.h                    |   21 +
+ arch/mips/jz4740/setup.c                     |   29 +
+ arch/mips/jz4740/time.c                      |  144 ++++
+ arch/mips/jz4740/timer.c                     |   48 ++
+ arch/mips/jz4740/timer.h                     |  136 ++++
+ arch/mips/kernel/cpu-probe.c                 |   20 +
+ arch/mips/mm/tlbex.c                         |    5 +
+ drivers/hwmon/Kconfig                        |   11 +
+ drivers/hwmon/Makefile                       |    1 +
+ drivers/hwmon/jz4740-hwmon.c                 |  206 ++++++
+ drivers/mfd/Kconfig                          |    8 +
+ drivers/mfd/Makefile                         |    1 +
+ drivers/mfd/jz4740-adc.c                     |  392 ++++++++++
+ drivers/mmc/host/Kconfig                     |    8 +
+ drivers/mmc/host/Makefile                    |    1 +
+ drivers/mmc/host/jz4740_mmc.c                |  993 ++++++++++++++++++++++++++
+ drivers/mtd/nand/Kconfig                     |    6 +
+ drivers/mtd/nand/Makefile                    |    1 +
+ drivers/mtd/nand/jz4740_nand.c               |  474 ++++++++++++
+ drivers/power/Kconfig                        |   11 +
+ drivers/power/Makefile                       |    1 +
+ drivers/power/jz4740-battery.c               |  445 ++++++++++++
+ drivers/rtc/Kconfig                          |   11 +
+ drivers/rtc/Makefile                         |    1 +
+ drivers/rtc/rtc-jz4740.c                     |  341 +++++++++
+ drivers/usb/Kconfig                          |    1 +
+ drivers/usb/host/ohci-hcd.c                  |    5 +
+ drivers/usb/host/ohci-jz4740.c               |  276 +++++++
+ drivers/video/Kconfig                        |    9 +
+ drivers/video/Makefile                       |    1 +
+ drivers/video/jz4740_fb.c                    |  817 +++++++++++++++++++++
+ include/linux/jz4740-adc.h                   |   32 +
+ include/linux/jz4740_fb.h                    |   58 ++
+ include/linux/mmc/jz4740_mmc.h               |   15 +
+ include/linux/mtd/jz4740_nand.h              |   34 +
+ include/linux/power/jz4740-battery.h         |   24 +
+ sound/soc/Kconfig                            |    1 +
+ sound/soc/Makefile                           |    1 +
+ sound/soc/codecs/Kconfig                     |    4 +
+ sound/soc/codecs/Makefile                    |    2 +
+ sound/soc/codecs/jz4740-codec.c              |  514 +++++++++++++
+ sound/soc/codecs/jz4740-codec.h              |   20 +
+ sound/soc/jz4740/Kconfig                     |   23 +
+ sound/soc/jz4740/Makefile                    |   13 +
+ sound/soc/jz4740/jz4740-i2s.c                |  540 ++++++++++++++
+ sound/soc/jz4740/jz4740-i2s.h                |   18 +
+ sound/soc/jz4740/jz4740-pcm.c                |  373 ++++++++++
+ sound/soc/jz4740/jz4740-pcm.h                |   22 +
+ sound/soc/jz4740/qi_lb60.c                   |  167 +++++
+ 79 files changed, 10396 insertions(+), 1 deletions(-)
+ create mode 100644 arch/mips/include/asm/mach-jz4740/base.h
+ create mode 100644 arch/mips/include/asm/mach-jz4740/clock.h
+ create mode 100644 arch/mips/include/asm/mach-jz4740/dma.h
+ create mode 100644 arch/mips/include/asm/mach-jz4740/gpio.h
  create mode 100644 arch/mips/include/asm/mach-jz4740/irq.h
+ create mode 100644 arch/mips/include/asm/mach-jz4740/platform.h
+ create mode 100644 arch/mips/include/asm/mach-jz4740/timer.h
+ create mode 100644 arch/mips/include/asm/mach-jz4740/war.h
+ create mode 100644 arch/mips/jz4740/Kconfig
+ create mode 100644 arch/mips/jz4740/Makefile
+ create mode 100644 arch/mips/jz4740/Platform
+ create mode 100644 arch/mips/jz4740/board-qi_lb60.c
+ create mode 100644 arch/mips/jz4740/clock-debugfs.c
+ create mode 100644 arch/mips/jz4740/clock.c
+ create mode 100644 arch/mips/jz4740/clock.h
+ create mode 100644 arch/mips/jz4740/dma.c
+ create mode 100644 arch/mips/jz4740/gpio.c
  create mode 100644 arch/mips/jz4740/irq.c
  create mode 100644 arch/mips/jz4740/irq.h
-
-diff --git a/arch/mips/include/asm/mach-jz4740/irq.h b/arch/mips/include/asm/mach-jz4740/irq.h
-new file mode 100644
-index 0000000..a865c98
---- /dev/null
-+++ b/arch/mips/include/asm/mach-jz4740/irq.h
-@@ -0,0 +1,57 @@
-+/*
-+ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *  JZ4740 IRQ definitions
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#ifndef __ASM_MACH_JZ4740_IRQ_H__
-+#define __ASM_MACH_JZ4740_IRQ_H__
-+
-+#define MIPS_CPU_IRQ_BASE 0
-+#define JZ4740_IRQ_BASE 8
-+
-+/* 1st-level interrupts */
-+#define JZ4740_IRQ(x)		(JZ4740_IRQ_BASE + (x))
-+#define JZ4740_IRQ_I2C		JZ4740_IRQ(1)
-+#define JZ4740_IRQ_UHC		JZ4740_IRQ(3)
-+#define JZ4740_IRQ_UART1	JZ4740_IRQ(8)
-+#define JZ4740_IRQ_UART0	JZ4740_IRQ(9)
-+#define JZ4740_IRQ_SADC		JZ4740_IRQ(12)
-+#define JZ4740_IRQ_MSC		JZ4740_IRQ(14)
-+#define JZ4740_IRQ_RTC		JZ4740_IRQ(15)
-+#define JZ4740_IRQ_SSI		JZ4740_IRQ(16)
-+#define JZ4740_IRQ_CIM		JZ4740_IRQ(17)
-+#define JZ4740_IRQ_AIC		JZ4740_IRQ(18)
-+#define JZ4740_IRQ_ETH		JZ4740_IRQ(19)
-+#define JZ4740_IRQ_DMAC		JZ4740_IRQ(20)
-+#define JZ4740_IRQ_TCU2		JZ4740_IRQ(21)
-+#define JZ4740_IRQ_TCU1		JZ4740_IRQ(22)
-+#define JZ4740_IRQ_TCU0		JZ4740_IRQ(23)
-+#define JZ4740_IRQ_UDC		JZ4740_IRQ(24)
-+#define JZ4740_IRQ_GPIO3	JZ4740_IRQ(25)
-+#define JZ4740_IRQ_GPIO2	JZ4740_IRQ(26)
-+#define JZ4740_IRQ_GPIO1	JZ4740_IRQ(27)
-+#define JZ4740_IRQ_GPIO0	JZ4740_IRQ(28)
-+#define JZ4740_IRQ_IPU		JZ4740_IRQ(29)
-+#define JZ4740_IRQ_LCD		JZ4740_IRQ(30)
-+
-+/* 2nd-level interrupts */
-+#define JZ4740_IRQ_DMA(x)	(JZ4740_IRQ(32) + (X))
-+
-+#define JZ4740_IRQ_INTC_GPIO(x) (JZ4740_IRQ_GPIO0 - (x))
-+#define JZ4740_IRQ_GPIO(x)	(JZ4740_IRQ(48) + (x))
-+
-+#define JZ4740_IRQ_ADC_BASE	JZ4740_IRQ(176)
-+
-+#define NR_IRQS (JZ4740_IRQ_ADC_BASE + 6)
-+
-+#endif
-diff --git a/arch/mips/jz4740/irq.c b/arch/mips/jz4740/irq.c
-new file mode 100644
-index 0000000..ea19f0e
---- /dev/null
-+++ b/arch/mips/jz4740/irq.c
-@@ -0,0 +1,170 @@
-+/*
-+ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *  JZ4740 platform IRQ support
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <linux/interrupt.h>
-+#include <linux/ioport.h>
-+#include <linux/timex.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
-+
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
-+
-+#include <asm/io.h>
-+#include <asm/mipsregs.h>
-+#include <asm/irq_cpu.h>
-+
-+#include <asm/mach-jz4740/base.h>
-+
-+static void __iomem *jz_intc_base;
-+static uint32_t jz_intc_wakeup;
-+static uint32_t jz_intc_saved;
-+
-+#define JZ_REG_INTC_STATUS	0x00
-+#define JZ_REG_INTC_MASK	0x04
-+#define JZ_REG_INTC_SET_MASK	0x08
-+#define JZ_REG_INTC_CLEAR_MASK	0x0c
-+#define JZ_REG_INTC_PENDING	0x10
-+
-+#define IRQ_BIT(x) BIT((x) - JZ4740_IRQ_BASE)
-+
-+static void intc_irq_unmask(unsigned int irq)
-+{
-+	writel(IRQ_BIT(irq), jz_intc_base + JZ_REG_INTC_CLEAR_MASK);
-+}
-+
-+static void intc_irq_mask(unsigned int irq)
-+{
-+	writel(IRQ_BIT(irq), jz_intc_base + JZ_REG_INTC_SET_MASK);
-+}
-+
-+static int intc_irq_set_wake(unsigned int irq, unsigned int on)
-+{
-+	if (on)
-+		jz_intc_wakeup |= IRQ_BIT(irq);
-+	else
-+		jz_intc_wakeup &= ~IRQ_BIT(irq);
-+
-+	return 0;
-+}
-+
-+static struct irq_chip intc_irq_type = {
-+	.name =		"INTC",
-+	.mask =		intc_irq_mask,
-+	.mask_ack =	intc_irq_mask,
-+	.unmask =	intc_irq_unmask,
-+	.set_wake =	intc_irq_set_wake,
-+};
-+
-+static irqreturn_t jz4740_cascade(int irq, void *data)
-+{
-+	uint32_t irq_reg;
-+	int intc_irq;
-+
-+	irq_reg = readl(jz_intc_base + JZ_REG_INTC_PENDING);
-+
-+	intc_irq = ffs(irq_reg);
-+	if (intc_irq)
-+		generic_handle_irq(intc_irq - 1 + JZ4740_IRQ_BASE);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static struct irqaction jz4740_cascade_action = {
-+	.handler = jz4740_cascade,
-+	.name = "JZ4740 cascade interrupt",
-+	.flags = IRQF_DISABLED,
-+};
-+
-+void __init arch_init_irq(void)
-+{
-+	int i;
-+	mips_cpu_irq_init();
-+
-+	jz_intc_base = ioremap(JZ4740_INTC_BASE_ADDR, 0x14);
-+
-+	for (i = JZ4740_IRQ_BASE; i < JZ4740_IRQ_BASE + 32; i++) {
-+		intc_irq_mask(i);
-+		set_irq_chip_and_handler(i, &intc_irq_type, handle_level_irq);
-+	}
-+
-+	setup_irq(2, &jz4740_cascade_action);
-+}
-+
-+asmlinkage void plat_irq_dispatch(void)
-+{
-+	unsigned int pending = read_c0_status() & read_c0_cause() & ST0_IM;
-+	if (pending & STATUSF_IP2)
-+		do_IRQ(2);
-+	else if (pending & STATUSF_IP3)
-+		do_IRQ(3);
-+	else
-+		spurious_interrupt();
-+}
-+
-+void jz4740_intc_suspend(void)
-+{
-+	jz_intc_saved = readl(jz_intc_base + JZ_REG_INTC_MASK);
-+	writel(~jz_intc_wakeup, jz_intc_base + JZ_REG_INTC_SET_MASK);
-+	writel(jz_intc_wakeup, jz_intc_base + JZ_REG_INTC_CLEAR_MASK);
-+}
-+
-+void jz4740_intc_resume(void)
-+{
-+	writel(~jz_intc_saved, jz_intc_base + JZ_REG_INTC_CLEAR_MASK);
-+	writel(jz_intc_saved, jz_intc_base + JZ_REG_INTC_SET_MASK);
-+}
-+
-+#ifdef CONFIG_DEBUG_FS
-+
-+static inline void intc_seq_reg(struct seq_file *s, const char *name,
-+	unsigned int reg)
-+{
-+	seq_printf(s, "%s:\t\t%08x\n", name, readl(jz_intc_base + reg));
-+}
-+
-+static int intc_regs_show(struct seq_file *s, void *unused)
-+{
-+	intc_seq_reg(s, "Status", JZ_REG_INTC_STATUS);
-+	intc_seq_reg(s, "Mask", JZ_REG_INTC_MASK);
-+	intc_seq_reg(s, "Pending", JZ_REG_INTC_PENDING);
-+
-+	return 0;
-+}
-+
-+static int intc_regs_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, intc_regs_show, NULL);
-+}
-+
-+static const struct file_operations intc_regs_operations = {
-+	.open		= intc_regs_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static int __init intc_debugfs_init(void)
-+{
-+	(void) debugfs_create_file("jz_regs_intc", S_IFREG | S_IRUGO,
-+				NULL, NULL, &intc_regs_operations);
-+	return 0;
-+}
-+subsys_initcall(intc_debugfs_init);
-+
-+#endif
-diff --git a/arch/mips/jz4740/irq.h b/arch/mips/jz4740/irq.h
-new file mode 100644
-index 0000000..56b5ead
---- /dev/null
-+++ b/arch/mips/jz4740/irq.h
-@@ -0,0 +1,21 @@
-+/*
-+ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#ifndef __MIPS_JZ4740_IRQ_H__
-+#define __MIPS_JZ4740_IRQ_H__
-+
-+extern void jz4740_intc_suspend(void);
-+extern void jz4740_intc_resume(void);
-+
-+#endif
--- 
-1.5.6.5
+ create mode 100644 arch/mips/jz4740/platform.c
+ create mode 100644 arch/mips/jz4740/pm.c
+ create mode 100644 arch/mips/jz4740/prom.c
+ create mode 100644 arch/mips/jz4740/pwm.c
+ create mode 100644 arch/mips/jz4740/reset.c
+ create mode 100644 arch/mips/jz4740/reset.h
+ create mode 100644 arch/mips/jz4740/serial.c
+ create mode 100644 arch/mips/jz4740/serial.h
+ create mode 100644 arch/mips/jz4740/setup.c
+ create mode 100644 arch/mips/jz4740/time.c
+ create mode 100644 arch/mips/jz4740/timer.c
+ create mode 100644 arch/mips/jz4740/timer.h
+ create mode 100644 drivers/hwmon/jz4740-hwmon.c
+ create mode 100644 drivers/mfd/jz4740-adc.c
+ create mode 100644 drivers/mmc/host/jz4740_mmc.c
+ create mode 100644 drivers/mtd/nand/jz4740_nand.c
+ create mode 100644 drivers/power/jz4740-battery.c
+ create mode 100644 drivers/rtc/rtc-jz4740.c
+ create mode 100644 drivers/usb/host/ohci-jz4740.c
+ create mode 100644 drivers/video/jz4740_fb.c
+ create mode 100644 include/linux/jz4740-adc.h
+ create mode 100644 include/linux/jz4740_fb.h
+ create mode 100644 include/linux/mmc/jz4740_mmc.h
+ create mode 100644 include/linux/mtd/jz4740_nand.h
+ create mode 100644 include/linux/power/jz4740-battery.h
+ create mode 100644 sound/soc/codecs/jz4740-codec.c
+ create mode 100644 sound/soc/codecs/jz4740-codec.h
+ create mode 100644 sound/soc/jz4740/Kconfig
+ create mode 100644 sound/soc/jz4740/Makefile
+ create mode 100644 sound/soc/jz4740/jz4740-i2s.c
+ create mode 100644 sound/soc/jz4740/jz4740-i2s.h
+ create mode 100644 sound/soc/jz4740/jz4740-pcm.c
+ create mode 100644 sound/soc/jz4740/jz4740-pcm.h
+ create mode 100644 sound/soc/jz4740/qi_lb60.c
 
