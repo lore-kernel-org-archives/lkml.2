@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545Ab0FSRuB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 13:50:01 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:58209 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755760Ab0FSRt7 convert rfc822-to-8bit (ORCPT
+	id S1755918Ab0FSRvu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 13:51:50 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39717 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754121Ab0FSRvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 13:49:59 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=yxpZwqImjE19NtqBY4hSpULytKCYBuXBHSTAnpL56ir66Ho6YvBnqLi2F/a3cM5L3
-	hkFwUoOOkUOEc5OPXiiKw==
-MIME-Version: 1.0
-In-Reply-To: <878w6bphc2.fsf@basil.nowhere.org>
-References: <1276907415-504-1-git-send-email-mrubin@google.com> 
-	<1276907415-504-4-git-send-email-mrubin@google.com> <878w6bphc2.fsf@basil.nowhere.org>
-From: Michael Rubin <mrubin@google.com>
-Date: Sat, 19 Jun 2010 10:49:34 -0700
-Message-ID: <AANLkTimhsQdLV7UeMppz8mwzQPUfDQbvdNdOCiVnxdKM@mail.gmail.com>
-Subject: Re: [PATCH 3/3] writeback: tracking subsystems causing writeback
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, jack@suse.cz, akpm@linux-foundation.org,
-       david@fromorbit.com, hch@lst.de, axboe@kernel.dk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Sat, 19 Jun 2010 13:51:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=N80G1bkRUitliFXbUwuK+XfM9bzjmF2DYu1MSokk9eSHWzbYdCD2SYWzcyiF5pWPpP
+         55LGQnToE78MEbXQTSCVvP/wPSd41c4KvGws++7CLViCROXH1X9c+n83LpHTF3wRl1ZZ
+         popIwZTmmydBGoghKL2vdpvg2gO1WCHotftUQ=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: linux-audit@redhat.com
+Cc: linux-kernel@vger.kernel.org, geert@linux-m68k.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 2/6 v2]kernel:audit.c Fix warning: variable 'nlh' set but not used
+Date: Sat, 19 Jun 2010 10:51:40 -0700
+Message-Id: <1276969900-11408-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for looking at this.
+This is a resend from the original due to some whitespace issues,
+and done incorrectly.
+ 
+The below patch fixes this warning from gcc 4.6.0
+  CC      kernel/audit.o
+kernel/audit.c: In function 'audit_buffer_alloc':
+kernel/audit.c:1044:19: warning: variable 'nlh' set but not used
 
-On Sat, Jun 19, 2010 at 1:17 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> Michael Rubin <mrubin@google.com> writes:
->>     # cat /sys/block/sda/bdi/writeback_stats
->>     balance dirty pages                       0
->>     balance dirty pages waiting               0
->>     periodic writeback                    92024
->>     periodic writeback exited                 0
->>     laptop periodic                           0
->>     laptop or bg threshold                    0
->>     free more memory                          0
->>     try to free pages                       271
->>     syc_sync                                  6
->>     sync filesystem                           0
->
-> That exports a lot of kernel internals in /sys, presumably read by some
-> applications. What happens with the applications if the kernel internals
-> ever change?  Will the application break?
->
-> It would be bad to not be able to change the kernel because of
-> such an interface.
+ Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-I agree. This would put the kernel in a box a bit. Some of them
-(sys_sync, periodic writeback, free_more_memory) I feel are generic
-enough concepts that with some rewording of the labels they could be
-exposed with no issue. "Balance_dirty_pages" is an example where that
-won't work.
+---
+ kernel/audit.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Are there alternatives to this? Maybe tracepoints that are compiled to be on?
-A CONFIG_WRITEBACK_DEBUG that would expose this file?
+diff --git a/kernel/audit.c b/kernel/audit.c
+index c71bd26..1d51258 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1041,7 +1041,6 @@ static struct audit_buffer * audit_buffer_alloc(struct audit_context *ctx,
+ {
+ 	unsigned long flags;
+ 	struct audit_buffer *ab = NULL;
+-	struct nlmsghdr *nlh;
+ 
+ 	spin_lock_irqsave(&audit_freelist_lock, flags);
+ 	if (!list_empty(&audit_freelist)) {
+@@ -1065,7 +1064,7 @@ static struct audit_buffer * audit_buffer_alloc(struct audit_context *ctx,
+ 	if (!ab->skb)
+ 		goto nlmsg_failure;
+ 
+-	nlh = NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
++	NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
+ 
+ 	return ab;
+ 
+-- 
+1.7.1.rc1.21.gf3bd6
 
-Having this set of info readily available and collected makes
-debugging a lot easier. But I admit I am not sure the best way to
-expose them.
-
-mrubin
