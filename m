@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab0FSFKb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 01:10:31 -0400
-Received: from smtp-out-037.synserver.de ([212.40.180.37]:1036 "HELO
+	id S1754598Ab0FSFKQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 01:10:16 -0400
+Received: from smtp-out-037.synserver.de ([212.40.180.37]:1061 "HELO
 	smtp-out-036.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754579Ab0FSFKW (ORCPT
+	by vger.kernel.org with SMTP id S1754453Ab0FSFKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 01:10:22 -0400
+	Sat, 19 Jun 2010 01:10:11 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 13414
@@ -14,9 +14,9 @@ From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v2 14/26] MIPS: JZ4740: Add Kbuild files
-Date: Sat, 19 Jun 2010 07:08:19 +0200
-Message-Id: <1276924111-11158-15-git-send-email-lars@metafoo.de>
+Subject: [PATCH v2 12/26] MIPS: JZ4740: Add prom support
+Date: Sat, 19 Jun 2010 07:08:17 +0200
+Message-Id: <1276924111-11158-13-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1276924111-11158-1-git-send-email-lars@metafoo.de>
 References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
@@ -24,115 +24,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Kbuild files for the JZ4740 architecture and adds JZ4740
-support to the MIPS Kbuild files.
+This patch adds support for initializing arcs_cmdline on JZ4740 based machines
+and provides a prom_putchar implementation.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-
 ---
-Changes since v1
-- Adjust to MIPS Kbuild changes
----
- arch/mips/Kbuild.platforms |    1 +
- arch/mips/Kconfig          |   13 +++++++++++++
- arch/mips/jz4740/Kconfig   |    8 ++++++++
- arch/mips/jz4740/Makefile  |   18 ++++++++++++++++++
- arch/mips/jz4740/Platform  |    5 +++++
- 5 files changed, 45 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/jz4740/Kconfig
- create mode 100644 arch/mips/jz4740/Makefile
- create mode 100644 arch/mips/jz4740/Platform
+ arch/mips/jz4740/prom.c |   68 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 68 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/jz4740/prom.c
 
-diff --git a/arch/mips/Kbuild.platforms b/arch/mips/Kbuild.platforms
-index ea3b96c..78439b8 100644
---- a/arch/mips/Kbuild.platforms
-+++ b/arch/mips/Kbuild.platforms
-@@ -9,6 +9,7 @@ platforms += cobalt
- platforms += dec
- platforms += emma
- platforms += jazz
-+platforms += jz4740
- platforms += lasat
- platforms += loongson
- platforms += mipssim
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index cdaae94..4d44bad 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -162,6 +162,18 @@ config MACH_JAZZ
- 	 Members include the Acer PICA, MIPS Magnum 4000, MIPS Millennium and
- 	 Olivetti M700-10 workstations.
- 
-+config MACH_JZ4740
-+	bool "Ingenic JZ4740 based machines"
-+	select SYS_HAS_CPU_MIPS32_R1
-+	select SYS_SUPPORTS_32BIT_KERNEL
-+	select SYS_SUPPORTS_LITTLE_ENDIAN
-+	select DMA_NONCOHERENT
-+	select IRQ_CPU
-+	select GENERIC_GPIO
-+	select ARCH_REQUIRE_GPIOLIB
-+	select SYS_HAS_EARLY_PRINTK
-+	select HAVE_PWM
-+
- config LASAT
- 	bool "LASAT Networks platforms"
- 	select CEVT_R4K
-@@ -686,6 +698,7 @@ endchoice
- source "arch/mips/alchemy/Kconfig"
- source "arch/mips/bcm63xx/Kconfig"
- source "arch/mips/jazz/Kconfig"
-+source "arch/mips/jz4740/Kconfig"
- source "arch/mips/lasat/Kconfig"
- source "arch/mips/pmc-sierra/Kconfig"
- source "arch/mips/powertv/Kconfig"
-diff --git a/arch/mips/jz4740/Kconfig b/arch/mips/jz4740/Kconfig
+diff --git a/arch/mips/jz4740/prom.c b/arch/mips/jz4740/prom.c
 new file mode 100644
-index 0000000..8a5e850
+index 0000000..cfeac15
 --- /dev/null
-+++ b/arch/mips/jz4740/Kconfig
-@@ -0,0 +1,8 @@
-+choice
-+	prompt "Machine type"
-+	depends on MACH_JZ4740
++++ b/arch/mips/jz4740/prom.c
+@@ -0,0 +1,68 @@
++/*
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  JZ4740 SoC prom code
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under  the terms of the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
 +
-+endchoice
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/string.h>
 +
-+config HAVE_PWM
-+	bool
-diff --git a/arch/mips/jz4740/Makefile b/arch/mips/jz4740/Makefile
-new file mode 100644
-index 0000000..a803ccb
---- /dev/null
-+++ b/arch/mips/jz4740/Makefile
-@@ -0,0 +1,18 @@
-+#
-+# Makefile for the Ingenic JZ4740.
-+#
++#include <linux/serial_reg.h>
 +
-+# Object file lists.
++#include <asm/bootinfo.h>
++#include <asm/mach-jz4740/base.h>
 +
-+obj-y += prom.o irq.o time.o reset.o setup.o dma.o \
-+	gpio.o clock.o platform.o timer.o pwm.o serial.o
++void jz4740_init_cmdline(int argc, char *argv[])
++{
++	unsigned int count = COMMAND_LINE_SIZE - 1;
++	int i;
++	char *dst = &(arcs_cmdline[0]);
++	char *src;
 +
-+obj-$(CONFIG_DEBUG_FS) += clock-debugfs.o
++	for (i = 1; i < argc && count; ++i) {
++		src = argv[i];
++		while (*src && count) {
++			*dst++ = *src++;
++			--count;
++		}
++		*dst++ = ' ';
++	}
++	if (i > 1)
++		--dst;
 +
-+# board specific support
++	*dst = 0;
++}
 +
-+# PM support
++void __init prom_init(void)
++{
++	jz4740_init_cmdline((int)fw_arg0, (char **)fw_arg1);
++	mips_machtype = MACH_INGENIC_JZ4740;
++}
 +
-+obj-$(CONFIG_PM) += pm.o
++void __init prom_free_prom_memory(void)
++{
++}
 +
-+EXTRA_CFLAGS += -Werror -Wall
-diff --git a/arch/mips/jz4740/Platform b/arch/mips/jz4740/Platform
-new file mode 100644
-index 0000000..540bb35
---- /dev/null
-+++ b/arch/mips/jz4740/Platform
-@@ -0,0 +1,3 @@
-+core-$(CONFIG_MACH_JZ4740)	+= arch/mips/jz4740/
-+cflags-$(CONFIG_MACH_JZ4740)	+= -I$(srctree)/arch/mips/include/asm/mach-jz4740
-+load-$(CONFIG_MACH_JZ4740)	+= 0xffffffff80010000
++#define UART_REG(_reg) ((void __iomem *)CKSEG1ADDR(JZ4740_UART0_BASE_ADDR + (_reg << 2)))
++
++void prom_putchar(char c)
++{
++	uint8_t lsr;
++
++	do {
++		lsr = readb(UART_REG(UART_LSR));
++	} while ((lsr & UART_LSR_TEMT) == 0);
++
++	writeb(c, UART_REG(UART_TX));
++}
 -- 
 1.5.6.5
 
