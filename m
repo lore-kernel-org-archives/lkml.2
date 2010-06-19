@@ -1,282 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab0FSRuF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 13:50:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55916 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756543Ab0FSRuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756545Ab0FSRuB (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 19 Jun 2010 13:50:01 -0400
-Date: Sat, 19 Jun 2010 19:49:57 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Ott <alan@signal11.us>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-       David S Miller <davem@davemloft.net>,
-       Michael Poole <mdpoole@troilus.org>, Bastien Nocera <hadess@hadess.net>,
-       Eric Dumazet <eric.dumazet@gmail.com>, linux-bluetooth@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw HIDIOCGFEATURE
- and HIDIOCSFEATURE
-In-Reply-To: <1276467601-9066-1-git-send-email-alan@signal11.us>
-Message-ID: <alpine.LNX.2.00.1006191947100.13809@pobox.suse.cz>
-References: <1276467601-9066-1-git-send-email-alan@signal11.us>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Received: from smtp-out.google.com ([74.125.121.35]:58209 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755760Ab0FSRt7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 13:49:59 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=yxpZwqImjE19NtqBY4hSpULytKCYBuXBHSTAnpL56ir66Ho6YvBnqLi2F/a3cM5L3
+	hkFwUoOOkUOEc5OPXiiKw==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <878w6bphc2.fsf@basil.nowhere.org>
+References: <1276907415-504-1-git-send-email-mrubin@google.com> 
+	<1276907415-504-4-git-send-email-mrubin@google.com> <878w6bphc2.fsf@basil.nowhere.org>
+From: Michael Rubin <mrubin@google.com>
+Date: Sat, 19 Jun 2010 10:49:34 -0700
+Message-ID: <AANLkTimhsQdLV7UeMppz8mwzQPUfDQbvdNdOCiVnxdKM@mail.gmail.com>
+Subject: Re: [PATCH 3/3] writeback: tracking subsystems causing writeback
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, jack@suse.cz, akpm@linux-foundation.org,
+       david@fromorbit.com, hch@lst.de, axboe@kernel.dk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Jun 2010, Alan Ott wrote:
+Thanks for looking at this.
 
-> This patch adds support or getting and setting feature reports for bluetooth
-> HID devices from HIDRAW.
-> 
-> Signed-off-by: Alan Ott <alan@signal11.us>
+On Sat, Jun 19, 2010 at 1:17 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> Michael Rubin <mrubin@google.com> writes:
+>>     # cat /sys/block/sda/bdi/writeback_stats
+>>     balance dirty pages                       0
+>>     balance dirty pages waiting               0
+>>     periodic writeback                    92024
+>>     periodic writeback exited                 0
+>>     laptop periodic                           0
+>>     laptop or bg threshold                    0
+>>     free more memory                          0
+>>     try to free pages                       271
+>>     syc_sync                                  6
+>>     sync filesystem                           0
+>
+> That exports a lot of kernel internals in /sys, presumably read by some
+> applications. What happens with the applications if the kernel internals
+> ever change?  Will the application break?
+>
+> It would be bad to not be able to change the kernel because of
+> such an interface.
 
-Marcel, any word on this please? We already have USB counterpart in, so 
-it'd be nice to finalize the Bluetooth part as well.
+I agree. This would put the kernel in a box a bit. Some of them
+(sys_sync, periodic writeback, free_more_memory) I feel are generic
+enough concepts that with some rewording of the labels they could be
+exposed with no issue. "Balance_dirty_pages" is an example where that
+won't work.
 
-Thanks.
+Are there alternatives to this? Maybe tracepoints that are compiled to be on?
+A CONFIG_WRITEBACK_DEBUG that would expose this file?
 
-> ---
->  net/bluetooth/hidp/core.c |  121 +++++++++++++++++++++++++++++++++++++++++++--
->  net/bluetooth/hidp/hidp.h |    8 +++
->  2 files changed, 125 insertions(+), 4 deletions(-)
-> 
-> diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
-> index bfe641b..0f068a0 100644
-> --- a/net/bluetooth/hidp/core.c
-> +++ b/net/bluetooth/hidp/core.c
-> @@ -36,6 +36,7 @@
->  #include <linux/file.h>
->  #include <linux/init.h>
->  #include <linux/wait.h>
-> +#include <linux/mutex.h>
->  #include <net/sock.h>
->  
->  #include <linux/input.h>
-> @@ -313,6 +314,93 @@ static int hidp_send_report(struct hidp_session *session, struct hid_report *rep
->  	return hidp_queue_report(session, buf, rsize);
->  }
->  
-> +static int hidp_get_raw_report(struct hid_device *hid,
-> +		unsigned char report_number,
-> +		unsigned char *data, size_t count,
-> +		unsigned char report_type)
-> +{
-> +	struct hidp_session *session = hid->driver_data;
-> +	struct sk_buff *skb;
-> +	size_t len;
-> +	int numbered_reports = hid->report_enum[report_type].numbered;
-> +
-> +	switch (report_type) {
-> +	case HID_FEATURE_REPORT:
-> +		report_type = HIDP_TRANS_GET_REPORT | HIDP_DATA_RTYPE_FEATURE;
-> +		break;
-> +	case HID_INPUT_REPORT:
-> +		report_type = HIDP_TRANS_GET_REPORT | HIDP_DATA_RTYPE_INPUT;
-> +		break;
-> +	case HID_OUTPUT_REPORT:
-> +		report_type = HIDP_TRANS_GET_REPORT | HIDP_DATA_RTYPE_OUPUT;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (mutex_lock_interruptible(&session->report_mutex))
-> +		return -ERESTARTSYS;
-> +
-> +	/* Set up our wait, and send the report request to the device. */
-> +	session->waiting_report_type = report_type & HIDP_DATA_RTYPE_MASK;
-> +	session->waiting_report_number = numbered_reports ? report_number : -1;
-> +	set_bit(HIDP_WAITING_FOR_RETURN, &session->flags);
-> +	data[0] = report_number;
-> +	if (hidp_send_ctrl_message(hid->driver_data, report_type, data, 1))
-> +		goto err_eio;
-> +
-> +	/* Wait for the return of the report. The returned report
-> +	   gets put in session->report_return.  */
-> +	while (test_bit(HIDP_WAITING_FOR_RETURN, &session->flags)) {
-> +		int res;
-> +
-> +		res = wait_event_interruptible_timeout(session->report_queue,
-> +			!test_bit(HIDP_WAITING_FOR_RETURN, &session->flags),
-> +			5*HZ);
-> +		if (res == 0) {
-> +			/* timeout */
-> +			goto err_eio;
-> +		}
-> +		if (res < 0) {
-> +			/* signal */
-> +			goto err_restartsys;
-> +		}
-> +	}
-> +
-> +	skb = session->report_return;
-> +	if (skb) {
-> +		if (numbered_reports) {
-> +			/* Strip off the report number. */
-> +			size_t rpt_len = skb->len-1;
-> +			len = rpt_len < count ? rpt_len : count;
-> +			memcpy(data, skb->data+1, len);
-> +		} else {
-> +			len = skb->len < count ? skb->len : count;
-> +			memcpy(data, skb->data, len);
-> +		}
-> +
-> +		kfree_skb(skb);
-> +		session->report_return = NULL;
-> +	} else {
-> +		/* Device returned a HANDSHAKE, indicating  protocol error. */
-> +		len = -EIO;
-> +	}
-> +
-> +	clear_bit(HIDP_WAITING_FOR_RETURN, &session->flags);
-> +	mutex_unlock(&session->report_mutex);
-> +
-> +	return len;
-> +
-> +err_restartsys:
-> +	clear_bit(HIDP_WAITING_FOR_RETURN, &session->flags);
-> +	mutex_unlock(&session->report_mutex);
-> +	return -ERESTARTSYS;
-> +err_eio:
-> +	clear_bit(HIDP_WAITING_FOR_RETURN, &session->flags);
-> +	mutex_unlock(&session->report_mutex);
-> +	return -EIO;
-> +}
-> +
->  static int hidp_output_raw_report(struct hid_device *hid, unsigned char *data, size_t count,
->  		unsigned char report_type)
->  {
-> @@ -367,6 +455,10 @@ static void hidp_process_handshake(struct hidp_session *session,
->  	case HIDP_HSHK_ERR_INVALID_REPORT_ID:
->  	case HIDP_HSHK_ERR_UNSUPPORTED_REQUEST:
->  	case HIDP_HSHK_ERR_INVALID_PARAMETER:
-> +		if (test_bit(HIDP_WAITING_FOR_RETURN, &session->flags)) {
-> +			clear_bit(HIDP_WAITING_FOR_RETURN, &session->flags);
-> +			wake_up_interruptible(&session->report_queue);
-> +		}
->  		/* FIXME: Call into SET_ GET_ handlers here */
->  		break;
->  
-> @@ -403,9 +495,11 @@ static void hidp_process_hid_control(struct hidp_session *session,
->  	}
->  }
->  
-> -static void hidp_process_data(struct hidp_session *session, struct sk_buff *skb,
-> +/* Returns true if the passed-in skb should be freed by the caller. */
-> +static int hidp_process_data(struct hidp_session *session, struct sk_buff *skb,
->  				unsigned char param)
->  {
-> +	int done_with_skb = 1;
->  	BT_DBG("session %p skb %p len %d param 0x%02x", session, skb, skb->len, param);
->  
->  	switch (param) {
-> @@ -417,7 +511,6 @@ static void hidp_process_data(struct hidp_session *session, struct sk_buff *skb,
->  
->  		if (session->hid)
->  			hid_input_report(session->hid, HID_INPUT_REPORT, skb->data, skb->len, 0);
-> -
->  		break;
->  
->  	case HIDP_DATA_RTYPE_OTHER:
-> @@ -429,12 +522,27 @@ static void hidp_process_data(struct hidp_session *session, struct sk_buff *skb,
->  		__hidp_send_ctrl_message(session,
->  			HIDP_TRANS_HANDSHAKE | HIDP_HSHK_ERR_INVALID_PARAMETER, NULL, 0);
->  	}
-> +
-> +	if (test_bit(HIDP_WAITING_FOR_RETURN, &session->flags) &&
-> +				param == session->waiting_report_type) {
-> +		if (session->waiting_report_number < 0 ||
-> +		    session->waiting_report_number == skb->data[0]) {
-> +			/* hidp_get_raw_report() is waiting on this report. */
-> +			session->report_return = skb;
-> +			done_with_skb = 0;
-> +			clear_bit(HIDP_WAITING_FOR_RETURN, &session->flags);
-> +			wake_up_interruptible(&session->report_queue);
-> +		}
-> +	}
-> +
-> +	return done_with_skb;
->  }
->  
->  static void hidp_recv_ctrl_frame(struct hidp_session *session,
->  					struct sk_buff *skb)
->  {
->  	unsigned char hdr, type, param;
-> +	int free_skb = 1;
->  
->  	BT_DBG("session %p skb %p len %d", session, skb, skb->len);
->  
-> @@ -454,7 +562,7 @@ static void hidp_recv_ctrl_frame(struct hidp_session *session,
->  		break;
->  
->  	case HIDP_TRANS_DATA:
-> -		hidp_process_data(session, skb, param);
-> +		free_skb = hidp_process_data(session, skb, param);
->  		break;
->  
->  	default:
-> @@ -463,7 +571,8 @@ static void hidp_recv_ctrl_frame(struct hidp_session *session,
->  		break;
->  	}
->  
-> -	kfree_skb(skb);
-> +	if (free_skb)
-> +		kfree_skb(skb);
->  }
->  
->  static void hidp_recv_intr_frame(struct hidp_session *session,
-> @@ -797,6 +906,7 @@ static int hidp_setup_hid(struct hidp_session *session,
->  	hid->dev.parent = hidp_get_device(session);
->  	hid->ll_driver = &hidp_hid_driver;
->  
-> +	hid->hid_get_raw_report = hidp_get_raw_report;
->  	hid->hid_output_raw_report = hidp_output_raw_report;
->  
->  	err = hid_add_device(hid);
-> @@ -857,6 +967,9 @@ int hidp_add_connection(struct hidp_connadd_req *req, struct socket *ctrl_sock,
->  	skb_queue_head_init(&session->ctrl_transmit);
->  	skb_queue_head_init(&session->intr_transmit);
->  
-> +	mutex_init(&session->report_mutex);
-> +	init_waitqueue_head(&session->report_queue);
-> +
->  	session->flags   = req->flags & (1 << HIDP_BLUETOOTH_VENDOR_ID);
->  	session->idle_to = req->idle_to;
->  
-> diff --git a/net/bluetooth/hidp/hidp.h b/net/bluetooth/hidp/hidp.h
-> index 8d934a1..00e71dd 100644
-> --- a/net/bluetooth/hidp/hidp.h
-> +++ b/net/bluetooth/hidp/hidp.h
-> @@ -80,6 +80,7 @@
->  #define HIDP_VIRTUAL_CABLE_UNPLUG	0
->  #define HIDP_BOOT_PROTOCOL_MODE		1
->  #define HIDP_BLUETOOTH_VENDOR_ID	9
-> +#define	HIDP_WAITING_FOR_RETURN		10
->  
->  struct hidp_connadd_req {
->  	int   ctrl_sock;	// Connected control socket
-> @@ -154,6 +155,13 @@ struct hidp_session {
->  	struct sk_buff_head ctrl_transmit;
->  	struct sk_buff_head intr_transmit;
->  
-> +	/* Used in hidp_get_raw_report() */
-> +	int waiting_report_type; /* HIDP_DATA_RTYPE_* */
-> +	int waiting_report_number; /* -1 for not numbered */
-> +	struct mutex report_mutex;
-> +	struct sk_buff *report_return;
-> +	wait_queue_head_t report_queue;
-> +
->  	/* Report descriptor */
->  	__u8 *rd_data;
->  	uint rd_size;
-> -- 
-> 1.7.0.4
-> 
-> 
+Having this set of info readily available and collected makes
+debugging a lot easier. But I admit I am not sure the best way to
+expose them.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+mrubin
