@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319Ab0FSJSa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 05:18:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60262 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755178Ab0FSJS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 05:18:28 -0400
-Message-ID: <4C1C8B32.1040007@kernel.org>
-Date: Sat, 19 Jun 2010 11:17:38 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Andy Walls <awalls@md.metrocast.net>,
-       Daniel Walker <dwalker@codeaurora.org>, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, jeff@garzik.org,
-       akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
-Subject: Re: Overview of concurrency managed workqueue
-References: <1276695665.9309.17.camel@m0nster> <4C18D574.1040903@kernel.org> <1276697146.9309.27.camel@m0nster> <1276776066.2461.15.camel@localhost> <87vd9fo1sk.fsf@basil.nowhere.org> <4C1C8263.9040404@kernel.org> <87fx0jo0z6.fsf@basil.nowhere.org> <4C1C8772.8090406@kernel.org> <20100619090851.GF18946@basil.fritz.box> <4C1C8A18.2030709@kernel.org> <20100619091518.GG18946@basil.fritz.box>
-In-Reply-To: <20100619091518.GG18946@basil.fritz.box>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755346Ab0FSJ1J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 05:27:09 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42392 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755191Ab0FSJ1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 05:27:07 -0400
+Date: Sat, 19 Jun 2010 10:30:56 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dzickus@redhat.com
+Subject: Re: [PATCH] Add TAINT_HARDWARE_UNSUPPORTED flag
+Message-ID: <20100619103056.194fb221@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
+References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 19 Jun 2010 09:17:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> Typically, one would push a config patch to enable and disable the feature and
+> patch the distribution.  However, in some cases this is not feasible in order
 
-On 06/19/2010 11:15 AM, Andi Kleen wrote:
->> Well, in general, queueing to execution latency should be fairly low
->> especially if it's put at the front of the queue but well it's nothing
->> with any kind of guarantee.
-> 
-> This is not a hard real time situation with a hard deadline,
-> just "ASAP"
-> 
->> I'm currently writing a kthread wrapper which basically provides
->> similar interface to wq but guarantees binding to a specific thread
->> which can be RT of course.  If single threadedness is acceptable, I
->> think this would render better behavior.  What do you think?
-> 
-> I think I would prefer simply high priority, but normal work item.
-> 
-> Otherwise we have the thread hanging around all the time 
-> and on a large system it's still only a single one, so
-> it'll never scale.
+If you can push a patch to set the flag you can push a patch to panic or
+reject that combination.
 
-Hmmm... yeah, adding it isn't hard.  I'm just a bit skeptical how
-useful it would be.  Having only single user would be a bit silly.
-Can you think of anything else which could benefit from high priority
-queueing?
+Devil's advocate time: 
 
-Thanks.
+Also the fact some distributions chose a binary compatible interface for
+their internal modules was their choice. It is one that has been
+repeatedly rejected by upstream and at kernel summit.
 
--- 
-tejun
+So given we fundamnetally reject your approach why should we carry your
+flag ?
+
+> In some cases the distribution may want to allow booting of these features but
+> explicitly notify a user that they are not "officially" supported.  It is also
+
+We have printk. You can add a module of your own which indicates
+'support' status too.
+
+> possible that the hardware is fixed via a firmware update at a later date,
+> making it supported again.
+
+IMHO it's not properly named in the first place. You are talking about
+combinations of hardware/firmware and you actually mean 'configuration
+not supported' ?
+
+> This patch introduces the TAINT_HARDWARE_UNSUPPORTED flag for distributions
+> to use.
+
+and why KERN_CRIT when the other printk's don't use that level ?
+
+A suggestion: instead of all this push a single patch with a comment and
+maybe defines indicating that taint flag bits 28-31 are 'reserved' for
+experimental and out of tree applications.
+
+That way anyone who has a requirement like yours can deal with it and
+nobody has to worry about bit collisions, naming and the like. Nor if you
+suddenely need an extra bit in 3 years time are you going to come unstuck
+on your KABI. That will help other people doing experiments with taint or
+with differing needs to the Red Hat one.
+
+Alan
