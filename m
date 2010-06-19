@@ -1,97 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab0FSTGl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 15:06:41 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56303 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756622Ab0FSTGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 15:06:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: svaidy@linux.vnet.ibm.com,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] RFC: /sys/power/policy_preference
-Date: Sat, 19 Jun 2010 21:04:47 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Victor Lowther <victor.lowther@gmail.com>, Len Brown <lenb@kernel.org>,
-       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       linux-pm@lists.linux-foundation.org
-References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain> <0F1C0B07-60D6-405B-890B-F9C320820CA5@gmail.com> <20100619151741.GA18201@dirshya.in.ibm.com>
-In-Reply-To: <20100619151741.GA18201@dirshya.in.ibm.com>
+	id S1756730Ab0FSTKH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 15:10:07 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45268 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756622Ab0FSTKE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 15:10:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=nQmXIvR3ksnfEu60IRydhDcZ4BC7AGztIjrzs6/uiyAIkcYGwz5TfdInNGgnebkCz4
+         jhav3osbt4KTQ0VaC4+CoYUiofw8eysh8F+ZoVGThRbH88Zsxdv0lhr/ADxoJV9gnwHn
+         KPJLKQljBJP3oE+Zcs4xp0kjydzu1NramcT54=
+Message-ID: <4C1D160D.5030303@gmail.com>
+Date: Sat, 19 Jun 2010 12:10:05 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+       zippel@linux-m68k.org, linux-fsdevel@vger.kernel.org,
+       rusty@rustcorp.com.au
+Subject: Re: [PATCH 5/6]kernel:module.c variable 'nowarn' set but not used
+References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>	<1276288869-16815-6-git-send-email-justinmattock@gmail.com>	<AANLkTilZLOGXpZxHUklA8iHMj8HsJap2BvWMrWMmeyu3@mail.gmail.com>	<4C1C4FDE.2090101@gmail.com> <AANLkTin5ovxSSsIM-1R-u7mmoqxp8UnxgtkuVJfZU2ES@mail.gmail.com>
+In-Reply-To: <AANLkTin5ovxSSsIM-1R-u7mmoqxp8UnxgtkuVJfZU2ES@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006192104.47438.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 19, 2010, Vaidyanathan Srinivasan wrote:
-> * Victor Lowther <victor.lowther@gmail.com> [2010-06-17 11:14:50]:
-> 
-> > 
-> > 
-> > 
-> > 
-> > On Jun 16, 2010, at 4:05 PM, Len Brown <lenb@kernel.org> wrote:
-> > 
-> > >Create /sys/power/policy_preference, giving user-space
-> > >the ability to express its preference for kernel based
-> > >power vs. performance decisions in a single place.
-> > >
-> > >This gives kernel sub-systems and drivers a central place
-> > >to discover this system-wide policy preference.
-> > >It also allows user-space to not have to be updated
-> > >every time a sub-system or driver adds a new power/perf knob.
-> > 
-> > I would prefer documenting all the current knobs and adding them to
-> > pm-utils so that pm-powersave knows about and can manage them. Once
-> > that is done, creating arbitrary powersave levels should be fairly
-> > simple.
-> 
-> Hi Len,
-> 
-> Reading through this thread, I prefer the above recommendation.
+On 06/19/2010 01:08 AM, Geert Uytterhoeven wrote:
+> On Sat, Jun 19, 2010 at 07:04, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
+>>> Also wrong, you removed the creation of the links in sysfs.
+>>>
+>>> The assignment to nowarn was there to avoid another compiler warning,
+>>> as sysfs_create_link() is marked __must_check.
+>>
+>> I also went back to this one and made the following changes.. let me know if
+>> it's wrong etc..
+>>
+>>  From 4f45beed80627d2bb32fb021bb6d22d88089557b Mon Sep 17 00:00:00 2001
+>> From: Justin P. Mattock<justinmattock@gmail.com>
+>> Date: Fri, 18 Jun 2010 22:01:07 -0700
+>> Subject: [PATCH 5/5] module.c
+>>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>
+>> ---
+>>   kernel/module.c |    3 +--
+>>   1 files changed, 1 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/module.c b/kernel/module.c
+>> index 8c6b428..48fc5c8 100644
+>> --- a/kernel/module.c
+>> +++ b/kernel/module.c
+>> @@ -1340,11 +1340,10 @@ static void add_usage_links(struct module *mod)
+>>   {
+>>   #ifdef CONFIG_MODULE_UNLOAD
+>>         struct module_use *use;
+>> -       int nowarn;
+>>
+>>         mutex_lock(&module_mutex);
+>>         list_for_each_entry(use,&mod->target_list, target_list) {
+>> -               nowarn = sysfs_create_link(use->target->holders_dir,
+>> +               sysfs_create_link(use->target->holders_dir,
+>>                                            &mod->mkobj.kobj, mod->name);
+>>         }
+>>         mutex_unlock(&module_mutex);
+>> --
+>> 1.7.1.rc1.21.gf3bd6
+>>
+>> if it looks good, then I can resend it out.
+>
+> Have you compile-tested this?
+> As sysfs_create_link() is marked __must_check, that will cause another compiler
+> warning, but only if CONFIG_SYSFS=y.
+>
+> Perhaps you can just mark the nowarn variable __unused?
 
-It also reflects my opinion quite well.
 
-> We have three main dimensions of (power savings) control (cpufreq,
-> cpuidle and scheduler) and you are combining them into a single policy
-> in the kernel.
+o.k. this builds cleanly without a warning, but is it the right thing 
+todo? i.g. rather leave the warning message there and file a bug than 
+just silence the issue. Anyways here is what I have:
 
-There's more than that, because we're in the process of adding runtime PM
-features to I/O device drivers.
+ From edbeb2b1ee051218f9e5b93fcb8bbdbf1119a6e4 Mon Sep 17 00:00:00 2001
+From: Justin P. Mattock <justinmattock@gmail.com>
+Date: Sat, 19 Jun 2010 12:07:32 -0700
+Subject: [PATCH 5/5] module.c
+  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-> The challenges are as follows:
-> 
-> * Number of policies will always limit flexibility
-> * More dimensions of control will be added in future and your
->   intention is to transparently include them within these defined
->   polices
-> * Even with the current implementations, power savings and performance
->   impact widely vary based on system topology and workload.  There is
->   no easy method to define modes such that one mode will _always_
->   consume less power than the other
-> * Each subsystem can override the policy settings and create more
->   combinations anyway
-> 
-> Your argument is that these modes can serve as a good default and allow
-> the user to tune the knobs directly for more sophisticated policies.
-> But in that case all kernel subsystem should default to the balanced
-> policy and let the user tweak individual subsystems for other modes.
-> 
-> On the other hand having the policy definitions in user space allows
-> us to create more flexible policies by considering higher level
-> factors like workload behavior, utilization, platform features,
-> power/thermal constraints etc.
+---
+  kernel/module.c |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
 
-The policy_preference levels as proposed are also really arbitrary and they
-will usually mean different things on different systems.  If the interpretation
-of these values is left to device drivers, then (for example) different network
-adapter drivers may interpret "performance" differently and that will lead to
-different types of behavior depending on which of them is used.  I think we
-should rather use interfaces that unambiguously tell the driver what to do.
+diff --git a/kernel/module.c b/kernel/module.c
+index 8c6b428..765bac5 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1340,7 +1340,7 @@ static void add_usage_links(struct module *mod)
+  {
+  #ifdef CONFIG_MODULE_UNLOAD
+  	struct module_use *use;
+-	int nowarn;
++	int nowarn __attribute__((unused));
 
-Thanks,
-Rafael
+  	mutex_lock(&module_mutex);
+  	list_for_each_entry(use, &mod->target_list, target_list) {
+-- 
+1.7.1.rc1.21.gf3bd6
