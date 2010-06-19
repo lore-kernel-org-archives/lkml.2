@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab0FSEZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 00:25:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56437 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751118Ab0FSEZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 00:25:57 -0400
-Date: Sat, 19 Jun 2010 00:25:34 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: axboe@kernel.dk, martin.petersen@oracle.com, James.Bottomley@suse.de,
-       linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: [PATCH, RFC] block: don't allocate a payload for discard request
-Message-ID: <20100619042534.GA16217@redhat.com>
-References: <20100618145942.GA1148@lst.de>
+	id S1752011Ab0FSEpP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 00:45:15 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47066 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478Ab0FSEpL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 00:45:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=XKuas90nJ6faxdsaV3bg09PDyQXxvGTzwQ4N97ZAyfyW1gO0wqY/lvDiidD6gHDoQB
+         LjCegCM+6zkt3zUrM+mCZOtER8Uy4npGfuwfI785aOofIlQe8s7r8Aw1QdZRg3umh4Iw
+         1GehyuYM503TeuTrVi9Gpv1PbZ0n9Oq5p+aGU=
+Message-ID: <4C1C4B55.8070209@gmail.com>
+Date: Fri, 18 Jun 2010 21:45:09 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100618145942.GA1148@lst.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+       zippel@linux-m68k.org, linux-fsdevel@vger.kernel.org,
+       rusty@rustcorp.com.au
+Subject: Re: [PATCH 2/6]kernel:audit.c Fix warning: variable 'nlh' set but
+ not 	used
+References: <1276288869-16815-1-git-send-email-justinmattock@gmail.com>	<1276288869-16815-3-git-send-email-justinmattock@gmail.com> <AANLkTildzUcfd6GghHbO53ebPAc4m4BahJrXUr8B7SQF@mail.gmail.com>
+In-Reply-To: <AANLkTildzUcfd6GghHbO53ebPAc4m4BahJrXUr8B7SQF@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18 2010 at 10:59am -0400,
-Christoph Hellwig <hch@lst.de> wrote:
 
-> 
-> Allocating a fixed payload for discard requests always was a horrible hack,
-> and it's not coming to byte us when adding support for discard in DM/MD.
-> 
-> So change the code to leave the allocation of a payload to the lowlevel
-> driver.  Unfortunately that means we'll need another hack, which allows
-> us to update the various block layer length fields indicating that we
-> have a payload.  Instead of hiding this in sd.c, which we already partially
-> do for UNMAP support add a documented helper in the core block layer for it.
-> 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
+>
+> This is not dead code. NLMSG_NEW() sets up an nlmsg in ab->skb.
+> If you remove the code, it's no longer initialized.
 
-Acked-by: Mike Snitzer <snitzer@redhat.com>
+I played around with this code some more, but am still getting confused 
+with nlmsg_new and NLMSG_NEW. if I remove the nlmsghdr struct I can get 
+a clean build without a warning, but still am a bit confused.
 
-I've built on your patch to successfully implement discard support for
-DM (this includes splitting discards that span targets; only the linear
-and striped DM targets are supported so far).
+here is an updated patch let me know if it still needs work..
+or if it's legit I can resend this.
 
-The patchset is still a work in progress but is available here (against
-2.6.34 at the moment):
-http://people.redhat.com/msnitzer/patches/dm-discard/latest/
+ From 7515a08ba921d3beed33fa5c6b1fbe59cf52e069 Mon Sep 17 00:00:00 2001
+From: Justin P. Mattock <justinmattock@gmail.com>
+Date: Fri, 18 Jun 2010 19:44:30 -0700
+Subject: [PATCH 4/4] audit
+  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
+---
+  kernel/audit.c |    3 +--
+  1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index c71bd26..1d51258 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1041,7 +1041,6 @@ static struct audit_buffer * 
+audit_buffer_alloc(struct audit_context *ctx,
+  {
+  	unsigned long flags;
+  	struct audit_buffer *ab = NULL;
+-	struct nlmsghdr *nlh;
+
+  	spin_lock_irqsave(&audit_freelist_lock, flags);
+  	if (!list_empty(&audit_freelist)) {
+@@ -1065,7 +1064,7 @@ static struct audit_buffer * 
+audit_buffer_alloc(struct audit_context *ctx,
+  	if (!ab->skb)
+  		goto nlmsg_failure;
+
+-	nlh = NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
++	NLMSG_NEW(ab->skb, 0, 0, type, 0, 0);
+
+  	return ab;
+
+-- 
+1.7.1.rc1.21.gf3bd6
+
+Justin P. Mattock
