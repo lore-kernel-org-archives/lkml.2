@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab0FSMQL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 08:16:11 -0400
-Received: from pedologie-fo.b.astral.ro ([85.186.159.107]:54357 "EHLO
-	www.icpa.ro" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751376Ab0FSMQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 08:16:09 -0400
-X-Greylist: delayed 6607 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Jun 2010 08:16:09 EDT
-Message-ID: <41517.85.17.254.135.1276940653.squirrel@mail.icpa.ro>
-Date: Sat, 19 Jun 2010 12:44:13 +0300 (EEST)
-Subject: 
-From: "Mrs.Susan Casson" <fastloanlender@live.com>
-Reply-To: mrs.susancassonloanfirmcompany@googlemail.com
-User-Agent: SquirrelMail/1.4.8-4.0.1.el5.centos.2
+	id S1755557Ab0FSMUS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 08:20:18 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35230 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab0FSMUQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 08:20:16 -0400
+Date: Sat, 19 Jun 2010 14:20:10 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Andy Walls <awalls@md.metrocast.net>,
+       Daniel Walker <dwalker@codeaurora.org>, mingo@elte.hu,
+       linux-kernel@vger.kernel.org, jeff@garzik.org,
+       akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk
+Subject: Re: Overview of concurrency managed workqueue
+Message-ID: <20100619122010.GI18946@basil.fritz.box>
+References: <87vd9fo1sk.fsf@basil.nowhere.org>
+ <4C1C8263.9040404@kernel.org>
+ <87fx0jo0z6.fsf@basil.nowhere.org>
+ <4C1C8772.8090406@kernel.org>
+ <20100619090851.GF18946@basil.fritz.box>
+ <4C1C8A18.2030709@kernel.org>
+ <20100619091518.GG18946@basil.fritz.box>
+ <4C1C8B32.1040007@kernel.org>
+ <20100619092758.GH18946@basil.fritz.box>
+ <4C1C911B.6040601@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C1C911B.6040601@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+> * Do machines ever report that many MCE errors?  The usual rate seems
+>   like one per weeks or months even when they're frequent.
 
-I am Mrs.Susan Casson, a private loan lender, I am willing to lend out
-loans with the interest rate of 3%,I offer loan to all categories of
-people ,firms, companies, all kinds of business organizations, private
-individuals and real estate investors with the minimum amount of
-$10,000.00USD to $1,000,000,000USD, I give out loans at very cheap and
-moderate rates. I am a certified, registered and legit lender. You can
-contact me immediately if you are interested in getting a loan, contact me
-for more information about the loan process, process like the loan terms
-and conditions and how the loan will be transferred to you.if
-interested,contact me with this email below:
-mrs.susancassonloanfirmcompany@googlemail.com
+Yes you can even get a flood when the system or parts 
+of the system is dying. There's some throttling in the error handling, 
+but yes in some cases you can get high rates.
 
+> * If a machine is actually reporting enough errors to overwhelm single
+>   error handling thread, does it even matter what we do?
 
-Best Regards
-Mrs.Susan Casson
+There are cases where you can have many errors but still survive.
 
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
