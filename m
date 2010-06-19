@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab0FSCPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 22:15:19 -0400
-Received: from wine.ocn.ne.jp ([122.1.235.145]:63691 "EHLO smtp.wine.ocn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754544Ab0FSCPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 22:15:17 -0400
-To: kees.cook@canonical.com, alan@lxorguk.ukuu.org.uk
-Cc: rdunlap@xenotime.net, jmorris@namei.org, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, jkosina@suse.cz, hidave.darkstar@gmail.com,
-       schwidefsky@de.ibm.com, roland@redhat.com, oleg@redhat.com,
-       hpa@zytor.com, dhowells@redhat.com, mingo@elte.hu,
-       a.p.zijlstra@chello.nl, ebiederm@xmission.com,
-       linux-doc@vger.kernel.org, sds@tycho.nsa.gov, dwalsh@redhat.com,
+	id S1751991Ab0FSCXK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 22:23:10 -0400
+Received: from smtp106.prem.mail.sp1.yahoo.com ([98.136.44.61]:34995 "HELO
+	smtp106.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751391Ab0FSCXB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Jun 2010 22:23:01 -0400
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: tX6AGMwVM1lnEkbOQTZFCwLX4v4_m0YhtwPnipQuReyFWOq
+ QTeDPenOileVjIWAjz61G8h7HGiZrY5ue64LVn3KFhWVh2.Ig5bF5uVOAoTU
+ Lxt3IYHeXua9xSx_BwtXMgPAYjBTdO21xOsiiOxTXzXEc1L8InU.uSjRfeYC
+ 7LQhKtMcRYK1ERtJJt95dO4qTdZ7BqZq074uTJYixY.BEQYvbY.lbW88P9t7
+ f__mV6e314LUB1AEu0Zjx13ZxJ1u.X_3Wi6.9w8oRkGM0as_8QcFJf0c6YdF
+ K0kRHkqyPSeW9vy99HYeUcfeSYBSty7O6m6.2wHxssI9LlJaoh741NW9p
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4C1C2A07.8020007@schaufler-ca.com>
+Date: Fri, 18 Jun 2010 19:23:03 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Theodore Tso <tytso@MIT.EDU>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Kees Cook <kees.cook@canonical.com>,
+       Randy Dunlap <rdunlap@xenotime.net>, James Morris <jmorris@namei.org>,
+       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-doc@vger.kernel.org, Stephen Smalley <sds@tycho.nsa.gov>,
+       Daniel J Walsh <dwalsh@redhat.com>,
        linux-security-module@vger.kernel.org
 Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20100617170453.GV24749@outflux.net>
-	<20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
-	<20100617140630.c6ced27a.rdunlap@xenotime.net>
-	<20100617221815.68ce30c5@lxorguk.ukuu.org.uk>
-	<20100617215105.GB24749@outflux.net>
-In-Reply-To: <20100617215105.GB24749@outflux.net>
-Message-Id: <201006191115.BFI52612.SMLFOFVHQOFtJO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 19 Jun 2010 11:15:11 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+References: <20100616221833.GM24749@outflux.net>	<20100617000120.13071be8@lxorguk.ukuu.org.uk>	<20100616232230.GP24749@outflux.net>	<alpine.LRH.2.00.1006172336390.17282@tundra.namei.org>	<20100617170453.GV24749@outflux.net>	<20100617215349.2fac02f5@lxorguk.ukuu.org.uk>	<20100617140630.c6ced27a.rdunlap@xenotime.net>	<20100617221815.68ce30c5@lxorguk.ukuu.org.uk>	<20100617215105.GB24749@outflux.net>	<20100617233054.330256cf@lxorguk.ukuu.org.uk>	<4C1AE3A8.2020104@schaufler-ca.com>	<E1FEE555-566E-4698-8FD8-240076A4F850@mit.edu> <m1wrtwwiua.fsf@fess.ebiederm.org>
+In-Reply-To: <m1wrtwwiua.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook wrote:
-> If all I cared about was the default Ubuntu distro, I wouldn't forward
-> these patches at all.  As it turns out, I care about all kinds of
-> configurations, e.g. people using SELinux on Ubuntu, AppArmor on SUSE,
-> no LSM on Fedora, grsecurity on Gentoo, or TOMOYO on Debian.  There are
-> all kinds of combinations, obviously, and I'm interested in making this
-> stuff available to anyone and everyone.
+Eric W. Biederman wrote:
+> Theodore Tso <tytso@MIT.EDU> writes:
+>
+>   
+>> i think we really need to have stacked LSM's,
 
-Security modules supported by distributor's kernels are one of benchmarks for
-Linux users when deciding distro to use. But it is just one of benchmarks.
-Linux users do not decide distro only with security modules supported by
-distributor's kernels. Linux users choose distro with various benchmarks.
+!
 
-Forcing Linux users to choose specific distro which supports SELinux in order
-to use ptrace restriction is nonsense.
+>>  because there is a large set
+>> of people who will never use SELinux.  Every few years, I take another 
+>> look at SELinux, my head explodes with the (IMHO unneeded complexity),
+>> and I go away again...
+>>
+>> Yet I would really like a number of features such as this ptrace scope idea ---
+>> which I think is a useful feature, and it may be that stacking is the only
+>> way we can resolve this debate.   The SELinux people will never believe that
+>> their system is too complicated, and I don't like using things that are impossible
+>> for me to understand or configure, and that doesn't seem likely to change anytime
+>> in the near future.
+>>
+>> I mean, even IPSEC RFC's are easier for me to understand, and that's saying
+>> a lot...
+>>     
+>
+>
+> If anyone is going to work on this let me make a concrete suggestion.
+> Let's aim at not stacked lsm's but chained lsm's, and put the chaining
+> logic in the lsm core.
+>   
 
-> The "just use SELinux" reply is tiresome.  If "everyone" used SELinux,
-> there wouldn't be at least 3 other LSMs under active development.
+It's 35 years since my data structures course. What's the important
+difference between the two?
 
-SELinux indeed has many functionalities. But SELinux cannot provide ability to
-perform restriction based on pathnames. "SELinux can do everything" is wrong.
+> The core difficulty appears to be how do you multiplex the security pointers
+> on various objects out there.
+>   
 
-If there were an all-in-one application that supports web browsing, mail,
-writing, music, chat, scheduler etc., will "everyone" use that all-in-one
-application? At least, I won't use it because it is too complicated to use.
+That and making sure that the hooks that maintain state get called
+even if the decision to deny access has already been made by someone
+else.
 
-I use X-desktop only when I need to use. I use SSH terminal if I can achieve
-what I want to do. I'm not happy with spending my time for understanding how to
-configure X-desktop.
+> My wishlist has this working so that I can logically have a local security
+> policy in a container, restricted by the global policy but with additional
+> restrictions.
+>
+> Eric
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>   
 
-Being unable to configure SELinux by Linux users leads to SELinux being
-unavailable for Linux users. If something is blocked by SELinux, Linux users
-simply set SELINUX=disabled in /etc/selinux/config rather than finding how to
-configure SELinux because they don't know what functionalities are provided by
-SELinux and which configuration is wrong.
-
-Linux users are seeking for solutions that they can understand and configure
-by themselves.
-
-> The PTRACE, symlink, and other stuff are features people want.  If the
-> point of your argument is that the logic and configuration for each
-> of these features should be added to every LSM, that's not sensible.
-> An end user should be able to pick and choose what they want.  If I
-> create the security/hideous/ LSM tree, it would _exclude_ the ability to
-> use TOMOYO or Smack or SELinux or AppArmor.
-
-I have strong complaint about closed nature of LSM community. I believe Linux
-kernel's duty is to serve userspace applications and Linux users. But whenever
-discussion about access control arises, the conclusion comes from Linux kernel
-developer's viewpoint rather than Linux user's viewpoint; i.e. "You can do it
-using SELinux (or netfilter or whatever in-tree code). Thus spend your time for
-understanding how to configure it". But that is too difficult for Linux users.
-
-No LSM module can provide all functionalities. When users want to introduce a
-security mechanism that provides specific functionalities, LSM is the only
-choice. This forces users to give up other security mechanisms that provide
-different functionalities because LSM is exclusive.
-
-Windows users are picking and choosing what they want for security, and are
-experiencing what combinations are good and what combinations are bad at their
-own risk. But Linux users can't because LSM developers complain conflicts and
-deprive Linux users of chances for experiencing what combinations are good and
-what combinations are bad.
-
-LSM modules can't be loaded upon runtime since 2.6.24. 2.6.24 strengthened the
-barrier for Linux users when they want to choose different security module
-because replacing vmlinux is a very very high barrier.
-Linux is behind Windows regarding security hooks.
-Linux kernel's duty is to serve userspace applications and Linux users, no?
-Why not to provide Linux users ability to pick and choose what they want at
-their own risk (rather than complaining conflicts forever)?
