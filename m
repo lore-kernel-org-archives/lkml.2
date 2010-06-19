@@ -1,480 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab0FSAbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Jun 2010 20:31:45 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:2784 "EHLO
+	id S1753990Ab0FSAfs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Jun 2010 20:35:48 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:62454 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab0FSAbE (ORCPT
+	with ESMTP id S1752867Ab0FSAfq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Jun 2010 20:31:04 -0400
+	Fri, 18 Jun 2010 20:35:46 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=a0PY69efehncMYvDp3oQq9v/Wx0Nc07LKOQtxjqrZJeycf61TPxQ7W1JHHbFFpPb2
-	u/l9o1MoJPpbCzLICB62A==
-From: Michael Rubin <mrubin@google.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org
-Cc: jack@suse.cz, akpm@linux-foundation.org, david@fromorbit.com, hch@lst.de,
-       axboe@kernel.dk, Michael Rubin <mrubin@google.com>
-Subject: [PATCH 3/3] writeback: tracking subsystems causing writeback
-Date: Fri, 18 Jun 2010 17:30:15 -0700
-Message-Id: <1276907415-504-4-git-send-email-mrubin@google.com>
-X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1276907415-504-1-git-send-email-mrubin@google.com>
-References: <1276907415-504-1-git-send-email-mrubin@google.com>
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=JMxfS3Y8VGm0v/5ByMDwjX/IxaioTRLUfIU1Muk9UI9N7tKp3JCtzKnyzY5sa+3eO
+	bHNu/aSkkGuWRgekKq8eg==
+MIME-Version: 1.0
+In-Reply-To: <20100618143947.GA8431@redhat.com>
+References: <20100618143947.GA8431@redhat.com>
+From: Divyesh Shah <dpshah@google.com>
+Date: Fri, 18 Jun 2010 17:35:22 -0700
+Message-ID: <AANLkTimZVnX1uEcQtmdXA0Sjxh_EMjsxSvAVU2qI1jUE@mail.gmail.com>
+Subject: Re: [PATCH] cfq-iosched: Fixed boot warning with BLK_CGROUP=y and 
+	CFQ_GROUP_IOSCHED=n
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+       Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding stats to indicate which subsystem is causing writeback.
-Implemented as per cpu counters rather than tracepoints so we can gather
-statistics continuously and cheaply.
+On Fri, Jun 18, 2010 at 7:39 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> Hi Jens,
+>
+> Few days back Ingo noticed a CFQ boot time warning. This patch fixes it.
+> The issue here is that with CFQ_GROUP_IOSCHED=n, CFQ should not really
+> be making blkio stat related calls.
+>
+>> Hm, it's still not entirely fixed, as of 2.6.35-rc2-00131-g7908a9e. With
+>> some
+>> configs i get bad spinlock warnings during bootup:
+>>
+>> [   28.968013] initcall net_olddevs_init+0x0/0x82 returned 0 after 93750
+>> usecs
+>> [   28.972003] calling  b44_init+0x0/0x55 @ 1
+>> [   28.976009] bus: 'pci': add driver b44
+>> [   28.976374]  sda:
+>> [   28.978157] BUG: spinlock bad magic on CPU#1, async/0/117
+>> [   28.980000]  lock: 7e1c5bbc, .magic: 00000000, .owner: <none>/-1, +.owner_cpu: 0
+>> [   28.980000] Pid: 117, comm: async/0 Not tainted +2.6.35-rc2-tip-01092-g010e7ef-dirty #8183
+>> [   28.980000] Call Trace:
+>> [   28.980000]  [<41ba6d55>] ? printk+0x20/0x24
+>> [   28.980000]  [<4134b7b7>] spin_bug+0x7c/0x87
+>> [   28.980000]  [<4134b853>] do_raw_spin_lock+0x1e/0x123
+>> [   28.980000]  [<41ba92ca>] ? _raw_spin_lock_irqsave+0x12/0x20
+>> [   28.980000]  [<41ba92d2>] _raw_spin_lock_irqsave+0x1a/0x20
+>> [   28.980000]  [<4133476f>] blkiocg_update_io_add_stats+0x25/0xfb
+>> [   28.980000]  [<41335dae>] ? cfq_prio_tree_add+0xb1/0xc1
+>> [   28.980000]  [<41337bc7>] cfq_insert_request+0x8c/0x425
+>
+>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 
-Knowing what is the source of writeback acitivity can help tune and
-debug applications.
+Looks good to me.
 
-The data is exported in bdi granularity at /sys/block/<dev>/bdi/writeback_stats.
-
-    # cat /sys/block/sda/bdi/writeback_stats
-    balance dirty pages                       0
-    balance dirty pages waiting               0
-    periodic writeback                    92024
-    periodic writeback exited                 0
-    laptop periodic                           0
-    laptop or bg threshold                    0
-    free more memory                          0
-    try to free pages                       271
-    syc_sync                                  6
-    sync filesystem                           0
-
-For the entire system you can find them at /sys/kernel/mm/writeback/stats.
-
-    # cat /sys/kernel/mm/writeback/stats
-    balance dirty pages                       0
-    balance dirty pages waiting               0
-    periodic writeback                    92892
-    periodic writeback exited                13
-    laptop periodic                           0
-    laptop or bg threshold                    0
-    free more memory                          0
-    try to free pages                       271
-    syc_sync                                  6
-    sync filesystem                           0
-
-Signed-off-by: Michael Rubin <mrubin@google.com>
----
- fs/buffer.c                 |    2 +-
- fs/fs-writeback.c           |   15 +++++---
- fs/sync.c                   |    2 +-
- include/linux/backing-dev.h |    8 ++++
- include/linux/writeback.h   |   50 +++++++++++++++++++++++++-
- mm/backing-dev.c            |   17 +++++++++
- mm/mm_init.c                |   82 ++++++++++++++++++++++++++++++++++++++++--
- mm/page-writeback.c         |   12 +++++--
- mm/vmscan.c                 |    3 +-
- 9 files changed, 175 insertions(+), 16 deletions(-)
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index d54812b..2a0ebe0 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -288,7 +288,7 @@ static void free_more_memory(void)
- 	struct zone *zone;
- 	int nid;
- 
--	wakeup_flusher_threads(1024);
-+	wakeup_flusher_threads(1024, WB_STAT_FREE_MORE_MEM);
- 	yield();
- 
- 	for_each_online_node(nid) {
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 62a899e..56331b0 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -956,6 +956,7 @@ int bdi_writeback_task(struct bdi_writeback *wb)
- 	long pages_written;
- 
- 	while (!kthread_should_stop()) {
-+		bdi_writeback_stat_inc(wb->bdi, WB_STAT_PERIODIC);
- 		pages_written = wb_do_writeback(wb, 0);
- 
- 		if (pages_written)
-@@ -969,8 +970,11 @@ int bdi_writeback_task(struct bdi_writeback *wb)
- 			 * recreated automatically.
- 			 */
- 			max_idle = max(5UL * 60 * HZ, wait_jiffies);
--			if (time_after(jiffies, max_idle + last_active))
-+			if (time_after(jiffies, max_idle + last_active)) {
-+				bdi_writeback_stat_inc(wb->bdi,
-+						      WB_STAT_PERIODIC_EXIT);
- 				break;
-+			}
- 		}
- 
- 		if (dirty_writeback_interval) {
-@@ -994,7 +998,8 @@ int bdi_writeback_task(struct bdi_writeback *wb)
-  * Schedule writeback for all backing devices. This does WB_SYNC_NONE
-  * writeback, for integrity writeback see bdi_sync_writeback().
-  */
--static void bdi_writeback_all(struct super_block *sb, long nr_pages)
-+static void bdi_writeback_all(struct super_block *sb, long nr_pages,
-+			      enum wb_stats stat)
- {
- 	struct wb_writeback_args args = {
- 		.sb		= sb,
-@@ -1008,7 +1013,7 @@ static void bdi_writeback_all(struct super_block *sb, long nr_pages)
- 	list_for_each_entry_rcu(bdi, &bdi_list, bdi_list) {
- 		if (!bdi_has_dirty_io(bdi))
- 			continue;
--
-+		bdi_writeback_stat_inc(bdi, stat);
- 		bdi_alloc_queue_work(bdi, &args);
- 	}
- 
-@@ -1019,12 +1024,12 @@ static void bdi_writeback_all(struct super_block *sb, long nr_pages)
-  * Start writeback of `nr_pages' pages.  If `nr_pages' is zero, write back
-  * the whole world.
-  */
--void wakeup_flusher_threads(long nr_pages)
-+void wakeup_flusher_threads(long nr_pages, enum wb_stats stat)
- {
- 	if (nr_pages == 0)
- 		nr_pages = global_page_state(NR_FILE_DIRTY) +
- 				global_page_state(NR_UNSTABLE_NFS);
--	bdi_writeback_all(NULL, nr_pages);
-+	bdi_writeback_all(NULL, nr_pages, stat);
- }
- 
- static noinline void block_dump___mark_inode_dirty(struct inode *inode)
-diff --git a/fs/sync.c b/fs/sync.c
-index 15aa6f0..6059e83 100644
---- a/fs/sync.c
-+++ b/fs/sync.c
-@@ -97,7 +97,7 @@ static void sync_filesystems(int wait)
-  */
- SYSCALL_DEFINE0(sync)
- {
--	wakeup_flusher_threads(0);
-+	wakeup_flusher_threads(0, WB_STAT_SYNC);
- 	sync_filesystems(0);
- 	sync_filesystems(1);
- 	if (unlikely(laptop_mode))
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index e1fb11c..dfa7c78 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -72,6 +72,7 @@ struct backing_dev_info {
- 	char *name;
- 
- 	struct percpu_counter bdi_stat[NR_BDI_STAT_ITEMS];
-+	struct writeback_stats *wb_stat;
- 
- 	struct prop_local_percpu completions;
- 	int dirty_exceeded;
-@@ -184,6 +185,13 @@ static inline s64 bdi_stat_sum(struct backing_dev_info *bdi,
- 	return sum;
- }
- 
-+static inline void bdi_writeback_stat_inc(struct backing_dev_info *bdi,
-+					 enum wb_stats stat)
-+{
-+	if (bdi)
-+		writeback_stats_inc(bdi->wb_stat, stat);
-+}
-+
- extern void bdi_writeout_inc(struct backing_dev_info *bdi);
- 
- /*
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index d63ef8f..f874410 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -22,6 +22,54 @@ enum writeback_sync_modes {
- };
- 
- /*
-+ * why this writeback was initiated
-+ */
-+enum wb_stats {
-+	WB_STAT_BALANCE_DIRTY,
-+	WB_STAT_BALANCE_DIRTY_WAIT,
-+	WB_STAT_PERIODIC,
-+	WB_STAT_PERIODIC_EXIT,
-+	WB_STAT_LAPTOP_TIMER,
-+	WB_STAT_LAPTOP_BG,
-+	WB_STAT_FREE_MORE_MEM,
-+	WB_STAT_TRY_TO_FREE_PAGES,
-+	WB_STAT_SYNC,
-+	WB_STAT_SYNC_FS,
-+	WB_STAT_MAX,
-+};
-+
-+struct writeback_stats {
-+	u64 stats[WB_STAT_MAX];
-+};
-+
-+extern struct writeback_stats *writeback_sys_stats;
-+
-+static inline struct writeback_stats *writeback_stats_alloc(void)
-+{
-+	return alloc_percpu(struct writeback_stats);
-+}
-+
-+static inline void writeback_stats_free(struct writeback_stats *stats)
-+{
-+	free_percpu(stats);
-+}
-+
-+static inline void writeback_stats_inc(struct writeback_stats *stats, int stat)
-+{
-+	BUG_ON(stat >= WB_STAT_MAX);
-+	preempt_disable();
-+	stats = per_cpu_ptr(stats, smp_processor_id());
-+	stats->stats[stat]++;
-+	if (likely(writeback_sys_stats)) {
-+		stats = per_cpu_ptr(writeback_sys_stats, smp_processor_id());
-+		stats->stats[stat]++;
-+	}
-+	preempt_enable();
-+}
-+
-+size_t writeback_stats_print(struct writeback_stats *, char *buf, size_t);
-+
-+/*
-  * A control structure which tells the writeback code what to do.  These are
-  * always on the stack, and hence need no locking.  They are always initialised
-  * in a manner such that unspecified fields are set to zero.
-@@ -68,7 +116,7 @@ int writeback_inodes_sb_if_idle(struct super_block *);
- void sync_inodes_sb(struct super_block *);
- void writeback_inodes_wbc(struct writeback_control *wbc);
- long wb_do_writeback(struct bdi_writeback *wb, int force_wait);
--void wakeup_flusher_threads(long nr_pages);
-+void wakeup_flusher_threads(long nr_pages, enum wb_stats);
- 
- /* writeback.h requires fs.h; it, too, is not included from here. */
- static inline void wait_on_inode(struct inode *inode)
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index 9a89296..83efc39 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -142,6 +142,13 @@ static ssize_t writeback_show(struct device *dev, struct device_attribute *attr,
- #undef K
- }
- 
-+static ssize_t writeback_stats_show(struct device *dev,
-+				  struct device_attribute *attr, char *buf)
-+{
-+	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-+	return writeback_stats_print(bdi->wb_stat, buf, PAGE_SIZE);
-+}
-+
- static ssize_t read_ahead_kb_store(struct device *dev,
- 				  struct device_attribute *attr,
- 				  const char *buf, size_t count)
-@@ -213,6 +220,7 @@ BDI_SHOW(max_ratio, bdi->max_ratio)
- static struct device_attribute bdi_dev_attrs[] = {
- 	__ATTR_RO(state),
- 	__ATTR_RO(writeback),
-+	__ATTR_RO(writeback_stats),
- 	__ATTR_RW(read_ahead_kb),
- 	__ATTR_RW(min_ratio),
- 	__ATTR_RW(max_ratio),
-@@ -673,11 +681,18 @@ int bdi_init(struct backing_dev_info *bdi)
- 			goto err;
- 	}
- 
-+	bdi->wb_stat = writeback_stats_alloc();
-+	if (bdi->wb_stat == NULL) {
-+		err = -ENOMEM;
-+		goto err;
-+	}
-+
- 	bdi->dirty_exceeded = 0;
- 	err = prop_local_init_percpu(&bdi->completions);
- 
- 	if (err) {
- err:
-+		writeback_stats_free(bdi->wb_stat);
- 		while (i--)
- 			percpu_counter_destroy(&bdi->bdi_stat[i]);
- 	}
-@@ -709,6 +724,8 @@ void bdi_destroy(struct backing_dev_info *bdi)
- 	for (i = 0; i < NR_BDI_STAT_ITEMS; i++)
- 		percpu_counter_destroy(&bdi->bdi_stat[i]);
- 
-+	writeback_stats_free(bdi->wb_stat);
-+
- 	prop_local_destroy_percpu(&bdi->completions);
- }
- EXPORT_SYMBOL(bdi_destroy);
-diff --git a/mm/mm_init.c b/mm/mm_init.c
-index 8f2ebdb..9ca5377 100644
---- a/mm/mm_init.c
-+++ b/mm/mm_init.c
-@@ -158,8 +158,74 @@ static ssize_t writeback_show(struct kobject *kobj,
- 
- KERNEL_ATTR_RO(writeback);
- 
-+struct writeback_stats *writeback_sys_stats;
-+
-+static const char *wb_stats_labels[WB_STAT_MAX] = {
-+	[WB_STAT_BALANCE_DIRTY] = "balance dirty pages",
-+	[WB_STAT_BALANCE_DIRTY_WAIT] = "balance dirty pages waiting",
-+	[WB_STAT_PERIODIC] = "periodic writeback",
-+	[WB_STAT_PERIODIC_EXIT] = "periodic writeback exited",
-+	[WB_STAT_LAPTOP_TIMER] = "laptop periodic",
-+	[WB_STAT_LAPTOP_BG] = "laptop or bg threshold",
-+	[WB_STAT_FREE_MORE_MEM] = "free more memory",
-+	[WB_STAT_TRY_TO_FREE_PAGES] = "try to free pages",
-+	[WB_STAT_SYNC] = "syc_sync",
-+	[WB_STAT_SYNC_FS] = "sync filesystem",
-+};
-+
-+static void writeback_stats_collect(struct writeback_stats *src,
-+				    struct writeback_stats *target)
-+{
-+	int cpu;
-+	for_each_online_cpu(cpu) {
-+		int stat;
-+		struct writeback_stats *stats = per_cpu_ptr(src, cpu);
-+		for (stat = 0; stat < WB_STAT_MAX; stat++)
-+			target->stats[stat] += stats->stats[stat];
-+	}
-+}
-+
-+static size_t writeback_stats_to_str(struct writeback_stats *stats,
-+				     char *buf, size_t len)
-+{
-+	int bufsize = len - 1;
-+	int i, printed = 0;
-+	for (i = 0; i < WB_STAT_MAX; i++) {
-+		const char *label = wb_stats_labels[i];
-+		if (label == NULL)
-+			continue;
-+		printed += snprintf(buf + printed, bufsize - printed,
-+				"%-32s %10llu\n", label, stats->stats[i]);
-+		if (printed >= bufsize) {
-+			buf[len - 1] = '\n';
-+			return len;
-+		}
-+	}
-+
-+	buf[printed - 1] = '\n';
-+	return printed;
-+}
-+
-+size_t writeback_stats_print(struct writeback_stats *stats,
-+			     char *buf, size_t len)
-+{
-+	struct writeback_stats total;
-+	memset(&total, 0, sizeof(total));
-+	writeback_stats_collect(stats, &total);
-+	return writeback_stats_to_str(&total, buf, len);
-+}
-+
-+static ssize_t stats_show(struct kobject *kobj,
-+			  struct kobj_attribute *attr, char *buf)
-+{
-+	return writeback_stats_print(writeback_sys_stats, buf, PAGE_SIZE);
-+}
-+
-+KERNEL_ATTR_RO(stats);
-+
- static struct attribute *writeback_attrs[] = {
- 	&writeback_attr.attr,
-+	&stats_attr.attr,
- 	NULL,
- };
- 
-@@ -177,11 +243,19 @@ static int mm_sysfs_writeback_init(void)
- 		return -ENOMEM;
- 
- 	error = sysfs_create_group(writeback_kobj, &writeback_attr_group);
--	if (error) {
--		kobject_put(mm_kobj);
--		return -ENOMEM;
--	}
-+	if (error)
-+		goto err;
-+
-+	writeback_sys_stats = alloc_percpu(struct writeback_stats);
-+	if (writeback_sys_stats == NULL)
-+		goto stats_err;
- 	return 0;
-+
-+stats_err:
-+	sysfs_remove_group(writeback_kobj, &writeback_attr_group);
-+err:
-+	kobject_put(mm_kobj);
-+	return -ENOMEM;
- }
- 
- struct kobject *mm_kobj;
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 4cea5c0..39d7ff2 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -537,6 +537,7 @@ static void balance_dirty_pages(struct address_space *mapping,
- 		 * up.
- 		 */
- 		if (bdi_nr_reclaimable > bdi_thresh) {
-+			bdi_writeback_stat_inc(bdi, WB_STAT_BALANCE_DIRTY);
- 			writeback_inodes_wbc(&wbc);
- 			pages_written += write_chunk - wbc.nr_to_write;
- 			get_dirty_limits(&background_thresh, &dirty_thresh,
-@@ -567,6 +568,7 @@ static void balance_dirty_pages(struct address_space *mapping,
- 			break;		/* We've done our duty */
- 
- 		__set_current_state(TASK_INTERRUPTIBLE);
-+		bdi_writeback_stat_inc(bdi, WB_STAT_BALANCE_DIRTY_WAIT);
- 		io_schedule_timeout(pause);
- 
- 		/*
-@@ -596,8 +598,10 @@ static void balance_dirty_pages(struct address_space *mapping,
- 	if ((laptop_mode && pages_written) ||
- 	    (!laptop_mode && ((global_page_state(NR_FILE_DIRTY)
- 			       + global_page_state(NR_UNSTABLE_NFS))
--					  > background_thresh)))
-+					  > background_thresh))) {
-+		bdi_writeback_stat_inc(bdi, WB_STAT_LAPTOP_BG);
- 		bdi_start_writeback(bdi, NULL, 0);
-+	}
- }
- 
- void set_page_dirty_balance(struct page *page, int page_mkwrite)
-@@ -700,14 +704,16 @@ void laptop_mode_timer_fn(unsigned long data)
- 	struct request_queue *q = (struct request_queue *)data;
- 	int nr_pages = global_page_state(NR_FILE_DIRTY) +
- 		global_page_state(NR_UNSTABLE_NFS);
--
- 	/*
- 	 * We want to write everything out, not just down to the dirty
- 	 * threshold
- 	 */
- 
--	if (bdi_has_dirty_io(&q->backing_dev_info))
-+	if (bdi_has_dirty_io(&q->backing_dev_info)) {
-+		writeback_stats_inc(q->backing_dev_info.wb_stat,
-+				    WB_STAT_LAPTOP_TIMER);
- 		bdi_start_writeback(&q->backing_dev_info, NULL, nr_pages);
-+	}
- }
- 
- /*
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 9c7e57c..ba6966e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1838,7 +1838,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		 */
- 		writeback_threshold = sc->nr_to_reclaim + sc->nr_to_reclaim / 2;
- 		if (total_scanned > writeback_threshold) {
--			wakeup_flusher_threads(laptop_mode ? 0 : total_scanned);
-+			wakeup_flusher_threads(laptop_mode ? 0 : total_scanned,
-+						WB_STAT_TRY_TO_FREE_PAGES);
- 			sc->may_writepage = 1;
- 		}
- 
--- 
-1.7.0.1
-
+Acked-by: Divyesh Shah <dpshah@google.com>
+> ---
+>  block/cfq-iosched.c |   54 ++++++++++++------------
+>  block/cfq.h         |  115 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 142 insertions(+), 27 deletions(-)
+>
+> Index: linux-2.6/block/cfq-iosched.c
+> ===================================================================
+> --- linux-2.6.orig/block/cfq-iosched.c  2010-06-18 09:40:46.403163874 -0400
+> +++ linux-2.6/block/cfq-iosched.c       2010-06-18 09:47:58.747339881 -0400
+> @@ -14,7 +14,7 @@
+>  #include <linux/rbtree.h>
+>  #include <linux/ioprio.h>
+>  #include <linux/blktrace_api.h>
+> -#include "blk-cgroup.h"
+> +#include "cfq.h"
+>
+>  /*
+>  * tunables
+> @@ -879,7 +879,7 @@
+>        if (!RB_EMPTY_NODE(&cfqg->rb_node))
+>                cfq_rb_erase(&cfqg->rb_node, st);
+>        cfqg->saved_workload_slice = 0;
+> -       blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+> +       cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
+>  }
+>
+>  static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+> @@ -939,8 +939,8 @@
+>
+>        cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+>                                        st->min_vdisktime);
+> -       blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
+> -       blkiocg_set_start_empty_time(&cfqg->blkg);
+> +       cfq_blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
+> +       cfq_blkiocg_set_start_empty_time(&cfqg->blkg);
+>  }
+>
+>  #ifdef CONFIG_CFQ_GROUP_IOSCHED
+> @@ -995,7 +995,7 @@
+>
+>        /* Add group onto cgroup list */
+>        sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+> -       blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
+> +       cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
+>                                        MKDEV(major, minor));
+>        cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
+>
+> @@ -1079,7 +1079,7 @@
+>                 * it from cgroup list, then it will take care of destroying
+>                 * cfqg also.
+>                 */
+> -               if (!blkiocg_del_blkio_group(&cfqg->blkg))
+> +               if (!cfq_blkiocg_del_blkio_group(&cfqg->blkg))
+>                        cfq_destroy_cfqg(cfqd, cfqg);
+>        }
+>  }
+> @@ -1421,10 +1421,10 @@
+>  {
+>        elv_rb_del(&cfqq->sort_list, rq);
+>        cfqq->queued[rq_is_sync(rq)]--;
+> -       blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(rq),
+> -                                               rq_is_sync(rq));
+> +       cfq_blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg,
+> +                                       rq_data_dir(rq), rq_is_sync(rq));
+>        cfq_add_rq_rb(rq);
+> -       blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
+> +       cfq_blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
+>                        &cfqq->cfqd->serving_group->blkg, rq_data_dir(rq),
+>                        rq_is_sync(rq));
+>  }
+> @@ -1482,8 +1482,8 @@
+>        cfq_del_rq_rb(rq);
+>
+>        cfqq->cfqd->rq_queued--;
+> -       blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(rq),
+> -                                               rq_is_sync(rq));
+> +       cfq_blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg,
+> +                                       rq_data_dir(rq), rq_is_sync(rq));
+>        if (rq_is_meta(rq)) {
+>                WARN_ON(!cfqq->meta_pending);
+>                cfqq->meta_pending--;
+> @@ -1518,8 +1518,8 @@
+>  static void cfq_bio_merged(struct request_queue *q, struct request *req,
+>                                struct bio *bio)
+>  {
+> -       blkiocg_update_io_merged_stats(&(RQ_CFQG(req))->blkg, bio_data_dir(bio),
+> -                                       cfq_bio_sync(bio));
+> +       cfq_blkiocg_update_io_merged_stats(&(RQ_CFQG(req))->blkg,
+> +                                       bio_data_dir(bio), cfq_bio_sync(bio));
+>  }
+>
+>  static void
+> @@ -1539,8 +1539,8 @@
+>        if (cfqq->next_rq == next)
+>                cfqq->next_rq = rq;
+>        cfq_remove_request(next);
+> -       blkiocg_update_io_merged_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(next),
+> -                                       rq_is_sync(next));
+> +       cfq_blkiocg_update_io_merged_stats(&(RQ_CFQG(rq))->blkg,
+> +                                       rq_data_dir(next), rq_is_sync(next));
+>  }
+>
+>  static int cfq_allow_merge(struct request_queue *q, struct request *rq,
+> @@ -1571,7 +1571,7 @@
+>  static inline void cfq_del_timer(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+>  {
+>        del_timer(&cfqd->idle_slice_timer);
+> -       blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
+> +       cfq_blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
+>  }
+>
+>  static void __cfq_set_active_queue(struct cfq_data *cfqd,
+> @@ -1580,7 +1580,7 @@
+>        if (cfqq) {
+>                cfq_log_cfqq(cfqd, cfqq, "set_active wl_prio:%d wl_type:%d",
+>                                cfqd->serving_prio, cfqd->serving_type);
+> -               blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
+> +               cfq_blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
+>                cfqq->slice_start = 0;
+>                cfqq->dispatch_start = jiffies;
+>                cfqq->allocated_slice = 0;
+> @@ -1911,7 +1911,7 @@
+>        sl = cfqd->cfq_slice_idle;
+>
+>        mod_timer(&cfqd->idle_slice_timer, jiffies + sl);
+> -       blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
+> +       cfq_blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
+>        cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu", sl);
+>  }
+>
+> @@ -1931,7 +1931,7 @@
+>        elv_dispatch_sort(q, rq);
+>
+>        cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
+> -       blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
+> +       cfq_blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
+>                                        rq_data_dir(rq), rq_is_sync(rq));
+>  }
+>
+> @@ -3248,7 +3248,7 @@
+>                                cfq_clear_cfqq_wait_request(cfqq);
+>                                __blk_run_queue(cfqd->queue);
+>                        } else {
+> -                               blkiocg_update_idle_time_stats(
+> +                               cfq_blkiocg_update_idle_time_stats(
+>                                                &cfqq->cfqg->blkg);
+>                                cfq_mark_cfqq_must_dispatch(cfqq);
+>                        }
+> @@ -3276,7 +3276,7 @@
+>        rq_set_fifo_time(rq, jiffies + cfqd->cfq_fifo_expire[rq_is_sync(rq)]);
+>        list_add_tail(&rq->queuelist, &cfqq->fifo);
+>        cfq_add_rq_rb(rq);
+> -       blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
+> +       cfq_blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
+>                        &cfqd->serving_group->blkg, rq_data_dir(rq),
+>                        rq_is_sync(rq));
+>        cfq_rq_enqueued(cfqd, cfqq, rq);
+> @@ -3364,9 +3364,9 @@
+>        WARN_ON(!cfqq->dispatched);
+>        cfqd->rq_in_driver--;
+>        cfqq->dispatched--;
+> -       blkiocg_update_completion_stats(&cfqq->cfqg->blkg, rq_start_time_ns(rq),
+> -                       rq_io_start_time_ns(rq), rq_data_dir(rq),
+> -                       rq_is_sync(rq));
+> +       cfq_blkiocg_update_completion_stats(&cfqq->cfqg->blkg,
+> +                       rq_start_time_ns(rq), rq_io_start_time_ns(rq),
+> +                       rq_data_dir(rq), rq_is_sync(rq));
+>
+>        cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
+>
+> @@ -3730,7 +3730,7 @@
+>
+>        cfq_put_async_queues(cfqd);
+>        cfq_release_cfq_groups(cfqd);
+> -       blkiocg_del_blkio_group(&cfqd->root_group.blkg);
+> +       cfq_blkiocg_del_blkio_group(&cfqd->root_group.blkg);
+>
+>        spin_unlock_irq(q->queue_lock);
+>
+> @@ -3798,8 +3798,8 @@
+>         */
+>        atomic_set(&cfqg->ref, 1);
+>        rcu_read_lock();
+> -       blkiocg_add_blkio_group(&blkio_root_cgroup, &cfqg->blkg, (void *)cfqd,
+> -                                       0);
+> +       cfq_blkiocg_add_blkio_group(&blkio_root_cgroup, &cfqg->blkg,
+> +                                       (void *)cfqd, 0);
+>        rcu_read_unlock();
+>  #endif
+>        /*
+> Index: linux-2.6/block/cfq.h
+> ===================================================================
+> --- /dev/null   1970-01-01 00:00:00.000000000 +0000
+> +++ linux-2.6/block/cfq.h       2010-06-18 09:41:23.256220395 -0400
+> @@ -0,0 +1,115 @@
+> +#ifndef _CFQ_H
+> +#define _CFQ_H
+> +#include "blk-cgroup.h"
+> +
+> +#ifdef CONFIG_CFQ_GROUP_IOSCHED
+> +static inline void cfq_blkiocg_update_io_add_stats(struct blkio_group *blkg,
+> +       struct blkio_group *curr_blkg, bool direction, bool sync)
+> +{
+> +       blkiocg_update_io_add_stats(blkg, curr_blkg, direction, sync);
+> +}
+> +
+> +static inline void cfq_blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+> +                       unsigned long dequeue)
+> +{
+> +       blkiocg_update_dequeue_stats(blkg, dequeue);
+> +}
+> +
+> +static inline void cfq_blkiocg_update_timeslice_used(struct blkio_group *blkg,
+> +                       unsigned long time)
+> +{
+> +       blkiocg_update_timeslice_used(blkg, time);
+> +}
+> +
+> +static inline void cfq_blkiocg_set_start_empty_time(struct blkio_group *blkg)
+> +{
+> +       blkiocg_set_start_empty_time(blkg);
+> +}
+> +
+> +static inline void cfq_blkiocg_update_io_remove_stats(struct blkio_group *blkg,
+> +                               bool direction, bool sync)
+> +{
+> +       blkiocg_update_io_remove_stats(blkg, direction, sync);
+> +}
+> +
+> +static inline void cfq_blkiocg_update_io_merged_stats(struct blkio_group *blkg,
+> +               bool direction, bool sync)
+> +{
+> +       blkiocg_update_io_merged_stats(blkg, direction, sync);
+> +}
+> +
+> +static inline void cfq_blkiocg_update_idle_time_stats(struct blkio_group *blkg)
+> +{
+> +       blkiocg_update_idle_time_stats(blkg);
+> +}
+> +
+> +static inline void
+> +cfq_blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg)
+> +{
+> +       blkiocg_update_avg_queue_size_stats(blkg);
+> +}
+> +
+> +static inline void
+> +cfq_blkiocg_update_set_idle_time_stats(struct blkio_group *blkg)
+> +{
+> +       blkiocg_update_set_idle_time_stats(blkg);
+> +}
+> +
+> +static inline void cfq_blkiocg_update_dispatch_stats(struct blkio_group *blkg,
+> +                               uint64_t bytes, bool direction, bool sync)
+> +{
+> +       blkiocg_update_dispatch_stats(blkg, bytes, direction, sync);
+> +}
+> +
+> +static inline void cfq_blkiocg_update_completion_stats(struct blkio_group *blkg, uint64_t start_time, uint64_t io_start_time, bool direction, bool sync)
+> +{
+> +       cfq_blkiocg_update_completion_stats(blkg, start_time, io_start_time,
+> +                               direction, sync);
+> +}
+> +
+> +static inline void cfq_blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+> +                       struct blkio_group *blkg, void *key, dev_t dev) {
+> +       blkiocg_add_blkio_group(blkcg, blkg, key, dev);
+> +}
+> +
+> +static inline int cfq_blkiocg_del_blkio_group(struct blkio_group *blkg)
+> +{
+> +       return blkiocg_del_blkio_group(blkg);
+> +}
+> +
+> +#else /* CFQ_GROUP_IOSCHED */
+> +static inline void cfq_blkiocg_update_io_add_stats(struct blkio_group *blkg,
+> +       struct blkio_group *curr_blkg, bool direction, bool sync) {}
+> +
+> +static inline void cfq_blkiocg_update_dequeue_stats(struct blkio_group *blkg,
+> +                       unsigned long dequeue) {}
+> +
+> +static inline void cfq_blkiocg_update_timeslice_used(struct blkio_group *blkg,
+> +                       unsigned long time) {}
+> +static inline void cfq_blkiocg_set_start_empty_time(struct blkio_group *blkg) {}
+> +static inline void cfq_blkiocg_update_io_remove_stats(struct blkio_group *blkg,
+> +                               bool direction, bool sync) {}
+> +static inline void cfq_blkiocg_update_io_merged_stats(struct blkio_group *blkg,
+> +               bool direction, bool sync) {}
+> +static inline void cfq_blkiocg_update_idle_time_stats(struct blkio_group *blkg)
+> +{
+> +}
+> +static inline void
+> +cfq_blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg) {}
+> +
+> +static inline void
+> +cfq_blkiocg_update_set_idle_time_stats(struct blkio_group *blkg) {}
+> +
+> +static inline void cfq_blkiocg_update_dispatch_stats(struct blkio_group *blkg,
+> +                               uint64_t bytes, bool direction, bool sync) {}
+> +static inline void cfq_blkiocg_update_completion_stats(struct blkio_group *blkg, uint64_t start_time, uint64_t io_start_time, bool direction, bool sync) {}
+> +
+> +static inline void cfq_blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
+> +                       struct blkio_group *blkg, void *key, dev_t dev) {}
+> +static inline int cfq_blkiocg_del_blkio_group(struct blkio_group *blkg)
+> +{
+> +       return 0;
+> +}
+> +
+> +#endif /* CFQ_GROUP_IOSCHED */
+> +#endif
+>
