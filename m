@@ -1,634 +1,706 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab0FSOu1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 10:50:27 -0400
-Received: from smtp-out-047.synserver.de ([212.40.180.47]:1077 "HELO
+	id S1756160Ab0FSOvM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 10:51:12 -0400
+Received: from smtp-out-047.synserver.de ([212.40.180.47]:1123 "HELO
 	smtp-out-044.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1756081Ab0FSOuZ (ORCPT
+	by vger.kernel.org with SMTP id S1756081Ab0FSOvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 10:50:25 -0400
+	Sat, 19 Jun 2010 10:51:10 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 16178
+X-SynServer-PPID: 16568
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
        Lars-Peter Clausen <lars@metafoo.de>,
        Mark Brown <broonie@opensource.wolfsonmicro.com>,
        Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
-Subject: [PATCH v3] alsa: ASoC: Add JZ4740 codec driver
-Date: Sat, 19 Jun 2010 16:49:53 +0200
-Message-Id: <1276958993-9012-1-git-send-email-lars@metafoo.de>
+Subject: [PATCH v3] alsa: ASoC: Add JZ4740 ASoC support
+Date: Sat, 19 Jun 2010 16:50:37 +0200
+Message-Id: <1276959038-9112-1-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1276924111-11158-21-git-send-email-lars@metafoo.de>
-References: <1276924111-11158-21-git-send-email-lars@metafoo.de>
+In-Reply-To: <1276924111-11158-22-git-send-email-lars@metafoo.de>
+References: <1276924111-11158-22-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the JZ4740 internal codec.
+This patch adds ASoC support for JZ4740 SoCs I2S module.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: Liam Girdwood <lrg@slimlogic.co.uk>
 Cc: alsa-devel@alsa-project.org
 
+alsa: ASoC: jz4740-i2s: Properly free and disable clocks in case of an error
+
 --
 Changes since v1
-- Put Kconfig entry in alphabetic order
-- Drop codec_set_fmt since the codec supports only one format
-- Rename "Capture Volume" control to "Master Capture Volume"
-- Drop unnecessary format checks
-- Add suspend/resume
-- Cleanup jz4740_codec_set_bias_level
+- i2s: Properly free and disable clocks in case of an error in probe
+- i2s: Drop unnecessary format checks which are already done in the core
+- i2s: Drop set_clkdiv
+- pcm: Refactor dma buffer position handling to be better comprehensible
+- Cleanup and fix Kconfig
 
 Changes since v2
-- Drop codec prefix from the filename. Note that I keeped it for the object
-  name, because otherwise when build as a module it will clash with the ASoC
-  JZ4740 platform support.
+- Use a platform device to register the snd_soc_platform
 ---
- sound/soc/codecs/Kconfig  |    4 +
- sound/soc/codecs/Makefile |    2 +
- sound/soc/codecs/jz4740.c |  514 +++++++++++++++++++++++++++++++++++++++++++++
- sound/soc/codecs/jz4740.h |   20 ++
- 4 files changed, 540 insertions(+), 0 deletions(-)
- create mode 100644 sound/soc/codecs/jz4740.c
- create mode 100644 sound/soc/codecs/jz4740.h
+ sound/soc/Kconfig             |    1 +
+ sound/soc/Makefile            |    1 +
+ sound/soc/jz4740/Kconfig      |   14 +
+ sound/soc/jz4740/Makefile     |    9 +
+ sound/soc/jz4740/jz4740-i2s.c |  540 +++++++++++++++++++++++++++++++++++++++++
+ sound/soc/jz4740/jz4740-i2s.h |   18 ++
+ sound/soc/jz4740/jz4740-pcm.c |  373 ++++++++++++++++++++++++++++
+ sound/soc/jz4740/jz4740-pcm.h |   22 ++
+ 8 files changed, 978 insertions(+), 0 deletions(-)
+ create mode 100644 sound/soc/jz4740/Kconfig
+ create mode 100644 sound/soc/jz4740/Makefile
+ create mode 100644 sound/soc/jz4740/jz4740-i2s.c
+ create mode 100644 sound/soc/jz4740/jz4740-i2s.h
+ create mode 100644 sound/soc/jz4740/jz4740-pcm.c
+ create mode 100644 sound/soc/jz4740/jz4740-pcm.h
 
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index c37c844..00d347d 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -24,6 +24,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_CQ0093VC if MFD_DAVINCI_VOICECODEC
- 	select SND_SOC_CS42L51 if I2C
- 	select SND_SOC_CS4270 if I2C
-+	select SND_SOC_JZ4740 if SOC_JZ4740
- 	select SND_SOC_MAX9877 if I2C
- 	select SND_SOC_DA7210 if I2C
- 	select SND_SOC_PCM3008
-@@ -142,6 +143,9 @@ config SND_SOC_CS4270_VD33_ERRATA
- config SND_SOC_CX20442
- 	tristate
+diff --git a/sound/soc/Kconfig b/sound/soc/Kconfig
+index d35f848..7137a9a 100644
+--- a/sound/soc/Kconfig
++++ b/sound/soc/Kconfig
+@@ -39,6 +39,7 @@ source "sound/soc/s3c24xx/Kconfig"
+ source "sound/soc/s6000/Kconfig"
+ source "sound/soc/sh/Kconfig"
+ source "sound/soc/txx9/Kconfig"
++source "sound/soc/jz4740/Kconfig"
  
-+config SND_SOC_JZ4740_CODEC
-+	tristate
-+
- config SND_SOC_L3
-        tristate
- 
-diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
-index 4a9c205..d8d9eeb 100644
---- a/sound/soc/codecs/Makefile
-+++ b/sound/soc/codecs/Makefile
-@@ -57,6 +57,7 @@ snd-soc-wm9705-objs := wm9705.o
- snd-soc-wm9712-objs := wm9712.o
- snd-soc-wm9713-objs := wm9713.o
- snd-soc-wm-hubs-objs := wm_hubs.o
-+snd-soc-jz4740-codec-objs := jz4740.o
- 
- # Amp
- snd-soc-max9877-objs := max9877.o
-@@ -80,6 +81,7 @@ obj-$(CONFIG_SND_SOC_CS4270)	+= snd-soc-cs4270.o
- obj-$(CONFIG_SND_SOC_CX20442)	+= snd-soc-cx20442.o
- obj-$(CONFIG_SND_SOC_DA7210)	+= snd-soc-da7210.o
- obj-$(CONFIG_SND_SOC_L3)	+= snd-soc-l3.o
-+obj-$(CONFIG_SND_SOC_JZ4740_CODEC)	+= snd-soc-jz4740-codec.o
- obj-$(CONFIG_SND_SOC_PCM3008)	+= snd-soc-pcm3008.o
- obj-$(CONFIG_SND_SOC_SPDIF)	+= snd-soc-spdif.o
- obj-$(CONFIG_SND_SOC_SSM2602)	+= snd-soc-ssm2602.o
-diff --git a/sound/soc/codecs/jz4740.c b/sound/soc/codecs/jz4740.c
+ # Supported codecs
+ source "sound/soc/codecs/Kconfig"
+diff --git a/sound/soc/Makefile b/sound/soc/Makefile
+index 97661b7..d131999 100644
+--- a/sound/soc/Makefile
++++ b/sound/soc/Makefile
+@@ -17,3 +17,4 @@ obj-$(CONFIG_SND_SOC)	+= s3c24xx/
+ obj-$(CONFIG_SND_SOC)	+= s6000/
+ obj-$(CONFIG_SND_SOC)	+= sh/
+ obj-$(CONFIG_SND_SOC)	+= txx9/
++obj-$(CONFIG_SND_SOC)	+= jz4740/
+diff --git a/sound/soc/jz4740/Kconfig b/sound/soc/jz4740/Kconfig
 new file mode 100644
-index 0000000..35848b6
+index 0000000..27480f2
 --- /dev/null
-+++ b/sound/soc/codecs/jz4740.c
-@@ -0,0 +1,514 @@
++++ b/sound/soc/jz4740/Kconfig
+@@ -0,0 +1,14 @@
++config SND_JZ4740_SOC
++	tristate "SoC Audio for Ingenic JZ4740 SoC"
++	depends on MACH_JZ4740 && SND_SOC
++	help
++	  Say Y or M if you want to add support for codecs attached to
++	  the JZ4740 I2S interface. You will also need to select the audio
++	  interfaces to support below.
++
++config SND_JZ4740_SOC_I2S
++	depends on SND_JZ4740_SOC
++	tristate "SoC Audio (I2S protocol) for Ingenic JZ4740 SoC"
++	help
++	  Say Y if you want to use I2S protocol and I2S codec on Ingenic JZ4740
++	  based boards.
+diff --git a/sound/soc/jz4740/Makefile b/sound/soc/jz4740/Makefile
+new file mode 100644
+index 0000000..1be8d19
+--- /dev/null
++++ b/sound/soc/jz4740/Makefile
+@@ -0,0 +1,9 @@
++#
++# Jz4740 Platform Support
++#
++snd-soc-jz4740-objs := jz4740-pcm.o
++snd-soc-jz4740-i2s-objs := jz4740-i2s.o
++
++obj-$(CONFIG_SND_JZ4740_SOC) += snd-soc-jz4740.o
++obj-$(CONFIG_SND_JZ4740_SOC_I2S) += snd-soc-jz4740-i2s.o
++
+diff --git a/sound/soc/jz4740/jz4740-i2s.c b/sound/soc/jz4740/jz4740-i2s.c
+new file mode 100644
+index 0000000..eb518f0
+--- /dev/null
++++ b/sound/soc/jz4740/jz4740-i2s.c
+@@ -0,0 +1,540 @@
 +/*
-+ * Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under  the terms of the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the License, or (at your
++ *  option) any later version.
 + *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
 + *  675 Mass Ave, Cambridge, MA 02139, USA.
 + *
 + */
 +
++#include <linux/init.h>
++#include <linux/io.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
 +#include <linux/slab.h>
 +
++#include <linux/clk.h>
 +#include <linux/delay.h>
++
++#include <linux/dma-mapping.h>
 +
 +#include <sound/core.h>
 +#include <sound/pcm.h>
 +#include <sound/pcm_params.h>
-+#include <sound/initval.h>
-+#include <sound/soc-dapm.h>
 +#include <sound/soc.h>
++#include <sound/soc-dapm.h>
++#include <sound/initval.h>
 +
-+#define JZ4740_REG_CODEC_1 0x0
-+#define JZ4740_REG_CODEC_2 0x1
++#include "jz4740-i2s.h"
++#include "jz4740-pcm.h"
 +
-+#define JZ4740_CODEC_1_LINE_ENABLE BIT(29)
-+#define JZ4740_CODEC_1_MIC_ENABLE BIT(28)
-+#define JZ4740_CODEC_1_SW1_ENABLE BIT(27)
-+#define JZ4740_CODEC_1_ADC_ENABLE BIT(26)
-+#define JZ4740_CODEC_1_SW2_ENABLE BIT(25)
-+#define JZ4740_CODEC_1_DAC_ENABLE BIT(24)
-+#define JZ4740_CODEC_1_VREF_DISABLE BIT(20)
-+#define JZ4740_CODEC_1_VREF_AMP_DISABLE BIT(19)
-+#define JZ4740_CODEC_1_VREF_PULLDOWN BIT(18)
-+#define JZ4740_CODEC_1_VREF_LOW_CURRENT BIT(17)
-+#define JZ4740_CODEC_1_VREF_HIGH_CURRENT BIT(16)
-+#define JZ4740_CODEC_1_HEADPHONE_DISABLE BIT(14)
-+#define JZ4740_CODEC_1_HEADPHONE_AMP_CHANGE_ANY BIT(13)
-+#define JZ4740_CODEC_1_HEADPHONE_CHARGE BIT(12)
-+#define JZ4740_CODEC_1_HEADPHONE_PULLDOWN (BIT(11) | BIT(10))
-+#define JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M BIT(9)
-+#define JZ4740_CODEC_1_HEADPHONE_POWERDOWN BIT(8)
-+#define JZ4740_CODEC_1_SUSPEND BIT(1)
-+#define JZ4740_CODEC_1_RESET BIT(0)
++#define JZ_REG_AIC_CONF		0x00
++#define JZ_REG_AIC_CTRL		0x04
++#define JZ_REG_AIC_I2S_FMT	0x10
++#define JZ_REG_AIC_FIFO_STATUS	0x14
++#define JZ_REG_AIC_I2S_STATUS	0x1c
++#define JZ_REG_AIC_CLK_DIV	0x30
++#define JZ_REG_AIC_FIFO		0x34
 +
-+#define JZ4740_CODEC_1_LINE_ENABLE_OFFSET 29
-+#define JZ4740_CODEC_1_MIC_ENABLE_OFFSET 28
-+#define JZ4740_CODEC_1_SW1_ENABLE_OFFSET 27
-+#define JZ4740_CODEC_1_ADC_ENABLE_OFFSET 26
-+#define JZ4740_CODEC_1_SW2_ENABLE_OFFSET 25
-+#define JZ4740_CODEC_1_DAC_ENABLE_OFFSET 24
-+#define JZ4740_CODEC_1_HEADPHONE_DISABLE_OFFSET 14
-+#define JZ4740_CODEC_1_HEADPHONE_POWERDOWN_OFFSET 8
++#define JZ_AIC_CONF_FIFO_RX_THRESHOLD_MASK (0xf << 12)
++#define JZ_AIC_CONF_FIFO_TX_THRESHOLD_MASK (0xf <<  8)
++#define JZ_AIC_CONF_OVERFLOW_PLAY_LAST BIT(6)
++#define JZ_AIC_CONF_INTERNAL_CODEC BIT(5)
++#define JZ_AIC_CONF_I2S BIT(4)
++#define JZ_AIC_CONF_RESET BIT(3)
++#define JZ_AIC_CONF_BIT_CLK_MASTER BIT(2)
++#define JZ_AIC_CONF_SYNC_CLK_MASTER BIT(1)
++#define JZ_AIC_CONF_ENABLE BIT(0)
 +
-+#define JZ4740_CODEC_2_INPUT_VOLUME_MASK		0x1f0000
-+#define JZ4740_CODEC_2_SAMPLE_RATE_MASK			0x000f00
-+#define JZ4740_CODEC_2_MIC_BOOST_GAIN_MASK		0x000030
-+#define JZ4740_CODEC_2_HEADPHONE_VOLUME_MASK	0x000003
++#define JZ_AIC_CONF_FIFO_RX_THRESHOLD_OFFSET 12
++#define JZ_AIC_CONF_FIFO_TX_THRESHOLD_OFFSET 8
 +
-+#define JZ4740_CODEC_2_INPUT_VOLUME_OFFSET		16
-+#define JZ4740_CODEC_2_SAMPLE_RATE_OFFSET		 8
-+#define JZ4740_CODEC_2_MIC_BOOST_GAIN_OFFSET	 4
-+#define JZ4740_CODEC_2_HEADPHONE_VOLUME_OFFSET	 0
++#define JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_MASK (0x7 << 19)
++#define JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_MASK (0x7 << 16)
++#define JZ_AIC_CTRL_ENABLE_RX_DMA BIT(15)
++#define JZ_AIC_CTRL_ENABLE_TX_DMA BIT(14)
++#define JZ_AIC_CTRL_MONO_TO_STEREO BIT(11)
++#define JZ_AIC_CTRL_SWITCH_ENDIANNESS BIT(10)
++#define JZ_AIC_CTRL_SIGNED_TO_UNSIGNED BIT(9)
++#define JZ_AIC_CTRL_FLUSH		BIT(8)
++#define JZ_AIC_CTRL_ENABLE_ROR_INT BIT(6)
++#define JZ_AIC_CTRL_ENABLE_TUR_INT BIT(5)
++#define JZ_AIC_CTRL_ENABLE_RFS_INT BIT(4)
++#define JZ_AIC_CTRL_ENABLE_TFS_INT BIT(3)
++#define JZ_AIC_CTRL_ENABLE_LOOPBACK BIT(2)
++#define JZ_AIC_CTRL_ENABLE_PLAYBACK BIT(1)
++#define JZ_AIC_CTRL_ENABLE_CAPTURE BIT(0)
 +
-+static const uint32_t jz4740_codec_regs[] = {
-+	0x021b2302, 0x00170803,
-+};
++#define JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_OFFSET 19
++#define JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_OFFSET  16
 +
-+struct jz4740_codec {
-+	void __iomem *base;
++#define JZ_AIC_I2S_FMT_DISABLE_BIT_CLK BIT(12)
++#define JZ_AIC_I2S_FMT_ENABLE_SYS_CLK BIT(4)
++#define JZ_AIC_I2S_FMT_MSB BIT(0)
++
++#define JZ_AIC_I2S_STATUS_BUSY BIT(2)
++
++#define JZ_AIC_CLK_DIV_MASK 0xf
++
++struct jz4740_i2s {
 +	struct resource *mem;
++	void __iomem *base;
++	dma_addr_t phys_base;
 +
-+	uint32_t reg_cache[2];
-+	struct snd_soc_codec codec;
++	struct clk *clk_aic;
++	struct clk *clk_i2s;
++
++	struct jz4740_pcm_config pcm_config_playback;
++	struct jz4740_pcm_config pcm_config_capture;
 +};
 +
-+static inline struct jz4740_codec *codec_to_jz4740(struct snd_soc_codec *codec)
-+{
-+	return container_of(codec, struct jz4740_codec, codec);
-+}
-+
-+static unsigned int jz4740_codec_read(struct snd_soc_codec *codec,
++static inline uint32_t jz4740_i2s_read(const struct jz4740_i2s *i2s,
 +	unsigned int reg)
 +{
-+	struct jz4740_codec *jz4740_codec = codec_to_jz4740(codec);
-+	return readl(jz4740_codec->base + (reg << 2));
++	return readl(i2s->base + reg);
 +}
 +
-+static int jz4740_codec_write(struct snd_soc_codec *codec, unsigned int reg,
-+	unsigned int val)
++static inline void jz4740_i2s_write(const struct jz4740_i2s *i2s,
++	unsigned int reg, uint32_t value)
 +{
-+	struct jz4740_codec *jz4740_codec = codec_to_jz4740(codec);
++	writel(value, i2s->base + reg);
++}
 +
-+	jz4740_codec->reg_cache[reg] = val;
-+	writel(val, jz4740_codec->base + (reg << 2));
++static inline struct jz4740_i2s *jz4740_dai_to_i2s(struct snd_soc_dai *dai)
++{
++	return dai->private_data;
++}
++
++static int jz4740_i2s_startup(struct snd_pcm_substream *substream,
++	struct snd_soc_dai *dai)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	uint32_t conf, ctrl;
++
++	if (dai->active)
++		return 0;
++
++	ctrl = jz4740_i2s_read(i2s, JZ_REG_AIC_CTRL);
++	ctrl |= JZ_AIC_CTRL_FLUSH;
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CTRL, ctrl);
++
++	clk_enable(i2s->clk_i2s);
++
++	conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
++	conf |= JZ_AIC_CONF_ENABLE;
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
 +
 +	return 0;
 +}
 +
-+static const struct snd_kcontrol_new jz4740_codec_controls[] = {
-+	SOC_SINGLE("Master Playback Volume", JZ4740_REG_CODEC_2,
-+			JZ4740_CODEC_2_HEADPHONE_VOLUME_OFFSET, 3, 0),
-+	SOC_SINGLE("Master Capture Volume", JZ4740_REG_CODEC_2,
-+			JZ4740_CODEC_2_INPUT_VOLUME_OFFSET, 31, 0),
-+	SOC_SINGLE("Master Playback Switch", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_HEADPHONE_DISABLE_OFFSET, 1, 1),
-+	SOC_SINGLE("Mic Capture Volume", JZ4740_REG_CODEC_2,
-+			JZ4740_CODEC_2_MIC_BOOST_GAIN_OFFSET, 3, 0),
-+};
-+
-+static const struct snd_kcontrol_new jz4740_codec_output_controls[] = {
-+	SOC_DAPM_SINGLE("Bypass Switch", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_SW1_ENABLE_OFFSET, 1, 0),
-+	SOC_DAPM_SINGLE("DAC Switch", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_SW2_ENABLE_OFFSET, 1, 0),
-+};
-+
-+static const struct snd_kcontrol_new jz4740_codec_input_controls[] = {
-+	SOC_DAPM_SINGLE("Line Capture Switch", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_LINE_ENABLE_OFFSET, 1, 0),
-+	SOC_DAPM_SINGLE("Mic Capture Switch", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_MIC_ENABLE_OFFSET, 1, 0),
-+};
-+
-+static const struct snd_soc_dapm_widget jz4740_codec_dapm_widgets[] = {
-+	SND_SOC_DAPM_ADC("ADC", "Capture", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_ADC_ENABLE_OFFSET, 0),
-+	SND_SOC_DAPM_DAC("DAC", "Playback", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_DAC_ENABLE_OFFSET, 0),
-+
-+	SND_SOC_DAPM_MIXER("Output Mixer", JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_HEADPHONE_POWERDOWN_OFFSET, 1,
-+			jz4740_codec_output_controls,
-+			ARRAY_SIZE(jz4740_codec_output_controls)),
-+
-+	SND_SOC_DAPM_MIXER_NAMED_CTL("Input Mixer", SND_SOC_NOPM, 0, 0,
-+			jz4740_codec_input_controls,
-+			ARRAY_SIZE(jz4740_codec_input_controls)),
-+	SND_SOC_DAPM_MIXER("Line Input", SND_SOC_NOPM, 0, 0, NULL, 0),
-+
-+	SND_SOC_DAPM_OUTPUT("LOUT"),
-+	SND_SOC_DAPM_OUTPUT("ROUT"),
-+
-+	SND_SOC_DAPM_INPUT("MIC"),
-+	SND_SOC_DAPM_INPUT("LIN"),
-+	SND_SOC_DAPM_INPUT("RIN"),
-+};
-+
-+static const struct snd_soc_dapm_route jz4740_codec_dapm_routes[] = {
-+	{"Line Input", NULL, "LIN"},
-+	{"Line Input", NULL, "RIN"},
-+
-+	{"Input Mixer", "Line Capture Switch", "Line Input"},
-+	{"Input Mixer", "Mic Capture Switch", "MIC"},
-+
-+	{"ADC", NULL, "Input Mixer"},
-+
-+	{"Output Mixer", "Bypass Switch", "Input Mixer"},
-+	{"Output Mixer", "DAC Switch", "DAC"},
-+
-+	{"LOUT", NULL, "Output Mixer"},
-+	{"ROUT", NULL, "Output Mixer"},
-+};
-+
-+static int jz4740_codec_hw_params(struct snd_pcm_substream *substream,
-+	struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
++static void jz4740_i2s_shutdown(struct snd_pcm_substream *substream,
++	struct snd_soc_dai *dai)
 +{
-+	uint32_t val;
-+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-+	struct snd_soc_device *socdev = rtd->socdev;
-+	struct snd_soc_codec *codec = socdev->card->codec;
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	uint32_t conf;
 +
-+	switch (params_rate(params)) {
-+	case 8000:
-+		val = 0;
++	if (!dai->active)
++		return;
++
++	conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
++	conf &= ~JZ_AIC_CONF_ENABLE;
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
++
++	clk_disable(i2s->clk_i2s);
++}
++
++static int jz4740_i2s_trigger(struct snd_pcm_substream *substream, int cmd,
++	struct snd_soc_dai *dai)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++
++	uint32_t ctrl;
++	uint32_t mask;
++
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++		mask = JZ_AIC_CTRL_ENABLE_PLAYBACK | JZ_AIC_CTRL_ENABLE_TX_DMA;
++	else
++		mask = JZ_AIC_CTRL_ENABLE_CAPTURE | JZ_AIC_CTRL_ENABLE_RX_DMA;
++
++	ctrl = jz4740_i2s_read(i2s, JZ_REG_AIC_CTRL);
++
++	switch (cmd) {
++	case SNDRV_PCM_TRIGGER_START:
++	case SNDRV_PCM_TRIGGER_RESUME:
++	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
++		ctrl |= mask;
 +		break;
-+	case 11025:
-+		val = 1;
-+		break;
-+	case 12000:
-+		val = 2;
-+		break;
-+	case 16000:
-+		val = 3;
-+		break;
-+	case 22050:
-+		val = 4;
-+		break;
-+	case 24000:
-+		val = 5;
-+		break;
-+	case 32000:
-+		val = 6;
-+		break;
-+	case 44100:
-+		val = 7;
-+		break;
-+	case 48000:
-+		val = 8;
++	case SNDRV_PCM_TRIGGER_STOP:
++	case SNDRV_PCM_TRIGGER_SUSPEND:
++	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
++		ctrl &= ~mask;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
 +
-+	val <<= JZ4740_CODEC_2_SAMPLE_RATE_OFFSET;
-+
-+	snd_soc_update_bits(codec, JZ4740_REG_CODEC_2,
-+				JZ4740_CODEC_2_SAMPLE_RATE_MASK, val);
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CTRL, ctrl);
 +
 +	return 0;
 +}
 +
-+static struct snd_soc_dai_ops jz4740_codec_dai_ops = {
-+	.hw_params = jz4740_codec_hw_params,
-+};
-+
-+struct snd_soc_dai jz4740_codec_dai = {
-+	.name = "jz4740",
-+	.playback = {
-+		.stream_name = "Playback",
-+		.channels_min = 2,
-+		.channels_max = 2,
-+		.rates = SNDRV_PCM_RATE_8000_48000,
-+		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
-+	},
-+	.capture = {
-+		.stream_name = "Capture",
-+		.channels_min = 2,
-+		.channels_max = 2,
-+		.rates = SNDRV_PCM_RATE_8000_48000,
-+		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
-+	},
-+	.ops = &jz4740_codec_dai_ops,
-+	.symmetric_rates = 1,
-+};
-+EXPORT_SYMBOL_GPL(jz4740_codec_dai);
-+
-+static void jz4740_codec_wakeup(struct snd_soc_codec *codec)
++static int jz4740_i2s_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 +{
-+	int i;
-+	uint32_t *cache = codec->reg_cache;
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
 +
-+	snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
-+		JZ4740_CODEC_1_RESET, JZ4740_CODEC_1_RESET);
-+	udelay(2);
++	uint32_t format = 0;
++	uint32_t conf;
 +
-+	snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
-+		JZ4740_CODEC_1_SUSPEND | JZ4740_CODEC_1_RESET, 0);
++	conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
 +
-+	for (i = 0; i < ARRAY_SIZE(jz4740_codec_regs); ++i)
-+		jz4740_codec_write(codec, i, cache[i]);
-+}
++	conf &= ~(JZ_AIC_CONF_BIT_CLK_MASTER | JZ_AIC_CONF_SYNC_CLK_MASTER);
 +
-+static int jz4740_codec_set_bias_level(struct snd_soc_codec *codec,
-+	enum snd_soc_bias_level level)
-+{
-+	unsigned int mask;
-+	unsigned int value;
-+
-+	switch (level) {
-+	case SND_SOC_BIAS_ON:
++	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
++	case SND_SOC_DAIFMT_CBS_CFS:
++		conf |= JZ_AIC_CONF_BIT_CLK_MASTER | JZ_AIC_CONF_SYNC_CLK_MASTER;
++		format |= JZ_AIC_I2S_FMT_ENABLE_SYS_CLK;
 +		break;
-+	case SND_SOC_BIAS_PREPARE:
-+		mask = JZ4740_CODEC_1_VREF_DISABLE |
-+				JZ4740_CODEC_1_VREF_AMP_DISABLE |
-+				JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M;
-+		value = 0;
-+
-+		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1, mask, value);
++	case SND_SOC_DAIFMT_CBM_CFS:
++		conf |= JZ_AIC_CONF_SYNC_CLK_MASTER;
 +		break;
-+	case SND_SOC_BIAS_STANDBY:
-+		/* The only way to clear the suspend flag is to reset the codec */
-+		if (codec->bias_level == SND_SOC_BIAS_OFF)
-+			jz4740_codec_wakeup(codec);
-+
-+		mask = JZ4740_CODEC_1_VREF_DISABLE |
-+			JZ4740_CODEC_1_VREF_AMP_DISABLE |
-+			JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M;
-+		value = JZ4740_CODEC_1_VREF_DISABLE |
-+			JZ4740_CODEC_1_VREF_AMP_DISABLE |
-+			JZ4740_CODEC_1_HEADPHONE_POWERDOWN_M;
-+
-+		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1, mask, value);
++	case SND_SOC_DAIFMT_CBS_CFM:
++		conf |= JZ_AIC_CONF_BIT_CLK_MASTER;
 +		break;
-+	case SND_SOC_BIAS_OFF:
-+		mask = JZ4740_CODEC_1_SUSPEND;
-+		value = JZ4740_CODEC_1_SUSPEND;
-+
-+		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1, mask, value);
++	case SND_SOC_DAIFMT_CBM_CFM:
 +		break;
 +	default:
++		return -EINVAL;
++	}
++
++	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
++	case SND_SOC_DAIFMT_MSB:
++		format |= JZ_AIC_I2S_FMT_MSB;
 +		break;
++	case SND_SOC_DAIFMT_I2S:
++		break;
++	default:
++		return -EINVAL;
 +	}
 +
-+	codec->bias_level = level;
++	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
++	case SND_SOC_DAIFMT_NB_NF:
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
++	jz4740_i2s_write(i2s, JZ_REG_AIC_I2S_FMT, format);
 +
 +	return 0;
 +}
 +
-+static struct snd_soc_codec *jz4740_codec_codec;
-+
-+static int jz4740_codec_dev_probe(struct platform_device *pdev)
++static int jz4740_i2s_hw_params(struct snd_pcm_substream *substream,
++	struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
 +{
-+	int ret;
-+	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
-+	struct snd_soc_codec *codec = jz4740_codec_codec;
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	enum jz4740_dma_width dma_width;
++	struct jz4740_pcm_config *pcm_config;
++	unsigned int sample_size;
++	uint32_t ctrl;
 +
-+	BUG_ON(!codec);
++	ctrl = jz4740_i2s_read(i2s, JZ_REG_AIC_CTRL);
 +
-+	socdev->card->codec = codec;
-+
-+	ret = snd_soc_new_pcms(socdev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to create pcms: %d\n", ret);
-+		return ret;
++	switch (params_format(params)) {
++	case SNDRV_PCM_FORMAT_S8:
++		sample_size = 0;
++		dma_width = JZ4740_DMA_WIDTH_8BIT;
++		break;
++	case SNDRV_PCM_FORMAT_S16:
++		sample_size = 1;
++		dma_width = JZ4740_DMA_WIDTH_16BIT;
++		break;
++	default:
++		return -EINVAL;
 +	}
 +
-+	snd_soc_add_controls(codec, jz4740_codec_controls,
-+		ARRAY_SIZE(jz4740_codec_controls));
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		ctrl &= ~JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_MASK;
++		ctrl |= sample_size << JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_OFFSET;
++		if (params_channels(params) == 1)
++			ctrl |= JZ_AIC_CTRL_MONO_TO_STEREO;
++		else
++			ctrl &= ~JZ_AIC_CTRL_MONO_TO_STEREO;
 +
-+	snd_soc_dapm_new_controls(codec, jz4740_codec_dapm_widgets,
-+		ARRAY_SIZE(jz4740_codec_dapm_widgets));
++		pcm_config = &i2s->pcm_config_playback;
++		pcm_config->dma_config.dst_width = dma_width;
 +
-+	snd_soc_dapm_add_routes(codec, jz4740_codec_dapm_routes,
-+		ARRAY_SIZE(jz4740_codec_dapm_routes));
++	} else {
++		ctrl &= ~JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_MASK;
++		ctrl |= sample_size << JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_OFFSET;
 +
-+	snd_soc_dapm_new_widgets(codec);
++		pcm_config = &i2s->pcm_config_capture;
++		pcm_config->dma_config.src_width = dma_width;
++	}
++
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CTRL, ctrl);
++
++	snd_soc_dai_set_dma_data(dai, substream, pcm_config);
 +
 +	return 0;
 +}
 +
-+static int jz4740_codec_dev_remove(struct platform_device *pdev)
++static int jz4740_i2s_set_sysclk(struct snd_soc_dai *dai, int clk_id,
++	unsigned int freq, int dir)
 +{
-+	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	struct clk *parent;
++	int ret = 0;
 +
-+	snd_soc_free_pcms(socdev);
-+	snd_soc_dapm_free(socdev);
-+
-+	return 0;
-+}
-+
-+struct snd_soc_codec_device soc_codec_dev_jz4740_codec = {
-+	.probe = jz4740_codec_dev_probe,
-+	.remove = jz4740_codec_dev_remove,
-+};
-+EXPORT_SYMBOL_GPL(soc_codec_dev_jz4740_codec);
-+
-+#ifdef CONFIG_PM_SLEEP
-+
-+static int jz4740_codec_suspend(struct device *dev)
-+{
-+	struct jz4740_codec *jz4740_codec = dev_get_drvdata(dev);
-+	return jz4740_codec_set_bias_level(&jz4740_codec->codec,
-+		SND_SOC_BIAS_OFF);
-+}
-+
-+static int jz4740_codec_resume(struct device *dev)
-+{
-+	struct jz4740_codec *jz4740_codec = dev_get_drvdata(dev);
-+	return jz4740_codec_set_bias_level(&jz4740_codec->codec,
-+		SND_SOC_BIAS_STANDBY);
-+}
-+
-+static const struct dev_pm_ops jz4740_pm_ops = {
-+	.suspend = jz4740_codec_suspend,
-+	.resume = jz4740_codec_resume,
-+};
-+
-+#define JZ4740_CODEC_PM_OPS (&jz4740_pm_ops)
-+
-+#else
-+#define JZ4740_CODEC_PM_OPS NULL
-+#endif
-+
-+static int __devinit jz4740_codec_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct jz4740_codec *jz4740_codec;
-+	struct snd_soc_codec *codec;
-+	struct resource *mem;
-+
-+	jz4740_codec = kzalloc(sizeof(*jz4740_codec), GFP_KERNEL);
-+	if (!jz4740_codec)
-+		return -ENOMEM;
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!mem) {
-+		dev_err(&pdev->dev, "Failed to get mmio memory resource\n");
-+		ret = -ENOENT;
-+		goto err_free_codec;
++	switch (clk_id) {
++	case JZ4740_I2S_CLKSRC_EXT:
++		parent = clk_get(NULL, "ext");
++		clk_set_parent(i2s->clk_i2s, parent);
++		break;
++	case JZ4740_I2S_CLKSRC_PLL:
++		parent = clk_get(NULL, "pll half");
++		clk_set_parent(i2s->clk_i2s, parent);
++		ret = clk_set_rate(i2s->clk_i2s, freq);
++		break;
++	default:
++		return -EINVAL;
 +	}
-+
-+	mem = request_mem_region(mem->start, resource_size(mem), pdev->name);
-+	if (!mem) {
-+		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
-+		ret = -EBUSY;
-+		goto err_free_codec;
-+	}
-+
-+	jz4740_codec->base = ioremap(mem->start, resource_size(mem));
-+	if (!jz4740_codec->base) {
-+		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
-+		ret = -EBUSY;
-+		goto err_release_mem_region;
-+	}
-+	jz4740_codec->mem = mem;
-+
-+	jz4740_codec_dai.dev = &pdev->dev;
-+
-+	codec = &jz4740_codec->codec;
-+
-+	codec->dev		= &pdev->dev;
-+	codec->name		= "jz4740";
-+	codec->owner		= THIS_MODULE;
-+
-+	codec->read		= jz4740_codec_read;
-+	codec->write		= jz4740_codec_write;
-+	codec->set_bias_level	= jz4740_codec_set_bias_level;
-+	codec->bias_level	= SND_SOC_BIAS_OFF;
-+
-+	codec->dai		= &jz4740_codec_dai;
-+	codec->num_dai		= 1;
-+
-+	codec->reg_cache	= jz4740_codec->reg_cache;
-+	codec->reg_cache_size	= 2;
-+	memcpy(codec->reg_cache, jz4740_codec_regs, sizeof(jz4740_codec_regs));
-+
-+	mutex_init(&codec->mutex);
-+	INIT_LIST_HEAD(&codec->dapm_widgets);
-+	INIT_LIST_HEAD(&codec->dapm_paths);
-+
-+	jz4740_codec_codec = codec;
-+
-+	snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
-+			JZ4740_CODEC_1_SW2_ENABLE, JZ4740_CODEC_1_SW2_ENABLE);
-+
-+	platform_set_drvdata(pdev, jz4740_codec);
-+
-+	ret = snd_soc_register_codec(codec);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to register codec\n");
-+		goto err_iounmap;
-+	}
-+
-+	ret = snd_soc_register_dai(&jz4740_codec_dai);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to register codec dai\n");
-+		goto err_unregister_codec;
-+	}
-+
-+	jz4740_codec_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-+
-+	return 0;
-+
-+err_unregister_codec:
-+	snd_soc_unregister_codec(codec);
-+err_iounmap:
-+	iounmap(jz4740_codec->base);
-+err_release_mem_region:
-+	release_mem_region(mem->start, resource_size(mem));
-+err_free_codec:
-+	kfree(jz4740_codec);
++	clk_put(parent);
 +
 +	return ret;
 +}
 +
-+static int __devexit jz4740_codec_remove(struct platform_device *pdev)
++static int jz4740_i2s_suspend(struct snd_soc_dai *dai)
 +{
-+	struct jz4740_codec *jz4740_codec = platform_get_drvdata(pdev);
-+	struct resource *mem = jz4740_codec->mem;
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	uint32_t conf;
 +
-+	snd_soc_unregister_dai(&jz4740_codec_dai);
-+	snd_soc_unregister_codec(&jz4740_codec->codec);
++	if (dai->active) {
++		conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
++		conf &= ~JZ_AIC_CONF_ENABLE;
++		jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
 +
-+	iounmap(jz4740_codec->base);
-+	release_mem_region(mem->start, resource_size(mem));
++		clk_disable(i2s->clk_i2s);
++	}
 +
-+	platform_set_drvdata(pdev, NULL);
-+	kfree(jz4740_codec);
++	clk_disable(i2s->clk_aic);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver jz4740_codec_driver = {
-+	.probe = jz4740_codec_probe,
-+	.remove = __devexit_p(jz4740_codec_remove),
++static int jz4740_i2s_resume(struct snd_soc_dai *dai)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	uint32_t conf;
++
++	clk_enable(i2s->clk_aic);
++
++	if (dai->active) {
++		clk_enable(i2s->clk_i2s);
++
++		conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
++		conf |= JZ_AIC_CONF_ENABLE;
++		jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
++	}
++
++	return 0;
++}
++
++static int jz4740_i2s_probe(struct platform_device *pdev, struct snd_soc_dai *dai)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	uint32_t conf;
++
++	conf = (7 << JZ_AIC_CONF_FIFO_RX_THRESHOLD_OFFSET) |
++		(8 << JZ_AIC_CONF_FIFO_TX_THRESHOLD_OFFSET) |
++		JZ_AIC_CONF_OVERFLOW_PLAY_LAST |
++		JZ_AIC_CONF_I2S |
++		JZ_AIC_CONF_INTERNAL_CODEC;
++
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, JZ_AIC_CONF_RESET);
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
++
++	return 0;
++}
++
++static struct snd_soc_dai_ops jz4740_i2s_dai_ops = {
++	.startup = jz4740_i2s_startup,
++	.shutdown = jz4740_i2s_shutdown,
++	.trigger = jz4740_i2s_trigger,
++	.hw_params = jz4740_i2s_hw_params,
++	.set_fmt = jz4740_i2s_set_fmt,
++	.set_sysclk = jz4740_i2s_set_sysclk,
++};
++
++#define JZ4740_I2S_FMTS (SNDRV_PCM_FMTBIT_S8 | \
++		SNDRV_PCM_FMTBIT_S16_LE)
++
++struct snd_soc_dai jz4740_i2s_dai = {
++	.name = "jz4740-i2s",
++	.probe = jz4740_i2s_probe,
++	.playback = {
++		.channels_min = 1,
++		.channels_max = 2,
++		.rates = SNDRV_PCM_RATE_8000_48000,
++		.formats = JZ4740_I2S_FMTS,
++	},
++	.capture = {
++		.channels_min = 2,
++		.channels_max = 2,
++		.rates = SNDRV_PCM_RATE_8000_48000,
++		.formats = JZ4740_I2S_FMTS,
++	},
++	.symmetric_rates = 1,
++	.ops = &jz4740_i2s_dai_ops,
++	.suspend = jz4740_i2s_suspend,
++	.resume = jz4740_i2s_resume,
++};
++EXPORT_SYMBOL_GPL(jz4740_i2s_dai);
++
++static void __devinit jz4740_i2c_init_pcm_config(struct jz4740_i2s *i2s)
++{
++	struct jz4740_dma_config *dma_config;
++
++	/* Playback */
++	dma_config = &i2s->pcm_config_playback.dma_config;
++	dma_config->src_width = JZ4740_DMA_WIDTH_32BIT,
++	dma_config->transfer_size = JZ4740_DMA_TRANSFER_SIZE_16BYTE;
++	dma_config->request_type = JZ4740_DMA_TYPE_AIC_TRANSMIT;
++	dma_config->flags = JZ4740_DMA_SRC_AUTOINC;
++	dma_config->mode = JZ4740_DMA_MODE_SINGLE;
++	i2s->pcm_config_playback.fifo_addr = i2s->phys_base + JZ_REG_AIC_FIFO;
++
++	/* Capture */
++	dma_config = &i2s->pcm_config_capture.dma_config;
++	dma_config->dst_width = JZ4740_DMA_WIDTH_32BIT,
++	dma_config->transfer_size = JZ4740_DMA_TRANSFER_SIZE_16BYTE;
++	dma_config->request_type = JZ4740_DMA_TYPE_AIC_RECEIVE;
++	dma_config->flags = JZ4740_DMA_DST_AUTOINC;
++	dma_config->mode = JZ4740_DMA_MODE_SINGLE;
++	i2s->pcm_config_capture.fifo_addr = i2s->phys_base + JZ_REG_AIC_FIFO;
++}
++
++static int __devinit jz4740_i2s_dev_probe(struct platform_device *pdev)
++{
++	struct jz4740_i2s *i2s;
++	int ret;
++
++	i2s = kzalloc(sizeof(*i2s), GFP_KERNEL);
++
++	if (!i2s)
++		return -ENOMEM;
++
++	i2s->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!i2s->mem) {
++		ret = -ENOENT;
++		goto err_free;
++	}
++
++	i2s->mem = request_mem_region(i2s->mem->start, resource_size(i2s->mem),
++				pdev->name);
++	if (!i2s->mem) {
++		ret = -EBUSY;
++		goto err_free;
++	}
++
++	i2s->base = ioremap_nocache(i2s->mem->start, resource_size(i2s->mem));
++	if (!i2s->base) {
++		ret = -EBUSY;
++		goto err_release_mem_region;
++	}
++
++	i2s->phys_base = i2s->mem->start;
++
++	i2s->clk_aic = clk_get(&pdev->dev, "aic");
++	if (IS_ERR(i2s->clk_aic)) {
++		ret = PTR_ERR(i2s->clk_aic);
++		goto err_iounmap;
++	}
++
++	i2s->clk_i2s = clk_get(&pdev->dev, "i2s");
++	if (IS_ERR(i2s->clk_i2s)) {
++		ret = PTR_ERR(i2s->clk_i2s);
++		goto err_clk_put_aic;
++	}
++
++	clk_enable(i2s->clk_aic);
++
++	jz4740_i2c_init_pcm_config(i2s);
++
++	jz4740_i2s_dai.private_data = i2s;
++	ret = snd_soc_register_dai(&jz4740_i2s_dai);
++
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to register DAI\n");
++		goto err_clk_put_i2s;
++	}
++
++	platform_set_drvdata(pdev, i2s);
++
++	return 0;
++
++err_clk_put_i2s:
++	clk_disable(i2s->clk_aic);
++	clk_put(i2s->clk_i2s);
++err_clk_put_aic:
++	clk_put(i2s->clk_aic);
++err_iounmap:
++	iounmap(i2s->base);
++err_release_mem_region:
++	release_mem_region(i2s->mem->start, resource_size(i2s->mem));
++err_free:
++	kfree(i2s);
++
++	return ret;
++}
++
++static int __devexit jz4740_i2s_dev_remove(struct platform_device *pdev)
++{
++	struct jz4740_i2s *i2s = platform_get_drvdata(pdev);
++
++	snd_soc_unregister_dai(&jz4740_i2s_dai);
++
++	clk_disable(i2s->clk_aic);
++	clk_put(i2s->clk_i2s);
++	clk_put(i2s->clk_aic);
++
++	iounmap(i2s->base);
++	release_mem_region(i2s->mem->start, resource_size(i2s->mem));
++
++	platform_set_drvdata(pdev, NULL);
++	kfree(i2s);
++
++	return 0;
++}
++
++static struct platform_driver jz4740_i2s_driver = {
++	.probe = jz4740_i2s_dev_probe,
++	.remove = __devexit_p(jz4740_i2s_dev_remove),
 +	.driver = {
-+		.name = "jz4740-codec",
++		.name = "jz4740-i2s",
 +		.owner = THIS_MODULE,
-+		.pm = JZ4740_CODEC_PM_OPS,
 +	},
 +};
 +
-+static int __init jz4740_codec_init(void)
++static int __init jz4740_i2s_init(void)
 +{
-+	return platform_driver_register(&jz4740_codec_driver);
++	return platform_driver_register(&jz4740_i2s_driver);
 +}
-+module_init(jz4740_codec_init);
++module_init(jz4740_i2s_init);
 +
-+static void __exit jz4740_codec_exit(void)
++static void __exit jz4740_i2s_exit(void)
 +{
-+	platform_driver_unregister(&jz4740_codec_driver);
++	platform_driver_unregister(&jz4740_i2s_driver);
 +}
-+module_exit(jz4740_codec_exit);
++module_exit(jz4740_i2s_exit);
 +
-+MODULE_DESCRIPTION("JZ4740 SoC internal codec driver");
-+MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:jz4740-codec");
-diff --git a/sound/soc/codecs/jz4740.h b/sound/soc/codecs/jz4740.h
++MODULE_AUTHOR("Lars-Peter Clausen, <lars@metafoo.de>");
++MODULE_DESCRIPTION("Ingenic JZ4740 SoC I2S driver");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:jz4740-i2s");
+diff --git a/sound/soc/jz4740/jz4740-i2s.h b/sound/soc/jz4740/jz4740-i2s.h
 new file mode 100644
-index 0000000..b5a0691
+index 0000000..da22ed8
 --- /dev/null
-+++ b/sound/soc/codecs/jz4740.h
-@@ -0,0 +1,20 @@
++++ b/sound/soc/jz4740/jz4740-i2s.h
+@@ -0,0 +1,18 @@
 +/*
-+ * Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
-+ *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
++ */
++
++#ifndef _JZ4740_I2S_H
++#define _JZ4740_I2S_H
++
++/* I2S clock source */
++#define JZ4740_I2S_CLKSRC_EXT 0
++#define JZ4740_I2S_CLKSRC_PLL 1
++
++#define JZ4740_I2S_BIT_CLK		0
++
++extern struct snd_soc_dai jz4740_i2s_dai;
++
++#endif
+diff --git a/sound/soc/jz4740/jz4740-pcm.c b/sound/soc/jz4740/jz4740-pcm.c
+new file mode 100644
+index 0000000..ee68d85
+--- /dev/null
++++ b/sound/soc/jz4740/jz4740-pcm.c
+@@ -0,0 +1,373 @@
++/*
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
++ *
++ *  This program is free software; you can redistribute	 it and/or modify it
++ *  under  the terms of	 the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
++ *  option) any later version.
 + *
 + *  You should have received a copy of the  GNU General Public License along
 + *  with this program; if not, write  to the Free Software Foundation, Inc.,
@@ -636,11 +708,391 @@ index 0000000..b5a0691
 + *
 + */
 +
-+#ifndef __SND_SOC_CODECS_JZ4740_CODEC_H__
-+#define __SND_SOC_CODECS_JZ4740_CODEC_H__
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
 +
-+extern struct snd_soc_dai jz4740_codec_dai;
-+extern struct snd_soc_codec_device soc_codec_dev_jz4740_codec;
++#include <linux/dma-mapping.h>
++
++#include <sound/core.h>
++#include <sound/pcm.h>
++#include <sound/pcm_params.h>
++#include <sound/soc.h>
++
++#include <asm/mach-jz4740/dma.h>
++#include "jz4740-pcm.h"
++
++struct jz4740_runtime_data {
++	unsigned long dma_period;
++	dma_addr_t dma_start;
++	dma_addr_t dma_pos;
++	dma_addr_t dma_end;
++
++	struct jz4740_dma_chan *dma;
++
++	dma_addr_t fifo_addr;
++};
++
++/* identify hardware playback capabilities */
++static const struct snd_pcm_hardware jz4740_pcm_hardware = {
++	.info = SNDRV_PCM_INFO_MMAP |
++		SNDRV_PCM_INFO_MMAP_VALID |
++		SNDRV_PCM_INFO_INTERLEAVED |
++		SNDRV_PCM_INFO_BLOCK_TRANSFER,
++	.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
++
++	.rates			= SNDRV_PCM_RATE_8000_48000,
++	.channels_min		= 1,
++	.channels_max		= 2,
++	.period_bytes_min	= 16,
++	.period_bytes_max	= 2 * PAGE_SIZE,
++	.periods_min		= 2,
++	.periods_max		= 128,
++	.buffer_bytes_max	= 128 * 2 * PAGE_SIZE,
++	.fifo_size		= 32,
++};
++
++static void jz4740_pcm_start_transfer(struct jz4740_runtime_data *prtd,
++	struct snd_pcm_substream *substream)
++{
++	unsigned long count;
++
++	if (prtd->dma_pos == prtd->dma_end)
++		prtd->dma_pos = prtd->dma_start;
++
++	if (prtd->dma_pos + prtd->dma_period > prtd->dma_end)
++		count = prtd->dma_end - prtd->dma_pos;
++	else
++		count = prtd->dma_period;
++
++	jz4740_dma_disable(prtd->dma);
++
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		jz4740_dma_set_src_addr(prtd->dma, prtd->dma_pos);
++		jz4740_dma_set_dst_addr(prtd->dma, prtd->fifo_addr);
++	} else {
++		jz4740_dma_set_src_addr(prtd->dma, prtd->fifo_addr);
++		jz4740_dma_set_dst_addr(prtd->dma, prtd->dma_pos);
++	}
++
++	jz4740_dma_set_transfer_count(prtd->dma, count);
++
++	prtd->dma_pos += count;
++
++	jz4740_dma_enable(prtd->dma);
++}
++
++static void jz4740_pcm_dma_transfer_done(struct jz4740_dma_chan *dma, int err,
++	void *dev_id)
++{
++	struct snd_pcm_substream *substream = dev_id;
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd = runtime->private_data;
++
++	snd_pcm_period_elapsed(substream);
++
++	jz4740_pcm_start_transfer(prtd, substream);
++}
++
++static int jz4740_pcm_hw_params(struct snd_pcm_substream *substream,
++	struct snd_pcm_hw_params *params)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd = runtime->private_data;
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct jz4740_pcm_config *config;
++
++	config = snd_soc_dai_get_dma_data(rtd->dai->cpu_dai, substream);
++
++	if (!config)
++		return 0;
++
++	if (!prtd->dma) {
++		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
++			prtd->dma = jz4740_dma_request(substream, "PCM Capture");
++		else
++			prtd->dma = jz4740_dma_request(substream, "PCM Playback");
++	}
++
++	if (!prtd->dma)
++		return -EBUSY;
++
++	jz4740_dma_configure(prtd->dma, &config->dma_config);
++	prtd->fifo_addr = config->fifo_addr;
++
++	jz4740_dma_set_complete_cb(prtd->dma, jz4740_pcm_dma_transfer_done);
++
++	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
++	runtime->dma_bytes = params_buffer_bytes(params);
++
++	prtd->dma_period = params_period_bytes(params);
++	prtd->dma_start = runtime->dma_addr;
++	prtd->dma_pos = prtd->dma_start;
++	prtd->dma_end = prtd->dma_start + runtime->dma_bytes;
++
++	return 0;
++}
++
++static int jz4740_pcm_hw_free(struct snd_pcm_substream *substream)
++{
++	struct jz4740_runtime_data *prtd = substream->runtime->private_data;
++
++	snd_pcm_set_runtime_buffer(substream, NULL);
++	if (prtd->dma) {
++		jz4740_dma_free(prtd->dma);
++		prtd->dma = NULL;
++	}
++
++	return 0;
++}
++
++static int jz4740_pcm_prepare(struct snd_pcm_substream *substream)
++{
++	struct jz4740_runtime_data *prtd = substream->runtime->private_data;
++
++	if (!prtd->dma)
++		return -EBUSY;
++
++	prtd->dma_pos = prtd->dma_start;
++
++	return 0;
++}
++
++static int jz4740_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd = runtime->private_data;
++
++	switch (cmd) {
++	case SNDRV_PCM_TRIGGER_START:
++	case SNDRV_PCM_TRIGGER_RESUME:
++	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
++		jz4740_pcm_start_transfer(prtd, substream);
++		break;
++	case SNDRV_PCM_TRIGGER_STOP:
++	case SNDRV_PCM_TRIGGER_SUSPEND:
++	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
++		jz4740_dma_disable(prtd->dma);
++		break;
++	default:
++		break;
++	}
++
++	return 0;
++}
++
++static snd_pcm_uframes_t jz4740_pcm_pointer(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd = runtime->private_data;
++	unsigned long byte_offset;
++	snd_pcm_uframes_t offset;
++	struct jz4740_dma_chan *dma = prtd->dma;
++
++	/* prtd->dma_pos points to the end of the current transfer. So by
++	 * subtracting prdt->dma_start we get the offset to the end of the
++	 * current period in bytes. By subtracting the residue of the transfer
++	 * we get the current offset in bytes. */
++	byte_offset = prtd->dma_pos - prtd->dma_start;
++	byte_offset -= jz4740_dma_get_residue(dma);
++
++	offset = bytes_to_frames(runtime, byte_offset);
++	if (offset >= runtime->buffer_size)
++		offset = 0;
++
++	return offset;
++}
++
++static int jz4740_pcm_open(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd;
++
++	prtd = kzalloc(sizeof(*prtd), GFP_KERNEL);
++	if (prtd == NULL)
++		return -ENOMEM;
++
++	snd_soc_set_runtime_hwparams(substream, &jz4740_pcm_hardware);
++
++	runtime->private_data = prtd;
++
++	return 0;
++}
++
++static int jz4740_pcm_close(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd = runtime->private_data;
++
++	kfree(prtd);
++
++	return 0;
++}
++
++static int jz4740_pcm_mmap(struct snd_pcm_substream *substream,
++	struct vm_area_struct *vma)
++{
++	return remap_pfn_range(vma, vma->vm_start,
++			substream->dma_buffer.addr >> PAGE_SHIFT,
++			vma->vm_end - vma->vm_start, vma->vm_page_prot);
++}
++
++static struct snd_pcm_ops jz4740_pcm_ops = {
++	.open		= jz4740_pcm_open,
++	.close		= jz4740_pcm_close,
++	.ioctl		= snd_pcm_lib_ioctl,
++	.hw_params	= jz4740_pcm_hw_params,
++	.hw_free	= jz4740_pcm_hw_free,
++	.prepare	= jz4740_pcm_prepare,
++	.trigger	= jz4740_pcm_trigger,
++	.pointer	= jz4740_pcm_pointer,
++	.mmap		= jz4740_pcm_mmap,
++};
++
++static int jz4740_pcm_preallocate_dma_buffer(struct snd_pcm *pcm, int stream)
++{
++	struct snd_pcm_substream *substream = pcm->streams[stream].substream;
++	struct snd_dma_buffer *buf = &substream->dma_buffer;
++	size_t size = jz4740_pcm_hardware.buffer_bytes_max;
++
++	buf->dev.type = SNDRV_DMA_TYPE_DEV;
++	buf->dev.dev = pcm->card->dev;
++	buf->private_data = NULL;
++
++	buf->area = dma_alloc_noncoherent(pcm->card->dev, size,
++					  &buf->addr, GFP_KERNEL);
++	if (!buf->area)
++		return -ENOMEM;
++
++	buf->bytes = size;
++
++	return 0;
++}
++
++static void jz4740_pcm_free(struct snd_pcm *pcm)
++{
++	struct snd_pcm_substream *substream;
++	struct snd_dma_buffer *buf;
++	int stream;
++
++	for (stream = 0; stream < SNDRV_PCM_STREAM_LAST; ++stream) {
++		substream = pcm->streams[stream].substream;
++		if (!substream)
++			continue;
++
++		buf = &substream->dma_buffer;
++		if (!buf->area)
++			continue;
++
++		dma_free_noncoherent(pcm->card->dev, buf->bytes, buf->area,
++				buf->addr);
++		buf->area = NULL;
++	}
++}
++
++static u64 jz4740_pcm_dmamask = DMA_BIT_MASK(32);
++
++int jz4740_pcm_new(struct snd_card *card, struct snd_soc_dai *dai,
++	struct snd_pcm *pcm)
++{
++	int ret = 0;
++
++	if (!card->dev->dma_mask)
++		card->dev->dma_mask = &jz4740_pcm_dmamask;
++
++	if (!card->dev->coherent_dma_mask)
++		card->dev->coherent_dma_mask = DMA_BIT_MASK(32);
++
++	if (dai->playback.channels_min) {
++		ret = jz4740_pcm_preallocate_dma_buffer(pcm,
++			SNDRV_PCM_STREAM_PLAYBACK);
++		if (ret)
++			goto err;
++	}
++
++	if (dai->capture.channels_min) {
++		ret = jz4740_pcm_preallocate_dma_buffer(pcm,
++			SNDRV_PCM_STREAM_CAPTURE);
++		if (ret)
++			goto err;
++	}
++
++err:
++	return ret;
++}
++
++struct snd_soc_platform jz4740_soc_platform = {
++		.name		= "jz4740-pcm",
++		.pcm_ops	= &jz4740_pcm_ops,
++		.pcm_new	= jz4740_pcm_new,
++		.pcm_free	= jz4740_pcm_free,
++};
++EXPORT_SYMBOL_GPL(jz4740_soc_platform);
++
++static int __devinit jz4740_pcm_probe(struct platform_device *pdev)
++{
++	return snd_soc_register_platform(&jz4740_soc_platform);
++}
++
++static int __devexit jz4740_pcm_remove(struct platform_device *pdev)
++{
++	snd_soc_unregister_platform(&jz4740_soc_platform);
++	return 0;
++}
++
++static struct platform_driver jz4740_pcm_driver = {
++	.probe = jz4740_pcm_probe,
++	.remove = __devexit_p(jz4740_pcm_remove),
++	.driver = {
++		.name = "jz4740-pcm",
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init jz4740_soc_platform_init(void)
++{
++	return platform_driver_register(&jz4740_pcm_driver);
++}
++module_init(jz4740_soc_platform_init);
++
++static void __exit jz4740_soc_platform_exit(void)
++{
++	return platform_driver_unregister(&jz4740_pcm_driver);
++}
++module_exit(jz4740_soc_platform_exit);
++
++MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
++MODULE_DESCRIPTION("Ingenic SoC JZ4740 PCM driver");
++MODULE_LICENSE("GPL");
+diff --git a/sound/soc/jz4740/jz4740-pcm.h b/sound/soc/jz4740/jz4740-pcm.h
+new file mode 100644
+index 0000000..e3f221e
+--- /dev/null
++++ b/sound/soc/jz4740/jz4740-pcm.h
+@@ -0,0 +1,22 @@
++/*
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _JZ4740_PCM_H
++#define _JZ4740_PCM_H
++
++#include <linux/dma-mapping.h>
++#include <asm/mach-jz4740/dma.h>
++
++/* platform data */
++extern struct snd_soc_platform jz4740_soc_platform;
++
++struct jz4740_pcm_config {
++	struct jz4740_dma_config dma_config;
++	phys_addr_t fifo_addr;
++};
 +
 +#endif
 -- 
