@@ -1,80 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab0FSQWb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 12:22:31 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:33325 "EHLO smtp.outflux.net"
+	id S1756443Ab0FSQYR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 12:24:17 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:59918 "EHLO poutre.nerim.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753986Ab0FSQWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 12:22:30 -0400
-Date: Sat, 19 Jun 2010 09:21:56 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       Alexander Potashev <aspotashev@gmail.com>,
-       Tim Abbott <tabbott@ksplice.com>, Sam Ravnborg <sam@ravnborg.org>,
-       Jan Beulich <jbeulich@novell.com>,
-       Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] x86: clear XD_DISABLED flag on Intel to regain
- NX
-Message-ID: <20100619162156.GW24749@outflux.net>
-References: <20100619055010.GR24749@outflux.net>
- <874ogzph4m.fsf@basil.nowhere.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <874ogzph4m.fsf@basil.nowhere.org>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1754631Ab0FSQYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 12:24:16 -0400
+Date: Sat, 19 Jun 2010 18:24:10 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [PATCH v3] hwmon: Add JZ4740 ADC driver
+Message-ID: <20100619182410.171856ae@hyperion.delvare>
+In-Reply-To: <1276958820-8862-1-git-send-email-lars@metafoo.de>
+References: <1276924111-11158-24-git-send-email-lars@metafoo.de>
+	<1276958820-8862-1-git-send-email-lars@metafoo.de>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Lars-Peter,
 
-On Sat, Jun 19, 2010 at 10:21:29AM +0200, Andi Kleen wrote:
-> Kees Cook <kees.cook@canonical.com> writes:
+On Sat, 19 Jun 2010 16:47:00 +0200, Lars-Peter Clausen wrote:
+> This patch adds support for reading the ADCIN pin of ADC unit on JZ4740 SoCs.
 > 
-> > This will clear the MSR_IA32_MISC_ENABLE_XD_DISABLE bit so that NX cannot
-> > be inappropriately controlled by the BIOS on Intel CPUs.  If NX actually
-> > needs to be disabled, "noexec=off" can be used.
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: lm-sensors@lm-sensors.org
 > 
-> The patch still seems like a bad idea to me. What happens if 
-> the NX bit is broken for some reason and the BIOS is right
-> to disable it?
+> --
+> Changes since v1
+> - Move ADC core access synchronizing from the HWMON driver to a MFD driver. The
+>   ADC driver now only reads the adcin value.
+> Changes since v2
+> - Add name sysfs attribute
+> - Report adcin in value in millivolts
 
-I would think this would be the exception; such broken systems should be
-worked around when they are discovered.
+Changes look good. A few more comments below; other than these, your
+driver look good, and I can add it to my hwmon tree and schedule it for
+2.6.36 if you want.
 
-> If there's some VM which doesn't ignore unknown MSR writes
-> it could also break early, and at best you get an ugly
-> message and at worst a crash.
+> ---
+>  drivers/hwmon/Kconfig        |   11 ++
+>  drivers/hwmon/Makefile       |    1 +
+>  drivers/hwmon/jz4740-hwmon.c |  224 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 236 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/hwmon/jz4740-hwmon.c
+> 
+> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> index 569082c..51fc2f6 100644
+> --- a/drivers/hwmon/Kconfig
+> +++ b/drivers/hwmon/Kconfig
+> @@ -446,6 +446,17 @@ config SENSORS_IT87
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called it87.
+>  
+> +config SENSORS_JZ4740
+> +	tristate "Ingenic JZ4740 SoC ADC driver"
+> +	depends on MACH_JZ4740
+> +    help
+> +      If you say yes here you get support for the Ingenic JZ4740 SoC ADC core.
+> +      It is required for the JZ4740 battery and touchscreen driver and is used
+> +      to synchronize access to the adc module between those two.
+> +
+> +      This driver can also be build as a module. If so, the module will be
+> +      called jz4740-adc.
 
-That would be a bug in the VM, but since intel_early_init() already does
-the MSR call, such a problem would already exist (and this patch wouldn't
-make it worse).
+Actually not. And please use tabs for the first indentation level.
 
-> Do you have evidence for a lot of systems where NX is disabled
-> this way without BIOS option? Really such information
-> should be in the patch description.
+> +
+>  config SENSORS_LM63
+>  	tristate "National Semiconductor LM63 and LM64"
+>  	depends on I2C
+> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+> index bca0d45..dffbdff 100644
+> --- a/drivers/hwmon/Makefile
+> +++ b/drivers/hwmon/Makefile
+> @@ -55,6 +55,7 @@ obj-$(CONFIG_SENSORS_I5K_AMB)	+= i5k_amb.o
+>  obj-$(CONFIG_SENSORS_IBMAEM)	+= ibmaem.o
+>  obj-$(CONFIG_SENSORS_IBMPEX)	+= ibmpex.o
+>  obj-$(CONFIG_SENSORS_IT87)	+= it87.o
+> +obj-$(CONFIG_SENSORS_JZ4740)	+= jz4740-hwmon.o
+>  obj-$(CONFIG_SENSORS_K8TEMP)	+= k8temp.o
+>  obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
+>  obj-$(CONFIG_SENSORS_LIS3LV02D) += lis3lv02d.o hp_accel.o
+> diff --git a/drivers/hwmon/jz4740-hwmon.c b/drivers/hwmon/jz4740-hwmon.c
+> new file mode 100644
+> index 0000000..a448d78
+> --- /dev/null
+> +++ b/drivers/hwmon/jz4740-hwmon.c
+> @@ -0,0 +1,224 @@
+> +/*
+> + * Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
+> + * JZ4740 SoC HWMON driver
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under  the terms of the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the License, or (at your
+> + * option) any later version.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, write to the Free Software Foundation, Inc.,
+> + * 675 Mass Ave, Cambridge, MA 02139, USA.
+> + *
+> + */
+> +
+> +#include <linux/err.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/mutex.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +
+> +#include <linux/mfd/core.h>
+> +
+> +#include <linux/hwmon.h>
+> +#include <linux/hwmon-sysfs.h>
+> +
+> +struct jz4740_hwmon {
+> +	struct resource *mem;
+> +	void __iomem *base;
+> +
+> +	int irq;
+> +
+> +	struct mfd_cell *cell;
+> +	struct device *hwmon;
+> +
+> +	struct completion read_completion;
 
-All Dell systems shipping Ubuntu (and RedHat before then) until maybe
-mid-2009 had XD_DISABLE set, and several bare boards with AMI BIOSes
-have shipped with it too.  It is an unfortunately common scenario from
-what I've seen.  Note that both have an option, but most users don't know
-or care about it.  Since Linux handles NX fine, it should clear the bit.
+You must include <linux/completion.h> for this.
 
-> If you really need to apply it apply it in some place where
-> exception handling is possible at least.
+> +
+> +	struct mutex lock;
+> +};
+> +
+> +static ssize_t jz4740_hwmon_show_name(struct device *dev,
+> +	struct device_attribute *dev_attr, char *buf)
+> +{
+> +	return sprintf(buf, "jz4740\n");
+> +}
+> +
+> +static irqreturn_t jz4740_hwmon_irq(int irq, void *data)
+> +{
+> +	struct jz4740_hwmon *hwmon = data;
+> +
+> +	complete(&hwmon->read_completion);
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static ssize_t jz4740_hwmon_read_adcin(struct device *dev,
+> +	struct device_attribute *dev_attr, char *buf)
+> +{
+> +	struct jz4740_hwmon *hwmon = dev_get_drvdata(dev);
+> +	unsigned long t;
+> +	unsigned long val;
+> +	int ret;
+> +
+> +	mutex_lock(&hwmon->lock);
+> +
+> +	INIT_COMPLETION(hwmon->read_completion);
+> +
+> +	enable_irq(hwmon->irq);
+> +	hwmon->cell->enable(to_platform_device(dev));
+> +
+> +	t = wait_for_completion_interruptible_timeout(&hwmon->read_completion, HZ);
 
-I think this needs to happen before the EFER gets set, which happens very
-early.  If this can be moved somewhere else, I would be very happy to put
-it there; I'd like to avoid any possible glitches (though clearing an MSR
-bit seems safe, and using that MSR is already known to be safe).
+Line over 80 characters.
 
--Kees
+> +
+> +	if (t > 0) {
+> +		val = readw(hwmon->base) & 0xfff;
+> +		val = (val * 3300) >> 12;
+> +		ret = sprintf(buf, "%lu\n", val);
+> +	} else {
+> +		ret = t ? t : -ETIMEDOUT;
+> +	}
+> +
+> +	hwmon->cell->disable(to_platform_device(dev));
+> +	disable_irq(hwmon->irq);
+> +
+> +	mutex_unlock(&hwmon->lock);
+> +
+> +	return ret;
+> +}
+> +
+> +static DEVICE_ATTR(name, S_IRUGO, jz4740_hwmon_show_name, NULL);
+> +static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, jz4740_hwmon_read_adcin, NULL, 0);
+
+Unless you plan to add support for devices with more than 1 voltage
+input, you can use DEVICE_ATTR() instead of SENSOR_DEVICE_ATTR(), it's
+cheaper. If you do, you no longer need to include <linux/hwmon-sysfs.h>.
+
+> +
+> +static struct attribute jz4740_hwmon_attributes[] = {
+> +	&dev_attr_name.attr,
+> +	&sensor_dev_attr_in0_input.dev_attr.attr,
+> +	NULL
+> +};
+> +
+> +static const struct attribute_group jz4740_hwmon_attr_group = {
+> +	.attrs = jz4740_hwmon_attributes,
+> +};
+> +
+> +static int __devinit jz4740_hwmon_probe(struct platform_device *pdev)
+> +{
+> +	int ret;
+> +	struct jz4740_hwmon *hwmon;
+> +
+> +	hwmon = kmalloc(sizeof(*hwmon), GFP_KERNEL);
+> +
+> +	hwmon->cell = pdev->dev.platform_data;
+> +
+> +	hwmon->irq = platform_get_irq(pdev, 0);
+> +	if (hwmon->irq < 0) {
+> +		ret = hwmon->irq;
+> +		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
+> +		goto err_free;
+> +	}
+> +
+> +	hwmon->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!hwmon->mem) {
+> +		ret = -ENOENT;
+> +		dev_err(&pdev->dev, "Failed to get platform mmio resource\n");
+> +		goto err_free;
+> +	}
+> +
+> +	hwmon->mem = request_mem_region(hwmon->mem->start,
+> +					resource_size(hwmon->mem), pdev->name);
+> +	if (!hwmon->mem) {
+> +		ret = -EBUSY;
+> +		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
+> +		goto err_free;
+> +	}
+> +
+> +	hwmon->base = ioremap_nocache(hwmon->mem->start, resource_size(hwmon->mem));
+
+Line over 80 characters.
+
+> +	if (!hwmon->base) {
+> +		ret = -EBUSY;
+> +		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
+> +		goto err_release_mem_region;
+> +	}
+> +
+> +	init_completion(&hwmon->read_completion);
+> +	mutex_init(&hwmon->lock);
+> +
+> +	platform_set_drvdata(pdev, hwmon);
+> +
+> +	ret = request_irq(hwmon->irq, jz4740_hwmon_irq, 0, pdev->name, hwmon);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to request irq: %d\n", ret);
+> +		goto err_iounmap;
+> +	}
+> +	disable_irq(hwmon->irq);
+> +
+> +	ret = sysfs_create_group(&pdev->dev.kobj, &jz4740_hwmon_attr_group);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to create sysfs group: %d\n", ret);
+> +		goto err_free_irq;
+> +	}
+> +
+> +	hwmon->hwmon = hwmon_device_register(&pdev->dev);
+> +	if (IS_ERR(hwmon->hwmon)) {
+> +		ret = PTR_ERR(hwmon->hwmon);
+> +		goto err_remove_file;
+> +	}
+> +
+> +	return 0;
+> +
+> +err_remove_file:
+> +	sysfs_remove_group(&pdev->dev.kobj, &jz4740_hwmon_attr_group);
+> +err_free_irq:
+> +	free_irq(hwmon->irq, hwmon);
+> +err_iounmap:
+> +	platform_set_drvdata(pdev, NULL);
+> +	iounmap(hwmon->base);
+> +err_release_mem_region:
+> +	release_mem_region(hwmon->mem->start, resource_size(hwmon->mem));
+> +err_free:
+> +	kfree(hwmon);
+> +
+> +	return ret;
+> +}
+> +
+> +static int __devexit jz4740_hwmon_remove(struct platform_device *pdev)
+> +{
+> +	struct jz4740_hwmon *hwmon = platform_get_drvdata(pdev);
+> +
+> +	hwmon_device_unregister(hwmon->hwmon);
+> +	sysfs_remove_group(&pdev->dev.kobj, &jz4740_hwmon_attr_group);
+> +
+> +	free_irq(hwmon->irq, hwmon);
+> +
+> +	iounmap(hwmon->base);
+> +	release_mem_region(hwmon->mem->start, resource_size(hwmon->mem));
+> +
+> +	platform_set_drvdata(pdev, NULL);
+> +	kfree(hwmon);
+> +
+> +	return 0;
+> +}
+> +
+> +struct platform_driver jz4740_hwmon_driver = {
+> +	.probe	= jz4740_hwmon_probe,
+> +	.remove = __devexit_p(jz4740_hwmon_remove),
+> +	.driver = {
+> +		.name = "jz4740-hwmon",
+> +		.owner = THIS_MODULE,
+> +	},
+> +};
+> +
+> +static int __init jz4740_hwmon_init(void)
+> +{
+> +	return platform_driver_register(&jz4740_hwmon_driver);
+> +}
+> +module_init(jz4740_hwmon_init);
+> +
+> +static void __exit jz4740_hwmon_exit(void)
+> +{
+> +	platform_driver_unregister(&jz4740_hwmon_driver);
+> +}
+> +module_exit(jz4740_hwmon_exit);
+> +
+> +MODULE_DESCRIPTION("JZ4740 SoC HWMON driver");
+> +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:jz4740-hwmon");
+
 
 -- 
-Kees Cook
-Ubuntu Security Team
+Jean Delvare
