@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab0FTPTY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 11:19:24 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:47211 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755226Ab0FTPTU (ORCPT
+	id S1752652Ab0FTPwq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 11:52:46 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:34354 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750884Ab0FTPwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 11:19:20 -0400
-Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
- external.
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-       "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-       Stephen Hemminger <shemminger@vyatta.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "davem@davemloft.net" <davem@davemloft.net>,
-       "jdike@linux.intel.com" <jdike@linux.intel.com>,
-       Rusty Russell <rusty@rustcorp.com.au>
-In-Reply-To: <20100620115926.GA31849@gondor.apana.org.au>
-References: <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com>
-	 <20100618055929.GA11333@gondor.apana.org.au>
-	 <F2E9EB7348B8264F86B6AB8151CE2D7915089FE573@shsmsx502.ccr.corp.intel.com>
-	 <20100620100631.GB4578@redhat.com>
-	 <20100620103235.GA31284@gondor.apana.org.au>
-	 <20100620103909.GA5285@redhat.com>
-	 <20100620110254.GA31484@gondor.apana.org.au>
-	 <20100620111124.GB5285@redhat.com>
-	 <20100620113609.GA31693@gondor.apana.org.au>
-	 <20100620114719.GC5285@redhat.com>
-	 <20100620115926.GA31849@gondor.apana.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Sun, 20 Jun 2010 16:19:14 +0100
-Message-ID: <1277047154.14011.880.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Jun 2010 15:19:53.0226 (UTC) FILETIME=[08616EA0:01CB108C]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17456.005
-X-TM-AS-Result: No--33.528000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Sun, 20 Jun 2010 11:52:43 -0400
+Date: Sun, 20 Jun 2010 11:52:42 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Suresh Rajashekara <suresh.raj+linuxomap@gmail.com>
+cc: linux-omap@vger.kernel.org, <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] wait_for_completion_interruptible does not wait !!
+In-Reply-To: <AANLkTikPOcNZk5ISX2WDHSmsPDw_a5_3Ic3owAbO4o0y@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1006201120210.22272-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-06-20 at 21:59 +1000, Herbert Xu wrote:
-> On Sun, Jun 20, 2010 at 02:47:19PM +0300, Michael S. Tsirkin wrote:
-> >
-> > Let's do this then.  So far the virtio spec avoided making layout
-> > assumptions, leaving guests lay out data as they see fit.
-> > Isn't it possible to keep supporting this with zero copy for hardware
-> > that can issue DMA at arbitrary addresses?
+On Sat, 19 Jun 2010, Suresh Rajashekara wrote:
+
+> I have an application which calls the ioctl of the codec driver to
+> know the status of the headset.
 > 
-> I think you're mistaken with respect to what is being proposed.
-> Raising 512 bytes isn't a hard constraint, it is merely an
-> optimisation for Intel NICs because their PS mode can produce
-> a head fragment of up to 512 bytes.
+> The ioctl waits on a completion variable (using
+> wait_for_completion_interruptible).
 > 
-> If the guest didn't allocate 512 bytes it wouldn't be the end of
-> the world, it'd just mean that we'd either copy whatever is in
-> the head fragment, or we waste 4096-X bytes of memory where X
-> is the number of bytes in the head.
+> The variable is completed in the interrupt handler, which happens on
+> headset insertion/removal. Once the variable is completed, the ioctl
+> returns (with appropriate value in the argument) and the application
+> decides what to do with the event.
 
-If I understand correctly what this 'PS mode' is (I haven't seen the
-documentation for it), it is a feature that Microsoft requested from
-hardware vendors for use in Hyper-V.  As a result, the SFC9000 family
-and presumably other controllers also implement something similar.
+What happens if the variable is completed while nobody is waiting for
+it?  The next time somebody tries to wait, won't the wait terminate
+immediately?
 
-Ben.
+> Once done handling the event, the application then calls the ioctl
+> once again (bascially it polls the audio driver) to know the status of
+> the headset. The call is blocked until the headset status changes.
+> 
+> I am running the system on linux-2.6.29 on a OMAP1 based board. All
+> this works well when the OMAP is awake.
+> 
+> The problem starts when we suspend the OMAP. The moment we suspend,
+> the wait_for_completion_interruptible is interrupted and the ioctl
+> returns.
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Of course.  That's how processes that are blocked in the kernel are
+given a chance to enter the freezer.
+
+> Application ends up thinking that the headset was either
+> removed/inserted.
+
+It should not think that.  There are other reasons why an ioctl might
+return early, such as a genuine signal or two status changes occurring
+before the ioctl starts (the next two ioctls will both return
+immediately, but the first one will contain the final status and the
+second won't contain any status change).
+
+For this to work correctly, the kernel should accumulate a bitmap of
+status changes as they occur.  When an ioctl returns, it should provide
+the bitmap of all the status changes that have occurred since the last
+ioctl (and it should clear the status-change bitmap) along with the
+current status.  Otherwise the application has no way to know about
+changes that occur between ioctl calls.
+
+> Our system does an aggressive sleep (wakes up every
+> 500 ms and sleeps again) and hence the application gets the event of
+> headset every 500 ms.
+
+What's wrong with that?  It should be smart enough to realize that most
+of these events aren't actual status changes.
+
+> I tried wait_for_completion instead, but now the kernel refuses to suspend.
+> 
+> I have tried wait queues and mutexs with no success.
+> 
+> Could anyone please point me how I can resolve this issue? Is there
+> any construct which can block inside the kernel during suspend/resume?
+
+Yes: The freezer.
+
+> Can there be a blocking call active while we suspend?
+
+Yes, in theory.  In practice it's not a good idea, since the call 
+wouldn't be able to distinguish between an actual signal and the onset 
+of a suspend.  You might end up with a call that ignores all signals 
+and hence cannot be interrupted.
+
+> Ideally I would resort to a method in which I would signal the process
+> when there is a headset event, but I am not free to change the
+> application. Its a legacy application and I have to make the kernel
+> work for it.
+
+It's not clear that anything needs to be fixed, except possibly the
+application.  Hint: See the SA_RESTART flag for sigaction(2).
+
+It also sounds like the application's design may be fundamentally
+broken.  Certain kinds of defects cannot be worked around in the
+kernel.
+
+Alan Stern
 
