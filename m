@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab0FTKL4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 06:11:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752766Ab0FTKLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 06:11:53 -0400
-Date: Sun, 20 Jun 2010 13:06:32 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+	id S1756711Ab0FTKcx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 06:32:53 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:45795 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754298Ab0FTKcu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 06:32:50 -0400
+Date: Sun, 20 Jun 2010 20:32:35 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Xin, Xiaohui" <xiaohui.xin@intel.com>,
        Stephen Hemminger <shemminger@vyatta.com>,
        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
@@ -20,79 +21,29 @@ Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
        Rusty Russell <rusty@rustcorp.com.au>
 Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
 	external.
-Message-ID: <20100620100631.GB4578@redhat.com>
-References: <20100606161348.427822fb@nehalam> <20100608052744.GA21547@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com> <20100611052112.GA25649@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com> <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com> <20100618055929.GA11333@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE573@shsmsx502.ccr.corp.intel.com>
+Message-ID: <20100620103235.GA31284@gondor.apana.org.au>
+References: <20100608052744.GA21547@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com> <20100611052112.GA25649@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com> <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com> <20100618055929.GA11333@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE573@shsmsx502.ccr.corp.intel.com> <20100620100631.GB4578@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D7915089FE573@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100620100631.GB4578@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 03:14:18PM +0800, Xin, Xiaohui wrote:
-> >-----Original Message-----
-> >From: Herbert Xu [mailto:herbert@gondor.apana.org.au]
-> >Sent: Friday, June 18, 2010 1:59 PM
-> >To: Xin, Xiaohui
-> >Cc: Stephen Hemminger; netdev@vger.kernel.org; kvm@vger.kernel.org;
-> >linux-kernel@vger.kernel.org; mst@redhat.com; mingo@elte.hu; davem@davemloft.net;
-> >jdike@linux.intel.com; Rusty Russell
-> >Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from external.
-> >
-> >On Fri, Jun 18, 2010 at 01:26:49PM +0800, Xin, Xiaohui wrote:
-> >>
-> >> Herbert,
-> >> I have questions about the idea above:
-> >> 1) Since netdev_alloc_skb() is still there, and we only modify alloc_page(),
-> >> then we don't need napi_gro_frags() any more, the driver's original receiving
-> >> function is ok. Right?
-> >
-> >Well I was actually thinking about converting all drivers that
-> >need this to napi_gro_frags.  But now that you mention it, yes
-> >we could still keep the old interface to minimise the work.
-> >
-> >> 2) Is napi_gro_frags() only suitable for TCP protocol packet?
-> >> I have done a small test for ixgbe driver to let it only allocate paged buffers
-> >> and found kernel hangs when napi_gro_frags() receives an ARP packet.
-> >
-> >It should work with any packet.  In fact, I'm pretty sure the
-> >other drivers (e.g., cxgb3) use that interface for all packets.
-> >
-> Thanks for the verification. By the way, does that mean that nearly all drivers can use the 
-> same napi_gro_frags() to receive buffers though currently each driver has it's own receiving 
-> function?
-> 
-> >> 3) As I have mentioned above, with this idea, netdev_alloc_skb() will allocate
-> >> as usual, the data pointed by skb->data will be copied into the first guest buffer.
-> >> That means we should reserve sufficient room in guest buffer. For PS mode
-> >> supported driver (for example ixgbe), the room will be more than 128. After 128bytes,
-> >> we will put the first frag data. Look into virtio-net.c the function page_to_skb()
-> >> and receive_mergeable(), that means we should modify guest virtio-net driver to
-> >> compute the offset as the parameter for skb_set_frag().
-> >>
-> >> How do you think about this? Attached is a patch to how to modify the guest driver.
-> >> I reserve 512 bytes as an example, and transfer the header len of the skb in hdr->hdr_len.
-> >
-> >Expanding the buffer size to 512 bytes to accomodate PS mode
-> >looks reasonable to me.
-> >
-> >However, I don't think we should increase the copy threshold to
-> >512 bytes at the same time.  I don't have any figures myself but
-> >I think if we are to make such a change it should be a separate
-> >one and come with supporting numbers.
-> >
-> Let me have a look to see if I can retain the copy threshold as 128 bytes 
-> and copy the header data safely.
+On Sun, Jun 20, 2010 at 01:06:32PM +0300, Michael S. Tsirkin wrote:
+>
+> Changing the guest virtio to match the backend is a problem,
+> this breaks migration etc.
 
-Changing the guest virtio to match the backend is a problem,
-this breaks migration etc.
+As long as it's done in a backwards compatible way it should be
+fine.  It's just like migrating from a backend that supports TSO
+to one that doesn't.
 
-
-> >Cheers,
-> >--
-> >Visit Openswan at http://www.openswan.org/
-> >Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
-> >Home Page: http://gondor.apana.org.au/~herbert/
-> >PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Cheers,
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
