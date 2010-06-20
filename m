@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab0FTSbf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 14:31:35 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62866 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755968Ab0FTSbe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 14:31:34 -0400
-Message-ID: <4C1E5E5D.5020805@metafoo.de>
-Date: Sun, 20 Jun 2010 20:30:53 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	id S1756844Ab0FTSbn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 14:31:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46426 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756738Ab0FTSbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 14:31:38 -0400
+Date: Sun, 20 Jun 2010 20:29:48 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Louis Rilling <louis.rilling@kerlabs.com>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org, Daniel Lezcano <dlezcano@fr.ibm.com>
+Subject: Re: [PATCH 1/6] pid:  Remove the child_reaper special case in
+	init/main.c
+Message-ID: <20100620182948.GB3258@redhat.com>
+References: <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <m1pqzmqema.fsf_-_@fess.ebiederm.org> <m1ljaaqejm.fsf_-_@fess.ebiederm.org>
 MIME-Version: 1.0
-To: Florian Fainelli <florian@openwrt.org>
-CC: Thomas Bogendoerfer <tsbogend@alpha.franken.de>,
-       Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, Graham Gower <graham.gower@gmail.com>
-Subject: Re: [PATCH v2 00/26] Add support for the Ingenic JZ4740 System-on-a-Chip
-References: <1276924111-11158-1-git-send-email-lars@metafoo.de> <4C1E467D.5030204@metafoo.de> <20100620170111.GA8650@alpha.franken.de> <201006201957.56978.florian@openwrt.org>
-In-Reply-To: <201006201957.56978.florian@openwrt.org>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1ljaaqejm.fsf_-_@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-Florian Fainelli wrote:
-> Hi,
+On 06/20, Eric W. Biederman wrote:
 >
-> Le Sunday 20 June 2010 19:01:11, Thomas Bogendoerfer a écrit :
->> On Sun, Jun 20, 2010 at 06:49:01PM +0200, Lars-Peter Clausen wrote:
->>> different to JZ4750 and JZ4760. So JZ47xx wont fit either.
->>> Right now there is no practical use to moving things around, and there
->>> wont be until somebody who can actually test it starts adding support
->>> for a different JZ47XX SoC.
->> great, I like such attitude:-(
+> It turns out that the existing assignment in copy_process of
+> the child_reaper can handle the initial assignment of child_reaper
+> we just need to generalize the test in kernel/fork.c
 >
-> I have to agree with Thomas here, if your concern is about the naming,
-then
-> just have a look at the vendor sources and find similarities for what
-is worth
-> being named JZ47XX and what deserves a name which is more specific.
-Also, it is
-> much easier to do that factoring job now instead of when there will be
-3 or
-> more flavors of that SoC to be supported.
-Well, it's not like somebody who wants to add support for e.g. JZ4730
-would start from scratch and add a complete implementation which then
-has to be merged with JZ4740. You would start adding it on-top of the
-existing JZ4740 platform support and generalize it where necessary.
-Renaming is cheap! This is not part of an API thats set into stone...
-Seriously, it doesn't make any sense to waste time and try to
-generalize now while it is uncertain if there will be support of a
-different JZ47xx SoC anytime soon. Furthermore the likelihood of over-
-or under-generalizing is pretty high if you do not know exactly what
-you want or what you need.
-I strongly disagree that it is easier to do the factoring job now. It
-will be easier when you actually know what requirements you'll have
-based on hard facts instead of having some loose ideas of what might
-work and what not.
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+> ---
+>  init/main.c   |    9 ---------
+>  kernel/fork.c |    2 +-
+>  2 files changed, 1 insertions(+), 10 deletions(-)
+>
+> diff --git a/init/main.c b/init/main.c
+> index 3bdb152..38f7edc 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -865,15 +865,6 @@ static int __init kernel_init(void * unused)
+>  	 * init can run on any cpu.
+>  	 */
+>  	set_cpus_allowed_ptr(current, cpu_all_mask);
+> -	/*
+> -	 * Tell the world that we're going to be the grim
+> -	 * reaper of innocent orphaned children.
+> -	 *
+> -	 * We don't want people to have to make incorrect
+> -	 * assumptions about where in the task array this
+> -	 * can be found.
+> -	 */
+> -	init_pid_ns.child_reaper = current;
+>
+>  	cad_pid = task_pid(current);
+>
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index b6cce14..8b85b17 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1263,7 +1263,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>  		tracehook_finish_clone(p, clone_flags, trace);
+>
+>  		if (thread_group_leader(p)) {
+> -			if (clone_flags & CLONE_NEWPID)
+> +			if (pid->numbers[pid->level].nr == 1)
+>  				p->nsproxy->pid_ns->child_reaper = p;
 
-That said, the platform support has been designed with having the idea
-of support for multiple JZ47XX SoCs at some point. So it will mostly
-be picking up the components shared between different SoCs and put
-them in a shared folder (and maybe do a 's/jz4740/jz47xx/g'). But
-right now there is only JZ4740 support...
+I must admit, personally I dislike this change. If it is needed for
+the next changes, please explain the need?
 
-- - Lars
+Yes, it removes the line from __init function, but it complicates
+copy_process(), this doesn't look fair to me ;) I agree, the complication
+is minor, but still. And, in fact, to me this change hides CLONE_NEWPID
+from grep.
 
+In fact, I was looking at this code when I did 1/4. And I think it is
+better to move it (and perhaps another CLONE_NEWPID check in copy_signal)
+into copy_pid_ns() path.
 
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org
-
-iEYEARECAAYFAkweXl0ACgkQBX4mSR26RiM7hACfRMhD54TJEdI11AgsaaWRiDaK
-xrYAnRR+0VT3CurJm2Xc9DgC9+bcrFfv
-=SFR2
------END PGP SIGNATURE-----
+Oleg.
 
