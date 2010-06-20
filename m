@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757044Ab0FTUF2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 16:05:28 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:37220 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756988Ab0FTUF1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 16:05:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=LEWhnk8b8kik9LMtpGDXTG0MaHZLaDYo06mq96kzNge4bBg+5q93DOPVSVPngrABke
-         ClsMlrOUxeTh5LsO8xztp8MWK0M/udIRdnLESkvJpTegXv1p2chJBInsqJvjvqbDZj4B
-         kVIq07+NSpMl/4KlL7gG+6KqqaDCqTz5DxXc0=
-Date: Sun, 20 Jun 2010 13:02:39 -0700
-From: Charles =?iso-8859-1?Q?Cl=E9ment?= <caratorn@gmail.com>
-To: John Sheehan <john.d.sheehan@gmail.com>
-Cc: Charles =?iso-8859-1?Q?Cl=E9ment?= <caratorn@gmail.com>, gregkh@suse.de,
-       wfp5p@virginia.edu, rich.folsom@gmail.com, mithlesh@linsyssoft.com,
-       jirislaby@gmail.com, john.d.sheehan@gmail.com,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Staging: comedi: fix style errors in adl_pci9111.c
-Message-ID: <20100620200238.GA31748@fujitsu>
-References: <1276713009-8499-1-git-send-email-john.d.sheehan@gmail.com>
- <20100616192803.GA11073@fujitsu>
- <AANLkTil0ezKl6SbtvGe0Vn_d6RX789NMAnwvRKheDUaK@mail.gmail.com>
+	id S1757075Ab0FTUNP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 16:13:15 -0400
+Received: from csmtp2.one.com ([91.198.169.22]:43408 "EHLO csmtp2.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757004Ab0FTUNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 16:13:14 -0400
+Message-ID: <4C1E7657.9070606@bitmath.org>
+Date: Sun, 20 Jun 2010 22:13:11 +0200
+From: Henrik Rydberg <rydberg@bitmath.org>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTil0ezKl6SbtvGe0Vn_d6RX789NMAnwvRKheDUaK@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oleg Nesterov <oleg@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+       Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH] Introduce buflock, a one-to-many circular buffer mechanism
+ (rev2)
+References: <1277060705-3363-1-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1277060705-3363-1-git-send-email-rydberg@euromail.se>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 10:33:36AM +0100, John Sheehan wrote:
-> Hi Charles,
-> 
-> 2010/6/16 Charles Clément <caratorn@gmail.com>:
-> > Hi,
-> >
-> > On Wed, Jun 16, 2010 at 07:30:09PM +0100, John Sheehan wrote:
-> >> From: John Sheehan <john.d.sheehan@gmail.com>
-> >
-> >> @@ -190,7 +190,7 @@ TODO:
-> >>    outb(flags, PCI9111_IO_BASE+PCI9111_REGISTER_TRIGGER_MODE_CONTROL)
-> >>
-> >>  #define pci9111_interrupt_and_fifo_get() \
-> >> -  ((inb(PCI9111_IO_BASE+PCI9111_REGISTER_AD_MODE_INTERRUPT_READBACK) >> 4) &0x03)
-> >> +  ((inb(PCI9111_IO_BASE+PCI9111_REGISTER_AD_MODE_INTERRUPT_READBACK) >> 4)&0x03)
-> >
-> > Doesn't checkpatch.pl suggest to add a whitespace after the & in that case?
-> 
-> no, surprisingly enough, it just requires the amount of whitespace at
-> either side of the & to be consistent
+...
 
-Any specific reason to take this off the list?
-
-> 
-> John
-> > It would seem more readable.
-> >
-> > --
-> > Charles Clément
-> >
-> >
-
--- 
-Charles Clément
+diff --git a/include/linux/buflock.h b/include/linux/buflock.h
+index 3d5df22..05996d5 100644
+--- a/include/linux/buflock.h
++++ b/include/linux/buflock.h
+@@ -125,8 +125,8 @@ static inline unsigned int bufwrite_at(const struct buflock_
+writer *bw)
+  */
+ static inline void bufwrite_unlock(struct buflock_writer *bw)
+ {
+-	++bw->head;
+ 	smp_wmb();
++	++bw->head;
+ }
 
