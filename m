@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab0FTNLn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 09:11:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60028 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753385Ab0FTNLk (ORCPT
+	id S1754116Ab0FTNRa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 09:17:30 -0400
+Received: from r11na27.net.upc.cz ([94.113.108.27]:33507 "EHLO
+	bimbo.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754019Ab0FTNR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 09:11:40 -0400
-Date: Sun, 20 Jun 2010 14:11:53 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-       alsa-devel@alsa-project.org
-Subject: Re: [PATCH v3] alsa: ASoC: Add JZ4740 codec driver
-Message-ID: <20100620131153.GA2405@opensource.wolfsonmicro.com>
-References: <1276924111-11158-21-git-send-email-lars@metafoo.de>
- <1276958993-9012-1-git-send-email-lars@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276958993-9012-1-git-send-email-lars@metafoo.de>
-X-Cookie: Is this really happening?
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 20 Jun 2010 09:17:28 -0400
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Lubomir Rintel <lkundrak@v3.sk>
+Subject: [PATCH] [fs/sysv] Fix NULL deref. when allocating new inode
+Date: Sun, 20 Jun 2010 15:17:23 +0200
+Message-Id: <1277039843-32548-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 19, 2010 at 04:49:53PM +0200, Lars-Peter Clausen wrote:
+A call to sysv_write_inode() in sysv_new_inode() to its new interface
+that replaced wait flag with writeback structure. This was broken by
+a9185b41a4f84971b930c519f0c63bd450c4810d.
 
-This looks good, just one thing:
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+---
+Resending this.
+ fs/sysv/ialloc.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-> +#ifdef CONFIG_PM_SLEEP
-> +
-> +static int jz4740_codec_suspend(struct device *dev)
-> +{
-> +	struct jz4740_codec *jz4740_codec = dev_get_drvdata(dev);
-> +	return jz4740_codec_set_bias_level(&jz4740_codec->codec,
-> +		SND_SOC_BIAS_OFF);
-> +}
+diff --git a/fs/sysv/ialloc.c b/fs/sysv/ialloc.c
+index 241e976..f2764e2 100644
+--- a/fs/sysv/ialloc.c
++++ b/fs/sysv/ialloc.c
+@@ -25,6 +25,7 @@
+ #include <linux/stat.h>
+ #include <linux/string.h>
+ #include <linux/buffer_head.h>
++#include <linux/writeback.h>
+ #include "sysv.h"
+ 
+ /* We don't trust the value of
+@@ -139,6 +140,9 @@ struct inode * sysv_new_inode(const struct inode * dir, mode_t mode)
+ 	struct inode *inode;
+ 	sysv_ino_t ino;
+ 	unsigned count;
++	struct writeback_control wbc = {
++		.sync_mode = WB_SYNC_NONE
++	};
+ 
+ 	inode = new_inode(sb);
+ 	if (!inode)
+@@ -177,7 +181,7 @@ struct inode * sysv_new_inode(const struct inode * dir, mode_t mode)
+ 	mark_inode_dirty(inode);
+ 
+ 	inode->i_mode = mode;		/* for sysv_write_inode() */
+-	sysv_write_inode(inode, 0);	/* ensure inode not allocated again */
++	sysv_write_inode(inode, &wbc);	/* ensure inode not allocated again */
+ 	mark_inode_dirty(inode);	/* cleared by sysv_write_inode() */
+ 	/* That's it. */
+ 	unlock_super(sb);
+-- 
+1.7.1
 
-You've got these set up on the CODEC platform device rather than the
-ASoC CODEC.  This means that the suspend and resume will happen out of
-sequence with the rest of the ASoC suspend and resume which could result
-in poor performance or bugs if the device is suspended while the core
-still thinks it's active.  For example, ASoC will use DAPM to shut down
-the CODEC and it's possible that the CODEC could be suspended (and
-generate an audible noise) while an external amplifier is still powered,
-worsening the problem.
