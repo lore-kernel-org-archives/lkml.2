@@ -1,88 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab0FSXpJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Jun 2010 19:45:09 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56675 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753878Ab0FSXpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Jun 2010 19:45:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dave Airlie <airlied@redhat.com>
-Subject: Re: [PATCH] DRM / radeon / PM: Do not evict VRAM during freeze phase of hibernation
-Date: Sun, 20 Jun 2010 01:43:05 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-       "dri-devel" <dri-devel@lists.freedesktop.org>,
-       linux-pm@lists.linux-foundation.org,
-       Alex Deucher <alexdeucher@gmail.com>,
+	id S1754534Ab0FTAC7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Jun 2010 20:02:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33272 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753399Ab0FTAC5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Jun 2010 20:02:57 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=un/DxWr8Fus2ZXMexAH9X/oh8ebIrZfzGpMNZntpENpLKwTpir3lkhsbsWefh7MXa
+	dxV3YfKQn3hTDiGrk52CA==
+Date: Sat, 19 Jun 2010 17:02:41 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+cc: ieidus@redhat.com, Andi Kleen <andi@firstfloor.org>,
+       lkml <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Ondrej Zary <linux@rainbow-software.org>,
-       =?utf-8?q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-References: <201006182221.57333.rjw@sisk.pl> <1276904995.6513.7.camel@t60prh> <201006191453.58379.rjw@sisk.pl>
-In-Reply-To: <201006191453.58379.rjw@sisk.pl>
+       linux-man <linux-man@vger.kernel.org>
+Subject: Re: man-pages text for MAV_MERGEABLE and MADV_UNMERGEABLE
+In-Reply-To: <AANLkTinX4TlNfvwrCtjfkU-bar3URnpvmPJB-sOi-9aT@mail.gmail.com>
+Message-ID: <alpine.DEB.1.00.1006191622450.14879@tigran.mtv.corp.google.com>
+References: <AANLkTinX4TlNfvwrCtjfkU-bar3URnpvmPJB-sOi-9aT@mail.gmail.com>
+User-Agent: Alpine 1.00 (DEB 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006200143.06059.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, June 19, 2010, Rafael J. Wysocki wrote:
-> On Saturday, June 19, 2010, Dave Airlie wrote:
-> > On Sat, 2010-06-19 at 01:23 +0200, Rafael J. Wysocki wrote:
-> > > On Friday, June 18, 2010, Dave Airlie wrote:
-> > > > On Fri, 2010-06-18 at 22:21 +0200, Rafael J. Wysocki wrote:
-> > > > > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > > > > 
-> > > > > I have recently noticed a 55 sec. delay during the "device freeze"
-> > > > > phase of hibernation on my test-bed HP nx6325.  Due to the 100%
-> > > > > reproducibility of it I was able to narrow it down to
-> > > > > radeon_suspend_kms() and then it turned out that the delay occured
-> > > > > somewhere in radeon_bo_evict_vram().  However, it doesn't seem really
-> > > > > necessary or even very useful to me to evict VRAM at this particular
-> > > > > point, because we're going to create an image and bring the device
-> > > > > back to the fully functional state in a little while.  Thus, I think
-> > > > > the VRAM evicition can be skipped for state.event == PM_EVENT_FREEZE,
-> > > > > which makes the delay go away.
-> > > > 
-> > > > I'm not 100% sure of the hibernate sequencing and its early in the
-> > > > morning, but we want to evict VRAM before image building so we can have
-> > > > the contents of VRAM in the image so we can restore them on resume. Does
-> > > > this just avoid evicting them a second time after we created the image?
-> > > 
-> > > No, it's the first time, before creating the image, but I didn't seen any
-> > > difference on resume with and without the patch, so I thought it was a good
-> > > idea. :-)
-> > 
-> > On the machine you have its most likely not going to show up unless you
-> > are running a 3D app or something across suspend, since currently X
-> > re-exposes most apps on VT switch, so they just redraw.
-> 
-> Yes.  Moreover, hibernation is always done after a VT switch.  That's why
-> I said I thought the eviction wasn't necessary in the changelog.
-> 
-> BTW, I have three different test boxes with radeon hardware and the
-> $subject patch is not a problem on any of them.
-> 
-> > Was it always this slow?
-> 
-> Nope.  It definitely is a regression, although I'm not sure what's the last
-> good kernel.
-> 
-> > you can see how many objects are in vram using
-> > debugfs (/sys/kernel/debug/dri/0/radeon_vram_mm), it sounds like the TTM
-> > eviction process is blocking on something,
+Hi Michael,
 
-I did some more debug work (the _total_ lack of comments inside of the
-relevant radeon and ttm code makes this a next-to-impossible task, though)
-and found that all of the delays (up to 5 seconds) happen inside of
-ttm_bo_move_accel_cleanup() called from radeon_move_blit(), where the "new"
-memory type is TTL_PL_TT and the "old" one is TTL_PL_VRAM.  The preceding
-radeon_copy() always returns 0.
+On Sat, 19 Jun 2010, Michael Kerrisk wrote:
 
-Please let me know if you need more information.
+> Hello Hugh, Izik
+> 
+> For the MADV_MERGEABLE + MADV_UNMERGEABLE changes added in 2.6.32,
+> I've written the following man-pages text. Could you please
+> review/fix/ACK.
 
-Thanks,
-Rafael
+Ah, good, thanks for writing this (but I recognize many of the words ;))
+
+> 
+> Thanks to Andi and Andrew for pointers that this documentation was needed.
+
+(We did Cc you when ksm.txt went into Andrew's tree, and when it went
+on into Linus's tree: is there something more we should have done?)
+
+> 
+> Thanks,
+> 
+> Michael
+> 
+> 
+> --- a/man2/madvise.2
+> +++ b/man2/madvise.2
+> @@ -156,6 +157,42 @@ and the page being unmapped.
+>  This feature is intended for memory testing.
+>  This feature is only available if the kernel was configured with
+>  .BR CONFIG_MEMORY_FAILURE .
+> +.TP
+> +.BR MADV_MERGEABLE " (since Linux 2.6.32)"
+> +Enable Kernel Samepage Merging (KSM) for the pages in the range specified by
+> +.I addr
+> +and
+> +.IR len .
+> +The KSM daemon
+> +.RI ( ksmd )
+> +periodically scans those areas of user memory that have
+> +been marked as mergeable,
+> +looking for pages with identical content.
+
+I was rather puzzled by Andi calling that an internal implementation
+detail.  Okay, I suppose the "KSM daemon periodically scans" is an
+internal implementation detail, though I think it helps to warn the
+programmer of the overhead of MADV_MERGEABLE; but without "pages
+with identical content", aren't we left mystified as to just what
+this "merging" is all about?
+
+> +These are replaced by a single write-protected page (which is automatically
+> +copied if a process later wants to update the content of the page).
+> +KSM only merges private anonymous pages (see
+> +.BR mmap (2)).
+> +The KSM feature is intended for applications that generate many
+> +instances of the same data (e.g., virtualization systems such as KVM).
+> +It can consume a lot of processing power; use with care.
+
+                                           :
+
+> +See the kernel source file
+> +.I Documentation/vm/ksm.txt
+> +for more details.
+> +The
+> +.BR MADV_MERGEABLE
+> +and
+> +.BR MADV_UNMERGEABLE
+> +operations are only available if the kernel was configured with
+> +.BR CONFIG_KSM.
+> +.TP
+> +.BR MADV_UNMERGEABLE " (since Linux 2.6.32)"
+> +Undo the effect of an earlier
+> +.BR MADV_MERGEABLE
+> +operation on the specified address range;
+> +KSM unmerges whatever pages it had merged in the address rnage specified by
+
+                                                            range
+
+> +.IR addr
+> +and
+> +.IR length .
+>  .SH "RETURN VALUE"
+>  On success
+>  .BR madvise ()
+> @@ -189,6 +226,14 @@ is not a valid value
+>  .IP *
+>  The application is attempting to release locked or shared pages (with
+>  .BR MADV_DONTNEED ).
+> +.IP *
+> +.BR MADV_MERGEABLE
+> +or
+> +.BR MADV_UNMERGEABLE
+> +was specified in
+> +.IR advice ,
+> +but the kernel was not configured with
+> +.BR CONFIG_KSM .
+>  .RE
+>  .TP
+>  .B EIO
+> @@ -221,8 +266,10 @@ for file access.
+>  .BR MADV_REMOVE ,
+>  .BR MADV_DONTFORK ,
+>  .BR MADV_DOFORK ,
+> +.BR MAD_HWPOISON ,
+
+Oh, I absolutely agree with you, MAD_HWPOISON indeed;
+but Andi might prefer MADV_HWPOISON.
+
+> +.BR MADVISE_MERGEABLE,
+
+       MADV_MERGEABLE,
+
+>  and
+> -.BR MAD_HWPOISON
+> +.BR MADVISE_UNMERGEABLE
+
+       MADV_UNMERGEABLE
+
+>  are Linux-specific.
+>  .SH NOTES
+>  .SS "Linux Notes"
+
+Thanks!
+Hugh
