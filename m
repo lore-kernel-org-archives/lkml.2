@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab0FTSVu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 14:21:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60961 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756145Ab0FTSVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 14:21:45 -0400
-Date: Sun, 20 Jun 2010 20:19:56 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Louis Rilling <louis.rilling@kerlabs.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org, Daniel Lezcano <dlezcano@fr.ibm.com>
-Subject: Re: [PATCH 2/6] pidns: Call pid_ns_prepare_proc from
-	create_pid_namespace
-Message-ID: <20100620181956.GA3258@redhat.com>
-References: <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <m1pqzmqema.fsf_-_@fess.ebiederm.org> <m1hbkyqeib.fsf_-_@fess.ebiederm.org>
+	id S1756676Ab0FTSbf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 14:31:35 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62866 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755968Ab0FTSbe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 14:31:34 -0400
+Message-ID: <4C1E5E5D.5020805@metafoo.de>
+Date: Sun, 20 Jun 2010 20:30:53 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1hbkyqeib.fsf_-_@fess.ebiederm.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Florian Fainelli <florian@openwrt.org>
+CC: Thomas Bogendoerfer <tsbogend@alpha.franken.de>,
+       Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, Graham Gower <graham.gower@gmail.com>
+Subject: Re: [PATCH v2 00/26] Add support for the Ingenic JZ4740 System-on-a-Chip
+References: <1276924111-11158-1-git-send-email-lars@metafoo.de> <4C1E467D.5030204@metafoo.de> <20100620170111.GA8650@alpha.franken.de> <201006201957.56978.florian@openwrt.org>
+In-Reply-To: <201006201957.56978.florian@openwrt.org>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20, Eric W. Biederman wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Florian Fainelli wrote:
+> Hi,
 >
-> Reorganize proc_get_sb so it can be called before the struct pid
-> of the first process is allocated.
-
-This is what
-
-	[PATCH 1/4] procfs: proc_get_sb: consolidate/cleanup root_inode->pid logic
-	[PATCH 2/4] procfs: kill the global proc_mnt variable
-
-do. But,
-
-> @@ -96,6 +97,9 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
->  	for (i = 1; i < PIDMAP_ENTRIES; i++)
->  		atomic_set(&ns->pidmap[i].nr_free, BITS_PER_PAGE);
+> Le Sunday 20 June 2010 19:01:11, Thomas Bogendoerfer a écrit :
+>> On Sun, Jun 20, 2010 at 06:49:01PM +0200, Lars-Peter Clausen wrote:
+>>> different to JZ4750 and JZ4760. So JZ47xx wont fit either.
+>>> Right now there is no practical use to moving things around, and there
+>>> wont be until somebody who can actually test it starts adding support
+>>> for a different JZ47XX SoC.
+>> great, I like such attitude:-(
 >
-> +	if (pid_ns_prepare_proc(ns))
-> +		goto out_free_map;
-> +
->  	return ns;
+> I have to agree with Thomas here, if your concern is about the naming,
+then
+> just have a look at the vendor sources and find similarities for what
+is worth
+> being named JZ47XX and what deserves a name which is more specific.
+Also, it is
+> much easier to do that factoring job now instead of when there will be
+3 or
+> more flavors of that SoC to be supported.
+Well, it's not like somebody who wants to add support for e.g. JZ4730
+would start from scratch and add a complete implementation which then
+has to be merged with JZ4740. You would start adding it on-top of the
+existing JZ4740 platform support and generalize it where necessary.
+Renaming is cheap! This is not part of an API thats set into stone...
+Seriously, it doesn't make any sense to waste time and try to
+generalize now while it is uncertain if there will be support of a
+different JZ47xx SoC anytime soon. Furthermore the likelihood of over-
+or under-generalizing is pretty high if you do not know exactly what
+you want or what you need.
+I strongly disagree that it is easier to do the factoring job now. It
+will be easier when you actually know what requirements you'll have
+based on hard facts instead of having some loose ideas of what might
+work and what not.
 
-Afaics, this is wrong.
+That said, the platform support has been designed with having the idea
+of support for multiple JZ47XX SoCs at some point. So it will mostly
+be picking up the components shared between different SoCs and put
+them in a shared folder (and maybe do a 's/jz4740/jz47xx/g'). But
+right now there is only JZ4740 support...
 
-If pid_ns_prepare_proc() fails we shouldn't blindly return ENOMEM
-and, more importantly, we need put_pid_ns(parent_ns).
+- - Lars
 
-Oleg.
+
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org
+
+iEYEARECAAYFAkweXl0ACgkQBX4mSR26RiM7hACfRMhD54TJEdI11AgsaaWRiDaK
+xrYAnRR+0VT3CurJm2Xc9DgC9+bcrFfv
+=SFR2
+-----END PGP SIGNATURE-----
 
