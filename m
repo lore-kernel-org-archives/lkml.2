@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab0FTQtk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 12:49:40 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:58110 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753984Ab0FTQth (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 12:49:37 -0400
-Message-ID: <4C1E467D.5030204@metafoo.de>
-Date: Sun, 20 Jun 2010 18:49:01 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
-MIME-Version: 1.0
-To: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, Graham Gower <graham.gower@gmail.com>
-Subject: Re: [PATCH v2 00/26] Add support for the Ingenic JZ4740 System-on-a-Chip
-References: <1276924111-11158-1-git-send-email-lars@metafoo.de> <20100620092610.GA4950@alpha.franken.de> <4C1E263E.1000903@metafoo.de> <20100620163437.GA8329@alpha.franken.de>
-In-Reply-To: <20100620163437.GA8329@alpha.franken.de>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755579Ab0FTQx4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 12:53:56 -0400
+Received: from mail.perches.com ([173.55.12.10]:1226 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754524Ab0FTQxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 12:53:54 -0400
+Subject: Re: [PATCH] drivers/media/IR/imon.c: Use pr_err instead of err
+From: Joe Perches <joe@perches.com>
+To: Jarod Wilson <jarod@wilsonet.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+       linux-media <linux-media@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <16004456-69D9-41BD-8597-5590BB7B099E@wilsonet.com>
+References: <1277018446.1548.66.camel@Joe-Laptop.home>
+	 <16004456-69D9-41BD-8597-5590BB7B099E@wilsonet.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 20 Jun 2010 09:53:51 -0700
+Message-ID: <1277052831.1548.103.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Bogendoerfer wrote:
-> On Sun, Jun 20, 2010 at 04:31:26PM +0200, Lars-Peter Clausen wrote:
->   
->> Another issue with naming is that while a component might be similar in
->> JZ4730 and JZ4740 it might be completely different in a different JZ47xx
->> SoC. So naming a driver 'jz47xx_driver' instead of 'jz4740_driver' wont
->> work either.
->>     
->
-> so ? call it xx for the common part an exact number for special part.
-> It might be just jugglin with pieces, but getting it better in the first
-> run is always a plus.
->
-> Thomas.
->   
-As I said, parts might be common between JZ4730 and JZ4740 but be
-different to JZ4750 and JZ4760. So JZ47xx wont fit either.
-Right now there is no practical use to moving things around, and there
-wont be until somebody who can actually test it starts adding support
-for a different JZ47XX SoC.
+On Sun, 2010-06-20 at 11:58 -0400, Jarod Wilson wrote:
+> On Jun 20, 2010, at 3:20 AM, Joe Perches <joe@perches.com> wrote:
+> Use the standard error logging mechanisms.
+> > Add #define pr_fmt(fmt) KBUILD_MODNAME ":%s" fmt, __func__
+> > Remove __func__ from err calls, add '\n', rename to pr_err
+> Eh. If we're going to make a change here, I'd rather it be to using  
+> dev_err instead, since most of the other spew in this driver uses  
+> similar.
 
-- Lars
+The idea is to eventually remove info/err/warn from usb.h by
+changing the code outside of drivers/usb first.
+
+There will always be some mix of printk or pr_<level> along
+with dev_<level> because struct device * is NULL or as is
+mostly used here there's no struct imon_context * available.
+
+I suggest you have a look and see which ones of these
+changes could use dev_<level> instead.
+
+cheers, Joe
+
 
