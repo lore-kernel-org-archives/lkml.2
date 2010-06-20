@@ -1,35 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab0FTNvt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 09:51:49 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:48561 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754535Ab0FTNvs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 09:51:48 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 2/2] arch/sh/mm: Eliminate a double lock
-In-Reply-To: <Pine.LNX.4.64.1006201324360.4366@ask.diku.dk>
-References: <Pine.LNX.4.64.1006201324360.4366@ask.diku.dk>
-User-Agent: Notmuch/0.3.1-61-g3f63bb6 (http://notmuchmail.org) Emacs/23.1.90.2 (x86_64-unknown-linux-gnu)
-Date: Sun, 20 Jun 2010 14:51:46 +0100
-Message-ID: <87lja9q0b1.fsf@linux-g6p1.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754811Ab0FTOSc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 10:18:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36861 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754609Ab0FTOS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 10:18:29 -0400
+Subject: Re: [PATCH 2/3] SCSI: Support Type C RAID controller
+From: James Bottomley <James.Bottomley@suse.de>
+To: nick.cheng@areca.com.tw
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <2A012083FB99432B9F10199BDD454867@areca4e4f859d4>
+References: <2A012083FB99432B9F10199BDD454867@areca4e4f859d4>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 20 Jun 2010 09:18:18 -0500
+Message-ID: <1277043498.5242.12.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Jun 2010 13:24:54 +0200 (CEST), Julia Lawall <julia@diku.dk> wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> The function begins and ends with a read_lock.  The latter is changed to a
-> read_unlock.
+On Fri, 2010-06-18 at 15:39 +0800, Nick Cheng wrote:
+> 1. To support Type C RAID controller, ACB_ADAPTER_TYPE_C, i.e. PCI device
+> ID: 0x1880.
 
-I think we've been quite lucky here so far, in that no one takes a
-write_lock after we've double-read-locked pmb_rwlock.
+OK, got patch 1/3 successfully, but after I apply it, this one doesn't
+apply:
 
-Acked-by: Matt Fleming <matt@console-pimps.org>
+jejb@mulgrave:~/git/scsi-misc-2.6> patch -p2 < ~/tmp.diff
+patching file drivers/scsi/arcmsr/arcmsr.h
+Hunk #9 succeeded at 599 with fuzz 2.
+Hunk #10 FAILED at 619.
+
+This rejection, for instance is because there's an indent before the
+#else and #endif in the patch which isn't in the file ... that lack of
+indent dates back to the time the driver was first imported, so you
+can't be patching from the current kernel to this.
+
+1 out of 10 hunks FAILED -- saving rejects to file
+drivers/scsi/arcmsr/arcmsr.h.rej
+patching file drivers/scsi/arcmsr/arcmsr_hba.c
+Hunk #3 FAILED at 121.
+Hunk #13 FAILED at 448.
+Hunk #14 FAILED at 475.
+Hunk #15 FAILED at 502.
+Hunk #16 succeeded at 644 (offset 1 line).
+Hunk #17 succeeded at 780 (offset 1 line).
+Hunk #18 FAILED at 794.
+Hunk #19 succeeded at 811 (offset 1 line).
+Hunk #20 succeeded at 844 (offset 1 line).
+Hunk #21 succeeded at 856 with fuzz 1 (offset 1 line).
+Hunk #22 succeeded at 880 (offset 1 line).
+Hunk #23 succeeded at 923 (offset 1 line).
+Hunk #24 succeeded at 940 (offset 1 line).
+Hunk #25 succeeded at 972 (offset 1 line).
+Hunk #26 succeeded at 986 (offset 1 line).
+Hunk #27 succeeded at 1009 (offset 1 line).
+Hunk #28 succeeded at 1036 (offset 1 line).
+Hunk #29 succeeded at 1047 (offset 1 line).
+Hunk #30 succeeded at 1088 (offset 1 line).
+Hunk #31 succeeded at 1119 (offset 1 line).
+Hunk #32 succeeded at 1180 (offset 1 line).
+Hunk #33 FAILED at 1197.
+Hunk #34 FAILED at 1236.
+Hunk #35 succeeded at 1263 (offset 1 line).
+Hunk #36 succeeded at 1278 (offset 1 line).
+Hunk #37 succeeded at 1289 (offset 1 line).
+Hunk #38 succeeded at 1310 (offset 1 line).
+Hunk #39 succeeded at 1323 (offset 1 line).
+Hunk #40 succeeded at 1355 (offset 1 line).
+Hunk #41 succeeded at 1380 (offset 1 line).
+Hunk #42 succeeded at 1409 (offset 1 line).
+Hunk #43 succeeded at 1438 (offset 1 line).
+Hunk #44 succeeded at 1463 (offset 1 line).
+Hunk #45 succeeded at 1552 (offset 1 line).
+Hunk #46 succeeded at 1596 (offset 1 line).
+Hunk #47 succeeded at 1665 (offset 2 lines).
+Hunk #48 succeeded at 1734 with fuzz 1 (offset 2 lines).
+Hunk #49 succeeded at 1778 (offset 3 lines).
+Hunk #50 succeeded at 2194 (offset 3 lines).
+Hunk #51 succeeded at 2220 (offset 3 lines).
+Hunk #52 FAILED at 2294.
+Hunk #53 succeeded at 2344 (offset 3 lines).
+Hunk #54 succeeded at 2421 (offset 3 lines).
+Hunk #55 succeeded at 2432 (offset 3 lines).
+Hunk #56 FAILED at 2459.
+Hunk #57 FAILED at 2474.
+Hunk #58 FAILED at 2522.
+Hunk #59 succeeded at 2546 (offset 3 lines).
+Hunk #60 succeeded at 2567 (offset 3 lines).
+Hunk #61 succeeded at 2585 (offset 3 lines).
+Hunk #62 succeeded at 2606 (offset 3 lines).
+Hunk #63 succeeded at 2625 (offset 3 lines).
+Hunk #64 succeeded at 2634 (offset 3 lines).
+Hunk #65 succeeded at 2681 (offset 3 lines).
+Hunk #66 succeeded at 2729 (offset 3 lines).
+Hunk #67 succeeded at 2762 (offset 3 lines).
+Hunk #68 succeeded at 2773 (offset 3 lines).
+Hunk #69 succeeded at 2784 (offset 3 lines).
+Hunk #70 succeeded at 2811 (offset 3 lines).
+Hunk #71 succeeded at 2838 (offset 3 lines).
+Hunk #72 succeeded at 2858 (offset 3 lines).
+Hunk #73 FAILED at 2870.
+Hunk #74 FAILED at 2892.
+Hunk #75 FAILED at 2967.
+Hunk #76 FAILED at 2992.
+Hunk #77 succeeded at 3028 (offset 4 lines).
+Hunk #78 succeeded at 3052 with fuzz 1 (offset 4 lines).
+Hunk #79 FAILED at 3070.
+Hunk #80 succeeded at 3083 (offset 4 lines).
+Hunk #81 succeeded at 3151 (offset 4 lines).
+16 out of 81 hunks FAILED -- saving rejects to file
+drivers/scsi/arcmsr/arcmsr_hba.c.rej
+
+Can you redo 2/3 and 3/3 so they apply in sequence on 2.6.35-rc3 with
+1/3 already applied?
+
+Thanks,
+
+James
+
+
