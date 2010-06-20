@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab0FTW3j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 18:29:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58641 "EHLO ogre.sisk.pl"
+	id S1757278Ab0FTW3o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 18:29:44 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58648 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756878Ab0FTW3f convert rfc822-to-8bit (ORCPT
+	id S1757189Ab0FTW3h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 18:29:35 -0400
+	Sun, 20 Jun 2010 18:29:37 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Pavel Machek" <pavel@ucw.cz>
+       "Brian Bloniarz" <phunge0@hotmail.com>,
+       "Yinghai Lu" <yinghai@kernel.org>
 References: <lc60d4toGTL.A.QzD._LpHMB@chimera>
 In-Reply-To: <lc60d4toGTL.A.QzD._LpHMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <W8JfMs9cZw.A.c2E.wMpHMB@chimera>
-Subject: [Bug #16222] 2.6.35-rc{12} regression: inactive console corrupted
+Message-ID: <W8JfMs9cZw.A.bwE.tMpHMB@chimera>
+Subject: [Bug #16228] BUG/boot failure on Dell Precision T3500 (pci/ahci_stop_engine)
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Mon, 21 Jun 2010 00:17:44 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,11 +34,9 @@ from 2.6.34.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16222
-Subject		: 2.6.35-rc{12} regression: inactive console corrupted
-Submitter	: Pavel Machek <pavel@ucw.cz>
-Date		: 2010-06-12 10:33 (9 days old)
-Message-ID	: <20100612103321.GA1458@ucw.cz>
-References	: http://marc.info/?l=linux-kernel&m=127633882614501&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16228
+Subject		: BUG/boot failure on Dell Precision T3500 (pci/ahci_stop_engine)
+Submitter	: Brian Bloniarz <phunge0@hotmail.com>
+Date		: 2010-06-16 17:57 (5 days old)
 
 
