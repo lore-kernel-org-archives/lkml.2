@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab0FTWaP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 18:30:15 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58679 "EHLO ogre.sisk.pl"
+	id S1757330Ab0FTWaA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 18:30:00 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58675 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757356Ab0FTWaK convert rfc822-to-8bit (ORCPT
+	id S1757290Ab0FTW3s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 18:30:10 -0400
+	Sun, 20 Jun 2010 18:29:48 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Christoph Lameter" <cl@linux-foundation.org>
+       "Sergey Senozhatsky" <sergey.senozhatsky@gmail.com>
 References: <lc60d4toGTL.A.QzD._LpHMB@chimera>
 In-Reply-To: <lc60d4toGTL.A.QzD._LpHMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,8 +17,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <W8JfMs9cZw.A.U5D.FMpHMB@chimera>
-Subject: [Bug #16255] 2.6.35-rc3 deadlocks on semaphore operations
+Message-ID: <W8JfMs9cZw.A.b_D.HMpHMB@chimera>
+Subject: [Bug #16248] inconsistent lock state
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Mon, 21 Jun 2010 00:17:46 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,11 +33,11 @@ from 2.6.34.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16255
-Subject		: 2.6.35-rc3 deadlocks on semaphore operations
-Submitter	: Christoph Lameter <cl@linux-foundation.org>
-Date		: 2010-06-18 14:49 (3 days old)
-Message-ID	: <alpine.DEB.2.00.1006180940140.11575@router.home>
-References	: http://marc.info/?l=linux-kernel&m=127687262727707&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16248
+Subject		: inconsistent lock state
+Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Date		: 2010-06-15 11:24 (6 days old)
+Message-ID	: <20100615112434.GA3967@swordfish.minsk.epam.com>
+References	: http://marc.info/?l=linux-kernel&m=127660087625903&w=2
 
 
