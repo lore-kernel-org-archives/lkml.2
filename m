@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab0FTNka (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 09:40:30 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:34740 "EHLO mgw2.diku.dk"
+	id S1754635Ab0FTNkK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 09:40:10 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:58626 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654Ab0FTNk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 09:40:26 -0400
-Date: Sun, 20 Jun 2010 15:40:20 +0200 (CEST)
+	id S1754156Ab0FTNkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 09:40:08 -0400
+Date: Sun, 20 Jun 2010 15:40:02 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+To: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net,
+       user-mode-linux-user@lists.sourceforge.net,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/3] drivers/gpu/drm/i915: remove duplicate structure field
+Subject: [PATCH 1/3] arch/um/drivers: remove duplicate structure field
  initialization
-Message-ID: <Pine.LNX.4.64.1006201540030.6207@ask.diku.dk>
+Message-ID: <Pine.LNX.4.64.1006201539080.6207@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,7 +22,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-In each case, is_mobile is defined twice to 1.  Drop one initialization.
+There are two initializations of ndo_set_mac_address, one to a local
+function that is not used otherwise and one to a function that is defined
+elsewhere.  This patch keeps the initialization to the local function.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -57,28 +60,20 @@ if int(ps[0].line)<int(pr[0].line) or int(ps[0].column)<int(pr[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/gpu/drm/i915/i915_drv.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+This fix was sent previously, in September 2009.
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index 423dc90..39b8981 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -97,7 +97,7 @@ static const struct intel_device_info intel_i965g_info = {
+ arch/um/drivers/net_kern.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/um/drivers/net_kern.c b/arch/um/drivers/net_kern.c
+index f053726..d2d42d8 100644
+--- a/arch/um/drivers/net_kern.c
++++ b/arch/um/drivers/net_kern.c
+@@ -380,7 +380,6 @@ static const struct net_device_ops uml_netdev_ops = {
+ 	.ndo_tx_timeout 	= uml_net_tx_timeout,
+ 	.ndo_set_mac_address	= uml_net_set_mac,
+ 	.ndo_change_mtu 	= uml_net_change_mtu,
+-	.ndo_set_mac_address 	= eth_mac_addr,
+ 	.ndo_validate_addr	= eth_validate_addr,
  };
  
- static const struct intel_device_info intel_i965gm_info = {
--	.is_i965g = 1, .is_mobile = 1, .is_i965gm = 1, .is_i9xx = 1,
-+	.is_i965g = 1, .is_i965gm = 1, .is_i9xx = 1,
- 	.is_mobile = 1, .has_fbc = 1, .has_rc6 = 1,
- 	.has_hotplug = 1,
- };
-@@ -114,7 +114,7 @@ static const struct intel_device_info intel_g45_info = {
- };
- 
- static const struct intel_device_info intel_gm45_info = {
--	.is_i965g = 1, .is_mobile = 1, .is_g4x = 1, .is_i9xx = 1,
-+	.is_i965g = 1, .is_g4x = 1, .is_i9xx = 1,
- 	.is_mobile = 1, .need_gfx_hws = 1, .has_fbc = 1, .has_rc6 = 1,
- 	.has_pipe_cxsr = 1,
- 	.has_hotplug = 1,
