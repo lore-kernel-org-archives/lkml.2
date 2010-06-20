@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab0FTUxU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 16:53:20 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:51913 "EHLO
+	id S1757231Ab0FTUxt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 16:53:49 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:51918 "EHLO
 	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757141Ab0FTUxS (ORCPT
+	with ESMTP id S1757141Ab0FTUxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 16:53:18 -0400
+	Sun, 20 Jun 2010 16:53:46 -0400
 X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 20 Jun 2010 22:52:27 +0200 (CEST)
+Date: Sun, 20 Jun 2010 22:52:55 +0200 (CEST)
 From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH 4/8] firewire: cdev: count references of cards during inbound
- transactions
+Subject: [PATCH 5/8] firewire: cdev: freeze FW_CDEV_VERSION due to libraw1394
+ bug
 To: linux1394-devel@lists.sourceforge.net
 cc: linux-kernel@vger.kernel.org
 In-Reply-To: <tkrat.ba0692c55cd50593@s5r6.in-berlin.de>
-Message-ID: <tkrat.fa0ba0710bd74fed@s5r6.in-berlin.de>
+Message-ID: <tkrat.76e78b3888692346@s5r6.in-berlin.de>
 References: <tkrat.ba0692c55cd50593@s5r6.in-berlin.de>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; CHARSET=us-ascii
@@ -24,99 +24,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a request comes in to an address range managed by a userspace driver
-i.e. <linux/firewire-cdev.h> client, the card instance of request and
-response may differ from the card instance of the client device.
-Therefore we need to take a reference of the card until the response was
-sent.
+libraw1394 v2.0.0...v2.0.5 takes FW_CDEV_VERSION from an externally
+installed header file and uses it to declare its own implementation
+level in FW_CDEV_IOC_GET_INFO.  This is wrong; it should set the real
+version for which it was actually written.
 
-I thought about putting the reference counting into core-transaction.c,
-but the various high-level drivers besides cdev clients (firewire-net,
-firewire-sbp2, firedtv) use the card pointer in their fw_address_handler
-address_callback method only to look up devices of which they already
-hold the necessary references.  So this seems to be a specific
-firewire-cdev issue which is better addressed locally.
+If we add features to the kernel ABI that require the kernel to check
+a client's implementation level, we can not trust the client version if
+it was set from FW_CDEV_VERSION.
 
-We do not need the reference
-  - in case of FCP_REQUEST or FCP_RESPONSE requests because then the
-    firewire-core will send the split transaction response for us
-    already in the context of the request handler,
-  - if it is the same card as the client device's because we hold a
-    card reference indirectly via teh client->device reference.
-To keep things simple, we take the reference nevertheless.
+Hence freeze FW_CDEV_VERSION at the current value (no damage has been
+done yet), clearly document FW_CDEV_VERSION as a dummy version and what
+clients are expected to do with fw_cdev_get_info.version, and use a new
+defined constant (which is not placed into the exported header file) as
+kernel implementation level.
 
-Jay Fenlason wrote:
-> there's no way for the core to tell cdev "this card is gone,
-> kill any inbound transactions on it", while cdev holds the transaction
-> open until userspace issues a SEND_RESPONSE ioctl, which may be a very,
-> very long time.  But when it does, it calls fw_send_response(), which
-> will dereference the card...
-> 
-> So how unhappy are we about userspace potentially holding a fw_card
-> open forever?
-
-While termination of inbound transcations at card removal could be
-implemented, it is IMO not worth the effort.  Currently, the effect of
-holding a reference of a card that has been removed is to block the
-process that called the pci_remove of the card.  This is
-  - either a user process ran by root.  Root can find and kill processes
-    that have /dev/fw* open, if desired.
-  - a kernel thread (which one?) in case of hot removal of a PCCard or
-    ExpressCard.
-The latter case could be a problem indeed.  firewire-core's card
-shutdown and card release should probably be improved not to block in
-shutdown, just to defer freeing of memory until release.
-
-This is not a new problem though; the same already always happens with
-the client->device->card without the need of inbound transactions or
-other special conditions involved, other than the client not closing the
-file.
+Note, in order to check in client program source code which features are
+present in an externally installed linux/firewire-cdev.h, use
+preprocessor directives like
+  #ifdef FW_CDEV_IOC_ALLOCATE_ISO_RESOURCE
+or
+  #ifdef FW_CDEV_EVENT_ISO_RESOURCE_ALLOCATED
+instead of a check of FW_CDEV_VERSION.
 
 Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 ---
- drivers/firewire/core-cdev.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/firewire/core-cdev.c  |    7 ++++++-
+ include/linux/firewire-cdev.h |   22 ++++++++++++++++------
+ 2 files changed, 22 insertions(+), 7 deletions(-)
 
 Index: b/drivers/firewire/core-cdev.c
 ===================================================================
 --- a/drivers/firewire/core-cdev.c
 +++ b/drivers/firewire/core-cdev.c
-@@ -628,6 +628,8 @@ static void release_request(struct clien
- 		kfree(r->data);
- 	else
- 		fw_send_response(r->card, r->request, RCODE_CONFLICT_ERROR);
+@@ -47,6 +47,11 @@
+ 
+ #include "core.h"
+ 
++/*
++ * ABI version history is documented in linux/firewire-cdev.h.
++ */
++#define FW_CDEV_KERNEL_VERSION 3
 +
-+	fw_card_put(r->card);
- 	kfree(r);
- }
+ struct client {
+ 	u32 version;
+ 	struct fw_device *device;
+@@ -396,7 +401,7 @@ static int ioctl_get_info(struct client 
+ 	unsigned long ret = 0;
  
-@@ -642,6 +644,9 @@ static void handle_request(struct fw_car
- 	void *fcp_frame = NULL;
- 	int ret;
+ 	client->version = a->version;
+-	a->version = FW_CDEV_VERSION;
++	a->version = FW_CDEV_KERNEL_VERSION;
+ 	a->card = client->device->card->index;
  
-+	/* card may be different from handler->client->device->card */
-+	fw_card_get(card);
-+
- 	r = kmalloc(sizeof(*r), GFP_ATOMIC);
- 	e = kmalloc(sizeof(*e), GFP_ATOMIC);
- 	if (r == NULL || e == NULL)
-@@ -687,6 +692,8 @@ static void handle_request(struct fw_car
+ 	down_read(&fw_device_rwsem);
+Index: b/include/linux/firewire-cdev.h
+===================================================================
+--- a/include/linux/firewire-cdev.h
++++ b/include/linux/firewire-cdev.h
+@@ -224,7 +224,7 @@ union fw_cdev_event {
+ 	struct fw_cdev_event_response		response;
+ 	struct fw_cdev_event_request		request;
+ 	struct fw_cdev_event_iso_interrupt	iso_interrupt;
+-	struct fw_cdev_event_iso_resource	iso_resource;
++	struct fw_cdev_event_iso_resource	iso_resource; /* added in 2.6.30 */
+ };
  
- 	if (!is_fcp_request(request))
- 		fw_send_response(card, request, RCODE_CONFLICT_ERROR);
-+
-+	fw_card_put(card);
- }
+ /* available since kernel version 2.6.22 */
+@@ -257,22 +257,32 @@ union fw_cdev_event {
+ #define FW_CDEV_IOC_GET_CYCLE_TIMER2   _IOWR('#', 0x14, struct fw_cdev_get_cycle_timer2)
  
- static void release_address_handler(struct client *client,
-@@ -769,6 +776,7 @@ static int ioctl_send_response(struct cl
- 	}
- 	fw_send_response(r->card, r->request, a->rcode);
-  out:
-+	fw_card_put(r->card);
- 	kfree(r);
+ /*
+- * FW_CDEV_VERSION History
++ * ABI version history
+  *  1  (2.6.22)  - initial version
++ *     (2.6.24)  - added %FW_CDEV_IOC_GET_CYCLE_TIMER
+  *  2  (2.6.30)  - changed &fw_cdev_event_iso_interrupt.header if
+  *                 &fw_cdev_create_iso_context.header_size is 8 or more
++ *               - added %FW_CDEV_IOC_*_ISO_RESOURCE*,
++ *                 %FW_CDEV_IOC_GET_SPEED, %FW_CDEV_IOC_SEND_BROADCAST_REQUEST,
++ *                 %FW_CDEV_IOC_SEND_STREAM_PACKET
+  *     (2.6.32)  - added time stamp to xmit &fw_cdev_event_iso_interrupt
+  *     (2.6.33)  - IR has always packet-per-buffer semantics now, not one of
+  *                 dual-buffer or packet-per-buffer depending on hardware
+  *  3  (2.6.34)  - made &fw_cdev_get_cycle_timer reliable
++ *               - added %FW_CDEV_IOC_GET_CYCLE_TIMER2
+  */
+-#define FW_CDEV_VERSION 3
++#define FW_CDEV_VERSION 3 /* Meaningless; don't use this macro. */
  
- 	return ret;
+ /**
+  * struct fw_cdev_get_info - General purpose information ioctl
+- * @version:	The version field is just a running serial number.
+- *		We never break backwards compatibility, but may add more
+- *		structs and ioctls in later revisions.
++ * @version:	The version field is just a running serial number.  Both an
++ *		input parameter (ABI version implemented by the client) and
++ *		output parameter (ABI version implemented by the kernel).
++ *		A client must not fill in an %FW_CDEV_VERSION defined from an
++ *		included kernel header file but the actual version for which
++ *		the client was implemented.  This is necessary for forward
++ *		compatibility.  We never break backwards compatibility, but
++ *		may add more structs, events, and ioctls in later revisions.
+  * @rom_length:	If @rom is non-zero, at most rom_length bytes of configuration
+  *		ROM will be copied into that user space address.  In either
+  *		case, @rom_length is updated with the actual length of the
 
 -- 
 Stefan Richter
