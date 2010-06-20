@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab0FTLZG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 07:25:06 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:57177 "EHLO mgw1.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab0FTLZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 07:25:00 -0400
-Date: Sun, 20 Jun 2010 13:24:54 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/2] arch/sh/mm: Eliminate a double lock
-Message-ID: <Pine.LNX.4.64.1006201324360.4366@ask.diku.dk>
+	id S1752324Ab0FTLgX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 07:36:23 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:55919 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751931Ab0FTLgV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 07:36:21 -0400
+Date: Sun, 20 Jun 2010 21:36:09 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Message-ID: <20100620113609.GA31693@gondor.apana.org.au>
+References: <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com> <20100618055929.GA11333@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE573@shsmsx502.ccr.corp.intel.com> <20100620100631.GB4578@redhat.com> <20100620103235.GA31284@gondor.apana.org.au> <20100620103909.GA5285@redhat.com> <20100620110254.GA31484@gondor.apana.org.au> <20100620111124.GB5285@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100620111124.GB5285@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Sun, Jun 20, 2010 at 02:11:24PM +0300, Michael S. Tsirkin wrote:
+>
+> Rather than modifying all guests, it seems much easier not to assume
+> specific buffer layout in host.  Copying network header around seems a
+> small cost.
 
-The function begins and ends with a read_lock.  The latter is changed to a
-read_unlock.
+Well sure we can debate the specifics of this implementation detail.
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+However, the fact that virtio_net doesn't support feature renegotiation
+on live migration is not a valid reason against this.
 
-// <smpl>
-@locked@
-expression E1;
-position p;
-@@
-
-read_lock(E1@p,...);
-
-@r exists@
-expression x <= locked.E1;
-expression locked.E1;
-expression E2;
-identifier lock;
-position locked.p,p1,p2;
-@@
-
-*lock@p1 (E1@p,...);
-... when != E1
-    when != \(x = E2\|&x\)
-*lock@p2 (E1,...);
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
-Not tested
-
- arch/sh/mm/pmb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/sh/mm/pmb.c b/arch/sh/mm/pmb.c
-index 18623ba..6379091 100644
---- a/arch/sh/mm/pmb.c
-+++ b/arch/sh/mm/pmb.c
-@@ -770,7 +770,7 @@ static void __init pmb_resize(void)
- 		spin_unlock_irqrestore(&pmbe->lock, flags);
- 	}
- 
--	read_lock(&pmb_rwlock);
-+	read_unlock(&pmb_rwlock);
- }
- #endif
- 
+Cheers,
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
