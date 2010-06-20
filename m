@@ -1,368 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab0FTW4k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 18:56:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56750 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755064Ab0FTW4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 18:56:38 -0400
-Date: Sun, 20 Jun 2010 18:56:22 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Jens Axboe <axboe@kernel.dk>, Divyesh Shah <dpshah@google.com>
-Subject: Re: [PATCH] cfq-iosched: Fixed boot warning with BLK_CGROUP=y and
- CFQ_GROUP_IOSCHED=n
-Message-ID: <20100620225622.GA12368@redhat.com>
-References: <20100618143947.GA8431@redhat.com>
- <20100620081016.GA5365@elte.hu>
+	id S1757411Ab0FTW5x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 18:57:53 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49967 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756096Ab0FTW5v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 18:57:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=iBQEmOrhrOH2QQR2NTKBU3R2yvpzmKPjwOSgpKAVcFM0FKidAC1g3yfhAl2xUcX2z8
+         MeT+iFRzdG2ybAykkkxhb/bqWqYL6c9LcXy06i4PJS2N473naO7BUADrJ+b2WBhRTaju
+         4W5ztulEjHzbPiBM+ybBWURCJYEC9jHskyheI=
+Date: Sun, 20 Jun 2010 15:58:10 -0700
+From: mark gross <640e9920@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Message-ID: <20100620225810.GB9735@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <201006200005.35771.rjw@sisk.pl>
+ <Pine.LNX.4.44L0.1006201153420.22272-100000@netrider.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100620081016.GA5365@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <Pine.LNX.4.44L0.1006201153420.22272-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 20, 2010 at 10:10:16AM +0200, Ingo Molnar wrote:
+On Sun, Jun 20, 2010 at 12:28:29PM -0400, Alan Stern wrote:
+> On Sun, 20 Jun 2010, Rafael J. Wysocki wrote:
 > 
-> * Vivek Goyal <vgoyal@redhat.com> wrote:
-> 
-> > Hi Jens,
+> > Hi,
 > > 
-> > Few days back Ingo noticed a CFQ boot time warning. This patch fixes it.
+> > One of the arguments during the suspend blockers discussion was that the
+> > mainline kernel didn't contain any mechanisms allowing it to avoid losing
+> > wakeup events during system suspend.
+> > 
+> > Generally, there are two problems in that area.  First, if a wakeup event
+> > occurs exactly at the same time when /sys/power/state is being written to,
+> > the even may be delivered to user space right before the freezing of it,
+> > in which case the user space consumer of the event may not be able to process
+> > it before the system is suspended.
 > 
-> Hm, have you tested it? This bit:
+> Indeed, the same problem arises if the event isn't delivered to
+> userspace until after userspace is frozen.  Of course, the underlying
+> issue here is that the kernel has no direct way to know when userspace
+> has finished processing an event.  Userspace would have to tell it,
+> which generally would mean rewriting some large number of user
+> programs.
 
-I did compile and boot testing. Booted with CFQ_GROUP_IOSCHED=n to make
-sure warning seen by you is gone. And IIRC, I also booted with
-CFQ_GROUP_IOSCHED=y and it seems to compile and boot just fine. Not sure
-why though.
+Suspend blockers don't solve this, and the large number of user programs
+isn't a big number.  /me thinks its 1 or 2 services.
+ 
+> >  Second, if a wakeup event occurs after user
+> > space has been frozen and that event is not a wakeup interrupt, the kernel will
+> > not react to it and the system will be suspended.
+> 
+> I don't quite understand what you mean here.  "Reacting" to an event
+> involves more than one action.  The kernel has to tell the hardware to
+> stop generating the wakeup signal, and it has to handle the event
+> somehow.
+> 
+> If the kernel doesn't tell the hardware to stop generating the wakeup 
+> signal, the signal will continue to be active until the system goes to 
+> sleep.  At that point it will cause the system to wake up immediately,
+> so there won't be any problem.
+> 
+> The real problem arises when the hardware stops generating the wakeup
+> signal but the kernel suspends before it finishes handling the event.  
+> For example, an interrupt handler might receive the event and start
+> processing it by calling pm_request_resume() -- but if the pm workqueue
+> thread is already frozen then the processing won't finish until
+> something else wakes the system up.  (IMO this is a potential bug which
+> could be fixed without too much effort.)
+> 
+> > The following patch illustrates my idea of how these two problems may be
+> > addressed.  It introduces a new global sysfs attribute,
+> > /sys/power/wakeup_count, associated with a running counter of wakeup events
+> > and a helper function, pm_wakeup_event(), that may be used by kernel subsystems
+> > to increment the wakeup events counter.
+> 
+> In what way is this better than suspend blockers?
+
+1) I don't think suspend blockers really solve or effectively articulate
+the suspend wake event race problem.
+2) the partial solution suspend blocker offer for the suspend race is
+tightly bound to the suspend blocker implementation and not useful in
+more general contexts.
+ 
+> > /sys/power/wakeup_count may be read from or written to by user space.  Reads
+> > will always succeed and return the current value of the wakeup events counter.
+> > Writes, however, will only succeed if the written number is equal to the
+> > current value of the wakeup events counter.  If a write is successful, it will
+> > cause the kernel to save the current value of the wakeup events counter and
+> > to compare the saved number with the current value of the counter at certain
+> > points of the subsequent suspend (or hibernate) sequence.  If the two values
+> > don't match, the suspend will be aborted just as though a wakeup interrupt
+> > happened.  Reading from /sys/power/wakeup_count again will turn that mechanism
+> > off.
+> > 
+> > The assumption is that there's a user space power manager that will first
+> > read from /sys/power/wakeup_count.  Then it will check all user space consumers
+> > of wakeup events known to it for unprocessed events.
+> 
+> What happens if an event arrives just before you read
+> /sys/power/wakeup_count, but the userspace consumer doesn't realize
+> there is a new unprocessed event until after the power manager checks
+> it?  Your plan is missing a critical step: the "handoff" whereby 
+> responsibility for handling an event passes from the kernel to 
+> userspace.
+> 
+> With suspend blockers, this handoff occurs when an event queue is 
+> emptied and its associate suspend blocker is deactivated.  Or with some 
+> kinds of events for which the Android people have not written an 
+> explicit handoff, it occurs when a timer expires (timed suspend 
+> blockers).
+
+The wakeup_count will need to be incremented in the same even queue the
+suspend blocker handoff happens.
 
 > 
-> > +++ linux-2.6/block/cfq.h	2010-06-18 09:41:23.256220395 -0400
+> >  If there are any, it will
+> > wait for them to be processed and repeat.  In turn, if there are not any,
+> > it will try to write to /sys/power/wakeup_count and if the write is successful,
+> > it will write to /sys/power/state to start suspend, so if any wakeup events
+> > accur past that point, they will be noticed by the kernel and will eventually
+> > cause the suspend to be aborted.
 > 
-> > +static inline void cfq_blkiocg_update_completion_stats(struct blkio_group *blkg, uint64_t start_time, uint64_t io_start_time, bool direction, bool sync)
-> > +{
-> > +	cfq_blkiocg_update_completion_stats(blkg, start_time, io_start_time,
-> > +				direction, sync);
-> > +}
+> This shares with the other alternatives posted recently the need for a
+> central power-manager process.  And like in-kernel suspend blockers, it
+> requires changes to wakeup-capable drivers (the wakeup-events counter
+> has to be incremented).
+
+true.
+ 
+> One advantage of the suspend-blocker approach is that it essentially
+> uses a single tool to handle both kinds of races (event not fully
+> handled by the kernel, or event not fully handled by userspace).  
+> Things aren't quite this simple, because of the need for a special API
+> to implement userspace suspend blockers, but this does avoid the need
+> for a power-manager process.
+
+I don't think suspend-blocker handles both kinds of races as well as you
+seem to think.  A single tool that conflates multiple kernel facilities
+is not an advantage.  It limits applications outside of the scope of
+doing it the "android way".
+
+Where do you get the idea that there isn't a need for a centralized PM
+process in Android?  Thats not true.
+ 
+> > In addition to the above, the patch adds a wakeup events counter to the
+> > power member of struct device and makes these per-device wakeup event counters
+> > available via sysfs, so that it's possible to check the activity of various
+> > wakeup event sources within the kernel.
+> > 
+> > To illustrate how subsystems can use pm_wakeup_event(), I added it to the
+> > PCI runtime PM wakeup-handling code.
+> > 
+> > At the moment the patch only contains code changes (ie. no documentation),
+> > but I'm going to add comments etc. if people like the idea.
+> > 
+> > Please tell me what you think.
 > 
-> is an inline function calling itself.
+> While this isn't a bad idea, I don't see how it is superior to the 
+> other alternatives that have been proposed.
+> 
+I like my PM-event framework better but I think this is ok too.
 
-That's my mistake. Sorry for that.  Here is the new patch fixing this
-issue.
+--mgross
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- block/cfq-iosched.c |   54 ++++++++++++------------
- block/cfq.h         |  116 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 143 insertions(+), 27 deletions(-)
 
-Index: linux-2.6/block/cfq-iosched.c
-===================================================================
---- linux-2.6.orig/block/cfq-iosched.c	2010-06-18 09:40:46.403163874 -0400
-+++ linux-2.6/block/cfq-iosched.c	2010-06-18 09:47:58.747339881 -0400
-@@ -14,7 +14,7 @@
- #include <linux/rbtree.h>
- #include <linux/ioprio.h>
- #include <linux/blktrace_api.h>
--#include "blk-cgroup.h"
-+#include "cfq.h"
  
- /*
-  * tunables
-@@ -879,7 +879,7 @@
- 	if (!RB_EMPTY_NODE(&cfqg->rb_node))
- 		cfq_rb_erase(&cfqg->rb_node, st);
- 	cfqg->saved_workload_slice = 0;
--	blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
-+	cfq_blkiocg_update_dequeue_stats(&cfqg->blkg, 1);
- }
- 
- static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
-@@ -939,8 +939,8 @@
- 
- 	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
- 					st->min_vdisktime);
--	blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
--	blkiocg_set_start_empty_time(&cfqg->blkg);
-+	cfq_blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
-+	cfq_blkiocg_set_start_empty_time(&cfqg->blkg);
- }
- 
- #ifdef CONFIG_CFQ_GROUP_IOSCHED
-@@ -995,7 +995,7 @@
- 
- 	/* Add group onto cgroup list */
- 	sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
--	blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
-+	cfq_blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
- 					MKDEV(major, minor));
- 	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
- 
-@@ -1079,7 +1079,7 @@
- 		 * it from cgroup list, then it will take care of destroying
- 		 * cfqg also.
- 		 */
--		if (!blkiocg_del_blkio_group(&cfqg->blkg))
-+		if (!cfq_blkiocg_del_blkio_group(&cfqg->blkg))
- 			cfq_destroy_cfqg(cfqd, cfqg);
- 	}
- }
-@@ -1421,10 +1421,10 @@
- {
- 	elv_rb_del(&cfqq->sort_list, rq);
- 	cfqq->queued[rq_is_sync(rq)]--;
--	blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(rq),
--						rq_is_sync(rq));
-+	cfq_blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg,
-+					rq_data_dir(rq), rq_is_sync(rq));
- 	cfq_add_rq_rb(rq);
--	blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
-+	cfq_blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
- 			&cfqq->cfqd->serving_group->blkg, rq_data_dir(rq),
- 			rq_is_sync(rq));
- }
-@@ -1482,8 +1482,8 @@
- 	cfq_del_rq_rb(rq);
- 
- 	cfqq->cfqd->rq_queued--;
--	blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(rq),
--						rq_is_sync(rq));
-+	cfq_blkiocg_update_io_remove_stats(&(RQ_CFQG(rq))->blkg,
-+					rq_data_dir(rq), rq_is_sync(rq));
- 	if (rq_is_meta(rq)) {
- 		WARN_ON(!cfqq->meta_pending);
- 		cfqq->meta_pending--;
-@@ -1518,8 +1518,8 @@
- static void cfq_bio_merged(struct request_queue *q, struct request *req,
- 				struct bio *bio)
- {
--	blkiocg_update_io_merged_stats(&(RQ_CFQG(req))->blkg, bio_data_dir(bio),
--					cfq_bio_sync(bio));
-+	cfq_blkiocg_update_io_merged_stats(&(RQ_CFQG(req))->blkg,
-+					bio_data_dir(bio), cfq_bio_sync(bio));
- }
- 
- static void
-@@ -1539,8 +1539,8 @@
- 	if (cfqq->next_rq == next)
- 		cfqq->next_rq = rq;
- 	cfq_remove_request(next);
--	blkiocg_update_io_merged_stats(&(RQ_CFQG(rq))->blkg, rq_data_dir(next),
--					rq_is_sync(next));
-+	cfq_blkiocg_update_io_merged_stats(&(RQ_CFQG(rq))->blkg,
-+					rq_data_dir(next), rq_is_sync(next));
- }
- 
- static int cfq_allow_merge(struct request_queue *q, struct request *rq,
-@@ -1571,7 +1571,7 @@
- static inline void cfq_del_timer(struct cfq_data *cfqd, struct cfq_queue *cfqq)
- {
- 	del_timer(&cfqd->idle_slice_timer);
--	blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
-+	cfq_blkiocg_update_idle_time_stats(&cfqq->cfqg->blkg);
- }
- 
- static void __cfq_set_active_queue(struct cfq_data *cfqd,
-@@ -1580,7 +1580,7 @@
- 	if (cfqq) {
- 		cfq_log_cfqq(cfqd, cfqq, "set_active wl_prio:%d wl_type:%d",
- 				cfqd->serving_prio, cfqd->serving_type);
--		blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
-+		cfq_blkiocg_update_avg_queue_size_stats(&cfqq->cfqg->blkg);
- 		cfqq->slice_start = 0;
- 		cfqq->dispatch_start = jiffies;
- 		cfqq->allocated_slice = 0;
-@@ -1911,7 +1911,7 @@
- 	sl = cfqd->cfq_slice_idle;
- 
- 	mod_timer(&cfqd->idle_slice_timer, jiffies + sl);
--	blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
-+	cfq_blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
- 	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu", sl);
- }
- 
-@@ -1931,7 +1931,7 @@
- 	elv_dispatch_sort(q, rq);
- 
- 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
--	blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
-+	cfq_blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
- 					rq_data_dir(rq), rq_is_sync(rq));
- }
- 
-@@ -3248,7 +3248,7 @@
- 				cfq_clear_cfqq_wait_request(cfqq);
- 				__blk_run_queue(cfqd->queue);
- 			} else {
--				blkiocg_update_idle_time_stats(
-+				cfq_blkiocg_update_idle_time_stats(
- 						&cfqq->cfqg->blkg);
- 				cfq_mark_cfqq_must_dispatch(cfqq);
- 			}
-@@ -3276,7 +3276,7 @@
- 	rq_set_fifo_time(rq, jiffies + cfqd->cfq_fifo_expire[rq_is_sync(rq)]);
- 	list_add_tail(&rq->queuelist, &cfqq->fifo);
- 	cfq_add_rq_rb(rq);
--	blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
-+	cfq_blkiocg_update_io_add_stats(&(RQ_CFQG(rq))->blkg,
- 			&cfqd->serving_group->blkg, rq_data_dir(rq),
- 			rq_is_sync(rq));
- 	cfq_rq_enqueued(cfqd, cfqq, rq);
-@@ -3364,9 +3364,9 @@
- 	WARN_ON(!cfqq->dispatched);
- 	cfqd->rq_in_driver--;
- 	cfqq->dispatched--;
--	blkiocg_update_completion_stats(&cfqq->cfqg->blkg, rq_start_time_ns(rq),
--			rq_io_start_time_ns(rq), rq_data_dir(rq),
--			rq_is_sync(rq));
-+	cfq_blkiocg_update_completion_stats(&cfqq->cfqg->blkg,
-+			rq_start_time_ns(rq), rq_io_start_time_ns(rq),
-+			rq_data_dir(rq), rq_is_sync(rq));
- 
- 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
- 
-@@ -3730,7 +3730,7 @@
- 
- 	cfq_put_async_queues(cfqd);
- 	cfq_release_cfq_groups(cfqd);
--	blkiocg_del_blkio_group(&cfqd->root_group.blkg);
-+	cfq_blkiocg_del_blkio_group(&cfqd->root_group.blkg);
- 
- 	spin_unlock_irq(q->queue_lock);
- 
-@@ -3798,8 +3798,8 @@
- 	 */
- 	atomic_set(&cfqg->ref, 1);
- 	rcu_read_lock();
--	blkiocg_add_blkio_group(&blkio_root_cgroup, &cfqg->blkg, (void *)cfqd,
--					0);
-+	cfq_blkiocg_add_blkio_group(&blkio_root_cgroup, &cfqg->blkg,
-+					(void *)cfqd, 0);
- 	rcu_read_unlock();
- #endif
- 	/*
-Index: linux-2.6/block/cfq.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6/block/cfq.h	2010-06-20 18:47:29.990241567 -0400
-@@ -0,0 +1,116 @@
-+#ifndef _CFQ_H
-+#define _CFQ_H
-+#include "blk-cgroup.h"
-+
-+#ifdef CONFIG_CFQ_GROUP_IOSCHED
-+static inline void cfq_blkiocg_update_io_add_stats(struct blkio_group *blkg,
-+	struct blkio_group *curr_blkg, bool direction, bool sync)
-+{
-+	blkiocg_update_io_add_stats(blkg, curr_blkg, direction, sync);
-+}
-+
-+static inline void cfq_blkiocg_update_dequeue_stats(struct blkio_group *blkg,
-+			unsigned long dequeue)
-+{
-+	blkiocg_update_dequeue_stats(blkg, dequeue);
-+}
-+
-+static inline void cfq_blkiocg_update_timeslice_used(struct blkio_group *blkg,
-+			unsigned long time)
-+{
-+	blkiocg_update_timeslice_used(blkg, time);
-+}
-+
-+static inline void cfq_blkiocg_set_start_empty_time(struct blkio_group *blkg)
-+{
-+	blkiocg_set_start_empty_time(blkg);
-+}
-+
-+static inline void cfq_blkiocg_update_io_remove_stats(struct blkio_group *blkg,
-+				bool direction, bool sync)
-+{
-+	blkiocg_update_io_remove_stats(blkg, direction, sync);
-+}
-+
-+static inline void cfq_blkiocg_update_io_merged_stats(struct blkio_group *blkg,
-+		bool direction, bool sync)
-+{
-+	blkiocg_update_io_merged_stats(blkg, direction, sync);
-+}
-+
-+static inline void cfq_blkiocg_update_idle_time_stats(struct blkio_group *blkg)
-+{
-+	blkiocg_update_idle_time_stats(blkg);
-+}
-+
-+static inline void
-+cfq_blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg)
-+{
-+	blkiocg_update_avg_queue_size_stats(blkg);
-+}
-+
-+static inline void
-+cfq_blkiocg_update_set_idle_time_stats(struct blkio_group *blkg)
-+{
-+	blkiocg_update_set_idle_time_stats(blkg);
-+}
-+
-+static inline void cfq_blkiocg_update_dispatch_stats(struct blkio_group *blkg,
-+				uint64_t bytes, bool direction, bool sync)
-+{
-+	blkiocg_update_dispatch_stats(blkg, bytes, direction, sync);
-+}
-+
-+static inline void cfq_blkiocg_update_completion_stats(struct blkio_group *blkg,
-+ uint64_t start_time, uint64_t io_start_time, bool direction, bool sync)
-+{
-+	blkiocg_update_completion_stats(blkg, start_time, io_start_time,
-+				direction, sync);
-+}
-+
-+static inline void cfq_blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
-+			struct blkio_group *blkg, void *key, dev_t dev) {
-+	blkiocg_add_blkio_group(blkcg, blkg, key, dev);
-+}
-+
-+static inline int cfq_blkiocg_del_blkio_group(struct blkio_group *blkg)
-+{
-+	return blkiocg_del_blkio_group(blkg);
-+}
-+
-+#else /* CFQ_GROUP_IOSCHED */
-+static inline void cfq_blkiocg_update_io_add_stats(struct blkio_group *blkg,
-+	struct blkio_group *curr_blkg, bool direction, bool sync) {}
-+
-+static inline void cfq_blkiocg_update_dequeue_stats(struct blkio_group *blkg,
-+			unsigned long dequeue) {}
-+
-+static inline void cfq_blkiocg_update_timeslice_used(struct blkio_group *blkg,
-+			unsigned long time) {}
-+static inline void cfq_blkiocg_set_start_empty_time(struct blkio_group *blkg) {}
-+static inline void cfq_blkiocg_update_io_remove_stats(struct blkio_group *blkg,
-+				bool direction, bool sync) {}
-+static inline void cfq_blkiocg_update_io_merged_stats(struct blkio_group *blkg,
-+		bool direction, bool sync) {}
-+static inline void cfq_blkiocg_update_idle_time_stats(struct blkio_group *blkg)
-+{
-+}
-+static inline void
-+cfq_blkiocg_update_avg_queue_size_stats(struct blkio_group *blkg) {}
-+
-+static inline void
-+cfq_blkiocg_update_set_idle_time_stats(struct blkio_group *blkg) {}
-+
-+static inline void cfq_blkiocg_update_dispatch_stats(struct blkio_group *blkg,
-+				uint64_t bytes, bool direction, bool sync) {}
-+static inline void cfq_blkiocg_update_completion_stats(struct blkio_group *blkg, uint64_t start_time, uint64_t io_start_time, bool direction, bool sync) {}
-+
-+static inline void cfq_blkiocg_add_blkio_group(struct blkio_cgroup *blkcg,
-+			struct blkio_group *blkg, void *key, dev_t dev) {}
-+static inline int cfq_blkiocg_del_blkio_group(struct blkio_group *blkg)
-+{
-+	return 0;
-+}
-+
-+#endif /* CFQ_GROUP_IOSCHED */
-+#endif
