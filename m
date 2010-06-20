@@ -1,78 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab0FTUot (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 16:44:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28965 "EHLO mx1.redhat.com"
+	id S1757154Ab0FTUsy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 16:48:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37013 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757082Ab0FTUos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 16:44:48 -0400
-Date: Sun, 20 Jun 2010 22:42:57 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Louis Rilling <louis.rilling@kerlabs.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org, Daniel Lezcano <dlezcano@fr.ibm.com>,
-       Roland McGrath <roland@redhat.com>
-Subject: Re: [PATCH 6/6] pidns: Support unsharing the pid namespace.
-Message-ID: <20100620204257.GA9156@redhat.com>
-References: <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <m1pqzmqema.fsf_-_@fess.ebiederm.org> <m1wrtuozq6.fsf_-_@fess.ebiederm.org> <20100620201454.GA6902@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100620201454.GA6902@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757079Ab0FTUsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 16:48:53 -0400
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Yang, Bo" <Bo.Yang@lsi.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+       "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+       "akpm@osdl.org" <akpm@osdl.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D09275CE@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+	 <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
+	 <1277046060.5242.18.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3D09275CC@cosmail02.lsi.com>
+	 <1277063250.5242.25.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3D09275CE@cosmail02.lsi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 20 Jun 2010 15:48:44 -0500
+Message-ID: <1277066924.5242.41.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20, Oleg Nesterov wrote:
->
-> On 06/20, Eric W. Biederman wrote:
-> >
-> > Unsharing of the pid namespace unlike unsharing of other namespaces
-> > does not take affect immediately.  Instead it affects the children
-> > created with fork and clone.
->
-> Cough. It is too late to me to even try to understand the changelog.
->
-> Instead I tried to quickly read the patch. Most probably I missed
-> somthing, but still I'd like to ask the quiestion.
->
-> So. If I understand correctly, the patch is simple:
->
-> 	- unshare(CLONE_NEWPID) changes current->proxy->pid_ns,
-> 	  but do not change current->pids[] and thus it doesn't
-> 	  change task_active_pid_ns().
->
-> 	- since copy_process() uses ->proxy->pid_ns for alloc_pid()
-> 	  the new children will fall into the new ns.
->
-> IOW, the caller becomes the "swapper" for the new namespace.
->
-> Correct?
->
-> If yes, I'm afraid nobody except you will understand this magic ;)
->
-> But what if the task T does unshare(CLONE_NEWPID) and then, say,
-> pthread_create() ? Unless I missed something, the new thread won't
-> be able to see T ?
+On Sun, 2010-06-20 at 14:19 -0600, Yang, Bo wrote:
+> Yes.  
 
-and, in this case the exiting sub-namespace init also kills its
-parent?
+OK, can you give me the single changelog for this one commit, then,
+please?
 
-> OK, suppose it does fork() after unshare(), then another fork().
-> In this case the second child lives in the same namespace with
-> init created by the 1st fork, but it is not descendant ? This means
-> in particular that if the new init exits, zap_pid_ns_processes()->
-> do_wait() can't work.
->
-> I hope I missed something, this all is too subtle for me. And I
-> still do not understand 4/6 which adds ns->dead.
+Thanks,
 
-And, forgot to mention. With this change proc_flush_task()->mntput()
-becomes even more wrong.
+James
 
-Oleg.
 
