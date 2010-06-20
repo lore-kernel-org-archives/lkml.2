@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab0FTVZf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 17:25:35 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:57341 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751107Ab0FTVZU (ORCPT
+	id S1754696Ab0FTV0E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 17:26:04 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:56100 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754434Ab0FTVZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 17:25:20 -0400
+	Sun, 20 Jun 2010 17:25:58 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Dan Williams <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, Per Friden <per.friden@stericsson.com>,
-       Jonas Aaberg <jonas.aberg@stericsson.com>,
+Cc: <linux-kernel@vger.kernel.org>, Jonas Aaberg <jonas.aberg@stericsson.com>,
        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 03/19] DMAENGINE: ste_dma40: moved freeing of client owned desc
-Date: Sun, 20 Jun 2010 23:24:59 +0200
-Message-ID: <1277069099-30736-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 09/19] DMAENGINE: ste_dma40: avoid doing unnessecary suspend
+Date: Sun, 20 Jun 2010 23:25:46 +0200
+Message-ID: <1277069146-31040-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,76 +21,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Per Friden <per.friden@stericsson.com>
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-fixed typo and moved freeing of client owned desc to free_dma.
+Avoid doing unnessecary suspend when modifying logical channels.
 
 Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/dma/ste_dma40.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+ drivers/dma/ste_dma40.c |   39 +++++++--------------------------------
+ 1 files changed, 7 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 9655452..d72eff6 100644
+index ebffb53..abbc1b6 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -374,7 +374,6 @@ static void d40_desc_remove(struct d40_desc *d40d)
+@@ -595,6 +595,7 @@ static void d40_config_set_event(struct d40_chan *d40c, bool do_enable)
+ 	u32 val;
+ 	unsigned long flags;
  
- static struct d40_desc *d40_desc_get(struct d40_chan *d40c)
++	/* Notice, that disable requires the physical channel to be stopped */
+ 	if (do_enable)
+ 		val = D40_ACTIVATE_EVENTLINE;
+ 	else
+@@ -740,18 +741,10 @@ static dma_cookie_t d40_tx_submit(struct dma_async_tx_descriptor *tx)
+ 
+ static int d40_start(struct d40_chan *d40c)
  {
--	struct d40_desc *desc;
- 	struct d40_desc *d;
- 	struct d40_desc *_d;
+-	int err;
+-
+-	if (d40c->log_num != D40_PHY_CHAN) {
+-		err = d40_channel_execute_command(d40c, D40_DMA_SUSPEND_REQ);
+-		if (err)
+-			return err;
++	if (d40c->log_num != D40_PHY_CHAN)
+ 		d40_config_set_event(d40c, true);
+-	}
+-
+-	err = d40_channel_execute_command(d40c, D40_DMA_RUN);
  
-@@ -583,8 +582,6 @@ done:
- static void d40_term_all(struct d40_chan *d40c)
- {
- 	struct d40_desc *d40d;
--	struct d40_desc *d;
--	struct d40_desc *_d;
+-	return err;
++	return d40_channel_execute_command(d40c, D40_DMA_RUN);
+ }
  
- 	/* Release active descriptors */
- 	while ((d40d = d40_first_active_get(d40c))) {
-@@ -602,15 +599,6 @@ static void d40_term_all(struct d40_chan *d40c)
- 		d40_desc_free(d40c, d40d);
+ static struct d40_desc *d40_queue_start(struct d40_chan *d40c)
+@@ -1340,7 +1333,6 @@ static bool d40_is_paused(struct d40_chan *d40c)
+ 	void __iomem *active_reg;
+ 	u32 status;
+ 	u32 event;
+-	int res;
+ 
+ 	spin_lock_irqsave(&d40c->lock, flags);
+ 
+@@ -1359,10 +1351,6 @@ static bool d40_is_paused(struct d40_chan *d40c)
+ 		goto _exit;
  	}
  
--	/* Release client owned descriptors */
--	if (!list_empty(&d40c->client))
--		list_for_each_entry_safe(d, _d, &d40c->client, node) {
--			d40_pool_lli_free(d);
--			d40_desc_remove(d);
--			/* Return desc to free-list */
--			d40_desc_free(d40c, d40d);
--		}
+-	res = d40_channel_execute_command(d40c, D40_DMA_SUSPEND_REQ);
+-	if (res != 0)
+-		goto _exit;
 -
- 	d40_lcla_id_put(d40c, &d40c->base->lcla_pool,
- 			d40c->lcla.src_id);
- 	d40_lcla_id_put(d40c, &d40c->base->lcla_pool,
-@@ -1240,10 +1228,22 @@ static int d40_free_dma(struct d40_chan *d40c)
- 	u32 event, dir;
- 	struct d40_phy_res *phy = d40c->phy_chan;
- 	bool is_src;
-+	struct d40_desc *d;
-+	struct d40_desc *_d;
-+
+ 	if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
+ 	    d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM)
+ 		event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dst_dev_type);
+@@ -1379,12 +1367,6 @@ static bool d40_is_paused(struct d40_chan *d40c)
  
- 	/* Terminate all queued and active transfers */
- 	d40_term_all(d40c);
+ 	if (status != D40_DMA_RUN)
+ 		is_paused = true;
+-
+-	/* Resume the other logical channels if any */
+-	if (d40_chan_has_events(d40c))
+-		res = d40_channel_execute_command(d40c,
+-						  D40_DMA_RUN);
+-
+ _exit:
+ 	spin_unlock_irqrestore(&d40c->lock, flags);
+ 	return is_paused;
+@@ -1430,20 +1412,13 @@ static int d40_resume(struct dma_chan *chan)
  
-+	/* Release client owned descriptors */
-+	if (!list_empty(&d40c->client))
-+		list_for_each_entry_safe(d, _d, &d40c->client, node) {
-+			d40_pool_lli_free(d);
-+			d40_desc_remove(d);
-+			/* Return desc to free-list */
-+			d40_desc_free(d40c, d);
-+		}
-+
- 	if (phy == NULL) {
- 		dev_err(&d40c->chan.dev->device, "[%s] phy == null\n",
- 			__func__);
+ 	spin_lock_irqsave(&d40c->lock, flags);
+ 
+-	if (d40c->log_num != D40_PHY_CHAN) {
+-		res = d40_channel_execute_command(d40c, D40_DMA_SUSPEND_REQ);
+-		if (res)
+-			goto out;
+-
+-		/* If bytes left to transfer or linked tx resume job */
+-		if (d40_residue(d40c) || d40_tx_is_linked(d40c)) {
++	/* If bytes left to transfer or linked tx resume job */
++	if (d40_residue(d40c) || d40_tx_is_linked(d40c)) {
++		if (d40c->log_num != D40_PHY_CHAN)
+ 			d40_config_set_event(d40c, true);
+-			res = d40_channel_execute_command(d40c, D40_DMA_RUN);
+-		}
+-	} else if (d40_residue(d40c) || d40_tx_is_linked(d40c))
+ 		res = d40_channel_execute_command(d40c, D40_DMA_RUN);
++	}
+ 
+-out:
+ 	spin_unlock_irqrestore(&d40c->lock, flags);
+ 	return res;
+ }
 -- 
 1.6.3.3
 
