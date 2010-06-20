@@ -1,125 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab0FTOSc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 10:18:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36861 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754609Ab0FTOS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 10:18:29 -0400
-Subject: Re: [PATCH 2/3] SCSI: Support Type C RAID controller
-From: James Bottomley <James.Bottomley@suse.de>
-To: nick.cheng@areca.com.tw
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <2A012083FB99432B9F10199BDD454867@areca4e4f859d4>
-References: <2A012083FB99432B9F10199BDD454867@areca4e4f859d4>
+	id S1754901Ab0FTO0S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 10:26:18 -0400
+Received: from amavis-smtp.knology.net ([75.76.199.6]:43896 "EHLO
+	amavis-smtp.knology.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753570Ab0FTO0P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 10:26:15 -0400
+Subject: Re: PROBLEM: SIS7019 stops recording after 42 min
+From: David Dillow <dave@thedillows.org>
+To: linux@schou.dk
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+In-Reply-To: <AANLkTimwZFNLBNJWODyzKXwx9CbIorg3OCA53XZchkeN@mail.gmail.com>
+References: <AANLkTimO5PXmJiIPDw82MTA53mLSl-OC0e1SOEh7v8pH@mail.gmail.com>
+	 <1276972298.22889.16.camel@obelisk.thedillows.org>
+	 <AANLkTimwZFNLBNJWODyzKXwx9CbIorg3OCA53XZchkeN@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 20 Jun 2010 09:18:18 -0500
-Message-ID: <1277043498.5242.12.camel@mulgrave.site>
+Date: Sun, 20 Jun 2010 10:26:10 -0400
+Message-ID: <1277043970.22889.45.camel@obelisk.thedillows.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-8.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-18 at 15:39 +0800, Nick Cheng wrote:
-> 1. To support Type C RAID controller, ACB_ADAPTER_TYPE_C, i.e. PCI device
-> ID: 0x1880.
+Please keep me on the cc list, I'll see your message sooner in my Inbox
+than my mailing list folders.
 
-OK, got patch 1/3 successfully, but after I apply it, this one doesn't
-apply:
+On Sun, 2010-06-20 at 08:20 +0200, Hans Schou wrote:
+> > On Sat, 2010-06-19 at 16:13 +0200, Hans Schou wrote:
+> >> Hi
+> >>
+> >> I have a problem with recording sound when using the sound chip
+> >> SIS7019 with both kernel 2.6.26 and 2.6.34. After recording about 42
+> >> minutes it kind a stops recording, more precisely it is taking a pause
+> >> of exactly 10 seconds between each reading.
+> >>
+> >> As recorder I have tried several programs and all of them fails after
+> >> 42 minutes. Some programs uses Alsa and some uses the old deprecated
+> >> method. In this example I have logged sox rec.
+> >>
+> >> Recording method in a script:
+> >>   strace -tt -o strace.log rec -c 1 -r 44100 -2 sox.wav &
+> >>   sleep 3000
+> >>   kill $?
+> >
+> > I think the answer is no, but to be sure -- are you talking directly to
+> > the hardware device, or are you going through pulseaudio?
+> 
+> Eh? No to what? Alsa?
 
-jejb@mulgrave:~/git/scsi-misc-2.6> patch -p2 < ~/tmp.diff
-patching file drivers/scsi/arcmsr/arcmsr.h
-Hunk #9 succeeded at 599 with fuzz 2.
-Hunk #10 FAILED at 619.
+Pulseaudio.
 
-This rejection, for instance is because there's an indent before the
-#else and #endif in the patch which isn't in the file ... that lack of
-indent dates back to the time the driver was first imported, so you
-can't be patching from the current kernel to this.
+>  I am not really sure. In strace I can see 'rec'
+> uses ioclt which could implies that it is talking directly to
+> hardware.
 
-1 out of 10 hunks FAILED -- saving rejects to file
-drivers/scsi/arcmsr/arcmsr.h.rej
-patching file drivers/scsi/arcmsr/arcmsr_hba.c
-Hunk #3 FAILED at 121.
-Hunk #13 FAILED at 448.
-Hunk #14 FAILED at 475.
-Hunk #15 FAILED at 502.
-Hunk #16 succeeded at 644 (offset 1 line).
-Hunk #17 succeeded at 780 (offset 1 line).
-Hunk #18 FAILED at 794.
-Hunk #19 succeeded at 811 (offset 1 line).
-Hunk #20 succeeded at 844 (offset 1 line).
-Hunk #21 succeeded at 856 with fuzz 1 (offset 1 line).
-Hunk #22 succeeded at 880 (offset 1 line).
-Hunk #23 succeeded at 923 (offset 1 line).
-Hunk #24 succeeded at 940 (offset 1 line).
-Hunk #25 succeeded at 972 (offset 1 line).
-Hunk #26 succeeded at 986 (offset 1 line).
-Hunk #27 succeeded at 1009 (offset 1 line).
-Hunk #28 succeeded at 1036 (offset 1 line).
-Hunk #29 succeeded at 1047 (offset 1 line).
-Hunk #30 succeeded at 1088 (offset 1 line).
-Hunk #31 succeeded at 1119 (offset 1 line).
-Hunk #32 succeeded at 1180 (offset 1 line).
-Hunk #33 FAILED at 1197.
-Hunk #34 FAILED at 1236.
-Hunk #35 succeeded at 1263 (offset 1 line).
-Hunk #36 succeeded at 1278 (offset 1 line).
-Hunk #37 succeeded at 1289 (offset 1 line).
-Hunk #38 succeeded at 1310 (offset 1 line).
-Hunk #39 succeeded at 1323 (offset 1 line).
-Hunk #40 succeeded at 1355 (offset 1 line).
-Hunk #41 succeeded at 1380 (offset 1 line).
-Hunk #42 succeeded at 1409 (offset 1 line).
-Hunk #43 succeeded at 1438 (offset 1 line).
-Hunk #44 succeeded at 1463 (offset 1 line).
-Hunk #45 succeeded at 1552 (offset 1 line).
-Hunk #46 succeeded at 1596 (offset 1 line).
-Hunk #47 succeeded at 1665 (offset 2 lines).
-Hunk #48 succeeded at 1734 with fuzz 1 (offset 2 lines).
-Hunk #49 succeeded at 1778 (offset 3 lines).
-Hunk #50 succeeded at 2194 (offset 3 lines).
-Hunk #51 succeeded at 2220 (offset 3 lines).
-Hunk #52 FAILED at 2294.
-Hunk #53 succeeded at 2344 (offset 3 lines).
-Hunk #54 succeeded at 2421 (offset 3 lines).
-Hunk #55 succeeded at 2432 (offset 3 lines).
-Hunk #56 FAILED at 2459.
-Hunk #57 FAILED at 2474.
-Hunk #58 FAILED at 2522.
-Hunk #59 succeeded at 2546 (offset 3 lines).
-Hunk #60 succeeded at 2567 (offset 3 lines).
-Hunk #61 succeeded at 2585 (offset 3 lines).
-Hunk #62 succeeded at 2606 (offset 3 lines).
-Hunk #63 succeeded at 2625 (offset 3 lines).
-Hunk #64 succeeded at 2634 (offset 3 lines).
-Hunk #65 succeeded at 2681 (offset 3 lines).
-Hunk #66 succeeded at 2729 (offset 3 lines).
-Hunk #67 succeeded at 2762 (offset 3 lines).
-Hunk #68 succeeded at 2773 (offset 3 lines).
-Hunk #69 succeeded at 2784 (offset 3 lines).
-Hunk #70 succeeded at 2811 (offset 3 lines).
-Hunk #71 succeeded at 2838 (offset 3 lines).
-Hunk #72 succeeded at 2858 (offset 3 lines).
-Hunk #73 FAILED at 2870.
-Hunk #74 FAILED at 2892.
-Hunk #75 FAILED at 2967.
-Hunk #76 FAILED at 2992.
-Hunk #77 succeeded at 3028 (offset 4 lines).
-Hunk #78 succeeded at 3052 with fuzz 1 (offset 4 lines).
-Hunk #79 FAILED at 3070.
-Hunk #80 succeeded at 3083 (offset 4 lines).
-Hunk #81 succeeded at 3151 (offset 4 lines).
-16 out of 81 hunks FAILED -- saving rejects to file
-drivers/scsi/arcmsr/arcmsr_hba.c.rej
+Probably, but I'm not familiar enough with the library/user-space side
+of alsa to know how it talks to plugins. I expect you are correct,
+though.
 
-Can you redo 2/3 and 3/3 so they apply in sequence on 2.6.35-rc3 with
-1/3 already applied?
+> > While rec is running, can you capture the configuration using
+> > head -1000 /proc/asound/card0/pcm0c/sub0/*
+> 
+> Below was captured while running:
+>    arecord -c 1 -r 44100 -f S16 arec01.wav
 
-Thanks,
+You caught the correct files, yes. Did that command produce 10 second
+pauses? If not, then I need to see the same information from the rec
+command you were using to reproduce the issue before. It may be easier
+to just run the rec command for a moment to collect the data rather than
+wait the 40+ minutes to see if arecord also demonstrates the issue.
 
-James
+> I got a strange error message from arecord while recording at rate 44100:
+> overrun!!! (at least 0.188 ms long)
+> overrun!!! (at least 0.190 ms long)
+> overrun!!! (at least 0.191 ms long)
+> 
+> Could this be a clue?
 
+Perhaps; I'm guessing that rec (sox) is using the mmap interface, and
+I've not done much with that -- though perhaps there is a bug in sox's
+overrun handling. You could enable SND_PCM_XRUN_DEBUG to see if overruns
+are happening when sox starts taking 10 seconds.
+
+Getting overruns on SiS 550 based devices isn't entirely surprising, as
+it doesn't have a huge amount of horsepower or memory. If you have too
+much going on in the background, it is very easy to not have enough time
+to processes all of the captured data, especially if you are running
+short period/buffer sizes.
+
+> The error does occur with rate 8000 8bit (the default).
+
+Do you mean 'does not occur'? That may be more expected -- 8khz/8bit has
+approximately 9% of the data as 44.1khz/16bit.
+
+> > Can you try using arecord? You can use options to tell it how to
+> > configure the PCM. Especially interesting will be to configure 2 periods
+> > per buffer vs whatever rec uses. 2 periods per buffer uses the hardware
+> > interrupts to clock out periods, where as 3+ uses a more complex
+> > mechanism. You can also use -M to use mmap vs not.
+> 
+> Options like this?
+> strace -tt -o arec.log arecord -c 1 -r 44100 -f S16 -M arec.wav
+
+Yes, for testing if the mmap interface is the problem. You can also use
+-v to have it print more information, including the source of the data
+(hw vs Pulseaudio). To check 1 period vs 2, you can use the
+--period-size/--buffer-size options. I seem to recall that there is a
+bug lurking around there somewhere, so you should check that you got 1
+period using -v or the proc files. You may have to fallback to the -F/-B
+options and convert samples to microseconds.
+
+Dave
 
