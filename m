@@ -1,222 +1,1170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab0FTItq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 04:49:46 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:32930 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749Ab0FTIto (ORCPT
+	id S1756284Ab0FTI4z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 04:56:55 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:42618 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755872Ab0FTI4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 04:49:44 -0400
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Louis Rilling <louis.rilling@kerlabs.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org, Daniel Lezcano <dlezcano@fr.ibm.com>
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com>
-	<20100617212003.GA4182@redhat.com>
-	<20100618082033.GD16877@hawkmoon.kerlabs.com>
-	<20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com>
-	<20100618173320.GG16877@hawkmoon.kerlabs.com>
-	<20100618175541.GA13680@redhat.com>
-	<20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com>
-	<m1pqzmqema.fsf_-_@fess.ebiederm.org>
+	Sun, 20 Jun 2010 04:56:52 -0400
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org,
+       Kexec Mailing List <kexec@lists.infradead.org>
+References: <20100619132235.GA24200@basil.fritz.box>
+	<20100619182419.GA22079@merkur.ravnborg.org>
+	<20100619195345.GT18946@basil.fritz.box>
+	<20100620082315.GA23188@merkur.ravnborg.org>
 From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Sun, 20 Jun 2010 01:49:37 -0700
-In-Reply-To: <m1pqzmqema.fsf_-_@fess.ebiederm.org> (Eric W. Biederman's message of "Sun\, 20 Jun 2010 01\:42\:37 -0700")
-Message-ID: <m1wrtuozq6.fsf_-_@fess.ebiederm.org>
+Date: Sun, 20 Jun 2010 01:56:40 -0700
+In-Reply-To: <20100620082315.GA23188@merkur.ravnborg.org> (Sam Ravnborg's message of "Sun\, 20 Jun 2010 10\:23\:15 +0200")
+Message-ID: <m1bpb6ozef.fsf@fess.ebiederm.org>
 User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
 X-SA-Exim-Connect-IP: 67.188.5.249
-X-SA-Exim-Rcpt-To: oleg@redhat.com, dlezcano@fr.ibm.com, linux-kernel@vger.kernel.org, containers@lists.osdl.org, xemul@openvz.org, louis.rilling@kerlabs.com, akpm@linux-foundation.org
+X-SA-Exim-Rcpt-To: sam@ravnborg.org, kexec@lists.infradead.org, linux-kernel@vger.kernel.org, akpm@linux-foundation.org, andi@firstfloor.org
 X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
+	*      [URIs: infradead.org]
+	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
 	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*      [sa07 0; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
+	*  1.0 XM_Sft_Co_L33T XM_Sft_Co_L33T
 	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: [PATCH 6/6] pidns: Support unsharing the pid namespace.
+X-Spam-DCC: ; sa07 0; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ****;Sam Ravnborg <sam@ravnborg.org>
+X-Spam-Relay-Country: _RELAYCOUNTRY_
+Subject: Re: [PATCH] kexec: export kexec.h to userspace
 X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
 X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sam Ravnborg <sam@ravnborg.org> writes:
 
-- Allow CLONEW_NEWPID into unshare.
-- Pass both nsproxy->pid_ns and task_active_pid_ns to copy_pid_ns
-  As they can now be different.
+>>From 23dc7f6d65a5bdcd05f2346b9f5cdaf232758db3 Mon Sep 17 00:00:00 2001
+> From: Sam Ravnborg <sam@ravnborg.org>
+> Date: Sat, 19 Jun 2010 20:11:59 +0200
+> Subject: [PATCH] kexec: export kexec.h to userspace
+>
+> kexec_load is a system call and it needs a header
+> file with its input arguments.
+>
+> Split kexec.h in two parts:
+> kexec.h - the userspace visible definitions
+> kexec_kernel.h - the kernel definitions
+>
+> Fix up all files that include kexec.h to include kexec_kernel.h
+> In a few cases an unused include was dropped.
 
-Unsharing of the pid namespace unlike unsharing of other namespaces
-does not take affect immediately.  Instead it affects the children
-created with fork and clone.  The first of these children becomes the init
-process of the new pid namespace, the rest become oddball children
-of pid 0.  From the point of view of the new pid namespace the process
-that created it is pid 0, as it's pid does not map.
+Can we please do this the other way around and create a kexec_user.h?
+Having a an xxx_user.h is a pattern we already have in the kernel.
+I can't find a signle xxxx_kernel.h
 
-A couple of different semantics were considered but this one was
-settled on because it is easy to implement and it is usable from
-pam modules.  The core reasons for the existence of unshare.
+If we can modify the userspace /sbin/kexec code to use this file (or
+at least a copy of it).  I will feel a lot more comfortable with this
+patch as the code will actually be tested.
 
-I took a survey of the callers of pam modules and the following
-appears to be a representative sample of their logic.
-{
-	setup stuff include pam
-	child = fork();
-	if (!child) {
-		setuid()
-                exec /bin/bash
-        }
-        waitpid(child);
+Oh, and please copy the kexec list on patches like this as well.
 
-        pam and other cleanup
-}
+I like the idea of this patch.  I just don't trust the implementation
+yet.
 
-As you can see there is a fork to create the unprivileged user
-space process.  Which means that the unprivileged user space
-process will appear as pid 1 in the new pid namespace.  Further
-most login processes do not cope with extraneous children which
-means shifting the duty of reaping extraneous child process to
-the creator of those extraneous children makes the system more
-comprehensible.
-
-The practical reason for this set of pid namespace semantics is
-that it is simple to implement and verify they work correctly.
-Whereas an implementation that requres changing the struct
-pid on a process comes with a lot more races and pain.  Not
-the least of which is that glibc caches getpid().
-
-These semantics are implemented by having two notions
-of the pid namespace of a proces.  There is task_active_pid_ns
-which is the pid namspace the process was created with
-and the pid namespace that all pids are presented to
-that process in.  The task_active_pid_ns is stored
-in the struct pid of the task.
-
-There there is the pid namespace that will be used for children
-that pid namespace is stored in task->nsproxy->pid_ns.
-
-There is one really nasty corner case in all of this.  Which
-pid namespace are you in if your parent unshared it's pid
-namespace and then on clone you also unshare the pid namespace.
-To me there are only two possible answers.  Either the cases
-is so bizarre and we deny it completely.  or the new pid
-namespace is a descendent of our parent's active pid namespace,
-and we ignore the task->nsproxy->pid_ns.
-
-To that end I have modified copy_pid_ns to take both of these
-pid namespaces.  The active pid namespace and the default
-pid namespace of children.  Allowing me to simply implement
-unsharing a pid namespace in clone after already unsharing
-a pid namespace with unshare.
-
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- include/linux/pid_namespace.h |   11 ++++++-----
- kernel/fork.c                 |    3 ++-
- kernel/nsproxy.c              |    5 +++--
- kernel/pid_namespace.c        |    7 ++++---
- 4 files changed, 15 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-index b447d37..95b1d8f 100644
---- a/include/linux/pid_namespace.h
-+++ b/include/linux/pid_namespace.h
-@@ -43,7 +43,8 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
- 	return ns;
- }
- 
--extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *ns);
-+extern struct pid_namespace *copy_pid_ns(unsigned long flags,
-+	struct pid_namespace *default_ns, struct pid_namespace *active_ns);
- extern void free_pid_ns(struct kref *kref);
- extern void zap_pid_ns_processes(struct pid_namespace *pid_ns);
- 
-@@ -61,12 +62,12 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
- 	return ns;
- }
- 
--static inline struct pid_namespace *
--copy_pid_ns(unsigned long flags, struct pid_namespace *ns)
-+static inline struct pid_namespace *copy_pid_ns(unsigned long flags,
-+	struct pid_namespace *default_ns, struct pid_namespace *active_ns)
- {
- 	if (flags & CLONE_NEWPID)
--		ns = ERR_PTR(-EINVAL);
--	return ns;
-+		return ERR_PTR(-EINVAL);
-+	return default_ns;
- }
- 
- static inline void put_pid_ns(struct pid_namespace *ns)
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 3c2501d..b452825 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1628,7 +1628,8 @@ SYSCALL_DEFINE1(unshare, unsigned long, unshare_flags)
- 	err = -EINVAL;
- 	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
- 				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
--				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
-+				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET|
-+				CLONE_NEWPID))
- 		goto bad_unshare_out;
- 
- 	/*
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index f74e6c0..6ffa36d 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -81,7 +81,8 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 		goto out_ipc;
- 	}
- 
--	new_nsp->pid_ns = copy_pid_ns(flags, task_active_pid_ns(tsk));
-+	new_nsp->pid_ns = copy_pid_ns(flags, tsk->nsproxy->pid_ns,
-+						task_active_pid_ns(tsk));
- 	if (IS_ERR(new_nsp->pid_ns)) {
- 		err = PTR_ERR(new_nsp->pid_ns);
- 		goto out_pid;
-@@ -185,7 +186,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
- 	int err = 0;
- 
- 	if (!(unshare_flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
--			       CLONE_NEWNET)))
-+			       CLONE_NEWNET | CLONE_NEWPID)))
- 		return 0;
- 
- 	if (!capable(CAP_SYS_ADMIN))
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index 34a251d..7225c83 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -120,13 +120,14 @@ static void destroy_pid_namespace(struct pid_namespace *ns)
- 	kmem_cache_free(pid_ns_cachep, ns);
- }
- 
--struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *old_ns)
-+struct pid_namespace *copy_pid_ns(unsigned long flags,
-+	struct pid_namespace *default_ns, struct pid_namespace *active_ns)
- {
- 	if (!(flags & CLONE_NEWPID))
--		return get_pid_ns(old_ns);
-+		return get_pid_ns(default_ns);
- 	if (flags & (CLONE_THREAD|CLONE_PARENT))
- 		return ERR_PTR(-EINVAL);
--	return create_pid_namespace(old_ns);
-+	return create_pid_namespace(active_ns);
- }
- 
- void free_pid_ns(struct kref *kref)
--- 
-1.6.5.2.143.g8cc62
-
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+> Acked-by: Andi Kleen <andi@firstfloor.org>
+> Cc: Eric Biederman <ebiederm@xmission.com>
+> ---
+>
+> Changes:
+> - Added ack from Andi. (Based on "that would work for me too" comment)
+> - Modified pattern in MAINTAINERS, thanks to Joe Perches
+>
+>
+> But it would be nice with a bit more comments on the
+> split in two files...
+>
+> 	Sam
+>
+>  MAINTAINERS                                   |    2 +-
+>  arch/arm/kernel/machine_kexec.c               |    2 +-
+>  arch/arm/kernel/traps.c                       |    2 +-
+>  arch/ia64/kernel/crash.c                      |    2 +-
+>  arch/ia64/kernel/efi.c                        |    2 +-
+>  arch/ia64/kernel/machine_kexec.c              |    2 +-
+>  arch/ia64/kernel/setup.c                      |    2 +-
+>  arch/ia64/kernel/smp.c                        |    2 +-
+>  arch/ia64/mm/init.c                           |    2 +-
+>  arch/microblaze/kernel/prom.c                 |    2 +-
+>  arch/mips/kernel/machine_kexec.c              |    2 +-
+>  arch/powerpc/kernel/crash.c                   |    2 +-
+>  arch/powerpc/kernel/machine_kexec.c           |    2 +-
+>  arch/powerpc/kernel/machine_kexec_32.c        |    2 +-
+>  arch/powerpc/kernel/machine_kexec_64.c        |    2 +-
+>  arch/powerpc/kernel/prom.c                    |    2 +-
+>  arch/powerpc/kernel/traps.c                   |    2 +-
+>  arch/powerpc/platforms/cell/ras.c             |    2 +-
+>  arch/powerpc/platforms/embedded6xx/gamecube.c |    2 +-
+>  arch/powerpc/platforms/embedded6xx/wii.c      |    2 +-
+>  arch/powerpc/platforms/iseries/setup.c        |    2 +-
+>  arch/s390/kernel/crash.c                      |    2 +-
+>  arch/s390/kernel/machine_kexec.c              |    2 +-
+>  arch/sh/kernel/machine_kexec.c                |    2 +-
+>  arch/sh/kernel/reboot.c                       |    2 +-
+>  arch/sh/kernel/setup.c                        |    2 +-
+>  arch/sh/kernel/traps_32.c                     |    2 +-
+>  arch/x86/kernel/crash.c                       |    2 +-
+>  arch/x86/kernel/dumpstack.c                   |    2 +-
+>  arch/x86/kernel/dumpstack_32.c                |    1 -
+>  arch/x86/kernel/dumpstack_64.c                |    1 -
+>  arch/x86/kernel/machine_kexec_32.c            |    2 +-
+>  arch/x86/kernel/machine_kexec_64.c            |    2 +-
+>  arch/x86/kernel/setup.c                       |    2 +-
+>  arch/x86/kernel/setup_percpu.c                |    1 -
+>  arch/x86/kernel/traps.c                       |    1 -
+>  arch/x86/mm/numa_32.c                         |    1 -
+>  drivers/base/cpu.c                            |    2 +-
+>  include/linux/Kbuild                          |    1 +
+>  include/linux/crash_dump.h                    |    1 -
+>  include/linux/kexec.h                         |  200 ++-----------------------
+>  include/linux/kexec_kernel.h                  |  193 ++++++++++++++++++++++++
+>  init/initramfs.c                              |    2 +-
+>  kernel/kexec.c                                |    2 +-
+>  kernel/ksysfs.c                               |    2 +-
+>  kernel/panic.c                                |    2 +-
+>  kernel/printk.c                               |    2 +-
+>  kernel/sys.c                                  |    2 +-
+>  48 files changed, 243 insertions(+), 235 deletions(-)
+>  create mode 100644 include/linux/kexec_kernel.h
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 6d119c9..ae8526b 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -3325,7 +3325,7 @@ M:	Eric Biederman <ebiederm@xmission.com>
+>  W:	http://ftp.kernel.org/pub/linux/kernel/people/horms/kexec-tools/
+>  L:	kexec@lists.infradead.org
+>  S:	Maintained
+> -F:	include/linux/kexec.h
+> +F:	include/linux/kexec*
+>  F:	kernel/kexec.c
+>  
+>  KEYS/KEYRINGS:
+> diff --git a/arch/arm/kernel/machine_kexec.c b/arch/arm/kernel/machine_kexec.c
+> index 598ca61..c5ac5b3 100644
+> --- a/arch/arm/kernel/machine_kexec.c
+> +++ b/arch/arm/kernel/machine_kexec.c
+> @@ -3,7 +3,7 @@
+>   */
+>  
+>  #include <linux/mm.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/delay.h>
+>  #include <linux/reboot.h>
+>  #include <linux/io.h>
+> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+> index 1621e53..b01edc8 100644
+> --- a/arch/arm/kernel/traps.c
+> +++ b/arch/arm/kernel/traps.c
+> @@ -20,7 +20,7 @@
+>  #include <linux/hardirq.h>
+>  #include <linux/kdebug.h>
+>  #include <linux/module.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/delay.h>
+>  #include <linux/init.h>
+>  
+> diff --git a/arch/ia64/kernel/crash.c b/arch/ia64/kernel/crash.c
+> index b942f40..0566d49 100644
+> --- a/arch/ia64/kernel/crash.c
+> +++ b/arch/ia64/kernel/crash.c
+> @@ -12,7 +12,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/crash_dump.h>
+>  #include <linux/bootmem.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/elfcore.h>
+>  #include <linux/sysctl.h>
+>  #include <linux/init.h>
+> diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
+> index a0f0019..c74e94a 100644
+> --- a/arch/ia64/kernel/efi.c
+> +++ b/arch/ia64/kernel/efi.c
+> @@ -29,7 +29,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/time.h>
+>  #include <linux/efi.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/mm.h>
+>  
+>  #include <asm/io.h>
+> diff --git a/arch/ia64/kernel/machine_kexec.c b/arch/ia64/kernel/machine_kexec.c
+> index 3d3aeef..5ac58da 100644
+> --- a/arch/ia64/kernel/machine_kexec.c
+> +++ b/arch/ia64/kernel/machine_kexec.c
+> @@ -11,7 +11,7 @@
+>   */
+>  
+>  #include <linux/mm.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/cpu.h>
+>  #include <linux/irq.h>
+>  #include <linux/efi.h>
+> diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
+> index 41ae6a5..f37a646 100644
+> --- a/arch/ia64/kernel/setup.c
+> +++ b/arch/ia64/kernel/setup.c
+> @@ -43,7 +43,7 @@
+>  #include <linux/initrd.h>
+>  #include <linux/pm.h>
+>  #include <linux/cpufreq.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/crash_dump.h>
+>  
+>  #include <asm/machvec.h>
+> diff --git a/arch/ia64/kernel/smp.c b/arch/ia64/kernel/smp.c
+> index dabeefe..248a43c 100644
+> --- a/arch/ia64/kernel/smp.c
+> +++ b/arch/ia64/kernel/smp.c
+> @@ -30,7 +30,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/efi.h>
+>  #include <linux/bitops.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  
+>  #include <asm/atomic.h>
+>  #include <asm/current.h>
+> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+> index ed41759..b478826 100644
+> --- a/arch/ia64/mm/init.c
+> +++ b/arch/ia64/mm/init.c
+> @@ -19,7 +19,7 @@
+>  #include <linux/swap.h>
+>  #include <linux/proc_fs.h>
+>  #include <linux/bitops.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  
+>  #include <asm/dma.h>
+>  #include <asm/io.h>
+> diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/prom.c
+> index a15ef6d..31ea314 100644
+> --- a/arch/microblaze/kernel/prom.c
+> +++ b/arch/microblaze/kernel/prom.c
+> @@ -26,7 +26,7 @@
+>  #include <linux/initrd.h>
+>  #include <linux/bitops.h>
+>  #include <linux/module.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/debugfs.h>
+>  #include <linux/irq.h>
+>  #include <linux/lmb.h>
+> diff --git a/arch/mips/kernel/machine_kexec.c b/arch/mips/kernel/machine_kexec.c
+> index 85beb9b..973739d 100644
+> --- a/arch/mips/kernel/machine_kexec.c
+> +++ b/arch/mips/kernel/machine_kexec.c
+> @@ -6,7 +6,7 @@
+>   * Version 2.  See the file COPYING for more details.
+>   */
+>  
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/mm.h>
+>  #include <linux/delay.h>
+>  
+> diff --git a/arch/powerpc/kernel/crash.c b/arch/powerpc/kernel/crash.c
+> index b46f2e0..a3010bc 100644
+> --- a/arch/powerpc/kernel/crash.c
+> +++ b/arch/powerpc/kernel/crash.c
+> @@ -15,7 +15,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/smp.h>
+>  #include <linux/reboot.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/bootmem.h>
+>  #include <linux/crash_dump.h>
+>  #include <linux/delay.h>
+> diff --git a/arch/powerpc/kernel/machine_kexec.c b/arch/powerpc/kernel/machine_kexec.c
+> index bb3d893..801e964 100644
+> --- a/arch/powerpc/kernel/machine_kexec.c
+> +++ b/arch/powerpc/kernel/machine_kexec.c
+> @@ -9,7 +9,7 @@
+>   * Version 2.  See the file COPYING for more details.
+>   */
+>  
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/reboot.h>
+>  #include <linux/threads.h>
+>  #include <linux/lmb.h>
+> diff --git a/arch/powerpc/kernel/machine_kexec_32.c b/arch/powerpc/kernel/machine_kexec_32.c
+> index ae63a96..95085a1 100644
+> --- a/arch/powerpc/kernel/machine_kexec_32.c
+> +++ b/arch/powerpc/kernel/machine_kexec_32.c
+> @@ -9,7 +9,7 @@
+>   * Version 2.  See the file COPYING for more details.
+>   */
+>  
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/mm.h>
+>  #include <linux/string.h>
+>  #include <asm/cacheflush.h>
+> diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
+> index 26f9900..038b871 100644
+> --- a/arch/powerpc/kernel/machine_kexec_64.c
+> +++ b/arch/powerpc/kernel/machine_kexec_64.c
+> @@ -10,7 +10,7 @@
+>   */
+>  
+>  
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/smp.h>
+>  #include <linux/thread_info.h>
+>  #include <linux/init_task.h>
+> diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+> index 05131d6..8dec91d 100644
+> --- a/arch/powerpc/kernel/prom.c
+> +++ b/arch/powerpc/kernel/prom.c
+> @@ -28,7 +28,7 @@
+>  #include <linux/initrd.h>
+>  #include <linux/bitops.h>
+>  #include <linux/module.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/debugfs.h>
+>  #include <linux/irq.h>
+>  #include <linux/lmb.h>
+> diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+> index 25fc339..e82321d 100644
+> --- a/arch/powerpc/kernel/traps.c
+> +++ b/arch/powerpc/kernel/traps.c
+> @@ -29,7 +29,7 @@
+>  #include <linux/prctl.h>
+>  #include <linux/delay.h>
+>  #include <linux/kprobes.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/backlight.h>
+>  #include <linux/bug.h>
+>  #include <linux/kdebug.h>
+> diff --git a/arch/powerpc/platforms/cell/ras.c b/arch/powerpc/platforms/cell/ras.c
+> index 1d3c4ef..2839cbd 100644
+> --- a/arch/powerpc/platforms/cell/ras.c
+> +++ b/arch/powerpc/platforms/cell/ras.c
+> @@ -14,7 +14,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/smp.h>
+>  #include <linux/reboot.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/crash_dump.h>
+>  
+>  #include <asm/kexec.h>
+> diff --git a/arch/powerpc/platforms/embedded6xx/gamecube.c b/arch/powerpc/platforms/embedded6xx/gamecube.c
+> index 1106fd9..6b51478 100644
+> --- a/arch/powerpc/platforms/embedded6xx/gamecube.c
+> +++ b/arch/powerpc/platforms/embedded6xx/gamecube.c
+> @@ -15,7 +15,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/init.h>
+>  #include <linux/irq.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/seq_file.h>
+>  #include <linux/of_platform.h>
+>  
+> diff --git a/arch/powerpc/platforms/embedded6xx/wii.c b/arch/powerpc/platforms/embedded6xx/wii.c
+> index 174a04a..8a46583 100644
+> --- a/arch/powerpc/platforms/embedded6xx/wii.c
+> +++ b/arch/powerpc/platforms/embedded6xx/wii.c
+> @@ -18,7 +18,7 @@
+>  #include <linux/init.h>
+>  #include <linux/irq.h>
+>  #include <linux/seq_file.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/lmb.h>
+>  #include <mm/mmu_decl.h>
+> diff --git a/arch/powerpc/platforms/iseries/setup.c b/arch/powerpc/platforms/iseries/setup.c
+> index b086341..370891a 100644
+> --- a/arch/powerpc/platforms/iseries/setup.c
+> +++ b/arch/powerpc/platforms/iseries/setup.c
+> @@ -23,7 +23,7 @@
+>  #include <linux/string.h>
+>  #include <linux/seq_file.h>
+>  #include <linux/kdev_t.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/major.h>
+>  #include <linux/root_dev.h>
+>  #include <linux/kernel.h>
+> diff --git a/arch/s390/kernel/crash.c b/arch/s390/kernel/crash.c
+> index 8cc7c9f..6bd969a 100644
+> --- a/arch/s390/kernel/crash.c
+> +++ b/arch/s390/kernel/crash.c
+> @@ -8,7 +8,7 @@
+>   */
+>  
+>  #include <linux/threads.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/reboot.h>
+>  
+>  void machine_crash_shutdown(struct pt_regs *regs)
+> diff --git a/arch/s390/kernel/machine_kexec.c b/arch/s390/kernel/machine_kexec.c
+> index a922d51..ebfbc82 100644
+> --- a/arch/s390/kernel/machine_kexec.c
+> +++ b/arch/s390/kernel/machine_kexec.c
+> @@ -9,7 +9,7 @@
+>  
+>  #include <linux/device.h>
+>  #include <linux/mm.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/delay.h>
+>  #include <linux/reboot.h>
+>  #include <asm/cio.h>
+> diff --git a/arch/sh/kernel/machine_kexec.c b/arch/sh/kernel/machine_kexec.c
+> index 5a559e6..18ba90d 100644
+> --- a/arch/sh/kernel/machine_kexec.c
+> +++ b/arch/sh/kernel/machine_kexec.c
+> @@ -9,7 +9,7 @@
+>   * Version 2.  See the file COPYING for more details.
+>   */
+>  #include <linux/mm.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/delay.h>
+>  #include <linux/reboot.h>
+>  #include <linux/numa.h>
+> diff --git a/arch/sh/kernel/reboot.c b/arch/sh/kernel/reboot.c
+> index b1fca66..b53bc7a 100644
+> --- a/arch/sh/kernel/reboot.c
+> +++ b/arch/sh/kernel/reboot.c
+> @@ -1,5 +1,5 @@
+>  #include <linux/pm.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/kernel.h>
+>  #include <linux/reboot.h>
+>  #include <linux/module.h>
+> diff --git a/arch/sh/kernel/setup.c b/arch/sh/kernel/setup.c
+> index 2727346..a2edc3e 100644
+> --- a/arch/sh/kernel/setup.c
+> +++ b/arch/sh/kernel/setup.c
+> @@ -20,7 +20,7 @@
+>  #include <linux/pfn.h>
+>  #include <linux/fs.h>
+>  #include <linux/mm.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/smp.h>
+>  #include <linux/err.h>
+> diff --git a/arch/sh/kernel/traps_32.c b/arch/sh/kernel/traps_32.c
+> index c3d86fa..7c9b26b 100644
+> --- a/arch/sh/kernel/traps_32.c
+> +++ b/arch/sh/kernel/traps_32.c
+> @@ -22,7 +22,7 @@
+>  #include <linux/bug.h>
+>  #include <linux/debug_locks.h>
+>  #include <linux/kdebug.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/limits.h>
+>  #include <linux/sysfs.h>
+>  #include <linux/uaccess.h>
+> diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+> index ebd4c51..fac1068 100644
+> --- a/arch/x86/kernel/crash.c
+> +++ b/arch/x86/kernel/crash.c
+> @@ -12,7 +12,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/smp.h>
+>  #include <linux/reboot.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/delay.h>
+>  #include <linux/elf.h>
+>  #include <linux/elfcore.h>
+> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+> index c89a386..3988f4f 100644
+> --- a/arch/x86/kernel/dumpstack.c
+> +++ b/arch/x86/kernel/dumpstack.c
+> @@ -2,6 +2,7 @@
+>   *  Copyright (C) 1991, 1992  Linus Torvalds
+>   *  Copyright (C) 2000, 2001, 2002 Andi Kleen, SuSE Labs
+>   */
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/kallsyms.h>
+>  #include <linux/kprobes.h>
+>  #include <linux/uaccess.h>
+> @@ -11,7 +12,6 @@
+>  #include <linux/module.h>
+>  #include <linux/ptrace.h>
+>  #include <linux/ftrace.h>
+> -#include <linux/kexec.h>
+>  #include <linux/bug.h>
+>  #include <linux/nmi.h>
+>  #include <linux/sysfs.h>
+> diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+> index 11540a1..624ccc5 100644
+> --- a/arch/x86/kernel/dumpstack_32.c
+> +++ b/arch/x86/kernel/dumpstack_32.c
+> @@ -9,7 +9,6 @@
+>  #include <linux/kdebug.h>
+>  #include <linux/module.h>
+>  #include <linux/ptrace.h>
+> -#include <linux/kexec.h>
+>  #include <linux/sysfs.h>
+>  #include <linux/bug.h>
+>  #include <linux/nmi.h>
+> diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+> index 272c9f1..5fa1079 100644
+> --- a/arch/x86/kernel/dumpstack_64.c
+> +++ b/arch/x86/kernel/dumpstack_64.c
+> @@ -9,7 +9,6 @@
+>  #include <linux/kdebug.h>
+>  #include <linux/module.h>
+>  #include <linux/ptrace.h>
+> -#include <linux/kexec.h>
+>  #include <linux/sysfs.h>
+>  #include <linux/bug.h>
+>  #include <linux/nmi.h>
+> diff --git a/arch/x86/kernel/machine_kexec_32.c b/arch/x86/kernel/machine_kexec_32.c
+> index a3fa43b..11d6464 100644
+> --- a/arch/x86/kernel/machine_kexec_32.c
+> +++ b/arch/x86/kernel/machine_kexec_32.c
+> @@ -7,7 +7,7 @@
+>   */
+>  
+>  #include <linux/mm.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/delay.h>
+>  #include <linux/init.h>
+>  #include <linux/numa.h>
+> diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+> index 035c8c5..faa23cd 100644
+> --- a/arch/x86/kernel/machine_kexec_64.c
+> +++ b/arch/x86/kernel/machine_kexec_64.c
+> @@ -7,7 +7,7 @@
+>   */
+>  
+>  #include <linux/mm.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/string.h>
+>  #include <linux/gfp.h>
+>  #include <linux/reboot.h>
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index b4ae4ac..202c206 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -42,7 +42,7 @@
+>  #include <linux/edd.h>
+>  #include <linux/iscsi_ibft.h>
+>  #include <linux/nodemask.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/dmi.h>
+>  #include <linux/pfn.h>
+>  #include <linux/pci.h>
+> diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
+> index de3b63a..2204da2 100644
+> --- a/arch/x86/kernel/setup_percpu.c
+> +++ b/arch/x86/kernel/setup_percpu.c
+> @@ -5,7 +5,6 @@
+>  #include <linux/init.h>
+>  #include <linux/bootmem.h>
+>  #include <linux/percpu.h>
+> -#include <linux/kexec.h>
+>  #include <linux/crash_dump.h>
+>  #include <linux/smp.h>
+>  #include <linux/topology.h>
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index 142d70c..22d9552 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -22,7 +22,6 @@
+>  #include <linux/string.h>
+>  #include <linux/delay.h>
+>  #include <linux/errno.h>
+> -#include <linux/kexec.h>
+>  #include <linux/sched.h>
+>  #include <linux/timer.h>
+>  #include <linux/init.h>
+> diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
+> index 809baaa..66bf642 100644
+> --- a/arch/x86/mm/numa_32.c
+> +++ b/arch/x86/mm/numa_32.c
+> @@ -29,7 +29,6 @@
+>  #include <linux/initrd.h>
+>  #include <linux/nodemask.h>
+>  #include <linux/module.h>
+> -#include <linux/kexec.h>
+>  #include <linux/pfn.h>
+>  #include <linux/swap.h>
+>  #include <linux/acpi.h>
+> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+> index 251acea..f67a55a 100644
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -107,7 +107,7 @@ static inline void register_cpu_control(struct cpu *cpu)
+>  #endif /* CONFIG_HOTPLUG_CPU */
+>  
+>  #ifdef CONFIG_KEXEC
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  
+>  static ssize_t show_crash_notes(struct sys_device *dev, struct sysdev_attribute *attr,
+>  				char *buf)
+> diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+> index 2fc8e14..f58f3db 100644
+> --- a/include/linux/Kbuild
+> +++ b/include/linux/Kbuild
+> @@ -106,6 +106,7 @@ header-y += irda.h
+>  header-y += iso_fs.h
+>  header-y += ixjuser.h
+>  header-y += jffs2.h
+> +header-y += kexec.h
+>  header-y += keyctl.h
+>  header-y += limits.h
+>  header-y += magic.h
+> diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
+> index 0026f26..e76e88e 100644
+> --- a/include/linux/crash_dump.h
+> +++ b/include/linux/crash_dump.h
+> @@ -2,7 +2,6 @@
+>  #define LINUX_CRASH_DUMP_H
+>  
+>  #ifdef CONFIG_CRASH_DUMP
+> -#include <linux/kexec.h>
+>  #include <linux/device.h>
+>  #include <linux/proc_fs.h>
+>  
+> diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+> index 03e8e8d..7d3da01 100644
+> --- a/include/linux/kexec.h
+> +++ b/include/linux/kexec.h
+> @@ -1,168 +1,9 @@
+>  #ifndef LINUX_KEXEC_H
+>  #define LINUX_KEXEC_H
+>  
+> -#ifdef CONFIG_KEXEC
+> -#include <linux/types.h>
+> -#include <linux/list.h>
+> -#include <linux/linkage.h>
+> -#include <linux/compat.h>
+> -#include <linux/ioport.h>
+> -#include <linux/elfcore.h>
+> -#include <linux/elf.h>
+> -#include <asm/kexec.h>
+> -
+> -/* Verify architecture specific macros are defined */
+> -
+> -#ifndef KEXEC_SOURCE_MEMORY_LIMIT
+> -#error KEXEC_SOURCE_MEMORY_LIMIT not defined
+> -#endif
+> -
+> -#ifndef KEXEC_DESTINATION_MEMORY_LIMIT
+> -#error KEXEC_DESTINATION_MEMORY_LIMIT not defined
+> -#endif
+> -
+> -#ifndef KEXEC_CONTROL_MEMORY_LIMIT
+> -#error KEXEC_CONTROL_MEMORY_LIMIT not defined
+> -#endif
+> -
+> -#ifndef KEXEC_CONTROL_PAGE_SIZE
+> -#error KEXEC_CONTROL_PAGE_SIZE not defined
+> -#endif
+> -
+> -#ifndef KEXEC_ARCH
+> -#error KEXEC_ARCH not defined
+> -#endif
+> -
+> -#define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
+> -#define KEXEC_CORE_NOTE_NAME "CORE"
+> -#define KEXEC_CORE_NOTE_NAME_BYTES ALIGN(sizeof(KEXEC_CORE_NOTE_NAME), 4)
+> -#define KEXEC_CORE_NOTE_DESC_BYTES ALIGN(sizeof(struct elf_prstatus), 4)
+> -/*
+> - * The per-cpu notes area is a list of notes terminated by a "NULL"
+> - * note header.  For kdump, the code in vmcore.c runs in the context
+> - * of the second kernel to combine them into one note.
+> - */
+> -#define KEXEC_NOTE_BYTES ( (KEXEC_NOTE_HEAD_BYTES * 2) +		\
+> -			    KEXEC_CORE_NOTE_NAME_BYTES +		\
+> -			    KEXEC_CORE_NOTE_DESC_BYTES )
+> -
+>  /*
+> - * This structure is used to hold the arguments that are used when loading
+> - * kernel binaries.
+> + * Kexec: one kernel loading another
+>   */
+> -
+> -typedef unsigned long kimage_entry_t;
+> -#define IND_DESTINATION  0x1
+> -#define IND_INDIRECTION  0x2
+> -#define IND_DONE         0x4
+> -#define IND_SOURCE       0x8
+> -
+> -#define KEXEC_SEGMENT_MAX 16
+> -struct kexec_segment {
+> -	void __user *buf;
+> -	size_t bufsz;
+> -	unsigned long mem;	/* User space sees this as a (void *) ... */
+> -	size_t memsz;
+> -};
+> -
+> -#ifdef CONFIG_COMPAT
+> -struct compat_kexec_segment {
+> -	compat_uptr_t buf;
+> -	compat_size_t bufsz;
+> -	compat_ulong_t mem;	/* User space sees this as a (void *) ... */
+> -	compat_size_t memsz;
+> -};
+> -#endif
+> -
+> -struct kimage {
+> -	kimage_entry_t head;
+> -	kimage_entry_t *entry;
+> -	kimage_entry_t *last_entry;
+> -
+> -	unsigned long destination;
+> -
+> -	unsigned long start;
+> -	struct page *control_code_page;
+> -	struct page *swap_page;
+> -
+> -	unsigned long nr_segments;
+> -	struct kexec_segment segment[KEXEC_SEGMENT_MAX];
+> -
+> -	struct list_head control_pages;
+> -	struct list_head dest_pages;
+> -	struct list_head unuseable_pages;
+> -
+> -	/* Address of next control page to allocate for crash kernels. */
+> -	unsigned long control_page;
+> -
+> -	/* Flags to indicate special processing */
+> -	unsigned int type : 1;
+> -#define KEXEC_TYPE_DEFAULT 0
+> -#define KEXEC_TYPE_CRASH   1
+> -	unsigned int preserve_context : 1;
+> -
+> -#ifdef ARCH_HAS_KIMAGE_ARCH
+> -	struct kimage_arch arch;
+> -#endif
+> -};
+> -
+> -
+> -
+> -/* kexec interface functions */
+> -extern void machine_kexec(struct kimage *image);
+> -extern int machine_kexec_prepare(struct kimage *image);
+> -extern void machine_kexec_cleanup(struct kimage *image);
+> -extern asmlinkage long sys_kexec_load(unsigned long entry,
+> -					unsigned long nr_segments,
+> -					struct kexec_segment __user *segments,
+> -					unsigned long flags);
+> -extern int kernel_kexec(void);
+> -#ifdef CONFIG_COMPAT
+> -extern asmlinkage long compat_sys_kexec_load(unsigned long entry,
+> -				unsigned long nr_segments,
+> -				struct compat_kexec_segment __user *segments,
+> -				unsigned long flags);
+> -#endif
+> -extern struct page *kimage_alloc_control_pages(struct kimage *image,
+> -						unsigned int order);
+> -extern void crash_kexec(struct pt_regs *);
+> -int kexec_should_crash(struct task_struct *);
+> -void crash_save_cpu(struct pt_regs *regs, int cpu);
+> -void crash_save_vmcoreinfo(void);
+> -void arch_crash_save_vmcoreinfo(void);
+> -void vmcoreinfo_append_str(const char *fmt, ...)
+> -	__attribute__ ((format (printf, 1, 2)));
+> -unsigned long paddr_vmcoreinfo_note(void);
+> -
+> -#define VMCOREINFO_OSRELEASE(value) \
+> -	vmcoreinfo_append_str("OSRELEASE=%s\n", value)
+> -#define VMCOREINFO_PAGESIZE(value) \
+> -	vmcoreinfo_append_str("PAGESIZE=%ld\n", value)
+> -#define VMCOREINFO_SYMBOL(name) \
+> -	vmcoreinfo_append_str("SYMBOL(%s)=%lx\n", #name, (unsigned long)&name)
+> -#define VMCOREINFO_SIZE(name) \
+> -	vmcoreinfo_append_str("SIZE(%s)=%lu\n", #name, \
+> -			      (unsigned long)sizeof(name))
+> -#define VMCOREINFO_STRUCT_SIZE(name) \
+> -	vmcoreinfo_append_str("SIZE(%s)=%lu\n", #name, \
+> -			      (unsigned long)sizeof(struct name))
+> -#define VMCOREINFO_OFFSET(name, field) \
+> -	vmcoreinfo_append_str("OFFSET(%s.%s)=%lu\n", #name, #field, \
+> -			      (unsigned long)offsetof(struct name, field))
+> -#define VMCOREINFO_LENGTH(name, value) \
+> -	vmcoreinfo_append_str("LENGTH(%s)=%lu\n", #name, (unsigned long)value)
+> -#define VMCOREINFO_NUMBER(name) \
+> -	vmcoreinfo_append_str("NUMBER(%s)=%ld\n", #name, (long)name)
+> -#define VMCOREINFO_CONFIG(name) \
+> -	vmcoreinfo_append_str("CONFIG_%s=y\n", #name)
+> -
+> -extern struct kimage *kexec_image;
+> -extern struct kimage *kexec_crash_image;
+> -
+> -#ifndef kexec_flush_icache_page
+> -#define kexec_flush_icache_page(page)
+> -#endif
+> -
+>  #define KEXEC_ON_CRASH		0x00000001
+>  #define KEXEC_PRESERVE_CONTEXT	0x00000002
+>  #define KEXEC_ARCH_MASK		0xffff0000
+> @@ -182,37 +23,16 @@ extern struct kimage *kexec_crash_image;
+>  #define KEXEC_ARCH_MIPS_LE (10 << 16)
+>  #define KEXEC_ARCH_MIPS    ( 8 << 16)
+>  
+> -/* List of defined/legal kexec flags */
+> -#ifndef CONFIG_KEXEC_JUMP
+> -#define KEXEC_FLAGS    KEXEC_ON_CRASH
+> +#define KEXEC_SEGMENT_MAX 16
+> +struct kexec_segment {
+> +	void __user *buf;
+> +	size_t bufsz;
+> +#ifdef __KERNEL__
+> +	unsigned long mem;	/* User space sees this as a (void *) ... */
+>  #else
+> -#define KEXEC_FLAGS    (KEXEC_ON_CRASH | KEXEC_PRESERVE_CONTEXT)
+> +	void *mem;
+>  #endif
+> +	size_t memsz;
+> +};
+>  
+> -#define VMCOREINFO_BYTES           (4096)
+> -#define VMCOREINFO_NOTE_NAME       "VMCOREINFO"
+> -#define VMCOREINFO_NOTE_NAME_BYTES ALIGN(sizeof(VMCOREINFO_NOTE_NAME), 4)
+> -#define VMCOREINFO_NOTE_SIZE       (KEXEC_NOTE_HEAD_BYTES*2 + VMCOREINFO_BYTES \
+> -				    + VMCOREINFO_NOTE_NAME_BYTES)
+> -
+> -/* Location of a reserved region to hold the crash kernel.
+> - */
+> -extern struct resource crashk_res;
+> -typedef u32 note_buf_t[KEXEC_NOTE_BYTES/4];
+> -extern note_buf_t __percpu *crash_notes;
+> -extern u32 vmcoreinfo_note[VMCOREINFO_NOTE_SIZE/4];
+> -extern size_t vmcoreinfo_size;
+> -extern size_t vmcoreinfo_max_size;
+> -
+> -int __init parse_crashkernel(char *cmdline, unsigned long long system_ram,
+> -		unsigned long long *crash_size, unsigned long long *crash_base);
+> -int crash_shrink_memory(unsigned long new_size);
+> -size_t crash_get_memory_size(void);
+> -
+> -#else /* !CONFIG_KEXEC */
+> -struct pt_regs;
+> -struct task_struct;
+> -static inline void crash_kexec(struct pt_regs *regs) { }
+> -static inline int kexec_should_crash(struct task_struct *p) { return 0; }
+> -#endif /* CONFIG_KEXEC */
+>  #endif /* LINUX_KEXEC_H */
+> diff --git a/include/linux/kexec_kernel.h b/include/linux/kexec_kernel.h
+> new file mode 100644
+> index 0000000..5d98b9b
+> --- /dev/null
+> +++ b/include/linux/kexec_kernel.h
+> @@ -0,0 +1,193 @@
+> +#ifndef LINUX_KEXEC_KERNEL_H
+> +#define LINUX_KEXEC_KERNEL_H
+> +
+> +#ifdef CONFIG_KEXEC
+> +#include <linux/types.h>
+> +#include <linux/list.h>
+> +#include <linux/linkage.h>
+> +#include <linux/compat.h>
+> +#include <linux/ioport.h>
+> +#include <linux/elfcore.h>
+> +#include <linux/elf.h>
+> +#include <asm/kexec.h>
+> +
+> +#include <linux/kexec.h>
+> +
+> +/* Verify architecture specific macros are defined */
+> +
+> +#ifndef KEXEC_SOURCE_MEMORY_LIMIT
+> +#error KEXEC_SOURCE_MEMORY_LIMIT not defined
+> +#endif
+> +
+> +#ifndef KEXEC_DESTINATION_MEMORY_LIMIT
+> +#error KEXEC_DESTINATION_MEMORY_LIMIT not defined
+> +#endif
+> +
+> +#ifndef KEXEC_CONTROL_MEMORY_LIMIT
+> +#error KEXEC_CONTROL_MEMORY_LIMIT not defined
+> +#endif
+> +
+> +#ifndef KEXEC_CONTROL_PAGE_SIZE
+> +#error KEXEC_CONTROL_PAGE_SIZE not defined
+> +#endif
+> +
+> +#ifndef KEXEC_ARCH
+> +#error KEXEC_ARCH not defined
+> +#endif
+> +
+> +#define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
+> +#define KEXEC_CORE_NOTE_NAME "CORE"
+> +#define KEXEC_CORE_NOTE_NAME_BYTES ALIGN(sizeof(KEXEC_CORE_NOTE_NAME), 4)
+> +#define KEXEC_CORE_NOTE_DESC_BYTES ALIGN(sizeof(struct elf_prstatus), 4)
+> +/*
+> + * The per-cpu notes area is a list of notes terminated by a "NULL"
+> + * note header.  For kdump, the code in vmcore.c runs in the context
+> + * of the second kernel to combine them into one note.
+> + */
+> +#define KEXEC_NOTE_BYTES ( (KEXEC_NOTE_HEAD_BYTES * 2) +		\
+> +			    KEXEC_CORE_NOTE_NAME_BYTES +		\
+> +			    KEXEC_CORE_NOTE_DESC_BYTES )
+> +
+> +/*
+> + * This structure is used to hold the arguments that are used when loading
+> + * kernel binaries.
+> + */
+> +
+> +typedef unsigned long kimage_entry_t;
+> +#define IND_DESTINATION  0x1
+> +#define IND_INDIRECTION  0x2
+> +#define IND_DONE         0x4
+> +#define IND_SOURCE       0x8
+> +
+> +#ifdef CONFIG_COMPAT
+> +struct compat_kexec_segment {
+> +	compat_uptr_t buf;
+> +	compat_size_t bufsz;
+> +	compat_ulong_t mem;	/* User space sees this as a (void *) ... */
+> +	compat_size_t memsz;
+> +};
+> +#endif
+> +
+> +struct kimage {
+> +	kimage_entry_t head;
+> +	kimage_entry_t *entry;
+> +	kimage_entry_t *last_entry;
+> +
+> +	unsigned long destination;
+> +
+> +	unsigned long start;
+> +	struct page *control_code_page;
+> +	struct page *swap_page;
+> +
+> +	unsigned long nr_segments;
+> +	struct kexec_segment segment[KEXEC_SEGMENT_MAX];
+> +
+> +	struct list_head control_pages;
+> +	struct list_head dest_pages;
+> +	struct list_head unuseable_pages;
+> +
+> +	/* Address of next control page to allocate for crash kernels. */
+> +	unsigned long control_page;
+> +
+> +	/* Flags to indicate special processing */
+> +	unsigned int type : 1;
+> +#define KEXEC_TYPE_DEFAULT 0
+> +#define KEXEC_TYPE_CRASH   1
+> +	unsigned int preserve_context : 1;
+> +
+> +#ifdef ARCH_HAS_KIMAGE_ARCH
+> +	struct kimage_arch arch;
+> +#endif
+> +};
+> +
+> +
+> +
+> +/* kexec interface functions */
+> +extern void machine_kexec(struct kimage *image);
+> +extern int machine_kexec_prepare(struct kimage *image);
+> +extern void machine_kexec_cleanup(struct kimage *image);
+> +extern asmlinkage long sys_kexec_load(unsigned long entry,
+> +					unsigned long nr_segments,
+> +					struct kexec_segment __user *segments,
+> +					unsigned long flags);
+> +extern int kernel_kexec(void);
+> +#ifdef CONFIG_COMPAT
+> +extern asmlinkage long compat_sys_kexec_load(unsigned long entry,
+> +				unsigned long nr_segments,
+> +				struct compat_kexec_segment __user *segments,
+> +				unsigned long flags);
+> +#endif
+> +extern struct page *kimage_alloc_control_pages(struct kimage *image,
+> +						unsigned int order);
+> +extern void crash_kexec(struct pt_regs *);
+> +int kexec_should_crash(struct task_struct *);
+> +void crash_save_cpu(struct pt_regs *regs, int cpu);
+> +void crash_save_vmcoreinfo(void);
+> +void arch_crash_save_vmcoreinfo(void);
+> +void vmcoreinfo_append_str(const char *fmt, ...)
+> +	__attribute__ ((format (printf, 1, 2)));
+> +unsigned long paddr_vmcoreinfo_note(void);
+> +
+> +#define VMCOREINFO_OSRELEASE(value) \
+> +	vmcoreinfo_append_str("OSRELEASE=%s\n", value)
+> +#define VMCOREINFO_PAGESIZE(value) \
+> +	vmcoreinfo_append_str("PAGESIZE=%ld\n", value)
+> +#define VMCOREINFO_SYMBOL(name) \
+> +	vmcoreinfo_append_str("SYMBOL(%s)=%lx\n", #name, (unsigned long)&name)
+> +#define VMCOREINFO_SIZE(name) \
+> +	vmcoreinfo_append_str("SIZE(%s)=%lu\n", #name, \
+> +			      (unsigned long)sizeof(name))
+> +#define VMCOREINFO_STRUCT_SIZE(name) \
+> +	vmcoreinfo_append_str("SIZE(%s)=%lu\n", #name, \
+> +			      (unsigned long)sizeof(struct name))
+> +#define VMCOREINFO_OFFSET(name, field) \
+> +	vmcoreinfo_append_str("OFFSET(%s.%s)=%lu\n", #name, #field, \
+> +			      (unsigned long)offsetof(struct name, field))
+> +#define VMCOREINFO_LENGTH(name, value) \
+> +	vmcoreinfo_append_str("LENGTH(%s)=%lu\n", #name, (unsigned long)value)
+> +#define VMCOREINFO_NUMBER(name) \
+> +	vmcoreinfo_append_str("NUMBER(%s)=%ld\n", #name, (long)name)
+> +#define VMCOREINFO_CONFIG(name) \
+> +	vmcoreinfo_append_str("CONFIG_%s=y\n", #name)
+> +
+> +extern struct kimage *kexec_image;
+> +extern struct kimage *kexec_crash_image;
+> +
+> +#ifndef kexec_flush_icache_page
+> +#define kexec_flush_icache_page(page)
+> +#endif
+> +
+> +/* List of defined/legal kexec flags */
+> +#ifndef CONFIG_KEXEC_JUMP
+> +#define KEXEC_FLAGS    KEXEC_ON_CRASH
+> +#else
+> +#define KEXEC_FLAGS    (KEXEC_ON_CRASH | KEXEC_PRESERVE_CONTEXT)
+> +#endif
+> +
+> +#define VMCOREINFO_BYTES           (4096)
+> +#define VMCOREINFO_NOTE_NAME       "VMCOREINFO"
+> +#define VMCOREINFO_NOTE_NAME_BYTES ALIGN(sizeof(VMCOREINFO_NOTE_NAME), 4)
+> +#define VMCOREINFO_NOTE_SIZE       (KEXEC_NOTE_HEAD_BYTES*2 + VMCOREINFO_BYTES \
+> +				    + VMCOREINFO_NOTE_NAME_BYTES)
+> +
+> +/* Location of a reserved region to hold the crash kernel.
+> + */
+> +extern struct resource crashk_res;
+> +typedef u32 note_buf_t[KEXEC_NOTE_BYTES/4];
+> +extern note_buf_t __percpu *crash_notes;
+> +extern u32 vmcoreinfo_note[VMCOREINFO_NOTE_SIZE/4];
+> +extern size_t vmcoreinfo_size;
+> +extern size_t vmcoreinfo_max_size;
+> +
+> +int __init parse_crashkernel(char *cmdline, unsigned long long system_ram,
+> +		unsigned long long *crash_size, unsigned long long *crash_base);
+> +int crash_shrink_memory(unsigned long new_size);
+> +size_t crash_get_memory_size(void);
+> +
+> +#else /* !CONFIG_KEXEC */
+> +struct pt_regs;
+> +struct task_struct;
+> +static inline void crash_kexec(struct pt_regs *regs) { }
+> +static inline int kexec_should_crash(struct task_struct *p) { return 0; }
+> +#endif /* CONFIG_KEXEC */
+> +#endif /* LINUX_KEXEC_KERNEL_H */
+> diff --git a/init/initramfs.c b/init/initramfs.c
+> index 4b9c202..fdd68ea 100644
+> --- a/init/initramfs.c
+> +++ b/init/initramfs.c
+> @@ -485,7 +485,7 @@ __setup("retain_initrd", retain_initrd_param);
+>  
+>  extern char __initramfs_start[], __initramfs_end[];
+>  #include <linux/initrd.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  
+>  static void __init free_initrd(void)
+>  {
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 474a847..7068e40 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -11,7 +11,7 @@
+>  #include <linux/file.h>
+>  #include <linux/slab.h>
+>  #include <linux/fs.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/mutex.h>
+>  #include <linux/list.h>
+>  #include <linux/highmem.h>
+> diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
+> index 0b624e7..9fe1a34 100644
+> --- a/kernel/ksysfs.c
+> +++ b/kernel/ksysfs.c
+> @@ -13,7 +13,7 @@
+>  #include <linux/sysfs.h>
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/profile.h>
+>  #include <linux/sched.h>
+>  
+> diff --git a/kernel/panic.c b/kernel/panic.c
+> index 3b16cd9..af6323f 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -8,6 +8,7 @@
+>   * This function is used through-out the kernel (including mm and fs)
+>   * to indicate a major problem.
+>   */
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/debug_locks.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/kmsg_dump.h>
+> @@ -17,7 +18,6 @@
+>  #include <linux/random.h>
+>  #include <linux/reboot.h>
+>  #include <linux/delay.h>
+> -#include <linux/kexec.h>
+>  #include <linux/sched.h>
+>  #include <linux/sysrq.h>
+>  #include <linux/init.h>
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 444b770..a50ceb2 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -32,7 +32,7 @@
+>  #include <linux/security.h>
+>  #include <linux/bootmem.h>
+>  #include <linux/syscalls.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/kdb.h>
+>  #include <linux/ratelimit.h>
+>  #include <linux/kmsg_dump.h>
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index e83ddbb..6559f9b 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -16,7 +16,7 @@
+>  #include <linux/perf_event.h>
+>  #include <linux/resource.h>
+>  #include <linux/kernel.h>
+> -#include <linux/kexec.h>
+> +#include <linux/kexec_kernel.h>
+>  #include <linux/workqueue.h>
+>  #include <linux/capability.h>
+>  #include <linux/device.h>
+> -- 
+> 1.6.0.6
