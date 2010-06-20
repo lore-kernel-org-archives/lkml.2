@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab0FTPBI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 11:01:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56476 "EHLO mx2.suse.de"
+	id S1755460Ab0FTPQO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 11:16:14 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:48220 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755179Ab0FTPBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 11:01:05 -0400
-Subject: Re: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
-  Enable Online Controller Reset Bit in register related functions
-From: James Bottomley <James.Bottomley@suse.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Yang, Bo" <Bo.Yang@lsi.com>,
-       "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-       "akpm@osdl.org" <akpm@osdl.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
-	 <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 20 Jun 2010 10:01:00 -0500
-Message-ID: <1277046060.5242.18.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1755226Ab0FTPQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 11:16:09 -0400
+Date: Sun, 20 Jun 2010 08:16:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Tilman Schmidt <tilman@imap.cc>, linux-kernel@vger.kernel.org
+Subject: Re: CONFIG_PROVE_RCU breaks proprietary modules (rcu_lock_map)
+Message-ID: <20100620151605.GA2396@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4BA689EA.4050102@imap.cc>
+ <20100329150946.GB2569@linux.vnet.ibm.com>
+ <4BB0E937.7070200@imap.cc>
+ <20100329184059.GL2569@linux.vnet.ibm.com>
+ <20100617103747.GZ20317@bombadil.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100617103747.GZ20317@bombadil.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-18 at 14:18 -0700, Yinghai Lu wrote:
-> On Wed, Jun 9, 2010 at 7:34 PM, Yang, Bo <Bo.Yang@lsi.com> wrote:
-> > Enable the Online Controller reset bit in the register related functions.  This is first part of the Online Controller Reset.
-> > The driver supports XScle and Gen2 chips.  Driver need to read the FW state register to see if there is FW state change
-> > Happen.
-> >
-> > Signed-off-by Bo Yang<bo.yang@lsi.com>
+On Thu, Jun 17, 2010 at 06:37:47AM -0400, Kyle McMartin wrote:
+> On Mon, Mar 29, 2010 at 11:40:59AM -0700, Paul E. McKenney wrote:
+> > > > I am comfortable with PROVE_RCU being incompatible with non-GPL modules.
+> > > > After all, it is only a debugging option, not intended for production use.
+> > > 
+> > > I agree completely. I just wanted to publish that fact because it seems
+> > > to be little known and can be quite a puzzler.
+> > 
+> > And I do very much appreciate your publicizing the solution!  ;-)
+> > 
 > 
-> This patch cause kernel hang just after
-> [  136.996297] megasas: FW now in Ready state
+> Hi Paul,
+> 
+> (Sorry I didn't bring this up until now.)
+> 
+> I don't really have any sympathy for people who use that crud, but from
+> my POV it's going to generate some grief. Fedora builds rawhide with a
+> lot of debugging options enabled in order to try and hit issues early
+> before kernels release.
+> 
+> A few weeks ago, I noticed a report that PROVE_RCU was breaking some
+> non-GPL junk. Digging a bit further, I noticed quite a number of more
+> reports of this.
+> 
+> Is there any chances you could reconsider this? Otherwise I'll probably
+> disable the option in Fedora's debug kernels as well if I continue to
+> see confused users.
 
-OK, I dropped all the megaraid_sas patches for now ... I'll reapply once
-we get the bisection intervals sorted out.
+Hello, Kyle,
 
-James
+My kneejerk reaction is that PROVE_RCU is a developer tool, so I am
+OK with it not being set by default in Rawhide.  Or have you seen good
+value from (say) PROVE_LOCKING in Rawhide?
 
-
+							Thanx, Paul
