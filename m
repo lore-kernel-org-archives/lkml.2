@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab0FTV6g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 17:58:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16600 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754519Ab0FTV6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 17:58:35 -0400
-Date: Sun, 20 Jun 2010 23:56:46 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Louis Rilling <louis.rilling@kerlabs.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org, Daniel Lezcano <dlezcano@fr.ibm.com>
-Subject: Re: [PATCH 0/6] Unshare support for the pid namespace.
-Message-ID: <20100620215646.GB17517@redhat.com>
-References: <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <m1pqzmqema.fsf_-_@fess.ebiederm.org> <20100620180335.GA17120@redhat.com> <m14ogxctd6.fsf@fess.ebiederm.org>
+	id S1755051Ab0FTWCX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 18:02:23 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:48155 "EHLO
+	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754519Ab0FTWCV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 18:02:21 -0400
+X-Greylist: delayed 1669 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Jun 2010 18:02:21 EDT
+Message-ID: <4C1E8952.7010503@cs.columbia.edu>
+Date: Sun, 20 Jun 2010 17:34:10 -0400
+From: Oren Laadan <orenl@cs.columbia.edu>
+Organization: Columbia University
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m14ogxctd6.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Christoffer Dall <christofferdall@christofferdall.dk>
+CC: containers <containers@lists.linux-foundation.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [C/R ARM v2][PATCH 0/3] Linux Checkpoint-Restart - ARM port
+References: <1272318223-28438-1-git-send-email-christofferdall@christofferdall.dk>
+In-Reply-To: <1272318223-28438-1-git-send-email-christofferdall@christofferdall.dk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20, Eric W. Biederman wrote:
->
-> Oleg Nesterov <oleg@redhat.com> writes:
->
-> > And. I do not think these series can fix the discussed problems. ns->dead
-> > definitely can't, no?
->
-> I'm am fairly confident that we have the signal sending races fixed so
-> we can reasonably expect having sent SIGKILL to all processes in a pid
-> namespace
+Applied.
 
-Sorry, didn't notice this part...
-
-Which races? I am talking about the current problems with pid_ns_release_proc(),
-we have at least 3 bugs, from the 2/2 changelog:
-
-	- Nobody does mntput() if copy_process() fails after
-	  pid_ns_prepare_proc().
-
-	- proc_flush_task() checks upid->nr == 1 to verify we are init,
-	  this is wrong if a multi-threaded init does exec.
-
-	- As Louis pointed out, this namespace can have the detached
-	  EXIT_DEAD tasks which can use ns->proc_mnt after this mntput().
-
-Oleg.
-
+On 04/26/2010 05:43 PM, Christoffer Dall wrote:
+> Following there will be two preparatory patches for an ARM port of the
+> checkpoint-restart code and finally a third patch implementing the
+> architecture-specific parts of c/r.
+> 
+> The preparatory patches consist of a partial syscall trace implementation
+> for ARM and an eclone implementation for ARM. The syscall trace
+> implementation provides only the needed functionality for c/r.
+> 
+> There is a separate patch for the user space code, which supports
+> cross-compilation, extracting headers for ARM and an eclone implementation
+> for ARM.
+> 
+> The kernel patches presented here are based on the ckpt-v21-rc6 patch set.
+> 
+> ---
+> 
+> CHANGELOG:
+> 
+> [2010-Apr-08] v2:
+> 	- Systrace implementation now inspects process state to get the
+> 	  system call number thereby avoiding extra work on system calls.
+> 	- Removed __user attribute on long type in eclone implementation
+> 	- Better check for architecture versions across C/R
+> 	- Improved checking of user space ABI settings across C/R
+> 	- Code simplifications
+> 
+> [2010-Mar-22] v1:
+> 	- Initial version
+> 	- Systrace implementation modified the system call entry path to
+> 	  store the system call number globally in memory.
+> 	- ARM implementation lightly tested
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/containers
+> 
