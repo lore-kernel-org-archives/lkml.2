@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab0FTRea (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 13:34:30 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38870 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755875Ab0FTRe1 (ORCPT
+	id S1756067Ab0FTR5x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 13:57:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46293 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab0FTR5v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 13:34:27 -0400
+	Sun, 20 Jun 2010 13:57:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:reply-to:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=KzTlGTS5qRYUEAS407kjtmxeDjKvHGoEbhB13LFkucU47zHRsKSfHnG6PnOikH2V6d
+         4Zg22g6cOs/O+h4c0FcrC0CgeAEPM7LnOEvbYYzq8/b8CGa5fcLhYV8HerIDVxvD8dLu
+         4H21/eWg+SmaMij/qJix3kAtxrSgBt0V4nZA8=
+From: Florian Fainelli <florian@openwrt.org>
+Reply-To: Florian Fainelli <florian@openwrt.org>
+To: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
+Subject: Re: [PATCH v2 00/26] Add support for the Ingenic JZ4740 System-on-a-Chip
+Date: Sun, 20 Jun 2010 19:57:54 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
+Cc: "Lars-Peter Clausen" <lars@metafoo.de>, Ralf Baechle <ralf@linux-mips.org>,
+       linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+       Graham Gower <graham.gower@gmail.com>
+References: <1276924111-11158-1-git-send-email-lars@metafoo.de> <4C1E467D.5030204@metafoo.de> <20100620170111.GA8650@alpha.franken.de>
+In-Reply-To: <20100620170111.GA8650@alpha.franken.de>
 MIME-Version: 1.0
-X-Originating-IP: [72.93.233.2]
-In-Reply-To: <1277052831.1548.103.camel@Joe-Laptop.home>
-References: <1277018446.1548.66.camel@Joe-Laptop.home>
-	<16004456-69D9-41BD-8597-5590BB7B099E@wilsonet.com>
-	<1277052831.1548.103.camel@Joe-Laptop.home>
-Date: Sun, 20 Jun 2010 13:34:26 -0400
-Message-ID: <AANLkTik4LVNFxj7GHs0HDGBA9Rdf0IP7BJmFwfx_qwGz@mail.gmail.com>
-Subject: Re: [PATCH] drivers/media/IR/imon.c: Use pr_err instead of err
-From: Jarod Wilson <jarod@wilsonet.com>
-To: Joe Perches <joe@perches.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-       linux-media <linux-media@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006201957.56978.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 20, 2010 at 12:53 PM, Joe Perches <joe@perches.com> wrote:
-> On Sun, 2010-06-20 at 11:58 -0400, Jarod Wilson wrote:
->> On Jun 20, 2010, at 3:20 AM, Joe Perches <joe@perches.com> wrote:
->> Use the standard error logging mechanisms.
->> > Add #define pr_fmt(fmt) KBUILD_MODNAME ":%s" fmt, __func__
->> > Remove __func__ from err calls, add '\n', rename to pr_err
->> Eh. If we're going to make a change here, I'd rather it be to using
->> dev_err instead, since most of the other spew in this driver uses
->> similar.
->
-> The idea is to eventually remove info/err/warn from usb.h by
-> changing the code outside of drivers/usb first.
->
-> There will always be some mix of printk or pr_<level> along
-> with dev_<level> because struct device * is NULL or as is
-> mostly used here there's no struct imon_context * available.
->
-> I suggest you have a look and see which ones of these
-> changes could use dev_<level> instead.
+Hi,
 
-Ah, tbh, didn't look all that closely. Okay, I'll see if any of them
-can actually be made into dev_err instead of pr_err, but any that
-can't, sure, there's no problem w/this change.
+Le Sunday 20 June 2010 19:01:11, Thomas Bogendoerfer a écrit :
+> On Sun, Jun 20, 2010 at 06:49:01PM +0200, Lars-Peter Clausen wrote:
+> > different to JZ4750 and JZ4760. So JZ47xx wont fit either.
+> > Right now there is no practical use to moving things around, and there
+> > wont be until somebody who can actually test it starts adding support
+> > for a different JZ47XX SoC.
+> 
+> great, I like such attitude:-(
 
--- 
-Jarod Wilson
-jarod@wilsonet.com
+I have to agree with Thomas here, if your concern is about the naming, then 
+just have a look at the vendor sources and find similarities for what is worth 
+being named JZ47XX and what deserves a name which is more specific. Also, it is 
+much easier to do that factoring job now instead of when there will be 3 or 
+more flavors of that SoC to be supported.
+
+Take a look at BCM63xx for instance, it is named like that because it supports 
+4 different versions of the family SoC, even though the internals of the SoC 
+have been varying a lot, still we support it with a single kernel and what is 
+really family specific is named accordingly from what is chip-specific.
+--
+Florian
