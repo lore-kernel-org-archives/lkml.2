@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab0FTSIa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 14:08:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29748 "EHLO mx1.redhat.com"
+	id S1756652Ab0FTSVu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 14:21:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60961 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756145Ab0FTSI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 14:08:28 -0400
-Date: Sun, 20 Jun 2010 20:06:37 +0200
+	id S1756145Ab0FTSVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 14:21:45 -0400
+Date: Sun, 20 Jun 2010 20:19:56 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: "Eric W. Biederman" <ebiederm@xmission.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -14,120 +14,44 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
        Pavel Emelyanov <xemul@openvz.org>,
        Linux Containers <containers@lists.osdl.org>,
        linux-kernel@vger.kernel.org, Daniel Lezcano <dlezcano@fr.ibm.com>
-Subject: [PATCH 2/2] pid_ns: refactor the buggy pid_ns_release_proc() logic
-Message-ID: <20100620180637.GD17120@redhat.com>
-References: <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <m1pqzmqema.fsf_-_@fess.ebiederm.org> <20100620180335.GA17120@redhat.com> <20100620180530.GB17120@redhat.com>
+Subject: Re: [PATCH 2/6] pidns: Call pid_ns_prepare_proc from
+	create_pid_namespace
+Message-ID: <20100620181956.GA3258@redhat.com>
+References: <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <m1pqzmqema.fsf_-_@fess.ebiederm.org> <m1hbkyqeib.fsf_-_@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100620180530.GB17120@redhat.com>
+In-Reply-To: <m1hbkyqeib.fsf_-_@fess.ebiederm.org>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pid_namespace holds ns->proc_mnt, while this vfsmount has a referene to
-the namespace via PROC_I(sb->s_root->d_inode)->pid. To break this circle
-/sbin/init does mntput() in pid_ns_release_proc(). See 6f4e6433.
+On 06/20, Eric W. Biederman wrote:
+>
+> Reorganize proc_get_sb so it can be called before the struct pid
+> of the first process is allocated.
 
-But we have the following problems:
+This is what
 
-	- Nobody does mntput() if copy_process() fails after
-	  pid_ns_prepare_proc().
+	[PATCH 1/4] procfs: proc_get_sb: consolidate/cleanup root_inode->pid logic
+	[PATCH 2/4] procfs: kill the global proc_mnt variable
 
-	- proc_flush_task() checks upid->nr == 1 to verify we are init,
-	  this is wrong if a multi-threaded init does exec.
+do. But,
 
-	- As Louis pointed out, this namespace can have the detached
-	  EXIT_DEAD tasks which can use ns->proc_mnt after this mntput().
+> @@ -96,6 +97,9 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
+>  	for (i = 1; i < PIDMAP_ENTRIES; i++)
+>  		atomic_set(&ns->pidmap[i].nr_free, BITS_PER_PAGE);
+>
+> +	if (pid_ns_prepare_proc(ns))
+> +		goto out_free_map;
+> +
+>  	return ns;
 
-With this patch only pid_namespace has a reference to ns->proc_mnt, and
-mntput(ns->proc_mnt) is called by destroy_pid_namespace() paths when we
-know that this ns must not have any references (in particular, there are
-no pids in this namespace).
+Afaics, this is wrong.
 
-Changes:
+If pid_ns_prepare_proc() fails we shouldn't blindly return ENOMEM
+and, more importantly, we need put_pid_ns(parent_ns).
 
-	- kill proc_flush_task()->pid_ns_release_proc()
-
-	- change fs/proc/root.c so that we don't create the "artificial"
-	  references to the namespace or its pid==1.
-
-	- change destroy_pid_namespace() to call pid_ns_release_proc().
-
-	- change pid_ns_release_proc() to clear s_root->d_inode->pid.
-	  The caller is destroy_pid_namespace(), this pid was already
-	  freed.
-
-Reported-by:  Louis Rilling <louis.rilling@kerlabs.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
-
- kernel/pid_namespace.c |    2 ++
- fs/proc/base.c         |    4 ----
- fs/proc/root.c         |   10 ++++++----
- 3 files changed, 8 insertions(+), 8 deletions(-)
-
---- 35-rc3/kernel/pid_namespace.c~PNS_6_BREAK_CIRCLE	2010-06-20 18:36:00.000000000 +0200
-+++ 35-rc3/kernel/pid_namespace.c	2010-06-20 18:50:30.000000000 +0200
-@@ -128,6 +128,8 @@ static void destroy_pid_namespace(struct
- {
- 	int i;
- 
-+	pid_ns_release_proc(ns);
-+
- 	for (i = 0; i < PIDMAP_ENTRIES; i++)
- 		kfree(ns->pidmap[i].page);
- 	kmem_cache_free(pid_ns_cachep, ns);
---- 35-rc3/fs/proc/base.c~PNS_6_BREAK_CIRCLE	2010-05-28 13:41:41.000000000 +0200
-+++ 35-rc3/fs/proc/base.c	2010-06-20 18:51:14.000000000 +0200
-@@ -2745,10 +2745,6 @@ void proc_flush_task(struct task_struct 
- 		proc_flush_task_mnt(upid->ns->proc_mnt, upid->nr,
- 					tgid->numbers[i].nr);
- 	}
--
--	upid = &pid->numbers[pid->level];
--	if (upid->nr == 1)
--		pid_ns_release_proc(upid->ns);
- }
- 
- static struct dentry *proc_pid_instantiate(struct inode *dir,
---- 35-rc3/fs/proc/root.c~PNS_6_BREAK_CIRCLE	2010-06-19 20:11:03.000000000 +0200
-+++ 35-rc3/fs/proc/root.c	2010-06-20 18:58:12.000000000 +0200
-@@ -31,7 +31,7 @@ static int proc_set_super(struct super_b
- 	struct pid_namespace *ns;
- 
- 	ns = (struct pid_namespace *)data;
--	sb->s_fs_info = get_pid_ns(ns);
-+	sb->s_fs_info = ns;
- 	return set_anon_super(sb, NULL);
- }
- 
-@@ -68,7 +68,7 @@ static int proc_get_sb(struct file_syste
- 		struct proc_inode *ei = PROC_I(sb->s_root->d_inode);
- 		if (!ei->pid) {
- 			rcu_read_lock();
--			ei->pid = get_pid(find_pid_ns(1, ns));
-+			ei->pid = find_pid_ns(1, ns);
- 			rcu_read_unlock();
- 		}
- 	}
-@@ -83,7 +83,6 @@ static void proc_kill_sb(struct super_bl
- 
- 	ns = (struct pid_namespace *)sb->s_fs_info;
- 	kill_anon_super(sb);
--	put_pid_ns(ns);
- }
- 
- static struct file_system_type proc_fs_type = {
-@@ -209,5 +208,8 @@ int pid_ns_prepare_proc(struct pid_names
- 
- void pid_ns_release_proc(struct pid_namespace *ns)
- {
--	mntput(ns->proc_mnt);
-+	if (ns->proc_mnt) {
-+		PROC_I(ns->proc_mnt->mnt_sb->s_root->d_inode)->pid = NULL;
-+		mntput(ns->proc_mnt);
-+	}
- }
+Oleg.
 
