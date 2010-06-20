@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab0FTVZE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 17:25:04 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:60100 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751107Ab0FTVY6 (ORCPT
+	id S1754320Ab0FTVZf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 17:25:35 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:57341 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751107Ab0FTVZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 17:24:58 -0400
+	Sun, 20 Jun 2010 17:25:20 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Dan Williams <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>,
+Cc: <linux-kernel@vger.kernel.org>, Per Friden <per.friden@stericsson.com>,
+       Jonas Aaberg <jonas.aberg@stericsson.com>,
        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 00/19] DMAENGINE: ste_dma40: bugfixes v2
-Date: Sun, 20 Jun 2010 23:24:36 +0200
-Message-ID: <1277069076-30579-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 03/19] DMAENGINE: ste_dma40: moved freeing of client owned desc
+Date: Sun, 20 Jun 2010 23:24:59 +0200
+Message-ID: <1277069099-30736-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -21,24 +22,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending this fixup patchset after review, so as to avoid
-confusion of which patch goes where. Some patches were changed
-in accordance with Dan's comments and that led to merge
-problems with later patches so may just as well resend the
-whole shebang.
+From: Per Friden <per.friden@stericsson.com>
 
-Changes since v1:
+fixed typo and moved freeing of client owned desc to free_dma.
 
-- Inline d40_config_chan() into d40_alloc_chan_resources()
-  in patch 02.
-- Removed weird page allocation count code in patch 12, we
-  don't quite know what we were up to, it looks more sane
-  now. Niced up the failure code as well and make it look
-  much better.
-- Changed order of patch 17 & 18 to avoid compilation and
-  bisection issues.
-- Included the separate patch to support older silicon in
-  this patch series.
+Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/dma/ste_dma40.c |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-Yours,
-Linus Walleij
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 9655452..d72eff6 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -374,7 +374,6 @@ static void d40_desc_remove(struct d40_desc *d40d)
+ 
+ static struct d40_desc *d40_desc_get(struct d40_chan *d40c)
+ {
+-	struct d40_desc *desc;
+ 	struct d40_desc *d;
+ 	struct d40_desc *_d;
+ 
+@@ -583,8 +582,6 @@ done:
+ static void d40_term_all(struct d40_chan *d40c)
+ {
+ 	struct d40_desc *d40d;
+-	struct d40_desc *d;
+-	struct d40_desc *_d;
+ 
+ 	/* Release active descriptors */
+ 	while ((d40d = d40_first_active_get(d40c))) {
+@@ -602,15 +599,6 @@ static void d40_term_all(struct d40_chan *d40c)
+ 		d40_desc_free(d40c, d40d);
+ 	}
+ 
+-	/* Release client owned descriptors */
+-	if (!list_empty(&d40c->client))
+-		list_for_each_entry_safe(d, _d, &d40c->client, node) {
+-			d40_pool_lli_free(d);
+-			d40_desc_remove(d);
+-			/* Return desc to free-list */
+-			d40_desc_free(d40c, d40d);
+-		}
+-
+ 	d40_lcla_id_put(d40c, &d40c->base->lcla_pool,
+ 			d40c->lcla.src_id);
+ 	d40_lcla_id_put(d40c, &d40c->base->lcla_pool,
+@@ -1240,10 +1228,22 @@ static int d40_free_dma(struct d40_chan *d40c)
+ 	u32 event, dir;
+ 	struct d40_phy_res *phy = d40c->phy_chan;
+ 	bool is_src;
++	struct d40_desc *d;
++	struct d40_desc *_d;
++
+ 
+ 	/* Terminate all queued and active transfers */
+ 	d40_term_all(d40c);
+ 
++	/* Release client owned descriptors */
++	if (!list_empty(&d40c->client))
++		list_for_each_entry_safe(d, _d, &d40c->client, node) {
++			d40_pool_lli_free(d);
++			d40_desc_remove(d);
++			/* Return desc to free-list */
++			d40_desc_free(d40c, d);
++		}
++
+ 	if (phy == NULL) {
+ 		dev_err(&d40c->chan.dev->device, "[%s] phy == null\n",
+ 			__func__);
+-- 
+1.6.3.3
+
