@@ -1,344 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab0FTV2Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 17:28:24 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:51743 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753902Ab0FTVZa (ORCPT
+	id S1753662Ab0FTVbd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 17:31:33 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:50280 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751778Ab0FTVbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 17:25:30 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, Jonas Aaberg <jonas.aberg@stericsson.com>,
-       Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 06/19] DMAENGINE: ste_dma40: various cosmetic clean-ups
-Date: Sun, 20 Jun 2010 23:25:24 +0200
-Message-ID: <1277069124-30889-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
+	Sun, 20 Jun 2010 17:31:31 -0400
+Message-ID: <4C1E88AE.5070808@bluewatersys.com>
+Date: Mon, 21 Jun 2010 09:31:26 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: David Brownell <david-b@pacbell.net>
+CC: David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
+       linux kernel <linux-kernel@vger.kernel.org>,
+       ext-jani.1.nikula@nokia.com,
+       =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: gpiolib and sleeping gpios
+References: <386783.17931.qm@web180310.mail.gq1.yahoo.com>
+In-Reply-To: <386783.17931.qm@web180310.mail.gq1.yahoo.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Aaberg <jonas.aberg@stericsson.com>
+On 06/19/2010 06:21 PM, David Brownell wrote:
+> 
+>>
+>> The runtime warnings will only show instances where the
+>> non-sleeping
+>> versions where called instead of the sleeping versions.
+> 
+> ... *AND* the GPIO requires the cansleep() version...
+> 
+> Right; such calls are errors.  We issue
+> warnings since fault returns are inapplicable.
 
-This cleans up some extra newlines, removes some code duplication
-and moves the code to comply better with checkpatch.
+A driver which only uses the non-sleeping versions, but _could_ use the
+cansleep variants (ie all calls to gpio_(set/get)_value are made from
+contexts where it is possible to sleep) is not so easy to spot. Passing
+a sleeping to gpio to such a driver will result in spurious warnings.
 
-Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
- drivers/dma/ste_dma40.c    |   95 ++++++++++++++++++-------------------------
- drivers/dma/ste_dma40_ll.c |   24 ++++++------
- 2 files changed, 52 insertions(+), 67 deletions(-)
+>> There is no
+>> warning to say that we are calling the spinlock safe
+>> version, where it is possible to sleep.
+> 
+> The call context isn't what controls whether
+> gpio_get_value() or gpio_get_value_cansleep()
+> is appropriate ... it's the GPIO itself, and
+> how its implementation works.
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 8ed1547..1d17664 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -161,7 +161,8 @@ struct d40_base;
-  * @pending_tx: The number of pending transfers. Used between interrupt handler
-  * and tasklet.
-  * @busy: Set to true when transfer is ongoing on this channel.
-- * @phy_chan: Pointer to physical channel which this instance runs on.
-+ * @phy_chan: Pointer to physical channel which this instance runs on. If this
-+ * point is NULL, then the channel is not allocated.
-  * @chan: DMA engine handle.
-  * @tasklet: Tasklet that gets scheduled from interrupt context to complete a
-  * transfer and call client callback.
-@@ -1236,7 +1237,6 @@ static int d40_free_dma(struct d40_chan *d40c)
- 		return -EINVAL;
- 	}
- 
--
- 	res = d40_channel_execute_command(d40c, D40_DMA_SUSPEND_REQ);
- 	if (res) {
- 		dev_err(&d40c->chan.dev->device, "[%s] suspend failed\n",
-@@ -1305,8 +1305,6 @@ static int d40_free_dma(struct d40_chan *d40c)
- 	d40c->base->lookup_phy_chans[phy->num] = NULL;
- 
- 	return 0;
--
--
- }
- 
- static int d40_pause(struct dma_chan *chan)
-@@ -1314,7 +1312,6 @@ static int d40_pause(struct dma_chan *chan)
- 	struct d40_chan *d40c =
- 		container_of(chan, struct d40_chan, chan);
- 	int res;
--
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&d40c->lock, flags);
-@@ -1510,25 +1507,23 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
- 						   struct scatterlist *sgl_dst,
- 						   struct scatterlist *sgl_src,
- 						   unsigned int sgl_len,
--						   unsigned long flags)
-+						   unsigned long dma_flags)
- {
- 	int res;
- 	struct d40_desc *d40d;
- 	struct d40_chan *d40c = container_of(chan, struct d40_chan,
- 					     chan);
--	unsigned long flg;
--
-+	unsigned long flags;
- 
--	spin_lock_irqsave(&d40c->lock, flg);
-+	spin_lock_irqsave(&d40c->lock, flags);
- 	d40d = d40_desc_get(d40c);
- 
- 	if (d40d == NULL)
- 		goto err;
- 
--	memset(d40d, 0, sizeof(struct d40_desc));
- 	d40d->lli_len = sgl_len;
- 	d40d->lli_tx_len = d40d->lli_len;
--	d40d->txd.flags = flags;
-+	d40d->txd.flags = dma_flags;
- 
- 	if (d40c->log_num != D40_PHY_CHAN) {
- 		if (d40d->lli_len > d40c->base->plat_data->llis_per_log)
-@@ -1556,7 +1551,7 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
- 					 d40d->lli_log.src,
- 					 d40c->log_def.lcsp1,
- 					 d40c->dma_cfg.src_info.data_width,
--					 flags & DMA_PREP_INTERRUPT,
-+					 dma_flags & DMA_PREP_INTERRUPT,
- 					 d40d->lli_tx_len,
- 					 d40c->base->plat_data->llis_per_log);
- 
-@@ -1566,7 +1561,7 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
- 					 d40d->lli_log.dst,
- 					 d40c->log_def.lcsp3,
- 					 d40c->dma_cfg.dst_info.data_width,
--					 flags & DMA_PREP_INTERRUPT,
-+					 dma_flags & DMA_PREP_INTERRUPT,
- 					 d40d->lli_tx_len,
- 					 d40c->base->plat_data->llis_per_log);
- 
-@@ -1612,11 +1607,11 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
- 
- 	d40d->txd.tx_submit = d40_tx_submit;
- 
--	spin_unlock_irqrestore(&d40c->lock, flg);
-+	spin_unlock_irqrestore(&d40c->lock, flags);
- 
- 	return &d40d->txd;
- err:
--	spin_unlock_irqrestore(&d40c->lock, flg);
-+	spin_unlock_irqrestore(&d40c->lock, flags);
- 	return NULL;
- }
- EXPORT_SYMBOL(stedma40_memcpy_sg);
-@@ -1729,15 +1724,15 @@ static struct dma_async_tx_descriptor *d40_prep_memcpy(struct dma_chan *chan,
- 						       dma_addr_t dst,
- 						       dma_addr_t src,
- 						       size_t size,
--						       unsigned long flags)
-+						       unsigned long dma_flags)
- {
- 	struct d40_desc *d40d;
- 	struct d40_chan *d40c = container_of(chan, struct d40_chan,
- 					     chan);
--	unsigned long flg;
-+	unsigned long flags;
- 	int err = 0;
- 
--	spin_lock_irqsave(&d40c->lock, flg);
-+	spin_lock_irqsave(&d40c->lock, flags);
- 	d40d = d40_desc_get(d40c);
- 
- 	if (d40d == NULL) {
-@@ -1746,9 +1741,7 @@ static struct dma_async_tx_descriptor *d40_prep_memcpy(struct dma_chan *chan,
- 		goto err;
- 	}
- 
--	memset(d40d, 0, sizeof(struct d40_desc));
--
--	d40d->txd.flags = flags;
-+	d40d->txd.flags = dma_flags;
- 
- 	dma_async_tx_descriptor_init(&d40d->txd, chan);
- 
-@@ -1817,7 +1810,7 @@ static struct dma_async_tx_descriptor *d40_prep_memcpy(struct dma_chan *chan,
- 				      d40d->lli_pool.size, DMA_TO_DEVICE);
- 	}
- 
--	spin_unlock_irqrestore(&d40c->lock, flg);
-+	spin_unlock_irqrestore(&d40c->lock, flags);
- 	return &d40d->txd;
- 
- err_fill_lli:
-@@ -1825,7 +1818,7 @@ err_fill_lli:
- 		"[%s] Failed filling in PHY LLI\n", __func__);
- 	d40_pool_lli_free(d40d);
- err:
--	spin_unlock_irqrestore(&d40c->lock, flg);
-+	spin_unlock_irqrestore(&d40c->lock, flags);
- 	return NULL;
- }
- 
-@@ -1834,7 +1827,7 @@ static int d40_prep_slave_sg_log(struct d40_desc *d40d,
- 				 struct scatterlist *sgl,
- 				 unsigned int sg_len,
- 				 enum dma_data_direction direction,
--				 unsigned long flags)
-+				 unsigned long dma_flags)
- {
- 	dma_addr_t dev_addr = 0;
- 	int total_size;
-@@ -1860,32 +1853,24 @@ static int d40_prep_slave_sg_log(struct d40_desc *d40d,
- 		if (d40_lcla_id_get(d40c, &d40c->base->lcla_pool) != 0)
- 			d40d->lli_tx_len = 1;
- 
--	if (direction == DMA_FROM_DEVICE) {
-+	if (direction == DMA_FROM_DEVICE)
- 		dev_addr = d40c->base->plat_data->dev_rx[d40c->dma_cfg.src_dev_type];
--		total_size = d40_log_sg_to_dev(&d40c->lcla,
--					       sgl, sg_len,
--					       &d40d->lli_log,
--					       &d40c->log_def,
--					       d40c->dma_cfg.src_info.data_width,
--					       d40c->dma_cfg.dst_info.data_width,
--					       direction,
--					       flags & DMA_PREP_INTERRUPT,
--					       dev_addr, d40d->lli_tx_len,
--					       d40c->base->plat_data->llis_per_log);
--	} else if (direction == DMA_TO_DEVICE) {
-+	else if (direction == DMA_TO_DEVICE)
- 		dev_addr = d40c->base->plat_data->dev_tx[d40c->dma_cfg.dst_dev_type];
--		total_size = d40_log_sg_to_dev(&d40c->lcla,
--					       sgl, sg_len,
--					       &d40d->lli_log,
--					       &d40c->log_def,
--					       d40c->dma_cfg.src_info.data_width,
--					       d40c->dma_cfg.dst_info.data_width,
--					       direction,
--					       flags & DMA_PREP_INTERRUPT,
--					       dev_addr, d40d->lli_tx_len,
--					       d40c->base->plat_data->llis_per_log);
--	} else
-+	else
- 		return -EINVAL;
-+
-+	total_size = d40_log_sg_to_dev(&d40c->lcla,
-+				       sgl, sg_len,
-+				       &d40d->lli_log,
-+				       &d40c->log_def,
-+				       d40c->dma_cfg.src_info.data_width,
-+				       d40c->dma_cfg.dst_info.data_width,
-+				       direction,
-+				       dma_flags & DMA_PREP_INTERRUPT,
-+				       dev_addr, d40d->lli_tx_len,
-+				       d40c->base->plat_data->llis_per_log);
-+
- 	if (total_size < 0)
- 		return -EINVAL;
- 
-@@ -1897,7 +1882,7 @@ static int d40_prep_slave_sg_phy(struct d40_desc *d40d,
- 				 struct scatterlist *sgl,
- 				 unsigned int sgl_len,
- 				 enum dma_data_direction direction,
--				 unsigned long flags)
-+				 unsigned long dma_flags)
- {
- 	dma_addr_t src_dev_addr;
- 	dma_addr_t dst_dev_addr;
-@@ -1954,12 +1939,12 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
- 							 struct scatterlist *sgl,
- 							 unsigned int sg_len,
- 							 enum dma_data_direction direction,
--							 unsigned long flags)
-+							 unsigned long dma_flags)
- {
- 	struct d40_desc *d40d;
- 	struct d40_chan *d40c = container_of(chan, struct d40_chan,
- 					     chan);
--	unsigned long flg;
-+	unsigned long flags;
- 	int err;
- 
- 	if (d40c->dma_cfg.pre_transfer)
-@@ -1967,9 +1952,9 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
- 					   d40c->dma_cfg.pre_transfer_data,
- 					   sg_dma_len(sgl));
- 
--	spin_lock_irqsave(&d40c->lock, flg);
-+	spin_lock_irqsave(&d40c->lock, flags);
- 	d40d = d40_desc_get(d40c);
--	spin_unlock_irqrestore(&d40c->lock, flg);
-+	spin_unlock_irqrestore(&d40c->lock, flags);
- 
- 	if (d40d == NULL)
- 		return NULL;
-@@ -1978,10 +1963,10 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
- 
- 	if (d40c->log_num != D40_PHY_CHAN)
- 		err = d40_prep_slave_sg_log(d40d, d40c, sgl, sg_len,
--					    direction, flags);
-+					    direction, dma_flags);
- 	else
- 		err = d40_prep_slave_sg_phy(d40d, d40c, sgl, sg_len,
--					    direction, flags);
-+					    direction, dma_flags);
- 	if (err) {
- 		dev_err(&d40c->chan.dev->device,
- 			"[%s] Failed to prepare %s slave sg job: %d\n",
-@@ -1990,7 +1975,7 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
- 		return NULL;
- 	}
- 
--	d40d->txd.flags = flags;
-+	d40d->txd.flags = dma_flags;
- 
- 	dma_async_tx_descriptor_init(&d40d->txd, chan);
- 
-diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
-index 561fdd8..e0194e4 100644
---- a/drivers/dma/ste_dma40_ll.c
-+++ b/drivers/dma/ste_dma40_ll.c
-@@ -430,25 +430,25 @@ void d40_log_lli_write(struct d40_log_lli_full *lcpa,
- 		       struct d40_log_lli *lli_src,
- 		       int llis_per_log)
- {
--	u32 slos = 0;
--	u32 dlos = 0;
-+	u32 slos;
-+	u32 dlos;
- 	int i;
- 
--	lcpa->lcsp0 = lli_src->lcsp02;
--	lcpa->lcsp1 = lli_src->lcsp13;
--	lcpa->lcsp2 = lli_dst->lcsp02;
--	lcpa->lcsp3 = lli_dst->lcsp13;
-+	writel(lli_src->lcsp02, &lcpa->lcsp0);
-+	writel(lli_src->lcsp13, &lcpa->lcsp1);
-+	writel(lli_dst->lcsp02, &lcpa->lcsp2);
-+	writel(lli_dst->lcsp13, &lcpa->lcsp3);
- 
- 	slos = lli_src->lcsp13 & D40_MEM_LCSP1_SLOS_MASK;
- 	dlos = lli_dst->lcsp13 & D40_MEM_LCSP3_DLOS_MASK;
- 
- 	for (i = 0; (i < llis_per_log) && slos && dlos; i++) {
--		writel(lli_src[i+1].lcsp02, &lcla_src[i].lcsp02);
--		writel(lli_src[i+1].lcsp13, &lcla_src[i].lcsp13);
--		writel(lli_dst[i+1].lcsp02, &lcla_dst[i].lcsp02);
--		writel(lli_dst[i+1].lcsp13, &lcla_dst[i].lcsp13);
-+		writel(lli_src[i + 1].lcsp02, &lcla_src[i].lcsp02);
-+		writel(lli_src[i + 1].lcsp13, &lcla_src[i].lcsp13);
-+		writel(lli_dst[i + 1].lcsp02, &lcla_dst[i].lcsp02);
-+		writel(lli_dst[i + 1].lcsp13, &lcla_dst[i].lcsp13);
- 
--		slos = lli_src[i+1].lcsp13 & D40_MEM_LCSP1_SLOS_MASK;
--		dlos = lli_dst[i+1].lcsp13 & D40_MEM_LCSP3_DLOS_MASK;
-+		slos = lli_src[i + 1].lcsp13 & D40_MEM_LCSP1_SLOS_MASK;
-+		dlos = lli_dst[i + 1].lcsp13 & D40_MEM_LCSP3_DLOS_MASK;
- 	}
- }
+No, a driver should not know anything about a gpio which is passed to
+it. If a driver is able to call the cansleep variants, then it should,
+and it will allow any gpio, sleeping or non-sleeping, to be used with
+that driver.
+
+If a driver uses a gpio in such a way that it cannot sleep, ie the
+gpio_(get/set)_value calls are made from spinlock context, then only
+gpios which do not sleep may be used with that driver.
+
+Thats why I think specifying whether the gpio is able to sleep when it
+is requested is a good idea. A driver which cannot use a sleeping gpio
+
+
+> "possible to sleep" is a GPIO attribute,
+> exposed by a predicate.  If spinlock-safe
+> calls are used on GPIOs with that attribute,
+>  a warning *IS* issued.
+
+Possible to sleep is also an attribute of how a driver _uses_ a gpio.
+
+>>
+>> The point I was trying to make is that there are lots of
+>> drivers which
+>> will not work with gpios on sleeping io expanders because
+>> they call the
+>> spinlock safe gpio calls.
+> 
+> And they will trigger runtime warnings, and
+> thus eventually get fixed.  The way to do that
+> is to check if the GPIO needs the cansleep()
+> call
+
+Hmm, maybe this then for drivers which cannot accept sleeping gpios:
+
+  if (gpio_cansleep(some_gpio)) {
+  	  dev_err(&dev, "This driver only supports non-sleeping gpios");
+	  return -EINVAL;
+  }
+
+  err = gpio_request(some_gpio, "some_gpio");
+
+I think ideally, gpio_request should specify this via a flags argument, ie:
+
+  #define GPIOF_NO_SLEEP	0x0
+  #define GPIOF_CANSLEEP	0x1
+
+  err = gpio_request(some_gpio, "some_gpio", GPIOF_NO_SLEEP);
+
+~Ryan
+
 -- 
-1.6.3.3
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
