@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab0FTKK0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 06:10:26 -0400
-Received: from elvis.franken.de ([193.175.24.41]:49673 "EHLO elvis.franken.de"
+	id S1756661Ab0FTKL4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 06:11:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34170 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756430Ab0FTKKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 06:10:23 -0400
-X-Greylist: delayed 2613 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Jun 2010 06:10:23 EDT
-Date: Sun, 20 Jun 2010 11:26:10 +0200
-From: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Anton Vorontsov <cbouatmailru@gmail.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
-       linux-fbdev@vger.kernel.org, linux-mmc@vger.kernel.org,
-       linux-mtd@lists.infradead.org, linux-usb@vger.kernel.org,
-       lm-sensors@lm-sensors.org, rtc-linux@googlegroups.com
-Subject: Re: [PATCH v2 00/26] Add support for the Ingenic JZ4740
-	System-on-a-Chip
-Message-ID: <20100620092610.GA4950@alpha.franken.de>
-References: <1276924111-11158-1-git-send-email-lars@metafoo.de>
+	id S1752766Ab0FTKLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 06:11:53 -0400
+Date: Sun, 20 Jun 2010 13:06:32 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Message-ID: <20100620100631.GB4578@redhat.com>
+References: <20100606161348.427822fb@nehalam> <20100608052744.GA21547@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com> <20100611052112.GA25649@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com> <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com> <20100618055929.GA11333@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE573@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1276924111-11158-1-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D7915089FE573@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 19, 2010 at 07:08:05AM +0200, Lars-Peter Clausen wrote:
-> This patch series adds support for the Ingenic JZ4740 System-on-a-Chip.
+On Fri, Jun 18, 2010 at 03:14:18PM +0800, Xin, Xiaohui wrote:
+> >-----Original Message-----
+> >From: Herbert Xu [mailto:herbert@gondor.apana.org.au]
+> >Sent: Friday, June 18, 2010 1:59 PM
+> >To: Xin, Xiaohui
+> >Cc: Stephen Hemminger; netdev@vger.kernel.org; kvm@vger.kernel.org;
+> >linux-kernel@vger.kernel.org; mst@redhat.com; mingo@elte.hu; davem@davemloft.net;
+> >jdike@linux.intel.com; Rusty Russell
+> >Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from external.
+> >
+> >On Fri, Jun 18, 2010 at 01:26:49PM +0800, Xin, Xiaohui wrote:
+> >>
+> >> Herbert,
+> >> I have questions about the idea above:
+> >> 1) Since netdev_alloc_skb() is still there, and we only modify alloc_page(),
+> >> then we don't need napi_gro_frags() any more, the driver's original receiving
+> >> function is ok. Right?
+> >
+> >Well I was actually thinking about converting all drivers that
+> >need this to napi_gro_frags.  But now that you mention it, yes
+> >we could still keep the old interface to minimise the work.
+> >
+> >> 2) Is napi_gro_frags() only suitable for TCP protocol packet?
+> >> I have done a small test for ixgbe driver to let it only allocate paged buffers
+> >> and found kernel hangs when napi_gro_frags() receives an ARP packet.
+> >
+> >It should work with any packet.  In fact, I'm pretty sure the
+> >other drivers (e.g., cxgb3) use that interface for all packets.
+> >
+> Thanks for the verification. By the way, does that mean that nearly all drivers can use the 
+> same napi_gro_frags() to receive buffers though currently each driver has it's own receiving 
+> function?
+> 
+> >> 3) As I have mentioned above, with this idea, netdev_alloc_skb() will allocate
+> >> as usual, the data pointed by skb->data will be copied into the first guest buffer.
+> >> That means we should reserve sufficient room in guest buffer. For PS mode
+> >> supported driver (for example ixgbe), the room will be more than 128. After 128bytes,
+> >> we will put the first frag data. Look into virtio-net.c the function page_to_skb()
+> >> and receive_mergeable(), that means we should modify guest virtio-net driver to
+> >> compute the offset as the parameter for skb_set_frag().
+> >>
+> >> How do you think about this? Attached is a patch to how to modify the guest driver.
+> >> I reserve 512 bytes as an example, and transfer the header len of the skb in hdr->hdr_len.
+> >
+> >Expanding the buffer size to 512 bytes to accomodate PS mode
+> >looks reasonable to me.
+> >
+> >However, I don't think we should increase the copy threshold to
+> >512 bytes at the same time.  I don't have any figures myself but
+> >I think if we are to make such a change it should be a separate
+> >one and come with supporting numbers.
+> >
+> Let me have a look to see if I can retain the copy threshold as 128 bytes 
+> and copy the header data safely.
 
-great stuff. I have a JZ4730 based netbook, for which I started magling
-the provided sources quite some time ago, but I didn't reach the
-point of submitting patches... there are a lot of common stuff between
-JZ4730 and JZ4740 so IMHO it would be a good thing not to nail
-everthing to JZ4740 namewise. It might also a good idea to select
-something like arch/mips/jzrisc as base directory, put the
-factored out code there and add JZ4730/JZ4740 in either seperate
-files or directories.
+Changing the guest virtio to match the backend is a problem,
+this breaks migration etc.
 
-Thomas.
 
--- 
-Crap can work. Given enough thrust pigs will fly, but it's not necessary a
-good idea.                                                [ RFC1925, 2.3 ]
+> >Cheers,
+> >--
+> >Visit Openswan at http://www.openswan.org/
+> >Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+> >Home Page: http://gondor.apana.org.au/~herbert/
+> >PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
