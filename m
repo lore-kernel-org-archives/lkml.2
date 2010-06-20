@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab0FTVdo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 17:33:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61594 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab0FTVdm (ORCPT
+	id S1754281Ab0FTVfP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 17:35:15 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:32276 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751778Ab0FTVfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 17:33:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=IKRarCoAYVecO1vWiIxaFnaSMsPxw8W3tnjhfDzpbWydP4cfbiIGkwlHcXPBB5zpQ/
-         6dvp6kkNCIvzm5k4ub++IQMGvtHwm5ZLt8YS/BMhyVlVIT2RKwTxCoKzk116DWtvQOu1
-         PbXQaaKDNGYBUpMa4zpn0R2cc+6rX0DEFiVgY=
+	Sun, 20 Jun 2010 17:35:12 -0400
+Message-ID: <4C1E898D.8010902@bluewatersys.com>
+Date: Mon, 21 Jun 2010 09:35:09 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1275997141-25419-1-git-send-email-linus.walleij@stericsson.com>
-References: <1275997141-25419-1-git-send-email-linus.walleij@stericsson.com>
-Date: Sun, 20 Jun 2010 23:33:40 +0200
-X-Google-Sender-Auth: KRPvgjIbRNAzDnPB_7NeDV9NCNU
-Message-ID: <AANLkTilki98X3SlVHilyjKo8PtPdbM86wbZcvZgU5-BN@mail.gmail.com>
-Subject: Re: [PATCH] Add commandline partitions for block devices v2
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Andries Brouwer <aeb@cwi.nl>, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: Jens Axboe <jens.axboe@oracle.com>,
-       Ulf Hansson <ulf.hansson@stericsson.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: mike@compulab.co.il, linux-kernel@vger.kernel.org, vilensky@compulab.co.il,
+       mike.rapoport@gmail.com
+Subject: Re: [PATCH] ds2782: Fix ds2782_get_capacity return value
+References: <1276562699-4933-1-git-send-email-ryan@bluewatersys.com>
+In-Reply-To: <1276562699-4933-1-git-send-email-ryan@bluewatersys.com>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/8 Linus Walleij <linus.walleij@stericsson.com>:
+On 06/15/2010 12:44 PM, Ryan Mallon wrote:
+> The ds2782_get_capacity function should return 0 on success, not the
+> capacity value.
+> 
+> Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
+> ---
+>  drivers/power/ds2782_battery.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
+> index d762a0c..2afbeec 100644
+> --- a/drivers/power/ds2782_battery.c
+> +++ b/drivers/power/ds2782_battery.c
+> @@ -163,7 +163,7 @@ static int ds2782_get_capacity(struct ds278x_info *info, int *capacity)
+>  	if (err)
+>  		return err;
+>  	*capacity = raw;
+> -	return raw;
+> +	return 0;
+>  }
+>  
+>  static int ds2786_get_current(struct ds278x_info *info, int *current_uA)
 
-> From: Ulf Hansson <ulf.hansson@stericsson.com>
->
-> This adds an option to pass in block device partitions from the kernel
-> cmdline.
+Ping, Anton?
 
-I don't get any reply from this, Andrew could you please stack this
-patch up in your tree unless the partition maintainer turns up?
+~Ryan
 
-Yours,
-Linus Walleij
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
