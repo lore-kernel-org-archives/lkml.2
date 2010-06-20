@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab0FTVto (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 17:49:44 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:52293 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753681Ab0FTVtm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 17:49:42 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 20 Jun 2010 23:48:43 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: [PATCH 0/8] firewire: cdev ABI updates
-To: linux1394-devel@lists.sourceforge.net
-cc: linux-kernel@vger.kernel.org
-In-Reply-To: <tkrat.ba0692c55cd50593@s5r6.in-berlin.de>
-Message-ID: <tkrat.00116e4425f35b7c@s5r6.in-berlin.de>
-References: <tkrat.ba0692c55cd50593@s5r6.in-berlin.de>
+	id S1754815Ab0FTVu4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 17:50:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35584 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753681Ab0FTVuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 17:50:54 -0400
+Date: Sun, 20 Jun 2010 23:48:28 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Louis Rilling <louis.rilling@kerlabs.com>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org, Daniel Lezcano <dlezcano@fr.ibm.com>
+Subject: Re: [PATCH 0/6] Unshare support for the pid namespace.
+Message-ID: <20100620214828.GA17517@redhat.com>
+References: <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <m1pqzmqema.fsf_-_@fess.ebiederm.org> <20100620180335.GA17120@redhat.com> <m14ogxctd6.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m14ogxctd6.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 Jun, Stefan Richter wrote:
-> Following as replies:  Proposed updates to the <linux/firewire-cdev.h>
-> ABI and to its backing implementation.  These updates are required for
-> target-type userspace drivers and in order to be able to use more than
-> one audio device with FFADO.
-> 
-> Some of the patches have already been seen on linux1394-devel but not
-> yet on linux-kernel.
-> 
-> Corresponding patches to libraw1394 will be posted to linux1394-devel
-> right after the kernel patch postings.
+On 06/20, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > Why?
+> >
+> > Once again, it is very possible I am wrong. I forgot this code if ever
+> > knew. But could you please explain?
+>
+> There are two kinds of dead for a pid namespace. There are:
+> - no processes left.
+> - no more references to struct pid_namespace.
+>
+> I just looked and I don't see any references to proc_mnt except from
+> living processes.
+>
+> So while it isn't necessary that we kill the proc_mnt earlier it does
+> mean that we hold the resources longer then necessary.
 
-The patches have been committed to a temporary branch called "testing"
-at the firewire drivers development repository:
+Yes, it can delay destroy_pid_namespace(), sure. OK, I am not going
+to argue. I never said this fix is perfect. I'll be wating for the
+better fix.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git testing
+> > Eric, why you can't do these changes on top of the cleanups I sent?
+>
+> Because there are conflicts,
 
-    gitweb:
-    http://git.kernel.org/?p=linux/kernel/git/ieee1394/linux1394-2.6.git;a=shortlog;h=refs/heads/testing
+I don't see any conflicts, but perhaps I missed something.
 
-This branch may be rebuild or deleted in case of negative feedback about
-the proposed patches.
+> > OK, personally I certainly dislike 1/6, but perhaps it is needed for
+> > 6/6 which I didn't read yet. But, in any case, it is orthogonal to
+> > pid_ns_prepare_proc() cleanups?
+>
+> 1/6 is.  If you unshare a pid namespace.  Your first child is pid one.
+> Which means we can on longer count on CLONE_PID.
 
-The patches are also available as quilt series and combo patches in my
-backports to a few stable kernel series at
+I understand, but I think it should be 5/6.
 
-    http://user.in-berlin.de/~s5r6/linux1394/updates/
+> > 	- remove the MS_KERNMOUNT check around ei->pid = find_pid(1).
+> > 	  OK, I agree it was not strictly needed, but imho makes the
+> > 	  code cleaner.
+> >
+> > 	  Or I missed something and this check was wrong?
+>
+> The MS_KERNMOUNT check was simply unnecessary, and it makes the code
+> uglier to read and more brittle.
 
-The corresponding libraw1394 patches are available at the libraw1394
-mirror repository, also in a "testing" branch:
+I disagree here. Sure, it is unnecessary, and I already said this.
+I added it to simply document the fact that find_pid() can't work if
+MS_KERNMOUNT is set, to me this certainly makes the code more
+understandable to the reader.
 
-    git://git.kernel.org/pub/scm/libs/ieee1394/libraw1394.git testing
-
-    gitweb:
-    http://git.kernel.org/?p=libs/ieee1394/libraw1394.git;a=shortlog;h=refs/heads/testing
-
-Would be good if a FFADO developer with two or more audio devices could
-give this a run.
--- 
-Stefan Richter
--=====-==-=- -==- =-=--
-http://arcgraph.de/sr/
+Oleg.
 
