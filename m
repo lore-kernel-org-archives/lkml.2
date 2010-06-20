@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab0FTNkK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 09:40:10 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:58626 "EHLO mgw1.diku.dk"
+	id S1754869Ab0FTNkq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 09:40:46 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:58643 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754156Ab0FTNkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 09:40:08 -0400
-Date: Sun, 20 Jun 2010 15:40:02 +0200 (CEST)
+	id S1754567Ab0FTNkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 09:40:42 -0400
+Date: Sun, 20 Jun 2010 15:40:37 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net,
-       user-mode-linux-user@lists.sourceforge.net,
+To: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/3] arch/um/drivers: remove duplicate structure field
- initialization
-Message-ID: <Pine.LNX.4.64.1006201539080.6207@ask.diku.dk>
+Subject: [PATCH 3/3] drivers/media/dvb/frontends: remove duplicate structure
+ field initialization
+Message-ID: <Pine.LNX.4.64.1006201540210.6207@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,9 +21,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-There are two initializations of ndo_set_mac_address, one to a local
-function that is not used otherwise and one to a function that is defined
-elsewhere.  This patch keeps the initialization to the local function.
+The read_status field is initialized twice to the same value.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -60,20 +57,18 @@ if int(ps[0].line)<int(pr[0].line) or int(ps[0].column)<int(pr[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-This fix was sent previously, in September 2009.
-
- arch/um/drivers/net_kern.c |    1 -
+ drivers/media/dvb/frontends/mb86a16.c |    1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/arch/um/drivers/net_kern.c b/arch/um/drivers/net_kern.c
-index f053726..d2d42d8 100644
---- a/arch/um/drivers/net_kern.c
-+++ b/arch/um/drivers/net_kern.c
-@@ -380,7 +380,6 @@ static const struct net_device_ops uml_netdev_ops = {
- 	.ndo_tx_timeout 	= uml_net_tx_timeout,
- 	.ndo_set_mac_address	= uml_net_set_mac,
- 	.ndo_change_mtu 	= uml_net_change_mtu,
--	.ndo_set_mac_address 	= eth_mac_addr,
- 	.ndo_validate_addr	= eth_validate_addr,
- };
+diff --git a/drivers/media/dvb/frontends/mb86a16.c b/drivers/media/dvb/frontends/mb86a16.c
+index 599d1aa..33b6323 100644
+--- a/drivers/media/dvb/frontends/mb86a16.c
++++ b/drivers/media/dvb/frontends/mb86a16.c
+@@ -1833,7 +1833,6 @@ static struct dvb_frontend_ops mb86a16_ops = {
  
+ 	.get_frontend_algo		= mb86a16_frontend_algo,
+ 	.search				= mb86a16_search,
+-	.read_status			= mb86a16_read_status,
+ 	.init				= mb86a16_init,
+ 	.sleep				= mb86a16_sleep,
+ 	.read_status			= mb86a16_read_status,
