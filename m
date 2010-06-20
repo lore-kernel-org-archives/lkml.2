@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab0FTGwf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 02:52:35 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51103 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab0FTGwc (ORCPT
+	id S1753194Ab0FTGzn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 02:55:43 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50391 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab0FTGzm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 02:52:32 -0400
+	Sun, 20 Jun 2010 02:55:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:content-type;
-        b=u1YE/k+A5t/DyJSv99Mo+/VEH2nOw3lKB5y2L53GR0mGTkTjl90dJBlvR7n4i1jNDY
-         gq+0x+PqMAIANX8lEy4Ld0IfIM9jJu5c3P3hPWeiMlj4xMxdUcOqQx8YxEy4Z5egmhDI
-         fK4iMpJaPeWKjtzrny2LwVmsbnNhNj0PVbI6Q=
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=h+gpl+9PTnVFE896ln5qh3xwyXiIDMZFEOlGvu5178/vsfvghEoG9Mtns4XOwQaPnR
+         3Tpyudymm8lzxcLGOVaewKTGw87T685/z4lEMWeuHF0cb8UqZi9XS4q/3z8ui3TRv1VI
+         LWReHf4rFRzFdN4MCNB9faOnNMKSJTGhXupwg=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: 2.6.35-rc3 deadlocks on semaphore operations
+Date: Sun, 20 Jun 2010 08:55:33 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3; KDE/4.4.4; i686; ; )
+Cc: linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>,
+       Manfred Spraul <manfred@colorfullife.com>
+References: <alpine.DEB.2.00.1006180940140.11575@router.home>
+In-Reply-To: <alpine.DEB.2.00.1006180940140.11575@router.home>
 MIME-Version: 1.0
-From: Suresh Rajashekara <suresh.raj+linuxomap@gmail.com>
-Date: Sat, 19 Jun 2010 23:52:10 -0700
-X-Google-Sender-Auth: bSDkTBWE5IDUp1tjxW8uyNl7F40
-Message-ID: <AANLkTikPOcNZk5ISX2WDHSmsPDw_a5_3Ic3owAbO4o0y@mail.gmail.com>
-Subject: wait_for_completion_interruptible does not wait !!
-To: linux-omap@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006200855.34169.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have an application which calls the ioctl of the codec driver to
-know the status of the headset.
+On piątek, 18 czerwca 2010 o 16:49:44 Christoph Lameter wrote:
+> Can produce it with make-kpkg building a kernel.
+> 
+> git show
+> 
+> commit 7e27d6e778cd87b6f2415515d7127eba53fe5d02
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Fri Jun 11 19:14:04 2010 -0700
+> 
+>     Linux 2.6.35-rc3
+> 
+>
 
-The ioctl waits on a completion variable (using
-wait_for_completion_interruptible).
-
-The variable is completed in the interrupt handler, which happens on
-headset insertion/removal. Once the variable is completed, the ioctl
-returns (with appropriate value in the argument) and the application
-decides what to do with the event.
-
-Once done handling the event, the application then calls the ioctl
-once again (bascially it polls the audio driver) to know the status of
-the headset. The call is blocked until the headset status changes.
-
-I am running the system on linux-2.6.29 on a OMAP1 based board. All
-this works well when the OMAP is awake.
-
-The problem starts when we suspend the OMAP. The moment we suspend,
-the wait_for_completion_interruptible is interrupted and the ioctl
-returns. Application ends up thinking that the headset was either
-removed/inserted. Our system does an aggressive sleep (wakes up every
-500 ms and sleeps again) and hence the application gets the event of
-headset every 500 ms.
-
-I tried wait_for_completion instead, but now the kernel refuses to suspend.
-
-I have tried wait queues and mutexs with no success.
-
-Could anyone please point me how I can resolve this issue? Is there
-any construct which can block inside the kernel during suspend/resume?
-Can there be a blocking call active while we suspend?
-
-Ideally I would resort to a method in which I would signal the process
-when there is a headset event, but I am not free to change the
-application. Its a legacy application and I have to make the kernel
-work for it.
-
-Thanks in advance,
-Suresh
-
-
-PS: It might be unrelated, but I am mentioning it here because I
-learnt this while debugging the issue. If I use an application
-scheduled as SCHED_FIFO to suspend the kernel (using a driver ioctl
-which in turn calls enter_state), the operation fails (kernel aborts
-the process of suspending after 20 seconds saying some applications
-failed to freeze). Just changing the application scheduling policy to
-SCHED_OTHER resolves the issue. I was unable to find an explaination
-for this. However, my current test applications are scheduled as
-SCHED_OTHER.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=16255
+for your bug report, please add your address to the CC list in there, thanks!
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
