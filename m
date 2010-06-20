@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab0FTVfP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 17:35:15 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:32276 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751778Ab0FTVfM (ORCPT
+	id S1754736Ab0FTVto (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 17:49:44 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:52293 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681Ab0FTVtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 17:35:12 -0400
-Message-ID: <4C1E898D.8010902@bluewatersys.com>
-Date: Mon, 21 Jun 2010 09:35:09 +1200
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	Sun, 20 Jun 2010 17:49:42 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 20 Jun 2010 23:48:43 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: [PATCH 0/8] firewire: cdev ABI updates
+To: linux1394-devel@lists.sourceforge.net
+cc: linux-kernel@vger.kernel.org
+In-Reply-To: <tkrat.ba0692c55cd50593@s5r6.in-berlin.de>
+Message-ID: <tkrat.00116e4425f35b7c@s5r6.in-berlin.de>
+References: <tkrat.ba0692c55cd50593@s5r6.in-berlin.de>
 MIME-Version: 1.0
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: mike@compulab.co.il, linux-kernel@vger.kernel.org, vilensky@compulab.co.il,
-       mike.rapoport@gmail.com
-Subject: Re: [PATCH] ds2782: Fix ds2782_get_capacity return value
-References: <1276562699-4933-1-git-send-email-ryan@bluewatersys.com>
-In-Reply-To: <1276562699-4933-1-git-send-email-ryan@bluewatersys.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/15/2010 12:44 PM, Ryan Mallon wrote:
-> The ds2782_get_capacity function should return 0 on success, not the
-> capacity value.
+On 20 Jun, Stefan Richter wrote:
+> Following as replies:  Proposed updates to the <linux/firewire-cdev.h>
+> ABI and to its backing implementation.  These updates are required for
+> target-type userspace drivers and in order to be able to use more than
+> one audio device with FFADO.
 > 
-> Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
-> ---
->  drivers/power/ds2782_battery.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Some of the patches have already been seen on linux1394-devel but not
+> yet on linux-kernel.
 > 
-> diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-> index d762a0c..2afbeec 100644
-> --- a/drivers/power/ds2782_battery.c
-> +++ b/drivers/power/ds2782_battery.c
-> @@ -163,7 +163,7 @@ static int ds2782_get_capacity(struct ds278x_info *info, int *capacity)
->  	if (err)
->  		return err;
->  	*capacity = raw;
-> -	return raw;
-> +	return 0;
->  }
->  
->  static int ds2786_get_current(struct ds278x_info *info, int *current_uA)
+> Corresponding patches to libraw1394 will be posted to linux1394-devel
+> right after the kernel patch postings.
 
-Ping, Anton?
+The patches have been committed to a temporary branch called "testing"
+at the firewire drivers development repository:
 
-~Ryan
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git testing
 
+    gitweb:
+    http://git.kernel.org/?p=linux/kernel/git/ieee1394/linux1394-2.6.git;a=shortlog;h=refs/heads/testing
+
+This branch may be rebuild or deleted in case of negative feedback about
+the proposed patches.
+
+The patches are also available as quilt series and combo patches in my
+backports to a few stable kernel series at
+
+    http://user.in-berlin.de/~s5r6/linux1394/updates/
+
+The corresponding libraw1394 patches are available at the libraw1394
+mirror repository, also in a "testing" branch:
+
+    git://git.kernel.org/pub/scm/libs/ieee1394/libraw1394.git testing
+
+    gitweb:
+    http://git.kernel.org/?p=libs/ieee1394/libraw1394.git;a=shortlog;h=refs/heads/testing
+
+Would be good if a FFADO developer with two or more audio devices could
+give this a run.
 -- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+Stefan Richter
+-=====-==-=- -==- =-=--
+http://arcgraph.de/sr/
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
