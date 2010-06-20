@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171Ab0FUJsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 05:48:55 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38387 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932099Ab0FUJsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 05:48:52 -0400
-Date: Mon, 21 Jun 2010 11:48:51 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Micki Balanga <micki@n-trig.com>
-Cc: chatty@enac.fr, dhprince-devel@yahoo.co.uk, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Rafi Rubin <rafi@seas.upenn.edu>
-Subject: RE: [PATCH] HID: Add support to new N-trig firwmare
-In-Reply-To: <48A28051AC6D7A48B64F28272458190338280A@Exchange-IL.n-trig.com>
-Message-ID: <alpine.LNX.2.00.1006211143520.13809@pobox.suse.cz>
-References: <48A28051AC6D7A48B64F28272458190333674B@Exchange-IL.n-trig.com> <alpine.LNX.2.00.1006041115480.12271@pobox.suse.cz> <48A28051AC6D7A48B64F28272458190326E03E@Exchange-IL.n-trig.com> <alpine.LNX.2.00.1006051741361.12271@pobox.suse.cz>
- <48A28051AC6D7A48B64F28272458190338280A@Exchange-IL.n-trig.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932177Ab0FUJvB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 05:51:01 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:48961 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932110Ab0FUJvA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 05:51:00 -0400
+Subject: [PATCH fs/ramfs] inode.c: Fix incorrect variable freeing.
+From: Davidlohr Bueso <dave.bueso@gmail.com>
+Reply-To: dave.bueso@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 20 Jun 2010 15:27:37 -0400
+Message-ID: <1277062057.14428.0.camel@cowboy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010, Micki Balanga wrote:
+Hi,
 
-> We have some new product so I have to update the patch,
-> When I update my git branch I didn't see the changes regarding N-trig
-> Product id. If you can insert this patch, if there a problem with the
-> patch
-> Let me know and hi will update it
+In ramfs_fill_super(), if fsi's memory allocation fails, it will go to 'fail', 
+which immediately tries to free the variable, potentially producing an Oops. 
+This patch addresses this issue.
 
-Hi Micki,
+Thanks.
 
-the patch seems incomplete -- it adds new entries to hid_blacklist[], but 
-doesn't update ntrig_devices[].
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ fs/ramfs/inode.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-Thanks,
-
+diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+index a5ebae7..40af7a2 100644
+--- a/fs/ramfs/inode.c
++++ b/fs/ramfs/inode.c
+@@ -219,7 +219,7 @@ int ramfs_fill_super(struct super_block *sb, void *data, int silent)
+ 	sb->s_fs_info = fsi;
+ 	if (!fsi) {
+ 		err = -ENOMEM;
+-		goto fail;
++		goto fail2;
+ 	}
+ 
+ 	err = ramfs_parse_options(data, &fsi->mount_opts);
+@@ -247,11 +247,13 @@ int ramfs_fill_super(struct super_block *sb, void *data, int silent)
+ 	}
+ 
+ 	return 0;
+-fail:
+-	kfree(fsi);
++fail2:
+ 	sb->s_fs_info = NULL;
+ 	iput(inode);
+ 	return err;
++fail:
++	kfree(fsi);
++	goto fail2;
+ }
+ 
+ int ramfs_get_sb(struct file_system_type *fs_type,
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+1.7.0.4
+
+
+
+
