@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560Ab0FTQif (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 12:38:35 -0400
-Received: from imr1.ericy.com ([198.24.6.9]:46204 "EHLO imr1.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753101Ab0FTQid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 12:38:33 -0400
-X-Greylist: delayed 93585 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Jun 2010 12:38:33 EDT
-Date: Sun, 20 Jun 2010 09:37:59 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: lm-sensors@lm-sensors.org
-CC: linux-kernel@vger.kernel.org
-Subject: Adding critical/fault limits to hwmon sysfs API
-Message-ID: <20100620163759.GA7077@ericsson.com>
+	id S1755379Ab0FTQtk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 12:49:40 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:58110 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753984Ab0FTQth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 12:49:37 -0400
+Message-ID: <4C1E467D.5030204@metafoo.de>
+Date: Sun, 20 Jun 2010 18:49:01 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
+CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, Graham Gower <graham.gower@gmail.com>
+Subject: Re: [PATCH v2 00/26] Add support for the Ingenic JZ4740 System-on-a-Chip
+References: <1276924111-11158-1-git-send-email-lars@metafoo.de> <20100620092610.GA4950@alpha.franken.de> <4C1E263E.1000903@metafoo.de> <20100620163437.GA8329@alpha.franken.de>
+In-Reply-To: <20100620163437.GA8329@alpha.franken.de>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Thomas Bogendoerfer wrote:
+> On Sun, Jun 20, 2010 at 04:31:26PM +0200, Lars-Peter Clausen wrote:
+>   
+>> Another issue with naming is that while a component might be similar in
+>> JZ4730 and JZ4740 it might be completely different in a different JZ47xx
+>> SoC. So naming a driver 'jz47xx_driver' instead of 'jz4740_driver' wont
+>> work either.
+>>     
+>
+> so ? call it xx for the common part an exact number for special part.
+> It might be just jugglin with pieces, but getting it better in the first
+> run is always a plus.
+>
+> Thomas.
+>   
+As I said, parts might be common between JZ4730 and JZ4740 but be
+different to JZ4750 and JZ4760. So JZ47xx wont fit either.
+Right now there is no practical use to moving things around, and there
+wont be until somebody who can actually test it starts adding support
+for a different JZ47XX SoC.
 
-the current hwmon sysfs API does not specify critical or fault limits for voltage
-and current readings.
-
-Many recent power controller/monitoring chips have support for such limits in addition
-to alarm limits. Typical action, when a the critical or fault limit is reached,
-may be a board reset or power shutdown, or to report the fault condition.
-
-Examples for chips supporting critical/fault limits are SMM665 and variants as well
-as many PMBus devices, such as MAX8688, MAX16064, LTC2978, and others.
-
-I think it would make sense to add critical/fault limits to the hwmon sysfs API,
-to be able to report those limits if supported by a chip.
-
-Any thoughts on this ?
-
-Thanks,
-Guenter
+- Lars
 
