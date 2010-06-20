@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949Ab0FTV0b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 17:26:31 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:54162 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754321Ab0FTV0Z (ORCPT
+	id S1754565Ab0FTVZn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 17:25:43 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:55060 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754304Ab0FTVZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 17:26:25 -0400
+	Sun, 20 Jun 2010 17:25:37 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Dan Williams <dan.j.williams@intel.com>
 Cc: <linux-kernel@vger.kernel.org>, Jonas Aaberg <jonas.aberg@stericsson.com>,
        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 13/19] DMAENGINE: ste_dma40: arch updates for LCLA and LCPA
-Date: Sun, 20 Jun 2010 23:26:14 +0200
-Message-ID: <1277069174-31238-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 07/19] DMAENGINE: ste_dma40: deny ops on non-alloc channels
+Date: Sun, 20 Jun 2010 23:25:31 +0200
+Message-ID: <1277069131-30941-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -23,72 +23,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-This follows on the patch to allocate LCLA dynamically: the
-on-chip memory is needed for other things so now that that
-we're using it dynamically we can remove the LCLA resource
-altogether and free up some ESRAM memory.
+Added checks to deny operating on none-allocated channels.
 
 Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- arch/arm/mach-ux500/devices-db8500.c           |   19 +++++++------------
- arch/arm/mach-ux500/include/mach/db8500-regs.h |    5 ++---
- 2 files changed, 9 insertions(+), 15 deletions(-)
+ drivers/dma/ste_dma40.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
-index 8229034..638964e 100644
---- a/arch/arm/mach-ux500/devices-db8500.c
-+++ b/arch/arm/mach-ux500/devices-db8500.c
-@@ -113,26 +113,21 @@ struct platform_device u8500_i2c4_device = {
- static struct resource dma40_resources[] = {
- 	[0] = {
- 		.start = U8500_DMA_BASE,
--		.end = U8500_DMA_BASE + SZ_4K - 1,
-+		.end   = U8500_DMA_BASE + SZ_4K - 1,
- 		.flags = IORESOURCE_MEM,
--		.name = "base",
-+		.name  = "base",
- 	},
- 	[1] = {
- 		.start = U8500_DMA_LCPA_BASE,
--		.end = U8500_DMA_LCPA_BASE + SZ_4K - 1,
-+		.end   = U8500_DMA_LCPA_BASE + 2 * SZ_1K - 1,
- 		.flags = IORESOURCE_MEM,
--		.name = "lcpa",
-+		.name  = "lcpa",
- 	},
- 	[2] = {
--		.start = U8500_DMA_LCLA_BASE,
--		.end = U8500_DMA_LCLA_BASE + 16 * 1024 - 1,
--		.flags = IORESOURCE_MEM,
--		.name = "lcla",
--	},
--	[3] = {
- 		.start = IRQ_DMA,
--		.end = IRQ_DMA,
--		.flags = IORESOURCE_IRQ}
-+		.end   = IRQ_DMA,
-+		.flags = IORESOURCE_IRQ,
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 1d17664..4d56d21 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1515,6 +1515,12 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
+ 					     chan);
+ 	unsigned long flags;
+ 
++	if (d40c->phy_chan == NULL) {
++		dev_err(&d40c->chan.dev->device,
++			"[%s] Unallocated channel.\n", __func__);
++		return ERR_PTR(-EINVAL);
 +	}
- };
++
+ 	spin_lock_irqsave(&d40c->lock, flags);
+ 	d40d = d40_desc_get(d40c);
  
- /* Default configuration for physcial memcpy */
-diff --git a/arch/arm/mach-ux500/include/mach/db8500-regs.h b/arch/arm/mach-ux500/include/mach/db8500-regs.h
-index 85fc6a8..897fa35 100644
---- a/arch/arm/mach-ux500/include/mach/db8500-regs.h
-+++ b/arch/arm/mach-ux500/include/mach/db8500-regs.h
-@@ -15,9 +15,8 @@
- #define U8500_ESRAM_BANK2	(U8500_ESRAM_BANK1 + U8500_ESRAM_BANK_SIZE)
- #define U8500_ESRAM_BANK3	(U8500_ESRAM_BANK2 + U8500_ESRAM_BANK_SIZE)
- #define U8500_ESRAM_BANK4	(U8500_ESRAM_BANK3 + U8500_ESRAM_BANK_SIZE)
--/* Use bank 4 for DMA LCLA and LCPA */
--#define U8500_DMA_LCLA_BASE	U8500_ESRAM_BANK4
--#define U8500_DMA_LCPA_BASE	(U8500_ESRAM_BANK4 + 0x4000)
-+/* Use bank 4 for DMA LCPA */
-+#define U8500_DMA_LCPA_BASE	U8500_ESRAM_BANK4
+@@ -1710,6 +1716,13 @@ static void d40_free_chan_resources(struct dma_chan *chan)
+ 	int err;
+ 	unsigned long flags;
  
- #define U8500_PER3_BASE		0x80000000
- #define U8500_STM_BASE		0x80100000
++	if (d40c->phy_chan == NULL) {
++		dev_err(&d40c->chan.dev->device,
++			"[%s] Cannot free unallocated channel\n", __func__);
++		return;
++	}
++
++
+ 	spin_lock_irqsave(&d40c->lock, flags);
+ 
+ 	err = d40_free_dma(d40c);
+@@ -1732,6 +1745,12 @@ static struct dma_async_tx_descriptor *d40_prep_memcpy(struct dma_chan *chan,
+ 	unsigned long flags;
+ 	int err = 0;
+ 
++	if (d40c->phy_chan == NULL) {
++		dev_err(&d40c->chan.dev->device,
++			"[%s] Channel is not allocated.\n", __func__);
++		return ERR_PTR(-EINVAL);
++	}
++
+ 	spin_lock_irqsave(&d40c->lock, flags);
+ 	d40d = d40_desc_get(d40c);
+ 
+@@ -1947,6 +1966,12 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
+ 	unsigned long flags;
+ 	int err;
+ 
++	if (d40c->phy_chan == NULL) {
++		dev_err(&d40c->chan.dev->device,
++			"[%s] Cannot prepare unallocated channel\n", __func__);
++		return ERR_PTR(-EINVAL);
++	}
++
+ 	if (d40c->dma_cfg.pre_transfer)
+ 		d40c->dma_cfg.pre_transfer(chan,
+ 					   d40c->dma_cfg.pre_transfer_data,
+@@ -1993,6 +2018,13 @@ static enum dma_status d40_tx_status(struct dma_chan *chan,
+ 	dma_cookie_t last_complete;
+ 	int ret;
+ 
++	if (d40c->phy_chan == NULL) {
++		dev_err(&d40c->chan.dev->device,
++			"[%s] Cannot read status of unallocated channel\n",
++			__func__);
++		return -EINVAL;
++	}
++
+ 	last_complete = d40c->completed;
+ 	last_used = chan->cookie;
+ 
+@@ -2012,6 +2044,12 @@ static void d40_issue_pending(struct dma_chan *chan)
+ 	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
+ 	unsigned long flags;
+ 
++	if (d40c->phy_chan == NULL) {
++		dev_err(&d40c->chan.dev->device,
++			"[%s] Channel is not allocated!\n", __func__);
++		return;
++	}
++
+ 	spin_lock_irqsave(&d40c->lock, flags);
+ 
+ 	/* Busy means that pending jobs are already being processed */
+@@ -2027,6 +2065,12 @@ static int d40_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	unsigned long flags;
+ 	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
+ 
++	if (d40c->phy_chan == NULL) {
++		dev_err(&d40c->chan.dev->device,
++			"[%s] Channel is not allocated!\n", __func__);
++		return -EINVAL;
++	}
++
+ 	switch (cmd) {
+ 	case DMA_TERMINATE_ALL:
+ 		spin_lock_irqsave(&d40c->lock, flags);
 -- 
 1.6.3.3
 
