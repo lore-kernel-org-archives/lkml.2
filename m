@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab0FTUzK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 16:55:10 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:57836 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757079Ab0FTUzF (ORCPT
+	id S1757311Ab0FTUzS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 16:55:18 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:51929 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757201Ab0FTUzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 16:55:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] serial: revert "Use block_til_ready helper"
-Date: Sun, 20 Jun 2010 22:54:34 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.35-rc3-00053-g34ffc96; KDE/4.4.2; x86_64; ; )
-Cc: Tony Luck <tony.luck@intel.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-References: <1273957196-13768-1-git-send-email-arnd@arndb.de> <201006192229.21971.arnd@arndb.de> <20100619225706.340eda52@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100619225706.340eda52@lxorguk.ukuu.org.uk>
+	Sun, 20 Jun 2010 16:55:13 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 20 Jun 2010 22:54:22 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH 8/8] firewire: cdev: extend fw_cdev_event_iso_interrupt
+ documentation
+To: linux1394-devel@lists.sourceforge.net
+cc: linux-kernel@vger.kernel.org
+In-Reply-To: <tkrat.ba0692c55cd50593@s5r6.in-berlin.de>
+Message-ID: <tkrat.2f07e0f4aa6fb821@s5r6.in-berlin.de>
+References: <tkrat.ba0692c55cd50593@s5r6.in-berlin.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006202254.34530.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18fpfRT31T8oLrVA0IRj8PL6D7EacEEsiNtwBM
- uF9KufIgXVtyXswZN2KpsEdXVEx8yjIg2eGKLgA+HZHJ9dTTfm
- njIX+leA78yqleeJG9nUw==
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 19 June 2010 23:57:06 Alan Cox wrote:
-> 
-> Important question - does it need a getty or will a simple cat < /dev/foo
-> twice get garbled (or cat > if its garbling the other way)
->
-> Which direction matters and whether a hangup is needed matters
+Add information regarding the 2.6.32 update to the xmit variant of
+fw_cdev_event_iso_interrupt.
 
-What I see is totally reproducible but does not make any sense to me.
-In my test setup I have a serial cable between /dev/ttyS0 (on-board
-16550A) and /dev/ttyUSB0 on the same machine.
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ include/linux/firewire-cdev.h |   19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
-When I start minicom on ttyS0 (or cat, for that matter), and start
-a getty on ttyUSB0 (or write into it any other way), everything is
-totally fine.
+Index: b/include/linux/firewire-cdev.h
+===================================================================
+--- a/include/linux/firewire-cdev.h
++++ b/include/linux/firewire-cdev.h
+@@ -209,10 +209,21 @@ struct fw_cdev_event_request2 {
+  * @header:	Stripped headers, if any
+  *
+  * This event is sent when the controller has completed an &fw_cdev_iso_packet
+- * with the %FW_CDEV_ISO_INTERRUPT bit set.  In the receive case, the headers
+- * stripped of all packets up until and including the interrupt packet are
+- * returned in the @header field.  The amount of header data per packet is as
+- * specified at iso context creation by &fw_cdev_create_iso_context.header_size.
++ * with the %FW_CDEV_ISO_INTERRUPT bit set.
++ *
++ * Isochronous transmit events:
++ *
++ * In version 1 of the ABI, &header_length is 0.  In version 3 and some
++ * implementations of version 2 of the ABI, &header_length is a multiple of 4
++ * and &header contains timestamps of all packets up until the interrupt packet.
++ * The format of the timestamps is as described below for isochronous reception.
++ *
++ * Isochronous receive events:
++ *
++ * The headers stripped of all packets up until and including the interrupt
++ * packet are returned in the @header field.  The amount of header data per
++ * packet is as specified at iso context creation by
++ * &fw_cdev_create_iso_context.header_size.
+  *
+  * In version 1 of this ABI, header data consisted of the 1394 isochronous
+  * packet header, followed by quadlets from the packet payload if
 
-I can observe the following problems when I start minicom on ttyUSB0:
-- writing to ttyS0 using cat alone gives garbled output
-- writing to ttyS0 using minicom always works
-- running a getty on ttyS0 lets me log in once
-- writing to ttyS0 using cat works fine while a working getty or minicom
-  also has ttyS0 open
-- running the getty on ttyS0 a second time gives me the same garbled
-  output as cat gives me
+-- 
+Stefan Richter
+-=====-==-=- -==- =-=--
+http://arcgraph.de/sr/
 
-The way that the output is garbled seems to be just missing characters,
-in a mostly reproducible way. Repeatedly writing the string
-abcdefghijklmnopqrstuvwxyz1234567890 into ttyS0 gives an output like
-'akq7m3iy', where only every sixteenth character is shown, plus
-an extra character in the second position.
-
-	Arnd
