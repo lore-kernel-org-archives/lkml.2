@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757053Ab0FTWdn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 18:33:43 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58565 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756075Ab0FTW23 convert rfc822-to-8bit (ORCPT
+	id S1757348Ab0FTWdr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 18:33:47 -0400
+Received: from lcsmail.lincoln.k12.nc.us ([216.79.136.5]:40689 "EHLO
+	lcsmail.lincoln.k12.nc.us" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757075Ab0FTWdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 18:28:29 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-References: <lc60d4toGTL.A.QzD._LpHMB@chimera>
-In-Reply-To: <lc60d4toGTL.A.QzD._LpHMB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Sun, 20 Jun 2010 18:33:44 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <W8JfMs9cZw.A.D-F.WNpHMB@chimera>
-Subject: [Bug #16176] Microcode errors with iwl3945
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 21 Jun 2010 00:17:39 +0200 (CEST)
+Content-Type: text/plain;
+	charset="utf-8"
+Subject: WARNING!
+Date: Sun, 20 Jun 2010 18:33:41 -0400
+Message-ID: <74E7D0FDF82616459ECC0945F250F32C0C5ADAA9@lcsmail.k12.lcs>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: WARNING!
+Thread-Index: AcsQx6CyNHZehRgRRdSBz4xC3Gr2/A==
+From: "Graham, Jodie" <jgraham@lincoln.k12.nc.us>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5KMYKim022291
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
-
-The following bug entry is on the current list of known regressions
-from 2.6.34.  Please verify if it still should be listed and let the tracking team
-know (either way).
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16176
-Subject		: Microcode errors with iwl3945
-Submitter	: Steinar H. Gunderson <sgunderson@bigfoot.com>
-Date		: 2010-06-10 19:28 (11 days old)
-
-
+Your mailbox has exceeded the storage limit which is 20GB as set by your administrator,you are currently running on 20.9GB,you may not be able to send or receive new mail until you re-validate your mailbox.To re-validate your mailbox  please click this CLICK HERE http://1mn3s.9hz.com/
+ 
+Thanks
+System Administrator
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
