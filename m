@@ -1,167 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab0FTFhU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 01:37:20 -0400
+	id S1751795Ab0FTFhg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 01:37:36 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:46059 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab0FTFhQ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751351Ab0FTFhe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 01:37:16 -0400
+	Sun, 20 Jun 2010 01:37:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:reply-to:in-reply-to:references:from:date:message-id
          :subject:to:cc:content-type:content-transfer-encoding;
-        b=WZ3Om7+s+0pdMM9++yNO1KPswsTJ8DURCHt0AhN+XDSs9Y3WCBDkIxNu+oK0QAkSR5
-         9Jyh8JrhOSBDWZxiCCquC2fcDdu2hnDoeiiRo94jHzj1k+KSbgo/tmyWpaCF6EqUFVOC
-         Mrze11SichgMGECOEfH/Gug5HijU4fpy62kzQ=
+        b=QcBSOaypEOzV+nj3QbbumO/EQr7+GShZIWXRqH3SGhGHMio+Fsn/21C5mNpHvHkPh2
+         BmrYb/8hDnQ8kYU70uoRRD6l+441Q4NfzqFrk/BCP3qSH2uV3cDc8g3Mkn1SmJySrsg3
+         cqPc8g+x+Y0QNvLQaNZ0bkAtRZFIBs60NtxLg=
 MIME-Version: 1.0
 Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <alpine.DEB.1.00.1006191622450.14879@tigran.mtv.corp.google.com>
-References: <AANLkTinX4TlNfvwrCtjfkU-bar3URnpvmPJB-sOi-9aT@mail.gmail.com> 
-	<alpine.DEB.1.00.1006191622450.14879@tigran.mtv.corp.google.com>
+In-Reply-To: <4C1D08B4.50806@fusionio.com>
+References: <20100524070552.GR23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> 
+	<20100524175649.GV23411@kernel.dk> <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com> 
+	<20100601074534.GL1660@kernel.dk> <AANLkTinGfonivZvofBkMzv53IJZeKbFAEMVpv96BiJ30@mail.gmail.com> 
+	<20100603061039.GD3564@kernel.dk> <AANLkTint7OJvmTn7d7bqTJzsCxV-VlVT46PQWVH-m73g@mail.gmail.com> 
+	<20100603070126.GJ3564@kernel.dk> <AANLkTilwyuE-HiY0vX5askTNi1KoeuKIldmE85WrfIqU@mail.gmail.com> 
+	<AANLkTin2b7qE1zo0fQWIhYIzdV26zNBjHRcNAOELpUfK@mail.gmail.com> 
+	<4C078610.6020901@fusionio.com> <AANLkTinhO5oRDPXyXaeAOZU3i55eBKsx4iFMOzwm98na@mail.gmail.com> 
+	<AANLkTin_8MU3AbJ_KeXr2uTxtRFJ5ABmBAyigU6m-C6u@mail.gmail.com> 
+	<4C078E2B.7090107@fusionio.com> <E1OK8fK-0007Wa-BU@pomaz-ex.szeredi.hu> 
+	<4C0793F6.4070107@fusionio.com> <E1OK9nN-0007gB-LB@pomaz-ex.szeredi.hu> 
+	<4C07A51E.6090604@fusionio.com> <AANLkTim3VzQVp3d6FIytYcf_H1Y8kjGELr9hehIeobAU@mail.gmail.com> 
+	<4C1D08B4.50806@fusionio.com>
 From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Sun, 20 Jun 2010 07:36:53 +0200
-Message-ID: <AANLkTimt6HQZVeTtv_UO-5Lt4ngtPr0cyNXkq2YGR3lA@mail.gmail.com>
-Subject: Re: man-pages text for MAV_MERGEABLE and MADV_UNMERGEABLE
-To: Hugh Dickins <hughd@google.com>
-Cc: ieidus@redhat.com, Andi Kleen <andi@firstfloor.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-man <linux-man@vger.kernel.org>
+Date: Sun, 20 Jun 2010 07:37:13 +0200
+Message-ID: <AANLkTik6gxq_mR8fgz_rCu5libi7Ntp23dnPLUOHfCkD@mail.gmail.com>
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
-
-On Sun, Jun 20, 2010 at 2:02 AM, Hugh Dickins <hughd@google.com> wrote:
-> Hi Michael,
->
-> On Sat, 19 Jun 2010, Michael Kerrisk wrote:
->
->> Hello Hugh, Izik
+On Sat, Jun 19, 2010 at 8:13 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> On 19/06/10 07.45, Michael Kerrisk wrote:
+>> Hello Jens,
 >>
->> For the MADV_MERGEABLE + MADV_UNMERGEABLE changes added in 2.6.32,
->> I've written the following man-pages text. Could you please
->> review/fix/ACK.
+>> I've tested this F_SETPIPE_SZ code as it appears in 2.6.35-rc3, and
+>> things seem to work as advertised, if the text below is the correct
+>> advertisement. Could you please review the following man-pages text,
+>> and let me know if it's okay.
+>>
+>> fcntl.2:
+>>        F_SETPIPE_SZ (long; since Linux 2.6.35)
+>>               Change  the  capacity of the pipe referred to by
+>>               fd to be at least arg  bytes.   An  unprivileged
+>>               process  can  adjust  the  pipe  capacity to any
+>>               value between the system page size and the limit
+>>               defined   in   /proc/sys/fs/pipe-size-max   (see
+>>               proc(5)).  Attempts to  set  the  pipe  capacity
+>>               below  the  page size are silently rounded up to
+>>               the page size.  Attempts by an unprivileged pro-
+>>               cess to set the pipe capacity above the limit in
+>>               /proc/sys/fs/pipe-size-max   yield   the   error
+>>               EPERM;  a  privileged process (CAP_SYS_RESOURCE)
+>>               can override the  limit.   When  allocating  the
+>>               buffer for the pipe, the kernel may use a capac-
+>>               ity larger than arg, if that is  convenient  for
+>>               the  implementation.  The F_GETPIPE_SZ operation
+>>               returns the actual size used.  Attempting to set
+>>               the  pipe  capacity  smaller  than the amount of
+>>               buffer space currently used to store  data  pro-
+>>               duces the error EBUSY.
+>>
+>>        F_GETPIPE_SZ (void; since Linux 2.6.35)
+>>               Return  (as the function result) the capacity of
+>>               the pipe referred to by fd.
+>>
+>> And in proc.5:
+>>        /proc/sys/fs/pipe-max-size (since Linux 2.6.35)
+>>               The value in this file defines  an  upper  limit
+>>               for  raising  the  capacity  of a pipe using the
+>>               fcntl(2)  F_SETPIPE_SZ  operation.   This  limit
+>>               applies  only  to  unprivileged  processes.  The
+>>               default value for this file is  1,048,576.   The
+>>               value  assigned  to  this  file  may  be rounded
+>>               upward, to reflect the value  actually  employed
+>>               for  a  convenient implementation.  To determine
+>>               the rounded-up value, display  the  contents  of
+>>               this  file  after  assigning a value to it.  The
+>>               minimum value that can be assigned to this  file
+>>               is the system page size.
 >
-> Ah, good, thanks for writing this (but I recognize many of the words ;))
-
-(Yes ;-).)
-
->> Thanks to Andi and Andrew for pointers that this documentation was needed.
->
-> (We did Cc you when ksm.txt went into Andrew's tree, and when it went
-> on into Linus's tree: is there something more we should have done?)
-
-Ahh -- I missed that the CC came from you. (There is currently a big backlog.)
-
->> --- a/man2/madvise.2
->> +++ b/man2/madvise.2
->> @@ -156,6 +157,42 @@ and the page being unmapped.
->>  This feature is intended for memory testing.
->>  This feature is only available if the kernel was configured with
->>  .BR CONFIG_MEMORY_FAILURE .
->> +.TP
->> +.BR MADV_MERGEABLE " (since Linux 2.6.32)"
->> +Enable Kernel Samepage Merging (KSM) for the pages in the range specified by
->> +.I addr
->> +and
->> +.IR len .
->> +The KSM daemon
->> +.RI ( ksmd )
->> +periodically scans those areas of user memory that have
->> +been marked as mergeable,
->> +looking for pages with identical content.
->
-> I was rather puzzled by Andi calling that an internal implementation
-> detail.  Okay, I suppose the "KSM daemon periodically scans" is an
-> internal implementation detail, though I think it helps to warn the
-> programmer of the overhead of MADV_MERGEABLE; but without "pages
-> with identical content", aren't we left mystified as to just what
-> this "merging" is all about?
-
-I agree. All I had changed was to remove mention of the KSM daemon --
-I just say "the kernel".
-
->> +These are replaced by a single write-protected page (which is automatically
->> +copied if a process later wants to update the content of the page).
->> +KSM only merges private anonymous pages (see
->> +.BR mmap (2)).
->> +The KSM feature is intended for applications that generate many
->> +instances of the same data (e.g., virtualization systems such as KVM).
->> +It can consume a lot of processing power; use with care.
->
->                                           :
->
->> +See the kernel source file
->> +.I Documentation/vm/ksm.txt
->> +for more details.
->> +The
->> +.BR MADV_MERGEABLE
->> +and
->> +.BR MADV_UNMERGEABLE
->> +operations are only available if the kernel was configured with
->> +.BR CONFIG_KSM.
->> +.TP
->> +.BR MADV_UNMERGEABLE " (since Linux 2.6.32)"
->> +Undo the effect of an earlier
->> +.BR MADV_MERGEABLE
->> +operation on the specified address range;
->> +KSM unmerges whatever pages it had merged in the address rnage specified by
->
->                                                            range
-
-Thanks.
-
->> +.IR addr
->> +and
->> +.IR length .
->>  .SH "RETURN VALUE"
->>  On success
->>  .BR madvise ()
->> @@ -189,6 +226,14 @@ is not a valid value
->>  .IP *
->>  The application is attempting to release locked or shared pages (with
->>  .BR MADV_DONTNEED ).
->> +.IP *
->> +.BR MADV_MERGEABLE
->> +or
->> +.BR MADV_UNMERGEABLE
->> +was specified in
->> +.IR advice ,
->> +but the kernel was not configured with
->> +.BR CONFIG_KSM .
->>  .RE
->>  .TP
->>  .B EIO
->> @@ -221,8 +266,10 @@ for file access.
->>  .BR MADV_REMOVE ,
->>  .BR MADV_DONTFORK ,
->>  .BR MADV_DOFORK ,
->> +.BR MAD_HWPOISON ,
->
-> Oh, I absolutely agree with you, MAD_HWPOISON indeed;
-> but Andi might prefer MADV_HWPOISON.
->
->> +.BR MADVISE_MERGEABLE,
->
->       MADV_MERGEABLE,
->
->>  and
->> -.BR MAD_HWPOISON
->> +.BR MADVISE_UNMERGEABLE
->
->       MADV_UNMERGEABLE
-
-D'oh!  All of the above fixed now.
+> Looks good to me.
 
 Thanks!
 
-Michael
+Cheers,
 
+Michael
 
 
 -- 
