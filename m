@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757091Ab0FTUQv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 16:16:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65264 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757025Ab0FTUQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 16:16:46 -0400
-Date: Sun, 20 Jun 2010 22:14:54 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Louis Rilling <louis.rilling@kerlabs.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org, Daniel Lezcano <dlezcano@fr.ibm.com>
-Subject: Re: [PATCH 6/6] pidns: Support unsharing the pid namespace.
-Message-ID: <20100620201454.GA6902@redhat.com>
-References: <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <m1pqzmqema.fsf_-_@fess.ebiederm.org> <m1wrtuozq6.fsf_-_@fess.ebiederm.org>
+	id S1757110Ab0FTUTu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 16:19:50 -0400
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:40974 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757025Ab0FTUTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 16:19:48 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Yinghai Lu <yinghai@kernel.org>,
+       "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+       "akpm@osdl.org" <akpm@osdl.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 20 Jun 2010 14:19:36 -0600
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Index: AcsQsXjy6bMF2/SaTzmTIob03lx+qwABFlCA
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3D09275CE@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+	 <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
+	 <1277046060.5242.18.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3D09275CC@cosmail02.lsi.com>
+ <1277063250.5242.25.camel@mulgrave.site>
+In-Reply-To: <1277063250.5242.25.camel@mulgrave.site>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1wrtuozq6.fsf_-_@fess.ebiederm.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5KKJwim020361
 
-On 06/20, Eric W. Biederman wrote:
->
-> Unsharing of the pid namespace unlike unsharing of other namespaces
-> does not take affect immediately.  Instead it affects the children
-> created with fork and clone.
+James,
 
-Cough. It is too late to me to even try to understand the changelog.
+Yes.  
 
-Instead I tried to quickly read the patch. Most probably I missed
-somthing, but still I'd like to ask the quiestion.
+Regards,
 
-So. If I understand correctly, the patch is simple:
+Bo Yang
 
-	- unshare(CLONE_NEWPID) changes current->proxy->pid_ns,
-	  but do not change current->pids[] and thus it doesn't
-	  change task_active_pid_ns().
+-----Original Message-----
+From: James Bottomley [mailto:James.Bottomley@suse.de] 
+Sent: Sunday, June 20, 2010 3:48 PM
+To: Yang, Bo
+Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
 
-	- since copy_process() uses ->proxy->pid_ns for alloc_pid()
-	  the new children will fall into the new ns.
+On Sun, 2010-06-20 at 13:27 -0600, Yang, Bo wrote:
+> The online controller reset (OCR) need to apply [Patch 1/12  --  patch
+> 8/12].  I already submitted all of them.
 
-IOW, the caller becomes the "swapper" for the new namespace.
+So 1-8 have to be done as a single commit and 9-12 can apply
+individually?
 
-Correct?
+James
 
-If yes, I'm afraid nobody except you will understand this magic ;)
 
-But what if the task T does unshare(CLONE_NEWPID) and then, say,
-pthread_create() ? Unless I missed something, the new thread won't
-be able to see T ?
-
-OK, suppose it does fork() after unshare(), then another fork().
-In this case the second child lives in the same namespace with
-init created by the 1st fork, but it is not descendant ? This means
-in particular that if the new init exits, zap_pid_ns_processes()->
-do_wait() can't work.
-
-I hope I missed something, this all is too subtle for me. And I
-still do not understand 4/6 which adds ns->dead.
-
-Oleg.
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
