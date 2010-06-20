@@ -1,310 +1,541 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254Ab0FTUys (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 16:54:48 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:51926 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757079Ab0FTUyq (ORCPT
+	id S1757278Ab0FTUy7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 16:54:59 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53943 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757168Ab0FTUy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 16:54:46 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 20 Jun 2010 22:53:55 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH 7/8] firewire: cdev: fix ABI for FCP and address range
- mapping, add fw_cdev_event_request2
-To: linux1394-devel@lists.sourceforge.net
-cc: linux-kernel@vger.kernel.org
-In-Reply-To: <tkrat.ba0692c55cd50593@s5r6.in-berlin.de>
-Message-ID: <tkrat.94c433133b5c4de5@s5r6.in-berlin.de>
-References: <tkrat.ba0692c55cd50593@s5r6.in-berlin.de>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+	Sun, 20 Jun 2010 16:54:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=cDA5zdiDGtVGULr7PWaoi/2I9z1hpPKwWkjHkmHa51x47bqHpE6Lndtv2s/LY9ckKQ
+         iYRMzEX0yk6h6d3GAzPMLoXeHQZ8ELqZvOzGVZD5S25l6FUCNkx4+nkmzJeuanQbTmGR
+         h5YYtcF2tVEnz/vYDAfx+LoZGT4Nt51ZfBvF8=
+From: Christoph Mair <christoph.mair@gmail.com>
+To: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Stefan Schmidt <stefan@datenfreihafen.org>,
+       Datta Shubhrajyoti <shubhrajyoti@ti.com>,
+       Christoph Mair <christoph.mair@gmail.com>
+Subject: [PATCH] Support for the pressure sensor BMP085 from Bosch Sensortec.
+Date: Sun, 20 Jun 2010 22:50:58 +0200
+Message-Id: <1277067058-6929-1-git-send-email-christoph.mair@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <4C1DF4DE.5090403@jic23.retrosnub.co.uk>
+References: <4C1DF4DE.5090403@jic23.retrosnub.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The problem:
+This driver adds support for the BMP085 digital pressure sensor
+from Bosch Sensortec. It exposes a sysfs api to userspace where
+pressure and temperature measurement results can be read from the
+pressure0_input and temp0_input file. The chip is able to calculate
+the average of up to eight samples to increase the accuracy.
+This feature can be controlled by writing to the oversampling file.
 
-A target-like userspace driver, e.g. AV/C target or SBP-2/3 target,
-needs to be able to act as responder and requester.  In the latter role,
-it needs to send requests to nods from which it received requests.  This
-is currently impossible because fw_cdev_event_request lacks information
-about sender node ID.
-Reported-by: Jay Fenlason <fenlason@redhat.com>
-
-Libffado + libraw1394 + firewire-core is currently unable to drive two
-or more audio devices on the same bus.
-Reported-by: Arnold Krille <arnold@arnoldarts.de>
-
-This is because libffado requires destination node ID of FCP requests
-and sender node ID of FCP responses to match.  It even prohibits
-libffado from working with a bus on which libraw1394 opens a /dev/fw* as
-default ioctl device that does not correspond with the audio device.
-This is because libraw1394 does not receive the sender node ID from the
-kernel.
-
-Moreover, fw_cdev_event_request makes it impossible to tell unicast and
-broadcast write requests apart.
-
-The fix:
-
-Add a replacement of struct fw_cdev_event_request request, boringly
-called struct fw_cdev_event_request2.  The new event will be sent to a
-userspace client instead of the old one if the client claims
-compatibility with <linux/firewire-cdev.h> ABI version 4 or later.
-
-libraw1394 needs to be extended to make use of the new event, in order
-to properly support libffado and other FCP or address range mapping
-users who require correct sender node IDs.
-
-Further notes:
-
-While we are at it, change back the range of possible values of
-fw_cdev_event_request.tcode to 0x0...0xb like in ABI version <= 3.
-The preceding change "firewire: expose extended tcode of incoming lock
-requests to (userspace) drivers" expanded it to 0x0...0x17 which could
-catch sloppily coded clients by surprise.  The extended range of codes
-is only used in the new fw_cdev_event_request2.tcode.
-
-Jay and I also suggested an alternative approach to fix the ABI for
-incoming requests:  Add an FW_CDEV_IOC_GET_REQUEST_INFO ioctl which can
-be called after reception of an fw_cdev_event_request, before issuing of
-the closing FW_CDEV_IOC_SEND_RESPONSE ioctl.  The new ioctl would reveal
-the vital information about a request that fw_cdev_event_request lacks.
-Jay showed an implementation of this approach.
-
-The former event approach adds 27 LOC of rather trivial code to
-core-cdev.c, the ioctl approach 34 LOC, some of which is nontrivial.
-The ioctl approach would certainly also add more LOC to userspace
-programs which require the expanded information on inbound requests.
-This approach is probably only on the lighter-weight side in case of
-clients that want to be compatible with kernels that lack the new
-capability, like libraw1394.  However, the code to be added to such
-libraw1394-like clients in case of the event approach is a straight-
-forward additional switch () case in its event handler.
-
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Christoph Mair <christoph.mair@gmail.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 ---
- drivers/firewire/core-cdev.c  |   45 ++++++++++++++++----
- include/linux/firewire-cdev.h |   76 +++++++++++++++++++++++++++++++++-
- 2 files changed, 110 insertions(+), 11 deletions(-)
+ drivers/misc/Kconfig  |   10 +
+ drivers/misc/Makefile |    1 +
+ drivers/misc/bmp085.c |  455 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 466 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/bmp085.c
 
-Index: b/drivers/firewire/core-cdev.c
-===================================================================
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -50,7 +50,8 @@
- /*
-  * ABI version history is documented in linux/firewire-cdev.h.
-  */
--#define FW_CDEV_KERNEL_VERSION 3
-+#define FW_CDEV_KERNEL_VERSION		4
-+#define FW_CDEV_VERSION_EVENT_REQUEST2	4
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 26386a9..9df8d3e 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -353,6 +353,16 @@ config VMWARE_BALLOON
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called vmware_balloon.
  
- struct client {
- 	u32 version;
-@@ -177,7 +178,10 @@ struct outbound_transaction_event {
- 
- struct inbound_transaction_event {
- 	struct event event;
--	struct fw_cdev_event_request request;
-+	union {
-+		struct fw_cdev_event_request request;
-+		struct fw_cdev_event_request2 request2;
-+	} req;
- };
- 
- struct iso_interrupt_event {
-@@ -646,6 +650,7 @@ static void handle_request(struct fw_car
- 	struct address_handler_resource *handler = callback_data;
- 	struct inbound_transaction_resource *r;
- 	struct inbound_transaction_event *e;
-+	size_t event_size0;
- 	void *fcp_frame = NULL;
- 	int ret;
- 
-@@ -679,15 +684,37 @@ static void handle_request(struct fw_car
- 	if (ret < 0)
- 		goto failed;
- 
--	e->request.type    = FW_CDEV_EVENT_REQUEST;
--	e->request.tcode   = tcode;
--	e->request.offset  = offset;
--	e->request.length  = length;
--	e->request.handle  = r->resource.handle;
--	e->request.closure = handler->closure;
-+	if (handler->client->version < FW_CDEV_VERSION_EVENT_REQUEST2) {
-+		struct fw_cdev_event_request *req = &e->req.request;
++config BMP085
++	tristate "BMP085 digital pressure sensor"
++	depends on I2C && SYSFS
++	help
++	  If you say yes here you get support for the Bosch Sensortec
++	  BMP086 digital pressure sensor.
 +
-+		if (tcode & 0x10)
-+			tcode = TCODE_LOCK_REQUEST;
++	  To compile this driver as a module, choose M here: the
++	  module will be called bmp085.
 +
-+		req->type	= FW_CDEV_EVENT_REQUEST;
-+		req->tcode	= tcode;
-+		req->offset	= offset;
-+		req->length	= length;
-+		req->handle	= r->resource.handle;
-+		req->closure	= handler->closure;
-+		event_size0	= sizeof(*req);
-+	} else {
-+		struct fw_cdev_event_request2 *req = &e->req.request2;
+ source "drivers/misc/c2port/Kconfig"
+ source "drivers/misc/eeprom/Kconfig"
+ source "drivers/misc/cb710/Kconfig"
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 6ed06a1..5623c54 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -31,3 +31,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
+ obj-y				+= eeprom/
+ obj-y				+= cb710/
+ obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
++obj-$(CONFIG_BMP085)		+= bmp085.o
+diff --git a/drivers/misc/bmp085.c b/drivers/misc/bmp085.c
+new file mode 100644
+index 0000000..16a2b2c
+--- /dev/null
++++ b/drivers/misc/bmp085.c
+@@ -0,0 +1,455 @@
++/*  Copyright (c) 2010  Christoph Mair <christoph.mair@gmail.com>
 +
-+		req->type	= FW_CDEV_EVENT_REQUEST2;
-+		req->tcode	= tcode;
-+		req->offset	= offset;
-+		req->source_node_id = source;
-+		req->destination_node_id = destination;
-+		req->card	= card->index;
-+		req->generation	= generation;
-+		req->length	= length;
-+		req->handle	= r->resource.handle;
-+		req->closure	= handler->closure;
-+		event_size0	= sizeof(*req);
-+	}
- 
- 	queue_event(handler->client, &e->event,
--		    &e->request, sizeof(e->request), r->data, length);
-+		    &e->req, event_size0, r->data, length);
- 	return;
- 
-  failed:
-Index: b/include/linux/firewire-cdev.h
-===================================================================
---- a/include/linux/firewire-cdev.h
-+++ b/include/linux/firewire-cdev.h
-@@ -37,6 +37,9 @@
- #define FW_CDEV_EVENT_ISO_RESOURCE_ALLOCATED	0x04
- #define FW_CDEV_EVENT_ISO_RESOURCE_DEALLOCATED	0x05
- 
-+/* available since kernel version 2.6.36 */
-+#define FW_CDEV_EVENT_REQUEST2			0x06
++    This program is free software; you can redistribute it and/or modify
++    it under the terms of the GNU General Public License as published by
++    the Free Software Foundation; either version 2 of the License, or
++    (at your option) any later version.
 +
- /**
-  * struct fw_cdev_event_common - Common part of all fw_cdev_event_ types
-  * @closure:	For arbitrary use by userspace
-@@ -103,11 +106,46 @@ struct fw_cdev_event_response {
- };
- 
- /**
-- * struct fw_cdev_event_request - Sent on incoming request to an address region
-+ * struct fw_cdev_event_request - Old version of &fw_cdev_event_request2
-  * @closure:	See &fw_cdev_event_common; set by %FW_CDEV_IOC_ALLOCATE ioctl
-  * @type:	See &fw_cdev_event_common; always %FW_CDEV_EVENT_REQUEST
-+ * @tcode:	See &fw_cdev_event_request2
-+ * @offset:	See &fw_cdev_event_request2
-+ * @handle:	See &fw_cdev_event_request2
-+ * @length:	See &fw_cdev_event_request2
-+ * @data:	See &fw_cdev_event_request2
-+ *
-+ * This event is sent instead of &fw_cdev_event_request2 if the kernel or
-+ * the client implements ABI version <= 3.
-+ *
-+ * Unlike &fw_cdev_event_request2, the sender identity cannot be established,
-+ * broadcast write requests cannot be distinguished from unicast writes, and
-+ * @tcode of lock requests is %TCODE_LOCK_REQUEST.
-+ *
-+ * Requests to the FCP_REQUEST or FCP_RESPONSE register are responded to as
-+ * with &fw_cdev_event_request2, except in kernel 2.6.32 and older which send
-+ * the response packet of the client's %FW_CDEV_IOC_SEND_RESPONSE ioctl.
-+ */
-+struct fw_cdev_event_request {
-+	__u64 closure;
-+	__u32 type;
-+	__u32 tcode;
-+	__u64 offset;
-+	__u32 handle;
-+	__u32 length;
-+	__u32 data[0];
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program; if not, write to the Free Software
++    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++*/
++
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/i2c.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++
++
++#define BMP085_I2C_ADDRESS		0x77
++#define BMP085_CHIP_ID			0x55
++
++#define BMP085_CALIBRATION_DATA_START	0xAA
++#define BMP085_CALIBRATION_DATA_LENGTH	11	/* 16 bit values */
++#define BMP085_CHIP_ID_REG		0xD0
++#define BMP085_VERSION_REG		0xD1
++#define BMP085_CTRL_REG			0xF4
++#define BMP085_TEMP_MEASUREMENT		0x2E
++#define BMP085_PRESSURE_MEASUREMENT	0x34
++#define BMP085_CONVERSION_REGISTER_MSB	0xF6
++#define BMP085_CONVERSION_REGISTER_LSB	0xF7
++#define BMP085_CONVERSION_REGISTER_XLSB	0xF8
++#define BMP085_TEMP_CONVERSION_TIME	5
++
++#define BMP085_CLIENT_NAME		"bmp085"
++
++
++static const unsigned short normal_i2c[] = { BMP085_I2C_ADDRESS,
++							I2C_CLIENT_END };
++
++struct bmp085_calibration_data {
++	s16 AC1, AC2, AC3;
++	u16 AC4, AC5, AC6;
++	s16 B1, B2;
++	s16 MB, MC, MD;
 +};
 +
-+/**
-+ * struct fw_cdev_event_request2 - Sent on incoming request to an address region
-+ * @closure:	See &fw_cdev_event_common; set by %FW_CDEV_IOC_ALLOCATE ioctl
-+ * @type:	See &fw_cdev_event_common; always %FW_CDEV_EVENT_REQUEST2
-  * @tcode:	Transaction code of the incoming request
-  * @offset:	The offset into the 48-bit per-node address space
-+ * @source_node_id: Sender node ID
-+ * @destination_node_id: Destination node ID
-+ * @card:	The index of the card from which the request came
-+ * @generation:	Bus generation in which the request is valid
-  * @handle:	Reference to the kernel-side pending request
-  * @length:	Data length, i.e. the request's payload size in bytes
-  * @data:	Incoming data, if any
-@@ -120,12 +158,42 @@ struct fw_cdev_event_response {
-  *
-  * The payload data for requests carrying data (write and lock requests)
-  * follows immediately and can be accessed through the @data field.
-+ *
-+ * Unlike &fw_cdev_event_request, @tcode of lock requests is one of the
-+ * firewire-core specific %TCODE_LOCK_MASK_SWAP...%TCODE_LOCK_VENDOR_DEPENDENT,
-+ * i.e. encodes the extended transaction code.
-+ *
-+ * @card may differ from &fw_cdev_get_info.card because requests are received
-+ * from all cards of the Linux host.  @source_node_id, @destination_node_id, and
-+ * @generation pertain to that card.  Destination node ID and bus generation may
-+ * therefore differ from the corresponding fields of the last
-+ * &fw_cdev_event_bus_reset.
-+ *
-+ * @destination_node_id may also differ from the current node ID because of a
-+ * non-local bus ID part or in case of a broadcast write request.  Note, a
-+ * client must call an %FW_CDEV_IOC_SEND_RESPONSE ioctl even in case of a
-+ * broadcast write request; the kernel will then release the kernel-side pending
-+ * request but will not actually send a response packet.
-+ *
-+ * In case of a write request to FCP_REQUEST or FCP_RESPONSE, the kernel already
-+ * sent a write response immediately after the request was received; in this
-+ * case the client must still call an %FW_CDEV_IOC_SEND_RESPONSE ioctl to
-+ * release the kernel-side pending request, though another response won't be
-+ * sent.
-+ *
-+ * If the client subsequently needs to initiate requests to the sender node of
-+ * an &fw_cdev_event_request2, it needs to use a device file with matching
-+ * card index, node ID, and generation for outbound requests.
-  */
--struct fw_cdev_event_request {
-+struct fw_cdev_event_request2 {
- 	__u64 closure;
- 	__u32 type;
- 	__u32 tcode;
- 	__u64 offset;
-+	__u32 source_node_id;
-+	__u32 destination_node_id;
-+	__u32 card;
-+	__u32 generation;
- 	__u32 handle;
- 	__u32 length;
- 	__u32 data[0];
-@@ -205,6 +273,7 @@ struct fw_cdev_event_iso_resource {
-  * @bus_reset:     Valid if @common.type == %FW_CDEV_EVENT_BUS_RESET
-  * @response:      Valid if @common.type == %FW_CDEV_EVENT_RESPONSE
-  * @request:       Valid if @common.type == %FW_CDEV_EVENT_REQUEST
-+ * @request2:      Valid if @common.type == %FW_CDEV_EVENT_REQUEST2
-  * @iso_interrupt: Valid if @common.type == %FW_CDEV_EVENT_ISO_INTERRUPT
-  * @iso_resource:  Valid if @common.type ==
-  *				%FW_CDEV_EVENT_ISO_RESOURCE_ALLOCATED or
-@@ -223,6 +292,7 @@ union fw_cdev_event {
- 	struct fw_cdev_event_bus_reset		bus_reset;
- 	struct fw_cdev_event_response		response;
- 	struct fw_cdev_event_request		request;
-+	struct fw_cdev_event_request2		request2;     /* added in 2.6.36 */
- 	struct fw_cdev_event_iso_interrupt	iso_interrupt;
- 	struct fw_cdev_event_iso_resource	iso_resource; /* added in 2.6.30 */
- };
-@@ -268,8 +338,10 @@ union fw_cdev_event {
-  *     (2.6.32)  - added time stamp to xmit &fw_cdev_event_iso_interrupt
-  *     (2.6.33)  - IR has always packet-per-buffer semantics now, not one of
-  *                 dual-buffer or packet-per-buffer depending on hardware
-+ *               - shared use and auto-response for FCP registers
-  *  3  (2.6.34)  - made &fw_cdev_get_cycle_timer reliable
-  *               - added %FW_CDEV_IOC_GET_CYCLE_TIMER2
-+ *  4  (2.6.36)  - added %FW_CDEV_EVENT_REQUEST2
-  */
- #define FW_CDEV_VERSION 3 /* Meaningless; don't use this macro. */
- 
-
++
++/* Each client has this additional data */
++struct bmp085_data {
++	struct i2c_client *client;
++	struct mutex lock;
++	struct bmp085_calibration_data calibration;
++	u32 raw_temperature;
++	u32 raw_pressure;
++	unsigned char oversampling_setting;
++	unsigned long last_temp_measurement;
++	s32 b6; /* calculated temperature correction coefficient */
++};
++
++
++static s32 bmp085_read_calibration_data(struct i2c_client *client)
++{
++	u16 tmp[BMP085_CALIBRATION_DATA_LENGTH];
++	struct bmp085_data *data = i2c_get_clientdata(client);
++	struct bmp085_calibration_data *cali = &(data->calibration);
++	s32 status = i2c_smbus_read_i2c_block_data(client,
++				BMP085_CALIBRATION_DATA_START,
++				BMP085_CALIBRATION_DATA_LENGTH*sizeof(u16),
++				(u8 *)tmp);
++	if (status < 0)
++		return status;
++
++	if (status != BMP085_CALIBRATION_DATA_LENGTH*sizeof(u16))
++		return -EIO;
++
++	cali->AC1 =  be16_to_cpu(tmp[0]);
++	cali->AC2 =  be16_to_cpu(tmp[1]);
++	cali->AC3 =  be16_to_cpu(tmp[2]);
++	cali->AC4 =  be16_to_cpu(tmp[3]);
++	cali->AC5 =  be16_to_cpu(tmp[4]);
++	cali->AC6 = be16_to_cpu(tmp[5]);
++	cali->B1 = be16_to_cpu(tmp[6]);
++	cali->B2 = be16_to_cpu(tmp[7]);
++	cali->MB = be16_to_cpu(tmp[8]);
++	cali->MC = be16_to_cpu(tmp[9]);
++	cali->MD = be16_to_cpu(tmp[10]);
++	return 0;
++}
++
++
++static s32 bmp085_update_raw_temperature(struct bmp085_data *data)
++{
++	u16 tmp;
++	s32 status;
++
++	mutex_lock(&data->lock);
++	status = i2c_smbus_write_byte_data(data->client, BMP085_CTRL_REG,
++						BMP085_TEMP_MEASUREMENT);
++	if (status != 0) {
++		dev_err(&data->client->dev,
++			"Error while requesting temperature measurement.\n");
++		goto exit;
++	}
++	msleep(BMP085_TEMP_CONVERSION_TIME);
++
++	status = i2c_smbus_read_i2c_block_data(data->client,
++		BMP085_CONVERSION_REGISTER_MSB, sizeof(tmp), (u8 *)&tmp);
++	if (status < 0)
++		goto exit;
++	if (status != sizeof(tmp)) {
++		dev_err(&data->client->dev,
++			"Error while reading temperature measurement result\n");
++		status = -EIO;
++		goto exit;
++	}
++	data->raw_temperature = be16_to_cpu(tmp);
++	data->last_temp_measurement = jiffies;
++	status = 0;	/* everything ok, return 0 */
++
++exit:
++	mutex_unlock(&data->lock);
++	return status;
++}
++
++static s32 bmp085_update_raw_pressure(struct bmp085_data *data)
++{
++	u32 tmp = 0;
++	s32 status;
++
++	mutex_lock(&data->lock);
++	status = i2c_smbus_write_byte_data(data->client, BMP085_CTRL_REG,
++		BMP085_PRESSURE_MEASUREMENT + (data->oversampling_setting<<6));
++	if (status != 0) {
++		dev_err(&data->client->dev,
++			"Error while requesting pressure measurement.\n");
++		goto exit;
++	}
++
++	/* wait for the end of conversion */
++	msleep(2+(3 << data->oversampling_setting<<1));
++
++	/* copy data into a u32 (4 bytes), but skip the first byte. */
++	status = i2c_smbus_read_i2c_block_data(data->client,
++			BMP085_CONVERSION_REGISTER_MSB, 3, ((u8 *)&tmp)+1);
++	if (status < 0)
++		goto exit;
++	if (status != 3) {
++		dev_err(&data->client->dev,
++			"Error while reading pressure measurement results\n");
++		status = -EIO;
++		goto exit;
++	}
++	data->raw_pressure = be32_to_cpu((tmp));
++	data->raw_pressure >>= (8-data->oversampling_setting);
++	status = 0;	/* everything ok, return 0 */
++
++exit:
++	mutex_unlock(&data->lock);
++	return status;
++}
++
++
++/*
++ * This function starts the temperature measurement and returns the value
++ * in tenth of a degree celsius.
++ */
++static s32 bmp085_get_temperature(struct bmp085_data *data, int *temperature)
++{
++	struct bmp085_calibration_data *cali = &data->calibration;
++	long x1, x2;
++	int status;
++
++	status = bmp085_update_raw_temperature(data);
++	if (status != 0)
++		goto exit;
++
++	x1 = ((data->raw_temperature - cali->AC6) * cali->AC5) >> 15;
++	x2 = (cali->MC << 11) / (x1 + cali->MD);
++	data->b6 = x1 + x2 - 4000;
++	/* if NULL just update b6. Used for pressure only measurements */
++	if (temperature != NULL)
++		*temperature = (x1+x2+8) >> 4;
++
++exit:
++	return status;;
++}
++
++/*
++ * This function starts the pressure measurement and returns the value
++ * in millibar. Since the pressure depends on the ambient temperature,
++ * a temperature measurement is executed if the last known value is older
++ * than one second.
++ */
++static s32 bmp085_get_pressure(struct bmp085_data *data, int *pressure)
++{
++	struct bmp085_calibration_data *cali = &data->calibration;
++	s32 x1, x2, x3, b3;
++	u32 b4, b7;
++	s32 p;
++	int status;
++
++	/* alt least every second force an update of the ambient temperature */
++	if (data->last_temp_measurement + 1*HZ < jiffies) {
++		status = bmp085_get_temperature(data, NULL);
++		if (status != 0)
++			goto exit;
++	}
++
++	status = bmp085_update_raw_pressure(data);
++	if (status != 0)
++		goto exit;
++
++	x1 = (data->b6 * data->b6) >> 12;
++	x1 *= cali->B2;
++	x1 >>= 11;
++
++	x2 = cali->AC2 * data->b6;
++	x2 >>= 11;
++
++	x3 = x1 + x2;
++
++	b3 = (((((s32)cali->AC1) * 4 + x3) << data->oversampling_setting) + 2);
++	b3 >>= 2;
++
++	x1 = (cali->AC3 * data->b6) >> 13;
++	x2 = (cali->B1 * ((data->b6 * data->b6) >> 12)) >> 16;
++	x3 = (x1 + x2 + 2) >> 2;
++	b4 = (cali->AC4 * (u32)(x3 + 32768)) >> 15;
++
++	b7 = ((u32)data->raw_pressure - b3) *
++					(50000 >> data->oversampling_setting);
++	p = ((b7 < 0x80000000) ? ((b7 << 1) / b4) : ((b7 / b4) * 2));
++
++	x1 = p >> 8;
++	x1 *= x1;
++	x1 = (x1 * 3038) >> 16;
++	x2 = (-7357 * p) >> 16;
++	p += (x1 + x2 + 3791) >> 4;
++
++	*pressure = p;
++
++exit:
++	return status;
++}
++
++/*
++ * This function sets the chip-internal oversampling. Valid values are 0..3.
++ * The chip will use 2^oversampling samples for interlan averaging.
++ * This influences the measurement time and the accuracy; larger values
++ * increase both. The datasheet gives on overview on how measurement time,
++ * accuracy and noise correlate.
++ */
++static void bmp085_set_oversampling(struct bmp085_data *data,
++						unsigned char oversampling)
++{
++	if (oversampling > 3)
++		oversampling = 3;
++	data->oversampling_setting = oversampling;
++}
++
++/*
++ * Returns the currently selected oversampling. Range: 0..3
++ */
++static unsigned char bmp085_get_oversampling(struct bmp085_data *data)
++{
++	return data->oversampling_setting;
++}
++
++/* sysfs callbacks */
++static ssize_t set_oversampling(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct bmp085_data *data = i2c_get_clientdata(client);
++	unsigned long oversampling;
++	int success = strict_strtoul(buf, 10, &oversampling);
++	if (success == 0) {
++		bmp085_set_oversampling(data, oversampling);
++		return count;
++	}
++	return success;
++}
++
++static ssize_t show_oversampling(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct bmp085_data *data = i2c_get_clientdata(client);
++	return sprintf(buf, "%u\n", bmp085_get_oversampling(data));
++}
++static DEVICE_ATTR(oversampling, S_IWUSR | S_IRUGO,
++					show_oversampling, set_oversampling);
++
++
++static ssize_t show_temperature(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	int temperature;
++	int status;
++	struct i2c_client *client = to_i2c_client(dev);
++	struct bmp085_data *data = i2c_get_clientdata(client);
++
++	status = bmp085_get_temperature(data, &temperature);
++	if (status != 0)
++		return status;
++	else
++		return sprintf(buf, "%d\n", temperature);
++}
++static DEVICE_ATTR(temp0_input, S_IRUGO, show_temperature, NULL);
++
++
++static ssize_t show_pressure(struct device *dev,
++			     struct device_attribute *attr, char *buf)
++{
++	int pressure;
++	int status;
++	struct i2c_client *client = to_i2c_client(dev);
++	struct bmp085_data *data = i2c_get_clientdata(client);
++
++	status = bmp085_get_pressure(data, &pressure);
++	if (status != 0)
++		return status;
++	else
++		return sprintf(buf, "%d\n", pressure);
++}
++static DEVICE_ATTR(pressure0_input, S_IRUGO, show_pressure, NULL);
++
++
++static struct attribute *bmp085_attributes[] = {
++	&dev_attr_temp0_input.attr,
++	&dev_attr_pressure0_input.attr,
++	&dev_attr_oversampling.attr,
++	NULL
++};
++
++static const struct attribute_group bmp085_attr_group = {
++	.attrs = bmp085_attributes,
++};
++
++static int bmp085_detect(struct i2c_client *client, struct i2c_board_info *info)
++{
++	if (client->addr != BMP085_I2C_ADDRESS)
++		return -ENODEV;
++
++	if (i2c_smbus_read_byte_data(client, BMP085_CHIP_ID_REG) != BMP085_CHIP_ID)
++		return -ENODEV;
++
++	return 0;
++}
++
++static int bmp085_init_client(struct i2c_client *client)
++{
++	unsigned char version;
++	int status;
++	struct bmp085_data *data = i2c_get_clientdata(client);
++	data->client = client;
++	status = bmp085_read_calibration_data(client);
++	if (status != 0)
++		goto exit;
++	version = i2c_smbus_read_byte_data(client, BMP085_VERSION_REG);
++	data->last_temp_measurement = 0;
++	data->oversampling_setting = 3;
++	mutex_init(&data->lock);
++	dev_info(&data->client->dev, "BMP085 ver. %d.%d found.\n",
++			(version & 0x0F), (version & 0xF0) >> 4);
++exit:
++	return status;
++}
++
++static int bmp085_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	struct bmp085_data *data;
++	int err = 0;
++
++	data = kzalloc(sizeof(struct bmp085_data), GFP_KERNEL);
++	if (!data) {
++		err = -ENOMEM;
++		goto exit;
++	}
++
++	/* default settings after POR */
++	data->oversampling_setting = 0x00;
++
++	i2c_set_clientdata(client, data);
++
++	/* Initialize the BMP085 chip */
++	err = bmp085_init_client(client);
++	if (err != 0)
++		goto exit_free;
++
++	/* Register sysfs hooks */
++	err = sysfs_create_group(&client->dev.kobj, &bmp085_attr_group);
++	if (err)
++		goto exit_free;
++
++	dev_info(&data->client->dev, "Succesfully initialized bmp085!\n");
++	goto exit;
++
++exit_free:
++	kfree(data);
++exit:
++	return err;
++}
++
++static int bmp085_remove(struct i2c_client *client)
++{
++	sysfs_remove_group(&client->dev.kobj, &bmp085_attr_group);
++	kfree(i2c_get_clientdata(client));
++	return 0;
++}
++
++static const struct i2c_device_id bmp085_id[] = {
++	{ "bmp085", 0 },
++	{ }
++};
++
++static struct i2c_driver bmp085_driver = {
++	.driver = {
++		.owner = THIS_MODULE,
++		.name	= "bmp085"
++	},
++	.id_table	= bmp085_id,
++	.probe		= bmp085_probe,
++	.remove		= bmp085_remove,
++
++	.detect		= bmp085_detect,
++	.address_list	= normal_i2c
++};
++
++static int __init bmp085_init(void)
++{
++	return i2c_add_driver(&bmp085_driver);
++}
++
++static void __exit bmp085_exit(void)
++{
++	i2c_del_driver(&bmp085_driver);
++}
++
++
++MODULE_AUTHOR("Christoph Mair <christoph.mair@gmail.com");
++MODULE_DESCRIPTION("BMP085 driver");
++MODULE_LICENSE("GPL");
++
++module_init(bmp085_init);
++module_exit(bmp085_exit);
 -- 
-Stefan Richter
--=====-==-=- -==- =-=--
-http://arcgraph.de/sr/
+1.7.1
 
