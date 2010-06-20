@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab0FTVZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 17:25:27 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:51528 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753340Ab0FTVZK (ORCPT
+	id S1754184Ab0FTVZb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 17:25:31 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:44388 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753387Ab0FTVZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 17:25:10 -0400
+	Sun, 20 Jun 2010 17:25:19 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Dan Williams <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>,
-       Linus Walleij <linus.walleij@stericsson.com>,
-       Jonas Aaberg <jonas.aberg@stericsson.com>
-Subject: [PATCH 02/19] DMAENGINE: ste_dma40: only write phy channel config first time
-Date: Sun, 20 Jun 2010 23:24:52 +0200
-Message-ID: <1277069092-30684-1-git-send-email-linus.walleij@stericsson.com>
+Cc: <linux-kernel@vger.kernel.org>, Jonas Aaberg <jonas.aberg@stericsson.com>,
+       Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH 04/19] DMAENGINE: ste_dma40: use kmem cache
+Date: Sun, 20 Jun 2010 23:25:08 +0200
+Message-ID: <1277069108-30787-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,131 +21,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We only need to write the configuration to a physical channel if
-it is free, else it is already written.
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
+
+Use kmem cache instead of own cache, reducing code duplication
+and bug sources.
 
 Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/dma/ste_dma40.c    |   64 ++++++++++++++++++++++----------------------
- drivers/dma/ste_dma40_ll.h |    3 ++
- 2 files changed, 35 insertions(+), 32 deletions(-)
+ drivers/dma/ste_dma40.c |   52 ++++++++++++++++------------------------------
+ 1 files changed, 18 insertions(+), 34 deletions(-)
 
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 4618d6c..9655452 100644
+index d72eff6..b60a6db 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -1210,30 +1210,6 @@ out:
+@@ -34,10 +34,6 @@
+ #define D40_ALLOC_PHY		(1 << 30)
+ #define D40_ALLOC_LOG_FREE	0
  
- }
+-/* The number of free d40_desc to keep in memory before starting
+- * to kfree() them */
+-#define D40_DESC_CACHE_SIZE 50
+-
+ /* Hardware designer of the block */
+ #define D40_PERIPHID2_DESIGNER 0x8
  
--static int d40_config_chan(struct d40_chan *d40c,
--			   struct stedma40_chan_cfg *info)
--{
--
--	/* Fill in basic CFG register values */
--	d40_phy_cfg(&d40c->dma_cfg, &d40c->src_def_cfg,
--		    &d40c->dst_def_cfg, d40c->log_num != D40_PHY_CHAN);
--
--	if (d40c->log_num != D40_PHY_CHAN) {
--		d40_log_cfg(&d40c->dma_cfg,
--			    &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
--
--		if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM)
--			d40c->lcpa = d40c->base->lcpa_base +
--				d40c->dma_cfg.src_dev_type * 32;
--		else
--			d40c->lcpa = d40c->base->lcpa_base +
--				d40c->dma_cfg.dst_dev_type * 32 + 16;
+@@ -172,8 +168,6 @@ struct d40_base;
+  * @client: Cliented owned descriptor list.
+  * @active: Active descriptor.
+  * @queue: Queued jobs.
+- * @free: List of free descripts, ready to be reused.
+- * @free_len: Number of descriptors in the free list.
+  * @dma_cfg: The client configuration of this dma channel.
+  * @base: Pointer to the device instance struct.
+  * @src_def_cfg: Default cfg register setting for src.
+@@ -197,8 +191,6 @@ struct d40_chan {
+ 	struct list_head		 client;
+ 	struct list_head		 active;
+ 	struct list_head		 queue;
+-	struct list_head		 free;
+-	int				 free_len;
+ 	struct stedma40_chan_cfg	 dma_cfg;
+ 	struct d40_base			*base;
+ 	/* Default register configurations */
+@@ -242,6 +234,7 @@ struct d40_chan {
+  * @lcpa_base: The virtual mapped address of LCPA.
+  * @phy_lcpa: The physical address of the LCPA.
+  * @lcpa_size: The size of the LCPA area.
++ * @desc_slab: cache for descriptors.
+  */
+ struct d40_base {
+ 	spinlock_t			 interrupt_lock;
+@@ -268,6 +261,7 @@ struct d40_base {
+ 	void				 *lcpa_base;
+ 	dma_addr_t			  phy_lcpa;
+ 	resource_size_t			  lcpa_size;
++	struct kmem_cache		 *desc_slab;
+ };
+ 
+ /**
+@@ -382,36 +376,21 @@ static struct d40_desc *d40_desc_get(struct d40_chan *d40c)
+ 			if (async_tx_test_ack(&d->txd)) {
+ 				d40_pool_lli_free(d);
+ 				d40_desc_remove(d);
+-				desc = d;
+-				goto out;
++				break;
+ 			}
 -	}
 -
--	/* Write channel configuration to the DMA */
--	return d40_config_write(d40c);
--}
--
- static int d40_config_memcpy(struct d40_chan *d40c)
- {
- 	dma_cap_mask_t cap = d40c->chan.device->cap_mask;
-@@ -1691,20 +1667,21 @@ static int d40_alloc_chan_resources(struct dma_chan *chan)
- 	unsigned long flags;
- 	struct d40_chan *d40c =
- 		container_of(chan, struct d40_chan, chan);
--
-+	bool is_free_phy;
- 	spin_lock_irqsave(&d40c->lock, flags);
- 
- 	d40c->completed = chan->cookie = 1;
- 
- 	/*
- 	 * If no dma configuration is set (channel_type == 0)
--	 * use default configuration
-+	 * use default configuration (memcpy)
- 	 */
- 	if (d40c->dma_cfg.channel_type == 0) {
- 		err = d40_config_memcpy(d40c);
- 		if (err)
- 			goto err_alloc;
- 	}
-+	is_free_phy = (d40c->phy_chan == NULL);
- 
- 	err = d40_allocate_channel(d40c);
- 	if (err) {
-@@ -1713,12 +1690,35 @@ static int d40_alloc_chan_resources(struct dma_chan *chan)
- 		goto err_alloc;
- 	}
- 
--	err = d40_config_chan(d40c, &d40c->dma_cfg);
--	if (err) {
--		dev_err(&d40c->chan.dev->device,
--			"[%s] Failed to configure channel\n",
--			__func__);
--		goto err_config;
-+	/* Fill in basic CFG register values */
-+	d40_phy_cfg(&d40c->dma_cfg, &d40c->src_def_cfg,
-+		    &d40c->dst_def_cfg, d40c->log_num != D40_PHY_CHAN);
-+
-+	if (d40c->log_num != D40_PHY_CHAN) {
-+		d40_log_cfg(&d40c->dma_cfg,
-+			    &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
-+
-+		if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM)
-+			d40c->lcpa = d40c->base->lcpa_base +
-+			  d40c->dma_cfg.src_dev_type * D40_LCPA_CHAN_SIZE;
-+		else
-+			d40c->lcpa = d40c->base->lcpa_base +
-+			  d40c->dma_cfg.dst_dev_type *
-+			  D40_LCPA_CHAN_SIZE + D40_LCPA_CHAN_DST_DELTA;
-+	}
-+
-+	/*
-+	 * Only write channel configuration to the DMA if the physical
-+	 * resource is free. In case of multiple logical channels
-+	 * on the same physical resource, only the first write is necessary.
-+	 */
-+	if (is_free_phy) {
-+		err = d40_config_write(d40c);
-+		if (err) {
-+			dev_err(&d40c->chan.dev->device,
-+				"[%s] Failed to configure channel\n",
-+				__func__);
+-	if (list_empty(&d40c->free)) {
+-		/* Alloc new desc because we're out of used ones */
+-		desc = kzalloc(sizeof(struct d40_desc), GFP_NOWAIT);
+-		if (desc == NULL)
+-			goto out;
+-		INIT_LIST_HEAD(&desc->node);
+ 	} else {
+-		/* Reuse an old desc. */
+-		desc = list_first_entry(&d40c->free,
+-					struct d40_desc,
+-					node);
+-		list_del(&desc->node);
+-		d40c->free_len--;
++		d = kmem_cache_alloc(d40c->base->desc_slab, GFP_NOWAIT);
++		if (d != NULL) {
++			memset(d, 0, sizeof(struct d40_desc));
++			INIT_LIST_HEAD(&d->node);
 +		}
  	}
+-out:
+-	return desc;
++	return d;
+ }
  
- 	spin_unlock_irqrestore(&d40c->lock, flags);
-diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
-index 2029280..c081f28 100644
---- a/drivers/dma/ste_dma40_ll.h
-+++ b/drivers/dma/ste_dma40_ll.h
-@@ -13,6 +13,9 @@
- #define D40_DREG_PCDELTA	(8 * 4)
- #define D40_LLI_ALIGN		16 /* LLI alignment must be 16 bytes. */
+ static void d40_desc_free(struct d40_chan *d40c, struct d40_desc *d40d)
+ {
+-	if (d40c->free_len < D40_DESC_CACHE_SIZE) {
+-		list_add_tail(&d40d->node, &d40c->free);
+-		d40c->free_len++;
+-	} else
+-		kfree(d40d);
++	kmem_cache_free(d40c->base->desc_slab, d40d);
+ }
  
-+#define D40_LCPA_CHAN_SIZE 32
-+#define D40_LCPA_CHAN_DST_DELTA 16
+ static void d40_desc_submit(struct d40_chan *d40c, struct d40_desc *desc)
+@@ -2107,13 +2086,10 @@ static void __init d40_chan_init(struct d40_base *base, struct dma_device *dma,
+ 
+ 		d40c->log_num = D40_PHY_CHAN;
+ 
+-		INIT_LIST_HEAD(&d40c->free);
+ 		INIT_LIST_HEAD(&d40c->active);
+ 		INIT_LIST_HEAD(&d40c->queue);
+ 		INIT_LIST_HEAD(&d40c->client);
+ 
+-		d40c->free_len = 0;
+-
+ 		tasklet_init(&d40c->tasklet, dma_tasklet,
+ 			     (unsigned long) d40c);
+ 
+@@ -2398,6 +2374,12 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 	if (!base->lcla_pool.alloc_map)
+ 		goto failure;
+ 
++	base->desc_slab = kmem_cache_create(D40_NAME, sizeof(struct d40_desc),
++					    0, SLAB_HWCACHE_ALIGN,
++					    NULL);
++	if (base->desc_slab == NULL)
++		goto failure;
 +
- #define D40_TYPE_TO_GROUP(type) (type / 16)
- #define D40_TYPE_TO_EVENT(type) (type % 16)
+ 	return base;
  
+ failure:
+@@ -2612,6 +2594,8 @@ static int __init d40_probe(struct platform_device *pdev)
+ 
+ failure:
+ 	if (base) {
++		if (base->desc_slab)
++			kmem_cache_destroy(base->desc_slab);
+ 		if (base->virtbase)
+ 			iounmap(base->virtbase);
+ 		if (base->lcla_pool.phy)
 -- 
 1.6.3.3
 
