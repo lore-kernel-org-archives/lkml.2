@@ -1,109 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421Ab0FTFfr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 01:35:47 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56109 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab0FTFfo convert rfc822-to-8bit (ORCPT
+	id S1751515Ab0FTFhU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 01:37:20 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46059 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab0FTFhQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 01:35:44 -0400
+	Sun, 20 Jun 2010 01:37:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wHks4xetc+ogEfuejbGPsFUaRl7Rd1PJLmPHpa8/0I+aw5cVhfzzsZ4uW0M1LYc49p
-         ZdhS5LKrWSD/zBgrvZZARCBhw8Bg1OQrqyTMYMvu2J3MRAXxpqntRZahWRh2/AaXvyLh
-         zu2KiBbx7nM092tS9j3z/ViqX9l5VL8r3QJrQ=
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=WZ3Om7+s+0pdMM9++yNO1KPswsTJ8DURCHt0AhN+XDSs9Y3WCBDkIxNu+oK0QAkSR5
+         9Jyh8JrhOSBDWZxiCCquC2fcDdu2hnDoeiiRo94jHzj1k+KSbgo/tmyWpaCF6EqUFVOC
+         Mrze11SichgMGECOEfH/Gug5HijU4fpy62kzQ=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinq_3P-QrTqsEdtyMbBtc9EXhahclER_4s5_Kx2@mail.gmail.com>
-References: <AANLkTinq_3P-QrTqsEdtyMbBtc9EXhahclER_4s5_Kx2@mail.gmail.com>
-Date: Sat, 19 Jun 2010 22:35:43 -0700
-Message-ID: <AANLkTikExwM_LBUw_-z2eimO96Dxs_fNfAM4jlftXyHM@mail.gmail.com>
-Subject: Re: Wacom based devices and the mt kernel protocol.
-From: Ping Cheng <pinglinux@gmail.com>
-To: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-       Chase Douglas <chase.douglas@canonical.com>,
-       Rafi Rubin <rafi@seas.upenn.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jiri Kosina <jkosina@suse.cz>
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <alpine.DEB.1.00.1006191622450.14879@tigran.mtv.corp.google.com>
+References: <AANLkTinX4TlNfvwrCtjfkU-bar3URnpvmPJB-sOi-9aT@mail.gmail.com> 
+	<alpine.DEB.1.00.1006191622450.14879@tigran.mtv.corp.google.com>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Sun, 20 Jun 2010 07:36:53 +0200
+Message-ID: <AANLkTimt6HQZVeTtv_UO-5Lt4ngtPr0cyNXkq2YGR3lA@mail.gmail.com>
+Subject: Re: man-pages text for MAV_MERGEABLE and MADV_UNMERGEABLE
+To: Hugh Dickins <hughd@google.com>
+Cc: ieidus@redhat.com, Andi Kleen <andi@firstfloor.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-man <linux-man@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mohamed,
+Hi Hugh,
 
-I am glad that you've initiated this email thread. Otherwise, I would
-have to find a proper way to explain the current status of Wacom MT
-support. Please see my comments inline.
-
-Thank you,
-
-Ping
-
-On Fri, Jun 18, 2010 at 4:20 AM, Mohamed Ikbel Boulabiar
-<boulabiar@gmail.com> wrote:
-> Hi,
+On Sun, Jun 20, 2010 at 2:02 AM, Hugh Dickins <hughd@google.com> wrote:
+> Hi Michael,
 >
-> Now we can find many multitouch devices based on wacom Wacom panel/digitizer
-> Bamboo Pen&Touch, HP tm2, Fujitsu LifeBook T4410 & T4310, etc...
+> On Sat, 19 Jun 2010, Michael Kerrisk wrote:
 >
-> it seems that these devices are supported in some way in Linux Kernel,
-> but I want to know if they are compliant with the MT Linux protocol.
-
-As most of you know, the current Wacom two finger touch devices have
-been supported on Linux since last Oct.  However, they are not
-supported with the current in-kernel MT protocol, aka, MT type A
-protocol.
-
-I know you would ask me why. The reason is simple: it doesn't support
-the Wacom case - finger tracking.  If you wonder why I don't work with
-the other developers to support Wacom MT case, I can assure you that I
-am working with them. We will support Wacom MT devices once the
-appropriate protocol is available.
-
-> N-Trig based devices and Stantum ones are the most compliant,
-
-That's fair since they don't need to track the fingers.
-
-> so Wacom situation needs to be clarified specially considering they are HID
-> devices (meaning similar to the others devices which respect the
-> protocol).
-
-Well, it is not a pure HID issue.  It is more of how we want to
-support MT on Linux issue.
-
-> This impact very much the decision of a Linux user wanting to buy wacom mt device.
-
-I think end users have already got the Linux support from Wacom.  Can
-you share the specific issues that are preventing Linux end users from
-buying a Wacom MT devices? If I didn't misunderstand your point here,
-you are talking about Linux users, not Linux developers/hackers,
-right?
-
-> Ping can you clarifie the situation of wacom based devices ?
-
-What else do you need me to clarify? I am all ears and I am ready to
-clarify any thing that puzzles you.
-
-Ping
-
-> Thanks,
->
-> ik.
->
-> On Tue, Jun 15, 2010 at 7:01 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> Hello Hugh, Izik
 >>
->> g number of intelligent multi-contact and
->> multi-user devices, the need to send digested, filtered information
->> from a set of different sources within the same device is imminent.
->> This patch adds the concept of slots to the MT protocol. The slots
->> enumerate a set of identified sources, such that all MT events
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> For the MADV_MERGEABLE + MADV_UNMERGEABLE changes added in 2.6.32,
+>> I've written the following man-pages text. Could you please
+>> review/fix/ACK.
 >
+> Ah, good, thanks for writing this (but I recognize many of the words ;))
+
+(Yes ;-).)
+
+>> Thanks to Andi and Andrew for pointers that this documentation was needed.
+>
+> (We did Cc you when ksm.txt went into Andrew's tree, and when it went
+> on into Linus's tree: is there something more we should have done?)
+
+Ahh -- I missed that the CC came from you. (There is currently a big backlog.)
+
+>> --- a/man2/madvise.2
+>> +++ b/man2/madvise.2
+>> @@ -156,6 +157,42 @@ and the page being unmapped.
+>>  This feature is intended for memory testing.
+>>  This feature is only available if the kernel was configured with
+>>  .BR CONFIG_MEMORY_FAILURE .
+>> +.TP
+>> +.BR MADV_MERGEABLE " (since Linux 2.6.32)"
+>> +Enable Kernel Samepage Merging (KSM) for the pages in the range specified by
+>> +.I addr
+>> +and
+>> +.IR len .
+>> +The KSM daemon
+>> +.RI ( ksmd )
+>> +periodically scans those areas of user memory that have
+>> +been marked as mergeable,
+>> +looking for pages with identical content.
+>
+> I was rather puzzled by Andi calling that an internal implementation
+> detail.  Okay, I suppose the "KSM daemon periodically scans" is an
+> internal implementation detail, though I think it helps to warn the
+> programmer of the overhead of MADV_MERGEABLE; but without "pages
+> with identical content", aren't we left mystified as to just what
+> this "merging" is all about?
+
+I agree. All I had changed was to remove mention of the KSM daemon --
+I just say "the kernel".
+
+>> +These are replaced by a single write-protected page (which is automatically
+>> +copied if a process later wants to update the content of the page).
+>> +KSM only merges private anonymous pages (see
+>> +.BR mmap (2)).
+>> +The KSM feature is intended for applications that generate many
+>> +instances of the same data (e.g., virtualization systems such as KVM).
+>> +It can consume a lot of processing power; use with care.
+>
+>                                           :
+>
+>> +See the kernel source file
+>> +.I Documentation/vm/ksm.txt
+>> +for more details.
+>> +The
+>> +.BR MADV_MERGEABLE
+>> +and
+>> +.BR MADV_UNMERGEABLE
+>> +operations are only available if the kernel was configured with
+>> +.BR CONFIG_KSM.
+>> +.TP
+>> +.BR MADV_UNMERGEABLE " (since Linux 2.6.32)"
+>> +Undo the effect of an earlier
+>> +.BR MADV_MERGEABLE
+>> +operation on the specified address range;
+>> +KSM unmerges whatever pages it had merged in the address rnage specified by
+>
+>                                                            range
+
+Thanks.
+
+>> +.IR addr
+>> +and
+>> +.IR length .
+>>  .SH "RETURN VALUE"
+>>  On success
+>>  .BR madvise ()
+>> @@ -189,6 +226,14 @@ is not a valid value
+>>  .IP *
+>>  The application is attempting to release locked or shared pages (with
+>>  .BR MADV_DONTNEED ).
+>> +.IP *
+>> +.BR MADV_MERGEABLE
+>> +or
+>> +.BR MADV_UNMERGEABLE
+>> +was specified in
+>> +.IR advice ,
+>> +but the kernel was not configured with
+>> +.BR CONFIG_KSM .
+>>  .RE
+>>  .TP
+>>  .B EIO
+>> @@ -221,8 +266,10 @@ for file access.
+>>  .BR MADV_REMOVE ,
+>>  .BR MADV_DONTFORK ,
+>>  .BR MADV_DOFORK ,
+>> +.BR MAD_HWPOISON ,
+>
+> Oh, I absolutely agree with you, MAD_HWPOISON indeed;
+> but Andi might prefer MADV_HWPOISON.
+>
+>> +.BR MADVISE_MERGEABLE,
+>
+>       MADV_MERGEABLE,
+>
+>>  and
+>> -.BR MAD_HWPOISON
+>> +.BR MADVISE_UNMERGEABLE
+>
+>       MADV_UNMERGEABLE
+
+D'oh!  All of the above fixed now.
+
+Thanks!
+
+Michael
+
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface" http://blog.man7.org/
