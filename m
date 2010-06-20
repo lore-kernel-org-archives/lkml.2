@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab0FTVZn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 17:25:43 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:55060 "EHLO
+	id S1755060Ab0FTV0k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 17:26:40 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:55319 "EHLO
 	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754304Ab0FTVZh (ORCPT
+	by vger.kernel.org with ESMTP id S1754971Ab0FTV0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 17:25:37 -0400
+	Sun, 20 Jun 2010 17:26:36 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Dan Williams <dan.j.williams@intel.com>
 Cc: <linux-kernel@vger.kernel.org>, Jonas Aaberg <jonas.aberg@stericsson.com>,
        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 07/19] DMAENGINE: ste_dma40: deny ops on non-alloc channels
-Date: Sun, 20 Jun 2010 23:25:31 +0200
-Message-ID: <1277069131-30941-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 15/19] DMAENGINE: ste_dma40: add DB8500 memcpy channels
+Date: Sun, 20 Jun 2010 23:26:30 +0200
+Message-ID: <1277069190-31343-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -23,111 +23,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-Added checks to deny operating on none-allocated channels.
+This adds all available memcpy channels to the DB8500 in the
+ux500 platform (and fixes a typo).
 
 Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/dma/ste_dma40.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
+ arch/arm/mach-ux500/devices-db8500.c   |    2 ++
+ arch/arm/mach-ux500/ste-dma40-db8500.h |    2 +-
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 1d17664..4d56d21 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -1515,6 +1515,12 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
- 					     chan);
- 	unsigned long flags;
+diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
+index 8d94bc6..a001e4c 100644
+--- a/arch/arm/mach-ux500/devices-db8500.c
++++ b/arch/arm/mach-ux500/devices-db8500.c
+@@ -177,10 +177,12 @@ static const dma_addr_t dma40_rx_map[STEDMA40_NR_DEV];
  
-+	if (d40c->phy_chan == NULL) {
-+		dev_err(&d40c->chan.dev->device,
-+			"[%s] Unallocated channel.\n", __func__);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
- 	spin_lock_irqsave(&d40c->lock, flags);
- 	d40d = d40_desc_get(d40c);
+ /* Reserved event lines for memcpy only */
+ static int dma40_memcpy_event[] = {
++	STEDMA40_MEMCPY_TX_0,
+ 	STEDMA40_MEMCPY_TX_1,
+ 	STEDMA40_MEMCPY_TX_2,
+ 	STEDMA40_MEMCPY_TX_3,
+ 	STEDMA40_MEMCPY_TX_4,
++	STEDMA40_MEMCPY_TX_5,
+ };
  
-@@ -1710,6 +1716,13 @@ static void d40_free_chan_resources(struct dma_chan *chan)
- 	int err;
- 	unsigned long flags;
- 
-+	if (d40c->phy_chan == NULL) {
-+		dev_err(&d40c->chan.dev->device,
-+			"[%s] Cannot free unallocated channel\n", __func__);
-+		return;
-+	}
-+
-+
- 	spin_lock_irqsave(&d40c->lock, flags);
- 
- 	err = d40_free_dma(d40c);
-@@ -1732,6 +1745,12 @@ static struct dma_async_tx_descriptor *d40_prep_memcpy(struct dma_chan *chan,
- 	unsigned long flags;
- 	int err = 0;
- 
-+	if (d40c->phy_chan == NULL) {
-+		dev_err(&d40c->chan.dev->device,
-+			"[%s] Channel is not allocated.\n", __func__);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
- 	spin_lock_irqsave(&d40c->lock, flags);
- 	d40d = d40_desc_get(d40c);
- 
-@@ -1947,6 +1966,12 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
- 	unsigned long flags;
- 	int err;
- 
-+	if (d40c->phy_chan == NULL) {
-+		dev_err(&d40c->chan.dev->device,
-+			"[%s] Cannot prepare unallocated channel\n", __func__);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
- 	if (d40c->dma_cfg.pre_transfer)
- 		d40c->dma_cfg.pre_transfer(chan,
- 					   d40c->dma_cfg.pre_transfer_data,
-@@ -1993,6 +2018,13 @@ static enum dma_status d40_tx_status(struct dma_chan *chan,
- 	dma_cookie_t last_complete;
- 	int ret;
- 
-+	if (d40c->phy_chan == NULL) {
-+		dev_err(&d40c->chan.dev->device,
-+			"[%s] Cannot read status of unallocated channel\n",
-+			__func__);
-+		return -EINVAL;
-+	}
-+
- 	last_complete = d40c->completed;
- 	last_used = chan->cookie;
- 
-@@ -2012,6 +2044,12 @@ static void d40_issue_pending(struct dma_chan *chan)
- 	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
- 	unsigned long flags;
- 
-+	if (d40c->phy_chan == NULL) {
-+		dev_err(&d40c->chan.dev->device,
-+			"[%s] Channel is not allocated!\n", __func__);
-+		return;
-+	}
-+
- 	spin_lock_irqsave(&d40c->lock, flags);
- 
- 	/* Busy means that pending jobs are already being processed */
-@@ -2027,6 +2065,12 @@ static int d40_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	unsigned long flags;
- 	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
- 
-+	if (d40c->phy_chan == NULL) {
-+		dev_err(&d40c->chan.dev->device,
-+			"[%s] Channel is not allocated!\n", __func__);
-+		return -EINVAL;
-+	}
-+
- 	switch (cmd) {
- 	case DMA_TERMINATE_ALL:
- 		spin_lock_irqsave(&d40c->lock, flags);
+ static struct stedma40_platform_data dma40_plat_data = {
+diff --git a/arch/arm/mach-ux500/ste-dma40-db8500.h b/arch/arm/mach-ux500/ste-dma40-db8500.h
+index e701627..9d9d379 100644
+--- a/arch/arm/mach-ux500/ste-dma40-db8500.h
++++ b/arch/arm/mach-ux500/ste-dma40-db8500.h
+@@ -136,7 +136,7 @@ enum dma_dest_dev_type {
+ 	STEDMA40_DEV_CAC1_TX = 48,
+ 	STEDMA40_DEV_CAC1_TX_HAC1_TX = 49,
+ 	STEDMA40_DEV_HAC1_TX = 50,
+-	STEDMA40_MEMXCPY_TX_0 = 51,
++	STEDMA40_MEMCPY_TX_0 = 51,
+ 	STEDMA40_DEV_SLIM1_CH0_TX_HSI_TX_CH4 = 52,
+ 	STEDMA40_DEV_SLIM1_CH1_TX_HSI_TX_CH5 = 53,
+ 	STEDMA40_DEV_SLIM1_CH2_TX_HSI_TX_CH6 = 54,
 -- 
 1.6.3.3
 
