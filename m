@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab0FTV0w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 17:26:52 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:45565 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755130Ab0FTV0t (ORCPT
+	id S1755467Ab0FTV1Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 17:27:25 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:56466 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754839Ab0FTV1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 17:26:49 -0400
+	Sun, 20 Jun 2010 17:27:17 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Dan Williams <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, Jonas Aaberg <jonas.aberg@stericsson.com>,
+Cc: <linux-kernel@vger.kernel.org>,
        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 16/19] DMAENGINE: ste_dma40: fix suspend bug
-Date: Sun, 20 Jun 2010 23:26:38 +0200
-Message-ID: <1277069198-31392-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 19/19] DMAENGINE: ste_dma40: support older silicon
+Date: Sun, 20 Jun 2010 23:27:07 +0200
+Message-ID: <1277069227-31557-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -21,90 +21,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Aaberg <jonas.aberg@stericsson.com>
+This makes sure the DMA40 driver will also work on the oldest
+silicon revisions that have the on-chip memory on another location
+in the DB8500 and also requires explicit suspend before starting
+or resuming a logical channel.
 
-This fixes a bug when suspending channels: first make the checks,
-then suspend the channel, not the other way around.
-
-Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/dma/ste_dma40.c |   33 +++++++++++++--------------------
- 1 files changed, 13 insertions(+), 20 deletions(-)
+ arch/arm/mach-ux500/devices-db8500.c           |    2 +
+ arch/arm/mach-ux500/include/mach/db8500-regs.h |    1 +
+ drivers/dma/ste_dma40.c                        |   32 +++++++++++++++++++++---
+ 3 files changed, 31 insertions(+), 4 deletions(-)
 
+diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
+index e2b7c31..c62cdbe 100644
+--- a/arch/arm/mach-ux500/devices-db8500.c
++++ b/arch/arm/mach-ux500/devices-db8500.c
+@@ -213,4 +213,6 @@ void dma40_u8500ed_fixup(void)
+ 	dma40_plat_data.memcpy_len = 0;
+ 	dma40_resources[0].start = U8500_DMA_BASE_ED;
+ 	dma40_resources[0].end = U8500_DMA_BASE_ED + SZ_4K - 1;
++	dma40_resources[1].start = U8500_DMA_LCPA_BASE_ED;
++	dma40_resources[1].end = U8500_DMA_LCPA_BASE_ED + 2 * SZ_1K - 1;
+ }
+diff --git a/arch/arm/mach-ux500/include/mach/db8500-regs.h b/arch/arm/mach-ux500/include/mach/db8500-regs.h
+index 897fa35..8a8646b 100644
+--- a/arch/arm/mach-ux500/include/mach/db8500-regs.h
++++ b/arch/arm/mach-ux500/include/mach/db8500-regs.h
+@@ -17,6 +17,7 @@
+ #define U8500_ESRAM_BANK4	(U8500_ESRAM_BANK3 + U8500_ESRAM_BANK_SIZE)
+ /* Use bank 4 for DMA LCPA */
+ #define U8500_DMA_LCPA_BASE	U8500_ESRAM_BANK4
++#define U8500_DMA_LCPA_BASE_ED	U8500_ESRAM_BANK4 + 0x4000
+ 
+ #define U8500_PER3_BASE		0x80000000
+ #define U8500_STM_BASE		0x80100000
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 5748e96..e14c395 100644
+index 1d21fbd..21a7597 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -1220,7 +1220,7 @@ static int d40_free_dma(struct d40_chan *d40c)
+@@ -218,6 +218,7 @@ struct d40_chan {
+  * the same physical register.
+  * @dev: The device structure.
+  * @virtbase: The virtual base address of the DMA's register.
++ * @rev: silicon revision detected.
+  * @clk: Pointer to the DMA clock structure.
+  * @phy_start: Physical memory start of the DMA registers.
+  * @phy_size: Size of the DMA register map.
+@@ -250,6 +251,7 @@ struct d40_base {
+ 	spinlock_t			 execmd_lock;
+ 	struct device			 *dev;
+ 	void __iomem			 *virtbase;
++	u8				  rev:4;
+ 	struct clk			 *clk;
+ 	phys_addr_t			  phy_start;
+ 	resource_size_t			  phy_size;
+@@ -757,6 +759,17 @@ static dma_cookie_t d40_tx_submit(struct dma_async_tx_descriptor *tx)
+ 
+ static int d40_start(struct d40_chan *d40c)
  {
- 
- 	int res = 0;
--	u32 event, dir;
-+	u32 event;
- 	struct d40_phy_res *phy = d40c->phy_chan;
- 	bool is_src;
- 	struct d40_desc *d;
-@@ -1252,21 +1252,12 @@ static int d40_free_dma(struct d40_chan *d40c)
- 		return -EINVAL;
- 	}
- 
--	res = d40_channel_execute_command(d40c, D40_DMA_SUSPEND_REQ);
--	if (res) {
--		dev_err(&d40c->chan.dev->device, "[%s] suspend failed\n",
--			__func__);
--		return res;
--	}
--
- 	if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
- 	    d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM) {
- 		event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dst_dev_type);
--		dir = D40_CHAN_REG_SDLNK;
- 		is_src = false;
- 	} else if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM) {
- 		event = D40_TYPE_TO_EVENT(d40c->dma_cfg.src_dev_type);
--		dir = D40_CHAN_REG_SSLNK;
- 		is_src = true;
- 	} else {
- 		dev_err(&d40c->chan.dev->device,
-@@ -1274,16 +1265,17 @@ static int d40_free_dma(struct d40_chan *d40c)
- 		return -EINVAL;
- 	}
- 
-+	res = d40_channel_execute_command(d40c, D40_DMA_SUSPEND_REQ);
-+	if (res) {
-+		dev_err(&d40c->chan.dev->device, "[%s] suspend failed\n",
-+			__func__);
-+		return res;
++	if (d40c->base->rev == 0) {
++		int err;
++
++		if (d40c->log_num != D40_PHY_CHAN) {
++			err = d40_channel_execute_command(d40c,
++							  D40_DMA_SUSPEND_REQ);
++			if (err)
++				return err;
++		}
 +	}
 +
- 	if (d40c->log_num != D40_PHY_CHAN) {
--		/*
--		 * Release logical channel, deactivate the event line during
--		 * the time physical res is suspended.
--		 */
--		writel((D40_DEACTIVATE_EVENTLINE << D40_EVENTLINE_POS(event)) &
--		       D40_EVENTLINE_MASK(event),
--		       d40c->base->virtbase + D40_DREG_PCBASE +
--		       phy->num * D40_DREG_PCDELTA + dir);
-+		/* Release logical channel, deactivate the event line */
+ 	if (d40c->log_num != D40_PHY_CHAN)
+ 		d40_config_set_event(d40c, true);
  
-+		d40_config_set_event(d40c, false);
- 		d40c->base->lookup_log_chans[d40c->log_num] = NULL;
+@@ -1426,6 +1439,13 @@ static int d40_resume(struct dma_chan *chan)
  
- 		/*
-@@ -1304,8 +1296,9 @@ static int d40_free_dma(struct d40_chan *d40c)
- 			}
- 			return 0;
+ 	spin_lock_irqsave(&d40c->lock, flags);
+ 
++	if (d40c->base->rev == 0)
++		if (d40c->log_num != D40_PHY_CHAN) {
++			res = d40_channel_execute_command(d40c,
++							  D40_DMA_SUSPEND_REQ);
++			goto no_suspend;
++		}
++
+ 	/* If bytes left to transfer or linked tx resume job */
+ 	if (d40_residue(d40c) || d40_tx_is_linked(d40c)) {
+ 		if (d40c->log_num != D40_PHY_CHAN)
+@@ -1433,6 +1453,7 @@ static int d40_resume(struct dma_chan *chan)
+ 		res = d40_channel_execute_command(d40c, D40_DMA_RUN);
+ 	}
+ 
++no_suspend:
+ 	spin_unlock_irqrestore(&d40c->lock, flags);
+ 	return res;
+ }
+@@ -2286,6 +2307,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 	int num_log_chans = 0;
+ 	int num_phy_chans;
+ 	int i;
++	u32 val;
+ 
+ 	clk = clk_get(&pdev->dev, NULL);
+ 
+@@ -2324,12 +2346,13 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
  		}
--	} else
--		d40_alloc_mask_free(phy, is_src, 0);
-+	} else {
-+		(void) d40_alloc_mask_free(phy, is_src, 0);
-+	}
+ 	}
  
- 	/* Release physical channel */
- 	res = d40_channel_execute_command(d40c, D40_DMA_STOP);
+-	i = readl(virtbase + D40_DREG_PERIPHID2);
++	/* Get silicon revision */
++	val = readl(virtbase + D40_DREG_PERIPHID2);
+ 
+-	if ((i & 0xf) != D40_PERIPHID2_DESIGNER) {
++	if ((val & 0xf) != D40_PERIPHID2_DESIGNER) {
+ 		dev_err(&pdev->dev,
+ 			"[%s] Unknown designer! Got %x wanted %x\n",
+-			__func__, i & 0xf, D40_PERIPHID2_DESIGNER);
++			__func__, val & 0xf, D40_PERIPHID2_DESIGNER);
+ 		goto failure;
+ 	}
+ 
+@@ -2337,7 +2360,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 	num_phy_chans = 4 * (readl(virtbase + D40_DREG_ICFG) & 0x7) + 4;
+ 
+ 	dev_info(&pdev->dev, "hardware revision: %d @ 0x%x\n",
+-		 (i >> 4) & 0xf, res->start);
++		 (val >> 4) & 0xf, res->start);
+ 
+ 	plat_data = pdev->dev.platform_data;
+ 
+@@ -2359,6 +2382,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 		goto failure;
+ 	}
+ 
++	base->rev = (val >> 4) & 0xf;
+ 	base->clk = clk;
+ 	base->num_phy_chans = num_phy_chans;
+ 	base->num_log_chans = num_log_chans;
 -- 
 1.6.3.3
 
