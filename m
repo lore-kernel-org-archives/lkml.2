@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab0FUWM2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 18:12:28 -0400
-Received: from mk-filter-4-a-2.mail.uk.tiscali.com ([212.74.100.51]:16719 "EHLO
-	mk-filter-4-a-2.mail.uk.tiscali.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751099Ab0FUWM1 (ORCPT
+	id S1752871Ab0FUWRn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 18:17:43 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:47153 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab0FUWRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 18:12:27 -0400
-X-Greylist: delayed 605 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jun 2010 18:12:27 EDT
-X-Trace: 422755429/mk-filter-4.mail.uk.tiscali.com/B2C/$b2c-ALLOWED_RELAY/b2c-SMARTHOST-RELAY/64.12.116.66/None/workforce2@homecall.co.uk
-X-SBRS: None
-X-RemoteIP: 64.12.116.66
-X-IP-MAIL-FROM: workforce2@homecall.co.uk
-X-SMTP-AUTH: 
-X-IP-Webmail: TRUE
-X-Originating-Country: US/UNITED STATES
-X-MUA: 
-To: Undisclosed recipients:;
-X-IP-Added: To/mk-filter-4.mail.uk.tiscali.com
-X-IP-BHB: Once
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EABaQHkxADHRC/2dsb2JhbACDHZsUVbBtPY9ZgSWDBnAE
-X-IronPort-AV: E=Sophos;i="4.53,450,1272841200"; 
-   d="scan'208";a="422755429"
-From: workforce2@homecall.co.uk
-Reply-To: autraliashoperit@aol.com
-Subject: #####Assignment-Offer#####
-Date: Mon, 21 Jun 2010 23:01:17 +0100
-Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 64.12.116.66
-Message-Id: <E1OQp3O-0003Mu-4f@mk-webmail-2.b2b.uk.tiscali.com>
+	Mon, 21 Jun 2010 18:17:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=DaTLN5LGiBfVAKxXTPDnKiIR77KtMC88gaYwphiGleppwfJHKVHpS2/mz9+1r2r14E
+         uMTn5tMq/UyYhouUIAK2WVtpemA858lo59p9Cqk1n488TgJxAHfTz1Zq9HdAzThnZKaj
+         LEn2lWZooW/DwzAobJ+8QDUClSGM4rS5ZfHMU=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 4/6 v2]hfs Fix variable set but not used
+Date: Mon, 21 Jun 2010 15:17:30 -0700
+Message-Id: <1277158650-19219-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Job-Description: Mystery-Shopper
-Salary: 300$ Weekly
-Time: 1/2 Hrs Weekly
-Location: Usa/Canada/Australia
-This is a P/T job 
+This is a redu from the original due to whitespace issues
+for extents.c which fixes this warning:
 
-If satisfied apply below: 
+ CC [M]  fs/hfsplus/extents.o
+fs/hfsplus/extents.c: In function 'hfsplus_get_block':
+fs/hfsplus/extents.c:178:6: warning: variable 'shift' set but not used
 
-Full Legal Names____ Mailing-Address____, City___,
-State____,Zip-Code___,Home and Cell#____Age___Present-Occupation___ & 
-Country___ 
+ Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-James L.A
-Perfect-Choice Ltd
+---
+ fs/hfsplus/extents.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/fs/hfsplus/extents.c b/fs/hfsplus/extents.c
+index 0022eec..824c6a5 100644
+--- a/fs/hfsplus/extents.c
++++ b/fs/hfsplus/extents.c
+@@ -175,12 +175,10 @@ int hfsplus_get_block(struct inode *inode, sector_t iblock,
+ 	struct super_block *sb;
+ 	int res = -EIO;
+ 	u32 ablock, dblock, mask;
+-	int shift;
+ 
+ 	sb = inode->i_sb;
+ 
+ 	/* Convert inode block to disk allocation block */
+-	shift = HFSPLUS_SB(sb).alloc_blksz_shift - sb->s_blocksize_bits;
+ 	ablock = iblock >> HFSPLUS_SB(sb).fs_shift;
+ 
+ 	if (iblock >= HFSPLUS_I(inode).fs_blocks) {
+-- 
+1.7.1.rc1.21.gf3bd6
+
