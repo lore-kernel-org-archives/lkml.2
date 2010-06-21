@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab0FUQLc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 12:11:32 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:44555 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757975Ab0FUQLa convert rfc822-to-8bit (ORCPT
+	id S932264Ab0FUQMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 12:12:22 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:2247 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757913Ab0FUQMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 12:11:30 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=j0lYiA32WRcov4M+2wLmN6P4Pgm84gyMbQzp7QmgrKKZV0U24MzoyGXmWqjgUb0T+
-	pTJF21UC6gdieNbeMS2IQ==
+	Mon, 21 Jun 2010 12:12:20 -0400
+X-IronPort-AV: E=Sophos;i="4.53,453,1272844800"; 
+   d="scan'208";a="514333"
+Date: Mon, 21 Jun 2010 17:12:20 +0100
+From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
+       Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: [PATCH 0/12] PV on HVM Xen
+Message-ID: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimt6HQZVeTtv_UO-5Lt4ngtPr0cyNXkq2YGR3lA@mail.gmail.com>
-References: <AANLkTinX4TlNfvwrCtjfkU-bar3URnpvmPJB-sOi-9aT@mail.gmail.com>
-	<alpine.DEB.1.00.1006191622450.14879@tigran.mtv.corp.google.com>
-	<AANLkTimt6HQZVeTtv_UO-5Lt4ngtPr0cyNXkq2YGR3lA@mail.gmail.com>
-Date: Mon, 21 Jun 2010 09:11:23 -0700
-Message-ID: <AANLkTil8umNYwlc1FUZJaGv2ObTLG37rHEmIgxfJAUqB@mail.gmail.com>
-Subject: Re: man-pages text for MAV_MERGEABLE and MADV_UNMERGEABLE
-From: Hugh Dickins <hughd@google.com>
-To: mtk.manpages@gmail.com
-Cc: Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-man <linux-man@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 19, 2010 at 10:36 PM, Michael Kerrisk
-<mtk.manpages@gmail.com> wrote:
-> On Sun, Jun 20, 2010 at 2:02 AM, Hugh Dickins <hughd@google.com> wrote:
->> On Sat, 19 Jun 2010, Michael Kerrisk wrote:
->>> +The KSM daemon
->>> +.RI ( ksmd )
->>> +periodically scans those areas of user memory that have
->>> +been marked as mergeable,
->>> +looking for pages with identical content.
->>
->> I was rather puzzled by Andi calling that an internal implementation
->> detail.  Okay, I suppose the "KSM daemon periodically scans" is an
->> internal implementation detail, though I think it helps to warn the
->> programmer of the overhead of MADV_MERGEABLE; but without "pages
->> with identical content", aren't we left mystified as to just what
->> this "merging" is all about?
->
-> I agree. All I had changed was to remove mention of the KSM daemon --
-> I just say "the kernel".
+Hi all,
+this is another update on the PV on HVM Xen series; a list of changes
+compared to the previous version follows:
 
-Great, that's just right: thanks.
+- the bug caused by modprobing xen frontend modules when xenbus is not
+initialized has been fixed: now xenbus is always initialized during
+postcore_initcall, before device drivers are initialized, so that we
+can be sure that loading xen pv frontends will always happen afterwards,
+no matter how the xen platform pci driver is built.
+In order to do that xenbus_probe has been moved out of the xenbus
+initialization and called it later on at device_initcall.
 
-Hugh
+- a new HVMOP_pagetable_dying hypercall has been added to notify Xen
+that a pagetable is going to be destroyed: this improves performances
+significantly when running on shadow pagetables.
+A patch is currently need on the Xen side for this to work.
+
+Jeremy's comments have been addressed:
+
+- xen_guest_init has been renamed xen_hvm_guest_init;
+
+- init_hvm_time has been moved to arch/x86/xen/time.c;
+
+Konrad's comments have been addressed:
+
+- gnttab_max_nr_grant_frames has been renamed gnttab_max_grant_frames;
+
+- few inaccurate comments have been rewritten;
+
+- the preprocessor checks in platform-pci-unplug.c have been moved to
+platform_pci.h;
+
+- few other code style improvements, like using dev_err instead of
+printk and strncmp instead of strcmp.
+
+
+
+A git tree is available here:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git
+
+branch name 2.6.34-pvhvm-v4.
+
+Cheers,
+
+Stefano
