@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757700Ab0FUTU1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 15:20:27 -0400
-Received: from verein.lst.de ([213.95.11.210]:55520 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753046Ab0FUTU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 15:20:26 -0400
-Date: Mon, 21 Jun 2010 21:20:24 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: trying to understand READ_META, READ_SYNC, WRITE_SYNC & co
-Message-ID: <20100621192024.GA24555@lst.de>
-References: <20100621094828.GA30748@lst.de> <4C1F3916.4070608@kernel.dk> <20100621110436.GA4056@lst.de> <4C1FB5F7.3070908@kernel.dk> <20100621191410.GA24213@lst.de> <4C1FBA91.3040601@kernel.dk>
+	id S1758169Ab0FUTVw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 15:21:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49303 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756202Ab0FUTVu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 15:21:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=J31h0pFjFwXFmA4lbhytrQCMn7N/LPo8kSgxif93sY5OG9JuRoQuH+jLar8IHnVGK2
+         rHgiGbR+e/hYUhBATfsVasoRfcLnPGjIuwU73zMHQ0+KdkraQoup1N5FGOdCH/tWME1z
+         HU4fWCDiNNwHI7QKy41QJvuDsymU7MG+qudLM=
+Subject: Re: [PATCH] Two fixes for my mmc/sd cardreader
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: linux-mmc <linux-mmc@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Philip Langdale <philipl@overt.org>
+In-Reply-To: <1276809695.28201.13.camel@maxim-laptop>
+References: <1276809695.28201.13.camel@maxim-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Jun 2010 22:21:44 +0300
+Message-ID: <1277148104.4241.1.camel@maxim-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C1FBA91.3040601@kernel.dk>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0.001 () BAYES_50
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 09:16:33PM +0200, Jens Axboe wrote:
-> Yes, but that's a separate thing. The point is that boosting meta data
-> IO is done by others as well. That we don't fully do the same on the
-> hw side is a different story. That doesn't mean that the io scheduler
-> boost isn't useful.
-
-Well, the FUA bit is useful for writes.  And I agree that we need to
-prioritize log I/O metadata.  On the other hand at least for XFS most
-other metadata writes actually are asynchronous - there's no need to
-prioritize those.
-
-> > We use the explicit unplugging, yes - but READ_META also includes
-> > REQ_SYNC which is not used anywhere.
+On Fri, 2010-06-18 at 00:21 +0300, Maxim Levitsky wrote: 
+> Hi,
 > 
-> That does look superfluous.
-
-The above should READ_SYNC, but the same still applies.
-
-> > We've only started using any kind of sync tag last year in ->writepage in
-> > commit a64c8610bd3b753c6aff58f51c04cdf0ae478c18 "block_write_full_page:
-> > Use synchronous writes for WBC_SYNC_ALL writebacks", switching from
-> > WRITE_SYNC to WRITE_SYNC_PLUG a bit later in commit
-> > 6e34eeddf7deec1444bbddab533f03f520d8458c "block_write_full_page: switch
-> > synchronous writes to use WRITE_SYNC_PLUG"
-> > 
-> > Before that we used plain WRITE, which had the normal idling logic.
+> These are 2 fixes for my card reader.
 > 
-> Plain write does not idle.
-
-Well, whatever logic we use for normal files.  Note that all the commits
-above were introduced in 2.6.29.  That's where the horrible fsync
-latency regressions due to the idling logic that Jeff is fighting were
-introduced.  So there's defintively something wrong going on here.
+> 
+> First patch fixes old issue with system hand on suspend to disk/ram with
+> mmc card inserted.
+> I updated description, and pm notification registration order.
+> I think this patch can an should go to 2.6.35, because it fixes long
+> standing and nasty regression.
+> 
+> The second patch is a result of my work trying to understand why my card
+> reader sometimes dies on resume.
+> This reader has a special MMC function which steals MMC cards, and until
+> now had no driver. A way to disable it was found, and while it works, it
+> has (at least here) a side effect of killing the controller on resume
+> from ram/disk (and it happens often, and doesn't depend of whether card
+> was in slot or not during suspend).
+> 
+> Fortunately it turned out that MMC part is _almost_ standard SDHCI
+> controller.
+> This patch adds support for this device to standard sdhci driver.
+> Unfortunately, this support still contais small hack.
+> It waits 1/2 of a second on resume before initializing the controller.
+> Not doing so, and resuming with MMC card present results in confused
+> controller. It is not dead though. A card reinsert makes it work again
+> with all cards.
+> Yet the 1st patch is must for this because otherwise mmc core seeing
+> that controller doesn't respond, removes the card, therefore hangs the
+> system.
+> It doesn't happen when I wait these 1/2 of second though.
+> 
+> I think that this patch is also ok for 2.6.35, because it only adds new
+> functionality.
+> You are free to disable MMC controller using the same
+> CONFIG_MMC_RICOH_MMC.
+> 
+> If you don't disable it though, instead of full lack of functionality
+> you will get full featured MMC controller.
+> 
+> Best regards,
+> Maxim Levitsky
+> 
+> 
+> 
+ping
 
