@@ -1,92 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab0FUHXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 03:23:21 -0400
-Received: from lider.pardus.org.tr ([193.140.100.216]:44444 "EHLO
-	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755941Ab0FUHXS convert rfc822-to-8bit (ORCPT
+	id S1755360Ab0FUHhG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 03:37:06 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20493 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab0FUHhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 03:23:18 -0400
-From: Ozan =?utf-8?q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>
-Organization: TUBITAK/UEKAE
-To: linux-kernel@vger.kernel.org
-Subject: [BISECTED] Suspend regression in v2.6.31 with Lenovo 3000 v200
-Date: Mon, 21 Jun 2010 10:22:37 +0300
-User-Agent: KMail/1.13.3 (Linux/2.6.31.13-131-pae; KDE/4.4.4; i686; ; )
-Cc: stern@rowland.harvard.edu, gregkh@suse.de, rjw@sisk.pl
+	Mon, 21 Jun 2010 03:37:02 -0400
+Message-ID: <4C1F167D.3040908@oracle.com>
+Date: Mon, 21 Jun 2010 15:36:29 +0800
+From: "jeff.liu" <jeff.liu@oracle.com>
+User-Agent: Thunderbird 2.0.0.14 (X11/20080505)
 MIME-Version: 1.0
-Message-Id: <201006211022.37707.ozan@pardus.org.tr>
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+To: Chris Mason <chris.mason@oracle.com>, Tao Ma <tao.ma@oracle.com>
+CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] btrfs: Don't return extent in fiemap if we meet
+ with a hole.
+References: <1277102222-3310-1-git-send-email-tao.ma@oracle.com>
+In-Reply-To: <1277102222-3310-1-git-send-email-tao.ma@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090203.4C1F169D.0215:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Chris,
 
-First of all I know that 2.6.31 is not maintained anymore and I don't know if 
-the problem still exists in kernels > 2.6.31 as I don't have any hardware to 
-reproduce it.
+Could you please also consider another tiny patch below combine with Tao's?
+It fix extent flags to FIEMAP_FLAG_UNWRITTEN if it was fallocate(2) and its "em->block_start ==
+EXTENT_MAP_LAST_BYTE".
 
-The users are just regular users which are not able to test the newer kernels.
+>From 63904ff528842bcbe20e9d34763c5e689c2f7ace Mon Sep 17 00:00:00 2001
+From: Jeff Liu <jeff.liu@oracle.com>
+Date: Mon, 21 Jun 2010 15:28:36 +0800
+Subject: [PATCH] Fix fiemap extent flag to FIEMAP_FLAG_UNWRITTEN if it is fallocated.
 
-What I've found out is that the following commit broke suspend-to-ram on their
-Lenovo 3000 v200 (2 separate bug reports confirming that reverting fixed the 
-issue):
-
-
-commit 4f0e35f03db2673dc86ee940dcaab5f8f422dc81
-Author: Alan Stern <stern@rowland.harvard.edu>
-Date:   Fri Jan 8 11:18:20 2010 -0500
-
-    USB: EHCI & UHCI: fix race between root-hub suspend and port resume
-
-    commit cec3a53c7fe794237b582e8e77fc0e48465e65ee upstream.
-
-    This patch (as1321) fixes a problem with EHCI and UHCI root-hub
-    suspends: If the suspend occurs while a port is trying to resume, the
-    resume doesn't finish and simply gets lost.  When remote wakeup is
-    enabled, this is undesirable behavior.
-
-    The patch checks first to see if any port resumes are in progress, and
-    if they are then it fails the root-hub suspend with -EBUSY.
-
-    Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-Their dmesg propagates the same error just before suspending and the system 
-instantly resumes back:
-
-[ 2995.328808] PM: Syncing filesystems ... done.
-[ 2995.417778] Stopping fuse filesystems.
-[ 2995.417786] Freezing user space processes ... (elapsed 0.01 seconds) done.
-[ 2995.436558] Stopping normal filesystems.
-[ 2995.551470] Freezing remaining freezable tasks ... (elapsed 0.00 seconds) 
-done.
-[ 2995.551558] Suspending console(s) (use no_console_suspend to debug)
-[ 2995.551923] pci 0000:00:02.0: PCI INT A disabled
-[ 2995.591204] btusb_bulk_complete: hci0 urb f1d1e600 failed to resubmit (1)
-[ 2995.592197] btusb_bulk_complete: hci0 urb f1d1e680 failed to resubmit (1)
-[ 2995.593200] btusb_intr_complete: hci0 urb f1d1e580 failed to resubmit (1)
-[ 2995.642091] sd 0:0:0:0: [sda] Synchronizing SCSI cache
-[ 2995.642263] sd 0:0:0:0: [sda] Stopping disk
-[ 2996.619560] pm_op(): usb_dev_suspend+0x0/0xf returns -16  	*******
-[ 2996.619562] PM: Device usb2 failed to suspend: error -16  	*******
-[ 2996.619564] PM: Some devices failed to suspend 	 		 	*******
-[ 2996.723535] sd 0:0:0:0: [sda] Starting disk
-
-and their device usb2 is:
-
-$ cat /sys/bus/usb/devices/usb2/product
-EHCI Host Controller
-
-Is it possible that this get fixed in somewhere between v2.6.31.13..HEAD? If 
-yes, can you point me to the relevant commit if possible?
-
-Many thanks,
-
+Signed-off-by: Jeff Liu <jeff.liu@oracle.com>
 ---
-Ozan Çağlayan
-TUBITAK/UEKAE - Pardus Linux
-http://www.pardus.org.tr/eng
+ fs/btrfs/extent_io.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index a4080c2..e68fd61 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -3005,6 +3005,8 @@ int extent_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+ 		}
+ 		if (test_bit(EXTENT_FLAG_COMPRESSED, &em->flags))
+ 			flags |= FIEMAP_EXTENT_ENCODED;
++		if (test_bit(EXTENT_FLAG_PREALLOC, &em->flags))
++			flags |= FIEMAP_EXTENT_UNWRITTEN;
+
+ 		emflags = em->flags;
+ 		free_extent_map(em);
+-- 
+1.7.1
+
+
+Thanks,
+-Jeff
+
+Tao Ma wrote:
+> Hi Chris,
+> 	could you please consider merging this patch? It should be
+> trivial enough. It helps Jeff adding fiemap support to cp.
+> 
+> Regards,
+> Tao
+> 
+> From 909effe7240be30dbc9403dd8cbb326587c3cc02 Mon Sep 17 00:00:00 2001
+> From: Tao Ma <tao.ma@oracle.com>
+> Date: Thu, 22 Apr 2010 12:38:57 +0800
+> Subject: [PATCH RESEND] btrfs: Don't return extent in fiemap if we meet with a hole.
+> 
+> Recently, my colleague Jeff tried to add fiemap support to cp(1).
+> http://www.mail-archive.com/bug-coreutils@gnu.org/msg19987.html
+> 
+> He just meet with a strange issue with following command:
+> dd if=/dev/null of=/btrfs/sparse bs=1 seek=4096
+> When we use fiemap to the file, btrfs returns an extent with len '4096'
+> and flag 'unwritten' while actually there is no data allocated.
+> 
+> I just dived into this and to my surprise, it is done by btrfs
+> intentionally. I checked other file systems which support fiemap.
+> Actually with the file created by the script, ocfs2, ext3/4 and
+> xfs all return zero extent. And according to the documentation file
+> Documentation/filesystems/fiemap.txt, FIEMAP_EXTENT_UNWRITTEN should
+> be used when the extent is allocated but it's data has not been
+> initialized. So I think btrfs should work like other filesystems.
+> 
+> Cc: Chris Mason <chris.mason@oracle.com>
+> Signed-off-by: Tao Ma <tao.ma@oracle.com>
+> Tested-by: Jeff Liu <jeff.liu@oracle.com>
+> ---
+>  fs/btrfs/extent_io.c |   15 +++++++++------
+>  1 files changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+> index b177ed3..7eb4d77 100644
+> --- a/fs/btrfs/extent_io.c
+> +++ b/fs/btrfs/extent_io.c
+> @@ -2951,7 +2951,7 @@ int extent_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  	u64 disko = 0;
+>  	struct extent_map *em = NULL;
+>  	struct extent_state *cached_state = NULL;
+> -	int end = 0;
+> +	int end = 0, hole = 0;
+>  	u64 em_start = 0, em_len = 0;
+>  	unsigned long emflags;
+>  	ret = 0;
+> @@ -2978,12 +2978,13 @@ int extent_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  
+>  		disko = 0;
+>  		flags = 0;
+> +		hole = 0;
+>  
+>  		if (em->block_start == EXTENT_MAP_LAST_BYTE) {
+>  			end = 1;
+>  			flags |= FIEMAP_EXTENT_LAST;
+>  		} else if (em->block_start == EXTENT_MAP_HOLE) {
+> -			flags |= FIEMAP_EXTENT_UNWRITTEN;
+> +			hole = 1;
+>  		} else if (em->block_start == EXTENT_MAP_INLINE) {
+>  			flags |= (FIEMAP_EXTENT_DATA_INLINE |
+>  				  FIEMAP_EXTENT_NOT_ALIGNED);
+> @@ -3015,10 +3016,12 @@ int extent_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  			end = 1;
+>  		}
+>  
+> -		ret = fiemap_fill_next_extent(fieinfo, em_start, disko,
+> -					em_len, flags);
+> -		if (ret)
+> -			goto out_free;
+> +		if (!hole) {
+> +			ret = fiemap_fill_next_extent(fieinfo, em_start, disko,
+> +						      em_len, flags);
+> +			if (ret)
+> +				goto out_free;
+> +		}
+>  	}
+>  out_free:
+>  	free_extent_map(em);
+
+
+-- 
+With Windows 7, Microsoft is asserting legal control over your computer and is using this power to
+abuse computer users.
