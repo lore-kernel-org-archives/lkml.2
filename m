@@ -1,158 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab0FUFFW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 01:05:22 -0400
-Received: from mxout12.netvision.net.il ([194.90.6.37]:51165 "EHLO
-	mxout12.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab0FUFFU (ORCPT
+	id S1752465Ab0FUFKS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 01:10:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57306 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab0FUFKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 01:05:20 -0400
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_0hZFtJnK1KKGRuAXHfdFWQ)"
-X-MIMEOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-Subject: RE: [PATCH] HID: Add support to new N-trig firwmare
-Date: Mon, 21 Jun 2010 08:06:15 +0300
-Message-id: <48A28051AC6D7A48B64F28272458190338280A@Exchange-IL.n-trig.com>
-In-reply-to: <alpine.LNX.2.00.1006051741361.12271@pobox.suse.cz>
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-Thread-topic: [PATCH] HID: Add support to new N-trig firwmare
-Thread-index: AcsExaSGWJ4Kr0KuT0+BaT7v96AzSgMOO1YA
-References: <48A28051AC6D7A48B64F28272458190333674B@Exchange-IL.n-trig.com>
- <alpine.LNX.2.00.1006041115480.12271@pobox.suse.cz>
- <48A28051AC6D7A48B64F28272458190326E03E@Exchange-IL.n-trig.com>
- <alpine.LNX.2.00.1006051741361.12271@pobox.suse.cz>
-From: Micki Balanga <micki@n-trig.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: chatty@enac.fr, dhprince-devel@yahoo.co.uk, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Rafi Rubin <rafi@seas.upenn.edu>
+	Mon, 21 Jun 2010 01:10:11 -0400
+Date: Mon, 21 Jun 2010 07:09:57 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: David Brownell <david-b@pacbell.net>
+Cc: Ryan Mallon <ryan@bluewatersys.com>,
+       David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
+       linux kernel <linux-kernel@vger.kernel.org>,
+       ext-jani.1.nikula@nokia.com, Andrew Morton <akpm@linux-foundation.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: gpiolib and sleeping gpios
+Message-ID: <20100621050957.GA23094@pengutronix.de>
+References: <4C1E88AE.5070808@bluewatersys.com> <887171.45295.qm@web180307.mail.gq1.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <887171.45295.qm@web180307.mail.gq1.yahoo.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Hi,
 
---Boundary_(ID_0hZFtJnK1KKGRuAXHfdFWQ)
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
+On Sun, Jun 20, 2010 at 07:40:46PM -0700, David Brownell wrote:
+> > > And they will trigger runtime warnings, and
+> > > thus eventually get fixed.
+> > \
+> >   }
+> > 
+> >   err = gpio_request(some_gpio, "some_gpio",
+> >           GPIOF_NO_SLEEP);
+> 
+> 
+> NAK ... keep it simple.  Such flags are
+> clearly not necessary...
+> 
+> I understand that some folk are bothered
+> by concepts/frameworks that seem "too simple"
+> and thus want to complexify them.  In this
+> case I am in a position to help avoid that.
+> Complexity is not a virtue.
+I'm against such an additional flag, too.  But I still think merging
+gpio_get_value and gpio_get_value_cansleep is nice.
 
-Hi Jiri
-We have some new product so I have to update the patch,
-When I update my git branch I didn't see the changes regarding N-trig
-Product id. If you can insert this patch, if there a problem with the
-patch
-Let me know and hi will update it
-Thank you
-Micki
-
-
------Original Message-----
-From: Jiri Kosina [mailto:jkosina@suse.cz] 
-Sent: Saturday, June 05, 2010 6:42 PM
-To: Micki Balanga
-Cc: chatty@enac.fr; dhprince-devel@yahoo.co.uk;
-linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Rafi Rubin
-Subject: RE: [PATCH] HID: Add support to new N-trig firwmare
-
-On Fri, 4 Jun 2010, Micki Balanga wrote:
-
-> Hi Jiri,
-> Attach the patch via file.
-> (Also fix 3 warning: please , no space before tabs)
-
-Thanks Micki, I have applied the patch.
+Best regards
+Uwe
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
-
---Boundary_(ID_0hZFtJnK1KKGRuAXHfdFWQ)
-Content-type: application/octet-stream;
- name=0001-HID-Add-support-to-new-N-trig-firwmare-part-2.patch
-Content-transfer-encoding: base64
-Content-disposition: attachment;
- filename=0001-HID-Add-support-to-new-N-trig-firwmare-part-2.patch
-Content-description: 0001-HID-Add-support-to-new-N-trig-firwmare-part-2.patch
-
-RnJvbSBlZmMwNTM5Yzc4YWY5YWFlYTQ2ZTA3MzhhNGY5ZDc0OWU3MzY4ODgzIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBtaWNraSA8bWlja2lAbWlja2ktbGFwdG9wLihub25lKT4KRGF0
-ZTogU2F0LCAxOSBKdW4gMjAxMCAxMTozNzoyOSArMDMwMApTdWJqZWN0OiBbUEFUQ0hdIEhJRDog
-QWRkIHN1cHBvcnQgdG8gbmV3IE4tdHJpZyBmaXJ3bWFyZSBwYXJ0IDIKClByb2R1Y3QgaWQgIDB4
-MDMgLSAweDE0CgpTaWduZWQtb2ZmLWJ5OiBNaWNraSBCYWxhbmdhIDxtaWNraUBuLXRyaWcuY29t
-PgotLS0KLS0tCi0tLQogZHJpdmVycy9oaWQvaGlkLWNvcmUuYyB8ICAgMTggKysrKysrKysrKysr
-KysrKysrCiBkcml2ZXJzL2hpZC9oaWQtaWRzLmggIHwgICAyMiArKysrKysrKysrKysrKysrKysr
-Ky0tCiAyIGZpbGVzIGNoYW5nZWQsIDM4IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpk
-aWZmIC0tZ2l0IGEvZHJpdmVycy9oaWQvaGlkLWNvcmUuYyBiL2RyaXZlcnMvaGlkL2hpZC1jb3Jl
-LmMKaW5kZXggYWEwZjdkYy4uODg3YWVmZCAxMDA2NDQKLS0tIGEvZHJpdmVycy9oaWQvaGlkLWNv
-cmUuYworKysgYi9kcml2ZXJzL2hpZC9oaWQtY29yZS5jCkBAIC0xMzM3LDYgKzEzMzcsMjQgQEAg
-c3RhdGljIGNvbnN0IHN0cnVjdCBoaWRfZGV2aWNlX2lkIGhpZF9ibGFja2xpc3RbXSA9IHsKIAl7
-IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTUlDUk9TT0ZULCBVU0JfREVWSUNFX0lEX1dJ
-UkVMRVNTX09QVElDQUxfREVTS1RPUF8zXzApIH0sCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVO
-RE9SX0lEX01PTlRFUkVZLCBVU0JfREVWSUNFX0lEX0dFTklVU19LQjI5RSkgfSwKIAl7IEhJRF9V
-U0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hf
-U0NSRUVOKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RF
-VklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMSkgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9W
-RU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzIpIH0sCisJ
-eyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNFX0lEX05UUklH
-X1RPVUNIX1NDUkVFTl8zKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJ
-RywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNCkgfSwKKwl7IEhJRF9VU0JfREVW
-SUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVO
-XzUpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNF
-X0lEX05UUklHX1RPVUNIX1NDUkVFTl82KSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRP
-Ul9JRF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNykgfSwKKwl7IEhJ
-RF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9V
-Q0hfU0NSRUVOXzgpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBV
-U0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl85KSB9LAorCXsgSElEX1VTQl9ERVZJQ0Uo
-VVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTAp
-IH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNFX0lE
-X05UUklHX1RPVUNIX1NDUkVFTl8xMSkgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1Jf
-SURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzEyKSB9LAorCXsgSElE
-X1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VD
-SF9TQ1JFRU5fMTMpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBV
-U0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl8xNCkgfSwKKwl7IEhJRF9VU0JfREVWSUNF
-KFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzE1
-KSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9J
-RF9OVFJJR19UT1VDSF9TQ1JFRU5fMTYpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9S
-X0lEX05UUklHLCBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl8xNykgfSwKKwl7IEhJ
-RF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9V
-Q0hfU0NSRUVOXzE4KSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9PUlRFSywg
-VVNCX0RFVklDRV9JRF9PUlRFS19XS0IyMDAwKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZF
-TkRPUl9JRF9QRVRBTFlOWCwgVVNCX0RFVklDRV9JRF9QRVRBTFlOWF9NQVhURVJfUkVNT1RFKSB9
-LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9RVUFOVEEsIFVTQl9ERVZJQ0VfSURf
-UVVBTlRBX09QVElDQUxfVE9VQ0gpIH0sCmRpZmYgLS1naXQgYS9kcml2ZXJzL2hpZC9oaWQtaWRz
-LmggYi9kcml2ZXJzL2hpZC9oaWQtaWRzLmgKaW5kZXggNmFmNzdlZC4uMWQ2MTk0YSAxMDA2NDQK
-LS0tIGEvZHJpdmVycy9oaWQvaGlkLWlkcy5oCisrKyBiL2RyaXZlcnMvaGlkL2hpZC1pZHMuaApA
-QCAtMzQsNyArMzQsNyBAQAogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FDRUNBRF9GTEFJUgkweDAw
-MDQKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9BQ0VDQURfMzAyCTB4MDAwOAogCi0jZGVmaW5lIFVT
-Ql9WRU5ET1JfSURfQURTX1RFQ0ggCQkweDA2ZTEKKyNkZWZpbmUgVVNCX1ZFTkRPUl9JRF9BRFNf
-VEVDSAkweDA2ZTEKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9BRFNfVEVDSF9SQURJT19TSTQ3MFgJ
-MHhhMTU1CiAKICNkZWZpbmUgVVNCX1ZFTkRPUl9JRF9BRkFURUNICQkweDE1YTQKQEAgLTE5OCw3
-ICsxOTgsNyBAQAogI2RlZmluZSBVU0JfVkVORE9SX0lEX0VUVAkJMHgwNjY0CiAjZGVmaW5lIFVT
-Ql9ERVZJQ0VfSURfVEM1VUgJCTB4MDMwOQogCi0jZGVmaW5lIFVTQl9WRU5ET1JfSURfRVpLRVkg
-CQkweDA1MTgKKyNkZWZpbmUgVVNCX1ZFTkRPUl9JRF9FWktFWQkJMHgwNTE4CiAjZGVmaW5lIFVT
-Ql9ERVZJQ0VfSURfQlRDXzgxOTMJCTB4MDAwMgogCiAjZGVmaW5lIFVTQl9WRU5ET1JfSURfR0FN
-RVJPTgkJMHgwODEwCkBAIC0zOTEsNiArMzkxLDI0IEBACiAKICNkZWZpbmUgVVNCX1ZFTkRPUl9J
-RF9OVFJJRyAgICAgICAgICAgICAgICAweDFiOTYKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJ
-R19UT1VDSF9TQ1JFRU4gICAweDAwMDEKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VD
-SF9TQ1JFRU5fMSAgIDB4MDAwMworI2RlZmluZSBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1ND
-UkVFTl8yICAgMHgwMDA0CisjZGVmaW5lIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVO
-XzMgICAweDAwMDUKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNCAg
-IDB4MDAwNgorI2RlZmluZSBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl81ICAgMHgw
-MDA3CisjZGVmaW5lIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzYgICAweDAwMDgK
-KyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNyAgIDB4MDAwOQorI2Rl
-ZmluZSBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl84ICAgMHgwMDBBCisjZGVmaW5l
-IFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzkgICAweDAwMEIKKyNkZWZpbmUgVVNC
-X0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTAgICAweDAwMEMKKyNkZWZpbmUgVVNCX0RF
-VklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTEgICAweDAwMEQKKyNkZWZpbmUgVVNCX0RFVklD
-RV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTIgICAweDAwMEUKKyNkZWZpbmUgVVNCX0RFVklDRV9J
-RF9OVFJJR19UT1VDSF9TQ1JFRU5fMTMgICAweDAwMEYKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9O
-VFJJR19UT1VDSF9TQ1JFRU5fMTQgICAweDAwMTAKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJ
-R19UT1VDSF9TQ1JFRU5fMTUgICAweDAwMTEKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19U
-T1VDSF9TQ1JFRU5fMTYgICAweDAwMTIKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VD
-SF9TQ1JFRU5fMTcgICAweDAwMTMKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9T
-Q1JFRU5fMTggICAweDAwMTQKIAogI2RlZmluZSBVU0JfVkVORE9SX0lEX09OVFJBSwkJMHgwYTA3
-CiAjZGVmaW5lIFVTQl9ERVZJQ0VfSURfT05UUkFLX0FEVTEwMAkweDAwNjQKLS0gCjEuNi4zLjMK
-Cg==
-
---Boundary_(ID_0hZFtJnK1KKGRuAXHfdFWQ)--
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
