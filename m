@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932335Ab0FUUBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 16:01:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39110 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758213Ab0FUUBD (ORCPT
+	id S1758247Ab0FUUB4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 16:01:56 -0400
+Received: from saarni.dnainternet.net ([83.102.40.136]:58962 "EHLO
+	saarni.dnainternet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758214Ab0FUUBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 16:01:03 -0400
-Date: Mon, 21 Jun 2010 13:00:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] Add TAINT_HARDWARE_UNSUPPORTED flag
-Message-Id: <20100621130008.d3dc01a8.akpm@linux-foundation.org>
-In-Reply-To: <20100621194559.GI3217@redhat.com>
-References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
-	<20100617091322.b7d21473.randy.dunlap@oracle.com>
-	<4C1A7D61.8010900@redhat.com>
-	<20100621122145.76ebd7ac.akpm@linux-foundation.org>
-	<20100621194559.GI3217@redhat.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 21 Jun 2010 16:01:54 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -1.36
+Message-ID: <20100621230152.41123y9y8dt1v968@hayate.sektori.org>
+Date: Mon, 21 Jun 2010 23:01:52 +0300
+From: "Jussi Kivilinna" <jussi.kivilinna@mbnet.fi>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Cc: "Maxim Levitsky" <maximlevitsky@gmail.com>,
+       "David Quan" <David.Quan@atheros.com>,
+       "Bob Copeland" <me@bobcopeland.com>,
+       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
+References: <20100528100901.14580.1322.stgit@fate.lan>
+	<1276806785.20754.8.camel@maxim-laptop>
+	<20100618112026.17623g6uhdjk8hts@naisho.dyndns.info>
+	<1276856142.9114.1.camel@maxim-laptop>
+	<20100618134930.124225d4fsi8w1fk@naisho.dyndns.info>
+	<1276859156.19554.2.camel@maxim-laptop>
+	<AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com>
+	<1276870309.23783.3.camel@maxim-laptop>
+	<1276933774.16697.11.camel@maxim-laptop>
+	<AANLkTimIjaxq7IDWwIl1vv93k9bNQ2i89Sb5R5TiJmmA@mail.gmail.com>
+	<1277032723.9555.12.camel@maxim-laptop>
+	<AANLkTim8iZmm8pEERJUsrQWOiLSjPUfCN-TFFzZZQWx2@mail.gmail.com>
+In-Reply-To: <AANLkTim8iZmm8pEERJUsrQWOiLSjPUfCN-TFFzZZQWx2@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=UTF-8;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010 15:45:59 -0400
-Don Zickus <dzickus@redhat.com> wrote:
+Quoting "Luis R. Rodriguez" <mcgrof@gmail.com>:
 
-> On Mon, Jun 21, 2010 at 12:21:45PM -0700, Andrew Morton wrote:
-> > > @@ -243,6 +245,9 @@ void add_taint(unsigned flag)
-> > >  	 */
-> > >  	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
-> > >  		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
-> > > +	if (flag == TAINT_HARDWARE_UNSUPPORTED)
-> > > +		printk(KERN_CRIT
-> > > +		       "WARNING: This system's hardware is unsupported.\n");
-> > >  
-> > >  	set_bit(flag, &tainted_mask);
-> > >  }
-> > 
-> > That's pretty user-hostile.  What are they to do - throw the entire
-> > computer away because it has the wrong type of mouse?
-> > 
-> > How about
-> > 
-> > void add_hardware_unsupported_taint(const char *hardware)
-> > {
-> > 	printk(KERN_CRIT
-> > 	       "Hardware device %s is unsupported by this kernel's vendor\n",
-> > 		hardware);
-> > 	add_taint(TAINT_HARDWARE_UNSUPPORTED);
-> > }
-> > 
-> > and
-> > 
-> > /*
-> >  * Don't call add_taint(TAINT_HARDWARE_UNSUPPORTED) directly - use
-> >  * add_hardware_unsupported_taint()
-> >  */
-> > #define TAINT_HARDWARE_UNSUPPORTED	12
-> 
-> Internally here that is how we planned on using the flag.  We weren't sure
-> if upstream would accept that piece or not, so we started with the flag
-> for now to at least reserve the bit.
-> 
-> But I can see your point about the other printk being a little
-> user-hostile if someone forgot to call the wrapper function.
-> 
-> I can respin with the wrapper function (Prarit is on vacation)
+>> Also Jussi Kivilinna said that he found that in windows .inf file there
+>> are some instructions to enable L1 but not L0s.
+>
+> For which chipsets?
 
-Not telling the user _which_ hardware is causing the problem is daft.
+I uploaded windows driver I have to:
+   
+http://www.student.oulu.fi/~jukivili/ath5k/XP32_XP64_WHQL_Dri-7-6-1-149_ACU-7-0-2-48_LEAP_Acer_81024
 
-> or go with
-> Alan's idea of just reserving the upper few bits.
+In inf, all ASPM entries are either ASPM off or ASPM L0s:off/L1:on.  
+There is also user option for changing ASPM setting with options  
+L0s:off/L1:off and L0s:off/L1:on.
 
-um.  Given that the vendor needs to patch the individual drivers to
-indicate ther unsupported status, why not just patch in the taint
-changes as well?
+-Jussi
 
 
