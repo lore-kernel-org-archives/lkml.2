@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932836Ab0FUPXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 11:23:37 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34932 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932811Ab0FUPXf (ORCPT
+	id S932823Ab0FUP1Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 11:27:25 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:47309 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932734Ab0FUP1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 11:23:35 -0400
-Date: Mon, 21 Jun 2010 11:23:33 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Florian Mickler <florian@mickler.org>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?ISO-8859-15?B?SGr4bm5lduVn?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-In-Reply-To: <20100621073233.3f874ad0@schatten.dmk.lab>
-Message-ID: <Pine.LNX.4.44L0.1006211111060.1687-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 21 Jun 2010 11:27:23 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=cs8sj1kYmUHrPAIKHplpS/5/v3fyLlhu4dbYVj14sorMhDVWTeOG4buH+I59kA4/bsdmTy8vjSg/VyfdoNGl2UXxqAz0jwFK9ZWLdCeNXM1SpKKxjGcUqa0K8zOFge7J;
+Date: Mon, 21 Jun 2010 08:25:35 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: mjg@redhat.com, platform-driver-x86@vger.kernel.org,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: Re: [PATCH] X86: intel_ips, check for kzalloc properly
+Message-ID: <20100621082535.14301a7c@virtuousgeek.org>
+In-Reply-To: <1277132531-14242-1-git-send-email-jslaby@suse.cz>
+References: <1277132531-14242-1-git-send-email-jslaby@suse.cz>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010, Florian Mickler wrote:
+On Mon, 21 Jun 2010 17:02:11 +0200
+Jiri Slaby <jslaby@suse.cz> wrote:
 
-> On Sun, 20 Jun 2010 22:23:38 -0400 (EDT)
-> Alan Stern <stern@rowland.harvard.edu> wrote:
-
-> > This is the race I was talking about:
-> > 
-> > > > What happens if an event arrives just before you read
-> > > > /sys/power/wakeup_count, but the userspace consumer doesn't realize
-> > > > there is a new unprocessed event until after the power manager checks
-> > > > it?
-> > 
-> > > I think this is not the kernel's problem.  In this approach the kernel makes it
-> > > possible for the user space to avoid the race.  Whether or not the user space
-> > > will use this opportunity is a different matter.
-> > 
-> > It is _not_ possible for userspace to avoid this race.  Help from the 
-> > kernel is needed.
+> Stanse found that there are two NULL checks missing in ips_monitor. So
+> check their value too and bail out appropriately if the allocation
+> failed.
 > 
-> It is possible if every (relevant) userspace program implements a
-> callback for the powermanager to check if one of it's wakeup-sources
-> got activated.
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: Matthew Garrett <mjg@redhat.com>
+> ---
+>  drivers/platform/x86/intel_ips.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 > 
-> That way the powermanager would read /sys/power/wakeup_count, then do
-> the roundtrip to all it's registered users and only then suspend. 
-> 
-> This turns the suspend_blockers concept around. Instead of actively
-> signaling the suspend_blockers, the userspace programs only answer
-> "yes/no" when asked.  (i.e. polling?) 
+> diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
+> index cdaf40e..3c7ea9a 100644
+> --- a/drivers/platform/x86/intel_ips.c
+> +++ b/drivers/platform/x86/intel_ips.c
+> @@ -931,7 +931,8 @@ static int ips_monitor(void *data)
+>  	mch_samples = kzalloc(sizeof(u16) * IPS_SAMPLE_COUNT, GFP_KERNEL);
+>  	cpu_samples = kzalloc(sizeof(u32) * IPS_SAMPLE_COUNT, GFP_KERNEL);
+>  	mchp_samples = kzalloc(sizeof(u32) * IPS_SAMPLE_COUNT, GFP_KERNEL);
+> -	if (!mcp_samples || !ctv1_samples || !ctv2_samples || !mch_samples) {
+> +	if (!mcp_samples || !ctv1_samples || !ctv2_samples || !mch_samples ||
+> +			!cpu_samples || !mchp_samples) {
+>  		dev_err(&ips->dev->dev,
+>  			"failed to allocate sample array, ips disabled\n");
+>  		kfree(mcp_samples);
 
-In the end you would want to have communication in both directions:  
-suspend blockers _and_ callbacks.  Polling is bad if done too often.  
-But I think the idea is a good one.
+Ah cool, am I also missing the appropriate kfree() calls for the last
+two?  The context doesn't have it.  Otherwise,
 
-In fact, you don't need a "yes/no" response.  Programs merely need a
-chance to activate a new suspend blocker if a wakeup source was
-recently activated before they acknowledge the poll.
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-> You _can not_ implement userspace suspend blockers with this approach,
-> as it is vital for every userspace program to get scheduled and check
-> it's wakeup-source (if even possible) before you know that the right
-> parties have won the race.
-
-I'm not sure what you mean.  Certainly you can take a userspace 
-suspend-blocker implementation of the sort discussed before (where 
-programs communicate their needs to a central power-manager process) 
-and add this callback mechanism on top.
-
-There is still at least one loophole to be closed: Android's
-timer-based wakelocks.  These include cases where the Android
-developers didn't add enough wakelocks to cover the entire path from
-kernel-event to userspace-handler, so they punted and relied on a timer
-to decide when the wakelock should be deactivated.  (There may be other
-cases too; I didn't follow the original discussion very closely.)  
-It's not clear whether these things can be handled already in Rafael's
-scheme with your addition, or whether something new is needed.
-
-Alan Stern
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
