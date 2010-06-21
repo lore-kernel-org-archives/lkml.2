@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248Ab0FULBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 07:01:32 -0400
-Received: from lider.pardus.org.tr ([193.140.100.216]:41496 "EHLO
-	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab0FULBb (ORCPT
+	id S932244Ab0FULCr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 07:02:47 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40800 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932121Ab0FULCp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 07:01:31 -0400
-From: =?UTF-8?q?Ozan=20=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@suse.de
-Subject: [PATCH] rt2870: add device id for Zyxel NWD-270N
-Date: Mon, 21 Jun 2010 14:00:56 +0300
-Message-Id: <1277118056-21367-1-git-send-email-ozan@pardus.org.tr>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 21 Jun 2010 07:02:45 -0400
+Subject: Re: [patch] x86, pat: freeing invalid memtype messages
+From: Peter Zijlstra <peterz@infradead.org>
+To: Xiaotian Feng <dfeng@redhat.com>
+Cc: Marcin Slusarz <marcin.slusarz@gmail.com>,
+       Dan Carpenter <error27@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, "H.PeterA" <"nvin hpa"@zytor.com>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
+       Jack Steiner <steiner@sgi.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
+       x86@kernel.org
+In-Reply-To: <4C1F455E.6050502@redhat.com>
+References: <20100617134559.GA29824@bicker> <20100617161728.GA2741@joi.lan>
+	 <4C1B1691.6020809@redhat.com> <20100618175726.GA2785@joi.lan>
+	 <4C1F455E.6050502@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 21 Jun 2010 13:02:35 +0200
+Message-ID: <1277118155.1875.508.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device id for Zyxel NWD-270N USB dongle.
+On Mon, 2010-06-21 at 18:56 +0800, Xiaotian Feng wrote:
 
-Signed-off-by: Ozan Çağlayan <ozan@pardus.org.tr>
----
- drivers/staging/rt2860/usb_main_dev.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> I guess there might be something wrong between the augmented rbtree insert/remove ..
 
-diff --git a/drivers/staging/rt2860/usb_main_dev.c b/drivers/staging/rt2860/usb_main_dev.c
-index b740662..674769d 100644
---- a/drivers/staging/rt2860/usb_main_dev.c
-+++ b/drivers/staging/rt2860/usb_main_dev.c
-@@ -77,6 +77,7 @@ struct usb_device_id rtusb_usb_id[] = {
- 	{USB_DEVICE(0x083A, 0x7522)},	/* Arcadyan */
- 	{USB_DEVICE(0x0CDE, 0x0022)},	/* ZCOM */
- 	{USB_DEVICE(0x0586, 0x3416)},	/* Zyxel */
-+	{USB_DEVICE(0x0586, 0x341a)},	/* Zyxel NWD-270N */
- 	{USB_DEVICE(0x0CDE, 0x0025)},	/* Zyxel */
- 	{USB_DEVICE(0x1740, 0x9701)},	/* EnGenius */
- 	{USB_DEVICE(0x1740, 0x9702)},	/* EnGenius */
--- 
-1.7.1
+The easiest thing is to revert that change and try again, the next step
+would be to print the full RB tree on each modification and look where
+it goes wrong.
 
+That said, I did print my fair share of (augmented) RB trees while
+playing with scheduler patches and I can't remember it ever having
+messed up like that.
