@@ -1,236 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab0FUQXx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 12:23:53 -0400
+	id S1758071Ab0FUQX7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 12:23:59 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:63374 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757566Ab0FUQXw (ORCPT
+	with ESMTP id S1757566Ab0FUQXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 12:23:52 -0400
+	Mon, 21 Jun 2010 12:23:55 -0400
 X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jun 2010 12:23:51 EDT
 X-IronPort-AV: E=Sophos;i="4.53,453,1272859200"; 
-   d="scan'208";a="102450157"
+   d="scan'208";a="102450175"
 From: stefano@stabellini.net
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Stefano.Stabellini@eu.citrix.com,
        sheng@linux.intel.com, ddutile@redhat.com, jeremy@goop.org,
-       Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 01/13] Add support for hvm_op
-Date: Mon, 21 Jun 2010 17:13:55 +0100
-Message-Id: <1277136847-13266-1-git-send-email-stefano@stabellini.net>
+Subject: [PATCH 03/13] evtchn delivery on HVM
+Date: Mon, 21 Jun 2010 17:13:57 +0100
+Message-Id: <1277136847-13266-3-git-send-email-stefano@stabellini.net>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
 References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
-X-OriginalArrivalTime: 21 Jun 2010 16:14:20.0193 (UTC) FILETIME=[CE0EC910:01CB115C]
+X-OriginalArrivalTime: 21 Jun 2010 16:14:27.0193 (UTC) FILETIME=[D23AE690:01CB115C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+From: Sheng Yang <sheng@linux.intel.com>
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+Set the callback to receive evtchns from Xen, using the
+callback vector delivery mechanism.
+
+The traditional way for receiving event channel notifications from Xen
+is interrupts from the platform PCI device.
+The callback vector is a newer alternative that allow us to receive
+notifications on any vcpu and doesn't need any PCI support: we allocate
+a vector exclusively to receive events, in the vector handler we don't
+need to interact with the vlapic, therefore we avoid a VMEXIT.
+
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Sheng Yang <sheng@linux.intel.com>
 ---
- arch/x86/include/asm/xen/hypercall.h |    6 ++
- include/xen/hvm.h                    |   24 +++++++++
- include/xen/interface/hvm/hvm_op.h   |   35 ++++++++++++
- include/xen/interface/hvm/params.h   |   95 ++++++++++++++++++++++++++++++++++
- 4 files changed, 160 insertions(+), 0 deletions(-)
- create mode 100644 include/xen/hvm.h
- create mode 100644 include/xen/interface/hvm/hvm_op.h
- create mode 100644 include/xen/interface/hvm/params.h
+ arch/x86/include/asm/irq_vectors.h |    5 ++
+ arch/x86/kernel/entry_32.S         |    2 +
+ arch/x86/kernel/entry_64.S         |    3 +
+ arch/x86/xen/enlighten.c           |   29 ++++++++++++
+ arch/x86/xen/xen-ops.h             |    2 +
+ drivers/xen/events.c               |   83 +++++++++++++++++++++++++++++++++---
+ include/xen/events.h               |    7 +++
+ include/xen/hvm.h                  |    6 +++
+ include/xen/interface/features.h   |    3 +
+ 9 files changed, 133 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
-index 9c371e4..7fda040 100644
---- a/arch/x86/include/asm/xen/hypercall.h
-+++ b/arch/x86/include/asm/xen/hypercall.h
-@@ -417,6 +417,12 @@ HYPERVISOR_nmi_op(unsigned long op, unsigned long arg)
- 	return _hypercall2(int, nmi_op, op, arg);
+diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
+index 8767d99..ab6ac1b 100644
+--- a/arch/x86/include/asm/irq_vectors.h
++++ b/arch/x86/include/asm/irq_vectors.h
+@@ -125,6 +125,11 @@
+  */
+ #define MCE_SELF_VECTOR			0xeb
+ 
++#ifdef CONFIG_XEN
++/* Xen vector callback to receive events in a HVM domain */
++#define XEN_HVM_EVTCHN_CALLBACK		0xe9
++#endif
++
+ #define NR_VECTORS			 256
+ 
+ #define FPU_IRQ				  13
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 44a8e0d..88ed128 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1147,6 +1147,8 @@ ENTRY(xen_failsafe_callback)
+ .previous
+ ENDPROC(xen_failsafe_callback)
+ 
++BUILD_INTERRUPT(xen_hvm_callback_vector, XEN_HVM_EVTCHN_CALLBACK)
++
+ #endif	/* CONFIG_XEN */
+ 
+ #ifdef CONFIG_FUNCTION_TRACER
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 0697ff1..d40c1e1 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1329,6 +1329,9 @@ ENTRY(xen_failsafe_callback)
+ 	CFI_ENDPROC
+ END(xen_failsafe_callback)
+ 
++apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
++	xen_hvm_callback_vector smp_xen_hvm_callback_vector
++
+ #endif /* CONFIG_XEN */
+ 
+ /*
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index d776c02..4b2172d 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -11,6 +11,7 @@
+  * Jeremy Fitzhardinge <jeremy@xensource.com>, XenSource Inc, 2007
+  */
+ 
++#include <linux/cpu.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/smp.h>
+@@ -38,6 +39,7 @@
+ #include <xen/interface/memory.h>
+ #include <xen/features.h>
+ #include <xen/page.h>
++#include <xen/hvm.h>
+ #include <xen/hvc-console.h>
+ 
+ #include <asm/paravirt.h>
+@@ -78,6 +80,9 @@ struct shared_info xen_dummy_shared_info;
+ 
+ void *xen_initial_gdt;
+ 
++__read_mostly int xen_have_vector_callback;
++EXPORT_SYMBOL_GPL(xen_have_vector_callback);
++
+ /*
+  * Point at some empty memory to start with. We map the real shared_info
+  * page as soon as fixmap is up and running.
+@@ -1276,6 +1281,24 @@ static void __init init_shared_info(void)
+ 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
  }
  
-+static inline unsigned long __must_check
-+HYPERVISOR_hvm_op(int op, void *arg)
++static int __cpuinit xen_hvm_cpu_notify(struct notifier_block *self,
++				    unsigned long action, void *hcpu)
 +{
-+       return _hypercall2(unsigned long, hvm_op, op, arg);
-+}
-+
- static inline void
- MULTI_fpu_taskswitch(struct multicall_entry *mcl, int set)
- {
-diff --git a/include/xen/hvm.h b/include/xen/hvm.h
-new file mode 100644
-index 0000000..708c821
---- /dev/null
-+++ b/include/xen/hvm.h
-@@ -0,0 +1,24 @@
-+/* Simple wrappers around HVM functions */
-+#ifndef XEN_HVM_H__
-+#define XEN_HVM_H__
-+
-+#include <xen/interface/hvm/params.h>
-+
-+static inline int hvm_get_parameter(int idx, uint64_t *value)
-+{
-+	struct xen_hvm_param xhv;
-+	int r;
-+
-+	xhv.domid = DOMID_SELF;
-+	xhv.index = idx;
-+	r = HYPERVISOR_hvm_op(HVMOP_get_param, &xhv);
-+	if (r < 0) {
-+		printk(KERN_ERR "cannot get hvm parameter %d: %d.\n",
-+			idx, r);
-+		return r;
++	int cpu = (long)hcpu;
++	switch (action) {
++	case CPU_UP_PREPARE:
++		per_cpu(xen_vcpu, cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
++		break;
++	default:
++		break;
 +	}
-+	*value = xhv.value;
-+	return r;
++	return NOTIFY_OK;
 +}
 +
-+#endif /* XEN_HVM_H__ */
-diff --git a/include/xen/interface/hvm/hvm_op.h b/include/xen/interface/hvm/hvm_op.h
-new file mode 100644
-index 0000000..73c8c7e
---- /dev/null
-+++ b/include/xen/interface/hvm/hvm_op.h
-@@ -0,0 +1,35 @@
-+/*
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to
-+ * deal in the Software without restriction, including without limitation the
-+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-+ * sell copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#ifndef __XEN_PUBLIC_HVM_HVM_OP_H__
-+#define __XEN_PUBLIC_HVM_HVM_OP_H__
-+
-+/* Get/set subcommands: the second argument of the hypercall is a
-+ * pointer to a xen_hvm_param struct. */
-+#define HVMOP_set_param           0
-+#define HVMOP_get_param           1
-+struct xen_hvm_param {
-+    domid_t  domid;    /* IN */
-+    uint32_t index;    /* IN */
-+    uint64_t value;    /* IN/OUT */
++static struct notifier_block __cpuinitdata xen_hvm_cpu_notifier = {
++	.notifier_call	= xen_hvm_cpu_notify,
 +};
-+DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_param);
 +
-+#endif /* __XEN_PUBLIC_HVM_HVM_OP_H__ */
-diff --git a/include/xen/interface/hvm/params.h b/include/xen/interface/hvm/params.h
-new file mode 100644
-index 0000000..1888d8c
---- /dev/null
-+++ b/include/xen/interface/hvm/params.h
-@@ -0,0 +1,95 @@
-+/*
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to
-+ * deal in the Software without restriction, including without limitation the
-+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-+ * sell copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ */
+ void __init xen_hvm_guest_init(void)
+ {
+ 	int r;
+@@ -1289,4 +1312,10 @@ void __init xen_hvm_guest_init(void)
+ 		return;
+ 
+ 	init_shared_info();
 +
-+#ifndef __XEN_PUBLIC_HVM_PARAMS_H__
-+#define __XEN_PUBLIC_HVM_PARAMS_H__
++	if (xen_feature(XENFEAT_hvm_callback_vector))
++		xen_have_vector_callback = 1;
++	register_cpu_notifier(&xen_hvm_cpu_notifier);
++	have_vcpu_info_placement = 0;
++	x86_init.irqs.intr_init = xen_init_IRQ;
+ }
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index f9153a3..0d0e0e6 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -38,6 +38,8 @@ void xen_enable_sysenter(void);
+ void xen_enable_syscall(void);
+ void xen_vcpu_restore(void);
+ 
++void xen_callback_vector(void);
 +
-+#include "hvm_op.h"
+ void __init xen_build_dynamic_phys_to_machine(void);
+ 
+ void xen_init_irq_ops(void);
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index db8f506..0a68343 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -29,6 +29,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/slab.h>
+ 
++#include <asm/desc.h>
+ #include <asm/ptrace.h>
+ #include <asm/irq.h>
+ #include <asm/idle.h>
+@@ -36,10 +37,14 @@
+ #include <asm/xen/hypercall.h>
+ #include <asm/xen/hypervisor.h>
+ 
++#include <xen/xen.h>
++#include <xen/hvm.h>
+ #include <xen/xen-ops.h>
+ #include <xen/events.h>
+ #include <xen/interface/xen.h>
+ #include <xen/interface/event_channel.h>
++#include <xen/interface/hvm/hvm_op.h>
++#include <xen/interface/hvm/params.h>
+ 
+ /*
+  * This lock protects updates to the following mapping and reference-count
+@@ -617,17 +622,13 @@ static DEFINE_PER_CPU(unsigned, xed_nesting_count);
+  * a bitset of words which contain pending event bits.  The second
+  * level is a bitset of pending events themselves.
+  */
+-void xen_evtchn_do_upcall(struct pt_regs *regs)
++static void __xen_evtchn_do_upcall(void)
+ {
+ 	int cpu = get_cpu();
+-	struct pt_regs *old_regs = set_irq_regs(regs);
+ 	struct shared_info *s = HYPERVISOR_shared_info;
+ 	struct vcpu_info *vcpu_info = __get_cpu_var(xen_vcpu);
+  	unsigned count;
+ 
+-	exit_idle();
+-	irq_enter();
+-
+ 	do {
+ 		unsigned long pending_words;
+ 
+@@ -667,10 +668,26 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
+ 	} while(count != 1);
+ 
+ out:
 +
-+/*
-+ * Parameter space for HVMOP_{set,get}_param.
-+ */
++	put_cpu();
++}
 +
-+/*
-+ * How should CPU0 event-channel notifications be delivered?
-+ * val[63:56] == 0: val[55:0] is a delivery GSI (Global System Interrupt).
-+ * val[63:56] == 1: val[55:0] is a delivery PCI INTx line, as follows:
-+ *                  Domain = val[47:32], Bus  = val[31:16],
-+ *                  DevFn  = val[15: 8], IntX = val[ 1: 0]
-+ * val[63:56] == 2: val[7:0] is a vector number.
-+ * If val == 0 then CPU0 event-channel notifications are not delivered.
-+ */
-+#define HVM_PARAM_CALLBACK_IRQ 0
++void xen_evtchn_do_upcall(struct pt_regs *regs)
++{
++	struct pt_regs *old_regs = set_irq_regs(regs);
 +
-+#define HVM_PARAM_STORE_PFN    1
-+#define HVM_PARAM_STORE_EVTCHN 2
++	exit_idle();
++	irq_enter();
 +
-+#define HVM_PARAM_PAE_ENABLED  4
++	__xen_evtchn_do_upcall();
 +
-+#define HVM_PARAM_IOREQ_PFN    5
+ 	irq_exit();
+ 	set_irq_regs(old_regs);
++}
+ 
+-	put_cpu();
++void xen_hvm_evtchn_do_upcall(void)
++{
++	__xen_evtchn_do_upcall();
+ }
+ 
+ /* Rebind a new event channel to an existing irq. */
+@@ -933,6 +950,53 @@ static struct irq_chip xen_dynamic_chip __read_mostly = {
+ 	.retrigger	= retrigger_dynirq,
+ };
+ 
++int xen_set_callback_via(uint64_t via)
++{
++	struct xen_hvm_param a;
++	a.domid = DOMID_SELF;
++	a.index = HVM_PARAM_CALLBACK_IRQ;
++	a.value = via;
++	return HYPERVISOR_hvm_op(HVMOP_set_param, &a);
++}
++EXPORT_SYMBOL_GPL(xen_set_callback_via);
 +
-+#define HVM_PARAM_BUFIOREQ_PFN 6
++void smp_xen_hvm_callback_vector(struct pt_regs *regs)
++{
++	struct pt_regs *old_regs = set_irq_regs(regs);
 +
-+/*
-+ * Set mode for virtual timers (currently x86 only):
-+ *  delay_for_missed_ticks (default):
-+ *   Do not advance a vcpu's time beyond the correct delivery time for
-+ *   interrupts that have been missed due to preemption. Deliver missed
-+ *   interrupts when the vcpu is rescheduled and advance the vcpu's virtual
-+ *   time stepwise for each one.
-+ *  no_delay_for_missed_ticks:
-+ *   As above, missed interrupts are delivered, but guest time always tracks
-+ *   wallclock (i.e., real) time while doing so.
-+ *  no_missed_ticks_pending:
-+ *   No missed interrupts are held pending. Instead, to ensure ticks are
-+ *   delivered at some non-zero rate, if we detect missed ticks then the
-+ *   internal tick alarm is not disabled if the VCPU is preempted during the
-+ *   next tick period.
-+ *  one_missed_tick_pending:
-+ *   Missed interrupts are collapsed together and delivered as one 'late tick'.
-+ *   Guest time always tracks wallclock (i.e., real) time.
-+ */
-+#define HVM_PARAM_TIMER_MODE   10
-+#define HVMPTM_delay_for_missed_ticks    0
-+#define HVMPTM_no_delay_for_missed_ticks 1
-+#define HVMPTM_no_missed_ticks_pending   2
-+#define HVMPTM_one_missed_tick_pending   3
++	exit_idle();
 +
-+/* Boolean: Enable virtual HPET (high-precision event timer)? (x86-only) */
-+#define HVM_PARAM_HPET_ENABLED 11
++	irq_enter();
 +
-+/* Identity-map page directory used by Intel EPT when CR0.PG=0. */
-+#define HVM_PARAM_IDENT_PT     12
++	__xen_evtchn_do_upcall();
 +
-+/* Device Model domain, defaults to 0. */
-+#define HVM_PARAM_DM_DOMAIN    13
++	irq_exit();
 +
-+/* ACPI S state: currently support S0 and S3 on x86. */
-+#define HVM_PARAM_ACPI_S_STATE 14
++	set_irq_regs(old_regs);
++}
 +
-+/* TSS used on Intel when CR0.PE=0. */
-+#define HVM_PARAM_VM86_TSS     15
++/* Vector callbacks are better than PCI interrupts to receive event
++ * channel notifications because we can receive vector callbacks on any
++ * vcpu and we don't need PCI support or APIC interactions. */
++void xen_callback_vector(void)
++{
++	int rc;
++	uint64_t callback_via;
++	if (xen_have_vector_callback) {
++		callback_via = HVM_CALLBACK_VECTOR(XEN_HVM_EVTCHN_CALLBACK);
++		rc = xen_set_callback_via(callback_via);
++		if (rc) {
++			printk(KERN_ERR "Request for Xen HVM callback vector"
++					" failed.\n");
++			xen_have_vector_callback = 0;
++			return;
++		}
++		printk(KERN_INFO "Xen HVM callback vector for event delivery is "
++				"enabled\n");
++		alloc_intr_gate(XEN_HVM_EVTCHN_CALLBACK, xen_hvm_callback_vector);
++	}
++}
 +
-+/* Boolean: Enable aligning all periodic vpts to reduce interrupts */
-+#define HVM_PARAM_VPT_ALIGN    16
+ void __init xen_init_IRQ(void)
+ {
+ 	int i;
+@@ -947,5 +1011,10 @@ void __init xen_init_IRQ(void)
+ 	for (i = 0; i < NR_EVENT_CHANNELS; i++)
+ 		mask_evtchn(i);
+ 
+-	irq_ctx_init(smp_processor_id());
++	if (xen_hvm_domain()) {
++		xen_callback_vector();
++		native_init_IRQ();
++	} else {
++		irq_ctx_init(smp_processor_id());
++	}
+ }
+diff --git a/include/xen/events.h b/include/xen/events.h
+index e68d59a..a15d932 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -56,4 +56,11 @@ void xen_poll_irq(int irq);
+ /* Determine the IRQ which is bound to an event channel */
+ unsigned irq_from_evtchn(unsigned int evtchn);
+ 
++/* Xen HVM evtchn vector callback */
++extern void xen_hvm_callback_vector(void);
++extern int xen_have_vector_callback;
++int xen_set_callback_via(uint64_t via);
++void xen_evtchn_do_upcall(struct pt_regs *regs);
++void xen_hvm_evtchn_do_upcall(void);
 +
-+#define HVM_NR_PARAMS          17
+ #endif	/* _XEN_EVENTS_H */
+diff --git a/include/xen/hvm.h b/include/xen/hvm.h
+index 708c821..3427f92 100644
+--- a/include/xen/hvm.h
++++ b/include/xen/hvm.h
+@@ -3,6 +3,7 @@
+ #define XEN_HVM_H__
+ 
+ #include <xen/interface/hvm/params.h>
++#include <asm/xen/hypercall.h>
+ 
+ static inline int hvm_get_parameter(int idx, uint64_t *value)
+ {
+@@ -21,4 +22,9 @@ static inline int hvm_get_parameter(int idx, uint64_t *value)
+ 	return r;
+ }
+ 
++#define HVM_CALLBACK_VIA_TYPE_VECTOR 0x2
++#define HVM_CALLBACK_VIA_TYPE_SHIFT 56
++#define HVM_CALLBACK_VECTOR(x) (((uint64_t)HVM_CALLBACK_VIA_TYPE_VECTOR)<<\
++		HVM_CALLBACK_VIA_TYPE_SHIFT | (x))
 +
-+#endif /* __XEN_PUBLIC_HVM_PARAMS_H__ */
+ #endif /* XEN_HVM_H__ */
+diff --git a/include/xen/interface/features.h b/include/xen/interface/features.h
+index f51b641..8ab08b9 100644
+--- a/include/xen/interface/features.h
++++ b/include/xen/interface/features.h
+@@ -41,6 +41,9 @@
+ /* x86: Does this Xen host support the MMU_PT_UPDATE_PRESERVE_AD hypercall? */
+ #define XENFEAT_mmu_pt_update_preserve_ad  5
+ 
++/* x86: Does this Xen host support the HVM callback vector type? */
++#define XENFEAT_hvm_callback_vector        8
++
+ #define XENFEAT_NR_SUBMAPS 1
+ 
+ #endif /* __XEN_PUBLIC_FEATURES_H__ */
 -- 
 1.7.0.4
 
