@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757473Ab0FUMet (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 08:34:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17493 "EHLO mx1.redhat.com"
+	id S1757623Ab0FUMhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 08:37:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44033 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755214Ab0FUMeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 08:34:46 -0400
-Date: Mon, 21 Jun 2010 09:34:36 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: reiserfs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH 8/8 v2]tuners:tuner-simple Fix warning: variable 'tun'
- set but not used
-Message-ID: <20100621093436.376b819a@pedra>
-In-Reply-To: <1276580914-21883-1-git-send-email-justinmattock@gmail.com>
-References: <1276580914-21883-1-git-send-email-justinmattock@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756609Ab0FUMhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 08:37:19 -0400
+Message-ID: <4C1F5CF0.4030206@redhat.com>
+Date: Mon, 21 Jun 2010 15:37:04 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com
+Subject: Re: [PATCH V2 5/5] ara virt interface of perf to support kvm guest
+ os statistics collection in guest os
+References: <1277112709.2096.513.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1277112709.2096.513.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 14 Jun 2010 22:48:34 -0700
-"Justin P. Mattock" <justinmattock@gmail.com> escreveu:
+On 06/21/2010 12:31 PM, Zhang, Yanmin wrote:
+> The 5th patch is applied to the latest qemu-kvm tree.
+>
+> --- qemu-kvm_0621/target-i386/kvm.c	2010-06-21 11:00:29.000000000 +0800
+> +++ qemu-kvm_0621_perf/target-i386/kvm.c	2010-06-21 13:00:14.136999850 +0800
+> @@ -150,6 +150,9 @@ struct kvm_para_features {
+>   #ifdef KVM_CAP_PV_MMU
+>           { KVM_CAP_PV_MMU, KVM_FEATURE_MMU_OP },
+>   #endif
+> +#ifdef KVM_CAP_PV_PERF
+> +        { KVM_CAP_PV_PERF, KVM_FEATURE_PV_PERF },
+> +#endif
+>           { -1, -1 }
+>   };
+>
+>    
 
-> Resend due to a whitespace issue I created by mistake.
-> The below patch fixes a warning message create by gcc 4.6.0
 
-It seems OK for me, but you shouldn't be sending it to be applied at reiserfs-devel ML.
-Instead, it should be sent to linux-media ML, and applied via my tree.
+Not really necessary any more - if you expose the cpuid bit via 
+KVM_GET_SUPPORTED_CPUID2 then 'qemu -cpu host' will automatically enable it.
 
->  
->  CC [M]  drivers/media/common/tuners/tuner-simple.o
-> drivers/media/common/tuners/tuner-simple.c: In function 'simple_set_tv_freq':
-> drivers/media/common/tuners/tuner-simple.c:548:20: warning: variable 'tun' set but not used
-> 
->  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
->  Reviewed-By: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> ---
->  drivers/media/common/tuners/tuner-simple.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/media/common/tuners/tuner-simple.c b/drivers/media/common/tuners/tuner-simple.c
-> index 8abbcc5..84900fa 100644
-> --- a/drivers/media/common/tuners/tuner-simple.c
-> +++ b/drivers/media/common/tuners/tuner-simple.c
-> @@ -545,14 +545,11 @@ static int simple_set_tv_freq(struct dvb_frontend *fe,
->  	struct tuner_simple_priv *priv = fe->tuner_priv;
->  	u8 config, cb;
->  	u16 div;
-> -	struct tunertype *tun;
->  	u8 buffer[4];
->  	int rc, IFPCoff, i;
->  	enum param_type desired_type;
->  	struct tuner_params *t_params;
->  
-> -	tun = priv->tun;
-> -
->  	/* IFPCoff = Video Intermediate Frequency - Vif:
->  		940  =16*58.75  NTSC/J (Japan)
->  		732  =16*45.75  M/N STD
-
+On the other hand, do update target-i386/cpuid.c:kvm_feature_name so 
+people can enable the feature using qemu -cpu ...,+kvmperf.
 
 -- 
+error compiling committee.c: too many arguments to function
 
-Cheers,
-Mauro
