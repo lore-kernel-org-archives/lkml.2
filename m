@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab0FUSij (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 14:38:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47889 "EHLO mga01.intel.com"
+	id S1753672Ab0FUSkw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 14:40:52 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34522 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754342Ab0FUSig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 14:38:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,454,1272870000"; 
-   d="scan'208";a="810022884"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Alan Cox <alan@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Moblin Kernel <moblin-kernel@linux.intel.com>,
-       Arjan van de Ven <arjan@linux.intel.com>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH] x86/mrst/pci: avoid enabling intx for msi capable devices
-Date: Mon, 21 Jun 2010 11:30:55 -0700
-Message-Id: <1277145055-20566-1-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1751921Ab0FUSkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 14:40:51 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [Bug #16122] 2.6.35-rc1: WARNING at fs/fs-writeback.c:1142 __mark_inode_dirty+0x103/0x170
+Date: Mon, 21 Jun 2010 20:39:25 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <lc60d4toGTL.A.QzD._LpHMB@chimera> <W8JfMs9cZw.A.N1G.5NpHMB@chimera> <4C1ECCDE.6050803@lwfinger.net>
+In-Reply-To: <4C1ECCDE.6050803@lwfinger.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006212039.25962.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Moorestown platform, true PCI devices with MSI capabilities do not support
-INTx mode. IRQ line# for those devices are zeros in the PCI shim, an attempt
-to enable INTx on these MSI capable devices will cause conflict in the system
-such as IRQ0 for the system timers.
-If the device driver probes/enables MSI before pci_enable_device(), the conflict
-is not shown since INTx will be disabled. But if the driver tries to enable INTx
-before MSI, the conflict will cause system timer IRQ0 to break.
+On Monday, June 21, 2010, Larry Finger wrote:
+> On 06/20/2010 05:17 PM, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.34.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16122
+> > Subject		: 2.6.35-rc1: WARNING at fs/fs-writeback.c:1142 __mark_inode_dirty+0x103/0x170
+> > Submitter	: Larry Finger <Larry.Finger@lwfinger.net>
+> > Date		: 2010-06-04 13:18 (17 days old)
+> 
+> This is still present in rc3.
 
-This patch will ensure the ordering of INTx and MSI setup by the driver is
-not relavent to INTx conflict. We will always skip INTx setup for MSI capable
-devices on Moorestown.
+Thanks for the update.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- arch/x86/pci/mrst.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
-index d5c7aef..ba3f08b 100644
---- a/arch/x86/pci/mrst.c
-+++ b/arch/x86/pci/mrst.c
-@@ -203,6 +203,9 @@ static int mrst_pci_irq_enable(struct pci_dev *dev)
- 	u8 pin;
- 	struct io_apic_irq_attr irq_attr;
- 
-+	if (pci_find_capability(dev, PCI_CAP_ID_MSI))
-+		return 0;
-+
- 	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
- 
- 	/* MRST only have IOAPIC, the PCI irq lines are 1:1 mapped to
--- 
-1.6.3.3
-
+Rafael
