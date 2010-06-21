@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab0FUIJq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 04:09:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:24762 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753945Ab0FUIJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 04:09:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,452,1272870000"; 
-   d="scan'208";a="632097412"
-From: "Berg, Johannes" <johannes.berg@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Kernel Testers List <kernel-testers@vger.kernel.org>,
+	id S1757248Ab0FUINb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 04:13:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43803 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754428Ab0FUIN3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 04:13:29 -0400
+Subject: Re: inconsistent lock state
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>, Sage Weil <sage@newdream.net>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Chatre, Reinette" <reinette.chatre@intel.com>
-Date: Mon, 21 Jun 2010 09:08:48 +0100
-Subject: RE: [Bug #16235] [REGRESSION] [IWL3945] Broadcast is broken?
-Thread-Topic: [Bug #16235] [REGRESSION] [IWL3945] Broadcast is broken?
-Thread-Index: AcsQyBjGtIXsVi1FQWekS4+KhciPZgAUM1fg
-Message-ID: <C5C86A19469DAE48AAAD0E5F3716E44501A571F996@irsmsx504.ger.corp.intel.com>
-References: <lc60d4toGTL.A.QzD._LpHMB@chimera>
- <W8JfMs9cZw.A.aOE.MMpHMB@chimera>
-In-Reply-To: <W8JfMs9cZw.A.aOE.MMpHMB@chimera>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>,
+       "David S.Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+In-Reply-To: <20100618133004.228c2223.akpm@linux-foundation.org>
+References: <20100615112434.GA3967@swordfish.minsk.epam.com>
+	 <20100618133004.228c2223.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 21 Jun 2010 08:54:52 +0200
+Message-ID: <1277103292.1875.331.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5L8AAim025571
 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16235
-> Subject		: [REGRESSION] [IWL3945] Broadcast is broken?
-> Submitter	: Maciej Rutecki <maciej.rutecki@gmail.com>
-> Date		: 2010-06-14 17:24 (7 days old)
-> Message-ID	: <201006141924.24061.maciej.rutecki@gmail.com>
-> References	: http://marc.info/?l=linux-kernel&m=127653628301300&w=2
+On Fri, 2010-06-18 at 13:30 -0700, Andrew Morton wrote:
+> From: Andrew Morton <akpm@linux-foundation.org>
+> 
+> Fix a lockdep-splat-causing regression introduced by
+> 
+> : commit 989a2979205dd34269382b357e6d4b4b6956b889
+> : Author:     Eric Dumazet <eric.dumazet@gmail.com>
+> : AuthorDate: Wed Apr 14 09:55:35 2010 +0000
+> : Commit:     David S. Miller <davem@davemloft.net>
+> : CommitDate: Wed Apr 21 16:19:29 2010 -0700
+> : 
+> :     fasync: RCU and fine grained locking
+> 
+> kill_fasync() can be called from both process and hard-irq context, so
+> fa_lock must be taken with IRQs disabled.
+> 
+> Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16230
+> 
+> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Reported-by: Dominik Brodowski <linux@dominikbrodowski.net>
+> Cc: Maciej Rutecki <maciej.rutecki@gmail.com>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org> 
 
-I asked Maxim to test a patch, which he has, and am in the process of pushing it upstream.
-
-johannes
----------------------------------------------------------------------Intel GmbHDornacher Strasse 185622 Feldkirchen/Muenchen GermanySitz der Gesellschaft: Feldkirchen bei MuenchenGeschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes SchwadererRegistergericht: Muenchen HRB 47456 Ust.-IdNr.VAT Registration No.: DE129385895Citibank Frankfurt (BLZ 502 109 00) 600119052
-This e-mail and any attachments may contain confidential material forthe sole use of the intended recipient(s). Any review or distributionby others is strictly prohibited. If you are not the intendedrecipient, please contact the sender and delete all copies.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
