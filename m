@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757053Ab0FUAmi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 20:42:38 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:34768 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756284Ab0FUAmf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 20:42:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=dt8D1frOI1VACes1NVaboKMvEUt5ZYNM6BAQMAS+XcnuuimTEPCm7zSnroBuJpXxN0
-         oOdCxHKFgZhrKRqt9blw+Hfs+sUJ8dUga+aPoyoUK4FDBfLF3tHywLERQasGhNA2zXh5
-         1qQvFfTPp1XWtKq00UusXNSB8NcsTcqstzhVw=
-Subject: [PATCH v2] qcserial: fix a memory leak in qcprobe error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matthew Garrett <mjg@redhat.com>,
-       Anssi Hannula <anssi.hannula@gmail.com>,
-       Bernhard Rosenkraenzer <bero@arklinux.org>, linux-usb@vger.kernel.org
-Content-Type: text/plain
-Date: Mon, 21 Jun 2010 08:44:17 +0800
-Message-Id: <1277081057.15579.3.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1757311Ab0FUAxY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 20:53:24 -0400
+Received: from tundra.namei.org ([65.99.196.166]:57576 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756284Ab0FUAxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 20:53:20 -0400
+Date: Mon, 21 Jun 2010 10:52:11 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Theodore Tso <tytso@mit.edu>
+cc: Casey Schaufler <casey@schaufler-ca.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Kees Cook <kees.cook@canonical.com>,
+       Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>, linux-doc@vger.kernel.org,
+       Stephen Smalley <sds@tycho.nsa.gov>, Daniel J Walsh <dwalsh@redhat.com>,
+       linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] ptrace: allow restriction of ptrace scope
+In-Reply-To: <E1FEE555-566E-4698-8FD8-240076A4F850@mit.edu>
+Message-ID: <alpine.LRH.2.00.1006211038250.7537@tundra.namei.org>
+References: <20100616221833.GM24749@outflux.net> <20100617000120.13071be8@lxorguk.ukuu.org.uk> <20100616232230.GP24749@outflux.net> <alpine.LRH.2.00.1006172336390.17282@tundra.namei.org> <20100617170453.GV24749@outflux.net> <20100617215349.2fac02f5@lxorguk.ukuu.org.uk>
+ <20100617140630.c6ced27a.rdunlap@xenotime.net> <20100617221815.68ce30c5@lxorguk.ukuu.org.uk> <20100617215105.GB24749@outflux.net> <20100617233054.330256cf@lxorguk.ukuu.org.uk> <4C1AE3A8.2020104@schaufler-ca.com>
+ <E1FEE555-566E-4698-8FD8-240076A4F850@mit.edu>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds missing kfree(data) before return -ENODEV.
+On Fri, 18 Jun 2010, Theodore Tso wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/usb/serial/qcserial.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+> Yet I would really like a number of features such as this ptrace scope idea ---
+> which I think is a useful feature, and it may be that stacking is the only
+> way we can resolve this debate.
 
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 04bb759..93d72eb 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -139,6 +139,7 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
- 					"Could not set interface, error %d\n",
- 					retval);
- 				retval = -ENODEV;
-+				kfree(data);
- 			}
- 			return retval;
- 		}
-@@ -155,6 +156,7 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
- 					"Could not set interface, error %d\n",
- 					retval);
- 				retval = -ENODEV;
-+				kfree(data);
- 			}
- 			return retval;
- 		}
-@@ -163,6 +165,7 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
- 	default:
- 		dev_err(&serial->dev->dev,
- 			"unknown number of interfaces: %d\n", nintf);
-+		kfree(data);
- 		return -ENODEV;
- 	}
- 
+We've already reached a consensus that these things should be put into a 
+separate LSM so we can evaluate the possible need for some form of 
+stacking or a security library API.
+
+Note that people using SELinux or AppArmor already have the ability to 
+restrict ptrace, and they would thus not need to stack this function if it 
+were in a separate LSM.
+
+Do you have a use-case where stacking would be useful here?
+
+
+
+- James
 -- 
-1.5.4.3
-
-
-
+James Morris
+<jmorris@namei.org>
