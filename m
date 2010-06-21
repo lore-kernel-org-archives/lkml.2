@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab0FUCDn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 22:03:43 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:50732 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757544Ab0FUCDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 22:03:39 -0400
-Date: Mon, 21 Jun 2010 12:03:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the i2c tree
-Message-Id: <20100621120331.1c6c1754.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__21_Jun_2010_12_03_31_+1000__ImrcpGHLYvXnzHj"
+	id S1757689Ab0FUCIV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 22:08:21 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44803 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757541Ab0FUCIU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 22:08:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hmLxrMtAFr6jgsEycI/7I0fvYsVwybr5+5jludKjutzDzzgZ7IBmhomnHclNamuZ55
+         UCxvXuXXyqS6nghU/A7gX1VURnQqI7V/RmyxMsY3DQm1mou1ui6MDiZM0kiChdkWBvoH
+         I0DjzEv7EzIH6/pbyRMSdVFlthtYwy9EBPuDM=
+MIME-Version: 1.0
+In-Reply-To: <20100618143727.GA16398@suse.de>
+References: <AANLkTimx1HWYzG0qQqP12ObWQI1eiH5SoFpRic06uN3f@mail.gmail.com>
+	<20100618143727.GA16398@suse.de>
+Date: Mon, 21 Jun 2010 11:08:19 +0900
+Message-ID: <AANLkTinPDECqU-GYKpD7_2IHb2qKjhCnViXkPDqN_cpu@mail.gmail.com>
+Subject: Re: [PATCH] USB: serial: ftdi: correct merge conflict with CONTEC id
+From: Daniel Sangorrin <daniel.sangorrin@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Andreas Mohr <andi@lisas.de>, Radek Liboska <liboska@uochb.cas.cz>,
+       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_Jun_2010_12_03_31_+1000__ImrcpGHLYvXnzHj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Greg,
 
-Hi Jean,
+I believe the merge problem occurred with the commit:
 
-After merging the i2c tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+dee5658b482e9e2ac7d6205dc876fc11d4008138
 
-drivers/i2c/i2c-core.c: In function 'i2c_detect':
-drivers/i2c/i2c-core.c:1460: error: 'adap' undeclared (first use in this fu=
-nction)
+Originally I submitted a patch and then they asked me to order the IDs
+and resubmit, so did I. But unfortunately in the end somehow both
+patches were merged.
 
-Caused by commit b741e61eb906816f78acbf361797fd408abdc715 ("i2c: Fix
-probability check").  The typo in this patch is probably why the later
-patch that I dropped would not apply ...
+[PATCH] USB: serial: ftdi: add CONTEC vendor and product id
+[PATCH resubmit] USB: serial: ftdi: add CONTEC vendor and product id
 
-I have used the i2c tree form next-20100618 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Was I supposed to do the resubmit patch in a way that would unpatch
+the first patch? Or is the word resubmit enough to know that this is
+the good patch?
 
---Signature=_Mon__21_Jun_2010_12_03_31_+1000__ImrcpGHLYvXnzHj
-Content-Type: application/pgp-signature
+Thanks!
+Dani
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkweyHMACgkQjjKRsyhoI8xUpACdEm/jubUvjRjKAByj01sCJ1dU
-g58An04H4MrGtcTU/jf5Lnad8/Y7Q5e6
-=RiFY
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_Jun_2010_12_03_31_+1000__ImrcpGHLYvXnzHj--
+On Fri, Jun 18, 2010 at 11:37 PM, Greg KH <gregkh@suse.de> wrote:
+> On Fri, Jun 18, 2010 at 03:30:02PM +0900, Daniel Sangorrin wrote:
+>> This patch corrects a problem with the merge of a previous
+>> patch to add the CONTEC identifier.
+>
+> What patch had the merge problem?  Did I just end up duplicating stuff
+> incorrectly?  What was the git commit id?
+>
+> thanks,
+>
+> greg k-h
+>
