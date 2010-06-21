@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566Ab0FUPrQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 11:47:16 -0400
-Received: from tomts22-srv.bellnexxia.net ([209.226.175.184]:52227 "EHLO
-	tomts22-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755853Ab0FUPrO (ORCPT
+	id S932105Ab0FUPwB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 11:52:01 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43736 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756749Ab0FUPwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 11:47:14 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAGMlH0xGGOJc/2dsb2JhbACfA3LDToUbBA
-Date: Mon, 21 Jun 2010 11:47:12 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Wu Zhangjin <wuzhangjin@gmail.com>, linux-kernel@vger.kernel.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>
-Subject: Re: [PATCH] tracing: Fix undelared ENOSYS in
-	include/linux/tracepoint.h
-Message-ID: <20100621154712.GB6965@Krystal>
-References: <1277118549-622-1-git-send-email-wuzhangjin@gmail.com> <1277130520.9181.12.camel@gandalf.stny.rr.com>
+	Mon, 21 Jun 2010 11:52:00 -0400
+Date: Mon, 21 Jun 2010 08:51:40 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Weedy <weedy2887@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Entropy poolsize
+Message-Id: <20100621085140.19dda646.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTil7mInflmvrvVQmOx7xrNVFAY7GtqQiGobHMTT2@mail.gmail.com>
+References: <AANLkTil7mInflmvrvVQmOx7xrNVFAY7GtqQiGobHMTT2@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1277130520.9181.12.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 11:45:40 up 75 days,  1:39,  2 users,  load average: 0.13, 0.12,
-	0.09
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4C1F8A9E.0184:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Mon, 2010-06-21 at 19:09 +0800, Wu Zhangjin wrote:
-> > From: Wu Zhangjin <wuzhangjin@gmail.com>
-> > 
-> > The header file include/linux/tracepoint.h may be included without
-> > include/linux/errno.h and then the compiler will fail on building for
-> > undelcared ENOSYS. This patch fixes this problem via including <linux/errno.h>
-> > to include/linux/tracepoint.h.
-> > 
-> 
-> Hi Wu,
-> 
-> I have not hit this. Did you hit this with mips? Does it need to get
-> into 2.6.35 or can it wait till 2.6.36?
+On Mon, 21 Jun 2010 09:58:16 -0400 Weedy wrote:
 
-errno.h is included by sched.h, which is included almost everywhere. No
-wonder it took that much time for someone to hit the problem. But given
-it's a simple bug fix, it should fit into the "for-2.6.35" definition,
-although I am no expert in these definitions. ;-)
-
-Thanks,
-
-Mathieu
-
+> I know grsecurity has a option for this but I don't want to patch my
+> kernel with it at this time. I have been poking around random.c but I
+> can't seem to figure out where .poolsize is assigned it's value and
+> how to increase it.
 > 
-> -- Steve
+> If someone could point it out that would be nice.
 > 
-> > Signed-off-by: Wu Zhangjin <wuzhangjin@gmail.com>
-> > ---
-> >  include/linux/tracepoint.h |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-> > index 9a59d1f..103d1b6 100644
-> > --- a/include/linux/tracepoint.h
-> > +++ b/include/linux/tracepoint.h
-> > @@ -14,6 +14,7 @@
-> >   * See the file COPYING for more details.
-> >   */
-> >  
-> > +#include <linux/errno.h>
-> >  #include <linux/types.h>
-> >  #include <linux/rcupdate.h>
-> >  
-> 
-> 
+> Thank you for your time.
+> --
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Do you mean this one in drivers/char/random.c or something else?
+
+static int sysctl_poolsize = INPUT_POOL_WORDS * 32;
+
+It's a sysctl, so it is tunable.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
