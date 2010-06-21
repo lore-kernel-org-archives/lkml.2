@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab0FVLN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 07:13:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51332 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab0FVLN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 07:13:57 -0400
-Message-ID: <4C209AF3.2070305@suse.cz>
-Date: Tue, 22 Jun 2010 13:13:55 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4 Thunderbird/3.0.4
+	id S1754448Ab0FVLO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 07:14:29 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:46633 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751502Ab0FVLO1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 07:14:27 -0400
+Date: Mon, 21 Jun 2010 17:57:49 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Arve Hj?nnev?g <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100621155749.GD1447@ucw.cz>
+References: <20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+ <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+ <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+ <20100527140655.GA28048@srcf.ucam.org>
+ <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain>
+ <20100527155201.GA31937@srcf.ucam.org>
+ <alpine.LFD.2.00.1005271808340.3032@localhost.localdomain>
+ <20100527165931.GB1062@srcf.ucam.org>
+ <alpine.LFD.2.00.1005271905000.3032@localhost.localdomain>
+ <20100527172343.GB2468@srcf.ucam.org>
 MIME-Version: 1.0
-To: Nico Schottelius <nico-linuxsetlocalversion@schottelius.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-       Greg Thelen <gthelen@google.com>
-Subject: Re: [PATCH] kbuild: Clean up and speed up the localversion logic
-References: <4C1764CD.3080402@suse.cz> <1276782038-23441-1-git-send-email-mmarek@suse.cz> <20100622104412.GB9779@ethz.ch>
-In-Reply-To: <20100622104412.GB9779@ethz.ch>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527172343.GB2468@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.6.2010 12:44, Nico Schottelius wrote:
-> Michal Marek [Thu, Jun 17, 2010 at 03:40:38PM +0200]:
->> -cd "${1:-.}" || usage
->> +scm_only=false
->> +srctree=.
->> +if test "$1" = "--scm-only"; then
->> +	scm_only=true
->> +	shift
->> +fi
->> +if test $# -gt 0; then
->> +	srctree=$1
+Hi!
+
+(ok, so I'm little late to the party).
+
+> > Nonsense, if we want to push the system into suspend from the idle
+> > state we can do that. It's just not implemented and we've never tried
+> > to do it as it requires a non trivial amount of work, but I have done
+> > it on an ARM two years ago as a prove of concept and it works like a
+> > charm.
 > 
-> You probably want
-> 
-> srctree="$1" 
-> 
-> to catch spaces and co. in the path.
+> ACPI provides no guarantees about what level of hardware functionality 
+> remains during S3. You don't have any useful ability to determine which 
+> events will generate wakeups. And from a purely practical point of view, 
 
-That's the same, the value in variable assignment is not subject to word
-splitting.
+We'll need ACPI extensions, then (or very conservative
+drivers). suspend blockers do *not* help here.
 
+> since the latency is in the range of seconds, you'll never have a low 
+> enough wakeup rate to hit it.
 
-> Otherwise I just had a quick view over it, but seems to look good.
+I did 'sleepy linux' prototype on PC, and yes I was able to get to
+'once in 5 seconds' wakeup rate... good enough...
+									Pavel
 
-Thanks!
-
-/me is now wondering if it's ok to push this for 2.6.35. At least, there
-were no bugreports from linux-next users so far.
-
-Michal
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
