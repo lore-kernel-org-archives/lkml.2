@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084Ab0FUS6x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 14:58:53 -0400
-Received: from fg-out-1718.google.com ([72.14.220.158]:15676 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127Ab0FUS6u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 14:58:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xI7Ej/8g1T+9pAFjVHbXRZTgcuBo5ObkrY0nsyNypKHSUItqea1j4D9H7vtoWOs2jE
-         fcqgzMsMiaP4KvIbxon5s/+RM0kHYKkKYwYSy444RTjKKRO5jWk+PZ955zt2nntpXZmB
-         PKits5wKbaUKrEvHDthhzPbjRj51JqL8PtYR4=
-Date: Mon, 21 Jun 2010 20:56:48 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-       Peter Zijlstra <peterz@infradead.org>, Xiaotian Feng <dfeng@redhat.com>,
-       Dan Carpenter <error27@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H.Peter Anvin" <hpa@zytor.com>,
-       Jack Steiner <steiner@sgi.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [patch] x86, pat: freeing invalid memtype messages
-Message-ID: <20100621185648.GA2768@joi.lan>
-References: <20100618175726.GA2785@joi.lan>
- <4C1F455E.6050502@redhat.com>
- <1277118155.1875.508.camel@laptop>
- <4C1F47EF.2060509@redhat.com>
- <20100621153303.GA2754@joi.lan>
- <1277134873.1875.520.camel@laptop>
- <1277142860.3017.22.camel@sbs-t61.sc.intel.com>
- <AANLkTilXM-6fIvU8TYADyyxxyg-6eIclkzfeT4vvBVJY@mail.gmail.com>
- <AANLkTimPFZiL7_Z-IIMj6NpuyzsJ4fZYvMD_q5o4E0Mq@mail.gmail.com>
- <20100621184154.GA3380@joi.lan>
+	id S1758191Ab0FUS7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 14:59:04 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:60540 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757860Ab0FUS6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 14:58:52 -0400
+Message-ID: <4C1FB66B.1030203@kernel.dk>
+Date: Mon, 21 Jun 2010 20:58:51 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100621184154.GA3380@joi.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: trying to understand READ_META, READ_SYNC, WRITE_SYNC & co
+References: <20100621094828.GA30748@lst.de> <4C1F3916.4070608@kernel.dk> <x49mxuo6ww6.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49mxuo6ww6.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 08:41:54PM +0200, Marcin Slusarz wrote:
-> On Mon, Jun 21, 2010 at 11:38:27AM -0700, Venkatesh Pallipadi wrote:
-> > On Mon, Jun 21, 2010 at 11:08 AM, Venkatesh Pallipadi <venki@google.com> wrote:
-> > > On Mon, Jun 21, 2010 at 10:54 AM, Suresh Siddha
-> > > <suresh.b.siddha@intel.com> wrote:
-> > >> On Mon, 2010-06-21 at 08:41 -0700, Peter Zijlstra wrote:
-> > >>> On Mon, 2010-06-21 at 17:33 +0200, Marcin Slusarz wrote:
-> > >>> > On Mon, Jun 21, 2010 at 07:07:27PM +0800, Xiaotian Feng wrote:
-> > >>> > > On 06/21/2010 07:02 PM, Peter Zijlstra wrote:
-> > >>> > > > On Mon, 2010-06-21 at 18:56 +0800, Xiaotian Feng wrote:
-> > >>> > > >
-> > >>> > > >> I guess there might be something wrong between the augmented rbtree insert/remove ..
-> > >>> > > >
-> > >>> > > > The easiest thing is to revert that change and try again, the next step
-> > >>> > > > would be to print the full RB tree on each modification and look where
-> > >>> > > > it goes wrong.
-> > >>> > > >
-> > >>> > > > That said, I did print my fair share of (augmented) RB trees while
-> > >>> > > > playing with scheduler patches and I can't remember it ever having
-> > >>> > > > messed up like that.
-> > >>> > > He's using 2.6.35-rc2+, without your "rbtree: Undo augmented trees
-> > >>> > > performance damage" patch ;-)
-> > >>> >
-> > >>> > I applied it manually (commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249 from -tip)
-> > >>> > to 2.6.35-rc3 and it fixed both acpi's and nouveau's "invalid memtype" messages.
-> > >>> > Thanks.
-> > >>>
-> > >>> Oh neat, so it actually fixes a bug in the previous augmented rb-tree
-> > >>> implementation?
-> > >>
-> > >> When I was reviewing your fix, it looked like that prior to your fix we
-> > >> were re-augmenting only at points where we do the tree rotations/color
-> > >> change and at the points of node insertion/removal. I don't think we
-> > >> were re-augmenting all the parent nodes in the path of the selected-node
-> > >> that is going to replace the deleted node.
-> > >>
-> > >> Perhaps we were hitting this issue here.
-> > >>
-> > >
-> > > rb_erase was calling the augment callback with successor_parent_cb.
-> > > That should be doing proper re-augmenting on delete.
-> > >
-> > > May be we are hitting the problem with not-initializing
-> > > subtree_max_end on insert? That was fixed in a later patch.
-> > 
-> > Here's the patch I was referring to
-> > http://marc.info/?l=linux-mm-commits&m=127654225011850&w=2
-> > 
-> > Marcin: Can you try this patch without Peter's patch and see whether
-> > there are any issues with that. Just to make sure we don't have issues
-> > wuth underlying augmented rbtree algorithm that somehow got fixed or
-> > masked for the time being with Peter's change.
+On 21/06/10 20.52, Jeff Moyer wrote:
+> Jens Axboe <axboe@kernel.dk> writes:
 > 
-> I tested this patch few days ago and it produced even more "invalid memtype" messages...
+>> On 2010-06-21 11:48, Christoph Hellwig wrote:
+>>> Now how do we use these flags in the block layer?
+>>>  
+>>>  - REQ_META
+>>>
+>>> 	The only place where we ever use this flag is inside the
+>>> 	cfq scheduler. In cfq_choose_req we use it to give a meta
+>>> 	request priority over one that doesn't have it.  But before
+>>> 	that we already do the same preference check with rw_is_sync,
+>>> 	which evaluates to true for requests with that are either
+>>> 	reads or have REQ_SYNC set.  So for reads the REQ_META flag
+>>> 	here effectively is a no-op, and for writes it gives less
+>>> 	priority than REQ_SYNC.
+>>> 	In addition to that we use it to account for pending metadata
+>>> 	requests in cfq_rq_enqueued/cfq_remove_request which gets
+>>> 	checked in cfq_should_preempt to give priority to a meta
+>>> 	request if the other queue doesn't have any pending meta
+>>> 	requests.  But again this priority comes after a similar
+>>> 	check for sync requests that checks if the other queue has
+>>> 	been marked to have sync requests pending.
+>>
+>> It's also annotation for blktrace, so you can tell which parts of the IO
+>> is meta data etc. The scheduler impact is questionable, I doubt it makes
+>> a whole lot of difference.
+> 
+> Really?  Even after I showed the performance impact of setting that bit
+> for journal I/O?
+> 
+> http://lkml.org/lkml/2010/4/1/344
 
-http://kadu.net/~joi/kernel/2010.06.09/2.6.35-rc3-debugpat-x86-proper-init-of-memtype-subtree_max_end.txt
+It's definitely a win in some cases, as you showed there as well.
+My initial testing a long time ago had some nice benefits too. So
+perhaps the above wasn't worded very well, I always worry that we
+have regressions doing boosts for things like that. But given that
+meta data is something that needs to be done before we get to the
+real data, bumping priority generally seems like a good thing to do.
 
-Marcin
+-- 
+Jens Axboe
 
