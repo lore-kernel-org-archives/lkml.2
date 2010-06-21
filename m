@@ -1,140 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab0FUTWF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 15:22:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48439 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932117Ab0FUTWB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 15:22:01 -0400
-Date: Mon, 21 Jun 2010 12:21:45 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
-       dzickus@redhat.com
-Subject: Re: [PATCH] Add TAINT_HARDWARE_UNSUPPORTED flag
-Message-Id: <20100621122145.76ebd7ac.akpm@linux-foundation.org>
-In-Reply-To: <4C1A7D61.8010900@redhat.com>
-References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
-	<20100617091322.b7d21473.randy.dunlap@oracle.com>
-	<4C1A7D61.8010900@redhat.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752638Ab0FUT0D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 15:26:03 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34739 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753046Ab0FUTZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 15:25:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tino Keitel <tino.keitel+xorg@tikei.de>,
+       Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: Suspend hangs since 2.6.34
+Date: Mon, 21 Jun 2010 21:24:08 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <20100609175356.GA17332@x61.home> <201006100142.13131.rjw@sisk.pl> <20100620225601.GA15589@x61.home>
+In-Reply-To: <20100620225601.GA15589@x61.home>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006212124.09076.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010 15:54:09 -0400
-Prarit Bhargava <prarit@redhat.com> wrote:
+On Monday, June 21, 2010, Tino Keitel wrote:
+> Hi,
+> 
+> this nasty bug did not appear after I enabled suspend debugging first,
+> but now it did:
+> 
+> 2010-06-20_22:40:31.22927 kern.info: usbcore: deregistering interface driver dvb_usb_vp7045
+> 2010-06-20_22:40:31.24960 kern.debug: usb 1-6: __pm_runtime_resume()!
+> 2010-06-20_22:40:31.24968 kern.debug: usb 1-6: __pm_runtime_resume() returns 1!
+> 2010-06-20_22:40:31.24969 kern.debug: PM: Removing info for No Bus:dvb0.frontend0
+> 2010-06-20_22:40:31.24971 kern.debug: PM: Removing info for No Bus:dvb0.net0
+> 2010-06-20_22:40:31.24972 kern.debug: PM: Removing info for No Bus:dvb0.demux0
+> 2010-06-20_22:40:31.24973 kern.debug: PM: Removing info for No Bus:dvb0.dvr0
+> 2010-06-20_22:40:31.24974 kern.info: dvb-usb: Twinhan USB2.0 DVB-T receiver (TwinhanDTV Alpha/MagicBox II) successfully deinitialized and disconnected.
+> 2010-06-20_22:40:32.26675 kern.info: PM: Syncing filesystems ... done.
+> 2010-06-20_22:40:32.39011 kern.debug: PM: Preparing system for mem sleep
+> 
+> When I killed the suspend script which hung at the echo mem >
+> /sys/power/state line, the computer suspended. After wakeup, the kernel
+>  log lines after the line above look like this:
+> 
+> 2010-06-20_22:49:10.28745 kern.warn: Freezing user space processes ... (elapsed 0.02 seconds) done.
+> 2010-06-20_22:49:10.28748 kern.warn: Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+> 2010-06-20_22:49:10.28748 kern.debug: PM: Entering mem sleep
+> 2010-06-20_22:49:10.28749 kern.warn: Suspending console(s) (use no_console_suspend to debug)
+> 
+> I also attached the full kernel log since the boot.
 
-> 
-> This patch is similar to Theordore Ts'o's TAINT_USER patch,
-> linux-2.6 commit 34f5a39899f3f3e815da64f48ddb72942d86c366.
-> 
-> Individual distributions may enable "generic" features such as X86 support,
-> PPC support, and driver support.
-> 
-> Some of the features that are enabled by these "generic" feature flags may
-> not be considered supported by the individual distribution.
-> 
-> For example, a distribution may want to support PPC but not the Power5
-> chipset, or the e1000e driver but not a card with a specific DeviceID because
-> of known firmware issues.
-> 
-> Typically, one would push a config patch to enable and disable the feature and
-> patch the distribution.  However, in some cases this is not feasible in order
-> to preserve kabi and at the same time maintain parity with the upstream kernel.
-> In some cases the distribution may want to allow booting of these features but
-> explicitly notify a user that they are not "officially" supported.  It is also
-> possible that the hardware is fixed via a firmware update at a later date,
-> making it supported again.
-> 
-> It would be useful for a distribution to notify the installer and
-> bug reporting applications, and notify users that the hardware they are using
-> is unsupported during panic, oops, BUG(), and WARN().
-> 
-> This patch introduces the TAINT_HARDWARE_UNSUPPORTED flag for distributions
-> to use.
-> 
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> 
-> diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
-> index 6fe9001..e337b0a 100644
-> --- a/Documentation/oops-tracing.txt
-> +++ b/Documentation/oops-tracing.txt
-> @@ -263,6 +263,8 @@ characters, each representing a particular tainted value.
->   12: 'I' if the kernel is working around a severe bug in the platform
->       firmware (BIOS or similar).
->  
-> + 13: 'H' if the hardware is unsupported by the distribution
-> +
->  The primary reason for the 'Tainted: ' string is to tell kernel
->  debuggers if this is a clean kernel or if anything unusual has
->  occurred.  Tainting is permanent: even if an offending module is
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 8317ec4..f722b0d 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -347,6 +347,7 @@ extern enum system_states {
->  #define TAINT_WARN			9
->  #define TAINT_CRAP			10
->  #define TAINT_FIRMWARE_WORKAROUND	11
-> +#define TAINT_HARDWARE_UNSUPPORTED	12
->  
->  extern void dump_stack(void) __cold;
->  
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index 3b16cd9..8d081ff 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -180,6 +180,7 @@ static const struct tnt tnts[] = {
->  	{ TAINT_WARN,			'W', ' ' },
->  	{ TAINT_CRAP,			'C', ' ' },
->  	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
-> +	{ TAINT_HARDWARE_UNSUPPORTED,	'H', ' ' },
->  };
->  
->  /**
-> @@ -197,6 +198,7 @@ static const struct tnt tnts[] = {
->   *  'W' - Taint on warning.
->   *  'C' - modules from drivers/staging are loaded.
->   *  'I' - Working around severe firmware bug.
-> + *  'H' - Hardware is unsupported.
->   *
->   *	The string is overwritten by the next call to print_tainted().
->   */
-> @@ -243,6 +245,9 @@ void add_taint(unsigned flag)
->  	 */
->  	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
->  		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
-> +	if (flag == TAINT_HARDWARE_UNSUPPORTED)
-> +		printk(KERN_CRIT
-> +		       "WARNING: This system's hardware is unsupported.\n");
->  
->  	set_bit(flag, &tainted_mask);
->  }
+Hmm.  It looks like a USB problem, then.
 
-That's pretty user-hostile.  What are they to do - throw the entire
-computer away because it has the wrong type of mouse?
+Alan, can you have a look at this, please?
 
-How about
-
-void add_hardware_unsupported_taint(const char *hardware)
-{
-	printk(KERN_CRIT
-	       "Hardware device %s is unsupported by this kernel's vendor\n",
-		hardware);
-	add_taint(TAINT_HARDWARE_UNSUPPORTED);
-}
-
-and
-
-/*
- * Don't call add_taint(TAINT_HARDWARE_UNSUPPORTED) directly - use
- * add_hardware_unsupported_taint()
- */
-#define TAINT_HARDWARE_UNSUPPORTED	12
-
+Rafael
