@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab0FUFKS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 01:10:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57306 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab0FUFKL (ORCPT
+	id S1753275Ab0FUFab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 01:30:31 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42304 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab0FUFa1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 01:10:11 -0400
-Date: Mon, 21 Jun 2010 07:09:57 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: David Brownell <david-b@pacbell.net>
-Cc: Ryan Mallon <ryan@bluewatersys.com>,
-       David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
-       linux kernel <linux-kernel@vger.kernel.org>,
-       ext-jani.1.nikula@nokia.com, Andrew Morton <akpm@linux-foundation.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: gpiolib and sleeping gpios
-Message-ID: <20100621050957.GA23094@pengutronix.de>
-References: <4C1E88AE.5070808@bluewatersys.com> <887171.45295.qm@web180307.mail.gq1.yahoo.com>
+	Mon, 21 Jun 2010 01:30:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JjZqfrpKIGTiSto714HIo3sHlcQYZD3wdjbRhR51s/JfOtCO2p0VebURU3Eze75zoO
+         Wz3HNsuCLD+aawfOPdnyPRx/q+JVuifkdRNTWAZLUWD2TJocIncandiKAN7OzPUjo4o8
+         oEmwFsPX6MtQy8LTyHZ1UsD5y1Qsw7LXHufpM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <887171.45295.qm@web180307.mail.gq1.yahoo.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <4C1EBE06.7020605@seas.upenn.edu>
+References: <AANLkTinq_3P-QrTqsEdtyMbBtc9EXhahclER_4s5_Kx2@mail.gmail.com>
+	<AANLkTikExwM_LBUw_-z2eimO96Dxs_fNfAM4jlftXyHM@mail.gmail.com>
+	<4C1E6A8C.4020904@seas.upenn.edu>
+	<AANLkTimCsVwppeTKXErpA6_1vwPHuQeqJHcdzLKd2EEp@mail.gmail.com>
+	<4C1EBE06.7020605@seas.upenn.edu>
+Date: Sun, 20 Jun 2010 22:30:26 -0700
+Message-ID: <AANLkTikR0PXLqYuK8jDd_pWvcmVlRLnQFLVElHH8e71a@mail.gmail.com>
+Subject: Re: Wacom based devices and the mt kernel protocol.
+From: Ping Cheng <pinglinux@gmail.com>
+To: Rafi Rubin <rafi@seas.upenn.edu>
+Cc: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
+       Henrik Rydberg <rydberg@euromail.se>,
+       Chase Douglas <chase.douglas@canonical.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Jun 20, 2010 at 6:19 PM, Rafi Rubin <rafi@seas.upenn.edu> wrote:
+>>
+>>>>> This impact very much the decision of a Linux user wanting to buy wacom mt device.
+>>>>
+>>>> I think end users have already got the Linux support from Wacom.  Can
+>>>> you share the specific issues that are preventing Linux end users from
+>>>> buying a Wacom MT devices? If I didn't misunderstand your point here,
+>>>> you are talking about Linux users, not Linux developers/hackers,
+>>>> right?
+>>>
+>>> I think normal users wanting to use linux for MT are generally frustrated and
+>>> confused at the moment.
+>>
+>> Why do the end users get frustrated and confused? Can you share some
+>> examples from an end user's (not developer's) perspective with me?
+>
+> Sorry, I've been too focused on the n-trig users.  They have been frustrated,
+> and I've seen from the forums that some have been playing with customized
+> versions of both the kernel and wacom x driver to get your two finger gestures.
+>
+> I'm also projecting my own frustrations, seeing the X mt interface still not
+> quite set, and very little in the way of applications that use mt at all.
+> We're still quite a ways away from seeing the full potential of a more hands on desktop.
 
-On Sun, Jun 20, 2010 at 07:40:46PM -0700, David Brownell wrote:
-> > > And they will trigger runtime warnings, and
-> > > thus eventually get fixed.
-> > \
-> >   }
-> > 
-> >   err = gpio_request(some_gpio, "some_gpio",
-> >           GPIOF_NO_SLEEP);
-> 
-> 
-> NAK ... keep it simple.  Such flags are
-> clearly not necessary...
-> 
-> I understand that some folk are bothered
-> by concepts/frameworks that seem "too simple"
-> and thus want to complexify them.  In this
-> case I am in a position to help avoid that.
-> Complexity is not a virtue.
-I'm against such an additional flag, too.  But I still think merging
-gpio_get_value and gpio_get_value_cansleep is nice.
+As far as I understand,  this issue is not device driver or MT support
+specific. It is universal  on Linux.
 
-Best regards
-Uwe
+>>> Certainly the protocol between the wacom kernel driver
+>>> and the wacom user space driver is way below the level that most are following.
+>>
+>> By "most", do you mean most MT device drivers, or most end users, or
+>> most developers? I am eager to bring the Wacom driver to the specific
+>> level.
+>
+> End users, they don't tend to care about the internal protocols as long as their
+> programs do what they want.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Then, I still don't get what you meant by "way below the level that
+most are following". I'd really like to understand it so I can work on
+it.
+
+Thank you,
+
+Ping
