@@ -1,61 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab0FURRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 13:17:07 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:38040 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754819Ab0FURRF (ORCPT
+	id S1758137Ab0FUR0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 13:26:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50464 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758016Ab0FUR0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 13:17:05 -0400
-Date: Mon, 21 Jun 2010 12:16:58 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Manfred Spraul <manfred@colorfullife.com>
-cc: linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
-Subject: Re: 2.6.35-rc3 deadlocks on semaphore operations
-In-Reply-To: <alpine.DEB.2.00.1006211155540.7407@router.home>
-Message-ID: <alpine.DEB.2.00.1006211209520.7407@router.home>
-References: <alpine.DEB.2.00.1006180940140.11575@router.home> <4C1CA49B.7020104@colorfullife.com> <alpine.DEB.2.00.1006211155540.7407@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 21 Jun 2010 13:26:09 -0400
+Subject: Re: 2.6.35-rc3 regression: IBM Maia system is unbootable [ACPI
+ related?]
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-acpi@vger.kernel.org
+In-Reply-To: <1277139286.10998.72.camel@mulgrave.site>
+References: <1277136189.10998.63.camel@mulgrave.site>
+	 <87pqzkqrzq.fsf@basil.nowhere.org>
+	 <1277138034.10998.69.camel@mulgrave.site>
+	 <1277139286.10998.72.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Jun 2010 12:26:06 -0500
+Message-ID: <1277141166.10998.79.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some more information that may be helpful:
+On Mon, 2010-06-21 at 11:54 -0500, James Bottomley wrote:
+> On Mon, 2010-06-21 at 11:33 -0500, James Bottomley wrote:
+> > On Mon, 2010-06-21 at 18:18 +0200, Andi Kleen wrote:
+> > > James Bottomley <James.Bottomley@HansenPartnership.com> writes:
+> > > 
+> > > > The system in question has a set of root bridges, with the CD rom (which
+> > > > is seen) being on bus 0 and the SCSI controller, which doesn't show up
+> > > > being on bus 1 (with several other things on busses > 1).
+> > > >
+> > > > The system uses ACPI to detect the multiple bridges, so it seems that
+> > > > this failure in 2.6.35-rc3:
+> > > >
+> > > > ACPI: Core revision 20100428
+> > > > ACPI Error: Hardware did not enter ACPI mode (20100428/evxfevnt-103)
+> > > > ACPI Warning: AcpiEnable failed (20100428/utxface-147)
+> > > > ACPI: Unable to enable ACPI
+> > > 
+> > > That probably causes all the other problems. Without ACPI enabled
+> > > modern systems generally do not work.
+> > > 
+> > > Just guessing, but maybe try to revert
+> > > 
+> > > b430acbd7c4b919886fa7fd92eeb7a695f1940d3
+> > > 
+> > > That was the last change in this area.
+> > 
+> > I can confirm that reverting this over a vanilla 2.6.35-rc3 fixes my
+> > boot problem.
+> 
+> Andi asked for the timings with the commit reverted, so here they are
+> (from ACPI version print to PCI root busses found):
+> 
+> [    0.084086] ACPI: Core revision 20100428
+> [    0.119779] Setting APIC routing to physical flat
+> [    0.124259] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+> [    0.128000] ..MP-BIOS bug: 8254 timer not connected to IO-APIC
+> [    0.128000] ...trying to set up timer (IRQ0) through the 8259A ...
+> [    0.128000] ..... (found apic 0 pin 2) ...
+> [    0.128000] ....... failed.
+> [    0.128000] ...trying to set up timer as Virtual Wire IRQ...
+> [    0.169681] ..... works.
+> [    0.172005] CPU0: Intel(R) Xeon(TM) MP CPU 3.16GHz stepping 01
+> [    0.188000] lockdep: fixing up alternatives.
+> [    0.188133] Booting Node   0, Processors  #1 Ok.
+> [    0.288089] Brought up 2 CPUs
+> [    0.292006] Total of 2 processors activated (12676.86 BogoMIPS).
+> [    0.300923] khelper used greatest stack depth: 5864 bytes left
+> [    0.305017] khelper used greatest stack depth: 5176 bytes left
+> [    0.325510] NET: Registered protocol family 16
+> [    0.341322] ACPI: bus type pci registered
+> [    0.344474] PCI: Using configuration type 1 for base access
+> [    0.359165] bio: create slab <bio-0> at 0
+> [    0.478153] ACPI: Interpreter enabled
+> [    0.488006] ACPI: (supports S0 S5)
+> [    0.497875] ACPI: Using IOAPIC for interrupt routing
+> [    0.548145] ACPI: No dock devices found.
+> [    0.552176] PCI: Ignoring host bridge windows from ACPI; if necessary, use "pci=use_crs" and report a bug
+> [    0.556263] ACPI: PCI Root Bridge [VP00] (domain 0000 [bus 00])
+> [    0.568051] ACPI: PCI Root Bridge [VP01] (domain 0000 [bus 01])
+> [    0.576336] ACPI: PCI Root Bridge [VP02] (domain 0000 [bus 02-03])
+> [    0.596889] ACPI: PCI Root Bridge [VP03] (domain 0000 [bus 04-05])
+> [    0.605222] ACPI: PCI Root Bridge [VP04] (domain 0000 [bus 06-07])
+> [    0.613530] ACPI: PCI Root Bridge [VP05] (domain 0000 [bus 08-09])
+> [    0.617658] ACPI: PCI Root Bridge [VP06] (domain 0000 [bus 0a-0b])
+> [    0.621672] ACPI: PCI Root Bridge [VP07] (domain 0000 [bus 0c-0d])
+> [    0.625948] HEST: Table is not found!
 
-proc/27878$ strace -p 27878
-Process 27878 attached - interrupt to quit
-semop(65536, {{0, -1, SEM_UNDO}}, 1
+Another update: It's clear the problem is the new expectation that the
+hardware sets ACPI mode instantly.  I applied the following patch on my
+system to see how long it actually takes.  I see a single loop:
 
-proc/27878$ ps xawwwww_
-ERROR: Unsupported option (BSD syntax)
+[    0.084087] ACPI: Core revision 20100428
+[    0.119720] ACPI Error: Hardware did not enter ACPI mode, retry = 0 (20100428/evxfevnt-104)
+[    0.128240] Setting APIC routing to physical flat
 
-ps alx shows a number of stuck processes:
+So it needs a delay of about 1ms (or one retry).
 
-0  1000 20121 17784  20   0 367040 14416 poll_s Sl   ?          0:07 /usr/lib/chromium-browser/chromium-browser --type=plugin --plugin-path=/var/lib/flashplugin-installer/npwr
-0  1000 23477 20121  20   0 120864 19940 poll_s Sl   ?          0:07 /usr/lib/nspluginwrapper/i386/linux/npviewer.bin --plugin /usr/lib/flashplugin-installer/libflashplayer.so
-0  1000 23531 16635  20   0  13928  2292 wait   S+   pts/0      0:00 /usr/bin/make -j9 EXTRAVERSION=-rc3-broke ARCH=x86_64 modules
-0  1000 24724 23531  20   0  17220  5444 wait   S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=fs
-0  1000 24817 23531  20   0  13512  1928 pipe_w S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers
-0  1000 25374 23531  20   0  14256  2384 pipe_w S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=net
-0  1000 27275 24817  20   0  13252  1560 wait   S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/media
-0  1000 27294 27275  20   0  13272  1576 pipe_w S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/media/dvb
-0  1000 27623 27275  20   0  20720  8980 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/media/video
-0  1000 27633 25374  20   0  16696  4984 pipe_w S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=net/sunrpc
-0  1000 27691 24724  20   0  18400  6700 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=fs/xfs
-0  1000 27693 27294  20   0  18252  6504 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/media/dvb/frontends
-0  1000 27743 25374  20   0  15988  4244 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=net/tipc
-0  1000 27744 24817  20   0  15016  3268 pipe_w S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/misc
-0  1000 27754 25374  20   0  14832  3008 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=net/wimax
-0  1000 27769 27633  20   0  14816  2836 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=net/sunrpc/auth_gss
-0  1000 27839 27744  20   0  13932  2100 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/misc/c2port
-0  1000 27847 27744  20   0  13996  2224 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/misc/cb710
-0  1000 27866 27744  20   0  13772  1844 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/misc/eeprom
-0  1000 27877 27693  20   0      0     0 exit   Z+   pts/0      0:00 [sh] <defunct>
-0  1000 27878 27623  20   0   8292   352 semtim S+   pts/0      0:00 /bin/sh -c { echo drivers/media/video/zr364xx.ko; echo drivers/media/video/zr364xx.o; } > .tmp_versions/zr1  1000 27879  2140  20   0  20900  4000 wait   S+   pts/1      0:00 bash
-0  1000 27905  2097  20   0  20900  4972 wait   Ss   pts/3      0:00 bash
-0  1000 27997 27905  20   0   6588   756 -      R+   pts/3      0:00 ps alx
+James
+
+---
+diff --git a/drivers/acpi/acpica/evxfevnt.c b/drivers/acpi/acpica/evxfevnt.c
+index d5a5efc..bace473 100644
+--- a/drivers/acpi/acpica/evxfevnt.c
++++ b/drivers/acpi/acpica/evxfevnt.c
+@@ -70,6 +70,7 @@ acpi_ev_get_gpe_device(struct acpi_gpe_xrupt_info *gpe_xrupt_info,
+ acpi_status acpi_enable(void)
+ {
+ 	acpi_status status;
++	int retry = 0;
+ 
+ 	ACPI_FUNCTION_TRACE(acpi_enable);
+ 
+@@ -98,6 +99,11 @@ acpi_status acpi_enable(void)
+ 
+ 	/* Sanity check that transition succeeded */
+ 
++	while (acpi_hw_get_mode() != ACPI_SYS_MODE_ACPI && retry < 3000) {
++		ACPI_ERROR((AE_INFO,
++			    "Hardware did not enter ACPI mode, retry = %d", retry++));
++		acpi_os_stall(1000);
++	}
+ 	if (acpi_hw_get_mode() != ACPI_SYS_MODE_ACPI) {
+ 		ACPI_ERROR((AE_INFO,
+ 			    "Hardware did not enter ACPI mode"));
 
 
