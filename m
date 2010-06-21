@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930Ab0FUWC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 18:02:27 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61837 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932606Ab0FUWC0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 18:02:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=mHSs+SXzlJx3UqctHua7XqD3J+9Chj1vu/UKrPVeXsGBeO9/m1eOqjlg//NvIuvcx+
-         5G1b+MYVmhP2caIR+JwlIbDvrB44zNjCAC8Iu+w5sy/RcYW++3yD5g9lVHg7Eq+hYg8b
-         KDu1b4mQUBnya/FQhHQqap2lbfemH5Jw6nVWA=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-wireless@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 1/5 v2]wireless:hostap_main.c warning: variable 'iface' set but not used
-Date: Mon, 21 Jun 2010 15:02:13 -0700
-Message-Id: <1277157733-14071-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
+	id S933006Ab0FUWC6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 18:02:58 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41840 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932908Ab0FUWCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 18:02:54 -0400
+Message-ID: <4C1FE184.8050802@kernel.org>
+Date: Tue, 22 Jun 2010 00:02:44 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Tony Luck <tony.luck@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH UPDATED] sched: adjust when cpu_active and cpuset 	configurations
+ are updated during cpu on/offlining
+References: <4C08FF36.80806@kernel.org>	<4C0E9E03.1010508@kernel.org>	<AANLkTimL2dEhIaxztoiDRBY3CsalcVNU54Mko6yg8ZqG@mail.gmail.com>	<4C1FD1D0.4060803@kernel.org>	<AANLkTil7QBQOsWIWQOGOaAz76eDqx9clZ1CfL2MR5484@mail.gmail.com>	<4C1FD78C.5030600@kernel.org> <AANLkTimw9yHxKuclHtZ4UzGtwzc2723IDLwmNguRhnZz@mail.gmail.com>
+In-Reply-To: <AANLkTimw9yHxKuclHtZ4UzGtwzc2723IDLwmNguRhnZz@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 21 Jun 2010 22:02:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a resend from version one due to trying a different approach
-than the original(probably important to leave netdev_priv() in).
+Hello,
 
-In any case have a look, if there's another approach let me know
-and ill test it out. The below patch fixes a warning im seeing
-when compiling with gcc 4.6.0
+On 06/21/2010 11:46 PM, Tony Luck wrote:
+> On Mon, Jun 21, 2010 at 2:20 PM, Tejun Heo <tj@kernel.org> wrote:
+>> I'm primarily curious why different archs are doing things
+>> differently, which causes confusion and reduces test coverage.  Also,
+>> if you just think about the end result, what x86 is doing makes more
+>> sense.  Although it may end up with larger kernel image, it actually
+>> allows more to be dropped once init is complete.
+> 
+> It allows x86 to drop some code that it never needed in the first place.
+> 
+> i don't think that is better :-)
+> 
+> Maybe someone from x86-land can explain why they *keep* __exit
+> code as they are the ones doing it wrong (/me ducks, runs and hides)
 
-CC [M]  drivers/net/wireless/hostap/hostap_main.o
-drivers/net/wireless/hostap/hostap_main.c: In function 'hostap_set_multicast_list_queue':
-drivers/net/wireless/hostap/hostap_main.c:744:27: warning: variable 'iface' set but not used
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Oh, it can actually drop more.  Please consider the following classes.
 
----
- drivers/net/wireless/hostap/hostap_main.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+1. Stuff which are used during system init.
+2. Stuff which are used during system init or hotplug.
+3. Stuff which are used during hotplug.
 
-diff --git a/drivers/net/wireless/hostap/hostap_main.c b/drivers/net/wireless/hostap/hostap_main.c
-index eb57d1e..a866e7a 100644
---- a/drivers/net/wireless/hostap/hostap_main.c
-+++ b/drivers/net/wireless/hostap/hostap_main.c
-@@ -741,9 +741,8 @@ void hostap_set_multicast_list_queue(struct work_struct *work)
- 	local_info_t *local =
- 		container_of(work, local_info_t, set_multicast_list_queue);
- 	struct net_device *dev = local->dev;
--	struct hostap_interface *iface;
- 
--	iface = netdev_priv(dev);
-+	netdev_priv(dev);
- 	if (hostap_set_word(dev, HFA384X_RID_PROMISCUOUSMODE,
- 			    local->is_promisc)) {
- 		printk(KERN_INFO "%s: %sabling promiscuous mode failed\n",
+ia64 way can express #1 and #3, x86 #1 and #2.  #2 is superset of #3.
+So, once init is complete, x86 way can drop larger set.  What matters
+is the memory consumption once init is complete, not the image size.
+Anyways, in the end, the difference isn't really meaningful but I do
+think that it would be far better to have unified behavior across
+different architectures, one way or the other.
+
+Thanks.
+
 -- 
-1.7.1.rc1.21.gf3bd6
-
+tejun
