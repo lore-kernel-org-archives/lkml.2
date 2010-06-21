@@ -1,34 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab0FUN6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 09:58:38 -0400
-Received: from mail-yw0-f198.google.com ([209.85.211.198]:59816 "EHLO
-	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932471Ab0FUN6h (ORCPT
+	id S932580Ab0FUN7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 09:59:09 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:38039 "EHLO
+	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932471Ab0FUN7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 09:58:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=uhXwrQHhB0VyhgRuUCc/HbGJKCZpuCX6YZWg2OrSCdUelXZyvtmH3pX93N/v3CtZ7e
-         l38fi8eMv/aUKLgIwkWfwuhx88mAKXpAdLaV5edkHrVYCbPMg5iLX4WCKWbyJHkDY4kr
-         JVVCC/vLDuJXfAw273P1eulHy3qrFz+YFMIZo=
+	Mon, 21 Jun 2010 09:59:06 -0400
+Date: Mon, 21 Jun 2010 09:58:57 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>
+Subject: Re: 2.6.35-rc3: Reported regressions from 2.6.34
+Message-ID: <20100621135857.GA21159@elliptictech.com>
+Mail-Followup-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Maciej Rutecki <maciej.rutecki@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Kernel Testers List <kernel-testers@vger.kernel.org>,
+	Network Development <netdev@vger.kernel.org>,
+	Linux ACPI <linux-acpi@vger.kernel.org>,
+	Linux PM List <linux-pm@lists.linux-foundation.org>,
+	Linux SCSI List <linux-scsi@vger.kernel.org>,
+	Linux Wireless List <linux-wireless@vger.kernel.org>,
+	DRI <dri-devel@lists.sourceforge.net>
+References: <lc60d4toGTL.A.QzD._LpHMB@chimera>
 MIME-Version: 1.0
-From: Weedy <weedy2887@gmail.com>
-Date: Mon, 21 Jun 2010 09:58:16 -0400
-Message-ID: <AANLkTil7mInflmvrvVQmOx7xrNVFAY7GtqQiGobHMTT2@mail.gmail.com>
-Subject: Entropy poolsize
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <lc60d4toGTL.A.QzD._LpHMB@chimera>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I know grsecurity has a option for this but I don't want to patch my
-kernel with it at this time. I have been poking around random.c but I
-can't seem to figure out where .poolsize is assigned it's value and
-how to increase it.
+On 00:11 Mon 21 Jun     , Rafael J. Wysocki wrote:
+> If you know of any other unresolved regressions from 2.6.34, please let us
+> know either and we'll add them to the list.  Also, please let us know
+> if any of the entries below are invalid.
 
-If someone could point it out that would be nice.
+Didn't see this one in the list:
 
-Thank you for your time.
+  Why is kslowd accumulating so much CPU time?
+  http://thread.gmane.org/gmane.linux.kernel/996907
+
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
