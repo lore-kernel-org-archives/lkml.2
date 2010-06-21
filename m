@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab0FUCDj (ORCPT <rfc822;w@1wt.eu>);
+	id S1757715Ab0FUCDn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 22:03:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:50732 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757544Ab0FUCDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 20 Jun 2010 22:03:39 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39281 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757541Ab0FUCDi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 22:03:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UMaevbldXQcH3/JSQL6iO0zJqfkFJeBpWeF4/nB6DIqXdHYhDRuT+tyJv7ZB9JfyiN
-         1vjvZleGhZErtGTa8OSynsz5o+mWqetLPhtcDVT1f7rsygPDuLmjThiizQAnMnm/voRa
-         Qn+gw0n1Un3yv/EEZsM/IEHm18sJsjPyIM1rQ=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikeDoxm6OzWldU5PAr06wvW89asIIPNrpVKoc8I@mail.gmail.com>
-References: <AANLkTikeDoxm6OzWldU5PAr06wvW89asIIPNrpVKoc8I@mail.gmail.com>
-Date: Mon, 21 Jun 2010 12:03:37 +1000
-Message-ID: <AANLkTikPAdDuUb37-GPDzFugBYEWNpoSLabcl2Fyt5VY@mail.gmail.com>
-Subject: Re: Kernel does strange things when compilations push memory usage 
-	above physical memory and the compilations are being done in a tmpfs, despite 
-	having ample swap
-From: Andrew Hendry <andrew.hendry@gmail.com>
-To: Richard Yao <shiningarcanine@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Date: Mon, 21 Jun 2010 12:03:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the i2c tree
+Message-Id: <20100621120331.1c6c1754.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__21_Jun_2010_12_03_31_+1000__ImrcpGHLYvXnzHj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the oom killer has killed things, is your system still really
-sluggish if it doesn't lockup?
+--Signature=_Mon__21_Jun_2010_12_03_31_+1000__ImrcpGHLYvXnzHj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I have what might be a similar issue, after a lot of compiling on a ramdisk.
-http://marc.info/?l=linux-kernel&m=127569877714937&w=2
+Hi Jean,
 
-Oom killer keeps killing processes until almost nothing is left.
-Free memory is very high, and system is still very sluggish.
+After merging the i2c tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-On Mon, Jun 21, 2010 at 10:21 AM, Richard Yao <shiningarcanine@gmail.com> wrote:
-> Dear Everyone,
->
-> My desktop has 4GB of RAM and it is running an unpatched Linux 2.6.34
-> kernel. I recently migrated it from Windows 7 to Gentoo Linux and I am
-> encountering a highly peculiar problem when I build/rebuild system
-> packages in a manner that stresses memory.
->
-> When system memory usage exceeds 4GB because I have several
-> compilations running simultaneously, all of which have had -j5 passed
-> to make, with the build scripts sharing an 8GB tmpfs directory, the
-> system typically responds by activating the kernel oom-killer, which
-> will usually kill some of the processes involved in the compilations,
-> among other things. This is with an 8GB swap partition and barely any
-> of it is touched when this happens according to KDE's system monitor.
-> Rarer, but alternative responses that the system has made to such
-> circumstances involve the system package manager failing
-> mid-compilation with "Segmentation fault" printed to the console or
-> open office failing with an obscure error message. Usually just
-> compiling open office alone is enough to have things fail, although I
-> usually see it fail with an obscure 5 digit error message that has no
-> meaning which I can derive from doing searches with Google. Unmounting
-> my tmpfs directory and doing things as I normally would do them makes
-> these issues disappear.
->
-> I have run memtest and it has not detected any hardware issues. I
-> tried asking for help on the Gentoo Linux forums, but I received no
-> responses and this looks like a kernel issue, so I thought it would be
-> a good idea to ask for assistance on the kernel mailing list. Here is
-> a link to a copy of my kernel's .config file:
->
-> http://paste.pocoo.org/show/227799/
->
-> As I was typing this, I had openoffice 3.2.1 and something else
-> compiling in the background and the system completely froze. This is
-> the first I have seen my system do this and it was about 10 minutes
-> after the oom-killer had already taken out kwin and several tabs in
-> chromium. I had SSH running in the background, but even that has been
-> rendered inaccessible by the freeze. I cannot get a response from the
-> system via arping and nmap is telling me that the system is down.
->
-> Earlier today, I tried to reproduce this issue under simpler
-> cirumstances by doing dd bs=4096 count=2097152 if=/dev/zero
-> of=/var/tmp/portage/zero.bak. As a consequence of all of the swapping
-> that occurred, the system's X server become unresponsive, so I walked
-> away and came back a few minutes later to find that the KDE System
-> Monitor had crashed, but everything else seemed fine.
->
-> Any help with this issue would be appreciated. I am willing to
-> recompile my system in whatever manner necessary to diagnose the cause
-> of this issue. Please CC me any responses made either directly or
-> indirectly in response to this message.
->
-> Yours truly,
-> Richard Yao
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+drivers/i2c/i2c-core.c: In function 'i2c_detect':
+drivers/i2c/i2c-core.c:1460: error: 'adap' undeclared (first use in this fu=
+nction)
+
+Caused by commit b741e61eb906816f78acbf361797fd408abdc715 ("i2c: Fix
+probability check").  The typo in this patch is probably why the later
+patch that I dropped would not apply ...
+
+I have used the i2c tree form next-20100618 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__21_Jun_2010_12_03_31_+1000__ImrcpGHLYvXnzHj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkweyHMACgkQjjKRsyhoI8xUpACdEm/jubUvjRjKAByj01sCJ1dU
+g58An04H4MrGtcTU/jf5Lnad8/Y7Q5e6
+=RiFY
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_Jun_2010_12_03_31_+1000__ImrcpGHLYvXnzHj--
