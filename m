@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab0FUWSG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 18:18:06 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51070 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751379Ab0FUWSF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 18:18:05 -0400
-Date: Mon, 21 Jun 2010 18:18:02 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Florian Mickler <florian@mickler.org>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-In-Reply-To: <20100621223841.1cf1942d@schatten.dmk.lab>
-Message-ID: <Pine.LNX.4.44L0.1006211814370.1687-100000@iolanthe.rowland.org>
+	id S1753704Ab0FUWUM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 18:20:12 -0400
+Received: from mail.gmx.net ([213.165.64.20]:52671 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752504Ab0FUWUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 18:20:10 -0400
+X-Authenticated: #1587495
+X-Provags-ID: V01U2FsdGVkX19l+ZxRVxxlAVp/WJNh5y3upxjzO+3cWwginJ6P/8
+	OjGaB9Hsu7VcWU
+From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
+Date: Tue, 22 Jun 2010 00:19:34 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-0.slh.7-sidux-686; KDE/4.4.4; i686; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>
+References: <g77CuMUl7QI.A.qMH.4ZpHMB@chimera> <rHrHQMIU4rI.A.5FD.vepHMB@chimera>
+In-Reply-To: <rHrHQMIU4rI.A.5FD.vepHMB@chimera>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed;
+  boundary="nextPart1370548.zVSHKF1gOA";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006220019.34874.s.L-H@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010, Florian Mickler wrote:
+--nextPart1370548.zVSHKF1gOA
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> > In the end you would want to have communication in both directions:  
-> > suspend blockers _and_ callbacks.  Polling is bad if done too often.  
-> > But I think the idea is a good one.
-> 
-> Actually, I'm not so shure. 
-> 
-> 1. you have to roundtrip whereas in the suspend_blocker scheme you have
-> active annotations (i.e. no further action needed) 
+Hi
 
-That's why it's best to use both.  The normal case is that programs
-activate and deactivate blockers by sending one-way messages to the PM
-process.  The exceptional case is when the PM process is about to
-initiate a suspend; that's when it does the round-trip polling.  Since
-the only purpose of the polling is to avoid a race, 90% of the time it
-will succeed.
+On Tuesday 22 June 2010, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.33 and 2.6.34.
+>=20
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>=20
+>=20
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D15589
+> Subject		: 2.6.34-rc1: Badness at fs/proc/generic.c:316
+> Submitter	: Christian Kujau <lists@nerdbynature.de>
+> Date		: 2010-03-13 23:53 (100 days old)
+> Message-ID	: < <AANLkTikNcCtUn9SQwKu2b3IE6NiAwAhciHsm1HVH4EJh@mail.gmail.=
+com>>
+> References	: http://marc.info/?l=3Dlinux-kernel&m=3D126852442903680&w=3D2
+> Handled-By	: Michael Ellerman <michael@ellerman.id.au>
+> 		  Jind=C5=99ich Makovi=C4=8Dka <makovick@gmail.com>
+> Patch		: http://patchwork.ozlabs.org/patch/52978/
+> 		  http://lkml.indiana.edu/hypermail/linux/kernel/1006.0/00137.html
 
-> 2. it may not be possible for a user to determine if a wake-event is
-> in-flight. you would have to somehow pass the wake-event-number with
-> it, so that the userspace process could ack it properly without
-> confusion. Or... I don't know of anything else... 
-> 
-> 	1. userspace-manager (UM) reads a number (42). 
-> 
-> 	2. it questions userspace program X: is it ok to suspend?
-> 
-> 	[please fill in how userspace program X determines to block
-> 	suspend]
-> 
-> 	3a. UM's roundtrip ends and it proceeds to write "42" to the
-> 	kernel [suspending]
-> 	3b. UM's roundtrip ends and it aborts suspend, because a
-> 	(userspace-)suspend-blocker got activated
-> 
-> I'm not shure how the userspace program could determine that there is a
-> wake-event in flight. Perhaps by storing the number of last wake-event.
-> But then you need per-wake-event-counters... :|
+At least the effects on b2c2-flexcop-pci are still valid, in linux-2.6
+HEAD and linux-next (next-20100621).
 
-Rafael seems to think timeouts will fix this.  I'm not so sure.
+Regards
+	Stefan Lippers-Hollmann
 
-> Do you have some thoughts about the wake-event-in-flight detection?
+--nextPart1370548.zVSHKF1gOA
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Not really, except for something like the original wakelock scheme in
-which the kernel tells the PM core when an event is over.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Alan Stern
+iEYEABECAAYFAkwf5XYACgkQORbEMfgJlPZVlACdE1/k3U7a8zNYIj6J9x9CKrmW
+wS8Ani/xU9WEn/M/7e76/GpRQKVcUIk6
+=fnak
+-----END PGP SIGNATURE-----
 
+--nextPart1370548.zVSHKF1gOA--
