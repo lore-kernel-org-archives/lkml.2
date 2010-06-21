@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab0FUXmj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 19:42:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56801 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757914Ab0FUXmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 19:42:37 -0400
-Date: Tue, 22 Jun 2010 09:42:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: paulmck@linux.vnet.ibm.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
-       netdev@vger.kernel.org
-Subject: Re: linux-next: manual merge of the tip tree with the net tree
-Message-Id: <20100622094232.fad9a60f.sfr@canb.auug.org.au>
-In-Reply-To: <20100621173011.GH2354@linux.vnet.ibm.com>
-References: <20100621161609.935d0085.sfr@canb.auug.org.au>
-	<20100621173011.GH2354@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__22_Jun_2010_09_42_32_+1000_+Duum7wQFAILv6Gm"
+	id S1758718Ab0FUXnU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 19:43:20 -0400
+Received: from helicon.mas.viperplatform.net.au ([202.147.75.21]:50571 "EHLO
+	helicon.mas.viperplatform.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758379Ab0FUXnT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 19:43:19 -0400
+Date: Tue, 22 Jun 2010 09:43:14 +1000
+From: Stuart Longland <redhatter@gentoo.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: ALSA Development List <alsa-devel@alsa-project.org>,
+       Takashi Iwai <tiwai@suse.de>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ASoC: Add new TI TLV320AIC3204 CODEC driver
+Message-ID: <20100621234314.GZ7759@www.longlandclan.yi.org>
+References: <1276833465-31702-1-git-send-email-redhatter@gentoo.org>
+ <1276899876-19001-1-git-send-email-redhatter@gentoo.org>
+ <20100619011221.GC2463@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100619011221.GC2463@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_Jun_2010_09_42_32_+1000_+Duum7wQFAILv6Gm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Jun 19, 2010 at 02:12:21AM +0100, Mark Brown wrote:
+> On Sat, Jun 19, 2010 at 08:24:36AM +1000, Stuart Longland wrote:
+> > +	/* Page 1 */
+> > +	if (page == 1) {
+> > +		if (reg <= 4)
+> > +			return 1;
+> 
+> I can't help but think that this'd be more legible with switch ()
+> statements (GCC has an extension for ranges in switch statements which
+> you could use).
 
-Hi Paul,
+I gave this some further thought... I'm not certain that a switch
+statement is going to be much clearer.  There are two ways I can tackle
+this.
 
-On Mon, 21 Jun 2010 10:30:11 -0700 "Paul E. McKenney" <paulmck@linux.vnet.i=
-bm.com> wrote:
->
-> I defer to Jiri on this one, and will withdraw my patch.
+One is to go on a page-by-page basis, which is how I do it using the if
+statements.  Here; I define my ranges so that I start from the very
+end... anything beyond page 70 is invalid ... voila, I eliminate those
+early on.  A number of pages have a similar register pattern, and so I
+make use of nested if statements to explain this.  The if block for
+pages following always use the block before to define the upper,
+non-inclusive bound.
 
-OK, thanks.
+The register tests start from register 0.  I could perhaps reverse the
+outer ifs to start at page 0 and work forwards too... but I instead work
+backwards from page 70.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I exit the function as early as possible to skip unneeded checks, as
+soon as I know a range is valid or not, I return 1 or 0.  Perhaps the 1
+or 0 could be made clearer (a couple of #defines maybe?) but to me, it
+looks fairly clear.
 
---Signature=_Tue__22_Jun_2010_09_42_32_+1000_+Duum7wQFAILv6Gm
-Content-Type: application/pgp-signature
+I could use switch statements to replace some or all of the if
+statements.  There'd be a small benefit I suppose in making the outer if
+statements a switch, but little anywhere else from what I can see.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+The other way is that I ignore pages completely; and use the
+AIC3204_PGREG macro to define ranges of absolute register addresses.
+This may have a small benefit in speed since these are compiled in... as
+opposed to runtime masking/shifting, but I don't see that being much
+clearer either.  I'd still come to a case statement, then return.
 
-iEYEARECAAYFAkwf+OgACgkQjjKRsyhoI8xJKACZAbTgg71TBAwuLoZ8BRTtLg6o
-r9wAni1EpdOHoVPfatTjsT5jVCvRo0es
-=xcNo
------END PGP SIGNATURE-----
+This is a function largely intended for debugging, in fact, I'm thinking
+I should probably wrap it in #ifdef CONFIG_DEBUG_FS, since the function
+isn't called unless debugfs is enabled.  So I'm not certain that
+performance is worth chasing here given the intended purpose -- it's not
+something that's called all the time, nor something that will be used in
+a production environment.
 
---Signature=_Tue__22_Jun_2010_09_42_32_+1000_+Duum7wQFAILv6Gm--
+That's my thoughts on the issue, perhaps naïve, but I'm not sure
+there's any real gain in refactoring this.
+-- 
+Stuart Longland (aka Redhatter, VK4MSL)      .'''.
+Gentoo Linux/MIPS Cobalt and Docs Developer  '.'` :
+. . . . . . . . . . . . . . . . . . . . . .   .'.'
+http://dev.gentoo.org/~redhatter             :.'
+
+I haven't lost my mind...
+  ...it's backed up on a tape somewhere.
