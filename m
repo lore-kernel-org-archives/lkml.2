@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112Ab0FUXF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 19:05:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754364Ab0FUXF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 19:05:26 -0400
-Date: Mon, 21 Jun 2010 19:05:18 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Moyer Jeff Moyer <jmoyer@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] cfq: always return false from should_idle if
- slice_idle is set to zero
-Message-ID: <20100621230518.GA10105@redhat.com>
-References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
- <1277149789-4493-2-git-send-email-jmoyer@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277149789-4493-2-git-send-email-jmoyer@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1757214Ab0FUXQz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 19:16:55 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35020 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751057Ab0FUXQx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 19:16:53 -0400
+Date: Mon, 21 Jun 2010 16:16:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Henrik Rydberg" <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+       Jiri Kosina <jkosina@suse.cz>, Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH] Introduce buflock, a one-to-many circular buffer
+ mechanism (rev2)
+Message-Id: <20100621161610.fdfe23a6.akpm@linux-foundation.org>
+In-Reply-To: <1277060705-3363-1-git-send-email-rydberg@euromail.se>
+References: <1277060705-3363-1-git-send-email-rydberg@euromail.se>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 03:49:48PM -0400, Jeff Moyer wrote:
-> Hi,
-> 
-> In testing a competing fsync-ing process and a sequential reader on
-> mid-grade storage, I found that cfq was incapable of achieving the I/O
-> rates of deadline, no matter how it was tuned.  Investigation, and insight
-> from Vivek (mostly the latter), led to identifying that we were still
-> idling for the last queue in the service tree.
-> 
-> Modifying cfq_should_idle to not idle when slice_idle is set to zero got
-> us much closer to the performance of deadline for this workload.  I have
-> one follow-on patch that gets us on-par with deadline, but I think this
-> patch stands alone.
-> 
-> Comments, as always, are appreciated.
-> 
+On Sun, 20 Jun 2010 21:05:05 +0200
+"Henrik Rydberg" <rydberg@euromail.se> wrote:
 
-Looks good to me Jeff. This does take away one functionality and that is
-ability to get group service differentation even with slice_idle=0.
-cfq_should_idle() was making sure that we don't select the next queue
-from next group.
-
-But I think a better way to fix that would be to introduce a new tunable
-say group_idle. That way if we are running on some powerful storage box
-and don't want the overhead of idling, we can do slice_idle=0 and not idle
-among the cfqq's with-in group but still do idle a bit on group and get
-the group service differentiation.
-
-I have a small patch for implementing group_idle. I will post that once
-you patch is in Jens's tree.
-
-Thanks
-Vivek
-
-> Cheers,
-> Jeff
+> In spite of the many lock patterns and fifo helpers in the kernel, the
+> case of a single writer feeding many readers via a circular event
+> buffer seems to be uncovered. This patch adds the buflock, a mechanism
+> for handling multiple concurrent read positions in a shared circular
+> buffer.  Under normal operation, given adequate buffer size, the
+> operation is lock-less. The mechanism is given the name buflock to
+> emphasize that the locking depends on the buffer read/write clashes.
 > 
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 > ---
->  block/cfq-iosched.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+> This is version 2 of the buflock, which was first introduced as a
+> patch against the input subsystem. In the reviews, it was suggested
+> the file be placed in include/linux/, which is the patch presented
+> here. The major changes, taking review comments into account, are:
 > 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 5ff4f48..572a050 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -1842,6 +1842,10 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  	if (prio == IDLE_WORKLOAD)
->  		return false;
->  
-> +	/* Don't idle if slice idling is disabled by the user */
-> +	if (cfqd->cfq_slice_idle == 0)
-> +		return false;
-> +
->  	/* We do for queues that were marked with idle window flag. */
->  	if (cfq_cfqq_idle_window(cfqq) &&
->  	   !(blk_queue_nonrot(cfqd->queue) && cfqd->hw_tag))
-> -- 
-> 1.6.5.2
+> * The API has been rewritten to better abstract a lock, which
+>   hopefully provides a clearer reason to leave the actual memory
+>   handling to the user.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> * The number of memory barriers has been reduced.
+> 
+> * Overlap detection now takes write interrupts larger than the buffer
+>   size into account.
+> 
+> * All methods are now static inlines.
+> 
+
+I don't understand why this has "lock" in its name.
+
+The API itself is a mixture of "bufwrite_foo" and "bufread_foo".
+
+It's all a bit chaotic.  I'd suggest picking a sane name for the whole
+subsytem - perhaps "mrbuf" for "multi reader buffer"?  Then
+consistently name all interface functions as "mrbuf_foo". 
+mrbuf.h, mrbuf_write_lock(), etc.
+
+> +static __always_inline bool __must_check bufread_retry(struct buflock_reader *br, const struct buflock_writer *bw)
+> +{
+> +	smp_rmb();
+> +	if (unlikely(((br->tail - br->last) & bw->page) < bw->next - br->last))
+> +		return true;
+> +	++br->tail;
+> +	if (unlikely(br->head - br->tail > bw->page))
+> +		br->tail = br->head;
+> +	return false;
+> +}
+
+This looks too large to be inlined.
+
+What's the __always_inline for?  Was gcc uninlining this within
+separate compilation units?
+
+
+Dmitry, if/when this code looks suitable to you and if you think it's
+all desirable then please merge the
+buflock-aka-bufwrite-aka-bufread-aka-mrbuf code via your tree.
