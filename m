@@ -1,168 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757112Ab0FUW6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 18:58:13 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:54896 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752409Ab0FUW6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 18:58:12 -0400
-Date: Mon, 21 Jun 2010 15:58:09 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Julia Lawall <julia@diku.dk>, Jeff Dike <jdike@addtoit.com>,
-       user-mode-linux-devel@lists.sourceforge.net,
-       user-mode-linux-user@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/3] arch/um/drivers: remove duplicate structure field
- initialization
-Message-ID: <20100621155809.4655a389@nehalam>
-In-Reply-To: <20100621155349.8f314499.akpm@linux-foundation.org>
-References: <Pine.LNX.4.64.1006201539080.6207@ask.diku.dk>
-	<20100621155349.8f314499.akpm@linux-foundation.org>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757659Ab0FUW65 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 18:58:57 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:58902 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab0FUW6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 18:58:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=K9UEuzHgya+iXxQznte55BX/NC3IPflh1ei2+VKuWSlbWF3INCCadcEljSzJMORFtA
+         fHY94EWGZfisiO5zCQe25l20LE1o3U6whlwjU6axeZHF6mHm2xURjuIO8uy5ds9X9SPx
+         BrLWZXsx9607za14jP93ClCmhvYXBGhzf2xGA=
+MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Mon, 21 Jun 2010 15:58:35 -0700
+Message-ID: <AANLkTikmFJAHEBwAZ_lPosAZH3JO2zA5KetXuHvfe4WT@mail.gmail.com>
+Subject: Linux script to enable ASPM / Documentation for ASPM
+To: linux-kernel@vger.kernel.org
+Cc: linux-wireless <linux-wireless@vger.kernel.org>, Martin Mares <mj@ucw.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010 15:53:49 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+ASPM was a dark magic when I first started looking at it. Some of it
+is still dark but what I was able to understand with the help of
+colleagues at work I've managed to stash here for now:
 
-> On Sun, 20 Jun 2010 15:40:02 +0200 (CEST)
-> Julia Lawall <julia@diku.dk> wrote:
-> 
-> > From: Julia Lawall <julia@diku.dk>
-> > 
-> > There are two initializations of ndo_set_mac_address, one to a local
-> > function that is not used otherwise and one to a function that is defined
-> > elsewhere.  This patch keeps the initialization to the local function.
-> > 
-> > The semantic match that finds this problem is as follows:
-> > (http://coccinelle.lip6.fr/)
-> > 
-> > // <smpl>
-> > @r@
-> > identifier I, s, fld;
-> > position p0,p;
-> > expression E;
-> > @@
-> > 
-> > struct I s =@p0 { ... .fld@p = E, ...};
-> > 
-> > @s@
-> > identifier I, s, r.fld;
-> > position r.p0,p;
-> > expression E;
-> > @@
-> > 
-> > struct I s =@p0 { ... .fld@p = E, ...};
-> > 
-> > @script:python@
-> > p0 << r.p0;
-> > fld << r.fld;
-> > ps << s.p;
-> > pr << r.p;
-> > @@
-> > 
-> > if int(ps[0].line)<int(pr[0].line) or int(ps[0].column)<int(pr[0].column):
-> >   cocci.print_main(fld,p0)
-> > // </smpl>
-> > 
-> > Signed-off-by: Julia Lawall <julia@diku.dk>
-> > 
-> > ---
-> > This fix was sent previously, in September 2009.
-> > 
-> >  arch/um/drivers/net_kern.c |    1 -
-> >  1 file changed, 1 deletion(-)
-> > 
-> > diff --git a/arch/um/drivers/net_kern.c b/arch/um/drivers/net_kern.c
-> > index f053726..d2d42d8 100644
-> > --- a/arch/um/drivers/net_kern.c
-> > +++ b/arch/um/drivers/net_kern.c
-> > @@ -380,7 +380,6 @@ static const struct net_device_ops uml_netdev_ops = {
-> >  	.ndo_tx_timeout 	= uml_net_tx_timeout,
-> >  	.ndo_set_mac_address	= uml_net_set_mac,
-> >  	.ndo_change_mtu 	= uml_net_change_mtu,
-> > -	.ndo_set_mac_address 	= eth_mac_addr,
-> >  	.ndo_validate_addr	= eth_validate_addr,
-> >  };
-> 
-> Your patch is actually a functional change.
-> 
-> Geeze, whatamess.
-> 
-> 
-> This duplicated field was added by
-> 
-> : commit 8bb95b39a16ed55226810596f92216c53329d2fe
-> : Author:     Stephen Hemminger <shemminger@linux-foundation.org>
-> : AuthorDate: Thu Mar 26 15:11:17 2009 +0000
-> : Commit:     David S. Miller <davem@davemloft.net>
-> : CommitDate: Fri Mar 27 00:46:40 2009 -0700
-> :
-> :    uml: convert network device to netdevice ops
-> 
-> Either Stephen fat-fingered it, or it was a secret, unchangelogged (and
-> partial) cleanup.
-> 
-> Presumably the spin_lock_irq(&lp->lock); stuff is in uml_net_set_mac()
-> for a reason so presumably we should restore it.
-> 
-> 
-> - Use the standard eth_mac_addr() in uml_net_set_mac()
-> 
-> - Remove unneeded and racy local set_ether_mac()
-> 
-> - Remove duplicated (and incorrect)
->   uml_netdev_ops.ndo_set_mac_address initializer.
-> 
-> Fixes 8bb95b39a16ed55226810596f92216c53329d2fe ("uml: convert network
-> device to netdevice ops").
-> 
-> diff -puN arch/um/drivers/net_kern.c~arch-um-drivers-remove-duplicate-structure-field-initialization arch/um/drivers/net_kern.c
-> --- a/arch/um/drivers/net_kern.c~arch-um-drivers-remove-duplicate-structure-field-initialization
-> +++ a/arch/um/drivers/net_kern.c
-> @@ -25,11 +25,6 @@
->  #include "net_kern.h"
->  #include "net_user.h"
->  
-> -static inline void set_ether_mac(struct net_device *dev, unsigned char *addr)
-> -{
-> -	memcpy(dev->dev_addr, addr, ETH_ALEN);
-> -}
-> -
->  #define DRIVER_NAME "uml-netdev"
->  
->  static DEFINE_SPINLOCK(opened_lock);
-> @@ -266,7 +261,7 @@ static int uml_net_set_mac(struct net_de
->  	struct sockaddr *hwaddr = addr;
->  
->  	spin_lock_irq(&lp->lock);
-> -	set_ether_mac(dev, hwaddr->sa_data);
-> +	eth_mac_addr(dev, hwaddr->sa_data);
->  	spin_unlock_irq(&lp->lock);
->  
->  	return 0;
-> @@ -380,7 +375,6 @@ static const struct net_device_ops uml_n
->  	.ndo_tx_timeout 	= uml_net_tx_timeout,
->  	.ndo_set_mac_address	= uml_net_set_mac,
->  	.ndo_change_mtu 	= uml_net_change_mtu,
-> -	.ndo_set_mac_address 	= eth_mac_addr,
->  	.ndo_validate_addr	= eth_validate_addr,
->  };
->  
-> @@ -478,7 +472,7 @@ static void eth_configure(int n, void *i
->  	    ((*transport->user->init)(&lp->user, dev) != 0))
->  		goto out_unregister;
->  
-> -	set_ether_mac(dev, device->mac);
-> +	eth_mac_addr(dev, device->mac);
->  	dev->mtu = transport->user->mtu;
->  	dev->netdev_ops = &uml_netdev_ops;
->  	dev->ethtool_ops = &uml_net_ethtool_ops;
+http://wireless.kernel.org/en/users/Documentation/ASPM
 
-Looks correct thanks.
+Then enabling ASPM was also quite a challenge and I always had to go
+back and revisit the procedures, so to help with that instead I wrote
+a script to do this for you correctly:
+
+http://kernel.org/pub/linux/kernel/people/mcgrof/aspm/enable-aspm
+
+Its sha1sum is: f5804fdab512065f219e55addf78c6654f1fc045
+
+If any of that looks confusing refer to the documentation above.
+
+There's a TODO there, so I'll get to the different items when I can
+but if you like feel free to send me patches as well:
+
+ TODO: patches are welcomed to me until we submit to to
+       PCI Utilities upstream.
+
+ This can be improved by in this order:
+
+        * Accept arguments for endpoint and root complex address, and
+          desired ASPM settings
+        * Look for your ASPM capabilities by quering your
+          LnkCap register first. Use these values to let you
+          select whether you want to enable only L1 or L1 & L0s
+        * Searching for your root complex for you
+        * Search for your PCI device by using the driver
+        * Disable your driver and ask to reboot ?
+        * Rewrite in C
+        * Write ncurses interface [ wishlist ]
+        * Write GTK/QT interface [ wishlist ]
+        * Submit upstream as aspm.c to the PCI Utilities, which are
+          maintained by Martin Mares <mj@ucw.cz>
+
+  Luis
