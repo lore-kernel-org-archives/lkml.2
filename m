@@ -1,97 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab0FUV7t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 17:59:49 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35184 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932318Ab0FUV7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 17:59:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Date: Mon, 21 Jun 2010 23:58:05 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-References: <Pine.LNX.4.44L0.1006202154260.29532-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1006202154260.29532-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006212358.05755.rjw@sisk.pl>
+	id S932930Ab0FUWC1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 18:02:27 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61837 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932606Ab0FUWC0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 18:02:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=mHSs+SXzlJx3UqctHua7XqD3J+9Chj1vu/UKrPVeXsGBeO9/m1eOqjlg//NvIuvcx+
+         5G1b+MYVmhP2caIR+JwlIbDvrB44zNjCAC8Iu+w5sy/RcYW++3yD5g9lVHg7Eq+hYg8b
+         KDu1b4mQUBnya/FQhHQqap2lbfemH5Jw6nVWA=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: linux-wireless@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 1/5 v2]wireless:hostap_main.c warning: variable 'iface' set but not used
+Date: Mon, 21 Jun 2010 15:02:13 -0700
+Message-Id: <1277157733-14071-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 21, 2010, Alan Stern wrote:
-> On Sun, 20 Jun 2010, Rafael J. Wysocki wrote:
-> 
-> > > > Generally, there are two problems in that area.  First, if a wakeup event
-> > > > occurs exactly at the same time when /sys/power/state is being written to,
-> > > > the even may be delivered to user space right before the freezing of it,
-> > > > in which case the user space consumer of the event may not be able to process
-> > > > it before the system is suspended.
-> > > 
-> > > Indeed, the same problem arises if the event isn't delivered to
-> > > userspace until after userspace is frozen.
-> > 
-> > In that case the kernel should abort the suspend so that the event can be
-> > delivered to the user space.
-> 
-> Yes.
-> 
-> > > Of course, the underlying issue here is that the kernel has no direct way
-> > > to know when userspace has finished processing an event.  Userspace would
-> > > have to tell it, which generally would mean rewriting some large number of user
-> > > programs.
-> > 
-> > I'm not sure of that.  If the kernel doesn't initiate suspend, it doesn't
-> > really need to know whether or not user space has already consumed the event.
-> 
-> That's true.  But it only shifts the onus: When a userspace program has 
-> finished processing an event, it has to tell the power-manager process.  
-> Clearly this sort of thing is unavoidable, one way or another.
+This is a resend from version one due to trying a different approach
+than the original(probably important to leave netdev_priv() in).
 
-That's correct, but there already are multiple ways to communicate things
-between user space processes, while we would need new interfaces to
-pass that information between user space and the kernel.  That makes quite
-some difference.
+In any case have a look, if there's another approach let me know
+and ill test it out. The below patch fixes a warning im seeing
+when compiling with gcc 4.6.0
 
-> > > > The following patch illustrates my idea of how these two problems may be
-> > > > addressed.  It introduces a new global sysfs attribute,
-> > > > /sys/power/wakeup_count, associated with a running counter of wakeup events
-> > > > and a helper function, pm_wakeup_event(), that may be used by kernel subsystems
-> > > > to increment the wakeup events counter.
-> > > 
-> > > In what way is this better than suspend blockers?
-> > 
-> > It doesn't add any new framework and it doesn't require the users of
-> > pm_wakeup_event() to "unblock" suspend, so it is simpler.  It also doesn't add
-> > the user space interface that caused so much opposition to appear.
-> 
-> Okay.  A quick comparison shows that in your proposal:
-> 
-> 	There's no need to register and unregister suspend blockers.
-> 	But instead you create the equivalent of a suspend blocker
-> 	inside every struct device.
+CC [M]  drivers/net/wireless/hostap/hostap_main.o
+drivers/net/wireless/hostap/hostap_main.c: In function 'hostap_set_multicast_list_queue':
+drivers/net/wireless/hostap/hostap_main.c:744:27: warning: variable 'iface' set but not used
+ Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Not really.  That thing is for statistics purposes only and it's not essential
-from the functionality POV.  But you know that. :-)
+---
+ drivers/net/wireless/hostap/hostap_main.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-> 	Drivers (or subsystems) don't have to activate suspend 
-> 	blockers.  But instead they have to call pm_wakeup_event().
->
-> 	Drivers don't have to deactivate suspend blockers.  You don't
-> 	have anything equivalent, and as a result your scheme is 
-> 	subject to the race described below.
+diff --git a/drivers/net/wireless/hostap/hostap_main.c b/drivers/net/wireless/hostap/hostap_main.c
+index eb57d1e..a866e7a 100644
+--- a/drivers/net/wireless/hostap/hostap_main.c
++++ b/drivers/net/wireless/hostap/hostap_main.c
+@@ -741,9 +741,8 @@ void hostap_set_multicast_list_queue(struct work_struct *work)
+ 	local_info_t *local =
+ 		container_of(work, local_info_t, set_multicast_list_queue);
+ 	struct net_device *dev = local->dev;
+-	struct hostap_interface *iface;
+ 
+-	iface = netdev_priv(dev);
++	netdev_priv(dev);
+ 	if (hostap_set_word(dev, HFA384X_RID_PROMISCUOUSMODE,
+ 			    local->is_promisc)) {
+ 		printk(KERN_INFO "%s: %sabling promiscuous mode failed\n",
+-- 
+1.7.1.rc1.21.gf3bd6
 
-The original one without user space variant of suspend blockers is subject to
-it as well, because the kernel doesn't know when the user space consumer is
-going to finish processing the event.
-
-Rafael
