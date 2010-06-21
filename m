@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889Ab0FUQnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 12:43:17 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:33009 "EHLO e6.ny.us.ibm.com"
+	id S932906Ab0FUQqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 12:46:21 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:37142 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932676Ab0FUQnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 12:43:14 -0400
-Date: Mon, 21 Jun 2010 09:43:06 -0700
+	id S932633Ab0FUQqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 12:46:20 -0400
+Date: Mon, 21 Jun 2010 09:46:14 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcutorture: add random preemption
-Message-ID: <20100621164306.GC2354@linux.vnet.ibm.com>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Tilman Schmidt <tilman@imap.cc>, linux-kernel@vger.kernel.org
+Subject: Re: CONFIG_PROVE_RCU breaks proprietary modules (rcu_lock_map)
+Message-ID: <20100621164614.GD2354@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <4C1F2986.7080006@cn.fujitsu.com>
+References: <4BA689EA.4050102@imap.cc>
+ <20100329150946.GB2569@linux.vnet.ibm.com>
+ <4BB0E937.7070200@imap.cc>
+ <20100329184059.GL2569@linux.vnet.ibm.com>
+ <20100617103747.GZ20317@bombadil.infradead.org>
+ <20100620151605.GA2396@linux.vnet.ibm.com>
+ <20100621101425.GA20317@bombadil.infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C1F2986.7080006@cn.fujitsu.com>
+In-Reply-To: <20100621101425.GA20317@bombadil.infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 04:57:42PM +0800, Lai Jiangshan wrote:
-> Add random preemption to help we to torture the preemptable rcu.
+On Mon, Jun 21, 2010 at 06:14:26AM -0400, Kyle McMartin wrote:
+> On Sun, Jun 20, 2010 at 08:16:05AM -0700, Paul E. McKenney wrote:
+> > My kneejerk reaction is that PROVE_RCU is a developer tool, so I am
+> > OK with it not being set by default in Rawhide.  Or have you seen good
+> > value from (say) PROVE_LOCKING in Rawhide?
 > 
-> srcu_read_delay() also calls rcu_read_delay() for shorter delays.
+> Hi Paul,
+> 
+> I'm fine with this, we try to enable debug options in rawhide in order
+> to get the most out of bug reports/dmesgs that we can. We've definitely
+> spotted a lot of lockdep reports by having it enabled for general
+> desktop use cases (but as debugging has become more intensive, the perf
+> loss from having it enabled is more costly.)
+> 
+> I suspect we'll be OK with PROVE_RCU off though.
 
-I do like the change to srcu_read_delay(), good to fall back to the
-normal rcu_read_delay() behavior when a long delay is not selected.
-The change to rcu_read_delay() looks promising as well, but please see
-below for some comments on the other change.
-
-And the big question: did you find any failures when testing with this
-change?  ;-)
+Sounds good -- but please feel free to bug me about this again if it turns
+out that you are seeing too many testing escapes from Rawhide into RHEL.
+Until then, my thought is that PROVE_RCU testing should primarily be done
+by developers on development trees.
 
 							Thanx, Paul
-
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-> index 2e2726d..7c81d07 100644
-> --- a/kernel/rcutorture.c
-> +++ b/kernel/rcutorture.c
-> @@ -303,6 +303,10 @@ static void rcu_read_delay(struct rcu_random_state *rrsp)
->  		mdelay(longdelay_ms);
->  	if (!(rcu_random(rrsp) % (nrealreaders * 2 * shortdelay_us)))
->  		udelay(shortdelay_us);
-> +#ifdef CONFIG_PREEMPT
-> +	if (!preempt_count() && !(rcu_random(rrsp) % (nrealreaders * 20000)))
-> +		preempt_schedule();
-> +#endif
-
-This one scared me for a bit -- then I realized that preempt_schedule()
-won't actually schedule if preemption is in any way disabled.  So the
-above really is OK, because Classic RCU and RCU-bh disable preemption.
-
-So, should we have a comment to this effect, or is my hypersensitivity to
-RCU semantics unique to me?
-
->  }
-> 
->  static void rcu_torture_read_unlock(int idx) __releases(RCU)
-> @@ -536,6 +540,8 @@ static void srcu_read_delay(struct rcu_random_state *rrsp)
->  	delay = rcu_random(rrsp) % (nrealreaders * 2 * longdelay * uspertick);
->  	if (!delay)
->  		schedule_timeout_interruptible(longdelay);
-> +	else
-> +		rcu_read_delay(rrsp);
->  }
-> 
->  static void srcu_torture_read_unlock(int idx) __releases(&srcu_ctl)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
