@@ -1,101 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab0FUFdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 01:33:16 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:53205 "EHLO mx01.d-labs.de"
+	id S1754193Ab0FUFf3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 01:35:29 -0400
+Received: from ozlabs.org ([203.10.76.45]:53205 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752295Ab0FUFdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 01:33:13 -0400
-Date: Mon, 21 Jun 2010 07:32:33 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Newsgroups: gmane.linux.kernel
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?ISO-8859-15?B?SGr4bm5lduVn?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Message-ID: <20100621073233.3f874ad0@schatten.dmk.lab>
-In-Reply-To: <Pine.LNX.4.44L0.1006202154260.29532-100000@netrider.rowland.org>
-References: <201006202350.27143.rjw@sisk.pl>
-	<Pine.LNX.4.44L0.1006202154260.29532-100000@netrider.rowland.org>
-X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752617Ab0FUFfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 01:35:24 -0400
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+Subject: [PATCH 1/2] Add a common struct clk
+Message-Id: <1277098513.947633.945838133095.1.gpush@pororo>
+In-Reply-To: <1277098513.947165.104554431018.0.gpush@pororo>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+       Ben Herrenchmidt <benh@kernel.crashing.org>
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+Date: Mon, 21 Jun 2010 13:35:13 +0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Jun 2010 22:23:38 -0400 (EDT)
-Alan Stern <stern@rowland.harvard.edu> wrote:
+We currently have 21 definitions of struct clk in the ARM architecture,
+each defined on a per-platform basis. This makes it difficult to define
+platform- (or architecture-) independent clock sources without making
+assumptions about struct clk, and impossible to compile two
+platforms with different struct clks into a single image.
 
-> On Sun, 20 Jun 2010, Rafael J. Wysocki wrote:
+This change is an effort to unify struct clk where possible, by defining
+a common struct clk, containing a set of clock operations. Different
+clock implementations can set their own operations, and have a standard
+interface for generic code. The callback interface is exposed to the
+kernel proper, while the clock implementations only need to be seen by
+the platform internals.
 
-> > > In what way is this better than suspend blockers?
-> > 
-> > It doesn't add any new framework and it doesn't require the users of
-> > pm_wakeup_event() to "unblock" suspend, so it is simpler.  It also doesn't add
-> > the user space interface that caused so much opposition to appear.
-> 
-> Okay.  A quick comparison shows that in your proposal:
-> 
-> 	There's no need to register and unregister suspend blockers.
-> 	But instead you create the equivalent of a suspend blocker
-> 	inside every struct device.
-> 
-> 	Drivers (or subsystems) don't have to activate suspend 
-> 	blockers.  But instead they have to call pm_wakeup_event().
-> 
-> 	Drivers don't have to deactivate suspend blockers.  You don't
-> 	have anything equivalent, and as a result your scheme is 
-> 	subject to the race described below.
-> 
-> 	There are no userspace suspend blockers and no opportunistic
-> 	suspend.  Instead a power-manager process takes care of 
-> 	initiating or preventing suspends as needed.
-> 
-> In short, you have eliminated the userspace part of the suspend blocker 
-> approach just as in some of the proposals posted earlier, and you have 
-> replaced the in-kernel suspend blockers with new data in struct device 
-> and a new PM API.  On the whole, it doesn't seem very different from 
-> the in-kernel part of suspend blockers.  The most notable difference is 
-> the name: pm_wake_event() vs. suspend_blocker_activate(), or whatever 
-> it ended up being called.
-> 
-> This is the race I was talking about:
-> 
-> > > What happens if an event arrives just before you read
-> > > /sys/power/wakeup_count, but the userspace consumer doesn't realize
-> > > there is a new unprocessed event until after the power manager checks
-> > > it?
-> 
-> > I think this is not the kernel's problem.  In this approach the kernel makes it
-> > possible for the user space to avoid the race.  Whether or not the user space
-> > will use this opportunity is a different matter.
-> 
-> It is _not_ possible for userspace to avoid this race.  Help from the 
-> kernel is needed.
+This allows us to share clock code among platforms, and makes it
+possible to dynamically create clock devices in platform-independent
+code.
 
-It is possible if every (relevant) userspace program implements a
-callback for the powermanager to check if one of it's wakeup-sources
-got activated.
+Platforms can enable the generic struct clock through
+CONFIG_USE_COMMON_STRUCT_CLK. In this case, the clock infrastructure
+consists of a common struct clk:
 
-That way the powermanager would read /sys/power/wakeup_count, then do
-the roundtrip to all it's registered users and only then suspend. 
+struct clk {
+	const struct clk_ops	*ops;
+	unsigned int		enable_count;
+	struct mutex		mutex;
+};
 
-This turns the suspend_blockers concept around. Instead of actively
-signaling the suspend_blockers, the userspace programs only answer
-"yes/no" when asked.  (i.e. polling?) 
+And a set of clock operations (defined per type of clock):
 
-You _can not_ implement userspace suspend blockers with this approach,
-as it is vital for every userspace program to get scheduled and check
-it's wakeup-source (if even possible) before you know that the right
-parties have won the race.
+struct clk_operations {
+       int             (*enable)(struct clk *);
+       void            (*disable)(struct clk *);
+       unsigned long   (*get_rate)(struct clk *);
+       [...]
+};
 
+To define a hardware-specific clock, machine code can "subclass" the
+struct clock into a new struct (adding any device-specific data), and
+provide a set of operations:
 
-Cheers,
-Flo
+struct clk_foo {
+	struct clk	clk;
+	void __iomem	*some_register;
+};
+
+struct clk_operations clk_foo_ops = {
+	.get_rate = clk_foo_get_rate,
+};
+
+The common clock definitions are based on a development patch from Ben
+Herrenschmidt <benh@kernel.crashing.org>.
+
+Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+
+---
+ arch/Kconfig        |    3 +
+ include/linux/clk.h |   77 +++++++++++++++++++++++++++++----
+ kernel/Makefile     |    1 
+ kernel/clk.c        |  101 ++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 173 insertions(+), 9 deletions(-)
+
+diff --git a/arch/Kconfig b/arch/Kconfig
+index acda512..2458b5e 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -151,4 +151,7 @@ config HAVE_MIXED_BREAKPOINTS_REGS
+ config HAVE_USER_RETURN_NOTIFIER
+ 	bool
+ 
++config USE_COMMON_STRUCT_CLK
++	bool
++
+ source "kernel/gcov/Kconfig"
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index 1d37f42..5c1098b 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -3,6 +3,7 @@
+  *
+  *  Copyright (C) 2004 ARM Limited.
+  *  Written by Deep Blue Solutions Limited.
++ *  Copyright (c) 2010 Jeremy Kerr <jeremy.kerr@canonical.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -11,18 +12,82 @@
+ #ifndef __LINUX_CLK_H
+ #define __LINUX_CLK_H
+ 
++#include <linux/err.h>
++#include <linux/mutex.h>
++
+ struct device;
+ 
+-/*
+- * The base API.
++#ifdef CONFIG_USE_COMMON_STRUCT_CLK
++
++/* If we're using the common struct clk, we define the base clk object here */
++
++/**
++ * struct clk - hardware independent clock structure
++ * @clk_ops:		implementation-specific ops for this clock
++ * @enable_count:	count of clk_enable() calls active on this clock
++ * @mutex:		lock for enable/disable or other HW-specific ops
++ *
++ * The base clock object, used by drivers for hardware-independent manipulation
++ * of clock lines. This will be 'subclassed' by device-specific implementations,
++ * which add device-specific data to struct clk. For example:
++ *
++ *  struct clk_foo {
++ *      struct clk;
++ *      [device specific fields]
++ *  };
++ *
++ * The clock driver code will manage the device-specific data, and pass
++ * clk_foo.clk to the common clock code. The clock driver will be called
++ * through the @ops callbacks.
++ *
++ * The @enable_count and @mutex members are initialised when a clock is
++ * registered with the arch-specific clock management code; the clock driver
++ * code does not need to handle these.
++ */
++struct clk {
++	const struct clk_ops	*ops;
++	unsigned int		enable_count;
++	struct mutex		mutex;
++};
++
++#define INIT_CLK(o) { .ops = &o, }
++
++struct clk_ops {
++       int		(*enable)(struct clk *);
++       void		(*disable)(struct clk *);
++       int		(*get)(struct clk *);
++       void		(*put)(struct clk *);
++       unsigned long	(*get_rate)(struct clk *);
++       long		(*round_rate)(struct clk *, unsigned long);
++       int		(*set_rate)(struct clk *, unsigned long);
++       int		(*set_parent)(struct clk *, struct clk *);
++       struct clk *	(*get_parent)(struct clk *);
++};
++
++/**
++ * __clk_get - update clock-specific refcounter
++ *
++ * @clk: The clock to refcount
++ *
++ * Before a clock is returned from clk_get, this function should be called
++ * to update any clock-specific refcounting.
++ *
++ * Returns non-zero on success, zero on failure. 
++ *
++ * Drivers should not need this function; it is only needed by the
++ * arch-specific clk_get() implementations.
+  */
++int __clk_get(struct clk *clk);
+ 
++#else /* !CONFIG_USE_COMMON_STRUCT_CLK */
+ 
+ /*
+- * struct clk - an machine class defined object / cookie.
++ * Global clock object, actual structure is declared per-machine
+  */
+ struct clk;
+ 
++#endif /* !CONFIG_USE_COMMON_STRUCT_CLK */
++
+ /**
+  * clk_get - lookup and obtain a reference to a clock producer.
+  * @dev: device for clock "consumer"
+@@ -83,12 +148,6 @@ unsigned long clk_get_rate(struct clk *clk);
+  */
+ void clk_put(struct clk *clk);
+ 
+-
+-/*
+- * The remaining APIs are optional for machine class support.
+- */
+-
+-
+ /**
+  * clk_round_rate - adjust a rate to the exact rate a clock can provide
+  * @clk: clock source
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 057472f..1ae15aa 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -105,6 +105,7 @@ obj-$(CONFIG_PERF_EVENTS) += perf_event.o
+ obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
++obj-$(CONFIG_USE_COMMON_STRUCT_CLK) += clk.o
+ 
+ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
+diff --git a/kernel/clk.c b/kernel/clk.c
+new file mode 100644
+index 0000000..cdea25f
+--- /dev/null
++++ b/kernel/clk.c
+@@ -0,0 +1,101 @@
++/*
++ * Copyright (C) 2010 Canonical Ltd <jeremy.kerr@canonical.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Standard functionality for the common clock API.
++ */
++
++#include <linux/clk.h>
++#include <linux/mutex.h>
++#include <linux/module.h>
++
++int clk_enable(struct clk *clk)
++{
++	int ret = 0;
++
++	if (!clk->ops->enable)
++		return 0;
++
++	mutex_lock(&clk->mutex);
++	if (!clk->enable_count)
++		ret = clk->ops->enable(clk);
++
++	if (!ret)
++		clk->enable_count++;
++	mutex_unlock(&clk->mutex);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(clk_enable);
++
++void clk_disable(struct clk *clk)
++{
++	if (!clk->ops->disable)
++		return;
++
++	mutex_lock(&clk->mutex);
++
++	if (!--clk->enable_count)
++		clk->ops->disable(clk);
++
++	mutex_unlock(&clk->mutex);
++}
++EXPORT_SYMBOL_GPL(clk_disable);
++
++unsigned long clk_get_rate(struct clk *clk)
++{
++	if (clk->ops->get_rate)
++		return clk->ops->get_rate(clk);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(clk_get_rate);
++
++int __clk_get(struct clk *clk)
++{
++	if (clk->ops->get)
++		return clk->ops->get(clk);
++	return 1;
++}
++EXPORT_SYMBOL_GPL(__clk_get);
++
++void clk_put(struct clk *clk)
++{
++	if (clk->ops->put)
++		clk->ops->put(clk);
++}
++EXPORT_SYMBOL_GPL(clk_put);
++
++long clk_round_rate(struct clk *clk, unsigned long rate)
++{
++	if (clk->ops->round_rate)
++		return clk->ops->round_rate(clk, rate);
++	return -ENOSYS;
++}
++EXPORT_SYMBOL_GPL(clk_round_rate);
++
++int clk_set_rate(struct clk *clk, unsigned long rate)
++{
++	if (clk->ops->set_rate)
++		return clk->ops->set_rate(clk, rate);
++	return -ENOSYS;
++}
++EXPORT_SYMBOL_GPL(clk_set_rate);
++
++int clk_set_parent(struct clk *clk, struct clk *parent)
++{
++	if (clk->ops->set_parent)
++		return clk->ops->set_parent(clk, parent);
++	return -ENOSYS;
++}
++EXPORT_SYMBOL_GPL(clk_set_parent);
++
++struct clk *clk_get_parent(struct clk *clk)
++{
++	if (clk->ops->get_parent)
++		return clk->ops->get_parent(clk);
++	return ERR_PTR(-ENOSYS);
++}
++EXPORT_SYMBOL_GPL(clk_get_parent);
