@@ -1,83 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758703Ab0FUXWT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 19:22:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58408 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758549Ab0FUXWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 19:22:11 -0400
-Date: Mon, 21 Jun 2010 19:22:08 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cfq: allow dispatching of both sync and async I/O
- together
-Message-ID: <20100621232208.GA10175@redhat.com>
-References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
- <1277149789-4493-3-git-send-email-jmoyer@redhat.com>
- <4C1FC4B4.3060700@kernel.dk>
+	id S1758666Ab0FUXWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 19:22:05 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47772 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758493Ab0FUXWA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 19:22:00 -0400
+Date: Mon, 21 Jun 2010 16:19:39 -0700
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+       adilger@Sun.COM, tytso@mit.edu, mfasheh@suse.com,
+       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com, dan.magenheimer@oracle.com
+Subject: [PATCH V3 3/8] Cleancache: core ops functions and configuration
+Message-ID: <20100621231939.GA19505@ca-server1.us.oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C1FC4B4.3060700@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+User-Agent: Mutt/1.5.16 (2007-06-11)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090203.4C1FF3E6.0150:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 09:59:48PM +0200, Jens Axboe wrote:
-> On 21/06/10 21.49, Jeff Moyer wrote:
-> > Hi,
-> > 
-> > In testing a workload that has a single fsync-ing process and another
-> > process that does a sequential buffered read, I was unable to tune CFQ
-> > to reach the throughput of deadline.  This patch, along with the previous
-> > one, brought CFQ in line with deadline when setting slice_idle to 0.
-> > 
-> > I'm not sure what the original reason for not allowing sync and async
-> > I/O to be dispatched together was.  If there is a workload I should be
-> > testing that shows the inherent problems of this, please point me at it
-> > and I will resume testing.  Until and unless that workload is identified,
-> > please consider applying this patch.
-> 
-> The problematic case is/was a normal SATA drive with a buffered
-> writer and an occasional reader. I'll have to double check my
-> mail tomorrow, but iirc the issue was that the occasional reader
-> would suffer great latencies since service times for that single
-> IO would be delayed at the drive side. It could perhaps just be
-> a bug in how we handle the slice idling on the read side when the
-> IO gets delayed initially.
-> 
-> So if my memory is correct, google for the fsync madness and
-> interactiveness thread that we had some months ago and which
-> caused a lot of tweaking. The commit adding this is
-> 5ad531db6e0f3c3c985666e83d3c1c4d53acccf9 and was added back
-> in July last year. So it was around that time that the mails went
-> around.
+[PATCH V3 3/8] Cleancache: core ops functions and configuration
 
-Hi Jens,
+Cleancache core ops functions and configuration
 
-I suspect we might have introduced this patch because mike galbraith
-had issues which application interactiveness (reading data back from swap)
-in the prence of heavy writeout on SATA disk.
+Credits: Cleancache_ops design derived from Jeremy Fitzhardinge
+design for tmem; sysfs code modelled after mm/ksm.c
 
-After this patch we did two enhancements.
+Note that CONFIG_CLEANCACHE defaults to on; all hooks devolve
+to a compare-function-pointer-to-NULL so performance impact should
+be negligible, but can be reduced to zero impact if config'ed off.
 
-- You introduced the logic of building write queue depth gradually.
-- Corrado introduced the logic of idling on the random reader service
-  tree.
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-In the past random reader were not protected from WRITES as there was no
-idling on random readers. But with corrado's changes of idling on
-sync-noidle service tree, I think this problem might have been solved to
-a great extent.
+Diffstat:
+ include/linux/cleancache.h               |   88 ++++++++++
+ mm/Kconfig                               |   22 ++
+ mm/Makefile                              |    1 
+ mm/cleancache.c                          |  169 +++++++++++++++++++++
+ 4 files changed, 280 insertions(+)
 
-Getting rid of this exclusivity of either SYNC/ASYNC requests in request
-queue might help us with throughput on storage arrys without loosing
-protection for random reader on SATA. 
-
-I will do some testing with and without patch and see if above is true
-or not.
-
-Thanks
-Vivek
+--- linux-2.6.35-rc2/include/linux/cleancache.h	1969-12-31 17:00:00.000000000 -0700
++++ linux-2.6.35-rc2-cleancache/include/linux/cleancache.h	2010-06-21 14:45:18.000000000 -0600
+@@ -0,0 +1,88 @@
++#ifndef _LINUX_CLEANCACHE_H
++#define _LINUX_CLEANCACHE_H
++
++#include <linux/fs.h>
++#include <linux/mm.h>
++
++struct cleancache_ops {
++	int (*init_fs)(size_t);
++	int (*init_shared_fs)(char *uuid, size_t);
++	int (*get_page)(int, ino_t, pgoff_t, struct page *);
++	void (*put_page)(int, ino_t, pgoff_t, struct page *);
++	void (*flush_page)(int, ino_t, pgoff_t);
++	void (*flush_inode)(int, ino_t);
++	void (*flush_fs)(int);
++};
++
++extern struct cleancache_ops cleancache_ops;
++extern int __cleancache_get_page(struct page *);
++extern void __cleancache_put_page(struct page *);
++extern void __cleancache_flush_page(struct address_space *, struct page *);
++extern void __cleancache_flush_inode(struct address_space *);
++
++#ifdef CONFIG_CLEANCACHE
++#define cleancache_enabled (cleancache_ops.init_fs)
++#else
++#define cleancache_enabled (0)
++#endif
++
++/* called by a cleancache-enabled filesystem at time of mount */
++static inline int cleancache_init_fs(size_t pagesize)
++{
++	int ret = -1;
++
++	if (cleancache_enabled)
++		ret = (*cleancache_ops.init_fs)(pagesize);
++	return ret;
++}
++
++/* called by a cleancache-enabled clustered filesystem at time of mount */
++static inline int cleancache_init_shared_fs(char *uuid, size_t pagesize)
++{
++	int ret = -1;
++
++	if (cleancache_enabled)
++		ret = (*cleancache_ops.init_shared_fs)(uuid, pagesize);
++	return ret;
++}
++
++static inline int cleancache_get_page(struct page *page)
++{
++	int ret = -1;
++
++	if (cleancache_enabled)
++		ret = __cleancache_get_page(page);
++	return ret;
++}
++
++static inline void cleancache_put_page(struct page *page)
++{
++	if (cleancache_enabled)
++		__cleancache_put_page(page);
++}
++
++static inline void cleancache_flush_page(struct address_space *mapping,
++					struct page *page)
++{
++	if (cleancache_enabled)
++		__cleancache_flush_page(mapping, page);
++}
++
++static inline void cleancache_flush_inode(struct address_space *mapping)
++{
++	if (cleancache_enabled)
++		__cleancache_flush_inode(mapping);
++}
++
++/*
++ * called by any cleancache-enabled filesystem at time of unmount;
++ * note that pool_id is surrendered and may be returned by a subsequent
++ * cleancache_init_fs or cleancache_init_shared_fs
++ */
++static inline void cleancache_flush_fs(int pool_id)
++{
++	if (cleancache_enabled && pool_id >= 0)
++		(*cleancache_ops.flush_fs)(pool_id);
++}
++
++#endif /* _LINUX_CLEANCACHE_H */
+--- linux-2.6.35-rc2/mm/cleancache.c	1969-12-31 17:00:00.000000000 -0700
++++ linux-2.6.35-rc2-cleancache/mm/cleancache.c	2010-06-11 10:32:35.000000000 -0600
+@@ -0,0 +1,169 @@
++/*
++ * Cleancache frontend
++ *
++ * This code provides the generic "frontend" layer to call a matching
++ * "backend" driver implementation of cleancache.  See
++ * Documentation/vm/cleancache.txt for more information.
++ *
++ * Copyright (C) 2009-2010 Oracle Corp. All rights reserved.
++ * Author: Dan Magenheimer
++ *
++ * This work is licensed under the terms of the GNU GPL, version 2.
++ */
++
++#include <linux/module.h>
++#include <linux/fs.h>
++#include <linux/mm.h>
++#include <linux/cleancache.h>
++
++/*
++ * cleancache_ops contains the pointers to the cleancache "backend"
++ * implementation functions
++ */
++struct cleancache_ops cleancache_ops;
++EXPORT_SYMBOL(cleancache_ops);
++
++/* useful stats available in /sys/kernel/mm/cleancache */
++static unsigned long succ_gets;
++static unsigned long failed_gets;
++static unsigned long puts;
++static unsigned long flushes;
++
++/*
++ * "Get" data from cleancache associated with the poolid/inode/index
++ * that were specified when the data was put to cleanache and, if
++ * successful, use it to fill the specified page with data and return 0.
++ * The pageframe is unchanged and returns -1 if the get fails.
++ * Page must be locked by caller.
++ */
++int __cleancache_get_page(struct page *page)
++{
++	int ret = -1;
++	int pool_id;
++
++	VM_BUG_ON(!PageLocked(page));
++	pool_id = page->mapping->host->i_sb->cleancache_poolid;
++	if (pool_id >= 0) {
++		ret = (*cleancache_ops.get_page)(pool_id,
++						 page->mapping->host->i_ino,
++						 page->index,
++						 page);
++		if (ret == 0)
++			succ_gets++;
++		else
++			failed_gets++;
++	}
++	return ret;
++}
++EXPORT_SYMBOL(__cleancache_get_page);
++
++/*
++ * "Put" data from a page to cleancache and associate it with the
++ * (previously-obtained per-filesystem) poolid and the page's,
++ * inode and page index.  Page must be locked.  Note that a put_page
++ * always "succeeds", though a subsequent get_page may succeed or fail.
++ */
++void __cleancache_put_page(struct page *page)
++{
++	int pool_id;
++
++	VM_BUG_ON(!PageLocked(page));
++	pool_id = page->mapping->host->i_sb->cleancache_poolid;
++	if (pool_id >= 0) {
++		(*cleancache_ops.put_page)(pool_id, page->mapping->host->i_ino,
++					   page->index, page);
++		puts++;
++	}
++}
++
++/*
++ * Flush any data from cleancache associated with the poolid and the
++ * page's inode and page index so that a subsequent "get" will fail.
++ */
++void __cleancache_flush_page(struct address_space *mapping, struct page *page)
++{
++	int pool_id = mapping->host->i_sb->cleancache_poolid;
++
++	if (pool_id >= 0) {
++		VM_BUG_ON(!PageLocked(page));
++		(*cleancache_ops.flush_page)(pool_id, mapping->host->i_ino,
++					     page->index);
++		flushes++;
++	}
++}
++EXPORT_SYMBOL(__cleancache_flush_page);
++
++/*
++ * Flush all data from cleancache associated with the poolid and the
++ * mappings's inode so that all subsequent gets to this poolid/inode
++ * will fail.
++ */
++void __cleancache_flush_inode(struct address_space *mapping)
++{
++	int pool_id = mapping->host->i_sb->cleancache_poolid;
++
++	if (pool_id >= 0)
++		(*cleancache_ops.flush_inode)(pool_id, mapping->host->i_ino);
++}
++EXPORT_SYMBOL(__cleancache_flush_inode);
++
++#ifdef CONFIG_SYSFS
++
++/* see Documentation/ABI/xxx/sysfs-kernel-mm-cleancache */
++
++#define CLEANCACHE_ATTR_RO(_name) \
++	static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
++
++static ssize_t succ_gets_show(struct kobject *kobj,
++			       struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%lu\n", succ_gets);
++}
++CLEANCACHE_ATTR_RO(succ_gets);
++
++static ssize_t failed_gets_show(struct kobject *kobj,
++			       struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%lu\n", failed_gets);
++}
++CLEANCACHE_ATTR_RO(failed_gets);
++
++static ssize_t puts_show(struct kobject *kobj,
++			       struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%lu\n", puts);
++}
++CLEANCACHE_ATTR_RO(puts);
++
++static ssize_t flushes_show(struct kobject *kobj,
++			       struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%lu\n", flushes);
++}
++CLEANCACHE_ATTR_RO(flushes);
++
++static struct attribute *cleancache_attrs[] = {
++	&succ_gets_attr.attr,
++	&failed_gets_attr.attr,
++	&puts_attr.attr,
++	&flushes_attr.attr,
++	NULL,
++};
++
++static struct attribute_group cleancache_attr_group = {
++	.attrs = cleancache_attrs,
++	.name = "cleancache",
++};
++
++#endif /* CONFIG_SYSFS */
++
++static int __init init_cleancache(void)
++{
++#ifdef CONFIG_SYSFS
++	int err;
++
++	err = sysfs_create_group(mm_kobj, &cleancache_attr_group);
++#endif /* CONFIG_SYSFS */
++	return 0;
++}
++module_init(init_cleancache)
+--- linux-2.6.35-rc2/mm/Kconfig	2010-06-05 21:43:24.000000000 -0600
++++ linux-2.6.35-rc2-cleancache/mm/Kconfig	2010-06-11 09:01:37.000000000 -0600
+@@ -298,3 +298,25 @@ config NOMMU_INITIAL_TRIM_EXCESS
+ 	  of 1 says that all excess pages should be trimmed.
+ 
+ 	  See Documentation/nommu-mmap.txt for more information.
++
++config CLEANCACHE
++	bool "Enable cleancache pseudo-RAM driver to cache clean pages"
++	default y
++	help
++ 	  Cleancache can be thought of as a page-granularity victim cache
++	  for clean pages that the kernel's pageframe replacement algorithm
++	  (PFRA) would like to keep around, but can't since there isn't enough
++	  memory.  So when the PFRA "evicts" a page, it first attempts to put
++	  it into a synchronous concurrency-safe page-oriented pseudo-RAM
++	  device (such as Xen's Transcendent Memory, aka "tmem") which is not
++	  directly accessible or addressable by the kernel and is of unknown
++	  (and possibly time-varying) size.  And when a cleancache-enabled
++	  filesystem wishes to access a page in a file on disk, it first
++	  checks cleancache to see if it already contains it; if it does,
++ 	  the page is copied into the kernel and a disk access is avoided.
++	  When a pseudo-RAM device is available, a significant I/O reduction
++	  may be achieved.  When none is available, all cleancache calls
++	  are reduced to a single pointer-compare-against-NULL resulting
++	  in a negligible performance hit.
++
++	  If unsure, say Y to enable cleancache
+--- linux-2.6.35-rc2/mm/Makefile	2010-06-05 21:43:24.000000000 -0600
++++ linux-2.6.35-rc2-cleancache/mm/Makefile	2010-06-11 09:01:37.000000000 -0600
+@@ -45,3 +45,4 @@ obj-$(CONFIG_MEMORY_FAILURE) += memory-f
+ obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
+ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
+ obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
++obj-$(CONFIG_CLEANCACHE) += cleancache.o
