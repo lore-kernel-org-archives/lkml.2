@@ -1,153 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab0FUFzI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 01:55:08 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:51617 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab0FUFzF (ORCPT
+	id S1754843Ab0FUF42 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 01:56:28 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62512 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab0FUF40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 01:55:05 -0400
+	Mon, 21 Jun 2010 01:56:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GqmEM6NYVGpuN7Xmq6wt+ELWo7agnT6/RbvEQOMW7q2uASXmakFW5JKsqpZBkJaVuo
-         1VPUc7aKewsUONUUMawLPg1q1UyV5p3+aBrKZoYvx76R8khuv2Fv9SKrJERAaKUtyLfN
-         /DUj2yqnMvruB9c2/EQw8odaCkwMlSw/B9hdA=
-Date: Sun, 20 Jun 2010 22:55:22 -0700
-From: mark gross <640e9920@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: markgross@thegnar.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       linux-pm@lists.linux-foundation.org,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Message-ID: <20100621055522.GE9735@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <20100620225810.GB9735@gvim.org>
- <Pine.LNX.4.44L0.1006202223440.29532-100000@netrider.rowland.org>
+        h=mime-version:sender:reply-to:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=OdfC2tWY01zHwTpneUtbzJfdCqyORBUa3LRObEJugh/Y7gUA9ep5UR7RpxcyOpewtw
+         to1vV40gfpFQwQHzaGLPMDIsEeATn7/mSOiO0a756K2Hzm9tn/rx24zI6Zblg/CnHFCT
+         3KDjUTzaSSfWoJ2J8iNbOqkGKqELX2b7KeuA0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1006202223440.29532-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: linux@schou.dk
+In-Reply-To: <1277043970.22889.45.camel@obelisk.thedillows.org>
+References: <AANLkTimO5PXmJiIPDw82MTA53mLSl-OC0e1SOEh7v8pH@mail.gmail.com> 
+	<1276972298.22889.16.camel@obelisk.thedillows.org> <AANLkTimwZFNLBNJWODyzKXwx9CbIorg3OCA53XZchkeN@mail.gmail.com> 
+	<1277043970.22889.45.camel@obelisk.thedillows.org>
+From: Hans Schou <linux@schou.dk>
+Date: Mon, 21 Jun 2010 07:56:05 +0200
+X-Google-Sender-Auth: hS8H8odDtBYhh5iCQNhFjwtpf48
+Message-ID: <AANLkTikBTMq3d-Ov65wYLJ_Vw-7Jde4AOwfXcEPB0wLr@mail.gmail.com>
+Subject: Re: PROBLEM: SIS7019 stops recording after 42 min
+To: David Dillow <dave@thedillows.org>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 20, 2010 at 10:33:01PM -0400, Alan Stern wrote:
-> On Sun, 20 Jun 2010, mark gross wrote:
-> 
-> > > Indeed, the same problem arises if the event isn't delivered to
-> > > userspace until after userspace is frozen.  Of course, the underlying
-> > > issue here is that the kernel has no direct way to know when userspace
-> > > has finished processing an event.  Userspace would have to tell it,
-> > > which generally would mean rewriting some large number of user
-> > > programs.
-> > 
-> > Suspend blockers don't solve this, and the large number of user programs
-> > isn't a big number.  /me thinks its 1 or 2 services.
-> 
-> On Android, perhaps.  What about on other systems?
+2010/6/20 David Dillow <dave@thedillows.org>:
 
-This is just speculation but, I would expect other systems would have
-the graphics, input, telephony, and any PM services wake_count / wake
-event ware.  
+> You caught the correct files, yes. Did that command produce 10 second
+> pauses? If not, then I need to see the same information from the rec
+> command you were using to reproduce the issue before. It may be easier
+> to just run the rec command for a moment to collect the data rather than
+> wait the 40+ minutes to see if arecord also demonstrates the issue.
 
-I can't imagine (at the moment) anything else that would care.
+Over night I have been running arecord several times. Alle wav-files
+are much below the expected size 264600000 bytes (44100*2*60s*50min).
+The file size recorded
 
-> 
-> > > In what way is this better than suspend blockers?
-> > 
-> > 1) I don't think suspend blockers really solve or effectively articulate
-> > the suspend wake event race problem.
-> 
-> Why not?
+184928116
+184939142
+185170688
+186030716
+186989978
+187166394
+187221524
+188555670
+188654904
+188798242
+189503906
+189900842
 
-For starters the suspend block patch is about suspend blocking, at least
-at first before competing ideas starting coming out and this race issue
-was offered up as an excuse to not consider the alternative ideas, then
-suddenly suspend blocking became a wake event notification mechanism
-implementation that was baked into the implementation.  The arguments
-are still a blur and irritating to recall / look up again.
+189900842/(44100*2*60) = 35.88
 
-But, the point I'm trying to make is that wake event serialization /
-event handling suddenly became a big FUD-pie tightly bound to a specific
-feature for suspend blocking (or was is auto suspending?  Its a magical
-solution to all the PM problems in the kernel.  I'm being sarcastic.)  
+Only 35 minutes of recording but I was running in 50min.
 
-Its much better to call out the issue and provide a clean targeted
-solution to it without binding it to some other solution to a different
+It seems that arecord loses more sample than I have seen with sox-rec.
+
+> I'm guessing that rec (sox) is using the mmap interface, and
+> I've not done much with that -- though perhaps there is a bug in sox's
+> overrun handling. You could enable SND_PCM_XRUN_DEBUG to see if overruns
+> are happening when sox starts taking 10 seconds.
+
+How do I enable SND_PCM_XRUN_DEBUG with sox?
+
+> Getting overruns on SiS 550 based devices isn't entirely surprising, as
+> it doesn't have a huge amount of horsepower or memory.
+
+Well, I usually don't have problem with that. I have samba running but
+I don't access the recorded files while recording, so it is not a
 problem.
 
-> 
-> > 2) the partial solution suspend blocker offer for the suspend race is
-> > tightly bound to the suspend blocker implementation and not useful in
-> > more general contexts.
-> 
-> I don't understand.  Can you explain further?
-> 
-> > > One advantage of the suspend-blocker approach is that it essentially
-> > > uses a single tool to handle both kinds of races (event not fully
-> > > handled by the kernel, or event not fully handled by userspace).  
-> > > Things aren't quite this simple, because of the need for a special API
-> > > to implement userspace suspend blockers, but this does avoid the need
-> > > for a power-manager process.
-> > 
-> > I don't think suspend-blocker handles both kinds of races as well as you
-> > seem to think.
-> 
-> Can you give any counterexamples?
+Right now uptime says
+   load average: 0.19, 0.21, 0.18
+but strace and top is the bad guys, not arecord.
 
-I knew you'd ask such a thing.  Do you have any correctness proofs of it
-working right?
-
-Lets consider the RIL incoming call race:
-1) user mode initiates an "opportunistic suspend" or whatever we call
-this these days by writing to some sys interface.
-2) a call comes in (multi-threaded cpu) just after the write.
-3) the caif driver grabs a blocker, stopping the in flight suspend in the
-nick of time.  But, when should it release it without racing?  How does
-one implement that kernel code such that its portable to non-android user
-mode stacks? 
-
-> 
-> >  A single tool that conflates multiple kernel facilities
-> > is not an advantage.  It limits applications outside of the scope of
-> > doing it the "android way".
-> 
-> I don't see that necessarily as a drawback.  You might just as well say
-> that the entire Linux kernel limits applications to doing things the
-> "Unix" way.  Often have fewer choices is an advantage.
-
-I disagree with your analogy.  One problem one solution with minimal
-coupling to other implementation details is nice.  Two problems with one
-solution dependent on the system wide architecture bound to a user mode
-PM design is fragile and not portable.
- 
-> > Where do you get the idea that there isn't a need for a centralized PM
-> > process in Android?  Thats not true.
-> 
-> I didn't get that idea from anywhere.  Sorry if I gave the wrong
-> impression -- I meant that non-Android systems would need to implement
-> a centralized power-manager process, along with all the necessary
-> changes to other programs.
-> 
-> (Incidentally, even on Android the centralized PM process does not 
-> handle _all_ of the userspace/kernel wakelock interactions.)
+>> The error does occur with rate 8000 8bit (the default).
 >
+> Do you mean 'does not occur'? That may be more expected -- 8khz/8bit has
+> approximately 9% of the data as 44.1khz/16bit.
 
-Yeah, I've been told that too.  I've grepped for where the wake_unlock
-sysfs interfaces are hit from user mode android (eclair) and I would
-like some help in identifying those guys. Maybe its in the FroYo code I
-don't get to look at yet?
+Sorry, yes you are right.
 
-There is libhardware_legacy/power/power.c and  an out of tree kernel
-broadcom bcm4329 driver under hardware/broadcom but that doesn't count
-as it looks like a kernel driver to me.
+>> > Can you try using arecord? You can use options to tell it how to
+>> > configure the PCM. Especially interesting will be to configure 2 periods
+>> > per buffer vs whatever rec uses. 2 periods per buffer uses the hardware
+>> > interrupts to clock out periods, where as 3+ uses a more complex
+>> > mechanism. You can also use -M to use mmap vs not.
+>>
+>> Options like this?
+>> strace -tt -o arec.log arecord -c 1 -r 44100 -f S16 -M arec.wav
 
---mgross 
+I tried this one:
+  arecord -c 1 -r 44100 -f S16 -M -D hw:0,0 -v arec.wav
+but it did not change anything. Still the files are much too small.
 
+Recording WAVE 'arec.wav' : Signed 16 bit Little Endian, Rate 44100 Hz, Mono
+Hardware PCM card 0 'SiS7019' device 0 subdevice 0
+Its setup is:
+  stream       : CAPTURE
+  access       : MMAP_INTERLEAVED
+  format       : S16_LE
+  subformat    : STD
+  channels     : 1
+  rate         : 44100
+  exact rate   : 44100 (44100/1)
+  msbits       : 16
+  buffer_size  : 22050
+  period_size  : 5513
+  period_time  : 125011
+  tick_time    : 0
+  tstamp_mode  : NONE
+  period_step  : 1
+  sleep_min    : 0
+  avail_min    : 5513
+  xfer_align   : 5513
+  start_threshold  : 1
+  stop_threshold   : 22050
+  silence_threshold: 0
+  silence_size : 0
+  boundary     : 1944986400
+overrun!!! (at least 4.368 ms long)
+Status:
+  state       : XRUN
+  trigger_time: 1277092780.321430383
+  tstamp      : 1277092780.323362792
+  delay       : 0
+  avail       : 27562
+  avail_max   : 27562
+
+# grep avail arec-stdout2.log | sort | uniq -c
+      6   avail       : 22053
+     13   avail       : 22055
+      2   avail       : 22058
+      1   avail       : 22059
+     10   avail       : 22060
+      4   avail       : 22062
+      1   avail       : 22063
+      2   avail       : 22064
+  10975   avail       : 27562
+      5   avail       : 33075
+      2   avail       : 38588
+      6   avail_max   : 22053
+     13   avail_max   : 22055
+      2   avail_max   : 22058
+      1   avail_max   : 22059
+     10   avail_max   : 22060
+      4   avail_max   : 22062
+      1   avail_max   : 22063
+      2   avail_max   : 22064
+  10975   avail_max   : 27562
+      5   avail_max   : 33075
+      2   avail_max   : 38588
+      2   avail_min    : 5513
+
+So most often 'avail' is 27562 after an overrun when  running arecord.
+
+I think it would be better to test with sox-rec but which options
+should be used?
+
+/hans
