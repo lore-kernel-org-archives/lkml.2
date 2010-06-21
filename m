@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab0FUNIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 09:08:54 -0400
-Received: from mail-in-13.arcor-online.net ([151.189.21.53]:59204 "EHLO
-	mail-in-13.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757878Ab0FUNIw (ORCPT
+	id S1757903Ab0FUNOu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 09:14:50 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:53197 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab0FUNOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 09:08:52 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-08.arcor-online.net 7E02D205865
-Message-ID: <24732538.1277125730475.JavaMail.ngmail@webmail17.arcor-online.net>
-Date: Mon, 21 Jun 2010 15:08:50 +0200 (CEST)
-From: screamingfist@arcor.de
-To: jkosina@suse.cz, erazor_de@users.sourceforge.net
-Subject: Aw: Re: [PATCH] HID: removing obsolete kone_abi_version sysfs attr
- for roccat kone
-Cc: rdunlap@xenotime.net, sfr@canb.auug.org.au, tj@kernel.org,
-       linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-ngMessageSubType: MessageSubType_MAIL
-X-WebmailclientIP: 138.246.7.174
+	Mon, 21 Jun 2010 09:14:49 -0400
+To: Valerie Aurora <vaurora@redhat.com>
+CC: raa.lkml@gmail.com, viro@zeniv.linux.org.uk, miklos@szeredi.hu,
+       jblunck@suse.de, hch@infradead.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+In-reply-to: <20100617183912.GA14389@shell> (message from Valerie Aurora on
+	Thu, 17 Jun 2010 14:39:13 -0400)
+Subject: Re: [PATCH 17/38] union-mount: Union mounts documentation
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-18-git-send-email-vaurora@redhat.com> <AANLkTilNAGzn3ZC5eN2ZQMqNhcSWnT-mi_y2TkIkdeUU@mail.gmail.com> <20100617183912.GA14389@shell>
+Message-Id: <E1OQgpf-0001DJ-3w@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Mon, 21 Jun 2010 15:14:35 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- ----- Original Nachricht ----
-Von:     Jiri Kosina <jkosina@suse.cz>
-An:      Stefan Achatz <erazor_de@users.sourceforge.net>
-Datum:   21.06.2010 14:06
-Betreff: Re: [PATCH] HID: removing obsolete kone_abi_version sysfs attr for
- roccat kone
-
-> On Fri, 18 Jun 2010, Stefan Achatz wrote:
+On Thu, 17 Jun 2010, Valerie Aurora wrote:
+> On Thu, Jun 17, 2010 at 10:01:30AM +0200, Alex Riesen wrote:
+> > On Tue, Jun 15, 2010 at 20:39, Valerie Aurora <vaurora@redhat.com> wrote:
+> > > +git://git.kernel.org/pub/scm/fs/ext2/val/e2fsprogs.git
+> > > +
+> > > +Currently, whiteout directory entries are not returned to userland.
+> > > +While the directory type for whiteouts, DT_WHT, has been defined for
+> > > +many years, very little userland code handles them. ??Userland will
+> > > +never see fallthru directory entries.
+> > 
+> > This may be a dumb question (I must admit I did only very little research),
+> > but how does one cleanup the topmost layer of whiteouts and fallthroughs,
+> > so that the entries of lower layer(s) can be made visible again?
 > 
-> > The newest version of the accompanying userland tools cuts backward
-> > compatibility and uses libudev to find its devices superseding the
-> > quirky kone_abi_version sysfs attribute. Therefore it should be removed.
-> 
-> How backwards incompatible this change actually is?
-> 
-> What happens if you run old userspace tool (the one which looks for 
-> kone_abi_version) on a kernel with this patch applied?
+> I'm not sure how best to do this.  We don't want to add more system
+> calls.  One thought of mine has been to do this offline, when the file
+> system is unmounted.  For example, e2fsck could add a feature to
+> delete whiteouts and fallthrus.  Another option is to add a flag to an
+> existing system call.
 
-Now there is one legacy version of the tool which looks for kone_driver_version and which will not be developed further cause I'm at a dead end with scanning sysfs directly.
+One more advantage of doing whiteouts, etc. with hard links and
+extended attributes instead of as special filesystem objects.  That
+way they are visible (unless part of a union) and can be treated as
+normal filesystem objects.
 
-The renamed attribute kone_abi_version is unreleased and at current only in your roccat branch so there's no need for the tool to look for that.
-
-For the next features i want to implement in the tool I need the path to the sysfs attributes, the roccat char device and the two hidraw devices (mouse and keyboard endpoints) corresponding to one device. I'm doing this with libudev and not with manually crawling through sysfs. This code only works with kone as hid-driver and with the relatively young libudev taken into account my old kone and roccat modules for kernels prior 2.6.28 won't work either.
-To make a long story short:
-People with kernel versions < 2.6.28 and without libudev have to use the legacy tools with limited functionality.
-Users with kernel versions >= 2.6.28 (using the modules my distibuted package or the official from 2.6.35 on) and with libudev should use the newest version of my tools with increasing functionality.
-
-Have a nice day,
-Stefan
+Miklos
