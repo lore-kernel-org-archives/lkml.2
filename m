@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797Ab0FUR00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 13:26:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30601 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758145Ab0FUR0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 13:26:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,454,1272870000"; 
-   d="scan'208";a="528840055"
-Date: Mon, 21 Jun 2010 10:24:32 -0700
-From: Jesse Barnes <jesse.barnes@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [git pull] PCI fix
-Message-ID: <20100621102432.2e206889@intel.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932908Ab0FUR1O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 13:27:14 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:39592 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932312Ab0FUR1M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 13:27:12 -0400
+Date: Mon, 21 Jun 2010 19:27:04 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Gregory Bean <gbean@codeaurora.org>, dwalker@codeaurora.org,
+       linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] msm: Add gpio register address mapping information.
+Message-ID: <20100621172704.GH2176@elf.ucw.cz>
+References: <1276888375-13221-1-git-send-email-gbean@codeaurora.org>
+ <1276888375-13221-2-git-send-email-gbean@codeaurora.org>
+ <20100619200249.GA2507@elf.ucw.cz>
+ <4C1F9B58.6020302@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C1F9B58.6020302@codeaurora.org>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit
-7e27d6e778cd87b6f2415515d7127eba53fe5d02: Linus Torvalds (1):
-        Linux 2.6.35-rc3
+On Mon 2010-06-21 10:03:20, Bryan Huntsman wrote:
+> Pavel Machek wrote:
+> >Hi!
+> >
+> >>--- /dev/null
+> >>+++ b/arch/arm/mach-msm/gpio_hw-7x30.h
+> >>@@ -0,0 +1,112 @@
+> >>+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+> >>+ *
+> >>+ * Redistribution and use in source and binary forms, with or without
+> >>+ * modification, are permitted provided that the following conditions are
+> >>+ * met:
+> >>+ *     * Redistributions of source code must retain the above copyright
+> >>+ *       notice, this list of conditions and the following disclaimer.
+> >>+ *     * Redistributions in binary form must reproduce the above
+> >>+ *       copyright notice, this list of conditions and the following
+> >>+ *       disclaimer in the documentation and/or other materials provided
+> >>+ *       with the distribution.
+> >>+ *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
+> >>+ *       contributors may be used to endorse or promote products derived
+> >>+ *       from this software without specific prior written permission.
+> >
+> >Yeah. Either this can be replaced with GPL, and it such case just do
+> >so, or it can not, and then it can not be applied to kernel.
+> >
+> 
+> This is a standard BSD-style license so it's compatible w/ the GPL.
+> Thanks.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 for-linus
-
-Just one regression fix from Rafael right now.  I hope to get one or
-two more regression fixes in before the final release too.
-
-Rafael J. Wysocki (1):
-      PCI/PM: Do not use native PCIe PME by default
-
- Documentation/kernel-parameters.txt |    4 +++-
- drivers/pci/pcie/pme/pcie_pme.c     |   19 +++++++++++++------
- 2 files changed, 16 insertions(+), 7 deletions(-)
-
-
+Not good enough for kernel. Stop trying to push this.
+									Pavel
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
