@@ -1,102 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674Ab0FUVg2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 17:36:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23933 "EHLO mx1.redhat.com"
+	id S1758671Ab0FUVi0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 17:38:26 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:57505 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758656Ab0FUVg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 17:36:27 -0400
-Date: Mon, 21 Jun 2010 17:36:18 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: trying to understand READ_META, READ_SYNC, WRITE_SYNC & co
-Message-ID: <20100621213618.GC6474@redhat.com>
-References: <20100621094828.GA30748@lst.de>
- <4C1F3916.4070608@kernel.dk>
- <20100621110436.GA4056@lst.de>
- <4C1FB5F7.3070908@kernel.dk>
- <20100621191410.GA24213@lst.de>
+	id S1758606Ab0FUViY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 17:38:24 -0400
+Date: Mon, 21 Jun 2010 14:38:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+       Don Zickus <dzickus@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Jerome Marchand <jmarchan@redhat.com>,
+       Mandeep Singh Baines <msb@google.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+       stable@kernel.org
+Subject: Re: while_each_thread() under rcu_read_lock() is broken?
+Message-ID: <20100621213820.GJ2354@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100618190251.GA17297@redhat.com>
+ <20100618193403.GA17314@redhat.com>
+ <20100618223354.GL2365@linux.vnet.ibm.com>
+ <20100621170919.GA13826@redhat.com>
+ <20100621205128.GI2354@linux.vnet.ibm.com>
+ <m1mxuo2i8c.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100621191410.GA24213@lst.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <m1mxuo2i8c.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 09:14:10PM +0200, Christoph Hellwig wrote:
-> On Mon, Jun 21, 2010 at 08:56:55PM +0200, Jens Axboe wrote:
-> > FWIW, Windows marks meta data writes and they go out with FUA set
-> > on SATA disks. And SATA firmware prioritizes FUA writes, it's essentially
-> > a priority bit as well as a platter access bit. So at least we have some
-> > one else using a meta data boost. I agree that it would be a lot more
-> > trivial to add the annotations if they didn't have scheduler impact
-> > as well, but I still think it's a sane thing.
+On Mon, Jun 21, 2010 at 02:22:59PM -0700, Eric W. Biederman wrote:
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
 > 
-> And we still disable the FUA bit in libata unless people set a
-> non-standard module option..
+> > On Mon, Jun 21, 2010 at 07:09:19PM +0200, Oleg Nesterov wrote:
+> >> On 06/18, Paul E. McKenney wrote:
+> >> >
+> >> > On Fri, Jun 18, 2010 at 09:34:03PM +0200, Oleg Nesterov wrote:
+> >> > >
+> >> > > 	#define XXX(t)	({
+> >> > > 		struct task_struct *__prev = t;
+> >> > > 		t = next_thread(t);
+> >> > > 		t != g && t != __prev;
+> >> > > 	})
+> >> > >
+> >> > > 	#define while_each_thread(g, t) \
+> >> > > 		while (XXX(t))
+> >> >
+> >> > Isn't the above vulnerable to a pthread_create() immediately following
+> >> > the offending exec()?  Especially if the task doing the traversal is
+> >> > preempted?
+> >> 
+> >> Yes, thanks!
+> >> 
+> >> > here are some techniques that might (or might not) help:
+> >> 
+> >> To simplify, let's consider the concrete example,
+> >
+> > Sounds very good!
+> >
+> >> 	rcu_read_lock();
+> >> 
+> >> 	g = t = returns_the_rcu_safe_task_struct_ptr();
+> >
+> > This returns a pointer to the task struct of the current thread?
+> > Or might this return a pointer some other thread's task struct?
+> >
+> >> 	do {
+> >> 		printk("%d\n", t->pid);
+> >> 	} while_each_thread(g, t);
+> >> 
+> >> 	rcu_read_unlock();
+> >> 
+> >> Whatever we do, without tasklist/siglock this can obviously race
+> >> with fork/exit/exec. It is OK to miss a thread, or print the pid
+> >> of the already exited/released task.
+> >> 
+> >> But it should not loop forever (the subject), and it should not
+> >> print the same pid twice (ignoring pid reuse, of course).
+> >> 
+> >> And, afaics, there are no problems with rcu magic per se, next_thread()
+> >> always returns the task_struct we can safely dereference. The only
+> >> problem is that while_each_thread() assumes that sooner or later
+> >> next_thread() must reach the starting point, g.
+> >> 
+> >> (zap_threads() is different, it must not miss a thread with ->mm
+> >>  we are going to dump, but it holds mmap_sem).
+> >
+> > Indeed, the tough part is figuring out when you are done given that things
+> > can come and go at will.  Some additional tricks, in no particular order:
+> >
+> > 1.	Always start at the group leader.  Of course, the group leader
+> > 	is probably permitted to leave any time it wants to, so this
+> > 	is not sufficient in and of itself.
 > 
-> > >> Reads are sync by nature in the block layer, so they don't get that
-> > >> special annotation.
-> > > 
-> > > Well, we do give them this special annotation in a few places, but we
-> > > don't actually use it.
-> > 
-> > For unplugging?
+> No.  The group leader must exist as long as the group exists.
+> Modulo de_thread weirdness.  The group_leader can be a zombie but
+> it can not go away completely.
+
+Ah, OK -- now that you mention it, all the thinks that I can think of
+that remove a thread from a group have the side effect of destroying
+the old group (exec() and exit()).  Other things that create a new thread
+group leave the old thread group intact.
+
+Or am I forgetting some odd operation?
+
+> > 2.	Maintain a separate task structure that flags the head of the
+> > 	list.  This separate structure is freed one RCU grace period
+> > 	following the disappearance of the current group leader.  This
+> > 	should be quite robust, but "holy overhead, Batman!!!"  (Apologies
+> > 	for the American pop culture reference, but nothing else seemed
+> > 	appropriate.)
 > 
-> We use the explicit unplugging, yes - but READ_META also includes
-> REQ_SYNC which is not used anywhere.
-> 
-> > > But that leaves the question why disabling the idling logical for
-> > > data integrity ->writepage is fine?  This gets called from ->fsync
-> > > or O_SYNC writes and will have the same impact as O_DIRECT writes.
-> > 
-> > We have never enabled idling for those. O_SYNC should get a nice
-> > boost too, it just needs to be benchmarked and tested and then
-> > there would be no reason not to add it.
-> 
-> We've only started using any kind of sync tag last year in ->writepage in
-> commit a64c8610bd3b753c6aff58f51c04cdf0ae478c18 "block_write_full_page:
-> Use synchronous writes for WBC_SYNC_ALL writebacks", switching from
-> WRITE_SYNC to WRITE_SYNC_PLUG a bit later in commit
-> 6e34eeddf7deec1444bbddab533f03f520d8458c "block_write_full_page: switch
-> synchronous writes to use WRITE_SYNC_PLUG"
-> 
-> Before that we used plain WRITE, which had the normal idling logic.
+> That is roughly what we have in the group leader right now.
 
-I have got very little understanding of file system layer, but if I had
-to guess, i think following might have happened.
+But can't the group leader do an exec(), becoming the leader of a new
+thread group without waiting for a grace period?  Or this possibility
+already covered?
 
-- We switched from WRITE to WRITE_SYNC for fsync() path.
-
-- This might have caused issues with idling as for SYNC_WRITE we will idle
-  in CFQ but probably it is not desirable in certain cases where next set
-  of WRITES is going to come from journaling thread. 
-
-- That might have prompted us to introduce the rq_noidle() to make sure
-  we don't idle in WRITE_SYNC path but direct IO path was avoided to make
-  sure good throughput is maintained. But this left one question open 
-  and that is it good to disable idling on all WRITE_SYNC path in kernel.
-
-- Slowly cfq code emerged and as it stands today, to me rq_noidle() is
-  practically of not much use. For sync-idle tree (where idling is
-  enabled), we are ignoring the rq_noidle() and always arming the timer.
-  For sync-noidle, we choose not to idle based on if there was some other
-  thread who did even a single IO with rq_noidle=0.
-
-  I think in practice, there is on thread of other which is doing some
-  read or write with rq_noidle=0 and if that's the case, we will end up
-  idling on sync-noidle tree also and rq_noidle() practically does
-  not take effect.
-
-So if rq_noidle() was introduced to solve the issue of not idling on 
-fsync() path (as jbd thread will send more data now), then probably slice
-yielding patch of jeff might come handy here and and we can get rid of
-rq_noidle() logic. This is just a guess work and I might be completely
-wrong here...
-
-Thanks
-Vivek
+							Thanx, Paul
