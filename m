@@ -1,112 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284Ab0FULIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 07:08:18 -0400
-Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:35713 "EHLO
-	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab0FULIQ (ORCPT
+	id S932296Ab0FULIY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 07:08:24 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36109 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab0FULIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 07:08:16 -0400
-Date: Mon, 21 Jun 2010 13:09:10 +0200
-From: Louis Rilling <Louis.Rilling@kerlabs.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
-Message-ID: <20100621110910.GH16877@hawkmoon.kerlabs.com>
-Mail-Followup-To: Oleg Nesterov <oleg@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Pavel Emelyanov <xemul@openvz.org>,
-	Linux Containers <containers@lists.osdl.org>,
-	linux-kernel@vger.kernel.org
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-13816-1277118485-0001-2"
-Content-Disposition: inline
-In-Reply-To: <20100618175541.GA13680@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 21 Jun 2010 07:08:21 -0400
+From: Wu Zhangjin <wuzhangjin@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+       Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>
+Subject: [PATCH] tracing: Fix undelared ENOSYS in include/linux/tracepoint.h
+Date: Mon, 21 Jun 2010 19:09:09 +0800
+Message-Id: <1277118549-622-1-git-send-email-wuzhangjin@gmail.com>
+X-Mailer: git-send-email 1.6.3.3
+X-OriginalArrivalTime: 21 Jun 2010 11:07:59.0105 (UTC) FILETIME=[02135710:01CB1132]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+From: Wu Zhangjin <wuzhangjin@gmail.com>
 
---=_bohort-13816-1277118485-0001-2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The header file include/linux/tracepoint.h may be included without
+include/linux/errno.h and then the compiler will fail on building for
+undelcared ENOSYS. This patch fixes this problem via including <linux/errno.h>
+to include/linux/tracepoint.h.
 
-On 18/06/10 19:55 +0200, Oleg Nesterov wrote:
-> On 06/18, Louis Rilling wrote:
-> > > @@ -74,7 +74,7 @@ static int proc_get_sb(struct file_syste
-> > >  		ei =3D PROC_I(sb->s_root->d_inode);
-> > >  		if (!ei->pid) {
-> > >  			rcu_read_lock();
-> > > -			ei->pid =3D get_pid(find_pid_ns(1, ns));
-> > > +			ei->pid =3D find_pid_ns(1, ns);
-> >
-> > I don't think that this is correct. IIUC, proc_delete_inode() calls put=
-_pid() on
-> > ei->pid.
->=20
-> Yes,
->=20
-> > So either a special case is added in proc_delete_inode(), or we try to
-> > live with get_pid() here. I'm actually not sure that we can pretend tha=
-t this
-> > pid remains valid if we don't get_pid() here.
->=20
-> But please see another change below,
->=20
-> > > +static void proc_mntput(struct work_struct *work)
-> > >  {
-> > > +	struct pid_namespace *ns =3D container_of(work, struct pid_namespac=
-e, proc_put);
-> > > +
-> > > +	PROC_I(ns->proc_mnt->mnt_sb->s_root->d_inode)->pid =3D NULL;
-> > >  	mntput(ns->proc_mnt);
-> > >  }
->=20
-> it clears ei->pid.
->=20
-> We are called from free_pid_ns() path, this ->pid must not have any refer=
-ence.
-> Any get_pid() implies get_pid_ns().
->=20
-> What do you think?
+Signed-off-by: Wu Zhangjin <wuzhangjin@gmail.com>
+---
+ include/linux/tracepoint.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Hm, I didn't look close enough. Sorry about that. However, I'm still concer=
-ned
-with this since this pid can have been freed right after container init's
-release_task(), and I don't see how it is guaranteed that nobody still trie=
-s to
-access this proc_mnt.
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index 9a59d1f..103d1b6 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -14,6 +14,7 @@
+  * See the file COPYING for more details.
+  */
+ 
++#include <linux/errno.h>
+ #include <linux/types.h>
+ #include <linux/rcupdate.h>
+ 
+-- 
+1.6.3.3
 
-Thanks,
-
-Louis
-
---=20
-Dr Louis Rilling			Kerlabs
-Skype: louis.rilling			Batiment Germanium
-Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
-http://www.kerlabs.com/			35700 Rennes
-
---=_bohort-13816-1277118485-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkwfSFYACgkQVKcRuvQ9Q1SWFQCfVx7cLGjWbEa3vuJFs+u2Wx1w
-xXoAn0VVYhXTGeCjKwm06NntPXHRB+jG
-=gZ41
------END PGP SIGNATURE-----
-
---=_bohort-13816-1277118485-0001-2--
