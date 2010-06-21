@@ -1,135 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab0FUFx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 01:53:57 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56812 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab0FUFxx convert rfc822-to-8bit (ORCPT
+	id S1754463Ab0FUFzI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 01:55:08 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:51617 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab0FUFzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 01:53:53 -0400
+	Mon, 21 Jun 2010 01:55:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=TSb17VNJC7IWSqOcToYyYU+Vs4mcVoV4pd8MOoLgdxpguHAGWGDYMBsPWmpUonWSp4
-         OsFSZ4shZvuxLuxPNtZtRVCKsLW6qoWuJDmdPG/as5G1X00BVl+T9F0ZYX0f/g0JYs+G
-         eZT813dBOLFgHVQzR7E7IQGgaDEuA9aBuWt7w=
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GqmEM6NYVGpuN7Xmq6wt+ELWo7agnT6/RbvEQOMW7q2uASXmakFW5JKsqpZBkJaVuo
+         1VPUc7aKewsUONUUMawLPg1q1UyV5p3+aBrKZoYvx76R8khuv2Fv9SKrJERAaKUtyLfN
+         /DUj2yqnMvruB9c2/EQw8odaCkwMlSw/B9hdA=
+Date: Sun, 20 Jun 2010 22:55:22 -0700
+From: mark gross <640e9920@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: markgross@thegnar.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-pm@lists.linux-foundation.org,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Message-ID: <20100621055522.GE9735@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <20100620225810.GB9735@gvim.org>
+ <Pine.LNX.4.44L0.1006202223440.29532-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1277032723.9555.12.camel@maxim-laptop>
-References: <20100528100901.14580.1322.stgit@fate.lan> <1276806785.20754.8.camel@maxim-laptop> 
-	<20100618112026.17623g6uhdjk8hts@naisho.dyndns.info> <1276856142.9114.1.camel@maxim-laptop> 
-	<20100618134930.124225d4fsi8w1fk@naisho.dyndns.info> <1276859156.19554.2.camel@maxim-laptop> 
-	<AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com> 
-	<1276870309.23783.3.camel@maxim-laptop> <1276933774.16697.11.camel@maxim-laptop> 
-	<AANLkTimIjaxq7IDWwIl1vv93k9bNQ2i89Sb5R5TiJmmA@mail.gmail.com> 
-	<1277032723.9555.12.camel@maxim-laptop>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Sun, 20 Jun 2010 22:53:32 -0700
-Message-ID: <AANLkTim8iZmm8pEERJUsrQWOiLSjPUfCN-TFFzZZQWx2@mail.gmail.com>
-Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
-       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1006202223440.29532-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 20, 2010 at 4:18 AM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> On Sun, 2010-06-20 at 01:13 -0700, Luis R. Rodriguez wrote:
->> > commit ac5de416f822917b927958b21186a82141550da7
->> > Author: Maxim Levitsky <maximlevitsky@gmail.com>
->> > Date:   Thu Jun 17 23:21:42 2010 +0300
->> >
->> >    ath5k: disable ASPM
->>
->> You are not disabling ASPM, you are disabling L0s. ASPM can work with
->> L1, for example.
-> This is left over from original patch.
+On Sun, Jun 20, 2010 at 10:33:01PM -0400, Alan Stern wrote:
+> On Sun, 20 Jun 2010, mark gross wrote:
+> 
+> > > Indeed, the same problem arises if the event isn't delivered to
+> > > userspace until after userspace is frozen.  Of course, the underlying
+> > > issue here is that the kernel has no direct way to know when userspace
+> > > has finished processing an event.  Userspace would have to tell it,
+> > > which generally would mean rewriting some large number of user
+> > > programs.
+> > 
+> > Suspend blockers don't solve this, and the large number of user programs
+> > isn't a big number.  /me thinks its 1 or 2 services.
+> 
+> On Android, perhaps.  What about on other systems?
 
-Your latest patch still has all this old info, please adjust.
+This is just speculation but, I would expect other systems would have
+the graphics, input, telephony, and any PM services wake_count / wake
+event ware.  
 
-> with open coded code I was able to disable just L0s and get stable
-> operation.
-> Note however that with this patch which implies CONFIG_PCIEASPM, pci
-> core disables both L0s and L1
+I can't imagine (at the moment) anything else that would care.
 
-You do not need CONFIG_PCIEASPM to use ASPM on Linux, that is another
-thing I have been meaning to clarify upstream but haven't had time to
-do so yet.
+> 
+> > > In what way is this better than suspend blockers?
+> > 
+> > 1) I don't think suspend blockers really solve or effectively articulate
+> > the suspend wake event race problem.
+> 
+> Why not?
 
-> (I still need to test and see if I need that patch at all. Maybe just
-> enabling CONFIG_PCIEASPM is enough...)
+For starters the suspend block patch is about suspend blocking, at least
+at first before competing ideas starting coming out and this race issue
+was offered up as an excuse to not consider the alternative ideas, then
+suddenly suspend blocking became a wake event notification mechanism
+implementation that was baked into the implementation.  The arguments
+are still a blur and irritating to recall / look up again.
 
-You should be able to test ASPM by just enabling the driver.
+But, the point I'm trying to make is that wake event serialization /
+event handling suddenly became a big FUD-pie tightly bound to a specific
+feature for suspend blocking (or was is auto suspending?  Its a magical
+solution to all the PM problems in the kernel.  I'm being sarcastic.)  
 
->> >    Atheros card on Acer Aspire One (AOA150, Atheros Communications Inc. AR5001
->> >    Wireless Network Adapter [168c:001c] (rev 01)) doesn't work well with ASPM
->> >    enabled. With ASPM ath5k will eventually stall on heavy traffic with often
->> >    'unsupported jumbo' warnings appearing. Disabling ASPM L0s in ath5k fixes
->> >    these problems.
->> >
->> >    Reproduced with pcie_aspm=force and by using 'nc < /dev/zero > /dev/null' at
->> >    both ends (usually stalls within seconds).
->>
->> I *highly* discourage the use of pcie_aspm=force, in fact I'm inclined
->> to just remove this junk code from the kernel. What you should do to
->> test ASPM on a device is to use setpci on the config space. I have
->> documented how you can do this here:
->>
->> http://wireless.kernel.org/en/users/Documentation/ASPM
->>
->> Reason for discouraging this is when you use this you enable ASPM on
->> *all* root complexes and *all* devices which do support ASPM. If you
->> have another device which is capable of ASPM but has it disabled for
->> some reason you will run into other issues.
->>
->> I should also note that loading a module already has an effect on
->> devices for ASPM. An example today is ath9k's ath9k_hw_init() which
->> runs simply during module load, this has some ASPM related code which
->> for example disables the PLL for ASPM for AR9003. I don't recall
->> exactly what we do with ath5k but just giving you an idea. To truly
->> test ASPM well I recommend to do something similar as with this script
->> or you can just give it a shot.
->>
->> http://kernel.org/pub/linux/kernel/people/mcgrof/aspm/enable-aspm
->>
->> Not like I expect very different results but just wanted to clarify
->> the details on force aspm.
->>
->> Why are you disabling L0s for all devices though? Why not just for the
->> reported device? Granted, L0s won't save you much more power but
->> still, why remove it completely, your commit log does not address that
->> in any way. It only states you have issues with L0s on one chipset but
->> what the patch really implies is you are disabling L0s completely for
->> all ath5k chipsets.
+Its much better to call out the issue and provide a clean targeted
+solution to it without binding it to some other solution to a different
+problem.
+
+> 
+> > 2) the partial solution suspend blocker offer for the suspend race is
+> > tightly bound to the suspend blocker implementation and not useful in
+> > more general contexts.
+> 
+> I don't understand.  Can you explain further?
+> 
+> > > One advantage of the suspend-blocker approach is that it essentially
+> > > uses a single tool to handle both kinds of races (event not fully
+> > > handled by the kernel, or event not fully handled by userspace).  
+> > > Things aren't quite this simple, because of the need for a special API
+> > > to implement userspace suspend blockers, but this does avoid the need
+> > > for a power-manager process.
+> > 
+> > I don't think suspend-blocker handles both kinds of races as well as you
+> > seem to think.
+> 
+> Can you give any counterexamples?
+
+I knew you'd ask such a thing.  Do you have any correctness proofs of it
+working right?
+
+Lets consider the RIL incoming call race:
+1) user mode initiates an "opportunistic suspend" or whatever we call
+this these days by writing to some sys interface.
+2) a call comes in (multi-threaded cpu) just after the write.
+3) the caif driver grabs a blocker, stopping the in flight suspend in the
+nick of time.  But, when should it release it without racing?  How does
+one implement that kernel code such that its portable to non-android user
+mode stacks? 
+
+> 
+> >  A single tool that conflates multiple kernel facilities
+> > is not an advantage.  It limits applications outside of the scope of
+> > doing it the "android way".
+> 
+> I don't see that necessarily as a drawback.  You might just as well say
+> that the entire Linux kernel limits applications to doing things the
+> "Unix" way.  Often have fewer choices is an advantage.
+
+I disagree with your analogy.  One problem one solution with minimal
+coupling to other implementation details is nice.  Two problems with one
+solution dependent on the system wide architecture bound to a user mode
+PM design is fragile and not portable.
+ 
+> > Where do you get the idea that there isn't a need for a centralized PM
+> > process in Android?  Thats not true.
+> 
+> I didn't get that idea from anywhere.  Sorry if I gave the wrong
+> impression -- I meant that non-Android systems would need to implement
+> a centralized power-manager process, along with all the necessary
+> changes to other programs.
+> 
+> (Incidentally, even on Android the centralized PM process does not 
+> handle _all_ of the userspace/kernel wakelock interactions.)
 >
-> First of all there aren't many PCIE ath5k based devices.
 
-Doesn't matter.
+Yeah, I've been told that too.  I've grepped for where the wake_unlock
+sysfs interfaces are hit from user mode android (eclair) and I would
+like some help in identifying those guys. Maybe its in the FroYo code I
+don't get to look at yet?
 
-> Two of them are known to be broken.
+There is libhardware_legacy/power/power.c and  an out of tree kernel
+broadcom bcm4329 driver under hardware/broadcom but that doesn't count
+as it looks like a kernel driver to me.
 
-Which ones?
+--mgross 
 
-> Also Jussi Kivilinna said that he found that in windows .inf file there
-> are some instructions to enable L1 but not L0s.
-
-For which chipsets?
-
-> Note that I tested that again, and card works very stable.
-
-Thanks for your work on this, I want to just check internally if there
-is another way, that's all.
-
-> I didn't see a single drop to 0 bytes/s. In fact throughput never drops
-> below 1 Mb/s. (usually about 2.4 Mb/s, with rare drops for few seconds
-> to ~1Mb/s)
-
-Disabling L0s should not affect performance.
-
-  Luis
