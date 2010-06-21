@@ -1,186 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932848Ab0FUQ0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 12:26:22 -0400
+	id S932865Ab0FUQ0m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 12:26:42 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:63374 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758072Ab0FUQYA (ORCPT
+	with ESMTP id S1758054Ab0FUQX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 12:24:00 -0400
+	Mon, 21 Jun 2010 12:23:57 -0400
 X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jun 2010 12:23:51 EDT
 X-IronPort-AV: E=Sophos;i="4.53,453,1272859200"; 
-   d="scan'208";a="102450192"
+   d="scan'208";a="102450166"
 From: stefano@stabellini.net
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Stefano.Stabellini@eu.citrix.com,
        sheng@linux.intel.com, ddutile@redhat.com, jeremy@goop.org,
-       Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 06/13] Allow xen platform pci device to be compiled as a module
-Date: Mon, 21 Jun 2010 17:14:00 +0100
-Message-Id: <1277136847-13266-6-git-send-email-stefano@stabellini.net>
+       Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+       "Yaozu (Eddie) Dong" <eddie.dong@intel.com>
+Subject: [PATCH 02/13] early PV on HVM
+Date: Mon, 21 Jun 2010 17:13:56 +0100
+Message-Id: <1277136847-13266-2-git-send-email-stefano@stabellini.net>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
 References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
-X-OriginalArrivalTime: 21 Jun 2010 16:14:36.0755 (UTC) FILETIME=[D7EDF230:01CB115C]
+X-OriginalArrivalTime: 21 Jun 2010 16:14:23.0896 (UTC) FILETIME=[D043D180:01CB115C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Sheng Yang <sheng@linux.intel.com>
+
+Initialize basic pv on hvm features in xen_hvm_guest_init.
+
+The hook in arch/x86/kernel/setup.c can easily be removed using the new
+generic hypervisor independent initialization infrastructure present in
+the linux-2.6-tip tree.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+Signed-off-by: Yaozu (Eddie) Dong <eddie.dong@intel.com>
 ---
- drivers/xen/events.c       |    1 +
- drivers/xen/grant-table.c  |   20 +++++++++++---------
- drivers/xen/manage.c       |    1 +
- drivers/xen/platform-pci.c |    3 +++
- include/xen/grant_table.h  |    3 +++
- 5 files changed, 19 insertions(+), 9 deletions(-)
+ arch/x86/kernel/setup.c           |    2 +
+ arch/x86/xen/enlighten.c          |   84 +++++++++++++++++++++++++++++++++++++
+ drivers/input/xen-kbdfront.c      |    2 +-
+ drivers/video/xen-fbfront.c       |    2 +-
+ drivers/xen/xenbus/xenbus_probe.c |   21 ++++++++-
+ include/xen/xen.h                 |    2 +
+ 6 files changed, 108 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 44fdbbb..0f7546e 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -689,6 +689,7 @@ void xen_hvm_evtchn_do_upcall(void)
- {
- 	__xen_evtchn_do_upcall();
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index c4851ef..de6d23f 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -69,6 +69,7 @@
+ #include <linux/tboot.h>
+ 
+ #include <video/edid.h>
++#include <xen/xen.h>
+ 
+ #include <asm/mtrr.h>
+ #include <asm/apic.h>
+@@ -1032,6 +1033,7 @@ void __init setup_arch(char **cmdline_p)
+ 	probe_nr_irqs_gsi();
+ 
+ 	kvm_guest_init();
++	xen_hvm_guest_init();
+ 
+ 	e820_reserve_resources();
+ 	e820_mark_nosave_regions(max_low_pfn);
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 65d8d79..d776c02 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -35,6 +35,7 @@
+ #include <xen/interface/version.h>
+ #include <xen/interface/physdev.h>
+ #include <xen/interface/vcpu.h>
++#include <xen/interface/memory.h>
+ #include <xen/features.h>
+ #include <xen/page.h>
+ #include <xen/hvc-console.h>
+@@ -56,6 +57,7 @@
+ #include <asm/tlbflush.h>
+ #include <asm/reboot.h>
+ #include <asm/stackprotector.h>
++#include <asm/hypervisor.h>
+ 
+ #include "xen-ops.h"
+ #include "mmu.h"
+@@ -1206,3 +1208,85 @@ asmlinkage void __init xen_start_kernel(void)
+ 	x86_64_start_reservations((char *)__pa_symbol(&boot_params));
+ #endif
  }
-+EXPORT_SYMBOL_GPL(xen_hvm_evtchn_do_upcall);
- 
- /* Rebind a new event channel to an existing irq. */
- void rebind_evtchn_irq(int evtchn, int irq)
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index 4c959a5..4a3f1b1 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -61,7 +61,8 @@ static unsigned int boot_max_nr_grant_frames;
- static int gnttab_free_count;
- static grant_ref_t gnttab_free_head;
- static DEFINE_SPINLOCK(gnttab_list_lock);
--static unsigned long hvm_pv_resume_frames;
-+unsigned long xen_hvm_resume_frames;
-+EXPORT_SYMBOL_GPL(xen_hvm_resume_frames);
- 
- static struct grant_entry *shared;
- 
-@@ -436,7 +437,7 @@ static unsigned int __max_nr_grant_frames(void)
- 	return query.max_nr_frames;
- }
- 
--static inline unsigned int max_nr_grant_frames(void)
-+unsigned int gnttab_max_grant_frames(void)
- {
- 	unsigned int xen_max = __max_nr_grant_frames();
- 
-@@ -444,6 +445,7 @@ static inline unsigned int max_nr_grant_frames(void)
- 		return boot_max_nr_grant_frames;
- 	return xen_max;
- }
-+EXPORT_SYMBOL_GPL(gnttab_max_grant_frames);
- 
- static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
- {
-@@ -464,7 +466,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
- 			xatp.domid = DOMID_SELF;
- 			xatp.idx = i;
- 			xatp.space = XENMAPSPACE_grant_table;
--			xatp.gpfn = (hvm_pv_resume_frames >> PAGE_SHIFT) + i;
-+			xatp.gpfn = (xen_hvm_resume_frames >> PAGE_SHIFT) + i;
- 			rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
- 			if (rc != 0) {
- 				printk(KERN_WARNING
-@@ -492,7 +494,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
- 
- 	BUG_ON(rc || setup.status);
- 
--	rc = arch_gnttab_map_shared(frames, nr_gframes, max_nr_grant_frames(),
-+	rc = arch_gnttab_map_shared(frames, nr_gframes, gnttab_max_grant_frames(),
- 				    &shared);
- 	BUG_ON(rc);
- 
-@@ -505,16 +507,15 @@ int gnttab_resume(void)
- {
- 	unsigned int max_nr_gframes;
- 
--	max_nr_gframes = max_nr_grant_frames();
-+	max_nr_gframes = gnttab_max_grant_frames();
- 	if (max_nr_gframes < nr_grant_frames)
- 		return -ENOSYS;
- 
- 	if (xen_pv_domain())
- 		return gnttab_map(0, nr_grant_frames - 1);
- 
--	if (!hvm_pv_resume_frames) {
--		hvm_pv_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
--		shared = ioremap(hvm_pv_resume_frames, PAGE_SIZE * max_nr_gframes);
-+	if (!shared) {
-+		shared = ioremap(xen_hvm_resume_frames, PAGE_SIZE * max_nr_gframes);
- 		if (shared == NULL) {
- 			printk(KERN_WARNING
- 					"Fail to ioremap gnttab share frames\n");
-@@ -541,7 +542,7 @@ static int gnttab_expand(unsigned int req_entries)
- 	cur = nr_grant_frames;
- 	extra = ((req_entries + (GREFS_PER_GRANT_FRAME-1)) /
- 		 GREFS_PER_GRANT_FRAME);
--	if (cur + extra > max_nr_grant_frames())
-+	if (cur + extra > gnttab_max_grant_frames())
- 		return -ENOSPC;
- 
- 	rc = gnttab_map(cur, cur + extra - 1);
-@@ -599,6 +600,7 @@ int gnttab_init(void)
- 	kfree(gnttab_list);
- 	return -ENOMEM;
- }
-+EXPORT_SYMBOL_GPL(gnttab_init);
- 
- static int __devinit __gnttab_init(void)
- {
-diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index 0716ba6..f5162e4 100644
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -307,5 +307,6 @@ int xen_setup_shutdown_event(void)
- 
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(xen_setup_shutdown_event);
- 
- subsys_initcall(__setup_shutdown_event);
-diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
-index 6663201..10b92ec 100644
---- a/drivers/xen/platform-pci.c
-+++ b/drivers/xen/platform-pci.c
-@@ -106,6 +106,7 @@ static int __devinit platform_pci_init(struct pci_dev *pdev,
- 	int i, ret;
- 	long ioaddr, iolen;
- 	long mmio_addr, mmio_len;
-+	unsigned int max_nr_gframes;
- 
- 	i = pci_enable_device(pdev);
- 	if (i)
-@@ -153,6 +154,8 @@ static int __devinit platform_pci_init(struct pci_dev *pdev,
- 		}
- 	}
- 
-+	max_nr_gframes = gnttab_max_grant_frames();
-+	xen_hvm_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
- 	ret = gnttab_init();
- 	if (ret)
- 		goto out;
-diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-index 811cda5..9a73170 100644
---- a/include/xen/grant_table.h
-+++ b/include/xen/grant_table.h
-@@ -113,6 +113,9 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
- void arch_gnttab_unmap_shared(struct grant_entry *shared,
- 			      unsigned long nr_gframes);
- 
-+extern unsigned long xen_hvm_resume_frames;
-+unsigned int gnttab_max_grant_frames(void);
 +
- #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
++static uint32_t xen_cpuid_base(void)
++{
++	uint32_t base, eax, ebx, ecx, edx;
++	char signature[13];
++
++	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
++		cpuid(base, &eax, &ebx, &ecx, &edx);
++		*(uint32_t *)(signature + 0) = ebx;
++		*(uint32_t *)(signature + 4) = ecx;
++		*(uint32_t *)(signature + 8) = edx;
++		signature[12] = 0;
++
++		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
++			return base;
++	}
++
++	return 0;
++}
++
++static int init_hvm_pv_info(int *major, int *minor)
++{
++	uint32_t eax, ebx, ecx, edx, pages, msr, base;
++	u64 pfn;
++
++	base = xen_cpuid_base();
++	if (!base)
++		return -EINVAL;
++
++	cpuid(base + 1, &eax, &ebx, &ecx, &edx);
++
++	*major = eax >> 16;
++	*minor = eax & 0xffff;
++	printk(KERN_INFO "Xen version %d.%d.\n", *major, *minor);
++
++	cpuid(base + 2, &pages, &msr, &ecx, &edx);
++
++	pfn = __pa(hypercall_page);
++	wrmsr_safe(msr, (u32)pfn, (u32)(pfn >> 32));
++
++	xen_setup_features();
++
++	pv_info = xen_info;
++	pv_info.kernel_rpl = 0;
++
++	xen_domain_type = XEN_HVM_DOMAIN;
++
++	return 0;
++}
++
++static void __init init_shared_info(void)
++{
++	struct xen_add_to_physmap xatp;
++	struct shared_info *shared_info_page;
++
++	shared_info_page = (struct shared_info *) alloc_bootmem_pages(PAGE_SIZE);
++	xatp.domid = DOMID_SELF;
++	xatp.idx = 0;
++	xatp.space = XENMAPSPACE_shared_info;
++	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
++	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
++		BUG();
++
++	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
++
++	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
++}
++
++void __init xen_hvm_guest_init(void)
++{
++	int r;
++	int major, minor;
++
++	if (xen_pv_domain())
++		return;
++
++	r = init_hvm_pv_info(&major, &minor);
++	if (r < 0)
++		return;
++
++	init_shared_info();
++}
+diff --git a/drivers/input/xen-kbdfront.c b/drivers/input/xen-kbdfront.c
+index e140816..7451d78 100644
+--- a/drivers/input/xen-kbdfront.c
++++ b/drivers/input/xen-kbdfront.c
+@@ -339,7 +339,7 @@ static struct xenbus_driver xenkbd_driver = {
  
- #endif /* __ASM_GNTTAB_H__ */
+ static int __init xenkbd_init(void)
+ {
+-	if (!xen_domain())
++	if (!xen_domain() || xen_hvm_domain())
+ 		return -ENODEV;
+ 
+ 	/* Nothing to do if running in dom0. */
+diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
+index fa97d3e..a105a19 100644
+--- a/drivers/video/xen-fbfront.c
++++ b/drivers/video/xen-fbfront.c
+@@ -684,7 +684,7 @@ static struct xenbus_driver xenfb_driver = {
+ 
+ static int __init xenfb_init(void)
+ {
+-	if (!xen_domain())
++	if (!xen_domain() || xen_hvm_domain())
+ 		return -ENODEV;
+ 
+ 	/* Nothing to do if running in dom0. */
+diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+index 3479332..0b05b62 100644
+--- a/drivers/xen/xenbus/xenbus_probe.c
++++ b/drivers/xen/xenbus/xenbus_probe.c
+@@ -56,6 +56,8 @@
+ #include <xen/events.h>
+ #include <xen/page.h>
+ 
++#include <xen/hvm.h>
++
+ #include "xenbus_comms.h"
+ #include "xenbus_probe.h"
+ 
+@@ -806,10 +808,23 @@ static int __init xenbus_probe_init(void)
+ 		/* dom0 not yet supported */
+ 	} else {
+ 		xenstored_ready = 1;
+-		xen_store_evtchn = xen_start_info->store_evtchn;
+-		xen_store_mfn = xen_start_info->store_mfn;
++		if (xen_hvm_domain()) {
++			uint64_t v = 0;
++			err = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &v);
++			if (err)
++				goto out_error;
++			xen_store_evtchn = (int)v;
++			err = hvm_get_parameter(HVM_PARAM_STORE_PFN, &v);
++			if (err)
++				goto out_error;
++			xen_store_mfn = (unsigned long)v;
++			xen_store_interface = ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
++		} else {
++			xen_store_evtchn = xen_start_info->store_evtchn;
++			xen_store_mfn = xen_start_info->store_mfn;
++			xen_store_interface = mfn_to_virt(xen_store_mfn);
++		}
+ 	}
+-	xen_store_interface = mfn_to_virt(xen_store_mfn);
+ 
+ 	/* Initialize the interface to xenstore. */
+ 	err = xs_init();
+diff --git a/include/xen/xen.h b/include/xen/xen.h
+index a164024..77604ed 100644
+--- a/include/xen/xen.h
++++ b/include/xen/xen.h
+@@ -9,8 +9,10 @@ enum xen_domain_type {
+ 
+ #ifdef CONFIG_XEN
+ extern enum xen_domain_type xen_domain_type;
++extern void xen_hvm_guest_init(void);
+ #else
+ #define xen_domain_type		XEN_NATIVE
++#define xen_hvm_guest_init() do { } while (0)
+ #endif
+ 
+ #define xen_domain()		(xen_domain_type != XEN_NATIVE)
 -- 
 1.7.0.4
 
