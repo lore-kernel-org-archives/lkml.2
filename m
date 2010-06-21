@@ -1,136 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758137Ab0FUR0M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 13:26:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50464 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758016Ab0FUR0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 13:26:09 -0400
-Subject: Re: 2.6.35-rc3 regression: IBM Maia system is unbootable [ACPI
- related?]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-acpi@vger.kernel.org
-In-Reply-To: <1277139286.10998.72.camel@mulgrave.site>
-References: <1277136189.10998.63.camel@mulgrave.site>
-	 <87pqzkqrzq.fsf@basil.nowhere.org>
-	 <1277138034.10998.69.camel@mulgrave.site>
-	 <1277139286.10998.72.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Jun 2010 12:26:06 -0500
-Message-ID: <1277141166.10998.79.camel@mulgrave.site>
+	id S932797Ab0FUR00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 13:26:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30601 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758145Ab0FUR0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 13:26:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,454,1272870000"; 
+   d="scan'208";a="528840055"
+Date: Mon, 21 Jun 2010 10:24:32 -0700
+From: Jesse Barnes <jesse.barnes@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [git pull] PCI fix
+Message-ID: <20100621102432.2e206889@intel.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-21 at 11:54 -0500, James Bottomley wrote:
-> On Mon, 2010-06-21 at 11:33 -0500, James Bottomley wrote:
-> > On Mon, 2010-06-21 at 18:18 +0200, Andi Kleen wrote:
-> > > James Bottomley <James.Bottomley@HansenPartnership.com> writes:
-> > > 
-> > > > The system in question has a set of root bridges, with the CD rom (which
-> > > > is seen) being on bus 0 and the SCSI controller, which doesn't show up
-> > > > being on bus 1 (with several other things on busses > 1).
-> > > >
-> > > > The system uses ACPI to detect the multiple bridges, so it seems that
-> > > > this failure in 2.6.35-rc3:
-> > > >
-> > > > ACPI: Core revision 20100428
-> > > > ACPI Error: Hardware did not enter ACPI mode (20100428/evxfevnt-103)
-> > > > ACPI Warning: AcpiEnable failed (20100428/utxface-147)
-> > > > ACPI: Unable to enable ACPI
-> > > 
-> > > That probably causes all the other problems. Without ACPI enabled
-> > > modern systems generally do not work.
-> > > 
-> > > Just guessing, but maybe try to revert
-> > > 
-> > > b430acbd7c4b919886fa7fd92eeb7a695f1940d3
-> > > 
-> > > That was the last change in this area.
-> > 
-> > I can confirm that reverting this over a vanilla 2.6.35-rc3 fixes my
-> > boot problem.
-> 
-> Andi asked for the timings with the commit reverted, so here they are
-> (from ACPI version print to PCI root busses found):
-> 
-> [    0.084086] ACPI: Core revision 20100428
-> [    0.119779] Setting APIC routing to physical flat
-> [    0.124259] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-> [    0.128000] ..MP-BIOS bug: 8254 timer not connected to IO-APIC
-> [    0.128000] ...trying to set up timer (IRQ0) through the 8259A ...
-> [    0.128000] ..... (found apic 0 pin 2) ...
-> [    0.128000] ....... failed.
-> [    0.128000] ...trying to set up timer as Virtual Wire IRQ...
-> [    0.169681] ..... works.
-> [    0.172005] CPU0: Intel(R) Xeon(TM) MP CPU 3.16GHz stepping 01
-> [    0.188000] lockdep: fixing up alternatives.
-> [    0.188133] Booting Node   0, Processors  #1 Ok.
-> [    0.288089] Brought up 2 CPUs
-> [    0.292006] Total of 2 processors activated (12676.86 BogoMIPS).
-> [    0.300923] khelper used greatest stack depth: 5864 bytes left
-> [    0.305017] khelper used greatest stack depth: 5176 bytes left
-> [    0.325510] NET: Registered protocol family 16
-> [    0.341322] ACPI: bus type pci registered
-> [    0.344474] PCI: Using configuration type 1 for base access
-> [    0.359165] bio: create slab <bio-0> at 0
-> [    0.478153] ACPI: Interpreter enabled
-> [    0.488006] ACPI: (supports S0 S5)
-> [    0.497875] ACPI: Using IOAPIC for interrupt routing
-> [    0.548145] ACPI: No dock devices found.
-> [    0.552176] PCI: Ignoring host bridge windows from ACPI; if necessary, use "pci=use_crs" and report a bug
-> [    0.556263] ACPI: PCI Root Bridge [VP00] (domain 0000 [bus 00])
-> [    0.568051] ACPI: PCI Root Bridge [VP01] (domain 0000 [bus 01])
-> [    0.576336] ACPI: PCI Root Bridge [VP02] (domain 0000 [bus 02-03])
-> [    0.596889] ACPI: PCI Root Bridge [VP03] (domain 0000 [bus 04-05])
-> [    0.605222] ACPI: PCI Root Bridge [VP04] (domain 0000 [bus 06-07])
-> [    0.613530] ACPI: PCI Root Bridge [VP05] (domain 0000 [bus 08-09])
-> [    0.617658] ACPI: PCI Root Bridge [VP06] (domain 0000 [bus 0a-0b])
-> [    0.621672] ACPI: PCI Root Bridge [VP07] (domain 0000 [bus 0c-0d])
-> [    0.625948] HEST: Table is not found!
+The following changes since commit
+7e27d6e778cd87b6f2415515d7127eba53fe5d02: Linus Torvalds (1):
+        Linux 2.6.35-rc3
 
-Another update: It's clear the problem is the new expectation that the
-hardware sets ACPI mode instantly.  I applied the following patch on my
-system to see how long it actually takes.  I see a single loop:
+are available in the git repository at:
 
-[    0.084087] ACPI: Core revision 20100428
-[    0.119720] ACPI Error: Hardware did not enter ACPI mode, retry = 0 (20100428/evxfevnt-104)
-[    0.128240] Setting APIC routing to physical flat
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 for-linus
 
-So it needs a delay of about 1ms (or one retry).
+Just one regression fix from Rafael right now.  I hope to get one or
+two more regression fixes in before the final release too.
 
-James
+Rafael J. Wysocki (1):
+      PCI/PM: Do not use native PCIe PME by default
 
----
-diff --git a/drivers/acpi/acpica/evxfevnt.c b/drivers/acpi/acpica/evxfevnt.c
-index d5a5efc..bace473 100644
---- a/drivers/acpi/acpica/evxfevnt.c
-+++ b/drivers/acpi/acpica/evxfevnt.c
-@@ -70,6 +70,7 @@ acpi_ev_get_gpe_device(struct acpi_gpe_xrupt_info *gpe_xrupt_info,
- acpi_status acpi_enable(void)
- {
- 	acpi_status status;
-+	int retry = 0;
- 
- 	ACPI_FUNCTION_TRACE(acpi_enable);
- 
-@@ -98,6 +99,11 @@ acpi_status acpi_enable(void)
- 
- 	/* Sanity check that transition succeeded */
- 
-+	while (acpi_hw_get_mode() != ACPI_SYS_MODE_ACPI && retry < 3000) {
-+		ACPI_ERROR((AE_INFO,
-+			    "Hardware did not enter ACPI mode, retry = %d", retry++));
-+		acpi_os_stall(1000);
-+	}
- 	if (acpi_hw_get_mode() != ACPI_SYS_MODE_ACPI) {
- 		ACPI_ERROR((AE_INFO,
- 			    "Hardware did not enter ACPI mode"));
+ Documentation/kernel-parameters.txt |    4 +++-
+ drivers/pci/pcie/pme/pcie_pme.c     |   19 +++++++++++++------
+ 2 files changed, 16 insertions(+), 7 deletions(-)
 
 
+-- 
+Jesse Barnes, Intel Open Source Technology Center
