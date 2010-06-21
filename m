@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757957Ab0FUOb0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 10:31:26 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:49433 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059Ab0FUObZ (ORCPT
+	id S932747Ab0FUOe3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 10:34:29 -0400
+Received: from 27.mail-out.ovh.net ([91.121.30.210]:58033 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754978Ab0FUOe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 10:31:25 -0400
-Date: Mon, 21 Jun 2010 09:31:10 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Manfred Spraul <manfred@colorfullife.com>
-cc: linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.35-rc3 deadlocks on semaphore operations
-In-Reply-To: <4C1CD791.101@colorfullife.com>
-Message-ID: <alpine.DEB.2.00.1006210927310.4513@router.home>
-References: <alpine.DEB.2.00.1006180940140.11575@router.home> <alpine.DEB.2.00.1006180955141.11575@router.home> <4C1CD791.101@colorfullife.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 21 Jun 2010 10:34:27 -0400
+Message-ID: <4C1F786D.8070106@example.com>
+Date: Mon, 21 Jun 2010 16:34:21 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: What's up with Linux git repo?
+References: <4C1F698D.2060105@example.com> <20100621140011.GA21453@elliptictech.com>
+In-Reply-To: <20100621140011.GA21453@elliptictech.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 8706583980344897816
+X-Ovh-Remote: 83.24.108.92 (doa92.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Jun 2010, Manfred Spraul wrote:
-
-> Hello Christoph,
+> On 15:30 Mon 21 Jun     , Piotr Hosowicz wrote:
+>> Until few days ago there were updates but now I don't see any. Will
+>> somebody tell me what's going on? Why there are no new updates?
 >
-> On 06/18/2010 04:56 PM, Christoph Lameter wrote:
-> > One important fact that I forgot to mention: This is on a dual quad core
-> > dell box (8 hardware threads) with CONCURRENCY_LEVEL set to 9.
-> >
+> See below.
 >
-> - Which version of make do you use? That would be one suspect that might use
-> semop().
+>> Is it because Linus has vacation now, as I read in another thread?
+>
+> Yes.
 
-$ make --version
-GNU Make 3.81
-Copyright (C) 2006  Free Software Foundation, Inc.
-This is free software; see the source for copying conditions.
-There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.
+And does somebody know and can tell when that vacation ends and things 
+will back as normal?
 
-This program built for x86_64-pc-linux-gnu
+Regards,
 
-> - If I run make -j5 bzImage, then no semaphore arrays are used.
-> Could you try to figure out which executable is doing the 'semop()' call?
+Piotr Hosowicz
 
-Looks like this was ld
-
-> Or: what's the output of ps xawwwww_
-
-Need to do another run with a broken kernel for this.
+-- 
+TV: "W tej chwili, ¿e siê tak wyra¿ê, zaliczonych mamy 17 zawodniczek."
+NP: Alice In Chains - All Secrets Known
+NB: 2.6.35-rc3
