@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab0FUGVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 02:21:52 -0400
-Received: from stag.seas.upenn.edu ([158.130.70.79]:55378 "EHLO
-	stag.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386Ab0FUGVu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 02:21:50 -0400
-Message-ID: <4C1F0348.8000804@seas.upenn.edu>
-Date: Mon, 21 Jun 2010 02:14:32 -0400
-From: Rafi Rubin <rafi@seas.upenn.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1751696Ab0FUGgB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 02:36:01 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39507 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104Ab0FUGf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 02:35:58 -0400
+Date: Mon, 21 Jun 2010 08:35:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Parag Warudkar <parag.lkml@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>
+Subject: Re: [Bug #16054] UML broken for CONFIG_SLAB
+Message-ID: <20100621063552.GA16491@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Parag Warudkar <parag.lkml@gmail.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Maciej Rutecki <maciej.rutecki@gmail.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Kernel Testers List <kernel-testers@vger.kernel.org>
+References: <g77CuMUl7QI.A.qMH.4ZpHMB@chimera>
+ <rHrHQMIU4rI.A.h6.rapHMB@chimera>
+ <AANLkTiks4DUvSLQLHb1Tr6cO_Mma-9UcDRqJ5uafdt1R@mail.gmail.com>
 MIME-Version: 1.0
-To: Micki Balanga <micki@n-trig.com>
-CC: Jiri Kosina <jkosina@suse.cz>, chatty@enac.fr, dhprince-devel@yahoo.co.uk,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: Add support to new N-trig firwmare
-References: <48A28051AC6D7A48B64F28272458190333674B@Exchange-IL.n-trig.com> <alpine.LNX.2.00.1006041115480.12271@pobox.suse.cz> <48A28051AC6D7A48B64F28272458190326E03E@Exchange-IL.n-trig.com> <alpine.LNX.2.00.1006051741361.12271@pobox.suse.cz> <48A28051AC6D7A48B64F28272458190338280A@Exchange-IL.n-trig.com>
-In-Reply-To: <48A28051AC6D7A48B64F28272458190338280A@Exchange-IL.n-trig.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AANLkTiks4DUvSLQLHb1Tr6cO_Mma-9UcDRqJ5uafdt1R@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+From: Parag Warudkar <parag.lkml@gmail.com>
+Date: Sun, Jun 20, 2010 at 06:48:55PM -0400
 
-On 06/21/10 01:06, Micki Balanga wrote:
-> Hi Jiri
-> We have some new product so I have to update the patch,
-> When I update my git branch I didn't see the changes regarding N-trig
-> Product id. If you can insert this patch, if there a problem with the
-> patch
-> Let me know and hi will update it
-> Thank you
-> Micki
+> Still broken. Borislav's fix on top of git a few days ago doesn't seem to
+> cure it.
+
+Everyone else has reported that
+http://git.kernel.org/tip/055c47272b8f5679d08ccc57efea3cb4aaeb5fc6 fixes
+the boot issue for them.
+
+One problem with testing this patch was making sure you do a completely
+clean build by removing the old build files through a 'make mrproper.'
+So, after applying this patch do (after having copied your .config to a
+safe place :))
+
+make mrproper
+
+and just to make sure no arch_hweight stuff is left, do
+
+grep -EriIn 'x86.*hweight\.h' arch/um/
+
+You shouldn't be getting any matches. If you do, than try to find out
+why you do because all those intermediary *.o.cmd files shouldn't
+contain any hweight-include files from arch/x86/.
+
+> On Jun 20, 2010 6:45 PM, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> 
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.33 and 2.6.34.
+> 
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
+> be listed and let the tracking team know (either way).
 > 
 > 
-> -----Original Message-----
-> From: Jiri Kosina [mailto:jkosina@suse.cz] 
-> Sent: Saturday, June 05, 2010 6:42 PM
-> To: Micki Balanga
-> Cc: chatty@enac.fr; dhprince-devel@yahoo.co.uk;
-> linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Rafi Rubin
-> Subject: RE: [PATCH] HID: Add support to new N-trig firwmare
-> 
-> On Fri, 4 Jun 2010, Micki Balanga wrote:
-> 
->> Hi Jiri,
->> Attach the patch via file.
->> (Also fix 3 warning: please , no space before tabs)
-> 
-> Thanks Micki, I have applied the patch.
-> 
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16054
+> Subject         : UML broken for CONFIG_SLAB
+> Submitter       : Parag Warudkar <parag.lkml@gmail.com>
+> Date            : 2010-05-23 21:40 (29 days old)
+> Message-ID      : <alpine.DEB.2.00.1005231149100.605@parag-laptop>
+> References      : http://marc.info/?l=linux-kernel&m=127465083806617&w=2
+> Handled-By      : Borislav Petkov <bp@alien8.de>
+> Patch           :
+> http://git.kernel.org/tip/055c47272b8f5679d08ccc57efea3cb4aaeb5fc6
 
-Micki, looks like there are a couple of accidental whitespace modifications:
-
-- -#define USB_VENDOR_ID_ADS_TECH                 0x06e1
-+#define USB_VENDOR_ID_ADS_TECH 0x06e1
-
-- -#define USB_VENDOR_ID_EZKEY            0x0518
-+#define USB_VENDOR_ID_EZKEY            0x0518
-
-
-Also, in the list of product ids, did you mean to skip 2?
-
-
-Jiri, is there a better way than listing each device individually?
-
-
-Rafi
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkwfA0UACgkQwuRiAT9o60+M9QCfQJcJ7pMo9TOY5vYgfK6Yq16d
-nD8AoK+l5sVJKAUEpyYEEANnCFCNm/zr
-=IFqR
------END PGP SIGNATURE-----
+-- 
+Regards/Gruss,
+    Boris.
