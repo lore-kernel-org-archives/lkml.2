@@ -1,137 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757663Ab0FUKbq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 06:31:46 -0400
-Received: from lider.pardus.org.tr ([193.140.100.216]:47378 "EHLO
-	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757537Ab0FUKbo convert rfc822-to-8bit (ORCPT
+	id S1757758Ab0FUKcK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 06:32:10 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:54773 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757537Ab0FUKcG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 06:31:44 -0400
-From: Ozan =?utf-8?q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>
-Organization: TUBITAK/UEKAE
-To: linux-kernel@vger.kernel.org
-Subject: Re: [BISECTED] Suspend regression in v2.6.31 with Lenovo 3000 v200
-Date: Mon, 21 Jun 2010 13:31:07 +0300
-User-Agent: KMail/1.13.3 (Linux/2.6.31.13-131-pae; KDE/4.4.4; i686; ; )
-Cc: stern@rowland.harvard.edu, gregkh@suse.de, rjw@sisk.pl
-References: <201006211022.37707.ozan@pardus.org.tr>
-In-Reply-To: <201006211022.37707.ozan@pardus.org.tr>
+	Mon, 21 Jun 2010 06:32:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=HIE4TtmeDwl+j5tXgCBeYd4Kja+HjOYCoM8aNlpK7vqMbP2BvgidgRP9NCvPzF53Fk
+         1m9NPlwq2VFcgGjRQP/NfyLGBoDw9GcFd6/BpdBBIF4tfyNA9/MfHRkLArgJ2ATJOdED
+         3QHdcEpy2zp+8M2vVgiX3Eng8Ya9kzIVZiXiY=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+In-Reply-To: <20100621073909.GA20674@oksana.dev.rtsoft.ru>
+References: <20090818214449.GA12848@oksana.dev.rtsoft.ru> <20090818214622.GA22651@oksana.dev.rtsoft.ru> 
+	<AANLkTikg60s6ZRSEDCq9PQK1z7hJtBDk6t4VE1lYDv8u@mail.gmail.com> 
+	<20100618133212.GA5276@oksana.dev.rtsoft.ru> <0F1B54C89D5F954D8535DB252AF412FA065551D8@chinexm1.ad.analog.com> 
+	<AANLkTiksYofs6hhWta6uFX2cla_g8pBu0Mtbtcbv-2tl@mail.gmail.com> 
+	<20100621071551.GA16109@oksana.dev.rtsoft.ru> <AANLkTiknH95loHJsQNxvCCyQbriCFWqM5LHl3wKzmdWX@mail.gmail.com> 
+	<20100621073909.GA20674@oksana.dev.rtsoft.ru>
+From: Barry Song <21cnbao@gmail.com>
+Date: Mon, 21 Jun 2010 18:31:44 +0800
+Message-ID: <AANLkTinjhmkQafVlrtQC5yDnqIZz859_wrZqo45QOEJ2@mail.gmail.com>
+Subject: Re: [Uclinux-dist-devel] [PATCH 1/2] mtd: m25p80: Reworkprobing/JEDEC 
+	code
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: "Song, Barry" <Barry.Song@analog.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Artem Bityutskiy <dedekind1@gmail.com>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, linux-mtd@lists.infradead.org,
+       uclinux-dist-devel@blackfin.uclinux.org,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201006211331.08010.ozan@pardus.org.tr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pazartesi 21 Haziran 2010 günü (saat 10:22:37) Ozan Çağlayan şunları yazmıştı:
-> Hi,
-> 
-> First of all I know that 2.6.31 is not maintained anymore and I don't know
-> if the problem still exists in kernels > 2.6.31 as I don't have any
-> hardware to reproduce it.
+On Mon, Jun 21, 2010 at 3:39 PM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+> On Mon, Jun 21, 2010 at 03:22:48PM +0800, Barry Song wrote:
+>> On Mon, Jun 21, 2010 at 3:15 PM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+>> > On Mon, Jun 21, 2010 at 11:27:31AM +0800, Barry Song wrote:
+>> > [...]
+>> >> > How about we add a non_jedec flag in platform_data, if the flag is 1, we
+>> >> > let the detection pass even though the ID is 0? Otherwise, we need a
+>> >> > valid ID?
+>> >> Here i mean:
+>> >
+>> > This will break at least OF-enabled platforms (e.g. PowerPC),
+>> > they assume that the driver will success for non-JEDEC flashes.
+>> > OF platforms don't pass platform data, and even if they did,
+>> > device tree doesn't specify if the flash is JEDEC or non-JEDEC.
+>> >
+>> > Which is why I think that, by default, the driver should
+>> > successfully register the flash even if JEDEC probe fails. So,
+>> > instead of checking for "!non_jedec", I would recommend
+>> > "force_jedec" check.
+>>
+>> Mike Frysinger suggested to use non_jedec since most devices are
+>> standard jedec devices.
+>
+> Well, on OF platforms most devices that I'm aware of are non-JEDEC.
+>
+>> Only if non_jedec=1, we let the detection pass
+>> if ID is 0.
+>
+> Then please #ifdef it with CONFIG_OF.
+I think the patch has nothing to do with platform. Here SPI Flash is a
+peripherals, doesn't depend on any platform. Adding a CONFIG_OF
+doesn't make sense very much.
+If you think most devices are non-JEDEC, we can change non_JEDEC to
+force_JEDEC as you said. But anyway, is that real that most devices
+are non_JEDEC?  If not, I think we should change OF platform codes to
+fit with this patch.
 
-And also here's some probably interesting warnings available on both machines' dmesg output:
-
-[    0.136578] ACPI Error (psargs-0359): [CDW1] Namespace lookup failure, AE_NOT_FOUND
-[    0.136585] ACPI Error (psparse-0537): Method parse/execution failed [\_SB_.PCI0._OSC] (Node f6c135b8), AE_NOT_FOUND
-[    0.136618] ACPI: PCI Root Bridge [PCI0] (0000:00)
-[    0.136732] pci 0000:00:02.0: reg 10 64bit mmio: [0xf4000000-0xf40fffff]
-[    0.136741] pci 0000:00:02.0: reg 18 64bit mmio: [0xd0000000-0xdfffffff]
-[    0.136748] pci 0000:00:02.0: reg 20 io port: [0x1800-0x1807]
-[    0.136798] pci 0000:00:02.1: reg 10 64bit mmio: [0xf4100000-0xf41fffff]
-[    0.136932] pci 0000:00:1a.0: reg 20 io port: [0x1820-0x183f]
-[    0.137029] pci 0000:00:1a.1: reg 20 io port: [0x1840-0x185f]
-[    0.137129] pci 0000:00:1a.7: reg 10 32bit mmio: [0xf4704000-0xf47043ff]
-[    0.137218] pci 0000:00:1a.7: PME# supported from D0 D3hot D3cold
-[    0.137225] pci 0000:00:1a.7: PME# disabled
-[    0.137288] pci 0000:00:1b.0: reg 10 64bit mmio: [0xf4500000-0xf4503fff]
-[    0.137360] pci 0000:00:1b.0: PME# supported from D0 D3hot D3cold
-[    0.137365] pci 0000:00:1b.0: PME# disabled
-[    0.137464] pci 0000:00:1c.0: PME# supported from D0 D3hot D3cold
-[    0.137470] pci 0000:00:1c.0: PME# disabled
-[    0.137574] pci 0000:00:1c.1: PME# supported from D0 D3hot D3cold
-[    0.137580] pci 0000:00:1c.1: PME# disabled
-[    0.137682] pci 0000:00:1c.2: PME# supported from D0 D3hot D3cold
-[    0.137687] pci 0000:00:1c.2: PME# disabled
-[    0.137764] pci 0000:00:1d.0: reg 20 io port: [0x1860-0x187f]
-[    0.137856] pci 0000:00:1d.1: reg 20 io port: [0x1880-0x189f]
-[    0.137948] pci 0000:00:1d.2: reg 20 io port: [0x18a0-0x18bf]
-[    0.138050] pci 0000:00:1d.7: reg 10 32bit mmio: [0xf4704400-0xf47047ff]
-[    1.238005] pci 0000:00:1d.7: EHCI: BIOS handoff failed (BIOS bug?) 01010001       ****************
-[    1.238043] pci 0000:00:1d.7: PME# supported from D0 D3hot D3cold
-[    1.238050] pci 0000:00:1d.7: PME# disabled
-[    1.238243] pci 0000:00:1f.0: quirk: region 1000-107f claimed by ICH6 ACPI/GPIO/TCO
-[    1.238248] pci 0000:00:1f.0: quirk: region 1180-11bf claimed by ICH6 GPIO
-[    1.238256] pci 0000:00:1f.0: ICH7 LPC Generic IO decode 2 PIO at 0068 (mask 0007)
-[    1.238320] pci 0000:00:1f.1: reg 10 io port: [0x00-0x07]
-[    1.238330] pci 0000:00:1f.1: reg 14 io port: [0x00-0x03]
-[    1.238339] pci 0000:00:1f.1: reg 18 io port: [0x00-0x07]
-[    1.238348] pci 0000:00:1f.1: reg 1c io port: [0x00-0x03]
-[    1.238358] pci 0000:00:1f.1: reg 20 io port: [0x1810-0x181f]
-[    1.238424] pci 0000:00:1f.2: reg 10 io port: [0x1c00-0x1c07]
-[    1.238434] pci 0000:00:1f.2: reg 14 io port: [0x18f4-0x18f7]
-[    1.238443] pci 0000:00:1f.2: reg 18 io port: [0x18f8-0x18ff]
-[    1.238453] pci 0000:00:1f.2: reg 1c io port: [0x18f0-0x18f3]
-[    1.238462] pci 0000:00:1f.2: reg 20 io port: [0x18e0-0x18ef]
-[    1.238471] pci 0000:00:1f.2: reg 24 io port: [0x18d0-0x18df]
-[    1.238506] pci 0000:00:1f.2: PME# supported from D3hot
-[    1.238512] pci 0000:00:1f.2: PME# disabled
-[    1.238544] pci 0000:00:1f.3: reg 10 32bit mmio: [0x000000-0x0000ff]
-[    1.238574] pci 0000:00:1f.3: reg 20 io port: [0x1c20-0x1c3f]
-[    1.238676] pci 0000:00:1c.0: bridge io port: [0x2000-0x2fff]
-[    1.238682] pci 0000:00:1c.0: bridge 32bit mmio: [0xf2000000-0xf3ffffff]
-[    1.238692] pci 0000:00:1c.0: bridge 64bit mmio pref: [0xf0000000-0xf1ffffff]
-[    1.238926] pci 0000:05:00.0: reg 10 64bit mmio: [0xf4200000-0xf420ffff]
-[    1.239180] pci 0000:05:00.0: PME# supported from D3hot D3cold
-[    1.239192] pci 0000:05:00.0: PME# disabled
-[    1.239719] pci 0000:00:1c.1: bridge 32bit mmio: [0xf4200000-0xf42fffff]
-[    1.239827] pci 0000:06:00.0: reg 10 64bit mmio: [0xf4300000-0xf4301fff]
-[    1.239954] pci 0000:06:00.0: PME# supported from D0 D3hot D3cold
-[    1.239963] pci 0000:06:00.0: PME# disabled
-[    1.242155] pci 0000:00:1c.2: bridge 32bit mmio: [0xf4300000-0xf43fffff]
-[    1.242240] pci 0000:0a:09.0: reg 10 32bit mmio: [0xf4400000-0xf44007ff]
-[    1.242324] pci 0000:0a:09.0: supports D1 D2
-[    1.242327] pci 0000:0a:09.0: PME# supported from D0 D1 D2 D3hot D3cold
-[    1.242333] pci 0000:0a:09.0: PME# disabled
-[    1.242391] pci 0000:0a:09.1: reg 10 32bit mmio: [0xf4400800-0xf44008ff]
-[    1.242474] pci 0000:0a:09.1: supports D1 D2
-[    1.242477] pci 0000:0a:09.1: PME# supported from D0 D1 D2 D3hot D3cold
-[    1.242484] pci 0000:0a:09.1: PME# disabled
-[    1.242542] pci 0000:0a:09.2: reg 10 32bit mmio: [0xf4400c00-0xf4400cff]
-[    1.242625] pci 0000:0a:09.2: supports D1 D2
-[    1.242628] pci 0000:0a:09.2: PME# supported from D0 D1 D2 D3hot D3cold
-[    1.242635] pci 0000:0a:09.2: PME# disabled
-[    1.242694] pci 0000:0a:09.3: reg 10 32bit mmio: [0xf4401000-0xf44010ff]
-[    1.242777] pci 0000:0a:09.3: supports D1 D2
-[    1.242780] pci 0000:0a:09.3: PME# supported from D0 D1 D2 D3hot D3cold
-[    1.242787] pci 0000:0a:09.3: PME# disabled
-[    1.242844] pci 0000:0a:09.4: reg 10 32bit mmio: [0xf4401400-0xf44014ff]
-[    1.242928] pci 0000:0a:09.4: supports D1 D2
-[    1.242930] pci 0000:0a:09.4: PME# supported from D0 D1 D2 D3hot D3cold
-[    1.242937] pci 0000:0a:09.4: PME# disabled
-[    1.243009] pci 0000:00:1e.0: transparent bridge
-[    1.243018] pci 0000:00:1e.0: bridge 32bit mmio: [0xf4400000-0xf44fffff]
-[    1.243057] pci_bus 0000:00: on NUMA node 0
-[    1.243063] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0._PRT]
-[    1.243329] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.RP01._PRT]
-[    1.243415] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.RP02._PRT]
-[    1.243501] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.RP03._PRT]
-[    1.243622] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PCIB._PRT]
-[    1.243724] ACPI Error (psargs-0359): [CDW1] Namespace lookup failure, AE_NOT_FOUND
-[    1.243731] ACPI Error (psparse-0537): Method parse/execution failed [\_SB_.PCI0._OSC] (Node f6c135b8), AE_NOT_FOUND
-[    1.256510] ACPI: PCI Interrupt Link [LNKA] (IRQs 1 3 4 *5 6 7 10 12 14 15)
-[    1.256630] ACPI: PCI Interrupt Link [LNKB] (IRQs 1 3 4 5 6 7 11 12 14 15) *10
-[    1.256746] ACPI: PCI Interrupt Link [LNKC] (IRQs 1 3 4 5 6 7 10 12 14 15) *11
-[    1.256861] ACPI: PCI Interrupt Link [LNKD] (IRQs 1 3 4 5 6 7 11 12 14 15) *10
-[    1.256975] ACPI: PCI Interrupt Link [LNKE] (IRQs 1 3 4 5 6 7 10 12 14 15) *0, disabled.
-[    1.257097] ACPI: PCI Interrupt Link [LNKF] (IRQs 1 *3 4 5 6 7 11 12 14 15)
-[    1.257211] ACPI: PCI Interrupt Link [LNKG] (IRQs 1 3 *4 5 6 7 10 12 14 15)
-[    1.257324] ACPI: PCI Interrupt Link [LNKH] (IRQs 1 3 4 5 6 *7 11 12 14 15)
-
-
----
-Ozan Çağlayan
-TUBITAK/UEKAE - Pardus Linux
-http://www.pardus.org.tr/eng
+>
+> Thanks,
+>
+>> >> Index: drivers/mtd/devices/m25p80.c
+>> >> ===================================================================
+>> >> --- drivers/mtd/devices/m25p80.c      (revision 8927)
+>> >> +++ drivers/mtd/devices/m25p80.c      (revision 8929)
+>> >> @@ -795,8 +795,13 @@
+>> >>
+>> >>               jid = jedec_probe(spi);
+>> >>               if (!jid) {
+>> >> -                     dev_info(&spi->dev, "non-JEDEC variant of %s\n",
+>> >> -                              id->name);
+>> >> +                     if (!data->non_jedec) {
+>> >> +                             dev_err(&spi->dev, "fail to detect%s\n",
+>> >> +                                             id->name);
+>> >> +                             return -ENODEV;
+>> >> +                     } else
+>> >> +                             dev_info(&spi->dev, "non-JEDEC variant of %s\n",
+>> >> +                                             id->name);
+>> >>               } else if (jid != id) {
+>> >
+>> > --
+>> > Anton Vorontsov
+>> > email: cbouatmailru@gmail.com
+>> > irc://irc.freenode.net/bd2
+>> >
+>
+> --
+> Anton Vorontsov
+> email: cbouatmailru@gmail.com
+> irc://irc.freenode.net/bd2
+>
