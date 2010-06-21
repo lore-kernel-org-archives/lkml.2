@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab0FUCoB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 22:44:01 -0400
-Received: from ozlabs.org ([203.10.76.45]:59714 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755962Ab0FUCn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 22:43:56 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH for-2.6.35] virtio_net: fix oom handling on tx
-Date: Mon, 21 Jun 2010 12:13:49 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-       Sridhar Samudrala <sri@us.ibm.com>,
-       virtualization@lists.linux-foundation.org,
-       Jiri Pirko <jpirko@redhat.com>, Shirley Ma <xma@us.ibm.com>,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100610152041.GA3480@redhat.com> <20100610104653.1aed2ecc@nehalam> <20100610190343.GC4044@redhat.com>
-In-Reply-To: <20100610190343.GC4044@redhat.com>
+	id S1757382Ab0FUC4j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 22:56:39 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34900 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757010Ab0FUC4f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 22:56:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:organization:user-agent:mime-version:to:cc
+         :subject:references:in-reply-to:content-type
+         :content-transfer-encoding;
+        b=CJUyXj0/5ly5ZtbSQBXV1jm/fnoQvXpEHj0iiy4ScwCZr9Dkn3ZMZCqtBYxdAeXODc
+         PeSKgUt7YTjzp8HU2fRX149Xj+vYnzfXYss8LKJ2NSvNR2ODbBgXo18ey0UF0Hvl8X+X
+         Q4ExKGSEf5Q0+BmQljDN1qtnK8nmW3fU9+Av8=
+Message-ID: <4C1ED4CA.9030906@gmail.com>
+Date: Mon, 21 Jun 2010 10:56:10 +0800
+From: Xiangfu Liu <xiangfu.z@gmail.com>
+Organization: www.openmobilefree.net
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
+CC: Lars-Peter Clausen <lars@metafoo.de>, Ralf Baechle <ralf@linux-mips.org>,
+       linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Anton Vorontsov <cbouatmailru@gmail.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
+       linux-fbdev@vger.kernel.org, linux-mmc@vger.kernel.org,
+       linux-mtd@lists.infradead.org, linux-usb@vger.kernel.org,
+       lm-sensors@lm-sensors.org, rtc-linux@googlegroups.com
+Subject: Re: [PATCH v2 00/26] Add support for the Ingenic JZ4740 System-on-a-Chip
+References: <1276924111-11158-1-git-send-email-lars@metafoo.de> <20100620092610.GA4950@alpha.franken.de>
+In-Reply-To: <20100620092610.GA4950@alpha.franken.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006211213.49600.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Jun 2010 04:33:43 am Michael S. Tsirkin wrote:
-> > > > @@ -572,12 +571,14 @@ again:
-> > > > 
-> > > >  	/* This can happen with OOM and indirect buffers. */
-> > > >  	if (unlikely(capacity < 0)) {
-> > > > -		netif_stop_queue(dev);
-> > > > -		dev_warn(&dev->dev, "Unexpected full queue\n");
-> > > > -		if (unlikely(!virtqueue_enable_cb(vi->svq))) {
-> > > > -			virtqueue_disable_cb(vi->svq);
-> > > > -			netif_start_queue(dev);
-> > > > -			goto again;
-> > > > +		if (net_ratelimit()) {
-> > > > +			if (likely(capacity == -ENOMEM))
-> > > > +				dev_warn(&dev->dev,
-> > > > +					 "TX queue failure: out of memory\n");
-> > > > +			else
-> > > > +				dev_warn(&dev->dev,
-> > > > +					 "Unexpected TX queue failure: %d\n",
-> > > > +					 capacity);
-...
-> 
-> Well, I only keep the existing behaviour around.
+On 06/20/2010 05:26 PM, Thomas Bogendoerfer wrote:
+> great stuff. I have a JZ4730 based netbook, for which I started magling
+> the provided sources quite some time ago, but I didn't reach the
+> point of submitting patches... there are a lot of common stuff between
+> JZ4730 and JZ4740 so IMHO it would be a good thing not to nail
+> everthing to JZ4740 namewise. It might also a good idea to select
+> something like arch/mips/jzrisc as base directory, put the
 
-Actually, it *does* change behavior, as the comment indicates.  So let's
-fix the whole thing.  AFAICT wth TX_BUSY we'll get called again RSN, and
-that's not really useful for OOM.
+Hi Thomas
 
-This is what I have:
+I would advice "xburst" instead jzrisc. because the Ingenic call
+their cpu "XBurst" series. like: XBurst JZ4740, XBurst JZ4750 ...
 
-Subject: virtio_net: fix oom handling on tx
-Date: Thu, 10 Jun 2010 18:20:41 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
 
-virtio net will never try to overflow the TX ring, so the only reason
-add_buf may fail is out of memory. Thus, we can not stop the
-device until some request completes - there's no guarantee anything
-at all is outstanding.
+> factored out code there and add JZ4730/JZ4740 in either seperate
+> files or directories.
 
-Make the error message clearer as well: error here does not
-indicate queue full.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au> (...and avoid TX_BUSY)
-Cc: stable@kernel.org
----
- drivers/net/virtio_net.c |   18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -562,7 +562,6 @@ static netdev_tx_t start_xmit(struct sk_
- 	struct virtnet_info *vi = netdev_priv(dev);
- 	int capacity;
- 
--again:
- 	/* Free up any pending old buffers before queueing new ones. */
- 	free_old_xmit_skbs(vi);
- 
-@@ -571,14 +570,17 @@ again:
- 
- 	/* This can happen with OOM and indirect buffers. */
- 	if (unlikely(capacity < 0)) {
--		netif_stop_queue(dev);
--		dev_warn(&dev->dev, "Unexpected full queue\n");
--		if (unlikely(!virtqueue_enable_cb(vi->svq))) {
--			virtqueue_disable_cb(vi->svq);
--			netif_start_queue(dev);
--			goto again;
-+		if (net_ratelimit()) {
-+			if (likely(capacity == -ENOMEM))
-+				dev_warn(&dev->dev,
-+					 "TX queue failure: out of memory\n");
-+			else
-+				dev_warn(&dev->dev,
-+					 "Unexpected TX queue failure: %d\n",
-+					 capacity);
- 		}
--		return NETDEV_TX_BUSY;
-+		kfree_skb(skb);
-+		return NETDEV_TX_OK;
- 	}
- 	virtqueue_kick(vi->svq);
- 
+-- 
+Best Regards
+Xiangfu Liu
+http://www.openmobilefree.net
