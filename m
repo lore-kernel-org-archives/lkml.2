@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010Ab0FUBBT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 21:01:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46058 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755143Ab0FUBBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 21:01:17 -0400
-Date: Mon, 21 Jun 2010 11:01:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: import of the i2c quilt series failed
-Message-Id: <20100621110108.e8ce0bcf.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__21_Jun_2010_11_01_08_+1000_hbLJO2oRUrljhQKg"
+	id S1757342Ab0FUBDw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 21:03:52 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44155 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab0FUBDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 21:03:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=CtzG7wEBPfWf3HN3wM2GTFUIw+BCqAzR7BWObgLc2K6FZnNFZ0P8Zze0IYff/dgRMA
+         n7SSnQjb26SOX6Sh2zD5m8gc/VU4uIIQZhk7VGNMLpIxrqYMxxWq4u8IQjgUYBDDr02j
+         zz1JLyxAo1rW4/jJuyii1OVWjF21OHqs3NqmY=
+Message-ID: <4C1EBA7D.4060508@gmail.com>
+Date: Sun, 20 Jun 2010 18:03:57 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@samba.org>
+CC: linux-cifs-client@lists.samba.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6 v2]cifs Fix warnings variables set but not used
+References: <1276980427-24728-1-git-send-email-justinmattock@gmail.com>	<20100620171713.782e9104@tlielax.poochiereds.net>	<4C1E9752.8040508@gmail.com> <20100620202811.2d655c95@corrin.poochiereds.net>
+In-Reply-To: <20100620202811.2d655c95@corrin.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__21_Jun_2010_11_01_08_+1000_hbLJO2oRUrljhQKg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/20/2010 05:28 PM, Jeff Layton wrote:
+> On Sun, 20 Jun 2010 15:33:54 -0700
+> "Justin P. Mattock"<justinmattock@gmail.com>  wrote:
+>
+>>
+>>>>    		/* since paths are not looked up by component - the parent
+>>>>    		   directories are presumed to be good here */
+>>>>    		renew_parental_timestamps(direntry);
+>>>> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+>>>> index 75541af..73e540b 100644
+>>>> --- a/fs/cifs/file.c
+>>>> +++ b/fs/cifs/file.c
+>>>> @@ -1312,7 +1312,7 @@ static int cifs_partialpagewrite(struct page *page, unsigned from, unsigned to)
+>>>>    	int rc = -EFAULT;
+>>>>    	int bytes_written = 0;
+>>>>    	struct cifs_sb_info *cifs_sb;
+>>>> -	struct cifsTconInfo *pTcon;
+>>>> +	struct cifsTconInfo *pTcon __attribute__((unused));
+>>>
+>>> This variable can just be removed (along with the spot where it gets
+>>> set later).
+>>>
+>>>>    	struct inode *inode;
+>>>>    	struct cifsFileInfo *open_file;
+>>>>
+>>>
+>>>
+>>
+>> one thing I want to make sure of before sending this out, is with file.c
+>> if I remove *pTcon another warning shows up:
+>>
+>>     CC [M]  fs/cifs/file.o
+>> fs/cifs/file.c: In function 'cifs_partialpagewrite':
+>> fs/cifs/file.c:1314:23: warning: variable 'cifs_sb' set but not used
+>>
+>> with the original patch I had removed this as well, should I do this or
+>> is this not a good idea?
+>
+> If it's not used, remove it...
+>
 
-Hi Jean,
+alright, I'll send those two, then go from there.
 
-The import of the i2c quilt series failed like this:
-
-i2c-drop-preliminary-probability-checks.patch
-error: patch failed: drivers/i2c/i2c-core.c:1456
-error: drivers/i2c/i2c-core.c: patch does not apply
-
-I have commented that patch out for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__21_Jun_2010_11_01_08_+1000_hbLJO2oRUrljhQKg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkweudQACgkQjjKRsyhoI8xTnwCeLM61hy24keaZOX2rdBnQTuwf
-UGQAnRPsjfnxKcJ5MPuFTXs2OFOIixWh
-=tfmZ
------END PGP SIGNATURE-----
-
---Signature=_Mon__21_Jun_2010_11_01_08_+1000_hbLJO2oRUrljhQKg--
+Justin P. Mttock
