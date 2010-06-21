@@ -1,200 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab0FUDj4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 23:39:56 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:52662 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757450Ab0FUDjx (ORCPT
+	id S1757490Ab0FUDxI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 23:53:08 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33763 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab0FUDxF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 23:39:53 -0400
-X-Sasl-enc: yoqH0/LL5pzas04slWejLRvbaJWhMfFiUzMnEZ3NwVsr 1277091588
-Subject: Re: [autofs] [PATCH 04/38] autofs4: Save autofs trigger's vfsmount
- in super block info
-From: Ian Kent <raven@themaw.net>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Valerie Aurora <vaurora@redhat.com>, autofs@linux.kernel.org,
-       Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
-       Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-       Jan Blunck <jblunck@suse.de>
-In-Reply-To: <1276661043.2339.35.camel@localhost>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
-	 <1276627208-17242-5-git-send-email-vaurora@redhat.com>
-	 <1276661043.2339.35.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Jun 2010 11:39:39 +0800
-Message-ID: <1277091579.3827.9.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Sun, 20 Jun 2010 23:53:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kkXSosYBXhgmEFiDeoONOjCaIAqghU9aajcMl4v0kZYC5AYJZ9JVRZyNXP7sY1D+NL
+         eu3AHsOJH3wHkrv5qN80Mqqgxuhj9fGy9Hl2yD5PsKhc/RZqn97xj1EetvoOJ3ursoiU
+         oePB5iKOVjKlMHCwZmexyDxXUfPmvMIeGnVSU=
+MIME-Version: 1.0
+In-Reply-To: <20100621120256.8d2a2fca.kamezawa.hiroyu@jp.fujitsu.com>
+References: <AANLkTikeDoxm6OzWldU5PAr06wvW89asIIPNrpVKoc8I@mail.gmail.com>
+	<AANLkTikPAdDuUb37-GPDzFugBYEWNpoSLabcl2Fyt5VY@mail.gmail.com>
+	<AANLkTilP5yyJjMqZPhvgv2d22Lrt8ZKB0AoITSEsukgt@mail.gmail.com>
+	<20100621120256.8d2a2fca.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 21 Jun 2010 13:53:02 +1000
+Message-ID: <AANLkTikDCq9EzyE_Sfy_sRHN_aBqFOZk9gWap8jDnXLN@mail.gmail.com>
+Subject: Re: Kernel does strange things when compilations push memory usage 
+	above physical memory and the compilations are being done in a tmpfs, despite 
+	having ample swap
+From: Andrew Hendry <andrew.hendry@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Richard Yao <shiningarcanine@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-16 at 12:04 +0800, Ian Kent wrote:
-> On Tue, 2010-06-15 at 11:39 -0700, Valerie Aurora wrote:
-> > From: Jan Blunck <jblunck@suse.de>
-> > 
-> > XXX - This is broken and included just to make union mounts work.  See
-> > discussion at:
-> > 
-> > http://kerneltrap.org/mailarchive/linux-fsdevel/2010/1/15/6708053/thread
-> 
-> Instead of saving the vfsmount we could save a pointer to the dentry of
-> the mount point in the autofs super block info struct. I think that's
-> the bit I don't have so it would be sufficient for a lookup_mnt() for
-> the needed vfsmount in ->follow_mount().
-> 
-> Objections?
-> Suggestions?
+Kame,
 
-No comments so far.
+Could the tempfs revert be the same and fix the ramdisk issue I have seen?
+http://marc.info/?l=linux-kernel&m=127569877714937&w=2
+I can re-test this evening.
 
-Before I dive into testing if this actually does what I need, can I get
-an "in principal" ack or nack for the patch so union mounts can move on
-please?
+Andrew.
 
-Note that this patch hasn't even been compile tested so the point is to
-decide whether it is worth going ahead with it.
-
-
-autofs4 - save autofs trigger mountpoint in super block info
-
-From: Ian Kent <raven@themaw.net>
-
-Adapted from the original patch from Jan Blunck <jblunck@suse.de>.
-
-Original commit message:
-
-This is a bugfix/replacement for commit
-051d381259eb57d6074d02a6ba6e90e744f1a29f:
-
-    During a path walk if an autofs trigger is mounted on a dentry,
-    when the follow_link method is called, the nameidata struct
-    contains the vfsmount and mountpoint dentry of the parent mount
-    while the dentry that is passed in is the root of the autofs
-    trigger mount.  I believe it is impossible to get the vfsmount of
-    the trigger mount, within the follow_link method, when only the
-    parent vfsmount and the root dentry of the trigger mount are
-    known.
-
-The solution in this commit was to replace the path embedded in the
-parent's nameidata with the path of the link itself in
-__do_follow_link().  This is a relatively harmless misuse of the
-field, but union mounts ran into a bug during follow_link() caused by
-the nameidata containing the wrong path (we count on it being what it
-is all other places - the path of the parent).
-
-A cleaner and easier to understand solution is to save the necessary
-mountpoint dentry in the autofs superblock info when it is mounted.
-Then we can cwlookup the needed vfsmount in autofs4_follow_link().
-
-Signed-off-by: Ian Kent <raven@themaw.net>
-Cc: Jan Blunck <jblunck@suse.de>
-Cc: Valerie Aurora <vaurora@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: autofs@linux.kernel.org
----
-
- fs/autofs4/autofs_i.h |    1 +
- fs/autofs4/init.c     |   11 ++++++++++-
- fs/autofs4/root.c     |   13 +++++++++++++
- fs/namei.c            |    7 ++-----
- fs/namespace.c        |    1 +
- 5 files changed, 27 insertions(+), 6 deletions(-)
-
-
-diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-index 3d283ab..9fc6d69 100644
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -133,6 +133,7 @@ struct autofs_sb_info {
- 	int reghost_enabled;
- 	int needs_reghost;
- 	struct super_block *sb;
-+	struct dentry *mountpoint;
- 	struct mutex wq_mutex;
- 	spinlock_t fs_lock;
- 	struct autofs_wait_queue *queues; /* Wait queue pointer */
-diff --git a/fs/autofs4/init.c b/fs/autofs4/init.c
-index 9722e4b..f305b7d 100644
---- a/fs/autofs4/init.c
-+++ b/fs/autofs4/init.c
-@@ -17,7 +17,16 @@
- static int autofs_get_sb(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
- {
--	return get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
-+	struct autofs_sb_info *sbi;
-+	int ret;
-+
-+	ret = get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
-+	if (ret)
-+		return ret;
-+
-+	sbi = autofs4_sbi(mnt->mnt_sb);
-+	sbi->mountpoint = mnt->mnt_mountpoint;
-+	return 0;
- }
- 
- static struct file_system_type autofs_fs_type = {
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index db4117e..be89fd2 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -215,11 +215,24 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
- 	struct autofs_info *ino = autofs4_dentry_ino(dentry);
- 	int oz_mode = autofs4_oz_mode(sbi);
- 	unsigned int lookup_type;
-+	struct vfsmount *mnt;
- 	int status;
- 
- 	DPRINTK("dentry=%p %.*s oz_mode=%d nd->flags=%d",
- 		dentry, dentry->d_name.len, dentry->d_name.name, oz_mode,
- 		nd->flags);
-+
-+	mnt = lookup_mount(nd->path.mnt, sbi->mountpoint);
-+	if (!mnt) {
-+		status = -ENOENT;
-+		goto out_error;
-+	}
-+
-+	dput(nd->path.dentry);
-+	mntput(nd->path.mnt);
-+	nd->path.mnt = mnt;
-+	nd->path.dentry = dget(dentry);
-+
- 	/*
- 	 * For an expire of a covered direct or offset mount we need
- 	 * to break out of follow_down() at the autofs mount trigger
-diff --git a/fs/namei.c b/fs/namei.c
-index 868d0cb..69a78ee 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -539,11 +539,8 @@ __do_follow_link(struct path *path, struct nameidata *nd, void **p)
- 	touch_atime(path->mnt, dentry);
- 	nd_set_link(nd, NULL);
- 
--	if (path->mnt != nd->path.mnt) {
--		path_to_nameidata(path, nd);
--		dget(dentry);
--	}
--	mntget(path->mnt);
-+	if (path->mnt == nd->path.mnt)
-+		mntget(nd->path.mnt);
- 	nd->last_type = LAST_BIND;
- 	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
- 	error = PTR_ERR(*p);
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 88058de..19b7fc9 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -445,6 +445,7 @@ struct vfsmount *lookup_mnt(struct path *path)
- 	spin_unlock(&vfsmount_lock);
- 	return child_mnt;
- }
-+EXPORT_SYMBOL_GPL(lookup_mnt);
- 
- static inline int check_mnt(struct vfsmount *mnt)
- {
-
-
+On Mon, Jun 21, 2010 at 1:02 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Sun, 20 Jun 2010 22:23:50 -0400
+> Richard Yao <shiningarcanine@gmail.com> wrote:
+>
+>> My system is still responsive if it has not locked-up, even after the
+>> oom-killer appears to have killed stuff.
+>>
+>> Does the kernel need to be compiled with any special options to have
+>> it report to dmesg that the oom-killer activated? I cited the
+>> oom-killer as being activated because several things would
+>> inexplicit-ably crash when the system is under memory pressure, but
+>> looking in my dmesg log at a crash that occurred earlier today when I
+>> forgot to unmount my tmpfs, I do not see any references to the oom
+>> killer, just the process that crashed:
+>>
+>
+> Are your oom-killer happens  on workload on tmpfs ?
+> (I thought /var/tmp isn' tmpfs..)
+>
+> plz check this.
+> =
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=d6da1a5abc2bf3a06a5bda08e0f6833409234666
+> =
+>
+> Does oom-killer happens also on 2.6.33 ?
+>
+> Thanks,
+> =Kame
+>
+>> [ 5873.816211] chrome[18404]: segfault at 8 ip 0000000001063b9b sp
+>> 00007fffb0a7f540 error 4 in chrome[400000+28be000]
+>>
+>> Could it be that a bug is causing the kernel to map the same region of
+>> physical memory to multiple programs?
+>>
+>> On Sun, Jun 20, 2010 at 10:03 PM, Andrew Hendry <andrew.hendry@gmail.com> wrote:
+>> > After the oom killer has killed things, is your system still really
+>> > sluggish if it doesn't lockup?
+>> >
+>> > I have what might be a similar issue, after a lot of compiling on a ramdisk.
+>> > http://marc.info/?l=linux-kernel&m=127569877714937&w=2
+>> >
+>> > Oom killer keeps killing processes until almost nothing is left.
+>> > Free memory is very high, and system is still very sluggish.
+>> >
+>> > On Mon, Jun 21, 2010 at 10:21 AM, Richard Yao <shiningarcanine@gmail.com> wrote:
+>> >> Dear Everyone,
+>> >>
+>> >> My desktop has 4GB of RAM and it is running an unpatched Linux 2.6.34
+>> >> kernel. I recently migrated it from Windows 7 to Gentoo Linux and I am
+>> >> encountering a highly peculiar problem when I build/rebuild system
+>> >> packages in a manner that stresses memory.
+>> >>
+>> >> When system memory usage exceeds 4GB because I have several
+>> >> compilations running simultaneously, all of which have had -j5 passed
+>> >> to make, with the build scripts sharing an 8GB tmpfs directory, the
+>> >> system typically responds by activating the kernel oom-killer, which
+>> >> will usually kill some of the processes involved in the compilations,
+>> >> among other things. This is with an 8GB swap partition and barely any
+>> >> of it is touched when this happens according to KDE's system monitor.
+>> >> Rarer, but alternative responses that the system has made to such
+>> >> circumstances involve the system package manager failing
+>> >> mid-compilation with "Segmentation fault" printed to the console or
+>> >> open office failing with an obscure error message. Usually just
+>> >> compiling open office alone is enough to have things fail, although I
+>> >> usually see it fail with an obscure 5 digit error message that has no
+>> >> meaning which I can derive from doing searches with Google. Unmounting
+>> >> my tmpfs directory and doing things as I normally would do them makes
+>> >> these issues disappear.
+>> >>
+>> >> I have run memtest and it has not detected any hardware issues. I
+>> >> tried asking for help on the Gentoo Linux forums, but I received no
+>> >> responses and this looks like a kernel issue, so I thought it would be
+>> >> a good idea to ask for assistance on the kernel mailing list. Here is
+>> >> a link to a copy of my kernel's .config file:
+>> >>
+>> >> http://paste.pocoo.org/show/227799/
+>> >>
+>> >> As I was typing this, I had openoffice 3.2.1 and something else
+>> >> compiling in the background and the system completely froze. This is
+>> >> the first I have seen my system do this and it was about 10 minutes
+>> >> after the oom-killer had already taken out kwin and several tabs in
+>> >> chromium. I had SSH running in the background, but even that has been
+>> >> rendered inaccessible by the freeze. I cannot get a response from the
+>> >> system via arping and nmap is telling me that the system is down.
+>> >>
+>> >> Earlier today, I tried to reproduce this issue under simpler
+>> >> cirumstances by doing dd bs=4096 count=2097152 if=/dev/zero
+>> >> of=/var/tmp/portage/zero.bak. As a consequence of all of the swapping
+>> >> that occurred, the system's X server become unresponsive, so I walked
+>> >> away and came back a few minutes later to find that the KDE System
+>> >> Monitor had crashed, but everything else seemed fine.
+>> >>
+>> >> Any help with this issue would be appreciated. I am willing to
+>> >> recompile my system in whatever manner necessary to diagnose the cause
+>> >> of this issue. Please CC me any responses made either directly or
+>> >> indirectly in response to this message.
+>> >>
+>> >> Yours truly,
+>> >> Richard Yao
+>> >> --
+>> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> >> the body of a message to majordomo@vger.kernel.org
+>> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> >> Please read the FAQ at  http://www.tux.org/lkml/
+>> >>
+>> >
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+>
