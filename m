@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851Ab0FUPd4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 11:33:56 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50377 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932791Ab0FUPdz (ORCPT
+	id S932848Ab0FUPfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 11:35:08 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:56803 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932766Ab0FUPfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 11:33:55 -0400
+	Mon, 21 Jun 2010 11:35:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=gsGArV+/cOA8b6yrXW599clkHnHQFjlqYZXDTZ3k6znP7MronV6+c43wjHWY6Lgxjj
-         4mTSEFtFLlIsJMa9nmtE54LyI0617eH0GElvh79Dt0tqwXG7HsaLjxbiZLiVhG3v9Wpv
-         Em7gAEsI+HeQHamnynZjy7iC0kaCAKyQXbXa0=
-Message-ID: <4C1F865C.1070707@gmail.com>
-Date: Mon, 21 Jun 2010 17:33:48 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1rc2-2.2 Thunderbird/3.1
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IKXeQMam21LAmuYeKSsKGc79gJHQHLmbSoBA9nYa3e1UKdNpWIo65JR78MeKpqP62O
+         5IUXOw3Q8OfQzec8Ts2xZm3fyZhbjLSrVOj41o4KtU5s3Oc42oxCi8ZxNKuwfEla0gFi
+         eibQ/fFDhaeB9w7i3KqlOdZeGu/w5QyNCKGPo=
+Date: Mon, 21 Jun 2010 17:33:03 +0200
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Xiaotian Feng <dfeng@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Dan Carpenter <error27@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H.PeterA" <nvinhpa@zytor.com>, Venkatesh Pallipadi <venki@google.com>,
+       Jack Steiner <steiner@sgi.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
+       x86@kernel.org
+Subject: Re: [patch] x86, pat: freeing invalid memtype messages
+Message-ID: <20100621153303.GA2754@joi.lan>
+References: <20100617134559.GA29824@bicker>
+ <20100617161728.GA2741@joi.lan>
+ <4C1B1691.6020809@redhat.com>
+ <20100618175726.GA2785@joi.lan>
+ <4C1F455E.6050502@redhat.com>
+ <1277118155.1875.508.camel@laptop>
+ <4C1F47EF.2060509@redhat.com>
 MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Jiri Slaby <jslaby@suse.cz>, mjg@redhat.com,
-       platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] X86: intel_ips, check for kzalloc properly
-References: <1277132531-14242-1-git-send-email-jslaby@suse.cz> <20100621082535.14301a7c@virtuousgeek.org>
-In-Reply-To: <20100621082535.14301a7c@virtuousgeek.org>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C1F47EF.2060509@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2010 05:25 PM, Jesse Barnes wrote:
-> On Mon, 21 Jun 2010 17:02:11 +0200
-> Jiri Slaby <jslaby@suse.cz> wrote:
-> 
->> Stanse found that there are two NULL checks missing in ips_monitor. So
->> check their value too and bail out appropriately if the allocation
->> failed.
->>
->> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
->> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
->> Cc: Matthew Garrett <mjg@redhat.com>
->> ---
->>  drivers/platform/x86/intel_ips.c |    3 ++-
->>  1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
->> index cdaf40e..3c7ea9a 100644
->> --- a/drivers/platform/x86/intel_ips.c
->> +++ b/drivers/platform/x86/intel_ips.c
->> @@ -931,7 +931,8 @@ static int ips_monitor(void *data)
->>  	mch_samples = kzalloc(sizeof(u16) * IPS_SAMPLE_COUNT, GFP_KERNEL);
->>  	cpu_samples = kzalloc(sizeof(u32) * IPS_SAMPLE_COUNT, GFP_KERNEL);
->>  	mchp_samples = kzalloc(sizeof(u32) * IPS_SAMPLE_COUNT, GFP_KERNEL);
->> -	if (!mcp_samples || !ctv1_samples || !ctv2_samples || !mch_samples) {
->> +	if (!mcp_samples || !ctv1_samples || !ctv2_samples || !mch_samples ||
->> +			!cpu_samples || !mchp_samples) {
->>  		dev_err(&ips->dev->dev,
->>  			"failed to allocate sample array, ips disabled\n");
->>  		kfree(mcp_samples);
-> 
-> Ah cool, am I also missing the appropriate kfree() calls for the last
-> two?  The context doesn't have it.  Otherwise,
+On Mon, Jun 21, 2010 at 07:07:27PM +0800, Xiaotian Feng wrote:
+> On 06/21/2010 07:02 PM, Peter Zijlstra wrote:
+> > On Mon, 2010-06-21 at 18:56 +0800, Xiaotian Feng wrote:
+> >
+> >> I guess there might be something wrong between the augmented rbtree insert/remove ..
+> >
+> > The easiest thing is to revert that change and try again, the next step
+> > would be to print the full RB tree on each modification and look where
+> > it goes wrong.
+> >
+> > That said, I did print my fair share of (augmented) RB trees while
+> > playing with scheduler patches and I can't remember it ever having
+> > messed up like that.
+> He's using 2.6.35-rc2+, without your "rbtree: Undo augmented trees 
+> performance damage" patch ;-)
 
-I checked when I was patching that and the last is not freed there.
-However I didn't add it since at least one must be non-NULL and in this
-case it can be only the last. (Until somebody add another allocation
-indeed.) So should I add even the last free there?
+I applied it manually (commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249 from -tip)
+to 2.6.35-rc3 and it fixed both acpi's and nouveau's "invalid memtype" messages.
+Thanks.
 
-thanks,
--- 
-js
+Marcin
