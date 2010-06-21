@@ -1,208 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab0FUD1y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 23:27:54 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47400 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757044Ab0FUD1x convert rfc822-to-8bit (ORCPT
+	id S1757503Ab0FUDj4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 23:39:56 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:52662 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757450Ab0FUDjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 23:27:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=rdL+hKkyWXw1KGayk7xyJjajtMkHaOFCVlLdY6D6AQuVz3GArEj8tdeXHzarUtoH39
-         B94cH+ZZ+xkbdueKldPPPPpPFbezbnHeJnhLmS8oI4w3riyVUjr47XOp3IDltwNBpgsU
-         byoCxc6EbBOjUtS0o2b9hsRNCGy9sGnJaq2N4=
-MIME-Version: 1.0
-In-Reply-To: <0F1B54C89D5F954D8535DB252AF412FA065551D8@chinexm1.ad.analog.com>
-References: <20090818214449.GA12848@oksana.dev.rtsoft.ru> <20090818214622.GA22651@oksana.dev.rtsoft.ru> 
-	<AANLkTikg60s6ZRSEDCq9PQK1z7hJtBDk6t4VE1lYDv8u@mail.gmail.com> 
-	<20100618133212.GA5276@oksana.dev.rtsoft.ru> <0F1B54C89D5F954D8535DB252AF412FA065551D8@chinexm1.ad.analog.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 21 Jun 2010 11:27:31 +0800
-Message-ID: <AANLkTiksYofs6hhWta6uFX2cla_g8pBu0Mtbtcbv-2tl@mail.gmail.com>
-Subject: Re: [Uclinux-dist-devel] [PATCH 1/2] mtd: m25p80: Reworkprobing/JEDEC 
-	code
-To: "Song, Barry" <Barry.Song@analog.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Artem Bityutskiy <dedekind1@gmail.com>, linux-kernel@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, linux-mtd@lists.infradead.org,
-       uclinux-dist-devel@blackfin.uclinux.org,
-       Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 20 Jun 2010 23:39:53 -0400
+X-Sasl-enc: yoqH0/LL5pzas04slWejLRvbaJWhMfFiUzMnEZ3NwVsr 1277091588
+Subject: Re: [autofs] [PATCH 04/38] autofs4: Save autofs trigger's vfsmount
+ in super block info
+From: Ian Kent <raven@themaw.net>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Valerie Aurora <vaurora@redhat.com>, autofs@linux.kernel.org,
+       Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
+       Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+       Jan Blunck <jblunck@suse.de>
+In-Reply-To: <1276661043.2339.35.camel@localhost>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
+	 <1276627208-17242-5-git-send-email-vaurora@redhat.com>
+	 <1276661043.2339.35.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Jun 2010 11:39:39 +0800
+Message-ID: <1277091579.3827.9.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 10:42 AM, Song, Barry <Barry.Song@analog.com> wrote:
->
->
->>-----Original Message-----
->>From: uclinux-dist-devel-bounces@blackfin.uclinux.org
->>[mailto:uclinux-dist-devel-bounces@blackfin.uclinux.org] On
->>Behalf Of Anton Vorontsov
->>Sent: Friday, June 18, 2010 9:32 PM
->>To: Barry Song
->>Cc: David Brownell; Artem Bityutskiy;
->>linux-kernel@vger.kernel.org; linuxppc-dev@ozlabs.org;
->>linux-mtd@lists.infradead.org;
->>uclinux-dist-devel@blackfin.uclinux.org; Andrew Morton
->>Subject: Re: [Uclinux-dist-devel] [PATCH 1/2] mtd: m25p80:
->>Reworkprobing/JEDEC code
->>
->>On Sat, Jun 12, 2010 at 02:27:12PM +0800, Barry Song wrote:
->>> On Wed, Aug 19, 2009 at 5:46 AM, Anton Vorontsov
->>> <avorontsov@ru.mvista.com> wrote:
->>> >
->>> > Previosly the driver always tried JEDEC probing, assuming
->>that non-JEDEC
->>> > chips will return '0'. But truly non-JEDEC chips (like
->>CAT25) won't do
->>> > that, their behaviour on RDID command is undefined, so the
->>driver should
->>> > not call jedec_probe() for these chips.
->>> >
->>> > Also, be less strict on error conditions, don't fail to
->>probe if JEDEC
->>> > found a chip that is different from what platform code
->>told, instead
->>> > just print some warnings and use an information obtained
->>via JEDEC. In
->>> This patch caused a problem:
->>> even though the external flash doesn't exist, it will still pass the
->>> probe() and be registerred into kernel and given the partition table.
->>> You may refer to this bug report:
->>>
->>http://blackfin.uclinux.org/gf/project/uclinux-dist/tracker/?ac
->>tion=TrackerItemEdit&tracker_item_id=5975&start=0
->>
->>Thanks for the report.
->>
->>There's little we can do about it. Platform code asked us
->>to register the device, and JEDEC probing of M25Pxx chips isn't
->>reliable (thanks to various vendors that make these JEDEC and
->>non-JEDEC variants), so the best thing we can do is to register
->>the chip anyway.
->>
->>OTOH, if the board pulls MISO line up, then the following patch
->>should help.
-> Make sense with pullup to keep the value high while external device
-> doesn't exist.
->>
->>If this won't work, we'll have to add some flag to the platform
->>data, i.e. to force JEDEC probing, and not trust platform data.
->
-> How about we add a non_jedec flag in platform_data, if the flag is 1, we
-> let the detection pass even though the ID is 0? Otherwise, we need a
-> valid ID?
-Here i mean:
-Index: drivers/mtd/devices/m25p80.c
-===================================================================
---- drivers/mtd/devices/m25p80.c	(revision 8927)
-+++ drivers/mtd/devices/m25p80.c	(revision 8929)
-@@ -795,8 +795,13 @@
+On Wed, 2010-06-16 at 12:04 +0800, Ian Kent wrote:
+> On Tue, 2010-06-15 at 11:39 -0700, Valerie Aurora wrote:
+> > From: Jan Blunck <jblunck@suse.de>
+> > 
+> > XXX - This is broken and included just to make union mounts work.  See
+> > discussion at:
+> > 
+> > http://kerneltrap.org/mailarchive/linux-fsdevel/2010/1/15/6708053/thread
+> 
+> Instead of saving the vfsmount we could save a pointer to the dentry of
+> the mount point in the autofs super block info struct. I think that's
+> the bit I don't have so it would be sufficient for a lookup_mnt() for
+> the needed vfsmount in ->follow_mount().
+> 
+> Objections?
+> Suggestions?
 
- 		jid = jedec_probe(spi);
- 		if (!jid) {
--			dev_info(&spi->dev, "non-JEDEC variant of %s\n",
--				 id->name);
-+			if (!data->non_jedec) {
-+				dev_err(&spi->dev, "fail to detect%s\n",
-+						id->name);
-+				return -ENODEV;
-+			} else
-+				dev_info(&spi->dev, "non-JEDEC variant of %s\n",
-+						id->name);
- 		} else if (jid != id) {
- 			/*
- 			 * JEDEC knows better, so overwrite platform ID. We
-Index: include/linux/spi/flash.h
-===================================================================
---- include/linux/spi/flash.h	(revision 8927)
-+++ include/linux/spi/flash.h	(revision 8929)
-@@ -25,6 +25,11 @@
+No comments so far.
 
- 	char		*type;
+Before I dive into testing if this actually does what I need, can I get
+an "in principal" ack or nack for the patch so union mounts can move on
+please?
 
-+	/*
-+	 * For non-JEDEC, id will be 0. In this case, we can't be sure
-+	 * whether the flash exists with runtime probing.
-+	 */
-+	int             non_jedec;
- 	/* we'll likely add more ... use JEDEC IDs, etc */
- };
+Note that this patch hasn't even been compile tested so the point is to
+decide whether it is worth going ahead with it.
 
->
->>
->>Not-yet-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
->>---
->>
->>diff --git a/drivers/mtd/devices/m25p80.c
->>b/drivers/mtd/devices/m25p80.c
->>index 81e49a9..a307929 100644
->>--- a/drivers/mtd/devices/m25p80.c
->>+++ b/drivers/mtd/devices/m25p80.c
->>@@ -16,6 +16,7 @@
->>  */
->>
->> #include <linux/init.h>
->>+#include <linux/errno.h>
->> #include <linux/module.h>
->> #include <linux/device.h>
->> #include <linux/interrupt.h>
->>@@ -723,7 +724,7 @@ static const struct spi_device_id
->>*__devinit jedec_probe(struct spi_device *spi)
->>       if (tmp < 0) {
->>               DEBUG(MTD_DEBUG_LEVEL0, "%s: error %d reading
->>JEDEC ID\n",
->>                       dev_name(&spi->dev), tmp);
->>-              return NULL;
->>+              return ERR_PTR(tmp);
->>       }
->>       jedec = id[0];
->>       jedec = jedec << 8;
->>@@ -737,7 +738,7 @@ static const struct spi_device_id
->>*__devinit jedec_probe(struct spi_device *spi)
->>        * exist for non-JEDEC chips, but for compatibility
->>they return ID 0.
->>        */
->>       if (jedec == 0)
->>-              return NULL;
->>+              return ERR_PTR(-EEXIST);
->>
->>       ext_jedec = id[3] << 8 | id[4];
->>
->>@@ -749,7 +750,7 @@ static const struct spi_device_id
->>*__devinit jedec_probe(struct spi_device *spi)
->>                       return &m25p_ids[tmp];
->>               }
->>       }
->>-      return NULL;
->>+      return ERR_PTR(-ENODEV);
->> }
->>
->>
->>@@ -794,9 +795,11 @@ static int __devinit m25p_probe(struct
->>spi_device *spi)
->>               const struct spi_device_id *jid;
->>
->>               jid = jedec_probe(spi);
->>-              if (!jid) {
->>+              if (IS_ERR(jid) && PTR_ERR(jid) == -EEXIST) {
->>                       dev_info(&spi->dev, "non-JEDEC variant of %s\n",
->>                                id->name);
->>+              } else if (IS_ERR(jid)) {
->>+                      return PTR_ERR(jid);
->>               } else if (jid != id) {
->>                       /*
->>                        * JEDEC knows better, so overwrite
->>platform ID. We
->>_______________________________________________
->>Uclinux-dist-devel mailing list
->>Uclinux-dist-devel@blackfin.uclinux.org
->>https://blackfin.uclinux.org/mailman/listinfo/uclinux-dist-devel
->>
->
+
+autofs4 - save autofs trigger mountpoint in super block info
+
+From: Ian Kent <raven@themaw.net>
+
+Adapted from the original patch from Jan Blunck <jblunck@suse.de>.
+
+Original commit message:
+
+This is a bugfix/replacement for commit
+051d381259eb57d6074d02a6ba6e90e744f1a29f:
+
+    During a path walk if an autofs trigger is mounted on a dentry,
+    when the follow_link method is called, the nameidata struct
+    contains the vfsmount and mountpoint dentry of the parent mount
+    while the dentry that is passed in is the root of the autofs
+    trigger mount.  I believe it is impossible to get the vfsmount of
+    the trigger mount, within the follow_link method, when only the
+    parent vfsmount and the root dentry of the trigger mount are
+    known.
+
+The solution in this commit was to replace the path embedded in the
+parent's nameidata with the path of the link itself in
+__do_follow_link().  This is a relatively harmless misuse of the
+field, but union mounts ran into a bug during follow_link() caused by
+the nameidata containing the wrong path (we count on it being what it
+is all other places - the path of the parent).
+
+A cleaner and easier to understand solution is to save the necessary
+mountpoint dentry in the autofs superblock info when it is mounted.
+Then we can cwlookup the needed vfsmount in autofs4_follow_link().
+
+Signed-off-by: Ian Kent <raven@themaw.net>
+Cc: Jan Blunck <jblunck@suse.de>
+Cc: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: autofs@linux.kernel.org
+---
+
+ fs/autofs4/autofs_i.h |    1 +
+ fs/autofs4/init.c     |   11 ++++++++++-
+ fs/autofs4/root.c     |   13 +++++++++++++
+ fs/namei.c            |    7 ++-----
+ fs/namespace.c        |    1 +
+ 5 files changed, 27 insertions(+), 6 deletions(-)
+
+
+diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
+index 3d283ab..9fc6d69 100644
+--- a/fs/autofs4/autofs_i.h
++++ b/fs/autofs4/autofs_i.h
+@@ -133,6 +133,7 @@ struct autofs_sb_info {
+ 	int reghost_enabled;
+ 	int needs_reghost;
+ 	struct super_block *sb;
++	struct dentry *mountpoint;
+ 	struct mutex wq_mutex;
+ 	spinlock_t fs_lock;
+ 	struct autofs_wait_queue *queues; /* Wait queue pointer */
+diff --git a/fs/autofs4/init.c b/fs/autofs4/init.c
+index 9722e4b..f305b7d 100644
+--- a/fs/autofs4/init.c
++++ b/fs/autofs4/init.c
+@@ -17,7 +17,16 @@
+ static int autofs_get_sb(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
+ {
+-	return get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
++	struct autofs_sb_info *sbi;
++	int ret;
++
++	ret = get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
++	if (ret)
++		return ret;
++
++	sbi = autofs4_sbi(mnt->mnt_sb);
++	sbi->mountpoint = mnt->mnt_mountpoint;
++	return 0;
+ }
+ 
+ static struct file_system_type autofs_fs_type = {
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index db4117e..be89fd2 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -215,11 +215,24 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
+ 	struct autofs_info *ino = autofs4_dentry_ino(dentry);
+ 	int oz_mode = autofs4_oz_mode(sbi);
+ 	unsigned int lookup_type;
++	struct vfsmount *mnt;
+ 	int status;
+ 
+ 	DPRINTK("dentry=%p %.*s oz_mode=%d nd->flags=%d",
+ 		dentry, dentry->d_name.len, dentry->d_name.name, oz_mode,
+ 		nd->flags);
++
++	mnt = lookup_mount(nd->path.mnt, sbi->mountpoint);
++	if (!mnt) {
++		status = -ENOENT;
++		goto out_error;
++	}
++
++	dput(nd->path.dentry);
++	mntput(nd->path.mnt);
++	nd->path.mnt = mnt;
++	nd->path.dentry = dget(dentry);
++
+ 	/*
+ 	 * For an expire of a covered direct or offset mount we need
+ 	 * to break out of follow_down() at the autofs mount trigger
+diff --git a/fs/namei.c b/fs/namei.c
+index 868d0cb..69a78ee 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -539,11 +539,8 @@ __do_follow_link(struct path *path, struct nameidata *nd, void **p)
+ 	touch_atime(path->mnt, dentry);
+ 	nd_set_link(nd, NULL);
+ 
+-	if (path->mnt != nd->path.mnt) {
+-		path_to_nameidata(path, nd);
+-		dget(dentry);
+-	}
+-	mntget(path->mnt);
++	if (path->mnt == nd->path.mnt)
++		mntget(nd->path.mnt);
+ 	nd->last_type = LAST_BIND;
+ 	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
+ 	error = PTR_ERR(*p);
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 88058de..19b7fc9 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -445,6 +445,7 @@ struct vfsmount *lookup_mnt(struct path *path)
+ 	spin_unlock(&vfsmount_lock);
+ 	return child_mnt;
+ }
++EXPORT_SYMBOL_GPL(lookup_mnt);
+ 
+ static inline int check_mnt(struct vfsmount *mnt)
+ {
+
+
