@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337Ab0FUSIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 14:08:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:33840 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab0FUSIx (ORCPT
+	id S1757178Ab0FUS2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 14:28:35 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62689 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753696Ab0FUS2e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 14:08:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=syLM6IeJo902U2dOu6rBx60zsg53zNSDiFljx4+NFrmLeeM8TgXDz++SZKeTzRuCW
-	kk0C9Rnjb94hk+9iXGh5Q==
+	Mon, 21 Jun 2010 14:28:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=iAhBlxpFu91+7AC+qsKXsrcU3lrKHbWp9pxmY2pavKWXlgRyeTVLOoTci7TcdrHnO/
+         1o3ErPuhKL1TtkYidLDl4673P7JavUpDYavgs/wWaJLieg80HMeg07korK/LGc5u1tDN
+         HDU9kr9SVSDHq6uS+VIs+Z1gScoYUQZGi7TGo=
 MIME-Version: 1.0
-In-Reply-To: <1277142860.3017.22.camel@sbs-t61.sc.intel.com>
-References: <20100617134559.GA29824@bicker>
-	<20100617161728.GA2741@joi.lan>
-	<4C1B1691.6020809@redhat.com>
-	<20100618175726.GA2785@joi.lan>
-	<4C1F455E.6050502@redhat.com>
-	<1277118155.1875.508.camel@laptop>
-	<4C1F47EF.2060509@redhat.com>
-	<20100621153303.GA2754@joi.lan>
-	<1277134873.1875.520.camel@laptop>
-	<1277142860.3017.22.camel@sbs-t61.sc.intel.com>
-Date: Mon, 21 Jun 2010 11:08:50 -0700
-Message-ID: <AANLkTilXM-6fIvU8TYADyyxxyg-6eIclkzfeT4vvBVJY@mail.gmail.com>
-Subject: Re: [patch] x86, pat: freeing invalid memtype messages
-From: Venkatesh Pallipadi <venki@google.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Marcin Slusarz <marcin.slusarz@gmail.com>,
-       Xiaotian Feng <dfeng@redhat.com>, Dan Carpenter <error27@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H.PeterA" <nvinhpa@zytor.com>, Jack Steiner <steiner@sgi.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>
+In-Reply-To: <4C0E9E03.1010508@kernel.org>
+References: <4C08FF36.80806@kernel.org>
+	<4C0E9E03.1010508@kernel.org>
+Date: Mon, 21 Jun 2010 11:28:33 -0700
+X-Google-Sender-Auth: 6vwLWEzT5yU_uL7vHOxeF31DVC4
+Message-ID: <AANLkTimL2dEhIaxztoiDRBY3CsalcVNU54Mko6yg8ZqG@mail.gmail.com>
+Subject: Re: [PATCH UPDATED] sched: adjust when cpu_active and cpuset 
+	configurations are updated during cpu on/offlining
+From: Tony Luck <tony.luck@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 10:54 AM, Suresh Siddha
-<suresh.b.siddha@intel.com> wrote:
-> On Mon, 2010-06-21 at 08:41 -0700, Peter Zijlstra wrote:
->> On Mon, 2010-06-21 at 17:33 +0200, Marcin Slusarz wrote:
->> > On Mon, Jun 21, 2010 at 07:07:27PM +0800, Xiaotian Feng wrote:
->> > > On 06/21/2010 07:02 PM, Peter Zijlstra wrote:
->> > > > On Mon, 2010-06-21 at 18:56 +0800, Xiaotian Feng wrote:
->> > > >
->> > > >> I guess there might be something wrong between the augmented rbtree insert/remove ..
->> > > >
->> > > > The easiest thing is to revert that change and try again, the next step
->> > > > would be to print the full RB tree on each modification and look where
->> > > > it goes wrong.
->> > > >
->> > > > That said, I did print my fair share of (augmented) RB trees while
->> > > > playing with scheduler patches and I can't remember it ever having
->> > > > messed up like that.
->> > > He's using 2.6.35-rc2+, without your "rbtree: Undo augmented trees
->> > > performance damage" patch ;-)
->> >
->> > I applied it manually (commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249 from -tip)
->> > to 2.6.35-rc3 and it fixed both acpi's and nouveau's "invalid memtype" messages.
->> > Thanks.
->>
->> Oh neat, so it actually fixes a bug in the previous augmented rb-tree
->> implementation?
->
-> When I was reviewing your fix, it looked like that prior to your fix we
-> were re-augmenting only at points where we do the tree rotations/color
-> change and at the points of node insertion/removal. I don't think we
-> were re-augmenting all the parent nodes in the path of the selected-node
-> that is going to replace the deleted node.
->
-> Perhaps we were hitting this issue here.
->
+On Tue, Jun 8, 2010 at 12:46 PM, Tejun Heo <tj@kernel.org> wrote:
+> * Ingo's test discovered __cpuinit/exit markups were incorrect.
+>  Fixed.
 
-rb_erase was calling the augment callback with successor_parent_cb.
-That should be doing proper re-augmenting on delete.
+No it isn't :-(
 
-May be we are hitting the problem with not-initializing
-subtree_max_end on insert? That was fixed in a later patch.
+> +static int __cpuexit cpuset_cpu_active(struct notifier_block *nfb,
+> +                                      unsigned long action, void *hcpu)
+...
+> +static int __cpuexit cpuset_cpu_inactive(struct notifier_block *nfb,
+> +                                        unsigned long action, void *hcpu)
 
-Thanks,
-Venki
+This patch arrived in linux-next (tag next-20100621) and breaks the
+ia64 build for configurations where CONFIG_HOTPLUG_CPU=n
+with the following cryptic error:
+
+`.cpuexit.text' referenced in section `.IA_64.unwind.cpuexit.text' of
+kernel/built-in.o: defined in discarded section `.cpuexit.text' of
+kernel/built-in.o
+
+This is because ia64 link stage drops __exit functions from
+built-in code (under the logic that they can never be called).
+
+Is the problem in the !CONFIG_HOTPLUG_CPU definition of
+hotcpu_notifier() in <linux/cpu.h> which still references the
+function argument:
+
+#define hotcpu_notifier(fn, pri)        do { (void)(fn); } while (0)
+
+Or should these functions not be marked __cpuexit?
+
+-Tony
