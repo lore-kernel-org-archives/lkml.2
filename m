@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908Ab0FUR1O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 13:27:14 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:39592 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932312Ab0FUR1M (ORCPT
+	id S1758145Ab0FUR15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 13:27:57 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:17582 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758016Ab0FUR14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 13:27:12 -0400
-Date: Mon, 21 Jun 2010 19:27:04 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Gregory Bean <gbean@codeaurora.org>, dwalker@codeaurora.org,
-       linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] msm: Add gpio register address mapping information.
-Message-ID: <20100621172704.GH2176@elf.ucw.cz>
-References: <1276888375-13221-1-git-send-email-gbean@codeaurora.org>
- <1276888375-13221-2-git-send-email-gbean@codeaurora.org>
- <20100619200249.GA2507@elf.ucw.cz>
- <4C1F9B58.6020302@codeaurora.org>
+	Mon, 21 Jun 2010 13:27:56 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Subject: Re: [Bug 16007] x86/pci Oops with CONFIG_SND_HDA_INTEL
+Date: Mon, 21 Jun 2010 11:28:11 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Graham Ramsey <ramsey.graham@ntlworld.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+       linux-pci@vger.kernel.org, bugzilla-daemon@bugzilla.kernel.org,
+       Myron Stowe <myron.stowe@hp.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Harald Welte <HaraldWelte@viatech.com>,
+       Joseph Chan <JosephChan@via.com.tw>
+References: <4BF40014.30303@ntlworld.com> <201006111549.05164.bjorn.helgaas@hp.com> <4C12C189.50201@oracle.com>
+In-Reply-To: <4C12C189.50201@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C1F9B58.6020302@codeaurora.org>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006211128.12889.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2010-06-21 10:03:20, Bryan Huntsman wrote:
-> Pavel Machek wrote:
-> >Hi!
-> >
-> >>--- /dev/null
-> >>+++ b/arch/arm/mach-msm/gpio_hw-7x30.h
-> >>@@ -0,0 +1,112 @@
-> >>+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-> >>+ *
-> >>+ * Redistribution and use in source and binary forms, with or without
-> >>+ * modification, are permitted provided that the following conditions are
-> >>+ * met:
-> >>+ *     * Redistributions of source code must retain the above copyright
-> >>+ *       notice, this list of conditions and the following disclaimer.
-> >>+ *     * Redistributions in binary form must reproduce the above
-> >>+ *       copyright notice, this list of conditions and the following
-> >>+ *       disclaimer in the documentation and/or other materials provided
-> >>+ *       with the distribution.
-> >>+ *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
-> >>+ *       contributors may be used to endorse or promote products derived
-> >>+ *       from this software without specific prior written permission.
-> >
-> >Yeah. Either this can be replaced with GPL, and it such case just do
-> >so, or it can not, and then it can not be applied to kernel.
-> >
-> 
-> This is a standard BSD-style license so it's compatible w/ the GPL.
-> Thanks.
+I think the best long-term fix is to always enable "pci=use_crs",
+regardless of the BIOS date (currently we only do it for 2008 and
+newer).  System designers and BIOS writers expect the OS to pay
+attention to that information, and indications are that Windows
+does use it, so I think we will ultimately be better off if we
+use the expected, best-tested path.
 
-Not good enough for kernel. Stop trying to push this.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+However, we have at least one known Linux issue (bug #16228) when
+_CRS is enabled, so I'm hesitant to enable it unconditionally at
+least until that is resolved.
+
+In the short term, I think we should apply Graham's quirk from
+comment #8, which enables pci=use_crs just for his system.
+
+Here's my response to Yinghai's patches.  ACPI gives us these resources:
+  pci_root PNP0A03:00: host bridge window [mem 0x80000000-0xff37ffff] (bus 00)
+  pci_root PNP0A08:00: host bridge window [mem 0xfebfc000-0xfebfffff] (bus 80)
+
+Yinghai's patch (comment #17, with a v2 posted to the list but not in
+the bugzilla), gives us these resources:
+  pci_bus 0000:00: resource 5 [mem 0x80000000-0xfcffffffff]
+  pci_bus 0000:80: resource 5 [mem 0x80000000-0xfcffffffff]
+
+I think it's just a bad idea to assign the same range to both buses,
+especially when the BIOS is telling us what we should be using.
+
+I also think it's a mistake to mess with the resource code to deal
+with this specific case.  A change like that makes resource.c hard
+to understand and maintain in the future.
