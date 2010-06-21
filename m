@@ -1,259 +1,878 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932865Ab0FUQ0m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 12:26:42 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:63374 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758054Ab0FUQX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 12:23:57 -0400
-X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jun 2010 12:23:51 EDT
-X-IronPort-AV: E=Sophos;i="4.53,453,1272859200"; 
-   d="scan'208";a="102450166"
-From: stefano@stabellini.net
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com, Stefano.Stabellini@eu.citrix.com,
-       sheng@linux.intel.com, ddutile@redhat.com, jeremy@goop.org,
-       Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-       "Yaozu (Eddie) Dong" <eddie.dong@intel.com>
-Subject: [PATCH 02/13] early PV on HVM
-Date: Mon, 21 Jun 2010 17:13:56 +0100
-Message-Id: <1277136847-13266-2-git-send-email-stefano@stabellini.net>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
-References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
-X-OriginalArrivalTime: 21 Jun 2010 16:14:23.0896 (UTC) FILETIME=[D043D180:01CB115C]
+	id S932834Ab0FUQcu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 12:32:50 -0400
+Received: from imr1.ericy.com ([198.24.6.9]:55553 "EHLO imr1.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932316Ab0FUQct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 12:32:49 -0400
+Date: Mon, 21 Jun 2010 09:31:33 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+CC: Jean Delvare <khali@linux-fr.org>, Hans de Goede <hdegoede@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] hwmon: Driver for SMM665 Six-Channel Active DC
+ Output Controller/Monitor
+Message-ID: <20100621163133.GA11311@ericsson.com>
+References: <1277061575-13831-1-git-send-email-guenter.roeck@ericsson.com>
+ <1277061575-13831-2-git-send-email-guenter.roeck@ericsson.com>
+ <4C1F30F8.70807@jic23.retrosnub.co.uk>
+ <20100621150621.GA10945@ericsson.com>
+ <4C1F8D82.70508@jic23.retrosnub.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4C1F8D82.70508@jic23.retrosnub.co.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sheng Yang <sheng@linux.intel.com>
+On Mon, Jun 21, 2010 at 12:04:18PM -0400, Jonathan Cameron wrote:
+> On 06/21/10 16:06, Guenter Roeck wrote:
+> > On Mon, Jun 21, 2010 at 05:29:28AM -0400, Jonathan Cameron wrote:
+> >> On 06/20/10 20:19, Guenter Roeck wrote:
+> >>> This driver adds support for the monitoring features of the Summit
+> >>> Microelectronics SMM665 Six-Channel Active DC Output Controller/Monitor.
+> >>>
+> >>> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> >>
+> >> Hi Guenter,
+> >>
+> >> Few more comments below.  Please don't eat errors when there
+> >> is no reason to do so.
+> >>
+> >> Also I would hold this driver for a few days to see if anyone
+> >> has comments on the critical values attributes.  It would be
+> >> good to see them supported as well (afterall you have pretty
+> >> much all the code here anyway!)
+> >>
+> > Sounds good to me. I'll be out travelling for the next few days anyway.
+> >
+> > Comments inline.
+> >
+> > Thanks a lot for the review!
+> >
+> > Guenter
+> >
+> >> Jonathan
+> >>> ---
+> >>>  drivers/hwmon/Kconfig  |   15 +
+> >>>  drivers/hwmon/Makefile |    1 +
+> >>>  drivers/hwmon/smm665.c |  681 ++++++++++++++++++++++++++++++++++++++++++++++++
+> >>>  3 files changed, 697 insertions(+), 0 deletions(-)
+> >>>  create mode 100644 drivers/hwmon/smm665.c
+> >>>
+> >>> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> >>> index e19cf8e..c45c17e 100644
+> >>> --- a/drivers/hwmon/Kconfig
+> >>> +++ b/drivers/hwmon/Kconfig
+> >>> @@ -739,6 +739,21 @@ config SENSORS_SIS5595
+> >>>         This driver can also be built as a module.  If so, the module
+> >>>         will be called sis5595.
+> >>>
+> >>> +config SENSORS_SMM665
+> >>> +     tristate "Summit Microelectronics SMM665"
+> >>> +     depends on I2C && EXPERIMENTAL
+> >>> +     default n
+> >>> +     help
+> >>> +       If you say yes here you get support for the hardware monitoring
+> >>> +       features of the Summit Microelectronics SMM665/SMM665B Six-Channel
+> >>> +       Active DC Output Controller / Monitor.
+> >>> +
+> >>> +       Other supported chips are SMM465, SMM665C, SMM764, and SMM766.
+> >>> +       Support for those chips is untested.
+> >>> +
+> >>> +       This driver can also be built as a module. If so, the module will
+> >>> +       be called smm665.
+> >>> +
+> >>>  config SENSORS_DME1737
+> >>>       tristate "SMSC DME1737, SCH311x and compatibles"
+> >>>       depends on I2C && EXPERIMENTAL
+> >>> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+> >>> index 2138ceb..55b0940 100644
+> >>> --- a/drivers/hwmon/Makefile
+> >>> +++ b/drivers/hwmon/Makefile
+> >>> @@ -86,6 +86,7 @@ obj-$(CONFIG_SENSORS_PCF8591)       += pcf8591.o
+> >>>  obj-$(CONFIG_SENSORS_S3C)    += s3c-hwmon.o
+> >>>  obj-$(CONFIG_SENSORS_SHT15)  += sht15.o
+> >>>  obj-$(CONFIG_SENSORS_SIS5595)        += sis5595.o
+> >>> +obj-$(CONFIG_SENSORS_SMM665) += smm665.o
+> >>>  obj-$(CONFIG_SENSORS_SMSC47B397)+= smsc47b397.o
+> >>>  obj-$(CONFIG_SENSORS_SMSC47M1)       += smsc47m1.o
+> >>>  obj-$(CONFIG_SENSORS_SMSC47M192)+= smsc47m192.o
+> >>> diff --git a/drivers/hwmon/smm665.c b/drivers/hwmon/smm665.c
+> >>> new file mode 100644
+> >>> index 0000000..b4e7c8f
+> >>> --- /dev/null
+> >>> +++ b/drivers/hwmon/smm665.c
+> >>> @@ -0,0 +1,681 @@
+> >>> +/*
+> >>> + * Driver for SMM665 Power Controller / Monitor
+> >>> + *
+> >>> + * Copyright (C) 2010 Ericsson AB.
+> >>> + *
+> >>> + * This program is free software; you can redistribute it and/or modify
+> >>> + * it under the terms of the GNU General Public License as published by
+> >>> + * the Free Software Foundation; version 2 of the License.
+> >>> + *
+> >>> + * This driver should also work for SMM465, SMM764, and SMM766, but is untested
+> >>> + * for those chips. Only monitoring functionality is implemented.
+> >>> + *
+> >>> + * Datasheets:
+> >>> + * http://www.summitmicro.com/prod_select/summary/SMM665/SMM665B_2089_20.pdf
+> >>> + * http://www.summitmicro.com/prod_select/summary/SMM766B/SMM766B_2122.pdf
+> >>> + */
+> >>> +
+> >>> +#include <linux/kernel.h>
+> >>> +#include <linux/module.h>
+> >>> +#include <linux/init.h>
+> >>> +#include <linux/err.h>
+> >>> +#include <linux/slab.h>
+> >>> +#include <linux/i2c.h>
+> >>> +#include <linux/hwmon.h>
+> >>> +#include <linux/hwmon-sysfs.h>
+> >>> +#include <linux/delay.h>
+> >>> +
+> >>> +/* Internal reference voltage (VREF, x 1000 */
+> >>> +#define SMM665_VREF_ADC_X1000        1250
+> >>> +
+> >>> +/* module parameters */
+> >>> +static int vref = SMM665_VREF_ADC_X1000;
+> >>> +module_param(vref, int, 0);
+> >>> +MODULE_PARM_DESC(vref, "Reference voltage in mV");
+> >>> +
+> >>> +enum chips { smm465, smm665, smm665c, smm764, smm766 };
+> >>> +
+> >>> +/*
+> >>> + * ADC channel addresses
+> >>> + */
+> >>> +#define      SMM665_MISC16_ADC_DATA_A        0x00
+> >>> +#define      SMM665_MISC16_ADC_DATA_B        0x01
+> >>> +#define      SMM665_MISC16_ADC_DATA_C        0x02
+> >>> +#define      SMM665_MISC16_ADC_DATA_D        0x03
+> >>> +#define      SMM665_MISC16_ADC_DATA_E        0x04
+> >>> +#define      SMM665_MISC16_ADC_DATA_F        0x05
+> >>> +#define      SMM665_MISC16_ADC_DATA_VDD      0x06
+> >>> +#define      SMM665_MISC16_ADC_DATA_12V      0x07
+> >>> +#define      SMM665_MISC16_ADC_DATA_INT_TEMP 0x08
+> >>> +#define      SMM665_MISC16_ADC_DATA_AIN1     0x09
+> >>> +#define      SMM665_MISC16_ADC_DATA_AIN2     0x0a
+> >>> +
+> >>> +/*
+> >>> + * Command registers
+> >>> + */
+> >>> +#define      SMM665_MISC8_CMD_STS            0x80
+> >>> +#define      SMM665_MISC8_STATUS1            0x81
+> >>> +#define      SMM665_MISC8_STATUSS2           0x82
+> >>> +#define      SMM665_MISC8_IO_POLARITY        0x83
+> >>> +#define      SMM665_MISC8_PUP_POLARITY       0x84
+> >>> +#define      SMM665_MISC8_ADOC_STATUS1       0x85
+> >>> +#define      SMM665_MISC8_ADOC_STATUS2       0x86
+> >>> +#define      SMM665_MISC8_WRITE_PROT         0x87
+> >>> +#define      SMM665_MISC8_STS_TRACK          0x88
+> >>> +
+> >>> +/*
+> >>> + * Configuration registers and register groups
+> >>> + */
+> >>> +#define SMM665_ADOC_ENABLE           0x0d
+> >>> +#define SMM665_LIMIT_BASE            0x80    /* First limit register */
+> >>> +
+> >>> +/*
+> >>> + * Limit register bit masks
+> >>> + */
+> >>> +#define SMM665_TRIGGER_RST           0x8000
+> >>> +#define SMM665_TRIGGER_HEALTHY               0x4000
+> >>> +#define SMM665_TRIGGER_POWEROFF              0x2000
+> >>> +#define SMM665_TRIGGER_SHUTDOWN              0x1000
+> >>> +#define SMM665_ADC_MASK                      0x03ff
+> >>> +
+> >>> +#define smm665_is_critical(lim)      ((lim) & (SMM665_TRIGGER_RST \
+> >>> +                                     | SMM665_TRIGGER_POWEROFF \
+> >>> +                                     | SMM665_TRIGGER_SHUTDOWN))
+> >>> +/*
+> >>> + * Fault register bit definitions
+> >>> + * Values are merged from status registers 1/2,
+> >>> + * with status register 1 providing the upper 8 bits.
+> >>> + */
+> >>> +#define SMM665_FAULT_A               0x0001
+> >>> +#define SMM665_FAULT_B               0x0002
+> >>> +#define SMM665_FAULT_C               0x0004
+> >>> +#define SMM665_FAULT_D               0x0008
+> >>> +#define SMM665_FAULT_E               0x0010
+> >>> +#define SMM665_FAULT_F               0x0020
+> >>> +#define SMM665_FAULT_VDD     0x0040
+> >>> +#define SMM665_FAULT_12V     0x0080
+> >>> +#define SMM665_FAULT_TEMP    0x0100
+> >>> +#define SMM665_FAULT_AIN1    0x0200
+> >>> +#define SMM665_FAULT_AIN2    0x0400
+> >>> +
+> >>> +/*
+> >>> + * I2C Register addresses
+> >>> + *
+> >>> + * The configuration register needs to be the configured base register.
+> >>> + * The command/status register address is derived from it.
+> >>> + */
+> >>> +#define SMM665_REGMASK               0x78
+> >>> +#define SMM665_CMDREG_BASE   0x48
+> >>> +#define SMM665_CONFREG_BASE  0x50
+> >>> +
+> >>> +/*
+> >>> + *  Equations given by chip manufacturer to calculate voltage/temperature values
+> >>> + *  vref = Reference voltage on VREF_ADC pin (module parameter)
+> >>> + *  adc  = 10bit ADC value read back from registers
+> >>> + */
+> >>> +
+> >>> +/* Voltage A-F and VDD */
+> >>> +#define SMM665_VMON_ADC_TO_VOLTS(adc)  ((adc) * vref / 256)
+> >>> +
+> >>> +/* Voltage 12VIN */
+> >>> +#define SMM665_12VIN_ADC_TO_VOLTS(adc) ((adc) * vref * 3 / 256)
+> >>> +
+> >>> +/* Voltage AIN1, AIN2 */
+> >>> +#define SMM665_AIN_ADC_TO_VOLTS(adc)   ((adc) * vref / 512)
+> >>> +
+> >>> +/* Temp Sensor */
+> >>> +#define SMM665_TEMP_ADC_TO_CELSIUS(adc) ((adc) <= 511) ?                \
+> >>> +                                      ((int)(adc) * 1000 / 4) :         \
+> >>> +                                      (((int)(adc) - 0x400) * 1000 / 4)
+> >>> +
+> >>> +#define SMM665_NUM_ADC               11
+> >>> +
+> >>> +/*
+> >>> + * Chip dependent ADC conversion time, in uS
+> >>> + */
+> >>> +#define SMM665_ADC_WAIT_SMM665       70
+> >>> +#define SMM665_ADC_WAIT_SMM766       185
+> >>> +
+> >>> +struct smm665_data {
+> >>> +     enum chips type;
+> >>> +     int conversion_time;            /* ADC conversion time */
+> >>> +     struct device *hwmon_dev;
+> >>> +     struct mutex update_lock;
+> >>> +     bool valid;
+> >>> +     unsigned long last_updated;     /* in jiffies */
+> >>> +     u16 adc[SMM665_NUM_ADC];        /* adc values (raw) */
+> >>> +     u16 faults;                     /* fault status */
+> >>> +     /* The following values are in mV */
+> >>> +     int critical_under_limit[SMM665_NUM_ADC];
+> >>> +     int alarm_under_limit[SMM665_NUM_ADC];
+> >>> +     int critical_over_limit[SMM665_NUM_ADC];
+> >>> +     int alarm_over_limit[SMM665_NUM_ADC];
+> >>> +     struct i2c_client *cmdreg;
+> >>> +};
+> >>> +
+> >>> +/*
+> >>> + * smm665_read16()
+> >>> + *
+> >>> + * Read 16 bit value from <reg>, <reg+1>. Upper 8 bits are in <reg>.
+> >>> + */
+> >>> +static int smm665_read16(struct i2c_client *client, int reg)
+> >>> +{
+> >>> +     int rv, val;
+> >>> +
+> >>> +     rv = i2c_smbus_read_byte_data(client, reg);
+> >>> +     if (rv < 0)
+> >>> +             return rv;
+> >>> +     val = rv << 8;
+> >>> +     rv = i2c_smbus_read_byte_data(client, reg + 1);
+> >>> +     if (rv < 0)
+> >>> +             return rv;
+> >>> +     val |= rv;
+> >>> +     return val;
+> >>> +}
+> >>> +
+> >>> +/*
+> >>> + * Read adc value.
+> >>> + */
+> >>> +static int smm665_read_adc(struct smm665_data *data, int adc)
+> >>> +{
+> >>> +     struct i2c_client *client = data->cmdreg;
+> >>> +     int rv;
+> >>> +     int radc;
+> >>> +
+> >>> +     /*
+> >>> +      * Algorithm for reading ADC, per SMM665 datasheet
+> >>> +      *
+> >>> +      *  {[S][addr][W][Ack]} {[offset][Ack]} {[S][addr][R][Nack]}
+> >>> +      * [wait conversion time]
+> >>> +      *  {[S][addr][R][Ack]} {[datahi][Ack]} {[datalo][Ack][P]}
+> >>> +      *
+> >>> +      * To implement the first part of this exchange,
+> >>> +      * do a full read transaction and expect a failure/Nack.
+> >>> +      * This sets up the address pointer on the SMM665
+> >>> +      * and starts the ADC conversion.
+> >>> +      * Then do a two-byte read transaction.
+> >>> +      */
+> >>> +     rv = i2c_smbus_read_byte_data(client, adc << 3);
+> >>> +     if (rv != -ENXIO) {
+> >>> +             /*
+> >>> +              * We expect ENXIO to reflect NACK
+> >>> +              * (per Documentation/i2c/fault-codes).
+> >>> +              * Everything else is an error.
+> >>> +              */
+> >>> +             dev_dbg(&client->dev,
+> >>> +                     "Unexpected return code %d when setting ADC index", rv);
+> >> Better to pass on the return code rather than eat it like this.
+> >
+> > Code would then look like
+> >               return (rv < 0) ? rv : -EIO;
+> > so it adds a little bit of complexity. Since this is an unlikely case,
+> > guess that should be ok.
+> Yup, not a lot of complexity for the gain in information if this
+> goes all the way to userspace.
+> >
+> >>> +             return -1;
+> >>> +     }
+> >>> +
+> >>> +     udelay(data->conversion_time);
+> >>> +
+> >>> +     /*
+> >>> +      * Now read two bytes.
+> >>> +      *
+> >>> +      * Neither i2c_smbus_read_byte() nor
+> >>> +      * i2c_smbus_read_block_data() worked here,
+> >>> +      * so use i2c_smbus_read_word_data() instead.
+> >>> +      * We could also try to use i2c_master_recv(),
+> >>> +      * but that is not always supported.
+> >>> +      */
+> >>> +     rv = i2c_smbus_read_word_data(client, 0);
+> >>> +     if (rv < 0) {
+> >>> +             dev_dbg(&client->dev, "Failed to read ADC value: error %d", rv);
+> >>> +             return -1;
+> >> Again, don't eat return codes.  Pass them on as far as you can
+> >
+> > Ok.
+> >
+> >>> +     }
+> >>> +     /*
+> >>> +      * Validate/verify readback adc channel (in bit 11..14).
+> >>> +      * High byte is in lower 8 bit of rv, so only shift by 3.
+> >>> +      */
+> >>> +     radc = (rv >> 3) & 0x0f;
+> >>> +     if (radc != adc) {
+> >>> +             dev_dbg(&client->dev, "Unexpected RADC: Expected %d got %d",
+> >>> +                     adc, radc);
+> >> Not quite sure what the right error code here would be...
+> >
+> > I would assume -EAGAIN. The device reported an ADC value, but for the wrong ADC,
+> > so requesting a retry would probably be the best reaction.
+> -EAGAIN is typically used for a 'device is busy' circumstance rather than it failed
+> this time and might work next.
 
-Initialize basic pv on hvm features in xen_hvm_guest_init.
+Ok, I'll use -EIO, unless you have a better idea. After all, it should not fail
+in the first place unless something odd is going on.
 
-The hook in arch/x86/kernel/setup.c can easily be removed using the new
-generic hypervisor independent initialization infrastructure present in
-the linux-2.6-tip tree.
+> >
+> >>> +             return -1;
+> >>> +     }
+> >>> +     /*
+> >>> +      * Chip replies with H/L, while SMBus expects L/H.
+> >>> +      * Thus, byte order is reversed, and we have to swap
+> >>> +      * the result.
+> >>> +      */
+> >>> +     rv = swab16(rv) & SMM665_ADC_MASK;
+> >>> +
+> >>> +     return rv;
+> >>> +}
+> >>> +
+> >>> +static struct smm665_data *smm665_update_device(struct device *dev)
+> >>> +{
+> >>> +     struct i2c_client *client = to_i2c_client(dev);
+> >>> +     struct smm665_data *data = i2c_get_clientdata(client);
+> >>> +
+> >>> +     mutex_lock(&data->update_lock);
+> >>> +
+> >>> +     if (time_after(jiffies, data->last_updated + HZ) || !data->valid) {
+> >>> +             int i, faults;
+> >>> +
+> >>> +             /*
+> >>> +              * read status registers
+> >>> +              */
+> >>> +             faults = smm665_read16(client, SMM665_MISC8_STATUS1);
+> >>> +             if (unlikely(faults < 0))
+> >>> +                     data->faults = 0;
+> >>> +             else
+> >>> +                     data->faults = faults;
+> >>> +
+> >>> +             /* Read adc registers */
+> >>> +             for (i = 0; i < SMM665_NUM_ADC; i++) {
+> >>> +                     int val = smm665_read_adc(data, i);
+> >>> +                     if (unlikely(val < 0))
+> >> So this is going to keep hammering a device that has already reported
+> >> an error. Ideally this would drop out and pass the error code all
+> >> the way up to user space.
+> >
+> > Yes, but do we know if this is a transient error ? Code would get quite
+> > complicated if I would try to sort out the reason for a failure and act on it.
+> If an error occurs then report it (via return from sysfs read).  That way userspace
+> can know that 'all' data might be invalid.  Doesn't matter if some of it is actually
+> fine.
+> 
+Makes sense. I'll check if I can store the error in the adc variable and return
+the stored error when it is read via sysfs.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-Signed-off-by: Yaozu (Eddie) Dong <eddie.dong@intel.com>
----
- arch/x86/kernel/setup.c           |    2 +
- arch/x86/xen/enlighten.c          |   84 +++++++++++++++++++++++++++++++++++++
- drivers/input/xen-kbdfront.c      |    2 +-
- drivers/video/xen-fbfront.c       |    2 +-
- drivers/xen/xenbus/xenbus_probe.c |   21 ++++++++-
- include/xen/xen.h                 |    2 +
- 6 files changed, 108 insertions(+), 5 deletions(-)
+> >
+> > Looking through other hwmon drivers, they either do the same (such as ltc4245,
+> > which I used as starting point), or ignore the error - up to the point
+> > where it is reported as ADC reading to the user (eg lm80).
+> Yup, there are occasionally patches to clean up error handling to ensure it goes
+> to userspace where possible.  It is one of those things that is nice to get right
+> in new drivers but no one can be bothered to fix the older ones.  If it adds a
+> lot of complexity then don't bother. I doubt anyone will be that fussy.
+> 
+> >
+> > Ultimately, there is no API for reporting this kind of error to userland,
+> > so I rather stick with precedent and do nothing.
+> The passing them up to userspace is the api for reporting errors.  Whether
+> user space acts on them is up to user space.  So if one reads a sysfs file
+> and gets an error it should go all the way.
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c4851ef..de6d23f 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -69,6 +69,7 @@
- #include <linux/tboot.h>
- 
- #include <video/edid.h>
-+#include <xen/xen.h>
- 
- #include <asm/mtrr.h>
- #include <asm/apic.h>
-@@ -1032,6 +1033,7 @@ void __init setup_arch(char **cmdline_p)
- 	probe_nr_irqs_gsi();
- 
- 	kvm_guest_init();
-+	xen_hvm_guest_init();
- 
- 	e820_reserve_resources();
- 	e820_mark_nosave_regions(max_low_pfn);
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 65d8d79..d776c02 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -35,6 +35,7 @@
- #include <xen/interface/version.h>
- #include <xen/interface/physdev.h>
- #include <xen/interface/vcpu.h>
-+#include <xen/interface/memory.h>
- #include <xen/features.h>
- #include <xen/page.h>
- #include <xen/hvc-console.h>
-@@ -56,6 +57,7 @@
- #include <asm/tlbflush.h>
- #include <asm/reboot.h>
- #include <asm/stackprotector.h>
-+#include <asm/hypervisor.h>
- 
- #include "xen-ops.h"
- #include "mmu.h"
-@@ -1206,3 +1208,85 @@ asmlinkage void __init xen_start_kernel(void)
- 	x86_64_start_reservations((char *)__pa_symbol(&boot_params));
- #endif
- }
-+
-+static uint32_t xen_cpuid_base(void)
-+{
-+	uint32_t base, eax, ebx, ecx, edx;
-+	char signature[13];
-+
-+	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
-+		cpuid(base, &eax, &ebx, &ecx, &edx);
-+		*(uint32_t *)(signature + 0) = ebx;
-+		*(uint32_t *)(signature + 4) = ecx;
-+		*(uint32_t *)(signature + 8) = edx;
-+		signature[12] = 0;
-+
-+		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
-+			return base;
-+	}
-+
-+	return 0;
-+}
-+
-+static int init_hvm_pv_info(int *major, int *minor)
-+{
-+	uint32_t eax, ebx, ecx, edx, pages, msr, base;
-+	u64 pfn;
-+
-+	base = xen_cpuid_base();
-+	if (!base)
-+		return -EINVAL;
-+
-+	cpuid(base + 1, &eax, &ebx, &ecx, &edx);
-+
-+	*major = eax >> 16;
-+	*minor = eax & 0xffff;
-+	printk(KERN_INFO "Xen version %d.%d.\n", *major, *minor);
-+
-+	cpuid(base + 2, &pages, &msr, &ecx, &edx);
-+
-+	pfn = __pa(hypercall_page);
-+	wrmsr_safe(msr, (u32)pfn, (u32)(pfn >> 32));
-+
-+	xen_setup_features();
-+
-+	pv_info = xen_info;
-+	pv_info.kernel_rpl = 0;
-+
-+	xen_domain_type = XEN_HVM_DOMAIN;
-+
-+	return 0;
-+}
-+
-+static void __init init_shared_info(void)
-+{
-+	struct xen_add_to_physmap xatp;
-+	struct shared_info *shared_info_page;
-+
-+	shared_info_page = (struct shared_info *) alloc_bootmem_pages(PAGE_SIZE);
-+	xatp.domid = DOMID_SELF;
-+	xatp.idx = 0;
-+	xatp.space = XENMAPSPACE_shared_info;
-+	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
-+	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
-+		BUG();
-+
-+	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
-+
-+	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
-+}
-+
-+void __init xen_hvm_guest_init(void)
-+{
-+	int r;
-+	int major, minor;
-+
-+	if (xen_pv_domain())
-+		return;
-+
-+	r = init_hvm_pv_info(&major, &minor);
-+	if (r < 0)
-+		return;
-+
-+	init_shared_info();
-+}
-diff --git a/drivers/input/xen-kbdfront.c b/drivers/input/xen-kbdfront.c
-index e140816..7451d78 100644
---- a/drivers/input/xen-kbdfront.c
-+++ b/drivers/input/xen-kbdfront.c
-@@ -339,7 +339,7 @@ static struct xenbus_driver xenkbd_driver = {
- 
- static int __init xenkbd_init(void)
- {
--	if (!xen_domain())
-+	if (!xen_domain() || xen_hvm_domain())
- 		return -ENODEV;
- 
- 	/* Nothing to do if running in dom0. */
-diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
-index fa97d3e..a105a19 100644
---- a/drivers/video/xen-fbfront.c
-+++ b/drivers/video/xen-fbfront.c
-@@ -684,7 +684,7 @@ static struct xenbus_driver xenfb_driver = {
- 
- static int __init xenfb_init(void)
- {
--	if (!xen_domain())
-+	if (!xen_domain() || xen_hvm_domain())
- 		return -ENODEV;
- 
- 	/* Nothing to do if running in dom0. */
-diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-index 3479332..0b05b62 100644
---- a/drivers/xen/xenbus/xenbus_probe.c
-+++ b/drivers/xen/xenbus/xenbus_probe.c
-@@ -56,6 +56,8 @@
- #include <xen/events.h>
- #include <xen/page.h>
- 
-+#include <xen/hvm.h>
-+
- #include "xenbus_comms.h"
- #include "xenbus_probe.h"
- 
-@@ -806,10 +808,23 @@ static int __init xenbus_probe_init(void)
- 		/* dom0 not yet supported */
- 	} else {
- 		xenstored_ready = 1;
--		xen_store_evtchn = xen_start_info->store_evtchn;
--		xen_store_mfn = xen_start_info->store_mfn;
-+		if (xen_hvm_domain()) {
-+			uint64_t v = 0;
-+			err = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &v);
-+			if (err)
-+				goto out_error;
-+			xen_store_evtchn = (int)v;
-+			err = hvm_get_parameter(HVM_PARAM_STORE_PFN, &v);
-+			if (err)
-+				goto out_error;
-+			xen_store_mfn = (unsigned long)v;
-+			xen_store_interface = ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
-+		} else {
-+			xen_store_evtchn = xen_start_info->store_evtchn;
-+			xen_store_mfn = xen_start_info->store_mfn;
-+			xen_store_interface = mfn_to_virt(xen_store_mfn);
-+		}
- 	}
--	xen_store_interface = mfn_to_virt(xen_store_mfn);
- 
- 	/* Initialize the interface to xenstore. */
- 	err = xs_init();
-diff --git a/include/xen/xen.h b/include/xen/xen.h
-index a164024..77604ed 100644
---- a/include/xen/xen.h
-+++ b/include/xen/xen.h
-@@ -9,8 +9,10 @@ enum xen_domain_type {
- 
- #ifdef CONFIG_XEN
- extern enum xen_domain_type xen_domain_type;
-+extern void xen_hvm_guest_init(void);
- #else
- #define xen_domain_type		XEN_NATIVE
-+#define xen_hvm_guest_init() do { } while (0)
- #endif
- 
- #define xen_domain()		(xen_domain_type != XEN_NATIVE)
--- 
-1.7.0.4
+Ok.
 
+> >
+> > One exception here is that we have a bit of vagueness in respect to the ADC reading code
+> > and the NACK mechanism. I think it makes sense to try reading an ADC value during device
+> > initialization (ie in the probe function), to make sure the code works as expected.
+> > This will catch problems if the bus driver does not return -ENXIO as response to NACK as
+> > expected. I'll add that code to the probe function.
+> I wouldn't bother unless you have reports of cases where it causes trouble.  Just
+> pass any errors that occur anywhere to userspace if possible. If they happen during
+> probe then the probe should fail (again returning the error code).
+
+Ok.
+
+> >
+> >>> +                             data->adc[i] = 0;
+> >>> +                     else
+> >>> +                             data->adc[i] = val;
+> >>> +             }
+> >>> +
+> >>> +             data->last_updated = jiffies;
+> >>> +             data->valid = 1;
+> >>> +     }
+> >>> +
+> >>> +     mutex_unlock(&data->update_lock);
+> >>> +
+> >>> +     return data;
+> >>> +}
+> >>> +
+> >>> +/* Return converted value from given adc */
+> >>> +static int smm665_convert(u16 adcval, int index)
+> >>> +{
+> >>> +     int val = 0;
+> >>> +
+> >>> +     switch (index) {
+> >>> +     case SMM665_MISC16_ADC_DATA_12V:
+> >>> +             val = SMM665_12VIN_ADC_TO_VOLTS(adcval & SMM665_ADC_MASK);
+> >>> +             break;
+> >>> +
+> >>> +     case SMM665_MISC16_ADC_DATA_VDD:
+> >>> +     case SMM665_MISC16_ADC_DATA_A:
+> >>> +     case SMM665_MISC16_ADC_DATA_B:
+> >>> +     case SMM665_MISC16_ADC_DATA_C:
+> >>> +     case SMM665_MISC16_ADC_DATA_D:
+> >>> +     case SMM665_MISC16_ADC_DATA_E:
+> >>> +     case SMM665_MISC16_ADC_DATA_F:
+> >>> +             val = SMM665_VMON_ADC_TO_VOLTS(adcval & SMM665_ADC_MASK);
+> >>> +             break;
+> >>> +
+> >>> +     case SMM665_MISC16_ADC_DATA_AIN1:
+> >>> +     case SMM665_MISC16_ADC_DATA_AIN2:
+> >>> +             val = SMM665_AIN_ADC_TO_VOLTS(adcval & SMM665_ADC_MASK);
+> >>> +             break;
+> >>> +
+> >>> +     case SMM665_MISC16_ADC_DATA_INT_TEMP:
+> >>> +             val = SMM665_TEMP_ADC_TO_CELSIUS(adcval & SMM665_ADC_MASK);
+> >>> +             break;
+> >>> +
+> >>> +     default:
+> >>> +             /* If we get here, the developer messed up */
+> >>> +             WARN_ON_ONCE(1);
+> >>> +             break;
+> >>> +     }
+> >>> +
+> >>> +     return val;
+> >>> +}
+> >>> +
+> >>> +/* Return converted value from given adc */
+> >>> +static int smm665_get_input(struct device *dev, int adc)
+> >>> +{
+> >>> +     struct smm665_data *data = smm665_update_device(dev);
+> >>> +
+> >>> +     return smm665_convert(data->adc[adc], adc);
+> >>> +}
+> >>> +
+> >>> +static int smm665_get_min(struct device *dev, int index)
+> >>> +{
+> >>> +     struct i2c_client *client = to_i2c_client(dev);
+> >>> +     struct smm665_data *data = i2c_get_clientdata(client);
+> >>> +
+> >>> +     return data->alarm_under_limit[index];
+> >>> +}
+> >>> +
+> >>> +static int smm665_get_max(struct device *dev, int index)
+> >>> +{
+> >>> +     struct i2c_client *client = to_i2c_client(dev);
+> >>> +     struct smm665_data *data = i2c_get_clientdata(client);
+> >>> +
+> >>> +     return data->alarm_over_limit[index];
+> >>> +}
+> >>> +
+> >>> +static int smm665_get_crit(struct device *dev, int index)
+> >>> +{
+> >>> +     struct i2c_client *client = to_i2c_client(dev);
+> >>> +     struct smm665_data *data = i2c_get_clientdata(client);
+> >>> +
+> >>> +     return data->critical_over_limit[index];
+> >>> +}
+> >>> +
+> >>> +static int smm665_get_fault(struct device *dev, int index)
+> >>> +{
+> >>> +     struct smm665_data *data = smm665_update_device(dev);
+> >>> +
+> >>> +     if (data->faults & (1 << index))
+> >>> +             return 1;
+> >>> +
+> >>> +     return 0;
+> >>> +}
+> >>> +
+> >>> +#define SMM665_SHOW(what) \
+> >>> +  static ssize_t smm665_show_##what(struct device *dev, \
+> >>> +                                 struct device_attribute *da, char *buf) \
+> >>> +{ \
+> >>> +     struct sensor_device_attribute *attr = to_sensor_dev_attr(da); \
+> >>> +     const int val = smm665_get_##what(dev, attr->index); \
+> >>> +     return snprintf(buf, PAGE_SIZE, "%d\n", val); \
+> >>> +}
+> >>> +
+> >>> +SMM665_SHOW(input);
+> >>> +SMM665_SHOW(min);
+> >>> +SMM665_SHOW(max);
+> >>> +SMM665_SHOW(crit);
+> >>> +SMM665_SHOW(fault);
+> >>> +
+> >>> +/* These macros are used below in constructing device attribute objects
+> >>> + * for use with sysfs_create_group() to make a sysfs device file
+> >>> + * for each register.
+> >>> + */
+> >>> +
+> >>> +#define SMM665_ATTR(name, type, cmd_idx) \
+> >>> +     static SENSOR_DEVICE_ATTR(name##_##type, S_IRUGO, \
+> >>> +                               smm665_show_##type, NULL, cmd_idx)
+> >>> +
+> >>> +/* Construct a sensor_device_attribute structure for each register */
+> >>> +
+> >>> +/* Input voltages */
+> >>> +SMM665_ATTR(in1, input, SMM665_MISC16_ADC_DATA_12V);
+> >>> +SMM665_ATTR(in2, input, SMM665_MISC16_ADC_DATA_VDD);
+> >>> +SMM665_ATTR(in3, input, SMM665_MISC16_ADC_DATA_A);
+> >>> +SMM665_ATTR(in4, input, SMM665_MISC16_ADC_DATA_B);
+> >>> +SMM665_ATTR(in5, input, SMM665_MISC16_ADC_DATA_C);
+> >>> +SMM665_ATTR(in6, input, SMM665_MISC16_ADC_DATA_D);
+> >>> +SMM665_ATTR(in7, input, SMM665_MISC16_ADC_DATA_E);
+> >>> +SMM665_ATTR(in8, input, SMM665_MISC16_ADC_DATA_F);
+> >>> +SMM665_ATTR(in9, input, SMM665_MISC16_ADC_DATA_AIN1);
+> >>> +SMM665_ATTR(in10, input, SMM665_MISC16_ADC_DATA_AIN2);
+> >>> +
+> >>> +/* Input voltages min */
+> >>> +SMM665_ATTR(in1, min, SMM665_MISC16_ADC_DATA_12V);
+> >>> +SMM665_ATTR(in2, min, SMM665_MISC16_ADC_DATA_VDD);
+> >>> +SMM665_ATTR(in3, min, SMM665_MISC16_ADC_DATA_A);
+> >>> +SMM665_ATTR(in4, min, SMM665_MISC16_ADC_DATA_B);
+> >>> +SMM665_ATTR(in5, min, SMM665_MISC16_ADC_DATA_C);
+> >>> +SMM665_ATTR(in6, min, SMM665_MISC16_ADC_DATA_D);
+> >>> +SMM665_ATTR(in7, min, SMM665_MISC16_ADC_DATA_E);
+> >>> +SMM665_ATTR(in8, min, SMM665_MISC16_ADC_DATA_F);
+> >>> +SMM665_ATTR(in9, min, SMM665_MISC16_ADC_DATA_AIN1);
+> >>> +SMM665_ATTR(in10, min, SMM665_MISC16_ADC_DATA_AIN2);
+> >>> +
+> >>> +/* Input voltages max */
+> >>> +SMM665_ATTR(in1, max, SMM665_MISC16_ADC_DATA_12V);
+> >>> +SMM665_ATTR(in2, max, SMM665_MISC16_ADC_DATA_VDD);
+> >>> +SMM665_ATTR(in3, max, SMM665_MISC16_ADC_DATA_A);
+> >>> +SMM665_ATTR(in4, max, SMM665_MISC16_ADC_DATA_B);
+> >>> +SMM665_ATTR(in5, max, SMM665_MISC16_ADC_DATA_C);
+> >>> +SMM665_ATTR(in6, max, SMM665_MISC16_ADC_DATA_D);
+> >>> +SMM665_ATTR(in7, max, SMM665_MISC16_ADC_DATA_E);
+> >>> +SMM665_ATTR(in8, max, SMM665_MISC16_ADC_DATA_F);
+> >>> +SMM665_ATTR(in9, max, SMM665_MISC16_ADC_DATA_AIN1);
+> >>> +SMM665_ATTR(in10, max, SMM665_MISC16_ADC_DATA_AIN2);
+> >>> +
+> >>> +/* Faults */
+> >>> +SMM665_ATTR(in1, fault, SMM665_FAULT_12V);
+> >>> +SMM665_ATTR(in2, fault, SMM665_FAULT_VDD);
+> >>> +SMM665_ATTR(in3, fault, SMM665_FAULT_A);
+> >>> +SMM665_ATTR(in4, fault, SMM665_FAULT_B);
+> >>> +SMM665_ATTR(in5, fault, SMM665_FAULT_C);
+> >>> +SMM665_ATTR(in6, fault, SMM665_FAULT_D);
+> >>> +SMM665_ATTR(in7, fault, SMM665_FAULT_E);
+> >>> +SMM665_ATTR(in8, fault, SMM665_FAULT_F);
+> >>> +SMM665_ATTR(in9, fault, SMM665_FAULT_AIN1);
+> >>> +SMM665_ATTR(in10, fault, SMM665_FAULT_AIN2);
+> >>> +
+> >>> +/* Temperature */
+> >>> +SMM665_ATTR(temp1, input, SMM665_MISC16_ADC_DATA_INT_TEMP);
+> >>> +SMM665_ATTR(temp1, min, SMM665_MISC16_ADC_DATA_INT_TEMP);
+> >>> +SMM665_ATTR(temp1, max, SMM665_MISC16_ADC_DATA_INT_TEMP);
+> >>
+> >> Why have critical here and nowhere else?
+> >
+> > Because the API defines it for temperatures, but not for voltages.
+> > Also, it is "critical high", which makes sense to a point for temperatures,
+> > but would be insufficient/incomplete for other measurements.
+> > It would be nice to have "min_crit" and "max_crit" for temperatures
+> > as well, though.
+> Yup.  Define them and post a patch adding them to the Documentation
+> (that's more likely to get peoples attention ;)
+
+Interesting idea. Might be worth a try ... maybe I should do the same for voltages.
+
+> >
+> >>> +SMM665_ATTR(temp1, crit, SMM665_MISC16_ADC_DATA_INT_TEMP);
+> >>> +SMM665_ATTR(temp1, fault, SMM665_FAULT_TEMP);
+> >>> +
+> >>> +/*
+> >>> + * Finally, construct an array of pointers to members of the above objects,
+> >>> + * as required for sysfs_create_group()
+> >>> + */
+> >>> +static struct attribute *smm665_attributes[] = {
+> >>> +     &sensor_dev_attr_in1_input.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in1_min.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in1_max.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in1_fault.dev_attr.attr,
+> >>> +
+> >>> +     &sensor_dev_attr_in2_input.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in2_min.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in2_max.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in2_fault.dev_attr.attr,
+> >>> +
+> >>> +     &sensor_dev_attr_in3_input.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in3_min.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in3_max.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in3_fault.dev_attr.attr,
+> >>> +
+> >>> +     &sensor_dev_attr_in4_input.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in4_min.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in4_max.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in4_fault.dev_attr.attr,
+> >>> +
+> >>> +     &sensor_dev_attr_in5_input.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in5_min.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in5_max.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in5_fault.dev_attr.attr,
+> >>> +
+> >>> +     &sensor_dev_attr_in6_input.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in6_min.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in6_max.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in6_fault.dev_attr.attr,
+> >>> +
+> >>> +     &sensor_dev_attr_in7_input.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in7_min.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in7_max.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in7_fault.dev_attr.attr,
+> >>> +
+> >>> +     &sensor_dev_attr_in8_input.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in8_min.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in8_max.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in8_fault.dev_attr.attr,
+> >>> +
+> >>> +     &sensor_dev_attr_in9_input.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in9_min.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in9_max.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in9_fault.dev_attr.attr,
+> >>> +
+> >>> +     &sensor_dev_attr_in10_input.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in10_min.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in10_max.dev_attr.attr,
+> >>> +     &sensor_dev_attr_in10_fault.dev_attr.attr,
+> >>> +
+> >>> +     &sensor_dev_attr_temp1_input.dev_attr.attr,
+> >>> +     &sensor_dev_attr_temp1_min.dev_attr.attr,
+> >>> +     &sensor_dev_attr_temp1_max.dev_attr.attr,
+> >>> +     &sensor_dev_attr_temp1_crit.dev_attr.attr,
+> >>> +     &sensor_dev_attr_temp1_fault.dev_attr.attr,
+> >>> +
+> >>> +     NULL,
+> >>> +};
+> >>> +
+> >>> +static const struct attribute_group smm665_group = {
+> >>> +     .attrs = smm665_attributes,
+> >>> +};
+> >>> +
+> >>> +static int smm665_probe(struct i2c_client *client,
+> >>> +                     const struct i2c_device_id *id)
+> >>> +{
+> >>> +     struct i2c_adapter *adapter = client->adapter;
+> >>> +     struct smm665_data *data;
+> >>> +     int i, ret;
+> >>> +
+> >>> +     if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA
+> >>> +                                  | I2C_FUNC_SMBUS_WORD_DATA))
+> >>> +             return -ENODEV;
+> >>> +
+> >>> +     if (i2c_smbus_read_byte_data(client, SMM665_ADOC_ENABLE) < 0)
+> >>> +             return -ENODEV;
+> >>> +
+> >>> +     ret = -ENOMEM;
+> >>> +     data = kzalloc(sizeof(*data), GFP_KERNEL);
+> >>> +     if (!data)
+> >>> +             goto out_kzalloc;
+> >>> +
+> >>> +     i2c_set_clientdata(client, data);
+> >>> +     mutex_init(&data->update_lock);
+> >>> +
+> >>> +     data->type = id->driver_data;
+> >>> +     data->cmdreg = i2c_new_dummy(adapter, (client->addr & ~SMM665_REGMASK)
+> >>> +                                  | SMM665_CMDREG_BASE);
+> >>> +     if (!data->cmdreg)
+> >>> +             goto out_new_dummy;
+> >>> +
+> >>> +     switch (data->type) {
+> >>> +     case smm465:
+> >>> +     case smm665:
+> >>> +             data->conversion_time = SMM665_ADC_WAIT_SMM665;
+> >>> +             break;
+> >>> +     case smm665c:
+> >>> +     case smm764:
+> >>> +     case smm766:
+> >>> +             data->conversion_time = SMM665_ADC_WAIT_SMM766;
+> >>> +             break;
+> >>> +     }
+> >>> +
+> >>> +     ret = -ENODEV;
+> >>> +     if (i2c_smbus_read_byte_data(data->cmdreg, SMM665_MISC8_CMD_STS) < 0)
+> >>> +             goto out_sysfs_create_group;
+> >>> +
+> >>> +     /*
+> >>> +      * Read limits.
+> >>> +      *
+> >>> +      * Limit registers start with register SMM665_LIMIT_BASE.
+> >>> +      * Each channel uses 8 registers, providing four limit values
+> >>> +      * per channel. Each limit value requires two registers, with the
+> >>> +      * high byte in the first register and the low byte in the second
+> >>> +      * register. The first two limits are under limit values, followed
+> >>> +      * by two over limit values.
+> >>> +      *
+> >>> +      * Limit register order matches the ADC register order, so we use
+> >>> +      * ADC register defines throughout the code to index limit registers.
+> >>> +      *
+> >>> +      * We save the first retrieved value both as "critical" and "alarm"
+> >>> +      * value. The second value overwrites either the critical or the
+> >>> +      * alarm value, depending on its configuration. This ensures that both
+> >>> +      * critical and alarm values are initialized, even if both registers are
+> >>> +      * configured as critical or non-critical.
+> >>> +      *
+> >>> +      * Note: Critical values for voltage channels are saved, even though
+> >>> +      * this information is currently not used by the driver. This is mostly
+> >>> +      * for consistency, though it might eventually be useful if future APIs
+> >>> +      * support reporting "critical" voltage values.
+> >>> +      */
+> >>> +     for (i = 0; i < SMM665_NUM_ADC; i++) {
+> >>> +             int val;
+> >>> +
+> >>> +             val = smm665_read16(client, SMM665_LIMIT_BASE + i * 8);
+> >>> +             if (unlikely(val < 0))
+> >>> +                     goto out_sysfs_create_group;
+> >>> +             data->critical_under_limit[i] = data->alarm_under_limit[i]
+> >>> +               = smm665_convert(val, i);
+> >>> +             val = smm665_read16(client, SMM665_LIMIT_BASE + i * 8 + 2);
+> >>> +             if (unlikely(val < 0))
+> >>> +                     goto out_sysfs_create_group;
+> >>> +             if (smm665_is_critical(val))
+> >>> +                     data->critical_under_limit[i] = smm665_convert(val, i);
+> >>> +             else
+> >>> +                     data->alarm_under_limit[i] = smm665_convert(val, i);
+> >>> +             val = smm665_read16(client, SMM665_LIMIT_BASE + i * 8 + 4);
+> >>> +             if (unlikely(val < 0))
+> >>> +                     goto out_sysfs_create_group;
+> >>> +             data->critical_over_limit[i] = data->alarm_over_limit[i]
+> >>> +               = smm665_convert(val, i);
+> >>> +             val = smm665_read16(client, SMM665_LIMIT_BASE + i * 8 + 6);
+> >>> +             if (unlikely(val < 0))
+> >>> +                     goto out_sysfs_create_group;
+> >>> +             if (smm665_is_critical(val))
+> >>> +                     data->critical_over_limit[i] = smm665_convert(val, i);
+> >>> +             else
+> >>> +                     data->alarm_over_limit[i] = smm665_convert(val, i);
+> >>> +     }
+> >>> +
+> >>> +     /* Register sysfs hooks */
+> >>> +     ret = sysfs_create_group(&client->dev.kobj, &smm665_group);
+> >>> +     if (ret)
+> >>> +             goto out_sysfs_create_group;
+> >>> +
+> >>> +     data->hwmon_dev = hwmon_device_register(&client->dev);
+> >>> +     if (IS_ERR(data->hwmon_dev)) {
+> >>> +             ret = PTR_ERR(data->hwmon_dev);
+> >>> +             goto out_hwmon_device_register;
+> >>> +     }
+> >>> +
+> >>> +     return 0;
+> >>> +
+> >>> +out_hwmon_device_register:
+> >>> +     sysfs_remove_group(&client->dev.kobj, &smm665_group);
+> >>> +out_sysfs_create_group:
+> >>> +     i2c_unregister_device(data->cmdreg);
+> >>> +out_new_dummy:
+> >>> +     kfree(data);
+> >>> +out_kzalloc:
+> >>> +     return ret;
+> >>> +}
+> >>> +
+> >>> +static int smm665_remove(struct i2c_client *client)
+> >>> +{
+> >>> +     struct smm665_data *data = i2c_get_clientdata(client);
+> >>> +
+> >>> +     i2c_unregister_device(data->cmdreg);
+> >>> +     hwmon_device_unregister(data->hwmon_dev);
+> >>> +     sysfs_remove_group(&client->dev.kobj, &smm665_group);
+> >>> +
+> >>> +     kfree(data);
+> >>> +
+> >>> +     return 0;
+> >>> +}
+> >>> +
+> >>> +static const struct i2c_device_id smm665_id[] = {
+> >>> +     {"smm465", smm465},
+> >>> +     {"smm665", smm665},
+> >>> +     {"smm665c", smm665c},
+> >>> +     {"smm764", smm764},
+> >>> +     {"smm766", smm766},
+> >>> +     {}
+> >>> +};
+> >>> +
+> >>> +MODULE_DEVICE_TABLE(i2c, smm665_id);
+> >>> +
+> >>> +/* This is the driver that will be inserted */
+> >>> +static struct i2c_driver smm665_driver = {
+> >>> +     .driver = {
+> >>> +                .name = "smm665",
+> >>> +                },
+> >>> +     .probe = smm665_probe,
+> >>> +     .remove = smm665_remove,
+> >>> +     .id_table = smm665_id,
+> >>> +};
+> >>> +
+> >>> +static int __init smm665_init(void)
+> >>> +{
+> >>> +     return i2c_add_driver(&smm665_driver);
+> >>> +}
+> >>> +
+> >>> +static void __exit smm665_exit(void)
+> >>> +{
+> >>> +     i2c_del_driver(&smm665_driver);
+> >>> +}
+> >>> +
+> >>> +MODULE_AUTHOR("Guenter Roeck");
+> >>> +MODULE_DESCRIPTION("SMM665 driver");
+> >>> +MODULE_LICENSE("GPL");
+> >>> +
+> >>> +module_init(smm665_init);
+> >>> +module_exit(smm665_exit);
+> >>
+> 
