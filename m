@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab0FUMUO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 08:20:14 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37601 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752995Ab0FUMUK (ORCPT
+	id S1755830Ab0FUMYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 08:24:05 -0400
+Received: from mxout12.netvision.net.il ([194.90.6.37]:45723 "EHLO
+	mxout12.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995Ab0FUMYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 08:20:10 -0400
-Date: Mon, 21 Jun 2010 13:22:34 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: tytso@mit.edu
-Cc: markgross@thegnar.org, Alan Stern <stern@rowland.harvard.edu>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Message-ID: <20100621132234.5eb880b0@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100621121058.GF6199@thunk.org>
-References: <201006202350.27143.rjw@sisk.pl>
-	<Pine.LNX.4.44L0.1006202154260.29532-100000@netrider.rowland.org>
-	<20100621061345.GF9735@gvim.org>
-	<20100621121058.GF6199@thunk.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Jun 2010 08:24:00 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+X-MIMEOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+Subject: RE: [PATCH] HID: Add support to new N-trig firwmare
+Date: Mon, 21 Jun 2010 15:24:54 +0300
+Message-id: <48A28051AC6D7A48B64F2827245819033828C1@Exchange-IL.n-trig.com>
+In-reply-to: <alpine.LNX.2.00.1006211342580.13809@pobox.suse.cz>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-topic: [PATCH] HID: Add support to new N-trig firwmare
+Thread-index: AcsRNv7u+dKDDmCJQBidUtKDKZ1KmAABVN8w
+References: <48A28051AC6D7A48B64F28272458190333674B@Exchange-IL.n-trig.com>
+ <alpine.LNX.2.00.1006041115480.12271@pobox.suse.cz>
+ <48A28051AC6D7A48B64F28272458190326E03E@Exchange-IL.n-trig.com>
+ <alpine.LNX.2.00.1006051741361.12271@pobox.suse.cz>
+ <48A28051AC6D7A48B64F28272458190338280A@Exchange-IL.n-trig.com>
+ <alpine.LNX.2.00.1006211143520.13809@pobox.suse.cz>
+ <48A28051AC6D7A48B64F282724581903382885@Exchange-IL.n-trig.com>
+ <alpine.LNX.2.00.1006211342580.13809@pobox.suse.cz>
+From: Micki Balanga <micki@n-trig.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: chatty@enac.fr, dhprince-devel@yahoo.co.uk, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Rafi Rubin <rafi@seas.upenn.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There's been one proposal that we simply merge in a set of no-op
-> inline functions for suspend blockers, just so we can get let the
-> drivers go in (assuming that Greg K-H believes this is still a
-> problem), but with an automatical removal of N months (N to be
-> decided, say 9 or 12 or 18 months).
+Hi 
+Thank you very much but the product id runs from 0x01 - 0x14(Not 0x0A)
+(hid_blacklist, ntrig_devices - were updated till 0x14)
+Micki
 
-If you automatically remove the suspend blocker wrappers in 12 months
-then you can keep the drivers in tree.
+-----Original Message-----
+From: Jiri Kosina [mailto:jkosina@suse.cz] 
+Sent: Monday, June 21, 2010 2:44 PM
+To: Micki Balanga
+Cc: chatty@enac.fr; dhprince-devel@yahoo.co.uk;
+linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Rafi Rubin
+Subject: RE: [PATCH] HID: Add support to new N-trig firwmare
 
-The drivers are generally not a problem (ok some of them like the binder
-are interesting little trips) its just those hooks, and we'd all benefit
-somewhat even if the only bit google are patching back in are their hooks.
+On Mon, 21 Jun 2010, Micki Balanga wrote:
 
-> down the road for N months.  Another approach is to simply merge in
-> no-op functions and not leave any kind of deprecation schedule.
-> That's sort of an implicit admission of the fact that we may not reach
-> consensus on this issue.  Or we could simply ship the patches as-is to
+> Attach one file which update hid_blacklist.
+> Attach Second patch which update ntrig_devices.
 
-Very bad precedent. What happens when every other vendor does the same ?
-Keep the upstream code clean. 
+I have folded the patches together, rebased them on top of the patch you
 
-> Linus after he gets back from vacation and ask him for a thumbs up or
-> thumbs down vote, which might settle things once and for all.
+already sent me and I had in my tree (adding devices up od 0x0A), and 
+applied. Thanks,
 
-You seem desperate to just throw it at Linus - you have been all along
-before the discussion, during it and now: but I don't understand why ?
-It's as if you don't want progress to be made by other means ?
-
-> How do we go forward from here?
-
-PM QoS seems to be evolving nicely.
-
-As for merging stuff - if its new code then it should get submitted with
-the hooks left out anyway, just as all the other vendors are doing with
-weird little custom hooks of their own. The hooks can still easily be
-patched back in as a tiny easy to maintain vendor patch.
-
-This works - the code still gets updated and seen by people, only the
-little hook patch has to be maintained and generally it looks after
-itself except for the odd .rej when something changes right up by the
-merge point.
-
-Alan
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
