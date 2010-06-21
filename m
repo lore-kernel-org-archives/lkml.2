@@ -1,84 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758169Ab0FUTVw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 15:21:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49303 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756202Ab0FUTVu (ORCPT
+	id S932278Ab0FUTWF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 15:22:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48439 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932117Ab0FUTWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 15:21:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=J31h0pFjFwXFmA4lbhytrQCMn7N/LPo8kSgxif93sY5OG9JuRoQuH+jLar8IHnVGK2
-         rHgiGbR+e/hYUhBATfsVasoRfcLnPGjIuwU73zMHQ0+KdkraQoup1N5FGOdCH/tWME1z
-         HU4fWCDiNNwHI7QKy41QJvuDsymU7MG+qudLM=
-Subject: Re: [PATCH] Two fixes for my mmc/sd cardreader
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: linux-mmc <linux-mmc@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Philip Langdale <philipl@overt.org>
-In-Reply-To: <1276809695.28201.13.camel@maxim-laptop>
-References: <1276809695.28201.13.camel@maxim-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Jun 2010 22:21:44 +0300
-Message-ID: <1277148104.4241.1.camel@maxim-laptop>
+	Mon, 21 Jun 2010 15:22:01 -0400
+Date: Mon, 21 Jun 2010 12:21:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
+       dzickus@redhat.com
+Subject: Re: [PATCH] Add TAINT_HARDWARE_UNSUPPORTED flag
+Message-Id: <20100621122145.76ebd7ac.akpm@linux-foundation.org>
+In-Reply-To: <4C1A7D61.8010900@redhat.com>
+References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
+	<20100617091322.b7d21473.randy.dunlap@oracle.com>
+	<4C1A7D61.8010900@redhat.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-18 at 00:21 +0300, Maxim Levitsky wrote: 
-> Hi,
+On Thu, 17 Jun 2010 15:54:09 -0400
+Prarit Bhargava <prarit@redhat.com> wrote:
+
 > 
-> These are 2 fixes for my card reader.
+> This patch is similar to Theordore Ts'o's TAINT_USER patch,
+> linux-2.6 commit 34f5a39899f3f3e815da64f48ddb72942d86c366.
 > 
+> Individual distributions may enable "generic" features such as X86 support,
+> PPC support, and driver support.
 > 
-> First patch fixes old issue with system hand on suspend to disk/ram with
-> mmc card inserted.
-> I updated description, and pm notification registration order.
-> I think this patch can an should go to 2.6.35, because it fixes long
-> standing and nasty regression.
+> Some of the features that are enabled by these "generic" feature flags may
+> not be considered supported by the individual distribution.
 > 
-> The second patch is a result of my work trying to understand why my card
-> reader sometimes dies on resume.
-> This reader has a special MMC function which steals MMC cards, and until
-> now had no driver. A way to disable it was found, and while it works, it
-> has (at least here) a side effect of killing the controller on resume
-> from ram/disk (and it happens often, and doesn't depend of whether card
-> was in slot or not during suspend).
+> For example, a distribution may want to support PPC but not the Power5
+> chipset, or the e1000e driver but not a card with a specific DeviceID because
+> of known firmware issues.
 > 
-> Fortunately it turned out that MMC part is _almost_ standard SDHCI
-> controller.
-> This patch adds support for this device to standard sdhci driver.
-> Unfortunately, this support still contais small hack.
-> It waits 1/2 of a second on resume before initializing the controller.
-> Not doing so, and resuming with MMC card present results in confused
-> controller. It is not dead though. A card reinsert makes it work again
-> with all cards.
-> Yet the 1st patch is must for this because otherwise mmc core seeing
-> that controller doesn't respond, removes the card, therefore hangs the
-> system.
-> It doesn't happen when I wait these 1/2 of second though.
+> Typically, one would push a config patch to enable and disable the feature and
+> patch the distribution.  However, in some cases this is not feasible in order
+> to preserve kabi and at the same time maintain parity with the upstream kernel.
+> In some cases the distribution may want to allow booting of these features but
+> explicitly notify a user that they are not "officially" supported.  It is also
+> possible that the hardware is fixed via a firmware update at a later date,
+> making it supported again.
 > 
-> I think that this patch is also ok for 2.6.35, because it only adds new
-> functionality.
-> You are free to disable MMC controller using the same
-> CONFIG_MMC_RICOH_MMC.
+> It would be useful for a distribution to notify the installer and
+> bug reporting applications, and notify users that the hardware they are using
+> is unsupported during panic, oops, BUG(), and WARN().
 > 
-> If you don't disable it though, instead of full lack of functionality
-> you will get full featured MMC controller.
+> This patch introduces the TAINT_HARDWARE_UNSUPPORTED flag for distributions
+> to use.
 > 
-> Best regards,
-> Maxim Levitsky
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
 > 
-> 
-> 
-ping
+> diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
+> index 6fe9001..e337b0a 100644
+> --- a/Documentation/oops-tracing.txt
+> +++ b/Documentation/oops-tracing.txt
+> @@ -263,6 +263,8 @@ characters, each representing a particular tainted value.
+>   12: 'I' if the kernel is working around a severe bug in the platform
+>       firmware (BIOS or similar).
+>  
+> + 13: 'H' if the hardware is unsupported by the distribution
+> +
+>  The primary reason for the 'Tainted: ' string is to tell kernel
+>  debuggers if this is a clean kernel or if anything unusual has
+>  occurred.  Tainting is permanent: even if an offending module is
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 8317ec4..f722b0d 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -347,6 +347,7 @@ extern enum system_states {
+>  #define TAINT_WARN			9
+>  #define TAINT_CRAP			10
+>  #define TAINT_FIRMWARE_WORKAROUND	11
+> +#define TAINT_HARDWARE_UNSUPPORTED	12
+>  
+>  extern void dump_stack(void) __cold;
+>  
+> diff --git a/kernel/panic.c b/kernel/panic.c
+> index 3b16cd9..8d081ff 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -180,6 +180,7 @@ static const struct tnt tnts[] = {
+>  	{ TAINT_WARN,			'W', ' ' },
+>  	{ TAINT_CRAP,			'C', ' ' },
+>  	{ TAINT_FIRMWARE_WORKAROUND,	'I', ' ' },
+> +	{ TAINT_HARDWARE_UNSUPPORTED,	'H', ' ' },
+>  };
+>  
+>  /**
+> @@ -197,6 +198,7 @@ static const struct tnt tnts[] = {
+>   *  'W' - Taint on warning.
+>   *  'C' - modules from drivers/staging are loaded.
+>   *  'I' - Working around severe firmware bug.
+> + *  'H' - Hardware is unsupported.
+>   *
+>   *	The string is overwritten by the next call to print_tainted().
+>   */
+> @@ -243,6 +245,9 @@ void add_taint(unsigned flag)
+>  	 */
+>  	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
+>  		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
+> +	if (flag == TAINT_HARDWARE_UNSUPPORTED)
+> +		printk(KERN_CRIT
+> +		       "WARNING: This system's hardware is unsupported.\n");
+>  
+>  	set_bit(flag, &tainted_mask);
+>  }
+
+That's pretty user-hostile.  What are they to do - throw the entire
+computer away because it has the wrong type of mouse?
+
+How about
+
+void add_hardware_unsupported_taint(const char *hardware)
+{
+	printk(KERN_CRIT
+	       "Hardware device %s is unsupported by this kernel's vendor\n",
+		hardware);
+	add_taint(TAINT_HARDWARE_UNSUPPORTED);
+}
+
+and
+
+/*
+ * Don't call add_taint(TAINT_HARDWARE_UNSUPPORTED) directly - use
+ * add_hardware_unsupported_taint()
+ */
+#define TAINT_HARDWARE_UNSUPPORTED	12
 
