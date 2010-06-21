@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758571Ab0FUU4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 16:56:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42123 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758466Ab0FUU4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 16:56:08 -0400
-Message-ID: <4C1FD1D0.4060803@kernel.org>
-Date: Mon, 21 Jun 2010 22:55:44 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1758578Ab0FUU6Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 16:58:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:65264 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758520Ab0FUU6O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 16:58:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] serial: revert "Use block_til_ready helper"
+Date: Mon, 21 Jun 2010 22:57:03 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.35-rc3-00068-g1931a4d-dirty; KDE/4.4.2; x86_64; ; )
+Cc: Tony Luck <tony.luck@intel.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+       linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+References: <1273957196-13768-1-git-send-email-arnd@arndb.de> <201006202254.34530.arnd@arndb.de> <20100621151309.334f6645@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100621151309.334f6645@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH UPDATED] sched: adjust when cpu_active and cpuset 	configurations
- are updated during cpu on/offlining
-References: <4C08FF36.80806@kernel.org>	<4C0E9E03.1010508@kernel.org> <AANLkTimL2dEhIaxztoiDRBY3CsalcVNU54Mko6yg8ZqG@mail.gmail.com>
-In-Reply-To: <AANLkTimL2dEhIaxztoiDRBY3CsalcVNU54Mko6yg8ZqG@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 21 Jun 2010 20:55:52 +0000 (UTC)
+Message-Id: <201006212257.03436.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/lMaLkefnOnx1mD61Op5P5ShxgVgP14oGRmpy
+ eXXHQSQ4EtnKedOHeKfXhWj755YIw8DjV+k/6URa3k8mZCIEhz
+ xg7ZRMQQM5WuZDkCCaaWw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Monday 21 June 2010 16:13:09 Alan Cox wrote:
 
-On 06/21/2010 08:28 PM, Tony Luck wrote:
-> On Tue, Jun 8, 2010 at 12:46 PM, Tejun Heo <tj@kernel.org> wrote:
->> * Ingo's test discovered __cpuinit/exit markups were incorrect.
->>  Fixed.
+> and paste it into
 > 
-> No it isn't :-(
+> void tty_port_raise_dtr_rts(struct tty_port *port)
+> {
+>         if (port->ops->dtr_rts)
+>                 port->ops->dtr_rts(port, 1);
+> 
+> 		-->> HERE <<--
+> }
+> 
+> 
+> (the mutex is held by the caller)
+> 
+> That should cure it and then we can think about doing it more elegantly
+> by getting the serial layer to use tty_port_open, kfifo and the like and
+> removing the tons of repeated crap in all the drivers.
 
-Ah, sorry, my original patch was broken on x86 too, so...
+I had to do it slightly different, see below. This patch also fixes
+the garbled output and lets me run cat> and getty on the onboard 16550a,
+but unlike the previous patch, I can't get a minicom connection between
+the two ports using hardware flow control now, so it seems that there
+is still another problem.
 
->> +static int __cpuexit cpuset_cpu_active(struct notifier_block *nfb,
->> +                                      unsigned long action, void *hcpu)
-> ...
->> +static int __cpuexit cpuset_cpu_inactive(struct notifier_block *nfb,
->> +                                        unsigned long action, void *hcpu)
-> 
-> This patch arrived in linux-next (tag next-20100621) and breaks the
-> ia64 build for configurations where CONFIG_HOTPLUG_CPU=n
-> with the following cryptic error:
-> 
-> `.cpuexit.text' referenced in section `.IA_64.unwind.cpuexit.text' of
-> kernel/built-in.o: defined in discarded section `.cpuexit.text' of
-> kernel/built-in.o
-> 
-> This is because ia64 link stage drops __exit functions from
-> built-in code (under the logic that they can never be called).
-> 
-> Is the problem in the !CONFIG_HOTPLUG_CPU definition of
-> hotcpu_notifier() in <linux/cpu.h> which still references the
-> function argument:
-> 
-> #define hotcpu_notifier(fn, pri)        do { (void)(fn); } while (0)
-> 
-> Or should these functions not be marked __cpuexit?
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-I see.  I think the right solution is removing __cpuexit but it's kind
-of silly to have different rules on different architectures.  On x86,
-__cpuexit currently means "you can drop it if you're not gonna be
-removing cpus after system boot"; IOW, __cpuexit is strict subset of
-__cpuinit.  If you define it as "don't include it in the text at all
-if cpus are not gonna be removed", it actually forces you to carry
-more text in the running system.  Is there any reason ia64 drops them
-during linking?
-
-Thanks.
-
--- 
-tejun
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index 78b1eac..cd85112 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -1533,8 +1533,16 @@ static void uart_dtr_rts(struct tty_port *port, int onoff)
+ 	struct uart_state *state = container_of(port, struct uart_state, port);
+ 	struct uart_port *uport = state->uart_port;
+ 
+-	if (onoff)
++	if (onoff) {
+ 		uart_set_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
++
++		/*
++		 * If this is the first open to succeed,
++		 * adjust things to suit.
++		 */
++		if (!test_and_set_bit(ASYNCB_NORMAL_ACTIVE, &port->flags))
++			uart_update_termios(port->tty, state);
++	}
+ 	else
+ 		uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
+ }
+@@ -1649,15 +1657,6 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
+ 	if (retval == 0)
+ 		retval = tty_port_block_til_ready(port, tty, filp);
+ 
+-	/*
+-	 * If this is the first open to succeed, adjust things to suit.
+-	 */
+-	if (retval == 0 && !(port->flags & ASYNC_NORMAL_ACTIVE)) {
+-		set_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
+-
+-		uart_update_termios(tty, state);
+-	}
+-
+ fail:
+ 	return retval;
+ }
