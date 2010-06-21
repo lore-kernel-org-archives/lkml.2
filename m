@@ -1,139 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932692Ab0FUONa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 10:13:30 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53385 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932609Ab0FUON2 (ORCPT
+	id S932675Ab0FUOOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 10:14:25 -0400
+Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:48669 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932608Ab0FUOOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 10:13:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZnB5R/2YBylEPvxLY8s2a7/fUv+Sb/YeZQxiNBiuYOz/E0nyafEy4keVxk4hwBCfqT
-         y71lDxRLUxupf6XNszfqkR7vMYeSEveu527voxhT5jMr2MTgS5Mw9BRnP5aMQkNp/joA
-         XVfMfXVDHGLZZ4WgHGZPXEywEen6MzMGa+7GI=
-Date: Mon, 21 Jun 2010 23:13:15 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Larry Woodman <lwoodman@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [Patch] Call cond_resched() at bottom of main look in
- balance_pgdat()
-Message-ID: <20100621141315.GB2456@barrios-desktop>
-References: <1276800520.8736.236.camel@dhcp-100-19-198.bos.redhat.com>
- <20100618093954.FBE7.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 21 Jun 2010 10:14:23 -0400
+Date: Mon, 21 Jun 2010 16:15:18 +0200
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.osdl.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Pavel Emelyanov <xemul@openvz.org>, linux-kernel@vger.kernel.org,
+       Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+Message-ID: <20100621141518.GA3773@hawkmoon.kerlabs.com>
+Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
+	Linux Containers <containers@lists.osdl.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Pavel Emelyanov <xemul@openvz.org>, linux-kernel@vger.kernel.org,
+	Pavel Emelyanov <xemul@parallels.com>
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <4C19F0A3.2050707@parallels.com> <m1631hdbdu.fsf@fess.ebiederm.org> <20100617213638.GB4182@redhat.com> <20100618082738.GE16877@hawkmoon.kerlabs.com> <20100618162734.GB7404@redhat.com> <20100621111127.GI16877@hawkmoon.kerlabs.com> <m1vd9c4k67.fsf@fess.ebiederm.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-18980-1277129655-0001-2"
 Content-Disposition: inline
-In-Reply-To: <20100618093954.FBE7.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <m1vd9c4k67.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 08:45:46PM +0900, KOSAKI Motohiro wrote:
-> > We are seeing a problem where kswapd gets stuck and hogs the CPU on a
-> > small single CPU system when an OOM kill should occur.  When this
-> > happens swap space has been exhausted and the pagecache has been shrunk
-> > to zero.  Once kswapd gets the CPU it never gives it up because at least
-> > one zone is below high.  Adding a single cond_resched() at the end of
-> > the main loop in balance_pgdat() fixes the problem by allowing the
-> > watchdog and tasks to run and eventually do an OOM kill which frees up
-> > the resources.
-> 
-> Thank you. this seems regression.
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
-Yes. I waited your response. :)
-
-> 
-> > Mem-Info:
-> > DMA per-cpu:
-> > CPU    0: hi:    0, btch:   1 usd:   0
-> > Normal per-cpu:
-> > CPU    0: hi:  186, btch:  31 usd: 152
-> > active_anon:54902 inactive_anon:54849 isolated_anon:32
-> >  active_file:0 inactive_file:25 isolated_file:0
-> >  unevictable:660 dirty:0 writeback:6 unstable:0
-> >  free:1172 slab_reclaimable:1969 slab_unreclaimable:8322
-> >  mapped:196 shmem:801 pagetables:1300 bounce:0
-> > ...
-> > Normal free:2672kB min:2764kB low:3452kB high:4144kB 
-> > ...
-> > 21729 total pagecache pages
-> > 20240 pages in swap cache
-> > Swap cache stats: add 468211, delete 447971, find 12560445/12560936
-> > Free swap  = 0kB
-> > Total swap = 1015800kB
-> > 128720 pages RAM
-> > 0 pages HighMem
-> > 3223 pages reserved
-> > 1206 pages shared
-> > 121413 pages non-shared
-> > 
-> 
-> zero free swap. then, vmscan don't try to scan anon pages. but
-> file pages are almost zero. then, shrink_page_list() was not called
-> enough frequently....
-> 
-> I guess it is caused following commit (by me).
-> 
-> 	commit bb3ab596832b920c703d1aea1ce76d69c0f71fb7
-> 	Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 	Date:   Mon Dec 14 17:58:55 2009 -0800
-> 	    vmscan: stop kswapd waiting on congestion when the min watermark is not being met
-> 
-> Very thanks your effort. your analysis seems perfect.
-> 
-> btw, I reformat your patch a bit. your previous email is a bit akpm 
-> unfriendly.
-> 
-> 
-> =============================================================
-> Subject: [PATCH] Call cond_resched() at bottom of main look in balance_pgdat()
-> From: Larry Woodman <lwoodman@redhat.com>
-> 
-> We are seeing a problem where kswapd gets stuck and hogs the CPU on a
-> small single CPU system when an OOM kill should occur.  When this
-> happens swap space has been exhausted and the pagecache has been shrunk
-> to zero.  Once kswapd gets the CPU it never gives it up because at least
-> one zone is below high.  Adding a single cond_resched() at the end of
-> the main loop in balance_pgdat() fixes the problem by allowing the
-> watchdog and tasks to run and eventually do an OOM kill which frees up
-> the resources.
-> 
-> kosaki note: This seems regression caused by commit bb3ab59683
-> (vmscan: stop kswapd waiting on congestion when the min watermark is
->  not being met)
-> 
-> Signed-off-by: Larry Woodman <lwoodman@redhat.com>
-> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/vmscan.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 9c7e57c..c5c46b7 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2182,6 +2182,7 @@ loop_again:
->  		 */
->  		if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
->  			break;
-> +		cond_resched();
->  	}
->  out:
->  	/*
-> -- 
-> 1.6.5.2
-
-Kosaki's patch's goal is that kswap doesn't yield cpu if the zone doesn't meet its
-min watermark to avoid failing atomic allocation.
-But this patch could yield kswapd's time slice at any time. 
-Doesn't the patch break your goal in bb3ab59683?
+--=_bohort-18980-1277129655-0001-2
+Content-Type: multipart/mixed; boundary="ew6BAiZeqk4r7MaW"
+Content-Disposition: inline
 
 
--- 
-Kind regards,
-Minchan Kim
+--ew6BAiZeqk4r7MaW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On 21/06/10  5:58 -0700, Eric W. Biederman wrote:
+> Louis Rilling <Louis.Rilling@kerlabs.com> writes:
+>=20
+> > On 18/06/10 18:27 +0200, Oleg Nesterov wrote:
+> >> On 06/18, Louis Rilling wrote:
+> >> >
+> >> > On 17/06/10 23:36 +0200, Oleg Nesterov wrote:
+> >> > > On 06/17, Eric W. Biederman wrote:
+> >> > > >
+> >> > > > The task->children isn't changed until __unhash_process() which =
+runs
+> >> > > > after flush_proc_task().
+> >> > >
+> >> > > Yes. But this is only the current implementation detail.
+> >> > > It would be nice to cleanup the code so that EXIT_DEAD tasks are
+> >> > > never sit in ->children list.
+> >> > >
+> >> > > > So we should be able to come up with
+> >> > > > a variant of do_wait() that zap_pid_ns_processes can use that do=
+es
+> >> > > > what we need.
+> >> > >
+> >> > > See above...
+> >> > >
+> >> > > Even if we modify do_wait() or add the new variant, how the caller
+> >> > > can wait for EXIT_DEAD tasks? I don't think we want to modify
+> >> > > release_task() to do __wake_up_parent() or something similar.
+> >> >
+> >> > Indeed, I was thinking about calling __wake_up_parent() from release=
+_task()
+> >> > once parent->children becomes empty.
+> >> >
+> >> > Not sure about the performance impact though. Maybe some WAIT_NO_CHI=
+LDREN flag
+> >> > in parent->signal could limit it. But if EXIT_DEAD children are remo=
+ved from
+> >> > ->children before release_task(), I'm afraid that this becomes impos=
+sible.
+> >>=20
+> >> Thinking more, even the current do_wait() from zap_pid_ns_processes()
+> >> is not really good. Suppose that some none-init thread is ptraced, then
+> >> zap_pid_ns_processes() will hange until the tracer does do_wait() or
+> >> exits.
+> >
+> > Is this really a bad thing? If somebody ptraces a task in a pid namespa=
+ce, that
+> > sounds reasonable to have this namespace (and it's init task) pinned.
+>=20
+> Louis.  Have you seen this problem hit without my setns patch?
+
+Yes. I hit it with Kerrighed patches. I also have an ugly reproducer on
+2.6.35-rc3 (see attachments). Ugly because I introduced artifical delays
+in release_task(). I couldn't trigger the bug without it, probably because =
+the
+scheduler is too kind :)
+
+I'm using memory poisoining (SLAB and DEBUG_SLAB) to make it easy to observ=
+e the
+bug.
+
+Example:
+# ./proc_flush_task-bug-reproducer 1
+
+>=20
+> I'm pretty certain that this hits because there are processes do_wait
+> does not wait for, in particular processes in a disjoint process tree.
+
+Indeed do_wait() misses EXIT_DEAD children.
+
+>=20
+> So at this point I am really favoring killing the do_wait and making
+> this all asynchronous.
+
+Any idea about how to do it?
+
+Thanks,
+
+Louis
+
+--=20
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
+
+--ew6BAiZeqk4r7MaW
+Content-Type: text/x-csrc; charset=us-ascii
+Content-Disposition: attachment; filename="proc_flush_task-bug-reproducer.c"
+Content-Transfer-Encoding: quoted-printable
+
+#define _GNU_SOURCE
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+#include <signal.h>
+#include <linux/sched.h>
+
+int pipefd[2];
+
+int init(void *arg)
+{
+	int nr, i, err;
+	sighandler_t sigret;
+	char c;
+
+	close(pipefd[0]);
+
+	err =3D setsid();
+	if (err < 0) {
+		perror("setsid");
+		abort();
+	}
+
+	sigret =3D signal(SIGCHLD, SIG_IGN);
+	if (sigret =3D=3D SIG_ERR) {
+		fprintf(stderr, "signal\n");
+		abort();
+	}
+=09
+	nr =3D atoi(arg);
+	for (i =3D 0; i < nr; i++) {
+		err =3D fork();
+		if (err < 0) {
+			perror("fork");
+			abort();
+		} else if (err =3D=3D 0) {
+			printf("%d before\n", getpid());
+			fflush(stdout);
+			pause();
+			printf("%d after\n", getpid());
+			fflush(stdout);
+			return 0;
+		}
+	}
+
+	err =3D write(pipefd[1], &c, 1);
+	if (err !=3D 1) {
+		perror("write");
+		abort();
+	}
+
+	pause();
+
+	return 0;
+}
+
+int main(int argc, char *argv[])
+{
+	long stack_size =3D sysconf(_SC_PAGESIZE);
+	void *stack =3D alloca(stack_size) + stack_size;
+	pid_t pid;
+	char c;
+	int ret;
+
+	ret =3D pipe(pipefd);
+	if (ret) {
+		perror("pipe");
+		abort();
+	}
+
+	ret =3D clone(init, stack, CLONE_NEWPID | SIGCHLD, argv[1]);
+	if (ret < 0) {
+		perror("clone");
+		abort();
+	}
+	pid =3D ret;
+	printf("%d\n", pid);
+	fflush(stdout);
+
+	close(pipefd[1]);
+	ret =3D read(pipefd[0], &c, 1);
+	if (ret !=3D 1) {
+		if (ret) {
+			perror("read");
+			abort();
+		} else {
+			sleep(5);
+		}
+	}
+
+	printf("killing %d\n", pid);
+	fflush(stdout);
+	ret =3D kill(-pid, SIGKILL);
+	if (ret) {
+		perror("kill");
+		abort();
+	}
+
+	return 0;
+}
+
+--ew6BAiZeqk4r7MaW
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="reproducer.patch"
+Content-Transfer-Encoding: quoted-printable
+
+commit 7b7cae6ae5c543b8e9cc84fc041d9bce36e7b674
+Author: Louis Rilling <louis.rilling@kerlabs.com>
+Date:   Wed Jun 16 16:20:02 2010 +0200
+
+    proc_flush_task() debug
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+index ceffc67..be8cdb0 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -169,6 +169,14 @@ repeat:
+ 	atomic_dec(&__task_cred(p)->user->processes);
+ 	rcu_read_unlock();
+=20
++	if (task_pid(p)->level > 0) {
++		if (!thread_group_leader(p) || !is_container_init(p)) {
++			__set_current_state(TASK_UNINTERRUPTIBLE);
++			schedule_timeout(10 * HZ);
++		}
++		printk("release_task: %d/%d\n", p->pid, task_pid(p)->numbers[1].nr);
++	}
++
+ 	proc_flush_task(p);
+=20
+ 	write_lock_irq(&tasklist_lock);
+
+--ew6BAiZeqk4r7MaW--
+
+--=_bohort-18980-1277129655-0001-2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkwfc/YACgkQVKcRuvQ9Q1TZFQCgm2hf3dqxF1puDH3oxVF0YNVp
+Tn4AnjzdWRHF+n0+lrQunFYIgxHZLBWw
+=2hR5
+-----END PGP SIGNATURE-----
+
+--=_bohort-18980-1277129655-0001-2--
