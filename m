@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932848Ab0FUPfI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 11:35:08 -0400
-Received: from fg-out-1718.google.com ([72.14.220.159]:56803 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932766Ab0FUPfG (ORCPT
+	id S932872Ab0FUPfo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 11:35:44 -0400
+Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:52454 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932756Ab0FUPfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 11:35:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IKXeQMam21LAmuYeKSsKGc79gJHQHLmbSoBA9nYa3e1UKdNpWIo65JR78MeKpqP62O
-         5IUXOw3Q8OfQzec8Ts2xZm3fyZhbjLSrVOj41o4KtU5s3Oc42oxCi8ZxNKuwfEla0gFi
-         eibQ/fFDhaeB9w7i3KqlOdZeGu/w5QyNCKGPo=
-Date: Mon, 21 Jun 2010 17:33:03 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Xiaotian Feng <dfeng@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Dan Carpenter <error27@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H.PeterA" <nvinhpa@zytor.com>, Venkatesh Pallipadi <venki@google.com>,
-       Jack Steiner <steiner@sgi.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
-       x86@kernel.org
-Subject: Re: [patch] x86, pat: freeing invalid memtype messages
-Message-ID: <20100621153303.GA2754@joi.lan>
-References: <20100617134559.GA29824@bicker>
- <20100617161728.GA2741@joi.lan>
- <4C1B1691.6020809@redhat.com>
- <20100618175726.GA2785@joi.lan>
- <4C1F455E.6050502@redhat.com>
- <1277118155.1875.508.camel@laptop>
- <4C1F47EF.2060509@redhat.com>
+	Mon, 21 Jun 2010 11:35:43 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Yinghai Lu <yinghai@kernel.org>,
+       "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+       "akpm@osdl.org" <akpm@osdl.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 21 Jun 2010 09:35:31 -0600
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Index: AcsQugUgIYpmrjuMSDS98Q9uUzoT2QAnKKmw
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3D09276BD@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+	 <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
+	 <1277046060.5242.18.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3D09275CC@cosmail02.lsi.com>
+	 <1277063250.5242.25.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3D09275CE@cosmail02.lsi.com>
+ <1277066924.5242.41.camel@mulgrave.site>
+In-Reply-To: <1277066924.5242.41.camel@mulgrave.site>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C1F47EF.2060509@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5LFZwim029205
 
-On Mon, Jun 21, 2010 at 07:07:27PM +0800, Xiaotian Feng wrote:
-> On 06/21/2010 07:02 PM, Peter Zijlstra wrote:
-> > On Mon, 2010-06-21 at 18:56 +0800, Xiaotian Feng wrote:
-> >
-> >> I guess there might be something wrong between the augmented rbtree insert/remove ..
-> >
-> > The easiest thing is to revert that change and try again, the next step
-> > would be to print the full RB tree on each modification and look where
-> > it goes wrong.
-> >
-> > That said, I did print my fair share of (augmented) RB trees while
-> > playing with scheduler patches and I can't remember it ever having
-> > messed up like that.
-> He's using 2.6.35-rc2+, without your "rbtree: Undo augmented trees 
-> performance damage" patch ;-)
+James,
 
-I applied it manually (commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249 from -tip)
-to 2.6.35-rc3 and it fixed both acpi's and nouveau's "invalid memtype" messages.
-Thanks.
+Attached is the changelog for OCR. 
 
-Marcin
+Signed-off-by Bo Yang<bo.yang@lsi.com>
+
+---
+Documentation/scsi/ChangeLog.megaraid_sas |   33 ++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas new/Documentation/scsi/ChangeLog.megaraid_sas
+--- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-06-20 03:41:31.000000000 -0400
++++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-06-20 03:55:42.000000000 -0400
+@@ -1,3 +1,36 @@
++1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
++			(emaild-id:megaraidlinux@lsi.com)
++			Bo Yang
++
++2 Current Version : 00.00.04.17.1-rc1
++3 Older Version   : 00.00.04.17.1-rc1
++
++1.	Add the Online Controller Reset (OCR) to the Driver.
++	OCR is the new feature for megaraid_sas driver which
++	will allow the fw to do the chip reset which will not
++	affact the OS behavious.
++
++	To add the OCR support, driver need to do: 
++		a). reset the controller chips -- Xscale and Gen2 which
++		will change the function calls and add the reset function
++		related to this two chips.
++		
++		b). during the reset, driver will store the pending cmds
++		which not returned by FW to driver's pending queue.  Driver
++		will re-issue those pending cmds again to FW after the OCR
++		finished.
++		
++		c). In driver's timeout routine, driver will report to
++		OS as reset. Also driver's queue routine will block the
++		cmds until the OCR finished.
++		
++		d). in Driver's ISR routine, if driver get the FW state as
++		state change, FW in Failure status and FW support online controller
++		reset (OCR), driver will start to do the controller reset.
++		
++		e). In driver's IOCTL routine, the application cmds will wait for the
++		OCR to finish, then issue the cmds to FW.
++		 
+ 1 Release Date    : Thur.  Oct 29, 2009 09:12:45 PST 2009 -
+ 			(emaild-id:megaraidlinux@lsi.com)
+ 			Bo Yang
+
+
+-----Original Message-----
+From: James Bottomley [mailto:James.Bottomley@suse.de] 
+Sent: Sunday, June 20, 2010 4:49 PM
+To: Yang, Bo
+Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
+
+On Sun, 2010-06-20 at 14:19 -0600, Yang, Bo wrote:
+> Yes.  
+
+OK, can you give me the single changelog for this one commit, then,
+please?
+
+Thanks,
+
+James
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
