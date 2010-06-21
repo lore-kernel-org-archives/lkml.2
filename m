@@ -1,99 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab0FUWti (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 18:49:38 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35368 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755765Ab0FUWtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 18:49:36 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Date: Tue, 22 Jun 2010 00:48:10 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Florian Mickler <florian@mickler.org>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-References: <Pine.LNX.4.44L0.1006211814370.1687-100000@iolanthe.rowland.org> <201006220040.41524.rjw@sisk.pl>
-In-Reply-To: <201006220040.41524.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754847Ab0FUWy5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 18:54:57 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42277 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750926Ab0FUWy4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 18:54:56 -0400
+Date: Mon, 21 Jun 2010 15:53:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net,
+       user-mode-linux-user@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+       Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: [PATCH 1/3] arch/um/drivers: remove duplicate structure field
+ initialization
+Message-Id: <20100621155349.8f314499.akpm@linux-foundation.org>
+In-Reply-To: <Pine.LNX.4.64.1006201539080.6207@ask.diku.dk>
+References: <Pine.LNX.4.64.1006201539080.6207@ask.diku.dk>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006220048.10875.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 22, 2010, Rafael J. Wysocki wrote:
-> On Tuesday, June 22, 2010, Alan Stern wrote:
-> > On Mon, 21 Jun 2010, Florian Mickler wrote:
-> > 
-> > > > In the end you would want to have communication in both directions:  
-> > > > suspend blockers _and_ callbacks.  Polling is bad if done too often.  
-> > > > But I think the idea is a good one.
-> > > 
-> > > Actually, I'm not so shure. 
-> > > 
-> > > 1. you have to roundtrip whereas in the suspend_blocker scheme you have
-> > > active annotations (i.e. no further action needed) 
-> > 
-> > That's why it's best to use both.  The normal case is that programs
-> > activate and deactivate blockers by sending one-way messages to the PM
-> > process.  The exceptional case is when the PM process is about to
-> > initiate a suspend; that's when it does the round-trip polling.  Since
-> > the only purpose of the polling is to avoid a race, 90% of the time it
-> > will succeed.
-> > 
-> > > 2. it may not be possible for a user to determine if a wake-event is
-> > > in-flight. you would have to somehow pass the wake-event-number with
-> > > it, so that the userspace process could ack it properly without
-> > > confusion. Or... I don't know of anything else... 
-> > > 
-> > > 	1. userspace-manager (UM) reads a number (42). 
-> > > 
-> > > 	2. it questions userspace program X: is it ok to suspend?
-> > > 
-> > > 	[please fill in how userspace program X determines to block
-> > > 	suspend]
-> > > 
-> > > 	3a. UM's roundtrip ends and it proceeds to write "42" to the
-> > > 	kernel [suspending]
-> > > 	3b. UM's roundtrip ends and it aborts suspend, because a
-> > > 	(userspace-)suspend-blocker got activated
-> > > 
-> > > I'm not shure how the userspace program could determine that there is a
-> > > wake-event in flight. Perhaps by storing the number of last wake-event.
-> > > But then you need per-wake-event-counters... :|
-> > 
-> > Rafael seems to think timeouts will fix this.  I'm not so sure.
-> > 
-> > > Do you have some thoughts about the wake-event-in-flight detection?
-> > 
-> > Not really, except for something like the original wakelock scheme in
-> > which the kernel tells the PM core when an event is over.
-> 
-> But the kernel doesn't really know that, so it really can't tell the PM core
-> anything useful.  What happens with suspend blockers is that a kernel suspend
+On Sun, 20 Jun 2010 15:40:02 +0200 (CEST)
+Julia Lawall <julia@diku.dk> wrote:
 
-s/suspend/subsyste/  (-ETOOLATE)
+> From: Julia Lawall <julia@diku.dk>
+> 
+> There are two initializations of ndo_set_mac_address, one to a local
+> function that is not used otherwise and one to a function that is defined
+> elsewhere.  This patch keeps the initialization to the local function.
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r@
+> identifier I, s, fld;
+> position p0,p;
+> expression E;
+> @@
+> 
+> struct I s =@p0 { ... .fld@p = E, ...};
+> 
+> @s@
+> identifier I, s, r.fld;
+> position r.p0,p;
+> expression E;
+> @@
+> 
+> struct I s =@p0 { ... .fld@p = E, ...};
+> 
+> @script:python@
+> p0 << r.p0;
+> fld << r.fld;
+> ps << s.p;
+> pr << r.p;
+> @@
+> 
+> if int(ps[0].line)<int(pr[0].line) or int(ps[0].column)<int(pr[0].column):
+>   cocci.print_main(fld,p0)
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+> This fix was sent previously, in September 2009.
+> 
+>  arch/um/drivers/net_kern.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/um/drivers/net_kern.c b/arch/um/drivers/net_kern.c
+> index f053726..d2d42d8 100644
+> --- a/arch/um/drivers/net_kern.c
+> +++ b/arch/um/drivers/net_kern.c
+> @@ -380,7 +380,6 @@ static const struct net_device_ops uml_netdev_ops = {
+>  	.ndo_tx_timeout 	= uml_net_tx_timeout,
+>  	.ndo_set_mac_address	= uml_net_set_mac,
+>  	.ndo_change_mtu 	= uml_net_change_mtu,
+> -	.ndo_set_mac_address 	= eth_mac_addr,
+>  	.ndo_validate_addr	= eth_validate_addr,
+>  };
 
-> cooperates with a user space consumer of the event to get the story straight.
-> 
-> However, that will only work if the user space is not buggy and doesn't crash,
-> for example, before releasing the suspend blocker it's holding.
-> 
-> Apart from this, there are those events withoug user space "handoff" that
-> use timeouts.
-> 
-> Also there are events like wake-on-LAN that can be regarded as instantaneous
-> from the power manager's point of view, so they don't really need all of the
-> "suspend blockers" machinery and for them we will need to use a cooldown
-> timeout anyway.
-> 
-> And if we need to use that cooldown timeout, I don't see why not to use
-> timeouts for avoiding the race you're worrying about.
+Your patch is actually a functional change.
+
+Geeze, whatamess.
+
+
+This duplicated field was added by
+
+: commit 8bb95b39a16ed55226810596f92216c53329d2fe
+: Author:     Stephen Hemminger <shemminger@linux-foundation.org>
+: AuthorDate: Thu Mar 26 15:11:17 2009 +0000
+: Commit:     David S. Miller <davem@davemloft.net>
+: CommitDate: Fri Mar 27 00:46:40 2009 -0700
+:
+:    uml: convert network device to netdevice ops
+
+Either Stephen fat-fingered it, or it was a secret, unchangelogged (and
+partial) cleanup.
+
+Presumably the spin_lock_irq(&lp->lock); stuff is in uml_net_set_mac()
+for a reason so presumably we should restore it.
+
+
+- Use the standard eth_mac_addr() in uml_net_set_mac()
+
+- Remove unneeded and racy local set_ether_mac()
+
+- Remove duplicated (and incorrect)
+  uml_netdev_ops.ndo_set_mac_address initializer.
+
+Fixes 8bb95b39a16ed55226810596f92216c53329d2fe ("uml: convert network
+device to netdevice ops").
+
+diff -puN arch/um/drivers/net_kern.c~arch-um-drivers-remove-duplicate-structure-field-initialization arch/um/drivers/net_kern.c
+--- a/arch/um/drivers/net_kern.c~arch-um-drivers-remove-duplicate-structure-field-initialization
++++ a/arch/um/drivers/net_kern.c
+@@ -25,11 +25,6 @@
+ #include "net_kern.h"
+ #include "net_user.h"
+ 
+-static inline void set_ether_mac(struct net_device *dev, unsigned char *addr)
+-{
+-	memcpy(dev->dev_addr, addr, ETH_ALEN);
+-}
+-
+ #define DRIVER_NAME "uml-netdev"
+ 
+ static DEFINE_SPINLOCK(opened_lock);
+@@ -266,7 +261,7 @@ static int uml_net_set_mac(struct net_de
+ 	struct sockaddr *hwaddr = addr;
+ 
+ 	spin_lock_irq(&lp->lock);
+-	set_ether_mac(dev, hwaddr->sa_data);
++	eth_mac_addr(dev, hwaddr->sa_data);
+ 	spin_unlock_irq(&lp->lock);
+ 
+ 	return 0;
+@@ -380,7 +375,6 @@ static const struct net_device_ops uml_n
+ 	.ndo_tx_timeout 	= uml_net_tx_timeout,
+ 	.ndo_set_mac_address	= uml_net_set_mac,
+ 	.ndo_change_mtu 	= uml_net_change_mtu,
+-	.ndo_set_mac_address 	= eth_mac_addr,
+ 	.ndo_validate_addr	= eth_validate_addr,
+ };
+ 
+@@ -478,7 +472,7 @@ static void eth_configure(int n, void *i
+ 	    ((*transport->user->init)(&lp->user, dev) != 0))
+ 		goto out_unregister;
+ 
+-	set_ether_mac(dev, device->mac);
++	eth_mac_addr(dev, device->mac);
+ 	dev->mtu = transport->user->mtu;
+ 	dev->netdev_ops = &uml_netdev_ops;
+ 	dev->ethtool_ops = &uml_net_ethtool_ops;
+_
+
