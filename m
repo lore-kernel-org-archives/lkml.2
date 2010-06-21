@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab0FUMGK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 08:06:10 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43050 "EHLO mx1.suse.de"
+	id S1754143Ab0FUMLR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 08:11:17 -0400
+Received: from THUNK.ORG ([69.25.196.29]:40129 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750966Ab0FUMGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 08:06:07 -0400
-Date: Mon, 21 Jun 2010 14:06:05 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-       Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>,
-       linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org
-Subject: Re: [PATCH] HID: removing obsolete kone_abi_version sysfs attr for
- roccat kone
-In-Reply-To: <1276872145.2358.1.camel@localhost>
-Message-ID: <alpine.LNX.2.00.1006211405110.13809@pobox.suse.cz>
-References: <1276872145.2358.1.camel@localhost>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752040Ab0FUMLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 08:11:15 -0400
+Date: Mon, 21 Jun 2010 08:10:58 -0400
+From: tytso@mit.edu
+To: markgross@thegnar.org
+Cc: Alan Stern <stern@rowland.harvard.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Message-ID: <20100621121058.GF6199@thunk.org>
+Mail-Followup-To: tytso@mit.edu, markgross@thegnar.org,
+	Alan Stern <stern@rowland.harvard.edu>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+	Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+References: <201006202350.27143.rjw@sisk.pl>
+ <Pine.LNX.4.44L0.1006202154260.29532-100000@netrider.rowland.org>
+ <20100621061345.GF9735@gvim.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100621061345.GF9735@gvim.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jun 2010, Stefan Achatz wrote:
+So where are we at this point?
 
-> The newest version of the accompanying userland tools cuts backward
-> compatibility and uses libudev to find its devices superseding the
-> quirky kone_abi_version sysfs attribute. Therefore it should be removed.
+Discussion had completely died down for a while, and it's picked up
+again, but it's not clear to me that we're any closer to reaching
+consensus.
 
-How backwards incompatible this change actually is?
+There's been one proposal that we simply merge in a set of no-op
+inline functions for suspend blockers, just so we can get let the
+drivers go in (assuming that Greg K-H believes this is still a
+problem), but with an automatical removal of N months (N to be
+decided, say 9 or 12 or 18 months).
 
-What happens if you run old userspace tool (the one which looks for 
-kone_abi_version) on a kernel with this patch applied?
+My concern is that if we do that, we will have simply kicked the ball
+down the road for N months.  Another approach is to simply merge in
+no-op functions and not leave any kind of deprecation schedule.
+That's sort of an implicit admission of the fact that we may not reach
+consensus on this issue.  Or we could simply ship the patches as-is to
+Linus after he gets back from vacation and ask him for a thumbs up or
+thumbs down vote, which might settle things once and for all.
 
-Thanks,
+How do we go forward from here?
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+					- Ted
