@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab0FUQOz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 12:14:55 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59892 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932091Ab0FUQOx (ORCPT
+	id S932336Ab0FUQP5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 12:15:57 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46651 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab0FUQPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 12:14:53 -0400
-Subject: Re: 2.6.35-rc3 regression: IBM Maia system is unbootable [ACPI
- related?]
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-In-Reply-To: <1277136189.10998.63.camel@mulgrave.site>
-References: <1277136189.10998.63.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 21 Jun 2010 11:14:51 -0500
-Message-ID: <1277136891.10998.67.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Jun 2010 12:15:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=oagxi+5lOSV6Utej8XKxDtFak0eXEnjnZqraR5N75adx2V9aUxmY5HN7VimxBbtati
+         iSgz86MGcIvBMVsE0Vebvl5mdq/rts/vw6zVf/euOnn7aXZ4K1qnnJRurK3Z57l9dnWn
+         AVuNglFdLfTLJGBTy6+18eoUSvU8uPOjn/yA4=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 8/8 v2]tuners:tuner-simple Fix warning: variable 'tun' set but not used
+Date: Mon, 21 Jun 2010 09:15:47 -0700
+Message-Id: <1277136947-2787-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-21 at 11:03 -0500, James Bottomley wrote:
-> The system in question has a set of root bridges, with the CD rom (which
-> is seen) being on bus 0 and the SCSI controller, which doesn't show up
-> being on bus 1 (with several other things on busses > 1).
-> 
-> The system uses ACPI to detect the multiple bridges, so it seems that
-> this failure in 2.6.35-rc3:
-> 
-> ACPI: Core revision 20100428
-> ACPI Error: Hardware did not enter ACPI mode (20100428/evxfevnt-103)
-> ACPI Warning: AcpiEnable failed (20100428/utxface-147)
-> ACPI: Unable to enable ACPI
-> 
-> Means that we can't detect any PCI bus other than 0 and thus the system
-> won't boot.
-> 
-> The full dmesgs for a successful (2.6.34) and failed (2.6.35-rc3) boot
-> are below.
+Resend due to a whitespace issue I created by mistake.
+The below patch fixes a warning message create by gcc 4.6.0
+ 
+ CC [M]  drivers/media/common/tuners/tuner-simple.o
+drivers/media/common/tuners/tuner-simple.c: In function 'simple_set_tv_freq':
+drivers/media/common/tuners/tuner-simple.c:548:20: warning: variable 'tun' set but not used
 
-This didn't make either the PCI or the ACPI lists ... probably because
-of the attachments.  However, the full message (with attachments) is on
-lkml:
+ Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+ Reviewed-By: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-http://marc.info/?l=linux-kernel&m=127713622821166
+---
+ drivers/media/common/tuners/tuner-simple.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-James
-
+diff --git a/drivers/media/common/tuners/tuner-simple.c b/drivers/media/common/tuners/tuner-simple.c
+index 8abbcc5..84900fa 100644
+--- a/drivers/media/common/tuners/tuner-simple.c
++++ b/drivers/media/common/tuners/tuner-simple.c
+@@ -545,14 +545,11 @@ static int simple_set_tv_freq(struct dvb_frontend *fe,
+ 	struct tuner_simple_priv *priv = fe->tuner_priv;
+ 	u8 config, cb;
+ 	u16 div;
+-	struct tunertype *tun;
+ 	u8 buffer[4];
+ 	int rc, IFPCoff, i;
+ 	enum param_type desired_type;
+ 	struct tuner_params *t_params;
+ 
+-	tun = priv->tun;
+-
+ 	/* IFPCoff = Video Intermediate Frequency - Vif:
+ 		940  =16*58.75  NTSC/J (Japan)
+ 		732  =16*45.75  M/N STD
+-- 
+1.7.1.rc1.21.gf3bd6
 
