@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757523Ab0FUKOb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 06:14:31 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53986 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447Ab0FUKOa (ORCPT
+	id S1757580Ab0FUKXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 06:23:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59215 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757232Ab0FUKXB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 06:14:30 -0400
-Date: Mon, 21 Jun 2010 06:14:26 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Kyle McMartin <kyle@mcmartin.ca>, Tilman Schmidt <tilman@imap.cc>,
-       linux-kernel@vger.kernel.org
-Subject: Re: CONFIG_PROVE_RCU breaks proprietary modules (rcu_lock_map)
-Message-ID: <20100621101425.GA20317@bombadil.infradead.org>
-References: <4BA689EA.4050102@imap.cc> <20100329150946.GB2569@linux.vnet.ibm.com> <4BB0E937.7070200@imap.cc> <20100329184059.GL2569@linux.vnet.ibm.com> <20100617103747.GZ20317@bombadil.infradead.org> <20100620151605.GA2396@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100620151605.GA2396@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 21 Jun 2010 06:23:01 -0400
+Subject: Re: [PATCH 00/28] mm: preemptibility -v3
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>,
+       "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1276153198.2096.465.camel@ymzhang.sh.intel.com>
+References: <20100607110654.606530953@chello.nl>
+	 <1276134311.2096.438.camel@ymzhang.sh.intel.com>
+	 <1276152750.2046.2485.camel@twins>
+	 <1276153198.2096.465.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 21 Jun 2010 12:21:58 +0200
+Message-ID: <1277115718.1875.490.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 20, 2010 at 08:16:05AM -0700, Paul E. McKenney wrote:
-> My kneejerk reaction is that PROVE_RCU is a developer tool, so I am
-> OK with it not being set by default in Rawhide.  Or have you seen good
-> value from (say) PROVE_LOCKING in Rawhide?
-> 
+On Thu, 2010-06-10 at 14:59 +0800, Zhang, Yanmin wrote:
 
-Hi Paul,
+> > > I applied it against 2.6.35-rc2 on x86_64 machine, but kernel booting panic.
 
-I'm fine with this, we try to enable debug options in rawhide in order
-to get the most out of bug reports/dmesgs that we can. We've definitely
-spotted a lot of lockdep reports by having it enabled for general
-desktop use cases (but as debugging has become more intensive, the perf
-loss from having it enabled is more costly.)
+<snip panic>
 
-I suspect we'll be OK with PROVE_RCU off though.
+> > Oi, that's no good. Happen to have your .config handy, I didn't actually
+> > see my machine do that.
 
-Thanks!
+> See the attachment.
 
-regards, Kyle
+That .config build and booted on my x86_64 machine, no funnies there.
+
+I pushed a git tree out to kernel.org but somehow its refusing to show
+up on git.kernel.org..
