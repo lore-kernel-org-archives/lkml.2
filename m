@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab0FUTuA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 15:50:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50798 "EHLO mx1.redhat.com"
+	id S932303Ab0FUTuF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 15:50:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12867 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686Ab0FUTt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 15:49:59 -0400
+	id S1751686Ab0FUTuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 15:50:02 -0400
 From: Jeff Moyer <jmoyer@redhat.com>
 To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] cfq: fixes to bring cfq in line with deadline performance for mid- to high-end storage
-Date: Mon, 21 Jun 2010 15:49:47 -0400
-Message-Id: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH 1/2] cfq: always return false from should_idle if slice_idle is set to zero
+Date: Mon, 21 Jun 2010 15:49:48 -0400
+Message-Id: <1277149789-4493-2-git-send-email-jmoyer@redhat.com>
+In-Reply-To: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
+References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-In testing iozone using the flag that enforces an fsync before close, we found
-that performance for cfq on ext3 and ext4 file systems was very poor for file
-sizes 8MB and below (as compared with a 2.6.18 kernel's cfq, or with a recent
-kernel with deadline).  The storage involved is middle of the road SAN storage
-connected via a single fiber pair.  Investigation showed that the idling logic
-of cfq was causing the process issuing the I/O to stall.  iozone, in this case,
-was really dependant on the journal commits done by the jbd thread, but cfq
-was instead idling waiting for more I/O from iozone.  Setting slice_idle to
-0 for cfq will regain this performance.
+In testing a competing fsync-ing process and a sequential reader on
+mid-grade storage, I found that cfq was incapable of achieving the I/O
+rates of deadline, no matter how it was tuned.  Investigation, and insight
+from Vivek (mostly the latter), led to identifying that we were still
+idling for the last queue in the service tree.
 
-However, if you introduce a single sequential reader into the mix, even
-with slice_idle set to 0, cfq is unable to perform as well as deadline:
+Modifying cfq_should_idle to not idle when slice_idle is set to zero got
+us much closer to the performance of deadline for this workload.  I have
+one follow-on patch that gets us on-par with deadline, but I think this
+patch stands alone.
 
-          deadline  cfq, defaults    cfq, slice_idle=0
-fs_mark:  294.3     36.1             48.0
-fio bsr:  153 MB/s  152 MB/s         147 MB/s
+Comments, as always, are appreciated.
 
-I used fs_mark to simulate iozone (it's less verbose) and fio to start
-a single Buffered Sequential Reader (bsr).  The fs_mark numbers are in
-files/second.  As you can see, cfq doesn't even compete here.
+Cheers,
+Jeff
 
-With either of the two patches applied, we get back a subset of the
-performance.  With both applied, we are in line with deadline.  I've also
-tested these patches against a single SATA disk and observed no performance
-degradation for default tuning.
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+---
+ block/cfq-iosched.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-[PATCH 1/2] cfq: always return false from should_idle if slice_idle is set to zero
-[PATCH 2/2] cfq: allow dispatching of both sync and async I/O together
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 5ff4f48..572a050 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1842,6 +1842,10 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 	if (prio == IDLE_WORKLOAD)
+ 		return false;
+ 
++	/* Don't idle if slice idling is disabled by the user */
++	if (cfqd->cfq_slice_idle == 0)
++		return false;
++
+ 	/* We do for queues that were marked with idle window flag. */
+ 	if (cfq_cfqq_idle_window(cfqq) &&
+ 	   !(blk_queue_nonrot(cfqd->queue) && cfqd->hw_tag))
+-- 
+1.6.5.2
+
