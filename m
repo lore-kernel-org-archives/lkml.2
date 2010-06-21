@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab0FUTqO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 15:46:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26000 "EHLO mx1.redhat.com"
+	id S1758198Ab0FUTuA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 15:50:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50798 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751921Ab0FUTqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 15:46:12 -0400
-Date: Mon, 21 Jun 2010 15:45:59 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] Add TAINT_HARDWARE_UNSUPPORTED flag
-Message-ID: <20100621194559.GI3217@redhat.com>
-References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
- <20100617091322.b7d21473.randy.dunlap@oracle.com>
- <4C1A7D61.8010900@redhat.com>
- <20100621122145.76ebd7ac.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100621122145.76ebd7ac.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1751686Ab0FUTt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 15:49:59 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] cfq: fixes to bring cfq in line with deadline performance for mid- to high-end storage
+Date: Mon, 21 Jun 2010 15:49:47 -0400
+Message-Id: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 12:21:45PM -0700, Andrew Morton wrote:
-> > @@ -243,6 +245,9 @@ void add_taint(unsigned flag)
-> >  	 */
-> >  	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
-> >  		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
-> > +	if (flag == TAINT_HARDWARE_UNSUPPORTED)
-> > +		printk(KERN_CRIT
-> > +		       "WARNING: This system's hardware is unsupported.\n");
-> >  
-> >  	set_bit(flag, &tainted_mask);
-> >  }
-> 
-> That's pretty user-hostile.  What are they to do - throw the entire
-> computer away because it has the wrong type of mouse?
-> 
-> How about
-> 
-> void add_hardware_unsupported_taint(const char *hardware)
-> {
-> 	printk(KERN_CRIT
-> 	       "Hardware device %s is unsupported by this kernel's vendor\n",
-> 		hardware);
-> 	add_taint(TAINT_HARDWARE_UNSUPPORTED);
-> }
-> 
-> and
-> 
-> /*
->  * Don't call add_taint(TAINT_HARDWARE_UNSUPPORTED) directly - use
->  * add_hardware_unsupported_taint()
->  */
-> #define TAINT_HARDWARE_UNSUPPORTED	12
+Hi,
 
-Internally here that is how we planned on using the flag.  We weren't sure
-if upstream would accept that piece or not, so we started with the flag
-for now to at least reserve the bit.
+In testing iozone using the flag that enforces an fsync before close, we found
+that performance for cfq on ext3 and ext4 file systems was very poor for file
+sizes 8MB and below (as compared with a 2.6.18 kernel's cfq, or with a recent
+kernel with deadline).  The storage involved is middle of the road SAN storage
+connected via a single fiber pair.  Investigation showed that the idling logic
+of cfq was causing the process issuing the I/O to stall.  iozone, in this case,
+was really dependant on the journal commits done by the jbd thread, but cfq
+was instead idling waiting for more I/O from iozone.  Setting slice_idle to
+0 for cfq will regain this performance.
 
-But I can see your point about the other printk being a little
-user-hostile if someone forgot to call the wrapper function.
+However, if you introduce a single sequential reader into the mix, even
+with slice_idle set to 0, cfq is unable to perform as well as deadline:
 
-I can respin with the wrapper function (Prarit is on vacation) or go with
-Alan's idea of just reserving the upper few bits.
+          deadline  cfq, defaults    cfq, slice_idle=0
+fs_mark:  294.3     36.1             48.0
+fio bsr:  153 MB/s  152 MB/s         147 MB/s
 
-Thoughts?
+I used fs_mark to simulate iozone (it's less verbose) and fio to start
+a single Buffered Sequential Reader (bsr).  The fs_mark numbers are in
+files/second.  As you can see, cfq doesn't even compete here.
 
-Cheers,
-Don
+With either of the two patches applied, we get back a subset of the
+performance.  With both applied, we are in line with deadline.  I've also
+tested these patches against a single SATA disk and observed no performance
+degradation for default tuning.
+
+[PATCH 1/2] cfq: always return false from should_idle if slice_idle is set to zero
+[PATCH 2/2] cfq: allow dispatching of both sync and async I/O together
