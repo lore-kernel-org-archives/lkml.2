@@ -1,150 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab0FUHhu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 03:37:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53708 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab0FUHhq (ORCPT
+	id S1756092Ab0FUHjV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 03:39:21 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:36235 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab0FUHjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 03:37:46 -0400
-Date: Mon, 21 Jun 2010 09:37:36 +0200
-From: Luotao Fu <l.fu@pengutronix.de>
-To: Martin Fuzzey <mfuzzey@gmail.com>
-Cc: Luotao Fu <l.fu@pengutronix.de>, Sascha Hauer <kernel@pengutronix.de>,
-       linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] imxfb: add flag to avoid disabling clk multiple times
-Message-ID: <20100621073736.GA24817@pengutronix.de>
-Mail-Followup-To: Martin Fuzzey <mfuzzey@gmail.com>,
-	Luotao Fu <l.fu@pengutronix.de>,
-	Sascha Hauer <kernel@pengutronix.de>, linux-fbdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1275561288-20661-1-git-send-email-l.fu@pengutronix.de> <4C1CE6B8.4090504@gmail.com>
+	Mon, 21 Jun 2010 03:39:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=XVOPZufsVIGE8XNWHBulteTyPoZjPl/m68FQxPchzTovnXoHFhZTqAgOLBIobfCrQj
+         /fU0zmP1vV+7n+/MMdcLpfAyHHauYn0A03n0JInvje38RZUfgN7T4/Oup9R7vRtblVE3
+         Ec6jQvAJDAmStc5cxqtEMX/XtszyIvihfNBPI=
+Date: Mon, 21 Jun 2010 11:39:09 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Barry Song <21cnbao@gmail.com>
+Cc: "Song, Barry" <Barry.Song@analog.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Artem Bityutskiy <dedekind1@gmail.com>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, linux-mtd@lists.infradead.org,
+       uclinux-dist-devel@blackfin.uclinux.org,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Uclinux-dist-devel] [PATCH 1/2] mtd: m25p80:
+ Reworkprobing/JEDEC code
+Message-ID: <20100621073909.GA20674@oksana.dev.rtsoft.ru>
+References: <20090818214449.GA12848@oksana.dev.rtsoft.ru>
+ <20090818214622.GA22651@oksana.dev.rtsoft.ru>
+ <AANLkTikg60s6ZRSEDCq9PQK1z7hJtBDk6t4VE1lYDv8u@mail.gmail.com>
+ <20100618133212.GA5276@oksana.dev.rtsoft.ru>
+ <0F1B54C89D5F954D8535DB252AF412FA065551D8@chinexm1.ad.analog.com>
+ <AANLkTiksYofs6hhWta6uFX2cla_g8pBu0Mtbtcbv-2tl@mail.gmail.com>
+ <20100621071551.GA16109@oksana.dev.rtsoft.ru>
+ <AANLkTiknH95loHJsQNxvCCyQbriCFWqM5LHl3wKzmdWX@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4C1CE6B8.4090504@gmail.com>
-X-PGP-Key-ID: 0xE5325261
-X-URL: http://www.pengutronix.de/
-X-Sent-From: Pengutronix Hildesheim
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:20:43 up 13 days, 23:48, 31 users,  load average: 0.44, 0.81,
-	0.69
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: l.fu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTiknH95loHJsQNxvCCyQbriCFWqM5LHl3wKzmdWX@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---n8g4imXOkfNTN/H1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Martin,
-
-On Sat, Jun 19, 2010 at 05:48:08PM +0200, Martin Fuzzey wrote:
-> Hi Luotao,
->=20
-> Luotao Fu wrote:
-> > while the imxfb driver blanks the screen. The clock supply to the frame=
-buffer
-> > controller is disabled. The same callback to disable the fb is, however=
-, also
-> > used the remove and shutdown hooks of the imxfb platform driver. This m=
-eans that
-> > the imxfb driver can run into a WARN in clock_disable while unloading or
-> > rebooting, if the screen is blanked previously, since the same clock wi=
-ll be
-> > than eventually disabled multiple times.  This patch adds a flag to mak=
-e sure
-> > that the clock will only be disabled, if it was not already disabled be=
-fore.
+On Mon, Jun 21, 2010 at 03:22:48PM +0800, Barry Song wrote:
+> On Mon, Jun 21, 2010 at 3:15 PM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+> > On Mon, Jun 21, 2010 at 11:27:31AM +0800, Barry Song wrote:
+> > [...]
+> >> > How about we add a non_jedec flag in platform_data, if the flag is 1, we
+> >> > let the detection pass even though the ID is 0? Otherwise, we need a
+> >> > valid ID?
+> >> Here i mean:
 > >
-> >  =20
-> Actually it's worse than that - you don't need to unload the
-> driver or reboot to run into this problem because imxfb_blank()
-> calls imxfb_disable_controller() for cases
->     case FB_BLANK_POWERDOWN:
->     case FB_BLANK_VSYNC_SUSPEND:
->     case FB_BLANK_HSYNC_SUSPEND:
->     case FB_BLANK_NORMAL:
->=20
-> Often an X server will call these after successive timeouts
-> (eg Normal, Suspend, Powerdown) so you can get into the
-> multiple suspend problem you describe just by waiting long
-> enough for at least two blank levels to be activated.
->=20
-> Furthermore once this happens, not only does a WARN occur
-> in clock_disable but the clock usage counter will actually become
-> negative so it will require multiple wake up requests to switch
-> the display back on.
->=20
-> I was just about to post a patch for this but I see you beat
-> me to it :).
->=20
-> Your patch fixes the clock_disable problem but fbi->backlight_power()
-> and fbi->lcd_power() can still be called multiple times.
-> Not sure if that is really a problem - they should be idempotent.
->=20
+> > This will break at least OF-enabled platforms (e.g. PowerPC),
+> > they assume that the driver will success for non-JEDEC flashes.
+> > OF platforms don't pass platform data, and even if they did,
+> > device tree doesn't specify if the flash is JEDEC or non-JEDEC.
+> >
+> > Which is why I think that, by default, the driver should
+> > successfully register the flash even if JEDEC probe fails. So,
+> > instead of checking for "!non_jedec", I would recommend
+> > "force_jedec" check.
+> 
+> Mike Frysinger suggested to use non_jedec since most devices are
+> standard jedec devices.
 
-Multiple calling of the backlight_power and lcd_power function hooks
-should be no trouble on most platforms since they mostly control some
-PWM or GPIO lines, which won't complain to be turned on or off again.
-Never the less I agree with you that this is quite unneccessary.
+Well, on OF platforms most devices that I'm aware of are non-JEDEC.
 
-> I did it by making all of imxfb_disable_controller() do nothing if the
-> disable was already done like this  (just for illustration not submission,
-> lines may be mangled):
->=20
+> Only if non_jedec=1, we let the detection pass
+> if ID is 0.
 
-This solution looks better and more clear than mine, which only concentrate
-on clock. Only nitpickings: I'd probably defined "enabled" as a bool. Furth=
-er
-it might be nice to change pr_debug so that one would see a failed
-enable/disable call. some like
-pr_debug("Disabling LCD controller ... ");
+Then please #ifdef it with CONFIG_OF.
 
-if (!fbi->enabled) {
-	pr_debug("already disabled\n");
-	return;
-} else
-		pr_debug("\n");
+Thanks,
 
-Applied and tested on my board here. (consolefb only, no X running.)
-so far:
-Acked-by: Luotao Fu <l.fu@pengutronix.de>
+> >> Index: drivers/mtd/devices/m25p80.c
+> >> ===================================================================
+> >> --- drivers/mtd/devices/m25p80.c      (revision 8927)
+> >> +++ drivers/mtd/devices/m25p80.c      (revision 8929)
+> >> @@ -795,8 +795,13 @@
+> >>
+> >>               jid = jedec_probe(spi);
+> >>               if (!jid) {
+> >> -                     dev_info(&spi->dev, "non-JEDEC variant of %s\n",
+> >> -                              id->name);
+> >> +                     if (!data->non_jedec) {
+> >> +                             dev_err(&spi->dev, "fail to detect%s\n",
+> >> +                                             id->name);
+> >> +                             return -ENODEV;
+> >> +                     } else
+> >> +                             dev_info(&spi->dev, "non-JEDEC variant of %s\n",
+> >> +                                             id->name);
+> >>               } else if (jid != id) {
+> >
+> > --
+> > Anton Vorontsov
+> > email: cbouatmailru@gmail.com
+> > irc://irc.freenode.net/bd2
+> >
 
-=20
-thanks
-and
-cheers
-
-Luotao Fu
---=20
-Pengutronix e.K.                           | Dipl.-Ing. Luotao Fu        |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
---n8g4imXOkfNTN/H1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkwfFsAACgkQkLuxfMCkDTbl2wCfVsonYgBg2tOto4CdifufIwGD
-bUIAn2KRo1r9NsAABc8K7sRQC7zjIFjM
-=UEKx
------END PGP SIGNATURE-----
-
---n8g4imXOkfNTN/H1--
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
