@@ -1,132 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab0FUGQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 02:16:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44377 "EHLO smtps.tip.net.au"
+	id S1756198Ab0FUGQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 02:16:23 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44363 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756374Ab0FUGQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 02:16:25 -0400
-Date: Mon, 21 Jun 2010 16:16:23 +1000
+	id S1755000Ab0FUGQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 02:16:21 -0400
+Date: Mon, 21 Jun 2010 16:16:09 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: linux-next: manual merge of the tip tree with the block tree
-Message-Id: <20100621161623.3dfedc32.sfr@canb.auug.org.au>
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
+       <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the tip tree with the net tree
+Message-Id: <20100621161609.935d0085.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__21_Jun_2010_16_16_09_+1000_NEGrOnCn9kXH9th6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__21_Jun_2010_16_16_09_+1000_NEGrOnCn9kXH9th6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi all,
 
 Today's linux-next merge of the tip tree got a conflict in
-fs/fs-writeback.c between commits 7f0e7bed936a0c422641a046551829a01341dd80
-("writeback: fix writeback completion notifications") and
-3c4d716538f3eefb1c1f10961a047a6456a2b590 ("writeback: queue work on stack
-in writeback_inodes_sb") from the block tree and commit
-b97181f24212f4c29197890ce1b2b9100bcc184d ("fs: remove all rcu head
-initializations, except on_stack initializations") from the tip tree.
+net/bridge/br_fdb.c net/bridge/netfilter/ebt_redirect.c
+net/bridge/netfilter/ebt_ulog.c net/bridge/netfilter/ebtables.c
+net/netfilter/nfnetlink_log.c between commit
+f350a0a87374418635689471606454abc7beaa3a ("bridge: use rx_handler_data
+pointer to store net_bridge_port pointer") from the net tree and commit
+81bdf5bd7349bd4523538cbd7878f334bc2bfe14 ("net: Make accesses to
+->br_port safe for sparse RCU") from the tip tree.
 
-I fixed it up (I hope - see below) and can carry the fix as necessary.
--- 
+The net tree commit looks like a superset of the tip tree commit, so I
+effectively reverted the tip tree commit.
+--=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --cc fs/fs-writeback.c
-index 5455009,af92100..0000000
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@@ -63,16 -63,45 +63,37 @@@ struct bdi_work 
-  };
-  
-  enum {
- -	WS_USED_B = 0,
- -	WS_ONSTACK_B,
- +	WS_INPROGRESS = 0,
- +	WS_ONSTACK,
-  };
-  
-- static inline void bdi_work_init(struct bdi_work *work,
-- 				 struct wb_writeback_args *args)
- -#define WS_USED (1 << WS_USED_B)
- -#define WS_ONSTACK (1 << WS_ONSTACK_B)
- -
- -static inline bool bdi_work_on_stack(struct bdi_work *work)
- -{
- -	return test_bit(WS_ONSTACK_B, &work->state);
- -}
- -
-+ static inline void __bdi_work_init(struct bdi_work *work,
-+ 				   struct wb_writeback_args *args,
-+ 				   int on_stack)
-  {
-- 	INIT_RCU_HEAD(&work->rcu_head);
-  	work->args = *args;
- -	work->state = WS_USED;
- +	__set_bit(WS_INPROGRESS, &work->state);
-+ 	if (on_stack) {
- -		work->state |= WS_ONSTACK;
-++		__set_bit(WS_ONSTACK, &work->state);
-+ 		init_rcu_head_on_stack(&work->rcu_head);
-+ 	}
-+ }
-+ 
-+ static inline void bdi_work_init(struct bdi_work *work,
-+ 				 struct wb_writeback_args *args)
-+ {
-+ 	__bdi_work_init(work, args, false);
-+ }
-+ 
-+ static inline void bdi_work_init_on_stack(struct bdi_work *work,
-+ 					  struct wb_writeback_args *args)
-+ {
-+ 	__bdi_work_init(work, args, true);
-+ }
-+ 
-+ static inline void bdi_destroy_work_on_stack(struct bdi_work *work)
-+ {
-+ 	destroy_rcu_head_on_stack(&work->rcu_head);
-  }
-  
-  /**
-@@@ -182,19 -239,26 +203,19 @@@ static void bdi_alloc_queue_work(struc
-   * @sb: write inodes from this super_block
-   *
-   * Description:
- - *   This does WB_SYNC_ALL data integrity writeback and waits for the
- - *   IO to complete. Callers must hold the sb s_umount semaphore for
- + *   This function initiates writeback and waits for the operation to
- + *   complete. Callers must hold the sb s_umount semaphore for
-   *   reading, to avoid having the super disappear before we are done.
-   */
- -static void bdi_sync_writeback(struct backing_dev_info *bdi,
- -			       struct super_block *sb)
- +static void bdi_queue_work_onstack(struct wb_writeback_args *args)
-  {
- -	struct wb_writeback_args args = {
- -		.sb		= sb,
- -		.sync_mode	= WB_SYNC_ALL,
- -		.nr_pages	= LONG_MAX,
- -		.range_cyclic	= 0,
- -	};
-  	struct bdi_work work;
-  
-- 	bdi_work_init(&work, args);
-- 	__set_bit(WS_ONSTACK, &work.state);
- -	bdi_work_init_on_stack(&work, &args);
-++	bdi_work_init_on_stack(&work, args);
-  
- -	bdi_queue_work(bdi, &work);
- -	bdi_wait_on_work_clear(&work);
- +	bdi_queue_work(args->sb->s_bdi, &work);
- +	bdi_wait_on_work_done(&work);
-+ 	bdi_destroy_work_on_stack(&work);
-  }
-  
-  /**
+--Signature=_Mon__21_Jun_2010_16_16_09_+1000_NEGrOnCn9kXH9th6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwfA6kACgkQjjKRsyhoI8wegQCgr4/t9h1BRhdYciQ7nJhDUVMx
+90QAmgIdEfl3Jv6rN/sXnoNwC93wL9Xk
+=TIs3
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__21_Jun_2010_16_16_09_+1000_NEGrOnCn9kXH9th6--
