@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab0FUFab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 01:30:31 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42304 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752295Ab0FUFa1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 01:30:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=JjZqfrpKIGTiSto714HIo3sHlcQYZD3wdjbRhR51s/JfOtCO2p0VebURU3Eze75zoO
-         Wz3HNsuCLD+aawfOPdnyPRx/q+JVuifkdRNTWAZLUWD2TJocIncandiKAN7OzPUjo4o8
-         oEmwFsPX6MtQy8LTyHZ1UsD5y1Qsw7LXHufpM=
-MIME-Version: 1.0
-In-Reply-To: <4C1EBE06.7020605@seas.upenn.edu>
-References: <AANLkTinq_3P-QrTqsEdtyMbBtc9EXhahclER_4s5_Kx2@mail.gmail.com>
-	<AANLkTikExwM_LBUw_-z2eimO96Dxs_fNfAM4jlftXyHM@mail.gmail.com>
-	<4C1E6A8C.4020904@seas.upenn.edu>
-	<AANLkTimCsVwppeTKXErpA6_1vwPHuQeqJHcdzLKd2EEp@mail.gmail.com>
-	<4C1EBE06.7020605@seas.upenn.edu>
-Date: Sun, 20 Jun 2010 22:30:26 -0700
-Message-ID: <AANLkTikR0PXLqYuK8jDd_pWvcmVlRLnQFLVElHH8e71a@mail.gmail.com>
-Subject: Re: Wacom based devices and the mt kernel protocol.
-From: Ping Cheng <pinglinux@gmail.com>
-To: Rafi Rubin <rafi@seas.upenn.edu>
-Cc: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>,
-       Henrik Rydberg <rydberg@euromail.se>,
-       Chase Douglas <chase.douglas@canonical.com>,
+	id S1753200Ab0FUFdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 01:33:16 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:53205 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752295Ab0FUFdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 01:33:13 -0400
+Date: Mon, 21 Jun 2010 07:32:33 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Newsgroups: gmane.linux.kernel
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+       Arve =?ISO-8859-15?B?SGr4bm5lduVn?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Message-ID: <20100621073233.3f874ad0@schatten.dmk.lab>
+In-Reply-To: <Pine.LNX.4.44L0.1006202154260.29532-100000@netrider.rowland.org>
+References: <201006202350.27143.rjw@sisk.pl>
+	<Pine.LNX.4.44L0.1006202154260.29532-100000@netrider.rowland.org>
+X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 20, 2010 at 6:19 PM, Rafi Rubin <rafi@seas.upenn.edu> wrote:
->>
->>>>> This impact very much the decision of a Linux user wanting to buy wacom mt device.
->>>>
->>>> I think end users have already got the Linux support from Wacom.  Can
->>>> you share the specific issues that are preventing Linux end users from
->>>> buying a Wacom MT devices? If I didn't misunderstand your point here,
->>>> you are talking about Linux users, not Linux developers/hackers,
->>>> right?
->>>
->>> I think normal users wanting to use linux for MT are generally frustrated and
->>> confused at the moment.
->>
->> Why do the end users get frustrated and confused? Can you share some
->> examples from an end user's (not developer's) perspective with me?
->
-> Sorry, I've been too focused on the n-trig users.  They have been frustrated,
-> and I've seen from the forums that some have been playing with customized
-> versions of both the kernel and wacom x driver to get your two finger gestures.
->
-> I'm also projecting my own frustrations, seeing the X mt interface still not
-> quite set, and very little in the way of applications that use mt at all.
-> We're still quite a ways away from seeing the full potential of a more hands on desktop.
+On Sun, 20 Jun 2010 22:23:38 -0400 (EDT)
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-As far as I understand,  this issue is not device driver or MT support
-specific. It is universal  on Linux.
+> On Sun, 20 Jun 2010, Rafael J. Wysocki wrote:
 
->>> Certainly the protocol between the wacom kernel driver
->>> and the wacom user space driver is way below the level that most are following.
->>
->> By "most", do you mean most MT device drivers, or most end users, or
->> most developers? I am eager to bring the Wacom driver to the specific
->> level.
->
-> End users, they don't tend to care about the internal protocols as long as their
-> programs do what they want.
+> > > In what way is this better than suspend blockers?
+> > 
+> > It doesn't add any new framework and it doesn't require the users of
+> > pm_wakeup_event() to "unblock" suspend, so it is simpler.  It also doesn't add
+> > the user space interface that caused so much opposition to appear.
+> 
+> Okay.  A quick comparison shows that in your proposal:
+> 
+> 	There's no need to register and unregister suspend blockers.
+> 	But instead you create the equivalent of a suspend blocker
+> 	inside every struct device.
+> 
+> 	Drivers (or subsystems) don't have to activate suspend 
+> 	blockers.  But instead they have to call pm_wakeup_event().
+> 
+> 	Drivers don't have to deactivate suspend blockers.  You don't
+> 	have anything equivalent, and as a result your scheme is 
+> 	subject to the race described below.
+> 
+> 	There are no userspace suspend blockers and no opportunistic
+> 	suspend.  Instead a power-manager process takes care of 
+> 	initiating or preventing suspends as needed.
+> 
+> In short, you have eliminated the userspace part of the suspend blocker 
+> approach just as in some of the proposals posted earlier, and you have 
+> replaced the in-kernel suspend blockers with new data in struct device 
+> and a new PM API.  On the whole, it doesn't seem very different from 
+> the in-kernel part of suspend blockers.  The most notable difference is 
+> the name: pm_wake_event() vs. suspend_blocker_activate(), or whatever 
+> it ended up being called.
+> 
+> This is the race I was talking about:
+> 
+> > > What happens if an event arrives just before you read
+> > > /sys/power/wakeup_count, but the userspace consumer doesn't realize
+> > > there is a new unprocessed event until after the power manager checks
+> > > it?
+> 
+> > I think this is not the kernel's problem.  In this approach the kernel makes it
+> > possible for the user space to avoid the race.  Whether or not the user space
+> > will use this opportunity is a different matter.
+> 
+> It is _not_ possible for userspace to avoid this race.  Help from the 
+> kernel is needed.
 
-Then, I still don't get what you meant by "way below the level that
-most are following". I'd really like to understand it so I can work on
-it.
+It is possible if every (relevant) userspace program implements a
+callback for the powermanager to check if one of it's wakeup-sources
+got activated.
 
-Thank you,
+That way the powermanager would read /sys/power/wakeup_count, then do
+the roundtrip to all it's registered users and only then suspend. 
 
-Ping
+This turns the suspend_blockers concept around. Instead of actively
+signaling the suspend_blockers, the userspace programs only answer
+"yes/no" when asked.  (i.e. polling?) 
+
+You _can not_ implement userspace suspend blockers with this approach,
+as it is vital for every userspace program to get scheduled and check
+it's wakeup-source (if even possible) before you know that the right
+parties have won the race.
+
+
+Cheers,
+Flo
