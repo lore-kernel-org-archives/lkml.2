@@ -1,50 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab0FULIY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 07:08:24 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36109 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932251Ab0FULIV (ORCPT
+	id S932288Ab0FULKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 07:10:33 -0400
+Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:36967 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932240Ab0FULKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 07:08:21 -0400
-From: Wu Zhangjin <wuzhangjin@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-       Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH] tracing: Fix undelared ENOSYS in include/linux/tracepoint.h
-Date: Mon, 21 Jun 2010 19:09:09 +0800
-Message-Id: <1277118549-622-1-git-send-email-wuzhangjin@gmail.com>
-X-Mailer: git-send-email 1.6.3.3
-X-OriginalArrivalTime: 21 Jun 2010 11:07:59.0105 (UTC) FILETIME=[02135710:01CB1132]
+	Mon, 21 Jun 2010 07:10:31 -0400
+Date: Mon, 21 Jun 2010 13:11:27 +0200
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Pavel Emelyanov <xemul@parallels.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+Message-ID: <20100621111127.GI16877@hawkmoon.kerlabs.com>
+Mail-Followup-To: Oleg Nesterov <oleg@redhat.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Pavel Emelyanov <xemul@parallels.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Pavel Emelyanov <xemul@openvz.org>,
+	Linux Containers <containers@lists.osdl.org>,
+	linux-kernel@vger.kernel.org
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <4C19F0A3.2050707@parallels.com> <m1631hdbdu.fsf@fess.ebiederm.org> <20100617213638.GB4182@redhat.com> <20100618082738.GE16877@hawkmoon.kerlabs.com> <20100618162734.GB7404@redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-13922-1277118621-0001-2"
+Content-Disposition: inline
+In-Reply-To: <20100618162734.GB7404@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wu Zhangjin <wuzhangjin@gmail.com>
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
-The header file include/linux/tracepoint.h may be included without
-include/linux/errno.h and then the compiler will fail on building for
-undelcared ENOSYS. This patch fixes this problem via including <linux/errno.h>
-to include/linux/tracepoint.h.
+--=_bohort-13922-1277118621-0001-2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Wu Zhangjin <wuzhangjin@gmail.com>
----
- include/linux/tracepoint.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On 18/06/10 18:27 +0200, Oleg Nesterov wrote:
+> On 06/18, Louis Rilling wrote:
+> >
+> > On 17/06/10 23:36 +0200, Oleg Nesterov wrote:
+> > > On 06/17, Eric W. Biederman wrote:
+> > > >
+> > > > The task->children isn't changed until __unhash_process() which runs
+> > > > after flush_proc_task().
+> > >
+> > > Yes. But this is only the current implementation detail.
+> > > It would be nice to cleanup the code so that EXIT_DEAD tasks are
+> > > never sit in ->children list.
+> > >
+> > > > So we should be able to come up with
+> > > > a variant of do_wait() that zap_pid_ns_processes can use that does
+> > > > what we need.
+> > >
+> > > See above...
+> > >
+> > > Even if we modify do_wait() or add the new variant, how the caller
+> > > can wait for EXIT_DEAD tasks? I don't think we want to modify
+> > > release_task() to do __wake_up_parent() or something similar.
+> >
+> > Indeed, I was thinking about calling __wake_up_parent() from release_ta=
+sk()
+> > once parent->children becomes empty.
+> >
+> > Not sure about the performance impact though. Maybe some WAIT_NO_CHILDR=
+EN flag
+> > in parent->signal could limit it. But if EXIT_DEAD children are removed=
+ from
+> > ->children before release_task(), I'm afraid that this becomes impossib=
+le.
+>=20
+> Thinking more, even the current do_wait() from zap_pid_ns_processes()
+> is not really good. Suppose that some none-init thread is ptraced, then
+> zap_pid_ns_processes() will hange until the tracer does do_wait() or
+> exits.
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 9a59d1f..103d1b6 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -14,6 +14,7 @@
-  * See the file COPYING for more details.
-  */
- 
-+#include <linux/errno.h>
- #include <linux/types.h>
- #include <linux/rcupdate.h>
- 
--- 
-1.6.3.3
+Is this really a bad thing? If somebody ptraces a task in a pid namespace, =
+that
+sounds reasonable to have this namespace (and it's init task) pinned.
 
+Louis
+
+--=20
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
+
+--=_bohort-13922-1277118621-0001-2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkwfSN8ACgkQVKcRuvQ9Q1R4DwCfR9yzSs3WDTbFTp2O3dO3gSrE
+ivkAoKzzTC8iwc4pLEf76ok6riQJ0Qv/
+=P5Tp
+-----END PGP SIGNATURE-----
+
+--=_bohort-13922-1277118621-0001-2--
