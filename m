@@ -1,137 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415Ab0FUMAr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 08:00:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43255 "EHLO mx1.redhat.com"
+	id S1757695Ab0FUMFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 08:05:09 -0400
+Received: from cantor.suse.de ([195.135.220.2]:42952 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932328Ab0FUMAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 08:00:45 -0400
-Message-ID: <4C1F5452.3000107@redhat.com>
-Date: Mon, 21 Jun 2010 15:00:18 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1754184Ab0FUMFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 08:05:05 -0400
+Date: Mon, 21 Jun 2010 14:05:03 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: Fixing offset errors in bin_attribute read functions
+ of roccat kone
+In-Reply-To: <1277054346.10971.1.camel@localhost>
+Message-ID: <alpine.LNX.2.00.1006211404560.13809@pobox.suse.cz>
+References: <1277054346.10971.1.camel@localhost>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com
-Subject: Re: [PATCH V2 2/5] ara virt interface of perf to support kvm guest
- os statistics collection in guest os
-References: <1277112686.2096.510.camel@ymzhang.sh.intel.com>
-In-Reply-To: <1277112686.2096.510.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2010 12:31 PM, Zhang, Yanmin wrote:
-> The 2nd patch is to change the definition of perf_event to facilitate
-> perf attr copy when a hypercall happens.
->
-> Signed-off-by: Zhang Yanmin<yanmin_zhang@linux.intel.com>
->
-> ---
->
-> --- linux-2.6_tip0620/include/linux/perf_event.h	2010-06-21 15:19:52.821999849 +0800
-> +++ linux-2.6_tip0620perfkvm/include/linux/perf_event.h	2010-06-21 16:53:49.283999849 +0800
-> @@ -188,7 +188,10 @@ struct perf_event_attr {
->   	__u64			sample_type;
->   	__u64			read_format;
->
->    
+On Sun, 20 Jun 2010, Stefan Achatz wrote:
 
-Assuming these flags are available to the guest?
+> Fixing wrong calculated offsets in bin_attribute read functions.
 
-> -	__u64			disabled       :  1, /* off by default        */
-> +	union {
-> +		__u64		flags;
-> +		struct {
-> +			__u64	disabled       :  1, /* off by default        */
->   				inherit	       :  1, /* children inherit it   */
->    
-
-inherit is meaningless for a guest.
-
->   				pinned	       :  1, /* must always be on PMU */
->    
-
-We cannot allow a guest to pin a counter.
-
-The other flags are also problematic.  I'd like to see virt-specific 
-flags (probably we'll only need kernel/user and nested_hv for nested 
-virtualization).
-
-Something that is worrying is that we don't expose group information.  
-perf will multiplex the events for us, but there will be a loss in accuracy.
-
->   #ifdef CONFIG_HAVE_HW_BREAKPOINT
->   #include<asm/hw_breakpoint.h>
->   #endif
-> @@ -753,6 +752,20 @@ struct perf_event {
->
->   	perf_overflow_handler_t		overflow_handler;
->
-> +	/*
-> +	 * pointers used by kvm perf paravirt interface.
-> +	 *
-> +	 * 1) Used in host kernel and points to host_perf_shadow which
-> +	 * has information about guest perf_event
-> +	 */
-> +	void				*host_perf_shadow;
->    
-
-Can we have real types instead of void pointers?
-
-> +	/*
-> +	 * 2) Used in guest kernel and points to guest_perf_shadow which
-> +	 * is used as a communication area with host kernel. Host kernel
-> +	 * copies overflow data to it when an event overflows.
-> +	 */
-> +	void				*guest_perf_shadow;
->    
-
-It's strange to see both guest and host parts in the same patch.  
-Splitting to separate patches will really help review.
-
-> @@ -1626,9 +1629,22 @@ void perf_event_task_tick(struct task_st
->   	if (ctx&&  ctx->nr_events&&  ctx->nr_events != ctx->nr_active)
->   		rotate = 1;
->
-> -	perf_ctx_adjust_freq(&cpuctx->ctx);
-> -	if (ctx)
-> -		perf_ctx_adjust_freq(ctx);
-> +#ifdef CONFIG_KVM_PERF
-> +	if (kvm_para_available()) {
-> +		/*
-> +		 * perf_ctx_adjust_freq causes lots of pmu->read which would
-> +		 * trigger too many vmexit to host kernel. We disable it
-> +		 * under para virt situation
-> +		 */
-> +		adjust_freq = 0;
-> +	}
-> +#endif
->    
-
-Perhaps we can have a batch read interface which will read many counters 
-at once.  This would reduce the number of exits.  Also adjust the 
-frequency less frequently.
-
-> +
-> +	if (adjust_freq) {
-> +		perf_ctx_adjust_freq(&cpuctx->ctx);
-> +		if (ctx)
-> +			perf_ctx_adjust_freq(ctx);
-> +	}
->
->    
+Applied, thanks.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
