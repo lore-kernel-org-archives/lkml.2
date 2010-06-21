@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab0FUOe3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 10:34:29 -0400
-Received: from 27.mail-out.ovh.net ([91.121.30.210]:58033 "HELO
-	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754978Ab0FUOe1 (ORCPT
+	id S932713Ab0FUOe2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 10:34:28 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34000 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752211Ab0FUOe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Jun 2010 10:34:27 -0400
-Message-ID: <4C1F786D.8070106@example.com>
-Date: Mon, 21 Jun 2010 16:34:21 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: What's up with Linux git repo?
-References: <4C1F698D.2060105@example.com> <20100621140011.GA21453@elliptictech.com>
-In-Reply-To: <20100621140011.GA21453@elliptictech.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 8706583980344897816
-X-Ovh-Remote: 83.24.108.92 (doa92.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Date: Mon, 21 Jun 2010 15:38:58 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Samo Pogacnik <samo_pogacnik@t-2.net>
+Cc: linux-embedded <linux-embedded@vger.kernel.org>,
+       linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+Message-ID: <20100621153858.444695c0@lxorguk.ukuu.org.uk>
+In-Reply-To: <1276291932.2154.45.camel@itpsd6lap>
+References: <1273918658.2341.17.camel@itpsd6lap>
+	<1275171436.2122.29.camel@itpsd6lap>
+	<20100529235402.296406d9@lxorguk.ukuu.org.uk>
+	<1275175983.2122.42.camel@itpsd6lap>
+	<1276123020.16010.97.camel@itpsd6lap>
+	<20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
+	<1276291932.2154.45.camel@itpsd6lap>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 15:30 Mon 21 Jun     , Piotr Hosowicz wrote:
->> Until few days ago there were updates but now I don't see any. Will
->> somebody tell me what's going on? Why there are no new updates?
->
-> See below.
->
->> Is it because Linus has vacation now, as I read in another thread?
->
-> Yes.
+> I'm thinking to leave the ratelimit support in for the time being. I had
+> in mind cases, when someone does
+>  "cat /proc/kmsg > dev/ttyprintk" or
+> suppose the console is redirected to ttyprintk (which i would like to be
+> able to do from user program)
 
-And does somebody know and can tell when that vacation ends and things 
-will back as normal?
+Console as in the printk sense would then loop.
 
-Regards,
+If you are going to do the flow control you should probably do something
+like
 
-Piotr Hosowicz
 
--- 
-TV: "W tej chwili, ¿e siê tak wyra¿ê, zaliczonych mamy 17 zawodniczek."
-NP: Alice In Chains - All Secrets Known
-NB: 2.6.35-rc3
+write_room()
+{
+	if (!flow_controlled)
+		space = 8192;
+	return space;
+}
+
+write()
+{
+	space -= len;
+}
+
+then your flow control will behave properly and slow down users rather
+than losing data (except stuff sent without blocking)
+
