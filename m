@@ -1,69 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab0FUF6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 01:58:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34535 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824Ab0FUF6R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 01:58:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=QtmK6pzK9eI5bgUrUVDTlLTKgt/5YVckbTB2iafXcwICEdi8rjaFM7P6NHIOoAeCLu
-         0nlvfcjku//owgY3DFGYZaMawdDUbkAAVsyob4g832LquDZtykagepxLFtXVIppl5aPW
-         Io0R2+SYKZMadb7PwnANS6S0YIuSmRG6KXjZk=
-From: Chris Clayton <chris2553@googlemail.com>
-Reply-To: chris2553@googlemail.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Bug #16231] Noticeable slow-down in 2.6.35-rc3
-Date: Mon, 21 Jun 2010 06:58:08 +0100
-User-Agent: KMail/1.9.10
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "John Fastabend" <john.r.fastabend@intel.com>
-References: <lc60d4toGTL.A.QzD._LpHMB@chimera> <W8JfMs9cZw.A.xkE.aMpHMB@chimera>
-In-Reply-To: <W8JfMs9cZw.A.xkE.aMpHMB@chimera>
+	id S1755420Ab0FUGCn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 02:02:43 -0400
+Received: from n2-vm0.bullet.mail.gq1.yahoo.com ([67.195.23.154]:47246 "HELO
+	n2-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751016Ab0FUGCl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 02:02:41 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 464553.30783.bm@omp129.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=0KXoV/7xnwJDhFxhwh2UpkYislH9uJW8K9qKqTTiPgsOpiu3Dj2rMLzFx91oJ5GpjHAxztSKUXYfe/5Mg8ESCLx3NXswNGFb+QOAHvK6scUcnAFrQpVvcl1kT8mc6lOsKnra3RPPe6VorCgBD9La1/A0UpVyaMi7cuhHNiKFVoQ=;
+Message-ID: <357982.4867.qm@web180304.mail.gq1.yahoo.com>
+X-YMail-OSG: Ij4lCiEVM1nm5rz6fdq_cVg2s5TVm18WvX1UzRbIdR14Erh
+ 9rkiBd0iwzI8UwH6Ve2SAsvgq.uU_ZPrL0x1pU4x7M4rGpA8x9Nrq5sgcoHC
+ 3nalIa13uQPOcN7Mj06OT5vGx786Z3F09cGObzuKRg8eh5q7xDDtX6ENhpOx
+ T5RnH1v8FuMJI2jupUXA0GshW1OW3oTjGEJsbT5qGacEbeB1zdWQ8Jt2Cawz
+ DKWlAqP3z5Fc2Mwqs8dv7_zZBv1MJULYMsl0NCmioroneV_u_MRvXf7Ldbo6
+ YLFCJXlUPrn78VJUiLKx.BY8Ks0xhtfnY7W0o3uWtfKlLR.as94TkAXy33Hk
+ n2HBlfEqU_4oO7AJZFiYR09WArCg-
+X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.103.269680
+Date: Sun, 20 Jun 2010 23:02:40 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [linux-pm] [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+To: markgross@thegnar.org, Alan Stern <stern@rowland.harvard.edu>
+Cc: Neil Brown <neilb@suse.de>, linux-pm@lists.linux-foundation.org,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       mark gross <640e9920@gmail.com>
+In-Reply-To: <799617.66764.qm@web180304.mail.gq1.yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201006210658.08740.chris2553@googlemail.com>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 20 June 2010, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
->
-> The following bug entry is on the current list of known regressions
-> from 2.6.34.  Please verify if it still should be listed and let the
-> tracking team know (either way).
->
-
-As noted below, the problem is fixed by John's patch. I added a Tested-by to the 
-bugzilla report a few days ago. I guess it should stay open, however, until 
-Linus has applied the patch to mainline.
-
->
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16231
-> Subject		: Noticeable slow-down in 2.6.35-rc3
-> Submitter	: Chris Clayton <chris2553@googlemail.com>
-> Date		: 2010-06-13 20:15 (8 days old)
-> First-Bad-Commit:
-> http://git.kernel.org/linus/597a264b1a9c7e36d1728f677c66c5c1f7e3b837
-> Message-ID	: <AANLkTimDUf0N6b5PBy2wTGeAWEIY-lUvQPHQ7D7Gyrq4@mail.gmail.com>
-> References	: http://marc.info/?l=linux-kernel&m=127646015226601&w=2
-> Handled-By	: John Fastabend <john.r.fastabend@intel.com>
-> Patch		: https://patchwork.kernel.org/patch/105859/
 
 
+--- On Sun, 6/20/10, David Brownell <david-b@pacbell.net> wrote:
 
--- 
-The more I see, the more I know. The more I know, the less I understand. 
-Changing Man - Paul Weller
+... in a sort of "aren't we asking the
+wrong questions??" manner ... 
+
+
+I suspect that
+looking at the problem in terms of how to
+coordinate subsystems (an abstraction which
+is at best very ad-hoc today!) we would
+end up with a cleaner model, which doesn't
+bother so many folk the ay wakelocks or
+even suspend blockers seem to bother them...
+
+
+> From: David Brownell <david-b@pacbell.net>
+> Subject: Re: [linux-pm] [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+> To: markgross@thegnar.org, "Alan Stern" <stern@rowland.harvard.edu>
+> Cc: "Neil Brown" <neilb@suse.de>, linux-pm@lists.linux-foundation.org, "Dmitry Torokhov" <dmitry.torokhov@gmail.com>, "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>, "mark gross" <640e9920@gmail.com>
+> Date: Sunday, June 20, 2010, 9:04 PM
+> 
+> > > > Indeed, the same problem arises if the
+> event
+> > isn't delivered to
+> > > > userspace until after userspace is frozen.
+> 
+> Can we put this more directly:  the problem is
+> that the *SYSTEM ISN'T FULLY SUSPENDED* when the
+> hardware wake event triggers?  (Where "*SYSTEM*
+> includes userspace not just kernel.  In fact the
+> overall system is built from many subsystems,
+> some in the kernel and some in userspace.
+> 
+> At the risk of being prematurely general:  I'd
+> point out that these subsystems probably have
+> sequencing requirements.  kernel-then-user is
+> a degenerate case, and surely oversimplified.
+> There are other examples, e.g. between kernel
+> subsystems...  Like needing to suspend a PMIC
+> before the bus it uses, where that bus uses
+> a task to manage request/response protocols.
+> (Think I2C or SPI.)
+> 
+> This is like the __init/__exit sequencing mess...
+> 
+> In terms of userspace event delivery, I'd say
+> it's a bug in the event mechanism if taking the
+> next step in suspension drops any event.  It
+> should be queued, not lost...  As a rule the
+> hardware queuing works (transparently)...
+> 
+> > Of course, the underlying
+> > > > issue here is that the kernel has no direct
+> way
+> > to know when userspace
+> > > > has finished processing an event.
+> 
+> 
+> Again said more directly:  there's no current
+> mechanism to coordinate subsystems.  Userspace
+> can't communicate "I'm ready" to kernel, and
+> vice versa.  (a few decades ago, APM could do
+> that ... we dropped such mechanisms though, and
+> I'm fairly sure APM's implementation was holey.)
+> 
+> 
+> 
+> 
+> _______________________________________________
+> linux-pm mailing list
+> linux-pm@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/linux-pm
+> 
+
