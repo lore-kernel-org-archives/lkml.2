@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab0FUMkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 08:40:32 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:45656 "EHLO mx01.d-labs.de"
+	id S1757787Ab0FUMni (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 08:43:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33949 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755214Ab0FUMka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 08:40:30 -0400
-Date: Mon, 21 Jun 2010 14:39:50 +0200
-From: Florian Mickler <florian@mickler.org>
-To: markgross@thegnar.org
-Newsgroups: gmane.linux.kernel
-Cc: 640e9920@gmail.com, Alan Stern <stern@rowland.harvard.edu>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?ISO-8859-15?B?SGr4bm5lduVn?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Message-ID: <20100621143950.7594fd33@schatten.dmk.lab>
-In-Reply-To: <20100621055522.GE9735@gvim.org>
-References: <20100620225810.GB9735@gvim.org>
-	<Pine.LNX.4.44L0.1006202223440.29532-100000@netrider.rowland.org>
-	<20100621055522.GE9735@gvim.org>
-X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756004Ab0FUMng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 08:43:36 -0400
+Date: Mon, 21 Jun 2010 14:43:24 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, "Rick L. Vinyard, Jr." <rvinyard@cs.nmsu.edu>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>, linux-kernel@vger.kernel.org,
+       felipe.balbi@nokia.com, linux-usb@vger.kernel.org, oliver@neukum.org,
+       linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+       npavel@ituner.com, tomi.valkeinen@nokia.com, tony@atomide.com,
+       florianschandinat@gmx.de, krzysztof.h1@wp.pl, akpm@linux-foundation.org,
+       linux-fbdev@vger.kernel.org, bonbons@linux-vserver.org
+Subject: Re: [PATCH] hid Logitech G13 Driver 0.0.5
+In-Reply-To: <201006191757.22035.marek.vasut@gmail.com>
+Message-ID: <alpine.LNX.2.00.1006211442350.13809@pobox.suse.cz>
+References: <201003021848.o22ImLSS004394@mustang.cs.nmsu.edu> <24ab70ff629c48b6d10ce0cf6dc5d64b.squirrel@intranet.cs.nmsu.edu> <20100303051311.GA4651@elf.ucw.cz> <201006191757.22035.marek.vasut@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Jun 2010 22:55:22 -0700
-mark gross <640e9920@gmail.com> wrote:
+On Sat, 19 Jun 2010, Marek Vasut wrote:
 
-> On Sun, Jun 20, 2010 at 10:33:01PM -0400, Alan Stern wrote:
-> > On Sun, 20 Jun 2010, mark gross wrote:
-> > > > In what way is this better than suspend blockers?
+> > > >> +/*
+> > > >> + * This is a default logo to be loaded upon driver initialization
+> > > >> + * replacing the default Logitech G13 image loaded on device
+> > > >> + * initialization. This is to provide the user a cue that the
+> > > >> + * Linux driver is loaded and ready.
+> > > >> + *
+> > > >> + * This logo contains the text G13 in the center with two penguins
+> > > >> + * on each side of the text. The penguins are a 33x40 rendition of
+> > > >> + * the default framebuffer 80x80 monochrome image scaled down and
+> > > >> + * cleaned up to retain something that looks a little better than
+> > > >> + * a simple scaling.
+> > > >> + *
+> > > >> + * This logo is a simple xbm image created in GIMP and exported.
+> > > >> + * To view the image copy the following two #defines plus the
+> > > >> + * g13_lcd_bits to an ASCII text file and save with extension
+> > > >> + * .xbm, then open with GIMP or any other graphical editor
+> > > >> + * such as eog that recognizes the .xbm format.
+> > > >> + */
+> > > > 
+> > > > ...
+> > > > 
+> > > >> +static unsigned char g13_lcd_bits[] = {
+> > > >> + 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+> > > >> 0x00,
+> > > > 
+> > > > I think you'll agree above is not an elegant solution.
 > > > 
-> > > 1) I don't think suspend blockers really solve or effectively articulate
-> > > the suspend wake event race problem.
+> > > I could make it a config option.
 > > 
-> > Why not?
+> > You get about 10 complains already, but you are not willing to solve
+> > it. No, config option does not help.
+> > 
+> > If you want to, make it separate patch so we can reject it separately.
+> > 
+> > > >> +static DEVICE_ATTR(rgb, 0666, g13_rgb_show, g13_rgb_store);
+> > > > 
+> > > > Reading above code, it looks like this new userspace sysfs attribute
+> > > > is for backlight control. Could that be better exposed using the
+> > > > existing backlight class?
+> > > 
+> > > I looked at the backlight class and it didn't seem to be a very good fit.
+> > > 
+> > > /* This structure defines all the properties of a backlight */
+> > > struct backlight_properties {
+> > > 
+> > > 	/* Current User requested brightness (0 - max_brightness) */
+> > > 	int brightness;
+> > > 	/* Maximal value for brightness (read-only) */
+> > > 	int max_brightness;
+> > > 	/* Current FB Power mode (0: full on, 1..3: power saving
+> > > 	
+> > > 	   modes; 4: full off), see FB_BLANK_XXX */
+> > > 	
+> > > 	int power;
+> > > 	/* FB Blanking active? (values as for power) */
+> > > 	/* Due to be removed, please use (state & BL_CORE_FBBLANK) */
+> > > 	int fb_blank;
+> > > 	/* Flags used to signal drivers of state changes */
+> > > 	/* Upper 4 bits are reserved for driver internal use */
+> > > 	unsigned int state;
+> > > 
+> > > };
+> > > 
+> > > The g13's backlight doesn't support any of these properties. All you can
+> > > set is an rgb value on the g13; no power modes, no brightness, etc. I
+> > > could add a brightness attribute by scaling the rgb values, but I would
+> > > prefer to do that from userspace rather than the driver since it's not
+> > > supported in the device itself.
+> > > 
+> > > And, we'd still have to have the rgb attribute since the backlight class
+> > > doesn't have color.
+> > 
+> > Or you could pretend you have 3 different backlights? ....which is
+> > actually what you have...?
+> > 									Pavel
 > 
-> For starters the suspend block patch is about suspend blocking, at least
-> at first before competing ideas starting coming out and this race issue
-> was offered up as an excuse to not consider the alternative ideas, then
-> suddenly suspend blocking became a wake event notification mechanism
-> implementation that was baked into the implementation.  The arguments
-> are still a blur and irritating to recall / look up again.
-
-I really can't follow you here. Userspace and kernelspace actively
-blocking suspend when necessary guarantees that the race is won by the
-right party. I.e. the race problem is solved.
-
-You can view it as a wake event notification if you want. But that's
-just another point of view. 
-
+> Any updates on this?
 > 
-> But, the point I'm trying to make is that wake event serialization /
-> event handling suddenly became a big FUD-pie tightly bound to a specific
-> feature for suspend blocking (or was is auto suspending?  Its a magical
-> solution to all the PM problems in the kernel.  I'm being sarcastic.)  
-> 
-> Its much better to call out the issue and provide a clean targeted
-> solution to it without binding it to some other solution to a different
-> problem.
+> btw. it'd be good if we could use the g13fb on G15 ... would that be possible?
+> Cheers!
 
-See my other mail in response to Alan Stern. In the case of a
-userspace-suspend-manager, if we just use this wake-event-counting
-mechanism, we have to make shure userspace get's scheduled and notifies
-the suspend-manager with an 'all clear' before it suspends the machine.
+Rick, please correct me if I am wrong, but as far as I remember, you have 
+gathered quite some feedback and were about to incorporate them and 
+re-submit the driver, which hasn't happened yet. Is that correct? Or have 
+I lost track completely?
 
-Else it can happen for the userspace-manager to suspend before
-userspace could notify the userspace-manager to not suspend.
+Thanks,
 
-Cheers,
-Flo
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
