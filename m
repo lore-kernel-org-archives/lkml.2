@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027Ab0FUROb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 13:14:31 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59141 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758077Ab0FURO2 (ORCPT
+	id S1758106Ab0FURRH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 13:17:07 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:38040 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754819Ab0FURRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 13:14:28 -0400
-Date: Mon, 21 Jun 2010 18:18:51 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Pavel Machek <pavel@ucw.cz>, Gregory Bean <gbean@codeaurora.org>,
-       dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] msm: Add gpio register address mapping information.
-Message-ID: <20100621181851.53de5f62@lxorguk.ukuu.org.uk>
-In-Reply-To: <4C1F9B58.6020302@codeaurora.org>
-References: <1276888375-13221-1-git-send-email-gbean@codeaurora.org>
-	<1276888375-13221-2-git-send-email-gbean@codeaurora.org>
-	<20100619200249.GA2507@elf.ucw.cz>
-	<4C1F9B58.6020302@codeaurora.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Jun 2010 13:17:05 -0400
+Date: Mon, 21 Jun 2010 12:16:58 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Manfred Spraul <manfred@colorfullife.com>
+cc: linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
+Subject: Re: 2.6.35-rc3 deadlocks on semaphore operations
+In-Reply-To: <alpine.DEB.2.00.1006211155540.7407@router.home>
+Message-ID: <alpine.DEB.2.00.1006211209520.7407@router.home>
+References: <alpine.DEB.2.00.1006180940140.11575@router.home> <4C1CA49B.7020104@colorfullife.com> <alpine.DEB.2.00.1006211155540.7407@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Yeah. Either this can be replaced with GPL, and it such case just do
-> > so, or it can not, and then it can not be applied to kernel.
-> > 
-> 
-> This is a standard BSD-style license so it's compatible w/ the GPL.  Thanks.
+Some more information that may be helpful:
 
-The kernel requires GPL, and its much much easier for everyone to state
-so explicitly to avoid future surprises (remember 4 clause BSD was once
-thought GPL compatible even by the FSF...)
+proc/27878$ strace -p 27878
+Process 27878 attached - interrupt to quit
+semop(65536, {{0, -1, SEM_UNDO}}, 1
 
-If you want to make it clear it's also available BSD licensed in this
-form (at least until someone changes it) see the wording in files like
-drivers/char/random.c
+proc/27878$ ps xawwwww_
+ERROR: Unsupported option (BSD syntax)
 
-That usually keeps all the lawyers happy.
+ps alx shows a number of stuck processes:
 
-Alan
+0  1000 20121 17784  20   0 367040 14416 poll_s Sl   ?          0:07 /usr/lib/chromium-browser/chromium-browser --type=plugin --plugin-path=/var/lib/flashplugin-installer/npwr
+0  1000 23477 20121  20   0 120864 19940 poll_s Sl   ?          0:07 /usr/lib/nspluginwrapper/i386/linux/npviewer.bin --plugin /usr/lib/flashplugin-installer/libflashplayer.so
+0  1000 23531 16635  20   0  13928  2292 wait   S+   pts/0      0:00 /usr/bin/make -j9 EXTRAVERSION=-rc3-broke ARCH=x86_64 modules
+0  1000 24724 23531  20   0  17220  5444 wait   S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=fs
+0  1000 24817 23531  20   0  13512  1928 pipe_w S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers
+0  1000 25374 23531  20   0  14256  2384 pipe_w S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=net
+0  1000 27275 24817  20   0  13252  1560 wait   S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/media
+0  1000 27294 27275  20   0  13272  1576 pipe_w S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/media/dvb
+0  1000 27623 27275  20   0  20720  8980 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/media/video
+0  1000 27633 25374  20   0  16696  4984 pipe_w S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=net/sunrpc
+0  1000 27691 24724  20   0  18400  6700 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=fs/xfs
+0  1000 27693 27294  20   0  18252  6504 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/media/dvb/frontends
+0  1000 27743 25374  20   0  15988  4244 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=net/tipc
+0  1000 27744 24817  20   0  15016  3268 pipe_w S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/misc
+0  1000 27754 25374  20   0  14832  3008 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=net/wimax
+0  1000 27769 27633  20   0  14816  2836 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=net/sunrpc/auth_gss
+0  1000 27839 27744  20   0  13932  2100 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/misc/c2port
+0  1000 27847 27744  20   0  13996  2224 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/misc/cb710
+0  1000 27866 27744  20   0  13772  1844 semtim S+   pts/0      0:00 /usr/bin/make -f scripts/Makefile.build obj=drivers/misc/eeprom
+0  1000 27877 27693  20   0      0     0 exit   Z+   pts/0      0:00 [sh] <defunct>
+0  1000 27878 27623  20   0   8292   352 semtim S+   pts/0      0:00 /bin/sh -c { echo drivers/media/video/zr364xx.ko; echo drivers/media/video/zr364xx.o; } > .tmp_versions/zr1  1000 27879  2140  20   0  20900  4000 wait   S+   pts/1      0:00 bash
+0  1000 27905  2097  20   0  20900  4972 wait   Ss   pts/3      0:00 bash
+0  1000 27997 27905  20   0   6588   756 -      R+   pts/3      0:00 ps alx
+
+
