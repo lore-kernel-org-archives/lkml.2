@@ -1,109 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab0FUVTz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 17:19:55 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35078 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758589Ab0FUVTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 17:19:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Date: Mon, 21 Jun 2010 23:18:02 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Florian Mickler <florian@mickler.org>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-References: <Pine.LNX.4.44L0.1006211244140.1687-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1006211244140.1687-100000@iolanthe.rowland.org>
+	id S1758629Ab0FUVUH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 17:20:07 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:55801 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758624Ab0FUVUB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 17:20:01 -0400
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Don Zickus <dzickus@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Jerome Marchand <jmarchan@redhat.com>,
+       Mandeep Singh Baines <msb@google.com>, linux-kernel@vger.kernel.org,
+       stable@kernel.org
+References: <20100618190251.GA17297@redhat.com>
+	<20100618193403.GA17314@redhat.com>
+	<20100618223354.GL2365@linux.vnet.ibm.com>
+	<20100621170919.GA13826@redhat.com>
+	<20100621174455.GA14886@redhat.com>
+	<20100621190212.C8630400C5@magilla.sf.frob.com>
+	<20100621200633.GA21099@redhat.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Mon, 21 Jun 2010 14:19:53 -0700
+In-Reply-To: <20100621200633.GA21099@redhat.com> (Oleg Nesterov's message of "Mon\, 21 Jun 2010 22\:06\:33 +0200")
+Message-ID: <m1vd9c2idi.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006212318.03001.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: oleg@redhat.com, stable@kernel.org, linux-kernel@vger.kernel.org, msb@google.com, jmarchan@redhat.com, mingo@elte.hu, fweisbec@gmail.com, dzickus@redhat.com, akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, roland@redhat.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 0; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: ; sa06 0; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: _RELAYCOUNTRY_
+Subject: Re: while_each_thread() under rcu_read_lock() is broken?
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 21, 2010, Alan Stern wrote:
-> On Mon, 21 Jun 2010, Florian Mickler wrote:
-> 
-> > > > > What happens if an event arrives just before you read
-> > > > > /sys/power/wakeup_count, but the userspace consumer doesn't realize
-> > > > > there is a new unprocessed event until after the power manager checks
-> > > > > it?
-> > > 
-> > > > I think this is not the kernel's problem.  In this approach the kernel makes it
-> > > > possible for the user space to avoid the race.  Whether or not the user space
-> > > > will use this opportunity is a different matter.
-> > > 
-> > > It is _not_ possible for userspace to avoid this race.  Help from the 
-> > > kernel is needed.
-> > 
-> > It is possible if every (relevant) userspace program implements a
-> > callback for the powermanager to check if one of it's wakeup-sources
-> > got activated.
-> > 
-> > That way the powermanager would read /sys/power/wakeup_count, then do
-> > the roundtrip to all it's registered users and only then suspend. 
-> 
-> After further thought, there's still a race:
-> 
-> 	A wakeup event arrives.
-> 
-> 	The kernel increments /sys/power/wakeup_count and starts
-> 	processing the event.
-> 
-> 	The power-manager process reads /sys/power/wakeup_count.
+Oleg Nesterov <oleg@redhat.com> writes:
 
-You assume that these two steps will occur instantaneously one after the other,
-while there may be (and in fact there should be) a delay between them.
+> On 06/21, Roland McGrath wrote:
+>>
+>> > Paul, Roland, do you see any problems from the correctness pov,
+>> > or a better fix for now?
+>> >
+>> > Perhaps it also makes sense to keep the old variant renamed to
+>> > while_each_thread_locked(), I dunno.
+>>
+>> Did we verify that only de_thread() can create the situation where a
+>> while_each_thread-style loop without either lock can be confused?
+>
+> I think yes, this is is the only case.
+>
+> I mean, while_each_thread(group_leader, t). If g != group_leader, then
+> the lockless while_each_thread() has problems with the plain exit(g).
+>
+> Afaics. The more I think about this, the more I feel confused ;)
+>
+> But if we start from ->group_leader, then while_each_thread() must
+> stop eventually. Otherwise we should assume that the dead (unhashed)
+> tasks can create the circular list, obviously this is not possible.
+>
+>> If
+>> that's so, then just changing it to avoid the situation seems like it
+>> would be less invasive overall.
+>
+> How? We should change ->group_leader uner write_lock_irq(tasklist),
+> synchronize_rcu() is not an option. We can't do call_rcu(release_task),
+> we can't take tasklist for writing in the softirq context. But even
+> if we could, this can't help in fact or I missed something.
 
-I would make the power manager wait for certain time after reading
-/sys/power/wakeup_count and if no wakeup events are reported to it within
-that time, to write to /sys/power/wakeup_count.
+We already do: call_rcu(&p->rcu, delayed_put_task_struct); in release_task.
+We don't call release_task until after we have removed it as leader and
+dropped the write lock. 
 
-The length of the time to wait would be system-dependent in general, but I'd
-also allow the event consumers to influence it (like when an application knows
-it will process things for 10 minutes going forward, so it tells the power
-manager to wait for at least 10 minutes before attempting to suspend).
+At first glance it sounds like the group leader is safe as a stopping
+point for a rcu while_each_thread, and I expect the fact that
+de_thread takes everything down to a single thread, could have nice
+properties here.  If pid_alive were only to fail on the group leader
+when de_thread is called I think we could legitimately say that an event
+we won't worry about.  It is close enough to a new thread being created
+anyway.
 
-> 	The power-manager process polls the relevant programs and
-> 	they all say no events are pending.
-> 
-> 	The power-manager process successfully writes 
-> 	/sys/power/wakeup_count.
-> 
-> 	The power-manager process initiates a suspend.
-> 
-> 	...  Hours later ...
-> 
-> 	The system wakes up.
-> 
-> 	The kernel finishes its internal processing of the event and
-> 	sends a notification to a user program.
-> 
-> The problem here is that the power-manager process can't tell when the
-> kernel has finished processing an event.  This is true both for events
-> that need to propagate to userspace and for events that are handled
-> entirely by the kernel.
-> 
-> This is a reflection of the two distinct pieces of information that we 
-> need to keep track of:
-> 
-> 	A wakeup event has arrived, so it's no longer safe to suspend.
-> 
-> 	Wakeup events are no longer pending, so it's once again
-> 	safe to suspend.
-> 
-> The wakeup_count interface tracks the first, but in this scheme nothing 
-> tracks the second.
-
-Which I don't think is really necessary, because we'll need to use timeouts
-anyway, at least for events that have no user space consumers.
-
-Rafael
+Eric
