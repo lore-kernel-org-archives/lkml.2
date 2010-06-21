@@ -1,127 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758291Ab0FUUPW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 16:15:22 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44094 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753945Ab0FUUPS (ORCPT
+	id S1758286Ab0FUUQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 16:16:59 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51020 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828Ab0FUUQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 16:15:18 -0400
-Date: Mon, 21 Jun 2010 13:14:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-       Hugh Dickins <hughd@google.com>, yanmin.zhang@intel.com
-Subject: Re: [PATCH v3 1/2] tmpfs: Add accurate compare function to
- percpu_counter library
-Message-Id: <20100621131438.a17b818d.akpm@linux-foundation.org>
-In-Reply-To: <1276818992.9661.81.camel@schen9-DESK>
-References: <1276818992.9661.81.camel@schen9-DESK>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Mon, 21 Jun 2010 16:16:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=P+JW6psxetm56tl/6JRXTfRB5YjFjUV/60ooKDvJRzIkdU2iE8XK9NjbwF6H9p2kLv
+         ZEcRu+1LT/YsipTUPuiRp49QJmnzVGdW2XR+vgYA3Cx+qUtxtR0AiJcamKERNwTqeZXL
+         Yg6eymAD9jT/em3i/ezsFw/9H5gyuVNA0aKF4=
+Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Cc: David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
+       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTim8iZmm8pEERJUsrQWOiLSjPUfCN-TFFzZZQWx2@mail.gmail.com>
+References: <20100528100901.14580.1322.stgit@fate.lan>
+	 <1276806785.20754.8.camel@maxim-laptop>
+	 <20100618112026.17623g6uhdjk8hts@naisho.dyndns.info>
+	 <1276856142.9114.1.camel@maxim-laptop>
+	 <20100618134930.124225d4fsi8w1fk@naisho.dyndns.info>
+	 <1276859156.19554.2.camel@maxim-laptop>
+	 <AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com>
+	 <1276870309.23783.3.camel@maxim-laptop>
+	 <1276933774.16697.11.camel@maxim-laptop>
+	 <AANLkTimIjaxq7IDWwIl1vv93k9bNQ2i89Sb5R5TiJmmA@mail.gmail.com>
+	 <1277032723.9555.12.camel@maxim-laptop>
+	 <AANLkTim8iZmm8pEERJUsrQWOiLSjPUfCN-TFFzZZQWx2@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Jun 2010 23:16:50 +0300
+Message-ID: <1277151410.5409.33.camel@maxim-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010 16:56:32 -0700
-Tim Chen <tim.c.chen@linux.intel.com> wrote:
+Luis, let me explain again, exactly the situation:
 
-> Add percpu_counter_compare that allows for a quick but accurate
-> comparison of percpu_counter with a given value.  
-> 
-> A rough count is provided by the count field in percpu_counter structure, 
-> without accounting for the other values stored in individual cpu counters.
-> The actual count is a sum of count and the cpu counters.  However, count field is
-> never different from the actual value by a factor of batch*num_online_cpu.
-> We do not need to get actual count for comparison if count
-> is different from the given value by this factor and allows for
-> quick comparison without summing up all the per cpu counters.
-> 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
->  include/linux/percpu_counter.h |   11 +++++++++++
->  lib/percpu_counter.c           |   27 +++++++++++++++++++++++++++
->  2 files changed, 38 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
-> index c88d67b..8a7d510 100644
-> --- a/include/linux/percpu_counter.h
-> +++ b/include/linux/percpu_counter.h
-> @@ -40,6 +40,7 @@ void percpu_counter_destroy(struct percpu_counter *fbc);
->  void percpu_counter_set(struct percpu_counter *fbc, s64 amount);
->  void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch);
->  s64 __percpu_counter_sum(struct percpu_counter *fbc);
-> +int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs);
->  
->  static inline void percpu_counter_add(struct percpu_counter *fbc, s64 amount)
->  {
-> @@ -98,6 +99,16 @@ static inline void percpu_counter_set(struct percpu_counter *fbc, s64 amount)
->  	fbc->count = amount;
->  }
->  
-> +static inline int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs)
-> +{
-> +	if (fbc->count > rhs)
-> +		return 1;
-> +	else if (fbc->count < rhs)
-> +		return -1;
-> +	else
-> +		return 0;
-> +}
+First of all AR5001 and AR5001X devices (former was usualy listed as
+AR2425, and I have it, later I don't know about much), don't work well
+with ASPM L0s enabled.
 
-It'd be nice if this interface were defined as returning a number
-less-than, greater-than or equal to zero.  Like the qsort() callback. 
-It's a pretty common idiom.  That way, the above code becomes just
+I told that many times, but I tell again.
+As soon as card it put on medium to high transmit load
+(for example even if transmission consists mostly of TCP ACK packets),
+it dies.
 
-	return fbc->count - rhs;
+Usualy it will stop transmitting, and then after few seconds it will
+send RXORN intrrupt to the host, even though the channel was idle.
+(Tested by sending a stream of UDP packets on channel that is neighbor
+free).
 
-However that does require that percpu_counter_compare() return an s64,
-which might make the code generated at callers a little less efficient.
+I didn't see it, but some users reported seeing jumbo frames at this
+time as well. 
+Overall it doesn't matter because card just goes south.
 
-I guess it doesn't matter much.
+A reset sometimes brings card to life, sometimes causes another storm of
+RXORN and sometimes just results in quiet dead card.
+A next reset might bring it to life, or not.
 
->  static inline void
->  percpu_counter_add(struct percpu_counter *fbc, s64 amount)
->  {
-> diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
-> index aeaa6d7..ec9048e 100644
-> --- a/lib/percpu_counter.c
-> +++ b/lib/percpu_counter.c
-> @@ -137,6 +137,33 @@ static int __cpuinit percpu_counter_hotcpu_callback(struct notifier_block *nb,
->  	return NOTIFY_OK;
->  }
->  
-> +/*
-> + * Compare counter against given value.
-> + * Return 1 if greater, 0 if equal and -1 if less
-> + */
-> +int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs)
-> +{
-> +	s64	count;
-> +
-> +	count = percpu_counter_read(fbc);
-> +	/* Check to see if rough count will be sufficient for comparison */
-> +	if (abs(count - rhs) > (percpu_counter_batch*num_online_cpus())) {
-> +		if (count > rhs)
-> +			return 1;
-> +		else
-> +			return -1;
-> +	}
-> +	/* Need to use precise count */
-> +	count = percpu_counter_sum(fbc);
-> +	if (count > rhs)
-> +		return 1;
-> +	else if (count < rhs)
-> +		return -1;
-> +	else
-> +		return 0;
-> +}
-> +EXPORT_SYMBOL(percpu_counter_compare);
+Card (at least mine) advertises its as a 'pre pci 1.1 device'.
+Therefore if I enable CONFIG_PCIEASPM, the pci core will automaticly
+disable ASPM (both L0s and L1) on this card.
+I won't be surprised that windows does the same.
 
-Looks OK.  For API uniformity we should have a
 
-__percpu_counter_compare(struct percpu_counter *fbc, s64 rhs, int batch)
+Therefore the patch I sent it useless because it only works when
+CONFIG_PCIEASPM is enabled.
 
-but that can be added later if needed I guess.
+In addition to that using the original version of this patch from Jussi
+Kivilinna contains code that disables ASPM (I modified it to disable
+only L0s) with or without CONFIG_PCIEASPM.
+
+But without CONFIG_PCIEASPM it uses open coded function that should
+belong to pci core.
+And it is also copied from e1000 which shouldn't do that too.
+
+Best regards,
+Maxim Levitsky
+
 
