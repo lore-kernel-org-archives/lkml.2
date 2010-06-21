@@ -1,45 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab0FUHXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 03:23:13 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:52341 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428Ab0FUHXK (ORCPT
+	id S1756308Ab0FUHXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 03:23:21 -0400
+Received: from lider.pardus.org.tr ([193.140.100.216]:44444 "EHLO
+	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755941Ab0FUHXS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 03:23:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=AMR/qcyarm6r1kPYefK/bqmNhOG7km+sQiML3PZe6kHo1g889VlbFM7L5ySeQNzwUY
-         OW5wIn8zBXcxJIevE70rh2yPAmXRDOKwEsFlTQnOeovQlcGXkUHE+XQm3kXf/zppXcR/
-         1fCHUNnnHfn/k03vtg/xU9TcXakK8u5rWk7k4=
+	Mon, 21 Jun 2010 03:23:18 -0400
+From: Ozan =?utf-8?q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>
+Organization: TUBITAK/UEKAE
+To: linux-kernel@vger.kernel.org
+Subject: [BISECTED] Suspend regression in v2.6.31 with Lenovo 3000 v200
+Date: Mon, 21 Jun 2010 10:22:37 +0300
+User-Agent: KMail/1.13.3 (Linux/2.6.31.13-131-pae; KDE/4.4.4; i686; ; )
+Cc: stern@rowland.harvard.edu, gregkh@suse.de, rjw@sisk.pl
 MIME-Version: 1.0
-In-Reply-To: <20100621071551.GA16109@oksana.dev.rtsoft.ru>
-References: <20090818214449.GA12848@oksana.dev.rtsoft.ru> <20090818214622.GA22651@oksana.dev.rtsoft.ru> 
-	<AANLkTikg60s6ZRSEDCq9PQK1z7hJtBDk6t4VE1lYDv8u@mail.gmail.com> 
-	<20100618133212.GA5276@oksana.dev.rtsoft.ru> <0F1B54C89D5F954D8535DB252AF412FA065551D8@chinexm1.ad.analog.com> 
-	<AANLkTiksYofs6hhWta6uFX2cla_g8pBu0Mtbtcbv-2tl@mail.gmail.com> 
-	<20100621071551.GA16109@oksana.dev.rtsoft.ru>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 21 Jun 2010 15:22:48 +0800
-Message-ID: <AANLkTiknH95loHJsQNxvCCyQbriCFWqM5LHl3wKzmdWX@mail.gmail.com>
-Subject: Re: [Uclinux-dist-devel] [PATCH 1/2] mtd: m25p80: Reworkprobing/JEDEC 
-	code
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: "Song, Barry" <Barry.Song@analog.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Artem Bityutskiy <dedekind1@gmail.com>, linux-kernel@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, linux-mtd@lists.infradead.org,
-       uclinux-dist-devel@blackfin.uclinux.org,
-       Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <201006211022.37707.ozan@pardus.org.tr>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o5L7NPim025273
 
-On Mon, Jun 21, 2010 at 3:15 PM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:> On Mon, Jun 21, 2010 at 11:27:31AM +0800, Barry Song wrote:> [...]>> > How about we add a non_jedec flag in platform_data, if the flag is 1, we>> > let the detection pass even though the ID is 0? Otherwise, we need a>> > valid ID?>> Here i mean:>> This will break at least OF-enabled platforms (e.g. PowerPC),> they assume that the driver will success for non-JEDEC flashes.> OF platforms don't pass platform data, and even if they did,> device tree doesn't specify if the flash is JEDEC or non-JEDEC.>> Which is why I think that, by default, the driver should> successfully register the flash even if JEDEC probe fails. So,> instead of checking for "!non_jedec", I would recommend> "force_jedec" check.
-Mike Frysinger suggested to use non_jedec since most devices arestandard jedec devices. Only if non_jedec=1, we let the detection passif ID is 0.
->>> Index: drivers/mtd/devices/m25p80.c>> ===================================================================>> --- drivers/mtd/devices/m25p80.c Â  Â  Â (revision 8927)>> +++ drivers/mtd/devices/m25p80.c Â  Â  Â (revision 8929)>> @@ -795,8 +795,13 @@>>>> Â  Â  Â  Â  Â  Â  Â  jid = jedec_probe(spi);>> Â  Â  Â  Â  Â  Â  Â  if (!jid) {>> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  dev_info(&spi->dev, "non-JEDEC variant of %s\n",>> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â id->name);>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if (!data->non_jedec) {>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  dev_err(&spi->dev, "fail to detect%s\n",>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  id->name);>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  return -ENODEV;>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  } else>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  dev_info(&spi->dev, "non-JEDEC variant of %s\n",>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  id->name);>> Â  Â  Â  Â  Â  Â  Â  } else if (jid != id) {>> --> Anton Vorontsov> email: cbouatmailru@gmail.com> irc://irc.freenode.net/bd2>ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Hi,
+
+First of all I know that 2.6.31 is not maintained anymore and I don't know if 
+the problem still exists in kernels > 2.6.31 as I don't have any hardware to 
+reproduce it.
+
+The users are just regular users which are not able to test the newer kernels.
+
+What I've found out is that the following commit broke suspend-to-ram on their
+Lenovo 3000 v200 (2 separate bug reports confirming that reverting fixed the 
+issue):
+
+
+commit 4f0e35f03db2673dc86ee940dcaab5f8f422dc81
+Author: Alan Stern <stern@rowland.harvard.edu>
+Date:   Fri Jan 8 11:18:20 2010 -0500
+
+    USB: EHCI & UHCI: fix race between root-hub suspend and port resume
+
+    commit cec3a53c7fe794237b582e8e77fc0e48465e65ee upstream.
+
+    This patch (as1321) fixes a problem with EHCI and UHCI root-hub
+    suspends: If the suspend occurs while a port is trying to resume, the
+    resume doesn't finish and simply gets lost.  When remote wakeup is
+    enabled, this is undesirable behavior.
+
+    The patch checks first to see if any port resumes are in progress, and
+    if they are then it fails the root-hub suspend with -EBUSY.
+
+    Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+Their dmesg propagates the same error just before suspending and the system 
+instantly resumes back:
+
+[ 2995.328808] PM: Syncing filesystems ... done.
+[ 2995.417778] Stopping fuse filesystems.
+[ 2995.417786] Freezing user space processes ... (elapsed 0.01 seconds) done.
+[ 2995.436558] Stopping normal filesystems.
+[ 2995.551470] Freezing remaining freezable tasks ... (elapsed 0.00 seconds) 
+done.
+[ 2995.551558] Suspending console(s) (use no_console_suspend to debug)
+[ 2995.551923] pci 0000:00:02.0: PCI INT A disabled
+[ 2995.591204] btusb_bulk_complete: hci0 urb f1d1e600 failed to resubmit (1)
+[ 2995.592197] btusb_bulk_complete: hci0 urb f1d1e680 failed to resubmit (1)
+[ 2995.593200] btusb_intr_complete: hci0 urb f1d1e580 failed to resubmit (1)
+[ 2995.642091] sd 0:0:0:0: [sda] Synchronizing SCSI cache
+[ 2995.642263] sd 0:0:0:0: [sda] Stopping disk
+[ 2996.619560] pm_op(): usb_dev_suspend+0x0/0xf returns -16  	*******
+[ 2996.619562] PM: Device usb2 failed to suspend: error -16  	*******
+[ 2996.619564] PM: Some devices failed to suspend 	 		 	*******
+[ 2996.723535] sd 0:0:0:0: [sda] Starting disk
+
+and their device usb2 is:
+
+$ cat /sys/bus/usb/devices/usb2/product
+EHCI Host Controller
+
+Is it possible that this get fixed in somewhere between v2.6.31.13..HEAD? If 
+yes, can you point me to the relevant commit if possible?
+
+Many thanks,
+
+---
+Ozan Ã‡aÄŸlayan
+TUBITAK/UEKAE - Pardus Linux
+http://www.pardus.org.tr/eng
