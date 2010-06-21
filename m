@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab0FUPkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 11:40:32 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:53608 "EHLO
-	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab0FUPka (ORCPT
+	id S1757125Ab0FUPlo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 11:41:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41364 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754770Ab0FUPln convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 11:40:30 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: mjg@redhat.com
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-       jirislaby@gmail.com, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] X86: intel_ips, check for kzalloc properly
-Date: Mon, 21 Jun 2010 17:40:15 +0200
-Message-Id: <1277134815-17666-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100621083418.6315d1d5@virtuousgeek.org>
-References: <20100621083418.6315d1d5@virtuousgeek.org>
+	Mon, 21 Jun 2010 11:41:43 -0400
+Subject: Re: [patch] x86, pat: freeing invalid memtype messages
+From: Peter Zijlstra <peterz@infradead.org>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Xiaotian Feng <dfeng@redhat.com>, Dan Carpenter <error27@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H.PeterA" <nvinhpa@zytor.com>, Venkatesh Pallipadi <venki@google.com>,
+       Jack Steiner <steiner@sgi.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
+       x86@kernel.org
+In-Reply-To: <20100621153303.GA2754@joi.lan>
+References: <20100617134559.GA29824@bicker> <20100617161728.GA2741@joi.lan>
+	 <4C1B1691.6020809@redhat.com> <20100618175726.GA2785@joi.lan>
+	 <4C1F455E.6050502@redhat.com> <1277118155.1875.508.camel@laptop>
+	 <4C1F47EF.2060509@redhat.com>  <20100621153303.GA2754@joi.lan>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 21 Jun 2010 17:41:13 +0200
+Message-ID: <1277134873.1875.520.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Or what about this one?
+On Mon, 2010-06-21 at 17:33 +0200, Marcin Slusarz wrote:
+> On Mon, Jun 21, 2010 at 07:07:27PM +0800, Xiaotian Feng wrote:
+> > On 06/21/2010 07:02 PM, Peter Zijlstra wrote:
+> > > On Mon, 2010-06-21 at 18:56 +0800, Xiaotian Feng wrote:
+> > >
+> > >> I guess there might be something wrong between the augmented rbtree insert/remove ..
+> > >
+> > > The easiest thing is to revert that change and try again, the next step
+> > > would be to print the full RB tree on each modification and look where
+> > > it goes wrong.
+> > >
+> > > That said, I did print my fair share of (augmented) RB trees while
+> > > playing with scheduler patches and I can't remember it ever having
+> > > messed up like that.
+> > He's using 2.6.35-rc2+, without your "rbtree: Undo augmented trees 
+> > performance damage" patch ;-)
+> 
+> I applied it manually (commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249 from -tip)
+> to 2.6.35-rc3 and it fixed both acpi's and nouveau's "invalid memtype" messages.
+> Thanks.
 
---
-
-Stanse found that there are two NULL checks missing in ips_monitor. So
-check their value too and bail out appropriately if the allocation
-failed.
-
-While at it, add one more kfree to the fail path. It is not necessary
-now, but may be needed in the future when a new allocation is added.
-And for completeness.
-
-Also remove unneeded initialization of the variables. They are all set
-right after their declaration.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Matthew Garrett <mjg@redhat.com>
----
- drivers/platform/x86/intel_ips.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
-index cdaf40e..0344822 100644
---- a/drivers/platform/x86/intel_ips.c
-+++ b/drivers/platform/x86/intel_ips.c
-@@ -920,9 +920,8 @@ static int ips_monitor(void *data)
- 	struct timer_list timer;
- 	unsigned long seqno_timestamp, expire, last_msecs, last_sample_period;
- 	int i;
--	u32 *cpu_samples = NULL, *mchp_samples = NULL, old_cpu_power;
--	u16 *mcp_samples = NULL, *ctv1_samples = NULL, *ctv2_samples = NULL,
--		*mch_samples = NULL;
-+	u32 *cpu_samples, *mchp_samples, old_cpu_power;
-+	u16 *mcp_samples, *ctv1_samples, *ctv2_samples, *mch_samples;
- 	u8 cur_seqno, last_seqno;
- 
- 	mcp_samples = kzalloc(sizeof(u16) * IPS_SAMPLE_COUNT, GFP_KERNEL);
-@@ -931,7 +930,8 @@ static int ips_monitor(void *data)
- 	mch_samples = kzalloc(sizeof(u16) * IPS_SAMPLE_COUNT, GFP_KERNEL);
- 	cpu_samples = kzalloc(sizeof(u32) * IPS_SAMPLE_COUNT, GFP_KERNEL);
- 	mchp_samples = kzalloc(sizeof(u32) * IPS_SAMPLE_COUNT, GFP_KERNEL);
--	if (!mcp_samples || !ctv1_samples || !ctv2_samples || !mch_samples) {
-+	if (!mcp_samples || !ctv1_samples || !ctv2_samples || !mch_samples ||
-+			!cpu_samples || !mchp_samples) {
- 		dev_err(&ips->dev->dev,
- 			"failed to allocate sample array, ips disabled\n");
- 		kfree(mcp_samples);
-@@ -939,6 +939,7 @@ static int ips_monitor(void *data)
- 		kfree(ctv2_samples);
- 		kfree(mch_samples);
- 		kfree(cpu_samples);
-+		kfree(mchp_samples);
- 		kthread_stop(ips->adjust);
- 		return -ENOMEM;
- 	}
--- 
-1.7.1
-
-
+Oh neat, so it actually fixes a bug in the previous augmented rb-tree
+implementation?
