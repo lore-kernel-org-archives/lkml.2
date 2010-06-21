@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab0FUAHK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 20:07:10 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42403 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754434Ab0FUAHG convert rfc822-to-8bit (ORCPT
+	id S1756120Ab0FUAV1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 20:21:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57287 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754797Ab0FUAVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 20:07:06 -0400
+	Sun, 20 Jun 2010 20:21:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=xAQ3vN7kSLyzbWQMLWWpvwDJcY+FDJ+TATXe92vF2lXde/PWfuDPTrx1yb0hUFxb3r
-         3ikVHjfi4H2dkl7UOeKMuPlyHuiHgEyYOFbCRVeS55t/3lX5NKXlqPomcvBq0kvGbkIs
-         z0/f3lW2rLUQW69z9dK8t3UiiaHMXV7Cj8bZo=
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=OFV+CQubvE/yLdyV7Jjwz3lAFCGXiRKe7/gwkYvqzuwBVg3mkZUJkn+GFYAqu5H7nT
+         jrAUSK+fyTUVWXruICjS/zSolyhGYZu7Vm4DYsMuO2OKbHezWG/tKoXPyynBbBYd7NRb
+         BA7WJVjqJ9f3dB+SjJb/ALdUdinaAiGS3lV+E=
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <W8JfMs9cZw.A.PcG.hNpHMB@chimera>
-References: <lc60d4toGTL.A.QzD._LpHMB@chimera>
-	<W8JfMs9cZw.A.PcG.hNpHMB@chimera>
-Date: Mon, 21 Jun 2010 02:07:04 +0200
-Message-ID: <AANLkTilVdN0qLq7v0H7wbxuNwlcVJ_5jjrW6q0_Nqm4F@mail.gmail.com>
-Subject: Re: [Bug #16169] Complain from preemptive debug
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Dmitry Monakhov <dmonakhov@openvz.org>,
-       Andrew Morton <akpm@linux-foundation.org>, cpufreq@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Sun, 20 Jun 2010 20:21:22 -0400
+Message-ID: <AANLkTikeDoxm6OzWldU5PAr06wvW89asIIPNrpVKoc8I@mail.gmail.com>
+Subject: Kernel does strange things when compilations push memory usage above 
+	physical memory and the compilations are being done in a tmpfs, despite 
+	having ample swap
+From: Richard Yao <shiningarcanine@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Dear Everyone,
 
-Andrew answered in [1]:
+My desktop has 4GB of RAM and it is running an unpatched Linux 2.6.34
+kernel. I recently migrated it from Windows 7 to Gentoo Linux and I am
+encountering a highly peculiar problem when I build/rebuild system
+packages in a manner that stresses memory.
 
-"I just merged a different patch whcih should address this:
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>"
+When system memory usage exceeds 4GB because I have several
+compilations running simultaneously, all of which have had -j5 passed
+to make, with the build scripts sharing an 8GB tmpfs directory, the
+system typically responds by activating the kernel oom-killer, which
+will usually kill some of the processes involved in the compilations,
+among other things. This is with an 8GB swap partition and barely any
+of it is touched when this happens according to KDE's system monitor.
+Rarer, but alternative responses that the system has made to such
+circumstances involve the system package manager failing
+mid-compilation with "Segmentation fault" printed to the console or
+open office failing with an obscure error message. Usually just
+compiling open office alone is enough to have things fail, although I
+usually see it fail with an obscure 5 digit error message that has no
+meaning which I can derive from doing searches with Google. Unmounting
+my tmpfs directory and doing things as I normally would do them makes
+these issues disappear.
 
-This alternative patch is fixing the problem here, too.
+I have run memtest and it has not detected any hardware issues. I
+tried asking for help on the Gentoo Linux forums, but I received no
+responses and this looks like a kernel issue, so I thought it would be
+a good idea to ask for assistance on the kernel mailing list. Here is
+a link to a copy of my kernel's .config file:
 
-Kind Regards,
-- Sedat -
+http://paste.pocoo.org/show/227799/
 
-[1] https://patchwork.kernel.org/patch/106555/
+As I was typing this, I had openoffice 3.2.1 and something else
+compiling in the background and the system completely froze. This is
+the first I have seen my system do this and it was about 10 minutes
+after the oom-killer had already taken out kwin and several tabs in
+chromium. I had SSH running in the background, but even that has been
+rendered inaccessible by the freeze. I cannot get a response from the
+system via arping and nmap is telling me that the system is down.
 
+Earlier today, I tried to reproduce this issue under simpler
+cirumstances by doing dd bs=4096 count=2097152 if=/dev/zero
+of=/var/tmp/portage/zero.bak. As a consequence of all of the swapping
+that occurred, the system's X server become unresponsive, so I walked
+away and came back a few minutes later to find that the KDE System
+Monitor had crashed, but everything else seemed fine.
 
-On Mon, Jun 21, 2010 at 12:17 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
->
-> The following bug entry is on the current list of known regressions
-> from 2.6.34.  Please verify if it still should be listed and let the tracking team
-> know (either way).
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16169
-> Subject         : Complain from preemptive debug
-> Submitter       : Sedat Dilek <sedat.dilek@googlemail.com>
-> Date            : 2010-05-31 10:10 (21 days old)
-> Message-ID      : <AANLkTilTnAAZIizKinYsxFkNTkrmPqk6XJJuUjjhJ7EP@mail.gmail.com>
-> References      : http://lkml.org/lkml/2010/5/31/77
-> Handled-By      : Dmitry Monakhov <dmonakhov@openvz.org>
-> Patch           : http://www.spinics.net/lists/cpufreq/msg01631.html
->
->
->
+Any help with this issue would be appreciated. I am willing to
+recompile my system in whatever manner necessary to diagnose the cause
+of this issue. Please CC me any responses made either directly or
+indirectly in response to this message.
+
+Yours truly,
+Richard Yao
