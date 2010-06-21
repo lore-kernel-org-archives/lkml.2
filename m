@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612Ab0FUVut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 17:50:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57485 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932340Ab0FUVus (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 17:50:48 -0400
-Date: Mon, 21 Jun 2010 14:49:58 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Mair <christoph.mair@gmail.com>
-Cc: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
-       linux-kernel@vger.kernel.org,
-       Stefan Schmidt <stefan@datenfreihafen.org>,
-       Datta Shubhrajyoti <shubhrajyoti@ti.com>
-Subject: Re: [PATCH] Support for the pressure sensor BMP085 from Bosch
- Sensortec.
-Message-Id: <20100621144958.d5fc694e.akpm@linux-foundation.org>
-In-Reply-To: <1277067058-6929-1-git-send-email-christoph.mair@gmail.com>
-References: <4C1DF4DE.5090403@jic23.retrosnub.co.uk>
-	<1277067058-6929-1-git-send-email-christoph.mair@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932695Ab0FUVxs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 17:53:48 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55795 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932522Ab0FUVxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 17:53:47 -0400
+Message-ID: <4C1FDF5B.1040301@kernel.org>
+Date: Mon, 21 Jun 2010 23:53:31 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Tony Luck <tony.luck@intel.com>
+Subject: [PATCH sched/core] sched,cpuset: drop __cpuexit from cpu hotplug
+ callbacks
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 21 Jun 2010 21:53:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Jun 2010 22:50:58 +0200
-Christoph Mair <christoph.mair@gmail.com> wrote:
+Commit 3a101d05 (sched: adjust when cpu_active and cpuset
+configurations are updated during cpu on/offlining) added hotplug
+notifiers marked with __cpuexit; however, ia64 drops text in __cpuexit
+during link unlike x86.  This means that functions which are
+referenced during init but used only for cpu hot unplugging afterwards
+shouldn't be marked with __cpuexit.  Drop __cpuexit from those
+functions.
 
-> This driver adds support for the BMP085 digital pressure sensor
-> from Bosch Sensortec.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Tony Luck <tony.luck@intel.com>
+---
+This seems to work fine here but it would be nice if you can confirm
+this.  Thanks.
 
-If there's a datasheet available, it would be nice to provide a
-reference to that in the driver.
+ kernel/cpuset.c |    2 +-
+ kernel/sched.c  |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-> It exposes a sysfs api to userspace where
-> pressure and temperature measurement results can be read from the
-> pressure0_input and temp0_input file. The chip is able to calculate
-> the average of up to eight samples to increase the accuracy.
-> This feature can be controlled by writing to the oversampling file.
-> 
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 05727dc..7146793 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2118,7 +2118,7 @@ static void scan_for_empty_cpusets(struct cpuset *root)
+  * Called within get_online_cpus().  Needs to call cgroup_lock()
+  * before calling generate_sched_domains().
+  */
+-void __cpuexit cpuset_update_active_cpus(void)
++void cpuset_update_active_cpus(void)
+ {
+ 	struct sched_domain_attr *attr;
+ 	cpumask_var_t *doms;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index b4427cc..9064e7d 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -7477,8 +7477,8 @@ int __init sched_create_sysfs_power_savings_entries(struct sysdev_class *cls)
+  * disabled, cpuset_update_active_cpus() becomes a simple wrapper
+  * around partition_sched_domains().
+  */
+-static int __cpuexit cpuset_cpu_active(struct notifier_block *nfb,
+-				       unsigned long action, void *hcpu)
++static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
++			     void *hcpu)
+ {
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_ONLINE:
+@@ -7490,8 +7490,8 @@ static int __cpuexit cpuset_cpu_active(struct notifier_block *nfb,
+ 	}
+ }
 
-You didn't adequately (IMO) describe the most important thing: the
-userspace interface.
-
-Please do send a full description of the proposed API so we can review
-that.  What are the contents of these files?  What are the units of
-those contents, etc?
-
-Are there any similar drivers in the tree (I don't think so) and if so
-does this new driver offer the same interface?
-
-Bear in mind that if new drivers for similar devices _do_ come along
-then we'd prefer that those drivers implement the same interface as
-this one.  So is this driver's interface well-designed from that point
-of view?
-
-Also, we're supposed to docuemnt these things formally in
-Documentation/ABI/.
-
->
-> ...
->
-> + * The chip will use 2^oversampling samples for interlan averaging.
-
-I assumed that was supposed to read "internal".
+-static int __cpuexit cpuset_cpu_inactive(struct notifier_block *nfb,
+-					 unsigned long action, void *hcpu)
++static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
++			       void *hcpu)
+ {
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_DOWN_PREPARE:
