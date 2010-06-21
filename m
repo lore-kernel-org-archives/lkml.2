@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758590Ab0FUVJu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 17:09:50 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:33299 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758566Ab0FUVJt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 17:09:49 -0400
-Date: Mon, 21 Jun 2010 17:09:46 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
-Cc: George Stephen-RVGG20 <RVGG20@freescale.com>,
-       Martinez Ed-R12594 <R12594@freescale.com>
-Subject: [RELEASE] LTTng 0.218 for kernel 2.6.34
-Message-ID: <20100621210946.GA7449@Krystal>
-References: <20100619154241.GA14460@Krystal>
+	id S1758575Ab0FUVOy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 17:14:54 -0400
+Received: from kroah.org ([198.145.64.141]:47480 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758497Ab0FUVOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 17:14:53 -0400
+Date: Mon, 21 Jun 2010 14:13:19 -0700
+From: Greg KH <greg@kroah.com>
+To: Ky Srinivasan <ksrinivasan@novell.com>
+Cc: hpa@zytor.com, hjanssen@microsoft.com, mingo@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Hyperv: Export the symbol that tracks hyperv features
+ and recommendations
+Message-ID: <20100621211319.GA25447@kroah.com>
+References: <4C1F80160200003000087BA8@sinclair.provo.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100619154241.GA14460@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 17:08:41 up 149 days, 23:45,  4 users,  load average: 0.61, 0.37,
-	0.26
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C1F80160200003000087BA8@sinclair.provo.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-LTTng 0.218 adds a missing irq_desc export in kernel/irq/handle.c, which only
-affects sparse irq configurations. This omission only appeared in 0.217.
-
-Mathieu
-
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> Hi,
+On Mon, Jun 21, 2010 at 03:07:02PM -0600, Ky Srinivasan wrote:
 > 
-> I just released LTTng 0.217 for kernel 2.6.34. Enjoy! :-)
+>  
+> From: K. Y. Srinivasan <ksrinivasan@novell.com>
+> Subject:  Export the symbol  for hyperv drivers to access hyperv
+> features and recommendations. This patch is needed by the hyperV clocksource driver.
 > 
-> Mathieu
+> Signed-off-by: K. Y. Srinivasan <ksrinivasan@novell.com>
 > 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
+> Index: linux.trees.git/arch/x86/kernel/cpu/mshyperv.c
+> ===================================================================
+> --- linux.trees.git.orig/arch/x86/kernel/cpu/mshyperv.c	2010-05-18 10:14:02.000000000 -0600
+> +++ linux.trees.git/arch/x86/kernel/cpu/mshyperv.c	2010-05-18 14:12:11.000000000 -0600
+> @@ -18,6 +18,7 @@
+>  #include <asm/mshyperv.h>
+>  
+>  struct ms_hyperv_info ms_hyperv;
+> +EXPORT_SYMBOL(ms_hyperv);
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+EXPORT_SYMBOL_GPL()?  Didn't you have it that way in your previous
+patch?
+
+thanks,
+
+greg k-h
