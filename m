@@ -1,133 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087Ab0FURMH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 13:12:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37398 "EHLO mx1.redhat.com"
+	id S1758097Ab0FURNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 13:13:10 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38736 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753818Ab0FURMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 13:12:05 -0400
-Date: Mon, 21 Jun 2010 19:09:19 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Jerome Marchand <jmarchan@redhat.com>,
-       Mandeep Singh Baines <msb@google.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: while_each_thread() under rcu_read_lock() is broken?
-Message-ID: <20100621170919.GA13826@redhat.com>
-References: <20100618190251.GA17297@redhat.com> <20100618193403.GA17314@redhat.com> <20100618223354.GL2365@linux.vnet.ibm.com>
+	id S1755169Ab0FURNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 13:13:08 -0400
+Date: Mon, 21 Jun 2010 10:13:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: linux-next: manual merge of the tip tree with the block tree
+Message-ID: <20100621171300.GF2354@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100621161623.3dfedc32.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100618223354.GL2365@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100621161623.3dfedc32.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/18, Paul E. McKenney wrote:
->
-> On Fri, Jun 18, 2010 at 09:34:03PM +0200, Oleg Nesterov wrote:
-> >
-> > 	#define XXX(t)	({
-> > 		struct task_struct *__prev = t;
-> > 		t = next_thread(t);
-> > 		t != g && t != __prev;
-> > 	})
-> >
-> > 	#define while_each_thread(g, t) \
-> > 		while (XXX(t))
->
-> Isn't the above vulnerable to a pthread_create() immediately following
-> the offending exec()?  Especially if the task doing the traversal is
-> preempted?
+On Mon, Jun 21, 2010 at 04:16:23PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the tip tree got a conflict in
+> fs/fs-writeback.c between commits 7f0e7bed936a0c422641a046551829a01341dd80
+> ("writeback: fix writeback completion notifications") and
+> 3c4d716538f3eefb1c1f10961a047a6456a2b590 ("writeback: queue work on stack
+> in writeback_inodes_sb") from the block tree and commit
+> b97181f24212f4c29197890ce1b2b9100bcc184d ("fs: remove all rcu head
+> initializations, except on_stack initializations") from the tip tree.
+> 
+> I fixed it up (I hope - see below) and can carry the fix as necessary.
 
-Yes, thanks!
+I took a look, and all of the changes from "fs: remove all rcu head
+initializations, except on_stack initializations" are reflected in -next.
 
-> here are some techniques that might (or might not) help:
+							Thanx, Paul
 
-To simplify, let's consider the concrete example,
-
-	rcu_read_lock();
-
-	g = t = returns_the_rcu_safe_task_struct_ptr();
-
-	do {
-		printk("%d\n", t->pid);
-	} while_each_thread(g, t);
-
-	rcu_read_unlock();
-
-Whatever we do, without tasklist/siglock this can obviously race
-with fork/exit/exec. It is OK to miss a thread, or print the pid
-of the already exited/released task.
-
-But it should not loop forever (the subject), and it should not
-print the same pid twice (ignoring pid reuse, of course).
-
-And, afaics, there are no problems with rcu magic per se, next_thread()
-always returns the task_struct we can safely dereference. The only
-problem is that while_each_thread() assumes that sooner or later
-next_thread() must reach the starting point, g.
-
-(zap_threads() is different, it must not miss a thread with ->mm
- we are going to dump, but it holds mmap_sem).
-
-> o	Check ACCESS_ONCE(p->group_leader == g),
-
-	but this assumeas that while_each_thread(g, t) always
-	uses g == group_leader. zap_other_threads(), for example,
-	starts with g == current and not necessarily the leader.
-
-> if false, restart
-> 	the traversal.
-
-I am not sure we should restart (don't pid the same pid twice),
-probably we should break the loop.
-
-So, I am thinking about the first attempt
-
-	#define while_each_thread(g, t) \
-		while ((t = next_thread(t)) != g && pid_alive(g))
-
-again. But this means while_each_thread() can miss more threads
-than it currently can under the same conditions. Correct, but
-not good.
-
-And,
-
-> 	This of course might
-> 	require careful attention of the order of updates to ->group_leader
-> 	and the list pointers.
-
-Yes. At least the code above needs barriers, and I am not sure
-it can be really correct without more complications.
-
-> o	Maintain an ->oldnext field that tracks the old pointer to
-> 	the next task for one RCU grace period after a de_thread()
-> 	operation.  When the grace period expires (presumably via
-> 	call_rcu()), the ->oldnext field is set to NULL.
-
-Well, another field in task_struct...
-
-> o	Do the de_thread() incrementally.  So if the list is tasks A,
-> 	B, and C, in that order, and if we are de-thread()ing B,
-> 	then make A's pointer refer to C,
-
-This breaks while_each_thread() under tasklist/siglock. It must
-see all unhashed tasks.
-
-Oh. I'll try to think more, but I also hope someone else can suggest
-a simple solution.
-
-> > Please tell me I am wrong!
->
-> It would take a braver man than me to say that Oleg Nesterov is wrong!
-
-Hmm. Given that you proved I was wrong in the first lines of your
-email, I do not know what to think ;)
-
-Oleg.
-
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc fs/fs-writeback.c
+> index 5455009,af92100..0000000
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@@ -63,16 -63,45 +63,37 @@@ struct bdi_work 
+>   };
+>   
+>   enum {
+>  -	WS_USED_B = 0,
+>  -	WS_ONSTACK_B,
+>  +	WS_INPROGRESS = 0,
+>  +	WS_ONSTACK,
+>   };
+>   
+> - static inline void bdi_work_init(struct bdi_work *work,
+> - 				 struct wb_writeback_args *args)
+>  -#define WS_USED (1 << WS_USED_B)
+>  -#define WS_ONSTACK (1 << WS_ONSTACK_B)
+>  -
+>  -static inline bool bdi_work_on_stack(struct bdi_work *work)
+>  -{
+>  -	return test_bit(WS_ONSTACK_B, &work->state);
+>  -}
+>  -
+> + static inline void __bdi_work_init(struct bdi_work *work,
+> + 				   struct wb_writeback_args *args,
+> + 				   int on_stack)
+>   {
+> - 	INIT_RCU_HEAD(&work->rcu_head);
+>   	work->args = *args;
+>  -	work->state = WS_USED;
+>  +	__set_bit(WS_INPROGRESS, &work->state);
+> + 	if (on_stack) {
+>  -		work->state |= WS_ONSTACK;
+> ++		__set_bit(WS_ONSTACK, &work->state);
+> + 		init_rcu_head_on_stack(&work->rcu_head);
+> + 	}
+> + }
+> + 
+> + static inline void bdi_work_init(struct bdi_work *work,
+> + 				 struct wb_writeback_args *args)
+> + {
+> + 	__bdi_work_init(work, args, false);
+> + }
+> + 
+> + static inline void bdi_work_init_on_stack(struct bdi_work *work,
+> + 					  struct wb_writeback_args *args)
+> + {
+> + 	__bdi_work_init(work, args, true);
+> + }
+> + 
+> + static inline void bdi_destroy_work_on_stack(struct bdi_work *work)
+> + {
+> + 	destroy_rcu_head_on_stack(&work->rcu_head);
+>   }
+>   
+>   /**
+> @@@ -182,19 -239,26 +203,19 @@@ static void bdi_alloc_queue_work(struc
+>    * @sb: write inodes from this super_block
+>    *
+>    * Description:
+>  - *   This does WB_SYNC_ALL data integrity writeback and waits for the
+>  - *   IO to complete. Callers must hold the sb s_umount semaphore for
+>  + *   This function initiates writeback and waits for the operation to
+>  + *   complete. Callers must hold the sb s_umount semaphore for
+>    *   reading, to avoid having the super disappear before we are done.
+>    */
+>  -static void bdi_sync_writeback(struct backing_dev_info *bdi,
+>  -			       struct super_block *sb)
+>  +static void bdi_queue_work_onstack(struct wb_writeback_args *args)
+>   {
+>  -	struct wb_writeback_args args = {
+>  -		.sb		= sb,
+>  -		.sync_mode	= WB_SYNC_ALL,
+>  -		.nr_pages	= LONG_MAX,
+>  -		.range_cyclic	= 0,
+>  -	};
+>   	struct bdi_work work;
+>   
+> - 	bdi_work_init(&work, args);
+> - 	__set_bit(WS_ONSTACK, &work.state);
+>  -	bdi_work_init_on_stack(&work, &args);
+> ++	bdi_work_init_on_stack(&work, args);
+>   
+>  -	bdi_queue_work(bdi, &work);
+>  -	bdi_wait_on_work_clear(&work);
+>  +	bdi_queue_work(args->sb->s_bdi, &work);
+>  +	bdi_wait_on_work_done(&work);
+> + 	bdi_destroy_work_on_stack(&work);
+>   }
+>   
+>   /**
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
