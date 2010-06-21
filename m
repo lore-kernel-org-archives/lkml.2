@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab0FUWcf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 18:32:35 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:55619 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755367Ab0FUWca (ORCPT
+	id S1755808Ab0FUWk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 18:40:59 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33417 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751731Ab0FUWk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 18:32:30 -0400
-Subject: [PATCH v2 5/5] of/irq: little endian fixes
-To: microblaze-uclinux@itee.uq.edu.au, devicetree-discuss@lists.ozlabs.org,
-       linuxppc-dev@lists.ozlabs.org
-From: Grant Likely <grant.likely@secretlab.ca>
-Cc: sfr@canb.auug.org.au, monstr@monstr.eu, linux-kernel@vger.kernel.org,
-       benh@kernel.crashing.org
-Date: Mon, 21 Jun 2010 16:32:25 -0600
-Message-ID: <20100621223223.18925.66253.stgit@angua>
-In-Reply-To: <20100621222052.18925.61569.stgit@angua>
-References: <20100621222052.18925.61569.stgit@angua>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Mon, 21 Jun 2010 18:40:58 -0400
+Date: Mon, 21 Jun 2010 15:40:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lubomir Rintel <lkundrak@v3.sk>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] [fs/sysv] Fix NULL deref. when allocating new inode
+Message-Id: <20100621154046.b5e8319c.akpm@linux-foundation.org>
+In-Reply-To: <1277039843-32548-1-git-send-email-lkundrak@v3.sk>
+References: <1277039843-32548-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <r.herring@freescale.com>
+On Sun, 20 Jun 2010 15:17:23 +0200
+Lubomir Rintel <lkundrak@v3.sk> wrote:
 
-Fix some endian issues in the irq mapping OF code.
+> A call to sysv_write_inode() in sysv_new_inode() to its new interface
+> that replaced wait flag with writeback structure. This was broken by
+> a9185b41a4f84971b930c519f0c63bd450c4810d.
+> 
+> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+> ---
+> Resending this.
+>  fs/sysv/ialloc.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/sysv/ialloc.c b/fs/sysv/ialloc.c
+> index 241e976..f2764e2 100644
+> --- a/fs/sysv/ialloc.c
+> +++ b/fs/sysv/ialloc.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/stat.h>
+>  #include <linux/string.h>
+>  #include <linux/buffer_head.h>
+> +#include <linux/writeback.h>
+>  #include "sysv.h"
+>  
+>  /* We don't trust the value of
+> @@ -139,6 +140,9 @@ struct inode * sysv_new_inode(const struct inode * dir, mode_t mode)
+>  	struct inode *inode;
+>  	sysv_ino_t ino;
+>  	unsigned count;
+> +	struct writeback_control wbc = {
+> +		.sync_mode = WB_SYNC_NONE
+> +	};
+>  
+>  	inode = new_inode(sb);
+>  	if (!inode)
+> @@ -177,7 +181,7 @@ struct inode * sysv_new_inode(const struct inode * dir, mode_t mode)
+>  	mark_inode_dirty(inode);
+>  
+>  	inode->i_mode = mode;		/* for sysv_write_inode() */
+> -	sysv_write_inode(inode, 0);	/* ensure inode not allocated again */
+> +	sysv_write_inode(inode, &wbc);	/* ensure inode not allocated again */
+>  	mark_inode_dirty(inode);	/* cleared by sysv_write_inode() */
+>  	/* That's it. */
+>  	unlock_super(sb);
 
-Signed-off-by: Rob Herring <r.herring@freescale.com>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-CC: Michal Simek <monstr@monstr.eu>
-CC: Wolfram Sang <w.sang@pengutronix.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
- drivers/of/irq.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 0b0518f..b68a924 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -87,7 +87,7 @@ int of_irq_map_raw(struct device_node *parent, const u32 *intspec, u32 ointsize,
- 		const u32 *addr, struct of_irq *out_irq)
- {
- 	struct device_node *ipar, *tnode, *old = NULL, *newpar = NULL;
--	const u32 *tmp, *imap, *imask;
-+	const __be32 *tmp, *imap, *imask;
- 	u32 intsize = 1, addrsize, newintsize = 0, newaddrsize = 0;
- 	int imaplen, match, i;
- 
-@@ -103,7 +103,7 @@ int of_irq_map_raw(struct device_node *parent, const u32 *intspec, u32 ointsize,
- 	do {
- 		tmp = of_get_property(ipar, "#interrupt-cells", NULL);
- 		if (tmp != NULL) {
--			intsize = *tmp;
-+			intsize = be32_to_cpu(*tmp);
- 			break;
- 		}
- 		tnode = ipar;
-@@ -132,7 +132,7 @@ int of_irq_map_raw(struct device_node *parent, const u32 *intspec, u32 ointsize,
- 	} while (old && tmp == NULL);
- 	of_node_put(old);
- 	old = NULL;
--	addrsize = (tmp == NULL) ? 2 : *tmp;
-+	addrsize = (tmp == NULL) ? 2 : be32_to_cpu(*tmp);
- 
- 	pr_debug(" -> addrsize=%d\n", addrsize);
- 
-@@ -144,8 +144,9 @@ int of_irq_map_raw(struct device_node *parent, const u32 *intspec, u32 ointsize,
- 		if (of_get_property(ipar, "interrupt-controller", NULL) !=
- 				NULL) {
- 			pr_debug(" -> got it !\n");
--			memcpy(out_irq->specifier, intspec,
--			       intsize * sizeof(u32));
-+			for (i = 0; i < intsize; i++)
-+				out_irq->specifier[i] =
-+						of_read_number(intspec +i, 1);
- 			out_irq->size = intsize;
- 			out_irq->controller = ipar;
- 			of_node_put(old);
-@@ -215,9 +216,9 @@ int of_irq_map_raw(struct device_node *parent, const u32 *intspec, u32 ointsize,
- 				pr_debug(" -> parent lacks #interrupt-cells!\n");
- 				goto fail;
- 			}
--			newintsize = *tmp;
-+			newintsize = be32_to_cpu(*tmp);
- 			tmp = of_get_property(newpar, "#address-cells", NULL);
--			newaddrsize = (tmp == NULL) ? 0 : *tmp;
-+			newaddrsize = (tmp == NULL) ? 0 : be32_to_cpu(*tmp);
- 
- 			pr_debug(" -> newintsize=%d, newaddrsize=%d\n",
- 			    newintsize, newaddrsize);
-@@ -299,7 +300,7 @@ int of_irq_map_one(struct device_node *device, int index, struct of_irq *out_irq
- 	tmp = of_get_property(p, "#interrupt-cells", NULL);
- 	if (tmp == NULL)
- 		goto out;
--	intsize = *tmp;
-+	intsize = be32_to_cpu(*tmp);
- 
- 	pr_debug(" intsize=%d intlen=%d\n", intsize, intlen);
- 
-
+hm.  AFACIT this means that 2.6.34's sysvfs will instantaneously oops,
+every time.
