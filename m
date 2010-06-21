@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab0FUKXH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 06:23:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59215 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757232Ab0FUKXB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 06:23:01 -0400
-Subject: Re: [PATCH 00/28] mm: preemptibility -v3
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>,
-       "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1276153198.2096.465.camel@ymzhang.sh.intel.com>
-References: <20100607110654.606530953@chello.nl>
-	 <1276134311.2096.438.camel@ymzhang.sh.intel.com>
-	 <1276152750.2046.2485.camel@twins>
-	 <1276153198.2096.465.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 21 Jun 2010 12:21:58 +0200
-Message-ID: <1277115718.1875.490.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757612Ab0FUKX4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 06:23:56 -0400
+Received: from ozlabs.org ([203.10.76.45]:34712 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757232Ab0FUKXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 06:23:52 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH for-2.6.35] virtio_net: fix oom handling on tx
+Date: Mon, 21 Jun 2010 19:53:43 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
+       Sridhar Samudrala <sri@us.ibm.com>,
+       virtualization@lists.linux-foundation.org,
+       Jiri Pirko <jpirko@redhat.com>, Shirley Ma <xma@us.ibm.com>,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100610152041.GA3480@redhat.com> <201006211213.49600.rusty@rustcorp.com.au> <20100621083315.GA8665@redhat.com>
+In-Reply-To: <20100621083315.GA8665@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006211953.44724.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-10 at 14:59 +0800, Zhang, Yanmin wrote:
+On Mon, 21 Jun 2010 06:03:16 pm Michael S. Tsirkin wrote:
+> On Mon, Jun 21, 2010 at 12:13:49PM +0930, Rusty Russell wrote:
+> > -		return NETDEV_TX_BUSY;
+> > +		kfree_skb(skb);
+> > +		return NETDEV_TX_OK;
+> 
+> If we do so, let's increment the dropped counter and/or error counter?
 
-> > > I applied it against 2.6.35-rc2 on x86_64 machine, but kernel booting panic.
+Yep, here's the extra change:
 
-<snip panic>
-
-> > Oi, that's no good. Happen to have your .config handy, I didn't actually
-> > see my machine do that.
-
-> See the attachment.
-
-That .config build and booted on my x86_64 machine, no funnies there.
-
-I pushed a git tree out to kernel.org but somehow its refusing to show
-up on git.kernel.org..
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -571,14 +571,16 @@ static netdev_tx_t start_xmit(struct sk_
+ 	/* This can happen with OOM and indirect buffers. */
+ 	if (unlikely(capacity < 0)) {
+ 		if (net_ratelimit()) {
+-			if (likely(capacity == -ENOMEM))
++			if (likely(capacity == -ENOMEM)) {
+ 				dev_warn(&dev->dev,
+ 					 "TX queue failure: out of memory\n");
+-			else
++			} else {
++				dev->stats.tx_fifo_errors++;
+ 				dev_warn(&dev->dev,
+ 					 "Unexpected TX queue failure: %d\n",
+ 					 capacity);
+ 		}
++		dev->stats.tx_dropped++;
+ 		kfree_skb(skb);
+ 		return NETDEV_TX_OK;
+ 	}
