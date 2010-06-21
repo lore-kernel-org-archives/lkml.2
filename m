@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808Ab0FUWk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 18:40:59 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33417 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751731Ab0FUWk6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 18:40:58 -0400
-Date: Mon, 21 Jun 2010 15:40:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] [fs/sysv] Fix NULL deref. when allocating new inode
-Message-Id: <20100621154046.b5e8319c.akpm@linux-foundation.org>
-In-Reply-To: <1277039843-32548-1-git-send-email-lkundrak@v3.sk>
-References: <1277039843-32548-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756174Ab0FUWmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 18:42:24 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:35342 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751731Ab0FUWmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 18:42:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Date: Tue, 22 Jun 2010 00:40:41 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Florian Mickler <florian@mickler.org>,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+References: <Pine.LNX.4.44L0.1006211814370.1687-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1006211814370.1687-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006220040.41524.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Jun 2010 15:17:23 +0200
-Lubomir Rintel <lkundrak@v3.sk> wrote:
-
-> A call to sysv_write_inode() in sysv_new_inode() to its new interface
-> that replaced wait flag with writeback structure. This was broken by
-> a9185b41a4f84971b930c519f0c63bd450c4810d.
+On Tuesday, June 22, 2010, Alan Stern wrote:
+> On Mon, 21 Jun 2010, Florian Mickler wrote:
 > 
-> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-> ---
-> Resending this.
->  fs/sysv/ialloc.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
+> > > In the end you would want to have communication in both directions:  
+> > > suspend blockers _and_ callbacks.  Polling is bad if done too often.  
+> > > But I think the idea is a good one.
+> > 
+> > Actually, I'm not so shure. 
+> > 
+> > 1. you have to roundtrip whereas in the suspend_blocker scheme you have
+> > active annotations (i.e. no further action needed) 
 > 
-> diff --git a/fs/sysv/ialloc.c b/fs/sysv/ialloc.c
-> index 241e976..f2764e2 100644
-> --- a/fs/sysv/ialloc.c
-> +++ b/fs/sysv/ialloc.c
-> @@ -25,6 +25,7 @@
->  #include <linux/stat.h>
->  #include <linux/string.h>
->  #include <linux/buffer_head.h>
-> +#include <linux/writeback.h>
->  #include "sysv.h"
->  
->  /* We don't trust the value of
-> @@ -139,6 +140,9 @@ struct inode * sysv_new_inode(const struct inode * dir, mode_t mode)
->  	struct inode *inode;
->  	sysv_ino_t ino;
->  	unsigned count;
-> +	struct writeback_control wbc = {
-> +		.sync_mode = WB_SYNC_NONE
-> +	};
->  
->  	inode = new_inode(sb);
->  	if (!inode)
-> @@ -177,7 +181,7 @@ struct inode * sysv_new_inode(const struct inode * dir, mode_t mode)
->  	mark_inode_dirty(inode);
->  
->  	inode->i_mode = mode;		/* for sysv_write_inode() */
-> -	sysv_write_inode(inode, 0);	/* ensure inode not allocated again */
-> +	sysv_write_inode(inode, &wbc);	/* ensure inode not allocated again */
->  	mark_inode_dirty(inode);	/* cleared by sysv_write_inode() */
->  	/* That's it. */
->  	unlock_super(sb);
+> That's why it's best to use both.  The normal case is that programs
+> activate and deactivate blockers by sending one-way messages to the PM
+> process.  The exceptional case is when the PM process is about to
+> initiate a suspend; that's when it does the round-trip polling.  Since
+> the only purpose of the polling is to avoid a race, 90% of the time it
+> will succeed.
+> 
+> > 2. it may not be possible for a user to determine if a wake-event is
+> > in-flight. you would have to somehow pass the wake-event-number with
+> > it, so that the userspace process could ack it properly without
+> > confusion. Or... I don't know of anything else... 
+> > 
+> > 	1. userspace-manager (UM) reads a number (42). 
+> > 
+> > 	2. it questions userspace program X: is it ok to suspend?
+> > 
+> > 	[please fill in how userspace program X determines to block
+> > 	suspend]
+> > 
+> > 	3a. UM's roundtrip ends and it proceeds to write "42" to the
+> > 	kernel [suspending]
+> > 	3b. UM's roundtrip ends and it aborts suspend, because a
+> > 	(userspace-)suspend-blocker got activated
+> > 
+> > I'm not shure how the userspace program could determine that there is a
+> > wake-event in flight. Perhaps by storing the number of last wake-event.
+> > But then you need per-wake-event-counters... :|
+> 
+> Rafael seems to think timeouts will fix this.  I'm not so sure.
+> 
+> > Do you have some thoughts about the wake-event-in-flight detection?
+> 
+> Not really, except for something like the original wakelock scheme in
+> which the kernel tells the PM core when an event is over.
 
-hm.  AFACIT this means that 2.6.34's sysvfs will instantaneously oops,
-every time.
+But the kernel doesn't really know that, so it really can't tell the PM core
+anything useful.  What happens with suspend blockers is that a kernel suspend
+cooperates with a user space consumer of the event to get the story straight.
+
+However, that will only work if the user space is not buggy and doesn't crash,
+for example, before releasing the suspend blocker it's holding.
+
+Apart from this, there are those events withoug user space "handoff" that
+use timeouts.
+
+Also there are events like wake-on-LAN that can be regarded as instantaneous
+from the power manager's point of view, so they don't really need all of the
+"suspend blockers" machinery and for them we will need to use a cooldown
+timeout anyway.
+
+And if we need to use that cooldown timeout, I don't see why not to use
+timeouts for avoiding the race you're worrying about.
+
+Rafael
