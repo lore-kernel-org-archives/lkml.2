@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758202Ab0FUTkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 15:40:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35979 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757566Ab0FUTkB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 15:40:01 -0400
-Date: Mon, 21 Jun 2010 12:39:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: linux-mmc <linux-mmc@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Philip Langdale <philipl@overt.org>
-Subject: Re: [PATCH] Two fixes for my mmc/sd cardreader
-Message-Id: <20100621123921.045e245f.akpm@linux-foundation.org>
-In-Reply-To: <1277148104.4241.1.camel@maxim-laptop>
-References: <1276809695.28201.13.camel@maxim-laptop>
-	<1277148104.4241.1.camel@maxim-laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932230Ab0FUTqO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 15:46:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26000 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751921Ab0FUTqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 15:46:12 -0400
+Date: Mon, 21 Jun 2010 15:45:59 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
+       Randy Dunlap <randy.dunlap@oracle.com>, alan@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH] Add TAINT_HARDWARE_UNSUPPORTED flag
+Message-ID: <20100621194559.GI3217@redhat.com>
+References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
+ <20100617091322.b7d21473.randy.dunlap@oracle.com>
+ <4C1A7D61.8010900@redhat.com>
+ <20100621122145.76ebd7ac.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100621122145.76ebd7ac.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010 22:21:44 +0300
-Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+On Mon, Jun 21, 2010 at 12:21:45PM -0700, Andrew Morton wrote:
+> > @@ -243,6 +245,9 @@ void add_taint(unsigned flag)
+> >  	 */
+> >  	if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
+> >  		printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
+> > +	if (flag == TAINT_HARDWARE_UNSUPPORTED)
+> > +		printk(KERN_CRIT
+> > +		       "WARNING: This system's hardware is unsupported.\n");
+> >  
+> >  	set_bit(flag, &tainted_mask);
+> >  }
+> 
+> That's pretty user-hostile.  What are they to do - throw the entire
+> computer away because it has the wrong type of mouse?
+> 
+> How about
+> 
+> void add_hardware_unsupported_taint(const char *hardware)
+> {
+> 	printk(KERN_CRIT
+> 	       "Hardware device %s is unsupported by this kernel's vendor\n",
+> 		hardware);
+> 	add_taint(TAINT_HARDWARE_UNSUPPORTED);
+> }
+> 
+> and
+> 
+> /*
+>  * Don't call add_taint(TAINT_HARDWARE_UNSUPPORTED) directly - use
+>  * add_hardware_unsupported_taint()
+>  */
+> #define TAINT_HARDWARE_UNSUPPORTED	12
 
-> On Fri, 2010-06-18 at 00:21 +0300, Maxim Levitsky wrote: 
-> > Hi,
-> > 
-> > These are 2 fixes for my card reader.
-> > 
-> > 
-> > First patch fixes old issue with system hand on suspend to disk/ram with
-> > mmc card inserted.
-> > I updated description, and pm notification registration order.
-> > I think this patch can an should go to 2.6.35, because it fixes long
-> > standing and nasty regression.
-> > 
-> > The second patch is a result of my work trying to understand why my card
-> > reader sometimes dies on resume.
-> > This reader has a special MMC function which steals MMC cards, and until
-> > now had no driver. A way to disable it was found, and while it works, it
-> > has (at least here) a side effect of killing the controller on resume
-> > from ram/disk (and it happens often, and doesn't depend of whether card
-> > was in slot or not during suspend).
-> > 
-> > Fortunately it turned out that MMC part is _almost_ standard SDHCI
-> > controller.
-> > This patch adds support for this device to standard sdhci driver.
-> > Unfortunately, this support still contais small hack.
-> > It waits 1/2 of a second on resume before initializing the controller.
-> > Not doing so, and resuming with MMC card present results in confused
-> > controller. It is not dead though. A card reinsert makes it work again
-> > with all cards.
-> > Yet the 1st patch is must for this because otherwise mmc core seeing
-> > that controller doesn't respond, removes the card, therefore hangs the
-> > system.
-> > It doesn't happen when I wait these 1/2 of second though.
-> > 
-> > I think that this patch is also ok for 2.6.35, because it only adds new
-> > functionality.
-> > You are free to disable MMC controller using the same
-> > CONFIG_MMC_RICOH_MMC.
-> > 
-> > If you don't disable it though, instead of full lack of functionality
-> > you will get full featured MMC controller.
-> > 
-> > Best regards,
-> > Maxim Levitsky
-> > 
-> > 
-> > 
-> ping
+Internally here that is how we planned on using the flag.  We weren't sure
+if upstream would accept that piece or not, so we started with the flag
+for now to at least reserve the bit.
 
-hey, that was only three days.  I commonly leave things to bake on the
-mailing list for a while, see what people have to say about it. 
-Particularly with subsystems like MMC.
+But I can see your point about the other printk being a little
+user-hostile if someone forgot to call the wrapper function.
+
+I can respin with the wrapper function (Prarit is on vacation) or go with
+Alan's idea of just reserving the upper few bits.
+
+Thoughts?
+
+Cheers,
+Don
