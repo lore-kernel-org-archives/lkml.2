@@ -1,135 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab0FUNQl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 09:16:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31808 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab0FUNQk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 09:16:40 -0400
-Date: Mon, 21 Jun 2010 09:15:28 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Edward Shishkin <edward@redhat.com>
-Cc: Jamie Lokier <jamie@shareable.org>,
-       Edward Shishkin <edward.shishkin@gmail.com>, Mat <jackdachef@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Ric Wheeler <rwheeler@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: Balancing leaves when walking from top to down (was Btrfs:...)
-Message-ID: <20100621131528.GA17979@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Edward Shishkin <edward@redhat.com>,
-	Jamie Lokier <jamie@shareable.org>,
-	Edward Shishkin <edward.shishkin@gmail.com>,
-	Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-	linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	The development of BTRFS <linux-btrfs@vger.kernel.org>
-References: <4C07C321.8010000@redhat.com>
- <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
- <4C1B7560.1000806@gmail.com>
- <20100618155653.GC10919@shareable.org>
- <4C1BC924.30604@redhat.com>
- <20100618193555.GV27466@think>
- <4C1BED56.9010300@redhat.com>
+	id S1757924Ab0FUNVq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 09:21:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47088 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757898Ab0FUNVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 09:21:44 -0400
+Date: Mon, 21 Jun 2010 15:21:40 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+       Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>,
+       linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org
+Subject: Re: [PATCH] HID: removing obsolete kone_abi_version sysfs attr for
+ roccat kone
+In-Reply-To: <1276872145.2358.1.camel@localhost>
+Message-ID: <alpine.LNX.2.00.1006211521130.13809@pobox.suse.cz>
+References: <1276872145.2358.1.camel@localhost>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C1BED56.9010300@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4C1F65FF.00A7:SCFMA922111,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 19, 2010 at 12:04:06AM +0200, Edward Shishkin wrote:
-> Chris Mason wrote:
-> >On Fri, Jun 18, 2010 at 09:29:40PM +0200, Edward Shishkin wrote:
-> >>Jamie Lokier wrote:
-> >>>Edward Shishkin wrote:
-> >>>>If you decide to base your file system on some algorithms then please
-> >>>>use the original ones from proper academic papers. DO NOT modify the
-> >>>>algorithms in solitude: this is very fragile thing! All such
-> >>>>modifications must be reviewed by specialists in the theory of
-> >>>>algorithms. Such review can be done in various scientific magazines of
-> >>>>proper level.
-> >>>>
-> >>>>Personally I don't see any way to improve the situation with Btrfs
-> >>>>except full redesigning the last one. If you want to base your file
-> >>>>system on the paper of Ohad Rodeh, then please, use *exactly* the
-> >>>>Bayer's B-trees that he refers to. That said, make sure that all
-> >>>>records you put to the tree has equal length and all non-root nodes of
-> >>>>your tree are at least half filled.
-> >>>First, thanks Edward for identifying a specific problem with the
-> >>>current btrfs implementation.
-> >>Hello Jamie.
-> >>
-> >>>I've studied modified B-trees quite a lot and know enough to be sure
-> >>>that they are quite robust when you modify them in all sorts of ways.
-> >>Which property is robust?
-> >>
-> >>>Moreover, you are incorrect to say there's an intrinsic algorithmic
-> >>>problem with variable-length records.  It is not true; if Knuth said
-> >>>so, Knuth was mistaken.
-> >>I didn't say about intrinsic algorithmic problems :)
-> >>I just repeat (after Knuth et al) that B-trees with variable-length
-> >>records don't
-> >>have any sane boundary for internal fragmentation. The common idea
-> >>is that if we
-> >>don't want Btrfs to be in infinite development stage, then we should
-> >>choose some
-> >>*sane* strategy (for example the paper of Ohad Rodeh) and strictly
-> >>adhere this in
-> >>future.
-> >
-> >Again, other than the inline file data, what exactly do you believe
-> >needs to change?
-> 
-> 1. getting rid of inline extents;
-> 2. new formats for directory and xattr items to not look like a train,
->   which is able to occupy the whole leaf;
-> 3. make sure we do pro-active balancing like it is described in the paper.
-> 
-> Sorry, I don't see other ways for now..
-> 
-> >  Top down balancing vs balancing on insertion doesn't
-> >impact our ability to maintain full leaves.  The current code is clearly
-> >choosing not to merge two leaves that it should have merged, which is
-> >just a plain old bug.
-> 
-> How are you going to balance leaves when walking from top to down?
-> Suppose 1) and 2) above are not satisfied and having arrived to the leaf
-> level we see a number of items of variable length. What will we do to
-> keep leaves full?
+On Fri, 18 Jun 2010, Stefan Achatz wrote:
 
-I think I'm mixing up complaints ;)  top-down balancing is unrelated to
-the variable length items.  You could balance from the bottom up and if
-you have a 1K item that can't be split next to a 3K item that can't be
-split, we're going to have those two items in two leaves.  This is true
-regardless of how we balance.  So the prime complaint here is that you
-don't like variable length items, correct?
+> The newest version of the accompanying userland tools cuts backward
+> compatibility and uses libudev to find its devices superseding the
+> quirky kone_abi_version sysfs attribute. Therefore it should be removed.
 
-Ideally leaves are full, and ideally data blocks are full.  In practice
-we can end up with either one utilized less than we would like.   At the
-end of the day, every FS has a worst case setup where it is mostly empty
-in terms of bytes stored but full in terms of blocks. On xfs:
+Thanks for explanation of the backwards compatibility (non-)issues with 
+userspace tools in the other mail.
 
-for x in `seq 1 bazallion` ; echo 'f' > $x
+I have queued tha patch.
 
-This would work on ext4 too, until you ran out of inodes.
-
-> 
-> Could you please provide a sketch of the algorithm?
-> 
-
-I'll reproduce from your test case and provide a fix.  mount -o
-max_inline=1500 would give us 50% usage in the worst case (minus the
-balancing bug you hit).
-
--chris
-
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
