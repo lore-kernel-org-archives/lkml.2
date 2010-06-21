@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab0FUUfx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 16:35:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:46759 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758231Ab0FUUfw (ORCPT
+	id S1758310Ab0FUUh1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 16:37:27 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:38553 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758119Ab0FUUhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 16:35:52 -0400
-Date: Mon, 21 Jun 2010 13:33:21 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andy Walls <awalls@md.metrocast.net>,
-       Daniel Walker <dwalker@codeaurora.org>, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, jeff@garzik.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       johannes@sipsolutions.net, oleg@redhat.com, axboe@kernel.dk,
-       mst@redhat.com, samudrala.sridhar@gmail.com
-Subject: Re: [PATCH] kthread: implement kthread_worker
-Message-Id: <20100621133321.6215b85b.randy.dunlap@oracle.com>
-In-Reply-To: <4C1CE813.8080701@kernel.org>
-References: <1276551467-21246-1-git-send-email-tj@kernel.org>
-	<4C17C598.7070303@kernel.org>
-	<1276631037.6432.9.camel@c-dwalke-linux.qualcomm.com>
-	<4C18BF40.40607@kernel.org>
-	<1276694825.9309.12.camel@m0nster>
-	<4C18D1FD.9060804@kernel.org>
-	<1276695665.9309.17.camel@m0nster>
-	<4C18D574.1040903@kernel.org>
-	<1276697146.9309.27.camel@m0nster>
-	<1276776066.2461.15.camel@localhost>
-	<20100617161619.d3ebd73d.akpm@linux-foundation.org>
-	<4C1B1D3F.8030509@kernel.org>
-	<20100618003127.10d9e6c8.akpm@linux-foundation.org>
-	<4C1B29BF.7080404@kernel.org>
-	<20100618100228.093ec17b.akpm@linux-foundation.org>
-	<4C1BACC6.5020602@kernel.org>
-	<4C1CE813.8080701@kernel.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090207.4C1FCC9D.00E3:SCFMA922111,ss=1,fgs=0
+	Mon, 21 Jun 2010 16:37:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=cY7/8mD+zH+sm9fX4mA5YiWTqNSupZNC50eRM41689dUj7qwJyJCbXn4vzcCvUpbgc
+         CcirbBYX1YkFAJmOc1Cgg6/inj42ROvKJke0b8m33Z+r2ECNDzQiw2uf6H6su1vzvBVz
+         ME9Q6UYCueUy0uRMVP7gljk/vQS26HDf3rnfk=
+MIME-Version: 1.0
+In-Reply-To: <1277151410.5409.33.camel@maxim-laptop>
+References: <20100528100901.14580.1322.stgit@fate.lan> <1276806785.20754.8.camel@maxim-laptop> 
+	<20100618112026.17623g6uhdjk8hts@naisho.dyndns.info> <1276856142.9114.1.camel@maxim-laptop> 
+	<20100618134930.124225d4fsi8w1fk@naisho.dyndns.info> <1276859156.19554.2.camel@maxim-laptop> 
+	<AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com> 
+	<1276870309.23783.3.camel@maxim-laptop> <1276933774.16697.11.camel@maxim-laptop> 
+	<AANLkTimIjaxq7IDWwIl1vv93k9bNQ2i89Sb5R5TiJmmA@mail.gmail.com> 
+	<1277032723.9555.12.camel@maxim-laptop> <AANLkTim8iZmm8pEERJUsrQWOiLSjPUfCN-TFFzZZQWx2@mail.gmail.com> 
+	<1277151410.5409.33.camel@maxim-laptop>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Mon, 21 Jun 2010 13:37:04 -0700
+Message-ID: <AANLkTin3fKn0_4mrhmPOlTeN--1EZbKECGF3NVdh9h1t@mail.gmail.com>
+Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
+       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Jonathan May <jonathan.may@atheros.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Jun 2010 17:53:55 +0200 Tejun Heo wrote:
+On Mon, Jun 21, 2010 at 1:16 PM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> Luis, let me explain again, exactly the situation:
+>
+> First of all AR5001 and AR5001X devices (former was usualy listed as
+> AR2425, and I have it, later I don't know about much), don't work well
+> with ASPM L0s enabled.
 
->  include/linux/kthread.h |   63 +++++++++++++++++++++++++
->  kernel/kthread.c        |  118 ++++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 181 insertions(+)
-> 
-> Index: work/kernel/kthread.c
-> ===================================================================
-> --- work.orig/kernel/kthread.c
-> +++ work/kernel/kthread.c
+Thanks for the clarification. David, do you see this as well on your end?
 
-> @@ -247,3 +249,119 @@ int kthreadd(void *unused)
-> 
->  	return 0;
->  }
-> +
-> +/**
-> + * kthread_worker_fn - kthread function to process kthread_worker
-> + * @data: pointer to initialized kthread_worker
+> I told that many times, but I tell again.
+> As soon as card it put on medium to high transmit load
+> (for example even if transmission consists mostly of TCP ACK packets),
+> it dies.
+>
+> Usualy it will stop transmitting, and then after few seconds it will
+> send RXORN intrrupt to the host, even though the channel was idle.
+> (Tested by sending a stream of UDP packets on channel that is neighbor
+> free).
+>
+> I didn't see it, but some users reported seeing jumbo frames at this
+> time as well.
+> Overall it doesn't matter because card just goes south.
+>
+> A reset sometimes brings card to life, sometimes causes another storm of
+> RXORN and sometimes just results in quiet dead card.
+> A next reset might bring it to life, or not.
+>
+> Card (at least mine) advertises its as a 'pre pci 1.1 device'.
+> Therefore if I enable CONFIG_PCIEASPM, the pci core will automaticly
+> disable ASPM (both L0s and L1) on this card.
+> I won't be surprised that windows does the same.
 
-s/data/worker_ptr/
+I am not sure when L0s was enabled as per the spec as mandatory, I
+thought it was optional. Interesting to hear this behavior on Linux
+with CONFIG_PCIEASPM. That Kconfig description and code really need
+some spit shining.
 
-> + *
-> + * This function can be used as @threadfn to kthread_create() or
-> + * kthread_run() with @data argument pointing to an initialized
+> Therefore the patch I sent it useless because it only works when
+> CONFIG_PCIEASPM is enabled.
 
-ditto.
+How so ? Your patch disables L0s, I can use ASPM with L0s and L1 with
+or without CONFIG_PCIEASPM. If I added your calls to ath9k I would
+disable L0s.
 
-> + * kthread_worker.  The started kthread will process work_list until
-> + * the it is stopped with kthread_stop().  A kthread can also call
-> + * this function directly after extra initialization.
-> + *
-> + * Different kthreads can be used for the same kthread_worker as long
-> + * as there's only one kthread attached to it at any given time.  A
-> + * kthread_worker without an attached kthread simply collects queued
-> + * kthread_works.
-> + */
-> +int kthread_worker_fn(void *worker_ptr)
-> +{
-> +	struct kthread_worker *worker = worker_ptr;
-> +	struct kthread_work *work;
-> +
-> +	WARN_ON(worker->task);
-> +	worker->task = current;
-> +repeat:
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+  Luis
