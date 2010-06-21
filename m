@@ -1,70 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab0FUE6q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 00:58:46 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:39744 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab0FUE6o (ORCPT
+	id S1752020Ab0FUFFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 01:05:22 -0400
+Received: from mxout12.netvision.net.il ([194.90.6.37]:51165 "EHLO
+	mxout12.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab0FUFFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 00:58:44 -0400
-Date: Sun, 20 Jun 2010 22:58:33 -0600
-From: Alex Chiang <achiang@canonical.com>
-To: David Miller <davem@davemloft.net>
-Cc: bmb@athenacr.com, jbarnes@virtuousgeek.org, rjw@sisk.pl, mikpe@it.uu.se,
-       linux-kernel@vger.kernel.org, kernel-testers@vger.kernel.org,
-       maciej.rutecki@gmail.com
-Subject: Re: [Bug #16161] [2.6.35-rc1 regression] sysfs: cannot create
- duplicate filename ... XVR-600 related?
-Message-ID: <20100621045832.GA2274@canonical.com>
-Mail-Followup-To: Alex Chiang <achiang@canonical.com>,
-	David Miller <davem@davemloft.net>, bmb@athenacr.com,
-	jbarnes@virtuousgeek.org, rjw@sisk.pl, mikpe@it.uu.se,
-	linux-kernel@vger.kernel.org, kernel-testers@vger.kernel.org,
-	maciej.rutecki@gmail.com
-References: <20100618131049.462ca7ce@virtuousgeek.org>
- <20100618.132655.260090086.davem@davemloft.net>
- <4C1BD9CC.5060300@athenacr.com>
- <20100618.140110.246534188.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100618.140110.246534188.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 21 Jun 2010 01:05:20 -0400
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_0hZFtJnK1KKGRuAXHfdFWQ)"
+X-MIMEOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+Subject: RE: [PATCH] HID: Add support to new N-trig firwmare
+Date: Mon, 21 Jun 2010 08:06:15 +0300
+Message-id: <48A28051AC6D7A48B64F28272458190338280A@Exchange-IL.n-trig.com>
+In-reply-to: <alpine.LNX.2.00.1006051741361.12271@pobox.suse.cz>
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+Thread-topic: [PATCH] HID: Add support to new N-trig firwmare
+Thread-index: AcsExaSGWJ4Kr0KuT0+BaT7v96AzSgMOO1YA
+References: <48A28051AC6D7A48B64F28272458190333674B@Exchange-IL.n-trig.com>
+ <alpine.LNX.2.00.1006041115480.12271@pobox.suse.cz>
+ <48A28051AC6D7A48B64F28272458190326E03E@Exchange-IL.n-trig.com>
+ <alpine.LNX.2.00.1006051741361.12271@pobox.suse.cz>
+From: Micki Balanga <micki@n-trig.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: chatty@enac.fr, dhprince-devel@yahoo.co.uk, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Rafi Rubin <rafi@seas.upenn.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Miller <davem@davemloft.net>:
-> From: Brian Bloniarz <bmb@athenacr.com>
-> Date: Fri, 18 Jun 2010 16:40:44 -0400
-> 
-> > In the patch, 2 individual code paths were trying to
-> > create the same symlinks:
-> > pci-sysfs.c:pci_create_slot_links(struct pci_dev *dev)
-> > and
-> > slot.c:create_sysfs_files(struct pci_slot *slot).
-> > I think some archs managed to call those both during
-> > initialization, and some not.
-> 
-> Right, and if I recall correctly when adding sparc64 support for
-> the sysfs slot stuff if you wanted to create the slots in a
-> non-hotplug situation (which all of the sparc64 cases are) you
-> had to defer the sysfs node creation to later in the boot than
-> when the PCI buses are actually probed and populated.
+This is a multi-part message in MIME format.
 
-Yeah, we call pci_create_sysfs_dev_files() from pci_sysfs_init()
-and from pci_bus_add_device().
+--Boundary_(ID_0hZFtJnK1KKGRuAXHfdFWQ)
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
 
-I haven't figured out why it is that creating other sysfs files,
-e.g. rom files, capabilities, etc. don't also result in duplicate
-entries while the slots do.
+Hi Jiri
+We have some new product so I have to update the patch,
+When I update my git branch I didn't see the changes regarding N-trig
+Product id. If you can insert this patch, if there a problem with the
+patch
+Let me know and hi will update it
+Thank you
+Micki
 
-Clearly my expectation was incorrect for the cases when
-pci_create_sysfs_dev_files() gets called on the different
-architectures.
 
-Anyhow, thanks for the revert Jesse. I wish I had more
-time/energy to dig into this right now, but I really don't.
-Sorry.
+-----Original Message-----
+From: Jiri Kosina [mailto:jkosina@suse.cz] 
+Sent: Saturday, June 05, 2010 6:42 PM
+To: Micki Balanga
+Cc: chatty@enac.fr; dhprince-devel@yahoo.co.uk;
+linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Rafi Rubin
+Subject: RE: [PATCH] HID: Add support to new N-trig firwmare
 
-/ac
+On Fri, 4 Jun 2010, Micki Balanga wrote:
+
+> Hi Jiri,
+> Attach the patch via file.
+> (Also fix 3 warning: please , no space before tabs)
+
+Thanks Micki, I have applied the patch.
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
+
+--Boundary_(ID_0hZFtJnK1KKGRuAXHfdFWQ)
+Content-type: application/octet-stream;
+ name=0001-HID-Add-support-to-new-N-trig-firwmare-part-2.patch
+Content-transfer-encoding: base64
+Content-disposition: attachment;
+ filename=0001-HID-Add-support-to-new-N-trig-firwmare-part-2.patch
+Content-description: 0001-HID-Add-support-to-new-N-trig-firwmare-part-2.patch
+
+RnJvbSBlZmMwNTM5Yzc4YWY5YWFlYTQ2ZTA3MzhhNGY5ZDc0OWU3MzY4ODgzIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBtaWNraSA8bWlja2lAbWlja2ktbGFwdG9wLihub25lKT4KRGF0
+ZTogU2F0LCAxOSBKdW4gMjAxMCAxMTozNzoyOSArMDMwMApTdWJqZWN0OiBbUEFUQ0hdIEhJRDog
+QWRkIHN1cHBvcnQgdG8gbmV3IE4tdHJpZyBmaXJ3bWFyZSBwYXJ0IDIKClByb2R1Y3QgaWQgIDB4
+MDMgLSAweDE0CgpTaWduZWQtb2ZmLWJ5OiBNaWNraSBCYWxhbmdhIDxtaWNraUBuLXRyaWcuY29t
+PgotLS0KLS0tCi0tLQogZHJpdmVycy9oaWQvaGlkLWNvcmUuYyB8ICAgMTggKysrKysrKysrKysr
+KysrKysrCiBkcml2ZXJzL2hpZC9oaWQtaWRzLmggIHwgICAyMiArKysrKysrKysrKysrKysrKysr
+Ky0tCiAyIGZpbGVzIGNoYW5nZWQsIDM4IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpk
+aWZmIC0tZ2l0IGEvZHJpdmVycy9oaWQvaGlkLWNvcmUuYyBiL2RyaXZlcnMvaGlkL2hpZC1jb3Jl
+LmMKaW5kZXggYWEwZjdkYy4uODg3YWVmZCAxMDA2NDQKLS0tIGEvZHJpdmVycy9oaWQvaGlkLWNv
+cmUuYworKysgYi9kcml2ZXJzL2hpZC9oaWQtY29yZS5jCkBAIC0xMzM3LDYgKzEzMzcsMjQgQEAg
+c3RhdGljIGNvbnN0IHN0cnVjdCBoaWRfZGV2aWNlX2lkIGhpZF9ibGFja2xpc3RbXSA9IHsKIAl7
+IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTUlDUk9TT0ZULCBVU0JfREVWSUNFX0lEX1dJ
+UkVMRVNTX09QVElDQUxfREVTS1RPUF8zXzApIH0sCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVO
+RE9SX0lEX01PTlRFUkVZLCBVU0JfREVWSUNFX0lEX0dFTklVU19LQjI5RSkgfSwKIAl7IEhJRF9V
+U0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hf
+U0NSRUVOKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RF
+VklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMSkgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9W
+RU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzIpIH0sCisJ
+eyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNFX0lEX05UUklH
+X1RPVUNIX1NDUkVFTl8zKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJ
+RywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNCkgfSwKKwl7IEhJRF9VU0JfREVW
+SUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVO
+XzUpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNF
+X0lEX05UUklHX1RPVUNIX1NDUkVFTl82KSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRP
+Ul9JRF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNykgfSwKKwl7IEhJ
+RF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9V
+Q0hfU0NSRUVOXzgpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBV
+U0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl85KSB9LAorCXsgSElEX1VTQl9ERVZJQ0Uo
+VVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTAp
+IH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNFX0lE
+X05UUklHX1RPVUNIX1NDUkVFTl8xMSkgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1Jf
+SURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzEyKSB9LAorCXsgSElE
+X1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VD
+SF9TQ1JFRU5fMTMpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBV
+U0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl8xNCkgfSwKKwl7IEhJRF9VU0JfREVWSUNF
+KFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzE1
+KSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9J
+RF9OVFJJR19UT1VDSF9TQ1JFRU5fMTYpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9S
+X0lEX05UUklHLCBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl8xNykgfSwKKwl7IEhJ
+RF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9V
+Q0hfU0NSRUVOXzE4KSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9PUlRFSywg
+VVNCX0RFVklDRV9JRF9PUlRFS19XS0IyMDAwKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZF
+TkRPUl9JRF9QRVRBTFlOWCwgVVNCX0RFVklDRV9JRF9QRVRBTFlOWF9NQVhURVJfUkVNT1RFKSB9
+LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9RVUFOVEEsIFVTQl9ERVZJQ0VfSURf
+UVVBTlRBX09QVElDQUxfVE9VQ0gpIH0sCmRpZmYgLS1naXQgYS9kcml2ZXJzL2hpZC9oaWQtaWRz
+LmggYi9kcml2ZXJzL2hpZC9oaWQtaWRzLmgKaW5kZXggNmFmNzdlZC4uMWQ2MTk0YSAxMDA2NDQK
+LS0tIGEvZHJpdmVycy9oaWQvaGlkLWlkcy5oCisrKyBiL2RyaXZlcnMvaGlkL2hpZC1pZHMuaApA
+QCAtMzQsNyArMzQsNyBAQAogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FDRUNBRF9GTEFJUgkweDAw
+MDQKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9BQ0VDQURfMzAyCTB4MDAwOAogCi0jZGVmaW5lIFVT
+Ql9WRU5ET1JfSURfQURTX1RFQ0ggCQkweDA2ZTEKKyNkZWZpbmUgVVNCX1ZFTkRPUl9JRF9BRFNf
+VEVDSAkweDA2ZTEKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9BRFNfVEVDSF9SQURJT19TSTQ3MFgJ
+MHhhMTU1CiAKICNkZWZpbmUgVVNCX1ZFTkRPUl9JRF9BRkFURUNICQkweDE1YTQKQEAgLTE5OCw3
+ICsxOTgsNyBAQAogI2RlZmluZSBVU0JfVkVORE9SX0lEX0VUVAkJMHgwNjY0CiAjZGVmaW5lIFVT
+Ql9ERVZJQ0VfSURfVEM1VUgJCTB4MDMwOQogCi0jZGVmaW5lIFVTQl9WRU5ET1JfSURfRVpLRVkg
+CQkweDA1MTgKKyNkZWZpbmUgVVNCX1ZFTkRPUl9JRF9FWktFWQkJMHgwNTE4CiAjZGVmaW5lIFVT
+Ql9ERVZJQ0VfSURfQlRDXzgxOTMJCTB4MDAwMgogCiAjZGVmaW5lIFVTQl9WRU5ET1JfSURfR0FN
+RVJPTgkJMHgwODEwCkBAIC0zOTEsNiArMzkxLDI0IEBACiAKICNkZWZpbmUgVVNCX1ZFTkRPUl9J
+RF9OVFJJRyAgICAgICAgICAgICAgICAweDFiOTYKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJ
+R19UT1VDSF9TQ1JFRU4gICAweDAwMDEKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VD
+SF9TQ1JFRU5fMSAgIDB4MDAwMworI2RlZmluZSBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1ND
+UkVFTl8yICAgMHgwMDA0CisjZGVmaW5lIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVO
+XzMgICAweDAwMDUKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNCAg
+IDB4MDAwNgorI2RlZmluZSBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl81ICAgMHgw
+MDA3CisjZGVmaW5lIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzYgICAweDAwMDgK
+KyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNyAgIDB4MDAwOQorI2Rl
+ZmluZSBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl84ICAgMHgwMDBBCisjZGVmaW5l
+IFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzkgICAweDAwMEIKKyNkZWZpbmUgVVNC
+X0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTAgICAweDAwMEMKKyNkZWZpbmUgVVNCX0RF
+VklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTEgICAweDAwMEQKKyNkZWZpbmUgVVNCX0RFVklD
+RV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTIgICAweDAwMEUKKyNkZWZpbmUgVVNCX0RFVklDRV9J
+RF9OVFJJR19UT1VDSF9TQ1JFRU5fMTMgICAweDAwMEYKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9O
+VFJJR19UT1VDSF9TQ1JFRU5fMTQgICAweDAwMTAKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJ
+R19UT1VDSF9TQ1JFRU5fMTUgICAweDAwMTEKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19U
+T1VDSF9TQ1JFRU5fMTYgICAweDAwMTIKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VD
+SF9TQ1JFRU5fMTcgICAweDAwMTMKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9T
+Q1JFRU5fMTggICAweDAwMTQKIAogI2RlZmluZSBVU0JfVkVORE9SX0lEX09OVFJBSwkJMHgwYTA3
+CiAjZGVmaW5lIFVTQl9ERVZJQ0VfSURfT05UUkFLX0FEVTEwMAkweDAwNjQKLS0gCjEuNi4zLjMK
+Cg==
+
+--Boundary_(ID_0hZFtJnK1KKGRuAXHfdFWQ)--
