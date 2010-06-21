@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758597Ab0FUXVz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 19:21:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47752 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758486Ab0FUXVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 19:21:52 -0400
-Date: Mon, 21 Jun 2010 16:20:40 -0700
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com, dan.magenheimer@oracle.com
-Subject: [PATCH V3 5/8] Cleancache: ext3 hook for cleancache
-Message-ID: <20100621232040.GA19617@ca-server1.us.oracle.com>
+	id S1758703Ab0FUXWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 19:22:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58408 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758549Ab0FUXWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 19:22:11 -0400
+Date: Mon, 21 Jun 2010 19:22:08 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cfq: allow dispatching of both sync and async I/O
+ together
+Message-ID: <20100621232208.GA10175@redhat.com>
+References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
+ <1277149789-4493-3-git-send-email-jmoyer@redhat.com>
+ <4C1FC4B4.3060700@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090207.4C1FF3DE.0017:SCFMA922111,ss=1,fgs=0
+In-Reply-To: <4C1FC4B4.3060700@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V3 5/8] Cleancache: ext3 hook for cleancache
+On Mon, Jun 21, 2010 at 09:59:48PM +0200, Jens Axboe wrote:
+> On 21/06/10 21.49, Jeff Moyer wrote:
+> > Hi,
+> > 
+> > In testing a workload that has a single fsync-ing process and another
+> > process that does a sequential buffered read, I was unable to tune CFQ
+> > to reach the throughput of deadline.  This patch, along with the previous
+> > one, brought CFQ in line with deadline when setting slice_idle to 0.
+> > 
+> > I'm not sure what the original reason for not allowing sync and async
+> > I/O to be dispatched together was.  If there is a workload I should be
+> > testing that shows the inherent problems of this, please point me at it
+> > and I will resume testing.  Until and unless that workload is identified,
+> > please consider applying this patch.
+> 
+> The problematic case is/was a normal SATA drive with a buffered
+> writer and an occasional reader. I'll have to double check my
+> mail tomorrow, but iirc the issue was that the occasional reader
+> would suffer great latencies since service times for that single
+> IO would be delayed at the drive side. It could perhaps just be
+> a bug in how we handle the slice idling on the read side when the
+> IO gets delayed initially.
+> 
+> So if my memory is correct, google for the fsync madness and
+> interactiveness thread that we had some months ago and which
+> caused a lot of tweaking. The commit adding this is
+> 5ad531db6e0f3c3c985666e83d3c1c4d53acccf9 and was added back
+> in July last year. So it was around that time that the mails went
+> around.
 
-Filesystems must explicitly enable cleancache by calling
-cleancache_init_fs anytime a instance of the filesystem
-is mounted and must save the returned poolid.  For ext3,
-all other cleancache hooks are in the VFS layer including
-the matching cleancache_flush_fs hook which must be
-called on unmount.
+Hi Jens,
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Acked-by: Andreas Dilger <adilger@sun.com>
+I suspect we might have introduced this patch because mike galbraith
+had issues which application interactiveness (reading data back from swap)
+in the prence of heavy writeout on SATA disk.
 
-Diffstat:
- super.c                                  |    2 ++
- 1 file changed, 2 insertions(+)
+After this patch we did two enhancements.
 
---- linux-2.6.35-rc2/fs/ext3/super.c	2010-06-05 21:43:24.000000000 -0600
-+++ linux-2.6.35-rc2-cleancache/fs/ext3/super.c	2010-06-11 09:01:37.000000000 -0600
-@@ -37,6 +37,7 @@
- #include <linux/quotaops.h>
- #include <linux/seq_file.h>
- #include <linux/log2.h>
-+#include <linux/cleancache.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -1362,6 +1363,7 @@ static int ext3_setup_super(struct super
- 	} else {
- 		ext3_msg(sb, KERN_INFO, "using internal journal");
- 	}
-+	sb->cleancache_poolid = cleancache_init_fs(PAGE_SIZE);
- 	return res;
- }
- 
+- You introduced the logic of building write queue depth gradually.
+- Corrado introduced the logic of idling on the random reader service
+  tree.
+
+In the past random reader were not protected from WRITES as there was no
+idling on random readers. But with corrado's changes of idling on
+sync-noidle service tree, I think this problem might have been solved to
+a great extent.
+
+Getting rid of this exclusivity of either SYNC/ASYNC requests in request
+queue might help us with throughput on storage arrys without loosing
+protection for random reader on SATA. 
+
+I will do some testing with and without patch and see if above is true
+or not.
+
+Thanks
+Vivek
