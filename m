@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758071Ab0FUROX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 13:14:23 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:51998 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab0FUROW (ORCPT
+	id S1758027Ab0FUROb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 13:14:31 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59141 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758077Ab0FURO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 13:14:22 -0400
-Date: Mon, 21 Jun 2010 12:13:47 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Manfred Spraul <manfred@colorfullife.com>
-cc: linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.35-rc3 deadlocks on semaphore operations
-In-Reply-To: <4C1F98C3.6090003@colorfullife.com>
-Message-ID: <alpine.DEB.2.00.1006211212500.7407@router.home>
-References: <alpine.DEB.2.00.1006180940140.11575@router.home> <alpine.DEB.2.00.1006180955141.11575@router.home> <4C1CD791.101@colorfullife.com> <alpine.DEB.2.00.1006210927310.4513@router.home> <4C1F98C3.6090003@colorfullife.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 21 Jun 2010 13:14:28 -0400
+Date: Mon, 21 Jun 2010 18:18:51 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Gregory Bean <gbean@codeaurora.org>,
+       dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] msm: Add gpio register address mapping information.
+Message-ID: <20100621181851.53de5f62@lxorguk.ukuu.org.uk>
+In-Reply-To: <4C1F9B58.6020302@codeaurora.org>
+References: <1276888375-13221-1-git-send-email-gbean@codeaurora.org>
+	<1276888375-13221-2-git-send-email-gbean@codeaurora.org>
+	<20100619200249.GA2507@elf.ucw.cz>
+	<4C1F9B58.6020302@codeaurora.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010, Manfred Spraul wrote:
+> > Yeah. Either this can be replaced with GPL, and it such case just do
+> > so, or it can not, and then it can not be applied to kernel.
+> > 
+> 
+> This is a standard BSD-style license so it's compatible w/ the GPL.  Thanks.
 
-> On 06/21/2010 04:31 PM, Christoph Lameter wrote:
-> > > - If I run make -j5 bzImage, then no semaphore arrays are used.
-> > > Could you try to figure out which executable is doing the 'semop()' call?
-> > >
-> > Looks like this was ld
-> >
-> >
-> Ok, that doesn't help:
-> $ grep semop -r binutils-2.20.51.0.2/
-> <nothing>
->
-> My guess: On your system, something is preloaded with LD_PRELOAD, and that
-> library hangs.
-> I have no idea which library, and I don't know if it's a library bug or a
-> kernel bug.
+The kernel requires GPL, and its much much easier for everyone to state
+so explicitly to avoid future surprises (remember 4 clause BSD was once
+thought GPL compatible even by the FSF...)
 
-No need to guess. The kernel build is run under fakeroot as evident from
-the command line I gave you. Fakeroot works fine with 2.6.34.
+If you want to make it clear it's also available BSD licensed in this
+form (at least until someone changes it) see the wording in files like
+drivers/char/random.c
 
+That usually keeps all the lawyers happy.
 
+Alan
