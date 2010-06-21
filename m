@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab0FUQuX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 12:50:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56268 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab0FUQuW convert rfc822-to-8bit (ORCPT
+	id S1758016Ab0FUQwB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 12:52:01 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44149 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757288Ab0FUQwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 12:50:22 -0400
-Subject: Re: [PATCH] rcutorture: add random preemption
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100621164306.GC2354@linux.vnet.ibm.com>
-References: <4C1F2986.7080006@cn.fujitsu.com>
-	 <20100621164306.GC2354@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 21 Jun 2010 18:50:11 +0200
-Message-ID: <1277139011.1875.522.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 21 Jun 2010 12:52:00 -0400
+Message-ID: <4C1F98C3.6090003@colorfullife.com>
+Date: Mon, 21 Jun 2010 18:52:19 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.35-rc3 deadlocks on semaphore operations
+References: <alpine.DEB.2.00.1006180940140.11575@router.home> <alpine.DEB.2.00.1006180955141.11575@router.home> <4C1CD791.101@colorfullife.com> <alpine.DEB.2.00.1006210927310.4513@router.home>
+In-Reply-To: <alpine.DEB.2.00.1006210927310.4513@router.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-21 at 09:43 -0700, Paul E. McKenney wrote:
-> > +#ifdef CONFIG_PREEMPT
-> > +     if (!preempt_count() && !(rcu_random(rrsp) % (nrealreaders * 20000)))
-> > +             preempt_schedule();
-> > +#endif
-> 
-> This one scared me for a bit -- then I realized that preempt_schedule()
-> won't actually schedule if preemption is in any way disabled.  So the
-> above really is OK, because Classic RCU and RCU-bh disable preemption.
-> 
-> So, should we have a comment to this effect, or is my hypersensitivity to
-> RCU semantics unique to me? 
+On 06/21/2010 04:31 PM, Christoph Lameter wrote:
+>> - If I run make -j5 bzImage, then no semaphore arrays are used.
+>> Could you try to figure out which executable is doing the 'semop()' call?
+>>      
+> Looks like this was ld
+>
+>    
+Ok, that doesn't help:
+$ grep semop -r binutils-2.20.51.0.2/
+<nothing>
 
-Well it seems to do a !preempt_count() test too, so I wouldn't worry too
-much about it, still using preempt_schedule() doesn't seem right, why
-not use cond_resched()?
+My guess: On your system, something is preloaded with LD_PRELOAD, and 
+that library hangs.
+I have no idea which library, and I don't know if it's a library bug or 
+a kernel bug.
+
+
+--
+     Manfred
