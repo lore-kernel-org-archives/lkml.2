@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab0FUM0D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 08:26:03 -0400
-Received: from cantor.suse.de ([195.135.220.2]:44190 "EHLO mx1.suse.de"
+	id S1755676Ab0FUM1n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 08:27:43 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:58851 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303Ab0FUM0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 08:26:00 -0400
-Date: Mon, 21 Jun 2010 14:25:59 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Micki Balanga <micki@n-trig.com>
-Cc: chatty@enac.fr, dhprince-devel@yahoo.co.uk, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Rafi Rubin <rafi@seas.upenn.edu>
-Subject: RE: [PATCH] HID: Add support to new N-trig firwmare
-In-Reply-To: <48A28051AC6D7A48B64F2827245819033828C1@Exchange-IL.n-trig.com>
-Message-ID: <alpine.LNX.2.00.1006211425410.13809@pobox.suse.cz>
-References: <48A28051AC6D7A48B64F28272458190333674B@Exchange-IL.n-trig.com> <alpine.LNX.2.00.1006041115480.12271@pobox.suse.cz> <48A28051AC6D7A48B64F28272458190326E03E@Exchange-IL.n-trig.com> <alpine.LNX.2.00.1006051741361.12271@pobox.suse.cz>
- <48A28051AC6D7A48B64F28272458190338280A@Exchange-IL.n-trig.com> <alpine.LNX.2.00.1006211143520.13809@pobox.suse.cz> <48A28051AC6D7A48B64F282724581903382885@Exchange-IL.n-trig.com> <alpine.LNX.2.00.1006211342580.13809@pobox.suse.cz>
- <48A28051AC6D7A48B64F2827245819033828C1@Exchange-IL.n-trig.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752995Ab0FUM1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 08:27:39 -0400
+Date: Mon, 21 Jun 2010 14:26:58 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Newsgroups: gmane.linux.power-management.general,gmane.linux.kernel
+Cc: tytso@mit.edu, mark gross <640e9920@gmail.com>, markgross@thegnar.org,
+       Neil Brown <neilb@suse.de>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Message-ID: <20100621142658.365493ae@schatten.dmk.lab>
+In-Reply-To: <20100621132234.5eb880b0@lxorguk.ukuu.org.uk>
+References: <201006202350.27143.rjw@sisk.pl>
+	<Pine.LNX.4.44L0.1006202154260.29532-100000@netrider.rowland.org>
+	<20100621061345.GF9735@gvim.org>
+	<20100621121058.GF6199@thunk.org>
+	<20100621132234.5eb880b0@lxorguk.ukuu.org.uk>
+X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010, Micki Balanga wrote:
+On Mon, 21 Jun 2010 13:22:34 +0100
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-> Thank you very much but the product id runs from 0x01 - 0x14(Not 0x0A)
-> (hid_blacklist, ntrig_devices - were updated till 0x14)
+> > How do we go forward from here?
+> 
+> PM QoS seems to be evolving nicely.
 
-Yes, but you already sent me patch adding device ids up to 0x0a, and that 
-has already been in my tree.
+Still, it doesn't solve the userspace-part.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Cheers,
+Flo
