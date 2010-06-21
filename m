@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758721Ab0FUXXd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 19:23:33 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:48839 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758693Ab0FUXX2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 19:23:28 -0400
-Date: Mon, 21 Jun 2010 16:22:10 -0700
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com, dan.magenheimer@oracle.com
-Subject: [PATCH V3 8/8] Cleancache: ocfs2 hook for cleancache
-Message-ID: <20100621232210.GA28024@ca-server1.us.oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090206.4C1FF43E.005D:SCFMA4539811,ss=1,fgs=0
+	id S1758680Ab0FUXko (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 19:40:44 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49323 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758317Ab0FUXkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 19:40:43 -0400
+Date: Tue, 22 Jun 2010 09:40:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: paulmck@linux.vnet.ibm.com
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: linux-next: manual merge of the tip tree with the block tree
+Message-Id: <20100622094033.3becf09f.sfr@canb.auug.org.au>
+In-Reply-To: <20100621171300.GF2354@linux.vnet.ibm.com>
+References: <20100621161623.3dfedc32.sfr@canb.auug.org.au>
+	<20100621171300.GF2354@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__22_Jun_2010_09_40_33_+1000_2nr4XOlf0l=dYd9L"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V3 8/8] Cleancache: ocfs2 hook for cleancache
+--Signature=_Tue__22_Jun_2010_09_40_33_+1000_2nr4XOlf0l=dYd9L
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Filesystems must explicitly enable cleancache by calling
-cleancache_init_fs anytime a instance of the filesystem
-is mounted and must save the returned poolid.  Ocfs2 is
-currently the only user of the clustered filesystem
-interface but nevertheless, the cleancache hooks in the
-VFS layer are sufficient for ocfs2 including
-the matching cleancache_flush_fs hook which must be
-called on unmount.
+Hi Paul,
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Acked-by: Joel Becker <joel.becker@oracle.com>
+On Mon, 21 Jun 2010 10:13:00 -0700 "Paul E. McKenney" <paulmck@linux.vnet.i=
+bm.com> wrote:
+>
+> I took a look, and all of the changes from "fs: remove all rcu head
+> initializations, except on_stack initializations" are reflected in -next.
 
-Diffstat:
- super.c                                  |    3 +++
- 1 file changed, 3 insertions(+)
+Thanks for checking.
 
---- linux-2.6.35-rc2/fs/ocfs2/super.c	2010-06-05 21:43:24.000000000 -0600
-+++ linux-2.6.35-rc2-cleancache/fs/ocfs2/super.c	2010-06-11 09:01:37.000000000 -0600
-@@ -42,6 +42,7 @@
- #include <linux/seq_file.h>
- #include <linux/quotaops.h>
- #include <linux/smp_lock.h>
-+#include <linux/cleancache.h>
- 
- #define MLOG_MASK_PREFIX ML_SUPER
- #include <cluster/masklog.h>
-@@ -2285,6 +2286,8 @@ static int ocfs2_initialize_super(struct
- 		mlog_errno(status);
- 		goto bail;
- 	}
-+	sb->cleancache_poolid =
-+		cleancache_init_shared_fs((char *)&uuid_net_key, PAGE_SIZE);
- 
- bail:
- 	mlog_exit(status);
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__22_Jun_2010_09_40_33_+1000_2nr4XOlf0l=dYd9L
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwf+HEACgkQjjKRsyhoI8z2kQCdFvU/21v7WjLBaBgqTPLENwP6
+asUAoKpF+eLp4v5xIlRL66cba/RT9gWj
+=gFkL
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__22_Jun_2010_09_40_33_+1000_2nr4XOlf0l=dYd9L--
