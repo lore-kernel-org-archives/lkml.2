@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757612Ab0FUKX4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 06:23:56 -0400
-Received: from ozlabs.org ([203.10.76.45]:34712 "EHLO ozlabs.org"
+	id S1757643Ab0FUKZq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 06:25:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23452 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757232Ab0FUKXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 06:23:52 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH for-2.6.35] virtio_net: fix oom handling on tx
-Date: Mon, 21 Jun 2010 19:53:43 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: Stephen Hemminger <shemminger@vyatta.com>,
-       Sridhar Samudrala <sri@us.ibm.com>,
-       virtualization@lists.linux-foundation.org,
-       Jiri Pirko <jpirko@redhat.com>, Shirley Ma <xma@us.ibm.com>,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100610152041.GA3480@redhat.com> <201006211213.49600.rusty@rustcorp.com.au> <20100621083315.GA8665@redhat.com>
-In-Reply-To: <20100621083315.GA8665@redhat.com>
+	id S1757537Ab0FUKZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 06:25:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,452,1272870000"; 
+   d="scan'208";a="809881266"
+Date: Mon, 21 Jun 2010 12:25:29 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       linux-kernel@vger.kernel.org, kyungmin.park@samsung.com
+Subject: Re: [PATCH v3] drivers: regulator: add Maxim 8998 driver
+Message-ID: <20100621102528.GA22491@sortiz-mobl>
+References: <1276671856-18902-1-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006211953.44724.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276671856-18902-1-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010 06:03:16 pm Michael S. Tsirkin wrote:
-> On Mon, Jun 21, 2010 at 12:13:49PM +0930, Rusty Russell wrote:
-> > -		return NETDEV_TX_BUSY;
-> > +		kfree_skb(skb);
-> > +		return NETDEV_TX_OK;
+On Wed, Jun 16, 2010 at 09:04:16AM +0200, Marek Szyprowski wrote:
+> From: Kyungmin Park <kyungmin.park@samsung.com>
 > 
-> If we do so, let's increment the dropped counter and/or error counter?
+> This patch adds voltage regulator driver for Maxim 8998 chip. This chip
+> is used on Samsung Aquila and GONI boards and provides following
+> functionalities:
+> - 4 BUCK voltage converters, 17 LDO power regulators and 5 other power
+>   controllers
+> - battery charger
+> 
+> This patch adds basic driver for voltage regulators and MAX 8998 MFD core.
+> 
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Looks good to me:
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
-Yep, here's the extra change:
+Cheers,
+Samuel.
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -571,14 +571,16 @@ static netdev_tx_t start_xmit(struct sk_
- 	/* This can happen with OOM and indirect buffers. */
- 	if (unlikely(capacity < 0)) {
- 		if (net_ratelimit()) {
--			if (likely(capacity == -ENOMEM))
-+			if (likely(capacity == -ENOMEM)) {
- 				dev_warn(&dev->dev,
- 					 "TX queue failure: out of memory\n");
--			else
-+			} else {
-+				dev->stats.tx_fifo_errors++;
- 				dev_warn(&dev->dev,
- 					 "Unexpected TX queue failure: %d\n",
- 					 capacity);
- 		}
-+		dev->stats.tx_dropped++;
- 		kfree_skb(skb);
- 		return NETDEV_TX_OK;
- 	}
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
