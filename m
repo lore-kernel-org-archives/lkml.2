@@ -1,288 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab0FUOOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 10:14:25 -0400
-Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:48669 "EHLO
-	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932608Ab0FUOOX (ORCPT
+	id S932696Ab0FUOQe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 10:16:34 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40424 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932544Ab0FUOQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 10:14:23 -0400
-Date: Mon, 21 Jun 2010 16:15:18 +0200
-From: Louis Rilling <Louis.Rilling@kerlabs.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.osdl.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Pavel Emelyanov <xemul@openvz.org>, linux-kernel@vger.kernel.org,
-       Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
-Message-ID: <20100621141518.GA3773@hawkmoon.kerlabs.com>
-Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-	Linux Containers <containers@lists.osdl.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Pavel Emelyanov <xemul@openvz.org>, linux-kernel@vger.kernel.org,
-	Pavel Emelyanov <xemul@parallels.com>
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <4C19F0A3.2050707@parallels.com> <m1631hdbdu.fsf@fess.ebiederm.org> <20100617213638.GB4182@redhat.com> <20100618082738.GE16877@hawkmoon.kerlabs.com> <20100618162734.GB7404@redhat.com> <20100621111127.GI16877@hawkmoon.kerlabs.com> <m1vd9c4k67.fsf@fess.ebiederm.org>
+	Mon, 21 Jun 2010 10:16:33 -0400
+Subject: Re: [PATCH 2/3] SCSI: Support Type C RAID controller
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: nick.cheng@areca.com.tw
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <76AB9A4FE9D94F96B7F79FC2896CC46E@areca4e4f859d4>
+References: <76AB9A4FE9D94F96B7F79FC2896CC46E@areca4e4f859d4>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Jun 2010 09:16:29 -0500
+Message-ID: <1277129789.10998.17.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-18980-1277129655-0001-2"
-Content-Disposition: inline
-In-Reply-To: <m1vd9c4k67.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+On Mon, 2010-06-21 at 11:02 +0800, Nick Cheng wrote:
+> 1. To support Type C RAID controller, ACB_ADAPTER_TYPE_C, i.e. PCI device
+> ID: 0x1880.
+> Signed-off-by: Nick Cheng< nick.cheng@areca.com.tw >
 
---=_bohort-18980-1277129655-0001-2
-Content-Type: multipart/mixed; boundary="ew6BAiZeqk4r7MaW"
-Content-Disposition: inline
+It's still giving the same rejections ... including the one I drew your
+attention to in the header.  Either there's a patch missing somewhere,
+or we're not working from the same base.  What I have is 2.6.35-rc3 plus
+your patch 1/3 here
+
+Message-id: <6D8C005181EA4A93BF2C281E4E1F72FC@areca4e4f859d4>
+
+Let's try to come at this a different way since you don't seem to be
+able to use git.  The current files I'm patching against are available
+here (this includes your patch 1/3):
+
+http://git.kernel.org/?p=linux/kernel/git/jejb/scsi-misc-2.6.git;a=tree;f=drivers/scsi/arcmsr
+
+You can download them directly from the web using the "raw" link.  Can
+you make sure the patches you send apply cleanly to these files?
+
+James
 
 
---ew6BAiZeqk4r7MaW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On 21/06/10  5:58 -0700, Eric W. Biederman wrote:
-> Louis Rilling <Louis.Rilling@kerlabs.com> writes:
->=20
-> > On 18/06/10 18:27 +0200, Oleg Nesterov wrote:
-> >> On 06/18, Louis Rilling wrote:
-> >> >
-> >> > On 17/06/10 23:36 +0200, Oleg Nesterov wrote:
-> >> > > On 06/17, Eric W. Biederman wrote:
-> >> > > >
-> >> > > > The task->children isn't changed until __unhash_process() which =
-runs
-> >> > > > after flush_proc_task().
-> >> > >
-> >> > > Yes. But this is only the current implementation detail.
-> >> > > It would be nice to cleanup the code so that EXIT_DEAD tasks are
-> >> > > never sit in ->children list.
-> >> > >
-> >> > > > So we should be able to come up with
-> >> > > > a variant of do_wait() that zap_pid_ns_processes can use that do=
-es
-> >> > > > what we need.
-> >> > >
-> >> > > See above...
-> >> > >
-> >> > > Even if we modify do_wait() or add the new variant, how the caller
-> >> > > can wait for EXIT_DEAD tasks? I don't think we want to modify
-> >> > > release_task() to do __wake_up_parent() or something similar.
-> >> >
-> >> > Indeed, I was thinking about calling __wake_up_parent() from release=
-_task()
-> >> > once parent->children becomes empty.
-> >> >
-> >> > Not sure about the performance impact though. Maybe some WAIT_NO_CHI=
-LDREN flag
-> >> > in parent->signal could limit it. But if EXIT_DEAD children are remo=
-ved from
-> >> > ->children before release_task(), I'm afraid that this becomes impos=
-sible.
-> >>=20
-> >> Thinking more, even the current do_wait() from zap_pid_ns_processes()
-> >> is not really good. Suppose that some none-init thread is ptraced, then
-> >> zap_pid_ns_processes() will hange until the tracer does do_wait() or
-> >> exits.
-> >
-> > Is this really a bad thing? If somebody ptraces a task in a pid namespa=
-ce, that
-> > sounds reasonable to have this namespace (and it's init task) pinned.
->=20
-> Louis.  Have you seen this problem hit without my setns patch?
-
-Yes. I hit it with Kerrighed patches. I also have an ugly reproducer on
-2.6.35-rc3 (see attachments). Ugly because I introduced artifical delays
-in release_task(). I couldn't trigger the bug without it, probably because =
-the
-scheduler is too kind :)
-
-I'm using memory poisoining (SLAB and DEBUG_SLAB) to make it easy to observ=
-e the
-bug.
-
-Example:
-# ./proc_flush_task-bug-reproducer 1
-
->=20
-> I'm pretty certain that this hits because there are processes do_wait
-> does not wait for, in particular processes in a disjoint process tree.
-
-Indeed do_wait() misses EXIT_DEAD children.
-
->=20
-> So at this point I am really favoring killing the do_wait and making
-> this all asynchronous.
-
-Any idea about how to do it?
-
-Thanks,
-
-Louis
-
---=20
-Dr Louis Rilling			Kerlabs
-Skype: louis.rilling			Batiment Germanium
-Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
-http://www.kerlabs.com/			35700 Rennes
-
---ew6BAiZeqk4r7MaW
-Content-Type: text/x-csrc; charset=us-ascii
-Content-Disposition: attachment; filename="proc_flush_task-bug-reproducer.c"
-Content-Transfer-Encoding: quoted-printable
-
-#define _GNU_SOURCE
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/syscall.h>
-#include <signal.h>
-#include <linux/sched.h>
-
-int pipefd[2];
-
-int init(void *arg)
-{
-	int nr, i, err;
-	sighandler_t sigret;
-	char c;
-
-	close(pipefd[0]);
-
-	err =3D setsid();
-	if (err < 0) {
-		perror("setsid");
-		abort();
-	}
-
-	sigret =3D signal(SIGCHLD, SIG_IGN);
-	if (sigret =3D=3D SIG_ERR) {
-		fprintf(stderr, "signal\n");
-		abort();
-	}
-=09
-	nr =3D atoi(arg);
-	for (i =3D 0; i < nr; i++) {
-		err =3D fork();
-		if (err < 0) {
-			perror("fork");
-			abort();
-		} else if (err =3D=3D 0) {
-			printf("%d before\n", getpid());
-			fflush(stdout);
-			pause();
-			printf("%d after\n", getpid());
-			fflush(stdout);
-			return 0;
-		}
-	}
-
-	err =3D write(pipefd[1], &c, 1);
-	if (err !=3D 1) {
-		perror("write");
-		abort();
-	}
-
-	pause();
-
-	return 0;
-}
-
-int main(int argc, char *argv[])
-{
-	long stack_size =3D sysconf(_SC_PAGESIZE);
-	void *stack =3D alloca(stack_size) + stack_size;
-	pid_t pid;
-	char c;
-	int ret;
-
-	ret =3D pipe(pipefd);
-	if (ret) {
-		perror("pipe");
-		abort();
-	}
-
-	ret =3D clone(init, stack, CLONE_NEWPID | SIGCHLD, argv[1]);
-	if (ret < 0) {
-		perror("clone");
-		abort();
-	}
-	pid =3D ret;
-	printf("%d\n", pid);
-	fflush(stdout);
-
-	close(pipefd[1]);
-	ret =3D read(pipefd[0], &c, 1);
-	if (ret !=3D 1) {
-		if (ret) {
-			perror("read");
-			abort();
-		} else {
-			sleep(5);
-		}
-	}
-
-	printf("killing %d\n", pid);
-	fflush(stdout);
-	ret =3D kill(-pid, SIGKILL);
-	if (ret) {
-		perror("kill");
-		abort();
-	}
-
-	return 0;
-}
-
---ew6BAiZeqk4r7MaW
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="reproducer.patch"
-Content-Transfer-Encoding: quoted-printable
-
-commit 7b7cae6ae5c543b8e9cc84fc041d9bce36e7b674
-Author: Louis Rilling <louis.rilling@kerlabs.com>
-Date:   Wed Jun 16 16:20:02 2010 +0200
-
-    proc_flush_task() debug
-
-diff --git a/kernel/exit.c b/kernel/exit.c
-index ceffc67..be8cdb0 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -169,6 +169,14 @@ repeat:
- 	atomic_dec(&__task_cred(p)->user->processes);
- 	rcu_read_unlock();
-=20
-+	if (task_pid(p)->level > 0) {
-+		if (!thread_group_leader(p) || !is_container_init(p)) {
-+			__set_current_state(TASK_UNINTERRUPTIBLE);
-+			schedule_timeout(10 * HZ);
-+		}
-+		printk("release_task: %d/%d\n", p->pid, task_pid(p)->numbers[1].nr);
-+	}
-+
- 	proc_flush_task(p);
-=20
- 	write_lock_irq(&tasklist_lock);
-
---ew6BAiZeqk4r7MaW--
-
---=_bohort-18980-1277129655-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkwfc/YACgkQVKcRuvQ9Q1TZFQCgm2hf3dqxF1puDH3oxVF0YNVp
-Tn4AnjzdWRHF+n0+lrQunFYIgxHZLBWw
-=2hR5
------END PGP SIGNATURE-----
-
---=_bohort-18980-1277129655-0001-2--
