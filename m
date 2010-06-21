@@ -1,175 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932210Ab0FUKEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 06:04:10 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:60466 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932101Ab0FUKEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 06:04:07 -0400
-Message-ID: <4C1F3916.4070608@kernel.dk>
-Date: Mon, 21 Jun 2010 12:04:06 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: trying to understand READ_META, READ_SYNC, WRITE_SYNC & co
-References: <20100621094828.GA30748@lst.de>
-In-Reply-To: <20100621094828.GA30748@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932171Ab0FUKIR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 06:08:17 -0400
+Received: from mxout12.netvision.net.il ([194.90.6.37]:60400 "EHLO
+	mxout12.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767Ab0FUKIN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 06:08:13 -0400
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_VVUZCftxJGu5ic9x2voeDg)"
+X-MIMEOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+Subject: RE: [PATCH] HID: Add support to new N-trig firwmare
+Date: Mon, 21 Jun 2010 13:09:06 +0300
+Message-id: <48A28051AC6D7A48B64F282724581903382885@Exchange-IL.n-trig.com>
+In-reply-to: <alpine.LNX.2.00.1006211143520.13809@pobox.suse.cz>
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+Thread-topic: [PATCH] HID: Add support to new N-trig firwmare
+Thread-index: AcsRJvGuY5RCATa+SGmp9cX1aKNofwAAnMdQ
+References: <48A28051AC6D7A48B64F28272458190333674B@Exchange-IL.n-trig.com>
+ <alpine.LNX.2.00.1006041115480.12271@pobox.suse.cz>
+ <48A28051AC6D7A48B64F28272458190326E03E@Exchange-IL.n-trig.com>
+ <alpine.LNX.2.00.1006051741361.12271@pobox.suse.cz>
+ <48A28051AC6D7A48B64F28272458190338280A@Exchange-IL.n-trig.com>
+ <alpine.LNX.2.00.1006211143520.13809@pobox.suse.cz>
+From: Micki Balanga <micki@n-trig.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: chatty@enac.fr, dhprince-devel@yahoo.co.uk, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Rafi Rubin <rafi@seas.upenn.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-06-21 11:48, Christoph Hellwig wrote:
-> Hi Jens,
-> 
-> I'm trying to understand the "sync" and "meta" flags we add to bios /
-> requests and the more I look into the more I get confused.  Let's start
-> with the simple bits:
-> 
->  - REQ_META
-> 
-> 	Only really used for READ_META.  There's a WRITE_META that I
-> 	added a while ago, but the actual users of it are gone again
-> 	now.
-> 
-> 	The READ_META is used by ext3 and ext4 for reading inodes,
-> 	and for all reads of directory blocks.  XFS has a place that
-> 	sets READ_META, but it's unreachable now.  GFS2 on the other
-> 	hand uses REQ_META directly, and ORs it into just about every
-> 	other kind of READ/WRITE request: WRITE_BARRIER,
-> 	WRITE_SYNC_PLUG, WRITE, READ_SYNC.
-> 
->  - REQ_SYNC
-> 
-> 	Used for READ_SYNC / WRITE_SYNC_PLUG / WRITE_SYNC /
-> 	WRITE_ODIRECT_PLUG / WRITE_BARRIER and the SWRITE variants.
-> 
-> 	READ_SYNC is used by GFS2 in a few spots, but always together
-> 	with REQ_META, and by jfs and xfs for the code reading the log
-> 	during recovery.
-> 	(S)WRITE_SYNC_PLUG is used for ->writepage instances with
-> 	the WB_SYNC_ALL sync_mode, and random pieces of journal /
-> 	metadata I/O in gfs2 and jbd(2) as well as fsync_buffers_list().
-> 	Note that the SWRITE_SYNC_PLUG uses actually degenerate to WRITE
-> 	in ll_rw_block.c due to what seems to be a bug in that code.
-> 	WRITE_SYNC is used by xfs for the log write if barriers are not
-> 	supported, by jfs for all log writes, by gfs2 for at least some
-> 	log writes, by btrfs for data writeout in some cases.
-> 	SWRITE_SYNC is entirely unused.
-> 	WRITE_ODIRECT_PLUG is used for O_DIRECT writes, and
-> 	WRITE_BARRIER is used for anything using barriers.
-> 
->  - REQ_NOIDLE
-> 
-> 	Used for WRITE_SYNC_PLUG / WRITE_SYNC / WRITE_BARRIER and
-> 	SWRITE variants.  See the description above for details.
-> 
->  - REQ_UNPLUG
-> 
-> 	Used for READ_SYNC, WRITE_SYNC and WRITE_BARRIER.
-> 
-> Now how do we use these flags in the block layer?
->  
->  - REQ_META
-> 
-> 	The only place where we ever use this flag is inside the
-> 	cfq scheduler. In cfq_choose_req we use it to give a meta
-> 	request priority over one that doesn't have it.  But before
-> 	that we already do the same preference check with rw_is_sync,
-> 	which evaluates to true for requests with that are either
-> 	reads or have REQ_SYNC set.  So for reads the REQ_META flag
-> 	here effectively is a no-op, and for writes it gives less
-> 	priority than REQ_SYNC.
-> 	In addition to that we use it to account for pending metadata
-> 	requests in cfq_rq_enqueued/cfq_remove_request which gets
-> 	checked in cfq_should_preempt to give priority to a meta
-> 	request if the other queue doesn't have any pending meta
-> 	requests.  But again this priority comes after a similar
-> 	check for sync requests that checks if the other queue has
-> 	been marked to have sync requests pending.
+This is a multi-part message in MIME format.
 
-It's also annotation for blktrace, so you can tell which parts of the IO
-is meta data etc. The scheduler impact is questionable, I doubt it makes
-a whole lot of difference.
+--Boundary_(ID_VVUZCftxJGu5ic9x2voeDg)
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
 
->  - REQ_SYNC
-> 
-> 	This one is used in quite a few places, with many of them
-> 	obsfucated by macros like rw_is_sync, rq_is_sync and
-> 	cfq_bio_sync.  In general all uses seem to imply giving
-> 	a write request the same priority as a read request and
-> 	treat it as synchronous.  I could not spot a place where
-> 	it actually has any effect on reads.
+Hi Jiri,
+Attach one file which update hid_blacklist.
+Attach Second patch which update ntrig_devices.
+Micki
+-----Original Message-----
+From: Jiri Kosina [mailto:jkosina@suse.cz] 
+Sent: Monday, June 21, 2010 12:49 PM
+To: Micki Balanga
+Cc: chatty@enac.fr; dhprince-devel@yahoo.co.uk;
+linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Rafi Rubin
+Subject: RE: [PATCH] HID: Add support to new N-trig firwmare
 
-Reads are sync by nature in the block layer, so they don't get that
-special annotation.
+On Mon, 21 Jun 2010, Micki Balanga wrote:
 
->  - REQ_NOIDLE
-> 
-> 	Only used inside the cfq I/O scheduler in one place:
-> 	cfq_completed_request.  Only used for READ or synchronous
-> 	request.  I can't figure out what's actually going on in
-> 	details here.
+> We have some new product so I have to update the patch,
+> When I update my git branch I didn't see the changes regarding N-trig
+> Product id. If you can insert this patch, if there a problem with the
+> patch
+> Let me know and hi will update it
 
-For a sync request, CFQ will idle the disk waiting for another one that
-is close to the completed request. This is what keeps up high throughput
-for read or sync write workloads, if you have more than one stream
-going.
+Hi Micki,
 
-> Now the big questions:
-> 
-> 	What eactly is the REQ_META flag for?  Even after going
-> 	through all the things I mentioned above I don't quite
-> 	understand it.  It's only used for reads, and doesn't seem
-> 	to give any major priority.  Should it be used for all metadata
-> 	reads or just some?  Currently it's not actually very widely
-> 	used.
-> 
-> 	Should we allow REQ_META on writes, but ignore it except for
-> 	blktrace?  If the answer above is we want to tag all metadata
-> 	reads as REQ_META that would allow easily spotting all metadata
-> 	I/O in blktrace.
+the patch seems incomplete -- it adds new entries to hid_blacklist[],
+but 
+doesn't update ntrig_devices[].
 
-For analysis purposes, annotating all meta data IOs as such would be
-beneficial (reads as well as writes). As mentioned above, the current
-scheduler impact isn't huge. There may be some interesting test and
-benchmarks there for improving that part.
-
-> 	Is there any point in keeping the READ_SYNC?  If the users
-> 	really want to keep the direct unplugging semantics we can
-> 	just write READ | REQ_UNPLUG, but even that seems to be wrong
-> 	for the log recvoery callers.
-> 
-> 	Similarly is there a point in keeping WRITE_SYNC?  Most callers
-> 	really want WRITE_SYNC_PLUG semantics, and the current naming
-> 	is extremtly confusing.  I'd much rather see the callers
-> 	specify explicitly using REQ_UNPLUG if they want to unplug
-> 	the queue.
-
-So a large part of that problem is the overloaded meaning of sync. For
-some cases it means "unplug on issue", and for others it means that the
-IO itself is syncronous. The other nasty bit is the implicit plugging
-that happens behind the back of the submitter, but that's an issue to
-tackle separately. I'd suggest avoiding unnecessary churn in naming of
-those.
-
-> 	Why do O_DIRECT writes not want to set REQ_NOIDLE (and that
-> 	exactly does REQ_NOIDLE mean anyway).  It's the only sync writes
-> 	that do not set it, so if this special case went away we
-> 	could get rid of the flag and key it off REQ_SYNC.
-
-See above for NOIDLE. You kill O_DIRECT write throughput if you don't
-idle at the end of a write, if you have other activity on the disk.
-
-> 	Do we really need to keep the SWRITE flags?  I'd rather
-> 	make that an additional flag to ll_rw_block, or even better
-> 	split ll_rw_block into two helpers for the guaranteed locking
-> 	or not case.
-
-No, lets kill those.
+Thanks,
 
 -- 
-Jens Axboe
+Jiri Kosina
+SUSE Labs, Novell Inc.
 
+--Boundary_(ID_VVUZCftxJGu5ic9x2voeDg)
+Content-type: application/octet-stream;
+ name=0001-HID-Add-support-to-new-N-trig-firwmare-part-2.patch
+Content-transfer-encoding: base64
+Content-disposition: attachment;
+ filename=0001-HID-Add-support-to-new-N-trig-firwmare-part-2.patch
+Content-description: 0001-HID-Add-support-to-new-N-trig-firwmare-part-2.patch
+
+RnJvbSBlZmMwNTM5Yzc4YWY5YWFlYTQ2ZTA3MzhhNGY5ZDc0OWU3MzY4ODgzIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBtaWNraSA8bWlja2lAbWlja2ktbGFwdG9wLihub25lKT4KRGF0
+ZTogU2F0LCAxOSBKdW4gMjAxMCAxMTozNzoyOSArMDMwMApTdWJqZWN0OiBbUEFUQ0hdIEhJRDog
+QWRkIHN1cHBvcnQgdG8gbmV3IE4tdHJpZyBmaXJ3bWFyZSBwYXJ0IDIKClByb2R1Y3QgaWQgIDB4
+MDMgLSAweDE0CgpTaWduZWQtb2ZmLWJ5OiBNaWNraSBCYWxhbmdhIDxtaWNraUBuLXRyaWcuY29t
+PgotLS0KLS0tCi0tLQogZHJpdmVycy9oaWQvaGlkLWNvcmUuYyB8ICAgMTggKysrKysrKysrKysr
+KysrKysrCiBkcml2ZXJzL2hpZC9oaWQtaWRzLmggIHwgICAyMiArKysrKysrKysrKysrKysrKysr
+Ky0tCiAyIGZpbGVzIGNoYW5nZWQsIDM4IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpk
+aWZmIC0tZ2l0IGEvZHJpdmVycy9oaWQvaGlkLWNvcmUuYyBiL2RyaXZlcnMvaGlkL2hpZC1jb3Jl
+LmMKaW5kZXggYWEwZjdkYy4uODg3YWVmZCAxMDA2NDQKLS0tIGEvZHJpdmVycy9oaWQvaGlkLWNv
+cmUuYworKysgYi9kcml2ZXJzL2hpZC9oaWQtY29yZS5jCkBAIC0xMzM3LDYgKzEzMzcsMjQgQEAg
+c3RhdGljIGNvbnN0IHN0cnVjdCBoaWRfZGV2aWNlX2lkIGhpZF9ibGFja2xpc3RbXSA9IHsKIAl7
+IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTUlDUk9TT0ZULCBVU0JfREVWSUNFX0lEX1dJ
+UkVMRVNTX09QVElDQUxfREVTS1RPUF8zXzApIH0sCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVO
+RE9SX0lEX01PTlRFUkVZLCBVU0JfREVWSUNFX0lEX0dFTklVU19LQjI5RSkgfSwKIAl7IEhJRF9V
+U0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hf
+U0NSRUVOKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RF
+VklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMSkgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9W
+RU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzIpIH0sCisJ
+eyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNFX0lEX05UUklH
+X1RPVUNIX1NDUkVFTl8zKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJ
+RywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNCkgfSwKKwl7IEhJRF9VU0JfREVW
+SUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVO
+XzUpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNF
+X0lEX05UUklHX1RPVUNIX1NDUkVFTl82KSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRP
+Ul9JRF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNykgfSwKKwl7IEhJ
+RF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9V
+Q0hfU0NSRUVOXzgpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBV
+U0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl85KSB9LAorCXsgSElEX1VTQl9ERVZJQ0Uo
+VVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTAp
+IH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNFX0lE
+X05UUklHX1RPVUNIX1NDUkVFTl8xMSkgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1Jf
+SURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzEyKSB9LAorCXsgSElE
+X1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VD
+SF9TQ1JFRU5fMTMpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBV
+U0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl8xNCkgfSwKKwl7IEhJRF9VU0JfREVWSUNF
+KFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzE1
+KSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9J
+RF9OVFJJR19UT1VDSF9TQ1JFRU5fMTYpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9S
+X0lEX05UUklHLCBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl8xNykgfSwKKwl7IEhJ
+RF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9V
+Q0hfU0NSRUVOXzE4KSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9PUlRFSywg
+VVNCX0RFVklDRV9JRF9PUlRFS19XS0IyMDAwKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZF
+TkRPUl9JRF9QRVRBTFlOWCwgVVNCX0RFVklDRV9JRF9QRVRBTFlOWF9NQVhURVJfUkVNT1RFKSB9
+LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9RVUFOVEEsIFVTQl9ERVZJQ0VfSURf
+UVVBTlRBX09QVElDQUxfVE9VQ0gpIH0sCmRpZmYgLS1naXQgYS9kcml2ZXJzL2hpZC9oaWQtaWRz
+LmggYi9kcml2ZXJzL2hpZC9oaWQtaWRzLmgKaW5kZXggNmFmNzdlZC4uMWQ2MTk0YSAxMDA2NDQK
+LS0tIGEvZHJpdmVycy9oaWQvaGlkLWlkcy5oCisrKyBiL2RyaXZlcnMvaGlkL2hpZC1pZHMuaApA
+QCAtMzQsNyArMzQsNyBAQAogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FDRUNBRF9GTEFJUgkweDAw
+MDQKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9BQ0VDQURfMzAyCTB4MDAwOAogCi0jZGVmaW5lIFVT
+Ql9WRU5ET1JfSURfQURTX1RFQ0ggCQkweDA2ZTEKKyNkZWZpbmUgVVNCX1ZFTkRPUl9JRF9BRFNf
+VEVDSAkweDA2ZTEKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9BRFNfVEVDSF9SQURJT19TSTQ3MFgJ
+MHhhMTU1CiAKICNkZWZpbmUgVVNCX1ZFTkRPUl9JRF9BRkFURUNICQkweDE1YTQKQEAgLTE5OCw3
+ICsxOTgsNyBAQAogI2RlZmluZSBVU0JfVkVORE9SX0lEX0VUVAkJMHgwNjY0CiAjZGVmaW5lIFVT
+Ql9ERVZJQ0VfSURfVEM1VUgJCTB4MDMwOQogCi0jZGVmaW5lIFVTQl9WRU5ET1JfSURfRVpLRVkg
+CQkweDA1MTgKKyNkZWZpbmUgVVNCX1ZFTkRPUl9JRF9FWktFWQkJMHgwNTE4CiAjZGVmaW5lIFVT
+Ql9ERVZJQ0VfSURfQlRDXzgxOTMJCTB4MDAwMgogCiAjZGVmaW5lIFVTQl9WRU5ET1JfSURfR0FN
+RVJPTgkJMHgwODEwCkBAIC0zOTEsNiArMzkxLDI0IEBACiAKICNkZWZpbmUgVVNCX1ZFTkRPUl9J
+RF9OVFJJRyAgICAgICAgICAgICAgICAweDFiOTYKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJ
+R19UT1VDSF9TQ1JFRU4gICAweDAwMDEKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VD
+SF9TQ1JFRU5fMSAgIDB4MDAwMworI2RlZmluZSBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1ND
+UkVFTl8yICAgMHgwMDA0CisjZGVmaW5lIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVO
+XzMgICAweDAwMDUKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNCAg
+IDB4MDAwNgorI2RlZmluZSBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl81ICAgMHgw
+MDA3CisjZGVmaW5lIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzYgICAweDAwMDgK
+KyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fNyAgIDB4MDAwOQorI2Rl
+ZmluZSBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl84ICAgMHgwMDBBCisjZGVmaW5l
+IFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzkgICAweDAwMEIKKyNkZWZpbmUgVVNC
+X0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTAgICAweDAwMEMKKyNkZWZpbmUgVVNCX0RF
+VklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTEgICAweDAwMEQKKyNkZWZpbmUgVVNCX0RFVklD
+RV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTIgICAweDAwMEUKKyNkZWZpbmUgVVNCX0RFVklDRV9J
+RF9OVFJJR19UT1VDSF9TQ1JFRU5fMTMgICAweDAwMEYKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9O
+VFJJR19UT1VDSF9TQ1JFRU5fMTQgICAweDAwMTAKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJ
+R19UT1VDSF9TQ1JFRU5fMTUgICAweDAwMTEKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19U
+T1VDSF9TQ1JFRU5fMTYgICAweDAwMTIKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VD
+SF9TQ1JFRU5fMTcgICAweDAwMTMKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9T
+Q1JFRU5fMTggICAweDAwMTQKIAogI2RlZmluZSBVU0JfVkVORE9SX0lEX09OVFJBSwkJMHgwYTA3
+CiAjZGVmaW5lIFVTQl9ERVZJQ0VfSURfT05UUkFLX0FEVTEwMAkweDAwNjQKLS0gCjEuNi4zLjMK
+Cg==
+
+--Boundary_(ID_VVUZCftxJGu5ic9x2voeDg)
+Content-type: application/octet-stream;
+ name=0002-HID-Update-hid-ntrig-driver-with-new-product-id-supp.patch
+Content-transfer-encoding: base64
+Content-disposition: attachment;
+ filename=0002-HID-Update-hid-ntrig-driver-with-new-product-id-supp.patch
+Content-description:  0002-HID-Update-hid-ntrig-driver-with-new-product-id-supp.patch
+
+RnJvbSBmMTMzOGM0NzAyY2Q5NWU4YjAwYmEzNDBmZDA3MzU4OTFkMjk0ZDQ3IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBtaWNraSA8bWlja2lAbWlja2lAbi10cmlnLmNvbT4KRGF0ZTog
+TW9uLCAyMSBKdW4gMjAxMCAxMzowMDo0MiArMDMwMApTdWJqZWN0OiBbUEFUQ0ggMi8yXSBbSElE
+XSBVcGRhdGUgaGlkLW50cmlnIGRyaXZlciB3aXRoIG5ldyBwcm9kdWN0IGlkIHN1cHBvcnQKClBy
+b2R1Y3QgaWQgMHgwMSAtIDAxNAoKU2lnbmVkLW9mZi1ieTogTWlja2kgQmFsYW5nYSA8bWlja2lA
+bi10cmlnLmNvbT4KLS0tCi0tLQotLS0KIGRyaXZlcnMvaGlkL2hpZC1udHJpZy5jIHwgICA0MCAr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKy0tCiAxIGZpbGVzIGNoYW5nZWQs
+IDM4IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9o
+aWQvaGlkLW50cmlnLmMgYi9kcml2ZXJzL2hpZC9oaWQtbnRyaWcuYwppbmRleCBiNmIwY2FlLi40
+MzAyNWI5IDEwMDY0NAotLS0gYS9kcml2ZXJzL2hpZC9oaWQtbnRyaWcuYworKysgYi9kcml2ZXJz
+L2hpZC9oaWQtbnRyaWcuYwpAQCAtNDg5LDcgKzQ4OSw3IEBAIHN0YXRpYyBpbnQgbnRyaWdfaW5w
+dXRfbWFwcGVkKHN0cnVjdCBoaWRfZGV2aWNlICpoZGV2LCBzdHJ1Y3QgaGlkX2lucHV0ICpoaSwK
+ICAqIGFuZCBjYWxsIGlucHV0X210X3N5bmMgYWZ0ZXIgZWFjaCBwb2ludCBpZiBuZWNlc3NhcnkK
+ICAqLwogc3RhdGljIGludCBudHJpZ19ldmVudCAoc3RydWN0IGhpZF9kZXZpY2UgKmhpZCwgc3Ry
+dWN0IGhpZF9maWVsZCAqZmllbGQsCi0JCSAgICAgICAgICAgICAgICAgICAgICAgIHN0cnVjdCBo
+aWRfdXNhZ2UgKnVzYWdlLCBfX3MzMiB2YWx1ZSkKKwkJCXN0cnVjdCBoaWRfdXNhZ2UgKnVzYWdl
+LCBfX3MzMiB2YWx1ZSkKIHsKIAlzdHJ1Y3QgaW5wdXRfZGV2ICppbnB1dCA9IGZpZWxkLT5oaWRp
+bnB1dC0+aW5wdXQ7CiAJc3RydWN0IG50cmlnX2RhdGEgKm5kID0gaGlkX2dldF9kcnZkYXRhKGhp
+ZCk7CkBAIC00OTgsNyArNDk4LDcgQEAgc3RhdGljIGludCBudHJpZ19ldmVudCAoc3RydWN0IGhp
+ZF9kZXZpY2UgKmhpZCwgc3RydWN0IGhpZF9maWVsZCAqZmllbGQsCiAJaWYgKGZpZWxkLT5hcHBs
+aWNhdGlvbiA9PSBISURfREdfUEVOKQogCQlyZXR1cm4gMDsKIAotICAgICAgICBpZiAoaGlkLT5j
+bGFpbWVkICYgSElEX0NMQUlNRURfSU5QVVQpIHsKKwlpZiAoaGlkLT5jbGFpbWVkICYgSElEX0NM
+QUlNRURfSU5QVVQpIHsKIAkJc3dpdGNoICh1c2FnZS0+aGlkKSB7CiAJCWNhc2UgMHhmZjAwMDAw
+MToKIAkJCS8qIFRhZyBpbmRpY2F0aW5nIHRoZSBzdGFydCBvZiBhIG11bHRpdG91Y2ggZ3JvdXAg
+Ki8KQEAgLTg2OCw2ICs4NjgsNDIgQEAgc3RhdGljIHZvaWQgbnRyaWdfcmVtb3ZlKHN0cnVjdCBo
+aWRfZGV2aWNlICpoZGV2KQogc3RhdGljIGNvbnN0IHN0cnVjdCBoaWRfZGV2aWNlX2lkIG50cmln
+X2RldmljZXNbXSA9IHsKIAl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVT
+Ql9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOKSwKIAkJLmRyaXZlcl9kYXRhID0gTlRSSUdf
+RFVQTElDQVRFX1VTQUdFUyB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJ
+RywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMSksCisJCS5kcml2ZXJfZGF0YSA9
+IE5UUklHX0RVUExJQ0FURV9VU0FHRVMgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1Jf
+SURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzIpLAorCQkuZHJpdmVy
+X2RhdGEgPSBOVFJJR19EVVBMSUNBVEVfVVNBR0VTIH0sCisJeyBISURfVVNCX0RFVklDRShVU0Jf
+VkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl8zKSwKKwkJ
+LmRyaXZlcl9kYXRhID0gTlRSSUdfRFVQTElDQVRFX1VTQUdFUyB9LAorCXsgSElEX1VTQl9ERVZJ
+Q0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5f
+NCksCisJCS5kcml2ZXJfZGF0YSA9IE5UUklHX0RVUExJQ0FURV9VU0FHRVMgfSwKKwl7IEhJRF9V
+U0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hf
+U0NSRUVOXzUpLAorCQkuZHJpdmVyX2RhdGEgPSBOVFJJR19EVVBMSUNBVEVfVVNBR0VTIH0sCisJ
+eyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNFX0lEX05UUklH
+X1RPVUNIX1NDUkVFTl82KSwKKwkJLmRyaXZlcl9kYXRhID0gTlRSSUdfRFVQTElDQVRFX1VTQUdF
+UyB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9J
+RF9OVFJJR19UT1VDSF9TQ1JFRU5fNyksCisJCS5kcml2ZXJfZGF0YSA9IE5UUklHX0RVUExJQ0FU
+RV9VU0FHRVMgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9E
+RVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzgpLAorCQkuZHJpdmVyX2RhdGEgPSBOVFJJR19E
+VVBMSUNBVEVfVVNBR0VTIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklH
+LCBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl85KSwKKwkJLmRyaXZlcl9kYXRhID0g
+TlRSSUdfRFVQTElDQVRFX1VTQUdFUyB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9J
+RF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTApLAorCQkuZHJpdmVy
+X2RhdGEgPSBOVFJJR19EVVBMSUNBVEVfVVNBR0VTIH0sCisJeyBISURfVVNCX0RFVklDRShVU0Jf
+VkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl8xMSksCisJ
+CS5kcml2ZXJfZGF0YSA9IE5UUklHX0RVUExJQ0FURV9VU0FHRVMgfSwKKwl7IEhJRF9VU0JfREVW
+SUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVO
+XzEyKSwKKwkJLmRyaXZlcl9kYXRhID0gTlRSSUdfRFVQTElDQVRFX1VTQUdFUyB9LAorCXsgSElE
+X1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywgVVNCX0RFVklDRV9JRF9OVFJJR19UT1VD
+SF9TQ1JFRU5fMTMpLAorCQkuZHJpdmVyX2RhdGEgPSBOVFJJR19EVVBMSUNBVEVfVVNBR0VTIH0s
+CisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX05UUklHLCBVU0JfREVWSUNFX0lEX05U
+UklHX1RPVUNIX1NDUkVFTl8xNCksCisJCS5kcml2ZXJfZGF0YSA9IE5UUklHX0RVUExJQ0FURV9V
+U0FHRVMgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJ
+Q0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzE1KSwKKwkJLmRyaXZlcl9kYXRhID0gTlRSSUdfRFVQ
+TElDQVRFX1VTQUdFUyB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9OVFJJRywg
+VVNCX0RFVklDRV9JRF9OVFJJR19UT1VDSF9TQ1JFRU5fMTYpLAorCQkuZHJpdmVyX2RhdGEgPSBO
+VFJJR19EVVBMSUNBVEVfVVNBR0VTIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lE
+X05UUklHLCBVU0JfREVWSUNFX0lEX05UUklHX1RPVUNIX1NDUkVFTl8xNyksCisJCS5kcml2ZXJf
+ZGF0YSA9IE5UUklHX0RVUExJQ0FURV9VU0FHRVMgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9W
+RU5ET1JfSURfTlRSSUcsIFVTQl9ERVZJQ0VfSURfTlRSSUdfVE9VQ0hfU0NSRUVOXzE4KSwKKwkJ
+LmRyaXZlcl9kYXRhID0gTlRSSUdfRFVQTElDQVRFX1VTQUdFUyB9LAogCXsgfQogfTsKIE1PRFVM
+RV9ERVZJQ0VfVEFCTEUoaGlkLCBudHJpZ19kZXZpY2VzKTsKLS0gCjEuNi4zLjMKCg==
+
+--Boundary_(ID_VVUZCftxJGu5ic9x2voeDg)--
