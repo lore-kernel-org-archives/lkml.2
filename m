@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932925Ab0FURC6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 13:02:58 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:56056 "EHLO bamako.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754491Ab0FURC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 13:02:56 -0400
-Date: Mon, 21 Jun 2010 19:02:52 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: ben-linux@fluff.org, hsweeten@visionengravers.com,
-       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c/mips: Fix error return codes from Sibyte i2c bus
- driver
-Message-ID: <20100621190252.2adc6bd8@hyperion.delvare>
-In-Reply-To: <1277056673-4305-1-git-send-email-guenter.roeck@ericsson.com>
-References: <1277056673-4305-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932958Ab0FURD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 13:03:26 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:55404 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932929Ab0FURDY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 13:03:24 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6020"; a="45070270"
+Message-ID: <4C1F9B58.6020302@codeaurora.org>
+Date: Mon, 21 Jun 2010 10:03:20 -0700
+From: Bryan Huntsman <bryanh@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+CC: Gregory Bean <gbean@codeaurora.org>, dwalker@codeaurora.org,
+       linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] msm: Add gpio register address mapping information.
+References: <1276888375-13221-1-git-send-email-gbean@codeaurora.org> <1276888375-13221-2-git-send-email-gbean@codeaurora.org> <20100619200249.GA2507@elf.ucw.cz>
+In-Reply-To: <20100619200249.GA2507@elf.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
-
-On Sun, 20 Jun 2010 10:57:53 -0700, Guenter Roeck wrote:
-> Sibyte i2c bus driver returns non-descriptive error values.
-> Update to return error values as defined in Documentation/i2c/fault-codes.
+Pavel Machek wrote:
+> Hi!
 > 
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> ---
->  drivers/i2c/busses/i2c-sibyte.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>> --- /dev/null
+>> +++ b/arch/arm/mach-msm/gpio_hw-7x30.h
+>> @@ -0,0 +1,112 @@
+>> +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+>> + *
+>> + * Redistribution and use in source and binary forms, with or without
+>> + * modification, are permitted provided that the following conditions are
+>> + * met:
+>> + *     * Redistributions of source code must retain the above copyright
+>> + *       notice, this list of conditions and the following disclaimer.
+>> + *     * Redistributions in binary form must reproduce the above
+>> + *       copyright notice, this list of conditions and the following
+>> + *       disclaimer in the documentation and/or other materials provided
+>> + *       with the distribution.
+>> + *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
+>> + *       contributors may be used to endorse or promote products derived
+>> + *       from this software without specific prior written permission.
 > 
-> diff --git a/drivers/i2c/busses/i2c-sibyte.c b/drivers/i2c/busses/i2c-sibyte.c
-> index 3d76a18..329cbee 100644
-> --- a/drivers/i2c/busses/i2c-sibyte.c
-> +++ b/drivers/i2c/busses/i2c-sibyte.c
-> @@ -94,7 +94,7 @@ static int smbus_xfer(struct i2c_adapter *i2c_adap, u16 addr,
->  		}
->  		break;
->  	default:
-> -		return -1;      /* XXXKW better error code? */
-> +		return -EOPNOTSUPP;
->  	}
->  
->  	while (csr_in32(SMB_CSR(adap, R_SMB_STATUS)) & M_SMB_BUSY)
-> @@ -104,7 +104,7 @@ static int smbus_xfer(struct i2c_adapter *i2c_adap, u16 addr,
->  	if (error & M_SMB_ERROR) {
->  		/* Clear error bit by writing a 1 */
->  		csr_out32(M_SMB_ERROR, SMB_CSR(adap, R_SMB_STATUS));
-> -		return -1;      /* XXXKW better error code? */
-> +		return -ENXIO;
->  	}
->  
->  	if (data_bytes == 1)
+> Yeah. Either this can be replaced with GPL, and it such case just do
+> so, or it can not, and then it can not be applied to kernel.
+> 
 
-Definitely an improvement. However, returning -ENXIO on all errors
-seems wrong. This error value should only be returned on missing ack
-from the slave on address byte. Isn't it possible to distinguish
-between different error kinds? M_SMB_ERROR_TYPE seems promising, but
-one would need to look up the datasheet (which I don't have) to
-discover its meaning.
+This is a standard BSD-style license so it's compatible w/ the GPL.  Thanks.
+
+- Bryan
 
 -- 
-Jean Delvare
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
