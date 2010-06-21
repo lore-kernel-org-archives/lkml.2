@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab0FUUsD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 16:48:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33695 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595Ab0FUUsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 16:48:00 -0400
-Date: Mon, 21 Jun 2010 16:46:46 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] Add TAINT_HARDWARE_UNSUPPORTED flag
-Message-ID: <20100621204646.GJ3217@redhat.com>
-References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
- <20100617091322.b7d21473.randy.dunlap@oracle.com>
- <4C1A7D61.8010900@redhat.com>
- <20100621122145.76ebd7ac.akpm@linux-foundation.org>
- <20100621194559.GI3217@redhat.com>
- <20100621130008.d3dc01a8.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100621130008.d3dc01a8.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1758551Ab0FUUuj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 16:50:39 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52331
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758491Ab0FUUui (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 16:50:38 -0400
+Date: Mon, 21 Jun 2010 13:50:50 -0700 (PDT)
+Message-Id: <20100621.135050.48492866.davem@davemloft.net>
+To: deller@gmx.de
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+       linux-parisc@vger.kernel.org, kyle@mcmartin.ca, jpirko@redhat.com,
+       netdev@vger.kernel.org
+Subject: Re: [PATCH] lasi82596: fix netdev_mc_count conversion
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100619224139.GA6158@p100.box>
+References: <20100619223524.GA6018@p100.box>
+	<20100619224139.GA6158@p100.box>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 01:00:08PM -0700, Andrew Morton wrote:
-> > Internally here that is how we planned on using the flag.  We weren't sure
-> > if upstream would accept that piece or not, so we started with the flag
-> > for now to at least reserve the bit.
-> > 
-> > But I can see your point about the other printk being a little
-> > user-hostile if someone forgot to call the wrapper function.
-> > 
-> > I can respin with the wrapper function (Prarit is on vacation)
-> 
-> Not telling the user _which_ hardware is causing the problem is daft.
-> 
-> > or go with
-> > Alan's idea of just reserving the upper few bits.
-> 
-> um.  Given that the vendor needs to patch the individual drivers to
-> indicate ther unsupported status, why not just patch in the taint
-> changes as well?
+From: Helge Deller <deller@gmx.de>
+Date: Sun, 20 Jun 2010 00:41:39 +0200
 
-Well we wanted to secure a bit flag first, so we don't bite ourselves later and
-have to change the userspace tools.
+> Fix commit 4cd24eaf0 (net: use netdev_mc_count and netdev_mc_empty when
+> appropriate)
+> 
+> Signed-off-by: Helge Deller <deller@gmx.de>
 
-Cheers,
-Don
+Applied, please CC: netdev@vger.kernel.org when posting networking
+patches in the future, thanks.
+
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Kyle McMartin <kyle@mcmartin.ca>
+> CC: "David S. Miller" <davem@davemloft.net>
+> CC: Jiri Pirko <jpirko@redhat.com>
+> 
+> --- a/drivers/net/lib82596.c
+> +++ b/drivers/net/lib82596.c
+> @@ -1343,7 +1343,7 @@ static void set_multicast_list(struct net_device *dev)
+>  	DEB(DEB_MULTI,
+>  	    printk(KERN_DEBUG
+>  		   "%s: set multicast list, %d entries, promisc %s, allmulti %s\n",
+> -		   dev->name, dev->mc_count,
+> +		   dev->name, netdev_mc_count(dev),
+>  		   dev->flags & IFF_PROMISC ? "ON" : "OFF",
+>  		   dev->flags & IFF_ALLMULTI ? "ON" : "OFF"));
+>  
+> 
