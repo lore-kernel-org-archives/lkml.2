@@ -1,87 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310Ab0FUUh1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 16:37:27 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:38553 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758119Ab0FUUhZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 16:37:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=cY7/8mD+zH+sm9fX4mA5YiWTqNSupZNC50eRM41689dUj7qwJyJCbXn4vzcCvUpbgc
-         CcirbBYX1YkFAJmOc1Cgg6/inj42ROvKJke0b8m33Z+r2ECNDzQiw2uf6H6su1vzvBVz
-         ME9Q6UYCueUy0uRMVP7gljk/vQS26HDf3rnfk=
-MIME-Version: 1.0
-In-Reply-To: <1277151410.5409.33.camel@maxim-laptop>
-References: <20100528100901.14580.1322.stgit@fate.lan> <1276806785.20754.8.camel@maxim-laptop> 
-	<20100618112026.17623g6uhdjk8hts@naisho.dyndns.info> <1276856142.9114.1.camel@maxim-laptop> 
-	<20100618134930.124225d4fsi8w1fk@naisho.dyndns.info> <1276859156.19554.2.camel@maxim-laptop> 
-	<AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com> 
-	<1276870309.23783.3.camel@maxim-laptop> <1276933774.16697.11.camel@maxim-laptop> 
-	<AANLkTimIjaxq7IDWwIl1vv93k9bNQ2i89Sb5R5TiJmmA@mail.gmail.com> 
-	<1277032723.9555.12.camel@maxim-laptop> <AANLkTim8iZmm8pEERJUsrQWOiLSjPUfCN-TFFzZZQWx2@mail.gmail.com> 
-	<1277151410.5409.33.camel@maxim-laptop>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Mon, 21 Jun 2010 13:37:04 -0700
-Message-ID: <AANLkTin3fKn0_4mrhmPOlTeN--1EZbKECGF3NVdh9h1t@mail.gmail.com>
-Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
-       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Jonathan May <jonathan.may@atheros.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1758327Ab0FUUjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 16:39:23 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:53232 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752828Ab0FUUjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 16:39:22 -0400
+Date: Mon, 21 Jun 2010 22:38:41 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Message-ID: <20100621223841.1cf1942d@schatten.dmk.lab>
+In-Reply-To: <Pine.LNX.4.44L0.1006211111060.1687-100000@iolanthe.rowland.org>
+References: <20100621073233.3f874ad0@schatten.dmk.lab>
+	<Pine.LNX.4.44L0.1006211111060.1687-100000@iolanthe.rowland.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 1:16 PM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> Luis, let me explain again, exactly the situation:
->
-> First of all AR5001 and AR5001X devices (former was usualy listed as
-> AR2425, and I have it, later I don't know about much), don't work well
-> with ASPM L0s enabled.
+On Mon, 21 Jun 2010 11:23:33 -0400 (EDT)
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-Thanks for the clarification. David, do you see this as well on your end?
+> On Mon, 21 Jun 2010, Florian Mickler wrote:
+> 
+> > On Sun, 20 Jun 2010 22:23:38 -0400 (EDT)
+> > Alan Stern <stern@rowland.harvard.edu> wrote:
+> 
+> > > This is the race I was talking about:
+> > > 
+> > > > > What happens if an event arrives just before you read
+> > > > > /sys/power/wakeup_count, but the userspace consumer doesn't realize
+> > > > > there is a new unprocessed event until after the power manager checks
+> > > > > it?
+> > > 
+> > > > I think this is not the kernel's problem.  In this approach the kernel makes it
+> > > > possible for the user space to avoid the race.  Whether or not the user space
+> > > > will use this opportunity is a different matter.
+> > > 
+> > > It is _not_ possible for userspace to avoid this race.  Help from the 
+> > > kernel is needed.
+> > 
+> > It is possible if every (relevant) userspace program implements a
+> > callback for the powermanager to check if one of it's wakeup-sources
+> > got activated.
+> > 
+> > That way the powermanager would read /sys/power/wakeup_count, then do
+> > the roundtrip to all it's registered users and only then suspend. 
+> > 
+> > This turns the suspend_blockers concept around. Instead of actively
+> > signaling the suspend_blockers, the userspace programs only answer
+> > "yes/no" when asked.  (i.e. polling?) 
+> 
+> In the end you would want to have communication in both directions:  
+> suspend blockers _and_ callbacks.  Polling is bad if done too often.  
+> But I think the idea is a good one.
 
-> I told that many times, but I tell again.
-> As soon as card it put on medium to high transmit load
-> (for example even if transmission consists mostly of TCP ACK packets),
-> it dies.
->
-> Usualy it will stop transmitting, and then after few seconds it will
-> send RXORN intrrupt to the host, even though the channel was idle.
-> (Tested by sending a stream of UDP packets on channel that is neighbor
-> free).
->
-> I didn't see it, but some users reported seeing jumbo frames at this
-> time as well.
-> Overall it doesn't matter because card just goes south.
->
-> A reset sometimes brings card to life, sometimes causes another storm of
-> RXORN and sometimes just results in quiet dead card.
-> A next reset might bring it to life, or not.
->
-> Card (at least mine) advertises its as a 'pre pci 1.1 device'.
-> Therefore if I enable CONFIG_PCIEASPM, the pci core will automaticly
-> disable ASPM (both L0s and L1) on this card.
-> I won't be surprised that windows does the same.
+Actually, I'm not so shure. 
 
-I am not sure when L0s was enabled as per the spec as mandatory, I
-thought it was optional. Interesting to hear this behavior on Linux
-with CONFIG_PCIEASPM. That Kconfig description and code really need
-some spit shining.
+1. you have to roundtrip whereas in the suspend_blocker scheme you have
+active annotations (i.e. no further action needed) 
 
-> Therefore the patch I sent it useless because it only works when
-> CONFIG_PCIEASPM is enabled.
+2. it may not be possible for a user to determine if a wake-event is
+in-flight. you would have to somehow pass the wake-event-number with
+it, so that the userspace process could ack it properly without
+confusion. Or... I don't know of anything else... 
 
-How so ? Your patch disables L0s, I can use ASPM with L0s and L1 with
-or without CONFIG_PCIEASPM. If I added your calls to ath9k I would
-disable L0s.
+	1. userspace-manager (UM) reads a number (42). 
 
-  Luis
+	2. it questions userspace program X: is it ok to suspend?
+
+	[please fill in how userspace program X determines to block
+	suspend]
+
+	3a. UM's roundtrip ends and it proceeds to write "42" to the
+	kernel [suspending]
+	3b. UM's roundtrip ends and it aborts suspend, because a
+	(userspace-)suspend-blocker got activated
+
+I'm not shure how the userspace program could determine that there is a
+wake-event in flight. Perhaps by storing the number of last wake-event.
+But then you need per-wake-event-counters... :|
+
+
+> In fact, you don't need a "yes/no" response.  Programs merely need a
+> chance to activate a new suspend blocker if a wakeup source was
+> recently activated before they acknowledge the poll.
+
+true. (incorporated alreeady above)
+
+> 
+> > You _can not_ implement userspace suspend blockers with this approach,
+> > as it is vital for every userspace program to get scheduled and check
+> > it's wakeup-source (if even possible) before you know that the right
+> > parties have won the race.
+> 
+> I'm not sure what you mean.  
+
+Sorry, that was not understandable. What I meant was that you "_can
+not_" implement the suspend-blockers scheme, where you don't need to
+roundtrip through all userspace (with all it's glory).
+( => you need the roundtrip here)
+
+> 
+> There is still at least one loophole to be closed: Android's
+> timer-based wakelocks.  These include cases where the Android
+> developers didn't add enough wakelocks to cover the entire path from
+> kernel-event to userspace-handler, so they punted and relied on a timer
+> to decide when the wakelock should be deactivated.  (There may be other
+> cases too; I didn't follow the original discussion very closely.)  
+> It's not clear whether these things can be handled already in Rafael's
+> scheme with your addition, or whether something new is needed.
+> 
+> Alan Stern
+
+Do you have some thoughts about the wake-event-in-flight detection?
+
+Cheers,
+Flo
