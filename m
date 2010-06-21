@@ -1,326 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab0FUSD2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 14:03:28 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16487 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756444Ab0FUSDQ (ORCPT
+	id S1757648Ab0FUSF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 14:05:59 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:59361 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754983Ab0FUSF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 14:03:16 -0400
-Date: Mon, 21 Jun 2010 14:00:13 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Edward Shishkin <edward@redhat.com>, Jamie Lokier <jamie@shareable.org>,
-       Edward Shishkin <edward.shishkin@gmail.com>, Mat <jackdachef@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Ric Wheeler <rwheeler@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: Balancing leaves when walking from top to down (was Btrfs:...)
-Message-ID: <20100621180013.GD17979@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Edward Shishkin <edward@redhat.com>,
-	Jamie Lokier <jamie@shareable.org>,
-	Edward Shishkin <edward.shishkin@gmail.com>,
-	Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-	linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	The development of BTRFS <linux-btrfs@vger.kernel.org>
-References: <4C07C321.8010000@redhat.com>
- <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
- <4C1B7560.1000806@gmail.com>
- <20100618155653.GC10919@shareable.org>
- <4C1BC924.30604@redhat.com>
- <20100618193555.GV27466@think>
- <4C1BED56.9010300@redhat.com>
- <20100621131528.GA17979@think>
+	Mon, 21 Jun 2010 14:05:57 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6020"; a="45076722"
+Message-ID: <4C1FAA05.9030006@codeaurora.org>
+Date: Mon, 21 Jun 2010 11:05:57 -0700
+From: Patrick Pannuto <ppannuto@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100621131528.GA17979@think>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090206.4C1FA927.0165:SCFMA922111,ss=1,fgs=0
+To: linux-kernel@vger.kernel.org
+Subject: hrtimer and context switch overhead -- udelay to "usleep"?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 09:15:28AM -0400, Chris Mason wrote:
-> 
-> I'll reproduce from your test case and provide a fix.  mount -o
-> max_inline=1500 would give us 50% usage in the worst case (minus the
-> balancing bug you hit).
+Circa 2007 there was talk of a patch to replace the underlying msleep
+Implementation with hrtimers ( http://lkml.org/lkml/2007/8/3/250 ); this
+ended up not happening for several reasons, but the idea of a usleep
+call built on hrtimers was at one point tossed around in the discussion.
+However, it seems that usleep idea never made it past that thread.
 
-Ok, the balancing bug was interesting.  What happens is we create all
-the inodes and directory items nicely packed into the leaves.
+I was wondering then about the potential overhead / cost / worth of a
+usleep function. Consider the hypothetical usleep:
 
-Then delayed allocation kicks in and starts inserting the big fat inline
-extents.  This often forces the balancing code to split a leaf twice in
-order to make room for the new inline extent.  The double split code
-wasn't balancing the bits that were left over on either side of our
-desired slot.
+static int __sched do_usleep_range(unsigned long min, unsigned long max)
+{
+	ktime_t kmin;
+	unsigned long delta;
 
-The patch below fixes the problem for me, reducing the number of leaves
-that have more than 2K of free space down from 6% of the total to about
-74 leaves.  It could be zero, but the balancing code doesn't push
-items around if our leaf is in the first or last slot of the parent
-node (complexity vs benefit tradeoff).
+	kmin = ktime_set(0, min * NSEC_PER_USEC);
+	delta = max - min;
+	return schedule_hrtimeout_range(&kmin, delta, HRTIMER_MODE_REL);
+}
 
-With the patch, I'm able to create 106894 files (2K each) on a 1GB FS.
-That doesn't sound like a huge improvement, but the default from
-mkfs.btrfs is to duplicate metadata.  After duplication, that's about
-417MB or about 40% of the overall space.
+/**
+ * usleep_range - Drop in replacement for udelay where wakeup is flexible
+ * @min: Minimum time in usecs to sleep
+ * @max: Maximum time in usecs to sleep
+ */
+void usleep_range(unsigned long min, unsigned long max)
+{
+	__set_current_state(TASK_UNINTERRUPTIBLE);
+	do_usleep_range(min, max);
+}
 
-When you factor in the space that we reserve to avoid exploding on
-enospc and the space that we have allocated for data extents, that's not
-a very surprising number.
+EXPORT_SYMBOL(usleep_range);
 
-I'm still putting this patch through more testing, the double split code
-is used in some difficult corners and I need to make sure I've tried
-all of them.
+static inline void usleep(unsigned long usecs)
+{
+	usleep_range(usecs, usecs);
+}
 
--chris
 
-diff --git a/fs/btrfs/ctree.c b/fs/btrfs/ctree.c
-index 0d1d966..1f393b0 100644
---- a/fs/btrfs/ctree.c
-+++ b/fs/btrfs/ctree.c
-@@ -2304,12 +2304,17 @@ noinline int btrfs_leaf_free_space(struct btrfs_root *root,
- 	return ret;
- }
+I have been doing some work in device driver writing lately, and an
+unfortunately common bit of code seems to be:
+
+write_some_bits(...)
+/* Need to let hardware latch */
+udelay(100)
+
+100us is a fairly middle-ground value, there are many calls to udelay(1~5)
+as well as some as high as udelay(800)! This seems like an awfully long
+time to be busy waiting, particularly if another part of the kernel could
+be doing something else.
+
+My question then is would a function such as usleep that replaces some of
+the longer calls to udelay be "worth it" and at what point would an
+appropriate cut-off between udelay and usleep be found? The first two
+questions that come to mind then are:
  
-+/*
-+ * min slot controls the lowest index we're willing to push to the
-+ * right.  We'll push up to and including min_slot, but no lower
-+ */
- static noinline int __push_leaf_right(struct btrfs_trans_handle *trans,
- 				      struct btrfs_root *root,
- 				      struct btrfs_path *path,
- 				      int data_size, int empty,
- 				      struct extent_buffer *right,
--				      int free_space, u32 left_nritems)
-+				      int free_space, u32 left_nritems,
-+				      u32 min_slot)
- {
- 	struct extent_buffer *left = path->nodes[0];
- 	struct extent_buffer *upper = path->nodes[1];
-@@ -2327,7 +2332,7 @@ static noinline int __push_leaf_right(struct btrfs_trans_handle *trans,
- 	if (empty)
- 		nr = 0;
- 	else
--		nr = 1;
-+		nr = max_t(u32, 1, min_slot);
- 
- 	if (path->slots[0] >= left_nritems)
- 		push_space += data_size;
-@@ -2469,10 +2474,13 @@ out_unlock:
-  *
-  * returns 1 if the push failed because the other node didn't have enough
-  * room, 0 if everything worked out and < 0 if there were major errors.
-+ *
-+ * this will push starting from min_slot to the end of the leaf.  It won't
-+ * push any slot lower than min_slot
-  */
- static int push_leaf_right(struct btrfs_trans_handle *trans, struct btrfs_root
- 			   *root, struct btrfs_path *path, int data_size,
--			   int empty)
-+			   int empty, u32 min_slot)
- {
- 	struct extent_buffer *left = path->nodes[0];
- 	struct extent_buffer *right;
-@@ -2515,7 +2523,7 @@ static int push_leaf_right(struct btrfs_trans_handle *trans, struct btrfs_root
- 		goto out_unlock;
- 
- 	return __push_leaf_right(trans, root, path, data_size, empty,
--				right, free_space, left_nritems);
-+				right, free_space, left_nritems, min_slot);
- out_unlock:
- 	btrfs_tree_unlock(right);
- 	free_extent_buffer(right);
-@@ -2525,12 +2533,17 @@ out_unlock:
- /*
-  * push some data in the path leaf to the left, trying to free up at
-  * least data_size bytes.  returns zero if the push worked, nonzero otherwise
-+ *
-+ * max_slot can put a limit on how far into the leaf we'll push items.  The
-+ * item at 'max_slot' won't be touched.  Use (u32)-1 to make us do all the
-+ * items
-  */
- static noinline int __push_leaf_left(struct btrfs_trans_handle *trans,
- 				     struct btrfs_root *root,
- 				     struct btrfs_path *path, int data_size,
- 				     int empty, struct extent_buffer *left,
--				     int free_space, int right_nritems)
-+				     int free_space, u32 right_nritems,
-+				     u32 max_slot)
- {
- 	struct btrfs_disk_key disk_key;
- 	struct extent_buffer *right = path->nodes[0];
-@@ -2549,9 +2562,9 @@ static noinline int __push_leaf_left(struct btrfs_trans_handle *trans,
- 	slot = path->slots[1];
- 
- 	if (empty)
--		nr = right_nritems;
-+		nr = min(right_nritems, max_slot);
- 	else
--		nr = right_nritems - 1;
-+		nr = min(right_nritems - 1, max_slot);
- 
- 	for (i = 0; i < nr; i++) {
- 		item = btrfs_item_nr(right, i);
-@@ -2712,10 +2725,14 @@ out:
- /*
-  * push some data in the path leaf to the left, trying to free up at
-  * least data_size bytes.  returns zero if the push worked, nonzero otherwise
-+ *
-+ * max_slot can put a limit on how far into the leaf we'll push items.  The
-+ * item at 'max_slot' won't be touched.  Use (u32)-1 to make us push all the
-+ * items
-  */
- static int push_leaf_left(struct btrfs_trans_handle *trans, struct btrfs_root
- 			  *root, struct btrfs_path *path, int data_size,
--			  int empty)
-+			  int empty, u32 max_slot)
- {
- 	struct extent_buffer *right = path->nodes[0];
- 	struct extent_buffer *left;
-@@ -2762,7 +2779,8 @@ static int push_leaf_left(struct btrfs_trans_handle *trans, struct btrfs_root
- 	}
- 
- 	return __push_leaf_left(trans, root, path, data_size,
--			       empty, left, free_space, right_nritems);
-+			       empty, left, free_space, right_nritems,
-+			       max_slot);
- out:
- 	btrfs_tree_unlock(left);
- 	free_extent_buffer(left);
-@@ -2855,6 +2873,59 @@ static noinline int copy_for_split(struct btrfs_trans_handle *trans,
- }
- 
- /*
-+ * double splits happen when we need to insert a big item in the middle
-+ * of a leaf.  A double split can leave us with 3 mostly empty leaves:
-+ * leaf: [ slots 0 - N] [ our target ] [ N + 1 - total in leaf ]
-+ *          A                 B                 C
-+ *
-+ * We avoid this by trying to push the items on either side of our target
-+ * into the adjacent leaves.  If all goes well we can avoid the double split
-+ * completely.
-+ */
-+static noinline int push_for_double_split(struct btrfs_trans_handle *trans,
-+					  struct btrfs_root *root,
-+					  struct btrfs_path *path)
-+{
-+	int ret;
-+	int progress = 0;
-+	int slot;
-+
-+	slot = path->slots[0];
-+
-+	/*
-+	 * try to push all the items after our slot into the
-+	 * right leaf
-+	 */
-+	ret = push_leaf_right(trans, root, path, 1, 0, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (ret == 0)
-+		progress++;
-+
-+	/*
-+	 * our goal is to get our slot at the start or end of a leaf.  If
-+	 * we've done so we're done
-+	 */
-+	if (path->slots[0] == 0 ||
-+	    path->slots[0] == btrfs_header_nritems(path->nodes[0]))
-+		return 0;
-+
-+	/* try to push all the items before our slot into the next leaf */
-+	slot = path->slots[0];
-+	ret = push_leaf_left(trans, root, path, 1, 0, slot);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (ret == 0)
-+		progress++;
-+
-+	if (progress)
-+		return 0;
-+	return 1;
-+}
-+
-+/*
-  * split the path's leaf in two, making sure there is at least data_size
-  * available for the resulting leaf level of the path.
-  *
-@@ -2876,6 +2947,7 @@ static noinline int split_leaf(struct btrfs_trans_handle *trans,
- 	int wret;
- 	int split;
- 	int num_doubles = 0;
-+	int tried_avoid_double = 0;
- 
- 	l = path->nodes[0];
- 	slot = path->slots[0];
-@@ -2884,12 +2956,13 @@ static noinline int split_leaf(struct btrfs_trans_handle *trans,
- 		return -EOVERFLOW;
- 
- 	/* first try to make some room by pushing left and right */
--	if (data_size && ins_key->type != BTRFS_DIR_ITEM_KEY) {
--		wret = push_leaf_right(trans, root, path, data_size, 0);
-+	if (data_size) {
-+		wret = push_leaf_right(trans, root, path, data_size, 0, 0);
- 		if (wret < 0)
- 			return wret;
- 		if (wret) {
--			wret = push_leaf_left(trans, root, path, data_size, 0);
-+			wret = push_leaf_left(trans, root, path,
-+					      data_size, 0, (u32)-1);
- 			if (wret < 0)
- 				return wret;
- 		}
-@@ -2923,6 +2996,12 @@ again:
- 				if (mid != nritems &&
- 				    leaf_space_used(l, mid, nritems - mid) +
- 				    data_size > BTRFS_LEAF_DATA_SIZE(root)) {
-+					if (!tried_avoid_double) {
-+						push_for_double_split(trans,
-+							      root, path);
-+						tried_avoid_double = 1;
-+						goto again;
-+					}
- 					split = 2;
- 				}
- 			}
-@@ -2939,6 +3018,12 @@ again:
- 				if (mid != nritems &&
- 				    leaf_space_used(l, mid, nritems - mid) +
- 				    data_size > BTRFS_LEAF_DATA_SIZE(root)) {
-+					if (!tried_avoid_double) {
-+						push_for_double_split(trans,
-+							      root, path);
-+						tried_avoid_double = 1;
-+						goto again;
-+					}
- 					split = 2 ;
- 				}
- 			}
-@@ -3915,13 +4000,14 @@ int btrfs_del_items(struct btrfs_trans_handle *trans, struct btrfs_root *root,
- 			extent_buffer_get(leaf);
- 
- 			btrfs_set_path_blocking(path);
--			wret = push_leaf_left(trans, root, path, 1, 1);
-+			wret = push_leaf_left(trans, root, path, 1, 1, (u32)-1);
- 			if (wret < 0 && wret != -ENOSPC)
- 				ret = wret;
- 
- 			if (path->nodes[0] == leaf &&
- 			    btrfs_header_nritems(leaf)) {
--				wret = push_leaf_right(trans, root, path, 1, 1);
-+				wret = push_leaf_right(trans, root, path,
-+						       1, 1, 0);
- 				if (wret < 0 && wret != -ENOSPC)
- 					ret = wret;
- 			}
+What is the approximate cost of a context switch, quantified?
+
+   I found 2 papers circa 2007 that seek to answer this, though they
+   are a bit dated:
+
+      http://www.cs.rochester.edu/u/cli/research/switch.pdf
+      IBM eServer, dual 2.0GHz Pentium Xeon; 512 KB L2, cache line 128B
+      Linux 2.6.17, RHEL 9, gcc 3.2.2 (-O0)
+      3.8 us / context switch
+
+      http://delivery.acm.org/10.1145/1290000/1281703/a3-david.pdf
+      ARMv5, ARM926EJ-S on an OMAP1610 (set to 120MHz clock)
+      Linux 2.6.20-rc5-omap1
+      48 us / context switch
+
+What is the overhead of an hrtimer? Would it be 'bad' to start using
+a lot more of them in sleeps?
+
+	From what I could tell, the overhead of hrtimers is fairly
+	negligible, but that is just from reading documentation,
+	anyone with numbers or experience here would be greatly
+	appreciated.
+
+
+Finally, to address any potential questions of why this isn't built on
+top of do_nanosleep, the function usleep_range seems very valuable for
+power applications; many of the delays are simply waiting for something
+to complete, thus I would prefer if they did not themselves instigate
+a wake-up; also, do_nanosleep seems like it is built to be an interface
+for the user-space nanosleep function - it did not seem like a good fit.
+
+
+Lastly, it is worth noting that there are many calls to udelay that
+*cannot* be switched to usleep; udelay is used often to implement some
+degree of bitbanging that would not take kindly to the more
+unpredictable usleep. This idea is *not* intended for those
+applications.
+
+
+I appreciate any insight!
+
+-Pat
+
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
