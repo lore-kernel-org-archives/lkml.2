@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab0FUO2n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 10:28:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:39341 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab0FUO2m (ORCPT
+	id S1757957Ab0FUOb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 10:31:26 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:49433 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab0FUObZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 10:28:42 -0400
-X-Authority-Analysis: v=1.1 cv=w1shWbTWTAfAQ6jIUag4hBIbd8wqGnfzh/ne7nEp+Po= c=1 sm=0 a=MjmHPCbp0jsA:10 a=ood2b7iyd8MA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=pGLkceISAAAA:8 a=ayqztE60YIDjpZbvhywA:9 a=Z92mY6PWu2-bq0yVONT-QAZiT_AA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] tracing: Fix undelared ENOSYS in
- include/linux/tracepoint.h
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Wu Zhangjin <wuzhangjin@gmail.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-       linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>
-In-Reply-To: <1277118549-622-1-git-send-email-wuzhangjin@gmail.com>
-References: <1277118549-622-1-git-send-email-wuzhangjin@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Mon, 21 Jun 2010 10:28:40 -0400
-Message-ID: <1277130520.9181.12.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Jun 2010 10:31:25 -0400
+Date: Mon, 21 Jun 2010 09:31:10 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Manfred Spraul <manfred@colorfullife.com>
+cc: linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.35-rc3 deadlocks on semaphore operations
+In-Reply-To: <4C1CD791.101@colorfullife.com>
+Message-ID: <alpine.DEB.2.00.1006210927310.4513@router.home>
+References: <alpine.DEB.2.00.1006180940140.11575@router.home> <alpine.DEB.2.00.1006180955141.11575@router.home> <4C1CD791.101@colorfullife.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-21 at 19:09 +0800, Wu Zhangjin wrote:
-> From: Wu Zhangjin <wuzhangjin@gmail.com>
-> 
-> The header file include/linux/tracepoint.h may be included without
-> include/linux/errno.h and then the compiler will fail on building for
-> undelcared ENOSYS. This patch fixes this problem via including <linux/errno.h>
-> to include/linux/tracepoint.h.
-> 
+On Sat, 19 Jun 2010, Manfred Spraul wrote:
 
-Hi Wu,
+> Hello Christoph,
+>
+> On 06/18/2010 04:56 PM, Christoph Lameter wrote:
+> > One important fact that I forgot to mention: This is on a dual quad core
+> > dell box (8 hardware threads) with CONCURRENCY_LEVEL set to 9.
+> >
+>
+> - Which version of make do you use? That would be one suspect that might use
+> semop().
 
-I have not hit this. Did you hit this with mips? Does it need to get
-into 2.6.35 or can it wait till 2.6.36?
+$ make --version
+GNU Make 3.81
+Copyright (C) 2006  Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.
+There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
 
--- Steve
+This program built for x86_64-pc-linux-gnu
 
-> Signed-off-by: Wu Zhangjin <wuzhangjin@gmail.com>
-> ---
->  include/linux/tracepoint.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-> index 9a59d1f..103d1b6 100644
-> --- a/include/linux/tracepoint.h
-> +++ b/include/linux/tracepoint.h
-> @@ -14,6 +14,7 @@
->   * See the file COPYING for more details.
->   */
->  
-> +#include <linux/errno.h>
->  #include <linux/types.h>
->  #include <linux/rcupdate.h>
->  
+> - If I run make -j5 bzImage, then no semaphore arrays are used.
+> Could you try to figure out which executable is doing the 'semop()' call?
 
+Looks like this was ld
 
+> Or: what's the output of ps xawwwww_
+
+Need to do another run with a broken kernel for this.
