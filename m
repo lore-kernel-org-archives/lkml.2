@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780Ab0FUPFW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 11:05:22 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:55721 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932462Ab0FUPFV (ORCPT
+	id S932808Ab0FUPGc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 11:06:32 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35449 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932343Ab0FUPGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 11:05:21 -0400
-Date: Mon, 21 Jun 2010 17:05:16 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: tiwai@suse.de, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-       jirislaby@gmail.com, Clemens Ladisch <clemens@ladisch.de>
-Subject: Re: [PATCH] SOUND: usb/endpoint, fix dangling pointer use
-Message-ID: <20100621150515.GB17833@buzzloop.caiaq.de>
-References: <1277132601-14375-1-git-send-email-jslaby@suse.cz>
+	Mon, 21 Jun 2010 11:06:31 -0400
+Date: Mon, 21 Jun 2010 11:06:27 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: David Brownell <david-b@pacbell.net>
+cc: Florian Mickler <florian@mickler.org>, <markgross@thegnar.org>,
+       mark gross <640e9920@gmail.com>, Neil Brown <neilb@suse.de>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [RFC][PATCH] PM: Avoid losing wakeup events during
+ suspend
+In-Reply-To: <799617.66764.qm@web180304.mail.gq1.yahoo.com>
+Message-ID: <Pine.LNX.4.44L0.1006211055090.1687-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277132601-14375-1-git-send-email-jslaby@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 05:03:21PM +0200, Jiri Slaby wrote:
-> Stanse found that in snd_usb_parse_audio_endpoints, there is a
-> dangling pointer dereference. When snd_usb_parse_audio_format fails,
-> fp is freed, and continue invoked. On the next loop, there is
-> "fp && fp->altsetting == 1 && fp->channels == 1" test, but fp is set
-> from the last iteration (but is bogus) and thus ilegally dereferenced.
+On Sun, 20 Jun 2010, David Brownell wrote:
+
+> Can we put this more directly:  the problem is
+> that the *SYSTEM ISN'T FULLY SUSPENDED* when the
+> hardware wake event triggers?  (Where "*SYSTEM*
+> includes userspace not just kernel.  In fact the
+> overall system is built from many subsystems,
+> some in the kernel and some in userspace.
+
+Indeed, the system may not even be partially suspended when the wake 
+event triggers.
+
+> At the risk of being prematurely general:  I'd
+> point out that these subsystems probably have
+> sequencing requirements.  kernel-then-user is
+> a degenerate case, and surely oversimplified.
+> There are other examples, e.g. between kernel
+> subsystems...  Like needing to suspend a PMIC
+> before the bus it uses, where that bus uses
+> a task to manage request/response protocols.
+> (Think I2C or SPI.)
 > 
-> Set fp to NULL before "continue".
-
-Oh, absolutely. Thanks.
-
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-
-Acked-by: Daniel Mack <daniel@caiaq.de>
-
-I think this should go thru the ALSA tree.
-
-
-Daniel
-
-
-> Cc: Clemens Ladisch <clemens@ladisch.de>
-> Cc: Takashi Iwai <tiwai@suse.de>
-> ---
->  sound/usb/endpoint.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> This is like the __init/__exit sequencing mess...
 > 
-> diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
-> index 9593b91..6f6596c 100644
-> --- a/sound/usb/endpoint.c
-> +++ b/sound/usb/endpoint.c
-> @@ -427,6 +427,7 @@ int snd_usb_parse_audio_endpoints(struct snd_usb_audio *chip, int iface_no)
->  		if (snd_usb_parse_audio_format(chip, fp, format, fmt, stream, alts) < 0) {
->  			kfree(fp->rate_table);
->  			kfree(fp);
-> +			fp = NULL;
->  			continue;
->  		}
->  
-> -- 
-> 1.7.1
+> In terms of userspace event delivery, I'd say
+> it's a bug in the event mechanism if taking the
+> next step in suspension drops any event.  It
+> should be queued, not lost...  As a rule the
+> hardware queuing works (transparently)...
+
+There may be a misunderstanding here...  People talk about events
+getting lost, but what they (usually) mean is that the event isn't
+actually _dropped_ -- rather, it fails to trigger a wakeup or to
+prevent a suspend.  When something else causes the system to resume
+later on, the event will be delivered normally.
+
+This means that the problem is not one of sequencing.  The problem is 
+twofold:
+
+	To recognize when a wakeup event has occurred and therefore
+	it is not now safe to allow the system to suspend;
+
+	And to recognize when a wakeup event has been completely
+	handled and therefore it is once again safe to allow the system 
+	to suspend.
+
+> > Of course, the underlying
+> > > > issue here is that the kernel has no direct way
+> > to know when userspace
+> > > > has finished processing an event.
 > 
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Again said more directly:  there's no current
+> mechanism to coordinate subsystems.  Userspace
+> can't communicate "I'm ready" to kernel, and
+> vice versa.  (a few decades ago, APM could do
+> that ... we dropped such mechanisms though, and
+> I'm fairly sure APM's implementation was holey.)
+
+Yes, that's a better way of putting it.  And it's not just a matter of
+"userspace communicating with the kernel", because userspace is not
+monolithic.  There has to be a way for one user process to communicate
+this information to another (I like Florian's idea).  Of course, the
+kernel doesn't have to worry about those details.
+
+If one accepts a scheme in which all the suspend initiations and
+cancellations are carried out by a single process (a power-manager
+process), then the difficulties of communication and coordination
+between the kernel and userspace are minimized.
+
+Alan Stern
+
