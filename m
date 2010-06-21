@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878Ab0FUCdH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Jun 2010 22:33:07 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:58179 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757856Ab0FUCdC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Jun 2010 22:33:02 -0400
-Date: Sun, 20 Jun 2010 22:33:01 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: markgross@thegnar.org
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-In-Reply-To: <20100620225810.GB9735@gvim.org>
-Message-ID: <Pine.LNX.4.44L0.1006202223440.29532-100000@netrider.rowland.org>
+	id S1756490Ab0FUCks (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Jun 2010 22:40:48 -0400
+Received: from n5-vm0.bullet.mail.gq1.yahoo.com ([67.195.8.62]:46532 "HELO
+	n5-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755521Ab0FUCkr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Jun 2010 22:40:47 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 969360.13067.bm@omp123.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=uF5H2Kb9DhNyux6DymrA7TD0EYns2okveNCHefadzwWuJ183BJ8G6aPOXm2gmbSJEuLuhi0xwH/uD6RZPg3ko/ShsELVIGXeI02jKnnSPjVS/f29TcqxQKr29g2xbZrMwUWYZ3+Wt6EbiRlg3H0LJJ8bOdsMibNzLfK+97Wa0S8=;
+Message-ID: <887171.45295.qm@web180307.mail.gq1.yahoo.com>
+X-YMail-OSG: ZvLYD9sVM1kbKyIGAd7jxr6nWtKZF3_Pwlzs9AbsGxoibDU
+ g04HukmWPOlJWSzqPu4YoVKp_pr8M8fhGc8eCAOdZA5wdbSs1kv1.dlwGiLD
+ IwgSS.o2O0vvClavoaL7fO22_uPir1fZEXmK4kcOCbzgIhurIziYaEl66DDZ
+ ubpEsKVRh1AlJOUT4Kbiww5XB_1ndU0xT0wQjQt._N9iyPEs.XwbLUpCHdfE
+ RduFEpt9M701GtTQ7zqWrNNpB6y7XsFjHHLq9Ab1McqbOCpC8AP68Y.9.GxD
+ GU8hpSjUdLPExz7No6GSBKyIpjMxdaHT5P28i3TJsimiRMIexOjjAZT7C0kr
+ SDwH7Z_m8.HRC.D.pjrMDTlvWpTcEYWnDInI-
+X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.103.269680
+Date: Sun, 20 Jun 2010 19:40:46 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: gpiolib and sleeping gpios
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
+       linux kernel <linux-kernel@vger.kernel.org>,
+       ext-jani.1.nikula@nokia.com,
+       =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <4C1E88AE.5070808@bluewatersys.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Jun 2010, mark gross wrote:
 
-> > Indeed, the same problem arises if the event isn't delivered to
-> > userspace until after userspace is frozen.  Of course, the underlying
-> > issue here is that the kernel has no direct way to know when userspace
-> > has finished processing an event.  Userspace would have to tell it,
-> > which generally would mean rewriting some large number of user
-> > programs.
+
+--- On Sun, 6/20/10, Ryan Mallon <ryan@bluewatersys.com> wrote:
+
+
+> >> The point I was trying to make is that
+> >> there are lots of drivers which
+> >> will not work with gpios on sleeping io expandersbecause they call the
+> >> spinlock safe gpio calls.
+
+"Lots"?  You mean there are lots of
+maintainers who aren't even bothering to
+provide trivial fixes for bug which are
+clearly reported to them by warnings?
+These one-liner fixes are not hard...
+
+Such problems are people-problems, not issues
+with any framework. 
+> > 
+> > And they will trigger runtime warnings, and
+> > thus eventually get fixed.
+> \
+>   }
 > 
-> Suspend blockers don't solve this, and the large number of user programs
-> isn't a big number.  /me thinks its 1 or 2 services.
+>   err = gpio_request(some_gpio, "some_gpio",
+>           GPIOF_NO_SLEEP);
 
-On Android, perhaps.  What about on other systems?
 
-> > In what way is this better than suspend blockers?
-> 
-> 1) I don't think suspend blockers really solve or effectively articulate
-> the suspend wake event race problem.
+NAK ... keep it simple.  Such flags are
+clearly not necessary...
 
-Why not?
+I understand that some folk are bothered
+by concepts/frameworks that seem "too simple"
+and thus want to complexify them.  In this
+case I am in a position to help avoid that.
+Complexity is not a virtue.
 
-> 2) the partial solution suspend blocker offer for the suspend race is
-> tightly bound to the suspend blocker implementation and not useful in
-> more general contexts.
-
-I don't understand.  Can you explain further?
-
-> > One advantage of the suspend-blocker approach is that it essentially
-> > uses a single tool to handle both kinds of races (event not fully
-> > handled by the kernel, or event not fully handled by userspace).  
-> > Things aren't quite this simple, because of the need for a special API
-> > to implement userspace suspend blockers, but this does avoid the need
-> > for a power-manager process.
-> 
-> I don't think suspend-blocker handles both kinds of races as well as you
-> seem to think.
-
-Can you give any counterexamples?
-
->  A single tool that conflates multiple kernel facilities
-> is not an advantage.  It limits applications outside of the scope of
-> doing it the "android way".
-
-I don't see that necessarily as a drawback.  You might just as well say
-that the entire Linux kernel limits applications to doing things the
-"Unix" way.  Often have fewer choices is an advantage.
-
-> Where do you get the idea that there isn't a need for a centralized PM
-> process in Android?  Thats not true.
-
-I didn't get that idea from anywhere.  Sorry if I gave the wrong
-impression -- I meant that non-Android systems would need to implement
-a centralized power-manager process, along with all the necessary
-changes to other programs.
-
-(Incidentally, even on Android the centralized PM process does not 
-handle _all_ of the userspace/kernel wakelock interactions.)
-
-Alan Stern
 
