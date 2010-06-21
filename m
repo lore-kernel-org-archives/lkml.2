@@ -1,45 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264Ab0FULHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 07:07:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5023 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932225Ab0FULHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 07:07:44 -0400
-Message-ID: <4C1F47EF.2060509@redhat.com>
-Date: Mon, 21 Jun 2010 19:07:27 +0800
-From: Xiaotian Feng <dfeng@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Marcin Slusarz <marcin.slusarz@gmail.com>,
-       Dan Carpenter <error27@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H.PeterA" <"nvin hpa"@zytor.com>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-       Jack Steiner <steiner@sgi.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>, linux-kernel@vger.kernel.org,
-       x86@kernel.org
-Subject: Re: [patch] x86, pat: freeing invalid memtype messages
-References: <20100617134559.GA29824@bicker> <20100617161728.GA2741@joi.lan>	 <4C1B1691.6020809@redhat.com> <20100618175726.GA2785@joi.lan>	 <4C1F455E.6050502@redhat.com> <1277118155.1875.508.camel@laptop>
-In-Reply-To: <1277118155.1875.508.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932284Ab0FULIS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 07:08:18 -0400
+Received: from 101-97.80-90.static-ip.oleane.fr ([90.80.97.101]:35713 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932240Ab0FULIQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 07:08:16 -0400
+Date: Mon, 21 Jun 2010 13:09:10 +0200
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] procfs: Do not release pid_ns->proc_mnt too early
+Message-ID: <20100621110910.GH16877@hawkmoon.kerlabs.com>
+Mail-Followup-To: Oleg Nesterov <oleg@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Pavel Emelyanov <xemul@openvz.org>,
+	Linux Containers <containers@lists.osdl.org>,
+	linux-kernel@vger.kernel.org
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-13816-1277118485-0001-2"
+Content-Disposition: inline
+In-Reply-To: <20100618175541.GA13680@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2010 07:02 PM, Peter Zijlstra wrote:
-> On Mon, 2010-06-21 at 18:56 +0800, Xiaotian Feng wrote:
->
->> I guess there might be something wrong between the augmented rbtree insert/remove ..
->
-> The easiest thing is to revert that change and try again, the next step
-> would be to print the full RB tree on each modification and look where
-> it goes wrong.
->
-> That said, I did print my fair share of (augmented) RB trees while
-> playing with scheduler patches and I can't remember it ever having
-> messed up like that.
-He's using 2.6.35-rc2+, without your "rbtree: Undo augmented trees 
-performance damage" patch ;-)
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
+--=_bohort-13816-1277118485-0001-2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On 18/06/10 19:55 +0200, Oleg Nesterov wrote:
+> On 06/18, Louis Rilling wrote:
+> > > @@ -74,7 +74,7 @@ static int proc_get_sb(struct file_syste
+> > >  		ei =3D PROC_I(sb->s_root->d_inode);
+> > >  		if (!ei->pid) {
+> > >  			rcu_read_lock();
+> > > -			ei->pid =3D get_pid(find_pid_ns(1, ns));
+> > > +			ei->pid =3D find_pid_ns(1, ns);
+> >
+> > I don't think that this is correct. IIUC, proc_delete_inode() calls put=
+_pid() on
+> > ei->pid.
+>=20
+> Yes,
+>=20
+> > So either a special case is added in proc_delete_inode(), or we try to
+> > live with get_pid() here. I'm actually not sure that we can pretend tha=
+t this
+> > pid remains valid if we don't get_pid() here.
+>=20
+> But please see another change below,
+>=20
+> > > +static void proc_mntput(struct work_struct *work)
+> > >  {
+> > > +	struct pid_namespace *ns =3D container_of(work, struct pid_namespac=
+e, proc_put);
+> > > +
+> > > +	PROC_I(ns->proc_mnt->mnt_sb->s_root->d_inode)->pid =3D NULL;
+> > >  	mntput(ns->proc_mnt);
+> > >  }
+>=20
+> it clears ei->pid.
+>=20
+> We are called from free_pid_ns() path, this ->pid must not have any refer=
+ence.
+> Any get_pid() implies get_pid_ns().
+>=20
+> What do you think?
+
+Hm, I didn't look close enough. Sorry about that. However, I'm still concer=
+ned
+with this since this pid can have been freed right after container init's
+release_task(), and I don't see how it is guaranteed that nobody still trie=
+s to
+access this proc_mnt.
+
+Thanks,
+
+Louis
+
+--=20
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
+
+--=_bohort-13816-1277118485-0001-2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkwfSFYACgkQVKcRuvQ9Q1SWFQCfVx7cLGjWbEa3vuJFs+u2Wx1w
+xXoAn0VVYhXTGeCjKwm06NntPXHRB+jG
+=gZ41
+-----END PGP SIGNATURE-----
+
+--=_bohort-13816-1277118485-0001-2--
