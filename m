@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab0FWUpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 16:45:53 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58421 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565Ab0FWUpv convert rfc822-to-8bit (ORCPT
+	id S1752791Ab0FWUqW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 16:46:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57313 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab0FWUqV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 16:45:51 -0400
-Subject: Re: [RFC][PATCH 6/8] perf: Per PMU disable
+	Wed, 23 Jun 2010 16:46:21 -0400
+Subject: Re: [RFC][PATCH 8/8] perf: Rework the PMU methods
 From: Peter Zijlstra <peterz@infradead.org>
 To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
@@ -17,48 +17,29 @@ Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
        Yanmin <yanmin_zhang@linux.intel.com>,
        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100622162131.GA5458@nowhere>
+In-Reply-To: <20100622162652.GB5458@nowhere>
 References: <20100616160027.590430763@chello.nl>
-	 <20100616160238.529009255@chello.nl> <20100618021405.GD5345@nowhere>
-	 <1276845118.27822.1443.camel@twins>  <20100622162131.GA5458@nowhere>
+	 <20100616160238.721536975@chello.nl> <20100618042143.GE5345@nowhere>
+	 <1276845338.27822.1450.camel@twins>  <20100622162652.GB5458@nowhere>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 22 Jun 2010 19:09:40 +0200
-Message-ID: <1277226580.27822.7872.camel@twins>
+Date: Tue, 22 Jun 2010 19:10:22 +0200
+Message-ID: <1277226622.27822.7873.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-22 at 18:21 +0200, Frederic Weisbecker wrote:
-> On Fri, Jun 18, 2010 at 09:11:58AM +0200, Peter Zijlstra wrote:
-> > On Fri, 2010-06-18 at 04:14 +0200, Frederic Weisbecker wrote:
-> > > On Wed, Jun 16, 2010 at 06:00:33PM +0200, Peter Zijlstra wrote:
-> > > > +static void armpmu_pmu_enable(struct pmu *pmu)
-> > > >  {
-> > > > +static void powerpc_pmu_pmu_disable(struct pmu *pmu)
-> > > >  {
-> > > > +static void fsl_emb_pmu_pmu_disable(struct pmu *pmu)
-> > > >  {
-> > > > +static void sh_pmu_pmu_enable(struct pmu *pmu)
-> > > > +{
-> > > > +static void sparc_pmu_pmu_enable(struct pmu *pmu)
-> > > >  {
-> > > > +static void x86_pmu_pmu_disable(struct pmu *pmu)
-> > > >  {
-> > > 
-> > > 
-> > > These namings are really bad. Why not just using pmu once
-> > > in each names? x86_pmu_enable, etc...
+On Tue, 2010-06-22 at 18:26 +0200, Frederic Weisbecker wrote:
+> > > It would be nice to have a PERF_EF_STOP as well in ->del, so that
+> > > each pmu don't need to maintain an internal state.
 > > 
-> > Because some of those were already taken:
-> > 
-> > static const struct pmu pmu = {
-> >         .enable         = x86_pmu_enable,
-> >         .disable        = x86_pmu_disable,
+> > You have to track it since we can stop the thing outselves without the
+> > caller knowing.
 > 
 > 
-> Then those should be renamed into x86_event_enable or so. 
-> 
-well, possibly, but the patches were large enough already.
+> From the pmu internals yeah, that's what the x86 pmu does. But otherwise, other
+> pmu don't do such things. 
+
+Everybody who does throttling will have to.
