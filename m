@@ -1,105 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757975Ab0FVR2K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 13:28:10 -0400
-Received: from imap.ru.mvista.com ([213.79.90.228]:10556 "EHLO
-	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756892Ab0FVR2G (ORCPT
+	id S1758421Ab0FVR2U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 13:28:20 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31647 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758077Ab0FVR2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 13:28:06 -0400
-Date: Tue, 22 Jun 2010 20:57:42 +0400
-From: Anton Vorontsov <avorontsov@mvista.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Barry Song <21cnbao@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Mike Frysinger <vapier.adi@gmail.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Artem Bityutskiy <dedekind1@gmail.com>, linux-kernel@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, linux-mtd@lists.infradead.org,
-       uclinux-dist-devel@blackfin.uclinux.org
-Subject: [PATCH 2/2] mtd: m25p80: Make jedec_probe() return proper errno
- values
-Message-ID: <20100622165742.GB20699@oksana.dev.rtsoft.ru>
-References: <20100622165545.GA10255@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100622165545.GA10255@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 22 Jun 2010 13:28:13 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 01/25] lmb: lmb_find_base() should return LMB_ERROR on failing path
+Date: Tue, 22 Jun 2010 10:26:30 -0700
+Message-Id: <1277227614-11581-2-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
+References: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090209.4C20F28F.0095,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-spi_write_then_read() may return its own return codes (e.g. -EIO),
-so let's propagate the value down to the probe().
+all callees assume it return LMB_ERROR when it fail to find a range
 
-Also, remove jedec == 0 check, it isn't needed as nowadays we use
-dedicated SPI device IDs for non-JEDEC flashes.
-
-Suggested-by: Barry Song <21cnbao@gmail.com>
-Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
+ lib/lmb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This is for 2.6.36.
-
- drivers/mtd/devices/m25p80.c |   18 ++++++------------
- 1 files changed, 6 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-index a610ca9..7bf5c45 100644
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
-@@ -16,6 +16,8 @@
-  */
- 
- #include <linux/init.h>
-+#include <linux/err.h>
-+#include <linux/errno.h>
- #include <linux/module.h>
- #include <linux/device.h>
- #include <linux/interrupt.h>
-@@ -733,7 +735,7 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)
- 	if (tmp < 0) {
- 		DEBUG(MTD_DEBUG_LEVEL0, "%s: error %d reading JEDEC ID\n",
- 			dev_name(&spi->dev), tmp);
--		return NULL;
-+		return ERR_PTR(tmp);
+diff --git a/lib/lmb.c b/lib/lmb.c
+index 2421b2a..13d1a04 100644
+--- a/lib/lmb.c
++++ b/lib/lmb.c
+@@ -154,7 +154,7 @@ static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align,
+ 		if (found != LMB_ERROR)
+ 			return found;
  	}
- 	jedec = id[0];
- 	jedec = jedec << 8;
-@@ -741,14 +743,6 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)
- 	jedec = jedec << 8;
- 	jedec |= id[2];
- 
--	/*
--	 * Some chips (like Numonyx M25P80) have JEDEC and non-JEDEC variants,
--	 * which depend on technology process. Officially RDID command doesn't
--	 * exist for non-JEDEC chips, but for compatibility they return ID 0.
--	 */
--	if (jedec == 0)
--		return NULL;
--
- 	ext_jedec = id[3] << 8 | id[4];
- 
- 	for (tmp = 0; tmp < ARRAY_SIZE(m25p_ids) - 1; tmp++) {
-@@ -759,7 +753,7 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)
- 			return &m25p_ids[tmp];
- 		}
- 	}
--	return NULL;
-+	return ERR_PTR(-ENODEV);
+-	return 0;
++	return LMB_ERROR;
  }
  
- 
-@@ -804,8 +798,8 @@ static int __devinit m25p_probe(struct spi_device *spi)
- 		const struct spi_device_id *jid;
- 
- 		jid = jedec_probe(spi);
--		if (!jid) {
--			return -ENODEV;
-+		if (IS_ERR(jid)) {
-+			return PTR_ERR(jid);
- 		} else if (jid != id) {
- 			/*
- 			 * JEDEC knows better, so overwrite platform ID. We
+ static void lmb_remove_region(struct lmb_type *type, unsigned long r)
 -- 
-1.7.0.5
+1.6.4.2
+
