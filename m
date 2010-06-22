@@ -1,44 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab0FVQig (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 12:38:36 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:37462 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab0FVQif (ORCPT
+	id S1755070Ab0FVQqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 12:46:15 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:64103 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441Ab0FVQqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 12:38:35 -0400
-Date: Tue, 22 Jun 2010 17:38:17 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Don Zickus <dzickus@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH v3] Add TAINT_HARDWARE_UNSUPPORTED flag
-Message-ID: <20100622163817.GE20668@srcf.ucam.org>
-References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com> <20100617091322.b7d21473.randy.dunlap@oracle.com> <4C1A7D61.8010900@redhat.com> <20100621122145.76ebd7ac.akpm@linux-foundation.org> <20100621194559.GI3217@redhat.com> <20100621130008.d3dc01a8.akpm@linux-foundation.org> <20100622153457.GA5381@redhat.com> <20100622164835.4ddb9432@lxorguk.ukuu.org.uk>
+	Tue, 22 Jun 2010 12:46:14 -0400
+Date: Tue, 22 Jun 2010 19:50:11 +0300
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: ext Rusty Russell <rusty@rustcorp.com.au>
+Cc: "dedekind1@gmail.com" <dedekind1@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Sitsofe Wheeler <sitsofe@yahoo.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>
+Subject: Re: [PULL] param sysfs oops (simple, leaky) fix, bool arrays fix
+Message-ID: <20100622165011.GZ17639@pcarmody-desktop>
+References: <200910290902.13724.rusty@rustcorp.com.au> <s5hmxwevlm4.wl%tiwai@suse.de> <1273049369.3702.127.camel@localhost> <201005061158.13098.rusty@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100622164835.4ddb9432@lxorguk.ukuu.org.uk>
+In-Reply-To: <201005061158.13098.rusty@rustcorp.com.au>
 User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-OriginalArrivalTime: 22 Jun 2010 16:45:14.0448 (UTC) FILETIME=[49B16500:01CB122A]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 04:48:35PM +0100, Alan Cox wrote:
-> > +	printk(KERN_CRIT "UNSUPPORTED HARDWARE DEVICE: %s\n", msg);
-> > +	WARN_TAINT(1, TAINT_HARDWARE_UNSUPPORTED,
-> > +		   "Your hardware is unsupported.  Please do not report "
-> > +		   "bugs, panics, oopses, etc., on this hardware.\n");
+On 06/05/10 04:28 +0200, ext Rusty Russell wrote:
+> On Wed, 5 May 2010 06:19:29 pm Artem Bityutskiy wrote:
+> > > Fixing in the way of the later upstream is a bit too intrusive as a
+> > > stable patch.  So, I'm also not sure whether we should take it,
+> > > too...
+> > 
+> > To be frank I do not really understand what you mean.
+> > 
+> > Anyway, I just humbly suggest not to have the "no one uses that, let's
+> > have a leak" attitude. I do understand that this is a 'it's a lot of
+> > churn for not much gain'. However, I think the rmmod leak is large
+> > enough issue.
 > 
-> And as already pointed out it's not unsupported hardware even in the case
-> you described
+> Thanks Artem, that's exactly the kind of feedback we need.
+> 
+> For most people, module parameters are rare, and module removal is rare.
+> So the amount of leak is less than the size of the code we would add to fix
+> it.
+> 
+> If this is hitting you, it clearly changes the priorities.  I will include
+> the patches now.
 
-It's hardware that isn't supported by the vendor. How is it not 
-unsupported hardware in that context?
+Rusty,
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Artem's passed the baton over to me to investigate, so I've reviewed
+and back-ported the last known version of your patchset. I'm happy to 
+report that the 100% reproducable leak that we were seeing before
+cannot be reproduced. As expected, given review of the code. I have 
+not been able to test the final driver-specific patches from your 
+patchset, but up to and including
+
+[PATCH 12/18] param: simple locking for sysfs-writable charp parameters
+
+they can all have a:
+
+Tested-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+
+I'm quite interested to see these pushed into the mainline so that I
+can cherry-pick final versions for our internal tree, do you have any 
+schedule for that?
+
+Cheers,
+Phil
