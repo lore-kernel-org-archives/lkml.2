@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758742Ab0FVBWH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 21:22:07 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34269 "EHLO smtps.tip.net.au"
+	id S1758763Ab0FVBXz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 21:23:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49086 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752026Ab0FVBWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 21:22:06 -0400
-Date: Tue, 22 Jun 2010 11:22:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Sripathi Kodi <sripathik@in.ibm.com>,
-       Eric Van Hensbergen <ericvh@gmail.com>, Christoph Hellwig <hch@lst.de>
-Subject: linux-next: build failure after merge of the vfs tree
-Message-Id: <20100622112201.08505101.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758686Ab0FVBXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 21:23:53 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Edward Allcutt <edward@allcutt.me.uk>
+X-Fcc: ~/Mail/linus
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] fs: limit maximum concurrent coredumps
+In-Reply-To: Edward Allcutt's message of  Monday, 21 June 2010 19:58:55 -0400 <1277164737-30055-1-git-send-email-edward@allcutt.me.uk>
+References: <1277164737-30055-1-git-send-email-edward@allcutt.me.uk>
+X-Shopping-List: (1) Diagnostic wine pistons
+   (2) Exotic shoe collisions
+   (3) Treasonous division gloves
+   (4) Mrs. Leland's Watchers
+   (5) Maternity garrulous ponds
+Message-Id: <20100622012303.BD72E402AD@magilla.sf.frob.com>
+Date: Mon, 21 Jun 2010 18:23:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+A core dump is just an instance of a process suddenly reading lots of its
+address space and doing lots of filesystem writes, producing the kinds of
+thrashing that any such instance might entail.  It really seems like the
+real solution to this kind of problem will be in some more general kind of
+throttling of processes (or whatever manner of collections thereof) when
+they got hog-wild on page-ins or filesystem writes, or whatever else.  I'm
+not trying to get into the details of what that would be.  But I have to
+cite this hack as the off-topic kludge that it really is.  That said, I do
+certainly sympathize with the desire for a quick hack that addresses the
+scenario you experience.
 
-After merging the vfs tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+For the case you described, it seems to me that constraining concurrency
+per se would be better than punting core dumps when too concurrent.  That
+is, you should not skip the dump when you hit the limit.  Rather, you
+should block in do_coredump() until the next dump already in progress
+finishes.  (It should be possible to use TASK_KILLABLE so that those dumps
+in waiting can be aborted with a follow-on SIGKILL.  But Oleg will have to
+check on the signals details being right for that.)
 
-fs/9p/vfs_inode.c: In function 'v9fs_vfs_setattr_dotl':
-fs/9p/vfs_inode.c:1056: error: implicit declaration of function 'inode_setattr'
+That won't make your crashers each complete quickly, but it will prevent
+the thrashing.  Instead of some crashers suddenly not producing dumps at
+all, they'll just all queue up waiting to finish crashing but not using any
+CPU or IO resources.  That way you don't lose any core dumps unless you
+want to start SIGKILL'ing things (which oom_kill might do if need be),
+you just don't die in flames trying to do nothing but dump cores.
 
-Caused by commit 463942d48d7f05812f0d6426dd8051ff53ea24a3 ("9p: Implement
-client side of setattr for 9P2000.L protocol") from the v9fs tree
-interacting with commit 3d9bf66940b6001a30aa30d5ac9f816326d9b3a0 ("remove
-inode_setattr") from the vfs tree.
 
-I have applied the following patch (using the changes in the above vfs
-tree commit as a guide) as a merge fix for today, but am not sure if it
-is correct.  I assume that this (or something similar) could be applied
-to the v9fs tree now - is that correct Christoph?
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 22 Jun 2010 11:15:01 +1000
-Subject: [PATCH] v9fs: fixup for inode_setattr being removed
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- fs/9p/vfs_inode.c |   15 ++++++++++++---
- 1 files changed, 12 insertions(+), 3 deletions(-)
-
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index f027a42..2ec7bfa 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -1052,10 +1052,19 @@ static int v9fs_vfs_setattr_dotl(struct dentry *dentry, struct iattr *iattr)
- 		return PTR_ERR(fid);
- 
- 	retval = p9_client_setattr(fid, &p9attr);
--	if (retval >= 0)
--		retval = inode_setattr(dentry->d_inode, iattr);
-+	if (retval < 0)
-+		return retval;
- 
--	return retval;
-+	if ((iattr->ia_valid & ATTR_SIZE) &&
-+	    iattr->ia_size != i_size_read(dentry->d_inode)) {
-+		retval = vmtruncate(dentry->d_inode, iattr->ia_size);
-+		if (retval)
-+			return retval;
-+	}
-+
-+	setattr_copy(dentry->d_inode, iattr);
-+	mark_inode_dirty(dentry->d_inode);
-+	return 0;
- }
- 
- /**
--- 
-1.7.1
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Thanks,
+Roland
