@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758926Ab0FVD5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 23:57:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33861 "EHLO mail.zytor.com"
+	id S1751168Ab0FVEEz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 00:04:55 -0400
+Received: from kroah.org ([198.145.64.141]:38536 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750827Ab0FVD5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 23:57:50 -0400
-Message-ID: <4C203439.6050601@zytor.com>
-Date: Mon, 21 Jun 2010 20:55:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1750949Ab0FVEEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 00:04:53 -0400
+Date: Mon, 21 Jun 2010 21:02:41 -0700
+From: Greg KH <greg@kroah.com>
+To: Tilman Schmidt <tilman@imap.cc>
+Cc: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       i4ldeveloper@listserv.isdn4linux.de, Hansjoerg Lipp <hjlipp@web.de>,
+       Karsten Keil <keil@b1-systems.de>, stable@kernel.org
+Subject: Re: [stable] [PATCH 0/5] late Gigaset fixes for 2.6.35
+Message-ID: <20100622040241.GB4151@kroah.com>
+References: <20100622-patch-gigaset-00.tilman@imap.cc>
 MIME-Version: 1.0
-To: Roland McGrath <roland@redhat.com>
-CC: Edward Allcutt <edward@allcutt.me.uk>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fs: limit maximum concurrent coredumps
-References: <1277164737-30055-1-git-send-email-edward@allcutt.me.uk> <20100622012303.BD72E402AD@magilla.sf.frob.com>
-In-Reply-To: <20100622012303.BD72E402AD@magilla.sf.frob.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100622-patch-gigaset-00.tilman@imap.cc>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21/2010 06:23 PM, Roland McGrath wrote:
-> A core dump is just an instance of a process suddenly reading lots of its
-> address space and doing lots of filesystem writes, producing the kinds of
-> thrashing that any such instance might entail.
+On Tue, Jun 22, 2010 at 02:28:41AM +0200, Tilman Schmidt wrote:
+> Karsten, David,
+> 
+> following are five patches to the Gigaset driver fixing reported
+> problems with two CAPI applications (Asterisk and capifax). They
+> fix serious bugs, though not technically regressions, and I would
+> therefore appreciate if they could still make it into release
+> 2.6.35. Otherwise please queue them for the first stable cycle.
+> 
+> These should also go into 2.6.34-stable. They apply cleanly to
+> 2.6.34 except for some offsets in file drivers/isdn/gigaset/capi.c.
 
-It is, although with one possibly important difference: the process has
-had an involuntary state transition, which may mean that its priority
-settings that it had as a "live" process are no longer applicable.  It
-would certainly seem appropriate to give the administrator the option of
-altering the priority parameters of coredumping processes.
+To get a patch in the -stable tree, please just add a simple:
+	Cc: stable <stable@kernel.org>
+to the body of the patch in the signed-off-by area.  That way, when the
+patches go to Linus, I get automatically notified of them and you don't
+have to do anything.  If you don't, then I have to go and dig and watch
+the tree to see if they are really applied or not, which, when
+confronted with 200+ patches that need to be manually watched for this
+way, does not scale...
 
-	-hpa
+thanks,
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+greg k-h
