@@ -1,104 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab0FVGAg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 02:00:36 -0400
-Received: from sh.osrg.net ([192.16.179.4]:57799 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751687Ab0FVGAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 02:00:34 -0400
-Date: Tue, 22 Jun 2010 14:59:50 +0900
-To: mattst88@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
-       fujita.tomonori@lab.ntt.co.jp, rth@twiddle.net,
-       ink@jurassic.park.msu.ru, mcree@orcon.net.nz, jbarnes@virtuousgeek.org,
-       linux-pci@vger.kernel.org, dri-devel@lists.freedesktop.org,
-       airlied@gmail.com, alexdeucher@gmail.com, jglisse@redhat.com
-Subject: Re: Problems with alpha/pci + radeon/ttm
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <AANLkTinG-5iKW5cigIQHPHRZuAMtG_xY-74XLL6vE5kb@mail.gmail.com>
-References: <AANLkTinG-5iKW5cigIQHPHRZuAMtG_xY-74XLL6vE5kb@mail.gmail.com>
+	id S1753533Ab0FVGCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 02:02:47 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50067 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab0FVGCp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 02:02:45 -0400
+Subject: Re: [patch 11/33] fs: dcache scale subdirs
+From: john stultz <johnstul@us.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Nick Piggin <npiggin@suse.de>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, John Kacur <jkacur@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1277132103.1875.519.camel@laptop>
+References: <20090904065142.114706411@nick.local0.net>
+	 <20090904065535.609317663@nick.local0.net>
+	 <1276787615.27822.426.camel@twins> <20100617165329.GA6138@laptop>
+	 <1277127322.1875.516.camel@laptop> <20100621144806.GC31679@laptop>
+	 <1277132103.1875.519.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Jun 2010 23:02:37 -0700
+Message-ID: <1277186557.1791.7.camel@work-vm>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100622145805R.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 22 Jun 2010 14:59:54 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010 17:19:43 -0400
-Matt Turner <mattst88@gmail.com> wrote:
-
-> Michael Cree and I have been debugging FDO bug 26403 [1]. I tried
-> booting with `radeon.test=1` and found this, which I think is related:
+On Mon, 2010-06-21 at 16:55 +0200, Peter Zijlstra wrote:
+> On Tue, 2010-06-22 at 00:48 +1000, Nick Piggin wrote:
+> > > Right, so I was staring at the -rt splat, so its John who created that
+> > > wreckage?
+> > 
+> > It was, but apparently they saw an RCU bug there somewhere and hit it
+> > with the big hammer. I haven't been able to reproduce it on a non-rt
+> > kernel yet, and I see yet why RCU is not good enough here.
 > 
-> > [drm] Tested GTT->VRAM and VRAM->GTT copy for GTT offset 0x202000
-> > [drm] Tested GTT->VRAM and VRAM->GTT copy for GTT offset 0x302000
-> [snip]
-> > [drm] Tested GTT->VRAM and VRAM->GTT copy for GTT offset 0xfd02000
-> > [drm] Tested GTT->VRAM and VRAM->GTT copy for GTT offset 0xfe02000
-> > pci_map_single failed: could not allocate dma page tables
-> > [drm:radeon_ttm_backend_bind] *ERROR* failed to bind 128 pages at 0x0FF02000
-> > [TTM] Couldn't bind backend.
-> > radeon 0000:00:07.0: object_init failed for (1048576, 0x00000002)
-> > [drm:radeon_test_moves] *ERROR* Failed to create GTT object 253
-> > Error while testing BO move.
-> 
-> From what I can see, the call chain is
-> radeon_test_moves
->  (radeon_ttm_backend_bind called through callback function)
->  - radeon_ttm.c:radeon_ttm_backend_bind calls radeon_gart_bind
->   - radeon_gart.c:radeon_gart_bind calls pci_map_page
->    - pci_map_page is alpha_pci_map_page, which calls...
->     - alpha_pci_map_page calls pci_iommu.c:pci_map_single_1
->      - pci_map_single_1 calls iommu_arena_alloc
->       - iommu_arena_alloc calls iommu_arena_find_pages
->        - iommu_arena_find_pages returns non-0
->       - iommu_arena_alloc returns non-0
->      - pci_map_single_1 returns 0 after printing
->        "could not allocate dma page tables" error
->     - alpha_pci_map_page returns 0 from pci_map_single_1
->   - radeon_gart_bind returns non-0, error path prints
->     "*ERROR* failed to bind 128 pages at 0x0FF02000"
+> John, could you describe the failure you spotted?
 
-This happens in the latest git, right?
+The problem was that the rcu_read_lock() on the dentry ascending wasn't
+preventing d_put/d_kill from removing entries from the parent node. So
+the next entry we tried to follow was invalid. So we were getting odd
+oopses from select_parent().
 
-Is this a regression (what kernel version worked)?
+I'm not as familiar with the rcu rules there, so the patch I made just
+held the locks as it went down the chain. Not ideal of course, but still
+an improvement over the dcache_lock that was there prior.
 
+Peter: I'm sorry, I've been out for a few days. Can you give me some
+background on what brought this up and what -rt splat you mean?
 
-Seems that the IOMMU can't find 128 pages. It's likely due to:
+thanks
+-john
 
-- out of the IOMMU space (possibly someone doesn't free the IOMMU
-  space).
-
-or
-
-- the mapping parameters (such as align) aren't appropriate so the
-  IOMMU can't find space.
-
-
-> Is this the cause of the bug we're seeing in the report [1]?
->
-> Anyone know what's going wrong here?
-
-
-I've attached a patch to print the debug info about the mapping
-parameters.
-
-
-diff --git a/arch/alpha/kernel/pci_iommu.c b/arch/alpha/kernel/pci_iommu.c
-index d1dbd9a..17cf0d8 100644
---- a/arch/alpha/kernel/pci_iommu.c
-+++ b/arch/alpha/kernel/pci_iommu.c
-@@ -187,6 +187,10 @@ iommu_arena_alloc(struct device *dev, struct pci_iommu_arena *arena, long n,
- 	/* Search for N empty ptes */
- 	ptes = arena->ptes;
- 	mask = max(align, arena->align_entry) - 1;
-+
-+	printk("%s: %p, %p, %d, %ld, %lx, %u\n", __func__, dev, arena, arena->size,
-+	       n, mask, align);
-+
- 	p = iommu_arena_find_pages(dev, arena, n, mask);
- 	if (p < 0) {
- 		spin_unlock_irqrestore(&arena->lock, flags);
 
