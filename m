@@ -1,117 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758576Ab0FVAuX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 20:50:23 -0400
-Received: from mail-yw0-f198.google.com ([209.85.211.198]:56417 "EHLO
-	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab0FVAuW convert rfc822-to-8bit (ORCPT
+	id S1758726Ab0FVA5V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 20:57:21 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25958 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758646Ab0FVA5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 20:50:22 -0400
+	Mon, 21 Jun 2010 20:57:20 -0400
+Date: Mon, 21 Jun 2010 20:56:55 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Tao Ma <tao.ma@oracle.com>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] btrfs: Don't return extent in fiemap if we meet
+ with a hole.
+Message-ID: <20100622005655.GI23009@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Tao Ma <tao.ma@oracle.com>, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1277102222-3310-1-git-send-email-tao.ma@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <201006220040.41524.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1006211814370.1687-100000@iolanthe.rowland.org>
-	<201006220040.41524.rjw@sisk.pl>
-Date: Mon, 21 Jun 2010 17:50:18 -0700
-Message-ID: <AANLkTimIq0y9ZtXNJ79qCTg8DKHxDUJAz4VE6pxet21B@mail.gmail.com>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Florian Mickler <florian@mickler.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>, Neil Brown <neilb@suse.de>,
-       mark gross <640e9920@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277102222-3310-1-git-send-email-tao.ma@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090207.4C200A6F.00E8:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 3:40 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, June 22, 2010, Alan Stern wrote:
->> On Mon, 21 Jun 2010, Florian Mickler wrote:
->>
->> > > In the end you would want to have communication in both directions:
->> > > suspend blockers _and_ callbacks.  Polling is bad if done too often.
->> > > But I think the idea is a good one.
->> >
->> > Actually, I'm not so shure.
->> >
->> > 1. you have to roundtrip whereas in the suspend_blocker scheme you have
->> > active annotations (i.e. no further action needed)
->>
->> That's why it's best to use both.  The normal case is that programs
->> activate and deactivate blockers by sending one-way messages to the PM
->> process.  The exceptional case is when the PM process is about to
->> initiate a suspend; that's when it does the round-trip polling.  Since
->> the only purpose of the polling is to avoid a race, 90% of the time it
->> will succeed.
->>
->> > 2. it may not be possible for a user to determine if a wake-event is
->> > in-flight. you would have to somehow pass the wake-event-number with
->> > it, so that the userspace process could ack it properly without
->> > confusion. Or... I don't know of anything else...
->> >
->> >     1. userspace-manager (UM) reads a number (42).
->> >
->> >     2. it questions userspace program X: is it ok to suspend?
->> >
->> >     [please fill in how userspace program X determines to block
->> >     suspend]
->> >
->> >     3a. UM's roundtrip ends and it proceeds to write "42" to the
->> >     kernel [suspending]
->> >     3b. UM's roundtrip ends and it aborts suspend, because a
->> >     (userspace-)suspend-blocker got activated
->> >
->> > I'm not shure how the userspace program could determine that there is a
->> > wake-event in flight. Perhaps by storing the number of last wake-event.
->> > But then you need per-wake-event-counters... :|
->>
->> Rafael seems to think timeouts will fix this.  I'm not so sure.
->>
->> > Do you have some thoughts about the wake-event-in-flight detection?
->>
->> Not really, except for something like the original wakelock scheme in
->> which the kernel tells the PM core when an event is over.
->
-> But the kernel doesn't really know that, so it really can't tell the PM core
-> anything useful.  What happens with suspend blockers is that a kernel suspend
-> cooperates with a user space consumer of the event to get the story straight.
->
-> However, that will only work if the user space is not buggy and doesn't crash,
-> for example, before releasing the suspend blocker it's holding.
->
-> Apart from this, there are those events withoug user space "handoff" that
-> use timeouts.
->
-> Also there are events like wake-on-LAN that can be regarded as instantaneous
-> from the power manager's point of view, so they don't really need all of the
-> "suspend blockers" machinery and for them we will need to use a cooldown
-> timeout anyway.
->
-> And if we need to use that cooldown timeout, I don't see why not to use
-> timeouts for avoiding the race you're worrying about.
->
+On Mon, Jun 21, 2010 at 02:37:02PM +0800, Tao Ma wrote:
+> Hi Chris,
+> 	could you please consider merging this patch? It should be
+> trivial enough. It helps Jeff adding fiemap support to cp.
 
-Just because some events need to use timeouts, does not mean that all
-events should use timeouts. You may even want different timeout for
-different events. If I want a 5 minute timeout after a wake-on-lan
-packet, I don't want the same timeout after every battery check alarm
-(every 10 minutes on the Nexus One).
+Yes, I'll add this in, thanks!
 
-Also, I don't see how this patch helps with events that never make
-reach user-space. Unless each driver blocks suspend by returning and
-error from its suspend hook, the driver then becomes dependent on the
-user-space power manager to choose a sufficiently long timeout. For
-some drivers, like the gpio keypad matrix driver there, is no safe
-value for the timeout. The keypad driver has to block suspend if any
-keys are held down.
+-chris
 
-I won't have time to actively follow this discussion, but I don't
-think this patch is a good solution.
-
--- 
-Arve Hjønnevåg
+> 
+> Regards,
+> Tao
+> 
+> From 909effe7240be30dbc9403dd8cbb326587c3cc02 Mon Sep 17 00:00:00 2001
+> From: Tao Ma <tao.ma@oracle.com>
+> Date: Thu, 22 Apr 2010 12:38:57 +0800
+> Subject: [PATCH RESEND] btrfs: Don't return extent in fiemap if we meet with a hole.
+> 
+> Recently, my colleague Jeff tried to add fiemap support to cp(1).
+> http://www.mail-archive.com/bug-coreutils@gnu.org/msg19987.html
+> 
+> He just meet with a strange issue with following command:
+> dd if=/dev/null of=/btrfs/sparse bs=1 seek=4096
+> When we use fiemap to the file, btrfs returns an extent with len '4096'
+> and flag 'unwritten' while actually there is no data allocated.
+> 
+> I just dived into this and to my surprise, it is done by btrfs
+> intentionally. I checked other file systems which support fiemap.
+> Actually with the file created by the script, ocfs2, ext3/4 and
+> xfs all return zero extent. And according to the documentation file
+> Documentation/filesystems/fiemap.txt, FIEMAP_EXTENT_UNWRITTEN should
+> be used when the extent is allocated but it's data has not been
+> initialized. So I think btrfs should work like other filesystems.
+> 
+> Cc: Chris Mason <chris.mason@oracle.com>
+> Signed-off-by: Tao Ma <tao.ma@oracle.com>
+> Tested-by: Jeff Liu <jeff.liu@oracle.com>
+> ---
+>  fs/btrfs/extent_io.c |   15 +++++++++------
+>  1 files changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+> index b177ed3..7eb4d77 100644
+> --- a/fs/btrfs/extent_io.c
+> +++ b/fs/btrfs/extent_io.c
+> @@ -2951,7 +2951,7 @@ int extent_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  	u64 disko = 0;
+>  	struct extent_map *em = NULL;
+>  	struct extent_state *cached_state = NULL;
+> -	int end = 0;
+> +	int end = 0, hole = 0;
+>  	u64 em_start = 0, em_len = 0;
+>  	unsigned long emflags;
+>  	ret = 0;
+> @@ -2978,12 +2978,13 @@ int extent_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  
+>  		disko = 0;
+>  		flags = 0;
+> +		hole = 0;
+>  
+>  		if (em->block_start == EXTENT_MAP_LAST_BYTE) {
+>  			end = 1;
+>  			flags |= FIEMAP_EXTENT_LAST;
+>  		} else if (em->block_start == EXTENT_MAP_HOLE) {
+> -			flags |= FIEMAP_EXTENT_UNWRITTEN;
+> +			hole = 1;
+>  		} else if (em->block_start == EXTENT_MAP_INLINE) {
+>  			flags |= (FIEMAP_EXTENT_DATA_INLINE |
+>  				  FIEMAP_EXTENT_NOT_ALIGNED);
+> @@ -3015,10 +3016,12 @@ int extent_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+>  			end = 1;
+>  		}
+>  
+> -		ret = fiemap_fill_next_extent(fieinfo, em_start, disko,
+> -					em_len, flags);
+> -		if (ret)
+> -			goto out_free;
+> +		if (!hole) {
+> +			ret = fiemap_fill_next_extent(fieinfo, em_start, disko,
+> +						      em_len, flags);
+> +			if (ret)
+> +				goto out_free;
+> +		}
+>  	}
+>  out_free:
+>  	free_extent_map(em);
+> -- 
+> 1.6.3.3.334.g916e1.dirty
+> 
