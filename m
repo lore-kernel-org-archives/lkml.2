@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab0FVLO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 07:14:29 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:46633 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751502Ab0FVLO1 (ORCPT
+	id S1752032Ab0FVLSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 07:18:41 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43570 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab0FVLSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 07:14:27 -0400
-Date: Mon, 21 Jun 2010 17:57:49 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Arve Hj?nnev?g <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100621155749.GD1447@ucw.cz>
-References: <20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
- <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
- <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
- <20100527140655.GA28048@srcf.ucam.org>
- <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain>
- <20100527155201.GA31937@srcf.ucam.org>
- <alpine.LFD.2.00.1005271808340.3032@localhost.localdomain>
- <20100527165931.GB1062@srcf.ucam.org>
- <alpine.LFD.2.00.1005271905000.3032@localhost.localdomain>
- <20100527172343.GB2468@srcf.ucam.org>
+	Tue, 22 Jun 2010 07:18:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :x-enigmail-version:content-type:content-transfer-encoding;
+        b=CkWR0BRPngUQMPYNVZSGHaCcs0kzE/tH/2uR/dizQEbG4YxRusgMkCAI80UmbGDotW
+         e7g8FiNdVuoX4n33/J2IgdqaxGc6R7XEJn9DLdtk8jXiioA6P9s3tfifrluNxmv+UVnh
+         +zwvtlgbVcDRAoSh3QBiVda12TXd1NxWkBGlA=
+Message-ID: <4C209C15.9090604@gmail.com>
+Date: Tue, 22 Jun 2010 13:18:45 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527172343.GB2468@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: borislav.petkov@amd.com
+CC: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: intel_cacheinfo: potential NULL dereference?
+X-Enigmail-Version: 1.1
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi,
 
-(ok, so I'm little late to the party).
+commit 9350f982 changed the code so it looks like:
+static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
+                                   const char *buf, size_t count,
+                                   unsigned int slot)
+{
+        struct pci_dev *dev = this_leaf->l3->dev;   <<1>>
+        int cpu = cpumask_first(to_cpumask(this_leaf->shared_cpu_map));
+        unsigned long val = 0;
 
-> > Nonsense, if we want to push the system into suspend from the idle
-> > state we can do that. It's just not implemented and we've never tried
-> > to do it as it requires a non trivial amount of work, but I have done
-> > it on an ARM two years ago as a prove of concept and it works like a
-> > charm.
-> 
-> ACPI provides no guarantees about what level of hardware functionality 
-> remains during S3. You don't have any useful ability to determine which 
-> events will generate wakeups. And from a purely practical point of view, 
+#define SUBCACHE_MASK   (3UL << 20)
+#define SUBCACHE_INDEX  0xfff
 
-We'll need ACPI extensions, then (or very conservative
-drivers). suspend blockers do *not* help here.
+        if (!this_leaf->l3 || !this_leaf->l3->can_disable)  <<2>>
+                return -EINVAL;
 
-> since the latency is in the range of seconds, you'll never have a low 
-> enough wakeup rate to hit it.
+Stanse found, that this_leaf->l3 is dereferenced at <<1>>, but checked
+for being NULL at <<2>>. Is the check superfluous or the dev assignment
+should go after the check?
 
-I did 'sleepy linux' prototype on PC, and yes I was able to get to
-'once in 5 seconds' wakeup rate... good enough...
-									Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+thanks,
+--
+js
