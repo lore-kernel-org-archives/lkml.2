@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab0FVQcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 12:32:10 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:45637 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab0FVQcI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 12:32:08 -0400
-Date: Tue, 22 Jun 2010 17:31:38 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
-       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
-Message-ID: <20100622163138.GD20668@srcf.ucam.org>
-References: <1276859156.19554.2.camel@maxim-laptop> <AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com> <1276870309.23783.3.camel@maxim-laptop> <1276933774.16697.11.camel@maxim-laptop> <AANLkTimIjaxq7IDWwIl1vv93k9bNQ2i89Sb5R5TiJmmA@mail.gmail.com> <1277032723.9555.12.camel@maxim-laptop> <AANLkTim8iZmm8pEERJUsrQWOiLSjPUfCN-TFFzZZQWx2@mail.gmail.com> <1277151410.5409.33.camel@maxim-laptop> <20100621233333.21262abjfxl8j1xc@hayate.sektori.org> <AANLkTikkt4dqYWrwtTCJ8tJZLB1kZXgF1KvaPsIOO3Dl@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikkt4dqYWrwtTCJ8tJZLB1kZXgF1KvaPsIOO3Dl@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1756071Ab0FVQc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 12:32:26 -0400
+Received: from www.sr71.net ([198.145.64.142]:41320 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754354Ab0FVQcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 12:32:23 -0400
+X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jun 2010 12:32:23 EDT
+Subject: Re: [PATCH V3 3/8] Cleancache: core ops functions and configuration
+From: Dave Hansen <dave@sr71.net>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+       adilger@Sun.COM, tytso@mit.edu, mfasheh@suse.com,
+       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com
+In-Reply-To: <20100621231939.GA19505@ca-server1.us.oracle.com>
+References: <20100621231939.GA19505@ca-server1.us.oracle.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 22 Jun 2010 09:26:28 -0700
+Message-ID: <1277223988.9782.20.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 01:39:07PM -0700, Luis R. Rodriguez wrote:
-> Last I reviewed CONFIG_PCIEASPM won't buy you *anything* other than
-> debugging knobs. With it you can force all devices to enable ASPM
-> completely on or disable it. Both of which I think are not really
-> useful and instead should be done in userspace given that if you are
-> testing ASPM you likely want to test only one one device and its
-> respective root complex, not all at the same time.
+On Mon, 2010-06-21 at 16:19 -0700, Dan Magenheimer wrote:
+> --- linux-2.6.35-rc2/include/linux/cleancache.h 1969-12-31 17:00:00.000000000 -0700
+> +++ linux-2.6.35-rc2-cleancache/include/linux/cleancache.h      2010-06-21 14:45:18.000000000 -0600
+> @@ -0,0 +1,88 @@
+> +#ifndef _LINUX_CLEANCACHE_H
+> +#define _LINUX_CLEANCACHE_H
+> +
+> +#include <linux/fs.h>
+> +#include <linux/mm.h>
+> +
+> +struct cleancache_ops {
+> +       int (*init_fs)(size_t);
+> +       int (*init_shared_fs)(char *uuid, size_t);
+> +       int (*get_page)(int, ino_t, pgoff_t, struct page *);
+> +       void (*put_page)(int, ino_t, pgoff_t, struct page *);
+> +       void (*flush_page)(int, ino_t, pgoff_t);
+> +       void (*flush_inode)(int, ino_t);
+> +       void (*flush_fs)(int);
+> +};
+> + 
 
-It buys you enabling of ASPM on devices that the BIOS hasn't configured, 
-which is legitimate and useful.
+How would someone go about testing this code?  Is there an example
+cleancache implementation?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+-- Dave
+
