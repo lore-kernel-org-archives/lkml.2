@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827Ab0FVFJZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 01:09:25 -0400
-Received: from mx.tele-kom.ru ([91.102.104.6]:1342 "HELO mx.tele-kom.ru"
+	id S1752032Ab0FVFKB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 01:10:01 -0400
+Received: from mx.tele-kom.ru ([91.102.104.6]:1471 "HELO mx.tele-kom.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751499Ab0FVFJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 01:09:23 -0400
+	id S1751710Ab0FVFKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 01:10:00 -0400
 Cc: recipient list not shown:;
-Message-ID: <54003.193.220.26.130.1277181100.squirrel@mail.t-k.ru>
-Date: Tue, 22 Jun 2010 08:31:40 +0400 (MSD)
+Message-ID: <46283.193.220.26.130.1277181262.squirrel@mail.t-k.ru>
+Date: Tue, 22 Jun 2010 08:34:22 +0400 (MSD)
 Subject: 
 From: "Mr Chen Guan" <info@w.cn>
 Reply-To: chen_guan777@w.cn
