@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758309Ab0FVRgI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 13:36:08 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56466 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756746Ab0FVRgF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 13:36:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=AU0vBb44lCCJKK19EN/CE6hrrQl9RmH9600bmQ8DAxW9YP8nRe+fVpyaxxsVapW3k1
-         LT6WeoKLbbmbP6XN/w8hk5Gjup5jBTEs0SabIdCxtS2j8Pg043sygpiKafXXOgrc6Hdo
-         8xvRxvMQsEVOtJdM0IGycaT7lJ7w6XrXtx5qQ=
+	id S1757199Ab0FVRkP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 13:40:15 -0400
+Received: from reaktio.net ([194.89.68.22]:33154 "EHLO ydin.reaktio.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752333Ab0FVRkN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 13:40:13 -0400
+Date: Tue, 22 Jun 2010 20:40:14 +0300
+From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
+To: Jiahua <jiahua@gmail.com>
+Cc: linux-kernel@vger.kernel.org, open-iscsi@googlegroups.com
+Subject: Re: Linux IO scalability and pushing over million IOPS over
+	software iSCSI?
+Message-ID: <20100622174014.GU17817@reaktio.net>
+References: <20100622134410.GT17817@reaktio.net> <AANLkTikDJN6oy7o7eTUH1F4KsRgRBZoOYQI_al3Y8HXk@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20100622161329.GA14978@phenom.dumpdata.com>
-References: <AANLkTim7_OzJfwbtk0fE5ScH8zZwZ_uJeo5pJFOhkHu_@mail.gmail.com>
-	<20100622161329.GA14978@phenom.dumpdata.com>
-Date: Tue, 22 Jun 2010 13:36:04 -0400
-Message-ID: <AANLkTimUGrJRgW6Ao6mfqqfxBOIdM4HNiUEkcqpWeQfo@mail.gmail.com>
-Subject: Re: Dell PowerEdge 4200 scsi, worked in 2.6.18, not in 2.6.26 (LOW 
-	PRIORITY help request)
-From: trouble daemon <troubledaemon@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikDJN6oy7o7eTUH1F4KsRgRBZoOYQI_al3Y8HXk@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad,
+On Tue, Jun 22, 2010 at 09:24:21AM -0700, Jiahua wrote:
+> Maybe a native question, but why need 50 targets? Each target can only
+> serve about 25K IOPS? A single ramdisk should be able to handle this.
+> Where is the bottleneck?
+> 
 
-> The more worrying is the irqs firring. Try to use the 'irqpoll' parameter as
-> it suggests.
+That's a good question.. dunno. Maybe StarWind iSCSI target didn't scale very well? :)
 
-Actually, it seems that it was solved with "noapic" kernel option, as was
-suggested by Ben in the debian bug report at:
+Or maybe it's related to the multi-queue support on the initiator NIC,
+to scale the load to multiple queues and thus to multiple IRQs and to multiple CPU cores..
 
-  http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586494
-
-I do thank you for replying though. I am still not sure what exactly changed in
-debian between epoch (</joke>) and 2.6.26 though, since the dell's
-have been 100% perfect
-out of the box in every single debian since circa 2002, when I got them.
-
-I can deal with noapic, but I will try the irqpoll as well. I only noticed that
-the dmesg was mentioning it after the noapic solved my problem. One thing I did
-notice with noapic though, is that network ping's seem to round down, so I see
-lots of "0.000 ms" pings on the local network. I assume that without apic that
-the system is just using some sort of timer to poll the nics though.
-
-On a side note, I also saw a 2007 post from Andrew Morton, I think, that was
-complaining about noapic and trying to track down where the problem might have
-started. Given the approx. 1999 munfacturing date (from what I can tell) of the
-PowerEdge 4200 series, and a perfect linux history from at least debian potato
-up until 2.6.26, you can bet some money that someone, somewhere out there,
-changed yet another feature that required me to use noapic. More specifically,
-it worked in 2.6.18 in debian etch/lenny, but broke in the next debian kernel,
-2.6.26. ie: the change/problem lies somewhere between 19-26 inclusive
-(depending on if my apic issue isn't simply a debian default/tweak
-that messed things
-up, of course)
-
-Hopefully Andrew high lights on his name! :)
-
-Anyways, thanks and sorry for the wall of text! l8r
+so maybe they needed multiple IP addresses to do that and it was easiest to just use 
+multiple target systems? 
 
 
+> We had a similar experiment but with Infiniband and Lustre. It turn
+> out Lustre has a rate limit in the RPC handling layer. Is it the same
+> problem here?
+> 
 
-troubled
+Note that we're trying to benchmark the *initiator* here, not the targets..
+
+-- Pasi
+
+> Jiahua
+> 
+> 
+> 
+> On Tue, Jun 22, 2010 at 6:44 AM, Pasi Kärkkäinen <pasik@iki.fi> wrote:
+> > Hello,
+> >
+> > Recently Intel and Microsoft demonstrated pushing over 1.25 million IOPS using software iSCSI and a single 10 Gbit NIC:
+> > http://communities.intel.com/community/wired/blog/2010/04/22/1-million-iops-how-about-125-million
+> >
+> > Earlier they achieved one (1.0) million IOPS:
+> > http://blog.fosketts.net/2010/01/14/microsoft-intel-push-million-iscsi-iops/
+> > http://communities.intel.com/community/openportit/server/blog/2010/01/19/1000000-iops-with-iscsi--thats-not-a-typo
+> >
+> > The benchmark setup explained:
+> > http://communities.intel.com/community/wired/blog/2010/04/20/1-million-iop-article-explained
+> > http://dlbmodigital.microsoft.com/ppt/TN-100114-JSchwartz_SMorgan_JPlawner-1032432956-FINAL.pdf
+> >
+> >
+> > So the question is.. does someone have enough new hardware to try this with Linux?
+> > Can Linux scale to over 1 million IO operations per second?
+> >
+> >
+> > Intel and Microsoft used the following for the benchmark:
+> >
+> >        - Single Windows 2008 R2 system with Intel Xeon 5600 series CPU,
+> >          single-port Intel 82599 10 Gbit NIC and MS software-iSCSI initiator
+> >          connecting to 50x iSCSI LUNs.
+> >        - IOmeter to benchmark all the 50x iSCSI LUNs concurrently.
+> >
+> >        - 10 servers as iSCSI targets, each having 5x ramdisk LUNs, total of 50x ramdisk LUNs.
+> >        - iSCSI target server also used 10 Gbit NICs, and StarWind iSCSI target software.
+> >        - Cisco 10 Gbit switch (Nexus) connecting the servers.
+> >
+> >        - For the 1.25 million IOPS result they used 512 bytes/IO benchmark, outstanding IOs=20.
+> >        - No jumbo frames, just the standard MTU=1500.
+> >
+> > They used many LUNs so they can scale the iSCSI connections to multiple CPU cores
+> > using RSS (Receive Side Scaling) and MSI-X interrupts.
+> >
+> > So.. Who wants to try this? :) I don't unfortunately have 11x extra computers with 10 Gbit NICs atm to try it myself..
+> >
+> > This test covers networking, block layer, and software iSCSI initiator..
+> > so it would be a nice to see if we find any bottlenecks from current Linux kernel.
+> >
+> > Comments please!
+> >
+> > -- Pasi
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
