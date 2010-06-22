@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758732Ab0FVO15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 10:27:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23609 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751897Ab0FVO14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 10:27:56 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cfq: allow dispatching of both sync and async I/O together
-References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
-	<1277149789-4493-3-git-send-email-jmoyer@redhat.com>
-	<4C1FC4B4.3060700@kernel.dk> <20100621232208.GA10175@redhat.com>
-	<20100622040700.GA12502@redhat.com>
-	<x49sk4ffd6l.fsf@segfault.boston.devel.redhat.com>
-	<20100622131853.GB13153@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 22 Jun 2010 10:27:52 -0400
-In-Reply-To: <20100622131853.GB13153@redhat.com> (Vivek Goyal's message of
-	"Tue, 22 Jun 2010 09:18:53 -0400")
-Message-ID: <x49k4prf8gn.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1758912Ab0FVO2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 10:28:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39124 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897Ab0FVO2U convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 10:28:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=PvnTb1AMNtJPen4Pto4UtB3C7nlksyDX8Zd5PtpwnFWQu9vfZC7srV+bYPNDtmNWiq
+         RjRy6Xb1OqODjdluXBqRZCaxQRmWlAGFxxPihAf3PSd35X0SwovJsada4nyE4kjJJYcm
+         OshBX1i7xIDkFrLL2WkLJ4F9YT3pDOFNC02+U=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: 2.6.35-rc3 regression: IBM Maia system is unbootable [ACPI related?]
+Date: Tue, 22 Jun 2010 16:28:13 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3; KDE/4.4.4; i686; ; )
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-acpi@vger.kernel.org
+References: <1277136189.10998.63.camel@mulgrave.site>
+In-Reply-To: <1277136189.10998.63.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006221628.14038.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+On poniedziałek, 21 czerwca 2010 o 18:03:09 James Bottomley wrote:
+> The system in question has a set of root bridges, with the CD rom (which
+> is seen) being on bus 0 and the SCSI controller, which doesn't show up
+> being on bus 1 (with several other things on busses > 1).
+> 
+> The system uses ACPI to detect the multiple bridges, so it seems that
+> this failure in 2.6.35-rc3:
+> 
+> ACPI: Core revision 20100428
+> ACPI Error: Hardware did not enter ACPI mode (20100428/evxfevnt-103)
+> ACPI Warning: AcpiEnable failed (20100428/utxface-147)
+> ACPI: Unable to enable ACPI
+> 
+> Means that we can't detect any PCI bus other than 0 and thus the system
+> won't boot.
+> 
+> The full dmesgs for a successful (2.6.34) and failed (2.6.35-rc3) boot
+> are below.
+> 
+> James
 
-> On Tue, Jun 22, 2010 at 08:45:54AM -0400, Jeff Moyer wrote:
->> Vivek Goyal <vgoyal@redhat.com> writes:
->> 
->> > On Mon, Jun 21, 2010 at 07:22:08PM -0400, Vivek Goyal wrote:
->> > So looks like firefox launching times have not changed much in the presence
->> > of heavy buffered writting going on root disk. I will do more testing tomorrow.
->> 
->> Was the buffered writer actually hitting disk?  How much memory is on
->> your system?
->
-> I have 4G of memory in the system. I used to wait for 10-15 seconds after
-> writer has started and then launch firefox to make sure writes are actually
-> hitting the disk.
->
-> Are you seeing different results in your testing?
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=16271
+for your bug report, please add your address to the CC list in there, thanks!
 
-No, I hadn't got to testing this yet.  I was just making sure the test
-procedure was sane (and it is).  Thanks for doing the testing!
-
--Jeff
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
