@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab0FVHeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 03:34:12 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:56622 "EHLO
+	id S1755008Ab0FVHj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 03:39:57 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:46652 "EHLO
 	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807Ab0FVHeL (ORCPT
+	with ESMTP id S1753371Ab0FVHj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 03:34:11 -0400
+	Tue, 22 Jun 2010 03:39:56 -0400
 Subject: Re: [rfc] Describe events in a structured way via sysfs
 From: Johannes Berg <johannes@sipsolutions.net>
 To: Lin Ming <ming.m.lin@intel.com>
@@ -26,7 +26,7 @@ Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
        lkml <linux-kernel@vger.kernel.org>,
        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1277191359.5025.4.camel@minggr.sh.intel.com>
+In-Reply-To: <1277192007.3637.8.camel@jlt3.sipsolutions.net>
 References: <1274233602.3036.84.camel@localhost>
 	 <20100518200524.GA20223@kroah.com>
 	 <1274236496.3603.22.camel@minggr.sh.intel.com>
@@ -40,9 +40,10 @@ References: <1274233602.3036.84.camel@localhost>
 	 <1277187920.4467.3.camel@minggr.sh.intel.com>
 	 <1277189971.3637.5.camel@jlt3.sipsolutions.net>
 	 <1277191359.5025.4.camel@minggr.sh.intel.com>
+	 <1277192007.3637.8.camel@jlt3.sipsolutions.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Jun 2010 09:33:27 +0200
-Message-ID: <1277192007.3637.8.camel@jlt3.sipsolutions.net>
+Date: Tue, 22 Jun 2010 09:39:24 +0200
+Message-ID: <1277192364.3637.10.camel@jlt3.sipsolutions.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
@@ -50,21 +51,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-22 at 15:22 +0800, Lin Ming wrote:
+On Tue, 2010-06-22 at 09:33 +0200, Johannes Berg wrote:
 
-> > > net/wlan0/events/
-> > > net/waln1/events/
-> > > ....
-> > > net/walnN/events/
+> > > > net/wlan0/events/
+> > > > net/waln1/events/
+> > > > ....
+> > > > net/walnN/events/
+> > > 
+> > > That's not appropriate either though since you may have multiple network
+> > > interfaces on the same hardware :)
 > > 
-> > That's not appropriate either though since you may have multiple network
-> > interfaces on the same hardware :)
+> > Doesn't net/wlan0...wlanN mean multiple network interfaces on the same
+> > hardware?
 > 
-> Doesn't net/wlan0...wlanN mean multiple network interfaces on the same
-> hardware?
+> Yes, but the trace points aren't per network interface but rather per
+> hardware piece.
 
-Yes, but the trace points aren't per network interface but rather per
-hardware piece.
+Which really just means that whoever writes the tracepoint needs to
+provide a struct device for where to put it (at least in the case of
+driver tracepoints), and then ideally some description of the device
+also gets put into the ringbuffer.
+
+Assuming you actually want to have the event show up in sysfs twice if
+it has multiple producers? I'd like that, it would make sense for a lot
+of cases since you might only care about one of the producers.
 
 johannes
 
