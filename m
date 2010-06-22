@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab0FVPZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 11:25:28 -0400
-Received: from victor.provo.novell.com ([137.65.250.26]:48639 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab0FVPZ1 (ORCPT
-	<rfc822;groupwise-SJayaraman@novell.com:0:0>);
-	Tue, 22 Jun 2010 11:25:27 -0400
-X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jun 2010 11:25:26 EDT
-From: Suresh Jayaraman <sjayaraman@suse.de>
-To: Steve French <smfrench@gmail.com>
-Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: [RFC][PATCH 10/10] cifs: add mount option to enable local caching
-Date: Tue, 22 Jun 2010 20:55:09 +0530
-Message-Id: <1277220309-3757-1-git-send-email-sjayaraman@suse.de>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <yes>
-References: <yes>
+	id S1758883Ab0FVPZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 11:25:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27032 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754070Ab0FVPZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 11:25:58 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: jbarnes@virtuousgeek.org
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] ACPI: Disable ASPM if the platform won't provide _OSC control for PCIe
+Date: Tue, 22 Jun 2010 11:25:43 -0400
+Message-Id: <1277220343-25168-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.34.250
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a mount option 'fsc' to enable local caching on CIFS.
+The PCI SIG documentation for the _OSC OS/firmware handshaking interface
+states:
 
-As the cifs-utils (userspace) changes are not done yet, this patch enables
-'fsc' by default to assist testing.
+"If the _OSC control method is absent from the scope of a host bridge
+device, then the operating system must not enable or attempt to use any
+features defined in this section for the hierarchy originated by the host
+bridge."
 
-Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+The obvious interpretation of this is that the OS should not attempt to use
+PCIe hotplug, PME or AER - however, the specification also notes that an
+_OSC method is *required* for PCIe hierarchies, and experimental validation
+with An Alternative OS indicates that it doesn't use any PCIe functionality
+if the _OSC method is missing. That arguably means we shouldn't be using
+MSI or extended config space, but right now our problems seem to be limited
+to vendors being surprised when ASPM gets enabled on machines when other
+OSs refuse to do so. So, for now, let's just disable ASPM if the _OSC
+method doesn't exist or refuses to hand over PCIe capability control.
+
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 ---
- fs/cifs/cifs_fs_sb.h |    1 +
- fs/cifs/connect.c    |    8 ++++++++
- 2 files changed, 9 insertions(+), 0 deletions(-)
+ drivers/acpi/pci_root.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/fs/cifs/cifs_fs_sb.h b/fs/cifs/cifs_fs_sb.h
-index 246a167..9e77145 100644
---- a/fs/cifs/cifs_fs_sb.h
-+++ b/fs/cifs/cifs_fs_sb.h
-@@ -35,6 +35,7 @@
- #define CIFS_MOUNT_DYNPERM      0x1000 /* allow in-memory only mode setting   */
- #define CIFS_MOUNT_NOPOSIXBRL   0x2000 /* mandatory not posix byte range lock */
- #define CIFS_MOUNT_NOSSYNC      0x4000 /* don't do slow SMBflush on every sync*/
-+#define CIFS_MOUNT_FSCACHE	0x8000 /* local caching enabled */
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index 1af8081..7167213 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -32,6 +32,7 @@
+ #include <linux/pm.h>
+ #include <linux/pci.h>
+ #include <linux/pci-acpi.h>
++#include <linux/pci-aspm.h>
+ #include <linux/acpi.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
+@@ -576,6 +577,14 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+ 	if (flags != base_flags)
+ 		acpi_pci_osc_support(root, flags);
  
- struct cifs_sb_info {
- 	struct cifsTconInfo *tcon;	/* primary mount */
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 4844dbd..6c6ff3c 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -98,6 +98,7 @@ struct smb_vol {
- 	bool noblocksnd:1;
- 	bool noautotune:1;
- 	bool nostrictsync:1; /* do not force expensive SMBflush on every sync */
-+	bool fsc:1;	/* enable fscache */
- 	unsigned int rsize;
- 	unsigned int wsize;
- 	bool sockopt_tcp_nodelay:1;
-@@ -843,6 +844,9 @@ cifs_parse_mount_options(char *options, const char *devname,
- 	/* default to using server inode numbers where available */
- 	vol->server_ino = 1;
- 
-+	/* XXX: default to fsc for testing until mount.cifs pieces are done */
-+	vol->fsc = 1;
++	status = acpi_pci_osc_control_set(root->device->handle,
++					  OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL);
 +
- 	if (!options)
- 		return 1;
++	if (ACPI_FAILURE(status)) {
++		printk(KERN_INFO "Unable to assume PCIe control: Disabling ASPM\n");
++		pcie_no_aspm();
++	}
++
+ 	return 0;
  
-@@ -1332,6 +1336,8 @@ cifs_parse_mount_options(char *options, const char *devname,
- 			printk(KERN_WARNING "CIFS: Mount option noac not "
- 				"supported. Instead set "
- 				"/proc/fs/cifs/LookupCacheEnabled to 0\n");
-+		} else if (strnicmp(data, "fsc", 3) == 0) {
-+			vol->fsc = true;
- 		} else
- 			printk(KERN_WARNING "CIFS: Unknown mount option %s\n",
- 						data);
-@@ -2405,6 +2411,8 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
- 		cifs_sb->mnt_cifs_flags |= CIFS_MOUNT_OVERR_GID;
- 	if (pvolume_info->dynperm)
- 		cifs_sb->mnt_cifs_flags |= CIFS_MOUNT_DYNPERM;
-+	if (pvolume_info->fsc)
-+		cifs_sb->mnt_cifs_flags |= CIFS_MOUNT_FSCACHE;
- 	if (pvolume_info->direct_io) {
- 		cFYI(1, "mounting share using direct i/o");
- 		cifs_sb->mnt_cifs_flags |= CIFS_MOUNT_DIRECT_IO;
+ end:
 -- 
-1.6.4.2
+1.7.1
 
