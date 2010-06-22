@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab0FVSKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 14:10:10 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:65525 "EHLO poutre.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785Ab0FVSKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 14:10:08 -0400
-Date: Tue, 22 Jun 2010 20:10:03 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Ben Dooks <ben-linux@fluff.org>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] i2c/mips: Fix error return codes from Sibyte i2c bus
- driver
-Message-ID: <20100622201003.23318b09@hyperion.delvare>
-In-Reply-To: <1277215748-31510-1-git-send-email-guenter.roeck@ericsson.com>
-References: <1277215748-31510-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751402Ab0FVSPU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 14:15:20 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:35998 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab0FVSPR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 14:15:17 -0400
+Date: Tue, 22 Jun 2010 14:13:20 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5 v2]wireless:hostap_main.c warning: variable 'iface'
+ set but not used
+Message-ID: <20100622181320.GD2583@tuxdriver.com>
+References: <1277157733-14071-1-git-send-email-justinmattock@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277157733-14071-1-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
-
-On Tue, 22 Jun 2010 07:09:08 -0700, Guenter Roeck wrote:
-> Sibyte i2c bus driver returns non-descriptive error values.
-> Update to return error values as defined in Documentation/i2c/fault-codes.
+On Mon, Jun 21, 2010 at 03:02:13PM -0700, Justin P. Mattock wrote:
+> This is a resend from version one due to trying a different approach
+> than the original(probably important to leave netdev_priv() in).
 > 
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> ---
-> v2: Return -ENXIO for missing ACK and -EIO for other errors
-> ---
->  drivers/i2c/busses/i2c-sibyte.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+> In any case have a look, if there's another approach let me know
+> and ill test it out. The below patch fixes a warning im seeing
+> when compiling with gcc 4.6.0
 > 
-> diff --git a/drivers/i2c/busses/i2c-sibyte.c b/drivers/i2c/busses/i2c-sibyte.c
-> index 3d76a18..0fe505d 100644
-> --- a/drivers/i2c/busses/i2c-sibyte.c
-> +++ b/drivers/i2c/busses/i2c-sibyte.c
-> @@ -94,7 +94,7 @@ static int smbus_xfer(struct i2c_adapter *i2c_adap, u16 addr,
->  		}
->  		break;
->  	default:
-> -		return -1;      /* XXXKW better error code? */
-> +		return -EOPNOTSUPP;
->  	}
->  
->  	while (csr_in32(SMB_CSR(adap, R_SMB_STATUS)) & M_SMB_BUSY)
-> @@ -104,7 +104,7 @@ static int smbus_xfer(struct i2c_adapter *i2c_adap, u16 addr,
->  	if (error & M_SMB_ERROR) {
->  		/* Clear error bit by writing a 1 */
->  		csr_out32(M_SMB_ERROR, SMB_CSR(adap, R_SMB_STATUS));
-> -		return -1;      /* XXXKW better error code? */
-> +		return (error & M_SMB_ERROR_TYPE) ? -EIO : -ENXIO;
->  	}
->  
->  	if (data_bytes == 1)
+> CC [M]  drivers/net/wireless/hostap/hostap_main.o
+> drivers/net/wireless/hostap/hostap_main.c: In function 'hostap_set_multicast_list_queue':
+> drivers/net/wireless/hostap/hostap_main.c:744:27: warning: variable 'iface' set but not used
+>  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Very nice, patch applied, thanks.
+I already applied the other version to wireless-next-2.6.  I can't
+imagine what you mean to accomplish by leaving in a call to netdev_priv
+w/o assigning the result to something.
 
+John
 -- 
-Jean Delvare
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
