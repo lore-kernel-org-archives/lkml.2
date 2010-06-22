@@ -1,143 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758788Ab0FVOVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 10:21:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49081 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab0FVOVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 10:21:10 -0400
-Date: Tue, 22 Jun 2010 10:20:06 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Edward Shishkin <edward@redhat.com>
-Cc: Jamie Lokier <jamie@shareable.org>,
-       Edward Shishkin <edward.shishkin@gmail.com>, Mat <jackdachef@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Ric Wheeler <rwheeler@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       The development of BTRFS <linux-btrfs@vger.kernel.org>
-Subject: Re: Balancing leaves when walking from top to down (was Btrfs:...)
-Message-ID: <20100622142006.GT23009@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Edward Shishkin <edward@redhat.com>,
-	Jamie Lokier <jamie@shareable.org>,
-	Edward Shishkin <edward.shishkin@gmail.com>,
-	Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-	linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	The development of BTRFS <linux-btrfs@vger.kernel.org>
-References: <4C07C321.8010000@redhat.com>
- <AANLkTilKw2onQkdNlZjg7WVnPu2dsNpDSvoxrO_FA2z_@mail.gmail.com>
- <4C1B7560.1000806@gmail.com>
- <20100618155653.GC10919@shareable.org>
- <4C1BC924.30604@redhat.com>
- <20100618193555.GV27466@think>
- <4C1BED56.9010300@redhat.com>
- <20100621131528.GA17979@think>
- <20100621180013.GD17979@think>
- <4C20C4E9.60203@redhat.com>
+	id S1758817Ab0FVOY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 10:24:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18124 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756212Ab0FVOYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 10:24:55 -0400
+Date: Tue, 22 Jun 2010 10:24:50 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cfq: allow dispatching of both sync and async I/O
+ together
+Message-ID: <20100622142450.GC13153@redhat.com>
+References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
+ <1277149789-4493-3-git-send-email-jmoyer@redhat.com>
+ <4C1FC4B4.3060700@kernel.dk>
+ <20100621232208.GA10175@redhat.com>
+ <20100622040700.GA12502@redhat.com>
+ <x49sk4ffd6l.fsf@segfault.boston.devel.redhat.com>
+ <20100622131853.GB13153@redhat.com>
+ <4C20B8CE.1070702@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C20C4E9.60203@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4C20C6B9.005D:SCFMA922111,ss=1,fgs=0
+In-Reply-To: <4C20B8CE.1070702@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 04:12:57PM +0200, Edward Shishkin wrote:
-> Chris Mason wrote:
-> >On Mon, Jun 21, 2010 at 09:15:28AM -0400, Chris Mason wrote:
-> >>I'll reproduce from your test case and provide a fix.  mount -o
-> >>max_inline=1500 would give us 50% usage in the worst case
+On Tue, Jun 22, 2010 at 03:21:18PM +0200, Jens Axboe wrote:
+> On 2010-06-22 15:18, Vivek Goyal wrote:
+> > On Tue, Jun 22, 2010 at 08:45:54AM -0400, Jeff Moyer wrote:
+> >> Vivek Goyal <vgoyal@redhat.com> writes:
+> >>
+> >>> On Mon, Jun 21, 2010 at 07:22:08PM -0400, Vivek Goyal wrote:
+> >>>> On Mon, Jun 21, 2010 at 09:59:48PM +0200, Jens Axboe wrote:
+> >>>>> On 21/06/10 21.49, Jeff Moyer wrote:
+> >>>>>> Hi,
+> >>>>>>
+> >>>>>> In testing a workload that has a single fsync-ing process and another
+> >>>>>> process that does a sequential buffered read, I was unable to tune CFQ
+> >>>>>> to reach the throughput of deadline.  This patch, along with the previous
+> >>>>>> one, brought CFQ in line with deadline when setting slice_idle to 0.
+> >>>>>>
+> >>>>>> I'm not sure what the original reason for not allowing sync and async
+> >>>>>> I/O to be dispatched together was.  If there is a workload I should be
+> >>>>>> testing that shows the inherent problems of this, please point me at it
+> >>>>>> and I will resume testing.  Until and unless that workload is identified,
+> >>>>>> please consider applying this patch.
+> >>>>>
+> >>>>> The problematic case is/was a normal SATA drive with a buffered
+> >>>>> writer and an occasional reader. I'll have to double check my
+> >>>>> mail tomorrow, but iirc the issue was that the occasional reader
+> >>>>> would suffer great latencies since service times for that single
+> >>>>> IO would be delayed at the drive side. It could perhaps just be
+> >>>>> a bug in how we handle the slice idling on the read side when the
+> >>>>> IO gets delayed initially.
+> >>>>>
+> >>>>> So if my memory is correct, google for the fsync madness and
+> >>>>> interactiveness thread that we had some months ago and which
+> >>>>> caused a lot of tweaking. The commit adding this is
+> >>>>> 5ad531db6e0f3c3c985666e83d3c1c4d53acccf9 and was added back
+> >>>>> in July last year. So it was around that time that the mails went
+> >>>>> around.
+> >>>>
+> >>>> Hi Jens,
+> >>>>
+> >>>> I suspect we might have introduced this patch because mike galbraith
+> >>>> had issues which application interactiveness (reading data back from swap)
+> >>>> in the prence of heavy writeout on SATA disk.
+> >>>>
+> >>>> After this patch we did two enhancements.
+> >>>>
+> >>>> - You introduced the logic of building write queue depth gradually.
+> >>>> - Corrado introduced the logic of idling on the random reader service
+> >>>>   tree.
+> >>>>
+> >>>> In the past random reader were not protected from WRITES as there was no
+> >>>> idling on random readers. But with corrado's changes of idling on
+> >>>> sync-noidle service tree, I think this problem might have been solved to
+> >>>> a great extent.
+> >>>>
+> >>>> Getting rid of this exclusivity of either SYNC/ASYNC requests in request
+> >>>> queue might help us with throughput on storage arrys without loosing
+> >>>> protection for random reader on SATA. 
+> >>>>
+> >>>> I will do some testing with and without patch and see if above is true
+> >>>> or not.
+> >>>
+> >>> Some primilinary testing results with and without patch. I started a
+> >>> buffered writer and started firefox and monitored how much time firefox
+> >>> took.
+> >>>
+> >>> dd if=/dev/zero of=zerofile bs=4K count=1024M
+> >>>
+> >>> 2.6.35-rc3 vanilla
+> >>> ==================
+> >>> real    0m22.546s
+> >>> user    0m0.566s
+> >>> sys     0m0.107s
+> >>>
+> >>>
+> >>> real    0m21.410s
+> >>> user    0m0.527s
+> >>> sys     0m0.095s
+> >>>
+> >>>
+> >>> real    0m27.594s
+> >>> user    0m1.256s
+> >>> sys     0m0.483s
+> >>>
+> >>> 2.6.35-rc3 + jeff's patches
+> >>> ===========================
+> >>> real    0m20.372s
+> >>> user    0m0.635s
+> >>> sys     0m0.128s
+> >>>
+> >>> real    0m22.281s
+> >>> user    0m0.509s
+> >>> sys     0m0.093s
+> >>>
+> >>> real    0m23.211s
+> >>> user    0m0.674s
+> >>> sys     0m0.140s
+> >>>
+> >>> So looks like firefox launching times have not changed much in the presence
+> >>> of heavy buffered writting going on root disk. I will do more testing tomorrow.
+> >>
+> >> Was the buffered writer actually hitting disk?  How much memory is on
+> >> your system?
+> > 
+> > I have 4G of memory in the system. I used to wait for 10-15 seconds after
+> > writer has started and then launch firefox to make sure writes are actually
+> > hitting the disk.
+> > 
+> > Are you seeing different results in your testing?
 > 
-> This is a very strange statement: how did you calculate this lower bound?
+> Just to be sure, this is a regular SATA drive that has NCQ enabled and
+> running? Apart from that comment, the test sounds good - dirty lots of
+> memory and ensure that it's writing, then start the reader. Should be
+> worst case for the reader. Sadly, both the before and after timings
+> are pretty horrible :-/
 
-We want room for the extent and the inode item and the inode backref.
-It's a rough number that leaves some extra room.  But even with a 2K
-item we're getting very close to 50% usage of the metadata area.
+This is Western Digital SATA disk. It has NCQ enabled. I see 31 in
+/sys/block/<dev>/device/queue_depth. Is there another way to verify that.
 
-> 
-> >> (minus the
-> >>balancing bug you hit).
-> >
-> >Ok, the balancing bug was interesting.  What happens is we create all
-> >the inodes and directory items nicely packed into the leaves.
-> >
-> >Then delayed allocation kicks in and starts inserting the big fat inline
-> >extents.  This often forces the balancing code to split a leaf twice in
-> >order to make room for the new inline extent.  The double split code
-> >wasn't balancing the bits that were left over on either side of our
-> >desired slot.
-> >
-> >The patch below fixes the problem for me, reducing the number of leaves
-> >that have more than 2K of free space down from 6% of the total to about
-> >74 leaves.  It could be zero, but the balancing code doesn't push
-> >items around if our leaf is in the first or last slot of the parent
-> >node (complexity vs benefit tradeoff).
-> 
-> Nevertheless, I see leaves, which are not in the first or last slot,
-> but mergeable with their neighbors (test case is the same):
+I also did a blktrace and I see that many a times we are driving deeper
+queue depths. So it confirms that this drive has NCQ enabled.
 
-Correct, but it was in the first or last slot when it was balanced (I
-confirmed this with printk).
+8,64   0        0     2.530368587     0  m   N cfq2024A / activate rq, drv=16
+8,64   0        0     2.531402018     0  m   N cfq2024A / activate rq, drv=16
+8,64   0        0     2.534765229     0  m   N cfq2024A / activate rq, drv=16
 
-Then the higher layers were balanced and our leaves were no longer in
-the first/last slot.  We don't rebalance leaves when we balance level 1.
+Setting the queue_depth=1 helps a bit and firefox launches in around 17-18
+seconds.
 
-> 
-> leaf 269557760 items 22 free space 2323 generation 25 owner 2
-> fs uuid 614fb921-cfa9-403d-9feb-940021e72382
-> chunk uuid b1674882-a445-45f9-b250-0985e483d231
-> 
-> leaf 280027136 items 18 free space 2627 generation 25 owner 2
-> fs uuid 614fb921-cfa9-403d-9feb-940021e72382
-> chunk uuid b1674882-a445-45f9-b250-0985e483d231
-> 
-> node 269549568 level 1 items 60 free 61 generation 25 owner 2
-> fs uuid 614fb921-cfa9-403d-9feb-940021e72382
-> chunk uuid b1674882-a445-45f9-b250-0985e483d231
->        key (175812608 EXTENT_ITEM 4096) block 175828992 (42927) gen 15
->        key (176025600 EXTENT_ITEM 4096) block 176111616 (42996) gen 15
->        key (176238592 EXTENT_ITEM 4096) block 176300032 (43042) gen 15
->        key (176451584 EXTENT_ITEM 4096) block 216248320 (52795) gen 17
->        key (176672768 EXTENT_ITEM 4096) block 216236032 (52792) gen 17
->        key (176783360 EXTENT_ITEM 4096) block 216252416 (52796) gen 17
->        key (176955392 EXTENT_ITEM 4096) block 138854400 (33900) gen 25
->        key (177131520 EXTENT_ITEM 4096) block 280289280 (68430) gen 25
->        key (177348608 EXTENT_ITEM 4096) block 280285184 (68429) gen 25
->        key (177561600 EXTENT_ITEM 4096) block 269557760 (65810) gen 25
->        key (177795072 EXTENT_ITEM 4096) block 280027136 (68366) gen 25
->        key (178008064 EXTENT_ITEM 4096) block 280064000 (68375) gen 25
->        key (178233344 EXTENT_ITEM 4096) block 285061120 (69595) gen 25
->        key (178442240 EXTENT_ITEM 4096) block 178442240 (43565) gen 16
->        key (178655232 EXTENT_ITEM 4096) block 178655232 (43617) gen 16
->        key (178868224 EXTENT_ITEM 4096) block 178868224 (43669) gen 16
-> [...]
-> 
-> >With the patch, I'm able to create 106894 files (2K each) on a 1GB FS.
-> >That doesn't sound like a huge improvement, but the default from
-> >mkfs.btrfs is to duplicate metadata.  After duplication, that's about
-> >417MB or about 40% of the overall space.
-> >
-> >When you factor in the space that we reserve to avoid exploding on
-> >enospc and the space that we have allocated for data extents, that's not
-> >a very surprising number.
-> >
-> >I'm still putting this patch through more testing, the double split code
-> >is used in some difficult corners and I need to make sure I've tried
-> >all of them.
-> 
-> Chris, for the further code review we need documents, which reflect
-> the original ideas of the balancing, etc. Could you please provide them?
-> Obviously, I can not do it instead of you, as I don't know those ideas.
-> 
+Without any competing workload, firefox launches in around 6 seconds.
 
-Which part are you most interested in?
+I guess the best way to deal with SATA disk is to set queue_depth=1 in 
+/sys.
 
--chris
+Thanks
+Vivek
