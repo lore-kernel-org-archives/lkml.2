@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758886Ab0FVCYf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 22:24:35 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34956 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab0FVCYd (ORCPT
+	id S1758896Ab0FVCYy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 22:24:54 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:33811 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752899Ab0FVCYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 22:24:33 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [Patch] Call cond_resched() at bottom of main look in balance_pgdat()
-Cc: kosaki.motohiro@jp.fujitsu.com, Larry Woodman <lwoodman@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20100621141315.GB2456@barrios-desktop>
-References: <20100618093954.FBE7.A69D9226@jp.fujitsu.com> <20100621141315.GB2456@barrios-desktop>
-Message-Id: <20100622112416.B554.A69D9226@jp.fujitsu.com>
+	Mon, 21 Jun 2010 22:24:52 -0400
+Date: Mon, 21 Jun 2010 22:24:50 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: markgross@thegnar.org
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+In-Reply-To: <20100622012519.GB12795@gvim.org>
+Message-ID: <Pine.LNX.4.44L0.1006212207410.19813-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 22 Jun 2010 11:24:24 +0900 (JST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > =============================================================
-> > Subject: [PATCH] Call cond_resched() at bottom of main look in balance_pgdat()
-> > From: Larry Woodman <lwoodman@redhat.com>
+On Mon, 21 Jun 2010, mark gross wrote:
+
+> On Mon, Jun 21, 2010 at 12:01:09PM -0400, Alan Stern wrote:
+> > On Sun, 20 Jun 2010, mark gross wrote:
 > > 
-> > We are seeing a problem where kswapd gets stuck and hogs the CPU on a
-> > small single CPU system when an OOM kill should occur.  When this
-> > happens swap space has been exhausted and the pagecache has been shrunk
-> > to zero.  Once kswapd gets the CPU it never gives it up because at least
-> > one zone is below high.  Adding a single cond_resched() at the end of
-> > the main loop in balance_pgdat() fixes the problem by allowing the
-> > watchdog and tasks to run and eventually do an OOM kill which frees up
-> > the resources.
+> > > Your confused about what problem this patch attempts to solve.
 > > 
-> > kosaki note: This seems regression caused by commit bb3ab59683
-> > (vmscan: stop kswapd waiting on congestion when the min watermark is
-> >  not being met)
-> > 
-> > Signed-off-by: Larry Woodman <lwoodman@redhat.com>
-> > Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > ---
-> >  mm/vmscan.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 9c7e57c..c5c46b7 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2182,6 +2182,7 @@ loop_again:
-> >  		 */
-> >  		if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
-> >  			break;
-> > +		cond_resched();
-> >  	}
-> >  out:
-> >  	/*
-> > -- 
-> > 1.6.5.2
+> > I don't think so.  Rafael's description was pretty clear.
 > 
-> Kosaki's patch's goal is that kswap doesn't yield cpu if the zone doesn't meet its
-> min watermark to avoid failing atomic allocation.
-> But this patch could yield kswapd's time slice at any time. 
-> Doesn't the patch break your goal in bb3ab59683?
+> Then how is it you don't understand the fact that Rafael's patch is to
+> solve the wake event notification suspend race and not block opertunistic
+> suspends or kernel critical sections where suspending should be disabled?
 
-No. it don't break.
+I don't know what gave you the idea that I think Rafael's patch is 
+meant to block kernel critical sections.  I certainly don't think that.
 
-Typically, kswapd periodically call shrink_page_list() and it call
-cond_resched() even if bb3ab59683 case.
-Larry observed very exceptional situation. his system don't have
-reclaimable pages at all, then eventually shrink_page_list() was not
-called very long time.
-His patch only change such very rare situation, I think it's safe.
+However leaving that aside, the rest of the above is just two different
+ways of saying the same thing:
 
-Thanks.
+	Wakeup events should cause suspend to be disabled until the
+	events are processed.
 
+	Arrival of wakeup events races with initiation of system 
+	suspend (whether opportunistic or not).
 
+Therefore blocking suspends when they ought to be disabled requires us 
+to solve the wake event/suspend race.  You can't do one without doing 
+the other.
 
+> > >  There is
+> > > a pm_qos patch in the works to address the suspend blocker
+> > > functionality.
+> > > http://lists.linux-foundation.org/pipermail/linux-pm/2010-June/026760.html
+> > 
+> > No.  That patch addresses something _similar_ to the suspend blocker
+> > functionality.  The fact remains, though, that pm_qos is not used
+> > during system suspend (the /sys/power/state interface), hence changes
+> > to pm_qos won't solve the system-suspend problems that suspend blockers 
+> > do solve.
+> 
+> You keep saying they solve something, I keep wondering what you are
+> talking aobut.
+> Lets see what problems it solves:
+> * implements oppertunistic suspending (this is a feature not a problem)
+> * enables kernel critical sections blocking suspending.
+> * requiers overlapping application specific critcal sections from ISR
+> into user mode to make implementation correct.
+> * exposes a user mode interface to set a critical section.
+> * reduces races between wake events (or suspend blocking events) but I'm
+> not convinced it solves them. 
+
+The last item on your list is what I meant.  The others are not 
+problems solved by suspend blockers.  Well, maybe the second is, but I 
+don't know of any kernel critical sections that need to block suspend 
+other than those caused by wakeup events.
+
+I agree with you that bundling opportunistic suspend and the user mode 
+interface together with suspend blockers made the situation more 
+difficult by mixing up the important issues.
+
+> suspend blockers provide a way to block oppertunistic suspending, wich
+> I'll have you know, is a pain to get working right and the enabling from
+> device to device is not very portable and *that* doesn't say good things
+> about the scheme.
+
+The real problem with the scheme is to define which events should count
+as "wakeup" events and to determine when they have been fully handled.  
+I can see that these might well vary from one platform to another.  
+(Maybe that's what you mean by saying the enabling is not very
+portable.)  But these issues are unavoidable; any scheme will have to
+address them.
+
+Alan Stern
 
