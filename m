@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759230Ab0FVRbk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 13:31:40 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33080 "EHLO
+	id S1755729Ab0FVRcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 13:32:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33073 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758951Ab0FVR2s (ORCPT
+	with ESMTP id S1756678Ab0FVR2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 13:28:48 -0400
+	Tue, 22 Jun 2010 13:28:45 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,67 +16,52 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 15/25] x86, lmb: Add lmb_find_in_range_node()
-Date: Tue, 22 Jun 2010 10:26:44 -0700
-Message-Id: <1277227614-11581-16-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 04/25] lmb: Export LMB_ERROR again
+Date: Tue, 22 Jun 2010 10:26:33 -0700
+Message-Id: <1277227614-11581-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
 References: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090205.4C20F2B2.0091,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4C20F2B3.01A0,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It can be used to find NODE_DATA for numa.
-
-Need to make sure early_node_map[] is filled before it is called, otherwise
-it will fallback to lmb_find_in_range(), with node range.
+will used by x86 lmb_find_in_range_node and nobootmem replacement
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/lmb.h |    1 +
- arch/x86/mm/lmb.c          |   15 +++++++++++++++
- 2 files changed, 16 insertions(+), 0 deletions(-)
+ include/linux/lmb.h |    1 +
+ lib/lmb.c           |    2 --
+ 2 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
-index 763fb52..02fe25d 100644
---- a/arch/x86/include/asm/lmb.h
-+++ b/arch/x86/include/asm/lmb.h
-@@ -14,5 +14,6 @@ int get_free_all_memory_range(struct range **rangep, int nodeid);
- void lmb_register_active_regions(int nid, unsigned long start_pfn,
- 					 unsigned long last_pfn);
- u64 lmb_hole_size(u64 start, u64 end);
-+u64 lmb_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index 1e96224..eb8a5a3 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -19,6 +19,7 @@
+ #include <asm/lmb.h>
  
- #endif
-diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
-index b7e42bc..399d223 100644
---- a/arch/x86/mm/lmb.c
-+++ b/arch/x86/mm/lmb.c
-@@ -240,6 +240,21 @@ void __init lmb_free_range(u64 start, u64 end)
- }
+ #define INIT_LMB_REGIONS 128
++#define LMB_ERROR	(~(phys_addr_t)0)
  
- /*
-+ * Need to call this function after lmb_register_active_regions,
-+ * so early_node_map[] is filled already.
-+ */
-+u64 __init lmb_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align)
-+{
-+	u64 addr;
-+	addr = find_memory_core_early(nid, size, align, start, end);
-+	if (addr != LMB_ERROR)
-+		return addr;
-+
-+	/* Fallback, should already have start end within node range */
-+	return lmb_find_in_range(start, end, size, align);
-+}
-+
-+/*
-  * Finds an active region in the address range from start_pfn to last_pfn and
-  * returns its range in ei_startpfn and ei_endpfn for the lmb entry.
-  */
+ struct lmb_region {
+ 	phys_addr_t base;
+diff --git a/lib/lmb.c b/lib/lmb.c
+index 7a6e11a..2aaeeec 100644
+--- a/lib/lmb.c
++++ b/lib/lmb.c
+@@ -27,8 +27,6 @@ int lmb_can_resize;
+ static struct lmb_region lmb_memory_init_regions[INIT_LMB_REGIONS + 1];
+ struct lmb_region lmb_reserved_init_regions[INIT_LMB_REGIONS + 1];
+ 
+-#define LMB_ERROR	(~(phys_addr_t)0)
+-
+ /* inline so we don't get a warning when pr_debug is compiled out */
+ static inline const char *lmb_type_name(struct lmb_type *type)
+ {
 -- 
 1.6.4.2
 
