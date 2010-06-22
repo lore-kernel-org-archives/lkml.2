@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab0FVQwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 12:52:47 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:44564 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab0FVQwp (ORCPT
+	id S1756343Ab0FVQxQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 12:53:16 -0400
+Received: from lider.pardus.org.tr ([193.140.100.216]:35328 "EHLO
+	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488Ab0FVQxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 12:52:45 -0400
-Date: Tue, 22 Jun 2010 17:52:13 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
-       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
-Message-ID: <20100622165213.GA21842@srcf.ucam.org>
-References: <1276870309.23783.3.camel@maxim-laptop> <1276933774.16697.11.camel@maxim-laptop> <AANLkTimIjaxq7IDWwIl1vv93k9bNQ2i89Sb5R5TiJmmA@mail.gmail.com> <1277032723.9555.12.camel@maxim-laptop> <AANLkTim8iZmm8pEERJUsrQWOiLSjPUfCN-TFFzZZQWx2@mail.gmail.com> <1277151410.5409.33.camel@maxim-laptop> <20100621233333.21262abjfxl8j1xc@hayate.sektori.org> <AANLkTikkt4dqYWrwtTCJ8tJZLB1kZXgF1KvaPsIOO3Dl@mail.gmail.com> <20100622163138.GD20668@srcf.ucam.org> <AANLkTikQkLFdpusfcLVOpyZHFrxwB5akr-ggFB7Fjm08@mail.gmail.com>
+	Tue, 22 Jun 2010 12:53:15 -0400
+Message-ID: <4C20EA74.6090109@pardus.org.tr>
+Date: Tue, 22 Jun 2010 19:53:08 +0300
+From: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikQkLFdpusfcLVOpyZHFrxwB5akr-ggFB7Fjm08@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: linux-kernel@vger.kernel.org, gregkh@suse.de, rjw@sisk.pl
+Subject: Re: [BISECTED] Suspend regression in v2.6.31 with Lenovo 3000 v200
+References: <Pine.LNX.4.44L0.1006221039530.1631-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1006221039530.1631-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 09:48:40AM -0700, Luis R. Rodriguez wrote:
+Alan Stern wrote:
 
-> Sure, I agree with that, but it also will enable ASPM for *all*
-> devices which have the capability which IMHO is a terrible idea for
-> users when all they want to do is enable ASPM for one device. Instead
-> I recommend users to enable ASPM for their devices selectively and
-> from userspace.
+> Okay, the bus is usb2, the device attached to port 5 is a USB camera, 
+> and it uses the Ali m5602 driver.  I have seen similar reports before, 
+> but they involved a webcam using the uvcvideo driver.
+> 
+> Anyway, the problem is that the camera sends a wakeup request, which
+> causes the suspend to be aborted.  I can't imagine why a camera would
+> want to send a wakeup request -- probably it's a bug in the firmware.
+> You can work around it by manually (or in a udev script) disabling
+> wakeup on the camera:
+> 
+> 	echo disabled >/sys/bus/usb/devices/2-5/power/wakeup
+> 
+> Or you can back-port the patch that fixed the problem, commit 
+> 7aba8d014341341590ecb64050b7a026642a62eb (USB: don't enable remote 
+> wakeup by default).
+> 
+> Alan Stern
 
-Why would you only want to enable ASPM for one device?
+Thank you very much for your help but it seems that core/hub.c in 2.6.31.13
+doesn't even include device_set_wakeup_enable() call that the commit you've
+mentioned removes. There are 2 calls in core/hcd.c and 1 in core/hcd-pci.c
+which at a quick glance still exists in the current master.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Should I disable the the remote wakeup in somewhere else or does that commit
+doesn't really fix the issue?
+
+Regards,
+
+Ozan Caglayan
