@@ -1,90 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab0FVLZh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 07:25:37 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:53997 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab0FVLZf (ORCPT
+	id S1754379Ab0FVLam (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 07:30:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54351 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab0FVLal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 07:25:35 -0400
-Date: Tue, 22 Jun 2010 13:25:30 +0200
-From: Nico Schottelius <nico-linuxsetlocalversion@schottelius.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Nico Schottelius <nico-linuxsetlocalversion@schottelius.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-       Greg Thelen <gthelen@google.com>
-Subject: Re: [PATCH] kbuild: Clean up and speed up the localversion logic
-Message-ID: <20100622112530.GD9779@ethz.ch>
-Mail-Followup-To: Nico Schottelius <nico-linuxsetlocalversion@schottelius.org>,
-	Michal Marek <mmarek@suse.cz>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-	Greg Thelen <gthelen@google.com>
-References: <4C1764CD.3080402@suse.cz>
- <1276782038-23441-1-git-send-email-mmarek@suse.cz>
- <20100622104412.GB9779@ethz.ch>
- <4C209AF3.2070305@suse.cz>
+	Tue, 22 Jun 2010 07:30:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+Date: Tue, 22 Jun 2010 13:30:39 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Wang, Yong Y" <yong.y.wang@intel.com>, "Wang Qi\"" <qi.wang@intel.com>,
+       "Intel OTC\"" <joel.clark@intel.com>,
+       "Andrew\"" <andrew.chih.howe.khor@intel.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       LKML <linux-kernel@vger.kernel.org>
+References: <4C204B0D.2030201@dsn.okisemi.com>
+In-Reply-To: <4C204B0D.2030201@dsn.okisemi.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Xm/fll+QQv+hsKip"
-Content-Disposition: inline
-In-Reply-To: <4C209AF3.2070305@suse.cz>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: kr (Linux 2.6.34-NS-08528-gb3f2f6c x86_64)
+Content-Type: Text/Plain;
+  charset="iso-2022-jp"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006221330.39621.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19cbKaPnQrv93bvZ15gVYN+sVMbv5Y79OH5qHJ
+ TcRa+/kqUMwXK/KOOV7Zsbi7iTe5p5f+cNBPOtH+JqrW6K9bcS
+ mWhHExFzZy3nnuVCq9tJA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 22 June 2010, Masayuki Ohtak wrote:
+> Hi, Arnd and Yong Y
+> 
+> I have released Phub patch file.
+> Please confirm below.
 
---Xm/fll+QQv+hsKip
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You have addressed all of my comments, the driver looks ready
+for inclusion from my perspective.
 
-Michal Marek [Tue, Jun 22, 2010 at 01:13:55PM +0200]:
-> On 22.6.2010 12:44, Nico Schottelius wrote:
-> > Michal Marek [Thu, Jun 17, 2010 at 03:40:38PM +0200]:
-> > srctree=3D"$1"=20
-> >=20
-> > to catch spaces and co. in the path.
->=20
-> That's the same, the value in variable assignment is not subject to word
-> splitting.
+> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
 
-Oh, indeed, you're right! Learned something!
-
-> > Otherwise I just had a quick view over it, but seems to look good.
->=20
-> Thanks!
->=20
-> /me is now wondering if it's ok to push this for 2.6.35. At least, there
-> were no bugreports from linux-next users so far.
-
-Well, sometime you'll have to push it and I'm not sure how many
-"no bugreports" you'll want to wait for :-)
-
-Cheers,
-
-Nico
-
---=20
-New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
-Please resign, if you signed 9885188C or 8D0E27A4.
-
-Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
-
---Xm/fll+QQv+hsKip
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwgnaoACgkQ19zI5DGHffDwnACg8F9zl2Yx3W13wH9yXHx2wrlp
-lfYAoKaInb9xq+Km52lyAXSXkJ0+OBrs
-=8z3r
------END PGP SIGNATURE-----
-
---Xm/fll+QQv+hsKip--
+Acked-by: Arnd Bergmann <arnd@arndb.de>
