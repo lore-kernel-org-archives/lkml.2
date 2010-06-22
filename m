@@ -1,137 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab0FVTST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 15:18:19 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:59819 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754467Ab0FVTSS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 15:18:18 -0400
-Date: Tue, 22 Jun 2010 21:19:40 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, "x86@kernel.org" <x86@kernel.org>,
-       Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: intel_cacheinfo: potential NULL dereference?
-Message-ID: <20100622191940.GA29678@aftab>
-References: <4C209C15.9090604@gmail.com>
- <4C209C6E.3060302@gmail.com>
- <20100622130825.GB27658@aftab>
- <4C20C478.9030505@gmail.com>
- <4C20EE54.2050506@zytor.com>
+	id S1754911Ab0FVTcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 15:32:12 -0400
+Received: from bar.sig21.net ([80.81.252.164]:40746 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750986Ab0FVTcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 15:32:11 -0400
+Date: Tue, 22 Jun 2010 21:31:43 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "Luis R. Rodriguez" <mcgrof@gmail.com>,
+       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
+       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Jonathan May <jonathan.may@atheros.com>,
+       Tim Gardner <tim.gardner@canonical.com>
+Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
+Message-ID: <20100622193143.GA17803@sig21.net>
+References: <AANLkTikkt4dqYWrwtTCJ8tJZLB1kZXgF1KvaPsIOO3Dl@mail.gmail.com>
+ <20100622163138.GD20668@srcf.ucam.org>
+ <AANLkTikQkLFdpusfcLVOpyZHFrxwB5akr-ggFB7Fjm08@mail.gmail.com>
+ <20100622165213.GA21842@srcf.ucam.org>
+ <AANLkTikHLBBWrhCP_1f5Jv7zE9RKPvdsl5nSyfkeMfLl@mail.gmail.com>
+ <20100622172545.GA22680@srcf.ucam.org>
+ <AANLkTilEHJ5qRD8ov0gIK0Zc4o-gJUPYkvHdyD1uZUon@mail.gmail.com>
+ <20100622175058.GA23499@srcf.ucam.org>
+ <AANLkTinE0BiOa5cpcIerbias7K-aDzj3x4qaeDpzy2CQ@mail.gmail.com>
+ <20100622184426.GA24546@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C20EE54.2050506@zytor.com>
+In-Reply-To: <20100622184426.GA24546@srcf.ucam.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.6 (---)
+X-Spam-21-Report: No, score=-3.6 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.775,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, Jun 22, 2010 at 01:09:40PM -0400
-
-> On 06/22/2010 07:11 AM, Jiri Slaby wrote:
-> > On 06/22/2010 03:08 PM, Borislav Petkov wrote:
-> >> From: Jiri Slaby <jirislaby@gmail.com>
-> >> Date: Tue, Jun 22, 2010 at 07:20:14AM -0400
-> >>
-> >>> On 06/22/2010 01:18 PM, Jiri Slaby wrote:
-> >>>> Stanse found, that this_leaf->l3 is dereferenced at <<1>>, but checked
-> >>>> for being NULL at <<2>>. Is the check superfluous or the dev assignment
-> >>>> should go after the check?
-> >>>
-> >>> Oh, and I have another report with same symptoms for show_cache_disable.
-> >>
-> >> Right, so I have a patch in tip/x86/cpu
-> >> (8cc1176e5de534d55cb26ff0cef3fd0d6ad8c3c0) which reorganizes
-> >> and cleans up that code. With it, all possible checks land in
-> >> amd_check_l3_disable() and if they have all been passed, the PCI dev is
-> >> guaranteed to be properly set. So no need for sprinkling additional NULL
-> >> checks in the code.
-> >>
-> >> How's that?
+On Tue, Jun 22, 2010 at 07:44:26PM +0100, Matthew Garrett wrote:
+> On Tue, Jun 22, 2010 at 11:28:20AM -0700, Luis R. Rodriguez wrote:
 > > 
-> > Looks good.
-> > 
+> > Heh, this whole patch and thread was started because Jussi tested
+> > ath5k with  pcie_aspm=force (on a pre PCIE 1.1 device (?)) . I have
+> > been trying to explain all along why this is a terrible idea to the
+> > point we should probably just remove that code from the kernel. Hence
+> > my side rants and explanations to justify my reasonings.
 > 
-> Do we need a patch for the existing code to go into -linus and -stable,
-> though?
+> Well, there's two things here. If you use force then you might get 
+> inappropriate ASPM. But if your BIOS enables ASPM on an old device, then 
+> booting *without* CONFIG_PCIE_ASPM will leave it turned on, and booting 
+> *with* CONFIG_PCIE_ASPM will turn it off. The Kconfig description is 
+> confusing - reality is that CONFIG_PCIE_ASPM enables logic that allows 
+> the kernel to modify the BIOS default, and disabling it makes the 
+> assumption that your BIOS did something sensible.
 
-Right, so this is not such a bad idea, actually. Here's a small fix,
-just in case. This should go to -linus so that the issue is patched up
-for .35 time. No need for -stable since this code came into the last
-merge window.
+Does CONFIG_PCIEASPM provide a way for the user to modifiy
+the settings at runtime?
 
-The 8cc1176e5de534d55cb26ff0cef3fd0d6ad8c3c0 in tip/x86/cpu was meant
-for the .36 merge window so I'll readjust it relative to the small fix
-below.
+I have a Samsung N130 netbook which has a BIOS setting
+called "CPU Power Saving Mode".  When enabled it activates
+ASPM L1 and L0s for the ethernet chip (Realtek RTL8102e, 100Mbit)
+and the PCIE bridge (with the BIOS setting off it's just L1).
+The result is that the ethernet througput is reduced to 25Mbit/s.
+(The BIOS setting does not activa L0s for the Atheros AR9285 WLAN.)
 
----
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Tue, 22 Jun 2010 21:06:51 +0200
-Subject: [PATCH] x86, cacheinfo: Move dereferencing after NULL check
+99,9% of the time I want to enjoy the power savings,
+but occationally I have to transfer some bulk data and would
+like to switch the setting for a few minutes.
 
-The sysfs handlers {show,store}_cache_disable() should dereference the
-pci dev pointer after having checked the previous l3 pointer in the
-chain first.
-
-Spotted-by: Jiri Slaby <jirislaby@gmail.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 33eae20..a7e358f 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -399,16 +399,15 @@ amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
- static ssize_t show_cache_disable(struct _cpuid4_info *this_leaf, char *buf,
- 				  unsigned int slot)
- {
--	struct pci_dev *dev = this_leaf->l3->dev;
- 	unsigned int reg = 0;
- 
- 	if (!this_leaf->l3 || !this_leaf->l3->can_disable)
- 		return -EINVAL;
- 
--	if (!dev)
-+	if (!this_leaf->l3->dev)
- 		return -EINVAL;
- 
--	pci_read_config_dword(dev, 0x1BC + slot * 4, &reg);
-+	pci_read_config_dword(this_leaf->l3->dev, 0x1BC + slot * 4, &reg);
- 	return sprintf(buf, "0x%08x\n", reg);
- }
- 
-@@ -456,7 +455,6 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
- 				   const char *buf, size_t count,
- 				   unsigned int slot)
- {
--	struct pci_dev *dev = this_leaf->l3->dev;
- 	int cpu = cpumask_first(to_cpumask(this_leaf->shared_cpu_map));
- 	unsigned long val = 0;
- 
-@@ -469,7 +467,7 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
--	if (!dev)
-+	if (!this_leaf->l3->dev)
- 		return -EINVAL;
- 
- 	if (strict_strtoul(buf, 10, &val) < 0)
--- 
-1.6.4.4
+Or, well, ideally I'd like to have power savings _and_ performance
+at the same time without any manual intervention.  I'm not sure
+if this is a quirk of the N130 or if ASPM L0s always causes
+performance degradation?
 
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Thanks
+Johannes
