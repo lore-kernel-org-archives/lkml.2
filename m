@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759195Ab0FVJli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 05:41:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759118Ab0FVJlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 05:41:36 -0400
-Message-ID: <4C208531.3040403@redhat.com>
-Date: Tue, 22 Jun 2010 12:41:05 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1759212Ab0FVJlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 05:41:44 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:34569 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759203Ab0FVJll (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 05:41:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=ajrPXTH+KYwE2L8lZXBAC9n8TCAga39vrDg4GV6DzrXVBoJ9WH3IhxyEntpd+xeNVG
+         oiqYE976D+D7KqxCDauQZHY6uiA2jCs2ssVj2VKifsfwD78wQQpR05oBjiySgyc0hNvr
+         YgRn/jGVC7gyRa4LY5wuvo3nR91r2fOvr25jU=
+Message-ID: <4C208545.7030604@gmail.com>
+Date: Tue, 22 Jun 2010 17:41:25 +0800
+From: Wan ZongShun <mcuos.com@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH V2 2/5] ara virt interface of perf to support kvm guest
- os statistics collection in guest os
-References: <1277112686.2096.510.camel@ymzhang.sh.intel.com>	 <4C1F5452.3000107@redhat.com>	 <1277172510.2096.585.camel@ymzhang.sh.intel.com>	 <4C207E63.5010504@redhat.com> <1277198752.2096.721.camel@ymzhang.sh.intel.com>
-In-Reply-To: <1277198752.2096.721.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Alessandro Zummo <a.zummo@towertech.it>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       rtc-linux <rtc-linux@googlegroups.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] RTC/m48t59: use rtc_valid_tm to check returning tm for m48t59
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2010 12:25 PM, Zhang, Yanmin wrote:
->
->> I'm talking about the guest/host interface.  So you have one vmexit and
->> many host perf calls.
->>      
-> I understood what you were speaking. I mean, perf generic codes operate perf_event
-> one by one. At low layer, we just know one perf_event before calling hypercall to
-> vmexit to host kernel.
->    
+This patch is to use rtc_valid_tm for checking
+returning struct rtc_time *tm, it can avoid returning
+wrong tm value.
 
-Ah.
+Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
+---
+ drivers/rtc/rtc-m48t59.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-We might fix that by having the perf ops work on guest memory, and add a 
-commit that transfers them to the host.  But this is complicated and can 
-be left for later.
+diff --git a/drivers/rtc/rtc-m48t59.c b/drivers/rtc/rtc-m48t59.c
+index be8359f..447f90f 100644
+--- a/drivers/rtc/rtc-m48t59.c
++++ b/drivers/rtc/rtc-m48t59.c
+@@ -105,7 +105,7 @@ static int m48t59_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 	dev_dbg(dev, "RTC read time %04d-%02d-%02d %02d/%02d/%02d\n",
+ 		tm->tm_year + 1900, tm->tm_mon, tm->tm_mday,
+ 		tm->tm_hour, tm->tm_min, tm->tm_sec);
+-	return 0;
++	return rtc_valid_tm(tm);
+ }
 
+ static int m48t59_rtc_set_time(struct device *dev, struct rtc_time *tm)
+@@ -196,7 +196,7 @@ static int m48t59_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	dev_dbg(dev, "RTC read alarm time %04d-%02d-%02d %02d/%02d/%02d\n",
+ 		tm->tm_year + 1900, tm->tm_mon, tm->tm_mday,
+ 		tm->tm_hour, tm->tm_min, tm->tm_sec);
+-	return 0;
++	return rtc_valid_tm(tm);
+ }
+
+ /*
 -- 
-error compiling committee.c: too many arguments to function
-
+1.6.3.3
