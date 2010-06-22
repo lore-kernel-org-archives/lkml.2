@@ -1,341 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab0FVPpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 11:45:14 -0400
-Received: from victor.provo.novell.com ([137.65.250.26]:59441 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab0FVPoA (ORCPT
-	<rfc822;groupwise-SJayaraman@novell.com:0:0>);
-	Tue, 22 Jun 2010 11:44:00 -0400
-From: Suresh Jayaraman <sjayaraman@suse.de>
-To: Steve French <smfrench@gmail.com>
-Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: [RFC][PATCH 06/10] cifs: define inode-level cache object and register them
-Date: Tue, 22 Jun 2010 20:53:33 +0530
-Message-Id: <1277220214-3597-1-git-send-email-sjayaraman@suse.de>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <yes>
-References: <yes>
+	id S1753112Ab0FVPyd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 11:54:33 -0400
+Received: from www.tglx.de ([62.245.132.106]:52372 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752278Ab0FVPyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 11:54:32 -0400
+From: John Ogness <john.ogness@linutronix.de>
+To: Ivo Clarysse <ivo.clarysse@gmail.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+       Sascha Hauer <kernel@pengutronix.de>,
+       linux-arm-kernel@lists.infradead.org,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCHv3 4/5] mtd: mxc_nand fixups
+References: <804oh0b7gx.fsf@merkur.tec.linutronix.de>
+	<20100618205401.GA12115@pengutronix.de>
+	<80sk4ivkga.fsf@merkur.tec.linutronix.de>
+	<AANLkTimA7Rbm_nHpVYpEPqaPCjrOse9s8YyiInWlhfEK@mail.gmail.com>
+	<80tyoyhxey.fsf_-_@merkur.tec.linutronix.de>
+	<AANLkTikRj_dMkKLyFhW78yld9jIYAIFncfPaPAF8WqUY@mail.gmail.com>
+Date: Tue, 22 Jun 2010 17:54:16 +0200
+In-Reply-To: <AANLkTikRj_dMkKLyFhW78yld9jIYAIFncfPaPAF8WqUY@mail.gmail.com>
+	(Ivo Clarysse's message of "Mon, 21 Jun 2010 13:47:41 +0200")
+Message-ID: <80iq5bqd07.fsf_-_@merkur.tec.linutronix.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define inode-level data storage objects (managed by cifsInodeInfo structs).
-Each inode-level object is created in a super-block level object and is itself
-a data storage object in to which pages from the inode are stored.
+The v2 version of this patch has 2 problems. I believe that this new
+version addresses the problems and still respects the strange behavior
+of the i.MX21.
 
-The inode object is keyed by UniqueId. The coherency data being used is
-LastWriteTime and the file size.
+Problem 1: The v2 patch passes IRQF_NOAUTOEN to request_irq(), but that
+flag is not evaluated by request_irq(). That flag is only evaluated in
+set_irq_flags(), which is now used by this patch.
 
-Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+Problem 2: We are still having problems with irq's possibly being
+enabled twice when threaded interrupts are used. This happens because
+the main thread that enables the irq can proceed even if the interrupt
+hasn't fired yet (NFC_INT is set, but the irq thread hasn't processed it
+yet). In this case it is possible for the main thread to enable the irq
+again with a later call to wait_op_done().
+
+This patch addresses the problem by allowing the function that enabled
+the irq to also be responsible for disabling the irq. This obviously
+avoids and double enabling.
+
+In order to prevent interrupt flooding, the interrupt handler will mask
+the interrupt. After the main thread has disabled the irq, it will
+unmask the interrupt. This should allow the i.MX21 to work correctly
+despite its masking behavior.
+
+And finally, this patch correctly clears the interrupt bit each
+time. Previously there was a case where the interrupt bit was not being
+cleared.
+
+The patch is against linux-next 20100618.
+
+The patch is against linux-next 20100618.
+
+Signed-off-by: John Ogness <john.ogness@linutronix.de>
 ---
- fs/cifs/cache.c    |   80 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/cifs/cifsfs.c   |    7 ++++
- fs/cifs/cifsglob.h |    3 +
- fs/cifs/file.c     |    6 +++
- fs/cifs/fscache.c  |   68 +++++++++++++++++++++++++++++++++++++++++++++
- fs/cifs/fscache.h  |   12 +++++++
- fs/cifs/inode.c    |    4 ++
- 7 files changed, 180 insertions(+)
+ drivers/mtd/nand/mxc_nand.c |   25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
 
-Index: cifs-2.6/fs/cifs/cache.c
+Index: linux-next-20100618/drivers/mtd/nand/mxc_nand.c
 ===================================================================
---- cifs-2.6.orig/fs/cifs/cache.c
-+++ cifs-2.6/fs/cifs/cache.c
-@@ -138,3 +138,83 @@ const struct fscache_cookie_def cifs_fsc
- 	.get_key = cifs_super_get_key,
- };
+--- linux-next-20100618.orig/drivers/mtd/nand/mxc_nand.c
++++ linux-next-20100618/drivers/mtd/nand/mxc_nand.c
+@@ -30,6 +30,7 @@
+ #include <linux/clk.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
++#include <linux/irq.h>
  
-+/*
-+ * Auxiliary data attached to CIFS inode within the cache
-+ */
-+struct cifs_fscache_inode_auxdata {
-+	struct timespec	last_write_time;
-+	loff_t		size;
-+};
-+
-+static uint16_t cifs_fscache_inode_get_key(const void *cookie_netfs_data,
-+					   void *buffer, uint16_t maxbuf)
-+{
-+	const struct cifsInodeInfo *cifsi = cookie_netfs_data;
-+	uint16_t keylen;
-+
-+	/* use the UniqueId as the key */
-+	keylen = sizeof(cifsi->uniqueid);
-+	if (keylen > maxbuf)
-+		keylen = 0;
-+	else
-+		memcpy(buffer, &cifsi->uniqueid, keylen);
-+
-+	return keylen;
-+}
-+
-+static void
-+cifs_fscache_inode_get_attr(const void *cookie_netfs_data, uint64_t *size)
-+{
-+	const struct cifsInodeInfo *cifsi = cookie_netfs_data;
-+
-+	*size = cifsi->vfs_inode.i_size;
-+}
-+
-+static uint16_t
-+cifs_fscache_inode_get_aux(const void *cookie_netfs_data, void *buffer,
-+			   uint16_t maxbuf)
-+{
-+	struct cifs_fscache_inode_auxdata auxdata;
-+	const struct cifsInodeInfo *cifsi = cookie_netfs_data;
-+
-+	memset(&auxdata, 0, sizeof(auxdata));
-+	auxdata.size = cifsi->vfs_inode.i_size;
-+	auxdata.last_write_time = cifsi->vfs_inode.i_ctime;
-+
-+	if (maxbuf > sizeof(auxdata))
-+		maxbuf = sizeof(auxdata);
-+
-+	memcpy(buffer, &auxdata, maxbuf);
-+
-+	return maxbuf;
-+}
-+
-+static enum
-+fscache_checkaux cifs_fscache_inode_check_aux(void *cookie_netfs_data,
-+					      const void *data,
-+					      uint16_t datalen)
-+{
-+	struct cifs_fscache_inode_auxdata auxdata;
-+	struct cifsInodeInfo *cifsi = cookie_netfs_data;
-+
-+	if (datalen != sizeof(auxdata))
-+		return FSCACHE_CHECKAUX_OBSOLETE;
-+
-+	memset(&auxdata, 0, sizeof(auxdata));
-+	auxdata.size = cifsi->vfs_inode.i_size;
-+	auxdata.last_write_time = cifsi->vfs_inode.i_ctime;
-+
-+	if (memcmp(data, &auxdata, datalen) != 0)
-+		return FSCACHE_CHECKAUX_OBSOLETE;
-+
-+	return FSCACHE_CHECKAUX_OKAY;
-+}
-+
-+const struct fscache_cookie_def cifs_fscache_inode_object_def = {
-+	.name		= "CIFS.uniqueid",
-+	.type		= FSCACHE_COOKIE_TYPE_DATAFILE,
-+	.get_key	= cifs_fscache_inode_get_key,
-+	.get_attr	= cifs_fscache_inode_get_attr,
-+	.get_aux	= cifs_fscache_inode_get_aux,
-+	.check_aux	= cifs_fscache_inode_check_aux,
-+};
-Index: cifs-2.6/fs/cifs/cifsfs.c
-===================================================================
---- cifs-2.6.orig/fs/cifs/cifsfs.c
-+++ cifs-2.6/fs/cifs/cifsfs.c
-@@ -330,6 +330,12 @@ cifs_destroy_inode(struct inode *inode)
- }
- 
- static void
-+cifs_clear_inode(struct inode *inode)
-+{
-+	cifs_fscache_release_inode_cookie(inode);
-+}
-+
-+static void
- cifs_show_address(struct seq_file *s, struct TCP_Server_Info *server)
+ #include <asm/mach/flash.h>
+ #include <mach/mxc_nand.h>
+@@ -173,8 +174,12 @@ static const char *part_probes[] = { "Re
+ static irqreturn_t mxc_nfc_irq(int irq, void *dev_id)
  {
- 	seq_printf(s, ",addr=");
-@@ -490,6 +496,7 @@ static const struct super_operations cif
- 	.alloc_inode = cifs_alloc_inode,
- 	.destroy_inode = cifs_destroy_inode,
- 	.drop_inode	= cifs_drop_inode,
-+	.clear_inode	= cifs_clear_inode,
- /*	.delete_inode	= cifs_delete_inode,  */  /* Do not need above
- 	function unless later we add lazy close of inodes or unless the
- 	kernel forgets to call us with the same number of releases (closes)
-Index: cifs-2.6/fs/cifs/cifsglob.h
-===================================================================
---- cifs-2.6.orig/fs/cifs/cifsglob.h
-+++ cifs-2.6/fs/cifs/cifsglob.h
-@@ -407,6 +407,9 @@ struct cifsInodeInfo {
- 	bool invalid_mapping:1;		/* pagecache is invalid */
- 	u64  server_eof;		/* current file size on server */
- 	u64  uniqueid;			/* server inode number */
-+#ifdef CONFIG_CIFS_FSCACHE
-+	struct fscache_cookie *fscache;
-+#endif
- 	struct inode vfs_inode;
- };
+ 	struct mxc_nand_host *host = dev_id;
++	uint16_t tmp;
  
-Index: cifs-2.6/fs/cifs/file.c
-===================================================================
---- cifs-2.6.orig/fs/cifs/file.c
-+++ cifs-2.6/fs/cifs/file.c
-@@ -40,6 +40,7 @@
- #include "cifs_unicode.h"
- #include "cifs_debug.h"
- #include "cifs_fs_sb.h"
-+#include "fscache.h"
+-	disable_irq_nosync(irq);
++	/* mask interrupts */
++	tmp = readw(host->regs + NFC_CONFIG1);
++	tmp |= NFC_INT_MSK;
++	writew(tmp, host->regs + NFC_CONFIG1);
  
- static inline int cifs_convert_flags(unsigned int flags)
- {
-@@ -282,6 +283,9 @@ int cifs_open(struct inode *inode, struc
- 				CIFSSMBClose(xid, tcon, netfid);
- 				rc = -ENOMEM;
- 			}
-+
-+			cifs_fscache_set_inode_cookie(inode, file);
-+
- 			goto out;
- 		} else if ((rc == -EINVAL) || (rc == -EOPNOTSUPP)) {
- 			if (tcon->ses->serverNOS)
-@@ -373,6 +377,8 @@ int cifs_open(struct inode *inode, struc
- 		goto out;
- 	}
+ 	wake_up(&host->irq_waitq);
  
-+	cifs_fscache_set_inode_cookie(inode, file);
-+
- 	if (oplock & CIFS_CREATE_ACTION) {
- 		/* time to set mode which we can not set earlier due to
- 		   problems creating new read-only files */
-Index: cifs-2.6/fs/cifs/fscache.c
-===================================================================
---- cifs-2.6.orig/fs/cifs/fscache.c
-+++ cifs-2.6/fs/cifs/fscache.c
-@@ -62,3 +62,71 @@ void cifs_fscache_release_super_cookie(s
- 	tcon->fscache = NULL;
- }
+@@ -197,10 +202,18 @@ static void wait_op_done(struct mxc_nand
+ 			wait_event(host->irq_waitq,
+ 				readw(host->regs + NFC_CONFIG2) & NFC_INT);
  
-+static void cifs_fscache_enable_inode_cookie(struct inode *inode)
-+{
-+	struct cifsInodeInfo *cifsi = CIFS_I(inode);
-+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
+-			tmp = readw(host->regs + NFC_CONFIG2);
+-			tmp  &= ~NFC_INT;
+-			writew(tmp, host->regs + NFC_CONFIG2);
++			disable_irq(host->irq);
 +
-+	if (cifsi->fscache)
-+		return;
-+
-+	cifsi->fscache = fscache_acquire_cookie(cifs_sb->tcon->fscache,
-+				&cifs_fscache_inode_object_def,
-+				cifsi);
-+	cFYI(1, "CIFS: got FH cookie (0x%p/0x%p/0x%p)\n",
-+			cifs_sb->tcon, cifsi, cifsi->fscache);
-+}
-+
-+void cifs_fscache_release_inode_cookie(struct inode *inode)
-+{
-+	struct cifsInodeInfo *cifsi = CIFS_I(inode);
-+
-+	if (cifsi->fscache) {
-+		cFYI(1, "CIFS releasing inode cookie (0x%p/0x%p)\n",
-+				cifsi, cifsi->fscache);
-+		fscache_relinquish_cookie(cifsi->fscache, 0);
-+		cifsi->fscache = NULL;
-+	}
-+}
-+
-+static void cifs_fscache_disable_inode_cookie(struct inode *inode)
-+{
-+	struct cifsInodeInfo *cifsi = CIFS_I(inode);
-+
-+	if (cifsi->fscache) {
-+		cFYI(1, "CIFS disabling inode cookie (0x%p/0x%p)\n",
-+				cifsi, cifsi->fscache);
-+		fscache_relinquish_cookie(cifsi->fscache, 1);
-+		cifsi->fscache = NULL;
-+	}
-+}
-+
-+void cifs_fscache_set_inode_cookie(struct inode *inode, struct file *filp)
-+{
-+	/* BB: parallel opens - need locking? */
-+	if ((filp->f_flags & O_ACCMODE) != O_RDONLY)
-+		cifs_fscache_disable_inode_cookie(inode);
-+	else {
-+		cifs_fscache_enable_inode_cookie(inode);
-+		cFYI(1, "CIFS: fscache inode cookie set\n");
-+	}
-+}
-+
-+void cifs_fscache_reset_inode_cookie(struct inode *inode)
-+{
-+	struct cifsInodeInfo *cifsi = CIFS_I(inode);
-+	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
-+	struct fscache_cookie *old = cifsi->fscache;
-+
-+	if (cifsi->fscache) {
-+		/* retire the current fscache cache and get a new one */
-+		fscache_relinquish_cookie(cifsi->fscache, 1);
-+
-+		cifsi->fscache = fscache_acquire_cookie(cifs_sb->tcon->fscache,
-+					&cifs_fscache_inode_object_def,
-+					cifsi);
-+		cFYI(1, "CIFS: new cookie (0x%p/0x%p) oldcookie 0x%p\n",
-+				cifsi, cifsi->fscache, old);
-+	}
-+}
-+
-Index: cifs-2.6/fs/cifs/fscache.h
-===================================================================
---- cifs-2.6.orig/fs/cifs/fscache.h
-+++ cifs-2.6/fs/cifs/fscache.h
-@@ -29,6 +29,8 @@
- extern struct fscache_netfs cifs_fscache_netfs;
- extern const struct fscache_cookie_def cifs_fscache_server_index_def;
- extern const struct fscache_cookie_def cifs_fscache_super_index_def;
-+extern const struct fscache_cookie_def cifs_fscache_inode_object_def;
-+
- 
- extern int cifs_fscache_register(void);
- extern void cifs_fscache_unregister(void);
-@@ -41,6 +43,10 @@ extern void cifs_fscache_release_client_
- extern void cifs_fscache_get_super_cookie(struct cifsTconInfo *);
- extern void cifs_fscache_release_super_cookie(struct cifsTconInfo *);
- 
-+extern void cifs_fscache_release_inode_cookie(struct inode *);
-+extern void cifs_fscache_set_inode_cookie(struct inode *, struct file *);
-+extern void cifs_fscache_reset_inode_cookie(struct inode *);
-+
- #else /* CONFIG_CIFS_FSCACHE */
- static inline int cifs_fscache_register(void) { return 0; }
- static inline void cifs_fscache_unregister(void) {}
-@@ -53,6 +59,12 @@ static inline void cifs_fscache_get_supe
- static inline void
- cifs_fscache_release_super_cookie(struct cifsTconInfo *tcon) {}
- 
-+static inline void cifs_fscache_release_inode_cookie(struct inode *inode) {}
-+static inline void cifs_fscache_set_inode_cookie(struct inode *inode,
-+			struct file *filp) {}
-+static inline void cifs_fscache_reset_inode_cookie(struct inode *inode) {}
-+
-+
- #endif /* CONFIG_CIFS_FSCACHE */
- 
- #endif /* _CIFS_FSCACHE_H */
-Index: cifs-2.6/fs/cifs/inode.c
-===================================================================
---- cifs-2.6.orig/fs/cifs/inode.c
-+++ cifs-2.6/fs/cifs/inode.c
-@@ -29,6 +29,7 @@
- #include "cifsproto.h"
- #include "cifs_debug.h"
- #include "cifs_fs_sb.h"
-+#include "fscache.h"
- 
- 
- static void cifs_set_ops(struct inode *inode, const bool is_dfs_referral)
-@@ -776,6 +777,8 @@ retry_iget5_locked:
- 			inode->i_flags |= S_NOATIME | S_NOCMTIME;
- 		if (inode->i_state & I_NEW) {
- 			inode->i_ino = hash;
-+			/* initialize per-inode cache cookie pointer */
-+			CIFS_I(inode)->fscache = NULL;
- 			unlock_new_inode(inode);
++			/* unmask interrupts */
++			tmp = readw(host->regs + NFC_CONFIG1);
++			tmp &= ~NFC_INT_MSK;
++			writew(tmp, host->regs + NFC_CONFIG1);
  		}
- 	}
-@@ -1568,6 +1571,7 @@ cifs_invalidate_mapping(struct inode *in
- 			cifs_i->write_behind_rc = rc;
- 	}
- 	invalidate_remote_inode(inode);
-+	cifs_fscache_reset_inode_cookie(inode);
- }
++
++		/* clear interrupt flag */
++		tmp = readw(host->regs + NFC_CONFIG2);
++		tmp &= ~NFC_INT;
++		writew(tmp, host->regs + NFC_CONFIG2);
+ 	} else {
+ 		while (max_retries-- > 0) {
+ 			if (readw(host->regs + NFC_CONFIG2) & NFC_INT) {
+@@ -846,7 +859,9 @@ static int __init mxcnd_probe(struct pla
  
- int cifs_revalidate_file(struct file *filp)
+ 	host->irq = platform_get_irq(pdev, 0);
+ 
+-	err = request_irq(host->irq, mxc_nfc_irq, IRQF_DISABLED, DRIVER_NAME, host);
++	/* request irq as disabled */
++	set_irq_flags(host->irq, IRQF_VALID | IRQF_NOAUTOEN);
++	err = request_irq(host->irq, mxc_nfc_irq, 0, DRIVER_NAME, host);
+ 	if (err)
+ 		goto eirq;
+ 
