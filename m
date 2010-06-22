@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758738Ab0FVA7O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 20:59:14 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26610 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab0FVA7N (ORCPT
+	id S1758736Ab0FVBGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 21:06:09 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:46064 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab0FVBGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 20:59:13 -0400
-Date: Mon, 21 Jun 2010 20:57:23 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: "jeff.liu" <jeff.liu@oracle.com>
-Cc: Tao Ma <tao.ma@oracle.com>, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] btrfs: Don't return extent in fiemap if we meet
- with a hole.
-Message-ID: <20100622005723.GJ23009@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	"jeff.liu" <jeff.liu@oracle.com>, Tao Ma <tao.ma@oracle.com>,
-	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1277102222-3310-1-git-send-email-tao.ma@oracle.com>
- <4C1F167D.3040908@oracle.com>
+	Mon, 21 Jun 2010 21:06:07 -0400
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Subject: Re: [PATCH 2/2] clk: Generic support for fixed-rate clocks
+Date: Tue, 22 Jun 2010 09:05:56 +0800
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Ben Herrenchmidt <benh@kernel.crashing.org>,
+       linux-arm-kernel@lists.infradead.org
+References: <1277098513.947920.264679354891.2.gpush@pororo> <4C1FCEDA.3000303@bluewatersys.com>
+In-Reply-To: <4C1FCEDA.3000303@bluewatersys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C1F167D.3040908@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090203.4C200AE1.0070:SCFMA4539811,ss=1,fgs=0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006220905.57533.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 03:36:29PM +0800, jeff.liu wrote:
-> Hi Chris,
-> 
-> Could you please also consider another tiny patch below combine with Tao's?
-> It fix extent flags to FIEMAP_FLAG_UNWRITTEN if it was fallocate(2) and its "em->block_start ==
-> EXTENT_MAP_LAST_BYTE".
+Hi Ryan,
 
-Thanks, will do.
+> Not sure if this has been discussed already, but shouldn't rate be const
+> for a fixed clock?
 
--chris
+No, we may need to set the rate at some point - eg, when setting up the 
+clocks, or parsing from the device tree.
+
+Cheers,
+
+
+Jeremy
