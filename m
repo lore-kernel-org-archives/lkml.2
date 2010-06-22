@@ -1,51 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751168Ab0FVEEz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 00:04:55 -0400
-Received: from kroah.org ([198.145.64.141]:38536 "EHLO coco.kroah.org"
+	id S1751397Ab0FVEHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 00:07:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36746 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750949Ab0FVEEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 00:04:53 -0400
-Date: Mon, 21 Jun 2010 21:02:41 -0700
-From: Greg KH <greg@kroah.com>
-To: Tilman Schmidt <tilman@imap.cc>
-Cc: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       i4ldeveloper@listserv.isdn4linux.de, Hansjoerg Lipp <hjlipp@web.de>,
-       Karsten Keil <keil@b1-systems.de>, stable@kernel.org
-Subject: Re: [stable] [PATCH 0/5] late Gigaset fixes for 2.6.35
-Message-ID: <20100622040241.GB4151@kroah.com>
-References: <20100622-patch-gigaset-00.tilman@imap.cc>
+	id S1751073Ab0FVEHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 00:07:04 -0400
+Date: Tue, 22 Jun 2010 00:07:00 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cfq: allow dispatching of both sync and async I/O
+ together
+Message-ID: <20100622040700.GA12502@redhat.com>
+References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
+ <1277149789-4493-3-git-send-email-jmoyer@redhat.com>
+ <4C1FC4B4.3060700@kernel.dk>
+ <20100621232208.GA10175@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100622-patch-gigaset-00.tilman@imap.cc>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100621232208.GA10175@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 02:28:41AM +0200, Tilman Schmidt wrote:
-> Karsten, David,
+On Mon, Jun 21, 2010 at 07:22:08PM -0400, Vivek Goyal wrote:
+> On Mon, Jun 21, 2010 at 09:59:48PM +0200, Jens Axboe wrote:
+> > On 21/06/10 21.49, Jeff Moyer wrote:
+> > > Hi,
+> > > 
+> > > In testing a workload that has a single fsync-ing process and another
+> > > process that does a sequential buffered read, I was unable to tune CFQ
+> > > to reach the throughput of deadline.  This patch, along with the previous
+> > > one, brought CFQ in line with deadline when setting slice_idle to 0.
+> > > 
+> > > I'm not sure what the original reason for not allowing sync and async
+> > > I/O to be dispatched together was.  If there is a workload I should be
+> > > testing that shows the inherent problems of this, please point me at it
+> > > and I will resume testing.  Until and unless that workload is identified,
+> > > please consider applying this patch.
+> > 
+> > The problematic case is/was a normal SATA drive with a buffered
+> > writer and an occasional reader. I'll have to double check my
+> > mail tomorrow, but iirc the issue was that the occasional reader
+> > would suffer great latencies since service times for that single
+> > IO would be delayed at the drive side. It could perhaps just be
+> > a bug in how we handle the slice idling on the read side when the
+> > IO gets delayed initially.
+> > 
+> > So if my memory is correct, google for the fsync madness and
+> > interactiveness thread that we had some months ago and which
+> > caused a lot of tweaking. The commit adding this is
+> > 5ad531db6e0f3c3c985666e83d3c1c4d53acccf9 and was added back
+> > in July last year. So it was around that time that the mails went
+> > around.
 > 
-> following are five patches to the Gigaset driver fixing reported
-> problems with two CAPI applications (Asterisk and capifax). They
-> fix serious bugs, though not technically regressions, and I would
-> therefore appreciate if they could still make it into release
-> 2.6.35. Otherwise please queue them for the first stable cycle.
+> Hi Jens,
 > 
-> These should also go into 2.6.34-stable. They apply cleanly to
-> 2.6.34 except for some offsets in file drivers/isdn/gigaset/capi.c.
+> I suspect we might have introduced this patch because mike galbraith
+> had issues which application interactiveness (reading data back from swap)
+> in the prence of heavy writeout on SATA disk.
+> 
+> After this patch we did two enhancements.
+> 
+> - You introduced the logic of building write queue depth gradually.
+> - Corrado introduced the logic of idling on the random reader service
+>   tree.
+> 
+> In the past random reader were not protected from WRITES as there was no
+> idling on random readers. But with corrado's changes of idling on
+> sync-noidle service tree, I think this problem might have been solved to
+> a great extent.
+> 
+> Getting rid of this exclusivity of either SYNC/ASYNC requests in request
+> queue might help us with throughput on storage arrys without loosing
+> protection for random reader on SATA. 
+> 
+> I will do some testing with and without patch and see if above is true
+> or not.
 
-To get a patch in the -stable tree, please just add a simple:
-	Cc: stable <stable@kernel.org>
-to the body of the patch in the signed-off-by area.  That way, when the
-patches go to Linus, I get automatically notified of them and you don't
-have to do anything.  If you don't, then I have to go and dig and watch
-the tree to see if they are really applied or not, which, when
-confronted with 200+ patches that need to be manually watched for this
-way, does not scale...
+Some primilinary testing results with and without patch. I started a
+buffered writer and started firefox and monitored how much time firefox
+took.
 
-thanks,
+dd if=/dev/zero of=zerofile bs=4K count=1024M
 
-greg k-h
+2.6.35-rc3 vanilla
+==================
+real    0m22.546s
+user    0m0.566s
+sys     0m0.107s
+
+
+real    0m21.410s
+user    0m0.527s
+sys     0m0.095s
+
+
+real    0m27.594s
+user    0m1.256s
+sys     0m0.483s
+
+2.6.35-rc3 + jeff's patches
+===========================
+real    0m20.372s
+user    0m0.635s
+sys     0m0.128s
+
+real    0m22.281s
+user    0m0.509s
+sys     0m0.093s
+
+real    0m23.211s
+user    0m0.674s
+sys     0m0.140s
+
+So looks like firefox launching times have not changed much in the presence
+of heavy buffered writting going on root disk. I will do more testing tomorrow.
+
+Thanks
+Vivek
