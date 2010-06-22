@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab0FVR22 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 13:28:28 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32311 "EHLO
+	id S1759054Ab0FVR3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 13:29:00 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33247 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758499Ab0FVR2Y (ORCPT
+	with ESMTP id S1759023Ab0FVR24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 13:28:24 -0400
+	Tue, 22 Jun 2010 13:28:56 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,72 +16,93 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 07/25] lmb: Add lmb_find_in_range()
-Date: Tue, 22 Jun 2010 10:26:36 -0700
-Message-Id: <1277227614-11581-8-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 17/25] x86, lmb: Add lmb_memory_in_range()
+Date: Tue, 22 Jun 2010 10:26:46 -0700
+Message-Id: <1277227614-11581-18-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
 References: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090206.4C20F2A0.0008,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4C20F2B7.008A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-it is a wrapper for lmb_find_base
+It will return memory size in specified range according to lmb.memory.region
 
-make it more easy for x86 to use lmb. ( rebase )
-x86 early_res is using find/reserve pattern instead of alloc.
+Try to share some code with lmb_free_memory_in_range() by passing get_free to
+__lmb_memory_in_range().
 
-keep it in weak version, so later We can use x86 own version if needed.
-also We need it in lib/lmb.c, so one caller mm/page_alloc.c could get compiled
-
--v2: Change name to lmb_find_in_range() according to Michael Ellerman
--v3: Add generic weak version __lmb_find_in_range()
-     so keep the path for fallback to x86 version that handle from low
--v4: use 0 for failing path
--v5: use LMB_ERROR again
--v6: remove __lmb_find_in_range()
+-v2: Ben want _in_range in the name instead of size
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/lmb.h |    2 ++
- lib/lmb.c           |    8 ++++++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/lmb.h |    1 +
+ arch/x86/mm/lmb.c          |   18 +++++++++++++++++-
+ 2 files changed, 18 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index 5310c7b..6ca5659 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -45,6 +45,8 @@ extern int lmb_debug;
- extern int lmb_can_resize;
- extern struct lmb_region lmb_reserved_init_regions[];
+diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
+index 3a304f8..749c224 100644
+--- a/arch/x86/include/asm/lmb.h
++++ b/arch/x86/include/asm/lmb.h
+@@ -16,5 +16,6 @@ void lmb_register_active_regions(int nid, unsigned long start_pfn,
+ u64 lmb_hole_size(u64 start, u64 end);
+ u64 lmb_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
+ u64 lmb_free_memory_in_range(u64 addr, u64 limit);
++u64 lmb_memory_in_range(u64 addr, u64 limit);
  
-+u64 lmb_find_in_range(u64 start, u64 end, u64 size, u64 align);
+ #endif
+diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+index 991dd55..bd2f60b 100644
+--- a/arch/x86/mm/lmb.c
++++ b/arch/x86/mm/lmb.c
+@@ -217,7 +217,7 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+ }
+ #endif
+ 
+-u64 __init lmb_free_memory_in_range(u64 addr, u64 limit)
++static u64 __init __lmb_memory_in_range(u64 addr, u64 limit, bool get_free)
+ {
+ 	int i, count;
+ 	struct range *range;
+@@ -246,6 +246,10 @@ u64 __init lmb_free_memory_in_range(u64 addr, u64 limit)
+ 	}
+ 	subtract_range(range, count, 0, addr);
+ 	subtract_range(range, count, limit, -1ULL);
 +
- extern void __init lmb_init(void);
- extern void __init lmb_analyze(void);
- extern long lmb_add(phys_addr_t base, phys_addr_t size);
-diff --git a/lib/lmb.c b/lib/lmb.c
-index e45e967..2e00159 100644
---- a/lib/lmb.c
-+++ b/lib/lmb.c
-@@ -156,6 +156,14 @@ static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align,
- 	return LMB_ERROR;
++	/* Subtract lmb.reserved.region in range ? */
++	if (!get_free)
++		goto sort_and_count_them;
+ 	for_each_lmb(reserved, r) {
+ 		final_start = PFN_DOWN(r->base);
+ 		final_end = PFN_UP(r->base + r->size);
+@@ -256,6 +260,8 @@ u64 __init lmb_free_memory_in_range(u64 addr, u64 limit)
+ 
+ 		subtract_range(range, count, final_start, final_end);
+ 	}
++
++sort_and_count_them:
+ 	nr_range = clean_sort_range(range, count);
+ 
+ 	free_size = 0;
+@@ -265,6 +271,16 @@ u64 __init lmb_free_memory_in_range(u64 addr, u64 limit)
+ 	return free_size << PAGE_SHIFT;
  }
  
-+/*
-+ * Find a free area with specified alignment in a specific range.
-+ */
-+u64 __init __weak lmb_find_in_range(u64 start, u64 end, u64 size, u64 align)
++u64 __init lmb_free_memory_in_range(u64 addr, u64 limit)
 +{
-+	return lmb_find_base(size, align, start, end);
++	return __lmb_memory_in_range(addr, limit, true);
 +}
 +
- static void __init_lmb lmb_remove_region(struct lmb_type *type, unsigned long r)
++u64 __init lmb_memory_in_range(u64 addr, u64 limit)
++{
++	return __lmb_memory_in_range(addr, limit, false);
++}
++
+ void __init lmb_reserve_range(u64 start, u64 end, char *name)
  {
- 	unsigned long i;
+ 	if (start == end)
 -- 
 1.6.4.2
 
