@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763Ab0FVBXz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 21:23:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49086 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758686Ab0FVBXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 21:23:53 -0400
+	id S1758775Ab0FVBZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 21:25:06 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64240 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758711Ab0FVBZD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 21:25:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=OWeAFXnAzJCd5JwISXs06ibgvttdcravy1dwawfefietBUk6FkkC6B8o7+XYo1EplO
+         2JG2k3D/KEX0udDV2gDJxOM6MbvVg7fc4j8F6W+aNzSRxjCmFfTUm7hX37pPZ8ioNKcY
+         Lso8BrnxMEOhx8NjuC22i2vZAiLv4H+SgXE7A=
+Date: Mon, 21 Jun 2010 18:25:19 -0700
+From: mark gross <640e9920@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: markgross@thegnar.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Message-ID: <20100622012519.GB12795@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <20100621061345.GF9735@gvim.org>
+ <Pine.LNX.4.44L0.1006211158200.1687-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Edward Allcutt <edward@allcutt.me.uk>
-X-Fcc: ~/Mail/linus
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fs: limit maximum concurrent coredumps
-In-Reply-To: Edward Allcutt's message of  Monday, 21 June 2010 19:58:55 -0400 <1277164737-30055-1-git-send-email-edward@allcutt.me.uk>
-References: <1277164737-30055-1-git-send-email-edward@allcutt.me.uk>
-X-Shopping-List: (1) Diagnostic wine pistons
-   (2) Exotic shoe collisions
-   (3) Treasonous division gloves
-   (4) Mrs. Leland's Watchers
-   (5) Maternity garrulous ponds
-Message-Id: <20100622012303.BD72E402AD@magilla.sf.frob.com>
-Date: Mon, 21 Jun 2010 18:23:03 -0700 (PDT)
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1006211158200.1687-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A core dump is just an instance of a process suddenly reading lots of its
-address space and doing lots of filesystem writes, producing the kinds of
-thrashing that any such instance might entail.  It really seems like the
-real solution to this kind of problem will be in some more general kind of
-throttling of processes (or whatever manner of collections thereof) when
-they got hog-wild on page-ins or filesystem writes, or whatever else.  I'm
-not trying to get into the details of what that would be.  But I have to
-cite this hack as the off-topic kludge that it really is.  That said, I do
-certainly sympathize with the desire for a quick hack that addresses the
-scenario you experience.
+On Mon, Jun 21, 2010 at 12:01:09PM -0400, Alan Stern wrote:
+> On Sun, 20 Jun 2010, mark gross wrote:
+> 
+> > Your confused about what problem this patch attempts to solve.
+> 
+> I don't think so.  Rafael's description was pretty clear.
 
-For the case you described, it seems to me that constraining concurrency
-per se would be better than punting core dumps when too concurrent.  That
-is, you should not skip the dump when you hit the limit.  Rather, you
-should block in do_coredump() until the next dump already in progress
-finishes.  (It should be possible to use TASK_KILLABLE so that those dumps
-in waiting can be aborted with a follow-on SIGKILL.  But Oleg will have to
-check on the signals details being right for that.)
+Then how is it you don't understand the fact that Rafael's patch is to
+solve the wake event notification suspend race and not block opertunistic
+suspends or kernel critical sections where suspending should be disabled?
 
-That won't make your crashers each complete quickly, but it will prevent
-the thrashing.  Instead of some crashers suddenly not producing dumps at
-all, they'll just all queue up waiting to finish crashing but not using any
-CPU or IO resources.  That way you don't lose any core dumps unless you
-want to start SIGKILL'ing things (which oom_kill might do if need be),
-you just don't die in flames trying to do nothing but dump cores.
+> 
+> >  There is
+> > a pm_qos patch in the works to address the suspend blocker
+> > functionality.
+> > http://lists.linux-foundation.org/pipermail/linux-pm/2010-June/026760.html
+> 
+> No.  That patch addresses something _similar_ to the suspend blocker
+> functionality.  The fact remains, though, that pm_qos is not used
+> during system suspend (the /sys/power/state interface), hence changes
+> to pm_qos won't solve the system-suspend problems that suspend blockers 
+> do solve.
 
+You keep saying they solve something, I keep wondering what you are
+talking aobut.
+Lets see what problems it solves:
+* implements oppertunistic suspending (this is a feature not a problem)
+* enables kernel critical sections blocking suspending.
+* requiers overlapping application specific critcal sections from ISR
+into user mode to make implementation correct.
+* exposes a user mode interface to set a critical section.
+* reduces races between wake events (or suspend blocking events) but I'm
+not convinced it solves them. 
 
-Thanks,
-Roland
+suspend blockers provide a way to block oppertunistic suspending, wich
+I'll have you know, is a pain to get working right and the enabling from
+device to device is not very portable and *that* doesn't say good things
+about the scheme.
+
+--mgross
+ 
