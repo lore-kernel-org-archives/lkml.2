@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759161Ab0FVJb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 05:31:27 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33079 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010Ab0FVJbZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 05:31:25 -0400
-Subject: Re: [PATCH V2 1/5] ara virt interface of perf to support kvm guest
- os statistics collection in guest os
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Jes Sorensen <Jes.Sorensen@redhat.com>, Avi Kivity <avi@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       zhiteng.huang@intel.com, tim.c.chen@intel.com
-In-Reply-To: <1277198943.2096.724.camel@ymzhang.sh.intel.com>
-References: <1277112680.2096.509.camel@ymzhang.sh.intel.com>
-	 <4C1F50D0.70205@redhat.com>
-	 <1277171344.2096.567.camel@ymzhang.sh.intel.com>
-	 <4C2062D8.20609@redhat.com>
-	 <1277192873.2096.690.camel@ymzhang.sh.intel.com>
-	 <1277193305.1875.537.camel@laptop>  <4C206D8B.4080105@redhat.com>
-	 <1277198943.2096.724.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 22 Jun 2010 11:31:00 +0200
-Message-ID: <1277199060.1875.675.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1759198Ab0FVJbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 05:31:35 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36878 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759183Ab0FVJbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 05:31:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: markgross@thegnar.org
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Date: Tue, 22 Jun 2010 11:29:42 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       linux-pm@lists.linux-foundation.org,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+References: <20100621055522.GE9735@gvim.org> <Pine.LNX.4.44L0.1006211125470.1687-100000@iolanthe.rowland.org> <20100622015837.GC12795@gvim.org>
+In-Reply-To: <20100622015837.GC12795@gvim.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006221129.43216.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-22 at 17:29 +0800, Zhang, Yanmin wrote:
-> On Tue, 2010-06-22 at 10:00 +0200, Jes Sorensen wrote:
-> > On 06/22/10 09:55, Peter Zijlstra wrote:
-> > > On Tue, 2010-06-22 at 15:47 +0800, Zhang, Yanmin wrote:
-> > >> Besides the para virt perf interface, I'm also considering the direct exposition
-> > >> of PMU hardware to guest os. 
-> > > 
-> > > NAK NAK NAK NAK, we've been over that, its not going to happen, full
-> > > stop!
-> > > 
-> > > Use MSR read/write traps and host perf to emulate the hardware. In some
-> > > cases we could allow the reads without trap but that's a later
-> > > optimization.
-> > 
-> > I believe whats meant here is a PMU compatible interface which is
-> > partially emulated. Not a handover of the PMU.
-> Right. We need capture all write to PMU MSR and allows guest os to read MSR directly.
+On Tuesday, June 22, 2010, mark gross wrote:
+> On Mon, Jun 21, 2010 at 11:57:21AM -0400, Alan Stern wrote:
+> > On Sun, 20 Jun 2010, mark gross wrote:
+... 
+> > I don't know -- I have never looked at the Android userspace.  No doubt 
+> > Arve can provide some examples.
+> who are you?  You don't know about the Android stack, and you keep
+> blowing about how suspend blockers solve all the PM problems?  I'm
+> starting to think your just trolling. 
 
-That latter is not possible, only in a subset of cases can you allow
-that read.
+And that's just an excellent way of convincing people that you're right.  Guess
+how it worked on me.
+
+For your information, Alan is one of the people most actively engaged in
+power management development at the kernel level and his ideas have heavily
+influenced the design of the I/O runtime PM framework, among other things.
+
+I certainly appeciate Alan's opinions very much, because he usually is
+technically right.
+
+Thanks,
+Rafael
