@@ -1,127 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab0FVXYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 19:24:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57923 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752488Ab0FVXYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 19:24:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,463,1272870000"; 
-   d="scan'208";a="529317527"
-Subject: [patch] x86: avoid unnecessary __clear_user() and xrstor in signal
- handling
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Tue, 22 Jun 2010 16:23:37 -0700
-Message-Id: <1277249017.2847.85.camel@sbs-t61.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	id S1752319Ab0FVX1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 19:27:52 -0400
+Received: from fg-out-1718.google.com ([72.14.220.152]:2753 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab0FVX1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 19:27:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=Yk6AV6E4UhloPliHv+F0KEPdUs3SDwL4G43BkWThwrakgEAiV+BcsktMyASZADaodV
+         HTWo0qUtjVHpmTK6gMuR5WEi4vell/dFyN82p4qz3kKsayceQAt9UGa+PR2LX5LKQQO7
+         2FM3hHJzOxz3S0sgC5RHDP1KaW1TS6hCy0VbM=
+From: Christoph Mair <christoph.mair@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Support for the pressure sensor BMP085 from Bosch Sensortec.
+Date: Wed, 23 Jun 2010 01:26:47 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-ARCH; KDE/4.4.4; x86_64; ; )
+Cc: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>,
+       linux-kernel@vger.kernel.org,
+       Stefan Schmidt <stefan@datenfreihafen.org>,
+       Datta Shubhrajyoti <shubhrajyoti@ti.com>
+References: <4C1DF4DE.5090403@jic23.retrosnub.co.uk> <1277067058-6929-1-git-send-email-christoph.mair@gmail.com> <20100621144958.d5fc694e.akpm@linux-foundation.org>
+In-Reply-To: <20100621144958.d5fc694e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006230126.48452.christoph.mair@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: x86: avoid unnecessary __clear_user() and xrstor in signal handling
+Am Montag 21 Juni 2010, 23:49:58 schrieben Sie:
+> On Sun, 20 Jun 2010 22:50:58 +0200
+> 
+> Christoph Mair <christoph.mair@gmail.com> wrote:
+> > This driver adds support for the BMP085 digital pressure sensor
+> > from Bosch Sensortec.
+> 
+> If there's a datasheet available, it would be nice to provide a
+> reference to that in the driver.
+I will send a patch to fix this.
 
-fxsave/xsave doesn't touch all the bytes in the memory layout used by
-these instructions. Specifically SW reserved (bytes 464..511) fields
-in the fxsave frame and the reserved fields in the xsave header.
+> Please do send a full description of the proposed API so we can review
+> that.  What are the contents of these files?  What are the units of
+> those contents, etc?
+There is a short description before the methods bmp085_get_temperature() and 
+bmp085_get_pressure(), but anyway.
 
-To present a clean context for the signal handling, just clear these fields
-instead of clearing the complete fxsave/xsave memory layout, when we dump these
-registers directly to the user signal frame.
+Here is a Description of the current sysfs user interface:
 
-Also avoid the call to second xrstor (which inits the state not passed
-in the signal frame) in restore_user_xstate() if all the state has already
-been restored by the first xrstor.
+The BMP085 digital pressure sensor can measure ambient air pressure and 
+temperature. Both values can be obtained from sysfs files. The pressure is 
+measured by reading from pressure0_input. Valid values range from 30000 to 
+110000 pascal with a resolution of 1 pascal (=0.01 millibar).
 
-These changes improve the performance of signal handling(by ~3-5% as measured
-by the lat_sig).
+temp0_input holds the current temperature in degree celsius, multiplied by 10. 
+This results in a resolution of a tenth degree celsius. Values range from -400 
+to 850.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/include/asm/i387.h  |    9 +++++++++
- arch/x86/include/asm/xsave.h |   10 ++++++++++
- arch/x86/kernel/xsave.c      |   12 ++----------
- 3 files changed, 21 insertions(+), 10 deletions(-)
-
-Index: tree/arch/x86/kernel/xsave.c
-===================================================================
---- tree.orig/arch/x86/kernel/xsave.c
-+++ tree/arch/x86/kernel/xsave.c
-@@ -91,14 +91,6 @@ int save_i387_xstate(void __user *buf)
- 		return 0;
- 
- 	if (task_thread_info(tsk)->status & TS_USEDFPU) {
--		/*
--	 	 * Start with clearing the user buffer. This will present a
--	 	 * clean context for the bytes not touched by the fxsave/xsave.
--		 */
--		err = __clear_user(buf, sig_xstate_size);
--		if (err)
--			return err;
--
- 		if (use_xsave())
- 			err = xsave_user(buf);
- 		else
-@@ -184,8 +176,8 @@ static int restore_user_xstate(void __us
- 	 * init the state skipped by the user.
- 	 */
- 	mask = pcntxt_mask & ~mask;
--
--	xrstor_state(init_xstate_buf, mask);
-+	if (unlikely(mask))
-+		xrstor_state(init_xstate_buf, mask);
- 
- 	return 0;
- 
-Index: tree/arch/x86/include/asm/i387.h
-===================================================================
---- tree.orig/arch/x86/include/asm/i387.h
-+++ tree/arch/x86/include/asm/i387.h
-@@ -127,6 +127,15 @@ static inline int fxsave_user(struct i38
- {
- 	int err;
- 
-+	/*
-+	 * Clear the bytes not touched by the fxsave and reserved
-+	 * for the SW usage.
-+	 */
-+	err = __clear_user(&fx->sw_reserved,
-+			   sizeof(struct _fpx_sw_bytes));
-+	if (unlikely(err))
-+		return -EFAULT;
-+
- 	asm volatile("1:  rex64/fxsave (%[fx])\n\t"
- 		     "2:\n"
- 		     ".section .fixup,\"ax\"\n"
-Index: tree/arch/x86/include/asm/xsave.h
-===================================================================
---- tree.orig/arch/x86/include/asm/xsave.h
-+++ tree/arch/x86/include/asm/xsave.h
-@@ -59,6 +59,16 @@ static inline int fpu_xrstor_checking(st
- static inline int xsave_user(struct xsave_struct __user *buf)
- {
- 	int err;
-+
-+	/*
-+	 * Clear the xsave header first, so that reserved fields are
-+	 * initialized to zero.
-+	 */
-+	err = __clear_user(&buf->xsave_hdr,
-+			   sizeof(struct xsave_hdr_struct));
-+	if (unlikely(err))
-+		return -EFAULT;
-+
- 	__asm__ __volatile__("1: .byte " REX_PREFIX "0x0f,0xae,0x27\n"
- 			     "2:\n"
- 			     ".section .fixup,\"ax\"\n"
+To increase the accuracy, this chip can calculate the average of 1, 2, 4 or 8 
+samples. This behavior is controlled through the oversampling sysfs file. Two 
+to the power of the value written to that file specifies how many samples will 
+be used. Valid values: 0..3.
 
 
+> Are there any similar drivers in the tree (I don't think so) and if so
+> does this new driver offer the same interface?
+I did not find one.
+
+> Bear in mind that if new drivers for similar devices _do_ come along
+> then we'd prefer that those drivers implement the same interface as
+> this one.  So is this driver's interface well-designed from that point
+> of view?
+The pressure0_input and temp0_input should follow the naming convention of 
+hwmon devices. I think that would be ok for other sensors too. The 
+oversampling is special to this device and others may not support this.
+
+A more general problem is the obtainable resolution. I work on a humidity 
+sensor driver for the SHT21. It measures temperatures with a resolution of 
+0.01 celsius, ten times higher than the bmp085.
+Maybe we need an additional sysfs file which contains the current measurement 
+resolution.
+
+I think it would be nice to have a general sensor api which for example 
+specifies the sensor type, the units used for this type and the resolution of 
+each result.
+Any thoughts on this?
+
+> Also, we're supposed to docuemnt these things formally in
+> Documentation/ABI/.
+I will send a patch for this one too.
+
+> 
+> > ...
+> > 
+> > + * The chip will use 2^oversampling samples for interlan averaging.
+> 
+> I assumed that was supposed to read "internal".
+True.
+
+Best Regards,
+  Christoph
