@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759171Ab0FVR3w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 13:29:52 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:46132 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759142Ab0FVR3t (ORCPT
+	id S1759007Ab0FVR2x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 13:28:53 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33065 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758940Ab0FVR2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 13:29:49 -0400
+	Tue, 22 Jun 2010 13:28:44 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,55 +16,79 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 24/25] x86: Put 64 bit numa node memmap above 16M
-Date: Tue, 22 Jun 2010 10:26:53 -0700
-Message-Id: <1277227614-11581-25-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 11/25] x86,lmb: Add lmb_reserve_range/lmb_free_range
+Date: Tue, 22 Jun 2010 10:26:40 -0700
+Message-Id: <1277227614-11581-12-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
 References: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C20F2C7.01AF,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4C20F2AF.001F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not use 0x8000 hard code value anymore.
+they are wrappers for core versions.
+they are taking start/end/name instead of base/size.
+will make x86 conversion more easy
+
+could add more debug print out
+
+-v2: change get_max_mapped() to lmb.default_alloc_limit according to Michael
+      Ellerman and Ben
+     change to lmb_reserve_range and lmb_free_range according to Michael Ellerman
+-v3: call check_and_double after reserve/free, so could avoid to use
+      find_lmb_area. Suggested by Michael Ellerman
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/numa_64.c |    2 +-
- arch/x86/mm/srat_64.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/lmb.h |    3 +++
+ arch/x86/mm/lmb.c          |   22 ++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 92c01a5..93a1e07 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -85,7 +85,7 @@ static int __init allocate_cachealigned_memnodemap(void)
- 	if (memnodemapsize <= ARRAY_SIZE(memnode.embedded_map))
- 		return 0;
+diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
+index e8207f8..70df84f 100644
+--- a/arch/x86/include/asm/lmb.h
++++ b/arch/x86/include/asm/lmb.h
+@@ -6,4 +6,7 @@
+ u64 lmb_find_in_range_size(u64 start, u64 *sizep, u64 align);
+ void lmb_to_bootmem(u64 start, u64 end);
  
--	addr = 0x8000;
-+	addr = __pa(MAX_DMA_ADDRESS);
- 	nodemap_size = roundup(sizeof(s16) * memnodemapsize, L1_CACHE_BYTES);
- 	nodemap_addr = lmb_find_in_range(addr, max_pfn<<PAGE_SHIFT,
- 				      nodemap_size, L1_CACHE_BYTES);
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index 8f82c80..1f9b7b7 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -99,8 +99,8 @@ void __init acpi_numa_slit_init(struct acpi_table_slit *slit)
- 	unsigned long phys;
- 
- 	length = slit->header.length;
--	phys = lmb_find_in_range(0, max_pfn_mapped<<PAGE_SHIFT, length,
--		 PAGE_SIZE);
-+	phys = lmb_find_in_range(__pa(MAX_DMA_ADDRESS), max_pfn_mapped<<PAGE_SHIFT,
-+				 length, PAGE_SIZE);
- 
- 	if (phys == (unsigned long)LMB_ERROR)
- 		panic(" Can not save slit!\n");
++void lmb_reserve_range(u64 start, u64 end, char *name);
++void lmb_free_range(u64 start, u64 end);
++
+ #endif
+diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+index a959699..6b6cc58 100644
+--- a/arch/x86/mm/lmb.c
++++ b/arch/x86/mm/lmb.c
+@@ -116,3 +116,25 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+ 		lmb_reserve(__pa(lmb.reserved.regions), sizeof(struct lmb_region) * lmb.reserved.max);
+ }
+ #endif
++
++void __init lmb_reserve_range(u64 start, u64 end, char *name)
++{
++	if (start == end)
++		return;
++
++	if (WARN_ONCE(start > end, "lmb_reserve_range: wrong range [%#llx, %#llx]\n", start, end))
++		return;
++
++	lmb_reserve(start, end - start);
++}
++
++void __init lmb_free_range(u64 start, u64 end)
++{
++	if (start == end)
++		return;
++
++	if (WARN_ONCE(start > end, "lmb_free_range: wrong range [%#llx, %#llx]\n", start, end))
++		return;
++
++	lmb_free(start, end - start);
++}
 -- 
 1.6.4.2
 
