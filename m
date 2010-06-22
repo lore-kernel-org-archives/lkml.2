@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758869Ab0FVDPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 23:15:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38436 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752027Ab0FVDPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 23:15:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,457,1272870000"; 
-   d="scan'208";a="578559115"
-Subject: Re: [PATCH V2 5/5] ara virt interface of perf to support kvm guest
- os statistics collection in guest os
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <4C1F5CF0.4030206@redhat.com>
-References: <1277112709.2096.513.camel@ymzhang.sh.intel.com>
-	 <4C1F5CF0.4030206@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 22 Jun 2010 11:15:54 +0800
-Message-Id: <1277176554.2096.654.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1758916Ab0FVDYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 23:24:05 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45842 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758760Ab0FVDYD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 23:24:03 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [Patch] Call cond_resched() at bottom of main look in  balance_pgdat()
+Cc: kosaki.motohiro@jp.fujitsu.com, Larry Woodman <lwoodman@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <AANLkTilN3EcYq400ajA2-rf3Xs4MhD-sKCg44fjzKlX1@mail.gmail.com>
+References: <20100622112416.B554.A69D9226@jp.fujitsu.com> <AANLkTilN3EcYq400ajA2-rf3Xs4MhD-sKCg44fjzKlX1@mail.gmail.com>
+Message-Id: <20100622114739.B563.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 22 Jun 2010 12:23:59 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-21 at 15:37 +0300, Avi Kivity wrote:
-> On 06/21/2010 12:31 PM, Zhang, Yanmin wrote:
-> > The 5th patch is applied to the latest qemu-kvm tree.
+> >> Kosaki's patch's goal is that kswap doesn't yield cpu if the zone doesn't meet its
+> >> min watermark to avoid failing atomic allocation.
+> >> But this patch could yield kswapd's time slice at any time.
+> >> Doesn't the patch break your goal in bb3ab59683?
 > >
-> > --- qemu-kvm_0621/target-i386/kvm.c	2010-06-21 11:00:29.000000000 +0800
-> > +++ qemu-kvm_0621_perf/target-i386/kvm.c	2010-06-21 13:00:14.136999850 +0800
-> > @@ -150,6 +150,9 @@ struct kvm_para_features {
-> >   #ifdef KVM_CAP_PV_MMU
-> >           { KVM_CAP_PV_MMU, KVM_FEATURE_MMU_OP },
-> >   #endif
-> > +#ifdef KVM_CAP_PV_PERF
-> > +        { KVM_CAP_PV_PERF, KVM_FEATURE_PV_PERF },
-> > +#endif
-> >           { -1, -1 }
-> >   };
+> > No. it don't break.
 > >
-> >    
+> > Typically, kswapd periodically call shrink_page_list() and it call
+> > cond_resched() even if bb3ab59683 case.
 > 
+> Hmm. If it is, bb3ab59683 is effective really?
 > 
-> Not really necessary any more - if you expose the cpuid bit via 
-> KVM_GET_SUPPORTED_CPUID2 then 'qemu -cpu host' will automatically enable it.
+> The bb3ab59683's goal is prevent CPU yield in case of free < min_watermark.
+> But shrink_page_list can yield cpu from kswapd at any time.
+> So I am not sure what is bb3ab59683's benefit.
+> Did you have any number about bb3ab59683's effectiveness?
+> (Of course, I know it's very hard. Just out of curiosity)
 > 
-> On the other hand, do update target-i386/cpuid.c:kvm_feature_name so 
-> people can enable the feature using qemu -cpu ...,+kvmperf.
-Thanks for the good pointer. I will change it.
+> As a matter of fact, when I saw this Larry's patch, I thought it would
+> be better to revert bb3ab59683. Then congestion_wait could yield CPU
+> to other process.
+> 
+> What do you think about?
 
-Avi,
+No. The goal is not prevent CPU yield. The goal is avoid unnecessary
+_long_ sleep (i.e. congestion_wait(BLK_RW_ASYNC, HZ/10)).
+Anyway we can't refuse CPU yield on UP. it lead to hangup ;)
 
-Thanks for your wonderful comments. I will fix all in the patches.
-As for the live migration, I need check it carefully. If you could
-provide some suggestions on it, especially about how/when to save all perf_events
-and restore all pref_events, that would be very helpful.
+What do you mean the number? If it mean how much reduce congestion_wait(),
+it was posted a lot of time. If it mean how much reduce page allocation 
+failure bug report, I think it has been observable reduced since half 
+years ago. 
 
-Yanmin
+If you have specific worried concern, can you please share it?
+
 
 
