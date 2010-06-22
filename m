@@ -1,99 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab0FVTzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 15:55:54 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46563 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754793Ab0FVTzx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 15:55:53 -0400
-Date: Tue, 22 Jun 2010 15:55:50 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Florian Mickler <florian@mickler.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+	id S1755266Ab0FVUBN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 16:01:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38914 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751901Ab0FVUBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 16:01:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: [update] Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Date: Tue, 22 Jun 2010 21:59:27 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Florian Mickler <florian@mickler.org>,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
        Matthew Garrett <mjg59@srcf.ucam.org>,
        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
        Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+References: <Pine.LNX.4.44L0.1006220952290.1631-100000@iolanthe.rowland.org> <201006221735.10467.rjw@sisk.pl>
 In-Reply-To: <201006221735.10467.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1006221508390.1322-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006222159.28081.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jun 2010, Rafael J. Wysocki wrote:
-
+On Tuesday, June 22, 2010, Rafael J. Wysocki wrote:
 > On Tuesday, June 22, 2010, Alan Stern wrote:
 > > On Tue, 22 Jun 2010, Rafael J. Wysocki wrote:
-> > 
-> > > Having reconsidered that I think there's more to it.
-> > > 
-> > > Take the PCI subsystem as an example, specifically pcie_pme_handle_request().
-> > > This is the place where wakeup events are started, but it has no idea about
-> > > how they are going to be handled.  Thus in the suspend blocker scheme it would
-> > > need to activate a blocker, but it wouldn't be able to release it.  So, it
-> > > seems, we would need to associate a suspend blocker with each PCIe device
-> > > that can generate wakeup events and require all drivers of such devices to
-> > > deal with a blocker activated by someone else (PCIe PME driver in this
-> > > particular case).  That sounds cumbersome to say the least.
-> > 
-> > Maybe this means pcie_pme_handle_request() isn't a good place to note
-> > the arrival of a wakeup event.  Doing it in the individual driver might
-> > work out better.
-> 
-> But it this case there will be an open window in which suspend may be started
-> after the wakeup event is signaled, but before the PM core is told about it.
-
-That's true but it doesn't matter, assuming the suspend can't progress 
-during this window.
-
-> > The problem in your example is that pcie_pme_handle_request() has no 
-> > idea about the nature or extent of the critical section to follow.
-> 
-> Exactly.
->  
-> > Therefore it's not in a good position to mark the beginning of the 
-> > critical section, even though it is in an excellent position to mark 
-> > the receipt of a wakeup event.
-> 
-> I think we have no choice but to regard the detection of a wakeup event as the
-> beginning of a "suspend critical section".
-
-Receipt of a wakeup event triggers a whole series of function calls,
-including calls to the resume methods of every driver.  The system
-should be designed so that the next suspend can't begin until those
-function calls complete.  For example, the next suspend certainly can't
-begin before the resume methods all complete.  Given that premise, any
-one of those functions could serve as the start of a suspend critical
-section.
-
-> > > Moreover, even if we do that, it still doesn't solve the entire problem,
-> > > because the event may need to be delivered to user space and processed by it.
-> > > While a driver can check if user space has already read the event, it has
-> > > no way to detect whether or not it has finished processing it.  In fact,
-> > > processing an event may involve an interaction with a (human) user and there's
-> > > no general way by which software can figure out when the user considers the
-> > > event as processed.
-> > 
-> > Is this the kernel's problem?  Once userspace has read the event, we
-> > can safely say that the kernel's critical section is over.  Perhaps a
-> > userspace critical section has begun, perhaps not; either way, it's no
-> > longer the kernel's responsibility.
-> 
-> Well, I agree here, but in the suspend blockers world it is the kernel
-> responsibility, because the kernel contains the power manager part.
-
-In the suspend blockers world (or at least, in Android's version of the
-suspend blockers world), userspace would activate another suspend
-blocker before reading the event.  The kernel's critical section could
-then end safely once the event was read.
-
+... 
 > > > So, even if we can say when the kernel has finished processing the event
 > > > (although that would be complicated in the PCIe case above), I don't think
 > > > it's generally possible to ensure that the entire processing of a wakeup event
@@ -110,89 +49,398 @@ then end safely once the event was read.
 > the kernel and such that it is able to detect whether or not user space has
 > acquired the event information.  That doesn't seem to be a common case to me.
 
-It's hard to say how common this is without having a list of possible
-wakeup sources.  And of course, that list will differ from one platform
-to another.
+Anyway, below's an update that addresses this particular case.
 
-> > > Now, going back to the $subject patch, I didn't really think it would be
-> > > suitable for opportunistic suspend, so let's focus on the "forced" suspend
-> > > instead.  It still has the problem that wakeup events occuring while
-> > > /sys/power/state is written to (or even slightly before) should cause the
-> > > system to cancel the suspend, but they generally won't.  With the patch
-> > > applied that can be avoided by (a) reading from /sys/power/wakeup_count,
-> > > (b) waiting for certain time (such that if a suspend event is not entirely
-> > > processed within that time, it's worth suspending and waking up the
-> > > system again) and (c) writing to /sys/power/wakeup_count right before writing
-> > > to /sys/power/state (where the latter is only done if the former succeeds).
-> > 
-> > In other words, you could detect if a critical section begins after the 
-> > user process has decided to initiate a suspend.  Yes, that's so.
-> 
-> Generally yes, although I think it will also detect "critical sections"
-> starting exactly at the moment the suspend is started.  Which in fact is the
-> purpose of the patch.
+It adds two more functions, pm_wakeup_begin() and pm_wakeup_end()
+that play similar roles to suspend_block() and suspend_unblock(), but they
+don't operate on suspend blocker objects.  Instead, the first of them increases
+a counter of events in progress and the other one decreases this counter.
+Together they have the same effect as pm_wakeup_event(), but the counter
+of wakeup events in progress they operate on is also checked by
+pm_check_wakeup_events().
 
-Well, the moment the suspend is started _does_ occur after the user 
-process decides to initiate a suspend.  Hence critical sections 
-starting exactly at that moment would indeed be detected.
+Thus there are two ways kernel subsystems can signal wakeup events.  First,
+if the event is not explicitly handed over to user space and "instantaneous",
+they can simply call pm_wakeup_event() and be done with it.  Second, if the
+event is going to be delivered to user space, the subsystem that processes
+the event can call pm_wakeup_begin() right when the event is detected and
+pm_wakeup_end() when it's been handed over to user space.
 
-> > So I'm not opposed to the new function.  But it doesn't solve the 
-> > entire problem of avoiding suspends during critical sections.
-> 
-> Surely not and it isn't my goal at this point.
-> 
-> I think there are a few different issues that the suspend blockers (or
-> wakelocks) framework attempts to address in one bit hammer.  To me, they are
-> at least (1) deciding when to suspend, (2) detecting events that should make
-> us avoid suspending (or abort suspend if already started), (3) preventing
-> "untrusted" processes from making the system use too much energy.
-> 
-> IMO it's better to treat them as different issues and try to address them
-> separately.
+Please tell me what you think.
 
-Certainly (3) needs to be addressed separately.  It should be handled 
-completely within userspace, if at all possible.
+Rafael
 
-(1) and (2) are closely related.  In fact, a reasonable criterion for 
-(1) might be: Suspend whenever it is allowed.  Then (2) becomes: What 
-sorts of things should disallow suspend, and for how long?
+---
+ drivers/base/power/Makefile     |    2 
+ drivers/base/power/main.c       |    1 
+ drivers/base/power/power.h      |    3 +
+ drivers/base/power/sysfs.c      |    9 +++
+ drivers/base/power/wakeup.c     |  113 ++++++++++++++++++++++++++++++++++++++++
+ drivers/pci/pci-acpi.c          |    2 
+ drivers/pci/pcie/pme/pcie_pme.c |    2 
+ include/linux/pm.h              |   10 +++
+ kernel/power/hibernate.c        |   14 +++-
+ kernel/power/main.c             |   24 ++++++++
+ kernel/power/power.h            |    7 ++
+ kernel/power/suspend.c          |    2 
+ 12 files changed, 182 insertions(+), 7 deletions(-)
 
-
-Evidently part of the problem here is that for a very long time
-(predating the existence of Linux), people have been using a bad
-abstraction.  We talk about "wakeup events", but an event occupies only
-a single moment in time.  If the computer happens to be asleep at that
-moment then it wakes up, fine.  But if it was already awake, then once
-the moment is passed there's no reason not to suspend -- even if only
-1 microsecond has elapsed.  Likewise, if an event causes the computer
-to wake up, then once the computer is awake the moment is over and
-there's nothing to prevent the computer from immediately going back to
-sleep.
-
-Instead of talking about events, we should be talking about procedures
-or sections: something that happens over a non-zero period of time.  
-But people have never thought in terms of wakeup procedures or suspend
-critical sections, and so the kernel isn't designed to accomodate them.  
-We may know when they begin, but we often have only a cloudy idea of
-when they end.
-
-Historically, people have mostly had in mind that the answer to (1)
-would be: Suspend whenever the user tells the computer to suspend.  In
-that kind of setting, (2) doesn't matter: When the user tells the
-machine to suspend, it should obey.
-
-But when we start to consider energy conservation and autonomous (or
-opportunistic) suspend, things become more complex.  This is why, for
-example, the USB subsystem has a user-selectable autosuspend delay.  
-It's not an ideal solution, but it does prevent us from thrashing
-between suspending and resuming a device over and over if it gets used
-repeatedly during a short period of time.
-
-
-We can design mechanisms until we are blue in the face (some of us may
-be blue already!), but until we remedy this weakness in our thinking we
-won't know how to apply them.  Which means people won't be able to
-agree on a single correct approach.
-
-Alan Stern
-
+Index: linux-2.6/kernel/power/main.c
+===================================================================
+--- linux-2.6.orig/kernel/power/main.c
++++ linux-2.6/kernel/power/main.c
+@@ -204,6 +204,28 @@ static ssize_t state_store(struct kobjec
+ 
+ power_attr(state);
+ 
++static ssize_t wakeup_count_show(struct kobject *kobj,
++				struct kobj_attribute *attr,
++				char *buf)
++{
++	return sprintf(buf, "%lu\n", pm_get_wakeup_count());
++}
++
++static ssize_t wakeup_count_store(struct kobject *kobj,
++				struct kobj_attribute *attr,
++				const char *buf, size_t n)
++{
++	unsigned long val;
++
++	if (sscanf(buf, "%lu", &val) == 1) {
++		if (pm_save_wakeup_count(val))
++			return n;
++	}
++	return -EINVAL;
++}
++
++power_attr(wakeup_count);
++
+ #ifdef CONFIG_PM_TRACE
+ int pm_trace_enabled;
+ 
+@@ -236,6 +258,7 @@ static struct attribute * g[] = {
+ #endif
+ #ifdef CONFIG_PM_SLEEP
+ 	&pm_async_attr.attr,
++	&wakeup_count_attr.attr,
+ #ifdef CONFIG_PM_DEBUG
+ 	&pm_test_attr.attr,
+ #endif
+@@ -266,6 +289,7 @@ static int __init pm_init(void)
+ 	int error = pm_start_workqueue();
+ 	if (error)
+ 		return error;
++	pm_wakeup_events_init();
+ 	power_kobj = kobject_create_and_add("power", NULL);
+ 	if (!power_kobj)
+ 		return -ENOMEM;
+Index: linux-2.6/drivers/base/power/wakeup.c
+===================================================================
+--- /dev/null
++++ linux-2.6/drivers/base/power/wakeup.c
+@@ -0,0 +1,113 @@
++
++#include <linux/device.h>
++#include <linux/pm.h>
++
++static unsigned long event_count;
++static unsigned long saved_event_count;
++static unsigned long events_in_progress;
++static bool events_check_enabled;
++static spinlock_t events_lock;
++
++void pm_wakeup_events_init(void)
++{
++	spin_lock_init(&events_lock);
++}
++
++void pm_wakeup_event(struct device *dev)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&events_lock, flags);
++	event_count++;
++	if (dev)
++		dev->power.wakeup_count++;
++	spin_unlock_irqrestore(&events_lock, flags);
++}
++
++void pm_wakeup_begin(struct device *dev)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&events_lock, flags);
++	events_in_progress++;
++	if (dev)
++		dev->power.wakeup_count++;
++	spin_unlock_irqrestore(&events_lock, flags);
++}
++
++void pm_wakeup_end(void)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&events_lock, flags);
++	if (events_in_progress) {
++		events_in_progress--;
++		event_count++;
++	}
++	spin_unlock_irqrestore(&events_lock, flags);
++}
++
++static bool check_wakeup_events(void)
++{
++	return !events_check_enabled
++		|| ((event_count == saved_event_count) && !events_in_progress);
++}
++
++bool pm_check_wakeup_events(void)
++{
++	unsigned long flags;
++	bool ret;
++
++	spin_lock_irqsave(&events_lock, flags);
++	ret = check_wakeup_events();
++	events_check_enabled = ret;
++	spin_unlock_irqrestore(&events_lock, flags);
++	return ret;
++}
++
++bool pm_check_wakeup_events_final(void)
++{
++	bool ret;
++
++	ret = check_wakeup_events();
++	events_check_enabled = false;
++	return ret;
++}
++
++unsigned long pm_get_wakeup_count(void)
++{
++	unsigned long flags;
++	unsigned long count;
++
++	spin_lock_irqsave(&events_lock, flags);
++	events_check_enabled = false;
++	count = event_count;
++	spin_unlock_irqrestore(&events_lock, flags);
++	return count;
++}
++
++bool pm_save_wakeup_count(unsigned long count)
++{
++	unsigned long flags;
++	bool ret = false;
++
++	spin_lock_irqsave(&events_lock, flags);
++	if (count == event_count) {
++		saved_event_count = count;
++		events_check_enabled = true;
++		ret = true;
++	}
++	spin_unlock_irqrestore(&events_lock, flags);
++	return ret;
++}
++
++unsigned long pm_dev_wakeup_count(struct device *dev)
++{
++	unsigned long flags;
++	unsigned long count;
++
++	spin_lock_irqsave(&events_lock, flags);
++	count = dev->power.wakeup_count;
++	spin_unlock_irqrestore(&events_lock, flags);
++	return count;
++}
+Index: linux-2.6/include/linux/pm.h
+===================================================================
+--- linux-2.6.orig/include/linux/pm.h
++++ linux-2.6/include/linux/pm.h
+@@ -457,6 +457,7 @@ struct dev_pm_info {
+ #ifdef CONFIG_PM_SLEEP
+ 	struct list_head	entry;
+ 	struct completion	completion;
++	unsigned long		wakeup_count;
+ #endif
+ #ifdef CONFIG_PM_RUNTIME
+ 	struct timer_list	suspend_timer;
+@@ -552,6 +553,11 @@ extern void __suspend_report_result(cons
+ 	} while (0)
+ 
+ extern void device_pm_wait_for_dev(struct device *sub, struct device *dev);
++
++/* drivers/base/power/wakeup.c */
++extern void pm_wakeup_event(struct device *dev);
++extern void pm_wakeup_begin(struct device *dev);
++extern void pm_wakeup_end(void);
+ #else /* !CONFIG_PM_SLEEP */
+ 
+ #define device_pm_lock() do {} while (0)
+@@ -565,6 +571,10 @@ static inline int dpm_suspend_start(pm_m
+ #define suspend_report_result(fn, ret)		do {} while (0)
+ 
+ static inline void device_pm_wait_for_dev(struct device *a, struct device *b) {}
++
++static inline void pm_wakeup_event(struct device *dev) {}
++static inline void pm_wakeup_begin(struct device *dev) {}
++static inline void pm_wakeup_end(void) {}
+ #endif /* !CONFIG_PM_SLEEP */
+ 
+ /* How to reorder dpm_list after device_move() */
+Index: linux-2.6/drivers/base/power/Makefile
+===================================================================
+--- linux-2.6.orig/drivers/base/power/Makefile
++++ linux-2.6/drivers/base/power/Makefile
+@@ -1,5 +1,5 @@
+ obj-$(CONFIG_PM)	+= sysfs.o
+-obj-$(CONFIG_PM_SLEEP)	+= main.o
++obj-$(CONFIG_PM_SLEEP)	+= main.o wakeup.o
+ obj-$(CONFIG_PM_RUNTIME)	+= runtime.o
+ obj-$(CONFIG_PM_OPS)	+= generic_ops.o
+ obj-$(CONFIG_PM_TRACE_RTC)	+= trace.o
+Index: linux-2.6/drivers/base/power/main.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/main.c
++++ linux-2.6/drivers/base/power/main.c
+@@ -59,6 +59,7 @@ void device_pm_init(struct device *dev)
+ {
+ 	dev->power.status = DPM_ON;
+ 	init_completion(&dev->power.completion);
++	dev->power.wakeup_count = 0;
+ 	pm_runtime_init(dev);
+ }
+ 
+Index: linux-2.6/kernel/power/power.h
+===================================================================
+--- linux-2.6.orig/kernel/power/power.h
++++ linux-2.6/kernel/power/power.h
+@@ -184,6 +184,13 @@ static inline void suspend_test_finish(c
+ #ifdef CONFIG_PM_SLEEP
+ /* kernel/power/main.c */
+ extern int pm_notifier_call_chain(unsigned long val);
++
++/* drivers/base/power/wakeup.c */
++extern void pm_wakeup_events_init(void);
++extern bool pm_check_wakeup_events(void);
++extern bool pm_check_wakeup_events_final(void);
++extern unsigned long pm_get_wakeup_count(void);
++extern bool pm_save_wakeup_count(unsigned long count);
+ #endif
+ 
+ #ifdef CONFIG_HIGHMEM
+Index: linux-2.6/kernel/power/suspend.c
+===================================================================
+--- linux-2.6.orig/kernel/power/suspend.c
++++ linux-2.6/kernel/power/suspend.c
+@@ -172,7 +172,7 @@ static int suspend_enter(suspend_state_t
+ 
+ 	error = sysdev_suspend(PMSG_SUSPEND);
+ 	if (!error) {
+-		if (!suspend_test(TEST_CORE))
++		if (!suspend_test(TEST_CORE) && pm_check_wakeup_events_final())
+ 			error = suspend_ops->enter(state);
+ 		sysdev_resume();
+ 	}
+Index: linux-2.6/kernel/power/hibernate.c
+===================================================================
+--- linux-2.6.orig/kernel/power/hibernate.c
++++ linux-2.6/kernel/power/hibernate.c
+@@ -277,7 +277,7 @@ static int create_image(int platform_mod
+ 		goto Enable_irqs;
+ 	}
+ 
+-	if (hibernation_test(TEST_CORE))
++	if (hibernation_test(TEST_CORE) || !pm_check_wakeup_events())
+ 		goto Power_up;
+ 
+ 	in_suspend = 1;
+@@ -511,14 +511,18 @@ int hibernation_platform_enter(void)
+ 
+ 	local_irq_disable();
+ 	sysdev_suspend(PMSG_HIBERNATE);
++	if (!pm_check_wakeup_events_final())
++		goto Power_up;
++
+ 	hibernation_ops->enter();
+ 	/* We should never get here */
+ 	while (1);
+ 
+-	/*
+-	 * We don't need to reenable the nonboot CPUs or resume consoles, since
+-	 * the system is going to be halted anyway.
+-	 */
++ Power_up:
++	sysdev_resume();
++	local_irq_enable();
++	enable_nonboot_cpus();
++
+  Platform_finish:
+ 	hibernation_ops->finish();
+ 
+Index: linux-2.6/drivers/pci/pci-acpi.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci-acpi.c
++++ linux-2.6/drivers/pci/pci-acpi.c
+@@ -48,6 +48,8 @@ static void pci_acpi_wake_dev(acpi_handl
+ 	if (event == ACPI_NOTIFY_DEVICE_WAKE && pci_dev) {
+ 		pci_check_pme_status(pci_dev);
+ 		pm_runtime_resume(&pci_dev->dev);
++		if (device_may_wakeup(&pci_dev->dev))
++			pm_wakeup_event(&pci_dev->dev);
+ 		if (pci_dev->subordinate)
+ 			pci_pme_wakeup_bus(pci_dev->subordinate);
+ 	}
+Index: linux-2.6/drivers/pci/pcie/pme/pcie_pme.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pcie/pme/pcie_pme.c
++++ linux-2.6/drivers/pci/pcie/pme/pcie_pme.c
+@@ -154,6 +154,8 @@ static bool pcie_pme_walk_bus(struct pci
+ 		/* Skip PCIe devices in case we started from a root port. */
+ 		if (!pci_is_pcie(dev) && pci_check_pme_status(dev)) {
+ 			pm_request_resume(&dev->dev);
++			if (device_may_wakeup(&dev->dev))
++				pm_wakeup_event(&dev->dev);
+ 			ret = true;
+ 		}
+ 
+Index: linux-2.6/drivers/base/power/power.h
+===================================================================
+--- linux-2.6.orig/drivers/base/power/power.h
++++ linux-2.6/drivers/base/power/power.h
+@@ -30,6 +30,9 @@ extern void device_pm_move_before(struct
+ extern void device_pm_move_after(struct device *, struct device *);
+ extern void device_pm_move_last(struct device *);
+ 
++/* drivers/base/power/wakeup.c */
++extern unsigned long pm_dev_wakeup_count(struct device *dev);
++
+ #else /* !CONFIG_PM_SLEEP */
+ 
+ static inline void device_pm_init(struct device *dev)
+Index: linux-2.6/drivers/base/power/sysfs.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/sysfs.c
++++ linux-2.6/drivers/base/power/sysfs.c
+@@ -144,6 +144,14 @@ wake_store(struct device * dev, struct d
+ 
+ static DEVICE_ATTR(wakeup, 0644, wake_show, wake_store);
+ 
++static ssize_t wakeup_count_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%lu\n", pm_dev_wakeup_count(dev));
++}
++
++static DEVICE_ATTR(wakeup_count, 0444, wakeup_count_show, NULL);
++
+ #ifdef CONFIG_PM_ADVANCED_DEBUG
+ #ifdef CONFIG_PM_RUNTIME
+ 
+@@ -230,6 +238,7 @@ static struct attribute * power_attrs[] 
+ 	&dev_attr_control.attr,
+ #endif
+ 	&dev_attr_wakeup.attr,
++	&dev_attr_wakeup_count.attr,
+ #ifdef CONFIG_PM_ADVANCED_DEBUG
+ 	&dev_attr_async.attr,
+ #ifdef CONFIG_PM_RUNTIME
