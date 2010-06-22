@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758943Ab0FVKAM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 06:00:12 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:53852 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab0FVKAK (ORCPT
+	id S1759208Ab0FVKCk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 06:02:40 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51138 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759095Ab0FVKCh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 06:00:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=rH/D1hFa/uD4iI2q/DpBuvVximRciG3A0nnm7wgnhOSS0YStdW/mIzrQC8eWHyMxfR
-         J60jZid3XZqq9VydCT87CZdSDjRFqTmsPeLl0/5ESeKWr/j6A/xNP82TwdPzUo3I6Fas
-         17oNVCIyBEFaBi1OD+OmBD14cK+ZUhWQyDHME=
-Message-ID: <4C208865.5090002@gmail.com>
-Date: Tue, 22 Jun 2010 17:54:45 +0800
-From: Wan ZongShun <mcuos.com@gmail.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Alessandro Zummo <a.zummo@towertech.it>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       rtc-linux <rtc-linux@googlegroups.com>
-Subject: [PATCH] RTC/m48t86: patch for use rtc_valid_tm to check returning
- tm.
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Jun 2010 06:02:37 -0400
+Subject: Re: [PATCH V2 1/5] ara virt interface of perf to support kvm guest
+ os statistics collection in guest os
+From: Peter Zijlstra <peterz@infradead.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Jes Sorensen <Jes.Sorensen@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       zhiteng.huang@intel.com, tim.c.chen@intel.com
+In-Reply-To: <4C20882C.80709@redhat.com>
+References: <1277112680.2096.509.camel@ymzhang.sh.intel.com>
+	 <4C1F50D0.70205@redhat.com>
+	 <1277171344.2096.567.camel@ymzhang.sh.intel.com>
+	 <4C2062D8.20609@redhat.com>
+	 <1277192873.2096.690.camel@ymzhang.sh.intel.com>
+	 <1277193305.1875.537.camel@laptop>  <4C206D8B.4080105@redhat.com>
+	 <1277198943.2096.724.camel@ymzhang.sh.intel.com>
+	 <1277199060.1875.675.camel@laptop>  <4C2084BB.3040501@redhat.com>
+	 <1277200010.1875.692.camel@laptop>  <4C20882C.80709@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 22 Jun 2010 12:02:22 +0200
+Message-ID: <1277200942.1875.694.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is to use rtc_valid_tm for checking
-returning struct rtc_time *tm, it can avoid returning
-wrong tm value.
+On Tue, 2010-06-22 at 12:53 +0300, Avi Kivity wrote:
 
-Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
 
----
- drivers/rtc/rtc-m48t86.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> > /me has no clue what virtual MSRs are,
+> 
+> MSRs that are not defined by the hardware, but instead by the
+> hypervisor.
+> 
+Uhm, but the PMU MSRs are all defined by the hardware, if you move the
+PMU MSRs around nothing will work.. *confusion*
 
-diff --git a/drivers/rtc/rtc-m48t86.c b/drivers/rtc/rtc-m48t86.c
-index 7c045cf..f981287 100644
---- a/drivers/rtc/rtc-m48t86.c
-+++ b/drivers/rtc/rtc-m48t86.c
-@@ -77,7 +77,7 @@ static int m48t86_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 		if (ops->readbyte(M48T86_REG_HOUR) & 0x80)
- 			tm->tm_hour += 12;
+> When emulating the hardware PMU we can be clever at times and allow 
+> RDPMC not to trap. 
 
--	return 0;
-+	return rtc_valid_tm(tm);
- }
-
- static int m48t86_rtc_set_time(struct device *dev, struct rtc_time *tm)
--- 
-1.6.3.3
+Sure, not disagreeing with that, still the generic case is to trap, so
+lets first get that to work and then try and be smart :-)
