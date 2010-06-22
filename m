@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab0FVHxD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 03:53:03 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:57574 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649Ab0FVHxA (ORCPT
+	id S1758352Ab0FVHx4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 03:53:56 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:49380 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754034Ab0FVHxy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 03:53:00 -0400
-Subject: Re: [rfc] Describe events in a structured way via sysfs
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Greg KH <greg@kroah.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1277192877.5025.9.camel@minggr.sh.intel.com>
-References: <1274233602.3036.84.camel@localhost>
-	 <20100518200524.GA20223@kroah.com>
-	 <1274236496.3603.22.camel@minggr.sh.intel.com>
-	 <20100519024823.GA25229@kroah.com>	<1274253276.5605.10124.camel@twins>
-	 <20100520184213.GB21030@kroah.com>	<20100520201418.GB11470@elte.hu>
-	 <20100520231229.GB8335@kroah.com>	<1274429038.1674.1684.camel@laptop>
-	 <20100521094053.GA4658@elte.hu>
-	 <AANLkTimf1Z0N9cv2Pu2qTTUscn4utC37zOPelCbqQoPv@mail.gmail.com>
-	 <1277110509.18390.28.camel@minggr.sh.intel.com>
-	 <1277112858.3618.16.camel@jlt3.sipsolutions.net>
-	 <1277187920.4467.3.camel@minggr.sh.intel.com>
-	 <1277189971.3637.5.camel@jlt3.sipsolutions.net>
-	 <1277191359.5025.4.camel@minggr.sh.intel.com>
-	 <1277192007.3637.8.camel@jlt3.sipsolutions.net>
-	 <1277192877.5025.9.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Jun 2010 09:52:25 +0200
-Message-ID: <1277193145.3637.12.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Jun 2010 03:53:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=AZttAfAfeCQI8RvZw0H7pgMkKAt2+JOTvlZGqGnRzQRTthNedf4Dzlp+yUNSWIzn4J
+         6YLEBVhZw/d5VbqhvL/FnE8UW/O9y9nBK12zumTeJtp82Xz+yh+qHYag3S3jDPTpHfGA
+         zgdzA5AHRyxOEo9KKoHxZVFuKCk8X+Ax4NJhs=
+MIME-Version: 1.0
+In-Reply-To: <20100622160518.2ef7afcc.sfr@canb.auug.org.au>
+References: <20100622160518.2ef7afcc.sfr@canb.auug.org.au>
+Date: Tue, 22 Jun 2010 09:53:51 +0200
+X-Google-Sender-Auth: 8D_fQyna-ngF0ak3yJZ-Wuzr4Kg
+Message-ID: <AANLkTim5sPmqblYvuCsft_Mm7R8ee1NJSwQjw7h6KgqY@mail.gmail.com>
+Subject: Re: linux-next: Tree for June 22
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-22 at 15:47 +0800, Lin Ming wrote:
+On Tue, Jun 22, 2010 at 08:05, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Status of my local build tests will be at
+> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
 
-> So it can only trace the whole hardware piece rather than a specific
-> interface?
-> 
-> If yes, then will change to
-> - /sys/devices/pci0000:00/0000:00:1c.1/0000:03:00.0/net/wlan0/events/iwlwifi_dev_ioread32/
-> + /sys/devices/pci0000:00/0000:00:1c.1/0000:03:00.0/events/iwlwifi_dev_ioread32/
+Which hasn't changed since June 18?
 
-Yes, I guess you were right from the start and I was just thinking about
-it the wrong way. So presumably you'll somehow have to "instantiate"
-tracepoints for a given device?
+Gr{oetje,eeting}s,
 
-johannes
+						Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
