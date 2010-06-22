@@ -1,198 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753Ab0FVPoS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 11:44:18 -0400
-Received: from victor.provo.novell.com ([137.65.250.26]:54214 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542Ab0FVPoB (ORCPT
-	<rfc822;groupwise-SJayaraman@novell.com:0:0>);
-	Tue, 22 Jun 2010 11:44:01 -0400
-From: Suresh Jayaraman <sjayaraman@suse.de>
-To: Steve French <smfrench@gmail.com>
-Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: [RFC][PATCH 07/10] cifs: FS-Cache page management
-Date: Tue, 22 Jun 2010 20:53:48 +0530
-Message-Id: <1277220228-3635-1-git-send-email-sjayaraman@suse.de>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <yes>
-References: <yes>
+	id S1754840Ab0FVPoc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 11:44:32 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49820 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754185Ab0FVPoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 11:44:17 -0400
+Date: Tue, 22 Jun 2010 16:48:35 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
+       Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [PATCH v3] Add TAINT_HARDWARE_UNSUPPORTED flag
+Message-ID: <20100622164835.4ddb9432@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100622153457.GA5381@redhat.com>
+References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
+	<20100617091322.b7d21473.randy.dunlap@oracle.com>
+	<4C1A7D61.8010900@redhat.com>
+	<20100621122145.76ebd7ac.akpm@linux-foundation.org>
+	<20100621194559.GI3217@redhat.com>
+	<20100621130008.d3dc01a8.akpm@linux-foundation.org>
+	<20100622153457.GA5381@redhat.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takes care of invalidation and release of FS-Cache marked pages and also
-invalidation of the FsCache page flag when the inode is removed.
+On Tue, 22 Jun 2010 11:34:57 -0400
+Don Zickus <dzickus@redhat.com> wrote:
 
-Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
----
- fs/cifs/cache.c   |   31 +++++++++++++++++++++++++++++++
- fs/cifs/file.c    |   20 ++++++++++++++++++++
- fs/cifs/fscache.c |   26 ++++++++++++++++++++++++++
- fs/cifs/fscache.h |   16 ++++++++++++++++
- 4 files changed, 93 insertions(+), 0 deletions(-)
+> This patch is similar to Theordore Ts'o's TAINT_USER patch,
+> linux-2.6 commit 34f5a39899f3f3e815da64f48ddb72942d86c366.
 
-diff --git a/fs/cifs/cache.c b/fs/cifs/cache.c
-index b205424..3a733c1 100644
---- a/fs/cifs/cache.c
-+++ b/fs/cifs/cache.c
-@@ -210,6 +210,36 @@ fscache_checkaux cifs_fscache_inode_check_aux(void *cookie_netfs_data,
- 	return FSCACHE_CHECKAUX_OKAY;
- }
- 
-+static void cifs_fscache_inode_now_uncached(void *cookie_netfs_data)
-+{
-+	struct cifsInodeInfo *cifsi = cookie_netfs_data;
-+	struct pagevec pvec;
-+	pgoff_t first;
-+	int loop, nr_pages;
-+
-+	pagevec_init(&pvec, 0);
-+	first = 0;
-+
-+	cFYI(1, "cifs inode 0x%p now uncached\n", cifsi);
-+
-+	for (;;) {
-+		nr_pages = pagevec_lookup(&pvec,
-+					  cifsi->vfs_inode.i_mapping, first,
-+					  PAGEVEC_SIZE - pagevec_count(&pvec));
-+		if (!nr_pages)
-+			break;
-+
-+		for (loop = 0; loop < nr_pages; loop++)
-+			ClearPageFsCache(pvec.pages[loop]);
-+
-+		first = pvec.pages[nr_pages - 1]->index + 1;
-+
-+		pvec.nr = nr_pages;
-+		pagevec_release(&pvec);
-+		cond_resched();
-+	}
-+}
-+
- const struct fscache_cookie_def cifs_fscache_inode_object_def = {
- 	.name		= "CIFS.uniqueid",
- 	.type		= FSCACHE_COOKIE_TYPE_DATAFILE,
-@@ -217,4 +247,5 @@ const struct fscache_cookie_def cifs_fscache_inode_object_def = {
- 	.get_attr	= cifs_fscache_inode_get_attr,
- 	.get_aux	= cifs_fscache_inode_get_aux,
- 	.check_aux	= cifs_fscache_inode_check_aux,
-+	.now_uncached	= cifs_fscache_inode_now_uncached,
- };
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 55ecb55..786ec04 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -2271,6 +2271,22 @@ out:
- 	return rc;
- }
- 
-+static int cifs_release_page(struct page *page, gfp_t gfp)
-+{
-+	if (PagePrivate(page))
-+		return 0;
-+
-+	return cifs_fscache_release_page(page, gfp);
-+}
-+
-+static void cifs_invalidate_page(struct page *page, unsigned long offset)
-+{
-+	struct cifsInodeInfo *cifsi = CIFS_I(page->mapping->host);
-+
-+	if (offset == 0)
-+		cifs_fscache_invalidate_page(page, &cifsi->vfs_inode);
-+}
-+
- static void
- cifs_oplock_break(struct slow_work *work)
- {
-@@ -2344,6 +2360,8 @@ const struct address_space_operations cifs_addr_ops = {
- 	.write_begin = cifs_write_begin,
- 	.write_end = cifs_write_end,
- 	.set_page_dirty = __set_page_dirty_nobuffers,
-+	.releasepage = cifs_release_page,
-+	.invalidatepage = cifs_invalidate_page,
- 	/* .sync_page = cifs_sync_page, */
- 	/* .direct_IO = */
- };
-@@ -2360,6 +2378,8 @@ const struct address_space_operations cifs_addr_ops_smallbuf = {
- 	.write_begin = cifs_write_begin,
- 	.write_end = cifs_write_end,
- 	.set_page_dirty = __set_page_dirty_nobuffers,
-+	.releasepage = cifs_release_page,
-+	.invalidatepage = cifs_invalidate_page,
- 	/* .sync_page = cifs_sync_page, */
- 	/* .direct_IO = */
- };
-diff --git a/fs/cifs/fscache.c b/fs/cifs/fscache.c
-index ddfd355..c09d3b8 100644
---- a/fs/cifs/fscache.c
-+++ b/fs/cifs/fscache.c
-@@ -130,3 +130,29 @@ void cifs_fscache_reset_inode_cookie(struct inode *inode)
- 	}
- }
- 
-+int cifs_fscache_release_page(struct page *page, gfp_t gfp)
-+{
-+	if (PageFsCache(page)) {
-+		struct inode *inode = page->mapping->host;
-+		struct cifsInodeInfo *cifsi = CIFS_I(inode);
-+
-+		cFYI(1, "CIFS: fscache release page (0x%p/0x%p)\n",
-+				cifsi->fscache, page);
-+		if (!fscache_maybe_release_page(cifsi->fscache, page, gfp))
-+			return 0;
-+	}
-+
-+	return 1;
-+}
-+
-+void __cifs_fscache_invalidate_page(struct page *page, struct inode *inode)
-+{
-+	struct cifsInodeInfo *cifsi = CIFS_I(inode);
-+	struct fscache_cookie *cookie = cifsi->fscache;
-+
-+	cFYI(1, "CIFS: fscache invalidatepage (0x%p/0x%p/0x%p)\n",
-+			cookie, page, cifsi);
-+	fscache_wait_on_page_write(cookie, page);
-+	fscache_uncache_page(cookie, page);
-+}
-+
-diff --git a/fs/cifs/fscache.h b/fs/cifs/fscache.h
-index 836bb02..127cb0a 100644
---- a/fs/cifs/fscache.h
-+++ b/fs/cifs/fscache.h
-@@ -47,6 +47,16 @@ extern void cifs_fscache_release_inode_cookie(struct inode *);
- extern void cifs_fscache_set_inode_cookie(struct inode *, struct file *);
- extern void cifs_fscache_reset_inode_cookie(struct inode *);
- 
-+extern void __cifs_fscache_invalidate_page(struct page *, struct inode *);
-+extern int cifs_fscache_release_page(struct page *page, gfp_t gfp);
-+
-+static inline void cifs_fscache_invalidate_page(struct page *page,
-+					       struct inode *inode)
-+{
-+	if (PageFsCache(page))
-+		__cifs_fscache_invalidate_page(page, inode);
-+}
-+
- #else /* CONFIG_CIFS_FSCACHE */
- static inline int cifs_fscache_register(void) { return 0; }
- static inline void cifs_fscache_unregister(void) {}
-@@ -63,7 +73,13 @@ static inline void cifs_fscache_release_inode_cookie(struct inode *inode) {}
- static inline void cifs_fscache_set_inode_cookie(struct inode *inode,
- 			struct file *filp) {}
- static inline void cifs_fscache_reset_inode_cookie(struct inode *inode) {}
-+static inline void cifs_fscache_release_page(struct page *page, gfp_t gfp)
-+{
-+	return 1; /* May release page */
-+}
- 
-+static inline int cifs_fscache_invalidate_page(struct page *page,
-+			struct inode *) {}
- 
- #endif /* CONFIG_CIFS_FSCACHE */
- 
--- 
-1.6.4.2
+This seems to have gone backwards
 
+> This patch introduces the TAINT_HARDWARE_UNSUPPORTED flag for distributions
+> to use.
+
+As I said before - just mark some as 'reserved'
+
+Giving it a specific meaning means it can't freely be used for many
+things by many distributions
+
+
+> +	printk(KERN_CRIT "UNSUPPORTED HARDWARE DEVICE: %s\n", msg);
+> +	WARN_TAINT(1, TAINT_HARDWARE_UNSUPPORTED,
+> +		   "Your hardware is unsupported.  Please do not report "
+> +		   "bugs, panics, oopses, etc., on this hardware.\n");
+
+And as already pointed out it's not unsupported hardware even in the case
+you described
+
+NAK
