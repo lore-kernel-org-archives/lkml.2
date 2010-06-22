@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208Ab0FVKCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 06:02:40 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51138 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759095Ab0FVKCh convert rfc822-to-8bit (ORCPT
+	id S1759058Ab0FVKCf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 06:02:35 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:36727 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755259Ab0FVKCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 06:02:37 -0400
-Subject: Re: [PATCH V2 1/5] ara virt interface of perf to support kvm guest
- os statistics collection in guest os
-From: Peter Zijlstra <peterz@infradead.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Jes Sorensen <Jes.Sorensen@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       zhiteng.huang@intel.com, tim.c.chen@intel.com
-In-Reply-To: <4C20882C.80709@redhat.com>
-References: <1277112680.2096.509.camel@ymzhang.sh.intel.com>
-	 <4C1F50D0.70205@redhat.com>
-	 <1277171344.2096.567.camel@ymzhang.sh.intel.com>
-	 <4C2062D8.20609@redhat.com>
-	 <1277192873.2096.690.camel@ymzhang.sh.intel.com>
-	 <1277193305.1875.537.camel@laptop>  <4C206D8B.4080105@redhat.com>
-	 <1277198943.2096.724.camel@ymzhang.sh.intel.com>
-	 <1277199060.1875.675.camel@laptop>  <4C2084BB.3040501@redhat.com>
-	 <1277200010.1875.692.camel@laptop>  <4C20882C.80709@redhat.com>
+	Tue, 22 Jun 2010 06:02:33 -0400
+Subject: Re: [PATCH v3] alsa: ASoC: JZ4740: Add qi_lb60 board driver
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: 1276924111-11158-27-git-send-email-lars@metafoo.de
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       alsa-devel@alsa-project.org
+In-Reply-To: <1276959082-9184-1-git-send-email-1276924111-11158-27-git-send-email-lars@metafoo.de>
+References: <1276959082-9184-1-git-send-email-1276924111-11158-27-git-send-email-lars@metafoo.de>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 22 Jun 2010 12:02:22 +0200
-Message-ID: <1277200942.1875.694.camel@laptop>
+Date: Tue, 22 Jun 2010 11:02:28 +0100
+Message-ID: <1277200948.4537.0.camel@odin>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-22 at 12:53 +0300, Avi Kivity wrote:
-
-
-> > /me has no clue what virtual MSRs are,
+On Sat, 2010-06-19 at 16:51 +0200,
+1276924111-11158-27-git-send-email-lars@metafoo.de wrote:
+> From: Lars-Peter Clausen <lars@metafoo.de>
 > 
-> MSRs that are not defined by the hardware, but instead by the
-> hypervisor.
+> This patch adds ASoC support for the qi_lb60 board.
 > 
-Uhm, but the PMU MSRs are all defined by the hardware, if you move the
-PMU MSRs around nothing will work.. *confusion*
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+> Cc: alsa-devel@alsa-project.org
 
-> When emulating the hardware PMU we can be clever at times and allow 
-> RDPMC not to trap. 
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
-Sure, not disagreeing with that, still the generic case is to trap, so
-lets first get that to work and then try and be smart :-)
