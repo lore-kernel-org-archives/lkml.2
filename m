@@ -1,195 +1,815 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab0FVRRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 13:17:55 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:39485 "EHLO e4.ny.us.ibm.com"
+	id S1756668Ab0FVRVa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 13:21:30 -0400
+Received: from lirone.symas.net ([64.71.152.235]:47459 "EHLO lirone.symas.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752584Ab0FVRRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 13:17:52 -0400
-Date: Tue, 22 Jun 2010 10:17:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Sage Weil <sage@newdream.net>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>,
-       "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: Re: inconsistent lock state
-Message-ID: <20100622171745.GH2290@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100615112434.GA3967@swordfish.minsk.epam.com>
- <20100618133004.228c2223.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100618133004.228c2223.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754353Ab0FVRV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 13:21:28 -0400
+Date: Tue, 22 Jun 2010 10:14:49 -0700
+Message-Id: <E1OR73h-0004VN-JE@lirone.symas.net>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH v3] tty: Add EXTPROC support for LINEMODE
+Cc: alan@lxorguk.ukuu.org.uk, greg@kroah.com
+From: hyc@symas.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 18, 2010 at 01:30:04PM -0700, Andrew Morton wrote:
-> 
-> This was also reported by Dominik and is being tracked at
-> https://bugzilla.kernel.org/show_bug.cgi?id=16230
-> 
-> On Tue, 15 Jun 2010 14:24:34 +0300
-> Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
-> 
-> > Hello,
-> > 
-> > kernel: [ 3272.351191] 
-> > kernel: [ 3272.351194] =================================
-> > kernel: [ 3272.351199] [ INFO: inconsistent lock state ]
-> > kernel: [ 3272.351204] 2.6.35-rc3-dbg-00106-ga75e02b-dirty #15
-> > kernel: [ 3272.351206] ---------------------------------
-> > kernel: [ 3272.351210] inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
-> > kernel: [ 3272.351215] X/3827 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> > kernel: [ 3272.351218]  (&(&new->fa_lock)->rlock){?.-...}, at: [<c10aefb4>] kill_fasync+0x37/0x71
-> > kernel: [ 3272.351232] {IN-HARDIRQ-W} state was registered at:
-> > kernel: [ 3272.351235]   [<c104e95c>] __lock_acquire+0x281/0xbe1
-> > kernel: [ 3272.351243]   [<c104f652>] lock_acquire+0x59/0x70
-> > kernel: [ 3272.351248]   [<c12c6c48>] _raw_spin_lock+0x25/0x34
-> > kernel: [ 3272.351255]   [<c10aefb4>] kill_fasync+0x37/0x71
-> > kernel: [ 3272.351261]   [<fd220c81>] evdev_event+0x135/0x190 [evdev]
-> > kernel: [ 3272.351275]   [<c1232003>] input_pass_event+0x6f/0xae
-> > kernel: [ 3272.351283]   [<c1232ef5>] input_handle_event+0x38d/0x396
-> > kernel: [ 3272.351288]   [<c1232fbf>] input_event+0x4f/0x62
-> > kernel: [ 3272.351293]   [<c12368e4>] input_sync+0xe/0x11
-> > kernel: [ 3272.351299]   [<c1236d72>] atkbd_interrupt+0x48b/0x541
-> > kernel: [ 3272.351304]   [<c122ecb2>] serio_interrupt+0x35/0x68
-> > kernel: [ 3272.351309]   [<c122fbff>] i8042_interrupt+0x264/0x26e
-> > kernel: [ 3272.351314]   [<c106bb02>] handle_IRQ_event+0x1d/0x98
-> > kernel: [ 3272.351321]   [<c106d506>] handle_edge_irq+0xc0/0x107
-> > kernel: [ 3272.351326]   [<c10045ca>] handle_irq+0x1a/0x20
-> > kernel: [ 3272.351332]   [<c100435f>] do_IRQ+0x43/0x8d
-> > kernel: [ 3272.351337]   [<c1002d75>] common_interrupt+0x35/0x3c
-> > kernel: [ 3272.351342]   [<c124723d>] cpuidle_idle_call+0x6a/0xa0
-> > kernel: [ 3272.351349]   [<c100170d>] cpu_idle+0x89/0xbe
-> > kernel: [ 3272.351354]   [<c12b6d11>] rest_init+0xb5/0xba
-> > kernel: [ 3272.351361]   [<c148a7bf>] start_kernel+0x33b/0x340
-> > kernel: [ 3272.351368]   [<c148a0c9>] i386_start_kernel+0xc9/0xd0
-> > kernel: [ 3272.351374] irq event stamp: 54104917
-> > kernel: [ 3272.351377] hardirqs last  enabled at (54104917): [<c12c70f2>] _raw_spin_unlock_irqrestore+0x36/0x5b
-> > kernel: [ 3272.351384] hardirqs last disabled at (54104916): [<c12c6ced>] _raw_spin_lock_irqsave+0x13/0x42
-> > kernel: [ 3272.351391] softirqs last  enabled at (54104732): [<c1032cf2>] __do_softirq+0xfd/0x10c
-> > kernel: [ 3272.351398] softirqs last disabled at (54104703): [<c1032d30>] do_softirq+0x2f/0x47
-> > kernel: [ 3272.351404] 
-> > kernel: [ 3272.351405] other info that might help us debug this:
-> > kernel: [ 3272.351409] 3 locks held by X/3827:
-> > kernel: [ 3272.351412]  #0:  (rcu_read_lock){.+.+..}, at: [<c124fdfa>] rcu_read_lock+0x0/0x26
-> > kernel: [ 3272.351423]  #1:  (rcu_read_lock){.+.+..}, at: [<c124d5d9>] rcu_read_lock+0x0/0x26
-> > kernel: [ 3272.351432]  #2:  (rcu_read_lock){.+.+..}, at: [<c10ae429>] rcu_read_lock+0x0/0x26
-> > kernel: [ 3272.351442] 
-> > kernel: [ 3272.351443] stack backtrace:
-> > kernel: [ 3272.351448] Pid: 3827, comm: X Not tainted 2.6.35-rc3-dbg-00106-ga75e02b-dirty #15
-> > kernel: [ 3272.351451] Call Trace:
-> > kernel: [ 3272.351456]  [<c12c4ff1>] ? printk+0xf/0x11
-> > kernel: [ 3272.351462]  [<c104e51a>] valid_state+0x133/0x141
-> > kernel: [ 3272.351468]  [<c104e5f7>] mark_lock+0xcf/0x1b3
-> > kernel: [ 3272.351473]  [<c104e54e>] ? mark_lock+0x26/0x1b3
-> > kernel: [ 3272.351479]  [<c104dfd2>] ? check_usage_backwards+0x0/0x68
-> > kernel: [ 3272.351484]  [<c104e9d0>] __lock_acquire+0x2f5/0xbe1
-> > kernel: [ 3272.351489]  [<c104ea44>] ? __lock_acquire+0x369/0xbe1
-> > kernel: [ 3272.351495]  [<c104ea44>] ? __lock_acquire+0x369/0xbe1
-> > kernel: [ 3272.351502]  [<c102ab40>] ? try_to_wake_up+0x2a8/0x2bb
-> > kernel: [ 3272.351508]  [<c104f652>] lock_acquire+0x59/0x70
-> > kernel: [ 3272.351513]  [<c10aefb4>] ? kill_fasync+0x37/0x71
-> > kernel: [ 3272.351519]  [<c12c6c48>] _raw_spin_lock+0x25/0x34
-> > kernel: [ 3272.351524]  [<c10aefb4>] ? kill_fasync+0x37/0x71
-> > kernel: [ 3272.351529]  [<c10aefb4>] kill_fasync+0x37/0x71
-> > kernel: [ 3272.351534]  [<c124d694>] sock_wake_async+0x77/0x83
-> > kernel: [ 3272.351540]  [<c124fe4d>] sk_wake_async+0x2d/0x32
-> > kernel: [ 3272.351545]  [<c1250004>] sock_def_readable+0x45/0x51
-> > kernel: [ 3272.351551]  [<c12b0247>] unix_stream_sendmsg+0x1e2/0x269
-> > kernel: [ 3272.351557]  [<c124fe6e>] ? rcu_read_unlock+0x1c/0x1e
-> > kernel: [ 3272.351562]  [<c124cf1a>] __sock_sendmsg+0x51/0x5a
-> > kernel: [ 3272.351567]  [<c124cff7>] sock_aio_write+0xd4/0xdd
-> > kernel: [ 3272.351575]  [<c10a4d95>] do_sync_readv_writev+0x84/0xb7
-> > kernel: [ 3272.351582]  [<c10a4288>] ? copy_from_user+0x8/0xa
-> > kernel: [ 3272.351587]  [<c10a4e69>] ? rw_copy_check_uvector+0x55/0xc7
-> > kernel: [ 3272.351594]  [<c1164082>] ? security_file_permission+0xf/0x11
-> > kernel: [ 3272.351599]  [<c10a47e5>] ? rw_verify_area+0x90/0xac
-> > kernel: [ 3272.351605]  [<c10a4f58>] do_readv_writev+0x7d/0xdf
-> > kernel: [ 3272.351610]  [<c124cf23>] ? sock_aio_write+0x0/0xdd
-> > kernel: [ 3272.351615]  [<c1164082>] ? security_file_permission+0xf/0x11
-> > kernel: [ 3272.351621]  [<c10a47e5>] ? rw_verify_area+0x90/0xac
-> > kernel: [ 3272.351626]  [<c10a4ff3>] vfs_writev+0x39/0x42
-> > kernel: [ 3272.351632]  [<c10a5102>] sys_writev+0x3b/0x8c
-> > kernel: [ 3272.351637]  [<c10027d3>] sysenter_do_call+0x12/0x32
-> > 
-> 
-> This, I think?
-> 
-> 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> 
-> Fix a lockdep-splat-causing regression introduced by
-> 
-> : commit 989a2979205dd34269382b357e6d4b4b6956b889
-> : Author:     Eric Dumazet <eric.dumazet@gmail.com>
-> : AuthorDate: Wed Apr 14 09:55:35 2010 +0000
-> : Commit:     David S. Miller <davem@davemloft.net>
-> : CommitDate: Wed Apr 21 16:19:29 2010 -0700
-> : 
-> :     fasync: RCU and fine grained locking
-> 
-> kill_fasync() can be called from both process and hard-irq context, so
-> fa_lock must be taken with IRQs disabled.
-> 
-> Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16230
-> 
-> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Reported-by: Dominik Brodowski <linux@dominikbrodowski.net>
-> Cc: Maciej Rutecki <maciej.rutecki@gmail.com>
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  fs/fcntl.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff -puN fs/fcntl.c~fs-fcntlc-kill_fasync_rcu-fa_lock-must-be-irq-safe fs/fcntl.c
-> --- a/fs/fcntl.c~fs-fcntlc-kill_fasync_rcu-fa_lock-must-be-irq-safe
-> +++ a/fs/fcntl.c
-> @@ -733,12 +733,14 @@ static void kill_fasync_rcu(struct fasyn
->  {
->  	while (fa) {
->  		struct fown_struct *fown;
-> +		unsigned long flags;
-> +
->  		if (fa->magic != FASYNC_MAGIC) {
->  			printk(KERN_ERR "kill_fasync: bad magic number in "
->  			       "fasync_struct!\n");
->  			return;
->  		}
-> -		spin_lock(&fa->fa_lock);
-> +		spin_lock_irqsave(&fa->fa_lock, flags);
->  		if (fa->fa_file) {
->  			fown = &fa->fa_file->f_owner;
->  			/* Don't send SIGURG to processes which have not set a
-> @@ -747,7 +749,7 @@ static void kill_fasync_rcu(struct fasyn
->  			if (!(sig == SIGURG && fown->signum == 0))
->  				send_sigio(fown, fa->fa_fd, band);
->  		}
-> -		spin_unlock(&fa->fa_lock);
-> +		spin_unlock_irqrestore(&fa->fa_lock, flags);
->  		fa = rcu_dereference(fa->fa_next);
->  	}
->  }
-> _
-> 
-> 
-> afaict all other lockers of fa_lock are OK (but one never really knows
-> with spin_lock_irq()).
-> 
-> Guys, please review-and-ack and I'll get it merged up.
+This patch is against the 2.6.34 source.
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Paraphrased from the 1989 BSD patch by David Borman @ cray.com:
+
+     These are the changes needed for the kernel to support
+     LINEMODE in the server.
+
+     There is a new bit in the termios local flag word, EXTPROC.
+     When this bit is set, several aspects of the terminal driver
+     are disabled.  Input line editing, character echo, and mapping
+     of signals are all disabled.  This allows the telnetd to turn
+     off these functions when in linemode, but still keep track of
+     what state the user wants the terminal to be in.
+
+     New ioctl:
+         TIOCSIG         Generate a signal to processes in the
+                         current process group of the pty.
+
+     There is a new mode for packet driver, the TIOCPKT_IOCTL bit.
+     When packet mode is turned on in the pty, and the EXTPROC bit
+     is set, then whenever the state of the pty is changed, the
+     next read on the master side of the pty will have the TIOCPKT_IOCTL
+     bit set.  This allows the process on the server side of the pty
+     to know when the state of the terminal has changed; it can then
+     issue the appropriate ioctl to retrieve the new state.
+
+Since the original BSD patches accompanied the source code for telnet I've 
+left that reference here, but obviously the feature is useful for any remote 
+terminal protocol, including ssh.
+
+The corresponding feature has existed in the BSD tty driver since 1989. For 
+historical reference, a good copy of the relevant files can be found here:
+
+http://anonsvn.mit.edu/viewvc/krb5/trunk/src/appl/telnet/?pathrev=17741
+
+Signed-off-by: Howard Chu <hyc@symas.com>
+
+---
+ arch/alpha/include/asm/ioctls.h     |    2 ++
+ arch/alpha/include/asm/termbits.h   |    1 +
+ arch/arm/include/asm/ioctls.h       |    2 ++
+ arch/arm/include/asm/termbits.h     |    1 +
+ arch/avr32/include/asm/ioctls.h     |    2 ++
+ arch/avr32/include/asm/termbits.h   |    1 +
+ arch/cris/include/asm/ioctls.h      |    2 ++
+ arch/cris/include/asm/termbits.h    |    1 +
+ arch/frv/include/asm/ioctls.h       |    2 ++
+ arch/frv/include/asm/termbits.h     |    1 +
+ arch/h8300/include/asm/ioctls.h     |    2 ++
+ arch/h8300/include/asm/termbits.h   |    1 +
+ arch/ia64/include/asm/ioctls.h      |    2 ++
+ arch/ia64/include/asm/termbits.h    |    1 +
+ arch/m32r/include/asm/ioctls.h      |    2 ++
+ arch/m32r/include/asm/termbits.h    |    1 +
+ arch/m68k/include/asm/ioctls.h      |    2 ++
+ arch/m68k/include/asm/termbits.h    |    1 +
+ arch/mips/include/asm/ioctls.h      |    3 ++-
+ arch/mips/include/asm/termbits.h    |    1 +
+ arch/mn10300/include/asm/ioctls.h   |    2 ++
+ arch/mn10300/include/asm/termbits.h |    1 +
+ arch/parisc/include/asm/ioctls.h    |    2 ++
+ arch/parisc/include/asm/termbits.h  |    1 +
+ arch/powerpc/include/asm/ioctls.h   |    2 ++
+ arch/powerpc/include/asm/termbits.h |    1 +
+ arch/s390/include/asm/ioctls.h      |    2 ++
+ arch/sh/include/asm/ioctls.h        |    2 ++
+ arch/sparc/include/asm/ioctls.h     |    2 ++
+ arch/sparc/include/asm/termbits.h   |    1 +
+ arch/xtensa/include/asm/ioctls.h    |    2 ++
+ arch/xtensa/include/asm/termbits.h  |    1 +
+ drivers/char/n_tty.c                |   17 ++++++++++++++---
+ drivers/char/pty.c                  |   21 +++++++++++++++++++++
+ drivers/char/tty_ioctl.c            |   18 ++++++++++++------
+ fs/compat_ioctl.c                   |    1 +
+ include/asm-generic/ioctls.h        |    2 ++
+ include/asm-generic/termbits.h      |    1 +
+ include/linux/tty.h                 |    1 +
+ 39 files changed, 101 insertions(+), 10 deletions(-)
+
+diff --git a/arch/alpha/include/asm/ioctls.h b/arch/alpha/include/asm/ioctls.h
+index 67bb9f6..8af5ee5 100644
+--- a/arch/alpha/include/asm/ioctls.h
++++ b/arch/alpha/include/asm/ioctls.h
+@@ -80,6 +80,7 @@
+ # define TIOCPKT_START		 8
+ # define TIOCPKT_NOSTOP		16
+ # define TIOCPKT_DOSTOP		32
++# define TIOCPKT_IOCTL		64
+ 
+ 
+ #define TIOCNOTTY	0x5422
+@@ -91,6 +92,7 @@
+ #define TIOCGSID	0x5429  /* Return the session ID of FD */
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define TIOCSERCONFIG	0x5453
+ #define TIOCSERGWILD	0x5454
+diff --git a/arch/alpha/include/asm/termbits.h b/arch/alpha/include/asm/termbits.h
+index ad854a4..879dd35 100644
+--- a/arch/alpha/include/asm/termbits.h
++++ b/arch/alpha/include/asm/termbits.h
+@@ -180,6 +180,7 @@ struct ktermios {
+ #define FLUSHO	0x00800000
+ #define PENDIN	0x20000000
+ #define IEXTEN	0x00000400
++#define EXTPROC	0x10000000
+ 
+ /* Values for the ACTION argument to `tcflow'.  */
+ #define	TCOOFF		0
+diff --git a/arch/arm/include/asm/ioctls.h b/arch/arm/include/asm/ioctls.h
+index a91d8a1..e5e22cf 100644
+--- a/arch/arm/include/asm/ioctls.h
++++ b/arch/arm/include/asm/ioctls.h
+@@ -52,6 +52,7 @@
+ #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
+ #define FIOCLEX		0x5451
+@@ -78,6 +79,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT	0x01	/* Transmitter physically empty */
+ 
+diff --git a/arch/arm/include/asm/termbits.h b/arch/arm/include/asm/termbits.h
+index f784d11..704135d 100644
+--- a/arch/arm/include/asm/termbits.h
++++ b/arch/arm/include/asm/termbits.h
+@@ -177,6 +177,7 @@ struct ktermios {
+ #define FLUSHO	0010000
+ #define PENDIN	0040000
+ #define IEXTEN	0100000
++#define EXTPROC	0200000
+ 
+ /* tcflow() and TCXONC use these */
+ #define	TCOOFF		0
+diff --git a/arch/avr32/include/asm/ioctls.h b/arch/avr32/include/asm/ioctls.h
+index 0cf2c0a..f947622 100644
+--- a/arch/avr32/include/asm/ioctls.h
++++ b/arch/avr32/include/asm/ioctls.h
+@@ -53,6 +53,7 @@
+ #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450
+ #define FIOCLEX		0x5451
+@@ -81,6 +82,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+ 
+diff --git a/arch/avr32/include/asm/termbits.h b/arch/avr32/include/asm/termbits.h
+index db2daab..366adc5 100644
+--- a/arch/avr32/include/asm/termbits.h
++++ b/arch/avr32/include/asm/termbits.h
+@@ -175,6 +175,7 @@ struct ktermios {
+ #define FLUSHO	0010000
+ #define PENDIN	0040000
+ #define IEXTEN	0100000
++#define EXTPROC	0200000
+ 
+ /* tcflow() and TCXONC use these */
+ #define	TCOOFF		0
+diff --git a/arch/cris/include/asm/ioctls.h b/arch/cris/include/asm/ioctls.h
+index 35bbc18..2569665 100644
+--- a/arch/cris/include/asm/ioctls.h
++++ b/arch/cris/include/asm/ioctls.h
+@@ -54,6 +54,7 @@
+ #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
+ #define FIOCLEX		0x5451
+@@ -86,6 +87,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+ 
+diff --git a/arch/cris/include/asm/termbits.h b/arch/cris/include/asm/termbits.h
+index 66e1a74..1c43bc8 100644
+--- a/arch/cris/include/asm/termbits.h
++++ b/arch/cris/include/asm/termbits.h
+@@ -214,6 +214,7 @@ struct ktermios {
+ #define FLUSHO	0010000
+ #define PENDIN	0040000
+ #define IEXTEN	0100000
++#define EXTPROC	0200000
+ 
+ /* tcflow() and TCXONC use these */
+ #define	TCOOFF		0
+diff --git a/arch/frv/include/asm/ioctls.h b/arch/frv/include/asm/ioctls.h
+index d0c30e3..a993e37 100644
+--- a/arch/frv/include/asm/ioctls.h
++++ b/arch/frv/include/asm/ioctls.h
+@@ -53,6 +53,7 @@
+ #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
+ #define FIOCLEX		0x5451
+@@ -79,6 +80,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+ 
+diff --git a/arch/frv/include/asm/termbits.h b/arch/frv/include/asm/termbits.h
+index 5568492..7722e19 100644
+--- a/arch/frv/include/asm/termbits.h
++++ b/arch/frv/include/asm/termbits.h
+@@ -180,6 +180,7 @@ struct ktermios {
+ #define FLUSHO	0010000
+ #define PENDIN	0040000
+ #define IEXTEN	0100000
++#define EXTPROC	0200000
+ 
+ 
+ /* tcflow() and TCXONC use these */
+diff --git a/arch/h8300/include/asm/ioctls.h b/arch/h8300/include/asm/ioctls.h
+index 98a53d0..b6b249f 100644
+--- a/arch/h8300/include/asm/ioctls.h
++++ b/arch/h8300/include/asm/ioctls.h
+@@ -53,6 +53,7 @@
+ #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
+ #define FIOCLEX		0x5451
+@@ -79,6 +80,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+ 
+diff --git a/arch/h8300/include/asm/termbits.h b/arch/h8300/include/asm/termbits.h
+index 31eca81..3287a62 100644
+--- a/arch/h8300/include/asm/termbits.h
++++ b/arch/h8300/include/asm/termbits.h
+@@ -179,6 +179,7 @@ struct ktermios {
+ #define FLUSHO	0010000
+ #define PENDIN	0040000
+ #define IEXTEN	0100000
++#define EXTPROC	0200000
+ 
+ 
+ /* tcflow() and TCXONC use these */
+diff --git a/arch/ia64/include/asm/ioctls.h b/arch/ia64/include/asm/ioctls.h
+index f41b636..a11af01 100644
+--- a/arch/ia64/include/asm/ioctls.h
++++ b/arch/ia64/include/asm/ioctls.h
+@@ -59,6 +59,7 @@
+ #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
+ #define FIOCLEX		0x5451
+@@ -87,6 +88,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+ 
+diff --git a/arch/ia64/include/asm/termbits.h b/arch/ia64/include/asm/termbits.h
+index 9f162e0..c009b94 100644
+--- a/arch/ia64/include/asm/termbits.h
++++ b/arch/ia64/include/asm/termbits.h
+@@ -187,6 +187,7 @@ struct ktermios {
+ #define FLUSHO	0010000
+ #define PENDIN	0040000
+ #define IEXTEN	0100000
++#define EXTPROC	0200000
+ 
+ /* tcflow() and TCXONC use these */
+ #define	TCOOFF		0
+diff --git a/arch/m32r/include/asm/ioctls.h b/arch/m32r/include/asm/ioctls.h
+index b9f54bb..366db76 100644
+--- a/arch/m32r/include/asm/ioctls.h
++++ b/arch/m32r/include/asm/ioctls.h
+@@ -53,6 +53,7 @@
+ #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450
+ #define FIOCLEX		0x5451
+@@ -81,6 +82,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+ 
+diff --git a/arch/m32r/include/asm/termbits.h b/arch/m32r/include/asm/termbits.h
+index bc10400..957a3c6 100644
+--- a/arch/m32r/include/asm/termbits.h
++++ b/arch/m32r/include/asm/termbits.h
+@@ -179,6 +179,7 @@ struct ktermios {
+ #define FLUSHO	0010000
+ #define PENDIN	0040000
+ #define IEXTEN	0100000
++#define EXTPROC	0200000
+ 
+ /* tcflow() and TCXONC use these */
+ #define	TCOOFF		0
+diff --git a/arch/m68k/include/asm/ioctls.h b/arch/m68k/include/asm/ioctls.h
+index b8d2f4b..91a57d6 100644
+--- a/arch/m68k/include/asm/ioctls.h
++++ b/arch/m68k/include/asm/ioctls.h
+@@ -52,6 +52,7 @@
+ #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
+ #define FIOCLEX		0x5451
+@@ -78,6 +79,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+ 
+diff --git a/arch/m68k/include/asm/termbits.h b/arch/m68k/include/asm/termbits.h
+index 8c14170..aea1e37 100644
+--- a/arch/m68k/include/asm/termbits.h
++++ b/arch/m68k/include/asm/termbits.h
+@@ -179,6 +179,7 @@ struct ktermios {
+ #define FLUSHO	0010000
+ #define PENDIN	0040000
+ #define IEXTEN	0100000
++#define EXTPROC	0200000
+ 
+ 
+ /* tcflow() and TCXONC use these */
+diff --git a/arch/mips/include/asm/ioctls.h b/arch/mips/include/asm/ioctls.h
+index 3f04a99..767d196 100644
+--- a/arch/mips/include/asm/ioctls.h
++++ b/arch/mips/include/asm/ioctls.h
+@@ -41,7 +41,7 @@
+ #define	 TIOCPKT_START		0x08	/* start output */
+ #define	 TIOCPKT_NOSTOP		0x10	/* no more ^S, ^Q */
+ #define	 TIOCPKT_DOSTOP		0x20	/* now do ^S ^Q */
+-/* #define  TIOCPKT_IOCTL		0x40	state change of pty driver */
++#define  TIOCPKT_IOCTL		0x40	/* state change of pty driver */
+ #define TIOCSWINSZ	_IOW('t', 103, struct winsize)	/* set window size */
+ #define TIOCGWINSZ	_IOR('t', 104, struct winsize)	/* get window size */
+ #define TIOCNOTTY	0x5471		/* void tty association */
+@@ -83,6 +83,7 @@
+ #define TCSETSF2	_IOW('T', 0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T', 0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T', 0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T', 0x36, int)  /* Generate signal on Pty slave */
+ 
+ /* I hope the range from 0x5480 on is free ... */
+ #define TIOCSCTTY	0x5480		/* become controlling tty */
+diff --git a/arch/mips/include/asm/termbits.h b/arch/mips/include/asm/termbits.h
+index c83c684..76630b3 100644
+--- a/arch/mips/include/asm/termbits.h
++++ b/arch/mips/include/asm/termbits.h
+@@ -203,6 +203,7 @@ struct ktermios {
+ #define PENDIN	0040000		/* Retype pending input (state).  */
+ #define TOSTOP	0100000		/* Send SIGTTOU for background output.  */
+ #define ITOSTOP	TOSTOP
++#define EXTPROC	0200000		/* External processing on pty */
+ 
+ /* ioctl (fd, TIOCSERGETLSR, &result) where result may be as below */
+ #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+diff --git a/arch/mn10300/include/asm/ioctls.h b/arch/mn10300/include/asm/ioctls.h
+index dcbfb45..c149fe1 100644
+--- a/arch/mn10300/include/asm/ioctls.h
++++ b/arch/mn10300/include/asm/ioctls.h
+@@ -54,6 +54,7 @@
+ #define TIOCGPTN	_IOR('T', 0x30, unsigned int) /* Get Pty Number
+ 						       * (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T', 0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T', 0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450
+ #define FIOCLEX		0x5451
+@@ -82,6 +83,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+ 
+diff --git a/arch/mn10300/include/asm/termbits.h b/arch/mn10300/include/asm/termbits.h
+index eb2b0dc..130d424 100644
+--- a/arch/mn10300/include/asm/termbits.h
++++ b/arch/mn10300/include/asm/termbits.h
+@@ -180,6 +180,7 @@ struct ktermios {
+ #define FLUSHO	0010000
+ #define PENDIN	0040000
+ #define IEXTEN	0100000
++#define EXTPROC	0200000
+ 
+ /* tcflow() and TCXONC use these */
+ #define	TCOOFF		0
+diff --git a/arch/parisc/include/asm/ioctls.h b/arch/parisc/include/asm/ioctls.h
+index 6747fad..bf73dbb 100644
+--- a/arch/parisc/include/asm/ioctls.h
++++ b/arch/parisc/include/asm/ioctls.h
+@@ -52,6 +52,7 @@
+ #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
+ #define FIOCLEX		0x5451
+@@ -84,6 +85,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+ 
+diff --git a/arch/parisc/include/asm/termbits.h b/arch/parisc/include/asm/termbits.h
+index d8bbc73..d1ab921 100644
+--- a/arch/parisc/include/asm/termbits.h
++++ b/arch/parisc/include/asm/termbits.h
+@@ -180,6 +180,7 @@ struct ktermios {
+ #define FLUSHO  0010000
+ #define PENDIN  0040000
+ #define IEXTEN  0100000
++#define EXTPROC	0200000
+ 
+ /* tcflow() and TCXONC use these */
+ #define	TCOOFF		0
+diff --git a/arch/powerpc/include/asm/ioctls.h b/arch/powerpc/include/asm/ioctls.h
+index 1842186..8519200 100644
+--- a/arch/powerpc/include/asm/ioctls.h
++++ b/arch/powerpc/include/asm/ioctls.h
+@@ -80,6 +80,7 @@
+ # define TIOCPKT_START		 8
+ # define TIOCPKT_NOSTOP		16
+ # define TIOCPKT_DOSTOP		32
++# define TIOCPKT_IOCTL		64
+ 
+ 
+ #define TIOCNOTTY	0x5422
+@@ -93,6 +94,7 @@
+ #define TIOCSRS485	0x542f
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define TIOCSERCONFIG	0x5453
+ #define TIOCSERGWILD	0x5454
+diff --git a/arch/powerpc/include/asm/termbits.h b/arch/powerpc/include/asm/termbits.h
+index 6698188..549d700 100644
+--- a/arch/powerpc/include/asm/termbits.h
++++ b/arch/powerpc/include/asm/termbits.h
+@@ -189,6 +189,7 @@ struct ktermios {
+ #define FLUSHO	0x00800000
+ #define PENDIN	0x20000000
+ #define IEXTEN	0x00000400
++#define EXTPROC	0x10000000
+ 
+ /* Values for the ACTION argument to `tcflow'.  */
+ #define	TCOOFF		0
+diff --git a/arch/s390/include/asm/ioctls.h b/arch/s390/include/asm/ioctls.h
+index 40e481b..2f3d873 100644
+--- a/arch/s390/include/asm/ioctls.h
++++ b/arch/s390/include/asm/ioctls.h
+@@ -60,6 +60,7 @@
+ #define TCSETSF2	_IOW('T',0x2D, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
+ #define FIOCLEX		0x5451
+@@ -86,6 +87,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
+ 
+diff --git a/arch/sh/include/asm/ioctls.h b/arch/sh/include/asm/ioctls.h
+index c212c37..eb6c4c6 100644
+--- a/arch/sh/include/asm/ioctls.h
++++ b/arch/sh/include/asm/ioctls.h
+@@ -69,6 +69,7 @@
+ # define TIOCPKT_START		 8
+ # define TIOCPKT_NOSTOP		16
+ # define TIOCPKT_DOSTOP		32
++# define TIOCPKT_IOCTL		64
+ 
+ 
+ #define TIOCNOTTY	_IO('T', 34) /* 0x5422 */
+@@ -84,6 +85,7 @@
+ #define TCSETSF2	_IOW('T', 45, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define TIOCSERCONFIG	_IO('T', 83) /* 0x5453 */
+ #define TIOCSERGWILD	_IOR('T', 84,  int) /* 0x5454 */
+diff --git a/arch/sparc/include/asm/ioctls.h b/arch/sparc/include/asm/ioctls.h
+index 1fe6855..53f4ee0 100644
+--- a/arch/sparc/include/asm/ioctls.h
++++ b/arch/sparc/include/asm/ioctls.h
+@@ -80,6 +80,7 @@
+ /* Get minor device of a pty master's FD -- Solaris equiv is ISPTM */
+ #define TIOCGPTN	_IOR('t', 134, unsigned int) /* Get Pty Number */
+ #define TIOCSPTLCK	_IOW('t', 135, int) /* Lock/unlock PTY */
++#define TIOCSIG		_IOW('t', 136, int) /* Generate signal on Pty slave */
+ 
+ /* Little f */
+ #define FIOCLEX		_IO('f', 1)
+@@ -132,5 +133,6 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #endif /* !(_ASM_SPARC_IOCTLS_H) */
+diff --git a/arch/sparc/include/asm/termbits.h b/arch/sparc/include/asm/termbits.h
+index d72dfed..23b10ff 100644
+--- a/arch/sparc/include/asm/termbits.h
++++ b/arch/sparc/include/asm/termbits.h
+@@ -225,6 +225,7 @@ struct ktermios {
+ #define FLUSHO	0x00002000
+ #define PENDIN	0x00004000
+ #define IEXTEN	0x00008000
++#define EXTPROC	0x00010000
+ 
+ /* modem lines */
+ #define TIOCM_LE	0x001
+diff --git a/arch/xtensa/include/asm/ioctls.h b/arch/xtensa/include/asm/ioctls.h
+index 0ffa942..ab18000 100644
+--- a/arch/xtensa/include/asm/ioctls.h
++++ b/arch/xtensa/include/asm/ioctls.h
+@@ -81,6 +81,7 @@
+ # define TIOCPKT_START		 8
+ # define TIOCPKT_NOSTOP		16
+ # define TIOCPKT_DOSTOP		32
++# define TIOCPKT_IOCTL		64
+ 
+ 
+ #define TIOCNOTTY	_IO('T', 34)
+@@ -97,6 +98,7 @@
+ #define TCSETSF2	_IOW('T', 45, struct termios2)
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
++#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
+ 
+ #define TIOCSERCONFIG	_IO('T', 83)
+ #define TIOCSERGWILD	_IOR('T', 84,  int)
+diff --git a/arch/xtensa/include/asm/termbits.h b/arch/xtensa/include/asm/termbits.h
+index 85aa6a3..0d6c871 100644
+--- a/arch/xtensa/include/asm/termbits.h
++++ b/arch/xtensa/include/asm/termbits.h
+@@ -196,6 +196,7 @@ struct ktermios {
+ #define FLUSHO	0010000
+ #define PENDIN	0040000
+ #define IEXTEN	0100000
++#define EXTPROC	0200000
+ 
+ /* tcflow() and TCXONC use these */
+ 
+diff --git a/drivers/char/n_tty.c b/drivers/char/n_tty.c
+index bdae832..428f4fe 100644
+--- a/drivers/char/n_tty.c
++++ b/drivers/char/n_tty.c
+@@ -1102,6 +1102,11 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
+ 	if (I_IUCLC(tty) && L_IEXTEN(tty))
+ 		c = tolower(c);
+ 
++	if (L_EXTPROC(tty)) {
++		put_tty_queue(c, tty);
++		return;
++	}
++
+ 	if (tty->stopped && !tty->flow_stopped && I_IXON(tty) &&
+ 	    I_IXANY(tty) && c != START_CHAR(tty) && c != STOP_CHAR(tty) &&
+ 	    c != INTR_CHAR(tty) && c != QUIT_CHAR(tty) && c != SUSP_CHAR(tty)) {
+@@ -1409,7 +1414,8 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 
+ 	n_tty_set_room(tty);
+ 
+-	if (!tty->icanon && (tty->read_cnt >= tty->minimum_to_wake)) {
++	if ((!tty->icanon && (tty->read_cnt >= tty->minimum_to_wake)) ||
++		L_EXTPROC(tty)) {
+ 		kill_fasync(&tty->fasync, SIGIO, POLL_IN);
+ 		if (waitqueue_active(&tty->read_wait))
+ 			wake_up_interruptible(&tty->read_wait);
+@@ -1585,7 +1591,7 @@ static int n_tty_open(struct tty_struct *tty)
+ static inline int input_available_p(struct tty_struct *tty, int amt)
+ {
+ 	tty_flush_to_ldisc(tty);
+-	if (tty->icanon) {
++	if (tty->icanon && !L_EXTPROC(tty)) {
+ 		if (tty->canon_data)
+ 			return 1;
+ 	} else if (tty->read_cnt >= (amt ? amt : 1))
+@@ -1632,6 +1638,11 @@ static int copy_from_read_buf(struct tty_struct *tty,
+ 		spin_lock_irqsave(&tty->read_lock, flags);
+ 		tty->read_tail = (tty->read_tail + n) & (N_TTY_BUF_SIZE-1);
+ 		tty->read_cnt -= n;
++		/* Turn single EOF into zero-length read */
++		if (L_EXTPROC(tty) && tty->icanon && n == 1) {
++			if (!tty->read_cnt && (*b)[n-1] == EOF_CHAR(tty))
++				n--;
++		}
+ 		spin_unlock_irqrestore(&tty->read_lock, flags);
+ 		*b += n;
+ 		*nr -= n;
+@@ -1812,7 +1823,7 @@ do_it_again:
+ 			nr--;
+ 		}
+ 
+-		if (tty->icanon) {
++		if (tty->icanon && !L_EXTPROC(tty)) {
+ 			/* N.B. avoid overrun if nr == 0 */
+ 			while (nr && tty->read_cnt) {
+ 				int eol;
+diff --git a/drivers/char/pty.c b/drivers/char/pty.c
+index d83a431..b640ef2 100644
+--- a/drivers/char/pty.c
++++ b/drivers/char/pty.c
+@@ -171,6 +171,23 @@ static int pty_set_lock(struct tty_struct *tty, int __user *arg)
+ 	return 0;
+ }
+ 
++/* Send a signal to the slave */
++static int pty_signal(struct tty_struct *tty, int sig)
++{
++	unsigned long flags;
++	struct pid *pgrp;
++
++	if (tty->link) {
++		spin_lock_irqsave(&tty->link->ctrl_lock, flags);
++		pgrp = get_pid(tty->link->pgrp);
++		spin_unlock_irqrestore(&tty->link->ctrl_lock, flags);
++
++		kill_pgrp(pgrp, sig, 1);
++		put_pid(pgrp);
++	}
++	return 0;
++}
++
+ static void pty_flush_buffer(struct tty_struct *tty)
+ {
+ 	struct tty_struct *to = tty->link;
+@@ -321,6 +338,8 @@ static int pty_bsd_ioctl(struct tty_struct *tty, struct file *file,
+ 	switch (cmd) {
+ 	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
+ 		return pty_set_lock(tty, (int __user *) arg);
++	case TIOCSIG:    /* Send signal to other side of pty */
++		return pty_signal(tty, (int) arg);
+ 	}
+ 	return -ENOIOCTLCMD;
+ }
+@@ -476,6 +495,8 @@ static int pty_unix98_ioctl(struct tty_struct *tty, struct file *file,
+ 		return pty_set_lock(tty, (int __user *)arg);
+ 	case TIOCGPTN: /* Get PT Number */
+ 		return put_user(tty->index, (unsigned int __user *)arg);
++	case TIOCSIG:    /* Send signal to other side of pty */
++		return pty_signal(tty, (int) arg);
+ 	}
+ 
+ 	return -ENOIOCTLCMD;
+diff --git a/drivers/char/tty_ioctl.c b/drivers/char/tty_ioctl.c
+index 6bd5f88..0c18899 100644
+--- a/drivers/char/tty_ioctl.c
++++ b/drivers/char/tty_ioctl.c
+@@ -517,19 +517,25 @@ static void change_termios(struct tty_struct *tty, struct ktermios *new_termios)
+ 
+ 	/* See if packet mode change of state. */
+ 	if (tty->link && tty->link->packet) {
++		int extproc = (old_termios.c_lflag & EXTPROC) |
++				(tty->termios->c_lflag & EXTPROC);
+ 		int old_flow = ((old_termios.c_iflag & IXON) &&
+ 				(old_termios.c_cc[VSTOP] == '\023') &&
+ 				(old_termios.c_cc[VSTART] == '\021'));
+ 		int new_flow = (I_IXON(tty) &&
+ 				STOP_CHAR(tty) == '\023' &&
+ 				START_CHAR(tty) == '\021');
+-		if (old_flow != new_flow) {
++		if ((old_flow != new_flow) || extproc) {
+ 			spin_lock_irqsave(&tty->ctrl_lock, flags);
+-			tty->ctrl_status &= ~(TIOCPKT_DOSTOP | TIOCPKT_NOSTOP);
+-			if (new_flow)
+-				tty->ctrl_status |= TIOCPKT_DOSTOP;
+-			else
+-				tty->ctrl_status |= TIOCPKT_NOSTOP;
++			if (old_flow != new_flow) {
++				tty->ctrl_status &= ~(TIOCPKT_DOSTOP | TIOCPKT_NOSTOP);
++				if (new_flow)
++					tty->ctrl_status |= TIOCPKT_DOSTOP;
++				else
++					tty->ctrl_status |= TIOCPKT_NOSTOP;
++			}
++			if (extproc)
++				tty->ctrl_status |= TIOCPKT_IOCTL;
+ 			spin_unlock_irqrestore(&tty->ctrl_lock, flags);
+ 			wake_up_interruptible(&tty->link->read_wait);
+ 		}
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index 641640d..766636d 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -966,6 +966,7 @@ COMPATIBLE_IOCTL(TIOCGPGRP)
+ COMPATIBLE_IOCTL(TIOCGPTN)
+ COMPATIBLE_IOCTL(TIOCSPTLCK)
+ COMPATIBLE_IOCTL(TIOCSERGETLSR)
++COMPATIBLE_IOCTL(TIOCSIG)
+ #ifdef TCGETS2
+ COMPATIBLE_IOCTL(TCGETS2)
+ COMPATIBLE_IOCTL(TCSETS2)
+diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
+index a799e20..87661c8 100644
+--- a/include/asm-generic/ioctls.h
++++ b/include/asm-generic/ioctls.h
+@@ -69,6 +69,7 @@
+ #define TCSETX		0x5433
+ #define TCSETXF		0x5434
+ #define TCSETXW		0x5435
++#define TIOCSIG		_IOW('T', 0x36, int)  /* pty: generate signal */
+ 
+ #define FIONCLEX	0x5450
+ #define FIOCLEX		0x5451
+@@ -104,6 +105,7 @@
+ #define TIOCPKT_START		 8
+ #define TIOCPKT_NOSTOP		16
+ #define TIOCPKT_DOSTOP		32
++#define TIOCPKT_IOCTL		64
+ 
+ #define TIOCSER_TEMT	0x01	/* Transmitter physically empty */
+ 
+diff --git a/include/asm-generic/termbits.h b/include/asm-generic/termbits.h
+index 1c9773d..232b478 100644
+--- a/include/asm-generic/termbits.h
++++ b/include/asm-generic/termbits.h
+@@ -178,6 +178,7 @@ struct ktermios {
+ #define FLUSHO	0010000
+ #define PENDIN	0040000
+ #define IEXTEN	0100000
++#define EXTPROC	0200000
+ 
+ /* tcflow() and TCXONC use these */
+ #define	TCOOFF		0
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 4409967..3cfe448 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -178,6 +178,7 @@ struct tty_bufhead {
+ #define L_FLUSHO(tty)	_L_FLAG((tty), FLUSHO)
+ #define L_PENDIN(tty)	_L_FLAG((tty), PENDIN)
+ #define L_IEXTEN(tty)	_L_FLAG((tty), IEXTEN)
++#define L_EXTPROC(tty)	_L_FLAG((tty), EXTPROC)
+ 
+ struct device;
+ struct signal_struct;
+--
+1.7.0.4
+
+  -- hyc
