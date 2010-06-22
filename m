@@ -1,122 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab0FVTqr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 15:46:47 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51703 "EHLO
+	id S1756976Ab0FVTs6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 15:48:58 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51725 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755031Ab0FVTqn (ORCPT
+	with ESMTP id S1755850Ab0FVTqr (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 22 Jun 2010 15:46:43 -0400
+	Tue, 22 Jun 2010 15:46:47 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp,
        iommu@lists.linux-foundation.org, albert_herranz@yahoo.es,
        x86@kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 07/19] swiotlb-xen: Make 'xen_swiotlb_alloc_coherent' work.
-Date: Tue, 22 Jun 2010 15:42:40 -0400
-Message-Id: <1277235772-26757-8-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH] Xen-SWIOTBL v0.8.3 used for Xen PCI pass through for PV guests.
+Date: Tue, 22 Jun 2010 15:42:33 -0400
+Message-Id: <1277235772-26757-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1277235772-26757-1-git-send-email-konrad.wilk@oracle.com>
-References: <1277235772-26757-1-git-send-email-konrad.wilk@oracle.com>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090203.4C2112C8.01DC:SCFMA4539811,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4C2112D1.022F:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We allocate the requested page from wherever (we ignore the DMA32 flags)
-and after allocation make a call for the kernel & hypervisor to replace
-the memory at the virtual addresses with physical memory that is under
-the 4GB mark.
+These nineteen patches lay the groundwork for Xen Paravirtualized (PV)
+domains to access PCI pass-through devices. These patches utilize the
+SWIOTLB library modifications (http://lkml.org/lkml/2010/6/4/272).
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- lib/swiotlb-xen.c |   55 ++++++++++++++++++++++------------------------------
- 1 files changed, 23 insertions(+), 32 deletions(-)
+The end user of this is the Xen PCI frontend and Xen PCI [1] which
+require a DMA API "backend" that understands Xen's MMU. This allows the
+PV domains to use PCI devices.
 
-diff --git a/lib/swiotlb-xen.c b/lib/swiotlb-xen.c
-index c177f32..89443e4 100644
---- a/lib/swiotlb-xen.c
-+++ b/lib/swiotlb-xen.c
-@@ -35,6 +35,7 @@
- 
- #include <linux/dma-mapping.h>
- #include <xen/page.h>
-+#include <xen/xen-ops.h>
- 
- /*
-  * Used to do a quick range check in swiotlb_tbl_unmap_single and
-@@ -129,47 +130,37 @@ void *
- xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 			   dma_addr_t *dma_handle, gfp_t flags)
- {
--	dma_addr_t dev_addr;
- 	void *ret;
- 	int order = get_order(size);
- 	u64 dma_mask = DMA_BIT_MASK(32);
-+	unsigned long vstart;
- 
--	if (hwdev && hwdev->coherent_dma_mask)
--		dma_mask = hwdev->coherent_dma_mask;
-+	/*
-+	* Ignore region specifiers - the kernel's ideas of
-+	* pseudo-phys memory layout has nothing to do with the
-+	* machine physical layout.  We can't allocate highmem
-+	* because we can't return a pointer to it.
-+	*/
-+	flags &= ~(__GFP_DMA | __GFP_HIGHMEM);
- 
--	ret = (void *)__get_free_pages(flags, order);
--	if (ret && xen_virt_to_bus(hwdev, ret) + size - 1 > dma_mask) {
--		/*
--		 * The allocated memory isn't reachable by the device.
--		 */
--		free_pages((unsigned long) ret, order);
--		ret = NULL;
--	}
--	if (!ret) {
--		/*
--		 * We are either out of memory or the device can't DMA to
--		 * GFP_DMA memory; fall back on map_single(), which
--		 * will grab memory from the lowest available address range.
--		 */
--		ret = xen_map_single(hwdev, 0, size, DMA_FROM_DEVICE);
--		if (!ret)
--			return NULL;
--	}
-+	if (dma_alloc_from_coherent(hwdev, size, dma_handle, &ret))
-+		return ret;
- 
--	memset(ret, 0, size);
--	dev_addr = xen_virt_to_bus(hwdev, ret);
-+	vstart = __get_free_pages(flags, order);
-+	ret = (void *)vstart;
- 
--	/* Confirm address can be DMA'd by device */
--	if (dev_addr + size - 1 > dma_mask) {
--		printk("hwdev DMA mask = 0x%016Lx, dev_addr = 0x%016Lx\n",
--		       (unsigned long long)dma_mask,
--		       (unsigned long long)dev_addr);
-+	if (hwdev && hwdev->coherent_dma_mask)
-+		dma_mask = hwdev->coherent_dma_mask;
- 
--		/* DMA_TO_DEVICE to avoid memcpy in unmap_single */
--		swiotlb_tbl_unmap_single(hwdev, ret, size, DMA_TO_DEVICE);
--		return NULL;
-+	if (ret) {
-+		if (xen_create_contiguous_region(vstart, order,
-+						 fls64(dma_mask)) != 0) {
-+			free_pages(vstart, order);
-+			return NULL;
-+		}
-+		memset(ret, 0, size);
-+		*dma_handle = virt_to_machine(ret).maddr;
- 	}
--	*dma_handle = dev_addr;
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(xen_swiotlb_alloc_coherent);
--- 
-1.7.0.1
+This patch-set is split in two groups. The first alter the Xen components,
+while the second introduces the SWIOTLB-Xen.
 
+The Xen components patches consist of:
+
+ [PATCH 01/19] xen: use _PAGE_IOMAP in ioremap to do machine mappings
+ [PATCH 02/19] xen: Allow unprivileged Xen domains to create iomap pages
+ [PATCH 03/19] xen: Rename the balloon lock
+ [PATCH 04/19] xen: Add xen_create_contiguous_region
+
+which alter the Xen MMU, which by default utilizes a layer of indirection
+wherein the PFN is translated to the Machine Frame Number (MFN) and vice-versa.
+This is required to "fool" the guest in thinking its memory starts at PFN 0 and
+goes up to the available amount.  While in the background, PFN 0 might as well be
+MFN 1048576 (4GB).
+
+For PCI/DMA API calls (ioremap, pci_map_page, etc) having a PFN != MFN is
+not too good, so two new mechanisms are introduced:
+  a). For PTEs which manipulate the PCI/DMA pages the PFN == MFN. This is done
+      via utilizing the _PAGE_IOMAP flag to distinguish the PTE as an IO type.
+  b). Allow a mechanism to "swizzle" the MFN's under a PFN to be under a certain
+      bus width (say 32). This allows us to provide a mechanism for the
+      SWIOTLB Xen to allocate memory for its pool that will be guaranteed to be
+      under the 4GB mark.
+
+The SWIOTLB-Xen adds a library that is only used if the machine is detected
+to be running under Xen. It utilizes the SWIOTLB library bookkeeping functions
+(swiotlb_tbl_*) and only deals with the virtual to [physical, bus] (and vice-versa)
+address translations.
+
+The diffstat:
+
+ arch/x86/include/asm/xen/page.h        |    8 +-
+ arch/x86/include/asm/xen/swiotlb-xen.h |   14 +
+ arch/x86/kernel/pci-dma.c              |    7 +-
+ arch/x86/xen/Kconfig                   |    4 +
+ arch/x86/xen/Makefile                  |    1 +
+ arch/x86/xen/enlighten.c               |    4 +
+ arch/x86/xen/mmu.c                     |  291 ++++++++++++++++++-
+ arch/x86/xen/pci-swiotlb-xen.c         |   58 ++++
+ drivers/xen/balloon.c                  |   15 +-
+ include/linux/swiotlb-xen.h            |   65 ++++
+ include/xen/interface/memory.h         |   50 +++
+ include/xen/xen-ops.h                  |    6 +
+ lib/Makefile                           |    1 +
+ lib/swiotlb-xen.c                      |  515 ++++++++++++++++++++++++++++++++
+ 14 files changed, 1018 insertions(+), 21 deletions(-)
+
+
+[1]: The Xen PCI and Xen PCI fronted patches, which have not yet been
+posted are available at git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
+under the branch devel/xen-pcifront-0.2. A merge of all required branches
+is under 'devel/merge.2.6.35-rc3'. Or 'devel/merge.2.6.34'. I will post them quite soon.
