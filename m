@@ -1,118 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758912Ab0FVDw0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 23:52:26 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:7645 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649Ab0FVDwZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 23:52:25 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=x2biGuA0riFJhoGpA2aCR10AgOcp0GTZgYx8CKwoGYlsLbF5HmHHxgTY2gyz4BsHd
-	7rL9SFdaZcFPAflvqxo8Q==
+	id S1758926Ab0FVD5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 23:57:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33861 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750827Ab0FVD5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 23:57:50 -0400
+Message-ID: <4C203439.6050601@zytor.com>
+Date: Mon, 21 Jun 2010 20:55:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <4C2023D0.7010309@redhat.com>
-References: <20100617134559.GA29824@bicker>
-	<20100617161728.GA2741@joi.lan>
-	<4C1B1691.6020809@redhat.com>
-	<20100618175726.GA2785@joi.lan>
-	<4C1F455E.6050502@redhat.com>
-	<1277118155.1875.508.camel@laptop>
-	<4C1F47EF.2060509@redhat.com>
-	<20100621153303.GA2754@joi.lan>
-	<1277134873.1875.520.camel@laptop>
-	<1277142860.3017.22.camel@sbs-t61.sc.intel.com>
-	<4C2023D0.7010309@redhat.com>
-Date: Mon, 21 Jun 2010 20:47:48 -0700
-Message-ID: <AANLkTim0QzkfGNdq-sP_JrVi6proXy9TsD09m6Unobsa@mail.gmail.com>
-Subject: Re: [patch] x86, pat: freeing invalid memtype messages
-From: Venkatesh Pallipadi <venki@google.com>
-To: Xiaotian Feng <dfeng@redhat.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Marcin Slusarz <marcin.slusarz@gmail.com>,
-       Dan Carpenter <error27@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H.PeterA" <nvinhpa@zytor.com>,
-       Jack Steiner <steiner@sgi.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Roland McGrath <roland@redhat.com>
+CC: Edward Allcutt <edward@allcutt.me.uk>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] fs: limit maximum concurrent coredumps
+References: <1277164737-30055-1-git-send-email-edward@allcutt.me.uk> <20100622012303.BD72E402AD@magilla.sf.frob.com>
+In-Reply-To: <20100622012303.BD72E402AD@magilla.sf.frob.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 7:45 PM, Xiaotian Feng <dfeng@redhat.com> wrote:
-> On 06/22/2010 01:54 AM, Suresh Siddha wrote:
->>
->> On Mon, 2010-06-21 at 08:41 -0700, Peter Zijlstra wrote:
->>>
->>> On Mon, 2010-06-21 at 17:33 +0200, Marcin Slusarz wrote:
->>>>
->>>> On Mon, Jun 21, 2010 at 07:07:27PM +0800, Xiaotian Feng wrote:
->>>>>
->>>>> On 06/21/2010 07:02 PM, Peter Zijlstra wrote:
->>>>>>
->>>>>> On Mon, 2010-06-21 at 18:56 +0800, Xiaotian Feng wrote:
->>>>>>
->>>>>>> I guess there might be something wrong between the augmented rbtree
->>>>>>> insert/remove ..
->>>>>>
->>>>>> The easiest thing is to revert that change and try again, the next
->>>>>> step
->>>>>> would be to print the full RB tree on each modification and look where
->>>>>> it goes wrong.
->>>>>>
->>>>>> That said, I did print my fair share of (augmented) RB trees while
->>>>>> playing with scheduler patches and I can't remember it ever having
->>>>>> messed up like that.
->>>>>
->>>>> He's using 2.6.35-rc2+, without your "rbtree: Undo augmented trees
->>>>> performance damage" patch ;-)
->>>>
->>>> I applied it manually (commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249
->>>> from -tip)
->>>> to 2.6.35-rc3 and it fixed both acpi's and nouveau's "invalid memtype"
->>>> messages.
->>>> Thanks.
->>>
->>> Oh neat, so it actually fixes a bug in the previous augmented rb-tree
->>> implementation?
->>
->> When I was reviewing your fix, it looked like that prior to your fix we
->> were re-augmenting only at points where we do the tree rotations/color
->> change and at the points of node insertion/removal. I don't think we
->> were re-augmenting all the parent nodes in the path of the selected-node
->> that is going to replace the deleted node.
->>
->> Perhaps we were hitting this issue here.
->
-> Were it from a insert without any rotations/color changes?
->
-> This case is performing insert A/remove A/ 2nd insert A/ 2nd remove A/3rd
-> insert A. And the 2nd remove
-> shows us the invalid memtype.  3rd insert shows us it is in the rbtree. All
-> I can image is that get_subtree_max_end
-> in memtype_rb_lowest_match returned stale value.
->
-> It looks like we don't re-augment the parent nodes if there aren't any
-> rotations/color changes
-> in the rb_insert_color().
+On 06/21/2010 06:23 PM, Roland McGrath wrote:
+> A core dump is just an instance of a process suddenly reading lots of its
+> address space and doing lots of filesystem writes, producing the kinds of
+> thrashing that any such instance might entail.
 
+It is, although with one possibly important difference: the process has
+had an involuntary state transition, which may mean that its priority
+settings that it had as a "live" process are no longer applicable.  It
+would certainly seem appropriate to give the administrator the option of
+altering the priority parameters of coredumping processes.
 
-Nice detective work! Yes. That kind of hints that max_end
-initialization is the problem. The patch I pointed to here
-http://marc.info/?l=linux-mm-commits&m=127654225011850&w=2
-will have a side-effect without Peter's change and make this problem worse.
-This minimal patch here
-https://bugzilla.kernel.org/show_bug.cgi?id=16092 comment #2
-on a kernel without Peter's change should not have this problem with
-insert however. As any new node starts at 0 max_end, updates itself to
-memtype->end and calls augment on its parent in rb_insert_color
-augment callback.
+	-hpa
 
-Thanks,
-Venki
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
