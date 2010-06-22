@@ -1,47 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758880Ab0FVIPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 04:15:40 -0400
-Received: from bart.inidep.edu.ar ([200.51.96.76]:51307 "EHLO
-	bart.inidep.edu.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758598Ab0FVIPi (ORCPT
+	id S1758934Ab0FVIP5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 04:15:57 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:57412 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758282Ab0FVIPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 04:15:38 -0400
-Message-ID: <2607.192.251.226.205.1277113408.squirrel@webmail.inidep.edu.ar>
-Date: Mon, 21 Jun 2010 04:43:28 -0500 (CDT)
-Subject: OFFER FROM:JOSEPH POON
-From: "Joseph Poon." <jopoonhk01@live.com>
-Reply-To: mailjosephpoon@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.13
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-AV-Checked: ClamAV usando ClamSMTP en BART(INIDEP)
+	Tue, 22 Jun 2010 04:15:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=OaIE4YTuZP1OM+Q7uqALZpWezdBE+ZZpUGRPKKDkZ6ywIDlkybNLqnxdag+ufMQ7el
+         0GG4dCzp8BM1rqUPRMxwr7SJsIMZ77VtN66Y5WnVLD3WiJDcGrwYYeu6LcB9JDm+xhR7
+         s308BsvugMueGHg+eVPUpNIOGjRh0isjQ0XyU=
+Subject: [PATCH] acer-wmi: fix resource reclaim in acer_wmi_init error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>,
+       Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+       Thomas Renninger <trenn@suse.de>,
+       Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+       platform-driver-x86@vger.kernel.org
+Content-Type: text/plain
+Date: Tue, 22 Jun 2010 16:17:38 +0800
+Message-Id: <1277194658.7248.2.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Mr. Joseph Poon, I have a business proposal of $24,500,000.00 for you
-to handle with me from my bank. This may sound strange and unbelievable to
-you but it is true. I shall provide you with more details of the business
-Should you be interested. Please send me the required Information below if
-interested.
+This patch fixes the resource reclaim in acer_wmi_init error path.
 
-1. Full name:
-2. private phone number:
-3. current residential address:
-4. Age:
-5: Occupation:
-6: Sex:
-7. Country:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/platform/x86/acer-wmi.c |   27 ++++++++++++++++++++++-----
+ 1 files changed, 22 insertions(+), 5 deletions(-)
 
-I will prefer you reach me on my private and secure email address
-below:(josephpoon26@yahoo.com.hk) with the above details if you are
-interested and ready in the business proposal.
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index 1ea6c43..1415d97 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -1327,22 +1327,31 @@ static int __init acer_wmi_init(void)
+ 		       "generic video driver\n");
+ 	}
+ 
+-	if (platform_driver_register(&acer_platform_driver)) {
++	err = platform_driver_register(&acer_platform_driver);
++	if (err) {
+ 		printk(ACER_ERR "Unable to register platform driver.\n");
+ 		goto error_platform_register;
+ 	}
++
+ 	acer_platform_device = platform_device_alloc("acer-wmi", -1);
+-	platform_device_add(acer_platform_device);
++	if (!acer_platform_device) {
++		err = -ENOMEM;
++		goto error_device_alloc;
++	}
++
++	err = platform_device_add(acer_platform_device);
++	if (err)
++		goto error_device_add;
+ 
+ 	err = create_sysfs();
+ 	if (err)
+-		return err;
++		goto error_create_sys;
+ 
+ 	if (wmi_has_guid(WMID_GUID2)) {
+ 		interface->debug.wmid_devices = get_wmid_devices();
+ 		err = create_debugfs();
+ 		if (err)
+-			return err;
++			goto error_create_debugfs;
+ 	}
+ 
+ 	/* Override any initial settings with values from the commandline */
+@@ -1350,8 +1359,16 @@ static int __init acer_wmi_init(void)
+ 
+ 	return 0;
+ 
++error_create_debugfs:
++	remove_sysfs(acer_platform_device);
++error_create_sys:
++	platform_device_del(acer_platform_device);
++error_device_add:
++	platform_device_put(acer_platform_device);
++error_device_alloc:
++	platform_driver_unregister(&acer_platform_driver);
+ error_platform_register:
+-	return -ENODEV;
++	return err;
+ }
+ 
+ static void __exit acer_wmi_exit(void)
+-- 
+1.5.4.3
 
-Kind Regards,
-Joseph Poon.
+
 
