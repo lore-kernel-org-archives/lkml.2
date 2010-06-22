@@ -1,40 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab0FVQdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 12:33:10 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:56304 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944Ab0FVQdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 12:33:08 -0400
-Subject: Re: [RFC][PATCH 9/9] make kvm mmu shrinker more aggressive
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-In-Reply-To: <4C1DCD1A.4010306@redhat.com>
-References: <20100615135518.BC244431@kernel.beaverton.ibm.com>
-	 <20100615135530.4565745D@kernel.beaverton.ibm.com>
-	 <4C189830.2070300@redhat.com>  <1276701911.6437.16973.camel@nimitz>
-	 <1276876156.6437.23323.camel@nimitz>  <4C1DCD1A.4010306@redhat.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Tue, 22 Jun 2010 09:32:39 -0700
-Message-ID: <1277224359.9782.21.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1754448Ab0FVQig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 12:38:36 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:37462 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab0FVQif (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 12:38:35 -0400
+Date: Tue, 22 Jun 2010 17:38:17 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Don Zickus <dzickus@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+       Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
+       Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [PATCH v3] Add TAINT_HARDWARE_UNSUPPORTED flag
+Message-ID: <20100622163817.GE20668@srcf.ucam.org>
+References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com> <20100617091322.b7d21473.randy.dunlap@oracle.com> <4C1A7D61.8010900@redhat.com> <20100621122145.76ebd7ac.akpm@linux-foundation.org> <20100621194559.GI3217@redhat.com> <20100621130008.d3dc01a8.akpm@linux-foundation.org> <20100622153457.GA5381@redhat.com> <20100622164835.4ddb9432@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100622164835.4ddb9432@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-06-20 at 11:11 +0300, Avi Kivity wrote:
-> > That changes a few things.  I bet all the contention we were seeing was
-> > just from nr_to_scan=0 calls and not from actual shrink operations.
-> > Perhaps we should just stop this set after patch 4.
-> >    
+On Tue, Jun 22, 2010 at 04:48:35PM +0100, Alan Cox wrote:
+> > +	printk(KERN_CRIT "UNSUPPORTED HARDWARE DEVICE: %s\n", msg);
+> > +	WARN_TAINT(1, TAINT_HARDWARE_UNSUPPORTED,
+> > +		   "Your hardware is unsupported.  Please do not report "
+> > +		   "bugs, panics, oopses, etc., on this hardware.\n");
 > 
-> At the very least, we should re-measure things. 
+> And as already pointed out it's not unsupported hardware even in the case
+> you described
 
-Sure.  I'll go back to the folks that found this in the first place and
-see how these patches affect the contention we were seeing.
+It's hardware that isn't supported by the vendor. How is it not 
+unsupported hardware in that context?
 
--- Dave
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
