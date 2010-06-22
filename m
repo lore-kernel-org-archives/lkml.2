@@ -1,236 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab0FVVuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 17:50:20 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:55670 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749Ab0FVVuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 17:50:17 -0400
-X-Authority-Analysis: v=1.1 cv=8MuG1bpxLlSbaYWWtODGdBCK7StbFcRsMXhWm1NVx/I= c=1 sm=0 a=wpY4Lvx3kJcA:10 a=UBIxAjGgU1YA:10 a=kj9zAlcOel0A:10 a=ld/erqUjW76FpBUqCqkKeA==:17 a=VwQbUJbxAAAA:8 a=qYub2k57AAAA:8 a=uYIlwBZcjrF9BUCsR4kA:9 a=OO1ZLbZb6q4TPdC5pcAA:7 a=jFshslHAf8hJVDYUYRlYN4n-w5YA:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=0kPLrQdw3YYA:10 a=jBoGP612-tUA:10 a=t5DF_bUGhurCx8LQ:21 a=W6P_Gh1y2IibdbqZ:21 a=ld/erqUjW76FpBUqCqkKeA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 71.70.153.3
-Date: Tue, 22 Jun 2010 17:52:14 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: Suresh Jayaraman <sjayaraman@suse.de>
-Cc: Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       David Howells <dhowells@redhat.com>
-Subject: Re: [RFC][PATCH 04/10] cifs: define server-level cache index
- objects and register them with FS-Cache
-Message-ID: <20100622175214.4c56234f@corrin.poochiereds.net>
-In-Reply-To: <1277220198-3522-1-git-send-email-sjayaraman@suse.de>
-References: <yes>
-	<1277220198-3522-1-git-send-email-sjayaraman@suse.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751929Ab0FVVuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 17:50:40 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39206 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751793Ab0FVVui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 17:50:38 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: [Bug #15863] 2.6.34-rc5-git7 (plus all patches) -- another suspicious rcu_dereference_check() usage.
+Date: Tue, 22 Jun 2010 23:49:12 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Miles Lane <miles.lane@gmail.com>
+References: <g77CuMUl7QI.A.qMH.4ZpHMB@chimera> <rHrHQMIU4rI.A.E9B.QcpHMB@chimera> <20100622211135.GO2290@linux.vnet.ibm.com>
+In-Reply-To: <20100622211135.GO2290@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006222349.13096.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jun 2010 20:53:18 +0530
-Suresh Jayaraman <sjayaraman@suse.de> wrote:
-
-> Define server-level cache index objects (as managed by TCP_ServerInfo structs).
-> Each server object is created in the CIFS top-level index object and is itself
-> an index into which superblock-level objects are inserted.
+On Tuesday, June 22, 2010, Paul E. McKenney wrote:
+> On Mon, Jun 21, 2010 at 12:34:25AM +0200, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a report
+> > of regressions introduced between 2.6.33 and 2.6.34.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > introduced between 2.6.33 and 2.6.34.  Please verify if it still should
+> > be listed and let the tracking team know (either way).
 > 
-> Currently, the server objects are keyed by hostname.
+> We have been knocking these off as they appear.  There is one or two
+> that the relevant maintainers have been ignoring, but that always seems
+> to be the case.  ;-)
 > 
-> Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
-> ---
->  fs/cifs/Makefile   |    2 +-
->  fs/cifs/cache.c    |   25 +++++++++++++++++++++++++
->  fs/cifs/cifsglob.h |    3 +++
->  fs/cifs/connect.c  |    4 ++++
->  fs/cifs/fscache.c  |   47 +++++++++++++++++++++++++++++++++++++++++++++++
->  fs/cifs/fscache.h  |   12 ++++++++++++
->  6 files changed, 92 insertions(+), 1 deletion(-)
->  create mode 100644 fs/cifs/fscache.c
-> 
-> Index: cifs-2.6/fs/cifs/Makefile
-> ===================================================================
-> --- cifs-2.6.orig/fs/cifs/Makefile
-> +++ cifs-2.6/fs/cifs/Makefile
-> @@ -12,4 +12,4 @@ cifs-$(CONFIG_CIFS_UPCALL) += cifs_spneg
->  
->  cifs-$(CONFIG_CIFS_DFS_UPCALL) += dns_resolve.o cifs_dfs_ref.o
->  
-> -cifs-$(CONFIG_CIFS_FSCACHE) += cache.o
-> +cifs-$(CONFIG_CIFS_FSCACHE) += fscache.o cache.o
-> Index: cifs-2.6/fs/cifs/cache.c
-> ===================================================================
-> --- cifs-2.6.orig/fs/cifs/cache.c
-> +++ cifs-2.6/fs/cifs/cache.c
-> @@ -51,3 +51,28 @@ void cifs_fscache_unregister(void)
->  	fscache_unregister_netfs(&cifs_fscache_netfs);
->  }
->  
-> +/*
-> + * Server object currently keyed by hostname
-> + */
-> +static uint16_t cifs_server_get_key(const void *cookie_netfs_data,
-> +				   void *buffer, uint16_t maxbuf)
-> +{
-> +	const struct TCP_Server_Info *server = cookie_netfs_data;
-> +	uint16_t len = strnlen(server->hostname, sizeof(server->hostname));
-> +
+> Your choice as to whether you want to track the group...
 
-Would a tuple of address/family/port be a better choice here? Imagine I
-mount "foo" and then later mount "foor.bar.baz". If they are the same
-address and only the UNC differs, then you won't get the benefit of
-the cache, right?
+I think I'll simply leave that one bug open until all known instances have been
+dealt with.
 
-> +	if (len > maxbuf)
-> +		return 0;
-> +
-> +	memcpy(buffer, server->hostname, len);
-> +
-> +	return len;
-> +}
-> +
-> +/*
-> + * Server object for FS-Cache
-> + */
-> +const struct fscache_cookie_def cifs_fscache_server_index_def = {
-> +	.name = "CIFS.server",
-> +	.type = FSCACHE_COOKIE_TYPE_INDEX,
-> +	.get_key = cifs_server_get_key,
-> +};
-> Index: cifs-2.6/fs/cifs/cifsglob.h
-> ===================================================================
-> --- cifs-2.6.orig/fs/cifs/cifsglob.h
-> +++ cifs-2.6/fs/cifs/cifsglob.h
-> @@ -193,6 +193,9 @@ struct TCP_Server_Info {
->  	bool	sec_mskerberos;		/* supports legacy MS Kerberos */
->  	bool	sec_kerberosu2u;	/* supports U2U Kerberos */
->  	bool	sec_ntlmssp;		/* supports NTLMSSP */
-> +#ifdef CONFIG_CIFS_FSCACHE
-> +	struct fscache_cookie   *fscache; /* client index cache cookie */
-> +#endif
->  };
->  
->  /*
-> Index: cifs-2.6/fs/cifs/connect.c
-> ===================================================================
-> --- cifs-2.6.orig/fs/cifs/connect.c
-> +++ cifs-2.6/fs/cifs/connect.c
-> @@ -48,6 +48,7 @@
->  #include "nterr.h"
->  #include "rfc1002pdu.h"
->  #include "cn_cifs.h"
-> +#include "fscache.h"
->  
->  #define CIFS_PORT 445
->  #define RFC1001_PORT 139
-> @@ -1453,6 +1454,8 @@ cifs_put_tcp_session(struct TCP_Server_I
->  		return;
->  	}
->  
-> +	cifs_fscache_release_client_cookie(server);
-> +
->  	list_del_init(&server->tcp_ses_list);
->  	write_unlock(&cifs_tcp_ses_lock);
->  
-> @@ -1572,6 +1575,7 @@ cifs_get_tcp_session(struct smb_vol *vol
->  		goto out_err;
->  	}
->  
-> +	cifs_fscache_get_client_cookie(tcp_ses);
->  	/* thread spawned, put it on the list */
->  	write_lock(&cifs_tcp_ses_lock);
->  	list_add(&tcp_ses->tcp_ses_list, &cifs_tcp_ses_list);
-> Index: cifs-2.6/fs/cifs/fscache.c
-> ===================================================================
-> --- /dev/null
-> +++ cifs-2.6/fs/cifs/fscache.c
-> @@ -0,0 +1,47 @@
-> +/*
-> + *   fs/cifs/fscache.c - CIFS filesystem cache interface
-> + *
-> + *   Copyright (c) 2010 Novell, Inc.
-> + *   Authors(s): Suresh Jayaraman (sjayaraman@suse.de>
-> + *
-> + *   This library is free software; you can redistribute it and/or modify
-> + *   it under the terms of the GNU Lesser General Public License as published
-> + *   by the Free Software Foundation; either version 2.1 of the License, or
-> + *   (at your option) any later version.
-> + *
-> + *   This library is distributed in the hope that it will be useful,
-> + *   but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
-> + *   the GNU Lesser General Public License for more details.
-> + *
-> + *   You should have received a copy of the GNU Lesser General Public License
-> + *   along with this library; if not, write to the Free Software
-> + *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-> + */
-> +#include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/sched.h>
-> +#include <linux/mm.h>
-> +#include <linux/in6.h>
-> +
-> +#include "fscache.h"
-> +#include "cifsglob.h"
-> +#include "cifs_debug.h"
-> +
-> +void cifs_fscache_get_client_cookie(struct TCP_Server_Info *server)
-> +{
-> +	server->fscache =
-> +		fscache_acquire_cookie(cifs_fscache_netfs.primary_index,
-> +				&cifs_fscache_server_index_def, server);
-> +	cFYI(1, "CIFS: get client cookie (0x%p/0x%p)\n",
-> +				server, server->fscache);
-> +}
-> +
-> +void cifs_fscache_release_client_cookie(struct TCP_Server_Info *server)
-> +{
-> +	cFYI(1, "CIFS: release client cookie (0x%p/0x%p)\n",
-> +				server, server->fscache);
-> +	fscache_relinquish_cookie(server->fscache, 0);
-> +	server->fscache = NULL;
-> +}
-> +
-> Index: cifs-2.6/fs/cifs/fscache.h
-> ===================================================================
-> --- cifs-2.6.orig/fs/cifs/fscache.h
-> +++ cifs-2.6/fs/cifs/fscache.h
-> @@ -27,14 +27,26 @@
->  #ifdef CONFIG_CIFS_FSCACHE
->  
->  extern struct fscache_netfs cifs_fscache_netfs;
-> +extern const struct fscache_cookie_def cifs_fscache_server_index_def;
->  
->  extern int cifs_fscache_register(void);
->  extern void cifs_fscache_unregister(void);
->  
-> +/*
-> + * fscache.c
-> + */
-> +extern void cifs_fscache_get_client_cookie(struct TCP_Server_Info *);
-> +extern void cifs_fscache_release_client_cookie(struct TCP_Server_Info *);
-> +
->  #else /* CONFIG_CIFS_FSCACHE */
->  static inline int cifs_fscache_register(void) { return 0; }
->  static inline void cifs_fscache_unregister(void) {}
->  
-> +static inline void
-> +cifs_fscache_get_client_cookie(struct TCP_Server_Info *server) {}
-> +static inline void
-> +cifs_fscache_get_client_cookie(struct TCP_Server_Info *server); {}
-> +
->  #endif /* CONFIG_CIFS_FSCACHE */
->  
->  #endif /* _CIFS_FSCACHE_H */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Please let me know when that happens. :-)
 
-
--- 
-Jeff Layton <jlayton@poochiereds.net>
+Thanks,
+Rafael
