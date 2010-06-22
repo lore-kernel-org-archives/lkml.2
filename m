@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab0FVG7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 02:59:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56974 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab0FVG7L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 02:59:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=cCsXdedoPFhlcIc1QdXKRGuIiRPhPVilX+XCj/sPqFFTsCWfB2g6RNFMYDV1uepSN0
-         eOo8jzLQ+k8serkikCvjWDMGDnUXeAV7RQC2jbNNdmrLi5wDBv31Ly626/Qg5xcxozi3
-         aLaTapEqTpTp28b0aPB1EKCQMKMDdG+HTuPd0=
-From: Sankar P <sankar.curiosity@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: lethal@linux-sh.org, linux-sh@vger.kernel.org, lrodriguez@atheros.com,
-       penberg@cs.helsinki.fi, catalin.marinas@arm.com, rnagarajan@novell.com,
-       teheo@novell.com, linux-mm@kvack.org,
-       Sankar P <sankar.curiosity@gmail.com>
-Subject: [PATCH] mm: kmemleak: Change kmemleak default buffer size
-Date: Tue, 22 Jun 2010 12:28:29 +0530
-Message-Id: <1277189909-16376-1-git-send-email-sankar.curiosity@gmail.com>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <AANLkTimb7rP0rS0OU8nan5uNEhHx_kEYL99ImZ3c8o0D@mail.gmail.com>
-References: <AANLkTimb7rP0rS0OU8nan5uNEhHx_kEYL99ImZ3c8o0D@mail.gmail.com>
+	id S1756981Ab0FVHNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 03:13:31 -0400
+Received: from koto.vergenet.net ([210.128.90.7]:59933 "EHLO koto.vergenet.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754096Ab0FVHN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 03:13:29 -0400
+Date: Tue, 22 Jun 2010 16:13:27 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Hannes Eder <heder@google.com>
+Cc: Patrick McHardy <kaber@trash.net>, lvs-devel@vger.kernel.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netfilter@vger.kernel.org, Wensong Zhang <wensong@linux-vs.org>,
+       Julius Volz <julius.volz@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Netfilter Development Mailinglist 
+	<netfilter-devel@vger.kernel.org>
+Subject: Re: [patch v2.2 1/4] [PATCH v2.1 1/4] netfilter: xt_ipvs
+ (netfilter matcher for IPVS)
+Message-ID: <20100622071326.GB9928@verge.net.au>
+References: <20100501032014.406353538@vergenet.net>
+ <20100501032120.298829234@vergenet.net>
+ <4BDC543F.7060500@trash.net>
+ <AANLkTikIzHuzxo4z1_8_fEGLBC2-0Uz0X8SOc8n2msuX@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikIzHuzxo4z1_8_fEGLBC2-0Uz0X8SOc8n2msuX@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we try to find the memory leaks in kernel that is
-compiled with 'make defconfig', the default buffer size
-seem to be inadequate. Change the buffer size from
-400 to 1000, which is sufficient in most cases.
+On Mon, May 03, 2010 at 01:29:46PM +0200, Hannes Eder wrote:
+> Thank you for picking this series of patches up again and thanks for
+> the feedback.
+> 
+> I'll send an updated version in the next days.
 
-Signed-off-by: Sankar P <sankar.curiosity@gmail.com>
----
- arch/sh/configs/sh7785lcr_32bit_defconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Hi Hanes,
 
-diff --git a/arch/sh/configs/sh7785lcr_32bit_defconfig b/arch/sh/configs/sh7785lcr_32bit_defconfig
-index 71f39c7..b02e5ae 100644
---- a/arch/sh/configs/sh7785lcr_32bit_defconfig
-+++ b/arch/sh/configs/sh7785lcr_32bit_defconfig
-@@ -1710,7 +1710,7 @@ CONFIG_SCHEDSTATS=y
- # CONFIG_DEBUG_OBJECTS is not set
- # CONFIG_DEBUG_SLAB is not set
- CONFIG_DEBUG_KMEMLEAK=y
--CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=400
-+CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE=1000
- # CONFIG_DEBUG_KMEMLEAK_TEST is not set
- CONFIG_DEBUG_PREEMPT=y
- # CONFIG_DEBUG_RT_MUTEXES is not set
--- 
-1.6.4.2
+more than a few days seems to have passed.
+Do you have time to fix the patches up?
+If not, I'll take a stab at it.
+
+Thanks
 
