@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab0FVRfI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 13:35:08 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46210 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab0FVRfG convert rfc822-to-8bit (ORCPT
+	id S1758309Ab0FVRgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 13:36:08 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:56466 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756746Ab0FVRgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 13:35:06 -0400
+	Tue, 22 Jun 2010 13:36:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=D/SNp1SlRwURhgHIhYUTTgHQLEs+INIEpQLeisShM55ig1DIYV8C7wqs1ghwsz7SAH
-         TCOIJKGqp9u8EqF2b0Cx+70R/cQRm0559axFyNFiJQHqkYmN5SpyP/foilRix1rgsOUO
-         ySX6VpSdSlSlhSVqfbig+65BFbEy6OCjwkqcs=
+         :cc:content-type;
+        b=AU0vBb44lCCJKK19EN/CE6hrrQl9RmH9600bmQ8DAxW9YP8nRe+fVpyaxxsVapW3k1
+         LT6WeoKLbbmbP6XN/w8hk5Gjup5jBTEs0SabIdCxtS2j8Pg043sygpiKafXXOgrc6Hdo
+         8xvRxvMQsEVOtJdM0IGycaT7lJ7w6XrXtx5qQ=
 MIME-Version: 1.0
-In-Reply-To: <1277217804.3057.428.camel@edumazet-laptop>
-References: <AANLkTilCW2iqsNaWM9NYIomy8OxGC9jG40KpLcKMYTqL@mail.gmail.com>
-	<20100621202854.de928e0a.akpm@linux-foundation.org>
-	<AANLkTimsDSrEL8vT877pLYSa4A338p4Y8w0Ya6Xm7BFJ@mail.gmail.com>
-	<1277217804.3057.428.camel@edumazet-laptop>
-Date: Tue, 22 Jun 2010 10:36:28 -0600
-Message-ID: <AANLkTikIzdbNH83SkIxCxEL2NMZmfErq7s6WgAGPtbwi@mail.gmail.com>
-Subject: Re: 2.6.34 Crash in dmaengine_put()
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       Dan Williams <dan.j.williams@intel.com>,
-       netdev <netdev@vger.kernel.org>
+In-Reply-To: <20100622161329.GA14978@phenom.dumpdata.com>
+References: <AANLkTim7_OzJfwbtk0fE5ScH8zZwZ_uJeo5pJFOhkHu_@mail.gmail.com>
+	<20100622161329.GA14978@phenom.dumpdata.com>
+Date: Tue, 22 Jun 2010 13:36:04 -0400
+Message-ID: <AANLkTimUGrJRgW6Ao6mfqqfxBOIdM4HNiUEkcqpWeQfo@mail.gmail.com>
+Subject: Re: Dell PowerEdge 4200 scsi, worked in 2.6.18, not in 2.6.26 (LOW 
+	PRIORITY help request)
+From: trouble daemon <troubledaemon@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
->> OK.  This bug occurs if you OR in the IFF_UP flag while creating
->> virtual interfaces without going through the normal ifup/ifdown
->> scripts.  Looks like a hole.  I will post the trace shortly.  It's
->> easy to reproduce, take the dummy net driver, OR in the IFF_UP flag in
->> dummy_setup, and watch the kernel crash.
->>
->
-> Then dont do that ?
->
-> No need to send us a trace, unless you use a pristine kernel.
->
-> IFF_UP changes rules are very strict, dont try to avoid them and claim
-> there is a hole or something wrong.
->
-> Check __dev_open() , __dev_close() and __dev_change_flags() were OR/AND
-> IFF_UP is done by core network.
->
-> Net drivers are not allowed to change IFF_UP themselves.
->
-> (DE-600 & DE-620 being the exceptions to confirm this rule, of course)
->
+Konrad,
 
-Gee.  OK, its a bug.  I see the crash when unregister_netdev is
-called.  Changing a flag in a driver should not cause the kernel to
-crash.  You should check the code.  The dmaengine registration should
-have nothing to do with registering a netdev -- period.  I have coded
-arounnd it but its damn convenient to create virtual drivers on the
-fly and mark them as UP without needing to configure a bunch of text
-scripts to bring one up or down.
+> The more worrying is the irqs firring. Try to use the 'irqpoll' parameter as
+> it suggests.
 
-The code itself is busted because it has a check if the dmaengine ref
-count goes negative.  If you are going to have a registration layer
-the rest of the OS should not have to wonder about its disconnected
-state.  The busted code is right at the top of dmaengine_put where it
-decrements the ref count then immediately jumps to a bug.  Need a
-better way here I think to prevent needless crashes.  Someone could
-just alter this flag remotely and crash a server -- HOLE - :)
+Actually, it seems that it was solved with "noapic" kernel option, as was
+suggested by Ben in the debian bug report at:
 
-Jeff
+  http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586494
+
+I do thank you for replying though. I am still not sure what exactly changed in
+debian between epoch (</joke>) and 2.6.26 though, since the dell's
+have been 100% perfect
+out of the box in every single debian since circa 2002, when I got them.
+
+I can deal with noapic, but I will try the irqpoll as well. I only noticed that
+the dmesg was mentioning it after the noapic solved my problem. One thing I did
+notice with noapic though, is that network ping's seem to round down, so I see
+lots of "0.000 ms" pings on the local network. I assume that without apic that
+the system is just using some sort of timer to poll the nics though.
+
+On a side note, I also saw a 2007 post from Andrew Morton, I think, that was
+complaining about noapic and trying to track down where the problem might have
+started. Given the approx. 1999 munfacturing date (from what I can tell) of the
+PowerEdge 4200 series, and a perfect linux history from at least debian potato
+up until 2.6.26, you can bet some money that someone, somewhere out there,
+changed yet another feature that required me to use noapic. More specifically,
+it worked in 2.6.18 in debian etch/lenny, but broke in the next debian kernel,
+2.6.26. ie: the change/problem lies somewhere between 19-26 inclusive
+(depending on if my apic issue isn't simply a debian default/tweak
+that messed things
+up, of course)
+
+Hopefully Andrew high lights on his name! :)
+
+Anyways, thanks and sorry for the wall of text! l8r
+
+
+
+troubled
