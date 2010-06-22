@@ -1,154 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab0FVXAT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 19:00:19 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:61707 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab0FVXAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 19:00:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=chefBnZYET9SqfZ1ZRdv6xgzUv7zT254aoTi6j/rmfUJmp89mopp21fSiUjM8PMJsE
-         grDDjezFIxdXSVxgXdspakycB33rG/9r5xIprZNgBToHHdWYHsZMkpuMxkBeGnmEHcS7
-         chl3EUNFQC6/W57ns5rkDwTuSa6YnB1x6ES34=
-Date: Tue, 22 Jun 2010 16:00:36 -0700
-From: mark gross <640e9920@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Florian Mickler <florian@mickler.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Message-ID: <20100622230036.GA15420@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <Pine.LNX.4.44L0.1006211814370.1687-100000@iolanthe.rowland.org>
- <201006220040.41524.rjw@sisk.pl>
- <201006221221.53801.rjw@sisk.pl>
+	id S1752778Ab0FVXE4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 19:04:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50534 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751651Ab0FVXEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 19:04:55 -0400
+Date: Tue, 22 Jun 2010 16:01:13 -0700
+From: Greg KH <gregkh@suse.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tony Luck <tony.luck@intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] serial: revert "Use block_til_ready helper"
+Message-ID: <20100622230113.GB18495@suse.de>
+References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
+ <AANLkTim4dHj_3ftAVD35DD-Cc7ZntHRi1YTRPup2wfJc@mail.gmail.com>
+ <201006191432.04685.arnd@arndb.de>
+ <201006192229.21971.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201006221221.53801.rjw@sisk.pl>
+In-Reply-To: <201006192229.21971.arnd@arndb.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 12:21:53PM +0200, Rafael J. Wysocki wrote:
-> On Tuesday, June 22, 2010, Rafael J. Wysocki wrote:
-> > On Tuesday, June 22, 2010, Alan Stern wrote:
-> > > On Mon, 21 Jun 2010, Florian Mickler wrote:
+On Sat, Jun 19, 2010 at 10:29:21PM +0200, Arnd Bergmann wrote:
+> On Saturday 19 June 2010 14:32:04 Arnd Bergmann wrote:
+> > > I boot with a "console=uart,io,0x3f8" argument, so I start out using
+> > > 8250_early.c. Looks like it switched to 8250.c based on seeing
+> > > this:
 > > > 
-> > > > > In the end you would want to have communication in both directions:  
-> > > > > suspend blockers _and_ callbacks.  Polling is bad if done too often.  
-> > > > > But I think the idea is a good one.
-> > > > 
-> > > > Actually, I'm not so shure. 
-> > > > 
-> > > > 1. you have to roundtrip whereas in the suspend_blocker scheme you have
-> > > > active annotations (i.e. no further action needed) 
+> > > Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
 > > > 
-> > > That's why it's best to use both.  The normal case is that programs
-> > > activate and deactivate blockers by sending one-way messages to the PM
-> > > process.  The exceptional case is when the PM process is about to
-> > > initiate a suspend; that's when it does the round-trip polling.  Since
-> > > the only purpose of the polling is to avoid a race, 90% of the time it
-> > > will succeed.
-> > > 
-> > > > 2. it may not be possible for a user to determine if a wake-event is
-> > > > in-flight. you would have to somehow pass the wake-event-number with
-> > > > it, so that the userspace process could ack it properly without
-> > > > confusion. Or... I don't know of anything else... 
-> > > > 
-> > > > 	1. userspace-manager (UM) reads a number (42). 
-> > > > 
-> > > > 	2. it questions userspace program X: is it ok to suspend?
-> > > > 
-> > > > 	[please fill in how userspace program X determines to block
-> > > > 	suspend]
-> > > > 
-> > > > 	3a. UM's roundtrip ends and it proceeds to write "42" to the
-> > > > 	kernel [suspending]
-> > > > 	3b. UM's roundtrip ends and it aborts suspend, because a
-> > > > 	(userspace-)suspend-blocker got activated
-> > > > 
-> > > > I'm not shure how the userspace program could determine that there is a
-> > > > wake-event in flight. Perhaps by storing the number of last wake-event.
-> > > > But then you need per-wake-event-counters... :|
-> > > 
-> > > Rafael seems to think timeouts will fix this.  I'm not so sure.
-> > > 
-> > > > Do you have some thoughts about the wake-event-in-flight detection?
-> > > 
-> > > Not really, except for something like the original wakelock scheme in
-> > > which the kernel tells the PM core when an event is over.
+> > > on the console log.
 > > 
-> > But the kernel doesn't really know that, so it really can't tell the PM core
-> > anything useful.  What happens with suspend blockers is that a kernel subsystem
-> > cooperates with a user space consumer of the event to get the story straight.
-> > 
-> > However, that will only work if the user space is not buggy and doesn't crash,
-> > for example, before releasing the suspend blocker it's holding.
+> > Good, so it's something I should be able to reproduce on a PC.
 > 
-> Having reconsidered that I think there's more to it.
+> I could reproduce the problem now and bisected it down to a cleanup
+> patch that can fortunately get reverted. The symptom that I saw
+> is that when I open a serial port for the second time (e.g. starting
+> getty and logging in), the output gets garbled, while the first one
+> worked fine. This does not rely on the console code at all.
 > 
-> Take the PCI subsystem as an example, specifically pcie_pme_handle_request().
-> This is the place where wakeup events are started, but it has no idea about
-> how they are going to be handled.  Thus in the suspend blocker scheme it would
-> need to activate a blocker, but it wouldn't be able to release it.  So, it
-> seems, we would need to associate a suspend blocker with each PCIe device
-> that can generate wakeup events and require all drivers of such devices to
-> deal with a blocker activated by someone else (PCIe PME driver in this
-> particular case).  That sounds cumbersome to say the least.
+> Original commit message:
+>     Our code now rather closely resembles the helper, so switch to it.
 > 
-> Moreover, even if we do that, it still doesn't solve the entire problem,
-> because the event may need to be delivered to user space and processed by it.
-> While a driver can check if user space has already read the event, it has
-> no way to detect whether or not it has finished processing it.  In fact,
-> processing an event may involve an interaction with a (human) user and there's
-> no general way by which software can figure out when the user considers the
-> event as processed.
+> Apparently, the two functions are not really doing the same,
+> so revert the commit for now. This includes the addition of
+> a tty_unlock()/tty_lock() pair when blocking on the wait queue.
 > 
-> It looks like user space suspend blockers only help in some special cases
-> when the user space processing of a wakeup event is simple enough, but I don't
-> think they help in general.  For an extreme example, a user may want to wake up
-> a system using wake-on-LAN to log into it, do some work and log out, so
-> effectively the initial wakeup event has not been processed entirely until the
-> user finally logs out of the system.  Now, after the system wakeup (resulting
-> from the wake-on-LAN signal) we need to give the user some time to log in, but
-> if the user doesn't do that in certain time, it may be reasonable to suspend
-> and let the user wake up the system again. 
-> 
-> Similar situation takes place when the system is woken up by a lid switch.
-> Evidently, the user has opened the laptop lid to do something, but we don't
-> even know what the user is going to do, so there's no way we can say when
-> the wakeup event is finally processed.
-> 
-> So, even if we can say when the kernel has finished processing the event
-> (although that would be complicated in the PCIe case above), I don't think
-> it's generally possible to ensure that the entire processing of a wakeup event
-> has been completed.  This leads to the question whether or not it is worth
-> trying to detect the ending of the processing of a wakeup event.
-> 
-> Now, going back to the $subject patch, I didn't really think it would be
-> suitable for opportunistic suspend, so let's focus on the "forced" suspend
-> instead.  It still has the problem that wakeup events occuring while
-> /sys/power/state is written to (or even slightly before) should cause the
-> system to cancel the suspend, but they generally won't.  With the patch
-> applied that can be avoided by (a) reading from /sys/power/wakeup_count,
-> (b) waiting for certain time (such that if a suspend event is not entirely
-> processed within that time, it's worth suspending and waking up the
-> system again) and (c) writing to /sys/power/wakeup_count right before writing
-> to /sys/power/state (where the latter is only done if the former succeeds).
->
-This is what thought was the problem your idea as trying to deal with.
+> Greg, do you want to apply this patch on top of the series, or
+> do you prefer to get a replacement for the original patch, once
+> we know what's wrong with it?
 
---mgross
+A replacement for the original one might be best if we can figure it
+out.
 
- 
+Just let me know what you need me to do.
+
+thanks,
+
+greg k-h
