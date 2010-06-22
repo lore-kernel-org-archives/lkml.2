@@ -1,82 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab0FVCqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 22:46:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19924 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758881Ab0FVCqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 22:46:03 -0400
-Message-ID: <4C2023D0.7010309@redhat.com>
-Date: Tue, 22 Jun 2010 10:45:36 +0800
-From: Xiaotian Feng <dfeng@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1758899Ab0FVCqz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 22:46:55 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:45734 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758791Ab0FVCqx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 22:46:53 -0400
+Date: Mon, 21 Jun 2010 22:46:50 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: markgross@thegnar.org
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+In-Reply-To: <20100622015837.GC12795@gvim.org>
+Message-ID: <Pine.LNX.4.44L0.1006212224550.19813-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-       Marcin Slusarz <marcin.slusarz@gmail.com>,
-       Dan Carpenter <error27@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H.PeterA" <nvinhpa@zytor.com>,
-       Venkatesh Pallipadi <venki@google.com>, Jack Steiner <steiner@sgi.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [patch] x86, pat: freeing invalid memtype messages
-References: <20100617134559.GA29824@bicker> <20100617161728.GA2741@joi.lan>	 <4C1B1691.6020809@redhat.com> <20100618175726.GA2785@joi.lan>	 <4C1F455E.6050502@redhat.com> <1277118155.1875.508.camel@laptop>	 <4C1F47EF.2060509@redhat.com>  <20100621153303.GA2754@joi.lan>	 <1277134873.1875.520.camel@laptop> <1277142860.3017.22.camel@sbs-t61.sc.intel.com>
-In-Reply-To: <1277142860.3017.22.camel@sbs-t61.sc.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2010 01:54 AM, Suresh Siddha wrote:
-> On Mon, 2010-06-21 at 08:41 -0700, Peter Zijlstra wrote:
->> On Mon, 2010-06-21 at 17:33 +0200, Marcin Slusarz wrote:
->>> On Mon, Jun 21, 2010 at 07:07:27PM +0800, Xiaotian Feng wrote:
->>>> On 06/21/2010 07:02 PM, Peter Zijlstra wrote:
->>>>> On Mon, 2010-06-21 at 18:56 +0800, Xiaotian Feng wrote:
->>>>>
->>>>>> I guess there might be something wrong between the augmented rbtree insert/remove ..
->>>>>
->>>>> The easiest thing is to revert that change and try again, the next step
->>>>> would be to print the full RB tree on each modification and look where
->>>>> it goes wrong.
->>>>>
->>>>> That said, I did print my fair share of (augmented) RB trees while
->>>>> playing with scheduler patches and I can't remember it ever having
->>>>> messed up like that.
->>>> He's using 2.6.35-rc2+, without your "rbtree: Undo augmented trees
->>>> performance damage" patch ;-)
->>>
->>> I applied it manually (commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249 from -tip)
->>> to 2.6.35-rc3 and it fixed both acpi's and nouveau's "invalid memtype" messages.
->>> Thanks.
->>
->> Oh neat, so it actually fixes a bug in the previous augmented rb-tree
->> implementation?
->
-> When I was reviewing your fix, it looked like that prior to your fix we
-> were re-augmenting only at points where we do the tree rotations/color
-> change and at the points of node insertion/removal. I don't think we
-> were re-augmenting all the parent nodes in the path of the selected-node
-> that is going to replace the deleted node.
->
-> Perhaps we were hitting this issue here.
+On Mon, 21 Jun 2010, mark gross wrote:
 
-Were it from a insert without any rotations/color changes?
+> > I get the feeling you didn't fully absorb the intent of the original
+> > wakelock patches.  Right from the start they were about fixing a race
+> > in system suspend: The system may go to sleep even though a pending
+> 
+> wrong.  They are about 1) adding opportunistic suspend, and 2) adding
+> critical sections to block suspend.  
+> 
+> No race issues where ever talked about until alternative solutions
+> where put up.
 
-This case is performing insert A/remove A/ 2nd insert A/ 2nd remove 
-A/3rd insert A. And the 2nd remove
-shows us the invalid memtype.  3rd insert shows us it is in the rbtree. 
-All I can image is that get_subtree_max_end
-in memtype_rb_lowest_match returned stale value.
+That's not how I remember it.  But this point isn't important enough to 
+be worth digging through the old emails to verify or disprove it.
 
-It looks like we don't re-augment the parent nodes if there aren't any 
-rotations/color changes
-in the rb_insert_color().
+> I am struck by how differently you are seeing things.
 
->
-> thanks,
-> suresh
->
->
+Those discussions were (and still are!) so long and annoying, it
+wouldn't be surprising if _everybody_ saw them differently!  :-)  You
+certainly must agree that a lot of differing personal viewpoints were
+expressed.
+
+> > > Lets consider the RIL incoming call race:
+> > 
+> > "RIL"?
+> 
+> You are not an android developer are you?
+
+Nope.
+
+>  RIL is the user mode Radio
+> Interface Layer.
+>  
+> > > 1) user mode initiates an "opportunistic suspend" or whatever we call
+> > > this these days by writing to some sys interface.
+> > 
+> > Okay.
+> > 
+> > > 2) a call comes in (multi-threaded cpu) just after the write.
+> > 
+> > Right.  Presumably we want the suspend to be delayed until the call 
+> > can be handled by a user programm, yes?
+> > 
+> > > 3) the caif driver grabs a blocker, stopping the in flight suspend in the
+> > > nick of time.  But, when should it release it without racing?  How does
+> > > one implement that kernel code such that its portable to non-android user
+> > > mode stacks? 
+> > 
+> > I don't know anything about the caif driver so I can't answer this
+> > question in detail.  Here's the general idea: Somehow the kernel has to
+> > notify userspace that an incoming call has arrived.  Whatever driver or
+> > subsystem sends that notification should release the suspend blocker
+> > once userspace indicates that the notification has been received (for
+> > example, by reading all the data in an input event queue).  That's true
+> > for both Android and non-Android.
+> 
+> so tell me how user space indicates to the kernel object will ever know
+> when its ok to release the blocker?
+
+First you tell me how the kernel indicates to userspace that an
+incoming call has arrived.  My answer will depend on that.
+
+> then tell me how suspend blocker provide an elegant portable solution
+> to this that works for multiple user mode stacks.
+
+When did I -- or anyone -- ever say it was "elegant"?
+
+As for multiple user mode stacks, I don't see the issue.  If you grant
+there is a mechanism whereby userspace indicates to the kernel that a
+blocker may be released, then it seems obvious that this mechanism
+could be used in multiple user mode stacks.
+
+> problem 1) opportunistic enable suspend deferral for critical sections
+> when suspending is "bad"
+> problem 2) race between entering pm_suspend call tree and wake events. 
+
+Can you point out any examples of kernel critical sections where 
+suspending is "bad" that aren't started by arrival of a wakeup event?  
+Unless you can, I'm justified in saying that these "two" problems are 
+one and the same.
+
+> > The fact that this is bound to a user-mode PM design was inevitable, 
+> > given the whole idea was to overcome weaknesses in the system suspend 
+> > implementation and that implementation already is driven by userspace.
+> 
+> I think we can do better.
+
+Maybe we can.  I'm certainly not going to claim that suspend blockers
+are the best possible solution.  And I'm not really keen on seeing them 
+merged along with all the attendant opportunistic suspend and userspace 
+API stuff.  But so far I haven't heard anything significantly better.
+
+> > I don't know -- I have never looked at the Android userspace.  No doubt 
+> > Arve can provide some examples.
+> who are you?
+
+You sound like a Vorlon.  Should I ask: "What do you want?"  :-)
+
+>  You don't know about the Android stack, and you keep
+> blowing about how suspend blockers solve all the PM problems?
+
+Not all of them.  Just the race between wakeup events and suspend.
+
+>  I'm
+> starting to think your just trolling. 
+
+You may think what you like.  Perhaps there is a certain degree of
+truth to the accusation -- goodness knows, I do tend to prolong
+technical conversations when I think I'm right.  (Ask anybody who has
+corresponded with me for any length of time.)  But this is probably
+true of a lot of kernel developers...
+
+Alan Stern
 
