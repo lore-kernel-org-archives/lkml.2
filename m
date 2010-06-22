@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758775Ab0FVBZG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 21:25:06 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:64240 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758711Ab0FVBZD (ORCPT
+	id S1758756Ab0FVBeQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 21:34:16 -0400
+Received: from kaylee.flamingspork.com ([74.207.245.61]:48518 "EHLO
+	kaylee.flamingspork.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab0FVBeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 21:25:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=OWeAFXnAzJCd5JwISXs06ibgvttdcravy1dwawfefietBUk6FkkC6B8o7+XYo1EplO
-         2JG2k3D/KEX0udDV2gDJxOM6MbvVg7fc4j8F6W+aNzSRxjCmFfTUm7hX37pPZ8ioNKcY
-         Lso8BrnxMEOhx8NjuC22i2vZAiLv4H+SgXE7A=
-Date: Mon, 21 Jun 2010 18:25:19 -0700
-From: mark gross <640e9920@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: markgross@thegnar.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Message-ID: <20100622012519.GB12795@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <20100621061345.GF9735@gvim.org>
- <Pine.LNX.4.44L0.1006211158200.1687-100000@iolanthe.rowland.org>
+	Mon, 21 Jun 2010 21:34:14 -0400
+X-Greylist: delayed 476 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Jun 2010 21:34:14 EDT
+From: Stewart Smith <stewart@flamingspork.com>
+To: David Pottage <david@electric-spoon.com>,
+       Nikanth Karthikesan <knikanth@novell.com>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Christoph Hellwig <hch@lst.de>, Chris Mason <chris.mason@oracle.com>,
+       linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH][RFC] Complex filesystem operations: split and join
+In-Reply-To: <e4ea1892f15eaac945c151ea14a5d2d9.squirrel@www.chrestomanci.org>
+References: <201006092035.46481.knikanth@novell.com> <87aaqzp39a.fsf@devron.myhome.or.jp> <201006151611.36443.knikanth@novell.com> <e4ea1892f15eaac945c151ea14a5d2d9.squirrel@www.chrestomanci.org>
+User-Agent: Notmuch/0.3.1-54-g42e146a (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Tue, 22 Jun 2010 09:26:16 +0800
+Message-ID: <87fx0fuabr.fsf@willster.local.flamingspork.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1006211158200.1687-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 12:01:09PM -0400, Alan Stern wrote:
-> On Sun, 20 Jun 2010, mark gross wrote:
-> 
-> > Your confused about what problem this patch attempts to solve.
-> 
-> I don't think so.  Rafael's description was pretty clear.
+On Tue, 15 Jun 2010 16:16:06 +0100, "David Pottage" <david@electric-spoon.com> wrote:
+> On the other hand, perhaps databases such as SQLite or MySQL would
+> benifit from this feature for improving their backend storage, especaly
+> if large amounts of BLOB data is inserted or deleted?
 
-Then how is it you don't understand the fact that Rafael's patch is to
-solve the wake event notification suspend race and not block opertunistic
-suspends or kernel critical sections where suspending should be disabled?
+unlikely.
 
-> 
-> >  There is
-> > a pm_qos patch in the works to address the suspend blocker
-> > functionality.
-> > http://lists.linux-foundation.org/pipermail/linux-pm/2010-June/026760.html
-> 
-> No.  That patch addresses something _similar_ to the suspend blocker
-> functionality.  The fact remains, though, that pm_qos is not used
-> during system suspend (the /sys/power/state interface), hence changes
-> to pm_qos won't solve the system-suspend problems that suspend blockers 
-> do solve.
+1) these operations aren't available everywhere
+2) kind of incompatible with how things are stored now
+3) no doubt incredibly fun with high concurrency (readers streaming out
+BLOBs from later in the file while you go and change everything)
+4) a background thread that goes around repacking things if you need to
+trim the end off the file just isn't that bad.
+   (sure, a nice api call to 'instantly' copy/swap parts of a file could
+   be fun... but then it's relying on the OS and file system to get this
+   right... which is almost always a bad idea)
 
-You keep saying they solve something, I keep wondering what you are
-talking aobut.
-Lets see what problems it solves:
-* implements oppertunistic suspending (this is a feature not a problem)
-* enables kernel critical sections blocking suspending.
-* requiers overlapping application specific critcal sections from ISR
-into user mode to make implementation correct.
-* exposes a user mode interface to set a critical section.
-* reduces races between wake events (or suspend blocking events) but I'm
-not convinced it solves them. 
+cheers,
 
-suspend blockers provide a way to block oppertunistic suspending, wich
-I'll have you know, is a pain to get working right and the enabling from
-device to device is not very portable and *that* doesn't say good things
-about the scheme.
-
---mgross
- 
+Stewart "spending way too much time inside databases to maintain sanity" Smith
