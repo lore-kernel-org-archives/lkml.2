@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab0FWUmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 16:42:22 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:40211 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753669Ab0FWUmU (ORCPT
+	id S1753467Ab0FWUpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 16:45:53 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58421 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565Ab0FWUpv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 16:42:20 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=KwvWNyAtWTFJY0suFNfIw4OgrtaPAajgmlnIkj6A34IAPHQNRHythj0yUJ83M2QfajBZQH2mpSNzXzmkfn1oHTHK/UQ3yMsyWiT0tYQjFOBpGX+UvpM0AwjLBZ0I81K+;
-Date: Wed, 23 Jun 2010 13:40:24 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Airlie <airlied@gmail.com>, linux-fbdev@vger.kernel.org,
-       dri-devel@lists.sf.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vt/console: try harder to print output when panicing
-Message-ID: <20100623134024.713e0714@virtuousgeek.org>
-In-Reply-To: <20100623133637.fbb318e2.akpm@linux-foundation.org>
-References: <1277262779-19338-1-git-send-email-airlied@gmail.com>
-	<20100623125605.5f56f6ba.akpm@linux-foundation.org>
-	<20100623130547.296e00a7@virtuousgeek.org>
-	<20100623133637.fbb318e2.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Wed, 23 Jun 2010 16:45:51 -0400
+Subject: Re: [RFC][PATCH 6/8] perf: Per PMU disable
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100622162131.GA5458@nowhere>
+References: <20100616160027.590430763@chello.nl>
+	 <20100616160238.529009255@chello.nl> <20100618021405.GD5345@nowhere>
+	 <1276845118.27822.1443.camel@twins>  <20100622162131.GA5458@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 22 Jun 2010 19:09:40 +0200
+Message-ID: <1277226580.27822.7872.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jun 2010 13:36:37 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Wed, 23 Jun 2010 13:05:47 -0700
-> Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> 
-> > On Wed, 23 Jun 2010 12:56:05 -0700
-> > Andrew Morton <akpm@linux-foundation.org> wrote:
+On Tue, 2010-06-22 at 18:21 +0200, Frederic Weisbecker wrote:
+> On Fri, Jun 18, 2010 at 09:11:58AM +0200, Peter Zijlstra wrote:
+> > On Fri, 2010-06-18 at 04:14 +0200, Frederic Weisbecker wrote:
+> > > On Wed, Jun 16, 2010 at 06:00:33PM +0200, Peter Zijlstra wrote:
+> > > > +static void armpmu_pmu_enable(struct pmu *pmu)
+> > > >  {
+> > > > +static void powerpc_pmu_pmu_disable(struct pmu *pmu)
+> > > >  {
+> > > > +static void fsl_emb_pmu_pmu_disable(struct pmu *pmu)
+> > > >  {
+> > > > +static void sh_pmu_pmu_enable(struct pmu *pmu)
+> > > > +{
+> > > > +static void sparc_pmu_pmu_enable(struct pmu *pmu)
+> > > >  {
+> > > > +static void x86_pmu_pmu_disable(struct pmu *pmu)
+> > > >  {
+> > > 
+> > > 
+> > > These namings are really bad. Why not just using pmu once
+> > > in each names? x86_pmu_enable, etc...
 > > 
-> > > On Wed, 23 Jun 2010 13:12:59 +1000
-> > > Dave Airlie <airlied@gmail.com> wrote:
-> > > 
-> > > > Jesse's initial patch commit said:
-> > > > 
-> > > > "At panic time (i.e. when oops_in_progress is set) we should try a bit
-> > > > harder to update the screen and make sure output gets to the VT, since
-> > > > some drivers are capable of flipping back to it.
-> > > > 
-> > > > So make sure we try to unblank and update the display if called from a
-> > > > panic context."
-> > > > 
-> > > > I've enhanced this to add a flag to the vc that console layer can set
-> > > > to indicate they want this behaviour to occur. This also adds support
-> > > > to fbcon for that flag and adds an fb flag for drivers to indicate
-> > > > they want to use the support. It enables this for KMS drivers.
-> > > 
-> > > Interesting.  Getting real oops traces from machines running X will
-> > > make Rusty happy, and that's what we're all here for.
-> > > 
-> > > How well does this all work?  How reliable is it?  What's the success rate?
-> > > 
-> > > 
-> > > 
-> > > What's the downside here?  After all, not all oopses are catastrophic -
-> > > sometimes the machine will go blurt and keep running so the user can
-> > > take a look in the logs then perform an orderly reboot, etc.  As I
-> > > understand it, those non-catastrophic oopses will now flip the machine
-> > > from X and into the vt display, yes?  Can the user get it back to X
-> > > mode?
+> > Because some of those were already taken:
 > > 
-> > No, we'll only flip from the panic notifier chain.
+> > static const struct pmu pmu = {
+> >         .enable         = x86_pmu_enable,
+> >         .disable        = x86_pmu_disable,
 > 
-> So we still don't get to see the output from BUGs and random oopses?  I
-> don't think panics are all that common.
-
-No, BUG() ends up in panic iirc by doing an bad pointer ref which
-should fault and panic. Random oopses won't show up though (but they're
-not supposed to be fatal and can be seen in the log).
-
-> So am I correct in believing that if a user is getting invisible-oopses
-> then he can set /proc/sys/kernel/panic_on_oops, and then the oops
-> should be visible?
-
-Yep.
-
-> (Shouldn't all this stuff be explained in the changlog?)
-
-Maybe?  Linux oops/panic handling is pretty ad-hoc, a separate document
-would probably be best.
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> 
+> Then those should be renamed into x86_event_enable or so. 
+> 
+well, possibly, but the patches were large enough already.
