@@ -1,64 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758916Ab0FVDYF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 23:24:05 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45842 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758760Ab0FVDYD (ORCPT
+	id S1758914Ab0FVD3p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 23:29:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51524 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751396Ab0FVD3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 23:24:03 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [Patch] Call cond_resched() at bottom of main look in  balance_pgdat()
-Cc: kosaki.motohiro@jp.fujitsu.com, Larry Woodman <lwoodman@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <AANLkTilN3EcYq400ajA2-rf3Xs4MhD-sKCg44fjzKlX1@mail.gmail.com>
-References: <20100622112416.B554.A69D9226@jp.fujitsu.com> <AANLkTilN3EcYq400ajA2-rf3Xs4MhD-sKCg44fjzKlX1@mail.gmail.com>
-Message-Id: <20100622114739.B563.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 22 Jun 2010 12:23:59 +0900 (JST)
+	Mon, 21 Jun 2010 23:29:44 -0400
+Date: Mon, 21 Jun 2010 20:28:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jeffrey Merkey <jeffmerkey@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
+Subject: Re: 2.6.34 Crash in dmaengine_put()
+Message-Id: <20100621202854.de928e0a.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTilCW2iqsNaWM9NYIomy8OxGC9jG40KpLcKMYTqL@mail.gmail.com>
+References: <AANLkTilCW2iqsNaWM9NYIomy8OxGC9jG40KpLcKMYTqL@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Kosaki's patch's goal is that kswap doesn't yield cpu if the zone doesn't meet its
-> >> min watermark to avoid failing atomic allocation.
-> >> But this patch could yield kswapd's time slice at any time.
-> >> Doesn't the patch break your goal in bb3ab59683?
-> >
-> > No. it don't break.
-> >
-> > Typically, kswapd periodically call shrink_page_list() and it call
-> > cond_resched() even if bb3ab59683 case.
+On Mon, 21 Jun 2010 20:57:40 -0600 Jeffrey Merkey <jeffmerkey@gmail.com> wrote:
+
+> If someone sets the IFF_UP flags in the netdev structure without going
+> through ifup userspace stuff, during unregister of the the netdev
+> the dmaengine-put code will decrement the reference counter negative,
+> and crash at BUG! in the driver/dma/dmaengine.c code.  This seems
+> busted.
 > 
-> Hmm. If it is, bb3ab59683 is effective really?
-> 
-> The bb3ab59683's goal is prevent CPU yield in case of free < min_watermark.
-> But shrink_page_list can yield cpu from kswapd at any time.
-> So I am not sure what is bb3ab59683's benefit.
-> Did you have any number about bb3ab59683's effectiveness?
-> (Of course, I know it's very hard. Just out of curiosity)
-> 
-> As a matter of fact, when I saw this Larry's patch, I thought it would
-> be better to revert bb3ab59683. Then congestion_wait could yield CPU
-> to other process.
-> 
-> What do you think about?
 
-No. The goal is not prevent CPU yield. The goal is avoid unnecessary
-_long_ sleep (i.e. congestion_wait(BLK_RW_ASYNC, HZ/10)).
-Anyway we can't refuse CPU yield on UP. it lead to hangup ;)
-
-What do you mean the number? If it mean how much reduce congestion_wait(),
-it was posted a lot of time. If it mean how much reduce page allocation 
-failure bug report, I think it has been observable reduced since half 
-years ago. 
-
-If you have specific worried concern, can you please share it?
-
-
-
+Please send a copy of the kernel BUG trace.
