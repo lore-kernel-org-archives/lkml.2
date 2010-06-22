@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759202Ab0FVJpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 05:45:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45241 "EHLO
+	id S1759240Ab0FVJrI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 05:47:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33901 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754887Ab0FVJpb convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1759192Ab0FVJrF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 05:45:31 -0400
-Subject: [PATCH] sched: silence PROVE_RCU in sched_fork()
+	Tue, 22 Jun 2010 05:47:05 -0400
+Subject: Re: [PATCH V2 1/5] ara virt interface of perf to support kvm guest
+ os statistics collection in guest os
 From: Peter Zijlstra <peterz@infradead.org>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: paulmck@linux.vnet.ibm.com, Vivek Goyal <vgoyal@redhat.com>,
-       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       nauman@google.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Paul Menage <menage@google.com>
-In-Reply-To: <AANLkTilsDv59zbL7rbAgJByz_vSnZ0QlbK3dVJUX2VYQ@mail.gmail.com>
-References: <AANLkTin2pPqOUx--9fIX3BH3e-cU6oCRufijcx_4ozx5@mail.gmail.com>
-	 <20100608001929.GF2387@linux.vnet.ibm.com>
-	 <AANLkTikl13cJNuU32JzRarrUnoh5DYHr-Tbnv9B-UjsG@mail.gmail.com>
-	 <1275986441.5408.111.camel@twins>
-	 <AANLkTimXVlgzHivCQberLdrFP8BH_nJzt8_ozUNHG_aI@mail.gmail.com>
-	 <1276004075.2987.208.camel@twins>
-	 <AANLkTil6ucLZ0A6tWx-OQt_2EeKnx8nSx6rIg2t1L2t5@mail.gmail.com>
-	 <1276097068.1745.13.camel@laptop>
-	 <AANLkTinl2JKUX6859Ioa1y0DqHWXH5TrkissQ8BAF4cP@mail.gmail.com>
-	 <AANLkTilpM9O373rA0cw_wTYVfTiDPbjaKHScAGlt7IAr@mail.gmail.com>
-	 <1276106229.1745.65.camel@laptop> <1276107311.1745.66.camel@laptop>
-	 <AANLkTilG5bjN5QaOChmuVN6vT7kMK4eGaV-DvPynBn_t@mail.gmail.com>
-	 <1276118458.1745.144.camel@laptop>
-	 <AANLkTilsDv59zbL7rbAgJByz_vSnZ0QlbK3dVJUX2VYQ@mail.gmail.com>
+To: Jes Sorensen <Jes.Sorensen@redhat.com>
+Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       zhiteng.huang@intel.com, tim.c.chen@intel.com
+In-Reply-To: <4C2084BB.3040501@redhat.com>
+References: <1277112680.2096.509.camel@ymzhang.sh.intel.com>
+	 <4C1F50D0.70205@redhat.com>
+	 <1277171344.2096.567.camel@ymzhang.sh.intel.com>
+	 <4C2062D8.20609@redhat.com>
+	 <1277192873.2096.690.camel@ymzhang.sh.intel.com>
+	 <1277193305.1875.537.camel@laptop>  <4C206D8B.4080105@redhat.com>
+	 <1277198943.2096.724.camel@ymzhang.sh.intel.com>
+	 <1277199060.1875.675.camel@laptop>  <4C2084BB.3040501@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 22 Jun 2010 11:44:53 +0200
-Message-ID: <1277199893.1875.690.camel@laptop>
+Date: Tue, 22 Jun 2010 11:46:50 +0200
+Message-ID: <1277200010.1875.692.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Menage, Li Zefan, any comments?
+On Tue, 2010-06-22 at 11:39 +0200, Jes Sorensen wrote:
+> On 06/22/10 11:31, Peter Zijlstra wrote:
+> > On Tue, 2010-06-22 at 17:29 +0800, Zhang, Yanmin wrote:
+> >> On Tue, 2010-06-22 at 10:00 +0200, Jes Sorensen wrote:
+> >>> On 06/22/10 09:55, Peter Zijlstra wrote:
+> >>>> On Tue, 2010-06-22 at 15:47 +0800, Zhang, Yanmin wrote:
+> >>>>> Besides the para virt perf interface, I'm also considering the direct exposition
+> >>>>> of PMU hardware to guest os. 
+> >>>>
+> >>>> NAK NAK NAK NAK, we've been over that, its not going to happen, full
+> >>>> stop!
+> >>>>
+> >>>> Use MSR read/write traps and host perf to emulate the hardware. In some
+> >>>> cases we could allow the reads without trap but that's a later
+> >>>> optimization.
+> >>>
+> >>> I believe whats meant here is a PMU compatible interface which is
+> >>> partially emulated. Not a handover of the PMU.
+> >> Right. We need capture all write to PMU MSR and allows guest os to read MSR directly.
+> > 
+> > That latter is not possible, only in a subset of cases can you allow
+> > that read.
+> 
+> Avi's suggestion of using virtual MSRs makes a ton of sense for this
+> though, and it makes it possible to switch direct access on/off for the
+> cases where direct access is possible, and go emulated when it isn't.
 
-
----
-Because cgroup_fork() is ran before sched_fork() [ from copy_process() ]
-and the child's pid is not yet visible the child is pinned to its
-cgroup. Therefore we can silence this warning.
-
-A nicer solution would be moving cgroup_fork() to right after
-dup_task_struct() and exclude PF_STARTING from task_subsys_state().
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/sched.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index b697606..2e79518 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2561,7 +2561,16 @@ void sched_fork(struct task_struct *p, int clone_flags)
- 	if (p->sched_class->task_fork)
- 		p->sched_class->task_fork(p);
- 
-+	/*
-+	 * The child is not yet in the pid-hash so no cgroup attach races,
-+	 * and the cgroup is pinned to this child due to cgroup_fork()
-+	 * is ran before sched_fork().
-+	 *
-+	 * Silence PROVE_RCU.
-+	 */
-+	rcu_read_lock();
- 	set_task_cpu(p, cpu);
-+	rcu_read_unlock();
- 
- #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
- 	if (likely(sched_info_on()))
-
+/me has no clue what virtual MSRs are, but yeah, that sounds about
+right. Anyway, the generic case is full trap and emulate get that
+working first, then try and be smart and avoid some traps.
