@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab0FVPop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 11:44:45 -0400
-Received: from victor.provo.novell.com ([137.65.250.26]:58250 "EHLO
+	id S1755705Ab0FVPpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 11:45:11 -0400
+Received: from victor.provo.novell.com ([137.65.250.26]:56189 "EHLO
 	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab0FVPok (ORCPT
+	with ESMTP id S1752441Ab0FVPoA (ORCPT
 	<rfc822;groupwise-SJayaraman@novell.com:0:0>);
-	Tue, 22 Jun 2010 11:44:40 -0400
+	Tue, 22 Jun 2010 11:44:00 -0400
 From: Suresh Jayaraman <sjayaraman@suse.de>
 To: Steve French <smfrench@gmail.com>
 Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: [RFC][PATCH 08/10] cifs: store pages into local cache
-Date: Tue, 22 Jun 2010 20:54:00 +0530
-Message-Id: <1277220240-3674-1-git-send-email-sjayaraman@suse.de>
+Subject: [RFC][PATCH 05/10] cifs: define superblock-level cache index objects and register them
+Date: Tue, 22 Jun 2010 20:53:26 +0530
+Message-Id: <1277220206-3559-1-git-send-email-sjayaraman@suse.de>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <yes>
 References: <yes>
@@ -21,100 +21,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Store pages from an CIFS inode into the data storage object associated with
-that inode.
+Define superblock-level cache index objects (managed by cifsTconInfo structs).
+Each superblock object is created in a server-level index object and in itself
+an index into which inode-level objects are inserted.
+
+Currently, the superblock objects are keyed by sharename.
 
 Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 ---
- fs/cifs/file.c    |    6 ++++++
- fs/cifs/fscache.c |   13 +++++++++++++
- fs/cifs/fscache.h |   11 +++++++++++
- 3 files changed, 30 insertions(+), 0 deletions(-)
+ fs/cifs/cache.c    |   62 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/cifs/cifsglob.h |    3 ++
+ fs/cifs/connect.c  |    4 +++
+ fs/cifs/fscache.c  |   17 ++++++++++++++
+ fs/cifs/fscache.h  |    6 +++++
+ 5 files changed, 92 insertions(+)
 
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 786ec04..39c1ce0 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -2060,6 +2060,8 @@ static int cifs_readpages(struct file *file, struct address_space *mapping,
- 				   we will hit it on next read */
- 
- 				/* break; */
-+				/* send this page to FS-Cache */
-+				cifs_readpage_to_fscache(mapping->host, page);
- 			}
- 		} else {
- 			cFYI(1, "No bytes read (%d) at offset %lld . "
-@@ -2117,6 +2119,10 @@ static int cifs_readpage_worker(struct file *file, struct page *page,
- 
- 	flush_dcache_page(page);
- 	SetPageUptodate(page);
+Index: cifs-2.6/fs/cifs/cache.c
+===================================================================
+--- cifs-2.6.orig/fs/cifs/cache.c
++++ cifs-2.6/fs/cifs/cache.c
+@@ -76,3 +76,65 @@ const struct fscache_cookie_def cifs_fsc
+ 	.type = FSCACHE_COOKIE_TYPE_INDEX,
+ 	.get_key = cifs_server_get_key,
+ };
 +
-+	/* send this page to the cache */
-+	cifs_readpage_to_fscache(file->f_path.dentry->d_inode, page);
-+
- 	rc = 0;
- 
- io_error:
-diff --git a/fs/cifs/fscache.c b/fs/cifs/fscache.c
-index c09d3b8..13e47d5 100644
---- a/fs/cifs/fscache.c
-+++ b/fs/cifs/fscache.c
-@@ -145,6 +145,19 @@ int cifs_fscache_release_page(struct page *page, gfp_t gfp)
- 	return 1;
- }
- 
-+void __cifs_readpage_to_fscache(struct inode *inode, struct page *page)
++static char *extract_sharename(const char *treename)
 +{
-+	int ret;
++	const char *src;
++	char *delim, *dst;
++	int len;
 +
-+	cFYI(1, "CIFS: readpage_to_fscache(fsc: %p, p: %p, i: %p\n",
-+			CIFS_I(inode)->fscache, page, inode);
-+	ret = fscache_write_page(CIFS_I(inode)->fscache, page, GFP_KERNEL);
-+	cFYI(1, "CIFS: fscache_write_page returned %d\n", ret);
++	/* skip double chars at the beginning */
++	src = treename + 2;
 +
-+	if (ret != 0)
-+		fscache_uncache_page(CIFS_I(inode)->fscache, page);
++	/* share name is always preceded by '\\' now */
++	delim = strchr(src, '\\');
++	if (!delim)
++		return ERR_PTR(-EINVAL);
++	delim++;
++	len = strlen(delim);
++
++	/* caller has to free the memory */
++	dst = kstrndup(delim, len, GFP_KERNEL);
++	if (!dst)
++		return ERR_PTR(-ENOMEM);
++
++	return dst;
 +}
 +
- void __cifs_fscache_invalidate_page(struct page *page, struct inode *inode)
- {
- 	struct cifsInodeInfo *cifsi = CIFS_I(inode);
-diff --git a/fs/cifs/fscache.h b/fs/cifs/fscache.h
-index 127cb0a..e34d8ab 100644
---- a/fs/cifs/fscache.h
-+++ b/fs/cifs/fscache.h
-@@ -50,6 +50,8 @@ extern void cifs_fscache_reset_inode_cookie(struct inode *);
- extern void __cifs_fscache_invalidate_page(struct page *, struct inode *);
- extern int cifs_fscache_release_page(struct page *page, gfp_t gfp);
- 
-+extern void __cifs_readpage_to_fscache(struct inode *, struct page *);
-+
- static inline void cifs_fscache_invalidate_page(struct page *page,
- 					       struct inode *inode)
- {
-@@ -57,6 +59,13 @@ static inline void cifs_fscache_invalidate_page(struct page *page,
- 		__cifs_fscache_invalidate_page(page, inode);
- }
- 
-+static inline void cifs_readpage_to_fscache(struct inode *inode,
-+					    struct page *page)
++/*
++ * Superblock object currently keyed by share name
++ */
++static uint16_t cifs_super_get_key(const void *cookie_netfs_data, void *buffer,
++				   uint16_t maxbuf)
 +{
-+	if (PageFsCache(page))
-+		__cifs_readpage_to_fscache(inode, page);
++	const struct cifsTconInfo *tcon = cookie_netfs_data;
++	char *sharename;
++	uint16_t len;
++
++	sharename = extract_sharename(tcon->treeName);
++	if (IS_ERR(sharename)) {
++		cFYI(1, "CIFS: couldn't extract sharename\n");
++		sharename = NULL;
++		return 0;
++	}
++
++	len = strlen(sharename);
++	if (len > maxbuf)
++		return 0;
++
++	memcpy(buffer, sharename, len);
++
++	kfree(sharename);
++
++	return len;
 +}
 +
++/*
++ * Superblock object for FS-Cache
++ */
++const struct fscache_cookie_def cifs_fscache_super_index_def = {
++	.name = "CIFS.super",
++	.type = FSCACHE_COOKIE_TYPE_INDEX,
++	.get_key = cifs_super_get_key,
++};
++
+Index: cifs-2.6/fs/cifs/cifsglob.h
+===================================================================
+--- cifs-2.6.orig/fs/cifs/cifsglob.h
++++ cifs-2.6/fs/cifs/cifsglob.h
+@@ -317,6 +317,9 @@ struct cifsTconInfo {
+ 	bool local_lease:1; /* check leases (only) on local system not remote */
+ 	bool broken_posix_open; /* e.g. Samba server versions < 3.3.2, 3.2.9 */
+ 	bool need_reconnect:1; /* connection reset, tid now invalid */
++#ifdef CONFIG_CIFS_FSCACHE
++	struct fscache_cookie *fscache; /* cookie for share */
++#endif
+ 	/* BB add field for back pointer to sb struct(s)? */
+ };
+ 
+Index: cifs-2.6/fs/cifs/connect.c
+===================================================================
+--- cifs-2.6.orig/fs/cifs/connect.c
++++ cifs-2.6/fs/cifs/connect.c
+@@ -1773,6 +1773,8 @@ cifs_put_tcon(struct cifsTconInfo *tcon)
+ 	list_del_init(&tcon->tcon_list);
+ 	write_unlock(&cifs_tcp_ses_lock);
+ 
++	cifs_fscache_release_super_cookie(tcon);
++
+ 	xid = GetXid();
+ 	CIFSSMBTDis(xid, tcon);
+ 	_FreeXid(xid);
+@@ -1843,6 +1845,8 @@ cifs_get_tcon(struct cifsSesInfo *ses, s
+ 	tcon->nocase = volume_info->nocase;
+ 	tcon->local_lease = volume_info->local_lease;
+ 
++	cifs_fscache_get_super_cookie(tcon);
++
+ 	write_lock(&cifs_tcp_ses_lock);
+ 	list_add(&tcon->tcon_list, &ses->tcon_list);
+ 	write_unlock(&cifs_tcp_ses_lock);
+Index: cifs-2.6/fs/cifs/fscache.c
+===================================================================
+--- cifs-2.6.orig/fs/cifs/fscache.c
++++ cifs-2.6/fs/cifs/fscache.c
+@@ -45,3 +45,20 @@ void cifs_fscache_release_client_cookie(
+ 	server->fscache = NULL;
+ }
+ 
++void cifs_fscache_get_super_cookie(struct cifsTconInfo *tcon)
++{
++	tcon->fscache =
++		fscache_acquire_cookie(tcon->ses->server->fscache,
++				&cifs_fscache_super_index_def, tcon);
++	cFYI(1, "CIFS: get superblock cookie (0x%p/0x%p)\n",
++				tcon, tcon->fscache);
++}
++
++void cifs_fscache_release_super_cookie(struct cifsTconInfo *tcon)
++{
++	cFYI(1, "CIFS: releasing superblock cookie (0x%p/0x%p)\n",
++			tcon, tcon->fscache);
++	fscache_relinquish_cookie(tcon->fscache, 0);
++	tcon->fscache = NULL;
++}
++
+Index: cifs-2.6/fs/cifs/fscache.h
+===================================================================
+--- cifs-2.6.orig/fs/cifs/fscache.h
++++ cifs-2.6/fs/cifs/fscache.h
+@@ -28,6 +28,7 @@
+ 
+ extern struct fscache_netfs cifs_fscache_netfs;
+ extern const struct fscache_cookie_def cifs_fscache_server_index_def;
++extern const struct fscache_cookie_def cifs_fscache_super_index_def;
+ 
+ extern int cifs_fscache_register(void);
+ extern void cifs_fscache_unregister(void);
+@@ -37,6 +38,8 @@ extern void cifs_fscache_unregister(void
+  */
+ extern void cifs_fscache_get_client_cookie(struct TCP_Server_Info *);
+ extern void cifs_fscache_release_client_cookie(struct TCP_Server_Info *);
++extern void cifs_fscache_get_super_cookie(struct cifsTconInfo *);
++extern void cifs_fscache_release_super_cookie(struct cifsTconInfo *);
+ 
  #else /* CONFIG_CIFS_FSCACHE */
  static inline int cifs_fscache_register(void) { return 0; }
- static inline void cifs_fscache_unregister(void) {}
-@@ -80,6 +89,8 @@ static inline void cifs_fscache_release_page(struct page *page, gfp_t gfp)
- 
- static inline int cifs_fscache_invalidate_page(struct page *page,
- 			struct inode *) {}
-+static inline void cifs_readpage_to_fscache(struct inode *inode,
-+			struct page *page) {}
+@@ -46,6 +49,9 @@ static inline void
+ cifs_fscache_get_client_cookie(struct TCP_Server_Info *server) {}
+ static inline void
+ cifs_fscache_get_client_cookie(struct TCP_Server_Info *server); {}
++static inline void cifs_fscache_get_super_cookie(struct cifsTconInfo *tcon) {}
++static inline void
++cifs_fscache_release_super_cookie(struct cifsTconInfo *tcon) {}
  
  #endif /* CONFIG_CIFS_FSCACHE */
  
--- 
-1.6.4.2
-
