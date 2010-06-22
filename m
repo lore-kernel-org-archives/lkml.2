@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab0FVWlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 18:41:49 -0400
-Received: from kroah.org ([198.145.64.141]:58092 "EHLO coco.kroah.org"
+	id S1752819Ab0FVWl6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 18:41:58 -0400
+Received: from kroah.org ([198.145.64.141]:58097 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994Ab0FVWlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 18:41:47 -0400
-Date: Tue, 22 Jun 2010 15:36:12 -0700
+	id S1751654Ab0FVWls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 18:41:48 -0400
+Date: Tue, 22 Jun 2010 15:39:13 -0700
 From: Greg KH <greg@kroah.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-       devel@driverdev.osuosl.org, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for June 21 (staging/easycap)
-Message-ID: <20100622223612.GB3898@kroah.com>
-References: <20100621170056.2fcf10ad.sfr@canb.auug.org.au>
- <20100621090049.c7f11c2d.randy.dunlap@oracle.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+       "ss@aao.gov.au" <ss@aao.gov.au>, Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH v2] Staging: dt3155: Cleanup memory mapped i/o access
+Message-ID: <20100622223913.GA28119@kroah.com>
+References: <20100504025430.GA26421@suse.de>
+ <1273000031.4143.56.camel@Joe-Laptop.home>
+ <0D753D10438DA54287A00B0270842697636EB83CE8@AUSP01VMBX24.collaborationhost.net>
+ <20100504201207.GA7096@kroah.com>
+ <0D753D10438DA54287A00B0270842697636EB83E2A@AUSP01VMBX24.collaborationhost.net>
+ <20100504210229.GA21128@kroah.com>
+ <0D753D10438DA54287A00B0270842697636EB83EC9@AUSP01VMBX24.collaborationhost.net>
+ <0D753D10438DA54287A00B0270842697636ECB4D7B@AUSP01VMBX24.collaborationhost.net>
+ <20100506202535.GA28600@kroah.com>
+ <0D753D10438DA54287A00B027084269763715265FE@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100621090049.c7f11c2d.randy.dunlap@oracle.com>
+In-Reply-To: <0D753D10438DA54287A00B027084269763715265FE@AUSP01VMBX24.collaborationhost.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 09:00:49AM -0700, Randy Dunlap wrote:
-> On Mon, 21 Jun 2010 17:00:56 +1000 Stephen Rothwell wrote:
+On Mon, Jun 21, 2010 at 10:51:54AM -0500, H Hartley Sweeten wrote:
+> The macros ReadMReg and WriteMReg are really just private versions of
+> the kernel's readl and writel functions.  Use the kernel's functions
+> instead.  And since ioremap returns a (void __iomem *) not a (u8 *),
+> change all the uses of dt3155_lbase to reflect this.
 > 
-> > Hi all,
-> > 
-> > Changes since 20100618:
+> While here, make dt3155_lbase static since it is only used in the
+> dt3155_drv.c file.  Also, remove the global variable dt3155_bbase
+> since it is not used anywhere in the code.
 > 
+> Where is makes sense, create a local 'mmio' variable instead of using
+> dt3155_lbase[minor] to make the code more readable.
 > 
-> When CONFIG_USB is not enabled:
+> This change also affects the {Read|Write}I2C functions so they are
+> also modified as needed.
 > 
-> ERROR: "usb_kill_urb" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "usb_deregister_dev" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "video_register_device" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "usb_deregister" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "video_unregister_device" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "usb_set_interface" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "usb_register_dev" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "usb_control_msg" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "usb_submit_urb" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "usb_get_dev" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "usb_find_interface" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "usb_register_driver" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "usb_free_urb" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "usb_alloc_urb" [drivers/staging/easycap/easycap.ko] undefined!
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Scott Smedley <ss@aao.gov.au>
 > 
+> ---
 > 
-> Adding "depends on USB" to EASYCAP is a good start.
-> After that and enabling CONFIG_USB, build of easycap gets:
-> 
-> ERROR: "video_register_device" [drivers/staging/easycap/easycap.ko] undefined!
-> ERROR: "video_unregister_device" [drivers/staging/easycap/easycap.ko] undefined!
-> 
-> because there is no media/video support enabled.  Also no SOUND enabled,
-> so I expect there to be build errors associated with sound also, meaning that
-> the Kconfig file should probably modified with something like
-> 
-> config EASYCAP
-> +	depends on USB && VIDEO_DEV && SND
-> 
-> 
-> This is something that the driver author should know the answer to and submit a
-> patch for.
+> V2 - rebased to next-20100621
 
-You are right, care to make up a patch for this?
+You are still doing something odd, this one doesn't apply either.  Is
+your email client messing something up?
 
-thanks,
+strange.
 
 greg k-h
