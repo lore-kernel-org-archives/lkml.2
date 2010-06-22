@@ -1,45 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758361Ab0FVNLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 09:11:16 -0400
-Received: from kroah.org ([198.145.64.141]:55788 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756022Ab0FVNLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 09:11:15 -0400
-Date: Tue, 22 Jun 2010 06:11:02 -0700
-From: Greg KH <greg@kroah.com>
-To: Sid Boyce <sboyce@blueyonder.co.uk>
-Cc: LKML Mailing List <linux-kernel@vger.kernel.org>,
-       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: 2.6.35-rc3 E-MU 0404 USB problem
-Message-ID: <20100622131102.GA18432@kroah.com>
-References: <4C20B364.9060405@blueyonder.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C20B364.9060405@blueyonder.co.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758584Ab0FVNLd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 09:11:33 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:39132 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758389Ab0FVNLb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 09:11:31 -0400
+X-Sasl-enc: WxyyEb2YiEW0L6A4epkH6TVyobj3BdMk2+PEe/lEGBkp 1277212289
+Subject: Re: [autofs] [PATCH 04/38] autofs4: Save autofs trigger's vfsmount
+ in super block info
+From: Ian Kent <raven@themaw.net>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, viro@zeniv.linux.org.uk,
+       vaurora@redhat.com, autofs@linux.kernel.org,
+       linux-kernel@vger.kernel.org, hch@infradead.org,
+       linux-fsdevel@vger.kernel.org, jblunck@suse.de
+In-Reply-To: <26799.1277185756@jrobl>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
+	 <1276627208-17242-5-git-send-email-vaurora@redhat.com>
+	 <1276661043.2339.35.camel@localhost> <1277091579.3827.9.camel@localhost>
+	 <E1OQghj-0001Bt-RU@pomaz-ex.szeredi.hu> <1277181999.2829.2.camel@localhost>
+	 <26799.1277185756@jrobl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Jun 2010 21:11:23 +0800
+Message-ID: <1277212283.2829.9.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 01:58:12PM +0100, Sid Boyce wrote:
-> I have an application using the on-board sound card mic which should
-> send it's data to the USB card for relay to a Sofweare Defined Radio
-> as 2 quadrature signals digital (I/Q) for transmission.
-> On the receiving side it can take data from the Radio at up to 192K
-> sample rate --> program --> Speaker on the on-board sound card -
-> that works fine.
-> Transmit fails, dmesg output with 48K sample rate set is:-
-> [509686.177169] ALSA sound/usb/clock.c:214: 6:2:3: endpoint lacks
-> sample rate attribute bit, cannot set.
-> [509686.187920] ALSA sound/usb/clock.c:214: 6:2:1: endpoint lacks
-> sample rate attribute bit, cannot set.
+On Tue, 2010-06-22 at 14:49 +0900, J. R. Okajima wrote:
+> Ian Kent:
+> > +static vfsmount *autofs4_find_vfsmount(struct path *parent, struct dentry *root)
+> > +{
+> > +	struct vfsmount *mnt = NULL;
+> > +	struct dentry *child;
+> > +
+> > +	spin_lock(&dcache_lock);
+> > +	list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child) {
+> 
+> dentry->d_subdirs?
+> parent->dentry->...?
 
-Looks like your device does not support this :(
+Yep, thanks, cut and paste error.
 
-Have you asked on the alsa mailing list?
+Like I said, I don't want to go though the test process unless I have
+something that is, in principal, OK.
 
-thanks,
+If whatever approach we use is acceptable, and will work, then I'll put
+the effort into it. I just don' want to spend a heap of time on
+something that is basically not the right thing to do. For example,
+exporting lookup_mnt?
 
-greg k-h
+> 
+> Or how about iterate_mounts() instead of loop over dentries?
+> For example (just a example),
+> 
+> struct args {
+> 	/* input */
+> 	struct dentry *root;
+> 
+> 	/* output */
+> 	struct vfsmount *mnt;
+> };
+> 
+> static int compare_mnt(struct vfsmount *mnt, void *arg)
+> {
+> 	struct args *a = arg;
+> 
+> 	if (mnt->mnt_root != a->root)
+> 		return 0;
+> 	a->mnt = mntget(mnt);
+> 	return 1;
+> }
+> 
+> struct vfsmount *autofs4_find_vfsmount(struct dentry *root)
+> {
+> 	int err;
+> 	struct args args = {
+> 		.root = root
+> 	};
+> 
+> 	err = iterate_mounts(compare_mnt, &args, current->nsproxy->mnt_ns);
+> }
+
+Oh, I'm not up with this, I'll have to check this out, might be useful
+for more than just this case, thanks for the comments.
+
+Ian
+
+
