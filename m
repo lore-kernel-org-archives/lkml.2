@@ -1,67 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263Ab0FVMl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 08:41:29 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:26295 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756595Ab0FVMl0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 08:41:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ff4Q0MZz+33N/IJBLoP2nZrUJ8Cg3thR7wE3j9cz8H7PnOc+ZVV6WuJw0jJmFnO6de
-         cBsT1y5PbJT9iMvSmQQ4qhW72Zs3E8OWgWPDHJsnzhUkHEtqj4fEIqvjmU0g7DWRfRec
-         1jmJPvziBkxgmnHFqeMjzqSX5pfMXSgBEiykU=
+	id S1758253Ab0FVMqA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 08:46:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40634 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751827Ab0FVMp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 08:45:59 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cfq: allow dispatching of both sync and async I/O together
+References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
+	<1277149789-4493-3-git-send-email-jmoyer@redhat.com>
+	<4C1FC4B4.3060700@kernel.dk> <20100621232208.GA10175@redhat.com>
+	<20100622040700.GA12502@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 22 Jun 2010 08:45:54 -0400
+In-Reply-To: <20100622040700.GA12502@redhat.com> (Vivek Goyal's message of
+	"Tue, 22 Jun 2010 00:07:00 -0400")
+Message-ID: <x49sk4ffd6l.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1277210104.29532.13.camel@e102109-lin.cambridge.arm.com>
-References: <AANLkTimb7rP0rS0OU8nan5uNEhHx_kEYL99ImZ3c8o0D@mail.gmail.com>
-	<1277189909-16376-1-git-send-email-sankar.curiosity@gmail.com>
-	<4C20702C.1080405@cs.helsinki.fi>
-	<1277196403-20836-1-git-send-email-sankar.curiosity@gmail.com>
-	<20100622113135.GB20140@linux-sh.org>
-	<1277208351.29532.5.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTin9ssqksoAvafRdsogmfrDUhShHCF9aCUb7CtCl@mail.gmail.com>
-	<1277210104.29532.13.camel@e102109-lin.cambridge.arm.com>
-Date: Tue, 22 Jun 2010 15:41:24 +0300
-X-Google-Sender-Auth: vpFN97qnIxWkUn3EXGcwSPwd1gg
-Message-ID: <AANLkTim-5W0BJ955VkIUpPCrPbXXZdCEkUVOIGeDZGo0@mail.gmail.com>
-Subject: Re: [PATCH] kmemleak: config-options: Default buffer size for 
-	kmemleak
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Paul Mundt <lethal@linux-sh.org>, Sankar P <sankar.curiosity@gmail.com>,
-       linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-       lrodriguez@atheros.com, rnagarajan@novell.com, teheo@novell.com,
-       linux-mm@kvack.org, paulmck@linux.vnet.ibm.com, mingo@elte.hu,
-       akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 3:35 PM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Tue, 2010-06-22 at 13:21 +0100, Pekka Enberg wrote:
->> On Tue, Jun 22, 2010 at 3:05 PM, Catalin Marinas
->> <catalin.marinas@arm.com> wrote:
->> > The defconfig change for this specific platform may be a better option
->> > but I thought defconfigs are to provide a stable (and maybe close to
->> > optimal) configuration without all the debugging features enabled
->> > (especially those slowing things down considerably).
->>
->> The defconfig change was definitely not a clean solution to this
->> problem. Better bake the fix in Kconfig proper even if it means
->> dependency on CONFIG_SH or something.
->
-> OK, maybe something like this
->
->        default 1000 if SH
->        default 400
->
-> It seems that kbuild only considers the first encounter of "default".
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-Sure, I'm fine with that.
+> On Mon, Jun 21, 2010 at 07:22:08PM -0400, Vivek Goyal wrote:
+>> On Mon, Jun 21, 2010 at 09:59:48PM +0200, Jens Axboe wrote:
+>> > On 21/06/10 21.49, Jeff Moyer wrote:
+>> > > Hi,
+>> > > 
+>> > > In testing a workload that has a single fsync-ing process and another
+>> > > process that does a sequential buffered read, I was unable to tune CFQ
+>> > > to reach the throughput of deadline.  This patch, along with the previous
+>> > > one, brought CFQ in line with deadline when setting slice_idle to 0.
+>> > > 
+>> > > I'm not sure what the original reason for not allowing sync and async
+>> > > I/O to be dispatched together was.  If there is a workload I should be
+>> > > testing that shows the inherent problems of this, please point me at it
+>> > > and I will resume testing.  Until and unless that workload is identified,
+>> > > please consider applying this patch.
+>> > 
+>> > The problematic case is/was a normal SATA drive with a buffered
+>> > writer and an occasional reader. I'll have to double check my
+>> > mail tomorrow, but iirc the issue was that the occasional reader
+>> > would suffer great latencies since service times for that single
+>> > IO would be delayed at the drive side. It could perhaps just be
+>> > a bug in how we handle the slice idling on the read side when the
+>> > IO gets delayed initially.
+>> > 
+>> > So if my memory is correct, google for the fsync madness and
+>> > interactiveness thread that we had some months ago and which
+>> > caused a lot of tweaking. The commit adding this is
+>> > 5ad531db6e0f3c3c985666e83d3c1c4d53acccf9 and was added back
+>> > in July last year. So it was around that time that the mails went
+>> > around.
+>> 
+>> Hi Jens,
+>> 
+>> I suspect we might have introduced this patch because mike galbraith
+>> had issues which application interactiveness (reading data back from swap)
+>> in the prence of heavy writeout on SATA disk.
+>> 
+>> After this patch we did two enhancements.
+>> 
+>> - You introduced the logic of building write queue depth gradually.
+>> - Corrado introduced the logic of idling on the random reader service
+>>   tree.
+>> 
+>> In the past random reader were not protected from WRITES as there was no
+>> idling on random readers. But with corrado's changes of idling on
+>> sync-noidle service tree, I think this problem might have been solved to
+>> a great extent.
+>> 
+>> Getting rid of this exclusivity of either SYNC/ASYNC requests in request
+>> queue might help us with throughput on storage arrys without loosing
+>> protection for random reader on SATA. 
+>> 
+>> I will do some testing with and without patch and see if above is true
+>> or not.
+>
+> Some primilinary testing results with and without patch. I started a
+> buffered writer and started firefox and monitored how much time firefox
+> took.
+>
+> dd if=/dev/zero of=zerofile bs=4K count=1024M
+>
+> 2.6.35-rc3 vanilla
+> ==================
+> real    0m22.546s
+> user    0m0.566s
+> sys     0m0.107s
+>
+>
+> real    0m21.410s
+> user    0m0.527s
+> sys     0m0.095s
+>
+>
+> real    0m27.594s
+> user    0m1.256s
+> sys     0m0.483s
+>
+> 2.6.35-rc3 + jeff's patches
+> ===========================
+> real    0m20.372s
+> user    0m0.635s
+> sys     0m0.128s
+>
+> real    0m22.281s
+> user    0m0.509s
+> sys     0m0.093s
+>
+> real    0m23.211s
+> user    0m0.674s
+> sys     0m0.140s
+>
+> So looks like firefox launching times have not changed much in the presence
+> of heavy buffered writting going on root disk. I will do more testing tomorrow.
+
+Was the buffered writer actually hitting disk?  How much memory is on
+your system?
+
+Cheers,
+Jeff
