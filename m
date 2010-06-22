@@ -1,446 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab0FVUBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 16:01:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38914 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751901Ab0FVUBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 16:01:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: [update] Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-Date: Tue, 22 Jun 2010 21:59:27 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Florian Mickler <florian@mickler.org>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-References: <Pine.LNX.4.44L0.1006220952290.1631-100000@iolanthe.rowland.org> <201006221735.10467.rjw@sisk.pl>
-In-Reply-To: <201006221735.10467.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1755401Ab0FVUKI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 16:10:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54220 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752421Ab0FVUKG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 16:10:06 -0400
+Date: Tue, 22 Jun 2010 13:09:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Andries Brouwer <aeb@cwi.nl>, <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Ulf Hansson <ulf.hansson@stericsson.com>
+Subject: Re: [PATCH] Add commandline partitions for block devices v2
+Message-Id: <20100622130915.16ad67cd.akpm@linux-foundation.org>
+In-Reply-To: <1275997141-25419-1-git-send-email-linus.walleij@stericsson.com>
+References: <1275997141-25419-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006222159.28081.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 22, 2010, Rafael J. Wysocki wrote:
-> On Tuesday, June 22, 2010, Alan Stern wrote:
-> > On Tue, 22 Jun 2010, Rafael J. Wysocki wrote:
-... 
-> > > So, even if we can say when the kernel has finished processing the event
-> > > (although that would be complicated in the PCIe case above), I don't think
-> > > it's generally possible to ensure that the entire processing of a wakeup event
-> > > has been completed.  This leads to the question whether or not it is worth
-> > > trying to detect the ending of the processing of a wakeup event.
-> > 
-> > As Arve pointed out, in some cases it definitely is worthwhile (the
-> > gpio keypad matrix example).  In other cases there may be no reasonable
-> > way to tell.  That doesn't mean we have to give up entirely.
+On Tue, 8 Jun 2010 13:39:01 +0200
+Linus Walleij <linus.walleij@stericsson.com> wrote:
+
+> From: Ulf Hansson <ulf.hansson@stericsson.com>
 > 
-> Well, I'm not sure, because that really depends on the hardware and bus in
-> question.  The necessary condition seems to be that the event be detected
-> and handled entirely by the same functional unit (eg. a device driver) within
-> the kernel and such that it is able to detect whether or not user space has
-> acquired the event information.  That doesn't seem to be a common case to me.
+> This adds an option to pass in block device partitions from the kernel
+> cmdline.
+> 
+> The rationale is that in embedded systems we sometimes have no standard
+> partition table available: often due to the fact that raw binary data is
+> read out from the first sectors of the device by ROM code in ASICs. We
+> have for a long time supplied custom partition information to embedded
+> flash memories through the MTDparts interface which has similar
+> semantics, and with the advent of embedded MMC block devices this now
+> comes to standard block devices.
+> 
+> Reviewed-by: Linus Walleij <linus.walleij@stericsson.com>
+> Signed-off-by: Ulf Hansson <ulf.hansson@stericsson.com>
 
-Anyway, below's an update that addresses this particular case.
+This should include your Signed-off-by: as well, since you were on the
+patch delivery path.
 
-It adds two more functions, pm_wakeup_begin() and pm_wakeup_end()
-that play similar roles to suspend_block() and suspend_unblock(), but they
-don't operate on suspend blocker objects.  Instead, the first of them increases
-a counter of events in progress and the other one decreases this counter.
-Together they have the same effect as pm_wakeup_event(), but the counter
-of wakeup events in progress they operate on is also checked by
-pm_check_wakeup_events().
+> Changes v1->v2:
+> - Changed file permissions to 644 in blkdev_parts.[c|h]
+> - Changed a printk() to include a hint that this comes from
+>   blkdev_parts
+> - Ready for merging? Andries, you are listed as maintainer for
+>   the partitions, will you take this patch?
+> ---
+>  fs/partitions/Kconfig        |   19 ++++++
+>  fs/partitions/Makefile       |    1 +
+>  fs/partitions/blkdev_parts.c |  127 ++++++++++++++++++++++++++++++++++++++++++
+>  fs/partitions/blkdev_parts.h |   14 +++++
+>  fs/partitions/check.c        |    4 +
+>  5 files changed, 165 insertions(+), 0 deletions(-)
+>  create mode 100644 fs/partitions/blkdev_parts.c
+>  create mode 100644 fs/partitions/blkdev_parts.h
+> 
+> diff --git a/fs/partitions/Kconfig b/fs/partitions/Kconfig
+> index cb5f0a3..097be19 100644
+> --- a/fs/partitions/Kconfig
+> +++ b/fs/partitions/Kconfig
+> @@ -68,6 +68,25 @@ config ACORN_PARTITION_RISCIX
+>  	  of machines called RISCiX.  If you say 'Y' here, Linux will be able
+>  	  to read disks partitioned under RISCiX.
+>  
+> +config BLKDEV_PARTITION
+> +	bool "Blockdev commandline partition support" if PARTITION_ADVANCED
+> +	default n
+> +	help
+> +	  Say Y if you like to setup partitions for block devices by reading
+> +	  from the kernel command line (kernel boot arguments).
+> +
+> +	  The format of the partitions on the command line:
+> +	  blkdevparts=<blkdev-def>[;<blkdev-def>]
+> +	  <blkdev-def> := <blkdev-id>:<partdef>[,<partdef>]
+> +	  <partdef>    := <size>[@<offset>]
+> +
+> +	  <blkdev-id>  := unique id used to map driver to blockdev name
+> +	  <size>       := size in numbers of sectors
+> +	  <offset>     := offset in sectors for partition to start at
+> +
+> +	  Example:
+> +	  blkdevparts=mmc0:1024@0,524288@1024;mmc1:8192@0,8192@8192
 
-Thus there are two ways kernel subsystems can signal wakeup events.  First,
-if the event is not explicitly handed over to user space and "instantaneous",
-they can simply call pm_wakeup_event() and be done with it.  Second, if the
-event is going to be delivered to user space, the subsystem that processes
-the event can call pm_wakeup_begin() right when the event is detected and
-pm_wakeup_end() when it's been handed over to user space.
+This is a bit terse, and perhaps the Kconfig file was not the best
+place to document the feature.  I'd suggest a standalone file in
+Documentation/block[dev]/.  Then add a pointer to that documentation
+within the Kconfig help record and in
+Documentation/kernel-parameters.txt.
 
-Please tell me what you think.
+Because it does need more explanation and perhaps more examples, IMO. 
+I'm particularly scratching my head over the dynamic behaviour.  This
+code will get reexecuted each time the kernel runs rescan_partitions(),
+no?  For example ioctl(BLKRRPART).  What happens then and under which
+circumstances is that a non-insane thing to do.
 
-Rafael
 
----
- drivers/base/power/Makefile     |    2 
- drivers/base/power/main.c       |    1 
- drivers/base/power/power.h      |    3 +
- drivers/base/power/sysfs.c      |    9 +++
- drivers/base/power/wakeup.c     |  113 ++++++++++++++++++++++++++++++++++++++++
- drivers/pci/pci-acpi.c          |    2 
- drivers/pci/pcie/pme/pcie_pme.c |    2 
- include/linux/pm.h              |   10 +++
- kernel/power/hibernate.c        |   14 +++-
- kernel/power/main.c             |   24 ++++++++
- kernel/power/power.h            |    7 ++
- kernel/power/suspend.c          |    2 
- 12 files changed, 182 insertions(+), 7 deletions(-)
+>  config OSF_PARTITION
+>  	bool "Alpha OSF partition support" if PARTITION_ADVANCED
+>  	default y if ALPHA
+> diff --git a/fs/partitions/Makefile b/fs/partitions/Makefile
+> index 03af8ea..48b216c 100644
+> --- a/fs/partitions/Makefile
+> +++ b/fs/partitions/Makefile
+> @@ -7,6 +7,7 @@ obj-$(CONFIG_BLOCK) := check.o
+>  obj-$(CONFIG_ACORN_PARTITION) += acorn.o
+>  obj-$(CONFIG_AMIGA_PARTITION) += amiga.o
+>  obj-$(CONFIG_ATARI_PARTITION) += atari.o
+> +obj-$(CONFIG_BLKDEV_PARTITION) += blkdev_parts.o
+>  obj-$(CONFIG_MAC_PARTITION) += mac.o
+>  obj-$(CONFIG_LDM_PARTITION) += ldm.o
+>  obj-$(CONFIG_MSDOS_PARTITION) += msdos.o
+> diff --git a/fs/partitions/blkdev_parts.c b/fs/partitions/blkdev_parts.c
+> new file mode 100644
+> index 0000000..b1c6297
+> --- /dev/null
+> +++ b/fs/partitions/blkdev_parts.c
+> @@ -0,0 +1,127 @@
+> +/*
+> + *
+> + * Copyright (C) ST-Ericsson SA 2010
+> + *
+> + * Author: Ulf Hansson <ulf.hansson@stericsson.com> for ST-Ericsson
+> + * License terms: GNU General Public License (GPL) version 2
+> + *
+> + * Create partitions for block devices by reading from the kernel
+> + * command line (kernel boot arguments).
+> + *
+> + */
+> +
+> +#include "check.h"
+> +#include "blkdev_parts.h"
+> +
+> +static char *cmdline;
+> +
+> +/*
+> + * This is the handler for our kernel commandline parameter,
+> + * called from main.c::checksetup().
+> + * Note that we can not yet kmalloc() anything, so we only save
+> + * the commandline for later processing.
+> + */
+> +static int cmdline_setup(char *s)
+> +{
+> +	cmdline = s;
+> +	return 1;
+> +}
+> +__setup("blkdevparts=", cmdline_setup);
 
-Index: linux-2.6/kernel/power/main.c
-===================================================================
---- linux-2.6.orig/kernel/power/main.c
-+++ linux-2.6/kernel/power/main.c
-@@ -204,6 +204,28 @@ static ssize_t state_store(struct kobjec
- 
- power_attr(state);
- 
-+static ssize_t wakeup_count_show(struct kobject *kobj,
-+				struct kobj_attribute *attr,
-+				char *buf)
-+{
-+	return sprintf(buf, "%lu\n", pm_get_wakeup_count());
-+}
-+
-+static ssize_t wakeup_count_store(struct kobject *kobj,
-+				struct kobj_attribute *attr,
-+				const char *buf, size_t n)
-+{
-+	unsigned long val;
-+
-+	if (sscanf(buf, "%lu", &val) == 1) {
-+		if (pm_save_wakeup_count(val))
-+			return n;
-+	}
-+	return -EINVAL;
-+}
-+
-+power_attr(wakeup_count);
-+
- #ifdef CONFIG_PM_TRACE
- int pm_trace_enabled;
- 
-@@ -236,6 +258,7 @@ static struct attribute * g[] = {
- #endif
- #ifdef CONFIG_PM_SLEEP
- 	&pm_async_attr.attr,
-+	&wakeup_count_attr.attr,
- #ifdef CONFIG_PM_DEBUG
- 	&pm_test_attr.attr,
- #endif
-@@ -266,6 +289,7 @@ static int __init pm_init(void)
- 	int error = pm_start_workqueue();
- 	if (error)
- 		return error;
-+	pm_wakeup_events_init();
- 	power_kobj = kobject_create_and_add("power", NULL);
- 	if (!power_kobj)
- 		return -ENOMEM;
-Index: linux-2.6/drivers/base/power/wakeup.c
-===================================================================
---- /dev/null
-+++ linux-2.6/drivers/base/power/wakeup.c
-@@ -0,0 +1,113 @@
-+
-+#include <linux/device.h>
-+#include <linux/pm.h>
-+
-+static unsigned long event_count;
-+static unsigned long saved_event_count;
-+static unsigned long events_in_progress;
-+static bool events_check_enabled;
-+static spinlock_t events_lock;
-+
-+void pm_wakeup_events_init(void)
-+{
-+	spin_lock_init(&events_lock);
-+}
-+
-+void pm_wakeup_event(struct device *dev)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&events_lock, flags);
-+	event_count++;
-+	if (dev)
-+		dev->power.wakeup_count++;
-+	spin_unlock_irqrestore(&events_lock, flags);
-+}
-+
-+void pm_wakeup_begin(struct device *dev)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&events_lock, flags);
-+	events_in_progress++;
-+	if (dev)
-+		dev->power.wakeup_count++;
-+	spin_unlock_irqrestore(&events_lock, flags);
-+}
-+
-+void pm_wakeup_end(void)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&events_lock, flags);
-+	if (events_in_progress) {
-+		events_in_progress--;
-+		event_count++;
-+	}
-+	spin_unlock_irqrestore(&events_lock, flags);
-+}
-+
-+static bool check_wakeup_events(void)
-+{
-+	return !events_check_enabled
-+		|| ((event_count == saved_event_count) && !events_in_progress);
-+}
-+
-+bool pm_check_wakeup_events(void)
-+{
-+	unsigned long flags;
-+	bool ret;
-+
-+	spin_lock_irqsave(&events_lock, flags);
-+	ret = check_wakeup_events();
-+	events_check_enabled = ret;
-+	spin_unlock_irqrestore(&events_lock, flags);
-+	return ret;
-+}
-+
-+bool pm_check_wakeup_events_final(void)
-+{
-+	bool ret;
-+
-+	ret = check_wakeup_events();
-+	events_check_enabled = false;
-+	return ret;
-+}
-+
-+unsigned long pm_get_wakeup_count(void)
-+{
-+	unsigned long flags;
-+	unsigned long count;
-+
-+	spin_lock_irqsave(&events_lock, flags);
-+	events_check_enabled = false;
-+	count = event_count;
-+	spin_unlock_irqrestore(&events_lock, flags);
-+	return count;
-+}
-+
-+bool pm_save_wakeup_count(unsigned long count)
-+{
-+	unsigned long flags;
-+	bool ret = false;
-+
-+	spin_lock_irqsave(&events_lock, flags);
-+	if (count == event_count) {
-+		saved_event_count = count;
-+		events_check_enabled = true;
-+		ret = true;
-+	}
-+	spin_unlock_irqrestore(&events_lock, flags);
-+	return ret;
-+}
-+
-+unsigned long pm_dev_wakeup_count(struct device *dev)
-+{
-+	unsigned long flags;
-+	unsigned long count;
-+
-+	spin_lock_irqsave(&events_lock, flags);
-+	count = dev->power.wakeup_count;
-+	spin_unlock_irqrestore(&events_lock, flags);
-+	return count;
-+}
-Index: linux-2.6/include/linux/pm.h
-===================================================================
---- linux-2.6.orig/include/linux/pm.h
-+++ linux-2.6/include/linux/pm.h
-@@ -457,6 +457,7 @@ struct dev_pm_info {
- #ifdef CONFIG_PM_SLEEP
- 	struct list_head	entry;
- 	struct completion	completion;
-+	unsigned long		wakeup_count;
- #endif
- #ifdef CONFIG_PM_RUNTIME
- 	struct timer_list	suspend_timer;
-@@ -552,6 +553,11 @@ extern void __suspend_report_result(cons
- 	} while (0)
- 
- extern void device_pm_wait_for_dev(struct device *sub, struct device *dev);
-+
-+/* drivers/base/power/wakeup.c */
-+extern void pm_wakeup_event(struct device *dev);
-+extern void pm_wakeup_begin(struct device *dev);
-+extern void pm_wakeup_end(void);
- #else /* !CONFIG_PM_SLEEP */
- 
- #define device_pm_lock() do {} while (0)
-@@ -565,6 +571,10 @@ static inline int dpm_suspend_start(pm_m
- #define suspend_report_result(fn, ret)		do {} while (0)
- 
- static inline void device_pm_wait_for_dev(struct device *a, struct device *b) {}
-+
-+static inline void pm_wakeup_event(struct device *dev) {}
-+static inline void pm_wakeup_begin(struct device *dev) {}
-+static inline void pm_wakeup_end(void) {}
- #endif /* !CONFIG_PM_SLEEP */
- 
- /* How to reorder dpm_list after device_move() */
-Index: linux-2.6/drivers/base/power/Makefile
-===================================================================
---- linux-2.6.orig/drivers/base/power/Makefile
-+++ linux-2.6/drivers/base/power/Makefile
-@@ -1,5 +1,5 @@
- obj-$(CONFIG_PM)	+= sysfs.o
--obj-$(CONFIG_PM_SLEEP)	+= main.o
-+obj-$(CONFIG_PM_SLEEP)	+= main.o wakeup.o
- obj-$(CONFIG_PM_RUNTIME)	+= runtime.o
- obj-$(CONFIG_PM_OPS)	+= generic_ops.o
- obj-$(CONFIG_PM_TRACE_RTC)	+= trace.o
-Index: linux-2.6/drivers/base/power/main.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -59,6 +59,7 @@ void device_pm_init(struct device *dev)
- {
- 	dev->power.status = DPM_ON;
- 	init_completion(&dev->power.completion);
-+	dev->power.wakeup_count = 0;
- 	pm_runtime_init(dev);
- }
- 
-Index: linux-2.6/kernel/power/power.h
-===================================================================
---- linux-2.6.orig/kernel/power/power.h
-+++ linux-2.6/kernel/power/power.h
-@@ -184,6 +184,13 @@ static inline void suspend_test_finish(c
- #ifdef CONFIG_PM_SLEEP
- /* kernel/power/main.c */
- extern int pm_notifier_call_chain(unsigned long val);
-+
-+/* drivers/base/power/wakeup.c */
-+extern void pm_wakeup_events_init(void);
-+extern bool pm_check_wakeup_events(void);
-+extern bool pm_check_wakeup_events_final(void);
-+extern unsigned long pm_get_wakeup_count(void);
-+extern bool pm_save_wakeup_count(unsigned long count);
- #endif
- 
- #ifdef CONFIG_HIGHMEM
-Index: linux-2.6/kernel/power/suspend.c
-===================================================================
---- linux-2.6.orig/kernel/power/suspend.c
-+++ linux-2.6/kernel/power/suspend.c
-@@ -172,7 +172,7 @@ static int suspend_enter(suspend_state_t
- 
- 	error = sysdev_suspend(PMSG_SUSPEND);
- 	if (!error) {
--		if (!suspend_test(TEST_CORE))
-+		if (!suspend_test(TEST_CORE) && pm_check_wakeup_events_final())
- 			error = suspend_ops->enter(state);
- 		sysdev_resume();
- 	}
-Index: linux-2.6/kernel/power/hibernate.c
-===================================================================
---- linux-2.6.orig/kernel/power/hibernate.c
-+++ linux-2.6/kernel/power/hibernate.c
-@@ -277,7 +277,7 @@ static int create_image(int platform_mod
- 		goto Enable_irqs;
- 	}
- 
--	if (hibernation_test(TEST_CORE))
-+	if (hibernation_test(TEST_CORE) || !pm_check_wakeup_events())
- 		goto Power_up;
- 
- 	in_suspend = 1;
-@@ -511,14 +511,18 @@ int hibernation_platform_enter(void)
- 
- 	local_irq_disable();
- 	sysdev_suspend(PMSG_HIBERNATE);
-+	if (!pm_check_wakeup_events_final())
-+		goto Power_up;
-+
- 	hibernation_ops->enter();
- 	/* We should never get here */
- 	while (1);
- 
--	/*
--	 * We don't need to reenable the nonboot CPUs or resume consoles, since
--	 * the system is going to be halted anyway.
--	 */
-+ Power_up:
-+	sysdev_resume();
-+	local_irq_enable();
-+	enable_nonboot_cpus();
-+
-  Platform_finish:
- 	hibernation_ops->finish();
- 
-Index: linux-2.6/drivers/pci/pci-acpi.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pci-acpi.c
-+++ linux-2.6/drivers/pci/pci-acpi.c
-@@ -48,6 +48,8 @@ static void pci_acpi_wake_dev(acpi_handl
- 	if (event == ACPI_NOTIFY_DEVICE_WAKE && pci_dev) {
- 		pci_check_pme_status(pci_dev);
- 		pm_runtime_resume(&pci_dev->dev);
-+		if (device_may_wakeup(&pci_dev->dev))
-+			pm_wakeup_event(&pci_dev->dev);
- 		if (pci_dev->subordinate)
- 			pci_pme_wakeup_bus(pci_dev->subordinate);
- 	}
-Index: linux-2.6/drivers/pci/pcie/pme/pcie_pme.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pcie/pme/pcie_pme.c
-+++ linux-2.6/drivers/pci/pcie/pme/pcie_pme.c
-@@ -154,6 +154,8 @@ static bool pcie_pme_walk_bus(struct pci
- 		/* Skip PCIe devices in case we started from a root port. */
- 		if (!pci_is_pcie(dev) && pci_check_pme_status(dev)) {
- 			pm_request_resume(&dev->dev);
-+			if (device_may_wakeup(&dev->dev))
-+				pm_wakeup_event(&dev->dev);
- 			ret = true;
- 		}
- 
-Index: linux-2.6/drivers/base/power/power.h
-===================================================================
---- linux-2.6.orig/drivers/base/power/power.h
-+++ linux-2.6/drivers/base/power/power.h
-@@ -30,6 +30,9 @@ extern void device_pm_move_before(struct
- extern void device_pm_move_after(struct device *, struct device *);
- extern void device_pm_move_last(struct device *);
- 
-+/* drivers/base/power/wakeup.c */
-+extern unsigned long pm_dev_wakeup_count(struct device *dev);
-+
- #else /* !CONFIG_PM_SLEEP */
- 
- static inline void device_pm_init(struct device *dev)
-Index: linux-2.6/drivers/base/power/sysfs.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/sysfs.c
-+++ linux-2.6/drivers/base/power/sysfs.c
-@@ -144,6 +144,14 @@ wake_store(struct device * dev, struct d
- 
- static DEVICE_ATTR(wakeup, 0644, wake_show, wake_store);
- 
-+static ssize_t wakeup_count_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%lu\n", pm_dev_wakeup_count(dev));
-+}
-+
-+static DEVICE_ATTR(wakeup_count, 0444, wakeup_count_show, NULL);
-+
- #ifdef CONFIG_PM_ADVANCED_DEBUG
- #ifdef CONFIG_PM_RUNTIME
- 
-@@ -230,6 +238,7 @@ static struct attribute * power_attrs[] 
- 	&dev_attr_control.attr,
- #endif
- 	&dev_attr_wakeup.attr,
-+	&dev_attr_wakeup_count.attr,
- #ifdef CONFIG_PM_ADVANCED_DEBUG
- 	&dev_attr_async.attr,
- #ifdef CONFIG_PM_RUNTIME
+Is the string at *s preserved for all time on all architectures?  It
+seems that way.
+
+This function should be __init.
+
+> +/* Parse for a matching blkdev-id and return pointer to partdef */
+> +static char *parse_blkdev_id(char *blkdev_name)
+> +{
+> +	int blkdev_id_len;
+> +	char *p, *blkdev_id;
+> +
+> +	/* Start parsing for a matching blkdev-id */
+> +	p = blkdev_id = cmdline;
+> +	while (blkdev_id != NULL) {
+> +
+> +		/* Find the end of the blkdev-id string */
+> +		p = strchr(blkdev_id, ':');
+> +		if (p == NULL)
+> +			return NULL;
+> +
+> +		/* Check if we found a matching blkdev-id */
+> +		blkdev_id_len = p - blkdev_id;
+> +		if (strlen(blkdev_name)	== blkdev_id_len) {
+> +			if (strncmp(blkdev_name, blkdev_id, blkdev_id_len) == 0)
+> +				return p;
+> +		}
+> +
+> +		/* Move to next blkdev-id string if there is one */
+> +		blkdev_id = strchr(p, ';');
+> +		if (blkdev_id != NULL)
+> +			blkdev_id++;
+> +	}
+> +	return NULL;
+> +}
+
+See, the documentation didn't tell me what a "blkkdev-id" is.  How does
+the user determine the blkdev-id of his devide so he knows how to
+configure his command line?
+
+> +static int parse_partdef(char **part, struct parsed_partitions *state, int part_nbr)
+> +{
+> +	sector_t size, offset;
+> +	char *p = *part;
+> +
+> +	/* Skip the beginning "," or ":" */
+> +	p++;
+> +
+> +	/* Fetch and verify size from partdef */
+> +	size = simple_strtoull(p, &p, 10);
+> +	if ((size == 0) || (*p != '@'))
+> +		return 0;
+> +
+> +	/* Skip the "@" */
+> +	p++;
+> +
+> +	/* Fetch offset from partdef and check if there are more parts */
+> +	offset = simple_strtoull(p, &p, 10);
+> +	if (*p == ',')
+> +		*part = p;
+> +	else
+> +		*part = NULL;
+> +
+> +	/* Add partition to state */
+> +	put_partition(state, part_nbr, offset, size);
+> +	printk(KERN_INFO "\nPartition: size=%llu, offset=%llu\n",
+> +		(unsigned long long) size,
+> +		(unsigned long long) offset);
+> +	return 1;
+> +}
+
+Is all this code warning-free and tested on 32-bit CONFIG_LBDAF=n? 
+>From the above typecasts I assume "yes, at some stage".
+
+> +static int parse_blkdev_parts(char *blkdev_name, struct parsed_partitions *state)
+> +{
+> +	char *partdef;
+> +	int part_nbr = 0;
+> +
+> +	/* Find partdef */
+> +	partdef = parse_blkdev_id(blkdev_name);
+> +
+> +	/* Add parts */
+> +	while (partdef != NULL) {
+> +		/* Find next part and add it to state */
+> +		part_nbr++;
+> +		if (!parse_partdef(&partdef, state, part_nbr))
+> +			return 0;
+> +	}
+> +	return part_nbr;
+> +}
+> +
+> +int blkdev_partition(struct parsed_partitions *state, struct block_device *bdev)
+> +{
+> +	char blkdev_name[BDEVNAME_SIZE];
+> +
+> +	/* Check if there are any partitions to handle */
+> +	if (cmdline == NULL)
+> +		return 0;
+> +
+> +	/* Get the name of the blockdevice we are operating upon */
+> +	if (bdevname(bdev, blkdev_name) == NULL) {
+> +		printk(KERN_WARNING "blkdevparts: Could not get a blkdev name\n");
+> +		return 0;
+> +	}
+> +
+> +	/* Parse for partitions and add them to the state */
+> +	return parse_blkdev_parts(blkdev_name, state);
+> +}
+
+It kinda sucks that all this new code cannot be __init.  If, as I
+suspect, there is no valid post-boot use case for this code then
+perhaps we can somehow arrange for it to get tossed away at
+free_initmem() time.  That'll probably cause a build-time sections
+warning however we do it :(
