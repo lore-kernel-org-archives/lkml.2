@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab0FVLLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 07:11:54 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:49579 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755485Ab0FVLLx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 07:11:53 -0400
-Date: Mon, 21 Jun 2010 17:55:15 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [Bug #15717] bluetooth oops
-Message-ID: <20100621155514.GC1447@ucw.cz>
-References: <g77CuMUl7QI.A.qMH.4ZpHMB@chimera>
- <rHrHQMIU4rI.A.vTC.gdpHMB@chimera>
+	id S1752695Ab0FVLN6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 07:13:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51332 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800Ab0FVLN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 07:13:57 -0400
+Message-ID: <4C209AF3.2070305@suse.cz>
+Date: Tue, 22 Jun 2010 13:13:55 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <rHrHQMIU4rI.A.vTC.gdpHMB@chimera>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nico Schottelius <nico-linuxsetlocalversion@schottelius.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+       Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH] kbuild: Clean up and speed up the localversion logic
+References: <4C1764CD.3080402@suse.cz> <1276782038-23441-1-git-send-email-mmarek@suse.cz> <20100622104412.GB9779@ethz.ch>
+In-Reply-To: <20100622104412.GB9779@ethz.ch>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2010-06-21 00:34:24, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.33 and 2.6.34.
+On 22.6.2010 12:44, Nico Schottelius wrote:
+> Michal Marek [Thu, Jun 17, 2010 at 03:40:38PM +0200]:
+>> -cd "${1:-.}" || usage
+>> +scm_only=false
+>> +srctree=.
+>> +if test "$1" = "--scm-only"; then
+>> +	scm_only=true
+>> +	shift
+>> +fi
+>> +if test $# -gt 0; then
+>> +	srctree=$1
 > 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-
-Did not see this one for long long time, so it was probably fixed.
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15717
-> Subject		: bluetooth oops
-> Submitter	: Pavel Machek <pavel@ucw.cz>
-> Date		: 2010-03-14 20:14 (99 days old)
-> Message-ID	: <20100314201434.GE22059@elf.ucw.cz>
-> References	: http://marc.info/?l=linux-kernel&m=126859771528426&w=4
-> Handled-By	: Marcel Holtmann <marcel@holtmann.org>
+> You probably want
 > 
+> srctree="$1" 
+> 
+> to catch spaces and co. in the path.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+That's the same, the value in variable assignment is not subject to word
+splitting.
+
+
+> Otherwise I just had a quick view over it, but seems to look good.
+
+Thanks!
+
+/me is now wondering if it's ok to push this for 2.6.35. At least, there
+were no bugreports from linux-next users so far.
+
+Michal
