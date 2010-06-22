@@ -1,131 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758253Ab0FVMqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 08:46:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40634 "EHLO mx1.redhat.com"
+	id S1758277Ab0FVMtU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 08:49:20 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39380 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751827Ab0FVMp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 08:45:59 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cfq: allow dispatching of both sync and async I/O together
-References: <1277149789-4493-1-git-send-email-jmoyer@redhat.com>
-	<1277149789-4493-3-git-send-email-jmoyer@redhat.com>
-	<4C1FC4B4.3060700@kernel.dk> <20100621232208.GA10175@redhat.com>
-	<20100622040700.GA12502@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 22 Jun 2010 08:45:54 -0400
-In-Reply-To: <20100622040700.GA12502@redhat.com> (Vivek Goyal's message of
-	"Tue, 22 Jun 2010 00:07:00 -0400")
-Message-ID: <x49sk4ffd6l.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753301Ab0FVMtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 08:49:18 -0400
+Date: Tue, 22 Jun 2010 12:48:43 GMT
+From: tip-bot for Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       peterz@infradead.org, tj@kernel.org, tony.luck@intel.com,
+       tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       peterz@infradead.org, tj@kernel.org, tglx@linutronix.de,
+       tony.luck@intel.com, mingo@elte.hu
+In-Reply-To: <4C1FDF5B.1040301@kernel.org>
+References: <4C1FDF5B.1040301@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched, cpuset: Drop __cpuexit from cpu hotplug callbacks
+Message-ID: <tip-0b2e918aa99fe6c3b8f163aa323a275ad8577828@git.kernel.org>
+Git-Commit-ID: 0b2e918aa99fe6c3b8f163aa323a275ad8577828
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 22 Jun 2010 12:48:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+Commit-ID:  0b2e918aa99fe6c3b8f163aa323a275ad8577828
+Gitweb:     http://git.kernel.org/tip/0b2e918aa99fe6c3b8f163aa323a275ad8577828
+Author:     Tejun Heo <tj@kernel.org>
+AuthorDate: Mon, 21 Jun 2010 23:53:31 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 22 Jun 2010 08:07:39 +0200
 
-> On Mon, Jun 21, 2010 at 07:22:08PM -0400, Vivek Goyal wrote:
->> On Mon, Jun 21, 2010 at 09:59:48PM +0200, Jens Axboe wrote:
->> > On 21/06/10 21.49, Jeff Moyer wrote:
->> > > Hi,
->> > > 
->> > > In testing a workload that has a single fsync-ing process and another
->> > > process that does a sequential buffered read, I was unable to tune CFQ
->> > > to reach the throughput of deadline.  This patch, along with the previous
->> > > one, brought CFQ in line with deadline when setting slice_idle to 0.
->> > > 
->> > > I'm not sure what the original reason for not allowing sync and async
->> > > I/O to be dispatched together was.  If there is a workload I should be
->> > > testing that shows the inherent problems of this, please point me at it
->> > > and I will resume testing.  Until and unless that workload is identified,
->> > > please consider applying this patch.
->> > 
->> > The problematic case is/was a normal SATA drive with a buffered
->> > writer and an occasional reader. I'll have to double check my
->> > mail tomorrow, but iirc the issue was that the occasional reader
->> > would suffer great latencies since service times for that single
->> > IO would be delayed at the drive side. It could perhaps just be
->> > a bug in how we handle the slice idling on the read side when the
->> > IO gets delayed initially.
->> > 
->> > So if my memory is correct, google for the fsync madness and
->> > interactiveness thread that we had some months ago and which
->> > caused a lot of tweaking. The commit adding this is
->> > 5ad531db6e0f3c3c985666e83d3c1c4d53acccf9 and was added back
->> > in July last year. So it was around that time that the mails went
->> > around.
->> 
->> Hi Jens,
->> 
->> I suspect we might have introduced this patch because mike galbraith
->> had issues which application interactiveness (reading data back from swap)
->> in the prence of heavy writeout on SATA disk.
->> 
->> After this patch we did two enhancements.
->> 
->> - You introduced the logic of building write queue depth gradually.
->> - Corrado introduced the logic of idling on the random reader service
->>   tree.
->> 
->> In the past random reader were not protected from WRITES as there was no
->> idling on random readers. But with corrado's changes of idling on
->> sync-noidle service tree, I think this problem might have been solved to
->> a great extent.
->> 
->> Getting rid of this exclusivity of either SYNC/ASYNC requests in request
->> queue might help us with throughput on storage arrys without loosing
->> protection for random reader on SATA. 
->> 
->> I will do some testing with and without patch and see if above is true
->> or not.
->
-> Some primilinary testing results with and without patch. I started a
-> buffered writer and started firefox and monitored how much time firefox
-> took.
->
-> dd if=/dev/zero of=zerofile bs=4K count=1024M
->
-> 2.6.35-rc3 vanilla
-> ==================
-> real    0m22.546s
-> user    0m0.566s
-> sys     0m0.107s
->
->
-> real    0m21.410s
-> user    0m0.527s
-> sys     0m0.095s
->
->
-> real    0m27.594s
-> user    0m1.256s
-> sys     0m0.483s
->
-> 2.6.35-rc3 + jeff's patches
-> ===========================
-> real    0m20.372s
-> user    0m0.635s
-> sys     0m0.128s
->
-> real    0m22.281s
-> user    0m0.509s
-> sys     0m0.093s
->
-> real    0m23.211s
-> user    0m0.674s
-> sys     0m0.140s
->
-> So looks like firefox launching times have not changed much in the presence
-> of heavy buffered writting going on root disk. I will do more testing tomorrow.
+sched, cpuset: Drop __cpuexit from cpu hotplug callbacks
 
-Was the buffered writer actually hitting disk?  How much memory is on
-your system?
+Commit 3a101d05 (sched: adjust when cpu_active and cpuset
+configurations are updated during cpu on/offlining) added
+hotplug notifiers marked with __cpuexit; however, ia64 drops
+text in __cpuexit during link unlike x86.
 
-Cheers,
-Jeff
+This means that functions which are referenced during init but used
+only for cpu hot unplugging afterwards shouldn't be marked with
+__cpuexit. Drop __cpuexit from those functions.
+
+Reported-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Tony Luck <tony.luck@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+LKML-Reference: <4C1FDF5B.1040301@kernel.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/cpuset.c |    2 +-
+ kernel/sched.c  |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 05727dc..7146793 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2118,7 +2118,7 @@ static void scan_for_empty_cpusets(struct cpuset *root)
+  * Called within get_online_cpus().  Needs to call cgroup_lock()
+  * before calling generate_sched_domains().
+  */
+-void __cpuexit cpuset_update_active_cpus(void)
++void cpuset_update_active_cpus(void)
+ {
+ 	struct sched_domain_attr *attr;
+ 	cpumask_var_t *doms;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index b4427cc..9064e7d 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -7477,8 +7477,8 @@ int __init sched_create_sysfs_power_savings_entries(struct sysdev_class *cls)
+  * disabled, cpuset_update_active_cpus() becomes a simple wrapper
+  * around partition_sched_domains().
+  */
+-static int __cpuexit cpuset_cpu_active(struct notifier_block *nfb,
+-				       unsigned long action, void *hcpu)
++static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
++			     void *hcpu)
+ {
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_ONLINE:
+@@ -7490,8 +7490,8 @@ static int __cpuexit cpuset_cpu_active(struct notifier_block *nfb,
+ 	}
+ }
+ 
+-static int __cpuexit cpuset_cpu_inactive(struct notifier_block *nfb,
+-					 unsigned long action, void *hcpu)
++static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
++			       void *hcpu)
+ {
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_DOWN_PREPARE:
