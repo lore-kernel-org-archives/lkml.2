@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab0FVHNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 03:13:31 -0400
-Received: from koto.vergenet.net ([210.128.90.7]:59933 "EHLO koto.vergenet.net"
+	id S1757324Ab0FVHPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 03:15:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18045 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754096Ab0FVHN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 03:13:29 -0400
-Date: Tue, 22 Jun 2010 16:13:27 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Hannes Eder <heder@google.com>
-Cc: Patrick McHardy <kaber@trash.net>, lvs-devel@vger.kernel.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       netfilter@vger.kernel.org, Wensong Zhang <wensong@linux-vs.org>,
-       Julius Volz <julius.volz@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Netfilter Development Mailinglist 
-	<netfilter-devel@vger.kernel.org>
-Subject: Re: [patch v2.2 1/4] [PATCH v2.1 1/4] netfilter: xt_ipvs
- (netfilter matcher for IPVS)
-Message-ID: <20100622071326.GB9928@verge.net.au>
-References: <20100501032014.406353538@vergenet.net>
- <20100501032120.298829234@vergenet.net>
- <4BDC543F.7060500@trash.net>
- <AANLkTikIzHuzxo4z1_8_fEGLBC2-0Uz0X8SOc8n2msuX@mail.gmail.com>
+	id S1756228Ab0FVHPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 03:15:08 -0400
+Message-ID: <4C2062D8.20609@redhat.com>
+Date: Tue, 22 Jun 2010 09:14:32 +0200
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikIzHuzxo4z1_8_fEGLBC2-0Uz0X8SOc8n2msuX@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       zhiteng.huang@intel.com, tim.c.chen@intel.com
+Subject: Re: [PATCH V2 1/5] ara virt interface of perf to support kvm guest
+ os statistics collection in guest os
+References: <1277112680.2096.509.camel@ymzhang.sh.intel.com>	 <4C1F50D0.70205@redhat.com> <1277171344.2096.567.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1277171344.2096.567.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 03, 2010 at 01:29:46PM +0200, Hannes Eder wrote:
-> Thank you for picking this series of patches up again and thanks for
-> the feedback.
+On 06/22/10 03:49, Zhang, Yanmin wrote:
+> On Mon, 2010-06-21 at 14:45 +0300, Avi Kivity wrote:
+>>   Since the guest can use NMI to read the 
+>> counter, it should have the highest possible priority, and thus it 
+>> shouldn't see any overflow unless it configured the threshold really low.
+>>
+>> If we drop overflow, we can use the RDPMC instruction instead of 
+>> KVM_PERF_OP_READ.  This allows the guest to allow userspace to read a 
+>> counter, or prevent userspace from reading the counter, by setting cr4.pce.
+> 1) para virt perf interface is to hide PMU hardware in host os. Guest os shouldn't
+> access PMU hardware directly. We could expose PMU hardware to guest os directly, but
+> that would be another guest os PMU support method. It shouldn't be a part of para virt
+> interface.
+> 2) Consider below scenario: PMU counter overflows and NMI causes guest os vmexit to
+> host kernel. Host kernel schedules the vcpu thread to another physical cpu before
+> vmenter the guest os again. So later on, guest os just RDPMC the counter on another
+> cpu.
 > 
-> I'll send an updated version in the next days.
+> So I think above discussion is around how to expose PMU hardware to guest os. I will
+> also check this method after the para virt interface is done.
 
-Hi Hanes,
+You should be able to expose the counters as read-only to the guest. KVM
+allows you to specify whether or not a guest has read, write or
+read/write access. If you allowed read access of the counters that would
+safe a fair bit of hyper calls.
 
-more than a few days seems to have passed.
-Do you have time to fix the patches up?
-If not, I'll take a stab at it.
+Question is if it is safe to drop overflow support?
 
-Thanks
+Cheers,
+Jes
 
