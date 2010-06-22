@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab0FVWi6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 18:38:58 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40097 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751528Ab0FVWi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 18:38:57 -0400
-Date: Tue, 22 Jun 2010 15:37:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mike McCormack <mikem@ring3k.org>
-Cc: oleg@redhat.com, kosaki.motohiro@jp.fujitsu.com, serue@us.ibm.com,
-       jmorris@namei.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] proc: Add complete process group list
-Message-Id: <20100622153757.dcb6bda9.akpm@linux-foundation.org>
-In-Reply-To: <4C20D1AE.5000205@ring3k.org>
-References: <4C20D1AE.5000205@ring3k.org>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752410Ab0FVWlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 18:41:49 -0400
+Received: from kroah.org ([198.145.64.141]:58092 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994Ab0FVWlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 18:41:47 -0400
+Date: Tue, 22 Jun 2010 15:36:12 -0700
+From: Greg KH <greg@kroah.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+       devel@driverdev.osuosl.org, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for June 21 (staging/easycap)
+Message-ID: <20100622223612.GB3898@kroah.com>
+References: <20100621170056.2fcf10ad.sfr@canb.auug.org.au>
+ <20100621090049.c7f11c2d.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100621090049.c7f11c2d.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jun 2010 00:07:26 +0900
-Mike McCormack <mikem@ring3k.org> wrote:
-
-> If a process is in more than NGROUPS_SMALL (32) groups, it's not possible
->  for any other user space process to determine the list of groups it is
->  in using /proc/<pid>/status.
+On Mon, Jun 21, 2010 at 09:00:49AM -0700, Randy Dunlap wrote:
+> On Mon, 21 Jun 2010 17:00:56 +1000 Stephen Rothwell wrote:
 > 
-> Increasing the list of groups listed by /proc/<pid>/status would lead to
->  very long lines that file, and possible misbehavior of userspace programs
->  that parse /proc/<pid>/status, so instead I have opted to create a new
->  file /proc/<pid>/groups, which contains the list of supplementary groups
->  for each pid.
+> > Hi all,
+> > 
+> > Changes since 20100618:
 > 
-> The new file /proc/<pid>/groups consists of a single group id per line,
->  with each line being 11 characters long.  This should be enough space
->  for 16bit or 32bit group ids.
 > 
-> This feature might be useful for a server listening on a unix domain pipe
->  to determine the list of groups that a client process is in from its pid.
+> When CONFIG_USB is not enabled:
+> 
+> ERROR: "usb_kill_urb" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "usb_deregister_dev" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "video_register_device" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "usb_deregister" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "video_unregister_device" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "usb_set_interface" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "usb_register_dev" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "usb_control_msg" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "usb_submit_urb" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "usb_get_dev" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "usb_find_interface" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "usb_register_driver" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "usb_free_urb" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "usb_alloc_urb" [drivers/staging/easycap/easycap.ko] undefined!
+> 
+> 
+> Adding "depends on USB" to EASYCAP is a good start.
+> After that and enabling CONFIG_USB, build of easycap gets:
+> 
+> ERROR: "video_register_device" [drivers/staging/easycap/easycap.ko] undefined!
+> ERROR: "video_unregister_device" [drivers/staging/easycap/easycap.ko] undefined!
+> 
+> because there is no media/video support enabled.  Also no SOUND enabled,
+> so I expect there to be build errors associated with sound also, meaning that
+> the Kconfig file should probably modified with something like
+> 
+> config EASYCAP
+> +	depends on USB && VIDEO_DEV && SND
+> 
+> 
+> This is something that the driver author should know the answer to and submit a
+> patch for.
 
-"might be"?
+You are right, care to make up a patch for this?
 
-It would be useful to hear a bit more about usage scenarios, why this
-is needed, etc - some hard info which would justify permanent extension
-of the kernel->userspace API.  How does this get used, why is it
-needed, what are the alternatives, etc.
+thanks,
 
-I don't recall having heard of anyone using the groups fields in
-/proc/pid/status before.
+greg k-h
