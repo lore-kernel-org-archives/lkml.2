@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab0FVWOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 18:14:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20148 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab0FVWOv (ORCPT
+	id S1752594Ab0FVWQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 18:16:22 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51484 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751066Ab0FVWQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 18:14:51 -0400
-Date: Tue, 22 Jun 2010 15:13:07 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/3 v5][RFC] ext3/4: enhance fsync performance when
- using CFQ
-Message-ID: <20100622221306.GA20090@mail.oracle.com>
-Mail-Followup-To: Jeff Moyer <jmoyer@redhat.com>, axboe@kernel.dk,
-	vgoyal@redhat.com, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org
-References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4C2135CD.012B:SCFMA922111,ss=1,fgs=0
+	Tue, 22 Jun 2010 18:16:20 -0400
+Date: Tue, 22 Jun 2010 23:21:08 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Samo Pogacnik <samo_pogacnik@t-2.net>
+Cc: linux-embedded <linux-embedded@vger.kernel.org>,
+       linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] detour TTY driver - now ttyprintk
+Message-ID: <20100622232108.26752ff8@lxorguk.ukuu.org.uk>
+In-Reply-To: <1277244410.2195.47.camel@itpsd6lap>
+References: <1273918658.2341.17.camel@itpsd6lap>
+	<1275171436.2122.29.camel@itpsd6lap>
+	<20100529235402.296406d9@lxorguk.ukuu.org.uk>
+	<1275175983.2122.42.camel@itpsd6lap>
+	<1276123020.16010.97.camel@itpsd6lap>
+	<20100611134455.3fa7d563@lxorguk.ukuu.org.uk>
+	<1276291932.2154.45.camel@itpsd6lap>
+	<20100621153858.444695c0@lxorguk.ukuu.org.uk>
+	<1277244410.2195.47.camel@itpsd6lap>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 05:34:59PM -0400, Jeff Moyer wrote:
-> Running iozone with the fsync flag, or fs_mark, the performance of CFQ is
-> far worse than that of deadline for enterprise class storage when dealing
-> with file sizes of 8MB or less.  I used the following command line as a
-> representative test case:
-> 
->   fs_mark -S 1 -D 10000 -N 100000 -d /mnt/test/fs_mark -s 65536 -t 1 -w 4096 -F
+> For correct flow control, i suppose current empty space of the real
+> (final) printk buffer is needed. On the other hand my intermediate
 
-	I'd be interested in how ocfs2 does, because we use jbd2 too.
+Console drivers have their own buffering so that doesn't really work. If
+you want to just avoid explosions then you don't need to be quite so
+clever
 
-Joel
+> in some logical manner. And the other would be to use ratelimit support
+> to switch between max and zero in write_room answer and remove other
+> retelimit response?
 
--- 
-
-Life's Little Instruction Book #139
-
-	"Never deprive someone of hope; it might be all they have."
-
-Joel Becker
-Principal Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+Yes - except that a driver isn't permitted to reduce the write room space
+by more than bytes written. That is if you offer 512 bytes you can't
+offer 0 until 512 bytes have been written - hence the design of the pseudo
+code I posted in the previous message.
