@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab0FVTcM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 15:32:12 -0400
-Received: from bar.sig21.net ([80.81.252.164]:40746 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986Ab0FVTcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 15:32:11 -0400
-Date: Tue, 22 Jun 2010 21:31:43 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Luis R. Rodriguez" <mcgrof@gmail.com>,
-       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
-       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Jonathan May <jonathan.may@atheros.com>,
-       Tim Gardner <tim.gardner@canonical.com>
-Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
-Message-ID: <20100622193143.GA17803@sig21.net>
-References: <AANLkTikkt4dqYWrwtTCJ8tJZLB1kZXgF1KvaPsIOO3Dl@mail.gmail.com>
- <20100622163138.GD20668@srcf.ucam.org>
- <AANLkTikQkLFdpusfcLVOpyZHFrxwB5akr-ggFB7Fjm08@mail.gmail.com>
- <20100622165213.GA21842@srcf.ucam.org>
- <AANLkTikHLBBWrhCP_1f5Jv7zE9RKPvdsl5nSyfkeMfLl@mail.gmail.com>
- <20100622172545.GA22680@srcf.ucam.org>
- <AANLkTilEHJ5qRD8ov0gIK0Zc4o-gJUPYkvHdyD1uZUon@mail.gmail.com>
- <20100622175058.GA23499@srcf.ucam.org>
- <AANLkTinE0BiOa5cpcIerbias7K-aDzj3x4qaeDpzy2CQ@mail.gmail.com>
- <20100622184426.GA24546@srcf.ucam.org>
+	id S1754568Ab0FVTfe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 15:35:34 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:34809 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab0FVTfc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 15:35:32 -0400
+Date: Tue, 22 Jun 2010 21:35:30 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org,
+       simone.ricci@gmail.com, scst-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org, Nick.Couchman@seakr.com,
+       Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: Re: Error "Unknown relocation: 36" on module load on Sparc
+Message-ID: <20100622193530.GA26041@merkur.ravnborg.org>
+References: <AANLkTimuv7nOlcGFxqPZlwcAjLmFMiLAvbA5O7F32Wbg@mail.gmail.com> <4C192085.2090404@vlnb.net> <20100616.133540.189696272.davem@davemloft.net> <4C210A07.80906@vlnb.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100622184426.GA24546@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-21-Score: -3.6 (---)
-X-Spam-21-Report: No, score=-3.6 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.775,BAYES_00=-2.599 autolearn=no
+In-Reply-To: <4C210A07.80906@vlnb.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 07:44:26PM +0100, Matthew Garrett wrote:
-> On Tue, Jun 22, 2010 at 11:28:20AM -0700, Luis R. Rodriguez wrote:
-> > 
-> > Heh, this whole patch and thread was started because Jussi tested
-> > ath5k with  pcie_aspm=force (on a pre PCIE 1.1 device (?)) . I have
-> > been trying to explain all along why this is a terrible idea to the
-> > point we should probably just remove that code from the kernel. Hence
-> > my side rants and explanations to justify my reasonings.
+On Tue, Jun 22, 2010 at 11:07:51PM +0400, Vladislav Bolkhovitin wrote:
+>
+> David Miller, on 06/17/2010 12:35 AM wrote:
+>> From: Vladislav Bolkhovitin <vst@vlnb.net>
+>>
+>> You're building the module with incorrect compiler flags, in
+>> particular somehow the "-mcmodel=medlow" option is not getting passed
+>> into the module build and thus the wrong code model is being used to
+>> build the module.
+>>
+> Thank you. This gives us the direction away from the current dead end.  
+> We will make the needed changes in our Makefiles.
+>
+> But we surprised that such platform specific compiler flags have to be  
+> manually maintained by out of the kernel tree modules developers. We  
+> thought kbuild environment doing it automatically. Particularly,  
+> Documentation/kbuild/modules.txt doesn't say anything about manual  
+> platform specific flags.
+
+They should all be there automagically.
+A few things to try out...
+What machine is this being build on?
+
+Your Makefile contains this:
+> ifeq ($(KVER),)
+>   ifeq ($(KDIR),)
+>     KVER = $(shell uname -r)
+>     KDIR := /lib/modules/$(KVER)/build
+>   endif
+> else
+>   KDIR := /lib/modules/$(KVER)/build
+> endif
 > 
-> Well, there's two things here. If you use force then you might get 
-> inappropriate ASPM. But if your BIOS enables ASPM on an old device, then 
-> booting *without* CONFIG_PCIE_ASPM will leave it turned on, and booting 
-> *with* CONFIG_PCIE_ASPM will turn it off. The Kconfig description is 
-> confusing - reality is that CONFIG_PCIE_ASPM enables logic that allows 
-> the kernel to modify the BIOS default, and disabling it makes the 
-> assumption that your BIOS did something sensible.
 
-Does CONFIG_PCIEASPM provide a way for the user to modifiy
-the settings at runtime?
+But does /lib/modules/... contain a sparc kernel?
 
-I have a Samsung N130 netbook which has a BIOS setting
-called "CPU Power Saving Mode".  When enabled it activates
-ASPM L1 and L0s for the ethernet chip (Realtek RTL8102e, 100Mbit)
-and the PCIE bridge (with the BIOS setting off it's just L1).
-The result is that the ethernet througput is reduced to 25Mbit/s.
-(The BIOS setting does not activa L0s for the Atheros AR9285 WLAN.)
+You could try to build your module using: V=1
 
-99,9% of the time I want to enjoy the power savings,
-but occationally I have to transfer some bulk data and would
-like to switch the setting for a few minutes.
+And reply with the output. This should give a clue about what flags are picked
+up from where.
 
-Or, well, ideally I'd like to have power savings _and_ performance
-at the same time without any manual intervention.  I'm not sure
-if this is a quirk of the N130 or if ASPM L0s always causes
-performance degradation?
+Most of your Makefile looks fine - I guess we need to find the bug
+in the build environmnet and not in the Makefile.
 
-
-Thanks
-Johannes
+	Sam
