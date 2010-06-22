@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab0FVSPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 14:15:20 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:35998 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab0FVSPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 14:15:17 -0400
-Date: Tue, 22 Jun 2010 14:13:20 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	id S1751651Ab0FVSTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 14:19:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38585 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750930Ab0FVSTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 14:19:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] ACPI: Disable ASPM if the platform won't provide _OSC control for PCIe
+Date: Tue, 22 Jun 2010 20:17:29 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5 v2]wireless:hostap_main.c warning: variable 'iface'
- set but not used
-Message-ID: <20100622181320.GD2583@tuxdriver.com>
-References: <1277157733-14071-1-git-send-email-justinmattock@gmail.com>
+References: <1277220343-25168-1-git-send-email-mjg@redhat.com>
+In-Reply-To: <1277220343-25168-1-git-send-email-mjg@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277157733-14071-1-git-send-email-justinmattock@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006222017.30023.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 03:02:13PM -0700, Justin P. Mattock wrote:
-> This is a resend from version one due to trying a different approach
-> than the original(probably important to leave netdev_priv() in).
+On Tuesday, June 22, 2010, Matthew Garrett wrote:
+> The PCI SIG documentation for the _OSC OS/firmware handshaking interface
+> states:
 > 
-> In any case have a look, if there's another approach let me know
-> and ill test it out. The below patch fixes a warning im seeing
-> when compiling with gcc 4.6.0
+> "If the _OSC control method is absent from the scope of a host bridge
+> device, then the operating system must not enable or attempt to use any
+> features defined in this section for the hierarchy originated by the host
+> bridge."
 > 
-> CC [M]  drivers/net/wireless/hostap/hostap_main.o
-> drivers/net/wireless/hostap/hostap_main.c: In function 'hostap_set_multicast_list_queue':
-> drivers/net/wireless/hostap/hostap_main.c:744:27: warning: variable 'iface' set but not used
->  Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> The obvious interpretation of this is that the OS should not attempt to use
+> PCIe hotplug, PME or AER - however, the specification also notes that an
+> _OSC method is *required* for PCIe hierarchies, and experimental validation
+> with An Alternative OS indicates that it doesn't use any PCIe functionality
+> if the _OSC method is missing. That arguably means we shouldn't be using
+> MSI or extended config space, but right now our problems seem to be limited
+> to vendors being surprised when ASPM gets enabled on machines when other
+> OSs refuse to do so. So, for now, let's just disable ASPM if the _OSC
+> method doesn't exist or refuses to hand over PCIe capability control.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
-I already applied the other version to wireless-next-2.6.  I can't
-imagine what you mean to accomplish by leaving in a call to netdev_priv
-w/o assigning the result to something.
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> ---
+>  drivers/acpi/pci_root.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+> index 1af8081..7167213 100644
+> --- a/drivers/acpi/pci_root.c
+> +++ b/drivers/acpi/pci_root.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/pm.h>
+>  #include <linux/pci.h>
+>  #include <linux/pci-acpi.h>
+> +#include <linux/pci-aspm.h>
+>  #include <linux/acpi.h>
+>  #include <acpi/acpi_bus.h>
+>  #include <acpi/acpi_drivers.h>
+> @@ -576,6 +577,14 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+>  	if (flags != base_flags)
+>  		acpi_pci_osc_support(root, flags);
+>  
+> +	status = acpi_pci_osc_control_set(root->device->handle,
+> +					  OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL);
+> +
+> +	if (ACPI_FAILURE(status)) {
+> +		printk(KERN_INFO "Unable to assume PCIe control: Disabling ASPM\n");
+> +		pcie_no_aspm();
+> +	}
+> +
+>  	return 0;
+>  
+>  end:
+> 
+
