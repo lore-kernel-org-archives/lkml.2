@@ -1,486 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab0FVWpl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 18:45:41 -0400
-Received: from p01c12o145.mxlogic.net ([208.65.145.68]:49842 "EHLO
-	p01c12o145.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab0FVWpj convert rfc822-to-8bit (ORCPT
+	id S1752662Ab0FVXAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 19:00:19 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:61707 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab0FVXAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 18:45:39 -0400
-X-MXL-Hash: 4c213d130a31064c-2b444f077ab84bb7a09acc20cea92961c2d067bd
-X-MXL-Hash: 4c213d10352d13f3-0e7efa300881b341be9cb059dfb348303467cc30
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg KH <greg@kroah.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-       "ss@aao.gov.au" <ss@aao.gov.au>, Greg KH <gregkh@suse.de>
-Date: Tue, 22 Jun 2010 17:45:32 -0500
-Subject: RE: [PATCH v2] Staging: dt3155: Cleanup memory mapped i/o access
-Thread-Topic: [PATCH v2] Staging: dt3155: Cleanup memory mapped i/o access
-Thread-Index: AcsSXBpmv/6nNiBcSYyw6Ub/BO7SaQAACkmA
-Message-ID: <0D753D10438DA54287A00B027084269763716504D6@AUSP01VMBX24.collaborationhost.net>
-References: <20100504025430.GA26421@suse.de>
- <1273000031.4143.56.camel@Joe-Laptop.home>
- <0D753D10438DA54287A00B0270842697636EB83CE8@AUSP01VMBX24.collaborationhost.net>
- <20100504201207.GA7096@kroah.com>
- <0D753D10438DA54287A00B0270842697636EB83E2A@AUSP01VMBX24.collaborationhost.net>
- <20100504210229.GA21128@kroah.com>
- <0D753D10438DA54287A00B0270842697636EB83EC9@AUSP01VMBX24.collaborationhost.net>
- <0D753D10438DA54287A00B0270842697636ECB4D7B@AUSP01VMBX24.collaborationhost.net>
- <20100506202535.GA28600@kroah.com>
- <0D753D10438DA54287A00B027084269763715265FE@AUSP01VMBX24.collaborationhost.net>
- <20100622223913.GA28119@kroah.com>
-In-Reply-To: <20100622223913.GA28119@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 Jun 2010 19:00:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=chefBnZYET9SqfZ1ZRdv6xgzUv7zT254aoTi6j/rmfUJmp89mopp21fSiUjM8PMJsE
+         grDDjezFIxdXSVxgXdspakycB33rG/9r5xIprZNgBToHHdWYHsZMkpuMxkBeGnmEHcS7
+         chl3EUNFQC6/W57ns5rkDwTuSa6YnB1x6ES34=
+Date: Tue, 22 Jun 2010 16:00:36 -0700
+From: mark gross <640e9920@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       Florian Mickler <florian@mickler.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
+Message-ID: <20100622230036.GA15420@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <Pine.LNX.4.44L0.1006211814370.1687-100000@iolanthe.rowland.org>
+ <201006220040.41524.rjw@sisk.pl>
+ <201006221221.53801.rjw@sisk.pl>
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010061701)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.31]
-X-AnalysisOut: [v=1.0 c=1 a=DjL9fr-YSJ0A:10 a=yQWWgrYGNuUA:10 a=VphdPIyG4k]
-X-AnalysisOut: [EA:10 a=kj9zAlcOel0A:10 a=qS3xps/WtSuafY8lc/WARg==:17 a=i0]
-X-AnalysisOut: [0gxMtYAAAA:8 a=OdlTqyd7nAGy97Ab6gAA:9 a=eh_gYHwXwaPGrYf4oS]
-X-AnalysisOut: [gA:7 a=kaqUvH704PrCEZCwIKn1di3nAH4A:4 a=CjuIK1q_8ugA:10 a=]
-X-AnalysisOut: [x1WnkoZAwusA:10 a=0kPLrQdw3YYA:10 a=pxmhpJq4vmbSrPSV:21 a=]
-X-AnalysisOut: [f-MS76ZYepBFPaOq:21]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006221221.53801.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 22, 2010 3:39 PM, Greg KH wrote:
-> You are still doing something odd, this one doesn't apply either.  Is
-> your email client messing something up?
+On Tue, Jun 22, 2010 at 12:21:53PM +0200, Rafael J. Wysocki wrote:
+> On Tuesday, June 22, 2010, Rafael J. Wysocki wrote:
+> > On Tuesday, June 22, 2010, Alan Stern wrote:
+> > > On Mon, 21 Jun 2010, Florian Mickler wrote:
+> > > 
+> > > > > In the end you would want to have communication in both directions:  
+> > > > > suspend blockers _and_ callbacks.  Polling is bad if done too often.  
+> > > > > But I think the idea is a good one.
+> > > > 
+> > > > Actually, I'm not so shure. 
+> > > > 
+> > > > 1. you have to roundtrip whereas in the suspend_blocker scheme you have
+> > > > active annotations (i.e. no further action needed) 
+> > > 
+> > > That's why it's best to use both.  The normal case is that programs
+> > > activate and deactivate blockers by sending one-way messages to the PM
+> > > process.  The exceptional case is when the PM process is about to
+> > > initiate a suspend; that's when it does the round-trip polling.  Since
+> > > the only purpose of the polling is to avoid a race, 90% of the time it
+> > > will succeed.
+> > > 
+> > > > 2. it may not be possible for a user to determine if a wake-event is
+> > > > in-flight. you would have to somehow pass the wake-event-number with
+> > > > it, so that the userspace process could ack it properly without
+> > > > confusion. Or... I don't know of anything else... 
+> > > > 
+> > > > 	1. userspace-manager (UM) reads a number (42). 
+> > > > 
+> > > > 	2. it questions userspace program X: is it ok to suspend?
+> > > > 
+> > > > 	[please fill in how userspace program X determines to block
+> > > > 	suspend]
+> > > > 
+> > > > 	3a. UM's roundtrip ends and it proceeds to write "42" to the
+> > > > 	kernel [suspending]
+> > > > 	3b. UM's roundtrip ends and it aborts suspend, because a
+> > > > 	(userspace-)suspend-blocker got activated
+> > > > 
+> > > > I'm not shure how the userspace program could determine that there is a
+> > > > wake-event in flight. Perhaps by storing the number of last wake-event.
+> > > > But then you need per-wake-event-counters... :|
+> > > 
+> > > Rafael seems to think timeouts will fix this.  I'm not so sure.
+> > > 
+> > > > Do you have some thoughts about the wake-event-in-flight detection?
+> > > 
+> > > Not really, except for something like the original wakelock scheme in
+> > > which the kernel tells the PM core when an event is over.
+> > 
+> > But the kernel doesn't really know that, so it really can't tell the PM core
+> > anything useful.  What happens with suspend blockers is that a kernel subsystem
+> > cooperates with a user space consumer of the event to get the story straight.
+> > 
+> > However, that will only work if the user space is not buggy and doesn't crash,
+> > for example, before releasing the suspend blocker it's holding.
+> 
+> Having reconsidered that I think there's more to it.
+> 
+> Take the PCI subsystem as an example, specifically pcie_pme_handle_request().
+> This is the place where wakeup events are started, but it has no idea about
+> how they are going to be handled.  Thus in the suspend blocker scheme it would
+> need to activate a blocker, but it wouldn't be able to release it.  So, it
+> seems, we would need to associate a suspend blocker with each PCIe device
+> that can generate wakeup events and require all drivers of such devices to
+> deal with a blocker activated by someone else (PCIe PME driver in this
+> particular case).  That sounds cumbersome to say the least.
+> 
+> Moreover, even if we do that, it still doesn't solve the entire problem,
+> because the event may need to be delivered to user space and processed by it.
+> While a driver can check if user space has already read the event, it has
+> no way to detect whether or not it has finished processing it.  In fact,
+> processing an event may involve an interaction with a (human) user and there's
+> no general way by which software can figure out when the user considers the
+> event as processed.
+> 
+> It looks like user space suspend blockers only help in some special cases
+> when the user space processing of a wakeup event is simple enough, but I don't
+> think they help in general.  For an extreme example, a user may want to wake up
+> a system using wake-on-LAN to log into it, do some work and log out, so
+> effectively the initial wakeup event has not been processed entirely until the
+> user finally logs out of the system.  Now, after the system wakeup (resulting
+> from the wake-on-LAN signal) we need to give the user some time to log in, but
+> if the user doesn't do that in certain time, it may be reasonable to suspend
+> and let the user wake up the system again. 
+> 
+> Similar situation takes place when the system is woken up by a lid switch.
+> Evidently, the user has opened the laptop lid to do something, but we don't
+> even know what the user is going to do, so there's no way we can say when
+> the wakeup event is finally processed.
+> 
+> So, even if we can say when the kernel has finished processing the event
+> (although that would be complicated in the PCIe case above), I don't think
+> it's generally possible to ensure that the entire processing of a wakeup event
+> has been completed.  This leads to the question whether or not it is worth
+> trying to detect the ending of the processing of a wakeup event.
+> 
+> Now, going back to the $subject patch, I didn't really think it would be
+> suitable for opportunistic suspend, so let's focus on the "forced" suspend
+> instead.  It still has the problem that wakeup events occuring while
+> /sys/power/state is written to (or even slightly before) should cause the
+> system to cancel the suspend, but they generally won't.  With the patch
+> applied that can be avoided by (a) reading from /sys/power/wakeup_count,
+> (b) waiting for certain time (such that if a suspend event is not entirely
+> processed within that time, it's worth suspending and waking up the
+> system again) and (c) writing to /sys/power/wakeup_count right before writing
+> to /sys/power/state (where the latter is only done if the former succeeds).
 >
-> strange.
+This is what thought was the problem your idea as trying to deal with.
 
-Hmm. I thought I had that worked out since I haven't had any problems lately.
+--mgross
 
-Can you please try this one?
-
----
-
-The macros ReadMReg and WriteMReg are really just private versions of
-the kernel's readl and writel functions.  Use the kernel's functions
-instead.  And since ioremap returns a (void __iomem *) not a (u8 *),
-change all the uses of dt3155_lbase to reflect this.
-
-While here, make dt3155_lbase static since it is only used in the
-dt3155_drv.c file.  Also, remove the global variable dt3155_bbase
-since it is not used anywhere in the code.
-
-Where is makes sense, create a local 'mmio' variable instead of using
-dt3155_lbase[minor] to make the code more readable.
-
-This change also affects the {Read|Write}I2C functions so they are
-also modified as needed.
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Scott Smedley <ss@aao.gov.au>
-
----
-
-V2 - rebased to next-20100621
-
-diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
-index dcd3849..88c9e59 100644
---- a/drivers/staging/dt3155/dt3155_drv.c
-+++ b/drivers/staging/dt3155/dt3155_drv.c
-@@ -64,8 +64,8 @@ extern void printques(int);
- #include <linux/poll.h>
- #include <linux/sched.h>
- #include <linux/smp_lock.h>
-+#include <linux/io.h>
-
--#include <asm/io.h>
- #include <asm/uaccess.h>
-
- #include "dt3155.h"
-@@ -112,14 +112,12 @@ int dt3155_major = 0;
- struct dt3155_status dt3155_status[MAXBOARDS];
-
- /* kernel logical address of the board */
--u8 *dt3155_lbase[MAXBOARDS] = { NULL
-+static void __iomem *dt3155_lbase[MAXBOARDS] = { NULL
- #if MAXBOARDS == 2
-                                      , NULL
- #endif
- };
--/* DT3155 registers              */
--u8 *dt3155_bbase = NULL;                 /* kernel logical address of the *
--                                          * buffer region                 */
-+
- u32  dt3155_dev_open[MAXBOARDS] = {0
- #if MAXBOARDS == 2
-                                       , 0
-@@ -139,11 +137,11 @@ static void quick_stop (int minor)
- {
-   // TODO: scott was here
- #if 1
--  ReadMReg((dt3155_lbase[minor] + INT_CSR), int_csr_r.reg);
-+  int_csr_r.reg = readl(dt3155_lbase[minor] + INT_CSR);
-   /* disable interrupts */
-   int_csr_r.fld.FLD_END_EVE_EN = 0;
-   int_csr_r.fld.FLD_END_ODD_EN = 0;
--  WriteMReg((dt3155_lbase[minor] + INT_CSR), int_csr_r.reg);
-+  writel(int_csr_r.reg, dt3155_lbase[minor] + INT_CSR);
-
-   dt3155_status[minor].state &= ~(DT3155_STATE_STOP|0xff);
-   /* mark the system stopped: */
-@@ -171,6 +169,7 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-   int    index;
-   unsigned long flags;
-   u32 buffer_addr;
-+  void __iomem *mmio;
-
-   /* find out who issued the interrupt */
-   for (index = 0; index < ndevices; index++) {
-@@ -187,8 +186,10 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-     return;
-   }
-
-+  mmio = dt3155_lbase[minor];
-+
-   /* Check for corruption and set a flag if so */
--  ReadMReg((dt3155_lbase[minor] + CSR1), csr1_r.reg);
-+  csr1_r.reg = readl(mmio + CSR1);
-
-   if ((csr1_r.fld.FLD_CRPT_EVE) || (csr1_r.fld.FLD_CRPT_ODD))
-     {
-@@ -200,7 +201,7 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-       return;
-     }
-
--  ReadMReg((dt3155_lbase[minor] + INT_CSR), int_csr_r.reg);
-+  int_csr_r.reg = readl(mmio + INT_CSR);
-
-   /* Handle the even field ... */
-   if (int_csr_r.fld.FLD_END_EVE)
-@@ -211,7 +212,7 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-          dt3155_fbuffer[minor]->frame_count++;
-        }
-
--      ReadI2C(dt3155_lbase[minor], EVEN_CSR, &i2c_even_csr.reg);
-+      ReadI2C(mmio, EVEN_CSR, &i2c_even_csr.reg);
-
-       /* Clear the interrupt? */
-       int_csr_r.fld.FLD_END_EVE = 1;
-@@ -231,7 +232,7 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-            }
-        }
-
--      WriteMReg((dt3155_lbase[minor] + INT_CSR), int_csr_r.reg);
-+      writel(int_csr_r.reg, mmio + INT_CSR);
-
-       /* Set up next DMA if we are doing FIELDS */
-       if ((dt3155_status[minor].state & DT3155_STATE_MODE) ==
-@@ -249,7 +250,7 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-
-          /* Set up the DMA address for the next field */
-          local_irq_restore(flags);
--         WriteMReg((dt3155_lbase[minor] + ODD_DMA_START), buffer_addr);
-+         writel(buffer_addr, mmio + ODD_DMA_START);
-        }
-
-       /* Check for errors. */
-@@ -257,7 +258,7 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-       if (i2c_even_csr.fld.ERROR_EVE)
-        dt3155_errno = DT_ERR_OVERRUN;
-
--      WriteI2C(dt3155_lbase[minor], EVEN_CSR, i2c_even_csr.reg);
-+      WriteI2C(mmio, EVEN_CSR, i2c_even_csr.reg);
-
-       /* Note that we actually saw an even field meaning  */
-       /* that subsequent odd field complete the frame     */
-@@ -274,7 +275,7 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-   /* ... now handle the odd field */
-   if (int_csr_r.fld.FLD_END_ODD)
-     {
--      ReadI2C(dt3155_lbase[minor], ODD_CSR, &i2c_odd_csr.reg);
-+      ReadI2C(mmio, ODD_CSR, &i2c_odd_csr.reg);
-
-       /* Clear the interrupt? */
-       int_csr_r.fld.FLD_END_ODD = 1;
-@@ -310,7 +311,7 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-            }
-        }
-
--      WriteMReg((dt3155_lbase[minor] + INT_CSR), int_csr_r.reg);
-+      writel(int_csr_r.reg, mmio + INT_CSR);
-
-       /* if the odd field has been acquired, then     */
-       /* change the next dma location for both fields */
-@@ -387,14 +388,14 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-       if ((dt3155_status[minor].state & DT3155_STATE_MODE) ==
-           DT3155_STATE_FLD)
-        {
--         WriteMReg((dt3155_lbase[minor] + EVEN_DMA_START), buffer_addr);
-+         writel(buffer_addr, mmio + EVEN_DMA_START);
-        }
-       else
-        {
--         WriteMReg((dt3155_lbase[minor] + EVEN_DMA_START), buffer_addr);
-+         writel(buffer_addr, mmio + EVEN_DMA_START);
-
--         WriteMReg((dt3155_lbase[minor] + ODD_DMA_START), buffer_addr
--                   + dt3155_status[minor].config.cols);
-+         writel(buffer_addr + dt3155_status[minor].config.cols,
-+               mmio + ODD_DMA_START);
-        }
-
-       /* Do error checking */
-@@ -402,7 +403,7 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
-       if (i2c_odd_csr.fld.ERROR_ODD)
-        dt3155_errno = DT_ERR_OVERRUN;
-
--      WriteI2C(dt3155_lbase[minor], ODD_CSR, i2c_odd_csr.reg);
-+      WriteI2C(mmio, ODD_CSR, i2c_odd_csr.reg);
-
-       return;
-     }
-@@ -419,6 +420,7 @@ static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
- static void dt3155_init_isr(int minor)
- {
-   const u32 stride =  dt3155_status[minor].config.cols;
-+  void __iomem *mmio = dt3155_lbase[minor];
-
-   switch (dt3155_status[minor].state & DT3155_STATE_MODE)
-     {
-@@ -429,12 +431,9 @@ static void dt3155_init_isr(int minor)
-        even_dma_stride_r = 0;
-        odd_dma_stride_r  = 0;
-
--       WriteMReg((dt3155_lbase[minor] + EVEN_DMA_START),
--                 even_dma_start_r);
--       WriteMReg((dt3155_lbase[minor] + EVEN_DMA_STRIDE),
--                 even_dma_stride_r);
--       WriteMReg((dt3155_lbase[minor] + ODD_DMA_STRIDE),
--                 odd_dma_stride_r);
-+       writel(even_dma_start_r, mmio + EVEN_DMA_START);
-+       writel(even_dma_stride_r, mmio + EVEN_DMA_STRIDE);
-+       writel(odd_dma_stride_r, mmio + ODD_DMA_STRIDE);
-        break;
-       }
-
-@@ -447,14 +446,10 @@ static void dt3155_init_isr(int minor)
-        even_dma_stride_r =  stride;
-        odd_dma_stride_r  =  stride;
-
--       WriteMReg((dt3155_lbase[minor] + EVEN_DMA_START),
--                 even_dma_start_r);
--       WriteMReg((dt3155_lbase[minor] + ODD_DMA_START),
--                 odd_dma_start_r);
--       WriteMReg((dt3155_lbase[minor] + EVEN_DMA_STRIDE),
--                 even_dma_stride_r);
--       WriteMReg((dt3155_lbase[minor] + ODD_DMA_STRIDE),
--                 odd_dma_stride_r);
-+       writel(even_dma_start_r, mmio + EVEN_DMA_START);
-+       writel(odd_dma_start_r, mmio + ODD_DMA_START);
-+       writel(even_dma_stride_r, mmio + EVEN_DMA_STRIDE);
-+       writel(odd_dma_stride_r, mmio + ODD_DMA_STRIDE);
-        break;
-       }
-     }
-@@ -462,9 +457,9 @@ static void dt3155_init_isr(int minor)
-   /* 50/60 Hz should be set before this point but let's make sure it is */
-   /* right anyway */
-
--  ReadI2C(dt3155_lbase[minor], CSR2, &i2c_csr2.reg);
-+  ReadI2C(mmio, CSR2, &i2c_csr2.reg);
-   i2c_csr2.fld.HZ50 = FORMAT50HZ;
--  WriteI2C(dt3155_lbase[minor], CSR2, i2c_csr2.reg);
-+  WriteI2C(mmio, CSR2, i2c_csr2.reg);
-
-   /* enable busmaster chip, clear flags */
-
-@@ -484,7 +479,7 @@ static void dt3155_init_isr(int minor)
-   csr1_r.fld.FLD_CRPT_EVE   = 1; /* writing a 1 clears flags */
-   csr1_r.fld.FLD_CRPT_ODD   = 1;
-
--  WriteMReg((dt3155_lbase[minor] + CSR1),csr1_r.reg);
-+  writel(csr1_r.reg, mmio + CSR1);
-
-   /* Enable interrupts at the end of each field */
-
-@@ -493,14 +488,14 @@ static void dt3155_init_isr(int minor)
-   int_csr_r.fld.FLD_END_ODD_EN = 1;
-   int_csr_r.fld.FLD_START_EN = 0;
-
--  WriteMReg((dt3155_lbase[minor] + INT_CSR), int_csr_r.reg);
-+  writel(int_csr_r.reg, mmio + INT_CSR);
-
-   /* start internal BUSY bits */
-
--  ReadI2C(dt3155_lbase[minor], CSR2, &i2c_csr2.reg);
-+  ReadI2C(mmio, CSR2, &i2c_csr2.reg);
-   i2c_csr2.fld.BUSY_ODD  = 1;
-   i2c_csr2.fld.BUSY_EVE  = 1;
--  WriteI2C(dt3155_lbase[minor], CSR2, i2c_csr2.reg);
-+  WriteI2C(mmio, CSR2, i2c_csr2.reg);
-
-   /* Now its up to the interrupt routine!! */
-
-@@ -709,7 +704,7 @@ static int dt3155_open(struct inode* inode, struct file* filep)
-
-   /* Disable ALL interrupts */
-   int_csr_r.reg = 0;
--  WriteMReg((dt3155_lbase[minor] + INT_CSR), int_csr_r.reg);
-+  writel(int_csr_r.reg, dt3155_lbase[minor] + INT_CSR);
-
-   init_waitqueue_head(&(dt3155_read_wait_queue[minor]));
-
-@@ -911,7 +906,7 @@ static int find_PCI (void)
-
-       /* Remap the base address to a logical address through which we
-        * can access it. */
--      dt3155_lbase[pci_index - 1] = ioremap(base,PCI_PAGE_SIZE);
-+      dt3155_lbase[pci_index - 1] = ioremap(base, PCI_PAGE_SIZE);
-       dt3155_status[pci_index - 1].reg_addr = base;
-       DT_3155_DEBUG_MSG("DT3155: New logical address is %p \n",
-                        dt3155_lbase[pci_index-1]);
-@@ -1036,7 +1031,7 @@ int init_module(void)
-   int_csr_r.reg = 0;
-   for( index = 0;  index < ndevices;  index++)
-     {
--      WriteMReg((dt3155_lbase[index] + INT_CSR), int_csr_r.reg);
-+      writel(int_csr_r.reg, dt3155_lbase[index] + INT_CSR);
-       if(dt3155_status[index].device_installed)
-        {
-          /*
-diff --git a/drivers/staging/dt3155/dt3155_drv.h b/drivers/staging/dt3155/dt3155_drv.h
-index 95e68c3..c447c61 100644
---- a/drivers/staging/dt3155/dt3155_drv.h
-+++ b/drivers/staging/dt3155/dt3155_drv.h
-@@ -24,12 +24,6 @@ MA 02111-1307 USA
- #ifndef DT3155_DRV_INC
- #define DT3155_DRV_INC
-
--/* kernel logical address of the frame grabbers */
--extern u8 *dt3155_lbase[MAXBOARDS];
--
--/* kernel logical address of ram buffer */
--extern u8 *dt3155_bbase;
--
- #ifdef __KERNEL__
- #include <linux/wait.h>
-
-diff --git a/drivers/staging/dt3155/dt3155_io.c b/drivers/staging/dt3155/dt3155_io.c
-index 7792e71..485cc5e 100644
---- a/drivers/staging/dt3155/dt3155_io.c
-+++ b/drivers/staging/dt3155/dt3155_io.c
-@@ -21,6 +21,8 @@
-  */
-
- #include <linux/delay.h>
-+#include <linux/io.h>
-+
- #include "dt3155.h"
- #include "dt3155_io.h"
- #include "dt3155_drv.h"
-@@ -75,13 +77,13 @@ u8 i2c_pm_lut_data;
-  *
-  * This function handles read/write timing and r/w timeout error
-  */
--static int wait_ibsyclr(u8 *lpReg)
-+static int wait_ibsyclr(void __iomem *mmio)
- {
-        /* wait 100 microseconds */
-        udelay(100L);
-        /* __delay(loops_per_sec/10000); */
-
--       ReadMReg(lpReg + IIC_CSR2, iic_csr2_r.reg);
-+       iic_csr2_r.reg = readl(mmio + IIC_CSR2);
-        if (iic_csr2_r.fld.NEW_CYCLE) {
-                /* if NEW_CYCLE didn't clear */
-                /* TIMEOUT ERROR */
-@@ -101,11 +103,11 @@ static int wait_ibsyclr(u8 *lpReg)
-  * 2nd parameter is reg. index;
-  * 3rd is value to be written
-  */
--int WriteI2C(u8 *lpReg, u_short wIregIndex, u8 byVal)
-+int WriteI2C(void __iomem *mmio, u_short wIregIndex, u8 byVal)
- {
-        /* read 32 bit IIC_CSR2 register data into union */
-
--       ReadMReg((lpReg + IIC_CSR2), iic_csr2_r.reg);
-+       iic_csr2_r.reg = readl(mmio + IIC_CSR2);
-
-        /* for write operation */
-        iic_csr2_r.fld.DIR_RD      = 0;
-@@ -117,10 +119,10 @@ int WriteI2C(u8 *lpReg, u_short wIregIndex, u8 byVal)
-        iic_csr2_r.fld.NEW_CYCLE   = 1;
-
-        /* xfer union data into 32 bit IIC_CSR2 register */
--       WriteMReg((lpReg + IIC_CSR2), iic_csr2_r.reg);
-+       writel(iic_csr2_r.reg, mmio + IIC_CSR2);
-
-        /* wait for IIC cycle to finish */
--       return wait_ibsyclr(lpReg);
-+       return wait_ibsyclr(mmio);
- }
-
- /*
-@@ -132,12 +134,12 @@ int WriteI2C(u8 *lpReg, u_short wIregIndex, u8 byVal)
-  * 2nd parameter is reg. index;
-  * 3rd is adrs of value to be read
-  */
--int ReadI2C(u8 *lpReg, u_short wIregIndex, u8 *byVal)
-+int ReadI2C(void __iomem *mmio, u_short wIregIndex, u8 *byVal)
- {
-        int writestat;  /* status for return */
-
-        /*  read 32 bit IIC_CSR2 register data into union */
--       ReadMReg((lpReg + IIC_CSR2), iic_csr2_r.reg);
-+       iic_csr2_r.reg = readl(mmio + IIC_CSR2);
-
-        /*  for read operation */
-        iic_csr2_r.fld.DIR_RD     = 1;
-@@ -149,14 +151,14 @@ int ReadI2C(u8 *lpReg, u_short wIregIndex, u8 *byVal)
-        iic_csr2_r.fld.NEW_CYCLE  = 1;
-
-        /*  xfer union's data into 32 bit IIC_CSR2 register */
--       WriteMReg((lpReg + IIC_CSR2), iic_csr2_r.reg);
-+       writel(iic_csr2_r.reg, mmio + IIC_CSR2);
-
-        /* wait for IIC cycle to finish */
--       writestat = wait_ibsyclr(lpReg);
-+       writestat = wait_ibsyclr(mmio);
-
-        /* Next 2 commands read 32 bit IIC_CSR1 register's data into union */
-        /* first read data is in IIC_CSR1 */
--       ReadMReg((lpReg + IIC_CSR1), iic_csr1_r.reg);
-+       iic_csr1_r.reg = readl(mmio + IIC_CSR1);
-
-        /* now get data u8 out of register */
-        *byVal = (u8) iic_csr1_r.fld.RD_DATA;
-diff --git a/drivers/staging/dt3155/dt3155_io.h b/drivers/staging/dt3155/dt3155_io.h
-index d1a2510..a9aa754 100644
---- a/drivers/staging/dt3155/dt3155_io.h
-+++ b/drivers/staging/dt3155/dt3155_io.h
-@@ -34,11 +34,6 @@ MA 02111-1307 USA
- #ifndef DT3155_IO_INC
- #define DT3155_IO_INC
-
--/* macros to access registers */
--
--#define WriteMReg(Address, Data)       (*((u32 *)(Address)) = Data)
--#define ReadMReg(Address, Data)                (Data = *((u32 *)(Address)))
--
- /***************** 32 bit register globals  **************/
-
- /*  offsets for 32-bit memory mapped registers */
-@@ -352,7 +347,7 @@ extern u8                   i2c_pm_lut_data;
-
- /* access 8-bit IIC registers */
-
--extern int ReadI2C(u8 *lpReg, u_short wIregIndex, u8 *byVal);
--extern int WriteI2C(u8 *lpReg, u_short wIregIndex, u8 byVal);
-+extern int ReadI2C(void __iomem *mmio, u_short wIregIndex, u8 *byVal);
-+extern int WriteI2C(void __iomem *mmio, u_short wIregIndex, u8 byVal);
-
- #endif
+ 
