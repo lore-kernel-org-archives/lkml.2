@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab0FVRcM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 13:32:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33073 "EHLO
+	id S1759267Ab0FVRbm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 13:31:42 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33079 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756678Ab0FVR2p (ORCPT
+	with ESMTP id S1758685Ab0FVR2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 13:28:45 -0400
+	Tue, 22 Jun 2010 13:28:48 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,52 +16,119 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 04/25] lmb: Export LMB_ERROR again
-Date: Tue, 22 Jun 2010 10:26:33 -0700
-Message-Id: <1277227614-11581-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 13/25] x86, lmb: Add lmb_register_active_regions() and lmb_hole_size()
+Date: Tue, 22 Jun 2010 10:26:42 -0700
+Message-Id: <1277227614-11581-14-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
 References: <1277227614-11581-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
 X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4C20F2B3.01A0,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4C20F2AF.00CE,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-will used by x86 lmb_find_in_range_node and nobootmem replacement
+lmb_register_active_regions() will be used to fill early_node_map,
+the result will be lmb.memory.region AND numa data
+
+lmb_hole_size will be used to find hole size on lmb.memory.region
+with specified range.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/lmb.h |    1 +
- lib/lmb.c           |    2 --
- 2 files changed, 1 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/lmb.h |    4 ++
+ arch/x86/mm/lmb.c          |   67 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 71 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index 1e96224..eb8a5a3 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -19,6 +19,7 @@
- #include <asm/lmb.h>
+diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
+index 63bb597..763fb52 100644
+--- a/arch/x86/include/asm/lmb.h
++++ b/arch/x86/include/asm/lmb.h
+@@ -11,4 +11,8 @@ void lmb_free_range(u64 start, u64 end);
+ struct range;
+ int get_free_all_memory_range(struct range **rangep, int nodeid);
  
- #define INIT_LMB_REGIONS 128
-+#define LMB_ERROR	(~(phys_addr_t)0)
++void lmb_register_active_regions(int nid, unsigned long start_pfn,
++					 unsigned long last_pfn);
++u64 lmb_hole_size(u64 start, u64 end);
++
+ #endif
+diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+index 3954103..b7e42bc 100644
+--- a/arch/x86/mm/lmb.c
++++ b/arch/x86/mm/lmb.c
+@@ -238,3 +238,70 @@ void __init lmb_free_range(u64 start, u64 end)
  
- struct lmb_region {
- 	phys_addr_t base;
-diff --git a/lib/lmb.c b/lib/lmb.c
-index 7a6e11a..2aaeeec 100644
---- a/lib/lmb.c
-+++ b/lib/lmb.c
-@@ -27,8 +27,6 @@ int lmb_can_resize;
- static struct lmb_region lmb_memory_init_regions[INIT_LMB_REGIONS + 1];
- struct lmb_region lmb_reserved_init_regions[INIT_LMB_REGIONS + 1];
- 
--#define LMB_ERROR	(~(phys_addr_t)0)
--
- /* inline so we don't get a warning when pr_debug is compiled out */
- static inline const char *lmb_type_name(struct lmb_type *type)
- {
+ 	lmb_free(start, end - start);
+ }
++
++/*
++ * Finds an active region in the address range from start_pfn to last_pfn and
++ * returns its range in ei_startpfn and ei_endpfn for the lmb entry.
++ */
++static int __init lmb_find_active_region(const struct lmb_region *ei,
++				  unsigned long start_pfn,
++				  unsigned long last_pfn,
++				  unsigned long *ei_startpfn,
++				  unsigned long *ei_endpfn)
++{
++	u64 align = PAGE_SIZE;
++
++	*ei_startpfn = round_up(ei->base, align) >> PAGE_SHIFT;
++	*ei_endpfn = round_down(ei->base + ei->size, align) >> PAGE_SHIFT;
++
++	/* Skip map entries smaller than a page */
++	if (*ei_startpfn >= *ei_endpfn)
++		return 0;
++
++	/* Skip if map is outside the node */
++	if (*ei_endpfn <= start_pfn || *ei_startpfn >= last_pfn)
++		return 0;
++
++	/* Check for overlaps */
++	if (*ei_startpfn < start_pfn)
++		*ei_startpfn = start_pfn;
++	if (*ei_endpfn > last_pfn)
++		*ei_endpfn = last_pfn;
++
++	return 1;
++}
++
++/* Walk the lmb.memory map and register active regions within a node */
++void __init lmb_register_active_regions(int nid, unsigned long start_pfn,
++					 unsigned long last_pfn)
++{
++	unsigned long ei_startpfn;
++	unsigned long ei_endpfn;
++	struct lmb_region *r;
++
++	for_each_lmb(memory, r)
++		if (lmb_find_active_region(r, start_pfn, last_pfn,
++					   &ei_startpfn, &ei_endpfn))
++			add_active_range(nid, ei_startpfn, ei_endpfn);
++}
++
++/*
++ * Find the hole size (in bytes) in the memory range.
++ * @start: starting address of the memory range to scan
++ * @end: ending address of the memory range to scan
++ */
++u64 __init lmb_hole_size(u64 start, u64 end)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long last_pfn = end >> PAGE_SHIFT;
++	unsigned long ei_startpfn, ei_endpfn, ram = 0;
++	struct lmb_region *r;
++
++	for_each_lmb(memory, r)
++		if (lmb_find_active_region(r, start_pfn, last_pfn,
++					   &ei_startpfn, &ei_endpfn))
++			ram += ei_endpfn - ei_startpfn;
++
++	return end - start - ((u64)ram << PAGE_SHIFT);
++}
++
 -- 
 1.6.4.2
 
