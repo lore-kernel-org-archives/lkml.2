@@ -1,114 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab0FVR0K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 13:26:10 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45118 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756012Ab0FVR0I (ORCPT
+	id S1757975Ab0FVR2K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 13:28:10 -0400
+Received: from imap.ru.mvista.com ([213.79.90.228]:10556 "EHLO
+	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756892Ab0FVR2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 13:26:08 -0400
-Subject: Re: bnx2 fails to compile on parisc because of missing
- get_dma_ops()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: lethal@linux-sh.org, davem@davemloft.net, mchan@broadcom.com,
-       vapier@gentoo.org, netdev@vger.kernel.org, linux-parisc@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100622152823R.fujita.tomonori@lab.ntt.co.jp>
-References: <20100617.073653.193708702.davem@davemloft.net>
-	 <20100617234520S.fujita.tomonori@lab.ntt.co.jp>
-	 <20100617153051.GB8964@linux-sh.org>
-	 <20100622152823R.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Jun 2010 12:26:04 -0500
-Message-ID: <1277227564.9374.7.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Jun 2010 13:28:06 -0400
+Date: Tue, 22 Jun 2010 20:57:42 +0400
+From: Anton Vorontsov <avorontsov@mvista.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Barry Song <21cnbao@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+       Mike Frysinger <vapier.adi@gmail.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Artem Bityutskiy <dedekind1@gmail.com>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, linux-mtd@lists.infradead.org,
+       uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH 2/2] mtd: m25p80: Make jedec_probe() return proper errno
+ values
+Message-ID: <20100622165742.GB20699@oksana.dev.rtsoft.ru>
+References: <20100622165545.GA10255@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100622165545.GA10255@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-22 at 15:30 +0900, FUJITA Tomonori wrote:
-> On Fri, 18 Jun 2010 00:30:51 +0900
-> Paul Mundt <lethal@linux-sh.org> wrote:
-> 
-> > On Thu, Jun 17, 2010 at 11:50:35PM +0900, FUJITA Tomonori wrote:
-> > > On Thu, 17 Jun 2010 07:36:53 -0700 (PDT)
-> > > David Miller <davem@davemloft.net> wrote:
-> > > 
-> > > > From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> > > > Date: Thu, 17 Jun 2010 21:21:13 +0900
-> > > > 
-> > > > > On Wed, 16 Jun 2010 23:24:44 -0700
-> > > > > "Michael Chan" <mchan@broadcom.com> wrote:
-> > > > > 
-> > > > >> David, why is dma_is_consistent() always returning 1 on sparc?  The
-> > > > >> streaming DMA is not consistent.
-> > > > > 
-> > > > > I think that there are some confusion about dma_is_consistent(). Some
-> > > > > architectures think that dma_is_consistent() is supposed to return 1
-> > > > > if they can allocate coherent memory (note that some architectures
-> > > > > can't allocate coherent memory).
-> > > > 
-> > > > Right, and that's why it's defined this way.
-> > > > 
-> > > > If the desired meaning is different, just me know and I'll fix the
-> > > > sparc definition.
-> > > 
-> > > I think that there are some other architectures do the same. We need
-> > > to make sure that all the architectures define dma_is_consistent() in
-> > > the same meaning if drivers need it. However, I'm not sure we really
-> > > need dma_is_consistent(). There is only one user of it (and I think we
-> > > could remove it).
-> > > 
-> > > In the bnx2 case, we can simply prefetch on all the archs (or just
-> > > remove the optimization).
-> > 
-> > I think its worthwhile keeping, especially since the consistency can vary
-> > on a per struct device level. If there's a benefit with these sorts of
-> > prefetch micro-optimizations in drivers when it doesn't cost us that much
-> > to provide the hint, I don't really see the harm. If dma_is_consistent()
-> > is suddenly supposed to take on other meanings, or it's supposed to mean
-> > something entirely different, then this is something we should deal with
-> > separately.
-> > 
-> > I don't see any harm in letting drivers know whether we can support
-> > consistent DMA allocs for a given struct device or not though, even if
-> > the micro-optimization is marginal at best.
-> 
-> I'm happier with exporting less DMA APIs to drivers because looks like
-> new original ways to use the APIs wrongly can be always invented.
-> 
-> 
-> > At least I've conditionalized the definition on SH, and it seems other
-> > archictures have done so too. It's not clear what we'd gain from throwing
-> 
-> >From a quick look, except for SH and POWERPC (and always-coherent
-> architectures), everyone does differently?
-> 
-> There are architectures that need to turn off the CPU cache for
-> coherent memory, I can't find none of them that see if an address is
-> coherent or not in dma_is_consistent().
+spi_write_then_read() may return its own return codes (e.g. -EIO),
+so let's propagate the value down to the probe().
 
-Yes, I fear ... parisc.  We have a class of machines where this is the
-only way (and we also have a class of machines where the cache disable
-doesn't work properly and we can't manufacture coherent memory at all).
-All our pa2.0 systems are fully integrated between the iommu cache and
-the CPU cache, so they can manufacture coherent memory properly, but the
-pa1.0 systems are a mixed bag of dirty tricks.
+Also, remove jedec == 0 check, it isn't needed as nowadays we use
+dedicated SPI device IDs for non-JEDEC flashes.
 
-> As I wrote, there is only one user of this API and we can remove it
-> easily. Then I'm not sure it's worth fixing dma_is_consistent() in
-> many architectures. I prefer to add this to
-> feature-removal-schedule.txt to see if driver writers oppose.
+Suggested-by: Barry Song <21cnbao@gmail.com>
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+---
 
-Let me check our two drivers: lasi and 53c700; they're the only ones we
-support on the architecture that can't do any coherence.  I think we
-don't need to tell because the dma_sync_cache calls which replace
-coherent memory handling are indirected on the platform so we don't need
-a global dma_is_coherent() flag.
+This is for 2.6.36.
 
-James
+ drivers/mtd/devices/m25p80.c |   18 ++++++------------
+ 1 files changed, 6 insertions(+), 12 deletions(-)
 
-
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index a610ca9..7bf5c45 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -16,6 +16,8 @@
+  */
+ 
+ #include <linux/init.h>
++#include <linux/err.h>
++#include <linux/errno.h>
+ #include <linux/module.h>
+ #include <linux/device.h>
+ #include <linux/interrupt.h>
+@@ -733,7 +735,7 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)
+ 	if (tmp < 0) {
+ 		DEBUG(MTD_DEBUG_LEVEL0, "%s: error %d reading JEDEC ID\n",
+ 			dev_name(&spi->dev), tmp);
+-		return NULL;
++		return ERR_PTR(tmp);
+ 	}
+ 	jedec = id[0];
+ 	jedec = jedec << 8;
+@@ -741,14 +743,6 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)
+ 	jedec = jedec << 8;
+ 	jedec |= id[2];
+ 
+-	/*
+-	 * Some chips (like Numonyx M25P80) have JEDEC and non-JEDEC variants,
+-	 * which depend on technology process. Officially RDID command doesn't
+-	 * exist for non-JEDEC chips, but for compatibility they return ID 0.
+-	 */
+-	if (jedec == 0)
+-		return NULL;
+-
+ 	ext_jedec = id[3] << 8 | id[4];
+ 
+ 	for (tmp = 0; tmp < ARRAY_SIZE(m25p_ids) - 1; tmp++) {
+@@ -759,7 +753,7 @@ static const struct spi_device_id *__devinit jedec_probe(struct spi_device *spi)
+ 			return &m25p_ids[tmp];
+ 		}
+ 	}
+-	return NULL;
++	return ERR_PTR(-ENODEV);
+ }
+ 
+ 
+@@ -804,8 +798,8 @@ static int __devinit m25p_probe(struct spi_device *spi)
+ 		const struct spi_device_id *jid;
+ 
+ 		jid = jedec_probe(spi);
+-		if (!jid) {
+-			return -ENODEV;
++		if (IS_ERR(jid)) {
++			return PTR_ERR(jid);
+ 		} else if (jid != id) {
+ 			/*
+ 			 * JEDEC knows better, so overwrite platform ID. We
+-- 
+1.7.0.5
