@@ -1,95 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536Ab0FVEnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 00:43:31 -0400
-Received: from tango.tkos.co.il ([62.219.50.35]:51870 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969Ab0FVEna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 00:43:30 -0400
-Date: Tue, 22 Jun 2010 07:43:10 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Ben Herrenchmidt <benh@kernel.crashing.org>,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] Add a common struct clk
-Message-ID: <20100622044310.GB26865@jasper.tkos.co.il>
-References: <1277098513.947165.104554431018.0.gpush@pororo>
- <1277098513.947633.945838133095.1.gpush@pororo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277098513.947633.945838133095.1.gpush@pororo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751770Ab0FVErG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 00:47:06 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:50994 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750924Ab0FVErE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 00:47:04 -0400
+X-Sasl-enc: 8HBN1t0KGEw1EAP744NFl/1O1WdYHTLeuxZ1DQ9mIYd0 1277182005
+Subject: Re: [autofs] [PATCH 04/38] autofs4: Save autofs trigger's vfsmount
+ in super block info
+From: Ian Kent <raven@themaw.net>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, vaurora@redhat.com, autofs@linux.kernel.org,
+       linux-kernel@vger.kernel.org, hch@infradead.org,
+       linux-fsdevel@vger.kernel.org, jblunck@suse.de
+In-Reply-To: <E1OQghj-0001Bt-RU@pomaz-ex.szeredi.hu>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
+	 <1276627208-17242-5-git-send-email-vaurora@redhat.com>
+	 <1276661043.2339.35.camel@localhost> <1277091579.3827.9.camel@localhost>
+	 <E1OQghj-0001Bt-RU@pomaz-ex.szeredi.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Jun 2010 12:46:39 +0800
+Message-ID: <1277181999.2829.2.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeremy,
+On Mon, 2010-06-21 at 15:06 +0200, Miklos Szeredi wrote:
+> On Mon, 21 Jun 2010, Ian Kent wrote:
+> > On Wed, 2010-06-16 at 12:04 +0800, Ian Kent wrote:
+> > > On Tue, 2010-06-15 at 11:39 -0700, Valerie Aurora wrote:
+> > > > From: Jan Blunck <jblunck@suse.de>
+> > > > 
+> > > > XXX - This is broken and included just to make union mounts work.  See
+> > > > discussion at:
+> > > > 
+> > > > http://kerneltrap.org/mailarchive/linux-fsdevel/2010/1/15/6708053/thread
+> > > 
+> > > Instead of saving the vfsmount we could save a pointer to the dentry of
+> > > the mount point in the autofs super block info struct. I think that's
+> > > the bit I don't have so it would be sufficient for a lookup_mnt() for
+> > > the needed vfsmount in ->follow_mount().
+> > > 
+> > > Objections?
+> > > Suggestions?
+> > 
+> > No comments so far.
+> > 
+> > Before I dive into testing if this actually does what I need, can I get
+> > an "in principal" ack or nack for the patch so union mounts can move on
+> > please?
+> > 
+> > Note that this patch hasn't even been compile tested so the point is to
+> > decide whether it is worth going ahead with it.
+> 
+> mnt_mountpoint is NULL at the point you try to save it, so this is not
+> going to work.
+> 
 
-On Mon, Jun 21, 2010 at 01:35:13PM +0800, Jeremy Kerr wrote:
-> We currently have 21 definitions of struct clk in the ARM architecture,
-> each defined on a per-platform basis. This makes it difficult to define
-> platform- (or architecture-) independent clock sources without making
-> assumptions about struct clk, and impossible to compile two
-> platforms with different struct clks into a single image.
-> 
-> This change is an effort to unify struct clk where possible, by defining
-> a common struct clk, containing a set of clock operations. Different
-> clock implementations can set their own operations, and have a standard
-> interface for generic code. The callback interface is exposed to the
-> kernel proper, while the clock implementations only need to be seen by
-> the platform internals.
-> 
-> This allows us to share clock code among platforms, and makes it
-> possible to dynamically create clock devices in platform-independent
-> code.
-> 
-> Platforms can enable the generic struct clock through
-> CONFIG_USE_COMMON_STRUCT_CLK. In this case, the clock infrastructure
-> consists of a common struct clk:
-> 
-> struct clk {
-> 	const struct clk_ops	*ops;
-> 	unsigned int		enable_count;
-> 	struct mutex		mutex;
-> };
-> 
-> And a set of clock operations (defined per type of clock):
-> 
-> struct clk_operations {
+What about this approach then?
 
-That's clk_ops above, and in the code.
 
->        int             (*enable)(struct clk *);
->        void            (*disable)(struct clk *);
->        unsigned long   (*get_rate)(struct clk *);
->        [...]
-> };
-> 
-> To define a hardware-specific clock, machine code can "subclass" the
-> struct clock into a new struct (adding any device-specific data), and
-> provide a set of operations:
-> 
-> struct clk_foo {
-> 	struct clk	clk;
-> 	void __iomem	*some_register;
-> };
-> 
-> struct clk_operations clk_foo_ops = {
+autofs4 - lookup vfsmount in follow_link()
 
-Ditto.
+From: Ian Kent <raven@themaw.net>
 
-> 	.get_rate = clk_foo_get_rate,
-> };
-> 
-> The common clock definitions are based on a development patch from Ben
-> Herrenschmidt <benh@kernel.crashing.org>.
-> 
-> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+Adapted from the original patch from Jan Blunck <jblunck@suse.de>.
 
-baruch
+Original commit message:
 
--- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+This is a bugfix/replacement for commit
+051d381259eb57d6074d02a6ba6e90e744f1a29f:
+
+    During a path walk if an autofs trigger is mounted on a dentry,
+    when the follow_link method is called, the nameidata struct
+    contains the vfsmount and mountpoint dentry of the parent mount
+    while the dentry that is passed in is the root of the autofs
+    trigger mount.  I believe it is impossible to get the vfsmount of
+    the trigger mount, within the follow_link method, when only the
+    parent vfsmount and the root dentry of the trigger mount are
+    known.
+
+The solution in this commit was to replace the path embedded in the
+parent's nameidata with the path of the link itself in
+__do_follow_link().  This is a relatively harmless misuse of the
+field, but union mounts ran into a bug during follow_link() caused by
+the nameidata containing the wrong path (we count on it being what it
+is all other places - the path of the parent).
+
+A better solution is to lookup the vfsmount when the mount is triggered,
+which can be done because binding an autofs file system mount to another
+location isn't valid (even though we can't actually veto this from the
+autofs module).
+
+Signed-off-by: Ian Kent <raven@themaw.net>
+Cc: Jan Blunck <jblunck@suse.de>
+Cc: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: autofs@linux.kernel.org
+---
+
+ fs/autofs4/root.c |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ fs/namei.c        |    7 ++-----
+ fs/namespace.c    |    1 +
+ 3 files changed, 50 insertions(+), 5 deletions(-)
+
+
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index db4117e..62dbcef 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -208,6 +208,40 @@ static int try_to_fill_dentry(struct dentry *dentry, int flags)
+ 	return 0;
+ }
+ 
++/*
++ * We need to find the vfsmount of the autofs mount that is triggering
++ * this mount but the path we have contains the parent vfsmount and
++ * the dentry of the directory that contains our mountpoint, not the
++ * dentry of the mountpoint itself. In this case we must rely on the
++ * fact that autofs file systems can't be bound elsewhere (and still
++ * work) so that when we locate a vfsmount with a matching global root
++ * it must be the one we want.
++ */
++static vfsmount *autofs4_find_vfsmount(struct path *parent, struct dentry *root)
++{
++	struct vfsmount *mnt = NULL;
++	struct dentry *child;
++
++	spin_lock(&dcache_lock);
++	list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child) {
++		if (d_unhashed(child) || !child->d_inode)
++			continue;
++		if (d_mountpoint(child)) {
++			struct vfsmount *this;
++			this = lookup_mnt(parent.mnt, child);
++			if (this && this->mnt_root != root) {
++				mntput(this);
++				continue;
++			}
++			mnt = this;
++			break;
++		}
++	}
++	spin_unlock(&dcache_lock);
++
++	return mnt;
++}
++
+ /* For autofs direct mounts the follow link triggers the mount */
+ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
+ {
+@@ -215,11 +249,24 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
+ 	struct autofs_info *ino = autofs4_dentry_ino(dentry);
+ 	int oz_mode = autofs4_oz_mode(sbi);
+ 	unsigned int lookup_type;
++	struct vfsmount *mnt;
+ 	int status;
+ 
+ 	DPRINTK("dentry=%p %.*s oz_mode=%d nd->flags=%d",
+ 		dentry, dentry->d_name.len, dentry->d_name.name, oz_mode,
+ 		nd->flags);
++
++	mnt = autofs4_find_vfsmount(&nd->path, dentry);
++	if (!mnt) {
++		status = -ENOENT;
++		goto out_error;
++	}
++
++	dput(nd->path.dentry);
++	mntput(nd->path.mnt);
++	nd->path.mnt = mnt;
++	nd->path.dentry = dget(dentry);
++
+ 	/*
+ 	 * For an expire of a covered direct or offset mount we need
+ 	 * to break out of follow_down() at the autofs mount trigger
+diff --git a/fs/namei.c b/fs/namei.c
+index 868d0cb..69a78ee 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -539,11 +539,8 @@ __do_follow_link(struct path *path, struct nameidata *nd, void **p)
+ 	touch_atime(path->mnt, dentry);
+ 	nd_set_link(nd, NULL);
+ 
+-	if (path->mnt != nd->path.mnt) {
+-		path_to_nameidata(path, nd);
+-		dget(dentry);
+-	}
+-	mntget(path->mnt);
++	if (path->mnt == nd->path.mnt)
++		mntget(nd->path.mnt);
+ 	nd->last_type = LAST_BIND;
+ 	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
+ 	error = PTR_ERR(*p);
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 88058de..19b7fc9 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -445,6 +445,7 @@ struct vfsmount *lookup_mnt(struct path *path)
+ 	spin_unlock(&vfsmount_lock);
+ 	return child_mnt;
+ }
++EXPORT_SYMBOL_GPL(lookup_mnt);
+ 
+ static inline int check_mnt(struct vfsmount *mnt)
+ {
+
+
