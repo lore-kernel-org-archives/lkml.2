@@ -1,60 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab0FVPoc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 11:44:32 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49820 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754185Ab0FVPoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 11:44:17 -0400
-Date: Tue, 22 Jun 2010 16:48:35 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [PATCH v3] Add TAINT_HARDWARE_UNSUPPORTED flag
-Message-ID: <20100622164835.4ddb9432@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100622153457.GA5381@redhat.com>
-References: <20100617134654.22523.39845.sendpatchset@prarit.bos.redhat.com>
-	<20100617091322.b7d21473.randy.dunlap@oracle.com>
-	<4C1A7D61.8010900@redhat.com>
-	<20100621122145.76ebd7ac.akpm@linux-foundation.org>
-	<20100621194559.GI3217@redhat.com>
-	<20100621130008.d3dc01a8.akpm@linux-foundation.org>
-	<20100622153457.GA5381@redhat.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755090Ab0FVPon (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 11:44:43 -0400
+Received: from victor.provo.novell.com ([137.65.250.26]:42741 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542Ab0FVPok (ORCPT
+	<rfc822;groupwise-SJayaraman@novell.com:0:0>);
+	Tue, 22 Jun 2010 11:44:40 -0400
+From: Suresh Jayaraman <sjayaraman@suse.de>
+To: Steve French <smfrench@gmail.com>
+Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: [RFC][PATCH 09/10] cifs: read pages from FS-Cache
+Date: Tue, 22 Jun 2010 20:54:21 +0530
+Message-Id: <1277220261-3717-1-git-send-email-sjayaraman@suse.de>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <yes>
+References: <yes>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jun 2010 11:34:57 -0400
-Don Zickus <dzickus@redhat.com> wrote:
+Read pages from a FS-Cache data storage object into a CIFS inode.
 
-> This patch is similar to Theordore Ts'o's TAINT_USER patch,
-> linux-2.6 commit 34f5a39899f3f3e815da64f48ddb72942d86c366.
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+---
+ fs/cifs/file.c    |   19 ++++++++++++++
+ fs/cifs/fscache.c |   73 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/cifs/fscache.h |   40 ++++++++++++++++++++++++++++-
+ 3 files changed, 131 insertions(+), 1 deletions(-)
 
-This seems to have gone backwards
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 39c1ce0..42d2f25 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -1978,6 +1978,16 @@ static int cifs_readpages(struct file *file, struct address_space *mapping,
+ 	cifs_sb = CIFS_SB(file->f_path.dentry->d_sb);
+ 	pTcon = cifs_sb->tcon;
+ 
++	/*
++	 * Reads as many pages as possible from fscache. Returns -ENOBUFS
++	 * immediately if the cookie is negative
++	 */
++	rc = cifs_readpages_from_fscache(mapping->host, mapping, page_list,
++					 &num_pages);
++	cFYI(1, "CIFS: readpages_from_fscache returned %d\n", rc);
++	if (rc == 0)
++		goto read_complete;
++
+ 	cFYI(DBG2, "rpages: num pages %d", num_pages);
+ 	for (i = 0; i < num_pages; ) {
+ 		unsigned contig_pages;
+@@ -2090,6 +2100,7 @@ static int cifs_readpages(struct file *file, struct address_space *mapping,
+ 		smb_read_data = NULL;
+ 	}
+ 
++read_complete:
+ 	FreeXid(xid);
+ 	return rc;
+ }
+@@ -2100,6 +2111,12 @@ static int cifs_readpage_worker(struct file *file, struct page *page,
+ 	char *read_data;
+ 	int rc;
+ 
++	/* Is the page cached? */
++	rc = cifs_readpage_from_fscache(file->f_path.dentry->d_inode, page);
++	cFYI(1, "CIFS: cifs_readpage_from_fscache returned %d\n", rc);
++	if (rc == 0)
++		goto read_complete;
++
+ 	page_cache_get(page);
+ 	read_data = kmap(page);
+ 	/* for reads over a certain size could initiate async read ahead */
+@@ -2128,6 +2145,8 @@ static int cifs_readpage_worker(struct file *file, struct page *page,
+ io_error:
+ 	kunmap(page);
+ 	page_cache_release(page);
++
++read_complete:
+ 	return rc;
+ }
+ 
+diff --git a/fs/cifs/fscache.c b/fs/cifs/fscache.c
+index 13e47d5..6813737 100644
+--- a/fs/cifs/fscache.c
++++ b/fs/cifs/fscache.c
+@@ -145,6 +145,79 @@ int cifs_fscache_release_page(struct page *page, gfp_t gfp)
+ 	return 1;
+ }
+ 
++static void cifs_readpage_from_fscache_complete(struct page *page, void *ctx,
++						int error)
++{
++	cFYI(1, "CFS: readpage_from_fscache_complete (0x%p/%d)\n",
++			page, error);
++	if (!error)
++		SetPageUptodate(page);
++	unlock_page(page);
++}
++
++/*
++ * Retrieve a page from FS-Cache
++ */
++int __cifs_readpage_from_fscache(struct inode *inode, struct page *page)
++{
++	int ret;
++
++	cFYI(1, "CIFS: readpage_from_fscache(fsc:%p, p:%p, i:0x%p\n",
++			CIFS_I(inode)->fscache, page, inode);
++	ret = fscache_read_or_alloc_page(CIFS_I(inode)->fscache, page,
++					 cifs_readpage_from_fscache_complete,
++					 NULL,
++					 GFP_KERNEL);
++	switch (ret) {
++
++	case 0: /* page found in fscache, read submitted */
++		cFYI(1, "CIFS: readpage_from_fscache: submitted\n");
++		return ret;
++	case -ENOBUFS:	/* page won't be cached */
++	case -ENODATA:	/* page not in cache */
++		cFYI(1, "CIFS: readpage_from_fscache %d\n", ret);
++		return 1;
++
++	default:
++		cFYI(1, "unknown error ret = %d", ret);
++	}
++	return ret;
++}
++
++/*
++ * Retrieve a set of pages from FS-Cache
++ */
++int __cifs_readpages_from_fscache(struct inode *inode,
++				struct address_space *mapping,
++				struct list_head *pages,
++				unsigned *nr_pages)
++{
++	int ret;
++
++	cFYI(1, "CIFS: __cifs_readpages_from_fscache (0x%p/%u/0x%p)\n",
++			CIFS_I(inode)->fscache, *nr_pages, inode);
++	ret = fscache_read_or_alloc_pages(CIFS_I(inode)->fscache, mapping,
++					  pages, nr_pages,
++					  cifs_readpage_from_fscache_complete,
++					  NULL,
++					  mapping_gfp_mask(mapping));
++	switch (ret) {
++	case 0:	/* read submitted to the cache for all pages */
++		cFYI(1, "CIFS: readpages_from_fscache\n");
++		return ret;
++
++	case -ENOBUFS:	/* some pages are not cached and can't be */
++	case -ENODATA:	/* some pages are not cached */
++		cFYI(1, "CIFS: readpages_from_fscache: no page\n");
++		return 1;
++
++	default:
++		cFYI(1, "unknown error ret = %d", ret);
++	}
++
++	return ret;
++}
++
+ void __cifs_readpage_to_fscache(struct inode *inode, struct page *page)
+ {
+ 	int ret;
+diff --git a/fs/cifs/fscache.h b/fs/cifs/fscache.h
+index e34d8ab..03bd3fe 100644
+--- a/fs/cifs/fscache.h
++++ b/fs/cifs/fscache.h
+@@ -31,7 +31,6 @@ extern const struct fscache_cookie_def cifs_fscache_server_index_def;
+ extern const struct fscache_cookie_def cifs_fscache_super_index_def;
+ extern const struct fscache_cookie_def cifs_fscache_inode_object_def;
+ 
+-
+ extern int cifs_fscache_register(void);
+ extern void cifs_fscache_unregister(void);
+ 
+@@ -49,6 +48,11 @@ extern void cifs_fscache_reset_inode_cookie(struct inode *);
+ 
+ extern void __cifs_fscache_invalidate_page(struct page *, struct inode *);
+ extern int cifs_fscache_release_page(struct page *page, gfp_t gfp);
++extern int __cifs_readpage_from_fscache(struct inode *, struct page *);
++extern int __cifs_readpages_from_fscache(struct inode *,
++					 struct address_space *,
++					 struct list_head *,
++					 unsigned *);
+ 
+ extern void __cifs_readpage_to_fscache(struct inode *, struct page *);
+ 
+@@ -59,6 +63,26 @@ static inline void cifs_fscache_invalidate_page(struct page *page,
+ 		__cifs_fscache_invalidate_page(page, inode);
+ }
+ 
++static inline int cifs_readpage_from_fscache(struct inode *inode,
++					     struct page *page)
++{
++	if (CIFS_I(inode)->fscache)
++		return __cifs_readpage_from_fscache(inode, page);
++
++	return -ENOBUFS;
++}
++
++static inline int cifs_readpages_from_fscache(struct inode *inode,
++					      struct address_space *mapping,
++					      struct list_head *pages,
++					      unsigned *nr_pages)
++{
++	if (CIFS_I(inode)->fscache)
++		return __cifs_readpages_from_fscache(inode, mapping, pages,
++						     nr_pages);
++	return -ENOBUFS;
++}
++
+ static inline void cifs_readpage_to_fscache(struct inode *inode,
+ 					    struct page *page)
+ {
+@@ -89,6 +113,20 @@ static inline void cifs_fscache_release_page(struct page *page, gfp_t gfp)
+ 
+ static inline int cifs_fscache_invalidate_page(struct page *page,
+ 			struct inode *) {}
++static inline int
++cifs_readpage_from_fscache(struct inode *inode, struct page *page)
++{
++	return -ENOBUFS;
++}
++
++static inline int cifs_readpages_from_fscache(struct inode *inode,
++					      struct address_space *mapping,
++					      struct list_head *pages,
++					      unsigned *nr_pages)
++{
++	return -ENOBUFS;
++}
++
+ static inline void cifs_readpage_to_fscache(struct inode *inode,
+ 			struct page *page) {}
+ 
+-- 
+1.6.4.2
 
-> This patch introduces the TAINT_HARDWARE_UNSUPPORTED flag for distributions
-> to use.
-
-As I said before - just mark some as 'reserved'
-
-Giving it a specific meaning means it can't freely be used for many
-things by many distributions
-
-
-> +	printk(KERN_CRIT "UNSUPPORTED HARDWARE DEVICE: %s\n", msg);
-> +	WARN_TAINT(1, TAINT_HARDWARE_UNSUPPORTED,
-> +		   "Your hardware is unsupported.  Please do not report "
-> +		   "bugs, panics, oopses, etc., on this hardware.\n");
-
-And as already pointed out it's not unsupported hardware even in the case
-you described
-
-NAK
