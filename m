@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329Ab0FVVL6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 17:11:58 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49844 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753514Ab0FVVL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 17:11:56 -0400
-Date: Tue, 22 Jun 2010 23:11:41 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Chris Mason <chris.mason@oracle.com>, axboe@kernel.dk,
-       linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-       Oleg Nesterov <oleg@redhat.com>, tglx <tglx@linutronix.de>
-Subject: Re: [PATCH RFC] reduce runqueue lock contention
-Message-ID: <20100622211141.GC21149@elte.hu>
-References: <20100520204810.GA19188@think>
- <1277114522.1875.469.camel@laptop>
- <1277117647.1875.503.camel@laptop>
- <1277125479.1875.510.camel@laptop>
- <1277213586.1875.704.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277213586.1875.704.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
-	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
-	[score: 0.1004]
+	id S1756343Ab0FVVQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 17:16:12 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40056
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755611Ab0FVVQK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 17:16:10 -0400
+Date: Tue, 22 Jun 2010 14:16:22 -0700 (PDT)
+Message-Id: <20100622.141622.15223630.davem@davemloft.net>
+To: vst@vlnb.net
+Cc: sparclinux@vger.kernel.org, simone.ricci@gmail.com,
+       scst-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+       Nick.Couchman@seakr.com, mmarek@suse.cz, linux-kbuild@vger.kernel.org
+Subject: Re: Error "Unknown relocation: 36" on module load on Sparc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C210A07.80906@vlnb.net>
+References: <4C192085.2090404@vlnb.net>
+	<20100616.133540.189696272.davem@davemloft.net>
+	<4C210A07.80906@vlnb.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+Date: Tue, 22 Jun 2010 23:07:51 +0400
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+> But we surprised that such platform specific compiler flags have to be
+> manually maintained by out of the kernel tree modules developers.
 
-> So this one boots and builds a kernel on a dual-socket nehalem.
-> 
-> there's still quite a number of XXXs to fix, but I don't think any of the 
-> races are crashing potential, mostly wrong accounting and scheduling iffies 
-> like.
-> 
-> But give it a go.. see what it does for you (x86 only for now).
-> 
-> Ingo, any comments other than, eew, scary? :-)
+You don't, Kbuild should do it transprently for you.
 
-None, other than a question: which future kernel do you aim it for? I'd prefer 
-v2.6.50 or later ;-)
-
-This is a truly scary patch.
-
-	Ingo
+It's possible you're simply not using kbuild correctly
+for external module builds, or something in your Makefile
+is overriding the arch specific CFLAGS.
