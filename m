@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab0FVGa1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 02:30:27 -0400
-Received: from sh.osrg.net ([192.16.179.4]:56981 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752628Ab0FVGaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 02:30:25 -0400
-Date: Tue, 22 Jun 2010 15:30:08 +0900
-To: lethal@linux-sh.org
-Cc: fujita.tomonori@lab.ntt.co.jp, davem@davemloft.net, mchan@broadcom.com,
-       vapier@gentoo.org, JBottomley@novell.com, netdev@vger.kernel.org,
-       linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: bnx2 fails to compile on parisc because of missing
- get_dma_ops()
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100617153051.GB8964@linux-sh.org>
-References: <20100617.073653.193708702.davem@davemloft.net>
-	<20100617234520S.fujita.tomonori@lab.ntt.co.jp>
-	<20100617153051.GB8964@linux-sh.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100622152823R.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 22 Jun 2010 15:30:10 +0900 (JST)
+	id S1754562Ab0FVGfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 02:35:31 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:44930 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753576Ab0FVGf3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 02:35:29 -0400
+Date: Tue, 22 Jun 2010 02:34:28 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 11/14] trace: uprobes trace_event interface
+Message-ID: <20100622063428.GA15092@infradead.org>
+References: <20100614082748.29068.21995.sendpatchset@localhost6.localdomain6>
+ <20100614083008.29068.56731.sendpatchset@localhost6.localdomain6>
+ <1277130156.9181.11.camel@gandalf.stny.rr.com>
+ <20100622041529.GA25989@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100622041529.GA25989@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Jun 2010 00:30:51 +0900
-Paul Mundt <lethal@linux-sh.org> wrote:
-
-> On Thu, Jun 17, 2010 at 11:50:35PM +0900, FUJITA Tomonori wrote:
-> > On Thu, 17 Jun 2010 07:36:53 -0700 (PDT)
-> > David Miller <davem@davemloft.net> wrote:
-> > 
-> > > From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> > > Date: Thu, 17 Jun 2010 21:21:13 +0900
-> > > 
-> > > > On Wed, 16 Jun 2010 23:24:44 -0700
-> > > > "Michael Chan" <mchan@broadcom.com> wrote:
-> > > > 
-> > > >> David, why is dma_is_consistent() always returning 1 on sparc?  The
-> > > >> streaming DMA is not consistent.
-> > > > 
-> > > > I think that there are some confusion about dma_is_consistent(). Some
-> > > > architectures think that dma_is_consistent() is supposed to return 1
-> > > > if they can allocate coherent memory (note that some architectures
-> > > > can't allocate coherent memory).
-> > > 
-> > > Right, and that's why it's defined this way.
-> > > 
-> > > If the desired meaning is different, just me know and I'll fix the
-> > > sparc definition.
-> > 
-> > I think that there are some other architectures do the same. We need
-> > to make sure that all the architectures define dma_is_consistent() in
-> > the same meaning if drivers need it. However, I'm not sure we really
-> > need dma_is_consistent(). There is only one user of it (and I think we
-> > could remove it).
-> > 
-> > In the bnx2 case, we can simply prefetch on all the archs (or just
-> > remove the optimization).
+On Tue, Jun 22, 2010 at 09:45:29AM +0530, Srikar Dronamraju wrote:
+> As you see UPROBE_EVENT is gated on UPROBES. I think if UPROBES is
+> enabled, then UPROBE_EVENT should be enabled. Esp with Christoph
+> suggesting for module support to be removed, I think it becomes all the
+> more reason for UPROBE_EVENT to be enabled by default. Otherwise there
+> is no point in having uprobes code and having no enabled users.
+> I was even looking at "select UPROBE_EVENT" on enabling UPROBES.
 > 
-> I think its worthwhile keeping, especially since the consistency can vary
-> on a per struct device level. If there's a benefit with these sorts of
-> prefetch micro-optimizations in drivers when it doesn't cost us that much
-> to provide the hint, I don't really see the harm. If dma_is_consistent()
-> is suddenly supposed to take on other meanings, or it's supposed to mean
-> something entirely different, then this is something we should deal with
-> separately.
-> 
-> I don't see any harm in letting drivers know whether we can support
-> consistent DMA allocs for a given struct device or not though, even if
-> the micro-optimization is marginal at best.
+> Do you have any specific reason why UPROBE_EVENT should not be enabled
+> by default? 
 
-I'm happier with exporting less DMA APIs to drivers because looks like
-new original ways to use the APIs wrongly can be always invented.
+default y generally is a big hammer.  But given that it depends on
+UPROBES it might be fine here.  Then again the big question is why
+we even bother with separate config options?  At least in this form
+UPROBES just is supported for UPROBE_EVENT.  So it makes sense either
+to remove the UPROBES option entirely, or at least make it invisible
+to the user and let UPROBE_EVENT select it.
 
-
-> At least I've conditionalized the definition on SH, and it seems other
-> archictures have done so too. It's not clear what we'd gain from throwing
-
->From a quick look, except for SH and POWERPC (and always-coherent
-architectures), everyone does differently?
-
-There are architectures that need to turn off the CPU cache for
-coherent memory, I can't find none of them that see if an address is
-coherent or not in dma_is_consistent().
-
-As I wrote, there is only one user of this API and we can remove it
-easily. Then I'm not sure it's worth fixing dma_is_consistent() in
-many architectures. I prefer to add this to
-feature-removal-schedule.txt to see if driver writers oppose.
-
-
-> that away as long as they're generally in agreement on what it means.
