@@ -1,85 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785Ab0FVBmg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 21:42:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52062 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752630Ab0FVBme (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 21:42:34 -0400
-Date: Mon, 21 Jun 2010 18:41:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Roland McGrath <roland@redhat.com>
-Cc: Edward Allcutt <edward@allcutt.me.uk>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
-       Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fs: limit maximum concurrent coredumps
-Message-Id: <20100621184116.92f85696.akpm@linux-foundation.org>
-In-Reply-To: <20100622012303.BD72E402AD@magilla.sf.frob.com>
-References: <1277164737-30055-1-git-send-email-edward@allcutt.me.uk>
-	<20100622012303.BD72E402AD@magilla.sf.frob.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1758796Ab0FVBtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 21:49:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15713 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752568Ab0FVBtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 21:49:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,457,1272870000"; 
+   d="scan'208";a="528980610"
+Subject: Re: [PATCH V2 1/5] ara virt interface of perf to support kvm guest
+ os statistics collection in guest os
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com
+In-Reply-To: <4C1F50D0.70205@redhat.com>
+References: <1277112680.2096.509.camel@ymzhang.sh.intel.com>
+	 <4C1F50D0.70205@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 22 Jun 2010 09:49:04 +0800
+Message-Id: <1277171344.2096.567.camel@ymzhang.sh.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010 18:23:03 -0700 (PDT) Roland McGrath <roland@redhat.com> wrote:
+On Mon, 2010-06-21 at 14:45 +0300, Avi Kivity wrote:
+> On 06/21/2010 12:31 PM, Zhang, Yanmin wrote:
+> > Here is the version 2.
+> >
+> > ChangeLog since V1: Mostly changes based on Avi's suggestions.
+> > 	1) Use a id to identify the perf_event between host and guest;
+> > 	2) Changes lots of codes to deal with malicious guest os;
+> > 	3) Add a perf_event number limitation per gust os instance;
+> > 	4) Support guest os on the top of another guest os scenario. But
+> > 	I didn't test it yet as there is no environment. The design is to
+> > 	add 2 pointers in struct perf_event. One is used by host and the
+> > 	other is used by guest.
+> > 	5) Fix the bug to support 'perf stat'. The key is sync count data
+> > 	back to guest when guest tries to disable the perf_event at host
+> > 	side.
+> > 	6) Add a clear ABI of PV perf.
+> >
+> >    
+> 
+> Please use meaningful subject lines for individual patches.
+Yes, I should. I rushed to send the patches out yesterday afternoon as I need
+to take company shuttle back home.
+> 
+> > I don't implement live migration feature.
+> >
+> > Avi,
+> > Is live migration necessary on pv perf support?
+> >    
+> 
+> Yes.
+Ok. With the PV perf interface, host perf saves all counter info into perf_event
+structure. To support live migration, we need save all host perf_event structure,
+or at least perf_event->count and perf_event->attr. Then, recreate the host perf_event
+after migration.
 
-> A core dump is just an instance of a process suddenly reading lots of its
-> address space and doing lots of filesystem writes, producing the kinds of
-> thrashing that any such instance might entail.  It really seems like the
-> real solution to this kind of problem will be in some more general kind of
-> throttling of processes (or whatever manner of collections thereof) when
-> they got hog-wild on page-ins or filesystem writes, or whatever else.  I'm
-> not trying to get into the details of what that would be.  But I have to
-> cite this hack as the off-topic kludge that it really is.  That said, I do
-> certainly sympathize with the desire for a quick hack that addresses the
-> scenario you experience.
+I check qemu-kvm codes and it seems most live migration is to save cpu states.
+So it seems it's hard for perf pv interface to match current live migration. Any suggestion?
 
-yup.
+> 
+> > --- linux-2.6_tip0620/Documentation/kvm/paravirt-perf.txt	1970-01-01 08:00:00.000000000 +0800
+> > +++ linux-2.6_tip0620perfkvm/Documentation/kvm/paravirt-perf.txt	2010-06-21 15:21:39.312999849 +0800
+> > @@ -0,0 +1,133 @@
+> > +The x86 kvm paravirt perf event interface
+> > +===================================
+> > +
+> > +This paravirt interface is responsible for supporting guest os perf event
+> > +collections. If guest os supports this interface, users could run command
+> > +perf in guest os directly.
+> > +
+> > +Design
+> > +========
+> > +
+> > +Guest os calls a series of hypercalls to communicate with host kernel to
+> > +create/enable/disable/close perf events. Host kernel notifies guest os
+> > +by injecting an NMI to guest os when an event overflows. Guets os need
+> > +go through all its active events to check if they overflow, and output
+> > +performance statistics if they do.
+> > +
+> > +ABI
+> > +=====
+> > +
+> > +1) Detect if host kernel supports paravirt perf interface:
+> > +#define KVM_FEATURE_PV_PERF       4
+> > +Host kernel defines above cpuid bit. Guest os calls cpuid to check if host
+> > +os retuns this bit. If it does, it mean host kernel supports paravirt perf
+> > +interface.
+> > +
+> > +2) Open a new event at host side:
+> > +kvm_hypercall3(KVM_PERF_OP, KVM_PERF_OP_OPEN, param_addr_low32bit,
+> > +param_addr_high32bit);
+> > +
+> > +#define KVM_PERF_OP                    3
+> > +/* Operations for KVM_PERF_OP */
+> > +#define KVM_PERF_OP_OPEN                1
+> > +#define KVM_PERF_OP_CLOSE               2
+> > +#define KVM_PERF_OP_ENABLE              3
+> > +#define KVM_PERF_OP_DISABLE             4
+> > +#define KVM_PERF_OP_READ                5
+> >    
+> 
+> > +/*
+> > + * guest_perf_attr is used when guest calls hypercall to
+> > + * open a new perf_event at host side. Mostly, it's a copy of
+> > + * perf_event_attr and deletes something not used by host kernel.
+> > + */
+> > +struct guest_perf_attr {
+> > +        __u32                   type;
+> >    
+> 
+> Need padding here, otherwise the structure is different on 32-bit and 
+> 64-bit guests.
+Ok. I will change it.
 
-> For the case you described, it seems to me that constraining concurrency
-> per se would be better than punting core dumps when too concurrent.  That
-> is, you should not skip the dump when you hit the limit.  Rather, you
-> should block in do_coredump() until the next dump already in progress
-> finishes.  (It should be possible to use TASK_KILLABLE so that those dumps
-> in waiting can be aborted with a follow-on SIGKILL.  But Oleg will have to
-> check on the signals details being right for that.)
+> 
+> > +        __u64                   config;
+> > +        __u64                   sample_period;
+> > +        __u64                   sample_type;
+> > +        __u64                   read_format;
+> > +        __u64                   flags;
+> >    
+> 
+> and here.
+I will rearrange the whole structure.
 
-yup.
+> 
+> > +        __u32                   bp_type;
+> > +        __u64                   bp_addr;
+> > +        __u64                   bp_len;
+> >    
+> 
+> Do we actually support breakpoints on the guest?  Note the hardware 
+> breakpoints are also usable by the guest, so if the host uses them, we 
+> won't be able to emulate them correctly.
+>   We can let the guest to 
+> breakpoint perf monitoring itself and drop this feature.
+Ok, I will disable breakpoint feature of pv interface.
 
-Might be able to use semaphores for this.  Use sema_init(),
-down_killable() and up().
+> 
+> > +};
+> >    
+> 
+> What about documentation for individual fields?  Esp. type, config, and 
+> flags, but also the others.
+They are really perf implementation specific. Even perf_event definition
+has no document but code comments. I will add simple explanation around
+the new structure definition.
 
-Modifying the max concurrency value would require a loop of up()s and
-down()s, probably all surrounded by a mutex_lock.  Which is a bit ugly,
-and should be done in kernel/semaphore.c I guess.
+> 
+> > +/*
+> > + * data communication area about perf_event between
+> > + * Host kernel and guest kernel
+> > + */
+> > +struct guest_perf_event {
+> > +        u64 count;
+> > +        atomic_t overflows;
+> >    
+> 
+> Please use __u64 and __u32, assume guests don't have Linux internal 
+> types (though of course the first guest _is_ Linux).
+This structure is used by both host and guest. In case there is a race
+condition, guest os has to use atomic_cmpxchg to reset it to 0. I could
+change its type to __u32, but guest kernel should calls atomic_cmpxchg to
+reset it.
 
-> That won't make your crashers each complete quickly, but it will prevent
-> the thrashing.  Instead of some crashers suddenly not producing dumps at
-> all, they'll just all queue up waiting to finish crashing but not using any
-> CPU or IO resources.  That way you don't lose any core dumps unless you
-> want to start SIGKILL'ing things (which oom_kill might do if need be),
-> you just don't die in flames trying to do nothing but dump cores.
+> 
+> Add padding to 64-bit.
+Ok.
 
-A global knob is a bit old-school.  Perhaps it should be a per-memcg
-knob or something.
+> 
+> > +};
+> > +struct guest_perf_event_param {
+> > +        __u64 attr_addr;
+> > +        __u64 guest_event_addr;
+> > +        /* In case there is an alignment issue, we put id as the last one */
+> > +        int id;
+> >    
+> 
+> Add explicit padding to be sure.
+Ok.
 
+> 
+> Also makes sense to add a flags field for future expansion.
+Ok. So it could also work as something like version info.
 
+> 
+> > +};
+> > +
+> > +param_addr_low32bit and param_addr_high32bit compose a u64 integer which means
+> > +the physical address of parameter struct guest_perf_event_param.
+> > +struct guest_perf_event_param consists of 3 members. attr_addr has the
+> > +physical address of parameter struct guest_perf_attr. guest_event_addr has the
+> > +physical address of a parameter whose type is struct guest_perf_eventi which
+> > +has to be aligned with 4 bytes.
+> > +guest os need allocate an exclusive id per event in this guest os instance, and save it to
+> > +guest_perf_event_param->id. Later on, the id is the only method to notify host
+> > +kernel about on what event guest os wants host kernel to operate.
+> >    
+> 
+> Need a way to expose the maximum number of events available to the 
+> guest.  I suggest exposing it in cpuid, and requiring 0 <= id < MAX_EVENTS.
+Ok.
 
-otoh, one could perhaps toss all these tasks into a blkio_cgroup and
-solve this problem with the block IO controller.  After all, that's
-what it's for.
+> 
+> > +guest_perf_event->count saves the latest count of the event.
+> > +guest_perf_event->overflows means how many times this event has overflowed
+> > +since guest os processes it. Host kernel just inc guest_perf_event->overflows
+> > +when the event overflows. Guest kernel should use a atomic_cmpxchg to reset
+> > +guest_perf_event->overflows to 0 in case there is a race between its reset by
+> > +guest os and host kernel data update.
+> >    
+> 
+> Is overflows really needed?
+Theoretically, we can remove it. But it could simplify the implementations and touch
+perf generic codes as small as we can.
+
+>   Since the guest can use NMI to read the 
+> counter, it should have the highest possible priority, and thus it 
+> shouldn't see any overflow unless it configured the threshold really low.
+> 
+> If we drop overflow, we can use the RDPMC instruction instead of 
+> KVM_PERF_OP_READ.  This allows the guest to allow userspace to read a 
+> counter, or prevent userspace from reading the counter, by setting cr4.pce.
+1) para virt perf interface is to hide PMU hardware in host os. Guest os shouldn't
+access PMU hardware directly. We could expose PMU hardware to guest os directly, but
+that would be another guest os PMU support method. It shouldn't be a part of para virt
+interface.
+2) Consider below scenario: PMU counter overflows and NMI causes guest os vmexit to
+host kernel. Host kernel schedules the vcpu thread to another physical cpu before
+vmenter the guest os again. So later on, guest os just RDPMC the counter on another
+cpu.
+
+So I think above discussion is around how to expose PMU hardware to guest os. I will
+also check this method after the para virt interface is done.
+
+> 
+> > +Host kernel saves count and overflow update information into guest_perf_event
+> > +pointed by guest_perf_event_param->guest_event_addr.
+> > +
+> > +After host kernel creates the event, this event is at disabled mode.
+> > +
+> > +This hypercall3 return 0 when host kernel creates the event successfully. Or
+> > +other value if it fails.
+> > +
+> > +3) Enable event at host side:
+> > +kvm_hypercall2(KVM_PERF_OP, KVM_PERF_OP_ENABLE, id);
+> > +
+> > +Parameter id means the event id allocated by guest os. Guest os need call this
+> > +hypercall to enable the event at host side. Then, host side will really start
+> > +to collect statistics by this event.
+> > +
+> > +This hypercall3 return 0 if host kernel succeds. Or other value if it fails.
+> > +
+> > +
+> > +4) Disable event at host side:
+> > +kvm_hypercall2(KVM_PERF_OP, KVM_PERF_OP_DISABLE, id);
+> > +
+> > +Parameter id means the event id allocated by guest os. Guest os need call this
+> > +hypercall to disable the event at host side. Then, host side will stop
+> > +statistics collection initiated by the event.
+> > +
+> > +This hypercall3 return 0 if host kernel succeds. Or other value if it fails.
+> > +
+> > +
+> > +5) Close event at host side:
+> > +kvm_hypercall2(KVM_PERF_OP, KVM_PERF_OP_CLOSE, id);
+> > +it will close and delete the event at host side.
+> >    
+> 
+> What about using MSRs to configure the counter like real hardware?  That 
+> takes care of live migration, since we already migrate MSRs.  At the end 
+> of the migration userspace will read all config and counter data from 
+> the source and transfer it to the destination.  This should work with 
+> existing userspace since we query the MSR index list from the host.
+Yes, but it will belong to the method that exposes PMU hardware to guest os directly.
+
+> 
+> 
+> > +
+> > +8) NMI notification from host kernel:
+> > +When an event overflows at host side, host kernel injects an NMI to guest os.
+> > +Guest os has to check all its active events in guest os NMI handler.
+> >    
+> 
+> Item 8) -> 6) :)
+Sorry. Originally, I added start and stop callbacks into the para virt PMU. I deleted
+them as they are just duplicate of enable and disable, but forgot to change sequence
+number.
+
+> 
+> Should be via the performance counter LVT.  Since we lack infrastructure 
+> for this at the moment, direct NMI delivery is fine.  I'm working on 
+> that infrastructure now.
+That's a good idea.
+
+> 
+> > +
+> > +
+> > +Usage flow at guest side
+> > +=============
+> > +1) Guest os registers an NMI handler to prepare to process all active event
+> > +overflows.
+> > +2) Guest os calls hypercall3(..., KVM_PERF_OP_OPEN, ...) to create an event at
+> > +host side.
+> > +3) Guest os calls hypercall2 (..., KVM_PERF_OP_ENABLE, ...) to enable the
+> > +event.
+> > +4) Guest os calls hypercall2 (..., KVM_PERF_OP_DISABLE, ...) to disable the
+> > +event.
+> > +5) Guest os could repeat 3) and 4).
+> > +6) Guest os calls hypercall2 (..., KVM_PERF_OP_CLOSE, ...) to close the event.
+> > +
+> > +
+> >    
+> 
+> How does OP_READ work?  simply update the guest_perf structure?
+Host kernel updates guest os perf->event->guest_perf_shadow->count. Then, guest os
+copies it to its perf_event->count.
+
 
