@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab0FVUNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 16:13:42 -0400
-Received: from smtp-out4.blueyonder.co.uk ([195.188.213.7]:43038 "EHLO
-	smtp-out4.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751327Ab0FVUNl (ORCPT
+	id S1755928Ab0FVUSE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 16:18:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39120 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755611Ab0FVUSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 16:13:41 -0400
-X-Greylist: delayed 26126 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jun 2010 16:13:40 EDT
-Message-ID: <4C20B364.9060405@blueyonder.co.uk>
-Date: Tue, 22 Jun 2010 13:58:12 +0100
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-GB; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5 ThunderBrowse/3.2.8.1
-MIME-Version: 1.0
-To: LKML Mailing List <linux-kernel@vger.kernel.org>,
-       "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: 2.6.35-rc3 E-MU 0404 USB problem
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 22 Jun 2010 16:18:01 -0400
+Date: Tue, 22 Jun 2010 13:16:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: TAMUKI Shoichi <tamuki@linet.gr.jp>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Blanchard <anton@samba.org>,
+       Andi Kleen <andi@firstfloor.org>, Andy Green <andy@warmcat.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+       Dmitry Torokhov <dtor@mail.ru>
+Subject: Re: [PATCH v4] panic: keep blinking in spite of long spin timer
+ mode
+Message-Id: <20100622131654.05032c22.akpm@linux-foundation.org>
+In-Reply-To: <201006202252.AA00437@tamuki.linet.gr.jp>
+References: <201006202252.AA00437@tamuki.linet.gr.jp>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have an application using the on-board sound card mic which should 
-send it's data to the USB card for relay to a Sofweare Defined Radio as 
-2 quadrature signals digital (I/Q) for transmission.
-On the receiving side it can take data from the Radio at up to 192K 
-sample rate --> program --> Speaker on the on-board sound card - that 
-works fine.
-Transmit fails, dmesg output with 48K sample rate set is:-
-[509686.177169] ALSA sound/usb/clock.c:214: 6:2:3: endpoint lacks sample 
-rate attribute bit, cannot set.
-[509686.187920] ALSA sound/usb/clock.c:214: 6:2:1: endpoint lacks sample 
-rate attribute bit, cannot set.
-[509686.266905] ALSA sound/usb/mixer.c:2051: status interrupt: c0 0e
-[509686.330901] ALSA sound/usb/mixer.c:2051: status interrupt: c0 0e
-[509686.353775] ALSA sound/usb/clock.c:214: 6:2:7: endpoint lacks sample 
-rate attribute bit, cannot set.
-[509686.394898] ALSA sound/usb/mixer.c:2051: status interrupt: c0 0e
-[509686.458886] ALSA sound/usb/mixer.c:2051: status interrupt: c0 0e
-[509686.522874] ALSA sound/usb/mixer.c:2051: status interrupt: c0 0e
-[509823.078594] ALSA sound/usb/clock.c:214: 6:2:3: endpoint lacks sample 
-rate attribute bit, cannot set.
-[509823.091571] ALSA sound/usb/clock.c:214: 6:2:1: endpoint lacks sample 
-rate attribute bit, cannot set.
-[509823.146811] ALSA sound/usb/mixer.c:2051: status interrupt: c0 0e
-[509823.202679] ALSA sound/usb/clock.c:214: 6:2:7: endpoint lacks sample 
-rate attribute bit, cannot set.
-[509823.210807] ALSA sound/usb/mixer.c:2051: status interrupt: c0 0e
-[509823.274792] ALSA sound/usb/mixer.c:2051: status interrupt: c0 0e
-[509823.338782] ALSA sound/usb/mixer.c:2051: status interrupt: c0 0e
-[509823.402783] ALSA sound/usb/mixer.c:2051: status interrupt: c0 0e
-Regards
-Sid.
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+On Mon, 21 Jun 2010 07:52:24 +0900
+TAMUKI Shoichi <tamuki@linet.gr.jp> wrote:
+
+> To keep panic_timeout accuracy when running under a hypervisor, the
+> current implementation only spins on long time (1 second) calls to
+> mdelay.  That brings a good effect, but the problem is the keyboard
+> LEDs don't blink at all on that situation.
+> 
+> This patch changes to call to panic_blink_enter() between every mdelay
+> and keeps blinking in spite of long spin timer mode.
+> 
+> The time to call to mdelay is now 100ms.  Even this change will keep
+> panic_timeout accuracy enough when running under a hypervisor.
+> 
+
+Thaks for sticking with it - I think the code's a lot better now.  Are
+you happy with it?
+
+> ---
+>  Changes since v3:
+>  - get rid of CONFIG_PANIC_LONGSPIN_TIMER kernel config option
+> 
+>  Documentation/kernel-parameters.txt |    3 -
+>  arch/arm/mach-s3c2440/mach-gta02.c  |   17 ++-----
+>  drivers/input/serio/i8042.c         |   25 ++---------
+>  include/linux/kernel.h              |    2 
+>  kernel/panic.c                      |   58 +++++++++++---------------
+>  5 files changed, 37 insertions(+), 68 deletions(-)
+
+And isn't that a nice sight.
+
+> --- a/drivers/input/serio/i8042.c
+> +++ b/drivers/input/serio/i8042.c
+
+Dmitry, I think drivers/input/serio/i8042.c is buggy.  It does
+
+	panic_blink = NULL;
+
+as the very last thing on module exit.  However it surely should do
+this at least at the _start_ of i8042_exit() and I suspect it really
+should be doing this at the start of i8042_shutdown()?
+
+As things stand, a well-timed panic will end up trying to flash LEDs
+via hardware which has been "shut down".
 
