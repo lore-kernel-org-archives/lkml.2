@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab0FVTp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 15:45:28 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49182 "EHLO
+	id S1754562Ab0FVTqI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 15:46:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50603 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab0FVTp0 (ORCPT
+	with ESMTP id S1751668Ab0FVTqE (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 22 Jun 2010 15:45:26 -0400
+	Tue, 22 Jun 2010 15:46:04 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp,
        iommu@lists.linux-foundation.org, albert_herranz@yahoo.es,
        x86@kernel.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 17/19] swiotlb-xen: Coalesce usage of xen_swiotlb_map.
-Date: Tue, 22 Jun 2010 15:42:50 -0400
-Message-Id: <1277235772-26757-18-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 10/19] swiotlb-xen: Make 'xen_swiotlb_[map|unmap]_page' work.
+Date: Tue, 22 Jun 2010 15:42:43 -0400
+Message-Id: <1277235772-26757-11-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1277235772-26757-1-git-send-email-konrad.wilk@oracle.com>
 References: <1277235772-26757-1-git-send-email-konrad.wilk@oracle.com>
 X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090203.4C211285.0154:SCFMA922111,ss=1,fgs=0
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090201.4C2112AA.002F:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't use the 'struct device' anymore, and the xen_swiotlb_map ended
-up just passing on the values and recomputing the same value
-(start_dma_addr) every time - so now we do it only once.
+We utilize the SWIOTLB proper book-keeping functions and compared
+to bare-metal SWIOTLB, we use a different virt->bus address
+translation. This is necessary as under Xen, the PFN is a pseudo-number
+that is not necessarily the true MFN. Because of that, successive pages
+might not physically contiguous, meaning mfn++ != pfn_to_mfn(pfn++), so
+we have to check for that too.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- lib/swiotlb-xen.c |   23 +++++++++++------------
- 1 files changed, 11 insertions(+), 12 deletions(-)
+ lib/swiotlb-xen.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/lib/swiotlb-xen.c b/lib/swiotlb-xen.c
-index 12e9dcd..b15f85c 100644
+index 2640052..efafcce 100644
 --- a/lib/swiotlb-xen.c
 +++ b/lib/swiotlb-xen.c
-@@ -46,6 +46,11 @@
- 
- static char *xen_io_tlb_start, *xen_io_tlb_end;
- static unsigned long xen_io_tlb_nslabs;
-+/*
-+ * Quick lookup value of the bus address of the IOTLB.
-+ */
-+
-+u64 start_dma_addr;
- 
- static dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
+@@ -192,7 +192,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 				struct dma_attrs *attrs)
  {
-@@ -110,15 +115,6 @@ static int is_xen_swiotlb_buffer(dma_addr_t dma_addr)
- 	return 0;
- }
+ 	phys_addr_t phys = page_to_phys(page) + offset;
+-	dma_addr_t dev_addr = phys_to_dma(dev, phys);
++	dma_addr_t dev_addr = xen_phys_to_bus(dev, phys);
+ 	void *map;
  
--static void *
--xen_map_single(struct device *hwdev, phys_addr_t phys, size_t size,
--	       enum dma_data_direction dir)
--{
--	u64 start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
--
--	return swiotlb_tbl_map_single(hwdev, start_dma_addr, phys, size, dir);
--}
--
- static int max_dma_bits = 32;
- 
- static int
-@@ -174,6 +170,7 @@ void __init xen_swiotlb_init(int verbose)
- 	if (rc)
- 		goto error;
- 
-+	start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
- 	swiotlb_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs, verbose);
- 
- 	return;
-@@ -266,7 +263,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 	/*
- 	 * Oh well, have to allocate and map a bounce buffer.
+ 	BUG_ON(dir == DMA_NONE);
+@@ -201,7 +201,8 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 	 * we can safely return the device addr and not worry about bounce
+ 	 * buffering it.
  	 */
--	map = xen_map_single(dev, phys, size, dir);
-+	map = swiotlb_tbl_map_single(dev, start_dma_addr, phys, size, dir);
- 	if (!map)
- 		return DMA_ERROR_CODE;
+-	if (dma_capable(dev, dev_addr, size) && !swiotlb_force)
++	if (dma_capable(dev, dev_addr, size) &&
++	    !range_straddles_page_boundary(phys, size) && !swiotlb_force)
+ 		return dev_addr;
  
-@@ -404,8 +401,10 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 		if (swiotlb_force ||
- 		    !dma_capable(hwdev, dev_addr, sg->length) ||
- 		    range_straddles_page_boundary(paddr, sg->length)) {
--			void *map = xen_map_single(hwdev, sg_phys(sg),
--						   sg->length, dir);
-+			void *map = swiotlb_tbl_map_single(hwdev,
-+							   start_dma_addr,
-+							   sg_phys(sg),
-+							   sg->length, dir);
- 			if (!map) {
- 				/* Don't panic here, we expect map_sg users
- 				   to do proper error handling. */
+ 	/*
+@@ -236,11 +237,12 @@ EXPORT_SYMBOL_GPL(xen_swiotlb_map_page);
+ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
+ 			     size_t size, enum dma_data_direction dir)
+ {
+-	phys_addr_t paddr = dma_to_phys(hwdev, dev_addr);
++	phys_addr_t paddr = xen_bus_to_phys(hwdev, dev_addr);
+ 
+ 	BUG_ON(dir == DMA_NONE);
+ 
+-	if (is_xen_swiotlb_buffer(paddr)) {
++	/* NOTE: We use dev_addr here, not paddr! */
++	if (is_xen_swiotlb_buffer(dev_addr)) {
+ 		swiotlb_tbl_unmap_single(hwdev, phys_to_virt(paddr), size, dir);
+ 		return;
+ 	}
 -- 
 1.7.0.1
 
