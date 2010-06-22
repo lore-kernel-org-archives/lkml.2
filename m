@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab0FVFX0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 01:23:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41767 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab0FVFXZ (ORCPT
+	id S1752637Ab0FVF0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 01:26:07 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44639 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710Ab0FVF0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 01:23:25 -0400
-Date: Tue, 22 Jun 2010 07:23:14 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg KH <greg@kroah.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Dmitry Torokhov <dtor@mail.ru>,
-       Anisse Astier <anisse@astier.eu>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Paul Mundt <lethal@linux-sh.org>, Eric Miao <eric.y.miao@gmail.com>,
-       linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] Driver core: reduce duplicated code
-Message-ID: <20100622052314.GA17128@pengutronix.de>
-References: <20100618073950.GA12822@pengutronix.de> <1277129511-2732-1-git-send-email-u.kleine-koenig@pengutronix.de> <20100621213846.GB25511@kroah.com>
+	Tue, 22 Jun 2010 01:26:04 -0400
+Message-ID: <4C204962.70208@in.ibm.com>
+Date: Tue, 22 Jun 2010 10:55:54 +0530
+From: Sachin Sant <sachinp@in.ibm.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100621213846.GB25511@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: linux-next@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, arnd@arndb.de,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: -next June 21: WARNING: at include/linux/tty.h
+References: <20100621170056.2fcf10ad.sfr@canb.auug.org.au>
+In-Reply-To: <20100621170056.2fcf10ad.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+With next-20100621 on a x86_64 box came across this warning :
 
-> > I changed the semantic slightly to only call
-> > platform_device_add_resources if data != NULL instead of size != 0.  The
-> > idea is to support wrappers like:
-> > 
-> > 	#define add_blablub(id, pdata) \
-> > 		platform_device_register_resndata(NULL, "blablub", id, \
-> > 			NULL, 0, pdata, sizeof(struct blablub_platform_data))
-> > 
-> > that don't fail if pdata=NULL.  Ditto for res.
-> 
-> That's fine, but why would you want to have a #define for something like
-> this?  Is it really needed?
-Well, what is really needed?  I intend to use it on arm/imx.  I have
-several different machines using similar SoCs and so I want to have a
-function à la:
+TCP cubic registered
+registered taskstats version 1
+------------[ cut here ]------------
+WARNING: at include/linux/tty.h:589 tty_open+0x76/0x57a()
+Hardware name: BladeCenter LS21 -[79716AA]-
+Modules linked in:
+Pid: 1, comm: swapper Not tainted 2.6.35-rc3-autotest-next-20100621 #1
+Call Trace:
+ [<ffffffff812428d8>] ? tty_open+0x76/0x57a
+ [<ffffffff8103cf39>] warn_slowpath_common+0x80/0xae
+ [<ffffffff8103cf7c>] warn_slowpath_null+0x15/0x17
+ [<ffffffff812428d8>] tty_open+0x76/0x57a
+ [<ffffffff810d4544>] ? exact_match+0x0/0x9
+ [<ffffffff810d491f>] chrdev_open+0x133/0x152
+ [<ffffffff810d47ec>] ? chrdev_open+0x0/0x152
+ [<ffffffff810d07b4>] __dentry_open+0x140/0x252
+ [<ffffffff810d0990>] nameidata_to_filp+0x3e/0x4f
+ [<ffffffff810db588>] do_last+0x51a/0x643
+ [<ffffffff810dd621>] do_filp_open+0x23d/0x5f8
+ [<ffffffff810c1ba8>] ? slab_node+0x3c/0x78
+ [<ffffffff810d05a1>] do_sys_open+0x5a/0xf0
+ [<ffffffff810d0660>] sys_open+0x1b/0x1d
+ [<ffffffff818e66fc>] kernel_init+0x1b3/0x220
+ [<ffffffff810036d4>] kernel_thread_helper+0x4/0x10
+ [<ffffffff818e6549>] ? kernel_init+0x0/0x220
+ [<ffffffff810036d0>] ? kernel_thread_helper+0x0/0x10
+---[ end trace 108cb769a1c0e534 ]---
 
-	struct platform_device *__init imx_add_imx_i2c(int id,
-		resource_size_t iobase, resource_size_t iosize, int irq,
-		const struct imxi2c_platform_data *pdata)
+This warning seem to have been introduced with next-20100617.
+The corresponding code is :
 
-that builds a struct resource[] and then calls
-platform_device_register_resndata().  And then I have a set of macros
-like:
+585 static inline void tty_lock(void) __acquires(kernel_lock)
+586 {
+587 #ifdef CONFIG_LOCK_KERNEL
+588         /* kernel_locked is 1 for !CONFIG_LOCK_KERNEL */
+589         WARN_ON(kernel_locked());
+590 #endif
+591         lock_kernel();
+592 }
 
-	#define imx21_add_i2c_imx(pdata)	\
-		imx_add_imx_i2c(0, MX2x_I2C_BASE_ADDR, SZ_4K, MX2x_INT_I2C, pdata)
-	#define imx25_add_imx_i2c0(pdata)	\
-		imx_add_imx_i2c(0, MX25_I2C1_BASE_ADDR, SZ_16K, MX25_INT_I2C1, pdata)
-	##define imx25_add_imx_i2c1(pdata)	\
-		imx_add_imx_i2c(1, MX25_I2C2_BASE_ADDR, SZ_16K, MX25_INT_I2C2, pdata)
+which was added by commit 01510c869f9..
 
-etc.  The final goal is to get rid of files like
-arch/arm/mach-mx3/devices.c.
+tty: replace BKL with a new tty_lock
 
-> Anyway, this version looks fine to me, I'll go apply it.
-\o/
+Thanks
+-Sachin
 
-Best regards and thanks
-Uwe
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+---------------------------------
+Sachin Sant
+IBM Linux Technology Center
+India Systems and Technology Labs
+Bangalore, India
+---------------------------------
+
