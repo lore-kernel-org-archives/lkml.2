@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759234Ab0FVJmD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 05:42:03 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50222 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759173Ab0FVJl7 convert rfc822-to-8bit (ORCPT
+	id S1759202Ab0FVJpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 05:45:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45241 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754887Ab0FVJpb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 05:41:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=FsS5y4lX3H2EQTsNSsIoQ0mUJH3KpEZ9fgBD5MmtOAviht+P/GXkgjadoXgQpaRiSc
-         5tnEE30jTPFXqC/hLgUu7Xsgogw13aXaDgLKCD+9mjS+r7SG2olJNtukmEcgW3PtldN3
-         YsClNrF76aPx/LExfTxU+2m0roSKl/UzfJbbE=
-MIME-Version: 1.0
-In-Reply-To: <4C207DAF.7010200@gmail.com>
-References: <4C207DAF.7010200@gmail.com>
-Date: Tue, 22 Jun 2010 17:41:57 +0800
-Message-ID: <AANLkTinJplJTzj9rqfmpS0ZXwXDTATuNoxgMjL1z5tEv@mail.gmail.com>
-Subject: Re: [PATCH] RTC/max6900: use rtc_valid_tm to check returning tm for 
-	max6900
-From: Wan ZongShun <mcuos.com@gmail.com>
-To: Alessandro Zummo <a.zummo@towertech.it>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       rtc-linux <rtc-linux@googlegroups.com>,
-       LKML <linux-kernel@vger.kernel.org>, dale@farnsworth.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Jun 2010 05:45:31 -0400
+Subject: [PATCH] sched: silence PROVE_RCU in sched_fork()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Vivek Goyal <vgoyal@redhat.com>,
+       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       nauman@google.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Paul Menage <menage@google.com>
+In-Reply-To: <AANLkTilsDv59zbL7rbAgJByz_vSnZ0QlbK3dVJUX2VYQ@mail.gmail.com>
+References: <AANLkTin2pPqOUx--9fIX3BH3e-cU6oCRufijcx_4ozx5@mail.gmail.com>
+	 <20100608001929.GF2387@linux.vnet.ibm.com>
+	 <AANLkTikl13cJNuU32JzRarrUnoh5DYHr-Tbnv9B-UjsG@mail.gmail.com>
+	 <1275986441.5408.111.camel@twins>
+	 <AANLkTimXVlgzHivCQberLdrFP8BH_nJzt8_ozUNHG_aI@mail.gmail.com>
+	 <1276004075.2987.208.camel@twins>
+	 <AANLkTil6ucLZ0A6tWx-OQt_2EeKnx8nSx6rIg2t1L2t5@mail.gmail.com>
+	 <1276097068.1745.13.camel@laptop>
+	 <AANLkTinl2JKUX6859Ioa1y0DqHWXH5TrkissQ8BAF4cP@mail.gmail.com>
+	 <AANLkTilpM9O373rA0cw_wTYVfTiDPbjaKHScAGlt7IAr@mail.gmail.com>
+	 <1276106229.1745.65.camel@laptop> <1276107311.1745.66.camel@laptop>
+	 <AANLkTilG5bjN5QaOChmuVN6vT7kMK4eGaV-DvPynBn_t@mail.gmail.com>
+	 <1276118458.1745.144.camel@laptop>
+	 <AANLkTilsDv59zbL7rbAgJByz_vSnZ0QlbK3dVJUX2VYQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Tue, 22 Jun 2010 11:44:53 +0200
+Message-ID: <1277199893.1875.690.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
-
-> Use rtc_valid_tm to check returning tm for max6900,
-> it can avoid returning wrong tm value.
-> ---
->  drivers/rtc/rtc-max6900.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/rtc/rtc-max6900.c b/drivers/rtc/rtc-max6900.c
-> index a4f6665..486142c 100644
-> --- a/drivers/rtc/rtc-max6900.c
-> +++ b/drivers/rtc/rtc-max6900.c
-> @@ -159,7 +159,7 @@ static int max6900_i2c_read_time(struct i2c_client *client, struct rtc_time *tm)
->                      bcd2bin(regs[MAX6900_REG_CENTURY]) * 100 - 1900;
->        tm->tm_wday = bcd2bin(regs[MAX6900_REG_DW]);
->
-> -       return 0;
-> +       return rtc_valid_tm(tm);
->  }
->
->  static int max6900_i2c_clear_write_protect(struct i2c_client *client)
-> --
-> 1.6.3.3
->
+Paul Menage, Li Zefan, any comments?
 
 
+---
+Because cgroup_fork() is ran before sched_fork() [ from copy_process() ]
+and the child's pid is not yet visible the child is pinned to its
+cgroup. Therefore we can silence this warning.
 
--- 
-*linux-arm-kernel mailing list
-mail addr:linux-arm-kernel@lists.infradead.org
-you can subscribe by:
-http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+A nicer solution would be moving cgroup_fork() to right after
+dup_task_struct() and exclude PF_STARTING from task_subsys_state().
 
-* linux-arm-NUC900 mailing list
-mail addr:NUC900@googlegroups.com
-main web: https://groups.google.com/group/NUC900
-you can subscribe it by sending me mail:
-mcuos.com@gmail.com
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/sched.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index b697606..2e79518 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2561,7 +2561,16 @@ void sched_fork(struct task_struct *p, int clone_flags)
+ 	if (p->sched_class->task_fork)
+ 		p->sched_class->task_fork(p);
+ 
++	/*
++	 * The child is not yet in the pid-hash so no cgroup attach races,
++	 * and the cgroup is pinned to this child due to cgroup_fork()
++	 * is ran before sched_fork().
++	 *
++	 * Silence PROVE_RCU.
++	 */
++	rcu_read_lock();
+ 	set_task_cpu(p, cpu);
++	rcu_read_unlock();
+ 
+ #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+ 	if (likely(sched_info_on()))
+
