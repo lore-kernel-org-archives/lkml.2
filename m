@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757876Ab0FVR0S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 13:26:18 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:58084 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756012Ab0FVR0P (ORCPT
+	id S1757233Ab0FVR0K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 13:26:10 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45118 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756012Ab0FVR0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 13:26:15 -0400
-Date: Tue, 22 Jun 2010 18:25:45 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
-       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
-Message-ID: <20100622172545.GA22680@srcf.ucam.org>
-References: <AANLkTimIjaxq7IDWwIl1vv93k9bNQ2i89Sb5R5TiJmmA@mail.gmail.com> <1277032723.9555.12.camel@maxim-laptop> <AANLkTim8iZmm8pEERJUsrQWOiLSjPUfCN-TFFzZZQWx2@mail.gmail.com> <1277151410.5409.33.camel@maxim-laptop> <20100621233333.21262abjfxl8j1xc@hayate.sektori.org> <AANLkTikkt4dqYWrwtTCJ8tJZLB1kZXgF1KvaPsIOO3Dl@mail.gmail.com> <20100622163138.GD20668@srcf.ucam.org> <AANLkTikQkLFdpusfcLVOpyZHFrxwB5akr-ggFB7Fjm08@mail.gmail.com> <20100622165213.GA21842@srcf.ucam.org> <AANLkTikHLBBWrhCP_1f5Jv7zE9RKPvdsl5nSyfkeMfLl@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikHLBBWrhCP_1f5Jv7zE9RKPvdsl5nSyfkeMfLl@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 22 Jun 2010 13:26:08 -0400
+Subject: Re: bnx2 fails to compile on parisc because of missing
+ get_dma_ops()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: lethal@linux-sh.org, davem@davemloft.net, mchan@broadcom.com,
+       vapier@gentoo.org, netdev@vger.kernel.org, linux-parisc@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100622152823R.fujita.tomonori@lab.ntt.co.jp>
+References: <20100617.073653.193708702.davem@davemloft.net>
+	 <20100617234520S.fujita.tomonori@lab.ntt.co.jp>
+	 <20100617153051.GB8964@linux-sh.org>
+	 <20100622152823R.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Jun 2010 12:26:04 -0500
+Message-ID: <1277227564.9374.7.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 10:17:11AM -0700, Luis R. Rodriguez wrote:
-> On Tue, Jun 22, 2010 at 9:52 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > Why would you only want to enable ASPM for one device?
+On Tue, 2010-06-22 at 15:30 +0900, FUJITA Tomonori wrote:
+> On Fri, 18 Jun 2010 00:30:51 +0900
+> Paul Mundt <lethal@linux-sh.org> wrote:
 > 
-> ASPM doesn't always work for all devices even if they do advertise
-> ASPM capability so turning it on selectively by device is what I
-> recommend since otherwise you may get hangs and you will then have to
-> do the selective enabling.
+> > On Thu, Jun 17, 2010 at 11:50:35PM +0900, FUJITA Tomonori wrote:
+> > > On Thu, 17 Jun 2010 07:36:53 -0700 (PDT)
+> > > David Miller <davem@davemloft.net> wrote:
+> > > 
+> > > > From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> > > > Date: Thu, 17 Jun 2010 21:21:13 +0900
+> > > > 
+> > > > > On Wed, 16 Jun 2010 23:24:44 -0700
+> > > > > "Michael Chan" <mchan@broadcom.com> wrote:
+> > > > > 
+> > > > >> David, why is dma_is_consistent() always returning 1 on sparc?  The
+> > > > >> streaming DMA is not consistent.
+> > > > > 
+> > > > > I think that there are some confusion about dma_is_consistent(). Some
+> > > > > architectures think that dma_is_consistent() is supposed to return 1
+> > > > > if they can allocate coherent memory (note that some architectures
+> > > > > can't allocate coherent memory).
+> > > > 
+> > > > Right, and that's why it's defined this way.
+> > > > 
+> > > > If the desired meaning is different, just me know and I'll fix the
+> > > > sparc definition.
+> > > 
+> > > I think that there are some other architectures do the same. We need
+> > > to make sure that all the architectures define dma_is_consistent() in
+> > > the same meaning if drivers need it. However, I'm not sure we really
+> > > need dma_is_consistent(). There is only one user of it (and I think we
+> > > could remove it).
+> > > 
+> > > In the bnx2 case, we can simply prefetch on all the archs (or just
+> > > remove the optimization).
+> > 
+> > I think its worthwhile keeping, especially since the consistency can vary
+> > on a per struct device level. If there's a benefit with these sorts of
+> > prefetch micro-optimizations in drivers when it doesn't cost us that much
+> > to provide the hint, I don't really see the harm. If dma_is_consistent()
+> > is suddenly supposed to take on other meanings, or it's supposed to mean
+> > something entirely different, then this is something we should deal with
+> > separately.
+> > 
+> > I don't see any harm in letting drivers know whether we can support
+> > consistent DMA allocs for a given struct device or not though, even if
+> > the micro-optimization is marginal at best.
+> 
+> I'm happier with exporting less DMA APIs to drivers because looks like
+> new original ways to use the APIs wrongly can be always invented.
+> 
+> 
+> > At least I've conditionalized the definition on SH, and it seems other
+> > archictures have done so too. It's not clear what we'd gain from throwing
+> 
+> >From a quick look, except for SH and POWERPC (and always-coherent
+> architectures), everyone does differently?
+> 
+> There are architectures that need to turn off the CPU cache for
+> coherent memory, I can't find none of them that see if an address is
+> coherent or not in dma_is_consistent().
 
-Right, which we have to deal with by having drivers disable ASPM on 
-broken devices.
+Yes, I fear ... parisc.  We have a class of machines where this is the
+only way (and we also have a class of machines where the cache disable
+doesn't work properly and we can't manufacture coherent memory at all).
+All our pa2.0 systems are fully integrated between the iommu cache and
+the CPU cache, so they can manufacture coherent memory properly, but the
+pa1.0 systems are a mixed bag of dirty tricks.
 
-> Furthermore laptops tend to disable ASPM for cards not built-in to it, 
-> an example is Cardbus slots or internal PCI-E slots. This is often 
-> done because to enable ASPM for some cards you often need to tune the 
-> host controller in addition to enabling ASPM for the endpoint, so this 
-> will vary depending on vendor, chipset, and host controller 
-> combination. This is documentation that the OEM / ODM typically end up 
-> getting, but not end users.
+> As I wrote, there is only one user of this API and we can remove it
+> easily. Then I'm not sure it's worth fixing dma_is_consistent() in
+> many architectures. I prefer to add this to
+> feature-removal-schedule.txt to see if driver writers oppose.
 
-Having looked into this, Windows will enable ASPM on external 
-controllers unless there's some reason for it not to - where that may be 
-either the appropriate bit in the FADT being set, the device not being 
-PCIe 1.1 or later, there being no _OSC method on the appropriate root 
-bridge or the _OSC method not giving it full control over PCIe, the 
-driver disabling ASPM or the device not advertising it in the first 
-place. Are you aware of any other cases where Windows will refuse to 
-enable ASPM?
- 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Let me check our two drivers: lasi and 53c700; they're the only ones we
+support on the architecture that can't do any coherence.  I think we
+don't need to tell because the dma_sync_cache calls which replace
+coherent memory handling are indirected on the platform so we don't need
+a global dma_is_coherent() flag.
+
+James
+
+
