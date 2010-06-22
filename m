@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758659Ab0FVOKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 10:10:22 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:45647 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756175Ab0FVOKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 10:10:20 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>
-CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH v2] i2c/mips: Fix error return codes from Sibyte i2c bus driver
-Date: Tue, 22 Jun 2010 07:09:08 -0700
-Message-ID: <1277215748-31510-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.0.87.g0901d
+	id S1758695Ab0FVOLI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 10:11:08 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:18797 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab0FVOLG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 10:11:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=H4Ky+tIzqxlWeYtLMAc6KuQ+ohaXhC6zcqxf5pGsgQ5/iMpbMbuy8fkwlvTsa02Rw5
+         qXgI9zDwG62wCBT5xldWCmvW1fezECQuks6b4HRUN/uhZA9hW92GfqM4feaY4cyZpukW
+         cw4ZxRtT8xZtiW9z2rbsJypX5JYizyQcMpIuE=
+Message-ID: <4C20C478.9030505@gmail.com>
+Date: Tue, 22 Jun 2010 16:11:04 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Borislav Petkov <bp@amd64.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+       Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: intel_cacheinfo: potential NULL dereference?
+References: <4C209C15.9090604@gmail.com> <4C209C6E.3060302@gmail.com> <20100622130825.GB27658@aftab>
+In-Reply-To: <20100622130825.GB27658@aftab>
+X-Enigmail-Version: 1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sibyte i2c bus driver returns non-descriptive error values.
-Update to return error values as defined in Documentation/i2c/fault-codes.
+On 06/22/2010 03:08 PM, Borislav Petkov wrote:
+> From: Jiri Slaby <jirislaby@gmail.com>
+> Date: Tue, Jun 22, 2010 at 07:20:14AM -0400
+> 
+>> On 06/22/2010 01:18 PM, Jiri Slaby wrote:
+>>> Stanse found, that this_leaf->l3 is dereferenced at <<1>>, but checked
+>>> for being NULL at <<2>>. Is the check superfluous or the dev assignment
+>>> should go after the check?
+>>
+>> Oh, and I have another report with same symptoms for show_cache_disable.
+> 
+> Right, so I have a patch in tip/x86/cpu
+> (8cc1176e5de534d55cb26ff0cef3fd0d6ad8c3c0) which reorganizes
+> and cleans up that code. With it, all possible checks land in
+> amd_check_l3_disable() and if they have all been passed, the PCI dev is
+> guaranteed to be properly set. So no need for sprinkling additional NULL
+> checks in the code.
+> 
+> How's that?
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
----
-v2: Return -ENXIO for missing ACK and -EIO for other errors
----
- drivers/i2c/busses/i2c-sibyte.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Looks good.
 
-diff --git a/drivers/i2c/busses/i2c-sibyte.c b/drivers/i2c/busses/i2c-sibyte.c
-index 3d76a18..0fe505d 100644
---- a/drivers/i2c/busses/i2c-sibyte.c
-+++ b/drivers/i2c/busses/i2c-sibyte.c
-@@ -94,7 +94,7 @@ static int smbus_xfer(struct i2c_adapter *i2c_adap, u16 addr,
- 		}
- 		break;
- 	default:
--		return -1;      /* XXXKW better error code? */
-+		return -EOPNOTSUPP;
- 	}
- 
- 	while (csr_in32(SMB_CSR(adap, R_SMB_STATUS)) & M_SMB_BUSY)
-@@ -104,7 +104,7 @@ static int smbus_xfer(struct i2c_adapter *i2c_adap, u16 addr,
- 	if (error & M_SMB_ERROR) {
- 		/* Clear error bit by writing a 1 */
- 		csr_out32(M_SMB_ERROR, SMB_CSR(adap, R_SMB_STATUS));
--		return -1;      /* XXXKW better error code? */
-+		return (error & M_SMB_ERROR_TYPE) ? -EIO : -ENXIO;
- 	}
- 
- 	if (data_bytes == 1)
+thanks,
 -- 
-1.7.0.87.g0901d
-
+js
