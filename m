@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab0FVGXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 02:23:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20687 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754098Ab0FVGXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 02:23:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,458,1272870000"; 
-   d="scan'208";a="632434083"
-Subject: [BUGFIX] kvm, Fix a race condition for usage of is_hwpoison_address
-From: Huang Ying <ying.huang@intel.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 22 Jun 2010 14:23:11 +0800
-Message-ID: <1277187791.3004.149.camel@yhuang-dev.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754708Ab0FVGYT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 02:24:19 -0400
+Received: from astoria.ccjclearline.com ([64.235.106.9]:60592 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159Ab0FVGYS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 02:24:18 -0400
+Date: Tue, 22 Jun 2010 02:24:12 -0400 (EDT)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@lynx
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Simplify conditional processing of fs/proc.o.
+Message-ID: <alpine.DEB.2.00.1006220218310.13501@lynx>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-is_hwpoison_address accesses the page table, so the caller must hold
-current->mm->mmap_sem in read mode. So fix its usage in hav_to_pfn of
-kvm accordingly.
 
-Comments on is_hwpoison_address are added to remind other users.
+Since the entire fs/proc directory is conditionally included based on
+CONFIG_PROC_FS, it's redundant to check that same variable within that
+directory.
 
-Reported-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
+
 ---
- mm/memory-failure.c |    3 +++
- virt/kvm/kvm_main.c |    3 ++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1298,6 +1298,9 @@ done:
- 	return ret;
- }
- 
-+/*
-+ * The caller must hold current->mm->mmap_sem in read mode.
-+ */
- int is_hwpoison_address(unsigned long addr)
- {
- 	pgd_t *pgdp;
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -955,12 +955,13 @@ static pfn_t hva_to_pfn(struct kvm *kvm,
- 	if (unlikely(npages != 1)) {
- 		struct vm_area_struct *vma;
- 
-+		down_read(&current->mm->mmap_sem);
- 		if (is_hwpoison_address(addr)) {
-+			up_read(&current->mm->mmap_sem);
- 			get_page(hwpoison_page);
- 			return page_to_pfn(hwpoison_page);
- 		}
- 
--		down_read(&current->mm->mmap_sem);
- 		vma = find_vma(current->mm, addr);
- 
- 		if (vma == NULL || addr < vma->vm_start ||
+diff --git a/fs/proc/Makefile b/fs/proc/Makefile
+index 11a7b5c..2758e2a 100644
+--- a/fs/proc/Makefile
++++ b/fs/proc/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the Linux proc filesystem routines.
+ #
+
+-obj-$(CONFIG_PROC_FS) += proc.o
++obj-y   += proc.o
+
+ proc-y			:= nommu.o task_nommu.o
+ proc-$(CONFIG_MMU)	:= mmu.o task_mmu.o
 
 
+rday
+
+-- 
+
+========================================================================
+Robert P. J. Day                               Waterloo, Ontario, CANADA
+
+        Top-notch, inexpensive online Linux/OSS/kernel courses
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
