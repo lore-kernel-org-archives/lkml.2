@@ -1,297 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab0FVGF1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 02:05:27 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34846 "EHLO smtps.tip.net.au"
+	id S1753707Ab0FVGGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 02:06:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39799 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527Ab0FVGFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 02:05:25 -0400
-Date: Tue, 22 Jun 2010 16:05:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for June 22
-Message-Id: <20100622160518.2ef7afcc.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__22_Jun_2010_16_05_18_+1000_sOjlFjMOLGuwmFVm"
+	id S1751912Ab0FVGGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 02:06:43 -0400
+Date: Tue, 22 Jun 2010 16:06:39 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, John Kacur <jkacur@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patch 11/33] fs: dcache scale subdirs
+Message-ID: <20100622060639.GE31679@laptop>
+References: <20090904065142.114706411@nick.local0.net>
+ <20090904065535.609317663@nick.local0.net>
+ <1276787615.27822.426.camel@twins>
+ <20100617165329.GA6138@laptop>
+ <1277127322.1875.516.camel@laptop>
+ <20100621144806.GC31679@laptop>
+ <1277132103.1875.519.camel@laptop>
+ <1277186557.1791.7.camel@work-vm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277186557.1791.7.camel@work-vm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_Jun_2010_16_05_18_+1000_sOjlFjMOLGuwmFVm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 21, 2010 at 11:02:37PM -0700, John Stultz wrote:
+> On Mon, 2010-06-21 at 16:55 +0200, Peter Zijlstra wrote:
+> > On Tue, 2010-06-22 at 00:48 +1000, Nick Piggin wrote:
+> > > > Right, so I was staring at the -rt splat, so its John who created that
+> > > > wreckage?
+> > > 
+> > > It was, but apparently they saw an RCU bug there somewhere and hit it
+> > > with the big hammer. I haven't been able to reproduce it on a non-rt
+> > > kernel yet, and I see yet why RCU is not good enough here.
+> > 
+> > John, could you describe the failure you spotted?
+> 
+> The problem was that the rcu_read_lock() on the dentry ascending wasn't
+> preventing d_put/d_kill from removing entries from the parent node. So
+> the next entry we tried to follow was invalid. So we were getting odd
+> oopses from select_parent().
 
-Hi all,
+Oh, ah OK that makes sense. I was thinking it was a use after grace
+period problem. Hmm, I'll think about whether we can fix it better.
 
-Changes since 20100621:
-
-My fixes tree contains:
-      v4l-dvb: update gfp/slab.h includes
-      arm: update gfp/slab.h includes
-      davinci: update gfp/slab.h includes
-      ocfs2: update gfp/slab.h includes
-      acpi: update gfp/slab.h includes
-
-The vfs tree gained a build failure due to an interaction with the v9fs
-tree for which I applied a merge fix patch.
-
-The i2c tree lost its build failure.
-
-The tip tree gained a conflict against the block tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 164 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/for-linus
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging tegra/for-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
-Merging galak/next
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-CONFLICT (content): Merge conflict in include/linux/serial_sci.h
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-CONFLICT (content): Merge conflict in fs/ecryptfs/main.c
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Applying: v9fs: fixup for inode_setattr being removed
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
-Merging quilt/jdelvare-hwmon
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging ibft/master
-Merging swiotlb/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging mmc/next
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/evergreen.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/r600.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_combios=
-.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_pm.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/rv770.c
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
-or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
-eft in tree.
-$ git rm -f fs/notify/inotify/inotify.c
-Applying: fsnotify: update gfp/slab.h includes
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging catalin/for-next
-Merging alacrity/linux-next
-Merging i7core_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging omap_dss2/for-next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in fs/fs-writeback.c
-CONFLICT (content): Merge conflict in net/bridge/br_fdb.c
-CONFLICT (content): Merge conflict in net/bridge/netfilter/ebt_redirect.c
-CONFLICT (content): Merge conflict in net/bridge/netfilter/ebt_ulog.c
-CONFLICT (content): Merge conflict in net/bridge/netfilter/ebtables.c
-CONFLICT (content): Merge conflict in net/netfilter/nfnetlink_log.c
-CONFLICT (content): Merge conflict in net/netfilter/nfnetlink_queue.c
-Applying: net: merge fixups for bridge rcu code
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-CONFLICT (content): Merge conflict in mm/memory-failure.c
-Merging sysctl/master
-Merging bkl-core/bkl/core
-Merging bkl-procfs/bkl/procfs
-Merging bkl-ioctl/bkl/ioctl
-Merging quilt/driver-core
-Merging quilt/tty
-Merging quilt/usb
-Merging staging-next/staging-next
-Merging slabh/slabh
-Merging scsi-post-merge/master
-
---Signature=_Tue__22_Jun_2010_16_05_18_+1000_sOjlFjMOLGuwmFVm
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwgUp4ACgkQjjKRsyhoI8xbagCgj6oLpdh5CHBCuXOOVvQVEAoI
-RhcAn32avZ3F27ZnEqp2nXnXlBQd6bOS
-=KadI
------END PGP SIGNATURE-----
-
---Signature=_Tue__22_Jun_2010_16_05_18_+1000_sOjlFjMOLGuwmFVm--
+> 
+> I'm not as familiar with the rcu rules there, so the patch I made just
+> held the locks as it went down the chain. Not ideal of course, but still
+> an improvement over the dcache_lock that was there prior.
+> 
+> Peter: I'm sorry, I've been out for a few days. Can you give me some
+> background on what brought this up and what -rt splat you mean?
+> 
+> thanks
+> -john
+> 
