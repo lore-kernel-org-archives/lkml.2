@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758940Ab0FVIoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 04:44:55 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55759 "EHLO mx1.suse.de"
+	id S1758373Ab0FVIou (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 04:44:50 -0400
+Received: from norkia.v3.sk ([91.210.183.14]:47007 "EHLO norkia.v3.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753299Ab0FVIow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 04:44:52 -0400
-Date: Tue, 22 Jun 2010 10:44:15 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Roland McGrath <roland@redhat.com>
-Cc: Edward Allcutt <edward@allcutt.me.uk>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fs: limit maximum concurrent coredumps
-In-Reply-To: <20100622012303.BD72E402AD@magilla.sf.frob.com>
-Message-ID: <alpine.LNX.2.00.1006221043470.13809@pobox.suse.cz>
-References: <1277164737-30055-1-git-send-email-edward@allcutt.me.uk> <20100622012303.BD72E402AD@magilla.sf.frob.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753299Ab0FVIot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 04:44:49 -0400
+X-Greylist: delayed 1081 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jun 2010 04:44:49 EDT
+Subject: Re: [PATCH] [fs/sysv] Fix NULL deref. when allocating new inode
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <20100621154046.b5e8319c.akpm@linux-foundation.org>
+References: <1277039843-32548-1-git-send-email-lkundrak@v3.sk>
+	 <20100621154046.b5e8319c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Jun 2010 10:26:36 +0200
+Message-ID: <1277195196.27623.155.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.29.91 (2.29.91-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010, Roland McGrath wrote:
+On Mon, 2010-06-21 at 15:40 -0700, Andrew Morton wrote:
+> On Sun, 20 Jun 2010 15:17:23 +0200
+> Lubomir Rintel <lkundrak@v3.sk> wrote:
+> 
+> > A call to sysv_write_inode() in sysv_new_inode() to its new interface
+> > that replaced wait flag with writeback structure. This was broken by
+> > a9185b41a4f84971b930c519f0c63bd450c4810d.
 
-> A core dump is just an instance of a process suddenly reading lots of its
-> address space and doing lots of filesystem writes, producing the kinds of
-> thrashing that any such instance might entail.  
+> hm.  AFACIT this means that 2.6.34's sysvfs will instantaneously oops,
+> every time.
 
-But priority settings don't apply any more for core dumping process, do 
-they?
+Ah yes, really. I thought I checked that and found that only 2.6.35 was
+affected which is why did not cc stable@. git tag --contains proves me
+wrong though, sorry for that.
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Flash is the Web2.0 version of blink and animated gifs.
+                                     -- Stephen Smoogen
+
