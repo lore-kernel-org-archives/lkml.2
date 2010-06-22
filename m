@@ -1,142 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899Ab0FVCqz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 22:46:55 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:45734 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758791Ab0FVCqx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 22:46:53 -0400
-Date: Mon, 21 Jun 2010 22:46:50 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: markgross@thegnar.org
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-pm@lists.linux-foundation.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
-Subject: Re: [RFC][PATCH] PM: Avoid losing wakeup events during suspend
-In-Reply-To: <20100622015837.GC12795@gvim.org>
-Message-ID: <Pine.LNX.4.44L0.1006212224550.19813-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758901Ab0FVC4L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 22:56:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18798 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753614Ab0FVC4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 22:56:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,457,1272870000"; 
+   d="scan'208";a="810156882"
+Subject: Re: [PATCH v3 2/2] tmpfs: Make tmpfs scalable with percpu_counter
+ for used blocks
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+       Hugh Dickins <hughd@google.com>, yanmin.zhang@intel.com
+In-Reply-To: <20100621131802.c2f45c82.akpm@linux-foundation.org>
+References: <1276818993.9661.82.camel@schen9-DESK>
+	 <20100621131802.c2f45c82.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 21 Jun 2010 19:52:11 -0700
+Message-ID: <1277175131.5150.19.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Jun 2010, mark gross wrote:
-
-> > I get the feeling you didn't fully absorb the intent of the original
-> > wakelock patches.  Right from the start they were about fixing a race
-> > in system suspend: The system may go to sleep even though a pending
+On Mon, 2010-06-21 at 13:18 -0700, Andrew Morton wrote:
+> On Thu, 17 Jun 2010 16:56:33 -0700
+> Tim Chen <tim.c.chen@linux.intel.com> wrote:
 > 
-> wrong.  They are about 1) adding opportunistic suspend, and 2) adding
-> critical sections to block suspend.  
+> > The current implementation of tmpfs is not scalable.
+> > We found that stat_lock is contended by multiple threads
+> > when we need to get a new page, leading to useless spinning
+> > inside this spin lock.  
+> > 
+> > This patch makes use of the percpu_counter library to maintain local
+> > count of used blocks to speed up getting and returning
+> > of pages.  So the acquisition of stat_lock is unnecessary
+> > for getting and returning blocks, improving the performance 
+> > of tmpfs on system with large number of cpus.  On a 4 socket
+> > 32 core NHM-EX system, we saw improvement of 270%.
 > 
-> No race issues where ever talked about until alternative solutions
-> where put up.
-
-That's not how I remember it.  But this point isn't important enough to 
-be worth digging through the old emails to verify or disprove it.
-
-> I am struck by how differently you are seeing things.
-
-Those discussions were (and still are!) so long and annoying, it
-wouldn't be surprising if _everybody_ saw them differently!  :-)  You
-certainly must agree that a lot of differing personal viewpoints were
-expressed.
-
-> > > Lets consider the RIL incoming call race:
-> > 
-> > "RIL"?
+> So it had exactly the same performance as the token-jar approach?
 > 
-> You are not an android developer are you?
 
-Nope.
+The performance numbers are almost identical, the difference is quite
+small (within 1%).
 
->  RIL is the user mode Radio
-> Interface Layer.
->  
-> > > 1) user mode initiates an "opportunistic suspend" or whatever we call
-> > > this these days by writing to some sys interface.
-> > 
-> > Okay.
-> > 
-> > > 2) a call comes in (multi-threaded cpu) just after the write.
-> > 
-> > Right.  Presumably we want the suspend to be delayed until the call 
-> > can be handled by a user programm, yes?
-> > 
-> > > 3) the caif driver grabs a blocker, stopping the in flight suspend in the
-> > > nick of time.  But, when should it release it without racing?  How does
-> > > one implement that kernel code such that its portable to non-android user
-> > > mode stacks? 
-> > 
-> > I don't know anything about the caif driver so I can't answer this
-> > question in detail.  Here's the general idea: Somehow the kernel has to
-> > notify userspace that an incoming call has arrived.  Whatever driver or
-> > subsystem sends that notification should release the suspend blocker
-> > once userspace indicates that the notification has been received (for
-> > example, by reading all the data in an input event queue).  That's true
-> > for both Android and non-Android.
+> It'd be good if the changelog were to mention the inaccuracy issues. 
+> Describe their impact, if any.
+
+You are talking about the small chance that we may overshoot the limit
+a bit? There's a slight chance of race between threads when another
+thread allocate the last block after we have read the block count,
+thinking that the used blocks are still below limit. There's a small
+chance that the same thing happen when we remount.  
 > 
-> so tell me how user space indicates to the kernel object will ever know
-> when its ok to release the blocker?
-
-First you tell me how the kernel indicates to userspace that an
-incoming call has arrived.  My answer will depend on that.
-
-> then tell me how suspend blocker provide an elegant portable solution
-> to this that works for multiple user mode stacks.
-
-When did I -- or anyone -- ever say it was "elegant"?
-
-As for multiple user mode stacks, I don't see the issue.  If you grant
-there is a mechanism whereby userspace indicates to the kernel that a
-blocker may be released, then it seems obvious that this mechanism
-could be used in multiple user mode stacks.
-
-> problem 1) opportunistic enable suspend deferral for critical sections
-> when suspending is "bad"
-> problem 2) race between entering pm_suspend call tree and wake events. 
-
-Can you point out any examples of kernel critical sections where 
-suspending is "bad" that aren't started by arrival of a wakeup event?  
-Unless you can, I'm justified in saying that these "two" problems are 
-one and the same.
-
-> > The fact that this is bound to a user-mode PM design was inevitable, 
-> > given the whole idea was to overcome weaknesses in the system suspend 
-> > implementation and that implementation already is driven by userspace.
+> Are you actually happy with this overall approach?
 > 
-> I think we can do better.
+I think qtoken approach can eliminate the small inaccuracy mentioned
+above.  However, the inaccuracy will really be quite small and transient
+(will go away once we return the used blocks) and will not cause any
+problem to tmpfs.  So I'm fine with it.
 
-Maybe we can.  I'm certainly not going to claim that suspend blockers
-are the best possible solution.  And I'm not really keen on seeing them 
-merged along with all the attendant opportunistic suspend and userspace 
-API stuff.  But so far I haven't heard anything significantly better.
+> >
+> > ...
+> >
+> > @@ -2258,9 +2254,8 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
+> >  		return error;
+> >  
+> >  	spin_lock(&sbinfo->stat_lock);
+> > -	blocks = sbinfo->max_blocks - sbinfo->free_blocks;
+> >  	inodes = sbinfo->max_inodes - sbinfo->free_inodes;
+> > -	if (config.max_blocks < blocks)
+> > +	if (config.max_blocks < percpu_counter_sum(&sbinfo->used_blocks))
+> 
+> This could actually use percpu_counter_compare()?
+> 
 
-> > I don't know -- I have never looked at the Android userspace.  No doubt 
-> > Arve can provide some examples.
-> who are you?
+Yeah, using percpu_counter_compare probably is cleaner.
 
-You sound like a Vorlon.  Should I ask: "What do you want?"  :-)
+Tim
 
->  You don't know about the Android stack, and you keep
-> blowing about how suspend blockers solve all the PM problems?
 
-Not all of them.  Just the race between wakeup events and suspend.
-
->  I'm
-> starting to think your just trolling. 
-
-You may think what you like.  Perhaps there is a certain degree of
-truth to the accusation -- goodness knows, I do tend to prolong
-technical conversations when I think I'm right.  (Ask anybody who has
-corresponded with me for any length of time.)  But this is probably
-true of a lot of kernel developers...
-
-Alan Stern
 
