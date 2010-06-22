@@ -1,62 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758991Ab0FVKgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 06:36:50 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:59299 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755289Ab0FVKgs (ORCPT
+	id S1759228Ab0FVKuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 06:50:14 -0400
+Received: from mail4.gmhwh.org ([216.49.178.94]:45936 "EHLO mail4.gmhwh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755417Ab0FVKuM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 06:36:48 -0400
-Date: Tue, 22 Jun 2010 11:36:44 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch.pl: Add check for space after struct or
- union definition
-Message-ID: <20100622103644.GE4032@shadowen.org>
-References: <1276768624.1005.34.camel@Joe-Laptop.home>
+	Tue, 22 Jun 2010 06:50:12 -0400
+From: Kim Farah <FarahKE@ldschurch.org>
+Date: Tue, 22 Jun 2010 04:47:49 -0600
+Subject: Lucky Winner( Contact The Claims Agent)
+Thread-Topic: Lucky Winner( Contact The Claims Agent)
+Thread-Index: AQHLEfhbPoDQNKcuwkq3g80lyy8atA==
+Message-ID: <064A9A36A18BD34DBF1C6DF89514AF31128F2BA8F6@MBX03.ldschurch.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276768624.1005.34.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Disclaimer: True
+X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
+ definitions=2010-06-21_01:2010-02-06,2010-06-21,2010-06-22 signatures=0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 17, 2010 at 02:57:04AM -0700, Joe Perches wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  scripts/checkpatch.pl |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index bd88f11..59084fe 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -1876,6 +1876,16 @@ sub process {
->  			ERROR("open brace '{' following function declarations go on the next line\n" . $herecurr);
->  		}
->  
-> +# missing space after union or struct definition
-> +		if ($rawline =~ /^\+\s*(union|struct)\s+$Ident[=\{]/) {
-> +		    WARN("Missing space after struct or union definition\n" . $herecurr);
-> +		}
-> +
-> +# missing space after enum definition
-> +		if ($rawline =~ /^\+\s*enum\{/) {
-> +		    WARN("Missing space after enum definition\n" . $herecurr);
-> +		}
-> +
->  # open braces for enum, union and struct go on the same line.
->  		if ($line =~ /^.\s*{/ &&
->  		    $prevline =~ /^.\s*(?:typedef\s+)?(enum|union|struct)(?:\s+$Ident)?\s*$/) {
+You are one of the lucky winner of £1,200,000.00 in EURO MILLIONS LOTTERY 2010. CONTACT EMAIL:euromillionslottery77@yahoo.com.hk
 
-I suspect that these checks should not be against the raw line, as that
-would make them match in comments and in strings as well.  Also I
-suspect that you also want to apply this match against union/struct {.
 
-I'll have a look.
+ NOTICE: This email message is for the sole use of the intended recipient(s) and may contain confidential and privileged information. Any unauthorized review, use, disclosure or distribution is prohibited. If you are not the intended recipient, please contact the sender by reply email and destroy all copies of the original message.
 
--apw
+
