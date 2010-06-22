@@ -1,112 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750949Ab0FVE3T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 00:29:19 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53501 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab0FVE3S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 00:29:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=T6a6WUGNL7VD7dOhl/EqnKTpkcGPJJMtkYAq0mtkhZ2Gh9zFQUjyhM2JZC1JZLr2oM
-         zzFVduKvqDHI7IZBBBJZut8+UqoVTtKuJgE1FbHYYccOTdTvEwqeDPOaLQVJ5NxjhFI2
-         IcRLBfDElvPAglRgsxF5WJ0x/cQ9cUqqFF00M=
+	id S1751536Ab0FVEnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 00:43:31 -0400
+Received: from tango.tkos.co.il ([62.219.50.35]:51870 "EHLO tango.tkos.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750969Ab0FVEna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 00:43:30 -0400
+Date: Tue, 22 Jun 2010 07:43:10 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Ben Herrenchmidt <benh@kernel.crashing.org>,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] Add a common struct clk
+Message-ID: <20100622044310.GB26865@jasper.tkos.co.il>
+References: <1277098513.947165.104554431018.0.gpush@pororo>
+ <1277098513.947633.945838133095.1.gpush@pororo>
 MIME-Version: 1.0
-In-Reply-To: <20100622114739.B563.A69D9226@jp.fujitsu.com>
-References: <20100622112416.B554.A69D9226@jp.fujitsu.com>
-	<AANLkTilN3EcYq400ajA2-rf3Xs4MhD-sKCg44fjzKlX1@mail.gmail.com>
-	<20100622114739.B563.A69D9226@jp.fujitsu.com>
-Date: Tue, 22 Jun 2010 13:29:17 +0900
-Message-ID: <AANLkTimleJIOdYquPwJvgGK3Dj_JDijoNjCQh4dfXxAY@mail.gmail.com>
-Subject: Re: [Patch] Call cond_resched() at bottom of main look in 
-	balance_pgdat()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Larry Woodman <lwoodman@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277098513.947633.945838133095.1.gpush@pororo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 12:23 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> >> Kosaki's patch's goal is that kswap doesn't yield cpu if the zone doesn't meet its
->> >> min watermark to avoid failing atomic allocation.
->> >> But this patch could yield kswapd's time slice at any time.
->> >> Doesn't the patch break your goal in bb3ab59683?
->> >
->> > No. it don't break.
->> >
->> > Typically, kswapd periodically call shrink_page_list() and it call
->> > cond_resched() even if bb3ab59683 case.
->>
->> Hmm. If it is, bb3ab59683 is effective really?
->>
->> The bb3ab59683's goal is prevent CPU yield in case of free < min_watermark.
->> But shrink_page_list can yield cpu from kswapd at any time.
->> So I am not sure what is bb3ab59683's benefit.
->> Did you have any number about bb3ab59683's effectiveness?
->> (Of course, I know it's very hard. Just out of curiosity)
->>
->> As a matter of fact, when I saw this Larry's patch, I thought it would
->> be better to revert bb3ab59683. Then congestion_wait could yield CPU
->> to other process.
->>
->> What do you think about?
->
-> No. The goal is not prevent CPU yield. The goal is avoid unnecessary
-> _long_ sleep (i.e. congestion_wait(BLK_RW_ASYNC, HZ/10)).
+Hi Jeremy,
 
-I meant it.
+On Mon, Jun 21, 2010 at 01:35:13PM +0800, Jeremy Kerr wrote:
+> We currently have 21 definitions of struct clk in the ARM architecture,
+> each defined on a per-platform basis. This makes it difficult to define
+> platform- (or architecture-) independent clock sources without making
+> assumptions about struct clk, and impossible to compile two
+> platforms with different struct clks into a single image.
+> 
+> This change is an effort to unify struct clk where possible, by defining
+> a common struct clk, containing a set of clock operations. Different
+> clock implementations can set their own operations, and have a standard
+> interface for generic code. The callback interface is exposed to the
+> kernel proper, while the clock implementations only need to be seen by
+> the platform internals.
+> 
+> This allows us to share clock code among platforms, and makes it
+> possible to dynamically create clock devices in platform-independent
+> code.
+> 
+> Platforms can enable the generic struct clock through
+> CONFIG_USE_COMMON_STRUCT_CLK. In this case, the clock infrastructure
+> consists of a common struct clk:
+> 
+> struct clk {
+> 	const struct clk_ops	*ops;
+> 	unsigned int		enable_count;
+> 	struct mutex		mutex;
+> };
+> 
+> And a set of clock operations (defined per type of clock):
+> 
+> struct clk_operations {
 
-> Anyway we can't refuse CPU yield on UP. it lead to hangup ;)
->
-> What do you mean the number? If it mean how much reduce congestion_wait(),
-> it was posted a lot of time. If it mean how much reduce page allocation
-> failure bug report, I think it has been observable reduced since half
-> years ago.
+That's clk_ops above, and in the code.
 
-I meant second.
-Hmm. I doubt it's observable since at that time, Mel had posted many
-patches to reduce page allocation fail. bb3ab59683 was just one of
-them.
+>        int             (*enable)(struct clk *);
+>        void            (*disable)(struct clk *);
+>        unsigned long   (*get_rate)(struct clk *);
+>        [...]
+> };
+> 
+> To define a hardware-specific clock, machine code can "subclass" the
+> struct clock into a new struct (adding any device-specific data), and
+> provide a set of operations:
+> 
+> struct clk_foo {
+> 	struct clk	clk;
+> 	void __iomem	*some_register;
+> };
+> 
+> struct clk_operations clk_foo_ops = {
 
->
-> If you have specific worried concern, can you please share it?
->
+Ditto.
 
-My concern is that I don't want to add new band-aid on uncertain
-feature to solve
-regression of uncertain feature.(Sorry for calling Larry's patch as band-aid.).
-If we revert bb3ab59683, congestion_wait in balance_pgdat could yield
-cpu from kswapd.
+> 	.get_rate = clk_foo_get_rate,
+> };
+> 
+> The common clock definitions are based on a development patch from Ben
+> Herrenschmidt <benh@kernel.crashing.org>.
+> 
+> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
 
-If you insist on bb3ab59683's effective and have proved it at past, I
-am not against it.
-
-And If it's regression of bb3ab59683, Doesn't it make sense following as?
-It could restore old behavior.
-
----
-                 * OK, kswapd is getting into trouble.  Take a nap, then take
-                 * another pass across the zones.
-                 */
-                if (total_scanned && (priority < DEF_PRIORITY - 2)) {
-                        if (has_under_min_watermark_zone) {
-                                count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
-                                /* allowing CPU yield to go on
-watchdog or OOMed task */
-                                cond_resched();
-                        }
-                        else
-                                congestion_wait(BLK_RW_ASYNC, HZ/10);
-                }
-
+baruch
 
 -- 
-Kind regards,
-Minchan Kim
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
