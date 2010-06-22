@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab0FVKKt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 06:10:49 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38632 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755314Ab0FVKKr convert rfc822-to-8bit (ORCPT
+	id S1759242Ab0FVKMZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 06:12:25 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:34286 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755289Ab0FVKMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 06:10:47 -0400
-Subject: Re: [PATCH V2 1/5] ara virt interface of perf to support kvm guest
- os statistics collection in guest os
-From: Peter Zijlstra <peterz@infradead.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Jes Sorensen <Jes.Sorensen@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       zhiteng.huang@intel.com, tim.c.chen@intel.com
-In-Reply-To: <4C208B09.9030003@redhat.com>
-References: <1277112680.2096.509.camel@ymzhang.sh.intel.com>
-	 <4C1F50D0.70205@redhat.com>
-	 <1277171344.2096.567.camel@ymzhang.sh.intel.com>
-	 <4C2062D8.20609@redhat.com>
-	 <1277192873.2096.690.camel@ymzhang.sh.intel.com>
-	 <1277193305.1875.537.camel@laptop>  <4C206D8B.4080105@redhat.com>
-	 <1277198943.2096.724.camel@ymzhang.sh.intel.com>
-	 <1277199060.1875.675.camel@laptop>  <4C2084BB.3040501@redhat.com>
-	 <1277200010.1875.692.camel@laptop>  <4C20882C.80709@redhat.com>
-	 <1277200942.1875.694.camel@laptop>  <4C208B09.9030003@redhat.com>
+	Tue, 22 Jun 2010 06:12:24 -0400
+Subject: Re: [PATCH v4] alsa: ASoC: Add JZ4740 codec driver
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       alsa-devel@alsa-project.org
+In-Reply-To: <1277160391-14737-1-git-send-email-lars@metafoo.de>
+References: <1276958993-9012-1-git-send-email-lars@metafoo.de>
+	 <1277160391-14737-1-git-send-email-lars@metafoo.de>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 22 Jun 2010 12:10:28 +0200
-Message-ID: <1277201428.1875.696.camel@laptop>
+Date: Tue, 22 Jun 2010 11:12:19 +0100
+Message-ID: <1277201539.4537.2.camel@odin>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-22 at 13:06 +0300, Avi Kivity wrote:
-
-> You have a set of MSRs for real hardware (actually several sets) 
-> discoverable by cpuid bits.  You have another set of MSRs, using other 
-> indexes, discoverable by more CPUID bits.
+On Tue, 2010-06-22 at 00:46 +0200, Lars-Peter Clausen wrote:
+> This patch adds support for the JZ4740 internal codec.
 > 
-> The new MSR indexes will always #GP on real hardware, but will be 
-> trapped and serviced by kvm.  In effect kvm will pretend to have a 
-> hardware-like PMU but done according to its own specifications.
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+> Cc: alsa-devel@alsa-project.org
+> 
+> ---
+> Changes since v1
+> - Put Kconfig entry in alphabetic order
+> - Drop codec_set_fmt since the codec supports only one format
+> - Rename "Capture Volume" control to "Master Capture Volume"
+> - Drop unnecessary format checks
+> - Add suspend/resume
+> - Cleanup jz4740_codec_set_bias_level
+> 
+> Changes since v2
+> - Drop codec prefix from the filename. Note that I keeped it for the object
+>   name, because otherwise when build as a module it will clash with the ASoC
+>   JZ4740 platform support.
+> 
+> Changes since v3
+> - Hook up suspend/resume callbacks to the codec instead of the platform device
 
-So what's the point? I thought the whole MSR interface thing was purely
-to let other-o$ play with the PMU, but if you move it around like that
-and make it KVM specific, nobody will find it...
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
