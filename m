@@ -1,91 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758640Ab0FVNDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 09:03:22 -0400
-Received: from i1.inoi.fi ([194.100.97.46]:40212 "EHLO mail.inoi.fi"
+	id S1758374Ab0FVNFk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 09:05:40 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37725 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758230Ab0FVNCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 09:02:45 -0400
-From: Petri Lehtinen <petri.lehtinen@inoi.fi>
-To: linux-kernel@vger.kernel.org
-Cc: stable@kernel.org, netdev@vger.kernel.org,
-       Anton Vorontsov <avorontsov@ru.mvista.com>,
-       Stable <stable@vger.kernel.org>, "[2.6.32]"@mail.srv.inoi.fi,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 2/3] ucc_geth: Fix netdev watchdog triggering on link changes
-Date: Tue, 22 Jun 2010 16:02:31 +0300
-Message-Id: <1277211752-14265-3-git-send-email-petri.lehtinen@inoi.fi>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1277211752-14265-1-git-send-email-petri.lehtinen@inoi.fi>
-References: <1277211752-14265-1-git-send-email-petri.lehtinen@inoi.fi>
+	id S1755998Ab0FVNFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 09:05:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [Bug #15717] bluetooth oops
+Date: Tue, 22 Jun 2010 15:03:57 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Marcel Holtmann <marcel@holtmann.org>
+References: <g77CuMUl7QI.A.qMH.4ZpHMB@chimera> <rHrHQMIU4rI.A.vTC.gdpHMB@chimera> <20100621155514.GC1447@ucw.cz>
+In-Reply-To: <20100621155514.GC1447@ucw.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006221503.57860.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Vorontsov <avorontsov@ru.mvista.com>
+On Monday, June 21, 2010, Pavel Machek wrote:
+> On Mon 2010-06-21 00:34:24, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a report
+> > of regressions introduced between 2.6.33 and 2.6.34.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > introduced between 2.6.33 and 2.6.34.  Please verify if it still should
+> > be listed and let the tracking team know (either way).
+> 
+> Did not see this one for long long time, so it was probably fixed.
 
-Since commit 864fdf884e82bacbe8ca5e93bd43393a61d2e2b4 ("ucc_geth:
-Fix hangs after switching from full to half duplex") ucc_geth driver
-disables the controller during MAC configuration changes. Though,
-disabling the controller might take quite awhile, and so the netdev
-watchdog might get upset:
+Thanks, closed.
 
- NETDEV WATCHDOG: eth2 (ucc_geth): transmit queue 0 timed out
- ------------[ cut here ]------------
- Badness at c02729a8 [verbose debug info unavailable]
- NIP: c02729a8 LR: c02729a8 CTR: c01b6088
- REGS: c0451c40 TRAP: 0700   Not tainted  (2.6.32-trunk-8360e)
- [...]
- NIP [c02729a8] dev_watchdog+0x280/0x290
- LR [c02729a8] dev_watchdog+0x280/0x290
- Call Trace:
- [c0451cf0] [c02729a8] dev_watchdog+0x280/0x290 (unreliable)
- [c0451d50] [c00377c4] run_timer_softirq+0x164/0x224
- [c0451da0] [c0032a38] __do_softirq+0xb8/0x13c
- [c0451df0] [c00065cc] do_softirq+0xa0/0xac
- [c0451e00] [c003280c] irq_exit+0x7c/0x9c
- [c0451e10] [c00640c4] __ipipe_sync_stage+0x248/0x24c
- [...]
-
-This patch fixes the issue by detaching the netdev during the
-time we change the configuration.
-
-Reported-by: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-Signed-off-by: Anton Vorontsov <avorontsov@ru.mvista.com>
-Tested-by: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-Cc: Stable <stable@vger.kernel.org> [2.6.32]
-Signed-off-by: David S. Miller <davem@davemloft.net>
-
-(cherry picked from commit 08b5e1c91ce95793c59a59529a362a1bcc81faae)
----
- drivers/net/ucc_geth.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ucc_geth.c b/drivers/net/ucc_geth.c
-index 20aa5b5..5077fd9 100644
---- a/drivers/net/ucc_geth.c
-+++ b/drivers/net/ucc_geth.c
-@@ -1563,7 +1563,10 @@ static int ugeth_disable(struct ucc_geth_private *ugeth, enum comm_dir mode)
- 
- static void ugeth_quiesce(struct ucc_geth_private *ugeth)
- {
--	/* Wait for and prevent any further xmits. */
-+	/* Prevent any further xmits, plus detach the device. */
-+	netif_device_detach(ugeth->ndev);
-+
-+	/* Wait for any current xmits to finish. */
- 	netif_tx_disable(ugeth->ndev);
- 
- 	/* Disable the interrupt to avoid NAPI rescheduling. */
-@@ -1577,7 +1580,7 @@ static void ugeth_activate(struct ucc_geth_private *ugeth)
- {
- 	napi_enable(&ugeth->napi);
- 	enable_irq(ugeth->ug_info->uf_info.irq);
--	netif_tx_wake_all_queues(ugeth->ndev);
-+	netif_device_attach(ugeth->ndev);
- }
- 
- /* Called every time the controller might need to be made
--- 
-1.7.1
-
+Rafael
