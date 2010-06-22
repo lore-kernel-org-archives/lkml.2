@@ -1,85 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976Ab0FVTs6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 15:48:58 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51725 "EHLO
+	id S1755728Ab0FVTqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 15:46:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51688 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab0FVTqr (ORCPT
+	with ESMTP id S1755655Ab0FVTqm (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 22 Jun 2010 15:46:47 -0400
+	Tue, 22 Jun 2010 15:46:42 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp,
        iommu@lists.linux-foundation.org, albert_herranz@yahoo.es,
        x86@kernel.org
-Subject: [PATCH] Xen-SWIOTBL v0.8.3 used for Xen PCI pass through for PV guests.
-Date: Tue, 22 Jun 2010 15:42:33 -0400
-Message-Id: <1277235772-26757-1-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 16/19] swiotlb-xen: Removing the 'struct device' in the address translation routines.
+Date: Tue, 22 Jun 2010 15:42:49 -0400
+Message-Id: <1277235772-26757-17-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <1277235772-26757-1-git-send-email-konrad.wilk@oracle.com>
+References: <1277235772-26757-1-git-send-email-konrad.wilk@oracle.com>
 X-Auth-Type: Internal IP
 X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4C2112D1.022F:SCFMA922111,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090204.4C2112C7.0139:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These nineteen patches lay the groundwork for Xen Paravirtualized (PV)
-domains to access PCI pass-through devices. These patches utilize the
-SWIOTLB library modifications (http://lkml.org/lkml/2010/6/4/272).
+We don't use it at all.
 
-The end user of this is the Xen PCI frontend and Xen PCI [1] which
-require a DMA API "backend" that understands Xen's MMU. This allows the
-PV domains to use PCI devices.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ lib/swiotlb-xen.c |   25 ++++++++++++-------------
+ 1 files changed, 12 insertions(+), 13 deletions(-)
 
-This patch-set is split in two groups. The first alter the Xen components,
-while the second introduces the SWIOTLB-Xen.
+diff --git a/lib/swiotlb-xen.c b/lib/swiotlb-xen.c
+index 6bba1a5..12e9dcd 100644
+--- a/lib/swiotlb-xen.c
++++ b/lib/swiotlb-xen.c
+@@ -47,20 +47,19 @@
+ static char *xen_io_tlb_start, *xen_io_tlb_end;
+ static unsigned long xen_io_tlb_nslabs;
+ 
+-static dma_addr_t xen_phys_to_bus(struct device *hwdev, phys_addr_t paddr)
++static dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
+ {
+ 	return phys_to_machine(XPADDR(paddr)).maddr;;
+ }
+ 
+-static phys_addr_t xen_bus_to_phys(struct device *hwdev, dma_addr_t baddr)
++static phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
+ {
+ 	return machine_to_phys(XMADDR(baddr)).paddr;
+ }
+ 
+-static dma_addr_t xen_virt_to_bus(struct device *hwdev,
+-				  void *address)
++static dma_addr_t xen_virt_to_bus(void *address)
+ {
+-	return xen_phys_to_bus(hwdev, virt_to_phys(address));
++	return xen_phys_to_bus(virt_to_phys(address));
+ }
+ 
+ static int check_pages_physically_contiguous(unsigned long pfn,
+@@ -115,7 +114,7 @@ static void *
+ xen_map_single(struct device *hwdev, phys_addr_t phys, size_t size,
+ 	       enum dma_data_direction dir)
+ {
+-	u64 start_dma_addr = xen_virt_to_bus(hwdev, xen_io_tlb_start);
++	u64 start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
+ 
+ 	return swiotlb_tbl_map_single(hwdev, start_dma_addr, phys, size, dir);
+ }
+@@ -251,7 +250,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 				struct dma_attrs *attrs)
+ {
+ 	phys_addr_t phys = page_to_phys(page) + offset;
+-	dma_addr_t dev_addr = xen_phys_to_bus(dev, phys);
++	dma_addr_t dev_addr = xen_phys_to_bus(phys);
+ 	void *map;
+ 
+ 	BUG_ON(dir == DMA_NONE);
+@@ -271,7 +270,7 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 	if (!map)
+ 		return DMA_ERROR_CODE;
+ 
+-	dev_addr = xen_virt_to_bus(dev, map);
++	dev_addr = xen_virt_to_bus(map);
+ 
+ 	/*
+ 	 * Ensure that the address returned is DMA'ble
+@@ -294,7 +293,7 @@ EXPORT_SYMBOL_GPL(xen_swiotlb_map_page);
+ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
+ 			     size_t size, enum dma_data_direction dir)
+ {
+-	phys_addr_t paddr = xen_bus_to_phys(hwdev, dev_addr);
++	phys_addr_t paddr = xen_bus_to_phys(dev_addr);
+ 
+ 	BUG_ON(dir == DMA_NONE);
+ 
+@@ -339,7 +338,7 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
+ 			size_t size, enum dma_data_direction dir,
+ 			enum dma_sync_target target)
+ {
+-	phys_addr_t paddr = xen_bus_to_phys(hwdev, dev_addr);
++	phys_addr_t paddr = xen_bus_to_phys(dev_addr);
+ 
+ 	BUG_ON(dir == DMA_NONE);
+ 
+@@ -400,7 +399,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+ 
+ 	for_each_sg(sgl, sg, nelems, i) {
+ 		phys_addr_t paddr = sg_phys(sg);
+-		dma_addr_t dev_addr = xen_phys_to_bus(hwdev, paddr);
++		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
+ 
+ 		if (swiotlb_force ||
+ 		    !dma_capable(hwdev, dev_addr, sg->length) ||
+@@ -415,7 +414,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+ 				sgl[0].dma_length = 0;
+ 				return DMA_ERROR_CODE;
+ 			}
+-			sg->dma_address = xen_virt_to_bus(hwdev, map);
++			sg->dma_address = xen_virt_to_bus(map);
+ 		} else
+ 			sg->dma_address = dev_addr;
+ 		sg->dma_length = sg->length;
+@@ -512,6 +511,6 @@ EXPORT_SYMBOL_GPL(xen_swiotlb_dma_mapping_error);
+ int
+ xen_swiotlb_dma_supported(struct device *hwdev, u64 mask)
+ {
+-	return xen_virt_to_bus(hwdev, xen_io_tlb_end - 1) <= mask;
++	return xen_virt_to_bus(xen_io_tlb_end - 1) <= mask;
+ }
+ EXPORT_SYMBOL_GPL(xen_swiotlb_dma_supported);
+-- 
+1.7.0.1
 
-The Xen components patches consist of:
-
- [PATCH 01/19] xen: use _PAGE_IOMAP in ioremap to do machine mappings
- [PATCH 02/19] xen: Allow unprivileged Xen domains to create iomap pages
- [PATCH 03/19] xen: Rename the balloon lock
- [PATCH 04/19] xen: Add xen_create_contiguous_region
-
-which alter the Xen MMU, which by default utilizes a layer of indirection
-wherein the PFN is translated to the Machine Frame Number (MFN) and vice-versa.
-This is required to "fool" the guest in thinking its memory starts at PFN 0 and
-goes up to the available amount.  While in the background, PFN 0 might as well be
-MFN 1048576 (4GB).
-
-For PCI/DMA API calls (ioremap, pci_map_page, etc) having a PFN != MFN is
-not too good, so two new mechanisms are introduced:
-  a). For PTEs which manipulate the PCI/DMA pages the PFN == MFN. This is done
-      via utilizing the _PAGE_IOMAP flag to distinguish the PTE as an IO type.
-  b). Allow a mechanism to "swizzle" the MFN's under a PFN to be under a certain
-      bus width (say 32). This allows us to provide a mechanism for the
-      SWIOTLB Xen to allocate memory for its pool that will be guaranteed to be
-      under the 4GB mark.
-
-The SWIOTLB-Xen adds a library that is only used if the machine is detected
-to be running under Xen. It utilizes the SWIOTLB library bookkeeping functions
-(swiotlb_tbl_*) and only deals with the virtual to [physical, bus] (and vice-versa)
-address translations.
-
-The diffstat:
-
- arch/x86/include/asm/xen/page.h        |    8 +-
- arch/x86/include/asm/xen/swiotlb-xen.h |   14 +
- arch/x86/kernel/pci-dma.c              |    7 +-
- arch/x86/xen/Kconfig                   |    4 +
- arch/x86/xen/Makefile                  |    1 +
- arch/x86/xen/enlighten.c               |    4 +
- arch/x86/xen/mmu.c                     |  291 ++++++++++++++++++-
- arch/x86/xen/pci-swiotlb-xen.c         |   58 ++++
- drivers/xen/balloon.c                  |   15 +-
- include/linux/swiotlb-xen.h            |   65 ++++
- include/xen/interface/memory.h         |   50 +++
- include/xen/xen-ops.h                  |    6 +
- lib/Makefile                           |    1 +
- lib/swiotlb-xen.c                      |  515 ++++++++++++++++++++++++++++++++
- 14 files changed, 1018 insertions(+), 21 deletions(-)
-
-
-[1]: The Xen PCI and Xen PCI fronted patches, which have not yet been
-posted are available at git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
-under the branch devel/xen-pcifront-0.2. A merge of all required branches
-is under 'devel/merge.2.6.35-rc3'. Or 'devel/merge.2.6.34'. I will post them quite soon.
