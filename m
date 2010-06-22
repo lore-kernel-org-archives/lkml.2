@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab0FVQqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 12:46:15 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:64103 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab0FVQqO (ORCPT
+	id S1756261Ab0FVQtG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 12:49:06 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:43256 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913Ab0FVQtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 12:46:14 -0400
-Date: Tue, 22 Jun 2010 19:50:11 +0300
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: ext Rusty Russell <rusty@rustcorp.com.au>
-Cc: "dedekind1@gmail.com" <dedekind1@gmail.com>, Takashi Iwai <tiwai@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Sitsofe Wheeler <sitsofe@yahoo.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>
-Subject: Re: [PULL] param sysfs oops (simple, leaky) fix, bool arrays fix
-Message-ID: <20100622165011.GZ17639@pcarmody-desktop>
-References: <200910290902.13724.rusty@rustcorp.com.au> <s5hmxwevlm4.wl%tiwai@suse.de> <1273049369.3702.127.camel@localhost> <201005061158.13098.rusty@rustcorp.com.au>
+	Tue, 22 Jun 2010 12:49:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=U6yl+A0t6EImS7NCi296nJVdcgEdTWybN+LxoQqExx5oPozgdK0Fo7Q0zOhf4oJhld
+         5YOXKyeaFX/GhzxNl90vp1Q3lWft7h7VqLmL+9jFhKvdLAiX7Wwke3yVroh8IRDnC9v7
+         mz2DvCDpeqX/TwPDDNmW819Rvy9GLOiEOeNXg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005061158.13098.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-OriginalArrivalTime: 22 Jun 2010 16:45:14.0448 (UTC) FILETIME=[49B16500:01CB122A]
-X-Nokia-AV: Clean
+In-Reply-To: <20100622163138.GD20668@srcf.ucam.org>
+References: <1276859156.19554.2.camel@maxim-laptop> <AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com> 
+	<1276870309.23783.3.camel@maxim-laptop> <1276933774.16697.11.camel@maxim-laptop> 
+	<AANLkTimIjaxq7IDWwIl1vv93k9bNQ2i89Sb5R5TiJmmA@mail.gmail.com> 
+	<1277032723.9555.12.camel@maxim-laptop> <AANLkTim8iZmm8pEERJUsrQWOiLSjPUfCN-TFFzZZQWx2@mail.gmail.com> 
+	<1277151410.5409.33.camel@maxim-laptop> <20100621233333.21262abjfxl8j1xc@hayate.sektori.org> 
+	<AANLkTikkt4dqYWrwtTCJ8tJZLB1kZXgF1KvaPsIOO3Dl@mail.gmail.com> 
+	<20100622163138.GD20668@srcf.ucam.org>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Tue, 22 Jun 2010 09:48:40 -0700
+Message-ID: <AANLkTikQkLFdpusfcLVOpyZHFrxwB5akr-ggFB7Fjm08@mail.gmail.com>
+Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
+       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/10 04:28 +0200, ext Rusty Russell wrote:
-> On Wed, 5 May 2010 06:19:29 pm Artem Bityutskiy wrote:
-> > > Fixing in the way of the later upstream is a bit too intrusive as a
-> > > stable patch.  So, I'm also not sure whether we should take it,
-> > > too...
-> > 
-> > To be frank I do not really understand what you mean.
-> > 
-> > Anyway, I just humbly suggest not to have the "no one uses that, let's
-> > have a leak" attitude. I do understand that this is a 'it's a lot of
-> > churn for not much gain'. However, I think the rmmod leak is large
-> > enough issue.
-> 
-> Thanks Artem, that's exactly the kind of feedback we need.
-> 
-> For most people, module parameters are rare, and module removal is rare.
-> So the amount of leak is less than the size of the code we would add to fix
-> it.
-> 
-> If this is hitting you, it clearly changes the priorities.  I will include
-> the patches now.
+On Tue, Jun 22, 2010 at 9:31 AM, Matthew Garrett <mjg@redhat.com> wrote:
+> On Mon, Jun 21, 2010 at 01:39:07PM -0700, Luis R. Rodriguez wrote:
+>> Last I reviewed CONFIG_PCIEASPM won't buy you *anything* other than
+>> debugging knobs. With it you can force all devices to enable ASPM
+>> completely on or disable it. Both of which I think are not really
+>> useful and instead should be done in userspace given that if you are
+>> testing ASPM you likely want to test only one one device and its
+>> respective root complex, not all at the same time.
+>
+> It buys you enabling of ASPM on devices that the BIOS hasn't configured,
+> which is legitimate and useful.
 
-Rusty,
+Sure, I agree with that, but it also will enable ASPM for *all*
+devices which have the capability which IMHO is a terrible idea for
+users when all they want to do is enable ASPM for one device. Instead
+I recommend users to enable ASPM for their devices selectively and
+from userspace.
 
-Artem's passed the baton over to me to investigate, so I've reviewed
-and back-ported the last known version of your patchset. I'm happy to 
-report that the 100% reproducable leak that we were seeing before
-cannot be reproduced. As expected, given review of the code. I have 
-not been able to test the final driver-specific patches from your 
-patchset, but up to and including
-
-[PATCH 12/18] param: simple locking for sysfs-writable charp parameters
-
-they can all have a:
-
-Tested-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
-
-I'm quite interested to see these pushed into the mainline so that I
-can cherry-pick final versions for our internal tree, do you have any 
-schedule for that?
-
-Cheers,
-Phil
+  Luis
