@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab0FVVKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 17:10:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11269 "EHLO mx1.redhat.com"
+	id S1756183Ab0FVVLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 17:11:40 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:57779 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751535Ab0FVVKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 17:10:45 -0400
-Date: Tue, 22 Jun 2010 23:10:40 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH -mm 2/6] rmap: always add new vmas at the end
-Message-ID: <20100622211040.GQ5787@random.random>
-References: <20100621163146.4e4e30cb@annuminas.surriel.com>
- <20100621163349.7dbd1ef6@annuminas.surriel.com>
- <20100622140822.3d290151.akpm@linux-foundation.org>
+	id S1752199Ab0FVVLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 17:11:38 -0400
+Date: Tue, 22 Jun 2010 14:11:35 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Miles Lane <miles.lane@gmail.com>
+Subject: Re: [Bug #15863] 2.6.34-rc5-git7 (plus all patches) -- another
+ suspicious rcu_dereference_check() usage.
+Message-ID: <20100622211135.GO2290@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <g77CuMUl7QI.A.qMH.4ZpHMB@chimera>
+ <rHrHQMIU4rI.A.E9B.QcpHMB@chimera>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100622140822.3d290151.akpm@linux-foundation.org>
+In-Reply-To: <rHrHQMIU4rI.A.E9B.QcpHMB@chimera>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 02:08:22PM -0700, Andrew Morton wrote:
-> On Mon, 21 Jun 2010 16:33:49 -0400
-> Rik van Riel <riel@redhat.com> wrote:
+On Mon, Jun 21, 2010 at 12:34:25AM +0200, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.33 and 2.6.34.
 > 
-> > From: Andrea Arcangeli <aarcange@redhat.com>
-> > Subject: always add new vmas at the end
-> > 
-> > Make sure to always add new VMAs at the end of the list.  This
-> > is important so rmap_walk does not miss a VMA that was created
-> > during the rmap_walk.
-> > 
-> > The old code got this right most of the time due to luck, but
-> > was buggy when anon_vma_prepare reused a mergeable anon_vma.
-> > 
-> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> > Signed-off-by: Rik van Riel <riel@redhat.com>
-> > ---
-> > 
-> > diff --git a/mm/rmap.c b/mm/rmap.c
-> > --- a/mm/rmap.c
-> > +++ b/mm/rmap.c
-> > @@ -149,7 +149,7 @@ int anon_vma_prepare(struct vm_area_stru
-> >  			avc->anon_vma = anon_vma;
-> >  			avc->vma = vma;
-> >  			list_add(&avc->same_vma, &vma->anon_vma_chain);
-> > -			list_add(&avc->same_anon_vma, &anon_vma->head);
-> > +			list_add_tail(&avc->same_anon_vma, &anon_vma->head);
-> >  			allocated = NULL;
-> >  			avc = NULL;
-> >  		}
-> 
-> Should this go into 2.6.35?
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
+> be listed and let the tracking team know (either way).
 
-Well migrate got broken anyway in 2.6.34, so until the whole
-root-anon-vma patchqueue is merged, it's not going to provide a safe
-migrate anyway and it can as well wait with the rest.
+We have been knocking these off as they appear.  There is one or two
+that the relevant maintainers have been ignoring, but that always seems
+to be the case.  ;-)
+
+Your choice as to whether you want to track the group...
+
+							Thanx, Paul
+
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15863
+> Subject		: 2.6.34-rc5-git7 (plus all patches) -- another suspicious rcu_dereference_check() usage.
+> Submitter	: Miles Lane <miles.lane@gmail.com>
+> Date		: 2010-04-27 0:51 (55 days old)
+> Message-ID	: <h2ya44ae5cd1004261751waa5cb65ei3d139cbcfa2cc5cf@mail.gmail.com>
+> References	: http://marc.info/?l=linux-kernel&m=127232949104878&w=2
+> Handled-By	: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Patch		: https://patchwork.kernel.org/patch/96096/
+> 
+> 
