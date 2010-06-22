@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758974Ab0FVJyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 05:54:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46114 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754366Ab0FVJyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 05:54:18 -0400
-Message-ID: <4C20882C.80709@redhat.com>
-Date: Tue, 22 Jun 2010 12:53:48 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1758943Ab0FVKAM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 06:00:12 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53852 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753774Ab0FVKAK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 06:00:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=rH/D1hFa/uD4iI2q/DpBuvVximRciG3A0nnm7wgnhOSS0YStdW/mIzrQC8eWHyMxfR
+         J60jZid3XZqq9VydCT87CZdSDjRFqTmsPeLl0/5ESeKWr/j6A/xNP82TwdPzUo3I6Fas
+         17oNVCIyBEFaBi1OD+OmBD14cK+ZUhWQyDHME=
+Message-ID: <4C208865.5090002@gmail.com>
+Date: Tue, 22 Jun 2010 17:54:45 +0800
+From: Wan ZongShun <mcuos.com@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Jes Sorensen <Jes.Sorensen@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       zhiteng.huang@intel.com, tim.c.chen@intel.com
-Subject: Re: [PATCH V2 1/5] ara virt interface of perf to support kvm guest
- os statistics collection in guest os
-References: <1277112680.2096.509.camel@ymzhang.sh.intel.com>	 <4C1F50D0.70205@redhat.com>	 <1277171344.2096.567.camel@ymzhang.sh.intel.com>	 <4C2062D8.20609@redhat.com>	 <1277192873.2096.690.camel@ymzhang.sh.intel.com>	 <1277193305.1875.537.camel@laptop>  <4C206D8B.4080105@redhat.com>	 <1277198943.2096.724.camel@ymzhang.sh.intel.com>	 <1277199060.1875.675.camel@laptop>  <4C2084BB.3040501@redhat.com> <1277200010.1875.692.camel@laptop>
-In-Reply-To: <1277200010.1875.692.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Alessandro Zummo <a.zummo@towertech.it>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       rtc-linux <rtc-linux@googlegroups.com>
+Subject: [PATCH] RTC/m48t86: patch for use rtc_valid_tm to check returning
+ tm.
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2010 12:46 PM, Peter Zijlstra wrote:
->
->> Avi's suggestion of using virtual MSRs makes a ton of sense for this
->> though, and it makes it possible to switch direct access on/off for the
->> cases where direct access is possible, and go emulated when it isn't.
->>      
-> /me has no clue what virtual MSRs are,
+This patch is to use rtc_valid_tm for checking
+returning struct rtc_time *tm, it can avoid returning
+wrong tm value.
 
-MSRs that are not defined by the hardware, but instead by the hypervisor.
+Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
 
-> but yeah, that sounds about
-> right. Anyway, the generic case is full trap and emulate get that
-> working first, then try and be smart and avoid some traps.
->    
+---
+ drivers/rtc/rtc-m48t86.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I doubt we can avoid traps for the paravirt PMU since the counter 
-indexes will not match.
+diff --git a/drivers/rtc/rtc-m48t86.c b/drivers/rtc/rtc-m48t86.c
+index 7c045cf..f981287 100644
+--- a/drivers/rtc/rtc-m48t86.c
++++ b/drivers/rtc/rtc-m48t86.c
+@@ -77,7 +77,7 @@ static int m48t86_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 		if (ops->readbyte(M48T86_REG_HOUR) & 0x80)
+ 			tm->tm_hour += 12;
 
-When emulating the hardware PMU we can be clever at times and allow 
-RDPMC not to trap.
+-	return 0;
++	return rtc_valid_tm(tm);
+ }
 
+ static int m48t86_rtc_set_time(struct device *dev, struct rtc_time *tm)
 -- 
-error compiling committee.c: too many arguments to function
-
+1.6.3.3
