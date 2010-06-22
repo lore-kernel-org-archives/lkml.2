@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab0FVQGh (ORCPT <rfc822;w@1wt.eu>);
+	id S1755497Ab0FVQGj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 12:06:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59530 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754918Ab0FVQGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Jun 2010 12:06:37 -0400
-Received: from acsinet14.oracle.com ([141.146.126.236]:23926 "EHLO
-	acsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab0FVQG0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 12:06:26 -0400
-X-Greylist: delayed 354 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jun 2010 12:06:25 EDT
-Date: Tue, 22 Jun 2010 08:59:03 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for June 22 (staging/spectra)
-Message-Id: <20100622085903.4232617d.randy.dunlap@oracle.com>
-In-Reply-To: <20100622083032.8abe1605.randy.dunlap@oracle.com>
-References: <20100622160518.2ef7afcc.sfr@canb.auug.org.au>
-	<20100622083032.8abe1605.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C20DE0F.00DE:SCFMA4539814,ss=1,fgs=0
+Date: Tue, 22 Jun 2010 18:04:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mike McCormack <mikem@ring3k.org>
+Cc: akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+       serue@us.ibm.com, jmorris@namei.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] proc: Add complete process group list
+Message-ID: <20100622160442.GA9072@redhat.com>
+References: <4C20D1AE.5000205@ring3k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C20D1AE.5000205@ring3k.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Jun 2010 08:30:32 -0700 Randy Dunlap wrote:
+On 06/23, Mike McCormack wrote:
+>
+> The new file /proc/<pid>/groups consists of a single group id per line,
+>  with each line being 11 characters long.  This should be enough space
+>  for 16bit or 32bit group ids.
+>
+> This feature might be useful for a server listening on a unix domain pipe
+>  to determine the list of groups that a client process is in from its pid.
 
-> On Tue, 22 Jun 2010 16:05:18 +1000 Stephen Rothwell wrote:
-> 
-> > Hi all,
-> > 
-> > Changes since 20100621:
-> > 
-> > My fixes tree contains:
-> >       v4l-dvb: update gfp/slab.h includes
-> >       arm: update gfp/slab.h includes
-> >       davinci: update gfp/slab.h includes
-> >       ocfs2: update gfp/slab.h includes
-> >       acpi: update gfp/slab.h includes
-> 
-> 
-> drivers/staging/spectra/ffsport.c:307: error: implicit declaration of function 'blk_fs_request'
-> 
-> Where is this function??
+As usual, I can never comment whether we need this or not. Just a minor
+nit about the code,
 
-The macro was deleted from include/linux/blkdev.h.  Just change that line to
+> +static int groups_proc_show(struct seq_file *m, void *v)
+> +{
+> +	struct inode *inode = m->private;
+> +	struct group_info *group_info;
+> +	struct task_struct *task;
+> +	const struct cred *cred;
+> +	struct pid *pid;
+> +	unsigned int g;
+> +
+> +	pid = proc_pid(inode);
+> +	task = get_pid_task(pid, PIDTYPE_PID);
 
--	if (!blk_fs_request(req))
-+	if (req->cmd_type != REQ_TYPE_FS)
+get_proc_task() ?
 
+> +	if (!task)
+> +		return -ESRCH;
+> +
+> +	cred = get_task_cred(task);
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+OTOH. Not that I think this is terribly important, but I don't think
+this needs get_task_struct + get_cred,
+
+	group_info = NULL;
+
+	rcu_read_lock();
+	task = pid_task(proc_pid(inode), PIDTYPE_PID);
+	if (task) {
+		group_info = _task_cred(task)->group_info;
+		get_group_info(group_info);
+	}
+	rcu_read_unlock();
+
+	if (!group_info)
+		retrn ESRCH;
+
+Feel free to ignore though.
+
+Oleg.
+
