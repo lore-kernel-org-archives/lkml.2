@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758878Ab0FVCpr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Jun 2010 22:45:47 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:63450 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab0FVCpq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Jun 2010 22:45:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NLEX05mz0RelB0ABkRKwmJNMVYSbMpYLZQ63JP2iWOOtcVUUKh5vvbOrfMbZl2Qd2S
-         Be5JmXM7IWTCtu9bAQYbUS0zrfrJ3FK/x5j3R+R2rVcS00hTkhwQsDgD4arJEZwWtr3B
-         Jm6P4HULA3tbWM6MThy7Uu7kDR2uZEfVwJbW8=
+	id S932230Ab0FVCqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Jun 2010 22:46:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19924 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758881Ab0FVCqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Jun 2010 22:46:03 -0400
+Message-ID: <4C2023D0.7010309@redhat.com>
+Date: Tue, 22 Jun 2010 10:45:36 +0800
+From: Xiaotian Feng <dfeng@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100622112416.B554.A69D9226@jp.fujitsu.com>
-References: <20100618093954.FBE7.A69D9226@jp.fujitsu.com>
-	<20100621141315.GB2456@barrios-desktop>
-	<20100622112416.B554.A69D9226@jp.fujitsu.com>
-Date: Tue, 22 Jun 2010 11:45:45 +0900
-Message-ID: <AANLkTilN3EcYq400ajA2-rf3Xs4MhD-sKCg44fjzKlX1@mail.gmail.com>
-Subject: Re: [Patch] Call cond_resched() at bottom of main look in 
-	balance_pgdat()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Larry Woodman <lwoodman@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+       Marcin Slusarz <marcin.slusarz@gmail.com>,
+       Dan Carpenter <error27@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, "H.PeterA" <nvinhpa@zytor.com>,
+       Venkatesh Pallipadi <venki@google.com>, Jack Steiner <steiner@sgi.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [patch] x86, pat: freeing invalid memtype messages
+References: <20100617134559.GA29824@bicker> <20100617161728.GA2741@joi.lan>	 <4C1B1691.6020809@redhat.com> <20100618175726.GA2785@joi.lan>	 <4C1F455E.6050502@redhat.com> <1277118155.1875.508.camel@laptop>	 <4C1F47EF.2060509@redhat.com>  <20100621153303.GA2754@joi.lan>	 <1277134873.1875.520.camel@laptop> <1277142860.3017.22.camel@sbs-t61.sc.intel.com>
+In-Reply-To: <1277142860.3017.22.camel@sbs-t61.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 11:24 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> > =============================================================
->> > Subject: [PATCH] Call cond_resched() at bottom of main look in balance_pgdat()
->> > From: Larry Woodman <lwoodman@redhat.com>
->> >
->> > We are seeing a problem where kswapd gets stuck and hogs the CPU on a
->> > small single CPU system when an OOM kill should occur.  When this
->> > happens swap space has been exhausted and the pagecache has been shrunk
->> > to zero.  Once kswapd gets the CPU it never gives it up because at least
->> > one zone is below high.  Adding a single cond_resched() at the end of
->> > the main loop in balance_pgdat() fixes the problem by allowing the
->> > watchdog and tasks to run and eventually do an OOM kill which frees up
->> > the resources.
->> >
->> > kosaki note: This seems regression caused by commit bb3ab59683
->> > (vmscan: stop kswapd waiting on congestion when the min watermark is
->> >  not being met)
->> >
->> > Signed-off-by: Larry Woodman <lwoodman@redhat.com>
->> > Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> > ---
->> >  mm/vmscan.c |    1 +
->> >  1 files changed, 1 insertions(+), 0 deletions(-)
->> >
->> > diff --git a/mm/vmscan.c b/mm/vmscan.c
->> > index 9c7e57c..c5c46b7 100644
->> > --- a/mm/vmscan.c
->> > +++ b/mm/vmscan.c
->> > @@ -2182,6 +2182,7 @@ loop_again:
->> >              */
->> >             if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
->> >                     break;
->> > +           cond_resched();
->> >     }
->> >  out:
->> >     /*
->> > --
->> > 1.6.5.2
+On 06/22/2010 01:54 AM, Suresh Siddha wrote:
+> On Mon, 2010-06-21 at 08:41 -0700, Peter Zijlstra wrote:
+>> On Mon, 2010-06-21 at 17:33 +0200, Marcin Slusarz wrote:
+>>> On Mon, Jun 21, 2010 at 07:07:27PM +0800, Xiaotian Feng wrote:
+>>>> On 06/21/2010 07:02 PM, Peter Zijlstra wrote:
+>>>>> On Mon, 2010-06-21 at 18:56 +0800, Xiaotian Feng wrote:
+>>>>>
+>>>>>> I guess there might be something wrong between the augmented rbtree insert/remove ..
+>>>>>
+>>>>> The easiest thing is to revert that change and try again, the next step
+>>>>> would be to print the full RB tree on each modification and look where
+>>>>> it goes wrong.
+>>>>>
+>>>>> That said, I did print my fair share of (augmented) RB trees while
+>>>>> playing with scheduler patches and I can't remember it ever having
+>>>>> messed up like that.
+>>>> He's using 2.6.35-rc2+, without your "rbtree: Undo augmented trees
+>>>> performance damage" patch ;-)
+>>>
+>>> I applied it manually (commit 2463eb8b3093995e09a0d41b3d78ee0cf5fb4249 from -tip)
+>>> to 2.6.35-rc3 and it fixed both acpi's and nouveau's "invalid memtype" messages.
+>>> Thanks.
 >>
->> Kosaki's patch's goal is that kswap doesn't yield cpu if the zone doesn't meet its
->> min watermark to avoid failing atomic allocation.
->> But this patch could yield kswapd's time slice at any time.
->> Doesn't the patch break your goal in bb3ab59683?
+>> Oh neat, so it actually fixes a bug in the previous augmented rb-tree
+>> implementation?
 >
-> No. it don't break.
+> When I was reviewing your fix, it looked like that prior to your fix we
+> were re-augmenting only at points where we do the tree rotations/color
+> change and at the points of node insertion/removal. I don't think we
+> were re-augmenting all the parent nodes in the path of the selected-node
+> that is going to replace the deleted node.
 >
-> Typically, kswapd periodically call shrink_page_list() and it call
-> cond_resched() even if bb3ab59683 case.
+> Perhaps we were hitting this issue here.
 
-Hmm. If it is, bb3ab59683 is effective really?
+Were it from a insert without any rotations/color changes?
 
-The bb3ab59683's goal is prevent CPU yield in case of free < min_watermark.
-But shrink_page_list can yield cpu from kswapd at any time.
-So I am not sure what is bb3ab59683's benefit.
-Did you have any number about bb3ab59683's effectiveness?
-(Of course, I know it's very hard. Just out of curiosity)
+This case is performing insert A/remove A/ 2nd insert A/ 2nd remove 
+A/3rd insert A. And the 2nd remove
+shows us the invalid memtype.  3rd insert shows us it is in the rbtree. 
+All I can image is that get_subtree_max_end
+in memtype_rb_lowest_match returned stale value.
 
-As a matter of fact, when I saw this Larry's patch, I thought it would
-be better to revert bb3ab59683. Then congestion_wait could yield CPU
-to other process.
+It looks like we don't re-augment the parent nodes if there aren't any 
+rotations/color changes
+in the rb_insert_color().
 
-What do you think about?
+>
+> thanks,
+> suresh
+>
+>
 
--- 
-Kind regards,
-Minchan Kim
