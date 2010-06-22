@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759278Ab0FVKz5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 06:55:57 -0400
-Received: from mk-outboundfilter-6-a-3.mail.uk.tiscali.com ([212.74.114.22]:12291
-	"EHLO mk-outboundfilter-6-a-3.mail.uk.tiscali.com"
+	id S932389Ab0FVLBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 07:01:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39446 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759144Ab0FVKzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 06:55:55 -0400
-X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jun 2010 06:55:55 EDT
-X-Trace: 220204588/mk-outboundfilter-6.mail.uk.tiscali.com/PIPEX/$PIPEX-MX-ACCEPTED/pipex-infrastructure/212.74.100.20/None/capstoneinvestment@consultant.com
-X-SBRS: None
-X-RemoteIP: 212.74.100.20
-X-IP-MAIL-FROM: capstoneinvestment@consultant.com
-X-SMTP-AUTH: 
-X-Originating-Country: GB/UNITED KINGDOM
-X-MUA: Mintersoft EdgeDesk, Build 4.03.0105
-X-IP-BHB: Once
-X-IP-Webmail: TRUE
-To: Undisclosed recipients:;
-X-IP-Added: To/mk-outboundfilter-6.mail.uk.tiscali.com
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtgLAEYxIEzUSmQU/2dsb2JhbACDHYRTliIsE0BzrwWRNIElgUOBQ3AEjHyDTwI
-X-IronPort-AV: E=Sophos;i="4.53,459,1272841200"; 
-   d="scan'208";a="220204588"
-X-IP-Direction: IN
-From: "Capstone Investment Advisors UK LLP" 
-	<capstoneinvestment@consultant.com>
-Importance: Normal
-Sensitivity: Normal
-Message-ID: <W3539328735721277203566@compnode04.prod.gpfs.vnl>
-X-Mailer: Mintersoft EdgeDesk, Build 4.03.0105
-X-Originating-IP: [83.143.9.81]
-X-Forwarded-For: [(null)]
-Date: Tue, 22 Jun 2010 10:46:06 +0000
-Subject: Mr. David Van Robert
-Reply-to: capstoneinvestment@consultant.com
+	id S1754459Ab0FVLB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 07:01:29 -0400
+Message-ID: <4C2097F4.1080402@redhat.com>
+Date: Tue, 22 Jun 2010 14:01:08 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Jes Sorensen <Jes.Sorensen@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       zhiteng.huang@intel.com, tim.c.chen@intel.com
+Subject: Re: [PATCH V2 1/5] ara virt interface of perf to support kvm guest
+ os statistics collection in guest os
+References: <1277112680.2096.509.camel@ymzhang.sh.intel.com>	 <4C1F50D0.70205@redhat.com>	 <1277171344.2096.567.camel@ymzhang.sh.intel.com>	 <4C2062D8.20609@redhat.com>	 <1277192873.2096.690.camel@ymzhang.sh.intel.com>	 <1277193305.1875.537.camel@laptop>  <4C206D8B.4080105@redhat.com>	 <1277198943.2096.724.camel@ymzhang.sh.intel.com>	 <1277199060.1875.675.camel@laptop>  <4C2084BB.3040501@redhat.com>	 <1277200010.1875.692.camel@laptop>  <4C20882C.80709@redhat.com>	 <1277200942.1875.694.camel@laptop>  <4C208B09.9030003@redhat.com> <1277201428.1875.696.camel@laptop>
+In-Reply-To: <1277201428.1875.696.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Mr. David Van Robert, I have a Business Proposal Value $13.2 Million
-US Dollars As an Investment, if interested Contact me on my E-mail
-    capstoneinvestment@consultant.com------------------------------------------
-This e-mail was sent using Tiscali Webmail
+On 06/22/2010 01:10 PM, Peter Zijlstra wrote:
+> On Tue, 2010-06-22 at 13:06 +0300, Avi Kivity wrote:
+>
+>    
+>> You have a set of MSRs for real hardware (actually several sets)
+>> discoverable by cpuid bits.  You have another set of MSRs, using other
+>> indexes, discoverable by more CPUID bits.
+>>
+>> The new MSR indexes will always #GP on real hardware, but will be
+>> trapped and serviced by kvm.  In effect kvm will pretend to have a
+>> hardware-like PMU but done according to its own specifications.
+>>      
+> So what's the point?
 
+We already have infrastructure for save/restore around MSRs.  They are 
+state-based (as opposed to function-based hypercalls), so it's easy to 
+live migrate by copying the MSR values.
 
+> I thought the whole MSR interface thing was purely
+> to let other-o$ play with the PMU, but if you move it around like that
+> and make it KVM specific, nobody will find it...
+>    
+
+Other-os support will be achieved by emulating an existing interface.
+
+-- 
+error compiling committee.c: too many arguments to function
 
