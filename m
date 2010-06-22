@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab0FVIrX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 04:47:23 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:6500 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab0FVIrV (ORCPT
+	id S1758937Ab0FVIyq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 04:54:46 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:36233 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755081Ab0FVIyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 04:47:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=LkFFJcWgTRNf9AvKv6PtoeMjm1dmwpq30HLLL+T+k5w/9XH138yunvy+FERULGveCR
-         R1qLGPIG38bmPhgcui/dz2iESvDjwZSqVvl2WBepw8JpwmGLO/UkFXq9TkKMp0USPnI6
-         OvNQr5+OzMWj4/l3+JEGxDDf3t+QykuwGNYMA=
-From: Sankar P <sankar.curiosity@gmail.com>
-To: penberg@cs.helsinki.fi
-Cc: lethal@linux-sh.org, linux-sh@vger.kernel.org,
-       linux-kernel@vger.kernel.org, lrodriguez@atheros.com,
-       catalin.marinas@arm.com, rnagarajan@novell.com, teheo@novell.com,
-       linux-mm@kvack.org, paulmck@linux.vnet.ibm.com, mingo@elte.hu,
-       akpm@linux-foundation.org, Sankar P <sankar.curiosity@gmail.com>
-Subject: [PATCH] kmemleak: config-options: Default buffer size for kmemleak
-Date: Tue, 22 Jun 2010 14:16:43 +0530
-Message-Id: <1277196403-20836-1-git-send-email-sankar.curiosity@gmail.com>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <4C20702C.1080405@cs.helsinki.fi>
-References: <AANLkTimb7rP0rS0OU8nan5uNEhHx_kEYL99ImZ3c8o0D@mail.gmail.com> <1277189909-16376-1-git-send-email-sankar.curiosity@gmail.com> <4C20702C.1080405@cs.helsinki.fi>
+	Tue, 22 Jun 2010 04:54:44 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 22 Jun 2010 17:49:06 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Roland McGrath <roland@redhat.com>, Edward Allcutt <edward@allcutt.me.uk>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
+       Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: Re: [PATCH] fs: limit maximum concurrent coredumps
+Message-Id: <20100622174906.ddf7d298.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100621184116.92f85696.akpm@linux-foundation.org>
+References: <1277164737-30055-1-git-send-email-edward@allcutt.me.uk>
+	<20100622012303.BD72E402AD@magilla.sf.frob.com>
+	<20100621184116.92f85696.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we try to find the memory leaks in kernel that is
-compiled with 'make defconfig', the default buffer size
-of DEBUG_KMEMLEAK_EARLY_LOG_SIZE seem to be inadequate.
+On Mon, 21 Jun 2010 18:41:16 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Change the buffer size from 400 to 1000,
-which is sufficient for most cases.
+> On Mon, 21 Jun 2010 18:23:03 -0700 (PDT) Roland McGrath <roland@redhat.com> wrote:
 
-Signed-off-by: Sankar P <sankar.curiosity@gmail.com>
----
+> > That won't make your crashers each complete quickly, but it will prevent
+> > the thrashing.  Instead of some crashers suddenly not producing dumps at
+> > all, they'll just all queue up waiting to finish crashing but not using any
+> > CPU or IO resources.  That way you don't lose any core dumps unless you
+> > want to start SIGKILL'ing things (which oom_kill might do if need be),
+> > you just don't die in flames trying to do nothing but dump cores.
+> 
+> A global knob is a bit old-school.  Perhaps it should be a per-memcg
+> knob or something.
+> 
 
-Thanks to Pekka Enberg's comments on my previous mail, I am sending a better patch,
-and adding new reviewers as suggested by the get_maintainer script. 
+Hmm, in my desktop, it seems coredump in a group is charged against
+root cgroup. (not against the group it belongs to.)
+This seems strange.....I've chased why...for 2 hours. I noticed 
 
- lib/Kconfig.debug |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+==
+[root@bluextal kamezawa]# cat /proc/sys/kernel/core_pattern
+|/usr/libexec/abrt-hook-ccpp /var/cache/abrt %p %s %u %c
+==
+This is fedora-12.
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index e722e9d..5eb9463 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -382,7 +382,7 @@ config DEBUG_KMEMLEAK_EARLY_LOG_SIZE
- 	int "Maximum kmemleak early log entries"
- 	depends on DEBUG_KMEMLEAK
- 	range 200 40000
--	default 400
-+	default 1000
- 	help
- 	  Kmemleak must track all the memory allocations to avoid
- 	  reporting false positives. Since memory may be allocated or
--- 
-1.6.4.2
+Then, for recent distros, doing "coredump" with some limited resource may
+be a job of abrt program. It can make use of I/O cgroup + direct I/O.
+
+If a kernel help is necesary, this helper function should work in
+the caller's cgroup, maybe.
+
+Regards,
+-Kame
 
