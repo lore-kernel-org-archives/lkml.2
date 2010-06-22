@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758499Ab0FVNfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 09:35:45 -0400
-Received: from xyzzy.farnsworth.org ([65.39.95.219]:41869 "EHLO
-	xyzzy.farnsworth.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757915Ab0FVNfo (ORCPT
+	id S1758596Ab0FVNgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 09:36:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64098 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758318Ab0FVNgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 09:35:44 -0400
-X-Greylist: delayed 2898 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Jun 2010 09:35:44 EDT
-Date: Tue, 22 Jun 2010 05:47:09 -0700
-From: Dale Farnsworth <dale@farnsworth.org>
-To: Wan ZongShun <mcuos.com@gmail.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       rtc-linux <rtc-linux@googlegroups.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20100622124709.GA6170@farnsworth.org>
-References: <4C207DAF.7010200@gmail.com>
-MIME-Version: 1.0
-Content-Disposition: inline
-In-Reply-To: <4C207DAF.7010200@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-Subject: Re: [PATCH] RTC/max6900: use rtc_valid_tm to check returning tm
-	for max6900
-Content-Type: text/plain; charset=us-ascii
+	Tue, 22 Jun 2010 09:36:46 -0400
+X-Authority-Analysis: v=1.1 cv=CRXretTPUtnO3YxfLBAQPdv2BUzevxUrVWgTW+Y28TY= c=1 sm=0 a=g4V3m_FLxYQA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=NjbqhjlbWcQNY9nlKLsA:9 a=H0Md_8yX9hHbm_cadNkmS2gqjFgA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH for stable] tracing: Consolidate protection of reader
+ access to the ring buffer
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Greg KH <gregkh@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@kernel.org>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>
+In-Reply-To: <20100622132839.GA18974@suse.de>
+References: <1277212983.9181.27.camel@gandalf.stny.rr.com>
+	 <20100622132839.GA18974@suse.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 22 Jun 2010 09:36:44 -0400
+Message-ID: <1277213804.9181.30.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 05:09:03PM +0800, Wan ZongShun wrote:
-> Use rtc_valid_tm to check returning tm for max6900,
-> it can avoid returning wrong tm value.
-> ---
->  drivers/rtc/rtc-max6900.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Tue, 2010-06-22 at 06:28 -0700, Greg KH wrote:
+> On Tue, Jun 22, 2010 at 09:23:03AM -0400, Steven Rostedt wrote:
+> > Greg,
+> > 
+> > Johannes has been hitting a bug in 2.6.33 that we believe is fixed with
+> > the following patch. The bug is hit a few times a week, so it is hard to
+> > verify. But we are only hitting it with .33 and not .34, and this patch
+> > looks like it would be the one to fix it.
+> > 
+> > Can you apply this patch to the 2.6.33 stable series.
 > 
-> diff --git a/drivers/rtc/rtc-max6900.c b/drivers/rtc/rtc-max6900.c
-> index a4f6665..486142c 100644
-> --- a/drivers/rtc/rtc-max6900.c
-> +++ b/drivers/rtc/rtc-max6900.c
-> @@ -159,7 +159,7 @@ static int max6900_i2c_read_time(struct i2c_client *client, struct rtc_time *tm)
->  		      bcd2bin(regs[MAX6900_REG_CENTURY]) * 100 - 1900;
->  	tm->tm_wday = bcd2bin(regs[MAX6900_REG_DW]);
-> 
-> -	return 0;
-> +	return rtc_valid_tm(tm);
->  }
-> 
->  static int max6900_i2c_clear_write_protect(struct i2c_client *client)
+> If you are ok with it, I'll apply it as it does look a little "big" for
+> a stable kernel :)
 
-Ack.
+Yeah, I usually would not ask for a patch this size to go into stable,
+but it has been in mainline for a while, and seems to be the fix for a
+bug we are hitting in .33.
 
-Thanks,
--Dale
+> 
+> I'll queue it up later today.
+
+Great! Thanks,
+
+-- Steve
+
+
