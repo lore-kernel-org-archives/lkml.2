@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759253Ab0FVKPF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 06:15:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51841 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758991Ab0FVKPD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 06:15:03 -0400
-Date: Tue, 22 Jun 2010 11:15:00 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stuart Longland <redhatter@gentoo.org>
-Cc: ALSA Development List <alsa-devel@alsa-project.org>,
-       Takashi Iwai <tiwai@suse.de>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ASoC: Add new TI TLV320AIC3204 CODEC driver
-Message-ID: <20100622101500.GA15255@opensource.wolfsonmicro.com>
-References: <1276833465-31702-1-git-send-email-redhatter@gentoo.org> <1276899876-19001-1-git-send-email-redhatter@gentoo.org> <20100619011221.GC2463@opensource.wolfsonmicro.com> <20100621234314.GZ7759@www.longlandclan.yi.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100621234314.GZ7759@www.longlandclan.yi.org>
-X-Cookie: You now have Asian Flu.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1759257Ab0FVKWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 06:22:14 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53257 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755334Ab0FVKWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 06:22:12 -0400
+Date: Tue, 22 Jun 2010 20:22:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for June 22
+Message-Id: <20100622202201.638a97f9.sfr@canb.auug.org.au>
+In-Reply-To: <AANLkTim5sPmqblYvuCsft_Mm7R8ee1NJSwQjw7h6KgqY@mail.gmail.com>
+References: <20100622160518.2ef7afcc.sfr@canb.auug.org.au>
+	<AANLkTim5sPmqblYvuCsft_Mm7R8ee1NJSwQjw7h6KgqY@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__22_Jun_2010_20_22_01_+1000_MRqr0UA8_sml/3p_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 09:43:14AM +1000, Stuart Longland wrote:
-> On Sat, Jun 19, 2010 at 02:12:21AM +0100, Mark Brown wrote:
-> > On Sat, Jun 19, 2010 at 08:24:36AM +1000, Stuart Longland wrote:
-> > > +	/* Page 1 */
-> > > +	if (page == 1) {
-> > > +		if (reg <= 4)
-> > > +			return 1;
+--Signature=_Tue__22_Jun_2010_20_22_01_+1000_MRqr0UA8_sml/3p_
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > I can't help but think that this'd be more legible with switch ()
-> > statements (GCC has an extension for ranges in switch statements which
-> > you could use).
+On Tue, 22 Jun 2010 09:53:51 +0200 Geert Uytterhoeven <geert@linux-m68k.org=
+> wrote:
+>
+> On Tue, Jun 22, 2010 at 08:05, Stephen Rothwell <sfr@canb.auug.org.au> wr=
+ote:
+> > Status of my local build tests will be at
+> > http://kisskb.ellerman.id.au/linux-next . =C2=A0If maintainers want to =
+give
+>=20
+> Which hasn't changed since June 18?
 
-> One is to go on a page-by-page basis, which is how I do it using the if
-> statements.  Here; I define my ranges so that I start from the very
-> end... anything beyond page 70 is invalid ... voila, I eliminate those
-> early on.  A number of pages have a similar register pattern, and so I
-> make use of nested if statements to explain this.  The if block for
-> pages following always use the block before to define the upper,
-> non-inclusive bound.
+Yeah, the build server ran out of inodes.  It should update later
+tonight/today.
 
-It's not so much the outer ifs that were bothering me, it's the inner
-ones where you're doing the final register ranges as just a sequence of
-if statements (not even if ... else) which really bothered me here.  The
-code just doesn't look like what it's trying to do.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> This is a function largely intended for debugging, in fact, I'm thinking
-> I should probably wrap it in #ifdef CONFIG_DEBUG_FS, since the function
-> isn't called unless debugfs is enabled.  So I'm not certain that
-> performance is worth chasing here given the intended purpose -- it's not
-> something that's called all the time, nor something that will be used in
-> a production environment.
+--Signature=_Tue__22_Jun_2010_20_22_01_+1000_MRqr0UA8_sml/3p_
+Content-Type: application/pgp-signature
 
-Oh, I thought you were using it to filter the CODEC register displays?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-> That's my thoughts on the issue, perhaps naïve, but I'm not sure
-> there's any real gain in refactoring this.
+iEYEARECAAYFAkwgjskACgkQjjKRsyhoI8xSqgCgmpUktraUQsGI8/voPD4MiWOU
+XTIAn1Lnr8IN4/dAKIX7UtNdRfaTboXb
+=oaa/
+-----END PGP SIGNATURE-----
 
-It's fairly hard to read at the minute - 
+--Signature=_Tue__22_Jun_2010_20_22_01_+1000_MRqr0UA8_sml/3p_--
