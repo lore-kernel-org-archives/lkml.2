@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758929Ab0FVIUF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 04:20:05 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:42968 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758282Ab0FVIUC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 04:20:02 -0400
-From: Rabin Vincent <rabin.vincent@stericsson.com>
-To: <linux-mmc@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <STEricsson_nomadik_linux@list.st.com>,
-       Hanumath Prasad <hanumath.prasad@stericsson.com>,
-       Rabin Vincent <rabin.vincent@stericsson.com>,
-       Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH] mmc: only set blockaddressed for > 2GiB cards
-Date: Tue, 22 Jun 2010 13:49:22 +0530
-Message-ID: <1277194762-21399-1-git-send-email-rabin.vincent@stericsson.com>
-X-Mailer: git-send-email 1.7.0
+	id S1754796Ab0FVIZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 04:25:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57018 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751191Ab0FVIZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 04:25:18 -0400
+Message-ID: <4C20734A.3000008@redhat.com>
+Date: Tue, 22 Jun 2010 10:24:42 +0200
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+       Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       zhiteng.huang@intel.com, tim.c.chen@intel.com
+Subject: Re: [PATCH V2 4/5] ara virt interface of perf to support kvm guest
+ os statistics collection in guest os
+References: <1277112706.2096.512.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1277112706.2096.512.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hanumath Prasad <hanumath.prasad@stericsson.com>
+On 06/21/10 11:31, Zhang, Yanmin wrote:
+> @@ -583,10 +584,20 @@ static void x86_pmu_disable_all(void)
+>  	}
+>  }
+>  
+> +#ifdef CONFIG_KVM_PERF
+> +static int kvm_hw_perf_enable(void);
+> +static int kvm_hw_perf_disable(void);
+> +#endif
 
-A non-zero value of SEC_COUNT does not indicate that the card is sector
-addressed.  According to the MMC specification, cards with a density
-greater than 2GiB are sector addressed.
+Please put these prototypes into a header ... and create dummy stubs for
+them when CONFIG_KVM_PERF is not set.
 
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-Signed-off-by: Hanumath Prasad <hanumath.prasad@stericsson.com>
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
----
- drivers/mmc/core/mmc.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+>  void hw_perf_disable(void)
+>  {
+>  	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+>  
+> +#ifdef CONFIG_KVM_PERF
+> +	if (!kvm_hw_perf_disable())
+> +		return;
+> +#endif
 
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 89f7a25..1dc784e 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -222,7 +222,9 @@ static int mmc_read_ext_csd(struct mmc_card *card)
- 			ext_csd[EXT_CSD_SEC_CNT + 1] << 8 |
- 			ext_csd[EXT_CSD_SEC_CNT + 2] << 16 |
- 			ext_csd[EXT_CSD_SEC_CNT + 3] << 24;
--		if (card->ext_csd.sectors)
-+
-+		/* Cards with density > 2GiB are sector addressed */
-+		if (card->ext_csd.sectors > (2u * 1024 * 1024 * 1024) / 512)
- 			mmc_card_set_blockaddr(card);
- 	}
- 
--- 
-1.7.0
+If you stub them out we can avoid all the ugly #ifdefs
+
+> @@ -810,6 +821,11 @@ void hw_perf_enable(void)
+>  	struct hw_perf_event *hwc;
+>  	int i, added = cpuc->n_added;
+>  
+> +#ifdef CONFIG_KVM_PERF
+> +	if (!kvm_hw_perf_enable())
+> +		return;
+> +#endif
+
+and here....
+
+> @@ -1317,6 +1334,11 @@ void __init init_hw_perf_events(void)
+>  
+>  	pr_info("Performance Events: ");
+>  
+> +#ifdef CONFIG_KVM_PERF
+> +	if (!kvm_init_hw_perf_events())
+> +		return;
+> +#endif
+
+and again here :)
+
+Cheers,
+Jes
+
 
