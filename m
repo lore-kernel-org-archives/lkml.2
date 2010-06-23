@@ -1,79 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab0FWVlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 17:41:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65319 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403Ab0FWVlQ (ORCPT
+	id S1753462Ab0FWVor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 17:44:47 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54358 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab0FWVop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 17:41:16 -0400
+	Wed, 23 Jun 2010 17:44:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer;
-        b=hwAxpssgfOzDLIPAuGlK7FhfUPpWCfILr9q6iSpkuWOe/+iMjWWfHtyhpOBeQf9bAA
-         j0nssZIyzQpzR1pC0OgT8qkm5StY0AN91Td6xwudSUG+NPLTHz5AMho3fagBwMUPcJcT
-         tLY0r3wKSKiRlRjhh1msR16M9FMAQRp5P9Ewg=
-From: =?UTF-8?q?Diego=20Elio=20=27Flameeyes=27=20Petten=C3=B2?= 
-	<flameeyes@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-sctp@vger.kernel.org
-Subject: [PATCH] sctp: implement SIOCINQ ioctl()
-Date: Wed, 23 Jun 2010 23:37:40 +0200
-Message-Id: <1277329060-21543-1-git-send-email-flameeyes@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=bZrJpGA20OMg3bPdGRzqCRzRh7KE4BOFLAG7WAi222zVxAdSXrKFfd4z0IGVEmtPe+
+         bXbMgX/nSgJszZcOd/hj2YOXS38UlpV7VgduNJQ3Yh5nOq69PI6y79UL0lDpYLcWTYRb
+         k+40kC/iLwq6UyvYgzEOGerarbSZWJzoToSOo=
+Message-ID: <4C22805A.3080307@gmail.com>
+Date: Wed, 23 Jun 2010 14:44:58 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: =?UTF-8?B?VGltbyBUZXLDpHM=?= <timo.teras@iki.fi>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+       "John W.Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       davem@davemloft.net
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
+References: <AANLkTilf41JrFwN1veRDifNA78S2LQ6SO0g3YLOONd2W@mail.gmail.com>	 <20100623141622.GC15205@tuxdriver.com>  <4C223DCA.5090704@gmail.com> <1277314167.2469.1144.camel@edumazet-laptop> <4C224E06.40806@iki.fi> <4C22508A.8060002@gmail.com> <4C226FCA.2030604@iki.fi>
+In-Reply-To: <4C226FCA.2030604@iki.fi>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simple patch copies the current approach for SIOCINQ ioctl() from DCCP
-into SCTp so that the userland code working with SCTP can use a similar
-interface across different protocols to know how much space to allocate for
-a buffer.
----
- net/sctp/socket.c |   31 ++++++++++++++++++++++++++++++-
- 1 files changed, 30 insertions(+), 1 deletions(-)
+On 06/23/2010 01:34 PM, Timo Teräs wrote:
+> On 06/23/2010 09:20 PM, Justin P. Mattock wrote:
+>> On 06/23/10 11:10, Timo Teräs wrote:
+>>> On 06/23/2010 08:29 PM, Eric Dumazet wrote:
+>>>
+>>>> Le mercredi 23 juin 2010 à 10:00 -0700, Justin P. Mattock a écrit :
+>>>>
+>>>>> o.k. the bisect is pointing to the below results..
+>>>>> (I tried git revert xxx but this commit is too big
+>>>>> so I'll(hopefully)manually revert it on the latest HEAD to
+>>>>> see if this is the actual problem im experiencing)
+>>>>>
+>>>>> 80c802f3073e84c956846e921e8a0b02dfa3755f is the first bad commit
+>>>>> commit 80c802f3073e84c956846e921e8a0b02dfa3755f
+>>>>> Author: Timo TerÃ¤s<timo.teras@iki.fi>
+>>>>> Date:   Wed Apr 7 00:30:05 2010 +0000
+>>>>>
+>>>>>        xfrm: cache bundles instead of policies for outgoing flows
+>>>>>
+>>>>>        __xfrm_lookup() is called for each packet transmitted out of
+>>>>>        system. The xfrm_find_bundle() does a linear search which can
+>>>>>        kill system performance depending on how many bundles are
+>>>>>        required per policy.
+>>>>>
+>>>>>        This modifies __xfrm_lookup() to store bundles directly in
+>>>>>        the flow cache. If we did not get a hit, we just create a new
+>>>>>        bundle instead of doing slow search. This means that we can now
+>>>>>        get multiple xfrm_dst's for same flow (on per-cpu basis).
+>>>>>
+>>>>>        Signed-off-by: Timo Teras<timo.teras@iki.fi>
+>>>>>        Signed-off-by: David S. Miller<davem@davemloft.net>
+>>>>>
+>>>>> :040000 040000 d8e60f5fa4c1329f450d9c7cdf98b34e6a177f22
+>>>>> 9f576e68e5bf4ce357d7f0305aee5f410250dfe2 M      include
+>>>>> :040000 040000 f2876df688ee36907af7b4123eea96592faaed3e
+>>>>> a3f6f6f94f0309106856cd99b38ec90b024eb016 M      net
+>>>>>
+>>>> Thanks a lot for bisecting Jutin, this is really appreciated.
+>>>>
+>>>> crash is in xfrm_bundle_ok()
+>>>>
+>>>> if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
+>>>>      return 0;
+>>>>
+>>>> xdst->pols[0] contains a NULL pointer
+>>>>
+>>> That does not really make sense, if we get this far; there's a valid
+>>> xfrm_state with the bundle. This means that there existed a policy with
+>>> it too.
+>>>
+>>> I'll take a deeper look at this tomorrow. Would it be possible to see
+>>> your xfrm policies?
+>>>
+>>> - Timo
+>>>
+>>>
+>>
+>> @Eric sure no problem doing the bisect...
+>>
+>> as for the xfrm policy here is the link that I used to setup ipsec:
+>> http://www.linuxfromscratch.org/hints/downloads/files/ipsec.txt
+>> (just change the keys if doing real world work..(but for me just testing).
+>>
+>> below is a temporary fix for me to get this working, tcpdump reports
+>> everything is doing what it should be
+>> 11:16:32.496166 IP xxxxx>  xxxxx: AH(spi=0x00000200,seq=0x1090):
+>> ESP(spi=0x00000201,seq=0x1090), length 56
+>> 11:16:32.496212 IP xxxxx>  xxxxx: AH(spi=0x00000200,seq=0x1091):
+>> ESP(spi=0x00000201,seq=0x1091), length 56
+>> 11:16:32.496259 IP xxxxx>  xxxxx: AH(spi=0x00000200,seq=0x1092):
+>> ESP(spi=0x00000201,seq=0x1092), length 56
+>>
+>> (tested a few mins ago, but not the right fix..)
+>
+> Yes, that would break some other obscure scenarios.
+>
+> Looks like it's ah inside esp. So you get chain of bundles. And only the
+> first bundle gets a policy. Should have thought of that. Does the below
+> fix it for you?
+>
+> diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
+> index 4bf27d9..af1c173 100644
+> --- a/net/xfrm/xfrm_policy.c
+> +++ b/net/xfrm/xfrm_policy.c
+> @@ -2300,7 +2300,8 @@ int xfrm_bundle_ok(struct xfrm_policy *pol, struct
+> xfrm_dst *first,
+>   			return 0;
+>   		if (xdst->xfrm_genid != dst->xfrm->genid)
+>   			return 0;
+> -		if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
+> +		if (xdst->num_pols>  0&&
+> +		    xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
+>   			return 0;
+>
+>   		if (strict&&  fl&&
+>
+>
 
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index 44a1ab0..3135b4e 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -3595,7 +3595,36 @@ out:
- /* The SCTP ioctl handler. */
- SCTP_STATIC int sctp_ioctl(struct sock *sk, int cmd, unsigned long arg)
- {
--	return -ENOIOCTLCMD;
-+	int rc = -ENOTCONN;
-+
-+	sctp_lock_sock(sk);
-+
-+	if (sctp_sstate(sk, LISTENING))
-+		goto out;
-+
-+	switch(cmd) {
-+	case SIOCINQ: {
-+		struct sk_buff *skb;
-+		unsigned long amount = 0;
-+
-+		skb = skb_peek(&sk->sk_receive_queue);
-+		if (skb != NULL) {
-+			/*
-+			 * We will only return the amount of this packet since
-+			 * that is all that will be read.
-+			 */
-+			amount = skb->len;
-+		}
-+		rc = put_user(amount, (int __user *)arg);
-+	}
-+		break;
-+	default:
-+		rc = -ENOIOCTLCMD;
-+		break;
-+	}
-+out:
-+	sctp_release_sock(sk);
-+	return rc;
- }
- 
- /* This is the function which gets called during socket creation to
--- 
-1.7.1
 
+yeah this works.. I can see AH and ESP showing up with tcpdump..
+looks good..
+
+Reported-Bisected-By: Justin P. Mattock <justinmattock@gmail.com>
+
+cheers,
+
+Justin P. Mattock
