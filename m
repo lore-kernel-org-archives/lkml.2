@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab0FWUgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 16:36:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:32944 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752399Ab0FWUgq (ORCPT
+	id S1753426Ab0FWUhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 16:37:08 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:46690 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399Ab0FWUhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 16:36:46 -0400
-Date: Wed, 23 Jun 2010 13:36:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Dave Airlie <airlied@gmail.com>, linux-fbdev@vger.kernel.org,
-       dri-devel@lists.sf.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vt/console: try harder to print output when panicing
-Message-Id: <20100623133637.fbb318e2.akpm@linux-foundation.org>
-In-Reply-To: <20100623130547.296e00a7@virtuousgeek.org>
-References: <1277262779-19338-1-git-send-email-airlied@gmail.com>
-	<20100623125605.5f56f6ba.akpm@linux-foundation.org>
-	<20100623130547.296e00a7@virtuousgeek.org>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 23 Jun 2010 16:37:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=VYdUMhHqrKhEjbyE6GAKDfMKIuQYjGJ3PDhHHXABG3kYcf8A1+lwwajSDgzG5Ra2VW
+         NMEN1KYYFtrFsxW6JnWwj1kL2R3IuDRSax+ByAOwiSon7TykvOV6MZEIhY9NFw2rmSCJ
+         1YsKxgMqaLjPJco8E0USCrm7QkTsAXf9kjjRs=
+Message-ID: <4C22706E.9020005@garzik.org>
+Date: Wed, 23 Jun 2010 16:37:02 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Anton Vorontsov <avorontsov@ru.mvista.com>,
+       Jeff Garzik <jgarzik@redhat.com>, Luming Yu <luming.yu@gmail.com>
+Subject: Re: [Bug #16172] 2.6.25-rc1 ahci regression
+References: <lc60d4toGTL.A.QzD._LpHMB@chimera> <W8JfMs9cZw.A.6TG.fNpHMB@chimera>
+In-Reply-To: <W8JfMs9cZw.A.6TG.fNpHMB@chimera>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jun 2010 13:05:47 -0700
-Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+On 06/20/2010 06:17 PM, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+>
+> The following bug entry is on the current list of known regressions
+> from 2.6.34.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+>
+>
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16172
+> Subject		: 2.6.25-rc1 ahci regression
+> Submitter	: Luming Yu<luming.yu@gmail.com>
+> Date		: 2010-06-03 7:02 (18 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/365cfa1ed5a36f9bcb9f64c9f0f52155af2e9fef
+> Message-ID	:<AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>>
+> References	: http://marc.info/?l=linux-kernel&m=127554855724361&w=2
 
-> On Wed, 23 Jun 2010 12:56:05 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > On Wed, 23 Jun 2010 13:12:59 +1000
-> > Dave Airlie <airlied@gmail.com> wrote:
-> > 
-> > > Jesse's initial patch commit said:
-> > > 
-> > > "At panic time (i.e. when oops_in_progress is set) we should try a bit
-> > > harder to update the screen and make sure output gets to the VT, since
-> > > some drivers are capable of flipping back to it.
-> > > 
-> > > So make sure we try to unblank and update the display if called from a
-> > > panic context."
-> > > 
-> > > I've enhanced this to add a flag to the vc that console layer can set
-> > > to indicate they want this behaviour to occur. This also adds support
-> > > to fbcon for that flag and adds an fb flag for drivers to indicate
-> > > they want to use the support. It enables this for KMS drivers.
-> > 
-> > Interesting.  Getting real oops traces from machines running X will
-> > make Rusty happy, and that's what we're all here for.
-> > 
-> > How well does this all work?  How reliable is it?  What's the success rate?
-> > 
-> > 
-> > 
-> > What's the downside here?  After all, not all oopses are catastrophic -
-> > sometimes the machine will go blurt and keep running so the user can
-> > take a look in the logs then perform an orderly reboot, etc.  As I
-> > understand it, those non-catastrophic oopses will now flip the machine
-> > from X and into the vt display, yes?  Can the user get it back to X
-> > mode?
-> 
-> No, we'll only flip from the panic notifier chain.
-
-So we still don't get to see the output from BUGs and random oopses?  I
-don't think panics are all that common.
-
-So am I correct in believing that if a user is getting invisible-oopses
-then he can set /proc/sys/kernel/panic_on_oops, and then the oops
-should be visible?
-
-(Shouldn't all this stuff be explained in the changlog?)
+As noted in the bug, this is IMO a problem of certain userlands not 
+properly digesting module dependencies...
 
 
