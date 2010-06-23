@@ -1,37 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab0FWQAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 12:00:11 -0400
-Received: from mail-fx0-f66.google.com ([209.85.161.66]:34894 "EHLO
-	mail-fx0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab0FWQAK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753846Ab0FWQA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 12:00:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6343 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753425Ab0FWQAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Jun 2010 12:00:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:content-type
-         :content-transfer-encoding;
-        b=szdOQBHdcuuiVPUko6a7PUYxMnhVJoOd5myjjISaEN4wWny9H2VbsLNDoSDI/joF/L
-         QcyshBfAcpJNp1fZHEO1HloD+2XDU0DJHlzqZiw4oIzWs9mvMU/2X0YBXicfczGLkk+F
-         Sc1zyfw6p5DTxlhzgqylQfEB6FCjmHYQfDwXI=
+Date: Wed, 23 Jun 2010 17:57:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Edward Allcutt <edward@allcutt.me.uk>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] fs: limit maximum concurrent coredumps
+Message-ID: <20100623155733.GA8874@redhat.com>
+References: <1277164737-30055-1-git-send-email-edward@allcutt.me.uk>
 MIME-Version: 1.0
-Date: Thu, 24 Jun 2010 00:00:06 +0800
-Message-ID: <AANLkTinVdLJ98PDnOnnpuQ8D5hyveph3MsNw1mnSoFYh@mail.gmail.com>
-Subject: Hey
-From: Athul Acharya <aacharya@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1277164737-30055-1-git-send-email-edward@allcutt.me.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey
-how are you recently ?
-I would like to recommend you a very good company and the website is
-「www. mccdeal . com」 .
-It can offer you all kinds of electronic products ,such as  laptops
-,gps ,TV LCD ,cell phones ,ps3 ,MP3/4, and so on.
-You can take some time to have a look ,there must be something you like .
-Hope you can enjoy yourself in shopping from that company !
-Regards !
+On 06/21, Edward Allcutt wrote:
+>
+> The ability to limit concurrent coredumps allows dumping core to be safely
+> enabled in these situations without affecting responsiveness of the system
+> as a whole.
+
+OK, but please note that the patch is not right,
+
+> @@ -1844,6 +1845,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+>  	int retval = 0;
+>  	int flag = 0;
+>  	int ispipe;
+> +	int dump_count = 0;
+>  	static atomic_t core_dump_count = ATOMIC_INIT(0);
+>  	struct coredump_params cprm = {
+>  		.signr = signr,
+> @@ -1865,6 +1867,14 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+>  	if (!__get_dumpable(cprm.mm_flags))
+>  		goto fail;
+>
+> +	dump_count = atomic_inc_return(&core_dump_count);
+> +	if (core_max_concurrency && (core_max_concurrency < dump_count)) {
+> +		printk(KERN_WARNING "Pid %d(%s) over core_max_concurrency\n",
+> +		       task_tgid_vnr(current), current->comm);
+> +		printk(KERN_WARNING "Skipping core dump\n");
+> +		goto fail;
+> +	}
+> +
+
+We can't return here. We should kill other threads which share the same
+->mm in any case.
+
+Suppose that core_dump_count > core_max_concurrency, and we send, say,
+SIGQUIT to the process. With this patch SIGQUIT suddenly starts to kill
+the single thread, this must not happen.
+
+If you change the patch to sleep until core_dump_count < core_max_concurrency,
+then, again, we should kill other threads first.
+
+Oleg.
+
