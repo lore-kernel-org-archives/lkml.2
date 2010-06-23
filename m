@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab0FWMp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 08:45:28 -0400
-Received: from smtprelay04.ispgateway.de ([80.67.31.32]:51116 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab0FWMp1 (ORCPT
+	id S1752442Ab0FWMp5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 08:45:57 -0400
+Received: from perceval.irobotique.be ([92.243.18.41]:56321 "EHLO
+	perceval.irobotique.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262Ab0FWMpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 08:45:27 -0400
-Message-ID: <4C2201DF.9050500@ladisch.de>
-Date: Wed, 23 Jun 2010 14:45:19 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Wed, 23 Jun 2010 08:45:55 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Nils Radtke <lkml@think-future.de>
+Subject: Re: [2.6.33.4 PATCH] V4L/uvcvideo: Add support for Suyin Corp. Lenovo Webcam
+Date: Wed, 23 Jun 2010 14:45:53 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.33; KDE/4.4.3; x86_64; ; )
+Cc: laurent.pinchart@skynet.be, linux-media@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+       "Greg Kroah-Hartman" <gregkh@suse.de>, stable@kernel.org
+References: <20100623092316.GA13364@localhost>
+In-Reply-To: <20100623092316.GA13364@localhost>
 MIME-Version: 1.0
-To: sboyce@blueyonder.co.uk, Daniel Mack <daniel@caiaq.de>
-CC: alsa-devel@alsa-project.org, alsa-user@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: 2.6.35-rc3 E-MU 0404 USB problem
-References: <4C20B364.9060405@blueyonder.co.uk> <20100622131102.GA18432@kroah.com> <20100622133434.GZ2698@buzzloop.caiaq.de> <4C21E875.20200@blueyonder.co.uk>
-In-Reply-To: <4C21E875.20200@blueyonder.co.uk>
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-usb@cl.domainfactory-kunde.de
+Message-Id: <201006231445.54883.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> Sid Boyce wrote:
->>>> Transmit fails,
+Hi Nils,
 
-What exactly fails?
+On Wednesday 23 June 2010 11:23:16 Nils Radtke wrote:
+> From: Nils Radtke <lkml@Think-Future.de>
+> 
+> This patch adds support for the Suyin Corp. Lenovo Webcam.
+> lsusb: ID 064e:a102 Suyin Corp. Lenovo Webcam
+> 
+> It is available as built-in webcam i.e. in ACER timeline 1810t
+> notebooks.
+> 
+> The note in uvc_driver.c about Logitech cameras applies the same
+> to the Suyin web cam: it doesn't announce itself as UVC devices
+> but is compliant.
+> 
+> Signed-off-by: Nils Radtke <lkml@Think-Future.de>
 
->>>> dmesg output with 48K sample rate set is:-
->>>> ALSA sound/usb/clock.c:214: 6:2:3: endpoint lacks sample rate attribute bit, cannot set.
+Thanks for the patch. Could you please send me the output of lsusb -v for your 
+camera, as well as the raw binary descriptors ? You can retrieve the later 
+with
 
-There are many devices that have only one sample rate or that have one
-sample rate per alternate setting.  This doesn't deserve a message, much
-less a warning.
+cat /proc/bus/usb/xxx/yyy
 
+Replace xxx with the device bus number, and yyy with the device number. Both 
+can be retrieved from /proc/bus/usb/devices.
 
+-- 
 Regards,
-Clemens
+
+Laurent Pinchart
