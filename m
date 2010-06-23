@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab0FWIJK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 04:09:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51102 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab0FWIJH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 04:09:07 -0400
-Subject: Re: [GIT PULL rcu/urgent] yet more lockdep-RCU splat fixes
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, tglx@linutronix.de, daniel.blueman@gmail.com,
-       lizf@cn.fujitsu.com, miles.lane@gmail.com, manfred@colorfullife.com
-In-Reply-To: <20100622204433.GJ2290@linux.vnet.ibm.com>
-References: <20100616042224.GA3892@linux.vnet.ibm.com>
-	 <20100616055358.GB17936@elte.hu> <1276669431.1745.595.camel@laptop>
-	 <20100616224110.GI2457@linux.vnet.ibm.com>
-	 <1276764554.27822.26.camel@twins>
-	 <20100622204433.GJ2290@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 23 Jun 2010 10:08:47 +0200
-Message-ID: <1277280527.1875.782.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1751515Ab0FWIJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 04:09:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15698 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751490Ab0FWIJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 04:09:46 -0400
+Message-ID: <4C21C136.9070708@redhat.com>
+Date: Wed, 23 Jun 2010 11:09:26 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH V2 3/5] ara virt interface of perf to support kvm guest
+ os statistics collection in guest os
+References: <1277112703.2096.511.camel@ymzhang.sh.intel.com>	 <20100621135659.GL4689@redhat.com>	 <1277185636.2096.675.camel@ymzhang.sh.intel.com>	 <4C206EA0.3060101@redhat.com> <1277257421.2096.758.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1277257421.2096.758.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-22 at 13:44 -0700, Paul E. McKenney wrote:
+On 06/23/2010 04:43 AM, Zhang, Yanmin wrote:
+>
+>> A reset does not involve destroying a vm; you have to clean up as part
+>> of the rest process.
+>>      
+> What does 'reset' here mean? Is it a reboot or halt? If it's a halt, it involves
+> destroying a vm. If a host user just kills the qemu process, is it a reset involving
+> destroying a vm?
+>    
 
-> I am probably missing something, but I see wake_affine() only called
-> from select_task_rq_fair(), which is one of the possible values for
-> ->select_task_rq().  This can be called from select_task_rq(), which
-> claims that it can be called without holding rq->lock.  I do not see
-> any rq->lock acquisition on the path from select_task_rq() to the
-> call to wake_affine().
-> 
-You're right, although try_to_wake_up(), wake_up_new_task() and
-sched_exec() all hold a rq->lock (not sufficient to cover both
-task_group() callers though).
+'reset' is either a complete reset ('system_reset' on the qemu monitor, 
+cycles through the bios etc.) or just an INIT signal to one vcpu.  
+Neither involves destroying a vm.
 
-I posted a patch yesterday that makes try_to_wake_up() call
-select_task_rq() without any rq->lock held (although its a scary patch
-and needs more work).
+>> You aren't guaranteed a reboot notifier will be called.  On the other
+>> hand, we need a kexec handler.
+>>      
+> ordinary kexec calls all reboot notifiers. Only crash kexec doesn't call them.
+> I will implement a machine_ops.crash_shutdown callback.
+>    
 
-> rcu: apply RCU protection to wake_affine()
-> 
-> The task_group() function returns a pointer that must be protected
-> by either RCU, the ->alloc_lock, or the cgroup lock (see the
-> rcu_dereference_check() in task_subsys_state(), which is invoked by
-> task_group()).  The wake_affine() function currently does none of these,
-> which means that a concurrent update would be within its rights to free
-> the structure returned by task_group().  Because wake_affine() uses this
-> structure only to compute load-balancing heuristics, there is no reason
-> to acquire either of the two locks.
-> 
-> Therefore, this commit introduces an RCU read-side critical section that
-> starts before the first call to task_group() and ends after the last use
-> of the "tg" pointer returned from task_group().  Thanks to Li Zefan for
-> pointing out the need to extend the RCU read-side critical section from
-> that proposed by the original patch.
-> 
-> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Thanks.
 
-OK, fair enough, thanks!
+-- 
+error compiling committee.c: too many arguments to function
+
