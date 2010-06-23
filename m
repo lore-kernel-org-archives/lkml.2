@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab0FWCv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 22:51:59 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41123 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751921Ab0FWCv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 22:51:57 -0400
-Date: Wed, 23 Jun 2010 12:51:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the wireless tree
-Message-Id: <20100623125149.bdd7b1e6.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__23_Jun_2010_12_51_49_+1000_=qlBHA/m++osTcNF"
+	id S1751825Ab0FWCxx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 22:53:53 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57233 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab0FWCxw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 22:53:52 -0400
+MIME-Version: 1.0
+Date: Wed, 23 Jun 2010 12:53:49 +1000
+Message-ID: <AANLkTilzxC6OdOCGiVfa6a7FMZXWRLNnPZ5lhTNnWCV4@mail.gmail.com>
+Subject: help identify wwan card
+From: Alexander Samad <alex@samad.com.au>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_Jun_2010_12_51_49_+1000_=qlBHA/m++osTcNF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi
 
-Hi John,
+I have got a new laptop HP 2540p, it has a qualcom 3g card, I had one
+in my hp mini and was able to get it to work with the qcserial module.
 
-After merging the wireless tree, today's linux-next build (x86_64 allmodcon=
-fig)
-failed like this:
+now I can't find it on my new laptop.
 
-ERROR: "mesh_handler_def" [drivers/net/wireless/libertas/libertas.ko] undef=
-ined!
+lspci
 
-Caused by commit cbca36ab906ce8c8d959eca1e0b5465e9182b0f0 ("Libertas:
-cfg80211 support") which removed mesh_handler_def even though there is
-still a reference to it in drivers/net/wireless/libertas/mesh.c when
-WIRELESS_EXT is defined.
+00:00.0 Host bridge: Intel Corporation Core Processor DRAM Controller (rev 12)
+00:02.0 VGA compatible controller: Intel Corporation Core Processor
+Integrated Graphics Controller (rev 12)
+00:16.0 Communication controller: Intel Corporation 5 Series/3400
+Series Chipset HECI Controller (rev 06)
+00:16.3 Serial controller: Intel Corporation 5 Series/3400 Series
+Chipset KT Controller (rev 06)
+00:19.0 Ethernet controller: Intel Corporation 82577LM Gigabit Network
+Connection (rev 06)
+00:1a.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
+USB2 Enhanced Host Controller (rev 06)
+00:1b.0 Audio device: Intel Corporation 5 Series/3400 Series Chipset
+High Definition Audio (rev 06)
+00:1c.0 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
+Express Root Port 1 (rev 06)
+00:1c.1 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
+Express Root Port 2 (rev 06)
+00:1c.3 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
+Express Root Port 4 (rev 06)
+00:1d.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
+USB2 Enhanced Host Controller (rev 06)
+00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev a6)
+00:1f.0 ISA bridge: Intel Corporation Mobile 5 Series Chipset LPC
+Interface Controller (rev 06)
+00:1f.2 SATA controller: Intel Corporation 5 Series/3400 Series
+Chipset 6 port SATA AHCI Controller (rev 06)
+00:1f.6 Signal processing controller: Intel Corporation 5 Series/3400
+Series Chipset Thermal Subsystem (rev 06)
+43:00.0 Network controller: Intel Corporation Centrino Advanced-N 6200 (rev 35)
+44:06.0 FireWire (IEEE 1394): Ricoh Co Ltd R5C832 IEEE 1394 Controller (rev 06)
+44:06.1 SD Host controller: Ricoh Co Ltd R5C822 SD/SDIO/MMC/MS/MSPro
+Host Adapter (rev 25)
+44:06.2 CardBus bridge: Ricoh Co Ltd RL5c476 II (rev bb)
+ff:00.0 Host bridge: Intel Corporation Core Processor QuickPath
+Architecture Generic Non-core Registers (rev 02)
+ff:00.1 Host bridge: Intel Corporation Core Processor QuickPath
+Architecture System Address Decoder (rev 02)
+ff:02.0 Host bridge: Intel Corporation Core Processor QPI Link 0 (rev 02)
+ff:02.1 Host bridge: Intel Corporation Core Processor QPI Physical 0 (rev 02)
+ff:02.2 Host bridge: Intel Corporation Core Processor Reserved (rev 02)
+ff:02.3 Host bridge: Intel Corporation Core Processor Reserved (rev 02)
 
-I have used the wireless tree from next-20100622 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Wed__23_Jun_2010_12_51_49_+1000_=qlBHA/m++osTcNF
-Content-Type: application/pgp-signature
+can't tell and from there can't tell which module to load.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+any one got any ideas ?
 
-iEYEARECAAYFAkwhdsUACgkQjjKRsyhoI8y2dgCeOTBq4VWEP/ZtrZMyjBaRGVmv
-61cAn0U+PmYJXTe8TYaFcylXJ6dA6EtG
-=Q3MJ
------END PGP SIGNATURE-----
-
---Signature=_Wed__23_Jun_2010_12_51_49_+1000_=qlBHA/m++osTcNF--
+Thanks
+Alex
+PS can you cc me as I am not subscribed to the list
