@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab0FWUhI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 16:37:08 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46690 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab0FWUhE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 16:37:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=VYdUMhHqrKhEjbyE6GAKDfMKIuQYjGJ3PDhHHXABG3kYcf8A1+lwwajSDgzG5Ra2VW
-         NMEN1KYYFtrFsxW6JnWwj1kL2R3IuDRSax+ByAOwiSon7TykvOV6MZEIhY9NFw2rmSCJ
-         1YsKxgMqaLjPJco8E0USCrm7QkTsAXf9kjjRs=
-Message-ID: <4C22706E.9020005@garzik.org>
-Date: Wed, 23 Jun 2010 16:37:02 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1753495Ab0FWUiH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 16:38:07 -0400
+Received: from kroah.org ([198.145.64.141]:41234 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753081Ab0FWUiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 16:38:03 -0400
+Date: Wed, 23 Jun 2010 13:36:53 -0700
+From: Greg KH <greg@kroah.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
+       stable@kernel.org, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [stable] [PATCH 1/3] writeback: pay attention to
+ wbc->nr_to_write in write_cache_pages
+Message-ID: <20100623203653.GB2281@kroah.com>
+References: <1276043840-1946-1-git-send-email-david@fromorbit.com>
+ <1276043840-1946-2-git-send-email-david@fromorbit.com>
+ <20100609140942.6799c84a.akpm@linux-foundation.org>
+ <20100609225804.GK7869@dastard>
+ <20100610000811.GL7869@dastard>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Anton Vorontsov <avorontsov@ru.mvista.com>,
-       Jeff Garzik <jgarzik@redhat.com>, Luming Yu <luming.yu@gmail.com>
-Subject: Re: [Bug #16172] 2.6.25-rc1 ahci regression
-References: <lc60d4toGTL.A.QzD._LpHMB@chimera> <W8JfMs9cZw.A.6TG.fNpHMB@chimera>
-In-Reply-To: <W8JfMs9cZw.A.6TG.fNpHMB@chimera>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100610000811.GL7869@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/20/2010 06:17 PM, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
->
-> The following bug entry is on the current list of known regressions
-> from 2.6.34.  Please verify if it still should be listed and let the tracking team
-> know (either way).
->
->
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16172
-> Subject		: 2.6.25-rc1 ahci regression
-> Submitter	: Luming Yu<luming.yu@gmail.com>
-> Date		: 2010-06-03 7:02 (18 days old)
-> First-Bad-Commit: http://git.kernel.org/linus/365cfa1ed5a36f9bcb9f64c9f0f52155af2e9fef
-> Message-ID	:<AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>>
-> References	: http://marc.info/?l=linux-kernel&m=127554855724361&w=2
+On Thu, Jun 10, 2010 at 10:08:11AM +1000, Dave Chinner wrote:
+> On Thu, Jun 10, 2010 at 08:58:04AM +1000, Dave Chinner wrote:
+> > On Wed, Jun 09, 2010 at 02:09:42PM -0700, Andrew Morton wrote:
+> > > On Wed,  9 Jun 2010 10:37:18 +1000
+> > > Dave Chinner <david@fromorbit.com> wrote:
+> > > 
+> > > > From: Dave Chinner <dchinner@redhat.com>
+> > > > 
+> > > > If a filesystem writes more than one page in ->writepage, write_cache_pages
+> > > > fails to notice this and continues to attempt writeback when wbc->nr_to_write
+> > > > has gone negative - this trace was captured from XFS:
+> > > > 
+> > > > 
+> > > >     wbc_writeback_start: towrt=1024
+> > > >     wbc_writepage: towrt=1024
+> > > >     wbc_writepage: towrt=0
+> > > >     wbc_writepage: towrt=-1
+> > > >     wbc_writepage: towrt=-5
+> > > >     wbc_writepage: towrt=-21
+> > > >     wbc_writepage: towrt=-85
+> > > > 
+> > > > This has adverse effects on filesystem writeback behaviour. write_cache_pages()
+> > > > needs to terminate after a certain number of pages are written, not after a
+> > > > certain number of calls to ->writepage are made.  This is a regression
+> > > > introduced by 17bc6c30cf6bfffd816bdc53682dd46fc34a2cf4 ("vfs: Add
+> > > > no_nrwrite_index_update writeback control flag"), but cannot be reverted
+> > > > directly due to subsequent bug fixes that have gone in on top of it.
+> > > 
+> > > Might be needed in -stable.  Unfortunately the most important piece of
+> > > information which is needed to make that decision was cunningly hidden
+> > > from us behind the vague-to-the-point-of-uselessness term "adverse
+> > > effects".
+> > > 
+> > > _what_ "adverse effects"??
+> > 
+> > Depends on how the specific filesystem handles a negative
+> > nr_to_write, doesn't it? I can't speak for the exact effect on
+> > anything other than XFS except to say that most ->write_page
+> > implemetnations don't handle the wbc->nr_to_write < 0 specifically...
+> > 
+> > For XFS, it results in increased CPU usage because it triggers
+> > page-at-a-time allocation (i.e no clustering), which increases
+> > overhead in the elveator due to merging requirements of single page
+> > bios and increased fragmentation due to small interleaved
+> > allocations on concurrent writeback workloads. Effectively it causes
+> > accelerated aging of XFS filesystems...
+> 
+> Sorry, forgot to address the -stable part of the question.
+> 
+> This series is dependent on the ext4 change to use it's own
+> writepage going into -stable first.  (i.e.
+> 8e48dcfbd7c0892b4cfd064d682cc4c95a29df32 "ext4: Use our own
+> write_cache_pages()").
+> 
+> I'd suggest that all 4 patches (the ext4 patch and the three in this
+> series) should go back to 2.6.34-stable due to the long term affect
+> this writeback bug could have on XFS filesystems, and the sync
+> taking too long problem has been fairly widely reported since at
+> least .32...
 
-As noted in the bug, this is IMO a problem of certain userlands not 
-properly digesting module dependencies...
+Ok, can someone please tell me the git commit ids that need to be
+applied to the -stable trees?
 
+thanks,
 
+greg k-h
