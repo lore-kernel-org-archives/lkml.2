@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab0FWPyf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 11:54:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6948 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753275Ab0FWPye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 11:54:34 -0400
-Message-ID: <4C222E0A.8060803@redhat.com>
-Date: Wed, 23 Jun 2010 18:53:46 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: virtualization@lists.linux-foundation.org,
-       Anthony Liguori <aliguori@us.ibm.com>, linux-pci@vger.kernel.org,
-       Matt Carlson <mcarlson@broadcom.com>, linux-kernel@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-       Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>
-Subject: Re: [PATCH for-2.6.35] virtio-pci: disable msi at startup
-References: <20100610152252.GA3510@redhat.com> <4C22132F.4060307@redhat.com> <20100623135946.GA30526@redhat.com> <4C221871.6020509@redhat.com> <20100623144307.GB30526@redhat.com> <4C222508.2060804@redhat.com> <20100623152633.GC30526@redhat.com> <4C2229DB.6060706@redhat.com> <20100623154311.GD30526@redhat.com>
-In-Reply-To: <20100623154311.GD30526@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753787Ab0FWPyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 11:54:54 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54704 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752967Ab0FWPyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 11:54:52 -0400
+Date: Wed, 23 Jun 2010 16:59:36 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Kees Cook <kees.cook@canonical.com>, linux-security-module@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2] security: Yama LSM
+Message-ID: <20100623165936.661744f8@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100623153408.GA15787@basil.fritz.box>
+References: <20100623065236.GH5876@outflux.net>
+	<877hlqas9e.fsf@basil.nowhere.org>
+	<20100623145437.GJ5876@outflux.net>
+	<20100623153408.GA15787@basil.fritz.box>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 06:43 PM, Michael S. Tsirkin wrote:
->
->    
->>> If/when we use more registers, we can update driver to clear them on start.
->>>
->>>        
->> The kdump kernel may not load drivers for those extra devices.
->>      
-> Then we don't care about clearing them?
->    
+> > I actually think this is a flaw in get_task_comm.  (Though actually it's
+> > the fault of terminals if they process dangerous escape sequences. Worst
+> > case tends to just be confusing output, but that's not important --
+> > nothing should spew non-printables regardless.)  Would a patch to
+> > get_task_comm be accepted to replace non-printables with "?" or something
+> > when filling the buffer?
+> 
+> Probably makes sense, although you might annoy someone who wants Kanji
+> process names in UTF-8 or similar.
 
-We do, if the device has a side effect (like blasting out noise through 
-loudspeakers).
+The task name is irrelevant, user controlled information. It's not
+really ideal for use in security logging.
 
-Anyway, just a suggestion.
-
--- 
-error compiling committee.c: too many arguments to function
+Alan
 
