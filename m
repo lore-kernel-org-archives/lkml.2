@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab0FWSEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 14:04:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55714 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751804Ab0FWSEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 14:04:39 -0400
-Date: Wed, 23 Jun 2010 14:03:54 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Ian Munsie <imunsie@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>,
-       Michael Ellerman <michael@ellerman.id.au>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Christoph Hellwig <hch@lst.de>,
-       Jesper Nilsson <jesper.nilsson@axis.com>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 39/40] trace syscalls: Clean confusing {s,r,}name and
-	fix ABI breakage
-Message-ID: <20100623180353.GB2680@redhat.com>
-References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com> <1277287401-28571-40-git-send-email-imunsie@au1.ibm.com>
+	id S1752168Ab0FWSHy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 14:07:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39686 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab0FWSHx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 14:07:53 -0400
+Message-ID: <4C224D26.1020307@oracle.com>
+Date: Wed, 23 Jun 2010 11:06:30 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1277287401-28571-40-git-send-email-imunsie@au1.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg KH <greg@kroah.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+       devel@driverdev.osuosl.org, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for June 21 (staging/easycap)
+References: <20100621170056.2fcf10ad.sfr@canb.auug.org.au> <20100621090049.c7f11c2d.randy.dunlap@oracle.com> <20100622223612.GB3898@kroah.com>
+In-Reply-To: <20100622223612.GB3898@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4C224D6F.00E1:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23, 2010 at 08:03:20PM +1000, Ian Munsie wrote:
-> From: Ian Munsie <imunsie@au1.ibm.com>
-> 
-> This patch cleans up the preprocessor macros defining system calls by
-> standidising on the parameters passing around the system call name, with
-> and without it's prefix.
-> 
-> Overall this makes the preprocessor code easier to understand and
-> follow and less likely to introduce bugs due to misunderstanding what to
-> place into each parameter.
-> 
-> The parameters henceforth should be named:
-> 
-> sname is the system call name WITHOUT the prefix (e.g. read)
-> prefix is the prefix INCLUDING the trailing underscore (e.g. sys_)
-> 
-> These are mashed together to form the full syscall name when required
-> like blah##prefix##sname. For just prefix##sname please use the provided
-> SYSNAME(prefix,sname) macro instead as it will be safe if prefix itself
-> is a macro.
-> 
-> This patch also fixes an ABI breakage - the ftrace events are once again
-> named like 'sys_enter_read' instead of 'enter_sys_read'. The rwtop
-> script shipped with perf relies on this ABI. Others may as well.
-> 
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> ---
+Greg KH wrote:
+> On Mon, Jun 21, 2010 at 09:00:49AM -0700, Randy Dunlap wrote:
+>> On Mon, 21 Jun 2010 17:00:56 +1000 Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> Changes since 20100618:
+>>
+>> When CONFIG_USB is not enabled:
+>>
+>> ERROR: "usb_kill_urb" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "usb_deregister_dev" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "video_register_device" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "usb_deregister" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "video_unregister_device" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "usb_set_interface" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "usb_register_dev" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "usb_control_msg" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "usb_submit_urb" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "usb_get_dev" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "usb_find_interface" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "usb_register_driver" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "usb_free_urb" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "usb_alloc_urb" [drivers/staging/easycap/easycap.ko] undefined!
+>>
+>>
+>> Adding "depends on USB" to EASYCAP is a good start.
+>> After that and enabling CONFIG_USB, build of easycap gets:
+>>
+>> ERROR: "video_register_device" [drivers/staging/easycap/easycap.ko] undefined!
+>> ERROR: "video_unregister_device" [drivers/staging/easycap/easycap.ko] undefined!
+>>
+>> because there is no media/video support enabled.  Also no SOUND enabled,
+>> so I expect there to be build errors associated with sound also, meaning that
+>> the Kconfig file should probably modified with something like
+>>
+>> config EASYCAP
+>> +	depends on USB && VIDEO_DEV && SND
+>>
+>>
+>> This is something that the driver author should know the answer to and submit a
+>> patch for.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-overall this patch is a major improvement! My question though is
-about the naming of the compat syscalls in the context of events. I
-believe this patch differeniates compat syscall event names as:
-"sys32_enter_sname", and "compat_sys_enter_sname". I agree that we keep that
-distinction for purposes of defining the actual syscall function. However,
-we had discuessed previously about keeping the event name the same for
-all compat syscalls. ie they are all called "compat_sys_sname" or some
-such. Reason being you could just do "compat_*" to match all compat
-events.
+> 
+> You are right, care to make up a patch for this?
 
-thanks,
-
--Jason
-
+No thanks, please see my last statement above.
+IOW, I want the driver developer (not you) to act responsibly on this.
