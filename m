@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab0FWTZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 15:25:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40115 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab0FWTZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 15:25:32 -0400
-Message-ID: <4C225F40.8000008@zytor.com>
-Date: Wed, 23 Jun 2010 12:23:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Christoph Hellwig <hch@lst.de>, Ian Munsie <imunsie@au1.ibm.com>,
-       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, x86@kernel.org,
-       Jason Baron <jbaron@redhat.com>, Greg Ungerer <gerg@uclinux.org>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 12/40] x86, compat: convert ia32 layer to use
-References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com> <1277287401-28571-13-git-send-email-imunsie@au1.ibm.com> <20100623101402.GA10564@lst.de> <20100623103619.GC5242@nowhere> <20100623104603.GB11845@lst.de> <20100623114116.GE5242@nowhere>
-In-Reply-To: <20100623114116.GE5242@nowhere>
-Content-Type: text/plain; charset=UTF-8
+	id S1753483Ab0FWT23 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 15:28:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33537 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753330Ab0FWT22 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 15:28:28 -0400
+Date: Wed, 23 Jun 2010 12:27:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Raffaele Recalcati <lamiaposta71@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+       Raffaele Recalcati <raffaele.recalcati@bticino.it>,
+       Andy Whitcroft <apw@canonical.com>, Daniel Walker <dwalker@fifo99.com>,
+       Joe Perches <joe@perches.com>
+Subject: Re: [PATCH] scripts: checkpatch.pl
+Message-Id: <20100623122759.7bf304e6.akpm@linux-foundation.org>
+In-Reply-To: <1277286561-3448-2-git-send-email-lamiaposta71@gmail.com>
+References: <1277286561-3448-1-git-send-email-lamiaposta71@gmail.com>
+	<1277286561-3448-2-git-send-email-lamiaposta71@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 04:41 AM, Frederic Weisbecker wrote:
-> On Wed, Jun 23, 2010 at 12:46:04PM +0200, Christoph Hellwig wrote:
->> On Wed, Jun 23, 2010 at 12:36:21PM +0200, Frederic Weisbecker wrote:
->>> I think we wanted that to keep the sys32_ prefixed based naming, to avoid
->>> collisions with generic compat handler names.
->>
->> For native syscalls we do this by adding a arch prefix inside the
->> syscall name, e.g.:
->>
->> arch/s390/kernel/sys_s390.c:SYSCALL_DEFINE(s390_fallocate)(int fd, int mode, loff_t offset,
->> arch/sparc/kernel/sys_sparc_64.c:SYSCALL_DEFINE1(sparc_pipe_real, struct pt_regs *, regs)
+On Wed, 23 Jun 2010 11:49:21 +0200
+Raffaele Recalcati <lamiaposta71@gmail.com> wrote:
+
+> From: Raffaele Recalcati <raffaele.recalcati@bticino.it>
 > 
-> In fact we sort of wanted to standardize the name of arch overriden compat
-> syscalls, so that userspace programs playing with syscalls tracing won't have
-> to deal with arch naming differences.
+> I've got a false positive when spaces are present
+> at the beginning of a line.
+> So I add this check, obviously outside comments.
+> This patch is compatible with the actual mainline,
+> I mean 7e27d6e778cd87b6f2415515d7127eba53fe5d02 commit.
+
+I don't really understand that.  It would help if the changelog
+were to include a copy of the code which triggers this "false
+positive", and a copy of the incorrect checkpatch output.
+
+Thanks.
+
+> Signed-off-by: Raffaele Recalcati <raffaele.recalcati@bticino.it>
+> ---
+>  scripts/checkpatch.pl |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
 > 
-
-That seems totally wrong in so many ways.
-
-What userspace sees is the system call name, e.g. fallocate or pipe.  It
-should *not* be visible to userspace that there is an arch-specici
-implementation.
-
-There are already a huge amount of gratuitous user space ABI
-differences, of course, partly because we *still* don't actually have a
-systematic model for argument passing.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index a4d7434..315a827 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -1433,6 +1433,13 @@ sub process {
+>  			WARN("please, no space before tabs\n" . $herevet);
+>  		}
+>  
+> +# check for spaces at the beginning of a line.
+> +		if ($rawline =~ /^\+ / && $rawline !~ /\+ +\*/)  {
+> +			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
+> +			WARN("please, no space for starting a line, \
+> +				excluding comments\n" . $herevet);
+> +		}
+> +
+>  # check we are in a valid C source file if not then ignore this hunk
+>  		next if ($realfile !~ /\.(h|c)$/);
 
