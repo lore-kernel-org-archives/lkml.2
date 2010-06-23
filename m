@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab0FWJ4Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 05:56:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45791 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824Ab0FWJ4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 05:56:23 -0400
-Subject: Re: linux-firmware tree vs. linux-firmware-from-kernel tree
-From: David Woodhouse <dwmw2@infradead.org>
-To: Thomas =?ISO-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <4C21D941.9030904@archlinux.org>
-References: <4C21D941.9030904@archlinux.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Jun 2010 10:56:18 +0100
-Message-ID: <1277286978.29898.6.camel@localhost>
+	id S1752211Ab0FWKBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 06:01:54 -0400
+Received: from verein.lst.de ([213.95.11.210]:60054 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750967Ab0FWKBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 06:01:53 -0400
+Date: Wed, 23 Jun 2010 12:01:38 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: trying to understand READ_META, READ_SYNC, WRITE_SYNC & co
+Message-ID: <20100623100138.GA9575@lst.de>
+References: <20100621094828.GA30748@lst.de> <4C1F3916.4070608@kernel.dk> <20100621110436.GA4056@lst.de> <4C1FB5F7.3070908@kernel.dk> <20100621191410.GA24213@lst.de> <20100621213618.GC6474@redhat.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.31.4 
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100621213618.GC6474@redhat.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 1.789 (*) BAYES_60
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-23 at 10:52 +0100, Thomas Bächler wrote:
-> Hello David,
+On Mon, Jun 21, 2010 at 05:36:18PM -0400, Vivek Goyal wrote:
+> I have got very little understanding of file system layer, but if I had
+> to guess, i think following might have happened.
 > 
-> After switching from 'make firmware_install' to using the firmware files
-> from the linux-firmware tree, I received a bug report about missing
-> firmware files. While investigating, I noticed that the following
-> commits are in linux-firmware-from-kernel, but not in linux-firmware:
-> 
-> Ken Kawasaki (1):
->       pcnet_cs: add cis of KTI PE520 pcmcia network card
-> 
-> Michael Chan (2):
->       bnx2: Update firmwares and update version to 2.0.8.
->       bnx2: Update 5709 MIPS firmware and version to 2.0.15.
-> 
-> Vladislav Zolotarov (1):
->       bnx2x: Use firmware 5.2.13
-> 
-> Is there a specific reason why they are missing? Can you merge these
-> commits into linux-firmware (I did it locally and it went fine, apart
-> from a minor conflict in the WHENCE file).
+> - We switched from WRITE to WRITE_SYNC for fsync() path.
 
-Yeah, it needs a manual merge, which I don't do very often -- partly
-because I don't expect us to be adding _new_ non-GPL firmware to the
-kernel tree. That's just insane.
+Yes.  WRITE_SYNC_PLUG to be exact.  Note that we don't juse do this
+for fsync but also for O_SYNC writes which use ->fsync, and also sync(2)
+and the unmount path, which all end up submitting WB_SYNC_ALL writeback
+requests.
 
--- 
-dwmw2
+> - This might have caused issues with idling as for SYNC_WRITE we will idle
+>   in CFQ but probably it is not desirable in certain cases where next set
+>   of WRITES is going to come from journaling thread. 
 
+I'm still a bit confused about what the idling logic actually does.  Is
+it some sort of additional plugging where we wait for more I/O to
+accumulate?
+
+> - That might have prompted us to introduce the rq_noidle() to make sure
+>   we don't idle in WRITE_SYNC path but direct IO path was avoided to make
+>   sure good throughput is maintained. But this left one question open 
+>   and that is it good to disable idling on all WRITE_SYNC path in kernel.
+
+I still fail to see why we should make any difference in the I/O
+scheduler for O_DIRECT vs O_SYNC/fsync workloads.  In both cases the
+caller blocks waiting for the I/O completion. 
+
+> - Slowly cfq code emerged and as it stands today, to me rq_noidle() is
+>   practically of not much use. For sync-idle tree (where idling is
+>   enabled), we are ignoring the rq_noidle() and always arming the timer.
+>   For sync-noidle, we choose not to idle based on if there was some other
+>   thread who did even a single IO with rq_noidle=0.
+> 
+>   I think in practice, there is on thread of other which is doing some
+>   read or write with rq_noidle=0 and if that's the case, we will end up
+>   idling on sync-noidle tree also and rq_noidle() practically does
+>   not take effect.
+> 
+> So if rq_noidle() was introduced to solve the issue of not idling on 
+> fsync() path (as jbd thread will send more data now), then probably slice
+> yielding patch of jeff might come handy here and and we can get rid of
+> rq_noidle() logic. This is just a guess work and I might be completely
+> wrong here...
+
+Getting rid of the noidle logic and more bio flag that us filesystem
+developers have real trouble understanding would be a good thing.
+
+After that we're down to three bio modifiers for filesystem use, of
+which at least two are very easy to grasp:
+
+ - REQ_SYNC - treat a request as synchronous, implicitly enabled for
+   reads anyway
+ - REQ_UNPLUG - explicitly unplug the queue after I/O submission
+
+and
+
+ - REQ_META - which we're currenly trying to define in detail
+
+
+REQ_NOIDLE currenly really is a lot of deep magic.
