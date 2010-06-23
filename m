@@ -1,120 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208Ab0FWFhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 01:37:11 -0400
-Received: from amavis-smtp.knology.net ([75.76.199.6]:49637 "EHLO
-	amavis-smtp.knology.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab0FWFhJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 01:37:09 -0400
-Subject: Re: PROBLEM: SIS7019 stops recording after 42 min
-From: David Dillow <dave@thedillows.org>
-To: linux@schou.dk
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-In-Reply-To: <1277262047.10818.9.camel@obelisk.thedillows.org>
-References: <AANLkTimO5PXmJiIPDw82MTA53mLSl-OC0e1SOEh7v8pH@mail.gmail.com>
-	 <1276972298.22889.16.camel@obelisk.thedillows.org>
-	 <AANLkTimwZFNLBNJWODyzKXwx9CbIorg3OCA53XZchkeN@mail.gmail.com>
-	 <1277043970.22889.45.camel@obelisk.thedillows.org>
-	 <AANLkTikBTMq3d-Ov65wYLJ_Vw-7Jde4AOwfXcEPB0wLr@mail.gmail.com>
-	 <1277129180.22889.64.camel@obelisk.thedillows.org>
-	 <AANLkTikW71h7ABVXY21pLL9AeOlmRTfVaSTjJ_6Ma0_R@mail.gmail.com>
-	 <AANLkTikCGzUKe9Fy1d0xhberqGFe71lvrQbg5gkQzgf1@mail.gmail.com>
-	 <AANLkTikPW9j4H15gq7nl0Tb213R15uIQAnSDi_cTOJre@mail.gmail.com>
-	 <1277262047.10818.9.camel@obelisk.thedillows.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Jun 2010 01:36:59 -0400
-Message-ID: <1277271419.10818.22.camel@obelisk.thedillows.org>
+	id S1751190Ab0FWFpl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 01:45:41 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41029 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750873Ab0FWFpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 01:45:38 -0400
+Date: Wed, 23 Jun 2010 15:45:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for June 23
+Message-Id: <20100623154531.0a4b02e1.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-8.fc13) 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__23_Jun_2010_15_45_31_+1000_Wi6Q9syx9njCKJ5M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-22 at 23:00 -0400, David Dillow wrote:
-> On Mon, 2010-06-21 at 22:10 +0200, Hans Schou wrote:
-> > 2010/6/21 Hans Schou <linux@schou.dk>:
-> > 
-> > > I have just started:
-> > >  arecord -B 1000000 -F 500000 -c 1 -r 44100 -f S16 -M -D hw:0,0 -v arec.wav
-> > 
-> > It gave a file size of 258822944 bytes. Almost 50 min:
-> >   echo "258822944/(2*60*44100)" | bc -ql
-> > 48.90
-> > 
-> > This is the longest recording I have made on this hardware.
-> > 
-> > I have this running now:
-> > + arecord -B 200000 -F 100000 -c 1 -r 44100 -f S16 -M -D hw:0,0 -v arec.wav
-> 
-> Ok, it seems something is definately funky with the driver in general,
-> and gets worse when we're using more than 2 periods per buffer.
+--Signature=_Wed__23_Jun_2010_15_45_31_+1000_Wi6Q9syx9njCKJ5M
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The driver's funkiness may be limited to the more than 2 periods per
-buffer/10 second pause issue.
+Hi all,
 
-> I don't have any overruns, nor does it go into the 10-second pause mode.
-> I do see an odd alternating pattern of one period taking 1.4ms to
-> capture, and the next taking 732ms. The period should be about 371ms, so
-> the lumpyness of the timing is likely making it easier to hit overruns.
+Changes since 20100622:
 
-I can reproduce the alternating pattern of periods using a different
-device, so this may be something in the core code of ALSA.
+My fixes tree contains:
+      v4l-dvb: update gfp/slab.h includes
+      arm: update gfp/slab.h includes
+      davinci: update gfp/slab.h includes
+      ocfs2: update gfp/slab.h includes
+      acpi: update gfp/slab.h includes
 
-Hardware PCM card 0 'HDA Intel' device 0 subdevice 0
-Its setup is:
-  stream       : CAPTURE
-  access       : RW_INTERLEAVED
-  format       : S16_LE
-  subformat    : STD
-  channels     : 2
-  rate         : 44100
-  exact rate   : 44100 (44100/1)
-  msbits       : 16
-  buffer_size  : 32768
-  period_size  : 16384
-  period_time  : 371519
-  tstamp_mode  : NONE
-  period_step  : 1
-  avail_min    : 16384
-  period_event : 0
-  start_threshold  : 1
-  stop_threshold   : 32768
-  silence_threshold: 0
-  silence_size : 0
-  boundary     : 4611686018427387904
-  appl_ptr     : 0
-  hw_ptr       : 0
+The net tree gained a conflict against the net-current tree.
 
-strace -T gives:
-ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.371672>
-write(1, ..., 65536) = 65536 <0.000035>
-ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.742746>
-write(1, ..., 65536) = 65536 <0.000013>
-ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.000027>
-write(1, ..., 65536) = 65536 <0.000016>
-ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.742694>
-write(1, ..., 65536) = 65536 <0.000011>
-ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.000038>
-write(1, ..., 65536) = 65536 <0.000024>
-ioctl(4, 0x80184151, 0x7fff532cff70) = 0 <0.742600>
+The wireless tree gained a conflict against the net tree and a build
+failure so I used the version from next-20100622.
 
-The first period gets clocked out close to the expected time --
-371.672ms actual vs 371.519 ms expected -- but then we're either running
-almost a full buffer -- 742.746ms actual vs 743.038ms buffer -- or very,
-very short at 0.027ms.
+----------------------------------------------------------------------------
 
-Since this problem is not related to the SiS7019 driver, I'll leave it
-to later -- or for others to investigate. Using three periods per buffer
-sees a similar pattern, but one has an extra period time to work
-within. 
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
 
-Dave
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
 
+Below is a summary of the state of the merge.
 
+We are up to 164 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
 
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
 
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
 
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/for-linus
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging tegra/for-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+CONFLICT (content): Merge conflict in include/linux/serial_sci.h
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+CONFLICT (content): Merge conflict in fs/ecryptfs/main.c
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Applying: v9fs: fixup for inode_setattr being removed
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging ibft/master
+Merging swiotlb/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in net/ipv4/ip_output.c
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/libertas/host.h
+$ git reset --hard HEAD^
+Merging refs/next/20100622/wireless
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging mmc/next
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/evergreen.c
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/r600.c
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_combios=
+.c
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_pm.c
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/rv770.c
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
+or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
+eft in tree.
+$ git rm -f fs/notify/inotify/inotify.c
+Applying: fsnotify: update gfp/slab.h includes
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging catalin/for-next
+Merging alacrity/linux-next
+Merging i7core_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging omap_dss2/for-next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in fs/fs-writeback.c
+CONFLICT (content): Merge conflict in net/bridge/br_fdb.c
+CONFLICT (content): Merge conflict in net/bridge/netfilter/ebt_redirect.c
+CONFLICT (content): Merge conflict in net/bridge/netfilter/ebt_ulog.c
+CONFLICT (content): Merge conflict in net/bridge/netfilter/ebtables.c
+CONFLICT (content): Merge conflict in net/netfilter/nfnetlink_log.c
+CONFLICT (content): Merge conflict in net/netfilter/nfnetlink_queue.c
+Applying: net: merge fixups for bridge rcu code
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+CONFLICT (content): Merge conflict in mm/memory-failure.c
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+Merging quilt/driver-core
+Merging quilt/tty
+Merging quilt/usb
+Merging staging-next/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/batman-adv/bat_sysfs.c
+CONFLICT (delete/modify): drivers/staging/batman-adv/device.c deleted in st=
+aging-next/staging-next and modified in HEAD. Version HEAD of drivers/stagi=
+ng/batman-adv/device.c left in tree.
+$ git rm -f drivers/staging/batman-adv/device.c
+Merging slabh/slabh
+Merging scsi-post-merge/master
+
+--Signature=_Wed__23_Jun_2010_15_45_31_+1000_Wi6Q9syx9njCKJ5M
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwhn3sACgkQjjKRsyhoI8xBSQCgjglz528Lq8KrqauOhmhh9jiW
+hIUAn0vgZGyOcldDggZoEIpLuQTp3HdB
+=9lDQ
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__23_Jun_2010_15_45_31_+1000_Wi6Q9syx9njCKJ5M--
