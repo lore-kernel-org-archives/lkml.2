@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab0FWGUu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 02:20:50 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:47557 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751066Ab0FWGUs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 02:20:48 -0400
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Viresh KUMAR <viresh.kumar@st.com>
-Date: Wed, 23 Jun 2010 08:20:28 +0200
-Subject: RE: [PATCH] DMAENGINE: runtime config for slave channels
-Thread-Topic: [PATCH] DMAENGINE: runtime config for slave channels
-Thread-Index: AcsSZigN2rryqeQiRXKoc0OGlTh15QANHBRA
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A025E8B0A1E@EXDCVYMBSTM006.EQ1STM.local>
-References: <1277072356-18048-1-git-send-email-linus.walleij@stericsson.com>
- <AANLkTikRRVPijSpkG8elztu_PS1p_0XM_fhiVrWOTqxZ@mail.gmail.com>
-In-Reply-To: <AANLkTikRRVPijSpkG8elztu_PS1p_0XM_fhiVrWOTqxZ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751506Ab0FWGWs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 02:22:48 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:54071 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751066Ab0FWGWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 02:22:46 -0400
+Date: Tue, 22 Jun 2010 23:22:42 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Christian Stroetmann <stroetmann@ontolinux.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux File System ML <linux-fsdevel@vger.kernel.org>,
+       Linux Security Module ML 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] security: Yama LSM
+Message-ID: <20100623062242.GG5876@outflux.net>
+References: <20100621213424.GG24749@outflux.net>
+ <201006220028.o5M0Sbx7062650@www262.sakura.ne.jp>
+ <20100622011452.GN24749@outflux.net>
+ <4C20ABC0.5050908@nokia.com>
+ <20100622160613.GC5876@outflux.net>
+ <4C21A39C.6040406@ontolinux.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C21A39C.6040406@ontolinux.com>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Dan Williams]
+On Wed, Jun 23, 2010 at 08:03:08AM +0200, Christian Stroetmann wrote:
+> "You've already had those suggestions some days ago. Use a security
+> module, either by using something like SELinux (where you can do
+> this just fine as far as I can see including exceptions by label for
+> problem apps)", [Alan Cox, 2010-06-08], or integrate it into an
+> already existing solution eg. grsecurity (www.grsecurity.net).
 
-> Is there a guarantee that all devices that implement this command will
-> support all the fields?
+You appear to be quoting[1], but you left off a bit.  To edit it a bit:
 
-No. They may be ignored on some controllers.
+  "Use a security module, either by using something like SELinux (...),
+  or write your own little security module that does it."
 
-> The presence of private_config concerns me
-> because that still seems to imply some hard coded knowledge about the
-> specific dma engine from the client.
+I have done the latter.
 
-Yes that is the idea.
+I don't need to integrate this into grsecurity because grsecurity already
+has these protections.  It is Openwall and grsecurity that I'm using as the
+starting point for this attempt at upstreaming the protections.
 
-> ...which is fine, but only if this is a common way to express
-> arch-specific extensions. In other words it's not clear where the
-> line is drawn between "this is a common operation that different dma
-> drivers can use / extend incompatibly" versus "this truly a generic
-> api that a client driver can depend on to run unmodified across
-> architectures that have a supporting dma driver".  Clarifying that
-> would help end point device driver authors to know what they can rely
-> on... to date all the slave implementations have been written by the
-> same author who wrote the driver, so the information hiding has been
-> blurred.  It would be nice to define / document what is and is not
-> expected to work for this command across implementations.
+-Kees
 
-OK the idea is to have the generic stuff in
-struct dma_slave_channel_config, and the only criteria I have for
-deciding what is generic is what COH901318, DMA40 and PL08x need
-to runtime configure to handle things like UART RX/TX and SPI 
-DMA with varying wordwidth which is currently my most complex
-usecases.
+[1] http://lkml.org/lkml/2010/6/8/56
 
-There may be DMA controllers that cannot specify the word width
-for example, but most can. Those that cannot do this will ignore
-that field, and as a consequence cannot be used to feed drivers
-that make use of it with DMA.
-
-This is a hardware restriction though: if your DMA controller cannot
-control the word width you cannot use the PL022 driver with DMA
-for example.
-
-The private_config is intended for stuff that can never be
-expressed in a generic way. For example Viresh told me that they
-may need to runtime-control which bus master the PL080 is using.
-Then the driver needs to take platform-specific actions, and
-there will be some struct pl08x_slave_config passed in this
-opaque pointer so the PL08x can be set up properly.
-
-Since you don't seem to be totally against this approach I
-will attempt to submit a more elaborate patch set.
-
-Yours,
-Linus Walleij
+-- 
+Kees Cook
+Ubuntu Security Team
