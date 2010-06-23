@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab0FWVy0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 17:54:26 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:34400 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753868Ab0FWVyW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 17:54:22 -0400
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Jun 2010 23:54:12 +0200
-Subject: Regression in next-20100618
-Thread-Topic: Regression in next-20100618
-Thread-Index: AcsTHp2q2vRCHXl7RIiFdKLkF7P6ww==
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A025FD0D260@EXDCVYMBSTM006.EQ1STM.local>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753330Ab0FWVwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 17:52:50 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:37299 "EHLO
+	mail.pripojeni.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751520Ab0FWVwt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 17:52:49 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: jirislaby@gmail.com
+Cc: Oleg Nesterov <oleg@redhat.com>, akpm@linux-foundation.org,
+       adobriyan@gmail.com, nhorman@tuxdriver.com,
+       Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+       Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 08/12] rlimits: add rlimit64 structure
+Date: Wed, 23 Jun 2010 23:52:09 +0200
+Message-Id: <1277329933-8139-8-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
+References: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+Add a platform independent structure for resource limits to use with
+a new prlimit64 syscall. This structure is the same which uses glibc
+for 64-bit limits.
 
-I have a regression in the next tree from 20100618, the prompt
-freezes on the U8500. Drilling down with git bisecting found:
+Also add corresponding infinity which is a 64-bit full of bit-ones.
 
-34ffc9670d67fe068f9d8582dd4d2a18d9a61205
-Author: Alan Cox <alan@linux.intel.com>
-Date:   Tue Jun 1 22:53:00 2010 +0200
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ include/linux/resource.h |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-    serial: Use block_til_ready helper
+diff --git a/include/linux/resource.h b/include/linux/resource.h
+index cf8dc96..037aa7e 100644
+--- a/include/linux/resource.h
++++ b/include/linux/resource.h
+@@ -43,6 +43,13 @@ struct rlimit {
+ 	unsigned long	rlim_max;
+ };
+ 
++#define RLIM64_INFINITY		(~0ULL)
++
++struct rlimit64 {
++	__u64 rlim_cur;
++	__u64 rlim_max;
++};
++
+ #define	PRIO_MIN	(-20)
+ #define	PRIO_MAX	20
+ 
+-- 
+1.7.1
 
-    Our code now rather closely resembles the helper, so switch to it.
 
-    Signed-off-by: Alan Cox <alan@linux.intel.com>
-    Cc: Arnd Bergmann <arnd@arndb.de>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-Reverting the commit makes the problem go away.
-
-This platform is using drivers/serial/amba-pl011.c
-
-Any ideas I could try out to help troubleshooting this one?
-It could be that you're provoking some bug in amba-pl011.c.
-
-Yours,
-Linus Walleij
