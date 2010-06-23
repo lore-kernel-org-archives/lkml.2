@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab0FWInN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 04:43:13 -0400
-Received: from mail-yw0-f198.google.com ([209.85.211.198]:40340 "EHLO
-	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab0FWInL convert rfc822-to-8bit (ORCPT
+	id S1751766Ab0FWIqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 04:46:23 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:36343 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751367Ab0FWIqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 04:43:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wJiWbyBa0aMNQbtoO0GW8B/6pDLi7Hsux8qwrBjURsI0LSfqjuVIzkfOAWPG6FnlHW
-         rdtGon/L4UHdr25tbnzSdjy7jLDeqeB6ZTjzFEMiQIFj1CR4ZLi91jFDCkFQ8l3zZkQw
-         dBtvxwdvRB/K5kl73FKuwErvd8dG4YuZekzXc=
+	Wed, 23 Jun 2010 04:46:21 -0400
+X-Greylist: delayed 1331 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jun 2010 04:46:21 EDT
+Message-ID: <4C21C48A.4030407@stericsson.com>
+Date: Wed, 23 Jun 2010 10:23:38 +0200
+From: Ulf Hansson <ulf.hansson@stericsson.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-In-Reply-To: <E1OQgpf-0001DJ-3w@pomaz-ex.szeredi.hu>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
-	<1276627208-17242-18-git-send-email-vaurora@redhat.com>
-	<AANLkTilNAGzn3ZC5eN2ZQMqNhcSWnT-mi_y2TkIkdeUU@mail.gmail.com>
-	<20100617183912.GA14389@shell>
-	<E1OQgpf-0001DJ-3w@pomaz-ex.szeredi.hu>
-Date: Wed, 23 Jun 2010 10:43:10 +0200
-Message-ID: <AANLkTikaxHChLzvbWPUZcPqxUURtjBSY9SXeU3nlKHIR@mail.gmail.com>
-Subject: Re: [PATCH 17/38] union-mount: Union mounts documentation
-From: Alex Riesen <raa.lkml@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Valerie Aurora <vaurora@redhat.com>, viro@zeniv.linux.org.uk,
-       jblunck@suse.de, hch@infradead.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Andries E. Brouwer" <Andries.Brouwer@cwi.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linus WALLEIJ <linus.walleij@stericsson.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: [PATCH] Add commandline partitions for block devices v2
+References: <1275997141-25419-1-git-send-email-linus.walleij@stericsson.com> <20100622130915.16ad67cd.akpm@linux-foundation.org> <20100622214812.GB1797@ub>
+In-Reply-To: <20100622214812.GB1797@ub>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 15:14, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Thu, 17 Jun 2010, Valerie Aurora wrote:
->> On Thu, Jun 17, 2010 at 10:01:30AM +0200, Alex Riesen wrote:
->> > On Tue, Jun 15, 2010 at 20:39, Valerie Aurora <vaurora@redhat.com> wrote:
->> > > +git://git.kernel.org/pub/scm/fs/ext2/val/e2fsprogs.git
->> > > +
->> > > +Currently, whiteout directory entries are not returned to userland.
->> > > +While the directory type for whiteouts, DT_WHT, has been defined for
->> > > +many years, very little userland code handles them. ??Userland will
->> > > +never see fallthru directory entries.
->> >
->> > This may be a dumb question (I must admit I did only very little research),
->> > but how does one cleanup the topmost layer of whiteouts and fallthroughs,
->> > so that the entries of lower layer(s) can be made visible again?
+Andries E. Brouwer wrote:
+> On Tue, Jun 22, 2010 Andrew Morton wrote:
+>   
+>> On Tue, 8 Jun 2010 Linus Walleij wrote:
 >>
->> I'm not sure how best to do this.  We don't want to add more system
->> calls.  One thought of mine has been to do this offline, when the file
->> system is unmounted.  For example, e2fsck could add a feature to
->> delete whiteouts and fallthrus.  Another option is to add a flag to an
->> existing system call.
+>>     
+>>> From: Ulf Hansson <ulf.hansson@stericsson.com>
+>>>
+>>> This adds an option to pass in block device partitions from the kernel
+>>> cmdline.
+>>>
+>>> The rationale is that in embedded systems we sometimes have no standard
+>>> partition table available: often due to the fact that raw binary data is
+>>> read out from the first sectors of the device by ROM code in ASICs. We
+>>> have for a long time supplied custom partition information to embedded
+>>> flash memories through the MTDparts interface which has similar
+>>> semantics, and with the advent of embedded MMC block devices this now
+>>> comes to standard block devices.
+>>>       
 >
-> One more advantage of doing whiteouts, etc. with hard links and
-> extended attributes instead of as special filesystem objects.  That
-> way they are visible (unless part of a union) and can be treated as
-> normal filesystem objects.
+> There exist ioctls BLKPG_ADD_PARTITION and BLKPG_DEL_PARTITION that
+> allow one to add or remove partitions at run time, without having
+> a partition table, or without having a partition table in a format
+> understood by the kernel. Things can be done in user space.
+>
+> In general there are many things one would like the kernel to do at
+> init time, and it is a bad idea to do all of this from the kernel
+> command line. So adding options like these should be done only
+> if it would be really awkward to do the same from an initial
+> ramdisk.
+>
+> Andries
+>
+>   
+I see your point!
 
-But then you have to break union to cleanup the topmost filesystem.
-That'll surely take the mount filesystem (in its working configuration, at
-least) offline. Not much better than using fsck.
+Although, in an embedded system it is not always convenient to use an 
+initial ramdisk. Instead your init program will be found directy from 
+your rootfs, which means the kernel must itself be able to setup the 
+partitions.
+
+Regards
+Uffe
+
