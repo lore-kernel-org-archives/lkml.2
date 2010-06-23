@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab0FWT4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 15:56:09 -0400
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:54351 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109Ab0FWT4H convert rfc822-to-8bit (ORCPT
+	id S1753780Ab0FWT4T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 15:56:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44105 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753707Ab0FWT4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 15:56:07 -0400
-Subject: Re: [RFC] tpm_tis: Fix subsequent suspend failures
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-In-Reply-To: <20100623121850.e000ac8b.akpm@linux-foundation.org>
-Date: Wed, 23 Jun 2010 16:55:54 -0300
-Cc: Helmut Schaa <helmut.schaa@googlemail.com>,
-       tpmdd-devel@lists.sourceforge.net,
-       Debora Velarde <debora@linux.vnet.ibm.com>,
-       David Safford <safford@watson.ibm.com>, jmorris@namei.org,
-       linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5204AD54-F4BF-49A8-9168-3FCA112AAA2B@linux.vnet.ibm.com>
-References: <201006091227.15729.helmut.schaa@googlemail.com> <201006091511.09810.helmut.schaa@googlemail.com> <1277176124.32011.4.camel@blackbox.ibm.com> <20100623121850.e000ac8b.akpm@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-X-Mailer: Apple Mail (2.1081)
+	Wed, 23 Jun 2010 15:56:16 -0400
+Date: Wed, 23 Jun 2010 12:56:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: linux-fbdev@vger.kernel.org, dri-devel@lists.sf.net,
+       linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] vt/console: try harder to print output when panicing
+Message-Id: <20100623125605.5f56f6ba.akpm@linux-foundation.org>
+In-Reply-To: <1277262779-19338-1-git-send-email-airlied@gmail.com>
+References: <1277262779-19338-1-git-send-email-airlied@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 23 Jun 2010 13:12:59 +1000
+Dave Airlie <airlied@gmail.com> wrote:
 
-On Jun 23, 2010, at 4:18 PM, Andrew Morton wrote:
+> Jesse's initial patch commit said:
+> 
+> "At panic time (i.e. when oops_in_progress is set) we should try a bit
+> harder to update the screen and make sure output gets to the VT, since
+> some drivers are capable of flipping back to it.
+> 
+> So make sure we try to unblank and update the display if called from a
+> panic context."
+> 
+> I've enhanced this to add a flag to the vc that console layer can set
+> to indicate they want this behaviour to occur. This also adds support
+> to fbcon for that flag and adds an fb flag for drivers to indicate
+> they want to use the support. It enables this for KMS drivers.
 
-> On Tue, 22 Jun 2010 00:08:44 -0300
-> Rajiv Andrade <srajiv@linux.vnet.ibm.com> wrote:
-> 
->> On Wed, 2010-06-09 at 15:11 +0200, Helmut Schaa wrote:
->>> Fix subsequent suspends by issuing tpm_continue_selftest during resume.
->>> Otherwise, the tpm chip seems to be not fully initialized and will reject
->>> the save state command during suspend, thus preventing the whole system
->>> to suspend.
->>> 
->>> Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
->>> ---
->>> 
->>> Not sure if the platform resume method should be fixed in the same way.
->>> Plase review.
->>> 
->>> Thanks,
->>> Helmut
->>> 
->>> drivers/char/tpm/tpm_tis.c |    9 ++++++++-
->>> 1 files changed, 8 insertions(+), 1 deletions(-)
->>> 
->>> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
->>> index 24314a9..1030f84 100644
->>> --- a/drivers/char/tpm/tpm_tis.c
->>> +++ b/drivers/char/tpm/tpm_tis.c
->>> @@ -623,7 +623,14 @@ static int tpm_tis_pnp_suspend(struct pnp_dev *dev, pm_message_t msg)
->>> 
->>> static int tpm_tis_pnp_resume(struct pnp_dev *dev)
->>> {
->>> -	return tpm_pm_resume(&dev->dev);
->>> +	struct tpm_chip *chip = pnp_get_drvdata(dev);
->>> +	int ret;
->>> +
->>> +	ret = tpm_pm_resume(&dev->dev);
->>> +	if (!ret)
->>> +		tpm_continue_selftest(chip);
->>> +
->>> +	return ret;
->>> }
->>> 
->>> static struct pnp_device_id tpm_pnp_tbl[] __devinitdata = {
->> 
->> Sorry the ones on CC, previous message got messed up by the mail client.
->> 
->> This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=16256
->> 
->> Link to original post given it wasn't submitted to LKML originally:
->> http://marc.info/?l=tpmdd-devel&m=127609160616162&w=2
->> 
->> Acked-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
->> 
-> 
-> (top-posting repaired.  Please don't do that).
-> 
-> This wasn't a very good way to send a patch.  I edited the diff,
-> reconstructed the patch and then assembled a decent-looking changelog. 
-> I also changed your acked-by to the required signed-off-by, because you
-> were on the patch's delivery path.
-> 
-> Pretty please: next time, prepare a proper mergeable patch with the
-> correct attributions and signoffs?  Thanks.
+Interesting.  Getting real oops traces from machines running X will
+make Rusty happy, and that's what we're all here for.
 
-Sure, sorry. I was just not certain if I could just resent Helmut's patch to LKML without messing with his authorship.
+How well does this all work?  How reliable is it?  What's the success rate?
 
-Thanks,
-Rajiv
+
+
+What's the downside here?  After all, not all oopses are catastrophic -
+sometimes the machine will go blurt and keep running so the user can
+take a look in the logs then perform an orderly reboot, etc.  As I
+understand it, those non-catastrophic oopses will now flip the machine
+from X and into the vt display, yes?  Can the user get it back to X
+mode?
+
+Worse, there's also a risk that doing all this new work within the
+oopsing context will screw the machine up, so the user will be
+_deprived_ of an oops report which he otherwise would have been able to
+get from the logs.  This is particularly the case when it's the DRI
+stuff which oopsed, which is not exactly an uncommon occurrence lately ;)
+
+Oh well, the best way to tell is to ship-it-and-see.
