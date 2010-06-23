@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab0FWRWe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 13:22:34 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:59357 "EHLO imr3.ericy.com"
+	id S1752884Ab0FWR2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 13:28:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45589 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752201Ab0FWRWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 13:22:33 -0400
-Date: Wed, 23 Jun 2010 10:21:44 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [lm-sensors] Adding critical/fault limits to hwmon sysfs API
-Message-ID: <20100623172144.GA20046@ericsson.com>
-References: <20100620163759.GA7077@ericsson.com>
- <20100623144346.10acd898@hyperion.delvare>
- <20100623133147.GA19143@ericsson.com>
- <20100623162911.2028f817@hyperion.delvare>
- <20100623150325.GA19461@ericsson.com>
- <20100623183437.5a04dedb@hyperion.delvare>
+	id S1752532Ab0FWR2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 13:28:18 -0400
+Message-ID: <4C224429.6010705@kernel.org>
+Date: Wed, 23 Jun 2010 19:28:09 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100623183437.5a04dedb@hyperion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: ata link not reset properly
+References: <4C223F8A.9030306@odi.ch>
+In-Reply-To: <4C223F8A.9030306@odi.ch>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 23 Jun 2010 17:28:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23, 2010 at 12:34:37PM -0400, Jean Delvare wrote:
-> Hi Guenter,
-> 
-> On Wed, 23 Jun 2010 08:03:25 -0700, Guenter Roeck wrote:
-> > On Wed, Jun 23, 2010 at 10:29:11AM -0400, Jean Delvare wrote:
-> > > I expected a counter-proposal of this kind. The problem I see is that
-> > > the new limit we are adding is unrelated to _min. However, the other
-> > > _min_* file we have (_min_alarm) expresses something which is relative
-> > > to _min. Same as _max_hyst and _crit_hyst, which are relative to _max
-> > > and _critn respectively. So I have the feeling that _min_crit sends the
-> > > wrong signal to the reader. Especially if we keep _crit for the high
-> > > bound, the asymmetry raises questions.
-> > > 
-> > > This is my rationale for suggesting _crit and _lcrit. Now, I won't
-> > > argue forever if others disagree, these is really only a naming
-> > > convention and everything will be fine as long as the drivers and
-> > > libsensors agree.
-> > 
-> > Makes sense. No strong opinion on my side, really. Using crit/lcrit is fine for me as well.
-> > Maybe we should wait if there is input from others and go with lcrit if there is none.
-> 
-> OK, fine with me.
-> 
-> > On a side note, libsensors does not support inX_fault today, even though 
-> > it is mentioned in the API, and there is no currX_fault. Likewise, libsensors supports 
-> > currX_alarm but it is not mentioned in hwmon/sysfs-interface.
-> > Unless there are objections, I'll clean that up when I add support for the _[l]crit objects.
-> 
-> Yes, please!
-> 
-> > Also, lib/sensors.conf.5 has a comment "Likewise, tempX_crit often comes with tempX_max_crit".
-> > Since tempX_max_crit does not exist, it might make sense to remove that comment.
-> 
-> Does the sentence make sense if you replace tempX_max_crit with
-> tempX_crit_hyst? Looks like a copy-paste-edit mistake (that would be
-> from me.)
+Hello,
 
-Yes, I think that is the problem. I'll fix that together with the other changes.
+On 06/23/2010 07:08 PM, Ortwin Glück wrote:
+>>From time to time this nVidia SATA controller chokes on a FLUSH CACHE.
+> 
+> 1. why does the kernel not try to HARD reset the link?
 
-Guenter
+Because hardreset sometimes brings the link completely offline on
+sata_nv's.  Hardreset on sata_nv controllers is quite fragile.
+
+> 2. it would be nice to have the possibility to manually force a
+> (hard) reset or to re-initialize the device. Other than rebooting I
+> mean :-)
+
+Maybe we can use hardreset as the last resort before ditching the
+device.  Something like the following.  Can you please try it and post
+the kernel log?  Thanks.
+
+diff --git a/drivers/ata/sata_nv.c b/drivers/ata/sata_nv.c
+index 2116113..5105951 100644
+--- a/drivers/ata/sata_nv.c
++++ b/drivers/ata/sata_nv.c
+@@ -1587,7 +1587,7 @@ static int nv_hardreset(struct ata_link *link, unsigned int *class,
+         * comment above port ops for details.
+         */
+        if (!(link->ap->pflags & ATA_PFLAG_LOADING) &&
+-           !ata_dev_enabled(link->device))
++           (!ata_dev_enabled(link->device) || ehc->tries[0] == 1))
+                sata_link_hardreset(link, sata_deb_timing_hotplug, deadline,
+                                    NULL, NULL);
+        else {
+
+-- 
+tejun
