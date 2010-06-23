@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab0FWKEE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 06:04:04 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47669 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab0FWKEA (ORCPT
+	id S1752516Ab0FWKEI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 06:04:08 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:59715 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab0FWKEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 06:04:00 -0400
+	Wed, 23 Jun 2010 06:04:05 -0400
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
 Cc: Jason Baron <jbaron@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Paul Mackerras <paulus@samba.org>,
-       Michael Ellerman <michael@ellerman.id.au>
-Subject: ftrace syscalls, PowerPC: Various fixes, Compat Syscall support and PowerPC implementation, V2
-Date: Wed, 23 Jun 2010 20:02:41 +1000
-Message-Id: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
+       Michael Ellerman <michael@ellerman.id.au>,
+       Ian Munsie <imunsie@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+       Masami Hiramatsu <mhiramat@redhat.com>
+Subject: [PATCH 01/40] ftrace syscalls: don't add events for unmapped syscalls
+Date: Wed, 23 Jun 2010 20:02:42 +1000
+Message-Id: <1277287401-28571-2-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
+References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series implements ftrace syscall tracing on PowerPC. All PPC 32bit,
-64bit and 32bit compat syscalls are supported along with all the missing
-generic compat syscalls.
+From: Ian Munsie <imunsie@au1.ibm.com>
 
-This patch series includes Jason Baron's Compat Syscall Support v3 patches
-rebased atop the current tip tree as patches 05 through 18 inclusive - refer to
-http://lkml.org/lkml/2010/3/16/308 for their discussion. Any alterations I have
-made other than what was necessary to rebase them are in separate later
-commits. In particular, patch #38 removes the test for unmapped syscalls as
-patch #1 prevents the events from being created if the mapping failed. Patch
-#39 also undoes an ABI change from Jason's patches.
+FTRACE_SYSCALLS would create events for each and every system call, even
+if it had failed to map the system call's name with it's number. This
+resulted in a number of events being created that would not behave as
+expected.
 
-Some of the PowerPC syscalls have been renamed in this series - particularly
-any with a ppc_ prefix or similar that did not use an assembly wrapper - most
-of these now have a sys_ppc_ prefix or similar.
+This could happen, for example, on architectures who's symbol names are
+unusual and will not match the system call name. It could also happen
+with system calls which were mapped to sys_ni_syscall.
 
-Those syscalls with assembly wrappers are now rigidly named such that only the
-first three characters differ from the function name (i.e. ppc_fork is the
-wrapper for sys_fork) so that the arch_syscall_match_sym_name function will
-still match them to their metadata (it ignores the 3 character prefix).
+This patch changes the default system call number in the metadata to -1.
+If the system call name from the metadata is not successfully mapped to
+a system call number during boot, than the event initialisation routine
+will now return an error, preventing the event from being created.
 
-I have avoided changing the return types of any of the syscalls as I was
-concerned about the affect of doing so, rather adding the infrastructure to
-allow their metadata to be recorded as well (patches #33 through #35).
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+ include/linux/syscalls.h      |    2 ++
+ kernel/trace/trace_syscalls.c |    8 ++++++++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
-If the system is booted with loglevel=8, any system calls that have not mapped
-to their metadata will be printed, which can help track down any further
-unmapped syscalls. This could be useful for other archs adding ftrace syscall
-tracing support.
-
-
-The patches base is tip/master.
-
-Changes since v1:
- * Add Jason's compat syscall support as part of the series
- * Convert all the PPC syscalls to use the SYSCALL_DEFINE macros
- * Remaining generic syscalls supported
- * Handle PPC syscalls with register access through 7th parameter
- * Support for syscalls with !long return types
- * Support for syscalls using their own syscall wrappers
- * Clean up some of the metadata recording preprocessor code
- * Some other general cleanups
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 7f614ce..86f082b 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -159,6 +159,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta_##sname = {				\
+ 		.name 		= "sys"#sname,			\
++		.syscall_nr	= -1,	/* Filled in at boot */	\
+ 		.nb_args 	= nb,				\
+ 		.types		= types_##sname,		\
+ 		.args		= args_##sname,			\
+@@ -176,6 +177,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta__##sname = {				\
+ 		.name 		= "sys_"#sname,			\
++		.syscall_nr	= -1,	/* Filled in at boot */	\
+ 		.nb_args 	= 0,				\
+ 		.enter_event	= &event_enter__##sname,	\
+ 		.exit_event	= &event_exit__##sname,		\
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 34e3580..82246ce 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -431,6 +431,14 @@ void unreg_event_syscall_exit(struct ftrace_event_call *call)
+ int init_syscall_trace(struct ftrace_event_call *call)
+ {
+ 	int id;
++	int num;
++
++	num = ((struct syscall_metadata *)call->data)->syscall_nr;
++	if (num < 0 || num >= NR_syscalls) {
++		pr_debug("syscall %s metadata not mapped, disabling ftrace event\n",
++				((struct syscall_metadata *)call->data)->name);
++		return -ENOSYS;
++	}
+ 
+ 	if (set_syscall_print_fmt(call) < 0)
+ 		return -ENOMEM;
+-- 
+1.7.1
 
