@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab0FWWFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 18:05:20 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:34602 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752441Ab0FWWFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 18:05:18 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>,
-       Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] MAINTAINERS: Add an entry for the input MT protocol
-Date: Thu, 24 Jun 2010 00:04:24 +0200
-Message-Id: <1277330664-13884-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.6.3.3
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1ORY3g-0007DX-55.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1ORY3g-0007DX-55 4bdbe230d6fefe76d2565c1de0fb2ad5
+	id S1753517Ab0FWWK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 18:10:59 -0400
+Received: from kroah.org ([198.145.64.141]:41102 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753175Ab0FWWK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 18:10:58 -0400
+Date: Wed, 23 Jun 2010 15:09:52 -0700
+From: Greg KH <greg@kroah.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+       devel@driverdev.osuosl.org, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for June 21 (staging/easycap)
+Message-ID: <20100623220952.GB18158@kroah.com>
+References: <20100621170056.2fcf10ad.sfr@canb.auug.org.au>
+ <20100621090049.c7f11c2d.randy.dunlap@oracle.com>
+ <20100622223612.GB3898@kroah.com>
+ <4C224D26.1020307@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C224D26.1020307@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a maintainer for the input multitouch (MT) protocol,
-such that get_maintainer.pl selects it whenever an MT event is present
-in the patch.
+On Wed, Jun 23, 2010 at 11:06:30AM -0700, Randy Dunlap wrote:
+> Greg KH wrote:
+> > On Mon, Jun 21, 2010 at 09:00:49AM -0700, Randy Dunlap wrote:
+> >> On Mon, 21 Jun 2010 17:00:56 +1000 Stephen Rothwell wrote:
+> >>
+> >>> Hi all,
+> >>>
+> >>> Changes since 20100618:
+> >>
+> >> When CONFIG_USB is not enabled:
+> >>
+> >> ERROR: "usb_kill_urb" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "usb_deregister_dev" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "video_register_device" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "usb_deregister" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "video_unregister_device" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "usb_set_interface" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "usb_register_dev" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "usb_control_msg" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "usb_submit_urb" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "usb_get_dev" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "usb_find_interface" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "usb_register_driver" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "usb_free_urb" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "usb_alloc_urb" [drivers/staging/easycap/easycap.ko] undefined!
+> >>
+> >>
+> >> Adding "depends on USB" to EASYCAP is a good start.
+> >> After that and enabling CONFIG_USB, build of easycap gets:
+> >>
+> >> ERROR: "video_register_device" [drivers/staging/easycap/easycap.ko] undefined!
+> >> ERROR: "video_unregister_device" [drivers/staging/easycap/easycap.ko] undefined!
+> >>
+> >> because there is no media/video support enabled.  Also no SOUND enabled,
+> >> so I expect there to be build errors associated with sound also, meaning that
+> >> the Kconfig file should probably modified with something like
+> >>
+> >> config EASYCAP
+> >> +	depends on USB && VIDEO_DEV && SND
+> >>
+> >>
+> >> This is something that the driver author should know the answer to and submit a
+> >> patch for.
+> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 
+> > 
+> > You are right, care to make up a patch for this?
+> 
+> No thanks, please see my last statement above.
+> IOW, I want the driver developer (not you) to act responsibly on this.
 
-Cc: Joe Perches <joe@perches.com>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- MAINTAINERS |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Ok, I'm working with them right now on this.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 6d119c9..32157c8 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3858,6 +3858,13 @@ S:	Maintained
- F:	drivers/char/isicom.c
- F:	include/linux/isicom.h
- 
-+MULTITOUCH INPUT MT PROTOCOL
-+M:	Henrik Rydberg <rydberg@euromail.se>
-+L:	linux-input@vger.kernel.org
-+S:	Maintained
-+F:	Documentation/input/multi-touch-protocol.txt
-+K:	ABS_MT
-+
- MUSB MULTIPOINT HIGH SPEED DUAL-ROLE CONTROLLER
- M:	Felipe Balbi <felipe.balbi@nokia.com>
- L:	linux-usb@vger.kernel.org
--- 
-1.6.3.3
+thanks,
 
+greg k-h
