@@ -1,132 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601Ab0FWUmP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 16:42:15 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:62346 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab0FWUmN (ORCPT
+	id S1753780Ab0FWUmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 16:42:22 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:40211 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753669Ab0FWUmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 16:42:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=mcfdirfKrp2RzU8h9rLHGj/IywWt/wDNki8AhPz2yGCoPraIgKGWl89IC5sb6/VdM7
-         si4fmpySNfK5hGyJTqpyD+ZCjyOlgSHVyfxxCwA7BQR5nKdNecK2rNHa0t0L6vb5mpA2
-         yNDGeFzSakNyZp2j4uznaAdCWpcNB7RG04bIA=
-Message-ID: <4C226FCA.2030604@iki.fi>
-Date: Wed, 23 Jun 2010 23:34:18 +0300
-From: =?UTF-8?B?VGltbyBUZXLDpHM=?= <timo.teras@iki.fi>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
-       "John W.Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       davem@davemloft.net
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
-References: <AANLkTilf41JrFwN1veRDifNA78S2LQ6SO0g3YLOONd2W@mail.gmail.com>	 <20100623141622.GC15205@tuxdriver.com>  <4C223DCA.5090704@gmail.com> <1277314167.2469.1144.camel@edumazet-laptop> <4C224E06.40806@iki.fi> <4C22508A.8060002@gmail.com>
-In-Reply-To: <4C22508A.8060002@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 23 Jun 2010 16:42:20 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=KwvWNyAtWTFJY0suFNfIw4OgrtaPAajgmlnIkj6A34IAPHQNRHythj0yUJ83M2QfajBZQH2mpSNzXzmkfn1oHTHK/UQ3yMsyWiT0tYQjFOBpGX+UvpM0AwjLBZ0I81K+;
+Date: Wed, 23 Jun 2010 13:40:24 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Airlie <airlied@gmail.com>, linux-fbdev@vger.kernel.org,
+       dri-devel@lists.sf.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vt/console: try harder to print output when panicing
+Message-ID: <20100623134024.713e0714@virtuousgeek.org>
+In-Reply-To: <20100623133637.fbb318e2.akpm@linux-foundation.org>
+References: <1277262779-19338-1-git-send-email-airlied@gmail.com>
+	<20100623125605.5f56f6ba.akpm@linux-foundation.org>
+	<20100623130547.296e00a7@virtuousgeek.org>
+	<20100623133637.fbb318e2.akpm@linux-foundation.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 09:20 PM, Justin P. Mattock wrote:
-> On 06/23/10 11:10, Timo Teräs wrote:
->> On 06/23/2010 08:29 PM, Eric Dumazet wrote:
->>   
->>> Le mercredi 23 juin 2010 à 10:00 -0700, Justin P. Mattock a écrit :
->>>     
->>>> o.k. the bisect is pointing to the below results..
->>>> (I tried git revert xxx but this commit is too big
->>>> so I'll(hopefully)manually revert it on the latest HEAD to
->>>> see if this is the actual problem im experiencing)
->>>>
->>>> 80c802f3073e84c956846e921e8a0b02dfa3755f is the first bad commit
->>>> commit 80c802f3073e84c956846e921e8a0b02dfa3755f
->>>> Author: Timo TerÃ¤s<timo.teras@iki.fi>
->>>> Date:   Wed Apr 7 00:30:05 2010 +0000
->>>>
->>>>       xfrm: cache bundles instead of policies for outgoing flows
->>>>
->>>>       __xfrm_lookup() is called for each packet transmitted out of
->>>>       system. The xfrm_find_bundle() does a linear search which can
->>>>       kill system performance depending on how many bundles are
->>>>       required per policy.
->>>>
->>>>       This modifies __xfrm_lookup() to store bundles directly in
->>>>       the flow cache. If we did not get a hit, we just create a new
->>>>       bundle instead of doing slow search. This means that we can now
->>>>       get multiple xfrm_dst's for same flow (on per-cpu basis).
->>>>
->>>>       Signed-off-by: Timo Teras<timo.teras@iki.fi>
->>>>       Signed-off-by: David S. Miller<davem@davemloft.net>
->>>>
->>>> :040000 040000 d8e60f5fa4c1329f450d9c7cdf98b34e6a177f22
->>>> 9f576e68e5bf4ce357d7f0305aee5f410250dfe2 M      include
->>>> :040000 040000 f2876df688ee36907af7b4123eea96592faaed3e
->>>> a3f6f6f94f0309106856cd99b38ec90b024eb016 M      net
->>>>        
->>> Thanks a lot for bisecting Jutin, this is really appreciated.
->>>
->>> crash is in xfrm_bundle_ok()
->>>
->>> if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
->>>     return 0;
->>>
->>> xdst->pols[0] contains a NULL pointer
->>>      
->> That does not really make sense, if we get this far; there's a valid
->> xfrm_state with the bundle. This means that there existed a policy with
->> it too.
->>
->> I'll take a deeper look at this tomorrow. Would it be possible to see
->> your xfrm policies?
->>
->> - Timo
->>
->>    
+On Wed, 23 Jun 2010 13:36:37 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Wed, 23 Jun 2010 13:05:47 -0700
+> Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
 > 
-> @Eric sure no problem doing the bisect...
+> > On Wed, 23 Jun 2010 12:56:05 -0700
+> > Andrew Morton <akpm@linux-foundation.org> wrote:
+> > 
+> > > On Wed, 23 Jun 2010 13:12:59 +1000
+> > > Dave Airlie <airlied@gmail.com> wrote:
+> > > 
+> > > > Jesse's initial patch commit said:
+> > > > 
+> > > > "At panic time (i.e. when oops_in_progress is set) we should try a bit
+> > > > harder to update the screen and make sure output gets to the VT, since
+> > > > some drivers are capable of flipping back to it.
+> > > > 
+> > > > So make sure we try to unblank and update the display if called from a
+> > > > panic context."
+> > > > 
+> > > > I've enhanced this to add a flag to the vc that console layer can set
+> > > > to indicate they want this behaviour to occur. This also adds support
+> > > > to fbcon for that flag and adds an fb flag for drivers to indicate
+> > > > they want to use the support. It enables this for KMS drivers.
+> > > 
+> > > Interesting.  Getting real oops traces from machines running X will
+> > > make Rusty happy, and that's what we're all here for.
+> > > 
+> > > How well does this all work?  How reliable is it?  What's the success rate?
+> > > 
+> > > 
+> > > 
+> > > What's the downside here?  After all, not all oopses are catastrophic -
+> > > sometimes the machine will go blurt and keep running so the user can
+> > > take a look in the logs then perform an orderly reboot, etc.  As I
+> > > understand it, those non-catastrophic oopses will now flip the machine
+> > > from X and into the vt display, yes?  Can the user get it back to X
+> > > mode?
+> > 
+> > No, we'll only flip from the panic notifier chain.
 > 
-> as for the xfrm policy here is the link that I used to setup ipsec:
-> http://www.linuxfromscratch.org/hints/downloads/files/ipsec.txt
-> (just change the keys if doing real world work..(but for me just testing).
-> 
-> below is a temporary fix for me to get this working, tcpdump reports
-> everything is doing what it should be
-> 11:16:32.496166 IP xxxxx > xxxxx: AH(spi=0x00000200,seq=0x1090):
-> ESP(spi=0x00000201,seq=0x1090), length 56
-> 11:16:32.496212 IP xxxxx > xxxxx: AH(spi=0x00000200,seq=0x1091):
-> ESP(spi=0x00000201,seq=0x1091), length 56
-> 11:16:32.496259 IP xxxxx > xxxxx: AH(spi=0x00000200,seq=0x1092):
-> ESP(spi=0x00000201,seq=0x1092), length 56
-> 
-> (tested a few mins ago, but not the right fix..)
+> So we still don't get to see the output from BUGs and random oopses?  I
+> don't think panics are all that common.
 
-Yes, that would break some other obscure scenarios.
+No, BUG() ends up in panic iirc by doing an bad pointer ref which
+should fault and panic. Random oopses won't show up though (but they're
+not supposed to be fatal and can be seen in the log).
 
-Looks like it's ah inside esp. So you get chain of bundles. And only the
-first bundle gets a policy. Should have thought of that. Does the below
-fix it for you?
+> So am I correct in believing that if a user is getting invisible-oopses
+> then he can set /proc/sys/kernel/panic_on_oops, and then the oops
+> should be visible?
 
-diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
-index 4bf27d9..af1c173 100644
---- a/net/xfrm/xfrm_policy.c
-+++ b/net/xfrm/xfrm_policy.c
-@@ -2300,7 +2300,8 @@ int xfrm_bundle_ok(struct xfrm_policy *pol, struct
-xfrm_dst *first,
- 			return 0;
- 		if (xdst->xfrm_genid != dst->xfrm->genid)
- 			return 0;
--		if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
-+		if (xdst->num_pols > 0 &&
-+		    xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
- 			return 0;
+Yep.
 
- 		if (strict && fl &&
+> (Shouldn't all this stuff be explained in the changlog?)
 
+Maybe?  Linux oops/panic handling is pretty ad-hoc, a separate document
+would probably be best.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
