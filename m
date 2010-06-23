@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab0FWVxX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 17:53:23 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:37335 "EHLO
+	id S1753975Ab0FWVxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 17:53:45 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:37336 "EHLO
 	mail.pripojeni.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753886Ab0FWVxT (ORCPT
+	with ESMTP id S1752188Ab0FWVxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Jun 2010 17:53:19 -0400
 From: Jiri Slaby <jslaby@suse.cz>
@@ -12,134 +12,107 @@ To: jirislaby@gmail.com
 Cc: Oleg Nesterov <oleg@redhat.com>, akpm@linux-foundation.org,
        adobriyan@gmail.com, nhorman@tuxdriver.com,
        Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-       Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 01/12] rlimits: security, add task_struct to setrlimit
-Date: Wed, 23 Jun 2010 23:52:02 +0200
-Message-Id: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
+       Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH v4 12/12] unistd: add __NR_prlimit64 syscall numbers
+Date: Wed, 23 Jun 2010 23:52:13 +0200
+Message-Id: <1277329933-8139-12-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
+References: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jirislaby@gmail.com>
+Add __NR_prlimit64 syscall numbers to asm-generic. Add them also to
+asm-x86, both 32 and 64-bit.
 
-Add task_struct to task_setrlimit of security_operations to be able to set
-rlimit of task other than current.
-
-Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
-Acked-by: Eric Paris <eparis@redhat.com>
-Acked-by: James Morris <jmorris@namei.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- include/linux/security.h |    9 ++++++---
- kernel/sys.c             |    2 +-
- security/capability.c    |    3 ++-
- security/security.c      |    5 +++--
- security/selinux/hooks.c |    7 ++++---
- 5 files changed, 16 insertions(+), 10 deletions(-)
+ arch/x86/ia32/ia32entry.S          |    1 +
+ arch/x86/include/asm/unistd_32.h   |    3 ++-
+ arch/x86/include/asm/unistd_64.h   |    2 ++
+ arch/x86/kernel/syscall_table_32.S |    1 +
+ include/asm-generic/unistd.h       |    6 ++++--
+ 5 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 5bcb395..a22219a 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -1499,7 +1499,8 @@ struct security_operations {
- 	int (*task_setnice) (struct task_struct *p, int nice);
- 	int (*task_setioprio) (struct task_struct *p, int ioprio);
- 	int (*task_getioprio) (struct task_struct *p);
--	int (*task_setrlimit) (unsigned int resource, struct rlimit *new_rlim);
-+	int (*task_setrlimit) (struct task_struct *p, unsigned int resource,
-+			struct rlimit *new_rlim);
- 	int (*task_setscheduler) (struct task_struct *p, int policy,
- 				  struct sched_param *lp);
- 	int (*task_getscheduler) (struct task_struct *p);
-@@ -1749,7 +1750,8 @@ void security_task_getsecid(struct task_struct *p, u32 *secid);
- int security_task_setnice(struct task_struct *p, int nice);
- int security_task_setioprio(struct task_struct *p, int ioprio);
- int security_task_getioprio(struct task_struct *p);
--int security_task_setrlimit(unsigned int resource, struct rlimit *new_rlim);
-+int security_task_setrlimit(struct task_struct *p, unsigned int resource,
-+		struct rlimit *new_rlim);
- int security_task_setscheduler(struct task_struct *p,
- 				int policy, struct sched_param *lp);
- int security_task_getscheduler(struct task_struct *p);
-@@ -2311,7 +2313,8 @@ static inline int security_task_getioprio(struct task_struct *p)
- 	return 0;
- }
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 17cf65c..b9472ec 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -844,4 +844,5 @@ ia32_sys_call_table:
+ 	.quad compat_sys_recvmmsg
+ 	.quad sys_fanotify_init
+ 	.quad sys32_fanotify_mark
++	.quad sys_prlimit64			/* 340 */
+ ia32_syscall_end:
+diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
+index 80b799c..b766a5e 100644
+--- a/arch/x86/include/asm/unistd_32.h
++++ b/arch/x86/include/asm/unistd_32.h
+@@ -345,10 +345,11 @@
+ #define __NR_recvmmsg		337
+ #define __NR_fanotify_init	338
+ #define __NR_fanotify_mark	339
++#define __NR_prlimit64		340
  
--static inline int security_task_setrlimit(unsigned int resource,
-+static inline int security_task_setrlimit(struct task_struct *p,
-+					  unsigned int resource,
- 					  struct rlimit *new_rlim)
- {
- 	return 0;
-diff --git a/kernel/sys.c b/kernel/sys.c
-index e83ddbb..1ba4522 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1290,7 +1290,7 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
- 	if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > sysctl_nr_open)
- 		return -EPERM;
+ #ifdef __KERNEL__
  
--	retval = security_task_setrlimit(resource, &new_rlim);
-+	retval = security_task_setrlimit(current, resource, &new_rlim);
- 	if (retval)
- 		return retval;
+-#define NR_syscalls 340
++#define NR_syscalls 341
  
-diff --git a/security/capability.c b/security/capability.c
-index 4aeb699..830a213 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -411,7 +411,8 @@ static int cap_task_getioprio(struct task_struct *p)
- 	return 0;
- }
+ #define __ARCH_WANT_IPC_PARSE_VERSION
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
+index 5b7b1d5..363e9b8 100644
+--- a/arch/x86/include/asm/unistd_64.h
++++ b/arch/x86/include/asm/unistd_64.h
+@@ -667,6 +667,8 @@ __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
+ __SYSCALL(__NR_fanotify_init, sys_fanotify_init)
+ #define __NR_fanotify_mark			301
+ __SYSCALL(__NR_fanotify_mark, sys_fanotify_mark)
++#define __NR_prlimit64				302
++__SYSCALL(__NR_prlimit64, sys_prlimit64)
  
--static int cap_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
-+static int cap_task_setrlimit(struct task_struct *p, unsigned int resource,
-+		struct rlimit *new_rlim)
- {
- 	return 0;
- }
-diff --git a/security/security.c b/security/security.c
-index 7461b1b..c53949f 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -780,9 +780,10 @@ int security_task_getioprio(struct task_struct *p)
- 	return security_ops->task_getioprio(p);
- }
+ #ifndef __NO_STUBS
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
+index 07ad5eb..b35786d 100644
+--- a/arch/x86/kernel/syscall_table_32.S
++++ b/arch/x86/kernel/syscall_table_32.S
+@@ -339,3 +339,4 @@ ENTRY(sys_call_table)
+ 	.long sys_recvmmsg
+ 	.long sys_fanotify_init
+ 	.long sys_fanotify_mark
++	.long sys_prlimit64		/* 340 */
+diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
+index 30218b4..3d1375d 100644
+--- a/include/asm-generic/unistd.h
++++ b/include/asm-generic/unistd.h
+@@ -631,15 +631,17 @@ __SYSCALL(__NR_perf_event_open, sys_perf_event_open)
+ __SYSCALL(__NR_accept4, sys_accept4)
+ #define __NR_recvmmsg 243
+ __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
++#define __NR_prlimit64 244
++__SYSCALL(__NR_prlimit64, sys_prlimit64)
  
--int security_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
-+int security_task_setrlimit(struct task_struct *p, unsigned int resource,
-+		struct rlimit *new_rlim)
- {
--	return security_ops->task_setrlimit(resource, new_rlim);
-+	return security_ops->task_setrlimit(p, resource, new_rlim);
- }
+ /*
+  * Architectures may provide up to 16 syscalls of their own
+  * starting with this value.
+  */
+-#define __NR_arch_specific_syscall 244
++#define __NR_arch_specific_syscall 245
  
- int security_task_setscheduler(struct task_struct *p,
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 5c9f25b..e3ce6b4 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -3371,16 +3371,17 @@ static int selinux_task_getioprio(struct task_struct *p)
- 	return current_has_perm(p, PROCESS__GETSCHED);
- }
+ #undef __NR_syscalls
+-#define __NR_syscalls 260
++#define __NR_syscalls 261
  
--static int selinux_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
-+static int selinux_task_setrlimit(struct task_struct *p, unsigned int resource,
-+		struct rlimit *new_rlim)
- {
--	struct rlimit *old_rlim = current->signal->rlim + resource;
-+	struct rlimit *old_rlim = p->signal->rlim + resource;
- 
- 	/* Control the ability to change the hard limit (whether
- 	   lowering or raising it), so that the hard limit can
- 	   later be used as a safe reset point for the soft limit
- 	   upon context transitions.  See selinux_bprm_committing_creds. */
- 	if (old_rlim->rlim_max != new_rlim->rlim_max)
--		return current_has_perm(current, PROCESS__SETRLIMIT);
-+		return current_has_perm(p, PROCESS__SETRLIMIT);
- 
- 	return 0;
- }
+ /*
+  * All syscalls below here should go away really,
 -- 
 1.7.1
 
