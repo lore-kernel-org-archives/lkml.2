@@ -1,66 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab0FWXbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 19:31:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43932 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753933Ab0FWXbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 19:31:11 -0400
-Date: Thu, 24 Jun 2010 09:31:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Paul Mackerras <paulus@samba.org>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: linux-next: build failure after merge of the final tree (tip
- tree related)
-Message-Id: <20100624093103.35b56e0a.sfr@canb.auug.org.au>
-In-Reply-To: <20100623165523.GG5242@nowhere>
-References: <20100624023117.219953e4.sfr@canb.auug.org.au>
-	<20100623165523.GG5242@nowhere>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__24_Jun_2010_09_31_03_+1000_evR7eHMFri_HmG=x"
+	id S1754003Ab0FWXiL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 19:38:11 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:54277 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753879Ab0FWXiI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 19:38:08 -0400
+Date: Thu, 24 Jun 2010 00:37:59 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Edward Shishkin <edward.shishkin@gmail.com>
+Cc: Chris Mason <chris.mason@oracle.com>, Edward Shishkin <edward@redhat.com>,
+       Mat <jackdachef@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       linux-fsdevel@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       The development of BTRFS <linux-btrfs@vger.kernel.org>
+Subject: Re: Balancing leaves when walking from top to down (was Btrfs:...)
+Message-ID: <20100623233759.GE7058@shareable.org>
+References: <4C1B7560.1000806@gmail.com> <20100618155653.GC10919@shareable.org> <4C1BC924.30604@redhat.com> <20100618193555.GV27466@think> <4C1BED56.9010300@redhat.com> <20100621131528.GA17979@think> <20100621180013.GD17979@think> <4C20C4E9.60203@redhat.com> <20100622142006.GT23009@think> <4C221049.501@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C221049.501@gmail.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Jun_2010_09_31_03_+1000_evR7eHMFri_HmG=x
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Edward Shishkin wrote:
+> Chris Mason wrote:
+> >On Tue, Jun 22, 2010 at 04:12:57PM +0200, Edward Shishkin wrote:
+> >  
+> >>Chris Mason wrote:
+> >>    
+> >>>On Mon, Jun 21, 2010 at 09:15:28AM -0400, Chris Mason wrote:
+> >>>      
+> >>>>I'll reproduce from your test case and provide a fix.  mount -o
+> >>>>max_inline=1500 would give us 50% usage in the worst case
+> >>>>        
+> >>This is a very strange statement: how did you calculate this lower bound?
+> >>    
+> >
+> >We want room for the extent and the inode item and the inode backref.
+> >It's a rough number that leaves some extra room.  But even with a 2K
+> >item we're getting very close to 50% usage of the metadata area.
+> >
+> >  
+> >>>>(minus the
+> >>>>balancing bug you hit).
+> >>>>        
+> >>>Ok, the balancing bug was interesting.  What happens is we create all
+> >>>the inodes and directory items nicely packed into the leaves.
+> >>>
+> >>>Then delayed allocation kicks in and starts inserting the big fat inline
+> >>>extents.  This often forces the balancing code to split a leaf twice in
+> >>>order to make room for the new inline extent.  The double split code
+> >>>wasn't balancing the bits that were left over on either side of our
+> >>>desired slot.
+> >>>
+> >>>The patch below fixes the problem for me, reducing the number of leaves
+> >>>that have more than 2K of free space down from 6% of the total to about
+> >>>74 leaves.  It could be zero, but the balancing code doesn't push
+> >>>items around if our leaf is in the first or last slot of the parent
+> >>>node (complexity vs benefit tradeoff).
+> >>>      
+> >>Nevertheless, I see leaves, which are not in the first or last slot,
+> >>but mergeable with their neighbors (test case is the same):
+> >>    
+> >
+> >Correct, but it was in the first or last slot when it was balanced (I
+> >confirmed this with printk).
+> >
+> >Then the higher layers were balanced and our leaves were no longer in
+> >the first/last slot.  We don't rebalance leaves when we balance level 1.
+> >
+> >  
+> >>leaf 269557760 items 22 free space 2323 generation 25 owner 2
+> >>fs uuid 614fb921-cfa9-403d-9feb-940021e72382
+> >>chunk uuid b1674882-a445-45f9-b250-0985e483d231
+> >>
+> >>leaf 280027136 items 18 free space 2627 generation 25 owner 2
+> >>fs uuid 614fb921-cfa9-403d-9feb-940021e72382
+> >>chunk uuid b1674882-a445-45f9-b250-0985e483d231
+> >>
+> >>node 269549568 level 1 items 60 free 61 generation 25 owner 2
+> >>fs uuid 614fb921-cfa9-403d-9feb-940021e72382
+> >>chunk uuid b1674882-a445-45f9-b250-0985e483d231
+> >>       key (175812608 EXTENT_ITEM 4096) block 175828992 (42927) gen 15
+> >>       key (176025600 EXTENT_ITEM 4096) block 176111616 (42996) gen 15
+> >>       key (176238592 EXTENT_ITEM 4096) block 176300032 (43042) gen 15
+> >>       key (176451584 EXTENT_ITEM 4096) block 216248320 (52795) gen 17
+> >>       key (176672768 EXTENT_ITEM 4096) block 216236032 (52792) gen 17
+> >>       key (176783360 EXTENT_ITEM 4096) block 216252416 (52796) gen 17
+> >>       key (176955392 EXTENT_ITEM 4096) block 138854400 (33900) gen 25
+> >>       key (177131520 EXTENT_ITEM 4096) block 280289280 (68430) gen 25
+> >>       key (177348608 EXTENT_ITEM 4096) block 280285184 (68429) gen 25
+> >>       key (177561600 EXTENT_ITEM 4096) block 269557760 (65810) gen 25
+> >>       key (177795072 EXTENT_ITEM 4096) block 280027136 (68366) gen 25
+> >>       key (178008064 EXTENT_ITEM 4096) block 280064000 (68375) gen 25
+> >>       key (178233344 EXTENT_ITEM 4096) block 285061120 (69595) gen 25
+> >>       key (178442240 EXTENT_ITEM 4096) block 178442240 (43565) gen 16
+> >>       key (178655232 EXTENT_ITEM 4096) block 178655232 (43617) gen 16
+> >>       key (178868224 EXTENT_ITEM 4096) block 178868224 (43669) gen 16
+> >>[...]
+> >>
+> >>    
+> >>>With the patch, I'm able to create 106894 files (2K each) on a 1GB FS.
+> >>>That doesn't sound like a huge improvement, but the default from
+> >>>mkfs.btrfs is to duplicate metadata.  After duplication, that's about
+> >>>417MB or about 40% of the overall space.
+> >>>
+> >>>When you factor in the space that we reserve to avoid exploding on
+> >>>enospc and the space that we have allocated for data extents, that's not
+> >>>a very surprising number.
+> >>>
+> >>>I'm still putting this patch through more testing, the double split code
+> >>>is used in some difficult corners and I need to make sure I've tried
+> >>>all of them.
+> >>>      
+> >>Chris, for the further code review we need documents, which reflect
+> >>the original ideas of the balancing, etc. Could you please provide them?
+> >>Obviously, I can not do it instead of you, as I don't know those ideas.
+> >>
+> >>    
+> >
+> >Which part are you most interested in?
+> >  
+> 
+> Balancing.
+> 
+> What conditions do we want to provide?
+> Why won't we get utilization slump in future?
+> How do we need to fix things when something goes wrong?
+> Whereas in accordance with the single existing paper Btrfs
+> design looks really broken, because:
 
-Hi Frederic,
+> 1. the balancing condition n <= number_of_keys <= 2n+1
+>   is not satisfied (indeed, when number_of_keys is 1
+>   we have 1 <= 2n+1 -- false);
 
-On Wed, 23 Jun 2010 18:55:25 +0200 Frederic Weisbecker <fweisbec@gmail.com>=
- wrote:
->
-> There is a pending fix:
->=20
-> From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-> [PATCH] perf: Fix argument of perf_arch_fetch_caller_regs
->=20
-> I'm going to send a pull request to Ingo so that gets fixed soon.
+That doesn't matter.  It is not necessary (or desirable) to follow the
+classical B-tree algorithms to the letter to get sufficiently good
+properties.  B-trees are quite robust to changing the details, as long
+as you follow the generalised principles which make them work.
 
-Excellent, thanks.
+(It is entirely possible that btrfs does not follow those principles
+though :-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+All that matters to guarantee utilisation and algorithmic performance
+is to do enough merging on deletions, and avoid doing too many splits,
+to ensure that an amount X% of all used blocks (except the root) are
+at least Y% full.
 
---Signature=_Thu__24_Jun_2010_09_31_03_+1000_evR7eHMFri_HmG=x
-Content-Type: application/pgp-signature
+Y is 50 and X is 100 in your description, but other numbers work too.
+Reducing X slightly improves utilisation in common filesystem
+scenarios where many blocks are filled in ascending key sequences.
+(But delayed allocation/writing, like btrfs does, is another way to
+achieve a similar result.)  Increasing Y improves minimum utilisation,
+which seems like a good thing to demand from a filesystem - for the
+actual data, anyway.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+>From what's been said in this thread, I'm getting the impression that
+btrfs does not guarantee a particular value of X, but rather depends
+heuristically on typical behaviour to give an equivalent outcome, and
+that that does not always work in some pathological cases.  And also
+that Y is/was not guaranteed, but that may be quite possibly an
+ordinary bug and might have been fixed by Chris during this thread.
 
-iEYEARECAAYFAkwimTcACgkQjjKRsyhoI8yVkgCgkzumpBjMxpZImOjgpUqeGaGV
-fsMAn1nX0ljVgQOWtJH7kH1ncsxc8BQY
-=8/fU
------END PGP SIGNATURE-----
+I must admit that only getting 200GB of 2kB files into a formatted 1GB
+partition before it says ENOSPC - and that's after Chris's recent
+tweak - is a bit disappointing.  A little over 50% loss for 2kB files
+is quite reasonable - most filesystems would do that just due to
+padding to the next 4kB (the block size), and about 50% wastage in a
+B-tree is fair enough (at least if there is no sane pattern to the
+file's creation), as guaranteeing higher utilisation has a performance
+penalty.  But with the delayed allocation, I'd hope for better packing
+than the worst case, and I'd expect even the worst case to be better
+than 20% available for data.
 
---Signature=_Thu__24_Jun_2010_09_31_03_+1000_evR7eHMFri_HmG=x--
+Losing 80% of the space to utilisation loss and metadata duplication
+is disappointing (to me), and a bit suprising, given that one of the
+purposes of inline extents is to pack small files more efficiently
+than if they were padded to the block size.
+
+> 2. the trees mentioned in this paper don't allow keys of
+>   variable length.
+
+Inline extents aren't the same as variable-length keys, because they
+aren't sorted or searched by content.  I showed in an earlier reply to
+you how to show that variable length *values*[1] don't cause
+unbalancing provided the splits are put in acceptable places.  But to
+make sense of that, you do have to grok the generalising of B-trees
+beyond the original algorithms.
+
+[1] Think of the B-tree variants which contain (key,value) pairings
+where "value" is not ordered, rather than the type which contain just
+"keys" which are fully ordered.
+
+Are there any true (fully ordered) variable-length keys in btrfs?
+
+-- Jamie
