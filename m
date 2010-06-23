@@ -1,85 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766Ab0FWJbs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 05:31:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62396 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059Ab0FWJbq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 05:31:46 -0400
-Message-ID: <4C21D442.8080703@oracle.com>
-Date: Wed, 23 Jun 2010 17:30:42 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752112Ab0FWJju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 05:39:50 -0400
+Received: from n14.bullet.mail.mud.yahoo.com ([68.142.206.41]:32068 "HELO
+	n14.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751875Ab0FWJjs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 05:39:48 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 913245.14802.bm@omp128.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=Wf69AIG+4ZCPbhSZX6+ItuFTUbemOAQUVEViMuY7TgOxNMuZNVkOFbHzotYuNl8sitxTNwUVT6T17sE7JNVShzZOobgY32c1w0sPO9ljao89Z+vYSu1cYCcktD5w2m2JBHfOfVt4V3LztTOGvVVG+cQi3nB7FefQlzhh2xk67Ko=;
+Message-ID: <728731.73469.qm@web180307.mail.gq1.yahoo.com>
+X-YMail-OSG: 9_cdTikVM1l5R3Pj8vJlmz2Y7vnjA8f3CNnxvtC2xIXv4E0
+ Vw252h6Z0uukXhQ6H1Oqlsv3z2BHzSMSHah731Dv4K12CHJ.MKyrh_7U1tjR
+ u.UwpRuqfklgURHnH_bqSrR2dcxkj60oIopfj9kqS9wAUkwFHixlq2pfsxXK
+ mw9uP4SVaKz8g.KOQVnpg3F3ydWbY3_EszNI_Ib8XSp4BN07oAj5m.9Y7HU6
+ euH0TBnq7WK9JpycjeQR8NaSqd.jQe0n06kVHR.qTO1vPWyULa6_xWHl9g.f
+ iBBQeLbqKAdvPyNVQ7Kl1KQ.xkZv3QiFepR_y86WX1tBDCsK7wgJJ7CT1emv
+ 6rtLWXEjD4u9Cj7gjQcFEW0DLCaVfN8J.2eQ-
+X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.104.274457
+Date: Wed, 23 Jun 2010 02:39:46 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [RFC PATCH] Rework gpio cansleep (was Re: gpiolib and sleeping gpios)
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
+       linux kernel <linux-kernel@vger.kernel.org>,
+       ext-jani.1.nikula@nokia.com, Andrew Morton <akpm@linux-foundation.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <4C21955D.1020502@bluewatersys.com>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 0/3 v5][RFC] ext3/4: enhance fsync performance when using
- CFQ
-References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
-In-Reply-To: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4C21D474.0043:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
 
-On 06/23/2010 05:34 AM, Jeff Moyer wrote:
-> Hi,
->
-> Running iozone with the fsync flag, or fs_mark, the performance of CFQ is
-> far worse than that of deadline for enterprise class storage when dealing
-> with file sizes of 8MB or less.  I used the following command line as a
-> representative test case:
->
->    fs_mark -S 1 -D 10000 -N 100000 -d /mnt/test/fs_mark -s 65536 -t 1 -w 4096 -F
->
-> When run using the deadline I/O scheduler, an average of the first 5 numbers
-> will give you 448.4 files / second.  CFQ will yield only 106.7.  With
-> this patch series applied (and the two patches I sent yesterday), CFQ now
-> achieves 462.5 files / second.
-which 2 patches? Could you paste the link or the subject? Just want to 
-make my test env like yours. ;)
-As Joel mentioned in another mail, ocfs2 also use jbd/jbd2, so I'd like 
-to give it a try and give you some feedback about the test.
 
-Regards,
-Tao
->
-> This patch set is still an RFC.  I'd like to make it perform better when
-> there is a competing sequential reader present.  For now, I've addressed
-> the concerns voiced about the previous posting.
->
-> Review and testing would be greatly appreciated.
->
-> Thanks!
-> Jeff
->
-> ---
->
-> New from the last round:
->
-> - removed the think time calculation I added for the sync-noidle service tree
-> - replaced above with a suggestion from Vivek to only guard against currently
->    active sequential readers when determining if we can preempt the sync-noidle
->    service tree.
-> - bug fixes
->
-> Over all, I think it's simpler now thanks to the suggestions from Jens and
-> Vivek.
->
-> [PATCH 1/3] block: Implement a blk_yield function to voluntarily give up the I/O scheduler.
-> [PATCH 2/3] jbd: yield the device queue when waiting for commits
-> [PATCH 3/3] jbd2: yield the device queue when waiting for journal commits
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+--- On Tue, 6/22/10, Ryan Mallon <ryan@bluewatersys.com> wrote:
+
+> > --- On Tue, 6/22/10, Ryan Mallon <ryan@bluewatersys.com>
+> wrote:
+> > 
+> > 
+> >> gpiolib
+> > 
+> > 
+> > Again, you're talking about "gpiolib" when
+> > you seem to mean the GPIO framework itself
+> > (for which gpiolib is only an implementation
+> > option)...
+> 
+> Fine, its just semantics.
+
+Yes, just the foundation of what you're
+saying.  Stuff that, when you get it wrong,
+prevents communication.  Try to get it right.
+
+If you can't be bothered to get the basics
+right, I'll just have to assume you're being
+a troll.  There's enough evidence of that in
+other parts of your latest message; sorry.
+
+
+ I think everyone knows what I
+> mean when I
+> refer to gpiolib.
+
+Not without first wasting tiime finding
+that you don't really mean "gpiolib"; you
+instead mean something else entirely.  Sigh.
+
+ 
+> >> 'Can sleep' for a gpio has two different meanings
+> depending
+> >> on context
+> > 
+> > NO; for the GPIO itself it's only ever had one
+> > meaning, regardless of context.
+> > 
+> > You're trying to conflate the GPIO and one
+> > of the contexts in which it's used.  That's
+> > the problem you seem to be struggling with.
+> > 
+> > Please stop conflating/confusing
+> > those two disparate concepts...
+> 
+> I'm not. 
+
+BUT Your "counter" example below is solid
+proof that you are:  it shows exactly the
+confusion I pointed out:  call context versus
+the GPIO itself.  There's no way I can read
+that as anything except "you are"...
+
+ 
+Your intent here seems perhaps more to
+be a troll than to address any real
+technical issues.  I don't see much
+point participating any further.
+
+
+ Some gpios, such as those on io expanders, may
+> sleep in their
+> implementations of the gpio_(set/get) functions.
+> 
+
+Such GPIOs have a "cansleep" attribute, in short.
+
+
+> Drivers, which use a gpio, may call gpio_(set/get)
+> functions for a given
+> gpio from a context where it is not safe to sleep.
+
+And that's the call dontext
+(in this case, from a driver).
+
+  QED.  You are confusing two disparate concepts.
+
+
+ In this
+> case, a gpio
+> which may sleep (ie one on an i2c io-expander) cannot be
+> used with this
+> driver. The gpio_request will succeed, but any call to
+> gpio_(set/get)_value will produce a warning.
+> 
+> >> example, if a driver calls gpio_get_value(gpio)
+> from an
+> >> interupt handler
+
+
+(YOU introduce interrupt/IRQ handlers...)
+
+> >> then the gpio must not be a sleeping gpio.
+> > 
+> > In a threaded IRQ handler it's OK to use
+> > the get_value_cansleep() option..
+> 
+> Ugh, you are really twisting my words.
+
+
+You said IRQ handler, so did I.  In what csense could I
+possibly be "twisting" your words"???
+
+
+STOP TROLLING.
+
+
+
+
+ replace 'interrupt
+> handler' with
+> 'non sleep safe context'.
+
+No, that would really be "twisting", by
+moving words from one place to another
+and significantly changing meanings.
+
+
+
