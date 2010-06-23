@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab0FWOUx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 10:20:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46469 "EHLO mx2.suse.de"
+	id S1752929Ab0FWOXo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 10:23:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41639 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab0FWOUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 10:20:51 -0400
-Date: Wed, 23 Jun 2010 16:20:49 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Ping Cheng <pingc@wacom.com>,
-       Benjamin Tissoires <tissoire@cena.fr>,
-       Chase Douglas <chase.douglas@canonical.com>,
-       Rafi Rubin <rafi@seas.upenn.edu>
-Subject: Re: [PATCH 4/5] hid-input: Use a larger event buffer for MT
- devices
-In-Reply-To: <1277291686-7153-5-git-send-email-rydberg@euromail.se>
-Message-ID: <alpine.LNX.2.00.1006231619570.13809@pobox.suse.cz>
-References: <1277291686-7153-1-git-send-email-rydberg@euromail.se> <1277291686-7153-2-git-send-email-rydberg@euromail.se> <1277291686-7153-3-git-send-email-rydberg@euromail.se> <1277291686-7153-4-git-send-email-rydberg@euromail.se>
- <1277291686-7153-5-git-send-email-rydberg@euromail.se>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751717Ab0FWOXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 10:23:43 -0400
+Message-ID: <4C221871.6020509@redhat.com>
+Date: Wed, 23 Jun 2010 17:21:37 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: virtualization@lists.linux-foundation.org,
+       Anthony Liguori <aliguori@us.ibm.com>, linux-pci@vger.kernel.org,
+       Matt Carlson <mcarlson@broadcom.com>, linux-kernel@vger.kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+       Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>
+Subject: Re: [PATCH for-2.6.35] virtio-pci: disable msi at startup
+References: <20100610152252.GA3510@redhat.com> <4C22132F.4060307@redhat.com> <20100623135946.GA30526@redhat.com>
+In-Reply-To: <20100623135946.GA30526@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jun 2010, Henrik Rydberg wrote:
+On 06/23/2010 04:59 PM, Michael S. Tsirkin wrote:
+>
+>> Why doesn't a device reset result in msi being cleared?
+>>      
+> This is not a standard function reset. This is virtio specific
+> command. So it only clears virtio registers.
+>    
 
-> The MT devices produce a lot of data. Tell the underlying input device
-> approximately how many events will be sent per synchronization, to allow
-> for better buffering. The number is a template based on continuously
-> reporting details for each finger on a single hand.
-> 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+I see.  We should implement FLR in qemu.  If we don't already do so, we 
+should probably FLR anything that moves when a kexec kernel starts.
 
-Feel free to add
+>> Shouldn't a reset be equivalent to power cycling?
+>>      
+> If we did this, driver would need to restore registers
+> such as BAR etc.
+>    
 
-	Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-
-to any other further patch respins (if needed), or if actually applying 
-this patch to any tree together with the rest of the series.
-
-Thanks.
-
-> ---
->  drivers/hid/hid-input.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index 7a0d2e4..69d152e 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -534,6 +534,9 @@ mapped:
->  			input_set_abs_params(input, usage->code, a, b, (b - a) >> 8, (b - a) >> 4);
->  		else	input_set_abs_params(input, usage->code, a, b, 0, 0);
->  
-> +		/* use a larger default input buffer for MT devices */
-> +		if (usage->code == ABS_MT_POSITION_X && input->hint_events_per_packet == 0)
-> +			input_set_events_per_packet(input, 60);
->  	}
->  
->  	if (usage->type == EV_ABS &&
-> -- 
-> 1.6.3.3
-> 
+We could save/restore the registers we care about.
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+error compiling committee.c: too many arguments to function
+
