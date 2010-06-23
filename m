@@ -1,44 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab0FWUiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 16:38:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47772 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753390Ab0FWUit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 16:38:49 -0400
-Date: Wed, 23 Jun 2010 22:36:52 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Louis Rilling <louis.rilling@kerlabs.com>,
-       Pavel Emelyanov <xemul@openvz.org>,
-       Linux Containers <containers@lists.osdl.org>,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1] pid_ns: move pid_ns_release_proc() from
-	proc_flush_task() to zap_pid_ns_processes()
-Message-ID: <20100623203652.GA25298@redhat.com>
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100619190840.GA3424@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753791Ab0FWUjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 16:39:11 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:8396 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753541Ab0FWUik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 16:38:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6022"; a="45321636"
+From: Gregory Bean <gbean@codeaurora.org>
+To: dwalker@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Gregory Bean <gbean@codeaurora.org>
+Subject: [PATCH 3/3 v3] msm: 8x50: add gpio device configuration.
+Date: Wed, 23 Jun 2010 13:38:36 -0700
+Message-Id: <1277325516-24111-4-git-send-email-gbean@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1277325516-24111-1-git-send-email-gbean@codeaurora.org>
+References: <1277325516-24111-1-git-send-email-gbean@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/19, Oleg Nesterov wrote:
->
-> But first of all I think we should cleanup the pid_ns_prepare_proc()
-> logic. Imho, this code is really ugly. Please see the patches.
->
-> The last one, 4/4, is orthogonal to other changes.
+Add device configuration and board-init for gpio support on the QSD8x50.
 
-And the last one on top of this series, before I go away from this
-thread ;)
+Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+---
+ arch/arm/mach-msm/board-qsd8x50.c   |   27 +++++++++++++++++++++++++--
+ arch/arm/mach-msm/devices-qsd8x50.c |   21 +++++++++++++++++++++
+ 2 files changed, 46 insertions(+), 2 deletions(-)
 
-Since my further fixes were not approved, I think at least it makes
-sense to cleanup pid_ns_release_proc() logic a bit.
+diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
+index e3cc807..508333c 100644
+--- a/arch/arm/mach-msm/board-qsd8x50.c
++++ b/arch/arm/mach-msm/board-qsd8x50.c
+@@ -40,7 +40,29 @@ static struct msm_gpio uart3_config_data[] = {
+ 	{ GPIO_CFG(87, 1, GPIO_OUTPUT,  GPIO_PULL_DOWN, GPIO_2MA), "UART2_Tx"},
+ };
+ 
+-static struct platform_device *devices[] __initdata = {
++/*
++ * Early devices are those which provide a system service which will be
++ * required by one or more of the function calls in qsd8x50_init.
++ * These devices must be probed and online first in order for
++ * the init routine to run successfully.
++ */
++static struct platform_device *early_devices[] __initdata = {
++	&msm_gpio_devices[0],
++	&msm_gpio_devices[1],
++	&msm_gpio_devices[2],
++	&msm_gpio_devices[3],
++	&msm_gpio_devices[4],
++	&msm_gpio_devices[5],
++	&msm_gpio_devices[6],
++	&msm_gpio_devices[7],
++};
++
++/*
++ * Late devices are those which are dependent upon services initialized
++ * by qsd8x50_init, or which simply have no dependents and can have
++ * their initialization deferred.
++ */
++static struct platform_device *late_devices[] __initdata = {
+ 	&msm_device_uart3,
+ };
+ 
+@@ -64,8 +86,9 @@ static void __init qsd8x50_init_irq(void)
+ 
+ static void __init qsd8x50_init(void)
+ {
++	platform_add_devices(early_devices, ARRAY_SIZE(early_devices));
+ 	msm8x50_init_uart3();
+-	platform_add_devices(devices, ARRAY_SIZE(devices));
++	platform_add_devices(late_devices, ARRAY_SIZE(late_devices));
+ }
+ 
+ MACHINE_START(QSD8X50_SURF, "QCT QSD8X50 SURF")
+diff --git a/arch/arm/mach-msm/devices-qsd8x50.c b/arch/arm/mach-msm/devices-qsd8x50.c
+index 4d4a507..2342654 100644
+--- a/arch/arm/mach-msm/devices-qsd8x50.c
++++ b/arch/arm/mach-msm/devices-qsd8x50.c
+@@ -90,3 +90,24 @@ struct clk msm_clocks_8x50[] = {
+ 
+ unsigned msm_num_clocks_8x50 = ARRAY_SIZE(msm_clocks_8x50);
+ 
++static struct msm7200a_gpio_platform_data gpio_platform_data[] = {
++	MSM7200A_GPIO_PLATFORM_DATA(0,   0,  15, INT_GPIO_GROUP1),
++	MSM7200A_GPIO_PLATFORM_DATA(1,  16,  42, INT_GPIO_GROUP2),
++	MSM7200A_GPIO_PLATFORM_DATA(2,  43,  67, INT_GPIO_GROUP1),
++	MSM7200A_GPIO_PLATFORM_DATA(3,  68,  94, INT_GPIO_GROUP1),
++	MSM7200A_GPIO_PLATFORM_DATA(4,  95, 103, INT_GPIO_GROUP1),
++	MSM7200A_GPIO_PLATFORM_DATA(5, 104, 121, INT_GPIO_GROUP1),
++	MSM7200A_GPIO_PLATFORM_DATA(6, 122, 152, INT_GPIO_GROUP1),
++	MSM7200A_GPIO_PLATFORM_DATA(7, 153, 164, INT_GPIO_GROUP1),
++};
++
++struct platform_device msm_gpio_devices[] = {
++	MSM7200A_GPIO_DEVICE(0, gpio_platform_data),
++	MSM7200A_GPIO_DEVICE(1, gpio_platform_data),
++	MSM7200A_GPIO_DEVICE(2, gpio_platform_data),
++	MSM7200A_GPIO_DEVICE(3, gpio_platform_data),
++	MSM7200A_GPIO_DEVICE(4, gpio_platform_data),
++	MSM7200A_GPIO_DEVICE(5, gpio_platform_data),
++	MSM7200A_GPIO_DEVICE(6, gpio_platform_data),
++	MSM7200A_GPIO_DEVICE(7, gpio_platform_data),
++};
+-- 
+1.7.0.4
 
-Oleg.
-
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
