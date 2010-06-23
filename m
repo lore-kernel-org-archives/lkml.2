@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab0FWRMR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 13:12:17 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:58280 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab0FWRMO (ORCPT
+	id S1752442Ab0FWRQz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 13:16:55 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42805 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab0FWRQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 13:12:14 -0400
+	Wed, 23 Jun 2010 13:16:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fyUve5n+pud3bvH49+TLBVMN+vqQrhXjqXAhHkRISfA5uWMfkbhZHnpeMzP0UmlMCV
-         C7RJhzSg0aK/6kzTXXVqwHqswblwRo3kzE+hopXtt8k/wMnMH/OVLPi6yPYVDt0yAVyN
-         sHwY99KZ7m5VrVemORJKMmB00CC56bO/vogIE=
-Date: Wed, 23 Jun 2010 10:12:06 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Ping Cheng <pinglinux@gmail.com>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-       Ping Cheng <pingc@wacom.com>, Benjamin Tissoires <tissoire@cena.fr>,
-       Chase Douglas <chase.douglas@canonical.com>,
-       Rafi Rubin <rafi@seas.upenn.edu>
-Subject: Re: [PATCH 2/5] input: Use driver hint to compute the evdev buffer
- size (rev3)
-Message-ID: <20100623171206.GA11512@core.coreip.homeip.net>
-References: <1277291686-7153-1-git-send-email-rydberg@euromail.se>
- <1277291686-7153-2-git-send-email-rydberg@euromail.se>
- <1277291686-7153-3-git-send-email-rydberg@euromail.se>
- <AANLkTilWSe-rdy1johctU6CXdV11Iiw8GkTTQOrsE2aO@mail.gmail.com>
- <4C223F60.6080904@euromail.se>
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type;
+        b=n1h3eJHB1pJdEJRIjz9XxnMeoc6USjpVhJJEBQlrD+kAhAejOnad3oMsInUFku453c
+         oI95fyZfypRPtZMYxMWNB/84wGgJ13pPj/S6EdkOYlsnVj81A0wZtmKYPdl6iSZOx1QN
+         OrcgB9X9P6r59hYSKD75T/EJq1wl6P10sNNQw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C223F60.6080904@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Date: Wed, 23 Jun 2010 13:16:51 -0400
+X-Google-Sender-Auth: -f8jFPmowVH2VtNS6QsFg21KlTs
+Message-ID: <AANLkTim362_xv5FAyFSpdnAFUlILliEoGBW8_oZ4QVj1@mail.gmail.com>
+Subject: i915: Dell E6410 Ironlake LVDS detection
+From: Ben Guthro <ben@guthro.net>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23, 2010 at 07:07:44PM +0200, Henrik Rydberg wrote:
-> Hi Ping,
-> [...]
-> >> @@ -51,7 +52,9 @@ static DEFINE_MUTEX(evdev_table_mutex);
-> >>
-> >>  static int evdev_compute_buffer_size(struct input_dev *dev)
-> >>  {
-> >> -       return EVDEV_MIN_BUFFER_SIZE;
-> >> +       int nev = dev->hint_events_per_packet * EVDEV_BUF_PACKETS;
-> >> +       nev = max(nev, EVDEV_MIN_BUFFER_SIZE);
-> >> +       return roundup_pow_of_two(nev);
-> > 
-> > I think we have a backward compatibility issue here. This routine will
-> > return 7 when nev falls to the default value
-> > (EVDEV_MIN_BUFFER_SIZE/64).  This could happen to those drivers that
-> > don't report MT events or forget/don't feel the need to set
-> > hint_events_per_packet since the old BUFFER_SIZE worked perfectly for
-> > them.  We need to keep the return value for those drivers as 64 so we
-> > could allocate the same space as it was in [PATCH 1/5].
-> 
-> Are you perhaps confusing EVDEV_BUF_PACKETS and EVDEV_MIN_BUFFER_SIZE? The last
-> line ensures that the value returned is a power of two (hence not 7). The
-> second-to-last line ensures the value is at least equal to 64 (hence not 7). The
-> default hint value for a driver that does not do anything is zero, which leads
-> to a return value of 64, just as it is today.
-> 
+I have a problematic machine, that I have traced the problem down to
+what I think is an issue with the i915 detection of the LVDS on the
+Ironlake chip.
 
-I think Ping might have confused roundup_pow_of_two() with
-get_order()-type function...
+The machine in question is a Dell Latitude E6410 - i5 quad core
+laptop, with the intel Ironlake chip, and the failure condition is
+such that when the boot sequence switches into KMS mode, the screen
+goes black, and never comes back.
 
-Anyways, applied all 5, thanks Henrik.
+My base install is Ubuntu 10.04, and I've spun through a few kernels
+to try to bisect the problem. Unfortunately, I've been unable to find
+a kernel that works (including the 2.6.35 RC's, and an ubuntu build of
+drm-intel-next from the beginning of June)
 
--- 
-Dmitry
+I can get the machine to come up on an external display, if switched
+at the BIOS screen...but /sys/class/card0 never shows an LVDS
+connector...and dmesg doesn't seem to be throwing any errors.
+
+If you have any thoughts on what I might try next, in attempting to
+debug this issue, I'd appreciate any pointers, as the intel cards
+isn't my particular area of expertise, but am capable enough to read
+the code...
+
+
+Regards,
+
+Ben Guthro
