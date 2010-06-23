@@ -1,115 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab0FWPUf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 11:20:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52207 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab0FWPUd (ORCPT
+	id S1753612Ab0FWPVe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 11:21:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37155 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753387Ab0FWPVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 11:20:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=I3DB9znYY7xzRB6KWUEkfIdbkK3GYxyvCodnJZODiuB0hsbe9mBAYvLP384fAUBzue
-         FW9HDikbDAbPxmGHRuJHXKVkBjJViy+CDQtWejQ/I1Y/80rQuHybFLr508alS4tX7OeM
-         nXwb1JvxJj0+Xhb12QcoAQTR6DRbK4hYFAU2g=
-Message-ID: <4C222644.4040601@gmail.com>
-Date: Wed, 23 Jun 2010 17:20:36 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
+	Wed, 23 Jun 2010 11:21:33 -0400
+Date: Wed, 23 Jun 2010 11:21:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Florian Mickler <florian@mickler.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, mark gross <640e9920@gmail.com>
+Subject: Re: [update] Re: [RFC][PATCH] PM: Avoid losing wakeup events during
+ suspend
+In-Reply-To: <201006231209.09187.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1006231038510.1617-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: akpm@linux-foundation.org, adobriyan@gmail.com, nhorman@tuxdriver.com,
-       linux-kernel@vger.kernel.org, Stephen Smalley <sds@tycho.nsa.gov>,
-       James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>
-Subject: Re: [PATCH v3 06/11] rlimits: do security check under task_lock
-References: <20100513155621.51ca77a4.akpm@linux-foundation.org> <1275855783-27316-1-git-send-email-jslaby@suse.cz> <20100607180855.GA6689@redhat.com>
-In-Reply-To: <20100607180855.GA6689@redhat.com>
-X-Enigmail-Version: 1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2010 08:08 PM, Oleg Nesterov wrote:
-> First of all, my apologies for the huge delay. And I still didn't
-> read the whole series, sorry.
+On Wed, 23 Jun 2010, Rafael J. Wysocki wrote:
 
-Hi, never mind, my RTT of 2 weeks doesn't look like very short too :).
-
-> On 06/06, Jiri Slaby wrote:
->> @@ -1339,13 +1364,19 @@ int do_prlimit(struct task_struct *tsk, unsigned int resource,
->>  
->>  	rlim = tsk->signal->rlim + resource;
->>  	task_lock(tsk->group_leader);
->> +again:
->> +	retval = 0;
->>  	if (new_rlim) {
->>  		if ((new_rlim->rlim_max > rlim->rlim_max) &&
->>  					!capable(CAP_SYS_RESOURCE))
-
-BTW this capable() has the exactly same problem with being called with
-task_lock held. Is it OK to move it completely out of critical section?
-I'm asking because it sets a current->flags SU bit used for accounting.
-If I move it out of the section, it will set the bit always.
-
->>  			retval = -EPERM;
->> -		if (!retval)
->> -			retval = security_task_setrlimit(tsk, resource,
->> -					new_rlim);
->> +		if (!retval) {
->> +			retval = check_security_task_setrlimit_unlocked(tsk,
->> +					resource, new_rlim, rlim);
->> +			if (retval == -EAGAIN) {
->> +				goto again;
->> +			}
->> +		}
+> > Didn't we agree that timeouts would be needed for Wake-on-LAN?
 > 
-> Oh. Can't we just ignore this (imho minor) race ? Or just verify/document that
-> current_has_perm() can be called under task_lock. Actually, I do not think
-> we have a race, selinux_task_setrlimit() only checks that the caller has
-> rights to change the rlimits.
+> Yes, we did, but in the WoL case the timeout will have to be used by the user
+> space rather than the kernel IMO.
 
-But does so only if current limits are different to the new ones. My
-opinion is that we can ignore it anyway.
+The kernel will still have to specify some small initial timeout.  Just 
+long enough for userspace to realize what has happened and start its 
+own critical section.
 
-> And. Given that avc_has_perm() can be called from irq context (say,
-> selinux_file_send_sigiotask or selinux_task_kill), we can assume it is safe
-> to call it under task_lock() which is not irq-safe.
+> It would make sense to add a timeout argument to pm_wakeup_event() that would
+> make the system stay in the working state long enough for the driver wakeup
+> code to start in the PCIe case.  I think pm_wakeup_event() mght just increment
+> events_in_progress and the timer might simply decrement it.
+
+Hmm.  I was thinking about a similar problem with the USB hub driver.
+
+Maybe a better answer for this particular issue is to change the
+workqueue code.  Don't allow a work thread to enter the freezer until
+its queue is empty.  Then you wouldn't need a timeout.
+
+> So, maybe it's just better to have pm_wakeup_event(dev, timeout) that will
+> increment events_in_progress and set up a timer and pm_wakeup_commit(dev) that
+> will delete the timer, decrement events_in_progress and increment event_count
+> (unless the timer has already expired before).
 > 
-> But. OTOH, if we are really worried about security_ ops, then we have another
-> reason to call this hook under task_lock(), and we probably want to modify
-> selinux_bprm_committing_creds() to take this lock too:
+> That would cost us a (one more) timer in struct dev_pm_info, but it would
+> allow us to cover all of the cases identified so far.  So, if a wakeup event is
+> handled within one functional unit that both detects it and delivers it to
+> user space, it would call pm_wakeup_event(dev, 0) (ie. infinite timeout) at the
+> beginning and then pm_wakeup_commit(dev) when it's done with the event.
+> If a wakeup event it's just detected by one piece of code and is going to
+> be handled by another, the first one could call pm_wakeup_event(dev, tm) and
+> allow the other one to call pm_wakeup_commit(dev) when it's done.  However,
+> calling pm_wakeup_commit(dev) is not mandatory, so the second piece of code
+> (eg. a PCI driver) doesn't really need to do anything in the simplest case.
+
+You have to handle the case where pm_wakeup_commit() gets called after
+the timer expires (it should do nothing).  And what happens if the
+device gets a second wakeup event before the timer for the first one
+expires?  dev_pm_info would need to store a count of pending events.
+
+In fact, this gets even worse.  What if the second event causes you to
+move the timeout forward, but then you get a commit for the second
+event before the original timer would have expired?  It's not clear 
+that timeouts and early commit work well together.
+
+You could consider changing some of the new function names.  Instead of 
+"wakeup" (which implies that the system was asleep previously) use 
+"awake" (which implies that you want to prevent the system from going 
+to sleep, as in "stay awake").
+
+> > One thing that stands out is the new spinlock.  It could potentially be
+> > a big source of contention.  Any wakeup-enabled device is liable to
+> > need it during every interrupt.  Do you think this could cause a
+> > noticeable slowdown?
 > 
-> 	--- security/selinux/hooks.c
-> 	+++ security/selinux/hooks.c
-> 	@@ -2333,11 +2333,14 @@ static void selinux_bprm_committing_cred
-> 		rc = avc_has_perm(new_tsec->osid, new_tsec->sid, SECCLASS_PROCESS,
-> 				  PROCESS__RLIMITINH, NULL);
-> 		if (rc) {
-> 	+		/* protects against do_prlimit() */
-> 	+		task_lock(current);
-> 			for (i = 0; i < RLIM_NLIMITS; i++) {
-> 				rlim = current->signal->rlim + i;
-> 				initrlim = init_task.signal->rlim + i;
-> 				rlim->rlim_cur = min(rlim->rlim_max, initrlim->rlim_cur);
-> 			}
-> 	+		task_unlock(current);
-> 			update_rlimit_cpu(current->signal->rlim[RLIMIT_CPU].rlim_cur);
-> 		}
-> 	 }
+> That really depends on the number of wakeup devices.  However, ISTR the
+> original wakelocks code had exactly the same issue (it used a spinlock to
+> protect the lists of wakelocks).
 
-Makes sense to me.
+Yeah, that's right.  I have already forgotten the details of how that
+original design worked.
 
-> Finally. selinux_task_setrlimit(p) uses __task_cred(p) for the check.
-> This looks a bit strange, different threads can have different creds
-> but obviously rlimits are per-process.
+Alan Stern
 
-Sorry I can't see it. Could you point out in which function this is done?
 
-thanks,
--- 
-js
