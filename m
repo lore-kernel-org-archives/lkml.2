@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399Ab0FWSKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 14:10:23 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:64556 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab0FWSKV (ORCPT
+	id S1752684Ab0FWSLM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 14:11:12 -0400
+Received: from old-tantale.fifi.org ([64.81.30.200]:35941 "EHLO
+	old-tantale.fifi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab0FWSLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 14:10:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=BLHOU6/pMsuQ8L9JjN/tmF2OZXXyhrpzrU/Ou9++S4hYg1E0Jt2E0si+SV0mrp7+2m
-         gnW8w1Nk5msoCTKro9xbjKcko7lHoGE4kX9ZZ1PUWYJcb60dUFfjW+S26dWtustXTItU
-         C/j9bQOtAAJHuHcdMVaQLoCCL9LIbIFV6/SJ4=
-Message-ID: <4C224E06.40806@iki.fi>
-Date: Wed, 23 Jun 2010 21:10:14 +0300
-From: =?UTF-8?B?VGltbyBUZXLDpHM=?= <timo.teras@iki.fi>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	Wed, 23 Jun 2010 14:11:10 -0400
+To: Ben Guthro <ben@guthro.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: i915: Dell E6410 Ironlake LVDS detection
+References: <AANLkTim362_xv5FAyFSpdnAFUlILliEoGBW8_oZ4QVj1@mail.gmail.com>
+	<87bpb1fxwg.fsf@old-tantale.fifi.org>
+	<AANLkTinm1ZXybaAgCUGGPkK_YKaGmO9k2mduoy9ThnQ3@mail.gmail.com>
+Mail-Copies-To: nobody
+From: Philippe Troin <phil@fifi.org>
+Date: 23 Jun 2010 11:11:06 -0700
+In-Reply-To: <AANLkTinm1ZXybaAgCUGGPkK_YKaGmO9k2mduoy9ThnQ3@mail.gmail.com>
+Message-ID: <877hlpfwlh.fsf@old-tantale.fifi.org>
+User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.2
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "Justin P.Mattock" <justinmattock@gmail.com>,
-       "John W.Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       davem@davemloft.net
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
-References: <AANLkTilf41JrFwN1veRDifNA78S2LQ6SO0g3YLOONd2W@mail.gmail.com>	 <20100623141622.GC15205@tuxdriver.com>  <4C223DCA.5090704@gmail.com> <1277314167.2469.1144.camel@edumazet-laptop>
-In-Reply-To: <1277314167.2469.1144.camel@edumazet-laptop>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 08:29 PM, Eric Dumazet wrote:
-> Le mercredi 23 juin 2010 à 10:00 -0700, Justin P. Mattock a écrit :
->> o.k. the bisect is pointing to the below results..
->> (I tried git revert xxx but this commit is too big
->> so I'll(hopefully)manually revert it on the latest HEAD to
->> see if this is the actual problem im experiencing)
->>
->> 80c802f3073e84c956846e921e8a0b02dfa3755f is the first bad commit
->> commit 80c802f3073e84c956846e921e8a0b02dfa3755f
->> Author: Timo TerÃ¤s <timo.teras@iki.fi>
->> Date:   Wed Apr 7 00:30:05 2010 +0000
->>
->>      xfrm: cache bundles instead of policies for outgoing flows
->>
->>      __xfrm_lookup() is called for each packet transmitted out of
->>      system. The xfrm_find_bundle() does a linear search which can
->>      kill system performance depending on how many bundles are
->>      required per policy.
->>
->>      This modifies __xfrm_lookup() to store bundles directly in
->>      the flow cache. If we did not get a hit, we just create a new
->>      bundle instead of doing slow search. This means that we can now
->>      get multiple xfrm_dst's for same flow (on per-cpu basis).
->>
->>      Signed-off-by: Timo Teras <timo.teras@iki.fi>
->>      Signed-off-by: David S. Miller <davem@davemloft.net>
->>
->> :040000 040000 d8e60f5fa4c1329f450d9c7cdf98b34e6a177f22 
->> 9f576e68e5bf4ce357d7f0305aee5f410250dfe2 M      include
->> :040000 040000 f2876df688ee36907af7b4123eea96592faaed3e 
->> a3f6f6f94f0309106856cd99b38ec90b024eb016 M      net
-> 
-> Thanks a lot for bisecting Jutin, this is really appreciated.
-> 
-> crash is in xfrm_bundle_ok()
-> 
-> if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
-> 	return 0;
-> 
-> xdst->pols[0] contains a NULL pointer
+Ben Guthro <ben@guthro.net> writes:
 
-That does not really make sense, if we get this far; there's a valid
-xfrm_state with the bundle. This means that there existed a policy with
-it too.
+> On Wed, Jun 23, 2010 at 1:42 PM, Philippe Troin <phil@fifi.org> wrote:
+> > I am seeing similar problems with an HP Elitebook 2540p.
+> >
+> > 2.6.32 works for me.
+> > 2.6.33.5 does not.
+> 
+> I have tried ubuntu mainline builds of:
+> 
+> 2.6.32.21
+> 2.6.32.22
+> 2.6.34-rc3
+> 2.6.35-rc1
+> 2.6.34-drm-intel-next
+>
+> None have worked yet...
 
-I'll take a deeper look at this tomorrow. Would it be possible to see
-your xfrm policies?
+Tried a vanilla kernel?
 
-- Timo
+> > I was able to turn on an external display connected via VGA with
+> > xrandr and it seemed to be working fine?
+> 
+> When I boot without the external display, I am never able to ssh in -
+> and I do not get the sound that typically plays when X is booted.
+> 
+> I've put this onto a serial line, and it seems to hang sometime in
+> init...with some indicators that it is when it switches over to the
+> higher resolution console...but the screen is black, so this is really
+> just a gut feel.
+
+Then it might be a different problem.  For me, X definitely boots.
+
+Can you boot with nomodeset?
+
+X will refuse to start, but then maybe you can set up your laptop so
+that the network comes up without needing X.
+
+Then you could try to reboot with i915+modeset and see if the machine
+is still alive (and it's just a connector issue) or if the machine is
+dead (then it's a deeper driver issue).
+
+What does lspci report for you?
+
+Mine says:
+
+00:02.0 VGA compatible controller: Intel Corporation Core Processor
+Integrated Graphics Controller (rev 12) (prog-if 00 [VGA controller])
+        Subsystem: Hewlett-Packard Company Device 7008
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0
+        Interrupt: pin A routed to IRQ 34
+        Region 0: Memory at d0000000 (64-bit, non-prefetchable)
+[size=4M]
+        Region 2: Memory at c0000000 (64-bit, prefetchable)
+[size=256M]
+        Region 4: I/O ports at 5078 [size=8]
+        Expansion ROM at <unassigned> [disabled]
+        Capabilities: <access denied>
+        Kernel driver in use: i915
+        Kernel modules: i915
+
+Phil.
