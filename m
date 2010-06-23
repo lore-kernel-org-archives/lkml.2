@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442Ab0FWRQz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 13:16:55 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42805 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab0FWRQy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 13:16:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:content-type;
-        b=n1h3eJHB1pJdEJRIjz9XxnMeoc6USjpVhJJEBQlrD+kAhAejOnad3oMsInUFku453c
-         oI95fyZfypRPtZMYxMWNB/84wGgJ13pPj/S6EdkOYlsnVj81A0wZtmKYPdl6iSZOx1QN
-         OrcgB9X9P6r59hYSKD75T/EJq1wl6P10sNNQw=
+	id S1752738Ab0FWRWe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 13:22:34 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:59357 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752201Ab0FWRWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 13:22:33 -0400
+Date: Wed, 23 Jun 2010 10:21:44 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] Adding critical/fault limits to hwmon sysfs API
+Message-ID: <20100623172144.GA20046@ericsson.com>
+References: <20100620163759.GA7077@ericsson.com>
+ <20100623144346.10acd898@hyperion.delvare>
+ <20100623133147.GA19143@ericsson.com>
+ <20100623162911.2028f817@hyperion.delvare>
+ <20100623150325.GA19461@ericsson.com>
+ <20100623183437.5a04dedb@hyperion.delvare>
 MIME-Version: 1.0
-Date: Wed, 23 Jun 2010 13:16:51 -0400
-X-Google-Sender-Auth: -f8jFPmowVH2VtNS6QsFg21KlTs
-Message-ID: <AANLkTim362_xv5FAyFSpdnAFUlILliEoGBW8_oZ4QVj1@mail.gmail.com>
-Subject: i915: Dell E6410 Ironlake LVDS detection
-From: Ben Guthro <ben@guthro.net>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100623183437.5a04dedb@hyperion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a problematic machine, that I have traced the problem down to
-what I think is an issue with the i915 detection of the LVDS on the
-Ironlake chip.
+On Wed, Jun 23, 2010 at 12:34:37PM -0400, Jean Delvare wrote:
+> Hi Guenter,
+> 
+> On Wed, 23 Jun 2010 08:03:25 -0700, Guenter Roeck wrote:
+> > On Wed, Jun 23, 2010 at 10:29:11AM -0400, Jean Delvare wrote:
+> > > I expected a counter-proposal of this kind. The problem I see is that
+> > > the new limit we are adding is unrelated to _min. However, the other
+> > > _min_* file we have (_min_alarm) expresses something which is relative
+> > > to _min. Same as _max_hyst and _crit_hyst, which are relative to _max
+> > > and _critn respectively. So I have the feeling that _min_crit sends the
+> > > wrong signal to the reader. Especially if we keep _crit for the high
+> > > bound, the asymmetry raises questions.
+> > > 
+> > > This is my rationale for suggesting _crit and _lcrit. Now, I won't
+> > > argue forever if others disagree, these is really only a naming
+> > > convention and everything will be fine as long as the drivers and
+> > > libsensors agree.
+> > 
+> > Makes sense. No strong opinion on my side, really. Using crit/lcrit is fine for me as well.
+> > Maybe we should wait if there is input from others and go with lcrit if there is none.
+> 
+> OK, fine with me.
+> 
+> > On a side note, libsensors does not support inX_fault today, even though 
+> > it is mentioned in the API, and there is no currX_fault. Likewise, libsensors supports 
+> > currX_alarm but it is not mentioned in hwmon/sysfs-interface.
+> > Unless there are objections, I'll clean that up when I add support for the _[l]crit objects.
+> 
+> Yes, please!
+> 
+> > Also, lib/sensors.conf.5 has a comment "Likewise, tempX_crit often comes with tempX_max_crit".
+> > Since tempX_max_crit does not exist, it might make sense to remove that comment.
+> 
+> Does the sentence make sense if you replace tempX_max_crit with
+> tempX_crit_hyst? Looks like a copy-paste-edit mistake (that would be
+> from me.)
 
-The machine in question is a Dell Latitude E6410 - i5 quad core
-laptop, with the intel Ironlake chip, and the failure condition is
-such that when the boot sequence switches into KMS mode, the screen
-goes black, and never comes back.
+Yes, I think that is the problem. I'll fix that together with the other changes.
 
-My base install is Ubuntu 10.04, and I've spun through a few kernels
-to try to bisect the problem. Unfortunately, I've been unable to find
-a kernel that works (including the 2.6.35 RC's, and an ubuntu build of
-drm-intel-next from the beginning of June)
-
-I can get the machine to come up on an external display, if switched
-at the BIOS screen...but /sys/class/card0 never shows an LVDS
-connector...and dmesg doesn't seem to be throwing any errors.
-
-If you have any thoughts on what I might try next, in attempting to
-debug this issue, I'd appreciate any pointers, as the intel cards
-isn't my particular area of expertise, but am capable enough to read
-the code...
-
-
-Regards,
-
-Ben Guthro
+Guenter
