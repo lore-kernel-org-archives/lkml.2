@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab0FWAN5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 20:13:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39488 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107Ab0FWANz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 20:13:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: [Bug #15863] 2.6.34-rc5-git7 (plus all patches) -- another suspicious rcu_dereference_check() usage.
-Date: Wed, 23 Jun 2010 02:12:14 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Miles Lane <miles.lane@gmail.com>
-References: <g77CuMUl7QI.A.qMH.4ZpHMB@chimera> <201006222349.13096.rjw@sisk.pl> <20100622222547.GQ2290@linux.vnet.ibm.com>
-In-Reply-To: <20100622222547.GQ2290@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752991Ab0FWAR3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 20:17:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54939 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752031Ab0FWAR2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 20:17:28 -0400
+Date: Tue, 22 Jun 2010 17:16:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: =?UTF-8?Q?=CE=91=CE=BB=CE=AD=CE=BE=CE=B1=CE=BD=CE=B4=CF=81=CE=BF=CF=82?=
+	 =?UTF-8?Q?_=CE=A0=CE=B1=CF=80=CE=B1=CE=B4=CE=BF=CE=B3=CE=B9=CE=B1=CE=BD?=
+	 =?UTF-8?Q?=CE=BD=CE=AC=CE=BA=CE=B7=CF=82?= <psxlover@hotmail.com>
+Cc: <linux-kernel@vger.kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: FW: sched_setaffinity not working with kernel 2.6.32.15
+Message-Id: <20100622171622.fc9d04c1.akpm@linux-foundation.org>
+In-Reply-To: <COL124-W1850C30E9FF3BFB06DF5BFD6C20@phx.gbl>
+References: <COL124-W1850C30E9FF3BFB06DF5BFD6C20@phx.gbl>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006230212.14254.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 23, 2010, Paul E. McKenney wrote:
-> On Tue, Jun 22, 2010 at 11:49:12PM +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, June 22, 2010, Paul E. McKenney wrote:
-> > > On Mon, Jun 21, 2010 at 12:34:25AM +0200, Rafael J. Wysocki wrote:
-> > > > This message has been generated automatically as a part of a report
-> > > > of regressions introduced between 2.6.33 and 2.6.34.
-> > > > 
-> > > > The following bug entry is on the current list of known regressions
-> > > > introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-> > > > be listed and let the tracking team know (either way).
-> > > 
-> > > We have been knocking these off as they appear.  There is one or two
-> > > that the relevant maintainers have been ignoring, but that always seems
-> > > to be the case.  ;-)
-> > > 
-> > > Your choice as to whether you want to track the group...
-> > 
-> > I think I'll simply leave that one bug open until all known instances have been
-> > dealt with.
-> > 
-> > Please let me know when that happens. :-)
-> 
-> So if I am sufficiently forgetful, I can just ask you to close the
-> bug immediately?
-> 
-> Sorry, but you really couldn't expect me to pass up that kind of
-> loophole!  ;-)
+On Sun, 20 Jun 2010 22:10:18 +0300
+____________________ ______________________________  <psxlover@hotmail.com> wrote:
 
-OK, closed.
+> 
+> From: psxlover@hotmail.com
+> To: mingo@elte.hu; peterz@infradead.org
+> Subject:
+>  sched_setaffinity not working with kernel 2.6.32.15
+> Date: Sun, 20 
+> Jun 2010 17:14:12 +0300
 
-Thanks,
-Rafael
+I assume from this that you initially sent the email privately to
+Peter&Ingo, then forwarded it to the list without cc'ing Peter&Ingo. 
+So if they're already responded to the inital email, I'm wasting my
+time.  Ho hum.
+
+> ...
+
+That's a great bug report - fully bisected and it includes a testcase. 
+Thanks.
+
+However I think your testcase is buggy.  You have main() racing against
+print_affinity().  If a sub-thread runs print_affinity() before main()
+has run set_threadaffinity(), print_affinity() will obviously print
+main()'s affinity.
+
+Between 2.6.18 and 2.6.35-rc3 the timing changed a bit - in the later
+kernel the sub-threads are running before main() is able to change
+their affinity.  In the earlier kernel the sub-threads run first.
+
+In both kernels, all CPU consumption is on CPU 0 as desired.
+
+Re-enabling the sleep(1) in threadCode() fixes the print_affinity()
+output, confirming that it's a userspace race.
+
