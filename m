@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab0FWVww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 17:52:52 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:37296 "EHLO
+	id S1753668Ab0FWVwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 17:52:53 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:37294 "EHLO
 	mail.pripojeni.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751617Ab0FWVwt (ORCPT
+	with ESMTP id S1752024Ab0FWVwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Jun 2010 17:52:49 -0400
 From: Jiri Slaby <jslaby@suse.cz>
@@ -12,11 +12,10 @@ To: jirislaby@gmail.com
 Cc: Oleg Nesterov <oleg@redhat.com>, akpm@linux-foundation.org,
        adobriyan@gmail.com, nhorman@tuxdriver.com,
        Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-       Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
-       Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH v4 07/12] rlimits: do security check under task_lock
-Date: Wed, 23 Jun 2010 23:52:08 +0200
-Message-Id: <1277329933-8139-7-git-send-email-jslaby@suse.cz>
+       Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 03/12] rlimits: make sure ->rlim_max never grows in sys_setrlimit
+Date: Wed, 23 Jun 2010 23:52:04 +0200
+Message-Id: <1277329933-8139-3-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
 References: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
@@ -24,67 +23,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do security_task_setrlimit under task_lock. Other tasks may change
-limits under our hands while we are checking limits inside the
-function. From now on, they can't.
+From: Oleg Nesterov <oleg@redhat.com>
 
-Note that all the security work is done under a spinlock here now.
-Security hooks count with that, they are called from interrupt context
-(like security_task_kill) and with spinlocks already held (e.g.
-capable->security_capable).
+Mostly preparation for Jiri's changes, but probably makes sense anyway.
 
+sys_setrlimit() checks new_rlim.rlim_max <= old_rlim->rlim_max, but when
+it takes task_lock() old_rlim->rlim_max can be already lowered. Move this
+check under task_lock().
+
+Currently this is not important, we can only race with our sub-thread,
+this means the application is stupid. But when we change the code to allow
+the update of !current task's limits, it becomes important to make sure
+->rlim_max can be lowered "reliably" even if we race with the application
+doing sys_setrlimit().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: James Morris <jmorris@namei.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- kernel/sys.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+ kernel/sys.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/sys.c b/kernel/sys.c
-index 9dbcbbc..c762eeb 100644
+index f5183b0..f2b2d7a 100644
 --- a/kernel/sys.c
 +++ b/kernel/sys.c
-@@ -1277,7 +1277,7 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
- 		struct rlimit *new_rlim)
- {
- 	struct rlimit *old_rlim;
--	int retval;
-+	int retval = 0;
- 
- 	if (resource >= RLIM_NLIMITS)
+@@ -1283,10 +1283,6 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+ 		return -EFAULT;
+ 	if (new_rlim.rlim_cur > new_rlim.rlim_max)
  		return -EINVAL;
-@@ -1293,9 +1293,14 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
- 		goto out;
+-	old_rlim = current->signal->rlim + resource;
+-	if ((new_rlim.rlim_max > old_rlim->rlim_max) &&
+-	    !capable(CAP_SYS_RESOURCE))
+-		return -EPERM;
+ 	if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > sysctl_nr_open)
+ 		return -EPERM;
+ 
+@@ -1304,11 +1300,16 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+ 		new_rlim.rlim_cur = 1;
  	}
  
--	retval = security_task_setrlimit(tsk->group_leader, resource, new_rlim);
--	if (retval)
--		goto out;
-+	old_rlim = tsk->signal->rlim + resource;
-+	task_lock(tsk->group_leader);
-+	if (new_rlim->rlim_max > old_rlim->rlim_max &&
++	old_rlim = current->signal->rlim + resource;
+ 	task_lock(current->group_leader);
+-	*old_rlim = new_rlim;
++	if (new_rlim.rlim_max > old_rlim->rlim_max &&
 +			!capable(CAP_SYS_RESOURCE))
 +		retval = -EPERM;
-+	if (!retval)
-+		retval = security_task_setrlimit(tsk->group_leader, resource,
-+				new_rlim);
++	else
++		*old_rlim = new_rlim;
+ 	task_unlock(current->group_leader);
  
- 	if (resource == RLIMIT_CPU && new_rlim->rlim_cur == 0) {
- 		/*
-@@ -1307,12 +1312,7 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
- 		new_rlim->rlim_cur = 1;
- 	}
+-	if (resource != RLIMIT_CPU)
++	if (retval || resource != RLIMIT_CPU)
+ 		goto out;
  
--	old_rlim = tsk->signal->rlim + resource;
--	task_lock(tsk->group_leader);
--	if (new_rlim->rlim_max > old_rlim->rlim_max &&
--			!capable(CAP_SYS_RESOURCE))
--		retval = -EPERM;
--	else
-+	if (!retval)
- 		*old_rlim = *new_rlim;
- 	task_unlock(tsk->group_leader);
+ 	/*
+@@ -1322,7 +1323,7 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
  
+ 	update_rlimit_cpu(current, new_rlim.rlim_cur);
+ out:
+-	return 0;
++	return retval;
+ }
+ 
+ /*
 -- 
 1.7.1
 
