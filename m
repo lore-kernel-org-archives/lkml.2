@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab0FWJwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 05:52:08 -0400
-Received: from gerolde.archlinux.org ([66.211.214.132]:55028 "EHLO
-	archlinux.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750967Ab0FWJwG (ORCPT
+	id S1752245Ab0FWJxG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 05:53:06 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:59936 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab0FWJxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 05:52:06 -0400
-Message-ID: <4C21D941.9030904@archlinux.org>
-Date: Wed, 23 Jun 2010 11:52:01 +0200
-From: =?ISO-8859-15?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.10) Gecko/20100617 Shredder/3.0.5
+	Wed, 23 Jun 2010 05:53:04 -0400
+Date: Wed, 23 Jun 2010 19:52:54 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "Dong, Eddie" <eddie.dong@intel.com>
+Cc: "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+       Stephen Hemminger <shemminger@vyatta.com>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+       "davem@davemloft.net" <davem@davemloft.net>,
+       "jdike@linux.intel.com" <jdike@linux.intel.com>
+Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Message-ID: <20100623095254.GA32491@gondor.apana.org.au>
+References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com> <20100606161348.427822fb@nehalam> <20100608052744.GA21547@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791100848F9F@shsmsx502.ccr.corp.intel.com> <20100611052112.GA25649@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D791210AA4475@shsmsx502.ccr.corp.intel.com> <F2E9EB7348B8264F86B6AB8151CE2D79134F9AA999@shsmsx502.ccr.corp.intel.com> <20100617112119.GB1515@gondor.apana.org.au> <F2E9EB7348B8264F86B6AB8151CE2D7915089FE4CC@shsmsx502.ccr.corp.intel.com> <1A42CE6F5F474C41B63392A5F80372B21F58CD9A@shsmsx501.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: David Woodhouse <David.Woodhouse@intel.com>, linux-kernel@vger.kernel.org
-Subject: linux-firmware tree vs. linux-firmware-from-kernel tree
-X-Enigmail-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="------------enig4CD3FF5F7708BCFE74760936"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1A42CE6F5F474C41B63392A5F80372B21F58CD9A@shsmsx501.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig4CD3FF5F7708BCFE74760936
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jun 23, 2010 at 04:09:40PM +0800, Dong, Eddie wrote:
+>
+> Xiaohui & Herbert:
+> 	Mixing copy of head & 0-copy of bulk data imposes additional challange to find the guest buffer. The backend driver may be unable to find a spare guest buffer from virtqueue at that time which may block the receiving process then.
+> 	Can't we completely eliminate netdev_alloc_skb here? Assigning guest buffer at this time makes life much easier.
 
-Hello David,
+I'm not sure I understand you concern.  If you mean that when
+the guest doesn't give enough pages to the host and the host
+can't receive on behalf of the guest then isn't that already
+the case with the original patch-set?
 
-After switching from 'make firmware_install' to using the firmware files
-from the linux-firmware tree, I received a bug report about missing
-firmware files. While investigating, I noticed that the following
-commits are in linux-firmware-from-kernel, but not in linux-firmware:
-
-Ken Kawasaki (1):
-      pcnet_cs: add cis of KTI PE520 pcmcia network card
-
-Michael Chan (2):
-      bnx2: Update firmwares and update version to 2.0.8.
-      bnx2: Update 5709 MIPS firmware and version to 2.0.15.
-
-Vladislav Zolotarov (1):
-      bnx2x: Use firmware 5.2.13
-
-Is there a specific reason why they are missing? Can you merge these
-commits into linux-firmware (I did it locally and it went fine, apart
-from a minor conflict in the WHENCE file).
-
-Regards
-Thomas
-
-
---------------enig4CD3FF5F7708BCFE74760936
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEAREIAAYFAkwh2UEACgkQEda5KzHP/VDWAQCeOY/4W1UbO9D33u22ywxufA0N
-DsMAn2YUZPccpgDQcHVjEgIoDEhWdUw8
-=QrxN
------END PGP SIGNATURE-----
-
---------------enig4CD3FF5F7708BCFE74760936--
+Cheers,
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
