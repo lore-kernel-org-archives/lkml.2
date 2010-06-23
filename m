@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab0FWRz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 13:55:28 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57604 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab0FWRz1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 13:55:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=WvdQmyzdYEiYb2CgmR1x7GH8uJ4pKbgTvqSjJdP3yMEsozlF+vSLrqkqUfZQR6QBic
-         M9i/3KkVaOqIEZDIXUnEoVe90I1Y4GubVOLpG/kDydK9yEfONKaGmKFd2p2vo4bzL1AA
-         z5/xD315qEtdoqBbyMU0WQ+wZHq8vPN43Wga4=
+	id S1752487Ab0FWR6A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 13:58:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751423Ab0FWR57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 13:57:59 -0400
+Date: Wed, 23 Jun 2010 19:56:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: akpm@linux-foundation.org, adobriyan@gmail.com, nhorman@tuxdriver.com,
+       linux-kernel@vger.kernel.org, Stephen Smalley <sds@tycho.nsa.gov>,
+       James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>
+Subject: Re: [PATCH v3 06/11] rlimits: do security check under task_lock
+Message-ID: <20100623175602.GA14824@redhat.com>
+References: <20100513155621.51ca77a4.akpm@linux-foundation.org> <1275855783-27316-1-git-send-email-jslaby@suse.cz> <20100607180855.GA6689@redhat.com> <4C222644.4040601@gmail.com> <20100623161254.GA10098@redhat.com> <4C224804.7030809@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <87bpb1fxwg.fsf@old-tantale.fifi.org>
-References: <AANLkTim362_xv5FAyFSpdnAFUlILliEoGBW8_oZ4QVj1@mail.gmail.com>
-	<87bpb1fxwg.fsf@old-tantale.fifi.org>
-Date: Wed, 23 Jun 2010 13:55:25 -0400
-X-Google-Sender-Auth: Ms7AFudhyEnBeg5PauEhBloi5dU
-Message-ID: <AANLkTinm1ZXybaAgCUGGPkK_YKaGmO9k2mduoy9ThnQ3@mail.gmail.com>
-Subject: Re: i915: Dell E6410 Ironlake LVDS detection
-From: Ben Guthro <ben@guthro.net>
-To: Philippe Troin <phil@fifi.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C224804.7030809@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23, 2010 at 1:42 PM, Philippe Troin <phil@fifi.org> wrote:
-> I am seeing similar problems with an HP Elitebook 2540p.
+On 06/23, Jiri Slaby wrote:
 >
-> 2.6.32 works for me.
-> 2.6.33.5 does not.
-
-I have tried ubuntu mainline builds of:
-
-2.6.32.21
-2.6.32.22
-2.6.34-rc3
-2.6.35-rc1
-2.6.34-drm-intel-next
-
-None have worked yet...
-
-> I'm not sure if this hardware has a LVDS connector.
-
-Apologies...mistyped. I meant the LVDS internal display, not connector.
-
-> I was able to boot it with i915 loaded (-> black screen), ssh in and
-> run xrandr.  Xrandr reported 6 connectors, none of them named LVDS.
-> It think they were named FP[123].
+> On 06/23/2010 06:12 PM, Oleg Nesterov wrote:
+> > On 06/23, Jiri Slaby wrote:
+> >>
+> >> BTW this capable() has the exactly same problem with being called with
+> >> task_lock held. Is it OK to move it completely out of critical section?
+> >> I'm asking because it sets a current->flags SU bit used for accounting.
+> >> If I move it out of the section, it will set the bit always.
+> >
+> > Well, with all these delays I do not know what "exactly same problem"
+> > means ;) Please explain?
 >
-> I was able to turn on an external display connected via VGA with
-> xrandr and it seemed to be working fine?
+> As I wrote: that the capable() is called with task_lock held.
 
-When I boot without the external display, I am never able to ssh in -
-and I do not get the sound that typically plays when X is booted.
+Ah, got it, yes.
 
-I've put this onto a serial line, and it seems to hang sometime in
-init...with some indicators that it is when it switches over to the
-higher resolution console...but the screen is black, so this is really
-just a gut feel.
+> > selinux_task_setrlimit()->current_has_perm()->current_sid()->current_cred()
+
+I meant
+selinux_task_setrlimit(p)->current_has_perm(p)->task_sid(p)->__task_cred(p)
+
+> I still see no way how this is wrong. We want to check whether current
+> thread has capabilities to change (someone else's) rlimits.
+
+Yes. but what is "someone else" ?
+
+IIRC, one of your patches (correctly) changes security_task_setrlimit()
+to have the new argument, p == "someone else", correct?
+
+Now, the result of security check depends on __task_cred(p) above, and
+thus depends on which thread we choose to change rlimits.
+
+I think it makes more sense to always pass ->group_leader as an argument
+to security_task_setrlimit(p). But probably I missed something, I do not
+remember what exactly other patches do.
+
+Oleg.
+
