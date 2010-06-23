@@ -1,41 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab0FWOaP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 10:30:15 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55488 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab0FWOaN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 10:30:13 -0400
-Date: Wed, 23 Jun 2010 10:16:22 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Justin Mattock <justinmattock@gmail.com>
-Cc: linux-wireless@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at
- 00000000000000a0
-Message-ID: <20100623141622.GC15205@tuxdriver.com>
-References: <AANLkTilf41JrFwN1veRDifNA78S2LQ6SO0g3YLOONd2W@mail.gmail.com>
+	id S1753132Ab0FWOkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 10:40:09 -0400
+Received: from bar.sig21.net ([80.81.252.164]:45946 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751824Ab0FWOkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 10:40:06 -0400
+Date: Wed, 23 Jun 2010 16:39:40 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
+       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Jonathan May <jonathan.may@atheros.com>,
+       Tim Gardner <tim.gardner@canonical.com>
+Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
+Message-ID: <20100623143940.GA5424@sig21.net>
+References: <20100622165213.GA21842@srcf.ucam.org>
+ <AANLkTikHLBBWrhCP_1f5Jv7zE9RKPvdsl5nSyfkeMfLl@mail.gmail.com>
+ <20100622172545.GA22680@srcf.ucam.org>
+ <AANLkTilEHJ5qRD8ov0gIK0Zc4o-gJUPYkvHdyD1uZUon@mail.gmail.com>
+ <20100622175058.GA23499@srcf.ucam.org>
+ <AANLkTinE0BiOa5cpcIerbias7K-aDzj3x4qaeDpzy2CQ@mail.gmail.com>
+ <20100622184426.GA24546@srcf.ucam.org>
+ <20100622193143.GA17803@sig21.net>
+ <AANLkTin1fAAgYTYegqaadkYIYP2NXRNRzCR48e-uIgYV@mail.gmail.com>
+ <AANLkTimsEkff4sMiMB_VyWqkZOjy9PIuJ4AiC95PASOZ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <AANLkTilf41JrFwN1veRDifNA78S2LQ6SO0g3YLOONd2W@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimsEkff4sMiMB_VyWqkZOjy9PIuJ4AiC95PASOZ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.7 (---)
+X-Spam-21-Report: No, score=-3.7 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.722,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 22, 2010 at 04:16:53PM -0700, Justin Mattock wrote:
-> I remember ipsec was able to work cleanly on my machines probably
-> about 4/6 months ago
-> now I get this:
+On Tue, Jun 22, 2010 at 12:38:03PM -0700, Luis R. Rodriguez wrote:
+> On Tue, Jun 22, 2010 at 12:37 PM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
+> > On Tue, Jun 22, 2010 at 12:31 PM, Johannes Stezenbach <js@sig21.net> wrote:
+> >>
+> >> Does CONFIG_PCIEASPM provide a way for the user to modifiy
+> >> the settings at runtime?
+> >
+> > You can tune ASPM settings at runtime, regardless of CONFIG_PCIEASPM. See:
+> >
+> > http://kernel.org/pub/linux/kernel/people/mcgrof/aspm/enable-aspm
+> > http://wireless.kernel.org/en/users/Documentation/ASPM
+> >
+> >> I have a Samsung N130 netbook which has a BIOS setting
+> >> called "CPU Power Saving Mode".  When enabled it activates
+> >> ASPM L1 and L0s for the ethernet chip (Realtek RTL8102e, 100Mbit)
+> >> and the PCIE bridge (with the BIOS setting off it's just L1).
+> >> The result is that the ethernet througput is reduced to 25Mbit/s.
+> >
+> > L0s is not going to buy you much gains, getting at least L1 will
+> > however. L0s is just a further enhancement. I recommend you test by
+> > enabling L1 and L0s, check how longer your battery lasts and then test
+> > again with just L1. Then test without both L1 and L0s.
+> 
+> So defaults should always be sane and you should not have to play with
+> this stuff, unless you're a hacker, or are testing something for
+> development purposes. Tweaking ASPM settings is not something a user
+> should have to worry about. Period.
 
-<snip>
+OK, let me put the question another way:
 
-Perhaps netdev would be a more appropriate list than linux-wireless
-for this?
+If enabling ASPM comes with a performance penalty (which is not unexpected,
+there is usually a tradeoff between performance and power consumption),
+do you think a boot time option (pcie_aspm=) or compile time option
+(CONFIG_PCIEASPM) is the right user interface?
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+
+But meanwhile I found that CONFIG_PCIEASPM has a runtime
+interface, /sys/module/pcie_aspm/parameters/policy.
+http://lwn.net/Articles/266585/
+
+I have not tested it on my N130 yet.
+
+
+Johannes
