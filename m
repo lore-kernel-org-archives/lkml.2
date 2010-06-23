@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab0FWUcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 16:32:31 -0400
-Received: from eazy.amigager.de ([213.239.192.238]:43593 "EHLO
-	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab0FWUca (ORCPT
+	id S1753340Ab0FWUgs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 16:36:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:32944 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752399Ab0FWUgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 16:32:30 -0400
-Date: Wed, 23 Jun 2010 22:32:35 +0200
-From: Tino Keitel <tino.keitel@tikei.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: Suspend hangs since 2.6.34
-Message-ID: <20100623203234.GA20913@mac.home>
-Mail-Followup-To: Alan Stern <stern@rowland.harvard.edu>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-	Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-References: <20100621213224.GA5723@mac.home>
- <Pine.LNX.4.44L0.1006211828090.1687-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1006211828090.1687-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 23 Jun 2010 16:36:46 -0400
+Date: Wed, 23 Jun 2010 13:36:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@gmail.com>, linux-fbdev@vger.kernel.org,
+       dri-devel@lists.sf.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vt/console: try harder to print output when panicing
+Message-Id: <20100623133637.fbb318e2.akpm@linux-foundation.org>
+In-Reply-To: <20100623130547.296e00a7@virtuousgeek.org>
+References: <1277262779-19338-1-git-send-email-airlied@gmail.com>
+	<20100623125605.5f56f6ba.akpm@linux-foundation.org>
+	<20100623130547.296e00a7@virtuousgeek.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 21, 2010 at 18:31:57 -0400, Alan Stern wrote:
+On Wed, 23 Jun 2010 13:05:47 -0700
+Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
 
-[...]
+> On Wed, 23 Jun 2010 12:56:05 -0700
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > On Wed, 23 Jun 2010 13:12:59 +1000
+> > Dave Airlie <airlied@gmail.com> wrote:
+> > 
+> > > Jesse's initial patch commit said:
+> > > 
+> > > "At panic time (i.e. when oops_in_progress is set) we should try a bit
+> > > harder to update the screen and make sure output gets to the VT, since
+> > > some drivers are capable of flipping back to it.
+> > > 
+> > > So make sure we try to unblank and update the display if called from a
+> > > panic context."
+> > > 
+> > > I've enhanced this to add a flag to the vc that console layer can set
+> > > to indicate they want this behaviour to occur. This also adds support
+> > > to fbcon for that flag and adds an fb flag for drivers to indicate
+> > > they want to use the support. It enables this for KMS drivers.
+> > 
+> > Interesting.  Getting real oops traces from machines running X will
+> > make Rusty happy, and that's what we're all here for.
+> > 
+> > How well does this all work?  How reliable is it?  What's the success rate?
+> > 
+> > 
+> > 
+> > What's the downside here?  After all, not all oopses are catastrophic -
+> > sometimes the machine will go blurt and keep running so the user can
+> > take a look in the logs then perform an orderly reboot, etc.  As I
+> > understand it, those non-catastrophic oopses will now flip the machine
+> > from X and into the vt display, yes?  Can the user get it back to X
+> > mode?
+> 
+> No, we'll only flip from the panic notifier chain.
 
-> Why does this look like a USB problem?  As far as I can tell, the bug 
-> is that the system delays somewhere during the suspend procedure.  But 
-> there's no reason to think the delay is connected with USB.
+So we still don't get to see the output from BUGs and random oopses?  I
+don't think panics are all that common.
 
-Breaking news: I just got the same hang when switching from X to the
-console, so I gues that this bug has nothing to to with suspend, but
-was just triggered by the switch to the console before suspend. I guess
-I have to ask the intel-gfx folks.
+So am I correct in believing that if a user is getting invisible-oopses
+then he can set /proc/sys/kernel/panic_on_oops, and then the oops
+should be visible?
 
-Regards,
-Tino
+(Shouldn't all this stuff be explained in the changlog?)
+
+
