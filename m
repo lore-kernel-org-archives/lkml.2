@@ -1,93 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab0FWSLM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 14:11:12 -0400
-Received: from old-tantale.fifi.org ([64.81.30.200]:35941 "EHLO
-	old-tantale.fifi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab0FWSLK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 14:11:10 -0400
-To: Ben Guthro <ben@guthro.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: i915: Dell E6410 Ironlake LVDS detection
-References: <AANLkTim362_xv5FAyFSpdnAFUlILliEoGBW8_oZ4QVj1@mail.gmail.com>
-	<87bpb1fxwg.fsf@old-tantale.fifi.org>
-	<AANLkTinm1ZXybaAgCUGGPkK_YKaGmO9k2mduoy9ThnQ3@mail.gmail.com>
-Mail-Copies-To: nobody
-From: Philippe Troin <phil@fifi.org>
-Date: 23 Jun 2010 11:11:06 -0700
-In-Reply-To: <AANLkTinm1ZXybaAgCUGGPkK_YKaGmO9k2mduoy9ThnQ3@mail.gmail.com>
-Message-ID: <877hlpfwlh.fsf@old-tantale.fifi.org>
-User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.2
+	id S1752654Ab0FWSMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 14:12:20 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:37068 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751478Ab0FWSMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 14:12:18 -0400
+Date: Wed, 23 Jun 2010 11:11:29 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oleg Nesterov <oleg@redhat.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] sanitize task->comm to avoid leaking escape codes
+Message-ID: <20100623181129.GM5876@outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Guthro <ben@guthro.net> writes:
+Through get_task_comm() and many direct uses of task->comm in the kernel,
+it is possible for escape codes and other non-printables to leak into
+dmesg, syslog, etc.  In the worst case, these strings could be used to
+attack administrators using vulnerable terminal emulators, and at least
+cause confusion through the injection of \r characters.
 
-> On Wed, Jun 23, 2010 at 1:42 PM, Philippe Troin <phil@fifi.org> wrote:
-> > I am seeing similar problems with an HP Elitebook 2540p.
-> >
-> > 2.6.32 works for me.
-> > 2.6.33.5 does not.
-> 
-> I have tried ubuntu mainline builds of:
-> 
-> 2.6.32.21
-> 2.6.32.22
-> 2.6.34-rc3
-> 2.6.35-rc1
-> 2.6.34-drm-intel-next
->
-> None have worked yet...
+This patch sanitizes task->comm to only contain printable characters
+when it is set.  Additionally, it redefines get_task_comm so that it
+cannot be misused by callers (presently nothing was incorrectly calling
+get_task_comm's unsafe use of strncpy).
 
-Tried a vanilla kernel?
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+---
+ fs/exec.c             |   17 +++++++++++++----
+ include/linux/sched.h |    3 ++-
+ 2 files changed, 15 insertions(+), 5 deletions(-)
 
-> > I was able to turn on an external display connected via VGA with
-> > xrandr and it seemed to be working fine?
-> 
-> When I boot without the external display, I am never able to ssh in -
-> and I do not get the sound that typically plays when X is booted.
-> 
-> I've put this onto a serial line, and it seems to hang sometime in
-> init...with some indicators that it is when it switches over to the
-> higher resolution console...but the screen is black, so this is really
-> just a gut feel.
+diff --git a/fs/exec.c b/fs/exec.c
+index 85092e3..aa84f66 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -935,17 +935,18 @@ static void flush_old_files(struct files_struct * files)
+ 	spin_unlock(&files->file_lock);
+ }
+ 
+-char *get_task_comm(char *buf, struct task_struct *tsk)
++char *get_task_comm_size(char *buf, size_t len, struct task_struct *tsk)
+ {
+-	/* buf must be at least sizeof(tsk->comm) in size */
+ 	task_lock(tsk);
+-	strncpy(buf, tsk->comm, sizeof(tsk->comm));
++	strlcpy(buf, tsk->comm, len);
+ 	task_unlock(tsk);
+ 	return buf;
+ }
+ 
+ void set_task_comm(struct task_struct *tsk, char *buf)
+ {
++	size_t i;
++
+ 	task_lock(tsk);
+ 
+ 	/*
+@@ -956,7 +957,15 @@ void set_task_comm(struct task_struct *tsk, char *buf)
+ 	 */
+ 	memset(tsk->comm, 0, TASK_COMM_LEN);
+ 	wmb();
+-	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
++
++	/* sanitize non-printable characters */
++	for (i = 0; buf[i] && i < (sizeof(tsk->comm) - 1); i++) {
++		if (!isprint(buf[i]))
++			tsk->comm[i] = '?';
++		else
++			tsk->comm[i] = buf[i];
++	}
++
+ 	task_unlock(tsk);
+ 	perf_event_comm(tsk);
+ }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f118809..0ba69dc 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2117,7 +2117,8 @@ extern long do_fork(unsigned long, unsigned long, struct pt_regs *, unsigned lon
+ struct task_struct *fork_idle(int);
+ 
+ extern void set_task_comm(struct task_struct *tsk, char *from);
+-extern char *get_task_comm(char *to, struct task_struct *tsk);
++#define get_task_comm(buf, task) get_task_comm_size(buf, sizeof(buf), task)
++extern char *get_task_comm_size(char *to, size_t len, struct task_struct *tsk);
+ 
+ #ifdef CONFIG_SMP
+ extern unsigned long wait_task_inactive(struct task_struct *, long match_state);
+-- 
+1.7.1
 
-Then it might be a different problem.  For me, X definitely boots.
 
-Can you boot with nomodeset?
-
-X will refuse to start, but then maybe you can set up your laptop so
-that the network comes up without needing X.
-
-Then you could try to reboot with i915+modeset and see if the machine
-is still alive (and it's just a connector issue) or if the machine is
-dead (then it's a deeper driver issue).
-
-What does lspci report for you?
-
-Mine says:
-
-00:02.0 VGA compatible controller: Intel Corporation Core Processor
-Integrated Graphics Controller (rev 12) (prog-if 00 [VGA controller])
-        Subsystem: Hewlett-Packard Company Device 7008
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
-ParErr- Stepping- SERR- FastB2B- DisINTx+
-        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort-
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 0
-        Interrupt: pin A routed to IRQ 34
-        Region 0: Memory at d0000000 (64-bit, non-prefetchable)
-[size=4M]
-        Region 2: Memory at c0000000 (64-bit, prefetchable)
-[size=256M]
-        Region 4: I/O ports at 5078 [size=8]
-        Expansion ROM at <unassigned> [disabled]
-        Capabilities: <access denied>
-        Kernel driver in use: i915
-        Kernel modules: i915
-
-Phil.
+-- 
+Kees Cook
+Ubuntu Security Team
