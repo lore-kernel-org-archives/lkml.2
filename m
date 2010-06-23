@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab0FWIJs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 04:09:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15698 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490Ab0FWIJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 04:09:46 -0400
-Message-ID: <4C21C136.9070708@redhat.com>
-Date: Wed, 23 Jun 2010 11:09:26 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1751777Ab0FWIMy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 04:12:54 -0400
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:56135 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751209Ab0FWIMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 04:12:51 -0400
+Message-ID: <4C21C1C3.5050708@euromail.se>
+Date: Wed, 23 Jun 2010 10:11:47 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       kvm@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Sheng Yang <sheng@linux.intel.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       tim.c.chen@intel.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH V2 3/5] ara virt interface of perf to support kvm guest
- os statistics collection in guest os
-References: <1277112703.2096.511.camel@ymzhang.sh.intel.com>	 <20100621135659.GL4689@redhat.com>	 <1277185636.2096.675.camel@ymzhang.sh.intel.com>	 <4C206EA0.3060101@redhat.com> <1277257421.2096.758.camel@ymzhang.sh.intel.com>
-In-Reply-To: <1277257421.2096.758.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jiri Kosina <jkosina@suse.cz>, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>
+Subject: Re: [PATCH] input: evdev: Use multi-reader buffer to save space (rev5)
+References: <1277059734-2939-1-git-send-email-rydberg@euromail.se> <20100623061939.GB11187@core.coreip.homeip.net>
+In-Reply-To: <20100623061939.GB11187@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1ORL42-0003tG-5s.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1ORL42-0003tG-5s 591bf1e449466b0e3b1f316d89a36764
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 04:43 AM, Zhang, Yanmin wrote:
->
->> A reset does not involve destroying a vm; you have to clean up as part
->> of the rest process.
->>      
-> What does 'reset' here mean? Is it a reboot or halt? If it's a halt, it involves
-> destroying a vm. If a host user just kills the qemu process, is it a reset involving
-> destroying a vm?
->    
-
-'reset' is either a complete reset ('system_reset' on the qemu monitor, 
-cycles through the bios etc.) or just an INIT signal to one vcpu.  
-Neither involves destroying a vm.
-
->> You aren't guaranteed a reboot notifier will be called.  On the other
->> hand, we need a kexec handler.
->>      
-> ordinary kexec calls all reboot notifiers. Only crash kexec doesn't call them.
-> I will implement a machine_ops.crash_shutdown callback.
->    
+Dmitry Torokhov wrote:
+> Hi Henrik,
+> 
+> On Sun, Jun 20, 2010 at 08:48:54PM +0200, Henrik Rydberg wrote:
+>> @@ -149,11 +148,29 @@ static int evdev_grab(struct evdev *evdev, struct evdev_client *client)
+>>  
+>>  static int evdev_ungrab(struct evdev *evdev, struct evdev_client *client)
+>>  {
+>> +	struct input_dev *dev = evdev->handle.dev;
+>> +	int head, tail;
+>> +
+>>  	if (evdev->grab != client)
+>>  		return  -EINVAL;
+>>  
+>> +	spin_lock_irq(&dev->event_lock);
+>> +
+>> +	head = client->head;
+>> +	tail = client->tail;
+>> +
+>> +	rcu_read_lock();
+>> +	list_for_each_entry_rcu(client, &evdev->client_list, node) {
+>> +		client->head = head;
+>> +		client->tail = tail;
+>> +	}
+>> +	rcu_read_unlock();
+>> +
+>>  	rcu_assign_pointer(evdev->grab, NULL);
+>>  	synchronize_rcu();
+> 
+> You may not call synchronize_rcu() while holding spinlock and with
+> interrupts off.
 
 Thanks.
 
--- 
-error compiling committee.c: too many arguments to function
+>> +
+>> +	spin_unlock_irq(&dev->event_lock);
+>> +
+>>  	input_release_device(&evdev->handle);
+>>  
+>>  	return 0;
+>> @@ -162,6 +179,7 @@ static int evdev_ungrab(struct evdev *evdev, struct evdev_client *client)
+>>  static void evdev_attach_client(struct evdev *evdev,
+>>  				struct evdev_client *client)
+>>  {
+>> +	client->head = client->tail = evdev->head;
+>>  	spin_lock(&evdev->client_lock);
+> 
+> So what happens if we advance evdev->head here but before we added the
+> new client to the list? I guess we'll have to wait till next event and
+> then client will read both of them...
+
+Right...
+
+> Overall I am starting getting concerned about proper isolation between
+> clients. Right now, if one client stops reading events and another one
+> issues grab then the first client will only get events that were
+> accumulated before grab tookm place. With the new shared buffer the
+> first client may get "grabbed" events if it stop for long enough for
+> buffer to wrap around.
+
+Doing some research, the semantics of ioctl have obviously been discussed
+before, and I believe this points to another such issue. When grabbing a device,
+are we guaranteeing that the device no longer sends events to other clients, or
+are we guaranteeing that other clients can no longer read the device? If the
+latter, clearing all client buffers in conjunction with a grab would be
+appropriate, and would solve this issue.
+
+> Do we really same that much memory here? We normally do not have that
+> many users connected to event devices at once...
+
+Ok, let's scratch this. Although I think the idea of multi-reader buffers is
+sound, it is obviously sufficiently incompatible with the current approach to
+produce distastefully complex patches. I will return with a new set which only
+fixes the buffer resize problem, and leaves the rest for later.
+
+Thanks,
+Henrik
 
