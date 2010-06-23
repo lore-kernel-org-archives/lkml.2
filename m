@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346Ab0FWJLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 05:11:17 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57704 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab0FWJLQ convert rfc822-to-8bit (ORCPT
+	id S1751598Ab0FWJL6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 05:11:58 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42244 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751117Ab0FWJLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 05:11:16 -0400
-Subject: Re: [PATCH RFC] reduce runqueue lock contention
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Chris Mason <chris.mason@oracle.com>, axboe@kernel.dk,
-       linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-       Oleg Nesterov <oleg@redhat.com>, tglx <tglx@linutronix.de>
-In-Reply-To: <20100622211141.GC21149@elte.hu>
-References: <20100520204810.GA19188@think>
-	 <1277114522.1875.469.camel@laptop> <1277117647.1875.503.camel@laptop>
-	 <1277125479.1875.510.camel@laptop> <1277213586.1875.704.camel@laptop>
-	 <20100622211141.GC21149@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 23 Jun 2010 11:10:57 +0200
-Message-ID: <1277284257.1875.820.camel@laptop>
+	Wed, 23 Jun 2010 05:11:55 -0400
+Date: Wed, 23 Jun 2010 10:16:48 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: Christian Stroetmann <stroetmann@ontolinux.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux File System ML <linux-fsdevel@vger.kernel.org>,
+       Linux Security Module ML 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] security: Yama LSM
+Message-ID: <20100623101648.3d2cf65d@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100623062242.GG5876@outflux.net>
+References: <20100621213424.GG24749@outflux.net>
+	<201006220028.o5M0Sbx7062650@www262.sakura.ne.jp>
+	<20100622011452.GN24749@outflux.net>
+	<4C20ABC0.5050908@nokia.com>
+	<20100622160613.GC5876@outflux.net>
+	<4C21A39C.6040406@ontolinux.com>
+	<20100623062242.GG5876@outflux.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-22 at 23:11 +0200, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
+> I have done the latter.
 > 
-> > So this one boots and builds a kernel on a dual-socket nehalem.
-> > 
-> > there's still quite a number of XXXs to fix, but I don't think any of the 
-> > races are crashing potential, mostly wrong accounting and scheduling iffies 
-> > like.
-> > 
-> > But give it a go.. see what it does for you (x86 only for now).
-> > 
-> > Ingo, any comments other than, eew, scary? :-)
-> 
-> None, other than a question: which future kernel do you aim it for? I'd prefer 
-> v2.6.50 or later ;-)
+> I don't need to integrate this into grsecurity because grsecurity already
+> has these protections.  It is Openwall and grsecurity that I'm using as the
+> starting point for this attempt at upstreaming the protections.
 
-Well, assuming it all works out and actually reduces runqueue lock
-contention we still need to sort out all those XXXs in there, I'd say at
-the soonest somewhere near .38/.39 or so.
+In effect its turning bits of grsecurity into an LSM which is a good
+thing.
 
-Its definitely not something we should rush in.
+
+Alan
