@@ -1,69 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab0FWRIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 13:08:16 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54358 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929Ab0FWRIM (ORCPT
+	id S1753189Ab0FWRIg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 13:08:36 -0400
+Received: from fep15.mx.upcmail.net ([62.179.121.35]:45185 "EHLO
+	fep15.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149Ab0FWRId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 13:08:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=eA96pHkno0i46v+JdG2RAHE6EUJuDp3ikyqFroQRTJhAPY/4zgirD1B7+dgiix0lHo
-         FC/aW0MmHjmlI06olwWIe4px/mIs6wRZu/hRM+NTuLrR/ej1ruW+N30Z8ga/EUsBLmna
-         UPhro6ggIc1nSdWPn3NHgdoOQN23BqYOk5b+I=
-Message-ID: <4C223DCA.5090704@gmail.com>
-Date: Wed, 23 Jun 2010 10:00:58 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+	Wed, 23 Jun 2010 13:08:33 -0400
+X-SourceIP: 77.57.188.152
+Message-ID: <4C223F8A.9030306@odi.ch>
+Date: Wed, 23 Jun 2010 19:08:26 +0200
+From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100415 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: "John W. Linville" <linville@tuxdriver.com>
-CC: netdev@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       davem@davemloft.net, timo.teras@iki.fi
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
-References: <AANLkTilf41JrFwN1veRDifNA78S2LQ6SO0g3YLOONd2W@mail.gmail.com> <20100623141622.GC15205@tuxdriver.com>
-In-Reply-To: <20100623141622.GC15205@tuxdriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+To: linux-kernel@vger.kernel.org
+Subject: ata link not reset properly
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Cloudmark-Analysis: v=1.1 cv=BX1z5e3lS7RAKjOkUI/uDpZ/pP4xz0N/VImyOZX9Sfk= c=1 sm=0 a=wbKXeunVgZ0A:10 a=8nJEP1OIZ-IA:10 a=VwQbUJbxAAAA:8 a=9c7KVfinEksGT300a6wA:9 a=AVt-N3lzlmrR1_8V0D0A:7 a=NnBWPXawONcSlpL_YZHqTq5LGfYA:4 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-o.k. the bisect is pointing to the below results..
-(I tried git revert xxx but this commit is too big
-so I'll(hopefully)manually revert it on the latest HEAD to
-see if this is the actual problem im experiencing)
+>From time to time this nVidia SATA controller chokes on a FLUSH CACHE.
+
+1. why does the kernel not try to HARD reset the link?
+2. it would be nice to have the possibility to manually force a (hard) reset or
+to re-initialize the device. Other than rebooting I mean :-)
+
+Thanks.
+  Ortwin
+
+Kernel is basically a 2.6.32.8 with a cherry picked fix:
+http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git;a=blob;f=queue-2.6.33/enable-retries-for-syncronize_cache-commands-to-fix-i-o-error.patch;h=2401e54b05502803889d4ece2afefc3e2b64995f;hb=117d7c078957b2e200e3fcf06c182422366764b0
+
+Jun 23 12:06:48 gollum kernel: ata2.00: exception Emask 0x0 SAct 0x0 SErr 0x0
+action 0x6 frozen
+Jun 23 12:06:48 gollum kernel: ata2.00: failed command: FLUSH CACHE
+Jun 23 12:06:48 gollum kernel: ata2.00: cmd e7/00:00:00:00:00/00:00:00:00:00/a0
+tag 0
+Jun 23 12:06:48 gollum kernel: res 40/00:01:00:00:00/00:00:00:00:00/a0 Emask 0x4
+(timeout)
+Jun 23 12:06:48 gollum kernel: ata2.00: status: { DRDY }
+Jun 23 12:06:53 gollum kernel: ata2: link is slow to respond, please be patient
+(ready=0)
+Jun 23 12:06:53 gollum kernel: ata2: link is slow to respond, please be patient
+(ready=0)
+Jun 23 12:07:59 gollum kernel: ata2: device not ready (errno=-16), forcing hardreset
+Jun 23 12:07:59 gollum kernel: ata2: device not ready (errno=-16), forcing hardreset
+Jun 23 12:07:59 gollum kernel: ata2: soft resetting link
+Jun 23 12:07:59 gollum kernel: ata2: soft resetting link
+Jun 23 12:07:59 gollum kernel: ata2: link is slow to respond, please be patient
+(ready=0)
+Jun 23 12:07:59 gollum kernel: ata2: link is slow to respond, please be patient
+(ready=0)
+Jun 23 12:07:59 gollum kernel: ata2: SRST failed (errno=-16)
+Jun 23 12:07:59 gollum kernel: ata2: soft resetting link
+Jun 23 12:07:59 gollum kernel: ata2: soft resetting link
+Jun 23 12:07:59 gollum kernel: ata2: link is slow to respond, please be patient
+(ready=0)
+Jun 23 12:07:59 gollum kernel: ata2: link is slow to respond, please be patient
+(ready=0)
+Jun 23 12:07:59 gollum kernel: ata2: SRST failed (errno=-16)
+Jun 23 12:07:59 gollum kernel: ata2: soft resetting link
+Jun 23 12:07:59 gollum kernel: ata2: soft resetting link
+Jun 23 12:07:59 gollum kernel: ata2: link is slow to respond, please be patient
+(ready=0)
+Jun 23 12:07:59 gollum kernel: ata2: link is slow to respond, please be patient
+(ready=0)
+Jun 23 12:07:59 gollum kernel: ata2: SRST failed (errno=-16)
+Jun 23 12:07:59 gollum kernel: ata2: soft resetting link
+Jun 23 12:07:59 gollum kernel: ata2: soft resetting link
+Jun 23 12:07:59 gollum kernel: ata2: SRST failed (errno=-16)
+Jun 23 12:07:59 gollum kernel: ata2: reset failed, giving up
+Jun 23 12:07:59 gollum kernel: ata2.00: disabled
+Jun 23 12:07:59 gollum kernel: ata2.00: disabled
+Jun 23 12:07:59 gollum kernel: ata2.01: disabled
+Jun 23 12:07:59 gollum kernel: ata2.01: disabled
+Jun 23 12:07:59 gollum kernel: ata2.00: device reported invalid CHS sector 0
+Jun 23 12:07:59 gollum kernel: ata2.00: device reported invalid CHS sector 0
+Jun 23 12:07:59 gollum kernel: ata2: EH complete
+Jun 23 12:07:59 gollum kernel: ata2: EH complete
+Jun 23 12:07:59 gollum kernel: end_request: I/O error, dev sdb, sector 58604962
+Jun 23 12:07:59 gollum kernel: md: super_written gets error=-5, uptodate=0
+Jun 23 12:07:59 gollum kernel: md: super_written gets error=-5, uptodate=0
+Jun 23 12:07:59 gollum kernel: raid1: Disk failure on sdb3, disabling device.
+Jun 23 12:07:59 gollum kernel: raid1: Operation continuing on 1 devices.
+Jun 23 12:07:59 gollum kernel: RAID1 conf printout:
+Jun 23 12:07:59 gollum kernel: RAID1 conf printout:
+Jun 23 12:07:59 gollum kernel: --- wd:1 rd:2
+Jun 23 12:07:59 gollum kernel: --- wd:1 rd:2
+Jun 23 12:07:59 gollum kernel: disk 0, wo:0, o:1, dev:sda3
+Jun 23 12:07:59 gollum kernel: disk 0, wo:0, o:1, dev:sda3
+Jun 23 12:07:59 gollum kernel: disk 1, wo:1, o:0, dev:sdb3
+Jun 23 12:07:59 gollum kernel: disk 1, wo:1, o:0, dev:sdb3
+Jun 23 12:07:59 gollum kernel: RAID1 conf printout:
+Jun 23 12:07:59 gollum kernel: RAID1 conf printout:
+Jun 23 12:07:59 gollum kernel: --- wd:1 rd:2
+Jun 23 12:07:59 gollum kernel: --- wd:1 rd:2
+Jun 23 12:07:59 gollum kernel: disk 0, wo:0, o:1, dev:sda3
+Jun 23 12:07:59 gollum kernel: disk 0, wo:0, o:1, dev:sda3
 
 
+lspci:
+00:1e.0 PCI bridge: nVidia Corporation nForce2 AGP (rev c1)
+00:1e.0 0604: 10de:01e8 (rev c1)
 
-80c802f3073e84c956846e921e8a0b02dfa3755f is the first bad commit
-commit 80c802f3073e84c956846e921e8a0b02dfa3755f
-Author: Timo Teräs <timo.teras@iki.fi>
-Date:   Wed Apr 7 00:30:05 2010 +0000
-
-     xfrm: cache bundles instead of policies for outgoing flows
-
-     __xfrm_lookup() is called for each packet transmitted out of
-     system. The xfrm_find_bundle() does a linear search which can
-     kill system performance depending on how many bundles are
-     required per policy.
-
-     This modifies __xfrm_lookup() to store bundles directly in
-     the flow cache. If we did not get a hit, we just create a new
-     bundle instead of doing slow search. This means that we can now
-     get multiple xfrm_dst's for same flow (on per-cpu basis).
-
-     Signed-off-by: Timo Teras <timo.teras@iki.fi>
-     Signed-off-by: David S. Miller <davem@davemloft.net>
-
-:040000 040000 d8e60f5fa4c1329f450d9c7cdf98b34e6a177f22 
-9f576e68e5bf4ce357d7f0305aee5f410250dfe2 M      include
-:040000 040000 f2876df688ee36907af7b4123eea96592faaed3e 
-a3f6f6f94f0309106856cd99b38ec90b024eb016 M      net
-
-
-
-Justin P. Mattock
+ATA initialization:
+Jun 23 18:46:38 gollum kernel: ata2.00: ATA-5: IC25N030ATCS04-0, CA3OA71A, max
+UDMA/100
+Jun 23 18:46:38 gollum kernel: ata2.00: ATA-5: IC25N030ATCS04-0, CA3OA71A, max
+UDMA/100
+Jun 23 18:46:38 gollum kernel: ata2.00: 58605120 sectors, multi 16: LBA
+Jun 23 18:46:38 gollum kernel: ata2.00: 58605120 sectors, multi 16: LBA
+Jun 23 18:46:38 gollum kernel: ata2.01: ATAPI: Pioneer DVD-ROM ATAPIModel
+DVD-115  0127, E1.27, max UDMA/33
+Jun 23 18:46:38 gollum kernel: ata2.01: ATAPI: Pioneer DVD-ROM ATAPIModel
+DVD-115  0127, E1.27, max UDMA/33
+Jun 23 18:46:38 gollum kernel: ata2: nv_mode_filter: 0x3f39f&0x3f39f->0x3f39f,
+BIOS=0x3f000 (0xc700c6c0) ACPI=0x3f01f (20:60:0x1f)
+Jun 23 18:46:38 gollum kernel: ata2: nv_mode_filter: 0x739f&0x739f->0x739f,
+BIOS=0x7000 (0xc700c6c0) ACPI=0x701f (20:60:0x1f)
+Jun 23 18:46:38 gollum kernel: ata2.00: configured for UDMA/100
+Jun 23 18:46:38 gollum kernel: ata2.00: configured for UDMA/100
+Jun 23 18:46:38 gollum kernel: ata2.01: configured for UDMA/33
+Jun 23 18:46:38 gollum kernel: ata2.01: configured for UDMA/33
+Jun 23 18:46:38 gollum kernel: scsi 1:0:0:0: Direct-Access     ATA
+IC25N030ATCS04-0 CA3O PQ: 0 ANSI: 5
+Jun 23 18:46:38 gollum kernel: scsi 1:0:0:0: Direct-Access     ATA
+IC25N030ATCS04-0 CA3O PQ: 0 ANSI: 5
+Jun 23 18:46:38 gollum kernel: sd 1:0:0:0: [sdb] 58605120 512-byte logical
+blocks: (30.0 GB/27.9 GiB)
+Jun 23 18:46:38 gollum kernel: sd 1:0:0:0: [sdb] 58605120 512-byte logical
+blocks: (30.0 GB/27.9 GiB)
+Jun 23 18:46:38 gollum kernel: sd 1:0:0:0: [sdb] Write Protect is off
+Jun 23 18:46:38 gollum kernel: sd 1:0:0:0: [sdb] Write Protect is off
+Jun 23 18:46:38 gollum kernel: sd 1:0:0:0: [sdb] Mode Sense: 00 3a 00 00
+Jun 23 18:46:38 gollum kernel: sd 1:0:0:0: [sdb] Write cache: enabled, read
+cache: enabled, doesn't support DPO or FUA
+Jun 23 18:46:38 gollum kernel: sd 1:0:0:0: [sdb] Write cache: enabled, read
+cache: enabled, doesn't support DPO or FUA
+Jun 23 18:46:38 gollum kernel: sdb:
+Jun 23 18:46:38 gollum kernel: sdb:
+Jun 23 18:46:38 gollum kernel: sd 1:0:0:0: Attached scsi generic sg1 type 0
+Jun 23 18:46:38 gollum kernel: sd 1:0:0:0: Attached scsi generic sg1 type 0
+Jun 23 18:46:38 gollum kernel: sdb1 sdb2 sdb3
+Jun 23 18:46:38 gollum kernel: sdb1 sdb2 sdb3
+Jun 23 18:46:38 gollum kernel: scsi 1:0:1:0: CD-ROM            PIONEER  DVD-ROM
+DVD-115F 1.27 PQ: 0 ANSI: 5
+Jun 23 18:46:38 gollum kernel: scsi 1:0:1:0: CD-ROM            PIONEER  DVD-ROM
+DVD-115F 1.27 PQ: 0 ANSI: 5
+Jun 23 18:46:38 gollum kernel: sd 1:0:0:0: [sdb] Attached SCSI disk
+Jun 23 18:46:38 gollum kernel: sd 1:0:0:0: [sdb] Attached SCSI disk
