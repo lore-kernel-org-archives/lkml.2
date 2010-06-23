@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab0FWPpB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 11:45:01 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:52825 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753411Ab0FWPo7 (ORCPT
+	id S1753522Ab0FWPtO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 11:49:14 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:45624 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752684Ab0FWPtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 11:44:59 -0400
+	Wed, 23 Jun 2010 11:49:13 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
 	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Ek/K0i1gIv9dGiR3N1q/JdJ+RsokJUHB2HhZn+Nm3bMwtjBH527jqhWgaKt01/10fSclpA8aKjNHxUIvDFlnMsJYdFuPzyQoRtK8yn+rayDsSqEniVeIJid+XnLH7Zcs;
-Date: Wed, 23 Jun 2010 08:43:05 -0700
+	b=jmRfl7uUDKx5Ij5pZe6T6kWFozuuwa8X4Ee7EulW9LrfoCGU7N1TpvKI0V4Gw7Gti/EEMv+XFRkUzOHlAM2KBaof5oXrUF3lqabgUXjjT2z9rWqj+4+ssfmI+L3utJxs;
+Date: Wed, 23 Jun 2010 08:47:18 -0700
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: linux-fbdev@vger.kernel.org, dri-devel@lists.sf.net,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vt/console: try harder to print output when panicing
-Message-ID: <20100623084305.033df51e@virtuousgeek.org>
-In-Reply-To: <1277262779-19338-1-git-send-email-airlied@gmail.com>
-References: <1277262779-19338-1-git-send-email-airlied@gmail.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, Eric Anholt <eric@anholt.net>,
+       Chris Wilson <chris@chris-wilson.co.uk>,
+       Zhenyu Wang <zhenyuw@linux.intel.com>, nanhai.zou@intel.com,
+       Benny Halevy <bhalevy@panasas.com>, dri-devel@lists.freedesktop.org,
+       linux-kernel@vger.kernel.org, "Jin, Gordon" <gordon.jin@intel.com>
+Subject: Re: [patch] i915: take struct_mutex in i915_dma_cleanup()
+Message-ID: <20100623084718.2dfe6e7f@virtuousgeek.org>
+In-Reply-To: <20100623111954.GA16433@bicker>
+References: <20100623111954.GA16433@bicker>
 X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -28,31 +31,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jun 2010 13:12:59 +1000
-Dave Airlie <airlied@gmail.com> wrote:
+On Wed, 23 Jun 2010 13:19:55 +0200
+Dan Carpenter <error27@gmail.com> wrote:
 
-> From: Jesse Barnes <jbarnes@virtuousgeek.org>
+> intel_cleanup_ring_buffer() calls drm_gem_object_unreference() (as
+> opposed to drm_gem_object_unreference_unlocked()) so it needs to be
+> called with "struct_mutex" held.  If we don't hold the lock, it triggers
+> a BUG_ON(!mutex_is_locked(&dev->struct_mutex));
 > 
-> Jesse's initial patch commit said:
+> I also audited the other places that call intel_cleanup_ring_buffer()
+> and they all hold the lock so they're OK.
 > 
-> "At panic time (i.e. when oops_in_progress is set) we should try a bit
-> harder to update the screen and make sure output gets to the VT, since
-> some drivers are capable of flipping back to it.
+> This was introduced in: 8187a2b70e3 "drm/i915: introduce
+> intel_ring_buffer structure (V2)" and it's a regression from v2.6.34.
 > 
-> So make sure we try to unblank and update the display if called from a
-> panic context."
+> Addresses: https://bugzilla.kernel.org/show_bug.cgi?id=16247
 > 
-> I've enhanced this to add a flag to the vc that console layer can set
-> to indicate they want this behaviour to occur. This also adds support
-> to fbcon for that flag and adds an fb flag for drivers to indicate
-> they want to use the support. It enables this for KMS drivers.
-> 
-> Signed-off-by: Dave Airlie <airlied@redhat.com>
-> ---
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> Reported-by: Benny Halevy <bhalevy@panasas.com>
+> Tested-by: Benny Halevy <bhalevy@panasas.com>
 
-Yeah this looks a little nicer, thanks.
+Reminds me, Gordon can you add module unload testing to your set of
+basic daily tests?  To unload you need to unbind the fbcon interface
+first, my script is like this:
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+echo 0 > /sys/class/vtconsole/vtcon1/bind
+rmmod i915
+rmmod drm_kms_helper
+rmmod drm
+modprobe i915
+echo 1 > /sys/class/vtconsole/vtcon1/bind
 
+If unload and re-load doesn't work please file a bug and see if you can
+bisect it.
+
+Thanks,
 -- 
 Jesse Barnes, Intel Open Source Technology Center
