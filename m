@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab0FWAS1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 20:18:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39503 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753152Ab0FWASZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 20:18:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] MMC: fix all hangs related to mmc/sd card insert/removal during suspend/resume.
-Date: Wed, 23 Jun 2010 02:16:59 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
-       Adrian Hunter <adrian.hunter@nokia.com>,
-       "linux-mmc" <linux-mmc@vger.kernel.org>,
-       "linux-pm" <linux-pm@lists.linux-foundation.org>,
-       "linux-kernel" <linux-kernel@vger.kernel.org>,
-       Philip Langdale <philipl@overt.org>
-References: <1276809695.28201.13.camel@maxim-laptop> <201006222353.21349.rjw@sisk.pl> <20100622152006.d0ec0cef.akpm@linux-foundation.org>
-In-Reply-To: <20100622152006.d0ec0cef.akpm@linux-foundation.org>
+	id S1752997Ab0FWA01 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 20:26:27 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56283 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab0FWA0Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 20:26:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=gY4yuMfOXAT7DBjdV0vtCCKA1aqXqtz/akQ6jTeIGZmY12xj3lx+pJGZEKb57ec0yo
+         It+j1AwnnS7K6/YQe/0RzJ1u6CmKVGBqYKLySxP9PhOQMSsc3PUgWJwBbjgdlQE1ZYJ0
+         zHzbkB4J56Rws+QGjZnxsaxTmBN9Y17AMq6JA=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006230216.59894.rjw@sisk.pl>
+Date: Wed, 23 Jun 2010 09:26:24 +0900
+Message-ID: <AANLkTimxGK93hnV9-jGZAeeJ_JnrWCTaq-dkDvfUW6St@mail.gmail.com>
+Subject: SO_REUSEPORT
+From: Tim Prepscius <timprepscius@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 23, 2010, Andrew Morton wrote:
-> On Tue, 22 Jun 2010 23:53:21 +0200
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > On Tuesday, June 22, 2010, Maxim Levitsky wrote:
-> > > On Tue, 2010-06-22 at 11:19 +0200, Rafael J. Wysocki wrote: 
-> > > > On Tuesday, June 22, 2010, Maxim Levitsky wrote:
-> > > > > On Mon, 2010-06-21 at 22:26 +0200, Rafael J. Wysocki wrote: 
-> > ...
-> > > > > I *do* use freezable  work-queue.
-> > > > 
-> > > > I overlooked that, sorry.
-> > > > 
-> > > > > However since this is pm notifier, it is called before userspace and the
-> > > > > workqueue is frozen.
-> > > > > Therefore I would like manually to freeze the workqueue from the pm
-> > > > > notifier.
-> > > > 
-> > > > No, that won't work.  You need to find an alternative solution.  I guess you
-> > > > may insert a work item that's going to sleep until a condition is
-> > > > satisfied (analogous to a workqueue barrier) and wait for it to 
-> > > This screams to be done in generic way.
-> > > Something like suspend_workqueue() and resume_workqueue();
-> > 
-> > Well, there was no need for that until now. :-)
-> > 
-> > > In addition to that I just found that .suspend function sometimes can
-> > > return -ENOSYS, which triggers card removal. I wrongly remove that chunk
-> > > of code.
-> > > 
-> > > To make the thing picture perfect I would have to invest more time to
-> > > it, I will do so as soon as I finish my exams.
-> > > 
-> > > Meanwhile the current patch already fixes all but corner cases or rather
-> > > nasty hang on suspend with any MMC/SD card inserted.
-> > 
-> > OK
-> > 
-> > I think Andrew has already taken [2/2].
-> 
-> I took them both, but I need to come back to this discussion to work
-> out what to do with them now.
+Greetings gods of the linux kernel,
 
-I think they are worth merging.  At least they shouldn't break things and
-Maxim has already promised to clean up that code in future.
+Is SO_REUSEPORT available 2.6.ish - (or any version)?
+I've been searching for a conclusive answer to this question and can't
+find it.
 
-> > Andrew, who's maintaining MMC now?
-> 
-> Pierre stopped doing it, so I'm now pretending to.
-> 
-> I actually pretend to maintain a huge number of subsystems and should
-> sprinkle akpms all over MAINTAINERS so stuff doesn't get lost.
+(yes I know of SO_REUSEADDR, and I know the difference between this
+and *PORT, and yes I know that I *definitely* need SO_REUSEPORT, no,
+I'm unconcerned this may/may not be part of a "standard," yes I know
+it is implemented differently on different systems, yes I know there
+may be security problems, but no, I don't care about this.)
 
-I see.
 
-If you have anything PM-related, I can handle that too.
+If it's not, are there any patches available which might enable it?
+
+Could you point me in the right direction to find these patches?
+Google/Bing seem to be failing me, and/or I'm picking the wrong/
+unlucky search terms.
+
+
+Thanks a lot!
+
+-tim
