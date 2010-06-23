@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab0FWP6K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 11:58:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49868 "EHLO
+	id S1753806Ab0FWP6q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 11:58:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49879 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab0FWP6I (ORCPT
+	with ESMTP id S1753485Ab0FWP6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 11:58:08 -0400
-Date: Wed, 23 Jun 2010 16:58:06 +0100 (BST)
+	Wed, 23 Jun 2010 11:58:45 -0400
+Date: Wed, 23 Jun 2010 16:58:43 +0100 (BST)
 From: James Simmons <jsimmons@infradead.org>
-To: Dave Airlie <airlied@gmail.com>
-cc: linux-fbdev@vger.kernel.org, dri-devel@lists.sf.net,
-       linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
-       stable@kernel.org
-Subject: Re: [PATCH] fb: fix colliding defines for fb flags.
-In-Reply-To: <1277257612-8491-1-git-send-email-airlied@gmail.com>
-Message-ID: <alpine.LFD.2.00.1006231657410.7462@casper.infradead.org>
-References: <1277257612-8491-1-git-send-email-airlied@gmail.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+cc: linux-fbdev@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fbcon: deinline large static function get_color()
+In-Reply-To: <1277233556-14827-1-git-send-email-vda.linux@googlemail.com>
+Message-ID: <alpine.LFD.2.00.1006231658320.7462@casper.infradead.org>
+References: <1277233556-14827-1-git-send-email-vda.linux@googlemail.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,46 +24,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> From: Dave Airlie <airlied@redhat.com>
+> This function's body is good two screenfuls and it has six callsites.
+> No apparent reason why it is marked "iniline".
 > 
-> When I added the flags I must have been using a 25 line terminal and missed the following flags.
-> 
-> The collided with flag has one user in staging despite being in-tree for 5 years.
-> 
-> I'm happy to push this via my drm tree unless someone really wants to do it.
-> 
-> Signed-off-by: Dave Airlie <airlied@redhat.com>
-> Cc: stable@kernel.org
-> ---
->  include/linux/fb.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+> Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
 
 Signed-off-by: James Simmons <jsimmons@infradead.org>
- 
-> diff --git a/include/linux/fb.h b/include/linux/fb.h
-> index 907ace3..8e5a9df 100644
-> --- a/include/linux/fb.h
-> +++ b/include/linux/fb.h
-> @@ -786,8 +786,6 @@ struct fb_tile_ops {
->  #define FBINFO_MISC_USEREVENT          0x10000 /* event request
->  						  from userspace */
->  #define FBINFO_MISC_TILEBLITTING       0x20000 /* use tile blitting */
-> -#define FBINFO_MISC_FIRMWARE           0x40000 /* a replaceable firmware
-> -						  inited framebuffer */
+
+> ---
+>  drivers/video/console/fbcon.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+> index b0a3fa0..24983e4 100644
+> --- a/drivers/video/console/fbcon.c
+> +++ b/drivers/video/console/fbcon.c
+> @@ -286,7 +286,7 @@ static inline int fbcon_is_inactive(struct vc_data *vc, struct fb_info *info)
+>  		vc->vc_mode != KD_TEXT || ops->graphics);
+>  }
 >  
->  /* A driver may set this flag to indicate that it does want a set_par to be
->   * called every time when fbcon_switch is executed. The advantage is that with
-> @@ -801,6 +799,8 @@ struct fb_tile_ops {
->   */
->  #define FBINFO_MISC_ALWAYS_SETPAR   0x40000
->  
-> +/* where the fb is a firmware driver, and can be replaced with a proper one */
-> +#define FBINFO_MISC_FIRMWARE        0x80000
->  /*
->   * Host and GPU endianness differ.
->   */
+> -static inline int get_color(struct vc_data *vc, struct fb_info *info,
+> +static int get_color(struct vc_data *vc, struct fb_info *info,
+>  	      u16 c, int is_fg)
+>  {
+>  	int depth = fb_get_color_depth(&info->var, &info->fix);
 > -- 
-> 1.7.1
+> 1.6.2.5
 > 
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
