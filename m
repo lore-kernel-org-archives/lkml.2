@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab0FWRw2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 13:52:28 -0400
-Received: from old-tantale.fifi.org ([64.81.30.200]:35826 "EHLO
-	old-tantale.fifi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab0FWRw1 (ORCPT
+	id S1752188Ab0FWRz2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 13:55:28 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57604 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab0FWRz1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 13:52:27 -0400
-X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jun 2010 13:52:27 EDT
-To: Ben Guthro <ben@guthro.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: i915: Dell E6410 Ironlake LVDS detection
-References: <AANLkTim362_xv5FAyFSpdnAFUlILliEoGBW8_oZ4QVj1@mail.gmail.com>
-Mail-Copies-To: nobody
-From: Philippe Troin <phil@fifi.org>
-Date: 23 Jun 2010 10:42:55 -0700
-In-Reply-To: <AANLkTim362_xv5FAyFSpdnAFUlILliEoGBW8_oZ4QVj1@mail.gmail.com>
-Message-ID: <87bpb1fxwg.fsf@old-tantale.fifi.org>
-User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.2
+	Wed, 23 Jun 2010 13:55:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=WvdQmyzdYEiYb2CgmR1x7GH8uJ4pKbgTvqSjJdP3yMEsozlF+vSLrqkqUfZQR6QBic
+         M9i/3KkVaOqIEZDIXUnEoVe90I1Y4GubVOLpG/kDydK9yEfONKaGmKFd2p2vo4bzL1AA
+         z5/xD315qEtdoqBbyMU0WQ+wZHq8vPN43Wga4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <87bpb1fxwg.fsf@old-tantale.fifi.org>
+References: <AANLkTim362_xv5FAyFSpdnAFUlILliEoGBW8_oZ4QVj1@mail.gmail.com>
+	<87bpb1fxwg.fsf@old-tantale.fifi.org>
+Date: Wed, 23 Jun 2010 13:55:25 -0400
+X-Google-Sender-Auth: Ms7AFudhyEnBeg5PauEhBloi5dU
+Message-ID: <AANLkTinm1ZXybaAgCUGGPkK_YKaGmO9k2mduoy9ThnQ3@mail.gmail.com>
+Subject: Re: i915: Dell E6410 Ironlake LVDS detection
+From: Ben Guthro <ben@guthro.net>
+To: Philippe Troin <phil@fifi.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Guthro <ben@guthro.net> writes:
-
-> I have a problematic machine, that I have traced the problem down to
-> what I think is an issue with the i915 detection of the LVDS on the
-> Ironlake chip.
+On Wed, Jun 23, 2010 at 1:42 PM, Philippe Troin <phil@fifi.org> wrote:
+> I am seeing similar problems with an HP Elitebook 2540p.
 >
-> The machine in question is a Dell Latitude E6410 - i5 quad core
-> laptop, with the intel Ironlake chip, and the failure condition is
-> such that when the boot sequence switches into KMS mode, the screen
-> goes black, and never comes back.
+> 2.6.32 works for me.
+> 2.6.33.5 does not.
 
-I am seeing similar problems with an HP Elitebook 2540p.
+I have tried ubuntu mainline builds of:
 
-> My base install is Ubuntu 10.04, and I've spun through a few kernels
-> to try to bisect the problem. Unfortunately, I've been unable to find
-> a kernel that works (including the 2.6.35 RC's, and an ubuntu build of
-> drm-intel-next from the beginning of June)
+2.6.32.21
+2.6.32.22
+2.6.34-rc3
+2.6.35-rc1
+2.6.34-drm-intel-next
 
-2.6.32 works for me.
-2.6.33.5 does not.
+None have worked yet...
 
-I'm currently bisecting the issue, but I do it at a rate of one kernel
-a day, so I will need a few more days.
+> I'm not sure if this hardware has a LVDS connector.
 
-> I can get the machine to come up on an external display, if switched
-> at the BIOS screen...but /sys/class/card0 never shows an LVDS
-> connector...and dmesg doesn't seem to be throwing any errors.
+Apologies...mistyped. I meant the LVDS internal display, not connector.
 
-I'm not sure if this hardware has a LVDS connector.
+> I was able to boot it with i915 loaded (-> black screen), ssh in and
+> run xrandr.  Xrandr reported 6 connectors, none of them named LVDS.
+> It think they were named FP[123].
+>
+> I was able to turn on an external display connected via VGA with
+> xrandr and it seemed to be working fine?
 
-I was able to boot it with i915 loaded (-> black screen), ssh in and
-run xrandr.  Xrandr reported 6 connectors, none of them named LVDS.
-It think they were named FP[123].
+When I boot without the external display, I am never able to ssh in -
+and I do not get the sound that typically plays when X is booted.
 
-I was able to turn on an external display connected via VGA with
-xrandr and it seemed to be working fine?
-
-Phil.
+I've put this onto a serial line, and it seems to hang sometime in
+init...with some indicators that it is when it switches over to the
+higher resolution console...but the screen is black, so this is really
+just a gut feel.
