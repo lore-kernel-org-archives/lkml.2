@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab0FWUil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 16:38:41 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:8395 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab0FWUij (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 16:38:39 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6022"; a="45321633"
-From: Gregory Bean <gbean@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH 0/3 v3] msm: Add gpiolib devices to MSM7x30 and QSD8x50.
-Date: Wed, 23 Jun 2010 13:38:33 -0700
-Message-Id: <1277325516-24111-1-git-send-email-gbean@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753707Ab0FWUiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 16:38:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47772 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753390Ab0FWUit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 16:38:49 -0400
+Date: Wed, 23 Jun 2010 22:36:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Louis Rilling <louis.rilling@kerlabs.com>,
+       Pavel Emelyanov <xemul@openvz.org>,
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1] pid_ns: move pid_ns_release_proc() from
+	proc_flush_task() to zap_pid_ns_processes()
+Message-ID: <20100623203652.GA25298@redhat.com>
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com> <20100617212003.GA4182@redhat.com> <20100618082033.GD16877@hawkmoon.kerlabs.com> <20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com> <20100618173320.GG16877@hawkmoon.kerlabs.com> <20100618175541.GA13680@redhat.com> <20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100619190840.GA3424@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks:
+On 06/19, Oleg Nesterov wrote:
+>
+> But first of all I think we should cleanup the pid_ns_prepare_proc()
+> logic. Imho, this code is really ugly. Please see the patches.
+>
+> The last one, 4/4, is orthogonal to other changes.
 
-Here is a proposed patch series which adds the configuration and devices
-needed to enable gpiolib on the MSM7x30 and QSD8x50 chipsets.
+And the last one on top of this series, before I go away from this
+thread ;)
 
-Thanks,
+Since my further fixes were not approved, I think at least it makes
+sense to cleanup pid_ns_release_proc() logic a bit.
 
-G
+Oleg.
 
-Gregory Bean (3):
-  msm: Add gpio register address mapping information.
-  msm: 7x30: Add gpio device configuration.
-  msm: 8x50: add gpio device configuration.
-
- arch/arm/mach-msm/board-msm7x30.c     |   27 ++++++++-
- arch/arm/mach-msm/board-qsd8x50.c     |   27 ++++++++-
- arch/arm/mach-msm/devices-msm7x30.c   |   21 +++++++
- arch/arm/mach-msm/devices-qsd8x50.c   |   21 +++++++
- arch/arm/mach-msm/devices.h           |   33 +++++++++++
- arch/arm/mach-msm/gpio_hw-7x30.h      |  100 +++++++++++++++++++++++++++++++++
- arch/arm/mach-msm/gpio_hw-7xxx.h      |   84 +++++++++++++++++++++++++++
- arch/arm/mach-msm/gpio_hw-8x50.h      |  100 +++++++++++++++++++++++++++++++++
- arch/arm/mach-msm/gpio_hw.h           |   35 +++++++++++
- arch/arm/mach-msm/include/mach/gpio.h |    2 +
- 10 files changed, 446 insertions(+), 4 deletions(-)
- create mode 100644 arch/arm/mach-msm/gpio_hw-7x30.h
- create mode 100644 arch/arm/mach-msm/gpio_hw-7xxx.h
- create mode 100644 arch/arm/mach-msm/gpio_hw-8x50.h
- create mode 100644 arch/arm/mach-msm/gpio_hw.h
-
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
