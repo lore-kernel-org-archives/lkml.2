@@ -1,134 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751066Ab0FWEdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 00:33:10 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:36186 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab0FWEdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 00:33:08 -0400
-Message-ID: <4C218E7D.8070006@in.ibm.com>
-Date: Wed, 23 Jun 2010 10:03:01 +0530
-From: Sachin Sant <sachinp@in.ibm.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+	id S1751000Ab0FWEmi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 00:42:38 -0400
+Received: from n2b.bullet.mail.ac4.yahoo.com ([76.13.13.72]:42325 "HELO
+	n2b.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750829Ab0FWEmh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 00:42:37 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 287727.92202.bm@omp120.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=TGMWDrkCqBuvsK+gIG6eSlmWCZ3dAf66ufSRyx2Rkk667RjChKQmLxlIB2tTaR5pL8n2R8bLc9azxrCQ16VZBHrXOmnfgEtzDiRbS6qNmz7OKm9d2jcIRnEcLKQXe4Rf8wLu5iwImiboSnYJ9Y3saJiBPm1KsoDs56EwOHm5syI=;
+Message-ID: <191168.5104.qm@web180308.mail.gq1.yahoo.com>
+X-YMail-OSG: 1ewCgpoVM1lMVUXBzyvU.lJSn4iociIoo.ooK5qiOwepAY8
+ 36kxAfET4YdZOnzEJgY93I3IpYZh_IE9kNMXPpIVmH_uERyp2ZPg7dmDnGe1
+ WJ5pifHPREfK62FGbmd.aLgvkUNU910Fxhssu9bXzvuMcX2rLWKPoqRESsPS
+ iUKALgDTIlsTEaO8j0_Zw.782XeR1MGqa1BEgaK.X0lEKyYLl7.AQ3hmuNob
+ X7kUTqHCm8Exz5OWo51AFcUQe21.PS3u8Zcan68b7IEMI7jTqGDkKg0nnGs.
+ oY7q9fdE5X8.PSbJ3.cags9TCbJgIQty2DWvFTvmQMnGyUFZl3AlkzaAmhZI
+ JPH_CSW_ybNw.cAfMF58ATndrejG0.zMocRU-
+X-Mailer: YahooMailClassic/11.1.4 YahooMailWebService/0.8.103.269680
+Date: Tue, 22 Jun 2010 21:37:47 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [RFC PATCH] Rework gpio cansleep (was Re: gpiolib and sleeping gpios)
+To: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       Ryan Mallon <ryan@bluewatersys.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
+       linux kernel <linux-kernel@vger.kernel.org>,
+       ext-jani.1.nikula@nokia.com, Andrew Morton <akpm@linux-foundation.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <4C216A79.7000305@bluewatersys.com>
 MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>, Avi Kivity <avi@redhat.com>,
-       Carsten Otte <cotte@de.ibm.com>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, linux-s390@vger.kernel.org,
-       Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: next June 10: S390 build failure [arch/s390/kvm/kvm.ko]
-References: <20100610160012.30ea7606.sfr@canb.auug.org.au> <4C10DCB7.7090903@in.ibm.com> <20100610154848.616aff99@mschwide.boeblingen.de.ibm.com> <201006120854.14259.borntraeger@de.ibm.com>
-In-Reply-To: <201006120854.14259.borntraeger@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christian Borntraeger wrote:
-> Am Donnerstag 10 Juni 2010, 15:48:48 schrieb Martin Schwidefsky:
->   
->> On Thu, 10 Jun 2010 18:08:15 +0530
->> Sachin Sant <sachinp@in.ibm.com> wrote:
->>
->>     
->>> Today's next fails to build on a s390 box with
->>>
->>> ERROR: "__kvm_s390_vcpu_store_status" [arch/s390/kvm/kvm.ko] undefined!
->>>
->>> Yesterday's next was good.
->>>       
->> That is caused by git commit fbc5eec58e652339e9df1332cd5e10e8d8250aaf
->> which fails to take git commit 5288fbf0ef041ba0e8b4dcb2df4536b5e3a48b32
->> into account. There is a second caller of __kvm_s390_vcpu_store_status
->> in arch/s390/kvm/intercept.c. As far as I understand the code you could
->> just drop the 'static' from kvm_s390_vcpu_store_status and call it from
->> handle_stop instead of the old __kvm_s390_vcpu_store_status.
->>
->> Carsten, Christian: could one of you have a look please?
->>     
->
-> that patch should do the trick. Avi can you add that to kvm.git?
->
-> kvm-s390: Fix build failure 
->   
-ping on the patch. Still not merged with next.
-
-Thanks
--Sachin
-
-> This patch fixes 
-> ERROR: "__kvm_s390_vcpu_store_status" [arch/s390/kvm/kvm.ko] undefined!
->
-> triggered by
-> commit 3268c56840dcee78c3e928336550f4e1861504c4 (kvm.git)
-> Author: Avi Kivity <avi@redhat.com>
-> Date:   Thu May 13 12:21:46 2010 +0300
->     KVM: s390: Centrally lock arch specific vcpu ioctls
->     
-> Reported-by: Sachin Sant <sachinp@in.ibm.com>
-> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
->
-> ---
->  arch/s390/kvm/intercept.c |    2 +-
->  arch/s390/kvm/kvm-s390.c  |    2 +-
->  arch/s390/kvm/kvm-s390.h  |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
->
-> Index: kvm/arch/s390/kvm/intercept.c
-> ===================================================================
-> --- kvm.orig/arch/s390/kvm/intercept.c
-> +++ kvm/arch/s390/kvm/intercept.c
-> @@ -135,7 +135,7 @@ static int handle_stop(struct kvm_vcpu *
->  	spin_lock_bh(&vcpu->arch.local_int.lock);
->  	if (vcpu->arch.local_int.action_bits & ACTION_STORE_ON_STOP) {
->  		vcpu->arch.local_int.action_bits &= ~ACTION_STORE_ON_STOP;
-> -		rc = __kvm_s390_vcpu_store_status(vcpu,
-> +		rc = kvm_s390_vcpu_store_status(vcpu,
->  						  KVM_S390_STORE_STATUS_NOADDR);
->  		if (rc >= 0)
->  			rc = -EOPNOTSUPP;
-> Index: kvm/arch/s390/kvm/kvm-s390.c
-> ===================================================================
-> --- kvm.orig/arch/s390/kvm/kvm-s390.c
-> +++ kvm/arch/s390/kvm/kvm-s390.c
-> @@ -569,7 +569,7 @@ static int __guestcopy(struct kvm_vcpu *
->   * KVM_S390_STORE_STATUS_NOADDR: -> 0x1200 on 64 bit
->   * KVM_S390_STORE_STATUS_PREFIXED: -> prefix
->   */
-> -static int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu, unsigned long addr)
-> +int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu, unsigned long addr)
->  {
->  	const unsigned char archmode = 1;
->  	int prefix;
-> Index: kvm/arch/s390/kvm/kvm-s390.h
-> ===================================================================
-> --- kvm.orig/arch/s390/kvm/kvm-s390.h
-> +++ kvm/arch/s390/kvm/kvm-s390.h
-> @@ -92,7 +92,7 @@ int kvm_s390_handle_b2(struct kvm_vcpu *
->  int kvm_s390_handle_sigp(struct kvm_vcpu *vcpu);
->
->  /* implemented in kvm-s390.c */
-> -int __kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu,
-> +int kvm_s390_vcpu_store_status(struct kvm_vcpu *vcpu,
->  				 unsigned long addr);
->  /* implemented in diag.c */
->  int kvm_s390_handle_diag(struct kvm_vcpu *vcpu);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-s390" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->   
 
 
--- 
+--- On Tue, 6/22/10, Ryan Mallon <ryan@bluewatersys.com> wrote:
 
----------------------------------
-Sachin Sant
-IBM Linux Technology Center
-India Systems and Technology Labs
-Bangalore, India
----------------------------------
+
+> gpiolib
+
+
+Again, you're talking about "gpiolib" when
+you seem to mean the GPIO framework itself
+(for which gpiolib is only an implementation
+option)...
+
+> framework could be simplified for cansleep gpios.
+> 
+> 'Can sleep' for a gpio has two different meanings depending
+> on context
+
+NO; for the GPIO itself it's only ever had one
+meaning, regardless of context.
+
+You're trying to conflate the GPIO and one
+of the contexts in which it's used.  That's
+the problem you seem to be struggling with.
+
+Please stop conflating/confusing
+those two disparate concepts...
+
+I hope you don't have such a hard time with
+the distinction in other contexts.  Like,
+the fact that some calls can't be made while
+holding spinlocks.  That notion is everywhere
+in Linux.
+
+
+> example, if a driver calls gpio_get_value(gpio) from an
+> interupt handler
+> then the gpio must not be a sleeping gpio.
+
+In a threaded IRQ handler it's OK to use
+the get_value_cansleep() option..
+
+
+
+> 
+> This patch introduces a new flag, FLAG_CANSLEEP, internal
+> to gpiolib
+
+NAK; Superfluous; the gpio_chip already has
+that information recorded.
+
+
+> new request function, gpio_request_cansleep, requests a
+> gpio which may
+> only be used from sleep possible contexts
+
+Also superfluous.
+
+
+ The existing
+> gpio_request
+> function requests a gpio, but does not allow it to be used
+> from a
+> context where sleep is not possible.
+
+Changing semantics of existing calls is a big
+mess, and should be avoided even if it seems
+appropriate.
+
+Since the request is just reserving a resource
+that's already been identified (and which has
+known characteristics, like whether the GPIO
+value must be accessed only from sleeping
+contexts), this call would also be superfluous.
+
+If you want to ensure the GPIO is a cansleep()
+one, just check that before reserving it.  There
+is no need for new calls to support that model;
+it works today.
+
+(NAK...)
+
+
+
+> The benefits I see to this approach are:
+>  ...
+>  - The API is simplified by combining gpio_(set/get)_value
+> and
+> gpio_(set/get)_value_cansleep
+
+
+You have a strange definition of "simplified"...
+
+Recognize that you're also proposing to remove
+an API characteristic which much simplifies
+code review:  you can look at calls and see
+that because they're the cansleep() version,
+they are unsafe in IRQ context ...
+
+That is, you're making code (and patch)
+reviews much harder and more error-prone.
+This isn't good, and doesn't simplify any
+process I can think of...
+
+So, NAK on these proposed changes.
+
+- Dave
+
 
