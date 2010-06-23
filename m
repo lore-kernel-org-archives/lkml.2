@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab0FWNCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 09:02:55 -0400
+	id S1752594Ab0FWNDA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 09:03:00 -0400
 Received: from mail-ww0-f46.google.com ([74.125.82.46]:58323 "EHLO
 	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab0FWNCx (ORCPT
+	with ESMTP id S1751494Ab0FWNCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 09:02:53 -0400
+	Wed, 23 Jun 2010 09:02:55 -0400
 From: Ohad Ben-Cohen <ohad@wizery.com>
 To: Greg KH <greg@kroah.com>
 Cc: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
@@ -25,397 +25,382 @@ Cc: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
        Deepak Chitriki <deepak.chitriki@ti.com>, Menon Nishanth <nm@ti.com>,
        Phil Carmody <ext-phil.2.carmody@nokia.com>,
        Pitney Gilbert <gpitney@ti.com>, Bhavin Shah <bshah@ti.com>,
+       Omar Ramirez Luna <omar.ramirez@ti.com>,
        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH 00/11] staging: add ti dspbridge driver
-Date: Wed, 23 Jun 2010 16:01:54 +0300
-Message-Id: <1277298125-17991-1-git-send-email-ohad@wizery.com>
+Subject: [PATCH 01/11] staging: ti dspbridge: add driver documentation
+Date: Wed, 23 Jun 2010 16:01:55 +0300
+Message-Id: <1277298125-17991-2-git-send-email-ohad@wizery.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1277298125-17991-1-git-send-email-ohad@wizery.com>
+References: <1277298125-17991-1-git-send-email-ohad@wizery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add TI's DSP Bridge driver to the staging area.
+From: Omar Ramirez Luna <omar.ramirez@ti.com>
 
-TI's DSP Bridge driver supplies a direct link between 
-host applications and DSP tasks running on a remote processor.
+Add a README with a general overview of TI's DSP Bridge driver,
+a short explanations of how error codes are currently used,
+and a CONTRIBUTORS file with all past & present contributors.
 
-Please pull from:
+For additional information about TI's DSP Bridge,
+check out http://omapzoom.org/gf/project/omapbridge/docman/?subdir=3
 
-git://wizery.com/pub/tidspbridge.git for-greg
+Note: if by any chance we forgot to mention any contributor,
+please let us know and we will fix that.
 
-The patches will be sent as a follow-on to this message to lkml and l-o for
-people to see.
-
-The patches are the result of a staging relocation and a linux-next
-rebase of 85343cd5491260881b34ab7bb7cdc8fdeef078e4 at
-git://dev.omapzoom.org/pub/scm/tidspbridge/kernel-dspbridge.git dspbridge
-
-For more information about TI's DSP Bridge, check out the 
-submitted documentation and also:
-http://omapzoom.org/gf/project/omapbridge/docman/?subdir=3
-
-The DSP/Bridge project wish to thank all of its contributors;
-current bridge driver is the result of the work of all of them.
-
-The following is an alphabetical order of all contributors (that we
-know of. If by any chance we forgot to mention anyone, please let
-us know, thanks!):
-
-	Suman Anna
-	Sripal Bagadia
-	Felipe Balbi
-	Ohad Ben-Cohen
-	Phil Carmody
-	Deepak Chitriki
-	Felipe Contreras
-	Hiroshi Doyu
-	Seth Forshee
-	Ivan Gomez Castellanos
-	Mark Grosen
-	Ramesh Gupta G
-	Fernando Guzman Lugo
-	Axel Haslam
-	Janet Head
-	Shivananda Hebbar
-	Hari Kanigeri
-	Tony Lindgren
-	Antonio Luna
-	Hari Nagalla
-	Nishanth Menon
-	Ameya Palande
-	Vijay Pasam
-	Gilbert Pitney
-	Omar Ramirez Luna
-	Ernesto Ramos
-	Chris Ring
-	Larry Schiefer
-	Rebecca Schultz Zavin
-	Bhavin Shah
-	Andy Shevchenko
-	Jeff Taylor
-	Roman Tereshonkov
-	Armando Uribe de Leon
-	Nischal Varide
-	Wenbiao Wang
-
-Thanks,
-
-Ohad Ben-Cohen (1):
-  staging: ti dspbridge: add TODO file
-
-Omar Ramirez Luna (10):
-  staging: ti dspbridge: add driver documentation
-  staging: ti dspbridge: add core driver sources
-  staging: ti dspbridge: add platform manager code
-  staging: ti dspbridge: add resource manager
-  staging: ti dspbridge: add MMU support
-  staging: ti dspbridge: add generic utilities
-  staging: ti dspbridge: add services
-  staging: ti dspbridge: add DOFF binaries loader
-  staging: ti dspbridge: add header files
-  staging: ti dspbridge: enable driver building
-
- drivers/staging/Kconfig                            |    2 +
- drivers/staging/Makefile                           |    1 +
- .../staging/tidspbridge/Documentation/CONTRIBUTORS |   82 +
- drivers/staging/tidspbridge/Documentation/README   |   70 +
- .../staging/tidspbridge/Documentation/error-codes  |  157 +
- drivers/staging/tidspbridge/Kconfig                |   88 +
- drivers/staging/tidspbridge/Makefile               |   34 +
- drivers/staging/tidspbridge/TODO                   |   18 +
- drivers/staging/tidspbridge/core/_cmm.h            |   45 +
- drivers/staging/tidspbridge/core/_deh.h            |   35 +
- drivers/staging/tidspbridge/core/_msg_sm.h         |  142 +
- drivers/staging/tidspbridge/core/_tiomap.h         |  377 +++
- drivers/staging/tidspbridge/core/_tiomap_pwr.h     |   85 +
- drivers/staging/tidspbridge/core/chnl_sm.c         | 1015 ++++++
- drivers/staging/tidspbridge/core/dsp-clock.c       |  421 +++
- drivers/staging/tidspbridge/core/io_sm.c           | 2410 +++++++++++++++
- drivers/staging/tidspbridge/core/mmu_fault.c       |  139 +
- drivers/staging/tidspbridge/core/mmu_fault.h       |   36 +
- drivers/staging/tidspbridge/core/msg_sm.c          |  673 ++++
- drivers/staging/tidspbridge/core/tiomap3430.c      | 1887 ++++++++++++
- drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |  604 ++++
- drivers/staging/tidspbridge/core/tiomap_io.c       |  458 +++
- drivers/staging/tidspbridge/core/tiomap_io.h       |  104 +
- drivers/staging/tidspbridge/core/ue_deh.c          |  303 ++
- drivers/staging/tidspbridge/core/wdt.c             |  150 +
- drivers/staging/tidspbridge/dynload/cload.c        | 1960 ++++++++++++
- .../staging/tidspbridge/dynload/dload_internal.h   |  351 +++
- drivers/staging/tidspbridge/dynload/doff.h         |  344 +++
- drivers/staging/tidspbridge/dynload/getsection.c   |  416 +++
- drivers/staging/tidspbridge/dynload/header.h       |   55 +
- drivers/staging/tidspbridge/dynload/module_list.h  |  159 +
- drivers/staging/tidspbridge/dynload/params.h       |  226 ++
- drivers/staging/tidspbridge/dynload/reloc.c        |  484 +++
- drivers/staging/tidspbridge/dynload/reloc_table.h  |  102 +
- .../tidspbridge/dynload/reloc_table_c6000.c        |  257 ++
- drivers/staging/tidspbridge/dynload/tramp.c        | 1143 +++++++
- .../tidspbridge/dynload/tramp_table_c6000.c        |  164 +
- drivers/staging/tidspbridge/gen/gb.c               |  167 +
- drivers/staging/tidspbridge/gen/gh.c               |  213 ++
- drivers/staging/tidspbridge/gen/gs.c               |   89 +
- drivers/staging/tidspbridge/gen/uuidutil.c         |  223 ++
- drivers/staging/tidspbridge/hw/EasiGlobal.h        |   41 +
- drivers/staging/tidspbridge/hw/GlobalTypes.h       |  308 ++
- drivers/staging/tidspbridge/hw/MMUAccInt.h         |   76 +
- drivers/staging/tidspbridge/hw/MMURegAcM.h         |  226 ++
- drivers/staging/tidspbridge/hw/hw_defs.h           |   60 +
- drivers/staging/tidspbridge/hw/hw_mmu.c            |  587 ++++
- drivers/staging/tidspbridge/hw/hw_mmu.h            |  161 +
- .../tidspbridge/include/dspbridge/_chnl_sm.h       |  181 ++
- .../tidspbridge/include/dspbridge/brddefs.h        |   39 +
- .../staging/tidspbridge/include/dspbridge/cfg.h    |  222 ++
- .../tidspbridge/include/dspbridge/cfgdefs.h        |   81 +
- .../staging/tidspbridge/include/dspbridge/chnl.h   |  130 +
- .../tidspbridge/include/dspbridge/chnldefs.h       |   67 +
- .../tidspbridge/include/dspbridge/chnlpriv.h       |  101 +
- .../staging/tidspbridge/include/dspbridge/clk.h    |  101 +
- .../staging/tidspbridge/include/dspbridge/cmm.h    |  386 +++
- .../tidspbridge/include/dspbridge/cmmdefs.h        |  105 +
- .../staging/tidspbridge/include/dspbridge/cod.h    |  369 +++
- .../staging/tidspbridge/include/dspbridge/dbc.h    |   46 +
- .../staging/tidspbridge/include/dspbridge/dbdcd.h  |  358 +++
- .../tidspbridge/include/dspbridge/dbdcddef.h       |   78 +
- .../staging/tidspbridge/include/dspbridge/dbdefs.h |  546 ++++
- .../tidspbridge/include/dspbridge/dbldefs.h        |  140 +
- .../staging/tidspbridge/include/dspbridge/dbll.h   |   59 +
- .../tidspbridge/include/dspbridge/dblldefs.h       |  496 +++
- .../staging/tidspbridge/include/dspbridge/dbtype.h |   88 +
- .../tidspbridge/include/dspbridge/dehdefs.h        |   32 +
- .../staging/tidspbridge/include/dspbridge/dev.h    |  702 +++++
- .../tidspbridge/include/dspbridge/devdefs.h        |   26 +
- .../staging/tidspbridge/include/dspbridge/disp.h   |  204 ++
- .../tidspbridge/include/dspbridge/dispdefs.h       |   35 +
- .../staging/tidspbridge/include/dspbridge/dmm.h    |   75 +
- .../staging/tidspbridge/include/dspbridge/drv.h    |  522 ++++
- .../tidspbridge/include/dspbridge/drvdefs.h        |   25 +
- .../tidspbridge/include/dspbridge/dspapi-ioctl.h   |  475 +++
- .../staging/tidspbridge/include/dspbridge/dspapi.h |  167 +
- .../tidspbridge/include/dspbridge/dspchnl.h        |   72 +
- .../tidspbridge/include/dspbridge/dspdefs.h        | 1128 +++++++
- .../staging/tidspbridge/include/dspbridge/dspdeh.h |   47 +
- .../staging/tidspbridge/include/dspbridge/dspdrv.h |   62 +
- .../staging/tidspbridge/include/dspbridge/dspio.h  |   41 +
- .../tidspbridge/include/dspbridge/dspioctl.h       |   73 +
- .../staging/tidspbridge/include/dspbridge/dspmsg.h |   56 +
- .../tidspbridge/include/dspbridge/dynamic_loader.h |  492 +++
- drivers/staging/tidspbridge/include/dspbridge/gb.h |   79 +
- .../tidspbridge/include/dspbridge/getsection.h     |  108 +
- drivers/staging/tidspbridge/include/dspbridge/gh.h |   32 +
- drivers/staging/tidspbridge/include/dspbridge/gs.h |   59 +
- .../tidspbridge/include/dspbridge/host_os.h        |   89 +
- drivers/staging/tidspbridge/include/dspbridge/io.h |  114 +
- .../staging/tidspbridge/include/dspbridge/io_sm.h  |  309 ++
- .../staging/tidspbridge/include/dspbridge/iodefs.h |   36 +
- .../staging/tidspbridge/include/dspbridge/ldr.h    |   29 +
- .../staging/tidspbridge/include/dspbridge/list.h   |  225 ++
- .../staging/tidspbridge/include/dspbridge/mbx_sh.h |  198 ++
- .../tidspbridge/include/dspbridge/memdefs.h        |   30 +
- .../staging/tidspbridge/include/dspbridge/mgr.h    |  205 ++
- .../tidspbridge/include/dspbridge/mgrpriv.h        |   45 +
- .../staging/tidspbridge/include/dspbridge/msg.h    |   86 +
- .../tidspbridge/include/dspbridge/msgdefs.h        |   29 +
- .../staging/tidspbridge/include/dspbridge/nldr.h   |   55 +
- .../tidspbridge/include/dspbridge/nldrdefs.h       |  293 ++
- .../staging/tidspbridge/include/dspbridge/node.h   |  579 ++++
- .../tidspbridge/include/dspbridge/nodedefs.h       |   28 +
- .../tidspbridge/include/dspbridge/nodepriv.h       |  182 ++
- .../staging/tidspbridge/include/dspbridge/ntfy.h   |  217 ++
- .../staging/tidspbridge/include/dspbridge/proc.h   |  621 ++++
- .../tidspbridge/include/dspbridge/procpriv.h       |   25 +
- .../staging/tidspbridge/include/dspbridge/pwr.h    |  107 +
- .../staging/tidspbridge/include/dspbridge/pwr_sh.h |   33 +
- .../include/dspbridge/resourcecleanup.h            |   63 +
- .../staging/tidspbridge/include/dspbridge/rmm.h    |  181 ++
- .../staging/tidspbridge/include/dspbridge/rms_sh.h |   95 +
- .../tidspbridge/include/dspbridge/rmstypes.h       |   28 +
- .../tidspbridge/include/dspbridge/services.h       |   50 +
- .../staging/tidspbridge/include/dspbridge/std.h    |   94 +
- .../staging/tidspbridge/include/dspbridge/strm.h   |  404 +++
- .../tidspbridge/include/dspbridge/strmdefs.h       |   46 +
- .../staging/tidspbridge/include/dspbridge/sync.h   |  109 +
- .../tidspbridge/include/dspbridge/utildefs.h       |   39 +
- .../tidspbridge/include/dspbridge/uuidutil.h       |   62 +
- .../staging/tidspbridge/include/dspbridge/wdt.h    |   79 +
- drivers/staging/tidspbridge/pmgr/chnl.c            |  163 +
- drivers/staging/tidspbridge/pmgr/chnlobj.h         |   46 +
- drivers/staging/tidspbridge/pmgr/cmm.c             | 1172 +++++++
- drivers/staging/tidspbridge/pmgr/cod.c             |  658 ++++
- drivers/staging/tidspbridge/pmgr/dbll.c            | 1585 ++++++++++
- drivers/staging/tidspbridge/pmgr/dev.c             | 1171 +++++++
- drivers/staging/tidspbridge/pmgr/dmm.c             |  533 ++++
- drivers/staging/tidspbridge/pmgr/dspapi.c          | 1685 ++++++++++
- drivers/staging/tidspbridge/pmgr/io.c              |  142 +
- drivers/staging/tidspbridge/pmgr/ioobj.h           |   38 +
- drivers/staging/tidspbridge/pmgr/msg.c             |  129 +
- drivers/staging/tidspbridge/pmgr/msgobj.h          |   38 +
- drivers/staging/tidspbridge/rmgr/dbdcd.c           | 1506 +++++++++
- drivers/staging/tidspbridge/rmgr/disp.c            |  754 +++++
- drivers/staging/tidspbridge/rmgr/drv.c             | 1047 +++++++
- drivers/staging/tidspbridge/rmgr/drv_interface.c   |  644 ++++
- drivers/staging/tidspbridge/rmgr/drv_interface.h   |   27 +
- drivers/staging/tidspbridge/rmgr/dspdrv.c          |  142 +
- drivers/staging/tidspbridge/rmgr/mgr.c             |  374 +++
- drivers/staging/tidspbridge/rmgr/nldr.c            | 1999 ++++++++++++
- drivers/staging/tidspbridge/rmgr/node.c            | 3231 ++++++++++++++++++++
- drivers/staging/tidspbridge/rmgr/proc.c            | 1948 ++++++++++++
- drivers/staging/tidspbridge/rmgr/pwr.c             |  182 ++
- drivers/staging/tidspbridge/rmgr/rmm.c             |  535 ++++
- drivers/staging/tidspbridge/rmgr/strm.c            |  861 ++++++
- drivers/staging/tidspbridge/services/cfg.c         |  253 ++
- drivers/staging/tidspbridge/services/ntfy.c        |   31 +
- drivers/staging/tidspbridge/services/services.c    |   69 +
- drivers/staging/tidspbridge/services/sync.c        |  104 +
- 152 files changed, 51105 insertions(+), 0 deletions(-)
+Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
+Signed-off-by: Kanigeri, Hari <h-kanigeri2@ti.com>
+Signed-off-by: Ameya Palande <ameya.palande@nokia.com>
+Signed-off-by: Guzman Lugo, Fernando <fernando.lugo@ti.com>
+Signed-off-by: Hebbar, Shivananda <x0hebbar@ti.com>
+Signed-off-by: Ramos Falcon, Ernesto <ernesto@ti.com>
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+Signed-off-by: Anna, Suman <s-anna@ti.com>
+Signed-off-by: Gupta, Ramesh <grgupta@ti.com>
+Signed-off-by: Gomez Castellanos, Ivan <ivan.gomez@ti.com>
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Signed-off-by: Armando Uribe De Leon <x0095078@ti.com>
+Signed-off-by: Deepak Chitriki <deepak.chitriki@ti.com>
+Signed-off-by: Menon, Nishanth <nm@ti.com>
+Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+---
+ .../staging/tidspbridge/Documentation/CONTRIBUTORS |   82 ++++++++++
+ drivers/staging/tidspbridge/Documentation/README   |   70 +++++++++
+ .../staging/tidspbridge/Documentation/error-codes  |  157 ++++++++++++++++++++
+ 3 files changed, 309 insertions(+), 0 deletions(-)
  create mode 100644 drivers/staging/tidspbridge/Documentation/CONTRIBUTORS
  create mode 100644 drivers/staging/tidspbridge/Documentation/README
  create mode 100644 drivers/staging/tidspbridge/Documentation/error-codes
- create mode 100644 drivers/staging/tidspbridge/Kconfig
- create mode 100644 drivers/staging/tidspbridge/Makefile
- create mode 100644 drivers/staging/tidspbridge/TODO
- create mode 100644 drivers/staging/tidspbridge/core/_cmm.h
- create mode 100644 drivers/staging/tidspbridge/core/_deh.h
- create mode 100644 drivers/staging/tidspbridge/core/_msg_sm.h
- create mode 100644 drivers/staging/tidspbridge/core/_tiomap.h
- create mode 100644 drivers/staging/tidspbridge/core/_tiomap_pwr.h
- create mode 100644 drivers/staging/tidspbridge/core/chnl_sm.c
- create mode 100644 drivers/staging/tidspbridge/core/dsp-clock.c
- create mode 100644 drivers/staging/tidspbridge/core/io_sm.c
- create mode 100644 drivers/staging/tidspbridge/core/mmu_fault.c
- create mode 100644 drivers/staging/tidspbridge/core/mmu_fault.h
- create mode 100644 drivers/staging/tidspbridge/core/msg_sm.c
- create mode 100644 drivers/staging/tidspbridge/core/tiomap3430.c
- create mode 100644 drivers/staging/tidspbridge/core/tiomap3430_pwr.c
- create mode 100644 drivers/staging/tidspbridge/core/tiomap_io.c
- create mode 100644 drivers/staging/tidspbridge/core/tiomap_io.h
- create mode 100644 drivers/staging/tidspbridge/core/ue_deh.c
- create mode 100644 drivers/staging/tidspbridge/core/wdt.c
- create mode 100644 drivers/staging/tidspbridge/dynload/cload.c
- create mode 100644 drivers/staging/tidspbridge/dynload/dload_internal.h
- create mode 100644 drivers/staging/tidspbridge/dynload/doff.h
- create mode 100644 drivers/staging/tidspbridge/dynload/getsection.c
- create mode 100644 drivers/staging/tidspbridge/dynload/header.h
- create mode 100644 drivers/staging/tidspbridge/dynload/module_list.h
- create mode 100644 drivers/staging/tidspbridge/dynload/params.h
- create mode 100644 drivers/staging/tidspbridge/dynload/reloc.c
- create mode 100644 drivers/staging/tidspbridge/dynload/reloc_table.h
- create mode 100644 drivers/staging/tidspbridge/dynload/reloc_table_c6000.c
- create mode 100644 drivers/staging/tidspbridge/dynload/tramp.c
- create mode 100644 drivers/staging/tidspbridge/dynload/tramp_table_c6000.c
- create mode 100644 drivers/staging/tidspbridge/gen/gb.c
- create mode 100644 drivers/staging/tidspbridge/gen/gh.c
- create mode 100644 drivers/staging/tidspbridge/gen/gs.c
- create mode 100644 drivers/staging/tidspbridge/gen/uuidutil.c
- create mode 100644 drivers/staging/tidspbridge/hw/EasiGlobal.h
- create mode 100644 drivers/staging/tidspbridge/hw/GlobalTypes.h
- create mode 100644 drivers/staging/tidspbridge/hw/MMUAccInt.h
- create mode 100644 drivers/staging/tidspbridge/hw/MMURegAcM.h
- create mode 100644 drivers/staging/tidspbridge/hw/hw_defs.h
- create mode 100644 drivers/staging/tidspbridge/hw/hw_mmu.c
- create mode 100644 drivers/staging/tidspbridge/hw/hw_mmu.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/_chnl_sm.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/brddefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/cfg.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/chnl.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/chnldefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/clk.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/cmm.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/cmmdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/cod.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbc.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbdcd.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbdcddef.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbldefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbll.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dblldefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbtype.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dehdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dev.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/devdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/disp.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dispdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dmm.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/drv.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/drvdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dspapi.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dspchnl.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dspdeh.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dspdrv.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dspio.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dspioctl.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dspmsg.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dynamic_loader.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/gb.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/getsection.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/gh.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/gs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/host_os.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/io.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/io_sm.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/iodefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/ldr.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/list.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/memdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/mgr.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/mgrpriv.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/msg.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/msgdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/nldr.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/nldrdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/node.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/nodedefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/nodepriv.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/ntfy.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/proc.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/procpriv.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/pwr.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/pwr_sh.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/resourcecleanup.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/rmm.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/rms_sh.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/rmstypes.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/services.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/std.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/strm.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/strmdefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/sync.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/utildefs.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/uuidutil.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/wdt.h
- create mode 100644 drivers/staging/tidspbridge/pmgr/chnl.c
- create mode 100644 drivers/staging/tidspbridge/pmgr/chnlobj.h
- create mode 100644 drivers/staging/tidspbridge/pmgr/cmm.c
- create mode 100644 drivers/staging/tidspbridge/pmgr/cod.c
- create mode 100644 drivers/staging/tidspbridge/pmgr/dbll.c
- create mode 100644 drivers/staging/tidspbridge/pmgr/dev.c
- create mode 100644 drivers/staging/tidspbridge/pmgr/dmm.c
- create mode 100644 drivers/staging/tidspbridge/pmgr/dspapi.c
- create mode 100644 drivers/staging/tidspbridge/pmgr/io.c
- create mode 100644 drivers/staging/tidspbridge/pmgr/ioobj.h
- create mode 100644 drivers/staging/tidspbridge/pmgr/msg.c
- create mode 100644 drivers/staging/tidspbridge/pmgr/msgobj.h
- create mode 100644 drivers/staging/tidspbridge/rmgr/dbdcd.c
- create mode 100644 drivers/staging/tidspbridge/rmgr/disp.c
- create mode 100644 drivers/staging/tidspbridge/rmgr/drv.c
- create mode 100644 drivers/staging/tidspbridge/rmgr/drv_interface.c
- create mode 100644 drivers/staging/tidspbridge/rmgr/drv_interface.h
- create mode 100644 drivers/staging/tidspbridge/rmgr/dspdrv.c
- create mode 100644 drivers/staging/tidspbridge/rmgr/mgr.c
- create mode 100644 drivers/staging/tidspbridge/rmgr/nldr.c
- create mode 100644 drivers/staging/tidspbridge/rmgr/node.c
- create mode 100644 drivers/staging/tidspbridge/rmgr/proc.c
- create mode 100644 drivers/staging/tidspbridge/rmgr/pwr.c
- create mode 100644 drivers/staging/tidspbridge/rmgr/rmm.c
- create mode 100644 drivers/staging/tidspbridge/rmgr/strm.c
- create mode 100644 drivers/staging/tidspbridge/services/cfg.c
- create mode 100644 drivers/staging/tidspbridge/services/ntfy.c
- create mode 100644 drivers/staging/tidspbridge/services/services.c
- create mode 100644 drivers/staging/tidspbridge/services/sync.c
+
+diff --git a/drivers/staging/tidspbridge/Documentation/CONTRIBUTORS b/drivers/staging/tidspbridge/Documentation/CONTRIBUTORS
+new file mode 100644
+index 0000000..b40e7a6
+--- /dev/null
++++ b/drivers/staging/tidspbridge/Documentation/CONTRIBUTORS
+@@ -0,0 +1,82 @@
++TI DSP/Bridge Driver - Contributors File
++
++The DSP/Bridge project wish to thank all of its contributors, current bridge
++driver is the result of the work of all of them. If any name is accidentally
++omitted, let us know by sending a mail to omar.ramirez@ti.com or
++x095840@ti.com.
++
++Please keep the following list in alphabetical order.
++
++	Suman Anna
++	Sripal Bagadia
++	Felipe Balbi
++	Ohad Ben-Cohen
++	Phil Carmody
++	Deepak Chitriki
++	Felipe Contreras
++	Hiroshi Doyu
++	Seth Forshee
++	Ivan Gomez Castellanos
++	Mark Grosen
++	Ramesh Gupta G
++	Fernando Guzman Lugo
++	Axel Haslam
++	Janet Head
++	Shivananda Hebbar
++	Hari Kanigeri
++	Tony Lindgren
++	Antonio Luna
++	Hari Nagalla
++	Nishanth Menon
++	Ameya Palande
++	Vijay Pasam
++	Gilbert Pitney
++	Omar Ramirez Luna
++	Ernesto Ramos
++	Chris Ring
++	Larry Schiefer
++	Rebecca Schultz Zavin
++	Bhavin Shah
++	Andy Shevchenko
++	Jeff Taylor
++	Roman Tereshonkov
++	Armando Uribe de Leon
++	Nischal Varide
++	Wenbiao Wang
++
++
++
++The following list was taken from file Revision History, if you recognize your
++alias or did any contribution to the project please let us now, so we can
++proper credit your work.
++
++	ag
++	ap
++	cc
++	db
++	dh4
++	dr
++	hp
++	jg
++	kc
++	kln
++	kw
++	ge
++	gv
++	map
++	mf
++	mk
++	mr
++	nn
++	rajesh
++	rg
++	rr
++	rt
++	sb
++	sg
++	sh
++	sp
++	srid
++	swa
++	vp
++	ww
+diff --git a/drivers/staging/tidspbridge/Documentation/README b/drivers/staging/tidspbridge/Documentation/README
+new file mode 100644
+index 0000000..df6d371
+--- /dev/null
++++ b/drivers/staging/tidspbridge/Documentation/README
+@@ -0,0 +1,70 @@
++                        Linux DSP/BIOS Bridge release
++
++DSP/BIOS Bridge overview
++========================
++
++DSP/BIOS Bridge is designed for platforms that contain a GPP and one or more
++attached DSPs.  The GPP is considered the master or "host" processor, and the
++attached DSPs are processing resources that can be utilized by applications
++and drivers running on the GPP.
++
++The abstraction that DSP/BIOS Bridge supplies, is a direct link between a GPP
++program and a DSP task.  This communication link is partitioned into two
++types of sub-links:  messaging (short, fixed-length packets) and data
++streaming (multiple, large buffers).  Each sub-link operates independently,
++and features in-order delivery of data, meaning that messages are delivered
++in the order they were submitted to the message link, and stream buffers are
++delivered in the order they were submitted to the stream link.
++
++In addition, a GPP client can specify what inputs and outputs a DSP task
++uses. DSP tasks typically use message objects for passing control and status
++information and stream objects for efficient streaming of real-time data.
++
++GPP Software Architecture
++=========================
++
++A GPP application communicates with its associated DSP task running on the
++DSP subsystem using the DSP/BIOS Bridge API. For example, a GPP audio
++application can use the API to pass messages to a DSP task that is managing
++data flowing from analog-to-digital converters (ADCs) to digital-to-analog
++converters (DACs).
++
++From the perspective of the GPP OS, the DSP is treated as just another
++peripheral device.   Most high level GPP OS typically support a device driver
++model, whereby applications can safely access and share a hardware peripheral
++through standard driver interfaces.  Therefore, to allow multiple GPP
++applications to share access to the DSP, the GPP side of DSP/BIOS Bridge
++implements a device driver for the DSP.
++
++Since driver interfaces are not always standard across GPP OS, and to provide
++some level of interoperability of application code using DSP/BIOS Bridge
++between GPP OS, DSP/BIOS Bridge provides a standard library of APIs which
++wrap calls into the device driver.   So, rather than calling GPP OS specific
++driver interfaces, applications (and even other device drivers) can use the
++standard API library directly.
++
++DSP Software Architecture
++=========================
++
++For DSP/BIOS, DSP/BIOS Bridge adds a device-independent streaming I/O (STRM)
++interface, a messaging interface (NODE), and a Resource Manager (RM) Server.
++The RM Server runs as a task of DSP/BIOS and is subservient to commands
++and queries from the GPP.  It executes commands to start and stop DSP signal
++processing nodes in response to GPP programs making requests through the
++(GPP-side) API.
++
++DSP tasks started by the RM Server are similar to any other DSP task with two
++important differences:  they must follow a specific task model consisting of
++three C-callable functions (node create, execute, and delete), with specific
++sets of arguments, and they have a pre-defined task environment established
++by the RM Server.
++
++Tasks started by the RM Server communicate using the STRM and NODE interfaces
++and act as servers for their corresponding GPP clients, performing signal
++processing functions as requested by messages sent by their GPP client.
++Typically, a DSP task moves data from source devices to sink devices using
++device independent I/O streams, performing application-specific processing
++and transformations on the data while it is moved.  For example, an audio
++task might perform audio decompression (ADPCM, MPEG, CELP) on data received
++from a GPP audio driver and then send the decompressed linear samples to a
++digital-to-analog converter.
+diff --git a/drivers/staging/tidspbridge/Documentation/error-codes b/drivers/staging/tidspbridge/Documentation/error-codes
+new file mode 100644
+index 0000000..12826e2
+--- /dev/null
++++ b/drivers/staging/tidspbridge/Documentation/error-codes
+@@ -0,0 +1,157 @@
++			DSP/Bridge Error Code Guide
++
++
++Success code is always taken as 0, except for one case where a success status
++different than 0 can be possible, this is when enumerating a series of dsp
++objects, if the enumeration doesn't have any more objects it is considered as a
++successful case. In this case a positive ENODATA is returned (TODO: Change to
++avoid this case).
++
++Error codes are returned as a negative 1, if an specific code is expected, it
++can be propagated to user space by reading errno symbol defined in errno.h, for
++specific details on the implementation a copy of the standard used should be
++read first.
++
++The error codes used by this driver are:
++
++[EPERM]
++    General driver failure.
++
++    According to the use case the following might apply:
++    - Device is in 'sleep/suspend' mode due to DPM.
++    - User cannot mark end of stream on an input channel.
++    - Requested operation is invalid for the node type.
++    - Invalid alignment for the node messaging buffer.
++    - The specified direction is invalid for the stream.
++    - Invalid stream mode.
++
++[ENOENT]
++    The specified object or file was not found.
++
++[ESRCH]
++    A shared memory buffer contained in a message or stream could not be mapped
++    to the GPP client process's virtual space.
++
++[EIO]
++    Driver interface I/O error.
++
++    or:
++    - Unable to plug channel ISR for configured IRQ.
++    - No free I/O request packets are available.
++
++[ENXIO]
++    Unable to find a named section in DSP executable or a non-existent memory
++    segment identifier was specified.
++
++[EBADF]
++    General error for file handling:
++
++    - Unable to open file.
++    - Unable to read file.
++    - An error occurred while parsing the DSP executable file.
++
++[ENOMEM]
++    A memory allocation failure occurred.
++
++[EACCES]
++    - Unable to read content of DCD data section; this is typically caused by
++    improperly configured nodes.
++    - Unable to decode DCD data section content; this is typically caused by
++    changes to DSP/BIOS Bridge data structures.
++    - Unable to get pointer to DCD data section; this is typically caused by
++    improperly configured UUIDs.
++    - Unable to load file containing DCD data section; this is typically
++    caused by a missing COFF file.
++    - The specified COFF file does not contain a valid node registration
++    section.
++
++[EFAULT]
++    Invalid pointer or handler.
++
++[EEXIST]
++    Attempted to create a channel manager  when one already exists.
++
++[EINVAL]
++    Invalid argument.
++
++[ESPIPE]
++    Symbol not found in the COFF file.  DSPNode_Create will return this if
++    the iAlg function table for an xDAIS socket is not found in the COFF file.
++    In this case, force the symbol to be linked into the COFF file.
++    DSPNode_Create, DSPNode_Execute, and DSPNode_Delete will return this if
++    the create, execute, or delete phase function, respectively, could not be
++    found in the COFF file.
++
++    - No symbol table is loaded/found for this board.
++    - Unable to initialize the ZL COFF parsing module.
++
++[EPIPE]
++    I/O is currently pending.
++
++    - End of stream was already requested on this output channel.
++
++[EDOM]
++    A parameter is specified outside its valid range.
++
++[ENOSYS]
++    The indicated operation is not supported.
++
++[EIDRM]
++    During enumeration a change in the number or properties of the objects
++    has occurred.
++
++[ECHRNG]
++    Attempt to created channel manager with too many channels or channel ID out
++    of range.
++
++[EBADR]
++    The state of the specified object is incorrect for the requested operation.
++
++    - Invalid segment ID.
++
++[ENODATA]
++    Unable to retrieve resource information from the registry.
++
++    - No more registry values.
++
++[ETIME]
++    A timeout occurred before the requested operation could complete.
++
++[ENOSR]
++    A stream has been issued the maximum number of buffers allowed in the
++    stream at once; buffers must be reclaimed from the stream before any more
++    can be issued.
++
++    - No free channels are available.
++
++[EILSEQ]
++    Error occurred in a dynamic loader library function.
++
++[EISCONN]
++    The Specified Connection already exists.
++
++[ENOTCONN]
++    Nodes not connected.
++
++[ETIMEDOUT]
++    Timeout occurred waiting for a response from the hardware.
++
++    - Wait for flush operation on an output channel timed out.
++
++[ECONNREFUSED]
++    No more connections can be made for this node.
++
++[EALREADY]
++    Channel is already in use.
++
++[EREMOTEIO]
++    dwTimeOut parameter was CHNL_IOCNOWAIT, yet no I/O completions were
++    queued.
++
++[ECANCELED]
++    I/O has been cancelled on this channel.
++
++[ENOKEY]
++    Invalid subkey parameter.
++
++    - UUID not found in registry.
+-- 
+1.7.0.4
 
