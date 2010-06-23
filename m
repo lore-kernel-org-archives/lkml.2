@@ -1,199 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab0FWVxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 17:53:21 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:37306 "EHLO
+	id S1753940Ab0FWVxX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 17:53:23 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:37335 "EHLO
 	mail.pripojeni.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753566Ab0FWVww (ORCPT
+	with ESMTP id S1753886Ab0FWVxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 17:52:52 -0400
+	Wed, 23 Jun 2010 17:53:19 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: jirislaby@gmail.com
 Cc: Oleg Nesterov <oleg@redhat.com>, akpm@linux-foundation.org,
        adobriyan@gmail.com, nhorman@tuxdriver.com,
        Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 11/12] rlimits: implement prlimit64 syscall
-Date: Wed, 23 Jun 2010 23:52:12 +0200
-Message-Id: <1277329933-8139-11-git-send-email-jslaby@suse.cz>
+Subject: [PATCH v4 01/12] rlimits: security, add task_struct to setrlimit
+Date: Wed, 23 Jun 2010 23:52:02 +0200
+Message-Id: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
-References: <1277329933-8139-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the code to support the sys_prlimit64 syscall which
-modifies-and-returns the rlim values of a selected process atomically.
-The first parameter, pid, being 0 means current process.
+From: Jiri Slaby <jirislaby@gmail.com>
 
-Unlike the current implementation, it is a generic interface,
-architecture indepentent so that we needn't handle compat stuff
-anymore. In the future, after glibc start to use this we can deprecate
-sys_setrlimit and sys_getrlimit in favor to clean up the code finally.
+Add task_struct to task_setrlimit of security_operations to be able to set
+rlimit of task other than current.
 
-It also adds a possibility of changing limits of other processes. We
-check the user's permissions to do that and if it succeeds, the new
-limits are propagated online. This is good for large scale
-applications such as SAP or databases where administrators need to
-change limits time by time (e.g. on crashes increase core size). And
-it is unacceptable to restart the service.
-
-For safety, all rlim users now either use accessors or doesn't need
-them due to
-- locking
-- the fact a process was just forked and nobody else knows about it
-  yet (and nobody can't thus read/write limits)
-hence it is safe to modify limits now.
-
-The limitation is that we currently stay at ulong internal
-representation. So the rlim64_is_infinity check is used where value is
-compared against ULONG_MAX on 32-bit which is the maximum value there.
-
-And since internally the limits are held in struct rlimit, converters
-which are used before and after do_prlimit call in sys_prlimit64 are
-introduced.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
+Acked-by: Eric Paris <eparis@redhat.com>
+Acked-by: James Morris <jmorris@namei.org>
 ---
- include/linux/syscalls.h |    4 ++
- kernel/sys.c             |   94 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 98 insertions(+), 0 deletions(-)
+ include/linux/security.h |    9 ++++++---
+ kernel/sys.c             |    2 +-
+ security/capability.c    |    3 ++-
+ security/security.c      |    5 +++--
+ security/selinux/hooks.c |    7 ++++---
+ 5 files changed, 16 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 3c7620c..0e3dd06 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -35,6 +35,7 @@ struct oldold_utsname;
- struct old_utsname;
- struct pollfd;
- struct rlimit;
-+struct rlimit64;
- struct rusage;
- struct sched_param;
- struct sel_arg_struct;
-@@ -644,6 +645,9 @@ asmlinkage long sys_old_getrlimit(unsigned int resource, struct rlimit __user *r
- #endif
- asmlinkage long sys_setrlimit(unsigned int resource,
- 				struct rlimit __user *rlim);
-+asmlinkage long sys_prlimit64(pid_t pid, unsigned int resource,
-+				const struct rlimit64 __user *new_rlim,
-+				struct rlimit64 __user *old_rlim);
- asmlinkage long sys_getrusage(int who, struct rusage __user *ru);
- asmlinkage long sys_umask(int mask);
- 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 9da98dd..e9ad444 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1271,6 +1271,39 @@ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
- 
- #endif
- 
-+static inline bool rlim64_is_infinity(__u64 rlim64)
-+{
-+#if BITS_PER_LONG < 64
-+	return rlim64 >= ULONG_MAX;
-+#else
-+	return rlim64 == RLIM64_INFINITY;
-+#endif
-+}
-+
-+static void rlim_to_rlim64(const struct rlimit *rlim, struct rlimit64 *rlim64)
-+{
-+	if (rlim->rlim_cur == RLIM_INFINITY)
-+		rlim64->rlim_cur = RLIM64_INFINITY;
-+	else
-+		rlim64->rlim_cur = rlim->rlim_cur;
-+	if (rlim->rlim_max == RLIM_INFINITY)
-+		rlim64->rlim_max = RLIM64_INFINITY;
-+	else
-+		rlim64->rlim_max = rlim->rlim_max;
-+}
-+
-+static void rlim64_to_rlim(const struct rlimit64 *rlim64, struct rlimit *rlim)
-+{
-+	if (rlim64_is_infinity(rlim64->rlim_cur))
-+		rlim->rlim_cur = RLIM_INFINITY;
-+	else
-+		rlim->rlim_cur = (unsigned long)rlim64->rlim_cur;
-+	if (rlim64_is_infinity(rlim64->rlim_max))
-+		rlim->rlim_max = RLIM_INFINITY;
-+	else
-+		rlim->rlim_max = (unsigned long)rlim64->rlim_max;
-+}
-+
- /* make sure you are allowed to change @tsk limits before calling this */
- int do_prlimit(struct task_struct *tsk, unsigned int resource,
- 		struct rlimit *new_rlim, struct rlimit *old_rlim)
-@@ -1336,6 +1369,67 @@ out:
- 	return retval;
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 5bcb395..a22219a 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1499,7 +1499,8 @@ struct security_operations {
+ 	int (*task_setnice) (struct task_struct *p, int nice);
+ 	int (*task_setioprio) (struct task_struct *p, int ioprio);
+ 	int (*task_getioprio) (struct task_struct *p);
+-	int (*task_setrlimit) (unsigned int resource, struct rlimit *new_rlim);
++	int (*task_setrlimit) (struct task_struct *p, unsigned int resource,
++			struct rlimit *new_rlim);
+ 	int (*task_setscheduler) (struct task_struct *p, int policy,
+ 				  struct sched_param *lp);
+ 	int (*task_getscheduler) (struct task_struct *p);
+@@ -1749,7 +1750,8 @@ void security_task_getsecid(struct task_struct *p, u32 *secid);
+ int security_task_setnice(struct task_struct *p, int nice);
+ int security_task_setioprio(struct task_struct *p, int ioprio);
+ int security_task_getioprio(struct task_struct *p);
+-int security_task_setrlimit(unsigned int resource, struct rlimit *new_rlim);
++int security_task_setrlimit(struct task_struct *p, unsigned int resource,
++		struct rlimit *new_rlim);
+ int security_task_setscheduler(struct task_struct *p,
+ 				int policy, struct sched_param *lp);
+ int security_task_getscheduler(struct task_struct *p);
+@@ -2311,7 +2313,8 @@ static inline int security_task_getioprio(struct task_struct *p)
+ 	return 0;
  }
  
-+/* rcu lock must be held */
-+static int check_prlimit_permission(struct task_struct *task)
-+{
-+	const struct cred *cred = current_cred(), *tcred;
-+
-+	tcred = __task_cred(task);
-+	if ((cred->uid != tcred->euid ||
-+	     cred->uid != tcred->suid ||
-+	     cred->uid != tcred->uid  ||
-+	     cred->gid != tcred->egid ||
-+	     cred->gid != tcred->sgid ||
-+	     cred->gid != tcred->gid) &&
-+	     !capable(CAP_SYS_RESOURCE)) {
-+		return -EPERM;
-+	}
-+
-+	return 0;
-+}
-+
-+SYSCALL_DEFINE4(prlimit64, pid_t, pid, unsigned int, resource,
-+		const struct rlimit64 __user *, new_rlim,
-+		struct rlimit64 __user *, old_rlim)
-+{
-+	struct rlimit64 old64, new64;
-+	struct rlimit old, new;
-+	struct task_struct *tsk;
-+	int ret;
-+
-+	if (new_rlim) {
-+		if (copy_from_user(&new64, new_rlim, sizeof(new64)))
-+			return -EFAULT;
-+		rlim64_to_rlim(&new64, &new);
-+	}
-+
-+	rcu_read_lock();
-+	tsk = pid ? find_task_by_vpid(pid) : current;
-+	if (!tsk) {
-+		rcu_read_unlock();
-+		return -ESRCH;
-+	}
-+	ret = check_prlimit_permission(tsk);
-+	if (ret) {
-+		rcu_read_unlock();
-+		return ret;
-+	}
-+	get_task_struct(tsk);
-+	rcu_read_unlock();
-+
-+	ret = do_prlimit(tsk, resource, new_rlim ? &new : NULL,
-+			old_rlim ? &old : NULL);
-+
-+	if (!ret && old_rlim) {
-+		rlim_to_rlim64(&old, &old64);
-+		if (copy_to_user(old_rlim, &old64, sizeof(old64)))
-+			ret = -EFAULT;
-+	}
-+
-+	put_task_struct(tsk);
-+	return ret;
-+}
-+
- SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+-static inline int security_task_setrlimit(unsigned int resource,
++static inline int security_task_setrlimit(struct task_struct *p,
++					  unsigned int resource,
+ 					  struct rlimit *new_rlim)
  {
- 	struct rlimit new_rlim;
+ 	return 0;
+diff --git a/kernel/sys.c b/kernel/sys.c
+index e83ddbb..1ba4522 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1290,7 +1290,7 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
+ 	if (resource == RLIMIT_NOFILE && new_rlim.rlim_max > sysctl_nr_open)
+ 		return -EPERM;
+ 
+-	retval = security_task_setrlimit(resource, &new_rlim);
++	retval = security_task_setrlimit(current, resource, &new_rlim);
+ 	if (retval)
+ 		return retval;
+ 
+diff --git a/security/capability.c b/security/capability.c
+index 4aeb699..830a213 100644
+--- a/security/capability.c
++++ b/security/capability.c
+@@ -411,7 +411,8 @@ static int cap_task_getioprio(struct task_struct *p)
+ 	return 0;
+ }
+ 
+-static int cap_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
++static int cap_task_setrlimit(struct task_struct *p, unsigned int resource,
++		struct rlimit *new_rlim)
+ {
+ 	return 0;
+ }
+diff --git a/security/security.c b/security/security.c
+index 7461b1b..c53949f 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -780,9 +780,10 @@ int security_task_getioprio(struct task_struct *p)
+ 	return security_ops->task_getioprio(p);
+ }
+ 
+-int security_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
++int security_task_setrlimit(struct task_struct *p, unsigned int resource,
++		struct rlimit *new_rlim)
+ {
+-	return security_ops->task_setrlimit(resource, new_rlim);
++	return security_ops->task_setrlimit(p, resource, new_rlim);
+ }
+ 
+ int security_task_setscheduler(struct task_struct *p,
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 5c9f25b..e3ce6b4 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -3371,16 +3371,17 @@ static int selinux_task_getioprio(struct task_struct *p)
+ 	return current_has_perm(p, PROCESS__GETSCHED);
+ }
+ 
+-static int selinux_task_setrlimit(unsigned int resource, struct rlimit *new_rlim)
++static int selinux_task_setrlimit(struct task_struct *p, unsigned int resource,
++		struct rlimit *new_rlim)
+ {
+-	struct rlimit *old_rlim = current->signal->rlim + resource;
++	struct rlimit *old_rlim = p->signal->rlim + resource;
+ 
+ 	/* Control the ability to change the hard limit (whether
+ 	   lowering or raising it), so that the hard limit can
+ 	   later be used as a safe reset point for the soft limit
+ 	   upon context transitions.  See selinux_bprm_committing_creds. */
+ 	if (old_rlim->rlim_max != new_rlim->rlim_max)
+-		return current_has_perm(current, PROCESS__SETRLIMIT);
++		return current_has_perm(p, PROCESS__SETRLIMIT);
+ 
+ 	return 0;
+ }
 -- 
 1.7.1
 
