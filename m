@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab0FWVY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 17:24:26 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43527 "EHLO ogre.sisk.pl"
+	id S1753483Ab0FWV3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 17:29:49 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:44041 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752487Ab0FWVYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 17:24:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tino Keitel <tino.keitel@tikei.de>
-Subject: Re: Suspend hangs since 2.6.34
-Date: Wed, 23 Jun 2010 23:22:57 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <20100621213224.GA5723@mac.home> <Pine.LNX.4.44L0.1006211828090.1687-100000@iolanthe.rowland.org> <20100623203234.GA20913@mac.home>
-In-Reply-To: <20100623203234.GA20913@mac.home>
+	id S1752962Ab0FWV3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 17:29:48 -0400
+Date: Wed, 23 Jun 2010 14:28:31 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] sanitize task->comm to avoid leaking escape codes
+Message-ID: <20100623212831.GA4809@outflux.net>
+References: <20100623181129.GM5876@outflux.net>
+ <20100623194145.GA19628@redhat.com>
+ <20100623202335.GA4424@x200>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006232322.57834.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100623202335.GA4424@x200>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 23, 2010, Tino Keitel wrote:
-> On Mon, Jun 21, 2010 at 18:31:57 -0400, Alan Stern wrote:
+On Wed, Jun 23, 2010 at 11:23:35PM +0300, Alexey Dobriyan wrote:
+> On Wed, Jun 23, 2010 at 09:41:45PM +0200, Oleg Nesterov wrote:
+> > On 06/23, Kees Cook wrote:
+>  
+> > > -extern char *get_task_comm(char *to, struct task_struct *tsk);
+> > > +#define get_task_comm(buf, task) get_task_comm_size(buf, sizeof(buf), task)
+> > > +extern char *get_task_comm_size(char *to, size_t len, struct task_struct *tsk);
+> > 
+> > Oh, but this means that get_task_comm(ptr, task) doesn't work?
 > 
-> [...]
-> 
-> > Why does this look like a USB problem?  As far as I can tell, the bug 
-> > is that the system delays somewhere during the suspend procedure.  But 
-> > there's no reason to think the delay is connected with USB.
-> 
-> Breaking news: I just got the same hang when switching from X to the
-> console, so I gues that this bug has nothing to to with suspend, but
-> was just triggered by the switch to the console before suspend. I guess
-> I have to ask the intel-gfx folks.
+> The number of users is so small, and everyone uses TASK_COMM_LEN,
+> so maybe nothing should be done or "char buf[TASK_COMM_LEN]"?
 
-Or the tty folks.
+I couldn't handle the pathological use of strncpy(dest, src, sizeof(src))
+that is currently in get_task_comm; that's just asking for trouble.
 
-Rafael
+If someone wants to use a ptr for get_task_comm, they would get to call
+get_task_comm_size() instead?
+
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
