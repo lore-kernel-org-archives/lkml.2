@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab0FWNDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 09:03:54 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:58323 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab0FWNDt (ORCPT
+	id S1752914Ab0FWNED (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 09:04:03 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41468 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab0FWND5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 09:03:49 -0400
+	Wed, 23 Jun 2010 09:03:57 -0400
 From: Ohad Ben-Cohen <ohad@wizery.com>
 To: Greg KH <greg@kroah.com>
 Cc: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
@@ -27,9 +27,9 @@ Cc: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
        Pitney Gilbert <gpitney@ti.com>, Bhavin Shah <bshah@ti.com>,
        Omar Ramirez Luna <omar.ramirez@ti.com>,
        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH 05/11] staging: ti dspbridge: add MMU support
-Date: Wed, 23 Jun 2010 16:01:59 +0300
-Message-Id: <1277298125-17991-6-git-send-email-ohad@wizery.com>
+Subject: [PATCH 07/11] staging: ti dspbridge: add services
+Date: Wed, 23 Jun 2010 16:02:01 +0300
+Message-Id: <1277298125-17991-8-git-send-email-ohad@wizery.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1277298125-17991-1-git-send-email-ohad@wizery.com>
 References: <1277298125-17991-1-git-send-email-ohad@wizery.com>
@@ -39,7 +39,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Omar Ramirez Luna <omar.ramirez@ti.com>
 
-Add TI's DSP Bridge MMU support
+Add TI's DSP Bridge driver services code
 
 Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
 Signed-off-by: Kanigeri, Hari <h-kanigeri2@ti.com>
@@ -58,34 +58,30 @@ Signed-off-by: Menon, Nishanth <nm@ti.com>
 Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
 Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 ---
- drivers/staging/tidspbridge/hw/EasiGlobal.h  |   41 ++
- drivers/staging/tidspbridge/hw/GlobalTypes.h |  308 ++++++++++++++
- drivers/staging/tidspbridge/hw/MMUAccInt.h   |   76 ++++
- drivers/staging/tidspbridge/hw/MMURegAcM.h   |  226 ++++++++++
- drivers/staging/tidspbridge/hw/hw_defs.h     |   60 +++
- drivers/staging/tidspbridge/hw/hw_mmu.c      |  587 ++++++++++++++++++++++++++
- drivers/staging/tidspbridge/hw/hw_mmu.h      |  161 +++++++
- 7 files changed, 1459 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/tidspbridge/hw/EasiGlobal.h
- create mode 100644 drivers/staging/tidspbridge/hw/GlobalTypes.h
- create mode 100644 drivers/staging/tidspbridge/hw/MMUAccInt.h
- create mode 100644 drivers/staging/tidspbridge/hw/MMURegAcM.h
- create mode 100644 drivers/staging/tidspbridge/hw/hw_defs.h
- create mode 100644 drivers/staging/tidspbridge/hw/hw_mmu.c
- create mode 100644 drivers/staging/tidspbridge/hw/hw_mmu.h
+ drivers/staging/tidspbridge/services/cfg.c      |  253 +++++++++++++++++++++++
+ drivers/staging/tidspbridge/services/ntfy.c     |   31 +++
+ drivers/staging/tidspbridge/services/services.c |   69 ++++++
+ drivers/staging/tidspbridge/services/sync.c     |  104 +++++++++
+ 4 files changed, 457 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/tidspbridge/services/cfg.c
+ create mode 100644 drivers/staging/tidspbridge/services/ntfy.c
+ create mode 100644 drivers/staging/tidspbridge/services/services.c
+ create mode 100644 drivers/staging/tidspbridge/services/sync.c
 
-diff --git a/drivers/staging/tidspbridge/hw/EasiGlobal.h b/drivers/staging/tidspbridge/hw/EasiGlobal.h
+diff --git a/drivers/staging/tidspbridge/services/cfg.c b/drivers/staging/tidspbridge/services/cfg.c
 new file mode 100644
-index 0000000..9b45aa7
+index 0000000..8ae64f4
 --- /dev/null
-+++ b/drivers/staging/tidspbridge/hw/EasiGlobal.h
-@@ -0,0 +1,41 @@
++++ b/drivers/staging/tidspbridge/services/cfg.c
+@@ -0,0 +1,253 @@
 +/*
-+ * EasiGlobal.h
++ * cfg.c
 + *
 + * DSP-BIOS Bridge driver support functions for TI OMAP processors.
 + *
-+ * Copyright (C) 2007 Texas Instruments, Inc.
++ * Implementation of platform specific config services.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
 + *
 + * This package is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -96,1332 +92,255 @@ index 0000000..9b45aa7
 + * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 + */
 +
-+#ifndef _EASIGLOBAL_H
-+#define _EASIGLOBAL_H
-+#include <linux/types.h>
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
 +
-+/*
-+ * DEFINE:        READ_ONLY, WRITE_ONLY &  READ_WRITE
-+ *
-+ * DESCRIPTION: Defines used to describe register types for EASI-checker tests.
-+ */
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
 +
-+#define READ_ONLY    1
-+#define WRITE_ONLY   2
-+#define READ_WRITE   3
++/*  ----------------------------------- OS Adaptation Layer */
 +
-+/*
-+ * MACRO:        _DEBUG_LEVEL1_EASI
-+ *
-+ * DESCRIPTION:  A MACRO which can be used to indicate that a particular beach
-+ *               register access function was called.
-+ *
-+ * NOTE:         We currently dont use this functionality.
-+ */
-+#define _DEBUG_LEVEL1_EASI(easiNum)     ((void)0)
++/*  ----------------------------------- This */
++#include <dspbridge/cfg.h>
++#include <dspbridge/drv.h>
 +
-+#endif /* _EASIGLOBAL_H */
-diff --git a/drivers/staging/tidspbridge/hw/GlobalTypes.h b/drivers/staging/tidspbridge/hw/GlobalTypes.h
-new file mode 100644
-index 0000000..9b55150
---- /dev/null
-+++ b/drivers/staging/tidspbridge/hw/GlobalTypes.h
-@@ -0,0 +1,308 @@
-+/*
-+ * GlobalTypes.h
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Global HW definitions
-+ *
-+ * Copyright (C) 2007 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+#ifndef _GLOBALTYPES_H
-+#define _GLOBALTYPES_H
-+
-+/*
-+ * Definition: TRUE, FALSE
-+ *
-+ * DESCRIPTION:  Boolean Definitions
-+ */
-+#ifndef TRUE
-+#define FALSE	0
-+#define TRUE	(!(FALSE))
-+#endif
-+
-+/*
-+ * Definition: NULL
-+ *
-+ * DESCRIPTION:  Invalid pointer
-+ */
-+#ifndef NULL
-+#define NULL	(void *)0
-+#endif
-+
-+/*
-+ * Definition: RET_CODE_BASE
-+ *
-+ * DESCRIPTION:  Base value for return code offsets
-+ */
-+#define RET_CODE_BASE	0
-+
-+/*
-+ * Definition: *BIT_OFFSET
-+ *
-+ * DESCRIPTION:  offset in bytes from start of 32-bit word.
-+ */
-+#define LOWER16BIT_OFFSET	  0
-+#define UPPER16BIT_OFFSET	  2
-+
-+#define LOWER8BIT_OFFSET	   0
-+#define LOWER_MIDDLE8BIT_OFFSET    1
-+#define UPPER_MIDDLE8BIT_OFFSET    2
-+#define UPPER8BIT_OFFSET	   3
-+
-+#define LOWER8BIT_OF16_OFFSET      0
-+#define UPPER8BIT_OF16_OFFSET      1
-+
-+/*
-+ * Definition: *BIT_SHIFT
-+ *
-+ * DESCRIPTION:  offset in bits from start of 32-bit word.
-+ */
-+#define LOWER16BIT_SHIFT	  0
-+#define UPPER16BIT_SHIFT	  16
-+
-+#define LOWER8BIT_SHIFT	   0
-+#define LOWER_MIDDLE8BIT_SHIFT    8
-+#define UPPER_MIDDLE8BIT_SHIFT    16
-+#define UPPER8BIT_SHIFT	   24
-+
-+#define LOWER8BIT_OF16_SHIFT      0
-+#define UPPER8BIT_OF16_SHIFT      8
-+
-+/*
-+ * Definition: LOWER16BIT_MASK
-+ *
-+ * DESCRIPTION: 16 bit mask used for inclusion of lower 16 bits i.e. mask out
-+ *		the upper 16 bits
-+ */
-+#define LOWER16BIT_MASK	0x0000FFFF
-+
-+/*
-+ * Definition: LOWER8BIT_MASK
-+ *
-+ * DESCRIPTION: 8 bit masks used for inclusion of 8 bits i.e. mask out
-+ *		the upper 16 bits
-+ */
-+#define LOWER8BIT_MASK	   0x000000FF
-+
-+/*
-+ * Definition: RETURN32BITS_FROM16LOWER_AND16UPPER(lower16Bits, upper16Bits)
-+ *
-+ * DESCRIPTION: Returns a 32 bit value given a 16 bit lower value and a 16
-+ *		bit upper value
-+ */
-+#define RETURN32BITS_FROM16LOWER_AND16UPPER(lower16Bits, upper16Bits)\
-+    (((((u32)lower16Bits)  & LOWER16BIT_MASK)) | \
-+     (((((u32)upper16Bits) & LOWER16BIT_MASK) << UPPER16BIT_SHIFT)))
-+
-+/*
-+ * Definition: RETURN16BITS_FROM8LOWER_AND8UPPER(lower16Bits, upper16Bits)
-+ *
-+ * DESCRIPTION:  Returns a 16 bit value given a 8 bit lower value and a 8
-+ *	       bit upper value
-+ */
-+#define RETURN16BITS_FROM8LOWER_AND8UPPER(lower8Bits, upper8Bits)\
-+    (((((u32)lower8Bits)  & LOWER8BIT_MASK)) | \
-+     (((((u32)upper8Bits) & LOWER8BIT_MASK) << UPPER8BIT_OF16_SHIFT)))
-+
-+/*
-+ * Definition: RETURN32BITS_FROM48BIT_VALUES(lower8Bits, lowerMiddle8Bits,
-+ * 					lowerUpper8Bits, upper8Bits)
-+ *
-+ * DESCRIPTION:  Returns a 32 bit value given four 8 bit values
-+ */
-+#define RETURN32BITS_FROM48BIT_VALUES(lower8Bits, lowerMiddle8Bits,\
-+	lowerUpper8Bits, upper8Bits)\
-+	(((((u32)lower8Bits) & LOWER8BIT_MASK)) | \
-+	(((((u32)lowerMiddle8Bits) & LOWER8BIT_MASK) <<\
-+		LOWER_MIDDLE8BIT_SHIFT)) | \
-+	(((((u32)lowerUpper8Bits) & LOWER8BIT_MASK) <<\
-+		UPPER_MIDDLE8BIT_SHIFT)) | \
-+	(((((u32)upper8Bits) & LOWER8BIT_MASK) <<\
-+		UPPER8BIT_SHIFT)))
-+
-+/*
-+ * Definition: READ_LOWER16BITS_OF32(value32bits)
-+ *
-+ * DESCRIPTION:  Returns a 16 lower bits of 32bit value
-+ */
-+#define READ_LOWER16BITS_OF32(value32bits)\
-+    ((u16)((u32)(value32bits) & LOWER16BIT_MASK))
-+
-+/*
-+ * Definition: READ_UPPER16BITS_OF32(value32bits)
-+ *
-+ * DESCRIPTION:  Returns a 16 lower bits of 32bit value
-+ */
-+#define READ_UPPER16BITS_OF32(value32bits)\
-+	(((u16)((u32)(value32bits) >> UPPER16BIT_SHIFT)) &\
-+	LOWER16BIT_MASK)
-+
-+/*
-+ * Definition: READ_LOWER8BITS_OF32(value32bits)
-+ *
-+ * DESCRIPTION:  Returns a 8 lower bits of 32bit value
-+ */
-+#define READ_LOWER8BITS_OF32(value32bits)\
-+    ((u8)((u32)(value32bits) & LOWER8BIT_MASK))
-+
-+/*
-+ * Definition: READ_LOWER_MIDDLE8BITS_OF32(value32bits)
-+ *
-+ * DESCRIPTION:  Returns a 8 lower middle bits of 32bit value
-+ */
-+#define READ_LOWER_MIDDLE8BITS_OF32(value32bits)\
-+	(((u8)((u32)(value32bits) >> LOWER_MIDDLE8BIT_SHIFT)) &\
-+	LOWER8BIT_MASK)
-+
-+/*
-+ * Definition: READ_LOWER_MIDDLE8BITS_OF32(value32bits)
-+ *
-+ * DESCRIPTION:  Returns a 8 lower middle bits of 32bit value
-+ */
-+#define READ_UPPER_MIDDLE8BITS_OF32(value32bits)\
-+	(((u8)((u32)(value32bits) >> LOWER_MIDDLE8BIT_SHIFT)) &\
-+	LOWER8BIT_MASK)
-+
-+/*
-+ * Definition: READ_UPPER8BITS_OF32(value32bits)
-+ *
-+ * DESCRIPTION:  Returns a 8 upper bits of 32bit value
-+ */
-+#define READ_UPPER8BITS_OF32(value32bits)\
-+    (((u8)((u32)(value32bits) >> UPPER8BIT_SHIFT)) & LOWER8BIT_MASK)
-+
-+/*
-+ * Definition: READ_LOWER8BITS_OF16(value16bits)
-+ *
-+ * DESCRIPTION:  Returns a 8 lower bits of 16bit value
-+ */
-+#define READ_LOWER8BITS_OF16(value16bits)\
-+    ((u8)((u16)(value16bits) & LOWER8BIT_MASK))
-+
-+/*
-+ * Definition: READ_UPPER8BITS_OF16(value32bits)
-+ *
-+ * DESCRIPTION:  Returns a 8 upper bits of 16bit value
-+ */
-+#define READ_UPPER8BITS_OF16(value16bits)\
-+    (((u8)((u32)(value16bits) >> UPPER8BIT_SHIFT)) & LOWER8BIT_MASK)
-+
-+/* UWORD16:  16 bit tpyes */
-+
-+/* reg_uword8, reg_word8: 8 bit register types */
-+typedef volatile unsigned char reg_uword8;
-+typedef volatile signed char reg_word8;
-+
-+/* reg_uword16, reg_word16: 16 bit register types */
-+#ifndef OMAPBRIDGE_TYPES
-+typedef volatile unsigned short reg_uword16;
-+#endif
-+typedef volatile short reg_word16;
-+
-+/* reg_uword32, REG_WORD32: 32 bit register types */
-+typedef volatile unsigned long reg_uword32;
-+
-+/* FLOAT
-+ *
-+ * Type to be used for floating point calculation. Note that floating point
-+ * calculation is very CPU expensive, and you should only  use if you
-+ * absolutely need this. */
-+
-+/* boolean_t:  Boolean Type True, False */
-+/* return_code_t:  Return codes to be returned by all library functions */
-+enum return_code_label {
-+	RET_OK = 0,
-+	RET_FAIL = -1,
-+	RET_BAD_NULL_PARAM = -2,
-+	RET_PARAM_OUT_OF_RANGE = -3,
-+	RET_INVALID_ID = -4,
-+	RET_EMPTY = -5,
-+	RET_FULL = -6,
-+	RET_TIMEOUT = -7,
-+	RET_INVALID_OPERATION = -8,
-+
-+	/* Add new error codes at end of above list */
-+
-+	RET_NUM_RET_CODES	/* this should ALWAYS be LAST entry */
-+};
-+
-+/* MACRO: RD_MEM8, WR_MEM8
-+ *
-+ * DESCRIPTION:  32 bit memory access macros
-+ */
-+#define RD_MEM8(addr)	((u8)(*((u8 *)(addr))))
-+#define WR_MEM8(addr, data)	(*((u8 *)(addr)) = (u8)(data))
-+
-+/* MACRO: RD_MEM8_VOLATILE, WR_MEM8_VOLATILE
-+ *
-+ * DESCRIPTION:  8 bit register access macros
-+ */
-+#define RD_MEM8_VOLATILE(addr)	((u8)(*((reg_uword8 *)(addr))))
-+#define WR_MEM8_VOLATILE(addr, data) (*((reg_uword8 *)(addr)) = (u8)(data))
-+
-+/*
-+ * MACRO: RD_MEM16, WR_MEM16
-+ *
-+ * DESCRIPTION:  16 bit memory access macros
-+ */
-+#define RD_MEM16(addr)	((u16)(*((u16 *)(addr))))
-+#define WR_MEM16(addr, data)	(*((u16 *)(addr)) = (u16)(data))
-+
-+/*
-+ * MACRO: RD_MEM16_VOLATILE, WR_MEM16_VOLATILE
-+ *
-+ * DESCRIPTION:  16 bit register access macros
-+ */
-+#define RD_MEM16_VOLATILE(addr)	((u16)(*((reg_uword16 *)(addr))))
-+#define WR_MEM16_VOLATILE(addr, data)	(*((reg_uword16 *)(addr)) =\
-+					(u16)(data))
-+
-+/*
-+ * MACRO: RD_MEM32, WR_MEM32
-+ *
-+ * DESCRIPTION:  32 bit memory access macros
-+ */
-+#define RD_MEM32(addr)	((u32)(*((u32 *)(addr))))
-+#define WR_MEM32(addr, data)	(*((u32 *)(addr)) = (u32)(data))
-+
-+/*
-+ * MACRO: RD_MEM32_VOLATILE, WR_MEM32_VOLATILE
-+ *
-+ * DESCRIPTION:  32 bit register access macros
-+ */
-+#define RD_MEM32_VOLATILE(addr)	((u32)(*((reg_uword32 *)(addr))))
-+#define WR_MEM32_VOLATILE(addr, data)	(*((reg_uword32 *)(addr)) =\
-+					(u32)(data))
-+
-+/* Not sure if this all belongs here */
-+
-+#define CHECK_RETURN_VALUE(actualValue, expectedValue,  returnCodeIfMismatch,\
-+	spyCodeIfMisMatch)
-+#define CHECK_RETURN_VALUE_RET(actualValue, expectedValue, returnCodeIfMismatch)
-+#define CHECK_RETURN_VALUE_RES(actualValue, expectedValue, spyCodeIfMisMatch)
-+#define CHECK_RETURN_VALUE_RET_VOID(actualValue, expectedValue,\
-+	spyCodeIfMisMatch)
-+
-+#define CHECK_INPUT_PARAM(actualValue, invalidValue, returnCodeIfMismatch,\
-+	spyCodeIfMisMatch)
-+#define CHECK_INPUT_PARAM_NO_SPY(actualValue, invalidValue,\
-+	returnCodeIfMismatch)
-+#define CHECK_INPUT_RANGE(actualValue, minValidValue, maxValidValue,\
-+	returnCodeIfMismatch, spyCodeIfMisMatch)
-+#define CHECK_INPUT_RANGE_NO_SPY(actualValue, minValidValue, maxValidValue,\
-+	returnCodeIfMismatch)
-+#define CHECK_INPUT_RANGE_MIN0(actualValue, maxValidValue,\
-+	returnCodeIfMismatch, spyCodeIfMisMatch)
-+#define CHECK_INPUT_RANGE_NO_SPY_MIN0(actualValue, maxValidValue,\
-+	returnCodeIfMismatch)
-+
-+#endif /* _GLOBALTYPES_H */
-diff --git a/drivers/staging/tidspbridge/hw/MMUAccInt.h b/drivers/staging/tidspbridge/hw/MMUAccInt.h
-new file mode 100644
-index 0000000..1cefca3
---- /dev/null
-+++ b/drivers/staging/tidspbridge/hw/MMUAccInt.h
-@@ -0,0 +1,76 @@
-+/*
-+ * MMUAccInt.h
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Copyright (C) 2007 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+#ifndef _MMU_ACC_INT_H
-+#define _MMU_ACC_INT_H
-+
-+/* Mappings of level 1 EASI function numbers to function names */
-+
-+#define EASIL1_MMUMMU_SYSCONFIG_READ_REGISTER32 (MMU_BASE_EASIL1 + 3)
-+#define EASIL1_MMUMMU_SYSCONFIG_IDLE_MODE_WRITE32  (MMU_BASE_EASIL1 + 17)
-+#define EASIL1_MMUMMU_SYSCONFIG_AUTO_IDLE_WRITE32    (MMU_BASE_EASIL1 + 39)
-+#define EASIL1_MMUMMU_IRQSTATUS_WRITE_REGISTER32   (MMU_BASE_EASIL1 + 51)
-+#define EASIL1_MMUMMU_IRQENABLE_READ_REGISTER32 (MMU_BASE_EASIL1 + 102)
-+#define EASIL1_MMUMMU_IRQENABLE_WRITE_REGISTER32 (MMU_BASE_EASIL1 + 103)
-+#define EASIL1_MMUMMU_WALKING_STTWL_RUNNING_READ32 (MMU_BASE_EASIL1 + 156)
-+#define EASIL1_MMUMMU_CNTLTWL_ENABLE_READ32 (MMU_BASE_EASIL1 + 174)
-+#define EASIL1_MMUMMU_CNTLTWL_ENABLE_WRITE32   (MMU_BASE_EASIL1 + 180)
-+#define EASIL1_MMUMMU_CNTLMMU_ENABLE_WRITE32     (MMU_BASE_EASIL1 + 190)
-+#define EASIL1_MMUMMU_FAULT_AD_READ_REGISTER32   (MMU_BASE_EASIL1 + 194)
-+#define EASIL1_MMUMMU_TTB_WRITE_REGISTER32  (MMU_BASE_EASIL1 + 198)
-+#define EASIL1_MMUMMU_LOCK_READ_REGISTER32   (MMU_BASE_EASIL1 + 203)
-+#define EASIL1_MMUMMU_LOCK_WRITE_REGISTER32  (MMU_BASE_EASIL1 + 204)
-+#define EASIL1_MMUMMU_LOCK_BASE_VALUE_READ32  (MMU_BASE_EASIL1 + 205)
-+#define EASIL1_MMUMMU_LOCK_CURRENT_VICTIM_READ32 (MMU_BASE_EASIL1 + 209)
-+#define EASIL1_MMUMMU_LOCK_CURRENT_VICTIM_WRITE32 (MMU_BASE_EASIL1 + 211)
-+#define EASIL1_MMUMMU_LOCK_CURRENT_VICTIM_SET32  (MMU_BASE_EASIL1 + 212)
-+#define EASIL1_MMUMMU_LD_TLB_READ_REGISTER32    (MMU_BASE_EASIL1 + 213)
-+#define EASIL1_MMUMMU_LD_TLB_WRITE_REGISTER32   (MMU_BASE_EASIL1 + 214)
-+#define EASIL1_MMUMMU_CAM_WRITE_REGISTER32   (MMU_BASE_EASIL1 + 226)
-+#define EASIL1_MMUMMU_RAM_WRITE_REGISTER32 (MMU_BASE_EASIL1 + 268)
-+#define EASIL1_MMUMMU_FLUSH_ENTRY_WRITE_REGISTER32  (MMU_BASE_EASIL1 + 322)
-+
-+/* Register offset address definitions */
-+#define MMU_MMU_SYSCONFIG_OFFSET   0x10
-+#define MMU_MMU_IRQSTATUS_OFFSET  0x18
-+#define MMU_MMU_IRQENABLE_OFFSET    0x1c
-+#define MMU_MMU_WALKING_ST_OFFSET 0x40
-+#define MMU_MMU_CNTL_OFFSET   0x44
-+#define MMU_MMU_FAULT_AD_OFFSET  0x48
-+#define MMU_MMU_TTB_OFFSET  0x4c
-+#define MMU_MMU_LOCK_OFFSET   0x50
-+#define MMU_MMU_LD_TLB_OFFSET  0x54
-+#define MMU_MMU_CAM_OFFSET   0x58
-+#define MMU_MMU_RAM_OFFSET   0x5c
-+#define MMU_MMU_GFLUSH_OFFSET  0x60
-+#define MMU_MMU_FLUSH_ENTRY_OFFSET  0x64
-+/* Bitfield mask and offset declarations */
-+#define MMU_MMU_SYSCONFIG_IDLE_MODE_MASK  0x18
-+#define MMU_MMU_SYSCONFIG_IDLE_MODE_OFFSET  3
-+#define MMU_MMU_SYSCONFIG_AUTO_IDLE_MASK  0x1
-+#define MMU_MMU_SYSCONFIG_AUTO_IDLE_OFFSET   0
-+#define MMU_MMU_WALKING_ST_TWL_RUNNING_MASK 0x1
-+#define MMU_MMU_WALKING_ST_TWL_RUNNING_OFFSET  0
-+#define MMU_MMU_CNTL_TWL_ENABLE_MASK 0x4
-+#define MMU_MMU_CNTL_TWL_ENABLE_OFFSET 2
-+#define MMU_MMU_CNTL_MMU_ENABLE_MASK    0x2
-+#define MMU_MMU_CNTL_MMU_ENABLE_OFFSET   1
-+#define MMU_MMU_LOCK_BASE_VALUE_MASK 0xfc00
-+#define MMU_MMU_LOCK_BASE_VALUE_OFFSET   10
-+#define MMU_MMU_LOCK_CURRENT_VICTIM_MASK   0x3f0
-+#define MMU_MMU_LOCK_CURRENT_VICTIM_OFFSET    4
-+
-+#endif /* _MMU_ACC_INT_H */
-diff --git a/drivers/staging/tidspbridge/hw/MMURegAcM.h b/drivers/staging/tidspbridge/hw/MMURegAcM.h
-new file mode 100644
-index 0000000..8c0c549
---- /dev/null
-+++ b/drivers/staging/tidspbridge/hw/MMURegAcM.h
-@@ -0,0 +1,226 @@
-+/*
-+ * MMURegAcM.h
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Copyright (C) 2007 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+#ifndef _MMU_REG_ACM_H
-+#define _MMU_REG_ACM_H
-+
-+#include <GlobalTypes.h>
-+#include <linux/io.h>
-+#include <EasiGlobal.h>
-+
-+#include "MMUAccInt.h"
-+
-+#if defined(USE_LEVEL_1_MACROS)
-+
-+#define MMUMMU_SYSCONFIG_READ_REGISTER32(baseAddress)\
-+    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_SYSCONFIG_READ_REGISTER32),\
-+      __raw_readl((baseAddress)+MMU_MMU_SYSCONFIG_OFFSET))
-+
-+#define MMUMMU_SYSCONFIG_IDLE_MODE_WRITE32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_SYSCONFIG_OFFSET;\
-+    register u32 data = __raw_readl((baseAddress)+offset);\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_SYSCONFIG_IDLE_MODE_WRITE32);\
-+    data &= ~(MMU_MMU_SYSCONFIG_IDLE_MODE_MASK);\
-+    newValue <<= MMU_MMU_SYSCONFIG_IDLE_MODE_OFFSET;\
-+    newValue &= MMU_MMU_SYSCONFIG_IDLE_MODE_MASK;\
-+    newValue |= data;\
-+    __raw_writel(newValue, baseAddress+offset);\
-+}
-+
-+#define MMUMMU_SYSCONFIG_AUTO_IDLE_WRITE32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_SYSCONFIG_OFFSET;\
-+    register u32 data = __raw_readl((baseAddress)+offset);\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_SYSCONFIG_AUTO_IDLE_WRITE32);\
-+    data &= ~(MMU_MMU_SYSCONFIG_AUTO_IDLE_MASK);\
-+    newValue <<= MMU_MMU_SYSCONFIG_AUTO_IDLE_OFFSET;\
-+    newValue &= MMU_MMU_SYSCONFIG_AUTO_IDLE_MASK;\
-+    newValue |= data;\
-+    __raw_writel(newValue, baseAddress+offset);\
-+}
-+
-+#define MMUMMU_IRQSTATUS_READ_REGISTER32(baseAddress)\
-+    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_IRQSTATUSReadRegister32),\
-+      __raw_readl((baseAddress)+MMU_MMU_IRQSTATUS_OFFSET))
-+
-+#define MMUMMU_IRQSTATUS_WRITE_REGISTER32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_IRQSTATUS_OFFSET;\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_IRQSTATUS_WRITE_REGISTER32);\
-+    __raw_writel(newValue, (baseAddress)+offset);\
-+}
-+
-+#define MMUMMU_IRQENABLE_READ_REGISTER32(baseAddress)\
-+    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_IRQENABLE_READ_REGISTER32),\
-+      __raw_readl((baseAddress)+MMU_MMU_IRQENABLE_OFFSET))
-+
-+#define MMUMMU_IRQENABLE_WRITE_REGISTER32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_IRQENABLE_OFFSET;\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_IRQENABLE_WRITE_REGISTER32);\
-+    __raw_writel(newValue, (baseAddress)+offset);\
-+}
-+
-+#define MMUMMU_WALKING_STTWL_RUNNING_READ32(baseAddress)\
-+    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_WALKING_STTWL_RUNNING_READ32),\
-+      (((__raw_readl(((baseAddress)+(MMU_MMU_WALKING_ST_OFFSET))))\
-+      & MMU_MMU_WALKING_ST_TWL_RUNNING_MASK) >>\
-+      MMU_MMU_WALKING_ST_TWL_RUNNING_OFFSET))
-+
-+#define MMUMMU_CNTLTWL_ENABLE_READ32(baseAddress)\
-+    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_CNTLTWL_ENABLE_READ32),\
-+      (((__raw_readl(((baseAddress)+(MMU_MMU_CNTL_OFFSET)))) &\
-+      MMU_MMU_CNTL_TWL_ENABLE_MASK) >>\
-+      MMU_MMU_CNTL_TWL_ENABLE_OFFSET))
-+
-+#define MMUMMU_CNTLTWL_ENABLE_WRITE32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_CNTL_OFFSET;\
-+    register u32 data = __raw_readl((baseAddress)+offset);\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_CNTLTWL_ENABLE_WRITE32);\
-+    data &= ~(MMU_MMU_CNTL_TWL_ENABLE_MASK);\
-+    newValue <<= MMU_MMU_CNTL_TWL_ENABLE_OFFSET;\
-+    newValue &= MMU_MMU_CNTL_TWL_ENABLE_MASK;\
-+    newValue |= data;\
-+    __raw_writel(newValue, baseAddress+offset);\
-+}
-+
-+#define MMUMMU_CNTLMMU_ENABLE_WRITE32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_CNTL_OFFSET;\
-+    register u32 data = __raw_readl((baseAddress)+offset);\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_CNTLMMU_ENABLE_WRITE32);\
-+    data &= ~(MMU_MMU_CNTL_MMU_ENABLE_MASK);\
-+    newValue <<= MMU_MMU_CNTL_MMU_ENABLE_OFFSET;\
-+    newValue &= MMU_MMU_CNTL_MMU_ENABLE_MASK;\
-+    newValue |= data;\
-+    __raw_writel(newValue, baseAddress+offset);\
-+}
-+
-+#define MMUMMU_FAULT_AD_READ_REGISTER32(baseAddress)\
-+    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_FAULT_AD_READ_REGISTER32),\
-+      __raw_readl((baseAddress)+MMU_MMU_FAULT_AD_OFFSET))
-+
-+#define MMUMMU_TTB_WRITE_REGISTER32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_TTB_OFFSET;\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_TTB_WRITE_REGISTER32);\
-+    __raw_writel(newValue, (baseAddress)+offset);\
-+}
-+
-+#define MMUMMU_LOCK_READ_REGISTER32(baseAddress)\
-+    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LOCK_READ_REGISTER32),\
-+      __raw_readl((baseAddress)+MMU_MMU_LOCK_OFFSET))
-+
-+#define MMUMMU_LOCK_WRITE_REGISTER32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_LOCK_OFFSET;\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LOCK_WRITE_REGISTER32);\
-+    __raw_writel(newValue, (baseAddress)+offset);\
-+}
-+
-+#define MMUMMU_LOCK_BASE_VALUE_READ32(baseAddress)\
-+    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LOCK_BASE_VALUE_READ32),\
-+      (((__raw_readl(((baseAddress)+(MMU_MMU_LOCK_OFFSET)))) &\
-+      MMU_MMU_LOCK_BASE_VALUE_MASK) >>\
-+      MMU_MMU_LOCK_BASE_VALUE_OFFSET))
-+
-+#define MMUMMU_LOCK_BASE_VALUE_WRITE32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_LOCK_OFFSET;\
-+    register u32 data = __raw_readl((baseAddress)+offset);\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LOCKBaseValueWrite32);\
-+    data &= ~(MMU_MMU_LOCK_BASE_VALUE_MASK);\
-+    newValue <<= MMU_MMU_LOCK_BASE_VALUE_OFFSET;\
-+    newValue &= MMU_MMU_LOCK_BASE_VALUE_MASK;\
-+    newValue |= data;\
-+    __raw_writel(newValue, baseAddress+offset);\
-+}
-+
-+#define MMUMMU_LOCK_CURRENT_VICTIM_READ32(baseAddress)\
-+    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LOCK_CURRENT_VICTIM_READ32),\
-+      (((__raw_readl(((baseAddress)+(MMU_MMU_LOCK_OFFSET)))) &\
-+      MMU_MMU_LOCK_CURRENT_VICTIM_MASK) >>\
-+      MMU_MMU_LOCK_CURRENT_VICTIM_OFFSET))
-+
-+#define MMUMMU_LOCK_CURRENT_VICTIM_WRITE32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_LOCK_OFFSET;\
-+    register u32 data = __raw_readl((baseAddress)+offset);\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LOCK_CURRENT_VICTIM_WRITE32);\
-+    data &= ~(MMU_MMU_LOCK_CURRENT_VICTIM_MASK);\
-+    newValue <<= MMU_MMU_LOCK_CURRENT_VICTIM_OFFSET;\
-+    newValue &= MMU_MMU_LOCK_CURRENT_VICTIM_MASK;\
-+    newValue |= data;\
-+    __raw_writel(newValue, baseAddress+offset);\
-+}
-+
-+#define MMUMMU_LOCK_CURRENT_VICTIM_SET32(var, value)\
-+    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LOCK_CURRENT_VICTIM_SET32),\
-+      (((var) & ~(MMU_MMU_LOCK_CURRENT_VICTIM_MASK)) |\
-+      (((value) << MMU_MMU_LOCK_CURRENT_VICTIM_OFFSET) &\
-+      MMU_MMU_LOCK_CURRENT_VICTIM_MASK)))
-+
-+#define MMUMMU_LD_TLB_READ_REGISTER32(baseAddress)\
-+    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LD_TLB_READ_REGISTER32),\
-+      __raw_readl((baseAddress)+MMU_MMU_LD_TLB_OFFSET))
-+
-+#define MMUMMU_LD_TLB_WRITE_REGISTER32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_LD_TLB_OFFSET;\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LD_TLB_WRITE_REGISTER32);\
-+    __raw_writel(newValue, (baseAddress)+offset);\
-+}
-+
-+#define MMUMMU_CAM_WRITE_REGISTER32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_CAM_OFFSET;\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_CAM_WRITE_REGISTER32);\
-+    __raw_writel(newValue, (baseAddress)+offset);\
-+}
-+
-+#define MMUMMU_RAM_WRITE_REGISTER32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_RAM_OFFSET;\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_RAM_WRITE_REGISTER32);\
-+    __raw_writel(newValue, (baseAddress)+offset);\
-+}
-+
-+#define MMUMMU_FLUSH_ENTRY_WRITE_REGISTER32(baseAddress, value)\
-+{\
-+    const u32 offset = MMU_MMU_FLUSH_ENTRY_OFFSET;\
-+    register u32 newValue = (value);\
-+    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_FLUSH_ENTRY_WRITE_REGISTER32);\
-+    __raw_writel(newValue, (baseAddress)+offset);\
-+}
-+
-+#endif /* USE_LEVEL_1_MACROS */
-+
-+#endif /* _MMU_REG_ACM_H */
-diff --git a/drivers/staging/tidspbridge/hw/hw_defs.h b/drivers/staging/tidspbridge/hw/hw_defs.h
-new file mode 100644
-index 0000000..98f6045
---- /dev/null
-+++ b/drivers/staging/tidspbridge/hw/hw_defs.h
-@@ -0,0 +1,60 @@
-+/*
-+ * hw_defs.h
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Global HW definitions
-+ *
-+ * Copyright (C) 2007 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+#ifndef _HW_DEFS_H
-+#define _HW_DEFS_H
-+
-+#include <GlobalTypes.h>
-+
-+/* Page size */
-+#define HW_PAGE_SIZE4KB   0x1000
-+#define HW_PAGE_SIZE64KB  0x10000
-+#define HW_PAGE_SIZE1MB   0x100000
-+#define HW_PAGE_SIZE16MB  0x1000000
-+
-+/* hw_status:  return type for HW API */
-+typedef long hw_status;
-+
-+/*  Macro used to set and clear any bit */
-+#define HW_CLEAR	0
-+#define HW_SET		1
-+
-+/* hw_endianism_t:  Enumerated Type used to specify the endianism
-+ *		Do NOT change these values. They are used as bit fields. */
-+enum hw_endianism_t {
-+	HW_LITTLE_ENDIAN,
-+	HW_BIG_ENDIAN
-+};
-+
-+/* hw_element_size_t:  Enumerated Type used to specify the element size
-+ *		Do NOT change these values. They are used as bit fields. */
-+enum hw_element_size_t {
-+	HW_ELEM_SIZE8BIT,
-+	HW_ELEM_SIZE16BIT,
-+	HW_ELEM_SIZE32BIT,
-+	HW_ELEM_SIZE64BIT
-+};
-+
-+/* hw_idle_mode_t:  Enumerated Type used to specify Idle modes */
-+enum hw_idle_mode_t {
-+	HW_FORCE_IDLE,
-+	HW_NO_IDLE,
-+	HW_SMART_IDLE
-+};
-+
-+#endif /* _HW_DEFS_H */
-diff --git a/drivers/staging/tidspbridge/hw/hw_mmu.c b/drivers/staging/tidspbridge/hw/hw_mmu.c
-new file mode 100644
-index 0000000..965b659
---- /dev/null
-+++ b/drivers/staging/tidspbridge/hw/hw_mmu.c
-@@ -0,0 +1,587 @@
-+/*
-+ * hw_mmu.c
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * API definitions to setup MMU TLB and PTE
-+ *
-+ * Copyright (C) 2007 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+#include <GlobalTypes.h>
-+#include <linux/io.h>
-+#include "MMURegAcM.h"
-+#include <hw_defs.h>
-+#include <hw_mmu.h>
-+#include <linux/types.h>
-+
-+#define MMU_BASE_VAL_MASK	0xFC00
-+#define MMU_PAGE_MAX	     3
-+#define MMU_ELEMENTSIZE_MAX      3
-+#define MMU_ADDR_MASK	    0xFFFFF000
-+#define MMU_TTB_MASK	     0xFFFFC000
-+#define MMU_SECTION_ADDR_MASK    0xFFF00000
-+#define MMU_SSECTION_ADDR_MASK   0xFF000000
-+#define MMU_PAGE_TABLE_MASK      0xFFFFFC00
-+#define MMU_LARGE_PAGE_MASK      0xFFFF0000
-+#define MMU_SMALL_PAGE_MASK      0xFFFFF000
-+
-+#define MMU_LOAD_TLB	0x00000001
-+
-+/*
-+ * hw_mmu_page_size_t: Enumerated Type used to specify the MMU Page Size(SLSS)
-+ */
-+enum hw_mmu_page_size_t {
-+	HW_MMU_SECTION,
-+	HW_MMU_LARGE_PAGE,
-+	HW_MMU_SMALL_PAGE,
-+	HW_MMU_SUPERSECTION
++struct drv_ext {
++	struct list_head link;
++	char sz_string[MAXREGPATHLENGTH];
 +};
 +
 +/*
-+ * FUNCTION	      : mmu_flush_entry
-+ *
-+ * INPUTS:
-+ *
-+ *       Identifier      : baseAddress
-+ *       Type		: const u32
-+ *       Description     : Base Address of instance of MMU module
-+ *
-+ * RETURNS:
-+ *
-+ *       Type		: hw_status
-+ *       Description     : RET_OK		 -- No errors occured
-+ *			 RET_BAD_NULL_PARAM     -- A Pointer
-+ *						Paramater was set to NULL
-+ *
-+ * PURPOSE:	      : Flush the TLB entry pointed by the
-+ *			lock counter register
-+ *			even if this entry is set protected
-+ *
-+ * METHOD:	       : Check the Input parameter and Flush a
-+ *			 single entry in the TLB.
++ *  ======== cfg_exit ========
++ *  Purpose:
++ *      Discontinue usage of the CFG module.
 + */
-+static hw_status mmu_flush_entry(const void __iomem *baseAddress);
++void cfg_exit(void)
++{
++	/* Do nothing */
++}
 +
 +/*
-+ * FUNCTION	      : mmu_set_cam_entry
-+ *
-+ * INPUTS:
-+ *
-+ *       Identifier      : baseAddress
-+ *       TypE		: const u32
-+ *       Description     : Base Address of instance of MMU module
-+ *
-+ *       Identifier      : pageSize
-+ *       TypE		: const u32
-+ *       Description     : It indicates the page size
-+ *
-+ *       Identifier      : preservedBit
-+ *       Type		: const u32
-+ *       Description     : It indicates the TLB entry is preserved entry
-+ *							or not
-+ *
-+ *       Identifier      : validBit
-+ *       Type		: const u32
-+ *       Description     : It indicates the TLB entry is valid entry or not
-+ *
-+ *
-+ *       Identifier      : virtual_addr_tag
-+ *       Type	    	: const u32
-+ *       Description     : virtual Address
-+ *
-+ * RETURNS:
-+ *
-+ *       Type	    	: hw_status
-+ *       Description     : RET_OK		 -- No errors occured
-+ *			 RET_BAD_NULL_PARAM     -- A Pointer Paramater
-+ *						   was set to NULL
-+ *			 RET_PARAM_OUT_OF_RANGE -- Input Parameter out
-+ *						   of Range
-+ *
-+ * PURPOSE:	      	: Set MMU_CAM reg
-+ *
-+ * METHOD:	       	: Check the Input parameters and set the CAM entry.
++ *  ======== cfg_get_auto_start ========
++ *  Purpose:
++ *      Retreive the autostart mask, if any, for this board.
 + */
-+static hw_status mmu_set_cam_entry(const void __iomem *baseAddress,
-+				   const u32 pageSize,
-+				   const u32 preservedBit,
-+				   const u32 validBit,
-+				   const u32 virtual_addr_tag);
++int cfg_get_auto_start(struct cfg_devnode *dev_node_obj,
++			      OUT u32 *pdwAutoStart)
++{
++	int status = 0;
++	u32 dw_buf_size;
++	struct drv_data *drv_datap = dev_get_drvdata(bridge);
++
++	dw_buf_size = sizeof(*pdwAutoStart);
++	if (!dev_node_obj)
++		status = -EFAULT;
++	if (!pdwAutoStart || !drv_datap)
++		status = -EFAULT;
++	if (DSP_SUCCEEDED(status))
++		*pdwAutoStart = (drv_datap->base_img) ? 1 : 0;
++
++	DBC_ENSURE((status == 0 &&
++		    (*pdwAutoStart == 0 || *pdwAutoStart == 1))
++		   || status != 0);
++	return status;
++}
 +
 +/*
-+ * FUNCTION	      : mmu_set_ram_entry
-+ *
-+ * INPUTS:
-+ *
-+ *       Identifier      : baseAddress
-+ *       Type	    	: const u32
-+ *       Description     : Base Address of instance of MMU module
-+ *
-+ *       Identifier      : physicalAddr
-+ *       Type	    	: const u32
-+ *       Description     : Physical Address to which the corresponding
-+ *			 virtual   Address shouldpoint
-+ *
-+ *       Identifier      : endianism
-+ *       Type	    	: hw_endianism_t
-+ *       Description     : endianism for the given page
-+ *
-+ *       Identifier      : element_size
-+ *       Type	    	: hw_element_size_t
-+ *       Description     : The element size ( 8,16, 32 or 64 bit)
-+ *
-+ *       Identifier      : mixed_size
-+ *       Type	    	: hw_mmu_mixed_size_t
-+ *       Description     : Element Size to follow CPU or TLB
-+ *
-+ * RETURNS:
-+ *
-+ *       Type	    	: hw_status
-+ *       Description     : RET_OK		 -- No errors occured
-+ *			 RET_BAD_NULL_PARAM     -- A Pointer Paramater
-+ *							was set to NULL
-+ *			 RET_PARAM_OUT_OF_RANGE -- Input Parameter
-+ *							out of Range
-+ *
-+ * PURPOSE:	      : Set MMU_CAM reg
-+ *
-+ * METHOD:	       : Check the Input parameters and set the RAM entry.
++ *  ======== cfg_get_dev_object ========
++ *  Purpose:
++ *      Retrieve the Device Object handle for a given devnode.
 + */
-+static hw_status mmu_set_ram_entry(const void __iomem *baseAddress,
-+				   const u32 physicalAddr,
-+				   enum hw_endianism_t endianism,
-+				   enum hw_element_size_t element_size,
-+				   enum hw_mmu_mixed_size_t mixed_size);
-+
-+/* HW FUNCTIONS */
-+
-+hw_status hw_mmu_enable(const void __iomem *baseAddress)
++int cfg_get_dev_object(struct cfg_devnode *dev_node_obj,
++			      OUT u32 *pdwValue)
 +{
-+	hw_status status = RET_OK;
++	int status = 0;
++	u32 dw_buf_size;
++	struct drv_data *drv_datap = dev_get_drvdata(bridge);
 +
-+	MMUMMU_CNTLMMU_ENABLE_WRITE32(baseAddress, HW_SET);
++	if (!drv_datap)
++		status = -EPERM;
 +
++	if (!dev_node_obj)
++		status = -EFAULT;
++
++	if (!pdwValue)
++		status = -EFAULT;
++
++	dw_buf_size = sizeof(pdwValue);
++	if (DSP_SUCCEEDED(status)) {
++
++		/* check the device string and then store dev object */
++		if (!
++		    (strcmp
++		     ((char *)((struct drv_ext *)dev_node_obj)->sz_string,
++		      "TIOMAP1510")))
++			*pdwValue = (u32)drv_datap->dev_object;
++	}
++	if (DSP_FAILED(status))
++		pr_err("%s: Failed, status 0x%x\n", __func__, status);
 +	return status;
 +}
 +
-+hw_status hw_mmu_disable(const void __iomem *baseAddress)
++/*
++ *  ======== cfg_get_exec_file ========
++ *  Purpose:
++ *      Retreive the default executable, if any, for this board.
++ */
++int cfg_get_exec_file(struct cfg_devnode *dev_node_obj, u32 ul_buf_size,
++			     OUT char *pstrExecFile)
 +{
-+	hw_status status = RET_OK;
++	int status = 0;
++	struct drv_data *drv_datap = dev_get_drvdata(bridge);
 +
-+	MMUMMU_CNTLMMU_ENABLE_WRITE32(baseAddress, HW_CLEAR);
++	if (!dev_node_obj)
++		status = -EFAULT;
 +
++	else if (!pstrExecFile || !drv_datap)
++		status = -EFAULT;
++
++	if (strlen(drv_datap->base_img) > ul_buf_size)
++		status = -EINVAL;
++
++	if (DSP_SUCCEEDED(status) && drv_datap->base_img)
++		strcpy(pstrExecFile, drv_datap->base_img);
++
++	if (DSP_FAILED(status))
++		pr_err("%s: Failed, status 0x%x\n", __func__, status);
++	DBC_ENSURE(((status == 0) &&
++		    (strlen(pstrExecFile) <= ul_buf_size))
++		   || (status != 0));
 +	return status;
 +}
 +
-+hw_status hw_mmu_num_locked_set(const void __iomem *baseAddress,
-+				u32 numLockedEntries)
++/*
++ *  ======== cfg_get_object ========
++ *  Purpose:
++ *      Retrieve the Object handle from the Registry
++ */
++int cfg_get_object(OUT u32 *pdwValue, u8 dw_type)
 +{
-+	hw_status status = RET_OK;
++	int status = -EINVAL;
++	struct drv_data *drv_datap = dev_get_drvdata(bridge);
 +
-+	MMUMMU_LOCK_BASE_VALUE_WRITE32(baseAddress, numLockedEntries);
++	DBC_REQUIRE(pdwValue != NULL);
 +
-+	return status;
-+}
++	if (!drv_datap)
++		return -EPERM;
 +
-+hw_status hw_mmu_victim_num_set(const void __iomem *baseAddress,
-+				u32 victimEntryNum)
-+{
-+	hw_status status = RET_OK;
-+
-+	MMUMMU_LOCK_CURRENT_VICTIM_WRITE32(baseAddress, victimEntryNum);
-+
-+	return status;
-+}
-+
-+hw_status hw_mmu_event_ack(const void __iomem *baseAddress, u32 irqMask)
-+{
-+	hw_status status = RET_OK;
-+
-+	MMUMMU_IRQSTATUS_WRITE_REGISTER32(baseAddress, irqMask);
-+
-+	return status;
-+}
-+
-+hw_status hw_mmu_event_disable(const void __iomem *baseAddress, u32 irqMask)
-+{
-+	hw_status status = RET_OK;
-+	u32 irq_reg;
-+
-+	irq_reg = MMUMMU_IRQENABLE_READ_REGISTER32(baseAddress);
-+
-+	MMUMMU_IRQENABLE_WRITE_REGISTER32(baseAddress, irq_reg & ~irqMask);
-+
-+	return status;
-+}
-+
-+hw_status hw_mmu_event_enable(const void __iomem *baseAddress, u32 irqMask)
-+{
-+	hw_status status = RET_OK;
-+	u32 irq_reg;
-+
-+	irq_reg = MMUMMU_IRQENABLE_READ_REGISTER32(baseAddress);
-+
-+	MMUMMU_IRQENABLE_WRITE_REGISTER32(baseAddress, irq_reg | irqMask);
-+
-+	return status;
-+}
-+
-+hw_status hw_mmu_event_status(const void __iomem *baseAddress, u32 *irqMask)
-+{
-+	hw_status status = RET_OK;
-+
-+	*irqMask = MMUMMU_IRQSTATUS_READ_REGISTER32(baseAddress);
-+
-+	return status;
-+}
-+
-+hw_status hw_mmu_fault_addr_read(const void __iomem *baseAddress, u32 *addr)
-+{
-+	hw_status status = RET_OK;
-+
-+	/*Check the input Parameters */
-+	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-+			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
-+
-+	/* read values from register */
-+	*addr = MMUMMU_FAULT_AD_READ_REGISTER32(baseAddress);
-+
-+	return status;
-+}
-+
-+hw_status hw_mmu_ttb_set(const void __iomem *baseAddress, u32 TTBPhysAddr)
-+{
-+	hw_status status = RET_OK;
-+	u32 load_ttb;
-+
-+	/*Check the input Parameters */
-+	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-+			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
-+
-+	load_ttb = TTBPhysAddr & ~0x7FUL;
-+	/* write values to register */
-+	MMUMMU_TTB_WRITE_REGISTER32(baseAddress, load_ttb);
-+
-+	return status;
-+}
-+
-+hw_status hw_mmu_twl_enable(const void __iomem *baseAddress)
-+{
-+	hw_status status = RET_OK;
-+
-+	MMUMMU_CNTLTWL_ENABLE_WRITE32(baseAddress, HW_SET);
-+
-+	return status;
-+}
-+
-+hw_status hw_mmu_twl_disable(const void __iomem *baseAddress)
-+{
-+	hw_status status = RET_OK;
-+
-+	MMUMMU_CNTLTWL_ENABLE_WRITE32(baseAddress, HW_CLEAR);
-+
-+	return status;
-+}
-+
-+hw_status hw_mmu_tlb_flush(const void __iomem *baseAddress, u32 virtualAddr,
-+			   u32 pageSize)
-+{
-+	hw_status status = RET_OK;
-+	u32 virtual_addr_tag;
-+	enum hw_mmu_page_size_t pg_size_bits;
-+
-+	switch (pageSize) {
-+	case HW_PAGE_SIZE4KB:
-+		pg_size_bits = HW_MMU_SMALL_PAGE;
++	switch (dw_type) {
++	case (REG_DRV_OBJECT):
++		if (drv_datap->drv_object) {
++			*pdwValue = (u32)drv_datap->drv_object;
++			status = 0;
++		} else {
++			status = -ENODATA;
++		}
 +		break;
-+
-+	case HW_PAGE_SIZE64KB:
-+		pg_size_bits = HW_MMU_LARGE_PAGE;
-+		break;
-+
-+	case HW_PAGE_SIZE1MB:
-+		pg_size_bits = HW_MMU_SECTION;
-+		break;
-+
-+	case HW_PAGE_SIZE16MB:
-+		pg_size_bits = HW_MMU_SUPERSECTION;
++	case (REG_MGR_OBJECT):
++		if (drv_datap->mgr_object) {
++			*pdwValue = (u32)drv_datap->mgr_object;
++			status = 0;
++		} else {
++			status = -ENODATA;
++		}
 +		break;
 +
 +	default:
-+		return RET_FAIL;
++		break;
 +	}
-+
-+	/* Generate the 20-bit tag from virtual address */
-+	virtual_addr_tag = ((virtualAddr & MMU_ADDR_MASK) >> 12);
-+
-+	mmu_set_cam_entry(baseAddress, pg_size_bits, 0, 0, virtual_addr_tag);
-+
-+	mmu_flush_entry(baseAddress);
-+
-+	return status;
-+}
-+
-+hw_status hw_mmu_tlb_add(const void __iomem *baseAddress,
-+			 u32 physicalAddr,
-+			 u32 virtualAddr,
-+			 u32 pageSize,
-+			 u32 entryNum,
-+			 struct hw_mmu_map_attrs_t *map_attrs,
-+			 s8 preservedBit, s8 validBit)
-+{
-+	hw_status status = RET_OK;
-+	u32 lock_reg;
-+	u32 virtual_addr_tag;
-+	enum hw_mmu_page_size_t mmu_pg_size;
-+
-+	/*Check the input Parameters */
-+	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-+			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
-+	CHECK_INPUT_RANGE_MIN0(pageSize, MMU_PAGE_MAX, RET_PARAM_OUT_OF_RANGE,
-+			       RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
-+	CHECK_INPUT_RANGE_MIN0(map_attrs->element_size, MMU_ELEMENTSIZE_MAX,
-+			       RET_PARAM_OUT_OF_RANGE, RES_MMU_BASE +
-+			       RES_INVALID_INPUT_PARAM);
-+
-+	switch (pageSize) {
-+	case HW_PAGE_SIZE4KB:
-+		mmu_pg_size = HW_MMU_SMALL_PAGE;
-+		break;
-+
-+	case HW_PAGE_SIZE64KB:
-+		mmu_pg_size = HW_MMU_LARGE_PAGE;
-+		break;
-+
-+	case HW_PAGE_SIZE1MB:
-+		mmu_pg_size = HW_MMU_SECTION;
-+		break;
-+
-+	case HW_PAGE_SIZE16MB:
-+		mmu_pg_size = HW_MMU_SUPERSECTION;
-+		break;
-+
-+	default:
-+		return RET_FAIL;
++	if (DSP_FAILED(status)) {
++		*pdwValue = 0;
++		pr_err("%s: Failed, status 0x%x\n", __func__, status);
 +	}
-+
-+	lock_reg = MMUMMU_LOCK_READ_REGISTER32(baseAddress);
-+
-+	/* Generate the 20-bit tag from virtual address */
-+	virtual_addr_tag = ((virtualAddr & MMU_ADDR_MASK) >> 12);
-+
-+	/* Write the fields in the CAM Entry Register */
-+	mmu_set_cam_entry(baseAddress, mmu_pg_size, preservedBit, validBit,
-+			  virtual_addr_tag);
-+
-+	/* Write the different fields of the RAM Entry Register */
-+	/* endianism of the page,Element Size of the page (8, 16, 32, 64 bit) */
-+	mmu_set_ram_entry(baseAddress, physicalAddr, map_attrs->endianism,
-+			  map_attrs->element_size, map_attrs->mixed_size);
-+
-+	/* Update the MMU Lock Register */
-+	/* currentVictim between lockedBaseValue and (MMU_Entries_Number - 1) */
-+	MMUMMU_LOCK_CURRENT_VICTIM_WRITE32(baseAddress, entryNum);
-+
-+	/* Enable loading of an entry in TLB by writing 1
-+	   into LD_TLB_REG register */
-+	MMUMMU_LD_TLB_WRITE_REGISTER32(baseAddress, MMU_LOAD_TLB);
-+
-+	MMUMMU_LOCK_WRITE_REGISTER32(baseAddress, lock_reg);
-+
++	DBC_ENSURE((DSP_SUCCEEDED(status) && *pdwValue != 0) ||
++		   (DSP_FAILED(status) && *pdwValue == 0));
 +	return status;
 +}
 +
-+hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
-+			 u32 physicalAddr,
-+			 u32 virtualAddr,
-+			 u32 pageSize, struct hw_mmu_map_attrs_t *map_attrs)
-+{
-+	hw_status status = RET_OK;
-+	u32 pte_addr, pte_val;
-+	s32 num_entries = 1;
-+
-+	switch (pageSize) {
-+	case HW_PAGE_SIZE4KB:
-+		pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va,
-+					      virtualAddr &
-+					      MMU_SMALL_PAGE_MASK);
-+		pte_val =
-+		    ((physicalAddr & MMU_SMALL_PAGE_MASK) |
-+		     (map_attrs->endianism << 9) | (map_attrs->
-+						    element_size << 4) |
-+		     (map_attrs->mixed_size << 11) | 2);
-+		break;
-+
-+	case HW_PAGE_SIZE64KB:
-+		num_entries = 16;
-+		pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va,
-+					      virtualAddr &
-+					      MMU_LARGE_PAGE_MASK);
-+		pte_val =
-+		    ((physicalAddr & MMU_LARGE_PAGE_MASK) |
-+		     (map_attrs->endianism << 9) | (map_attrs->
-+						    element_size << 4) |
-+		     (map_attrs->mixed_size << 11) | 1);
-+		break;
-+
-+	case HW_PAGE_SIZE1MB:
-+		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
-+					      virtualAddr &
-+					      MMU_SECTION_ADDR_MASK);
-+		pte_val =
-+		    ((((physicalAddr & MMU_SECTION_ADDR_MASK) |
-+		       (map_attrs->endianism << 15) | (map_attrs->
-+						       element_size << 10) |
-+		       (map_attrs->mixed_size << 17)) & ~0x40000) | 0x2);
-+		break;
-+
-+	case HW_PAGE_SIZE16MB:
-+		num_entries = 16;
-+		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
-+					      virtualAddr &
-+					      MMU_SSECTION_ADDR_MASK);
-+		pte_val =
-+		    (((physicalAddr & MMU_SSECTION_ADDR_MASK) |
-+		      (map_attrs->endianism << 15) | (map_attrs->
-+						      element_size << 10) |
-+		      (map_attrs->mixed_size << 17)
-+		     ) | 0x40000 | 0x2);
-+		break;
-+
-+	case HW_MMU_COARSE_PAGE_SIZE:
-+		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
-+					      virtualAddr &
-+					      MMU_SECTION_ADDR_MASK);
-+		pte_val = (physicalAddr & MMU_PAGE_TABLE_MASK) | 1;
-+		break;
-+
-+	default:
-+		return RET_FAIL;
-+	}
-+
-+	while (--num_entries >= 0)
-+		((u32 *) pte_addr)[num_entries] = pte_val;
-+
-+	return status;
-+}
-+
-+hw_status hw_mmu_pte_clear(const u32 pg_tbl_va, u32 virtualAddr, u32 page_size)
-+{
-+	hw_status status = RET_OK;
-+	u32 pte_addr;
-+	s32 num_entries = 1;
-+
-+	switch (page_size) {
-+	case HW_PAGE_SIZE4KB:
-+		pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va,
-+					      virtualAddr &
-+					      MMU_SMALL_PAGE_MASK);
-+		break;
-+
-+	case HW_PAGE_SIZE64KB:
-+		num_entries = 16;
-+		pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va,
-+					      virtualAddr &
-+					      MMU_LARGE_PAGE_MASK);
-+		break;
-+
-+	case HW_PAGE_SIZE1MB:
-+	case HW_MMU_COARSE_PAGE_SIZE:
-+		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
-+					      virtualAddr &
-+					      MMU_SECTION_ADDR_MASK);
-+		break;
-+
-+	case HW_PAGE_SIZE16MB:
-+		num_entries = 16;
-+		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
-+					      virtualAddr &
-+					      MMU_SSECTION_ADDR_MASK);
-+		break;
-+
-+	default:
-+		return RET_FAIL;
-+	}
-+
-+	while (--num_entries >= 0)
-+		((u32 *) pte_addr)[num_entries] = 0;
-+
-+	return status;
-+}
-+
-+/* mmu_flush_entry */
-+static hw_status mmu_flush_entry(const void __iomem *baseAddress)
-+{
-+	hw_status status = RET_OK;
-+	u32 flush_entry_data = 0x1;
-+
-+	/*Check the input Parameters */
-+	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-+			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
-+
-+	/* write values to register */
-+	MMUMMU_FLUSH_ENTRY_WRITE_REGISTER32(baseAddress, flush_entry_data);
-+
-+	return status;
-+}
-+
-+/* mmu_set_cam_entry */
-+static hw_status mmu_set_cam_entry(const void __iomem *baseAddress,
-+				   const u32 pageSize,
-+				   const u32 preservedBit,
-+				   const u32 validBit,
-+				   const u32 virtual_addr_tag)
-+{
-+	hw_status status = RET_OK;
-+	u32 mmu_cam_reg;
-+
-+	/*Check the input Parameters */
-+	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-+			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
-+
-+	mmu_cam_reg = (virtual_addr_tag << 12);
-+	mmu_cam_reg = (mmu_cam_reg) | (pageSize) | (validBit << 2) |
-+	    (preservedBit << 3);
-+
-+	/* write values to register */
-+	MMUMMU_CAM_WRITE_REGISTER32(baseAddress, mmu_cam_reg);
-+
-+	return status;
-+}
-+
-+/* mmu_set_ram_entry */
-+static hw_status mmu_set_ram_entry(const void __iomem *baseAddress,
-+				   const u32 physicalAddr,
-+				   enum hw_endianism_t endianism,
-+				   enum hw_element_size_t element_size,
-+				   enum hw_mmu_mixed_size_t mixed_size)
-+{
-+	hw_status status = RET_OK;
-+	u32 mmu_ram_reg;
-+
-+	/*Check the input Parameters */
-+	CHECK_INPUT_PARAM(baseAddress, 0, RET_BAD_NULL_PARAM,
-+			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
-+	CHECK_INPUT_RANGE_MIN0(element_size, MMU_ELEMENTSIZE_MAX,
-+			       RET_PARAM_OUT_OF_RANGE, RES_MMU_BASE +
-+			       RES_INVALID_INPUT_PARAM);
-+
-+	mmu_ram_reg = (physicalAddr & MMU_ADDR_MASK);
-+	mmu_ram_reg = (mmu_ram_reg) | ((endianism << 9) | (element_size << 7) |
-+				       (mixed_size << 6));
-+
-+	/* write values to register */
-+	MMUMMU_RAM_WRITE_REGISTER32(baseAddress, mmu_ram_reg);
-+
-+	return status;
-+
-+}
-diff --git a/drivers/staging/tidspbridge/hw/hw_mmu.h b/drivers/staging/tidspbridge/hw/hw_mmu.h
-new file mode 100644
-index 0000000..9b13468
---- /dev/null
-+++ b/drivers/staging/tidspbridge/hw/hw_mmu.h
-@@ -0,0 +1,161 @@
 +/*
-+ * hw_mmu.h
++ *  ======== cfg_init ========
++ *  Purpose:
++ *      Initialize the CFG module's private state.
++ */
++bool cfg_init(void)
++{
++	return true;
++}
++
++/*
++ *  ======== cfg_set_dev_object ========
++ *  Purpose:
++ *      Store the Device Object handle and dev_node pointer for a given devnode.
++ */
++int cfg_set_dev_object(struct cfg_devnode *dev_node_obj, u32 dwValue)
++{
++	int status = 0;
++	struct drv_data *drv_datap = dev_get_drvdata(bridge);
++
++	if (!drv_datap) {
++		pr_err("%s: Failed, status 0x%x\n", __func__, status);
++		return -EPERM;
++	}
++
++	if (!dev_node_obj)
++		status = -EFAULT;
++
++	if (DSP_SUCCEEDED(status)) {
++		/* Store the Bridge device object in the Registry */
++
++		if (!(strcmp((char *)dev_node_obj, "TIOMAP1510")))
++			drv_datap->dev_object = (void *) dwValue;
++	}
++	if (DSP_FAILED(status))
++		pr_err("%s: Failed, status 0x%x\n", __func__, status);
++
++	return status;
++}
++
++/*
++ *  ======== cfg_set_object ========
++ *  Purpose:
++ *      Store the Driver Object handle
++ */
++int cfg_set_object(u32 dwValue, u8 dw_type)
++{
++	int status = -EINVAL;
++	struct drv_data *drv_datap = dev_get_drvdata(bridge);
++
++	if (!drv_datap)
++		return -EPERM;
++
++	switch (dw_type) {
++	case (REG_DRV_OBJECT):
++		drv_datap->drv_object = (void *)dwValue;
++		status = 0;
++		break;
++	case (REG_MGR_OBJECT):
++		drv_datap->mgr_object = (void *)dwValue;
++		status = 0;
++		break;
++	default:
++		break;
++	}
++	if (DSP_FAILED(status))
++		pr_err("%s: Failed, status 0x%x\n", __func__, status);
++	return status;
++}
+diff --git a/drivers/staging/tidspbridge/services/ntfy.c b/drivers/staging/tidspbridge/services/ntfy.c
+new file mode 100644
+index 0000000..a2ea698
+--- /dev/null
++++ b/drivers/staging/tidspbridge/services/ntfy.c
+@@ -0,0 +1,31 @@
++/*
++ * ntfy.c
 + *
 + * DSP-BIOS Bridge driver support functions for TI OMAP processors.
 + *
-+ * MMU types and API declarations
++ * Manage lists of notification events.
 + *
-+ * Copyright (C) 2007 Texas Instruments, Inc.
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
 + *
 + * This package is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
@@ -1432,149 +351,204 @@ index 0000000..9b13468
 + * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 + */
 +
-+#ifndef _HW_MMU_H
-+#define _HW_MMU_H
++/*  ----------------------------------- This */
++#include <dspbridge/ntfy.h>
 +
-+#include <linux/types.h>
-+
-+/* Bitmasks for interrupt sources */
-+#define HW_MMU_TRANSLATION_FAULT   0x2
-+#define HW_MMU_ALL_INTERRUPTS      0x1F
-+
-+#define HW_MMU_COARSE_PAGE_SIZE 0x400
-+
-+/* hw_mmu_mixed_size_t:  Enumerated Type used to specify whether to follow
-+			CPU/TLB Element size */
-+enum hw_mmu_mixed_size_t {
-+	HW_MMU_TLBES,
-+	HW_MMU_CPUES
-+};
-+
-+/* hw_mmu_map_attrs_t:  Struct containing MMU mapping attributes */
-+struct hw_mmu_map_attrs_t {
-+	enum hw_endianism_t endianism;
-+	enum hw_element_size_t element_size;
-+	enum hw_mmu_mixed_size_t mixed_size;
-+	bool donotlockmpupage;
-+};
-+
-+extern hw_status hw_mmu_enable(const void __iomem *baseAddress);
-+
-+extern hw_status hw_mmu_disable(const void __iomem *baseAddress);
-+
-+extern hw_status hw_mmu_num_locked_set(const void __iomem *baseAddress,
-+				       u32 numLockedEntries);
-+
-+extern hw_status hw_mmu_victim_num_set(const void __iomem *baseAddress,
-+				       u32 victimEntryNum);
-+
-+/* For MMU faults */
-+extern hw_status hw_mmu_event_ack(const void __iomem *baseAddress,
-+				  u32 irqMask);
-+
-+extern hw_status hw_mmu_event_disable(const void __iomem *baseAddress,
-+				      u32 irqMask);
-+
-+extern hw_status hw_mmu_event_enable(const void __iomem *baseAddress,
-+				     u32 irqMask);
-+
-+extern hw_status hw_mmu_event_status(const void __iomem *baseAddress,
-+				     u32 *irqMask);
-+
-+extern hw_status hw_mmu_fault_addr_read(const void __iomem *baseAddress,
-+					u32 *addr);
-+
-+/* Set the TT base address */
-+extern hw_status hw_mmu_ttb_set(const void __iomem *baseAddress,
-+				u32 TTBPhysAddr);
-+
-+extern hw_status hw_mmu_twl_enable(const void __iomem *baseAddress);
-+
-+extern hw_status hw_mmu_twl_disable(const void __iomem *baseAddress);
-+
-+extern hw_status hw_mmu_tlb_flush(const void __iomem *baseAddress,
-+				  u32 virtualAddr, u32 pageSize);
-+
-+extern hw_status hw_mmu_tlb_add(const void __iomem *baseAddress,
-+				u32 physicalAddr,
-+				u32 virtualAddr,
-+				u32 pageSize,
-+				u32 entryNum,
-+				struct hw_mmu_map_attrs_t *map_attrs,
-+				s8 preservedBit, s8 validBit);
-+
-+/* For PTEs */
-+extern hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
-+				u32 physicalAddr,
-+				u32 virtualAddr,
-+				u32 pageSize,
-+				struct hw_mmu_map_attrs_t *map_attrs);
-+
-+extern hw_status hw_mmu_pte_clear(const u32 pg_tbl_va,
-+				  u32 page_size, u32 virtualAddr);
-+
-+static inline u32 hw_mmu_pte_addr_l1(u32 L1_base, u32 va)
++int dsp_notifier_event(struct notifier_block *this, unsigned long event,
++			   void *data)
 +{
-+	u32 pte_addr;
-+	u32 va31_to20;
-+
-+	va31_to20 = va >> (20 - 2);	/* Left-shift by 2 here itself */
-+	va31_to20 &= 0xFFFFFFFCUL;
-+	pte_addr = L1_base + va31_to20;
-+
-+	return pte_addr;
++	struct  ntfy_event *ne = container_of(this, struct ntfy_event,
++							noti_block);
++	if (ne->event & event)
++		sync_set_event(&ne->sync_obj);
++	return NOTIFY_OK;
 +}
 +
-+static inline u32 hw_mmu_pte_addr_l2(u32 L2_base, u32 va)
+diff --git a/drivers/staging/tidspbridge/services/services.c b/drivers/staging/tidspbridge/services/services.c
+new file mode 100644
+index 0000000..23be95c
+--- /dev/null
++++ b/drivers/staging/tidspbridge/services/services.c
+@@ -0,0 +1,69 @@
++/*
++ * services.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * Provide SERVICES loading.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++#include <dspbridge/host_os.h>
++
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
++
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
++
++/*  ----------------------------------- OS Adaptation Layer */
++#include <dspbridge/cfg.h>
++#include <dspbridge/ntfy.h>
++#include <dspbridge/sync.h>
++#include <dspbridge/clk.h>
++
++/*  ----------------------------------- This */
++#include <dspbridge/services.h>
++
++/*
++ *  ======== services_exit ========
++ *  Purpose:
++ *      Discontinue usage of module; free resources when reference count
++ *      reaches 0.
++ */
++void services_exit(void)
 +{
-+	u32 pte_addr;
-+
-+	pte_addr = (L2_base & 0xFFFFFC00) | ((va >> 10) & 0x3FC);
-+
-+	return pte_addr;
++	cfg_exit();
 +}
 +
-+static inline u32 hw_mmu_pte_coarse_l1(u32 pte_val)
++/*
++ *  ======== services_init ========
++ *  Purpose:
++ *      Initializes SERVICES modules.
++ */
++bool services_init(void)
 +{
-+	u32 pte_coarse;
++	bool ret = true;
++	bool fcfg;
 +
-+	pte_coarse = pte_val & 0xFFFFFC00;
++	/* Perform required initialization of SERVICES modules. */
++	fcfg = cfg_init();
 +
-+	return pte_coarse;
-+}
++	ret = fcfg;
 +
-+static inline u32 hw_mmu_pte_size_l1(u32 pte_val)
-+{
-+	u32 pte_size = 0;
-+
-+	if ((pte_val & 0x3) == 0x1) {
-+		/* Points to L2 PT */
-+		pte_size = HW_MMU_COARSE_PAGE_SIZE;
++	if (!ret) {
++		if (fcfg)
++			cfg_exit();
 +	}
 +
-+	if ((pte_val & 0x3) == 0x2) {
-+		if (pte_val & (1 << 18))
-+			pte_size = HW_PAGE_SIZE16MB;
-+		else
-+			pte_size = HW_PAGE_SIZE1MB;
++	return ret;
++}
+diff --git a/drivers/staging/tidspbridge/services/sync.c b/drivers/staging/tidspbridge/services/sync.c
+new file mode 100644
+index 0000000..9010b37
+--- /dev/null
++++ b/drivers/staging/tidspbridge/services/sync.c
+@@ -0,0 +1,104 @@
++/*
++ * sync.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * Synchronization services.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++/*  ----------------------------------- Host OS */
++#include <dspbridge/host_os.h>
++
++/*  ----------------------------------- This */
++#include <dspbridge/sync.h>
++
++DEFINE_SPINLOCK(sync_lock);
++
++/**
++ * sync_set_event() - set or signal and specified event
++ * @event:	Event to be set..
++ *
++ * set the @event, if there is an thread waiting for the event
++ * it will be waken up, this function only wakes one thread.
++ */
++
++void sync_set_event(struct sync_object *event)
++{
++	spin_lock_bh(&sync_lock);
++	complete(&event->comp);
++	if (event->multi_comp)
++		complete(event->multi_comp);
++	spin_unlock_bh(&sync_lock);
++}
++
++/**
++ * sync_wait_on_multiple_events() - waits for multiple events to be set.
++ * @events:	Array of events to wait for them.
++ * @count:	number of elements of the array.
++ * @timeout	timeout on waiting for the evetns.
++ * @pu_index	index of the event set.
++ *
++ * This functios will wait until any of the array element is set or until
++ * timeout. In case of success the function will return 0 and
++ * @pu_index will store the index of the array element set or in case
++ * of timeout the function will return -ETIME or in case of
++ * interrupting by a signal it will return -EPERM.
++ */
++
++int sync_wait_on_multiple_events(struct sync_object **events,
++				     unsigned count, unsigned timeout,
++				     unsigned *index)
++{
++	unsigned i;
++	int status = -EPERM;
++	struct completion m_comp;
++
++	init_completion(&m_comp);
++
++	if (SYNC_INFINITE == timeout)
++		timeout = MAX_SCHEDULE_TIMEOUT;
++
++	spin_lock_bh(&sync_lock);
++	for (i = 0; i < count; i++) {
++		if (completion_done(&events[i]->comp)) {
++			INIT_COMPLETION(events[i]->comp);
++			*index = i;
++			spin_unlock_bh(&sync_lock);
++			status = 0;
++			goto func_end;
++		}
 +	}
 +
-+	return pte_size;
++	for (i = 0; i < count; i++)
++		events[i]->multi_comp = &m_comp;
++
++	spin_unlock_bh(&sync_lock);
++
++	if (!wait_for_completion_interruptible_timeout(&m_comp,
++					msecs_to_jiffies(timeout)))
++		status = -ETIME;
++
++	spin_lock_bh(&sync_lock);
++	for (i = 0; i < count; i++) {
++		if (completion_done(&events[i]->comp)) {
++			INIT_COMPLETION(events[i]->comp);
++			*index = i;
++			status = 0;
++		}
++		events[i]->multi_comp = NULL;
++	}
++	spin_unlock_bh(&sync_lock);
++func_end:
++	return status;
 +}
 +
-+static inline u32 hw_mmu_pte_size_l2(u32 pte_val)
-+{
-+	u32 pte_size = 0;
-+
-+	if (pte_val & 0x2)
-+		pte_size = HW_PAGE_SIZE4KB;
-+	else if (pte_val & 0x1)
-+		pte_size = HW_PAGE_SIZE64KB;
-+
-+	return pte_size;
-+}
-+
-+#endif /* _HW_MMU_H */
 -- 
 1.7.0.4
 
