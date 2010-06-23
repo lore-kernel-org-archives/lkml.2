@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0FWKHr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 06:07:47 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47805 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab0FWKEf (ORCPT
+	id S1752845Ab0FWKEb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 06:04:31 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:49505 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab0FWKEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 06:04:35 -0400
+	Wed, 23 Jun 2010 06:04:21 -0400
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
 Cc: Jason Baron <jbaron@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,19 +15,13 @@ Cc: Jason Baron <jbaron@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
        Paul Mackerras <paulus@samba.org>,
        Michael Ellerman <michael@ellerman.id.au>,
        Ian Munsie <imunsie@au1.ibm.com>,
+       "David S. Miller" <davem@davemloft.net>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Christoph Hellwig <hch@lst.de>,
-       Jesper Nilsson <jesper.nilsson@axis.com>,
-       David Howells <dhowells@redhat.com>,
-       Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-       Kumar Gala <galak@kernel.crashing.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, David Gibson <dwg@au1.ibm.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       Chase Douglas <cndougla@linux.vnet.ibm.com>
-Subject: [PATCH 28/40] trace syscalls, PPC: Convert syscalls using regs to REGS_SYSCALL_DEFINE macros
-Date: Wed, 23 Jun 2010 20:03:09 +1000
-Message-Id: <1277287401-28571-29-git-send-email-imunsie@au1.ibm.com>
+       Arnd Bergmann <arnd@arndb.de>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>
+Subject: [PATCH 10/40] tracing: add tracing support for compat syscalls
+Date: Wed, 23 Jun 2010 20:02:51 +1000
+Message-Id: <1277287401-28571-11-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
 References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
@@ -35,227 +29,279 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
+From: Jason Baron <jbaron@redhat.com>
 
-This patch coverts a number of system calls on PowerPC to use the new
-PPC_REGS_SYSCALL_DEFINE class of macros, to record their metadata but
-still use the correct syntax to access the registers through the 7th
-parameter.
+Add core support to event tracing for compat syscalls. The basic idea is that we
+check if we have a compat task via 'is_compat_task()'. If so, we lookup in the
+new compat_syscalls_metadata table, the corresponding struct syscall_metadata, to
+check syscall arguments and whether or not we are enabled.
 
+Signed-off-by: Jason Baron <jbaron@redhat.com>
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 ---
- arch/powerpc/include/asm/syscalls.h |   10 ++++++----
- arch/powerpc/kernel/process.c       |   27 +++++++++++----------------
- arch/powerpc/kernel/signal.c        |    7 ++++---
- arch/powerpc/kernel/signal_32.c     |   11 +++++------
- arch/powerpc/kernel/signal_64.c     |   11 ++++-------
- arch/powerpc/kernel/sys_ppc32.c     |   11 ++++++-----
- 6 files changed, 36 insertions(+), 41 deletions(-)
+ include/linux/compat.h        |    2 +
+ include/trace/syscall.h       |    4 ++
+ kernel/trace/trace.h          |    2 +
+ kernel/trace/trace_syscalls.c |   86 +++++++++++++++++++++++++++++++++++++----
+ 4 files changed, 86 insertions(+), 8 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/syscalls.h b/arch/powerpc/include/asm/syscalls.h
-index 72badaa..531b45d 100644
---- a/arch/powerpc/include/asm/syscalls.h
-+++ b/arch/powerpc/include/asm/syscalls.h
-@@ -71,12 +71,14 @@ asmlinkage unsigned long sys_mmap(unsigned long addr, size_t len,
- asmlinkage unsigned long sys_mmap2(unsigned long addr, size_t len,
- 		unsigned long prot, unsigned long flags,
- 		unsigned long fd, unsigned long pgoff);
--asmlinkage int sys_execve(unsigned long a0, unsigned long a1,
--		unsigned long a2, unsigned long a3, unsigned long a4,
--		unsigned long a5, struct pt_regs *regs);
-+asmlinkage int sys_execve(char __user * ufilename,
-+		char __user * __user * argv,
-+		char __user * __user * envp,
-+		unsigned long, unsigned long, unsigned long,
-+		struct pt_regs *regs);
- asmlinkage int sys_clone(unsigned long clone_flags, unsigned long usp,
- 		int __user *parent_tidp, void __user *child_threadptr,
--		int __user *child_tidp, int p6, struct pt_regs *regs);
-+		int __user *child_tidp, unsigned long p6, struct pt_regs *regs);
- asmlinkage int sys_fork(unsigned long p1, unsigned long p2,
- 		unsigned long p3, unsigned long p4, unsigned long p5,
- 		unsigned long p6, struct pt_regs *regs);
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index 9b41ece..df08d05 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -950,10 +950,9 @@ int get_unalign_ctl(struct task_struct *tsk, unsigned long adr)
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index ab638e9..a94f13d 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -363,6 +363,8 @@ extern ssize_t compat_rw_copy_check_uvector(int type,
  
- #define TRUNC_PTR(x)	((typeof(x))(((unsigned long)(x)) & 0xffffffff))
+ #else /* CONFIG_COMPAT */
  
--int sys_clone(unsigned long clone_flags, unsigned long usp,
--	      int __user *parent_tidp, void __user *child_threadptr,
--	      int __user *child_tidp, int p6,
--	      struct pt_regs *regs)
-+PPC_REGS_SYSCALL_DEFINE5_RET(int, clone, regs, unsigned long, clone_flags, unsigned long, usp,
-+	      int __user *, parent_tidp, void __user *, child_threadptr,
-+	      int __user *, child_tidp)
++#define NR_syscalls_compat 0
++
+ static inline int is_compat_task(void)
  {
- 	CHECK_FULL_REGS(regs);
- 	if (usp == 0)
-@@ -967,39 +966,35 @@ int sys_clone(unsigned long clone_flags, unsigned long usp,
-  	return do_fork(clone_flags, usp, regs, 0, parent_tidp, child_tidp);
+ 	return 0;
+diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+index 75f3dce..67d4e64 100644
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -22,6 +22,7 @@
+ struct syscall_metadata {
+ 	const char	*name;
+ 	int		syscall_nr;
++	int		compat_syscall_nr;
+ 	int		nb_args;
+ 	const char	**types;
+ 	const char	**args;
+@@ -38,6 +39,9 @@ struct syscall_metadata {
+ 
+ #ifdef CONFIG_FTRACE_SYSCALLS
+ extern unsigned long arch_syscall_addr(int nr);
++#ifdef CONFIG_COMPAT
++extern unsigned long arch_compat_syscall_addr(int nr);
++#endif
+ extern int init_syscall_trace(struct ftrace_event_call *call);
+ 
+ extern int reg_event_syscall_enter(struct ftrace_event_call *call);
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 01ce088..53ace4b 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -79,12 +79,14 @@ enum trace_type {
+ struct syscall_trace_enter {
+ 	struct trace_entry	ent;
+ 	int			nr;
++	int			compat;
+ 	unsigned long		args[];
+ };
+ 
+ struct syscall_trace_exit {
+ 	struct trace_entry	ent;
+ 	int			nr;
++	int			compat;
+ 	long			ret;
+ };
+ 
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index f5ddb9c..d910cba 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -4,6 +4,7 @@
+ #include <linux/kernel.h>
+ #include <linux/ftrace.h>
+ #include <linux/perf_event.h>
++#include <linux/compat.h>
+ #include <asm/syscall.h>
+ 
+ #include "trace_output.h"
+@@ -65,6 +66,7 @@ extern unsigned long __start_syscalls_metadata[];
+ extern unsigned long __stop_syscalls_metadata[];
+ 
+ static struct syscall_metadata **syscalls_metadata;
++static struct syscall_metadata **compat_syscalls_metadata;
+ 
+ static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
+ {
+@@ -84,8 +86,14 @@ static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
+ 	return NULL;
  }
  
--int sys_fork(unsigned long p1, unsigned long p2, unsigned long p3,
--	     unsigned long p4, unsigned long p5, unsigned long p6,
--	     struct pt_regs *regs)
-+PPC_REGS_SYSCALL_DEFINE0_RET(int, fork, regs)
+-static struct syscall_metadata *syscall_nr_to_meta(int nr)
++static struct syscall_metadata *syscall_nr_to_meta(int nr, int compat)
  {
- 	CHECK_FULL_REGS(regs);
- 	return do_fork(SIGCHLD, regs->gpr[1], regs, 0, NULL, NULL);
- }
++	if (compat) {
++		if (!compat_syscalls_metadata || nr >= NR_syscalls_compat ||
++									nr < 0)
++			return NULL;
++		return compat_syscalls_metadata[nr];
++	}
+ 	if (!syscalls_metadata || nr >= NR_syscalls || nr < 0)
+ 		return NULL;
  
--int sys_vfork(unsigned long p1, unsigned long p2, unsigned long p3,
--	      unsigned long p4, unsigned long p5, unsigned long p6,
--	      struct pt_regs *regs)
-+PPC_REGS_SYSCALL_DEFINE0_RET(int, vfork, regs)
- {
- 	CHECK_FULL_REGS(regs);
- 	return do_fork(CLONE_VFORK | CLONE_VM | SIGCHLD, regs->gpr[1],
- 			regs, 0, NULL, NULL);
- }
+@@ -104,7 +112,7 @@ print_syscall_enter(struct trace_iterator *iter, int flags,
  
--int sys_execve(unsigned long a0, unsigned long a1, unsigned long a2,
--	       unsigned long a3, unsigned long a4, unsigned long a5,
--	       struct pt_regs *regs)
-+PPC_REGS_SYSCALL_DEFINE3_RET(int, execve, regs,
-+		char __user *, ufilename,
-+		char __user * __user *, argv,
-+		char __user * __user *, envp)
- {
- 	int error;
- 	char *filename;
+ 	trace = (typeof(trace))ent;
+ 	syscall = trace->nr;
+-	entry = syscall_nr_to_meta(syscall);
++	entry = syscall_nr_to_meta(syscall, trace->compat);
  
--	filename = getname((char __user *) a0);
-+	filename = getname(ufilename);
- 	error = PTR_ERR(filename);
- 	if (IS_ERR(filename))
- 		goto out;
- 	flush_fp_to_thread(current);
- 	flush_altivec_to_thread(current);
- 	flush_spe_to_thread(current);
--	error = do_execve(filename, (char __user * __user *) a1,
--			  (char __user * __user *) a2, regs);
-+	error = do_execve(filename, argv, envp, regs);
- 	putname(filename);
- out:
- 	return error;
-diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
-index a0afb55..8ebc83b 100644
---- a/arch/powerpc/kernel/signal.c
-+++ b/arch/powerpc/kernel/signal.c
-@@ -13,6 +13,7 @@
- #include <linux/signal.h>
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
-+#include <asm/syscalls.h>
+ 	if (!entry)
+ 		goto end;
+@@ -158,7 +166,7 @@ print_syscall_exit(struct trace_iterator *iter, int flags,
  
- #include "signal.h"
+ 	trace = (typeof(trace))ent;
+ 	syscall = trace->nr;
+-	entry = syscall_nr_to_meta(syscall);
++	entry = syscall_nr_to_meta(syscall, trace->compat);
  
-@@ -197,9 +198,9 @@ void do_signal(struct pt_regs *regs, unsigned long thread_info_flags)
+ 	if (!entry) {
+ 		trace_seq_printf(s, "\n");
+@@ -293,12 +301,16 @@ void ftrace_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ 	struct ring_buffer *buffer;
+ 	int size;
+ 	int syscall_nr;
++	int compat = 0;
+ 
+ 	syscall_nr = syscall_get_nr(current, regs);
+ 	if (syscall_nr < 0)
+ 		return;
+ 
+-	sys_data = syscall_nr_to_meta(syscall_nr);
++	if (is_compat_task())
++		compat = 1;
++
++	sys_data = syscall_nr_to_meta(syscall_nr, compat);
+ 	if (!sys_data)
+ 		return;
+ 
+@@ -314,6 +326,7 @@ void ftrace_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ 
+ 	entry = ring_buffer_event_data(event);
+ 	entry->nr = syscall_nr;
++	entry->compat = compat;
+ 	syscall_get_arguments(current, regs, 0, sys_data->nb_args, entry->args);
+ 
+ 	if (!filter_current_check_discard(buffer, sys_data->enter_event,
+@@ -328,12 +341,16 @@ void ftrace_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
+ 	int syscall_nr;
++	int compat = 0;
+ 
+ 	syscall_nr = syscall_get_nr(current, regs);
+ 	if (syscall_nr < 0)
+ 		return;
+ 
+-	sys_data = syscall_nr_to_meta(syscall_nr);
++	if (is_compat_task())
++		compat = 1;
++
++	sys_data = syscall_nr_to_meta(syscall_nr, compat);
+ 	if (!sys_data)
+ 		return;
+ 
+@@ -347,6 +364,7 @@ void ftrace_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
+ 
+ 	entry = ring_buffer_event_data(event);
+ 	entry->nr = syscall_nr;
++	entry->compat = compat;
+ 	entry->ret = syscall_get_return_value(current, regs);
+ 
+ 	if (!filter_current_check_discard(buffer, sys_data->exit_event,
+@@ -485,7 +503,49 @@ int __init init_ftrace_syscalls(void)
+ 		meta->syscall_nr = i;
+ 		syscalls_metadata[i] = meta;
  	}
- }
- 
--long sys_sigaltstack(const stack_t __user *uss, stack_t __user *uoss,
--		unsigned long r5, unsigned long r6, unsigned long r7,
--		unsigned long r8, struct pt_regs *regs)
-+PPC_REGS_SYSCALL_DEFINE2_RET(long, sigaltstack, regs,
-+		const stack_t __user *, uss,
-+		stack_t __user *, uoss)
- {
- 	return do_sigaltstack(uss, uoss, regs->gpr[1]);
- }
-diff --git a/arch/powerpc/kernel/signal_32.c b/arch/powerpc/kernel/signal_32.c
-index e65d311..212583d 100644
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -784,8 +784,8 @@ COMPAT_SYSCALL_DEFINE3(rt_sigqueueinfo, u32, pid, u32, sig,
-  *       sigaltatck               compat_sys_sigaltstack
-  */
- 
--int compat_sys_sigaltstack(u32 __new, u32 __old, int r5,
--		      int r6, int r7, int r8, struct pt_regs *regs)
-+PPC_REGS_COMPAT_SYSCALL_DEFINE2_RET(int, sigaltstack, regs,
-+		u32, __new, u32, __old)
- {
- 	stack_32_t __user * newstack = compat_ptr(__new);
- 	stack_32_t __user * oldstack = compat_ptr(__old);
-@@ -1076,10 +1076,9 @@ long sys_rt_sigreturn(int r3, int r4, int r5, int r6, int r7, int r8,
- }
- 
- #ifdef CONFIG_PPC32
--int sys_debug_setcontext(struct ucontext __user *ctx,
--			 int ndbg, struct sig_dbg_op __user *dbg,
--			 int r6, int r7, int r8,
--			 struct pt_regs *regs)
-+PPC_REGS_SYSCALL_DEFINE3_RET(int, debug_setcontext, regs,
-+		struct ucontext __user *, ctx, int, ndbg,
-+		struct sig_dbg_op __user *, dbg)
- {
- 	struct sig_dbg_op op;
- 	int i;
-diff --git a/arch/powerpc/kernel/signal_64.c b/arch/powerpc/kernel/signal_64.c
-index 2fe6fc6..a44781a 100644
---- a/arch/powerpc/kernel/signal_64.c
-+++ b/arch/powerpc/kernel/signal_64.c
-@@ -276,9 +276,9 @@ static long setup_trampoline(unsigned int syscall, unsigned int __user *tramp)
- /*
-  * Handle {get,set,swap}_context operations
-  */
--int sys_swapcontext(struct ucontext __user *old_ctx,
--		    struct ucontext __user *new_ctx,
--		    long ctx_size, long r6, long r7, long r8, struct pt_regs *regs)
-+PPC_REGS_SYSCALL_DEFINE3_RET(int, swapcontext, regs,
-+		struct ucontext __user *, old_ctx,
-+		struct ucontext __user *, new_ctx, long, ctx_size)
- {
- 	unsigned char tmp;
- 	sigset_t set;
-@@ -347,10 +347,7 @@ int sys_swapcontext(struct ucontext __user *old_ctx,
- /*
-  * Do a signal return; undo the signal stack.
-  */
 -
--int sys_rt_sigreturn(unsigned long r3, unsigned long r4, unsigned long r5,
--		     unsigned long r6, unsigned long r7, unsigned long r8,
--		     struct pt_regs *regs)
-+PPC_REGS_SYSCALL_DEFINE0_RET(int, rt_sigreturn, regs)
- {
- 	struct ucontext __user *uc = (struct ucontext __user *)regs->gpr[1];
- 	sigset_t set;
-diff --git a/arch/powerpc/kernel/sys_ppc32.c b/arch/powerpc/kernel/sys_ppc32.c
-index 6fc8ba9..27cf460 100644
---- a/arch/powerpc/kernel/sys_ppc32.c
-+++ b/arch/powerpc/kernel/sys_ppc32.c
-@@ -189,21 +189,22 @@ asmlinkage int compat_sys_sendfile64(int out_fd, int in_fd, compat_loff_t __user
- 	return ret;
++#ifdef __HAVE_ARCH_FTRACE_COMPAT_SYSCALLS
++	if (NR_syscalls_compat) {
++		int match;
++		struct ftrace_event_call *ftrace_event;
++
++		compat_syscalls_metadata = kzalloc(sizeof(*syscalls_metadata) *
++						NR_syscalls_compat, GFP_KERNEL);
++		if (!compat_syscalls_metadata) {
++			WARN_ON(1);
++			kfree(syscalls_metadata);
++			return -ENOMEM;
++		}
++		for (i = 0; i < NR_syscalls_compat; i++) {
++			addr = arch_compat_syscall_addr(i);
++			meta = find_syscall_meta(addr);
++			if (!meta)
++				continue;
++
++			meta->compat_syscall_nr = i;
++			compat_syscalls_metadata[i] = meta;
++		}
++		/* now check if any compat_syscalls are not referenced */
++		for (ftrace_event = __start_ftrace_events;
++			(unsigned long)ftrace_event <
++			(unsigned long)__stop_ftrace_events; ftrace_event++) {
++
++			match = 0;
++			if (!ftrace_event->name)
++				continue;
++			if (strcmp(ftrace_event->class->system, "compat_syscalls"))
++				continue;
++			for (i = 0; i < NR_syscalls_compat; i++) {
++				if (ftrace_event->data ==
++						compat_syscalls_metadata[i]) {
++					match = 1;
++					break;
++				}
++			}
++			if (!match)
++				ftrace_event->name = NULL;
++		}
++	}
++#endif
+ 	return 0;
  }
+ core_initcall(init_ftrace_syscalls);
+@@ -503,9 +563,13 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ 	int syscall_nr;
+ 	int rctx;
+ 	int size;
++	int compat = 0;
  
--long compat_sys_execve(unsigned long a0, unsigned long a1, unsigned long a2,
--		  unsigned long a3, unsigned long a4, unsigned long a5,
--		  struct pt_regs *regs)
-+PPC_REGS_COMPAT_SYSCALL_DEFINE3_RET(long, execve, regs,
-+		char __user *, ufilename,
-+		unsigned long, argv,
-+		unsigned long, envp)
- {
- 	int error;
- 	char * filename;
- 	
--	filename = getname((char __user *) a0);
-+	filename = getname(ufilename);
- 	error = PTR_ERR(filename);
- 	if (IS_ERR(filename))
- 		goto out;
- 	flush_fp_to_thread(current);
- 	flush_altivec_to_thread(current);
+ 	syscall_nr = syscall_get_nr(current, regs);
+-	sys_data = syscall_nr_to_meta(syscall_nr);
++	if (is_compat_task())
++		compat = 1;
++
++	sys_data = syscall_nr_to_meta(syscall_nr, compat);
+ 	if (!sys_data)
+ 		return;
  
--	error = compat_do_execve(filename, compat_ptr(a1), compat_ptr(a2), regs);
-+	error = compat_do_execve(filename, compat_ptr(argv), compat_ptr(envp), regs);
+@@ -527,6 +591,7 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ 		return;
  
- 	putname(filename);
+ 	rec->nr = syscall_nr;
++	rec->compat = compat;
+ 	syscall_get_arguments(current, regs, 0, sys_data->nb_args,
+ 			       (unsigned long *)&rec->args);
  
+@@ -577,9 +642,13 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
+ 	int syscall_nr;
+ 	int rctx;
+ 	int size;
++	int compat = 0;
+ 
+ 	syscall_nr = syscall_get_nr(current, regs);
+-	sys_data = syscall_nr_to_meta(syscall_nr);
++	if (is_compat_task())
++		compat = 1;
++
++	sys_data = syscall_nr_to_meta(syscall_nr, compat);
+ 	if (!sys_data)
+ 		return;
+ 
+@@ -604,6 +673,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
+ 		return;
+ 
+ 	rec->nr = syscall_nr;
++	rec->compat = compat;
+ 	rec->ret = syscall_get_return_value(current, regs);
+ 
+ 	head = this_cpu_ptr(sys_data->exit_event->perf_events);
 -- 
 1.7.1
 
