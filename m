@@ -1,129 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab0FWULr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 16:11:47 -0400
-Received: from 69-100-st.zelcom.ru ([80.92.100.69]:40863 "HELO
-	feelingofgreen.ru" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with SMTP id S1750966Ab0FWULq (ORCPT
+	id S1753243Ab0FWULy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 16:11:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53197 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752902Ab0FWULw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 16:11:46 -0400
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Jun 2010 16:11:45 EDT
-From: Samium Gromoff <_deepfire@feelingofgreen.ru>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] serial: MMIO32 support for 8250_early.c
-Date: Wed, 23 Jun 2010 23:10:20 +0400
-Message-ID: <87r5jxva3n.fsf@auriga.deep>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 23 Jun 2010 16:11:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=odyMAnZJR7IJhVjayGwvbuPSuFUY6uhxaaPXkvdmCpopzpEnAF/uzpqC4+SdZ3r5vS
+         Ka8gOGXCAug4RwO6vrnSluP7QlMEr00+fITd4ax+RZebeZ0ZItNfjIvbCK796sT/PTIB
+         koLX4szx9uK8Ek5foBfV0N0Fd/XWgLR9C3WEk=
+Date: Thu, 24 Jun 2010 00:11:48 +0400
+From: Ilya Loginov <isloginov@gmail.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] fix problem with reschenduling in rest_init (2.6.35-rc3)
+Message-Id: <20100624001148.61e9da1c.isloginov@gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This should be fairly uncontroversial, but YMMV.
+	There is a bug in rest_init function. The problem is that kernel_init
+thread starts before initialization of kthreadd_task when
+CONFIG_PREEMPT_VOLUNTARY is enabled.
 
-Available from master branch at git://git.feelingofgreen.ru/linux
+kernel_init thread do wake_up_process(kthreadd_task) and I have kernel Oops in
+try_to_wake_up when I try to get p->state.
 
-commit 67e21ada6739e0730fb28f855abf4202a1bb3f8c
-Author: Samium Gromoff <deepfire@elvees.com>
-Date:   Thu Jun 24 00:36:16 2010 +0400
+	I found this problem on 2.6.34 on FPGA. It is very slow, and
+find_task_by_pid is done after reschenduling. I have no this problem on
+2.6.35-rc3 because kernel code is moved. But if I write simple loop like
+	volatile int tmp;
+	for(i = 0; i < preset_lpj; i++)
+		tmp++;
+right after kernel_thread(kernel_init,.... , I have this problem on
+2.6.35-rc3 too.
 
-    Provide MMIO32 support in 8250_early (aka earlycon)
+	I understand that real problem is reschenduling in init code, but
+I have no ability to fix it.
 
-diff --git a/drivers/serial/8250_early.c b/drivers/serial/8250_early.c
-index f279745..afb6dce 100644
---- a/drivers/serial/8250_early.c
-+++ b/drivers/serial/8250_early.c
-@@ -48,18 +48,31 @@ static struct early_serial8250_device early_device;
+Signed-off-by: Ilya Loginov <isloginov@gmail.com>
+---
+diff --git a/init/main.c b/init/main.c
+index 3bdb152..9febd69 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -428,12 +428,12 @@ static noinline void __init_refok rest_init(void)
+ 	int pid;
  
- static unsigned int __init serial_in(struct uart_port *port, int offset)
- {
--	if (port->iotype == UPIO_MEM)
--		return readb(port->membase + offset);
--	else
--		return inb(port->iobase + offset);
-+	switch (port->iotype) {
-+		case UPIO_MEM:
-+			return readb(port->membase + offset);
-+		case UPIO_MEM32:
-+			return readw(port->membase + (offset << 2));
-+		case UPIO_PORT:
-+			return inb(port->iobase + offset);
-+		default:
-+			return 0;
-+	}
- }
+ 	rcu_scheduler_starting();
+-	kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);
+ 	numa_default_policy();
+ 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
+ 	rcu_read_lock();
+ 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
+ 	rcu_read_unlock();
++	kernel_thread(kernel_init, NULL, CLONE_FS | CLONE_SIGHAND);
+ 	unlock_kernel();
  
- static void __init serial_out(struct uart_port *port, int offset, int value)
- {
--	if (port->iotype == UPIO_MEM)
--		writeb(value, port->membase + offset);
--	else
--		outb(value, port->iobase + offset);
-+	switch (port->iotype) {
-+		case UPIO_MEM:
-+			writeb(value, port->membase + offset);
-+			break;
-+		case UPIO_MEM32:
-+			writew(value, port->membase + (offset << 2));
-+			break;
-+		case UPIO_PORT:
-+			outb(value, port->iobase + offset);
-+			break;
-+	}
- }
- 
- #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
-@@ -137,15 +150,20 @@ static int __init parse_options(struct early_serial8250_device *device,
- 								char *options)
- {
- 	struct uart_port *port = &device->port;
--	int mmio, length;
-+	int mmio, mmio32, length;
- 
- 	if (!options)
- 		return -ENODEV;
- 
- 	port->uartclk = BASE_BAUD * 16;
--	if (!strncmp(options, "mmio,", 5)) {
--		port->iotype = UPIO_MEM;
--		port->mapbase = simple_strtoul(options + 5, &options, 0);
-+
-+	mmio = !strncmp(options, "mmio,", 5);
-+	mmio32 = !strncmp(options, "mmio32,", 7);
-+	if (mmio || mmio32) {
-+		port->iotype = (mmio ? UPIO_MEM : UPIO_MEM32);
-+		port->mapbase = simple_strtoul(options + (mmio ? 5 : 7), &options, 0);
-+		if (mmio32)
-+			port->regshift = 2;
- #ifdef CONFIG_FIX_EARLYCON_MEM
- 		set_fixmap_nocache(FIX_EARLYCON_MEM_BASE,
- 					port->mapbase & PAGE_MASK);
-@@ -161,7 +179,6 @@ static int __init parse_options(struct early_serial8250_device *device,
- 			return -ENOMEM;
- 		}
- #endif
--		mmio = 1;
- 	} else if (!strncmp(options, "io,", 3)) {
- 		port->iotype = UPIO_PORT;
- 		port->iobase = simple_strtoul(options + 3, &options, 0);
-@@ -182,9 +199,9 @@ static int __init parse_options(struct early_serial8250_device *device,
- 	}
- 
- 	printk(KERN_INFO "Early serial console at %s 0x%llx (options '%s')\n",
--		mmio ? "MMIO" : "I/O port",
--		mmio ? (unsigned long long) port->mapbase
--		     : (unsigned long long) port->iobase,
-+		mmio ? "MMIO" : mmio32 ? "MMIO32" : "I/O port",
-+		(mmio | mmio32) ? (unsigned long long) port->mapbase
-+		                : (unsigned long long) port->iobase,
- 		device->options);
- 	return 0;
- }
-
-
--- 
-regards,
-  Samium Gromoff
---
-"Actually I made up the term 'object-oriented', and I can tell you I
-did not have C++ in mind." - Alan Kay (OOPSLA 1997 Keynote)
+ 	/*
