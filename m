@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab0FWWcS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 18:32:18 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:33637 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753658Ab0FWWcR (ORCPT
+	id S1753993Ab0FWWi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 18:38:26 -0400
+Received: from s12.ALPHA-c2.vectant.ne.jp ([222.230.51.12]:50571 "EHLO
+	s12.ALPHA-c2.vectant.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751708Ab0FWWiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 18:32:17 -0400
-Message-ID: <4C228B49.5000408@euromail.se>
-Date: Thu, 24 Jun 2010 00:31:37 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Wed, 23 Jun 2010 18:38:25 -0400
+Message-Id: <201006232235.AA00445@tamuki.linet.gr.jp>
+From: TAMUKI Shoichi <tamuki@linet.gr.jp>
+Date: Thu, 24 Jun 2010 07:35:34 +0900
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Blanchard <anton@samba.org>,
+       Andi Kleen <andi@firstfloor.org>, Andy Green <andy@warmcat.com>,
+       Randy Dunlap <randy.dunlap@oracle.com>, Dmitry Torokhov <dtor@mail.ru>,
+       TAMUKI Shoichi <tamuki@linet.gr.jp>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] panic: keep blinking in spite of long spin timer mode
+In-Reply-To: <20100622131654.05032c22.akpm@linux-foundation.org>
+References: <20100622131654.05032c22.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] MAINTAINERS: Add an entry for the input MT protocol
-References: <1277330664-13884-1-git-send-email-rydberg@euromail.se> <1277332072.31591.92.camel@Joe-Laptop.home>
-In-Reply-To: <1277332072.31591.92.camel@Joe-Laptop.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1ORYTt-000670-Bc.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1ORYTt-000670-Bc a4db0addecd6a5cbc958178aa33049e2
+X-Mailer: AL-Mail32 Version 1.13
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches wrote:
-> On Thu, 2010-06-24 at 00:04 +0200, Henrik Rydberg wrote:
->> This patch adds a maintainer for the input multitouch (MT) protocol,
->> such that get_maintainer.pl selects it whenever an MT event is present
->> in the patch.
-> 
->> +MULTITOUCH INPUT MT PROTOCOL
->> +M:	Henrik Rydberg <rydberg@euromail.se>
->> +L:	linux-input@vger.kernel.org
->> +S:	Maintained
->> +F:	Documentation/input/multi-touch-protocol.txt
->> +K:	ABS_MT
-> 
-> That doesn't seem to match anything other than multitouch
-> stuff, but it's probably best to specify the pattern as
-> much as possible.
-> 
-> If you didn't know, K: entries can be entered as perl regex,
-> so maybe something like:
-> 
-> K:	\b(ABS|SYN)_MT_
-> 
+Hello,
 
-Thanks for the info. However, since every application using the MT protocol by
-necessity uses at least one event called ABS_MT*, it should be fine as is,
-shouldn't it?
+On Tue, 22 Jun 2010 13:16:54 -0700 Andrew Morton wrote:
 
-Henrik
+> > To keep panic_timeout accuracy when running under a hypervisor, the
+> > current implementation only spins on long time (1 second) calls to
+> > mdelay.  That brings a good effect, but the problem is the keyboard
+> > LEDs don't blink at all on that situation.
+> > 
+> > This patch changes to call to panic_blink_enter() between every mdelay
+> > and keeps blinking in spite of long spin timer mode.
+> > 
+> > The time to call to mdelay is now 100ms.  Even this change will keep
+> > panic_timeout accuracy enough when running under a hypervisor.
+> 
+> Thaks for sticking with it - I think the code's a lot better now.  Are
+> you happy with it?
 
+Oh, yes.  That's very thoughtful of you.
+
+Regards,
+TAMUKI Shoichi
