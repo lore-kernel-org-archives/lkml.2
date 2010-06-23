@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab0FWAKT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 20:10:19 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49656 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab0FWAKR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 20:10:17 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mike McCormack <mikem@ring3k.org>
-Subject: Re: [PATCH] proc: Add complete process group list
-Cc: kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org, oleg@redhat.com,
-       serue@us.ibm.com, jmorris@namei.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4C20D1AE.5000205@ring3k.org>
-References: <4C20D1AE.5000205@ring3k.org>
-Message-Id: <20100623090544.B588.A69D9226@jp.fujitsu.com>
+	id S1753019Ab0FWAN5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 20:13:57 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39488 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107Ab0FWANz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Jun 2010 20:13:55 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: [Bug #15863] 2.6.34-rc5-git7 (plus all patches) -- another suspicious rcu_dereference_check() usage.
+Date: Wed, 23 Jun 2010 02:12:14 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc3-rjw+; KDE/4.4.3; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Miles Lane <miles.lane@gmail.com>
+References: <g77CuMUl7QI.A.qMH.4ZpHMB@chimera> <201006222349.13096.rjw@sisk.pl> <20100622222547.GQ2290@linux.vnet.ibm.com>
+In-Reply-To: <20100622222547.GQ2290@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 23 Jun 2010 09:10:13 +0900 (JST)
+Message-Id: <201006230212.14254.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If a process is in more than NGROUPS_SMALL (32) groups, it's not possible
->  for any other user space process to determine the list of groups it is
->  in using /proc/<pid>/status.
+On Wednesday, June 23, 2010, Paul E. McKenney wrote:
+> On Tue, Jun 22, 2010 at 11:49:12PM +0200, Rafael J. Wysocki wrote:
+> > On Tuesday, June 22, 2010, Paul E. McKenney wrote:
+> > > On Mon, Jun 21, 2010 at 12:34:25AM +0200, Rafael J. Wysocki wrote:
+> > > > This message has been generated automatically as a part of a report
+> > > > of regressions introduced between 2.6.33 and 2.6.34.
+> > > > 
+> > > > The following bug entry is on the current list of known regressions
+> > > > introduced between 2.6.33 and 2.6.34.  Please verify if it still should
+> > > > be listed and let the tracking team know (either way).
+> > > 
+> > > We have been knocking these off as they appear.  There is one or two
+> > > that the relevant maintainers have been ignoring, but that always seems
+> > > to be the case.  ;-)
+> > > 
+> > > Your choice as to whether you want to track the group...
+> > 
+> > I think I'll simply leave that one bug open until all known instances have been
+> > dealt with.
+> > 
+> > Please let me know when that happens. :-)
 > 
-> Increasing the list of groups listed by /proc/<pid>/status would lead to
->  very long lines that file, and possible misbehavior of userspace programs
->  that parse /proc/<pid>/status, so instead I have opted to create a new
->  file /proc/<pid>/groups, which contains the list of supplementary groups
->  for each pid.
+> So if I am sufficiently forgetful, I can just ask you to close the
+> bug immediately?
 > 
-> The new file /proc/<pid>/groups consists of a single group id per line,
->  with each line being 11 characters long.  This should be enough space
->  for 16bit or 32bit group ids.
-> 
-> This feature might be useful for a server listening on a unix domain pipe
->  to determine the list of groups that a client process is in from its pid.
-> 
-> Signed-off-by: Mike McCormack <mikem@ring3k.org>
+> Sorry, but you really couldn't expect me to pass up that kind of
+> loophole!  ;-)
 
-Just dumb question.
+OK, closed.
 
-Why don't you fix /proc/<pid>/status? Can we share your worry? I haven't review your patch 
-carefully yet. but your groups_proc_show() seems don't have heavy weight lock.
-
-note: I'm not against your plan. it's just curiosity.
-
-
+Thanks,
+Rafael
