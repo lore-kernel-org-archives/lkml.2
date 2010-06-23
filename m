@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab0FWR2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 13:28:39 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:49433 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752914Ab0FWR2h (ORCPT
+	id S1752791Ab0FWR3h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 13:29:37 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:60964 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab0FWR3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 13:28:37 -0400
-Message-ID: <4C22441D.8000705@euromail.se>
-Date: Wed, 23 Jun 2010 19:27:57 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Ping Cheng <pinglinux@gmail.com>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-       Ping Cheng <pingc@wacom.com>, Benjamin Tissoires <tissoire@cena.fr>,
-       Chase Douglas <chase.douglas@canonical.com>,
-       Rafi Rubin <rafi@seas.upenn.edu>
-Subject: Re: [PATCH 2/5] input: Use driver hint to compute the evdev buffer
- size (rev3)
-References: <1277291686-7153-1-git-send-email-rydberg@euromail.se> <1277291686-7153-2-git-send-email-rydberg@euromail.se> <1277291686-7153-3-git-send-email-rydberg@euromail.se> <AANLkTilWSe-rdy1johctU6CXdV11Iiw8GkTTQOrsE2aO@mail.gmail.com> <4C223F60.6080904@euromail.se> <20100623171206.GA11512@core.coreip.homeip.net>
-In-Reply-To: <20100623171206.GA11512@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1ORTk0-0003eN-9l.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1ORTk0-0003eN-9l ee2047e36988ebd925818413494e2106
+	Wed, 23 Jun 2010 13:29:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=YXXDOdU3f0G2icOiUmp27qkeV1eTmA/1JwpERccS6vi8pkh2GMUwtEeT3ntdc1/WL0
+         cAWDRWHz04apITkGxWludh9++oONn0KQSMpUDdlkuvB+tzRq1JzE6BGeXn93Iu83akqp
+         Io/ugreU7TGKNKQmrEDJpjOZ8mZv9L9TnCHcs=
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at
+ 00000000000000a0
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Justin P.Mattock" <justinmattock@gmail.com>
+Cc: "John W.Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       davem@davemloft.net, timo.teras@iki.fi
+In-Reply-To: <4C223DCA.5090704@gmail.com>
+References: <AANLkTilf41JrFwN1veRDifNA78S2LQ6SO0g3YLOONd2W@mail.gmail.com>
+	 <20100623141622.GC15205@tuxdriver.com>  <4C223DCA.5090704@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Jun 2010 19:29:27 +0200
+Message-ID: <1277314167.2469.1144.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote:
-> On Wed, Jun 23, 2010 at 07:07:44PM +0200, Henrik Rydberg wrote:
->> Hi Ping,
->> [...]
->>>> @@ -51,7 +52,9 @@ static DEFINE_MUTEX(evdev_table_mutex);
->>>>
->>>>  static int evdev_compute_buffer_size(struct input_dev *dev)
->>>>  {
->>>> -       return EVDEV_MIN_BUFFER_SIZE;
->>>> +       int nev = dev->hint_events_per_packet * EVDEV_BUF_PACKETS;
->>>> +       nev = max(nev, EVDEV_MIN_BUFFER_SIZE);
->>>> +       return roundup_pow_of_two(nev);
->>> I think we have a backward compatibility issue here. This routine will
->>> return 7 when nev falls to the default value
->>> (EVDEV_MIN_BUFFER_SIZE/64).  This could happen to those drivers that
->>> don't report MT events or forget/don't feel the need to set
->>> hint_events_per_packet since the old BUFFER_SIZE worked perfectly for
->>> them.  We need to keep the return value for those drivers as 64 so we
->>> could allocate the same space as it was in [PATCH 1/5].
->> Are you perhaps confusing EVDEV_BUF_PACKETS and EVDEV_MIN_BUFFER_SIZE? The last
->> line ensures that the value returned is a power of two (hence not 7). The
->> second-to-last line ensures the value is at least equal to 64 (hence not 7). The
->> default hint value for a driver that does not do anything is zero, which leads
->> to a return value of 64, just as it is today.
->>
+Le mercredi 23 juin 2010 à 10:00 -0700, Justin P. Mattock a écrit :
+> o.k. the bisect is pointing to the below results..
+> (I tried git revert xxx but this commit is too big
+> so I'll(hopefully)manually revert it on the latest HEAD to
+> see if this is the actual problem im experiencing)
 > 
-> I think Ping might have confused roundup_pow_of_two() with
-> get_order()-type function...
 > 
-> Anyways, applied all 5, thanks Henrik.
+> 
+> 80c802f3073e84c956846e921e8a0b02dfa3755f is the first bad commit
+> commit 80c802f3073e84c956846e921e8a0b02dfa3755f
+> Author: Timo TerÃ¤s <timo.teras@iki.fi>
+> Date:   Wed Apr 7 00:30:05 2010 +0000
+> 
+>      xfrm: cache bundles instead of policies for outgoing flows
+> 
+>      __xfrm_lookup() is called for each packet transmitted out of
+>      system. The xfrm_find_bundle() does a linear search which can
+>      kill system performance depending on how many bundles are
+>      required per policy.
+> 
+>      This modifies __xfrm_lookup() to store bundles directly in
+>      the flow cache. If we did not get a hit, we just create a new
+>      bundle instead of doing slow search. This means that we can now
+>      get multiple xfrm_dst's for same flow (on per-cpu basis).
+> 
+>      Signed-off-by: Timo Teras <timo.teras@iki.fi>
+>      Signed-off-by: David S. Miller <davem@davemloft.net>
+> 
+> :040000 040000 d8e60f5fa4c1329f450d9c7cdf98b34e6a177f22 
+> 9f576e68e5bf4ce357d7f0305aee5f410250dfe2 M      include
+> :040000 040000 f2876df688ee36907af7b4123eea96592faaed3e 
+> a3f6f6f94f0309106856cd99b38ec90b024eb016 M      net
+> 
 > 
 
-Got them, thanks to you too.
+Thanks a lot for bisecting Jutin, this is really appreciated.
 
-Henrik
+crash is in xfrm_bundle_ok()
+
+if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
+	return 0;
+
+xdst->pols[0] contains a NULL pointer
+
 
