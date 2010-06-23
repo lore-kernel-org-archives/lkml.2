@@ -1,132 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab0FWOvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 10:51:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6503 "EHLO mx1.redhat.com"
+	id S1753275Ab0FWOyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 10:54:49 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:55672 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751638Ab0FWOvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 10:51:08 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 1/3] block: Implement a blk_yield function to voluntarily give up the I/O scheduler.
-References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
-	<1277242502-9047-2-git-send-email-jmoyer@redhat.com>
-	<20100622220406.690bb0c8.akpm@linux-foundation.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 23 Jun 2010 10:50:28 -0400
-In-Reply-To: <20100622220406.690bb0c8.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Tue, 22 Jun 2010 22:04:06 -0700")
-Message-ID: <x49bpb1pzuz.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1751638Ab0FWOys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 10:54:48 -0400
+Date: Wed, 23 Jun 2010 07:54:37 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2] security: Yama LSM
+Message-ID: <20100623145437.GJ5876@outflux.net>
+References: <20100623065236.GH5876@outflux.net>
+ <877hlqas9e.fsf@basil.nowhere.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <877hlqas9e.fsf@basil.nowhere.org>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+Hi Andi,
 
-> On Tue, 22 Jun 2010 17:35:00 -0400 Jeff Moyer <jmoyer@redhat.com> wrote:
->
->> This patch implements a blk_yield to allow a process to voluntarily
->> give up its I/O scheduler time slice.  This is desirable for those processes
->> which know that they will be blocked on I/O from another process, such as
->> the file system journal thread.  Following patches will put calls to blk_yield
->> into jbd and jbd2.
->> 
->
-> I'm looking through this patch series trying to find the
-> analysis/description of the cause for this (bad) performance problem. 
-> But all I'm seeing is implementation stuff :(  It's hard to review code
-> with your eyes shut.
+On Wed, Jun 23, 2010 at 01:43:41PM +0200, Andi Kleen wrote:
+> Kees Cook <kees.cook@canonical.com> writes:
+> > +
+> > +config SECURITY_YAMA_SYMLINKS
+> > +	bool "Yama: protect symlink following in sticky world-writable
+> > dirs"
+> 
+> IMHO it's bad style to have CONFIGs that just set defaults,
+> if that can be done at runtime too. Especially as in your case if it's 
+> a lot of settings. Is it that bad to have a init script and drop these 
+> CONFIGs? 
 
-Sorry about that, Andrew.  The problem case is (for example) iozone when
-run with small file sizes (up to 8MB) configured to fsync after each
-file is written.  Because the iozone process is issuing synchronous
-writes, it is put onto CFQ's SYNC service tree.  The significance of
-this is that CFQ will idle for up to 8ms waiting for requests on such
-queues.  So, what happens is that the iozone process will issue, say,
-64KB worth of write I/O.  That I/O will just land in the page cache.
-Then, the iozone process does an fsync which forces those I/Os to disk
-as synchronous writes.  Then, the file system's fsync method is invoked,
-and for ext3/4, it calls log_start_commit followed by log_wait_commit.
-Because those synchronous writes were forced out in the context of the
-iozone process, CFQ will now idle on iozone's cfqq waiting for more I/O.
-However, iozone's progress is gated by the journal thread, now.
+Oh, er, I actually added these configs because Eric Paris recommended them
+as handy for distributions.  I'm fine with dropping them, but will I be
+asked to add them back later?  And what about the case of CONFIG_SYSCTL
+being unset?
 
-So, I tried two approaches to solving the problem.  The first, which
-Christoph brought up again in this thread, was to simply mark all
-journal I/O as BIO_RW_META, which would cause the iozone process' cfqq
-to be preempted when the journal issued its I/O.  However, Vivek pointed
-out that this was bad for interactive performance.
+> However the help texts are useful,  these should be in the sysctl
+> documentatin in Documentation instead.
 
-The second approach, of which this is the fourth iteration, was to allow
-the file system to explicitly tell the I/O scheduler that it is waiting
-on I/O from another process.
+I documented the sysctls in Documentation/Yama.txt (where SELinux.txt and
+Smack.txt live) should I create an additional file in Documentation/sysctl/
+with that information (moved from Yama.txt) or move Yama.txt there?
 
-Does that help?  Let me know if you have any more questions, and thanks
-a ton for looking at this, Andrew.  I appreciate it.
+> > +	if (rc) {
+> > +		printk_ratelimited(KERN_INFO "ptrace of non-child"
+> > +			" pid %d was attempted by: %s (pid %d)\n",
+> > +			child->pid, get_task_comm(name, current),
+> > +			current->pid);
+> 
+> It's probably obscure and other kernel code has this too, but at some point
+> there were attacks to use terminal ESC sequences to attack root's
+> terminal when they dmesg. Couldn't that be done through "comm" here?
 
-The comments I've elided from my response make perfect sense, so I'll
-address them in the next posting.
+I actually think this is a flaw in get_task_comm.  (Though actually it's
+the fault of terminals if they process dangerous escape sequences. Worst
+case tends to just be confusing output, but that's not important --
+nothing should spew non-printables regardless.)  Would a patch to
+get_task_comm be accepted to replace non-printables with "?" or something
+when filling the buffer?
 
->>  };
->>  #define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
->> -			.count = 0, .min_vdisktime = 0, }
->> +			.count = 0, .min_vdisktime = 0, .last_expiry = 0UL, \
->> +			.last_pid = (pid_t)-1, }
->
-> May as well leave the 0 and NULL fields unmentioned (ie: don't do
-> crappy stuff because the old code did crappy stuff!)
+Thanks,
 
-I don't actually understand why you take issue with this.
+-Kees
 
->> +{
->> +	struct cfq_data *cfqd = q->elevator->elevator_data;
->> +	struct cfq_io_context *cic, *new_cic;
->> +	struct cfq_queue *cfqq;
->> +
->> +	cic = cfq_cic_lookup(cfqd, current->io_context);
->> +	if (!cic)
->> +		return;
->> +
->> +	task_lock(tsk);
->> +	new_cic = cfq_cic_lookup(cfqd, tsk->io_context);
->> +	atomic_long_inc(&tsk->io_context->refcount);
->
-> How do we know tsk has an io_context?  Use get_io_context() and check
-> its result?
-
-I'll fix that up.  It works now only by luck (and the fact that there's
-a good chance the journal thread has an i/o context).
-
->> +	task_unlock(tsk);
->> +	if (!new_cic)
->> +		goto out_dec;
->> +
->> +	spin_lock_irq(q->queue_lock);
->> +
->> +	cfqq = cic_to_cfqq(cic, 1);
->> +	if (!cfqq)
->> +		goto out_unlock;
->> +
->> +	/*
->> +	 * If we are currently servicing the SYNC_NOIDLE_WORKLOAD, and we
->> +	 * are idling on the last queue in that workload, *and* there are no
->> +	 * potential dependent readers running currently, then go ahead and
->> +	 * yield the queue.
->> +	 */
->
-> Comment explains the code, but doesn't explain the *reason* for the code.
-
-Actually, it explains more than just what the code does.  It would be
-difficult for one to divine that the code actually only really cares
-about breaking up a currently running dependent reader.  I'll see if I
-can make that more clear.
-
-Cheers,
-Jeff
+-- 
+Kees Cook
+Ubuntu Security Team
