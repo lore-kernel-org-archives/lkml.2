@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929Ab0FWOXo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 10:23:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41639 "EHLO mx1.redhat.com"
+	id S1753036Ab0FWO3P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 10:29:15 -0400
+Received: from bamako.nerim.net ([62.4.17.28]:49487 "EHLO bamako.nerim.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab0FWOXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 10:23:43 -0400
-Message-ID: <4C221871.6020509@redhat.com>
-Date: Wed, 23 Jun 2010 17:21:37 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: virtualization@lists.linux-foundation.org,
-       Anthony Liguori <aliguori@us.ibm.com>, linux-pci@vger.kernel.org,
-       Matt Carlson <mcarlson@broadcom.com>, linux-kernel@vger.kernel.org,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-       Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>
-Subject: Re: [PATCH for-2.6.35] virtio-pci: disable msi at startup
-References: <20100610152252.GA3510@redhat.com> <4C22132F.4060307@redhat.com> <20100623135946.GA30526@redhat.com>
-In-Reply-To: <20100623135946.GA30526@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751520Ab0FWO3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 10:29:14 -0400
+Date: Wed, 23 Jun 2010 16:29:11 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] Adding critical/fault limits to hwmon sysfs API
+Message-ID: <20100623162911.2028f817@hyperion.delvare>
+In-Reply-To: <20100623133147.GA19143@ericsson.com>
+References: <20100620163759.GA7077@ericsson.com>
+	<20100623144346.10acd898@hyperion.delvare>
+	<20100623133147.GA19143@ericsson.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 04:59 PM, Michael S. Tsirkin wrote:
->
->> Why doesn't a device reset result in msi being cleared?
->>      
-> This is not a standard function reset. This is virtio specific
-> command. So it only clears virtio registers.
->    
+On Wed, 23 Jun 2010 06:31:47 -0700, Guenter Roeck wrote:
+> On Wed, Jun 23, 2010 at 08:43:46AM -0400, Jean Delvare wrote:
+> > Hi Guenter,
+> > 
+> > On Sun, 20 Jun 2010 09:37:59 -0700, Guenter Roeck wrote:
+> > > the current hwmon sysfs API does not specify critical or fault limits for voltage
+> > > and current readings.
+> > > 
+> > > Many recent power controller/monitoring chips have support for such limits in addition
+> > > to alarm limits. Typical action, when a the critical or fault limit is reached,
+> > > may be a board reset or power shutdown, or to report the fault condition.
+> > > 
+> > > Examples for chips supporting critical/fault limits are SMM665 and variants as well
+> > > as many PMBus devices, such as MAX8688, MAX16064, LTC2978, and others.
+> > > 
+> > > I think it would make sense to add critical/fault limits to the hwmon sysfs API,
+> > > to be able to report those limits if supported by a chip.
+> > > 
+> > > Any thoughts on this ?
+> > 
+> > I agree it would be good to have standard names (and libsensors
+> > support) if these features are popular. It might be a little difficult
+> > to come up with the right attribute names though.
+> > 
+> > For temperatures, we have temp[1-*]_crit, for the critical limit on the
+> > high end. We don't have a name for the critical limit on the low end,
+> > because no chip ever implemented that. The name we chose doesn't offer
+> > much possibilities for a nice name while staying consistent. Maybe
+> > "lcrit" would be acceptable for the low end critical limit, and we keep
+> > "crit" for the high end critical limit?
+> > 
+> How about {curr|in|temp}[1-*]_[min_]crit ?
+> 
+> In other words, keep _crit for the upper limit and introduce min_crit for the lower limit.
+> This would be a bit better aligned with the existing _min while maintaining _crit for the 
+> upper limit.
 
-I see.  We should implement FLR in qemu.  If we don't already do so, we 
-should probably FLR anything that moves when a kexec kernel starts.
+I expected a counter-proposal of this kind. The problem I see is that
+the new limit we are adding is unrelated to _min. However, the other
+_min_* file we have (_min_alarm) expresses something which is relative
+to _min. Same as _max_hyst and _crit_hyst, which are relative to _max
+and _critn respectively. So I have the feeling that _min_crit sends the
+wrong signal to the reader. Especially if we keep _crit for the high
+bound, the asymmetry raises questions.
 
->> Shouldn't a reset be equivalent to power cycling?
->>      
-> If we did this, driver would need to restore registers
-> such as BAR etc.
->    
-
-We could save/restore the registers we care about.
+This is my rationale for suggesting _crit and _lcrit. Now, I won't
+argue forever if others disagree, these is really only a naming
+convention and everything will be fine as long as the drivers and
+libsensors agree.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Jean Delvare
