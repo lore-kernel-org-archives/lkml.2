@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495Ab0FWTpv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 15:45:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37052 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab0FWTpu (ORCPT
+	id S1753605Ab0FWTzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 15:55:33 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:46702 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab0FWTza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 15:45:50 -0400
-X-Authority-Analysis: v=1.1 cv=4GK1Slht3WUdSXXcSOu+TCe3GQnvEFDsQSvVHKX2gdo= c=1 sm=0 a=VT3f0z-SXmYA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=ijvh-uqoNxbpdy8Ix98A:9 a=Aa-osqySh_7p6KDs9HOUXalZZcQA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 08/40] tracing: remove syscall bitmaps in preparation
- for compat support
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Jason Baron <jbaron@redhat.com>
-Cc: Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>,
-       Michael Ellerman <michael@ellerman.id.au>, Ingo Molnar <mingo@elte.hu>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>
-In-Reply-To: <20100623193455.GE2680@redhat.com>
-References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
-	 <1277287401-28571-9-git-send-email-imunsie@au1.ibm.com>
-	 <1277306204.9181.43.camel@gandalf.stny.rr.com>
-	 <20100623191454.GC2680@redhat.com>  <20100623193455.GE2680@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Wed, 23 Jun 2010 15:45:47 -0400
-Message-ID: <1277322347.9181.54.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Jun 2010 15:55:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=j3+rW1N22UVs+ULNBS7WZLNuteYVTx07+wId0JKCYZZgbfxB9uec/QfplGOiSS6aaC
+         1j9DWMXRoMXmlTqijJujcze0k6/G0FmHSR3cBdrX+ed8sCunop+wjQdRuVmwJXG4mcru
+         h1QYu9j3TCb4KGwKcoteC3+aTHKtlHdy/6LYg=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1006131208470.18415@ayla.of.borg>
+References: <alpine.DEB.2.00.1006131208470.18415@ayla.of.borg>
+Date: Wed, 23 Jun 2010 21:55:27 +0200
+X-Google-Sender-Auth: WQJLduFbs-eq2xEcmTPoQHqqju4
+Message-ID: <AANLkTikdDZf1zvgtu3DjuMoabHBo43zY6H_AUKn0Q5Qz@mail.gmail.com>
+Subject: Re: [PATCH] rtc: rp5c01 - Add NVRAM support
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Alessandro Zummo <a.zummo@towertech.it>,
+       Arno Griffioen <arno.griffioen@ieee.org>
+Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>, rtc-linux@googlegroups.com,
+       Linux Kernel Development <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-23 at 15:34 -0400, Jason Baron wrote:
+On Sun, Jun 13, 2010 at 12:12, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> The Ricoh RP5C01 RTC contains 26 x 4 bits of NVRAM.
+> Provide access to it via a sysfs "nvram" attribute file.
 
-> Actually, looking at this further, what we probably want to do change
-> the "int nb_args" field, which is already in syscall_metadata into a bit
-> field. nb_args I think can be at most 6, or 3 bits, and we only need 4
-> bits for storing the enabled/disabled data, so we could even make it a
-> char. Thus, actually saving space with this patch :) (at least as far as
-> the syscall_metadata field is concerned).
+I also created a small tool to correct NVRAM checksums, interprete the
+contents, and
+modify individual NVRAM fields on Amiga 3000/4000.
+You can find it at
+git://git.kernel.org/pub/scm/linux/kernel/git/geert/amiga-nvram.git.
 
-Yeah, I'm fine with turning that into a count/flags field.
+BTW, does anyone (Arno?) know the meaning of the AMIX-specific bits (32-63)?
+battmembitsamix.h just says "See Amix documentation for these bit definitions".
+I also couldn't find anything about it at http://www.amigaunix.com/.
 
--- Steve
+Thx!
 
+Gr{oetje,eeting}s,
 
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
