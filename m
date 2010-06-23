@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab0FWSHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 14:07:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39686 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab0FWSHx (ORCPT
+	id S1752399Ab0FWSKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 14:10:23 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:64556 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab0FWSKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 14:07:53 -0400
-Message-ID: <4C224D26.1020307@oracle.com>
-Date: Wed, 23 Jun 2010 11:06:30 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
+	Wed, 23 Jun 2010 14:10:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=BLHOU6/pMsuQ8L9JjN/tmF2OZXXyhrpzrU/Ou9++S4hYg1E0Jt2E0si+SV0mrp7+2m
+         gnW8w1Nk5msoCTKro9xbjKcko7lHoGE4kX9ZZ1PUWYJcb60dUFfjW+S26dWtustXTItU
+         C/j9bQOtAAJHuHcdMVaQLoCCL9LIbIFV6/SJ4=
+Message-ID: <4C224E06.40806@iki.fi>
+Date: Wed, 23 Jun 2010 21:10:14 +0300
+From: =?UTF-8?B?VGltbyBUZXLDpHM=?= <timo.teras@iki.fi>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-       devel@driverdev.osuosl.org, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for June 21 (staging/easycap)
-References: <20100621170056.2fcf10ad.sfr@canb.auug.org.au> <20100621090049.c7f11c2d.randy.dunlap@oracle.com> <20100622223612.GB3898@kroah.com>
-In-Reply-To: <20100622223612.GB3898@kroah.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "Justin P.Mattock" <justinmattock@gmail.com>,
+       "John W.Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       davem@davemloft.net
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 00000000000000a0
+References: <AANLkTilf41JrFwN1veRDifNA78S2LQ6SO0g3YLOONd2W@mail.gmail.com>	 <20100623141622.GC15205@tuxdriver.com>  <4C223DCA.5090704@gmail.com> <1277314167.2469.1144.camel@edumazet-laptop>
+In-Reply-To: <1277314167.2469.1144.camel@edumazet-laptop>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4C224D6F.00E1:SCFMA922111,ss=1,fgs=0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> On Mon, Jun 21, 2010 at 09:00:49AM -0700, Randy Dunlap wrote:
->> On Mon, 21 Jun 2010 17:00:56 +1000 Stephen Rothwell wrote:
+On 06/23/2010 08:29 PM, Eric Dumazet wrote:
+> Le mercredi 23 juin 2010 à 10:00 -0700, Justin P. Mattock a écrit :
+>> o.k. the bisect is pointing to the below results..
+>> (I tried git revert xxx but this commit is too big
+>> so I'll(hopefully)manually revert it on the latest HEAD to
+>> see if this is the actual problem im experiencing)
 >>
->>> Hi all,
->>>
->>> Changes since 20100618:
+>> 80c802f3073e84c956846e921e8a0b02dfa3755f is the first bad commit
+>> commit 80c802f3073e84c956846e921e8a0b02dfa3755f
+>> Author: Timo TerÃ¤s <timo.teras@iki.fi>
+>> Date:   Wed Apr 7 00:30:05 2010 +0000
 >>
->> When CONFIG_USB is not enabled:
+>>      xfrm: cache bundles instead of policies for outgoing flows
 >>
->> ERROR: "usb_kill_urb" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "usb_deregister_dev" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "video_register_device" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "usb_deregister" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "video_unregister_device" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "usb_set_interface" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "usb_register_dev" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "usb_control_msg" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "usb_submit_urb" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "usb_get_dev" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "usb_find_interface" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "usb_register_driver" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "usb_free_urb" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "usb_alloc_urb" [drivers/staging/easycap/easycap.ko] undefined!
+>>      __xfrm_lookup() is called for each packet transmitted out of
+>>      system. The xfrm_find_bundle() does a linear search which can
+>>      kill system performance depending on how many bundles are
+>>      required per policy.
 >>
+>>      This modifies __xfrm_lookup() to store bundles directly in
+>>      the flow cache. If we did not get a hit, we just create a new
+>>      bundle instead of doing slow search. This means that we can now
+>>      get multiple xfrm_dst's for same flow (on per-cpu basis).
 >>
->> Adding "depends on USB" to EASYCAP is a good start.
->> After that and enabling CONFIG_USB, build of easycap gets:
+>>      Signed-off-by: Timo Teras <timo.teras@iki.fi>
+>>      Signed-off-by: David S. Miller <davem@davemloft.net>
 >>
->> ERROR: "video_register_device" [drivers/staging/easycap/easycap.ko] undefined!
->> ERROR: "video_unregister_device" [drivers/staging/easycap/easycap.ko] undefined!
->>
->> because there is no media/video support enabled.  Also no SOUND enabled,
->> so I expect there to be build errors associated with sound also, meaning that
->> the Kconfig file should probably modified with something like
->>
->> config EASYCAP
->> +	depends on USB && VIDEO_DEV && SND
->>
->>
->> This is something that the driver author should know the answer to and submit a
->> patch for.
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
+>> :040000 040000 d8e60f5fa4c1329f450d9c7cdf98b34e6a177f22 
+>> 9f576e68e5bf4ce357d7f0305aee5f410250dfe2 M      include
+>> :040000 040000 f2876df688ee36907af7b4123eea96592faaed3e 
+>> a3f6f6f94f0309106856cd99b38ec90b024eb016 M      net
 > 
-> You are right, care to make up a patch for this?
+> Thanks a lot for bisecting Jutin, this is really appreciated.
+> 
+> crash is in xfrm_bundle_ok()
+> 
+> if (xdst->policy_genid != atomic_read(&xdst->pols[0]->genid))
+> 	return 0;
+> 
+> xdst->pols[0] contains a NULL pointer
 
-No thanks, please see my last statement above.
-IOW, I want the driver developer (not you) to act responsibly on this.
+That does not really make sense, if we get this far; there's a valid
+xfrm_state with the bundle. This means that there existed a policy with
+it too.
+
+I'll take a deeper look at this tomorrow. Would it be possible to see
+your xfrm policies?
+
+- Timo
