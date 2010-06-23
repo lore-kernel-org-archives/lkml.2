@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab0FWNET (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 09:04:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42137 "EHLO
+	id S1752884Ab0FWNFi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 09:05:38 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41468 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab0FWNEJ (ORCPT
+	with ESMTP id S1752407Ab0FWNDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 09:04:09 -0400
+	Wed, 23 Jun 2010 09:03:49 -0400
 From: Ohad Ben-Cohen <ohad@wizery.com>
 To: Greg KH <greg@kroah.com>
 Cc: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
@@ -27,9 +27,9 @@ Cc: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
        Pitney Gilbert <gpitney@ti.com>, Bhavin Shah <bshah@ti.com>,
        Omar Ramirez Luna <omar.ramirez@ti.com>,
        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [PATCH 08/11] staging: ti dspbridge: add DOFF binaries loader
-Date: Wed, 23 Jun 2010 16:02:02 +0300
-Message-Id: <1277298125-17991-9-git-send-email-ohad@wizery.com>
+Subject: [PATCH 04/11] staging: ti dspbridge: add resource manager
+Date: Wed, 23 Jun 2010 16:01:58 +0300
+Message-Id: <1277298125-17991-5-git-send-email-ohad@wizery.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1277298125-17991-1-git-send-email-ohad@wizery.com>
 References: <1277298125-17991-1-git-send-email-ohad@wizery.com>
@@ -39,7 +39,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Omar Ramirez Luna <omar.ramirez@ti.com>
 
-Add TI's DSP Bridge DOFF binaries dynamic loader driver sources
+Add TI's DSP Bridge resource manager driver sources
 
 Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
 Signed-off-by: Kanigeri, Hari <h-kanigeri2@ti.com>
@@ -58,42 +58,53 @@ Signed-off-by: Menon, Nishanth <nm@ti.com>
 Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
 Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 ---
- drivers/staging/tidspbridge/dynload/cload.c        | 1960 ++++++++++++++++++++
- .../staging/tidspbridge/dynload/dload_internal.h   |  351 ++++
- drivers/staging/tidspbridge/dynload/doff.h         |  344 ++++
- drivers/staging/tidspbridge/dynload/getsection.c   |  416 +++++
- drivers/staging/tidspbridge/dynload/header.h       |   55 +
- drivers/staging/tidspbridge/dynload/module_list.h  |  159 ++
- drivers/staging/tidspbridge/dynload/params.h       |  226 +++
- drivers/staging/tidspbridge/dynload/reloc.c        |  484 +++++
- drivers/staging/tidspbridge/dynload/reloc_table.h  |  102 +
- .../tidspbridge/dynload/reloc_table_c6000.c        |  257 +++
- drivers/staging/tidspbridge/dynload/tramp.c        | 1143 ++++++++++++
- .../tidspbridge/dynload/tramp_table_c6000.c        |  164 ++
- 12 files changed, 5661 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/tidspbridge/dynload/cload.c
- create mode 100644 drivers/staging/tidspbridge/dynload/dload_internal.h
- create mode 100644 drivers/staging/tidspbridge/dynload/doff.h
- create mode 100644 drivers/staging/tidspbridge/dynload/getsection.c
- create mode 100644 drivers/staging/tidspbridge/dynload/header.h
- create mode 100644 drivers/staging/tidspbridge/dynload/module_list.h
- create mode 100644 drivers/staging/tidspbridge/dynload/params.h
- create mode 100644 drivers/staging/tidspbridge/dynload/reloc.c
- create mode 100644 drivers/staging/tidspbridge/dynload/reloc_table.h
- create mode 100644 drivers/staging/tidspbridge/dynload/reloc_table_c6000.c
- create mode 100644 drivers/staging/tidspbridge/dynload/tramp.c
- create mode 100644 drivers/staging/tidspbridge/dynload/tramp_table_c6000.c
+ drivers/staging/tidspbridge/rmgr/dbdcd.c         | 1506 ++++++++++
+ drivers/staging/tidspbridge/rmgr/disp.c          |  754 +++++
+ drivers/staging/tidspbridge/rmgr/drv.c           | 1047 +++++++
+ drivers/staging/tidspbridge/rmgr/drv_interface.c |  644 +++++
+ drivers/staging/tidspbridge/rmgr/drv_interface.h |   27 +
+ drivers/staging/tidspbridge/rmgr/dspdrv.c        |  142 +
+ drivers/staging/tidspbridge/rmgr/mgr.c           |  374 +++
+ drivers/staging/tidspbridge/rmgr/nldr.c          | 1999 +++++++++++++
+ drivers/staging/tidspbridge/rmgr/node.c          | 3231 ++++++++++++++++++++++
+ drivers/staging/tidspbridge/rmgr/proc.c          | 1948 +++++++++++++
+ drivers/staging/tidspbridge/rmgr/pwr.c           |  182 ++
+ drivers/staging/tidspbridge/rmgr/rmm.c           |  535 ++++
+ drivers/staging/tidspbridge/rmgr/strm.c          |  861 ++++++
+ 13 files changed, 13250 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/tidspbridge/rmgr/dbdcd.c
+ create mode 100644 drivers/staging/tidspbridge/rmgr/disp.c
+ create mode 100644 drivers/staging/tidspbridge/rmgr/drv.c
+ create mode 100644 drivers/staging/tidspbridge/rmgr/drv_interface.c
+ create mode 100644 drivers/staging/tidspbridge/rmgr/drv_interface.h
+ create mode 100644 drivers/staging/tidspbridge/rmgr/dspdrv.c
+ create mode 100644 drivers/staging/tidspbridge/rmgr/mgr.c
+ create mode 100644 drivers/staging/tidspbridge/rmgr/nldr.c
+ create mode 100644 drivers/staging/tidspbridge/rmgr/node.c
+ create mode 100644 drivers/staging/tidspbridge/rmgr/proc.c
+ create mode 100644 drivers/staging/tidspbridge/rmgr/pwr.c
+ create mode 100644 drivers/staging/tidspbridge/rmgr/rmm.c
+ create mode 100644 drivers/staging/tidspbridge/rmgr/strm.c
 
-diff --git a/drivers/staging/tidspbridge/dynload/cload.c b/drivers/staging/tidspbridge/dynload/cload.c
+diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
 new file mode 100644
-index 0000000..d4f71b5
+index 0000000..e014600
 --- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/cload.c
-@@ -0,0 +1,1960 @@
++++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+@@ -0,0 +1,1506 @@
 +/*
-+ * cload.c
++ * dbdcd.c
 + *
 + * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * This file contains the implementation of the DSP/BIOS Bridge
++ * Configuration Database (DCD).
++ *
++ * Notes:
++ *   The fxn dcd_get_objects can apply a callback fxn to each DCD object
++ *   that is located in a specified COFF file.  At the moment,
++ *   dcd_auto_register, dcd_auto_unregister, and NLDR module all use
++ *   dcd_get_objects.
 + *
 + * Copyright (C) 2005-2006 Texas Instruments, Inc.
 + *
@@ -106,3324 +117,9765 @@ index 0000000..d4f71b5
 + * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 + */
 +
-+#include "header.h"
++/*  ----------------------------------- Host OS */
++#include <dspbridge/host_os.h>
 +
-+#include "module_list.h"
-+#define LINKER_MODULES_HEADER ("_" MODULES_HEADER)
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
++
++/*  ----------------------------------- Platform Manager */
++#include <dspbridge/cod.h>
++
++/*  ----------------------------------- Others */
++#include <dspbridge/uuidutil.h>
++
++/*  ----------------------------------- This */
++#include <dspbridge/dbdcd.h>
++
++/*  ----------------------------------- Global defines. */
++#define MAX_INT2CHAR_LENGTH     16	/* Max int2char len of 32 bit int */
++
++/* Name of section containing dependent libraries */
++#define DEPLIBSECT		".dspbridge_deplibs"
++
++/* DCD specific structures. */
++struct dcd_manager {
++	struct cod_manager *cod_mgr;	/* Handle to COD manager object. */
++};
++
++/*  Pointer to the registry support key */
++static struct list_head reg_key_list;
++static DEFINE_SPINLOCK(dbdcd_lock);
++
++/* Global reference variables. */
++static u32 refs;
++static u32 enum_refs;
++
++/* Helper function prototypes. */
++static s32 atoi(char *psz_buf);
++static int get_attrs_from_buf(char *psz_buf, u32 ul_buf_size,
++				     enum dsp_dcdobjtype obj_type,
++				     struct dcd_genericobj *pGenObj);
++static void compress_buf(char *psz_buf, u32 ul_buf_size, s32 cCharSize);
++static char dsp_char2_gpp_char(char *pWord, s32 cDspCharSize);
++static int get_dep_lib_info(IN struct dcd_manager *hdcd_mgr,
++				   IN struct dsp_uuid *uuid_obj,
++				   IN OUT u16 *pNumLibs,
++				   OPTIONAL OUT u16 *pNumPersLibs,
++				   OPTIONAL OUT struct dsp_uuid *pDepLibUuids,
++				   OPTIONAL OUT bool *pPersistentDepLibs,
++				   IN enum nldr_phase phase);
 +
 +/*
-+ * we use the fact that DOFF section records are shaped just like
-+ * ldr_section_info to reduce our section storage usage.  This macro marks
-+ * the places where that assumption is made
++ *  ======== dcd_auto_register ========
++ *  Purpose:
++ *      Parses the supplied image and resigsters with DCD.
 + */
-+#define DOFFSEC_IS_LDRSEC(pdoffsec) ((struct ldr_section_info *)(pdoffsec))
-+
-+/*
-+ * forward references
-+ */
-+static void dload_symbols(struct dload_state *dlthis);
-+static void dload_data(struct dload_state *dlthis);
-+static void allocate_sections(struct dload_state *dlthis);
-+static void string_table_free(struct dload_state *dlthis);
-+static void symbol_table_free(struct dload_state *dlthis);
-+static void section_table_free(struct dload_state *dlthis);
-+static void init_module_handle(struct dload_state *dlthis);
-+#if BITS_PER_AU > BITS_PER_BYTE
-+static char *unpack_name(struct dload_state *dlthis, u32 soffset);
-+#endif
-+
-+static const char cinitname[] = { ".cinit" };
-+static const char loader_dllview_root[] = { "?DLModules?" };
-+
-+/*
-+ * Error strings
-+ */
-+static const char readstrm[] = { "Error reading %s from input stream" };
-+static const char err_alloc[] = { "Syms->dload_allocate( %d ) failed" };
-+static const char tgtalloc[] = {
-+	"Target memory allocate failed, section %s size " FMT_UI32 };
-+static const char initfail[] = { "%s to target address " FMT_UI32 " failed" };
-+static const char dlvwrite[] = { "Write to DLLview list failed" };
-+static const char iconnect[] = { "Connect call to init interface failed" };
-+static const char err_checksum[] = { "Checksum failed on %s" };
-+
-+/*************************************************************************
-+ * Procedure dload_error
-+ *
-+ * Parameters:
-+ *	errtxt	description of the error, printf style
-+ *	...		additional information
-+ *
-+ * Effect:
-+ *	Reports or records the error as appropriate.
-+ *********************************************************************** */
-+void dload_error(struct dload_state *dlthis, const char *errtxt, ...)
++int dcd_auto_register(IN struct dcd_manager *hdcd_mgr,
++			     IN char *pszCoffPath)
 +{
-+	va_list args;
++	int status = 0;
 +
-+	va_start(args, errtxt);
-+	dlthis->mysym->error_report(dlthis->mysym, errtxt, args);
-+	va_end(args);
-+	dlthis->dload_errcount += 1;
++	DBC_REQUIRE(refs > 0);
 +
-+}				/* dload_error */
++	if (hdcd_mgr)
++		status = dcd_get_objects(hdcd_mgr, pszCoffPath,
++					 (dcd_registerfxn) dcd_register_object,
++					 (void *)pszCoffPath);
++	else
++		status = -EFAULT;
 +
-+#define DL_ERROR(zza, zzb) dload_error(dlthis, zza, zzb)
-+
-+/*************************************************************************
-+ * Procedure dload_syms_error
-+ *
-+ * Parameters:
-+ *	errtxt	description of the error, printf style
-+ *	...		additional information
-+ *
-+ * Effect:
-+ *	Reports or records the error as appropriate.
-+ *********************************************************************** */
-+void dload_syms_error(struct dynamic_loader_sym *syms, const char *errtxt, ...)
-+{
-+	va_list args;
-+
-+	va_start(args, errtxt);
-+	syms->error_report(syms, errtxt, args);
-+	va_end(args);
++	return status;
 +}
 +
-+/*************************************************************************
-+ * Procedure dynamic_load_module
-+ *
-+ * Parameters:
-+ *	module	The input stream that supplies the module image
-+ *	syms	Host-side symbol table and malloc/free functions
-+ *	alloc	Target-side memory allocation
-+ *	init	Target-side memory initialization
-+ *	options	Option flags DLOAD_*
-+ *	mhandle	A module handle for use with Dynamic_Unload
-+ *
-+ * Effect:
-+ *	The module image is read using *module.  Target storage for the new
-+ *	image is
-+ * obtained from *alloc.  Symbols defined and referenced by the module are
-+ * managed using *syms.  The image is then relocated and references
-+ *	resolved as necessary, and the resulting executable bits are placed
-+ *	into target memory using *init.
-+ *
-+ * Returns:
-+ *	On a successful load, a module handle is placed in *mhandle,
-+ *	and zero is returned.  On error, the number of errors detected is
-+ *	returned.  Individual errors are reported during the load process
-+ *	using syms->error_report().
-+ ********************************************************************** */
-+int dynamic_load_module(struct dynamic_loader_stream *module,
-+			struct dynamic_loader_sym *syms,
-+			struct dynamic_loader_allocate *alloc,
-+			struct dynamic_loader_initialize *init,
-+			unsigned options, void **mhandle)
++/*
++ *  ======== dcd_auto_unregister ========
++ *  Purpose:
++ *      Parses the supplied DSP image and unresiters from DCD.
++ */
++int dcd_auto_unregister(IN struct dcd_manager *hdcd_mgr,
++			       IN char *pszCoffPath)
 +{
-+	register unsigned *dp, sz;
-+	struct dload_state dl_state;	/* internal state for this call */
++	int status = 0;
 +
-+	/* blast our internal state */
-+	dp = (unsigned *)&dl_state;
-+	for (sz = sizeof(dl_state) / sizeof(unsigned); sz > 0; sz -= 1)
-+		*dp++ = 0;
++	DBC_REQUIRE(refs > 0);
 +
-+	/* Enable _only_ BSS initialization if enabled by user */
-+	if ((options & DLOAD_INITBSS) == DLOAD_INITBSS)
-+		dl_state.myoptions = DLOAD_INITBSS;
++	if (hdcd_mgr)
++		status = dcd_get_objects(hdcd_mgr, pszCoffPath,
++					 (dcd_registerfxn) dcd_register_object,
++					 NULL);
++	else
++		status = -EFAULT;
 +
-+	/* Check that mandatory arguments are present */
-+	if (!module || !syms) {
-+		dload_error(&dl_state, "Required parameter is NULL");
-+	} else {
-+		dl_state.strm = module;
-+		dl_state.mysym = syms;
-+		dload_headers(&dl_state);
-+		if (!dl_state.dload_errcount)
-+			dload_strings(&dl_state, false);
-+		if (!dl_state.dload_errcount)
-+			dload_sections(&dl_state);
-+
-+		if (init && !dl_state.dload_errcount) {
-+			if (init->connect(init)) {
-+				dl_state.myio = init;
-+				dl_state.myalloc = alloc;
-+				/* do now, before reducing symbols */
-+				allocate_sections(&dl_state);
-+			} else
-+				dload_error(&dl_state, iconnect);
-+		}
-+
-+		if (!dl_state.dload_errcount) {
-+			/* fix up entry point address */
-+			unsigned sref = dl_state.dfile_hdr.df_entry_secn - 1;
-+			if (sref < dl_state.allocated_secn_count)
-+				dl_state.dfile_hdr.df_entrypt +=
-+				    dl_state.ldr_sections[sref].run_addr;
-+
-+			dload_symbols(&dl_state);
-+		}
-+
-+		if (init && !dl_state.dload_errcount)
-+			dload_data(&dl_state);
-+
-+		init_module_handle(&dl_state);
-+
-+		/* dl_state.myio is init or 0 at this point. */
-+		if (dl_state.myio) {
-+			if ((!dl_state.dload_errcount) &&
-+			    (dl_state.dfile_hdr.df_entry_secn != DN_UNDEF) &&
-+			    (!init->execute(init,
-+					    dl_state.dfile_hdr.df_entrypt)))
-+				dload_error(&dl_state, "Init->Execute Failed");
-+			init->release(init);
-+		}
-+
-+		symbol_table_free(&dl_state);
-+		section_table_free(&dl_state);
-+		string_table_free(&dl_state);
-+		dload_tramp_cleanup(&dl_state);
-+
-+		if (dl_state.dload_errcount) {
-+			dynamic_unload_module(dl_state.myhandle, syms, alloc,
-+					      init);
-+			dl_state.myhandle = NULL;
-+		}
-+	}
-+
-+	if (mhandle)
-+		*mhandle = dl_state.myhandle;	/* give back the handle */
-+
-+	return dl_state.dload_errcount;
-+}				/* DLOAD_File */
-+
-+/*************************************************************************
-+ * Procedure dynamic_open_module
-+ *
-+ * Parameters:
-+ *      module  The input stream that supplies the module image
-+ *      syms    Host-side symbol table and malloc/free functions
-+ *      alloc   Target-side memory allocation
-+ *      init    Target-side memory initialization
-+ *      options Option flags DLOAD_*
-+ *      mhandle A module handle for use with Dynamic_Unload
-+ *
-+ * Effect:
-+ *      The module image is read using *module.  Target storage for the new
-+ *      image is
-+ * 	obtained from *alloc.  Symbols defined and referenced by the module are
-+ * 	managed using *syms.  The image is then relocated and references
-+ *      resolved as necessary, and the resulting executable bits are placed
-+ *      into target memory using *init.
-+ *
-+ * Returns:
-+ *      On a successful load, a module handle is placed in *mhandle,
-+ *      and zero is returned.  On error, the number of errors detected is
-+ *      returned.  Individual errors are reported during the load process
-+ *      using syms->error_report().
-+ ********************************************************************** */
-+int
-+dynamic_open_module(struct dynamic_loader_stream *module,
-+		    struct dynamic_loader_sym *syms,
-+		    struct dynamic_loader_allocate *alloc,
-+		    struct dynamic_loader_initialize *init,
-+		    unsigned options, void **mhandle)
-+{
-+	register unsigned *dp, sz;
-+	struct dload_state dl_state;	/* internal state for this call */
-+
-+	/* blast our internal state */
-+	dp = (unsigned *)&dl_state;
-+	for (sz = sizeof(dl_state) / sizeof(unsigned); sz > 0; sz -= 1)
-+		*dp++ = 0;
-+
-+	/* Enable _only_ BSS initialization if enabled by user */
-+	if ((options & DLOAD_INITBSS) == DLOAD_INITBSS)
-+		dl_state.myoptions = DLOAD_INITBSS;
-+
-+	/* Check that mandatory arguments are present */
-+	if (!module || !syms) {
-+		dload_error(&dl_state, "Required parameter is NULL");
-+	} else {
-+		dl_state.strm = module;
-+		dl_state.mysym = syms;
-+		dload_headers(&dl_state);
-+		if (!dl_state.dload_errcount)
-+			dload_strings(&dl_state, false);
-+		if (!dl_state.dload_errcount)
-+			dload_sections(&dl_state);
-+
-+		if (init && !dl_state.dload_errcount) {
-+			if (init->connect(init)) {
-+				dl_state.myio = init;
-+				dl_state.myalloc = alloc;
-+				/* do now, before reducing symbols */
-+				allocate_sections(&dl_state);
-+			} else
-+				dload_error(&dl_state, iconnect);
-+		}
-+
-+		if (!dl_state.dload_errcount) {
-+			/* fix up entry point address */
-+			unsigned sref = dl_state.dfile_hdr.df_entry_secn - 1;
-+			if (sref < dl_state.allocated_secn_count)
-+				dl_state.dfile_hdr.df_entrypt +=
-+				    dl_state.ldr_sections[sref].run_addr;
-+
-+			dload_symbols(&dl_state);
-+		}
-+
-+		init_module_handle(&dl_state);
-+
-+		/* dl_state.myio is either 0 or init at this point. */
-+		if (dl_state.myio) {
-+			if ((!dl_state.dload_errcount) &&
-+			    (dl_state.dfile_hdr.df_entry_secn != DN_UNDEF) &&
-+			    (!init->execute(init,
-+					    dl_state.dfile_hdr.df_entrypt)))
-+				dload_error(&dl_state, "Init->Execute Failed");
-+			init->release(init);
-+		}
-+
-+		symbol_table_free(&dl_state);
-+		section_table_free(&dl_state);
-+		string_table_free(&dl_state);
-+
-+		if (dl_state.dload_errcount) {
-+			dynamic_unload_module(dl_state.myhandle, syms, alloc,
-+					      init);
-+			dl_state.myhandle = NULL;
-+		}
-+	}
-+
-+	if (mhandle)
-+		*mhandle = dl_state.myhandle;	/* give back the handle */
-+
-+	return dl_state.dload_errcount;
-+}				/* DLOAD_File */
-+
-+/*************************************************************************
-+ * Procedure dload_headers
-+ *
-+ * Parameters:
-+ *	none
-+ *
-+ * Effect:
-+ *	Loads the DOFF header and verify record.  Deals with any byte-order
-+ * issues and checks them for validity.
-+ *********************************************************************** */
-+#define COMBINED_HEADER_SIZE (sizeof(struct doff_filehdr_t)+ \
-+			     sizeof(struct doff_verify_rec_t))
-+
-+void dload_headers(struct dload_state *dlthis)
-+{
-+	u32 map;
-+
-+	/* Read the header and the verify record as one.  If we don't get it
-+	   all, we're done */
-+	if (dlthis->strm->read_buffer(dlthis->strm, &dlthis->dfile_hdr,
-+				      COMBINED_HEADER_SIZE) !=
-+	    COMBINED_HEADER_SIZE) {
-+		DL_ERROR(readstrm, "File Headers");
-+		return;
-+	}
-+	/*
-+	 * Verify that we have the byte order of the file correct.
-+	 * If not, must fix it before we can continue
-+	 */
-+	map = REORDER_MAP(dlthis->dfile_hdr.df_byte_reshuffle);
-+	if (map != REORDER_MAP(BYTE_RESHUFFLE_VALUE)) {
-+		/* input is either byte-shuffled or bad */
-+		if ((map & 0xFCFCFCFC) == 0) {	/* no obviously bogus bits */
-+			dload_reorder(&dlthis->dfile_hdr, COMBINED_HEADER_SIZE,
-+				      map);
-+		}
-+		if (dlthis->dfile_hdr.df_byte_reshuffle !=
-+		    BYTE_RESHUFFLE_VALUE) {
-+			/* didn't fix the problem, the byte swap map is bad */
-+			dload_error(dlthis,
-+				    "Bad byte swap map " FMT_UI32 " in header",
-+				    dlthis->dfile_hdr.df_byte_reshuffle);
-+			return;
-+		}
-+		dlthis->reorder_map = map;	/* keep map for future use */
-+	}
-+
-+	/*
-+	 * Verify checksum of header and verify record
-+	 */
-+	if (~dload_checksum(&dlthis->dfile_hdr,
-+			    sizeof(struct doff_filehdr_t)) ||
-+	    ~dload_checksum(&dlthis->verify,
-+			    sizeof(struct doff_verify_rec_t))) {
-+		DL_ERROR(err_checksum, "header or verify record");
-+		return;
-+	}
-+#if HOST_ENDIANNESS
-+	dlthis->dfile_hdr.df_byte_reshuffle = map;	/* put back for later */
-+#endif
-+
-+	/* Check for valid target ID */
-+	if ((dlthis->dfile_hdr.df_target_id != TARGET_ID) &&
-+	    -(dlthis->dfile_hdr.df_target_id != TMS470_ID)) {
-+		dload_error(dlthis, "Bad target ID 0x%x and TARGET_ID 0x%x",
-+			    dlthis->dfile_hdr.df_target_id, TARGET_ID);
-+		return;
-+	}
-+	/* Check for valid file format */
-+	if ((dlthis->dfile_hdr.df_doff_version != DOFF0)) {
-+		dload_error(dlthis, "Bad DOFF version 0x%x",
-+			    dlthis->dfile_hdr.df_doff_version);
-+		return;
-+	}
-+
-+	/*
-+	 * Apply reasonableness checks to count fields
-+	 */
-+	if (dlthis->dfile_hdr.df_strtab_size > MAX_REASONABLE_STRINGTAB) {
-+		dload_error(dlthis, "Excessive string table size " FMT_UI32,
-+			    dlthis->dfile_hdr.df_strtab_size);
-+		return;
-+	}
-+	if (dlthis->dfile_hdr.df_no_scns > MAX_REASONABLE_SECTIONS) {
-+		dload_error(dlthis, "Excessive section count 0x%x",
-+			    dlthis->dfile_hdr.df_no_scns);
-+		return;
-+	}
-+#ifndef TARGET_ENDIANNESS
-+	/*
-+	 * Check that endianness does not disagree with explicit specification
-+	 */
-+	if ((dlthis->dfile_hdr.df_flags >> ALIGN_COFF_ENDIANNESS) &
-+	    dlthis->myoptions & ENDIANNESS_MASK) {
-+		dload_error(dlthis,
-+			    "Input endianness disagrees with specified option");
-+		return;
-+	}
-+	dlthis->big_e_target = dlthis->dfile_hdr.df_flags & DF_BIG;
-+#endif
-+
-+}				/* dload_headers */
-+
-+/*	COFF Section Processing
-+ *
-+ *	COFF sections are read in and retained intact.  Each record is embedded
-+ * 	in a new structure that records the updated load and
-+ * 	run addresses of the section */
-+
-+static const char secn_errid[] = { "section" };
-+
-+/*************************************************************************
-+ * Procedure dload_sections
-+ *
-+ * Parameters:
-+ *	none
-+ *
-+ * Effect:
-+ *	Loads the section records into an internal table.
-+ *********************************************************************** */
-+void dload_sections(struct dload_state *dlthis)
-+{
-+	s16 siz;
-+	struct doff_scnhdr_t *shp;
-+	unsigned nsecs = dlthis->dfile_hdr.df_no_scns;
-+
-+	/* allocate space for the DOFF section records */
-+	siz = nsecs * sizeof(struct doff_scnhdr_t);
-+	shp =
-+	    (struct doff_scnhdr_t *)dlthis->mysym->dload_allocate(dlthis->mysym,
-+								  siz);
-+	if (!shp) {		/* not enough storage */
-+		DL_ERROR(err_alloc, siz);
-+		return;
-+	}
-+	dlthis->sect_hdrs = shp;
-+
-+	/* read in the section records */
-+	if (dlthis->strm->read_buffer(dlthis->strm, shp, siz) != siz) {
-+		DL_ERROR(readstrm, secn_errid);
-+		return;
-+	}
-+
-+	/* if we need to fix up byte order, do it now */
-+	if (dlthis->reorder_map)
-+		dload_reorder(shp, siz, dlthis->reorder_map);
-+
-+	/* check for validity */
-+	if (~dload_checksum(dlthis->sect_hdrs, siz) !=
-+	    dlthis->verify.dv_scn_rec_checksum) {
-+		DL_ERROR(err_checksum, secn_errid);
-+		return;
-+	}
-+
-+}				/* dload_sections */
-+
-+/*****************************************************************************
-+ * Procedure allocate_sections
-+ *
-+ * Parameters:
-+ *	alloc	target memory allocator class
-+ *
-+ * Effect:
-+ *	Assigns new (target) addresses for sections
-+ **************************************************************************** */
-+static void allocate_sections(struct dload_state *dlthis)
-+{
-+	u16 curr_sect, nsecs, siz;
-+	struct doff_scnhdr_t *shp;
-+	struct ldr_section_info *asecs;
-+	struct my_handle *hndl;
-+	nsecs = dlthis->dfile_hdr.df_no_scns;
-+	if (!nsecs)
-+		return;
-+	if ((dlthis->myalloc == NULL) &&
-+	    (dlthis->dfile_hdr.df_target_scns > 0)) {
-+		DL_ERROR("Arg 3 (alloc) required but NULL", 0);
-+		return;
-+	}
-+	/*
-+	 * allocate space for the module handle, which we will keep for unload
-+	 * purposes include an additional section store for an auto-generated
-+	 * trampoline section in case we need it.
-+	 */
-+	siz = (dlthis->dfile_hdr.df_target_scns + 1) *
-+	    sizeof(struct ldr_section_info) + MY_HANDLE_SIZE;
-+
-+	hndl =
-+	    (struct my_handle *)dlthis->mysym->dload_allocate(dlthis->mysym,
-+							      siz);
-+	if (!hndl) {		/* not enough storage */
-+		DL_ERROR(err_alloc, siz);
-+		return;
-+	}
-+	/* initialize the handle header */
-+	hndl->dm.hnext = hndl->dm.hprev = hndl;	/* circular list */
-+	hndl->dm.hroot = NULL;
-+	hndl->dm.dbthis = 0;
-+	dlthis->myhandle = hndl;	/* save away for return */
-+	/* pointer to the section list of allocated sections */
-+	dlthis->ldr_sections = asecs = hndl->secns;
-+	/* * Insert names into all sections, make copies of
-+	   the sections we allocate */
-+	shp = dlthis->sect_hdrs;
-+	for (curr_sect = 0; curr_sect < nsecs; curr_sect++) {
-+		u32 soffset = shp->ds_offset;
-+#if BITS_PER_AU <= BITS_PER_BYTE
-+		/* attempt to insert the name of this section */
-+		if (soffset < dlthis->dfile_hdr.df_strtab_size)
-+			DOFFSEC_IS_LDRSEC(shp)->name = dlthis->str_head +
-+			    soffset;
-+		else {
-+			dload_error(dlthis, "Bad name offset in section %d",
-+				    curr_sect);
-+			DOFFSEC_IS_LDRSEC(shp)->name = NULL;
-+		}
-+#endif
-+		/* allocate target storage for sections that require it */
-+		if (DS_NEEDS_ALLOCATION(shp)) {
-+			*asecs = *DOFFSEC_IS_LDRSEC(shp);
-+			asecs->context = 0;	/* zero the context field */
-+#if BITS_PER_AU > BITS_PER_BYTE
-+			asecs->name = unpack_name(dlthis, soffset);
-+			dlthis->debug_string_size = soffset + dlthis->temp_len;
-+#else
-+			dlthis->debug_string_size = soffset;
-+#endif
-+			if (dlthis->myalloc != NULL) {
-+				if (!dlthis->myalloc->
-+				    dload_allocate(dlthis->myalloc, asecs,
-+						   DS_ALIGNMENT(asecs->type))) {
-+					dload_error(dlthis, tgtalloc,
-+						    asecs->name, asecs->size);
-+					return;
-+				}
-+			}
-+			/* keep address deltas in original section table */
-+			shp->ds_vaddr = asecs->load_addr - shp->ds_vaddr;
-+			shp->ds_paddr = asecs->run_addr - shp->ds_paddr;
-+			dlthis->allocated_secn_count += 1;
-+		}		/* allocate target storage */
-+		shp += 1;
-+		asecs += 1;
-+	}
-+#if BITS_PER_AU <= BITS_PER_BYTE
-+	dlthis->debug_string_size +=
-+	    strlen(dlthis->str_head + dlthis->debug_string_size) + 1;
-+#endif
-+}				/* allocate sections */
-+
-+/*************************************************************************
-+ * Procedure section_table_free
-+ *
-+ * Parameters:
-+ *	none
-+ *
-+ * Effect:
-+ *	Frees any state used by the symbol table.
-+ *
-+ * WARNING:
-+ *	This routine is not allowed to declare errors!
-+ *********************************************************************** */
-+static void section_table_free(struct dload_state *dlthis)
-+{
-+	struct doff_scnhdr_t *shp;
-+
-+	shp = dlthis->sect_hdrs;
-+	if (shp)
-+		dlthis->mysym->dload_deallocate(dlthis->mysym, shp);
-+
-+}				/* section_table_free */
-+
-+/*************************************************************************
-+ * Procedure dload_strings
-+ *
-+ * Parameters:
-+ *  sec_names_only   If true only read in the "section names"
-+ *		     portion of the string table
-+ *
-+ * Effect:
-+ *	Loads the DOFF string table into memory. DOFF keeps all strings in a
-+ * big unsorted array.  We just read that array into memory in bulk.
-+ *********************************************************************** */
-+static const char stringtbl[] = { "string table" };
-+
-+void dload_strings(struct dload_state *dlthis, bool sec_names_only)
-+{
-+	u32 ssiz;
-+	char *strbuf;
-+
-+	if (sec_names_only) {
-+		ssiz = BYTE_TO_HOST(DOFF_ALIGN
-+				    (dlthis->dfile_hdr.df_scn_name_size));
-+	} else {
-+		ssiz = BYTE_TO_HOST(DOFF_ALIGN
-+				    (dlthis->dfile_hdr.df_strtab_size));
-+	}
-+	if (ssiz == 0)
-+		return;
-+
-+	/* get some memory for the string table */
-+#if BITS_PER_AU > BITS_PER_BYTE
-+	strbuf = (char *)dlthis->mysym->dload_allocate(dlthis->mysym, ssiz +
-+						       dlthis->dfile_hdr.
-+						       df_max_str_len);
-+#else
-+	strbuf = (char *)dlthis->mysym->dload_allocate(dlthis->mysym, ssiz);
-+#endif
-+	if (strbuf == NULL) {
-+		DL_ERROR(err_alloc, ssiz);
-+		return;
-+	}
-+	dlthis->str_head = strbuf;
-+#if BITS_PER_AU > BITS_PER_BYTE
-+	dlthis->str_temp = strbuf + ssiz;
-+#endif
-+	/* read in the strings and verify them */
-+	if ((unsigned)(dlthis->strm->read_buffer(dlthis->strm, strbuf,
-+						 ssiz)) != ssiz) {
-+		DL_ERROR(readstrm, stringtbl);
-+	}
-+	/* if we need to fix up byte order, do it now */
-+#ifndef _BIG_ENDIAN
-+	if (dlthis->reorder_map)
-+		dload_reorder(strbuf, ssiz, dlthis->reorder_map);
-+
-+	if ((!sec_names_only) && (~dload_checksum(strbuf, ssiz) !=
-+				  dlthis->verify.dv_str_tab_checksum)) {
-+		DL_ERROR(err_checksum, stringtbl);
-+	}
-+#else
-+	if (dlthis->dfile_hdr.df_byte_reshuffle !=
-+	    HOST_BYTE_ORDER(REORDER_MAP(BYTE_RESHUFFLE_VALUE))) {
-+		/* put strings in big-endian order, not in PC order */
-+		dload_reorder(strbuf, ssiz,
-+			      HOST_BYTE_ORDER(dlthis->
-+					      dfile_hdr.df_byte_reshuffle));
-+	}
-+	if ((!sec_names_only) && (~dload_reverse_checksum(strbuf, ssiz) !=
-+				  dlthis->verify.dv_str_tab_checksum)) {
-+		DL_ERROR(err_checksum, stringtbl);
-+	}
-+#endif
-+}				/* dload_strings */
-+
-+/*************************************************************************
-+ * Procedure string_table_free
-+ *
-+ * Parameters:
-+ *	none
-+ *
-+ * Effect:
-+ *	Frees any state used by the string table.
-+ *
-+ * WARNING:
-+ *	This routine is not allowed to declare errors!
-+ ************************************************************************ */
-+static void string_table_free(struct dload_state *dlthis)
-+{
-+	if (dlthis->str_head)
-+		dlthis->mysym->dload_deallocate(dlthis->mysym,
-+						dlthis->str_head);
-+
-+}				/* string_table_free */
++	return status;
++}
 +
 +/*
-+ * Symbol Table Maintenance Functions
-+ *
-+ * COFF symbols are read by dload_symbols(), which is called after
-+ * sections have been allocated.  Symbols which might be used in
-+ * relocation (ie, not debug info) are retained in an internal temporary
-+ * compressed table (type local_symbol). A particular symbol is recovered
-+ * by index by calling dload_find_symbol().  dload_find_symbol
-+ * reconstructs a more explicit representation (type SLOTVEC) which is
-+ * used by reloc.c
++ *  ======== dcd_create_manager ========
++ *  Purpose:
++ *      Creates DCD manager.
 + */
-+/* real size of debug header */
-+#define DBG_HDR_SIZE (sizeof(struct dll_module) - sizeof(struct dll_sect))
-+
-+static const char sym_errid[] = { "symbol" };
-+
-+/**************************************************************************
-+ * Procedure dload_symbols
-+ *
-+ * Parameters:
-+ *	none
-+ *
-+ * Effect:
-+ *	Reads in symbols and retains ones that might be needed for relocation
-+ * purposes.
-+ *********************************************************************** */
-+/* size of symbol buffer no bigger than target data buffer, to limit stack
-+ * usage */
-+#define MY_SYM_BUF_SIZ (BYTE_TO_HOST(IMAGE_PACKET_SIZE)/\
-+			sizeof(struct doff_syment_t))
-+
-+static void dload_symbols(struct dload_state *dlthis)
++int dcd_create_manager(IN char *pszZlDllName,
++			      OUT struct dcd_manager **phDcdMgr)
 +{
-+	u32 sym_count, siz, dsiz, symbols_left;
-+	u32 checks;
-+	struct local_symbol *sp;
-+	struct dynload_symbol *symp;
-+	struct dynload_symbol *newsym;
-+
-+	sym_count = dlthis->dfile_hdr.df_no_syms;
-+	if (sym_count == 0)
-+		return;
-+
-+	/*
-+	 * We keep a local symbol table for all of the symbols in the input.
-+	 * This table contains only section & value info, as we do not have
-+	 * to do any name processing for locals.  We reuse this storage
-+	 * as a temporary for .dllview record construction.
-+	 * Allocate storage for the whole table.  Add 1 to the section count
-+	 * in case a trampoline section is auto-generated as well as the
-+	 * size of the trampoline section name so DLLView doens't get lost.
-+	 */
-+
-+	siz = sym_count * sizeof(struct local_symbol);
-+	dsiz = DBG_HDR_SIZE +
-+	    (sizeof(struct dll_sect) * dlthis->allocated_secn_count) +
-+	    BYTE_TO_HOST_ROUND(dlthis->debug_string_size + 1);
-+	if (dsiz > siz)
-+		siz = dsiz;	/* larger of symbols and .dllview temp */
-+	sp = (struct local_symbol *)dlthis->mysym->dload_allocate(dlthis->mysym,
-+								  siz);
-+	if (!sp) {
-+		DL_ERROR(err_alloc, siz);
-+		return;
-+	}
-+	dlthis->local_symtab = sp;
-+	/* Read the symbols in the input, store them in the table, and post any
-+	 * globals to the global symbol table.  In the process, externals
-+	 become defined from the global symbol table */
-+	checks = dlthis->verify.dv_sym_tab_checksum;
-+	symbols_left = sym_count;
-+	do {			/* read all symbols */
-+		char *sname;
-+		u32 val;
-+		s32 delta;
-+		struct doff_syment_t *input_sym;
-+		unsigned syms_in_buf;
-+		struct doff_syment_t my_sym_buf[MY_SYM_BUF_SIZ];
-+		input_sym = my_sym_buf;
-+		syms_in_buf = symbols_left > MY_SYM_BUF_SIZ ?
-+		    MY_SYM_BUF_SIZ : symbols_left;
-+		siz = syms_in_buf * sizeof(struct doff_syment_t);
-+		if (dlthis->strm->read_buffer(dlthis->strm, input_sym, siz) !=
-+		    siz) {
-+			DL_ERROR(readstrm, sym_errid);
-+			return;
-+		}
-+		if (dlthis->reorder_map)
-+			dload_reorder(input_sym, siz, dlthis->reorder_map);
-+
-+		checks += dload_checksum(input_sym, siz);
-+		do {		/* process symbols in buffer */
-+			symbols_left -= 1;
-+			/* attempt to derive the name of this symbol */
-+			sname = NULL;
-+			if (input_sym->dn_offset > 0) {
-+#if BITS_PER_AU <= BITS_PER_BYTE
-+				if ((u32) input_sym->dn_offset <
-+				    dlthis->dfile_hdr.df_strtab_size)
-+					sname = dlthis->str_head +
-+					    BYTE_TO_HOST(input_sym->dn_offset);
-+				else
-+					dload_error(dlthis,
-+						    "Bad name offset in symbol "
-+						    " %d", symbols_left);
-+#else
-+				sname = unpack_name(dlthis,
-+						    input_sym->dn_offset);
-+#endif
-+			}
-+			val = input_sym->dn_value;
-+			delta = 0;
-+			sp->sclass = input_sym->dn_sclass;
-+			sp->secnn = input_sym->dn_scnum;
-+			/* if this is an undefined symbol,
-+			 * define it (or fail) now */
-+			if (sp->secnn == DN_UNDEF) {
-+				/* pointless for static undefined */
-+				if (input_sym->dn_sclass != DN_EXT)
-+					goto loop_cont;
-+
-+				/* try to define symbol from previously
-+				 * loaded images */
-+				symp = dlthis->mysym->find_matching_symbol
-+				    (dlthis->mysym, sname);
-+				if (!symp) {
-+					DL_ERROR
-+					    ("Undefined external symbol %s",
-+					     sname);
-+					goto loop_cont;
-+				}
-+				val = delta = symp->value;
-+#ifdef ENABLE_TRAMP_DEBUG
-+				dload_syms_error(dlthis->mysym,
-+						 "===> ext sym [%s] at %x",
-+						 sname, val);
-+#endif
-+
-+				goto loop_cont;
-+			}
-+			/* symbol defined by this module */
-+			if (sp->secnn > 0) {
-+				/* symbol references a section */
-+				if ((unsigned)sp->secnn <=
-+				    dlthis->allocated_secn_count) {
-+					/* section was allocated */
-+					struct doff_scnhdr_t *srefp =
-+					    &dlthis->sect_hdrs[sp->secnn - 1];
-+
-+					if (input_sym->dn_sclass ==
-+					    DN_STATLAB ||
-+					    input_sym->dn_sclass == DN_EXTLAB) {
-+						/* load */
-+						delta = srefp->ds_vaddr;
-+					} else {
-+						/* run */
-+						delta = srefp->ds_paddr;
-+					}
-+					val += delta;
-+				}
-+				goto loop_itr;
-+			}
-+			/* This symbol is an absolute symbol */
-+			if (sp->secnn == DN_ABS && ((sp->sclass == DN_EXT) ||
-+						    (sp->sclass ==
-+						     DN_EXTLAB))) {
-+				symp =
-+				    dlthis->mysym->find_matching_symbol(dlthis->
-+									mysym,
-+									sname);
-+				if (!symp)
-+					goto loop_itr;
-+				/* This absolute symbol is already defined. */
-+				if (symp->value == input_sym->dn_value) {
-+					/* If symbol values are equal, continue
-+					 * but don't add to the global symbol
-+					 * table */
-+					sp->value = val;
-+					sp->delta = delta;
-+					sp += 1;
-+					input_sym += 1;
-+					continue;
-+				} else {
-+					/* If symbol values are not equal,
-+					 * return with redefinition error */
-+					DL_ERROR("Absolute symbol %s is "
-+						 "defined multiple times with "
-+						 "different values", sname);
-+					return;
-+				}
-+			}
-+loop_itr:
-+			/* if this is a global symbol, post it to the
-+			 * global table */
-+			if (input_sym->dn_sclass == DN_EXT ||
-+			    input_sym->dn_sclass == DN_EXTLAB) {
-+				/* Keep this global symbol for subsequent
-+				 * modules. Don't complain on error, to allow
-+				 * symbol API to suppress global symbols */
-+				if (!sname)
-+					goto loop_cont;
-+
-+				newsym = dlthis->mysym->add_to_symbol_table
-+				    (dlthis->mysym, sname,
-+				     (unsigned)dlthis->myhandle);
-+				if (newsym)
-+					newsym->value = val;
-+
-+			}	/* global */
-+loop_cont:
-+			sp->value = val;
-+			sp->delta = delta;
-+			sp += 1;
-+			input_sym += 1;
-+		} while ((syms_in_buf -= 1) > 0);	/* process sym in buf */
-+	} while (symbols_left > 0);	/* read all symbols */
-+	if (~checks)
-+		dload_error(dlthis, "Checksum of symbols failed");
-+
-+}				/* dload_symbols */
-+
-+/*****************************************************************************
-+ * Procedure symbol_table_free
-+ *
-+ * Parameters:
-+ *	none
-+ *
-+ * Effect:
-+ *	Frees any state used by the symbol table.
-+ *
-+ * WARNING:
-+ *	This routine is not allowed to declare errors!
-+ **************************************************************************** */
-+static void symbol_table_free(struct dload_state *dlthis)
-+{
-+	if (dlthis->local_symtab) {
-+		if (dlthis->dload_errcount) {	/* blow off our symbols */
-+			dlthis->mysym->purge_symbol_table(dlthis->mysym,
-+							  (unsigned)
-+							  dlthis->myhandle);
-+		}
-+		dlthis->mysym->dload_deallocate(dlthis->mysym,
-+						dlthis->local_symtab);
-+	}
-+}				/* symbol_table_free */
-+
-+/* .cinit Processing
-+ *
-+ * The dynamic loader does .cinit interpretation.  cload_cinit()
-+ * acts as a special write-to-target function, in that it takes relocated
-+ * data from the normal data flow, and interprets it as .cinit actions.
-+ * Because the normal data flow does not  necessarily process the whole
-+ * .cinit section in one buffer, cload_cinit() must be prepared to
-+ * interpret the data piecemeal.  A state machine is used for this
-+ * purpose.
-+ */
-+
-+/* The following are only for use by reloc.c and things it calls */
-+static const struct ldr_section_info cinit_info_init = { cinitname, 0, 0,
-+	(ldr_addr)-1, 0, DLOAD_BSS, 0
-+};
-+
-+/*************************************************************************
-+ * Procedure cload_cinit
-+ *
-+ * Parameters:
-+ *	ipacket		Pointer to data packet to be loaded
-+ *
-+ * Effect:
-+ *	Interprets the data in the buffer as .cinit data, and performs the
-+ * appropriate initializations.
-+ *********************************************************************** */
-+static void cload_cinit(struct dload_state *dlthis,
-+			struct image_packet_t *ipacket)
-+{
-+#if TDATA_TO_HOST(CINIT_COUNT)*BITS_PER_AU > 16
-+	s32 init_count, left;
-+#else
-+	s16 init_count, left;
-+#endif
-+	unsigned char *pktp = ipacket->img_data;
-+	unsigned char *pktend = pktp + BYTE_TO_HOST_ROUND(ipacket->packet_size);
-+	int temp;
-+	ldr_addr atmp;
-+	struct ldr_section_info cinit_info;
-+
-+	/*  PROCESS ALL THE INITIALIZATION RECORDS IN THE BUFFER. */
-+	while (true) {
-+		left = pktend - pktp;
-+		switch (dlthis->cinit_state) {
-+		case CI_COUNT:	/* count field */
-+			if (left < TDATA_TO_HOST(CINIT_COUNT))
-+				goto loopexit;
-+			temp = dload_unpack(dlthis, (tgt_au_t *) pktp,
-+					    CINIT_COUNT * TDATA_AU_BITS, 0,
-+					    ROP_SGN);
-+			pktp += TDATA_TO_HOST(CINIT_COUNT);
-+			/* negative signifies BSS table, zero means done */
-+			if (temp <= 0) {
-+				dlthis->cinit_state = CI_DONE;
-+				break;
-+			}
-+			dlthis->cinit_count = temp;
-+			dlthis->cinit_state = CI_ADDRESS;
-+			break;
-+#if CINIT_ALIGN < CINIT_ADDRESS
-+		case CI_PARTADDRESS:
-+			pktp -= TDATA_TO_HOST(CINIT_ALIGN);
-+			/* back up pointer into space courtesy of caller */
-+			*(uint16_t *) pktp = dlthis->cinit_addr;
-+			/* stuff in saved bits  !! FALL THRU !! */
-+#endif
-+		case CI_ADDRESS:	/* Address field for a copy packet */
-+			if (left < TDATA_TO_HOST(CINIT_ADDRESS)) {
-+#if CINIT_ALIGN < CINIT_ADDRESS
-+				if (left == TDATA_TO_HOST(CINIT_ALIGN)) {
-+					/* address broken into halves */
-+					dlthis->cinit_addr = *(uint16_t *) pktp;
-+					/* remember 1st half */
-+					dlthis->cinit_state = CI_PARTADDRESS;
-+					left = 0;
-+				}
-+#endif
-+				goto loopexit;
-+			}
-+			atmp = dload_unpack(dlthis, (tgt_au_t *) pktp,
-+					    CINIT_ADDRESS * TDATA_AU_BITS, 0,
-+					    ROP_UNS);
-+			pktp += TDATA_TO_HOST(CINIT_ADDRESS);
-+#if CINIT_PAGE_BITS > 0
-+			dlthis->cinit_page = atmp &
-+			    ((1 << CINIT_PAGE_BITS) - 1);
-+			atmp >>= CINIT_PAGE_BITS;
-+#else
-+			dlthis->cinit_page = CINIT_DEFAULT_PAGE;
-+#endif
-+			dlthis->cinit_addr = atmp;
-+			dlthis->cinit_state = CI_COPY;
-+			break;
-+		case CI_COPY:	/* copy bits to the target */
-+			init_count = HOST_TO_TDATA(left);
-+			if (init_count > dlthis->cinit_count)
-+				init_count = dlthis->cinit_count;
-+			if (init_count == 0)
-+				goto loopexit;	/* get more bits */
-+			cinit_info = cinit_info_init;
-+			cinit_info.page = dlthis->cinit_page;
-+			if (!dlthis->myio->writemem(dlthis->myio, pktp,
-+						   TDATA_TO_TADDR
-+						   (dlthis->cinit_addr),
-+						   &cinit_info,
-+						   TDATA_TO_HOST(init_count))) {
-+				dload_error(dlthis, initfail, "write",
-+					    dlthis->cinit_addr);
-+			}
-+			dlthis->cinit_count -= init_count;
-+			if (dlthis->cinit_count <= 0) {
-+				dlthis->cinit_state = CI_COUNT;
-+				init_count = (init_count + CINIT_ALIGN - 1) &
-+				    -CINIT_ALIGN;
-+				/* align to next init */
-+			}
-+			pktp += TDATA_TO_HOST(init_count);
-+			dlthis->cinit_addr += init_count;
-+			break;
-+		case CI_DONE:	/* no more .cinit to do */
-+			return;
-+		}		/* switch (cinit_state) */
-+	}			/* while */
-+
-+loopexit:
-+	if (left > 0) {
-+		dload_error(dlthis, "%d bytes left over in cinit packet", left);
-+		dlthis->cinit_state = CI_DONE;	/* left over bytes are bad */
-+	}
-+}				/* cload_cinit */
-+
-+/*	Functions to interface to reloc.c
-+ *
-+ * reloc.c is the relocation module borrowed from the linker, with
-+ * minimal (we hope) changes for our purposes.  cload_sect_data() invokes
-+ * this module on a section to relocate and load the image data for that
-+ * section.  The actual read and write actions are supplied by the global
-+ * routines below.
-+ */
-+
-+/************************************************************************
-+ * Procedure relocate_packet
-+ *
-+ * Parameters:
-+ *	ipacket		Pointer to an image packet to relocate
-+ *
-+ * Effect:
-+ *	Performs the required relocations on the packet.  Returns a checksum
-+ * of the relocation operations.
-+ *********************************************************************** */
-+#define MY_RELOC_BUF_SIZ 8
-+/* careful! exists at the same time as the image buffer */
-+static int relocate_packet(struct dload_state *dlthis,
-+			   struct image_packet_t *ipacket,
-+			   u32 *checks, bool *tramps_generated)
-+{
-+	u32 rnum;
-+	*tramps_generated = false;
-+
-+	rnum = ipacket->num_relocs;
-+	do {			/* all relocs */
-+		unsigned rinbuf;
-+		int siz;
-+		struct reloc_record_t *rp, rrec[MY_RELOC_BUF_SIZ];
-+		rp = rrec;
-+		rinbuf = rnum > MY_RELOC_BUF_SIZ ? MY_RELOC_BUF_SIZ : rnum;
-+		siz = rinbuf * sizeof(struct reloc_record_t);
-+		if (dlthis->strm->read_buffer(dlthis->strm, rp, siz) != siz) {
-+			DL_ERROR(readstrm, "relocation");
-+			return 0;
-+		}
-+		/* reorder the bytes if need be */
-+		if (dlthis->reorder_map)
-+			dload_reorder(rp, siz, dlthis->reorder_map);
-+
-+		*checks += dload_checksum(rp, siz);
-+		do {
-+			/* perform the relocation operation */
-+			dload_relocate(dlthis, (tgt_au_t *) ipacket->img_data,
-+				       rp, tramps_generated, false);
-+			rp += 1;
-+			rnum -= 1;
-+		} while ((rinbuf -= 1) > 0);
-+	} while (rnum > 0);	/* all relocs */
-+	/* If trampoline(s) were generated, we need to do an update of the
-+	 * trampoline copy of the packet since a 2nd phase relo will be done
-+	 * later. */
-+	if (*tramps_generated == true) {
-+		dload_tramp_pkt_udpate(dlthis,
-+				       (dlthis->image_secn -
-+					dlthis->ldr_sections),
-+				       dlthis->image_offset, ipacket);
-+	}
-+
-+	return 1;
-+}				/* dload_read_reloc */
-+
-+#define IPH_SIZE (sizeof(struct image_packet_t) - sizeof(u32))
-+
-+/* VERY dangerous */
-+static const char imagepak[] = { "image packet" };
-+
-+/*************************************************************************
-+ * Procedure dload_data
-+ *
-+ * Parameters:
-+ *	none
-+ *
-+ * Effect:
-+ *	Read image data from input file, relocate it, and download it to the
-+ *	target.
-+ *********************************************************************** */
-+static void dload_data(struct dload_state *dlthis)
-+{
-+	u16 curr_sect;
-+	struct doff_scnhdr_t *sptr = dlthis->sect_hdrs;
-+	struct ldr_section_info *lptr = dlthis->ldr_sections;
-+#ifdef OPT_ZERO_COPY_LOADER
-+	bool zero_copy = false;
-+#endif
-+	u8 *dest;
-+
-+	struct {
-+		struct image_packet_t ipacket;
-+		u8 bufr[BYTE_TO_HOST(IMAGE_PACKET_SIZE)];
-+	} ibuf;
-+
-+	/* Indicates whether CINIT processing has occurred */
-+	bool cinit_processed = false;
-+
-+	/* Loop through the sections and load them one at a time.
-+	 */
-+	for (curr_sect = 0; curr_sect < dlthis->dfile_hdr.df_no_scns;
-+	     curr_sect += 1) {
-+		if (DS_NEEDS_DOWNLOAD(sptr)) {
-+			s32 nip;
-+			ldr_addr image_offset = 0;
-+			/* set relocation info for this section */
-+			if (curr_sect < dlthis->allocated_secn_count)
-+				dlthis->delta_runaddr = sptr->ds_paddr;
-+			else {
-+				lptr = DOFFSEC_IS_LDRSEC(sptr);
-+				dlthis->delta_runaddr = 0;
-+			}
-+			dlthis->image_secn = lptr;
-+#if BITS_PER_AU > BITS_PER_BYTE
-+			lptr->name = unpack_name(dlthis, sptr->ds_offset);
-+#endif
-+			nip = sptr->ds_nipacks;
-+			while ((nip -= 1) >= 0) {	/* process packets */
-+
-+				s32 ipsize;
-+				u32 checks;
-+				bool tramp_generated = false;
-+
-+				/* get the fixed header bits */
-+				if (dlthis->strm->read_buffer(dlthis->strm,
-+							      &ibuf.ipacket,
-+							      IPH_SIZE) !=
-+				    IPH_SIZE) {
-+					DL_ERROR(readstrm, imagepak);
-+					return;
-+				}
-+				/* reorder the header if need be */
-+				if (dlthis->reorder_map) {
-+					dload_reorder(&ibuf.ipacket, IPH_SIZE,
-+						      dlthis->reorder_map);
-+				}
-+				/* now read the rest of the packet */
-+				ipsize =
-+				    BYTE_TO_HOST(DOFF_ALIGN
-+						 (ibuf.ipacket.packet_size));
-+				if (ipsize > BYTE_TO_HOST(IMAGE_PACKET_SIZE)) {
-+					DL_ERROR("Bad image packet size %d",
-+						 ipsize);
-+					return;
-+				}
-+				dest = ibuf.bufr;
-+#ifdef OPT_ZERO_COPY_LOADER
-+				zero_copy = false;
-+				if (DLOAD_SECT_TYPE(sptr) != DLOAD_CINIT) {
-+					dlthis->myio->writemem(dlthis->myio,
-+							       &dest,
-+							       lptr->load_addr +
-+							       image_offset,
-+							       lptr, 0);
-+					zero_copy = (dest != ibuf.bufr);
-+				}
-+#endif
-+				/* End of determination */
-+
-+				if (dlthis->strm->read_buffer(dlthis->strm,
-+							      ibuf.bufr,
-+							      ipsize) !=
-+				    ipsize) {
-+					DL_ERROR(readstrm, imagepak);
-+					return;
-+				}
-+				ibuf.ipacket.img_data = dest;
-+
-+				/* reorder the bytes if need be */
-+#if !defined(_BIG_ENDIAN) || (TARGET_AU_BITS > 16)
-+				if (dlthis->reorder_map) {
-+					dload_reorder(dest, ipsize,
-+						      dlthis->reorder_map);
-+				}
-+				checks = dload_checksum(dest, ipsize);
-+#else
-+				if (dlthis->dfile_hdr.df_byte_reshuffle !=
-+				    TARGET_ORDER(REORDER_MAP
-+						 (BYTE_RESHUFFLE_VALUE))) {
-+					/* put image bytes in big-endian order,
-+					 * not PC order */
-+					dload_reorder(dest, ipsize,
-+						      TARGET_ORDER
-+						      (dlthis->dfile_hdr.
-+						       df_byte_reshuffle));
-+				}
-+#if TARGET_AU_BITS > 8
-+				checks = dload_reverse_checksum16(dest, ipsize);
-+#else
-+				checks = dload_reverse_checksum(dest, ipsize);
-+#endif
-+#endif
-+
-+				checks += dload_checksum(&ibuf.ipacket,
-+							 IPH_SIZE);
-+				/* relocate the image bits as needed */
-+				if (ibuf.ipacket.num_relocs) {
-+					dlthis->image_offset = image_offset;
-+					if (!relocate_packet(dlthis,
-+							     &ibuf.ipacket,
-+							     &checks,
-+							     &tramp_generated))
-+						return;	/* serious error */
-+				}
-+				if (~checks)
-+					DL_ERROR(err_checksum, imagepak);
-+				/* Only write the result to the target if no
-+				 * trampoline was generated.  Otherwise it
-+				 *will be done during trampoline finalize. */
-+
-+				if (tramp_generated == false) {
-+
-+					/* stuff the result into target
-+					 * memory */
-+					if (DLOAD_SECT_TYPE(sptr) ==
-+					    DLOAD_CINIT) {
-+						cload_cinit(dlthis,
-+							    &ibuf.ipacket);
-+						cinit_processed = true;
-+					} else {
-+#ifdef OPT_ZERO_COPY_LOADER
-+						if (!zero_copy) {
-+#endif
-+							/* FIXME */
-+							if (!dlthis->myio->
-+							    writemem(dlthis->
-+								myio,
-+								ibuf.bufr,
-+								lptr->
-+								load_addr +
-+								image_offset,
-+								lptr,
-+								BYTE_TO_HOST
-+								(ibuf.
-+								ipacket.
-+								packet_size))) {
-+								DL_ERROR
-+								  ("Write to "
-+								  FMT_UI32
-+								  " failed",
-+								  lptr->
-+								  load_addr +
-+								  image_offset);
-+							}
-+#ifdef OPT_ZERO_COPY_LOADER
-+						}
-+#endif
-+					}
-+				}
-+				image_offset +=
-+				    BYTE_TO_TADDR(ibuf.ipacket.packet_size);
-+			}	/* process packets */
-+			/* if this is a BSS section, we may want to fill it */
-+			if (DLOAD_SECT_TYPE(sptr) != DLOAD_BSS)
-+				goto loop_cont;
-+
-+			if (!(dlthis->myoptions & DLOAD_INITBSS))
-+				goto loop_cont;
-+
-+			if (cinit_processed) {
-+				/* Don't clear BSS after load-time
-+				 * initialization */
-+				DL_ERROR
-+				    ("Zero-initialization at " FMT_UI32
-+				     " after " "load-time initialization!",
-+				     lptr->load_addr);
-+				goto loop_cont;
-+			}
-+			/* fill the .bss area */
-+			dlthis->myio->fillmem(dlthis->myio,
-+					      TADDR_TO_HOST(lptr->load_addr),
-+					      lptr, TADDR_TO_HOST(lptr->size),
-+					      DLOAD_FILL_BSS);
-+			goto loop_cont;
-+		}
-+		/* if DS_DOWNLOAD_MASK */
-+		/* If not loading, but BSS, zero initialize */
-+		if (DLOAD_SECT_TYPE(sptr) != DLOAD_BSS)
-+			goto loop_cont;
-+
-+		if (!(dlthis->myoptions & DLOAD_INITBSS))
-+			goto loop_cont;
-+
-+		if (curr_sect >= dlthis->allocated_secn_count)
-+			lptr = DOFFSEC_IS_LDRSEC(sptr);
-+
-+		if (cinit_processed) {
-+			/*Don't clear BSS after load-time initialization */
-+			DL_ERROR("Zero-initialization at " FMT_UI32
-+				 " attempted after "
-+				 "load-time initialization!", lptr->load_addr);
-+			goto loop_cont;
-+		}
-+		/* fill the .bss area */
-+		dlthis->myio->fillmem(dlthis->myio,
-+				      TADDR_TO_HOST(lptr->load_addr), lptr,
-+				      TADDR_TO_HOST(lptr->size),
-+				      DLOAD_FILL_BSS);
-+loop_cont:
-+		sptr += 1;
-+		lptr += 1;
-+	}			/* load sections */
-+
-+	/*  Finalize any trampolines that were created during the load */
-+	if (dload_tramp_finalize(dlthis) == 0) {
-+		DL_ERROR("Finalization of auto-trampolines (size = " FMT_UI32
-+			 ") failed", dlthis->tramp.tramp_sect_next_addr);
-+	}
-+}				/* dload_data */
-+
-+/*************************************************************************
-+ * Procedure dload_reorder
-+ *
-+ * Parameters:
-+ *	data	32-bit aligned pointer to data to be byte-swapped
-+ *	dsiz	size of the data to be reordered in sizeof() units.
-+ *	map		32-bit map defining how to reorder the data.  Value
-+ *			must be REORDER_MAP() of some permutation
-+ *			of 0x00 01 02 03
-+ *
-+ * Effect:
-+ *	Re-arranges the bytes in each word according to the map specified.
-+ *
-+ *********************************************************************** */
-+/* mask for byte shift count */
-+#define SHIFT_COUNT_MASK (3 << LOG_BITS_PER_BYTE)
-+
-+void dload_reorder(void *data, int dsiz, unsigned int map)
-+{
-+	register u32 tmp, tmap, datv;
-+	u32 *dp = (u32 *) data;
-+
-+	map <<= LOG_BITS_PER_BYTE;	/* align map with SHIFT_COUNT_MASK */
-+	do {
-+		tmp = 0;
-+		datv = *dp;
-+		tmap = map;
-+		do {
-+			tmp |= (datv & BYTE_MASK) << (tmap & SHIFT_COUNT_MASK);
-+			tmap >>= BITS_PER_BYTE;
-+		} while (datv >>= BITS_PER_BYTE);
-+		*dp++ = tmp;
-+	} while ((dsiz -= sizeof(u32)) > 0);
-+}				/* dload_reorder */
-+
-+/*************************************************************************
-+ * Procedure dload_checksum
-+ *
-+ * Parameters:
-+ *	data	32-bit aligned pointer to data to be checksummed
-+ *	siz		size of the data to be checksummed in sizeof() units.
-+ *
-+ * Effect:
-+ *	Returns a checksum of the specified block
-+ *
-+ *********************************************************************** */
-+u32 dload_checksum(void *data, unsigned siz)
-+{
-+	u32 sum;
-+	u32 *dp;
-+	int left;
-+
-+	sum = 0;
-+	dp = (u32 *) data;
-+	for (left = siz; left > 0; left -= sizeof(u32))
-+		sum += *dp++;
-+	return sum;
-+}				/* dload_checksum */
-+
-+#if HOST_ENDIANNESS
-+/*************************************************************************
-+ * Procedure dload_reverse_checksum
-+ *
-+ * Parameters:
-+ *	data	32-bit aligned pointer to data to be checksummed
-+ *	siz		size of the data to be checksummed in sizeof() units.
-+ *
-+ * Effect:
-+ *	Returns a checksum of the specified block, which is assumed to be bytes
-+ * in big-endian order.
-+ *
-+ * Notes:
-+ *	In a big-endian host, things like the string table are stored as bytes
-+ * in host order. But dllcreate always checksums in little-endian order.
-+ * It is most efficient to just handle the difference a word at a time.
-+ *
-+ ********************************************************************** */
-+u32 dload_reverse_checksum(void *data, unsigned siz)
-+{
-+	u32 sum, temp;
-+	u32 *dp;
-+	int left;
-+
-+	sum = 0;
-+	dp = (u32 *) data;
-+
-+	for (left = siz; left > 0; left -= sizeof(u32)) {
-+		temp = *dp++;
-+		sum += temp << BITS_PER_BYTE * 3;
-+		sum += temp >> BITS_PER_BYTE * 3;
-+		sum += (temp >> BITS_PER_BYTE) & (BYTE_MASK << BITS_PER_BYTE);
-+		sum += (temp & (BYTE_MASK << BITS_PER_BYTE)) << BITS_PER_BYTE;
-+	}
-+
-+	return sum;
-+}				/* dload_reverse_checksum */
-+
-+#if (TARGET_AU_BITS > 8) && (TARGET_AU_BITS < 32)
-+u32 dload_reverse_checksum16(void *data, unsigned siz)
-+{
-+	uint_fast32_t sum, temp;
-+	u32 *dp;
-+	int left;
-+
-+	sum = 0;
-+	dp = (u32 *) data;
-+
-+	for (left = siz; left > 0; left -= sizeof(u32)) {
-+		temp = *dp++;
-+		sum += temp << BITS_PER_BYTE * 2;
-+		sum += temp >> BITS_PER_BYTE * 2;
-+	}
-+
-+	return sum;
-+}				/* dload_reverse_checksum16 */
-+#endif
-+#endif
-+
-+/*************************************************************************
-+ * Procedure swap_words
-+ *
-+ * Parameters:
-+ *	data	32-bit aligned pointer to data to be swapped
-+ *	siz	size of the data to be swapped.
-+ *	bitmap	Bit map of how to swap each 32-bit word; 1 => 2 shorts,
-+ *		0 => 1 long
-+ *
-+ * Effect:
-+ *	Swaps the specified data according to the specified map
-+ *
-+ *********************************************************************** */
-+static void swap_words(void *data, unsigned siz, unsigned bitmap)
-+{
-+	register int i;
-+#if TARGET_AU_BITS < 16
-+	register u16 *sp;
-+#endif
-+	register u32 *lp;
-+
-+	siz /= sizeof(u16);
-+
-+#if TARGET_AU_BITS < 16
-+	/* pass 1: do all the bytes */
-+	i = siz;
-+	sp = (u16 *) data;
-+	do {
-+		register u16 tmp;
-+		tmp = *sp;
-+		*sp++ = SWAP16BY8(tmp);
-+	} while ((i -= 1) > 0);
-+#endif
-+
-+#if TARGET_AU_BITS < 32
-+	/* pass 2: fixup the 32-bit words */
-+	i = siz >> 1;
-+	lp = (u32 *) data;
-+	do {
-+		if ((bitmap & 1) == 0) {
-+			register u32 tmp;
-+			tmp = *lp;
-+			*lp = SWAP32BY16(tmp);
-+		}
-+		lp += 1;
-+		bitmap >>= 1;
-+	} while ((i -= 1) > 0);
-+#endif
-+}				/* swap_words */
-+
-+/*************************************************************************
-+ * Procedure copy_tgt_strings
-+ *
-+ * Parameters:
-+ *	dstp		Destination address.  Assumed to be 32-bit aligned
-+ *	srcp		Source address.  Assumed to be 32-bit aligned
-+ *	charcount	Number of characters to copy.
-+ *
-+ * Effect:
-+ *	Copies strings from the source (which is in usual .dof file order on
-+ * the loading processor) to the destination buffer (which should be in proper
-+ * target addressable unit order).  Makes sure the last string in the
-+ * buffer is NULL terminated (for safety).
-+ * Returns the first unused destination address.
-+ *********************************************************************** */
-+static char *copy_tgt_strings(void *dstp, void *srcp, unsigned charcount)
-+{
-+	register tgt_au_t *src = (tgt_au_t *) srcp;
-+	register tgt_au_t *dst = (tgt_au_t *) dstp;
-+	register int cnt = charcount;
-+	do {
-+#if TARGET_AU_BITS <= BITS_PER_AU
-+		/* byte-swapping issues may exist for strings on target */
-+		*dst++ = *src++;
-+#else
-+		*dst++ = *src++;
-+#endif
-+	} while ((cnt -= (sizeof(tgt_au_t) * BITS_PER_AU / BITS_PER_BYTE)) > 0);
-+	/*apply force to make sure that the string table has null terminator */
-+#if (BITS_PER_AU == BITS_PER_BYTE) && (TARGET_AU_BITS == BITS_PER_BYTE)
-+	dst[-1] = 0;
-+#else
-+	/* little endian */
-+	dst[-1] &= (1 << (BITS_PER_AU - BITS_PER_BYTE)) - 1;
-+#endif
-+	return (char *)dst;
-+}				/* copy_tgt_strings */
-+
-+/*************************************************************************
-+ * Procedure init_module_handle
-+ *
-+ * Parameters:
-+ *	none
-+ *
-+ * Effect:
-+ *	Initializes the module handle we use to enable unloading, and installs
-+ * the debug information required by the target.
-+ *
-+ * Notes:
-+ * The handle returned from dynamic_load_module needs to encapsulate all the
-+ * allocations done for the module, and enable them plus the modules symbols to
-+ * be deallocated.
-+ *
-+ *********************************************************************** */
-+#ifndef _BIG_ENDIAN
-+static const struct ldr_section_info dllview_info_init = { ".dllview", 0, 0,
-+	(ldr_addr)-1, DBG_LIST_PAGE, DLOAD_DATA, 0
-+};
-+#else
-+static const struct ldr_section_info dllview_info_init = { ".dllview", 0, 0,
-+	(ldr_addr)-1, DLOAD_DATA, DBG_LIST_PAGE, 0
-+};
-+#endif
-+static void init_module_handle(struct dload_state *dlthis)
-+{
-+	struct my_handle *hndl;
-+	u16 curr_sect;
-+	struct ldr_section_info *asecs;
-+	struct dll_module *dbmod;
-+	struct dll_sect *dbsec;
-+	struct dbg_mirror_root *mlist;
-+	register char *cp;
-+	struct modules_header mhdr;
-+	struct ldr_section_info dllview_info;
-+	struct dynload_symbol *debug_mirror_sym;
-+	hndl = dlthis->myhandle;
-+	if (!hndl)
-+		return;		/* must be errors detected, so forget it */
-+
-+	/*  Store the section count */
-+	hndl->secn_count = dlthis->allocated_secn_count;
-+
-+	/*  If a trampoline section was created, add it in */
-+	if (dlthis->tramp.tramp_sect_next_addr != 0)
-+		hndl->secn_count += 1;
-+
-+	hndl->secn_count = hndl->secn_count << 1;
-+
-+	hndl->secn_count = dlthis->allocated_secn_count << 1;
-+#ifndef TARGET_ENDIANNESS
-+	if (dlthis->big_e_target)
-+		hndl->secn_count += 1;	/* flag for big-endian */
-+#endif
-+	if (dlthis->dload_errcount)
-+		return;		/* abandon if errors detected */
-+	/* Locate the symbol that names the header for the CCS debug list
-+	   of modules. If not found, we just don't generate the debug record.
-+	   If found, we create our modules list.  We make sure to create the
-+	   loader_dllview_root even if there is no relocation info to record,
-+	   just to try to put both symbols in the same symbol table and
-+	   module. */
-+	debug_mirror_sym = dlthis->mysym->find_matching_symbol(dlthis->mysym,
-+							loader_dllview_root);
-+	if (!debug_mirror_sym) {
-+		struct dynload_symbol *dlmodsym;
-+		struct dbg_mirror_root *mlst;
-+
-+		/* our root symbol is not yet present;
-+		   check if we have DLModules defined */
-+		dlmodsym = dlthis->mysym->find_matching_symbol(dlthis->mysym,
-+							LINKER_MODULES_HEADER);
-+		if (!dlmodsym)
-+			return;	/* no DLModules list so no debug info */
-+		/* if we have DLModules defined, construct our header */
-+		mlst = (struct dbg_mirror_root *)
-+		    dlthis->mysym->dload_allocate(dlthis->mysym,
-+						  sizeof(struct
-+							 dbg_mirror_root));
-+		if (!mlst) {
-+			DL_ERROR(err_alloc, sizeof(struct dbg_mirror_root));
-+			return;
-+		}
-+		mlst->hnext = NULL;
-+		mlst->changes = 0;
-+		mlst->refcount = 0;
-+		mlst->dbthis = TDATA_TO_TADDR(dlmodsym->value);
-+		/* add our root symbol */
-+		debug_mirror_sym = dlthis->mysym->add_to_symbol_table
-+		    (dlthis->mysym, loader_dllview_root,
-+		     (unsigned)dlthis->myhandle);
-+		if (!debug_mirror_sym) {
-+			/* failed, recover memory */
-+			dlthis->mysym->dload_deallocate(dlthis->mysym, mlst);
-+			return;
-+		}
-+		debug_mirror_sym->value = (u32) mlst;
-+	}
-+	/* First create the DLLview record and stuff it into the buffer.
-+	   Then write it to the DSP.  Record pertinent locations in our hndl,
-+	   and add it to the per-processor list of handles with debug info. */
-+#ifndef DEBUG_HEADER_IN_LOADER
-+	mlist = (struct dbg_mirror_root *)debug_mirror_sym->value;
-+	if (!mlist)
-+		return;
-+#else
-+	mlist = (struct dbg_mirror_root *)&debug_list_header;
-+#endif
-+	hndl->dm.hroot = mlist;	/* set pointer to root into our handle */
-+	if (!dlthis->allocated_secn_count)
-+		return;		/* no load addresses to be recorded */
-+	/* reuse temporary symbol storage */
-+	dbmod = (struct dll_module *)dlthis->local_symtab;
-+	/* Create the DLLview record in the memory we retain for our handle */
-+	dbmod->num_sects = dlthis->allocated_secn_count;
-+	dbmod->timestamp = dlthis->verify.dv_timdat;
-+	dbmod->version = INIT_VERSION;
-+	dbmod->verification = VERIFICATION;
-+	asecs = dlthis->ldr_sections;
-+	dbsec = dbmod->sects;
-+	for (curr_sect = dlthis->allocated_secn_count;
-+	     curr_sect > 0; curr_sect -= 1) {
-+		dbsec->sect_load_adr = asecs->load_addr;
-+		dbsec->sect_run_adr = asecs->run_addr;
-+		dbsec += 1;
-+		asecs += 1;
-+	}
-+
-+	/*  If a trampoline section was created go ahead and add its info */
-+	if (dlthis->tramp.tramp_sect_next_addr != 0) {
-+		dbmod->num_sects++;
-+		dbsec->sect_load_adr = asecs->load_addr;
-+		dbsec->sect_run_adr = asecs->run_addr;
-+		dbsec++;
-+		asecs++;
-+	}
-+
-+	/* now cram in the names */
-+	cp = copy_tgt_strings(dbsec, dlthis->str_head,
-+			      dlthis->debug_string_size);
-+
-+	/* If a trampoline section was created, add its name so DLLView
-+	 * can show the user the section info. */
-+	if (dlthis->tramp.tramp_sect_next_addr != 0) {
-+		cp = copy_tgt_strings(cp,
-+				      dlthis->tramp.final_string_table,
-+				      strlen(dlthis->tramp.final_string_table) +
-+				      1);
-+	}
-+
-+	/* round off the size of the debug record, and remember same */
-+	hndl->dm.dbsiz = HOST_TO_TDATA_ROUND(cp - (char *)dbmod);
-+	*cp = 0;		/* strictly to make our test harness happy */
-+	dllview_info = dllview_info_init;
-+	dllview_info.size = TDATA_TO_TADDR(hndl->dm.dbsiz);
-+	/* Initialize memory context to default heap */
-+	dllview_info.context = 0;
-+	hndl->dm.context = 0;
-+	/* fill in next pointer and size */
-+	if (mlist->hnext) {
-+		dbmod->next_module = TADDR_TO_TDATA(mlist->hnext->dm.dbthis);
-+		dbmod->next_module_size = mlist->hnext->dm.dbsiz;
++	struct cod_manager *cod_mgr;	/* COD manager handle */
++	struct dcd_manager *dcd_mgr_obj = NULL;	/* DCD Manager pointer */
++	int status = 0;
++
++	DBC_REQUIRE(refs >= 0);
++	DBC_REQUIRE(phDcdMgr);
++
++	status = cod_create(&cod_mgr, pszZlDllName, NULL);
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/* Create a DCD object. */
++	dcd_mgr_obj = kzalloc(sizeof(struct dcd_manager), GFP_KERNEL);
++	if (dcd_mgr_obj != NULL) {
++		/* Fill out the object. */
++		dcd_mgr_obj->cod_mgr = cod_mgr;
++
++		/* Return handle to this DCD interface. */
++		*phDcdMgr = dcd_mgr_obj;
 +	} else {
-+		dbmod->next_module_size = 0;
-+		dbmod->next_module = 0;
-+	}
-+	/* allocate memory for on-DSP DLLview debug record */
-+	if (!dlthis->myalloc)
-+		return;
-+	if (!dlthis->myalloc->dload_allocate(dlthis->myalloc, &dllview_info,
-+					     HOST_TO_TADDR(sizeof(u32)))) {
-+		return;
-+	}
-+	/* Store load address of .dllview section */
-+	hndl->dm.dbthis = dllview_info.load_addr;
-+	/* Store memory context (segid) in which .dllview section
-+	 * was  allocated */
-+	hndl->dm.context = dllview_info.context;
-+	mlist->refcount += 1;
-+	/* swap bytes in the entire debug record, but not the string table */
-+	if (TARGET_ENDIANNESS_DIFFERS(TARGET_BIG_ENDIAN)) {
-+		swap_words(dbmod, (char *)dbsec - (char *)dbmod,
-+			   DLL_MODULE_BITMAP);
-+	}
-+	/* Update the DLLview list on the DSP write new record */
-+	if (!dlthis->myio->writemem(dlthis->myio, dbmod,
-+				    dllview_info.load_addr, &dllview_info,
-+				    TADDR_TO_HOST(dllview_info.size))) {
-+		return;
-+	}
-+	/* write new header */
-+	mhdr.first_module_size = hndl->dm.dbsiz;
-+	mhdr.first_module = TADDR_TO_TDATA(dllview_info.load_addr);
-+	/* swap bytes in the module header, if needed */
-+	if (TARGET_ENDIANNESS_DIFFERS(TARGET_BIG_ENDIAN)) {
-+		swap_words(&mhdr, sizeof(struct modules_header) - sizeof(u16),
-+			   MODULES_HEADER_BITMAP);
-+	}
-+	dllview_info = dllview_info_init;
-+	if (!dlthis->myio->writemem(dlthis->myio, &mhdr, mlist->dbthis,
-+				    &dllview_info,
-+				    sizeof(struct modules_header) -
-+				    sizeof(u16))) {
-+		return;
-+	}
-+	/* Add the module handle to this processor's list
-+	   of handles with debug info */
-+	hndl->dm.hnext = mlist->hnext;
-+	if (hndl->dm.hnext)
-+		hndl->dm.hnext->dm.hprev = hndl;
-+	hndl->dm.hprev = (struct my_handle *)mlist;
-+	mlist->hnext = hndl;	/* insert after root */
-+}				/* init_module_handle */
++		status = -ENOMEM;
 +
-+/*************************************************************************
-+ * Procedure dynamic_unload_module
-+ *
-+ * Parameters:
-+ *	mhandle	A module handle from dynamic_load_module
-+ *	syms	Host-side symbol table and malloc/free functions
-+ *	alloc	Target-side memory allocation
-+ *
-+ * Effect:
-+ *	The module specified by mhandle is unloaded.  Unloading causes all
-+ * target memory to be deallocated, all symbols defined by the module to
-+ * be purged, and any host-side storage used by the dynamic loader for
-+ * this module to be released.
-+ *
-+ * Returns:
-+ *	Zero for success. On error, the number of errors detected is returned.
-+ * Individual errors are reported using syms->error_report().
-+ *********************************************************************** */
-+int dynamic_unload_module(void *mhandle,
-+			  struct dynamic_loader_sym *syms,
-+			  struct dynamic_loader_allocate *alloc,
-+			  struct dynamic_loader_initialize *init)
++		/*
++		 * If allocation of DcdManager object failed, delete the
++		 * COD manager.
++		 */
++		cod_delete(cod_mgr);
++	}
++
++	DBC_ENSURE((DSP_SUCCEEDED(status)) ||
++			((dcd_mgr_obj == NULL) && (status == -ENOMEM)));
++
++func_end:
++	return status;
++}
++
++/*
++ *  ======== dcd_destroy_manager ========
++ *  Purpose:
++ *      Frees DCD Manager object.
++ */
++int dcd_destroy_manager(IN struct dcd_manager *hdcd_mgr)
 +{
-+	s16 curr_sect;
-+	struct ldr_section_info *asecs;
-+	struct my_handle *hndl;
-+	struct dbg_mirror_root *root;
-+	unsigned errcount = 0;
-+	struct ldr_section_info dllview_info = dllview_info_init;
-+	struct modules_header mhdr;
++	struct dcd_manager *dcd_mgr_obj = hdcd_mgr;
++	int status = -EFAULT;
 +
-+	hndl = (struct my_handle *)mhandle;
-+	if (!hndl)
-+		return 0;	/* if handle is null, nothing to do */
-+	/* Clear out the module symbols
-+	 * Note that if this is the module that defined MODULES_HEADER
-+	 (the head of the target debug list)
-+	 * then this operation will blow away that symbol.
-+	 It will therefore be impossible for subsequent
-+	 * operations to add entries to this un-referenceable list. */
-+	if (!syms)
-+		return 1;
-+	syms->purge_symbol_table(syms, (unsigned)hndl);
-+	/* Deallocate target memory for sections
-+	 * NOTE: The trampoline section, if created, gets deleted here, too */
++	DBC_REQUIRE(refs >= 0);
 +
-+	asecs = hndl->secns;
-+	if (alloc)
-+		for (curr_sect = (hndl->secn_count >> 1); curr_sect > 0;
-+		     curr_sect -= 1) {
-+			asecs->name = NULL;
-+			alloc->dload_deallocate(alloc, asecs++);
++	if (hdcd_mgr) {
++		/* Delete the COD manager. */
++		cod_delete(dcd_mgr_obj->cod_mgr);
++
++		/* Deallocate a DCD manager object. */
++		kfree(dcd_mgr_obj);
++
++		status = 0;
++	}
++
++	return status;
++}
++
++/*
++ *  ======== dcd_enumerate_object ========
++ *  Purpose:
++ *      Enumerates objects in the DCD.
++ */
++int dcd_enumerate_object(IN s32 cIndex, IN enum dsp_dcdobjtype obj_type,
++				OUT struct dsp_uuid *uuid_obj)
++{
++	int status = 0;
++	char sz_reg_key[DCD_MAXPATHLENGTH];
++	char sz_value[DCD_MAXPATHLENGTH];
++	struct dsp_uuid dsp_uuid_obj;
++	char sz_obj_type[MAX_INT2CHAR_LENGTH];	/* str. rep. of obj_type. */
++	u32 dw_key_len = 0;
++	struct dcd_key_elem *dcd_key;
++	int len;
++
++	DBC_REQUIRE(refs >= 0);
++	DBC_REQUIRE(cIndex >= 0);
++	DBC_REQUIRE(uuid_obj != NULL);
++
++	if ((cIndex != 0) && (enum_refs == 0)) {
++		/*
++		 * If an enumeration is being performed on an index greater
++		 * than zero, then the current enum_refs must have been
++		 * incremented to greater than zero.
++		 */
++		status = -EIDRM;
++	} else {
++		/*
++		 * Pre-determine final key length. It's length of DCD_REGKEY +
++		 *  "_\0" + length of sz_obj_type string + terminating NULL.
++		 */
++		dw_key_len = strlen(DCD_REGKEY) + 1 + sizeof(sz_obj_type) + 1;
++		DBC_ASSERT(dw_key_len < DCD_MAXPATHLENGTH);
++
++		/* Create proper REG key; concatenate DCD_REGKEY with
++		 * obj_type. */
++		strncpy(sz_reg_key, DCD_REGKEY, strlen(DCD_REGKEY) + 1);
++		if ((strlen(sz_reg_key) + strlen("_\0")) <
++		    DCD_MAXPATHLENGTH) {
++			strncat(sz_reg_key, "_\0", 2);
++		} else {
++			status = -EPERM;
 +		}
-+	root = hndl->dm.hroot;
-+	if (!root) {
-+		/* there is a debug list containing this module */
++
++		/* This snprintf is guaranteed not to exceed max size of an
++		 * integer. */
++		status = snprintf(sz_obj_type, MAX_INT2CHAR_LENGTH, "%d",
++				  obj_type);
++
++		if (status == -1) {
++			status = -EPERM;
++		} else {
++			status = 0;
++			if ((strlen(sz_reg_key) + strlen(sz_obj_type)) <
++			    DCD_MAXPATHLENGTH) {
++				strncat(sz_reg_key, sz_obj_type,
++					strlen(sz_obj_type) + 1);
++			} else {
++				status = -EPERM;
++			}
++		}
++
++		if (DSP_SUCCEEDED(status)) {
++			len = strlen(sz_reg_key);
++			spin_lock(&dbdcd_lock);
++			list_for_each_entry(dcd_key, &reg_key_list, link) {
++				if (!strncmp(dcd_key->name, sz_reg_key, len)
++						&& !cIndex--) {
++					strncpy(sz_value, &dcd_key->name[len],
++					       strlen(&dcd_key->name[len]) + 1);
++						break;
++				}
++			}
++			spin_unlock(&dbdcd_lock);
++
++			if (&dcd_key->link == &reg_key_list)
++				status = -ENODATA;
++		}
++
++		if (DSP_SUCCEEDED(status)) {
++			/* Create UUID value using string retrieved from
++			 * registry. */
++			uuid_uuid_from_string(sz_value, &dsp_uuid_obj);
++
++			*uuid_obj = dsp_uuid_obj;
++
++			/* Increment enum_refs to update reference count. */
++			enum_refs++;
++
++			status = 0;
++		} else if (status == -ENODATA) {
++			/* At the end of enumeration. Reset enum_refs. */
++			enum_refs = 0;
++
++			/*
++			 * TODO: Revisit, this is not an errror case but code
++			 * expects non-zero value.
++			 */
++			status = ENODATA;
++		} else {
++			status = -EPERM;
++		}
++	}
++
++	DBC_ENSURE(uuid_obj || (status == -EPERM));
++
++	return status;
++}
++
++/*
++ *  ======== dcd_exit ========
++ *  Purpose:
++ *      Discontinue usage of the DCD module.
++ */
++void dcd_exit(void)
++{
++	struct dcd_key_elem *rv, *rv_tmp;
++	DBC_REQUIRE(refs > 0);
++
++	refs--;
++	if (refs == 0) {
++		cod_exit();
++		list_for_each_entry_safe(rv, rv_tmp, &reg_key_list, link) {
++			list_del(&rv->link);
++			kfree(rv->path);
++			kfree(rv);
++		}
++	}
++
++	DBC_ENSURE(refs >= 0);
++}
++
++/*
++ *  ======== dcd_get_dep_libs ========
++ */
++int dcd_get_dep_libs(IN struct dcd_manager *hdcd_mgr,
++			    IN struct dsp_uuid *uuid_obj,
++			    u16 numLibs, OUT struct dsp_uuid *pDepLibUuids,
++			    OUT bool *pPersistentDepLibs,
++			    IN enum nldr_phase phase)
++{
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(hdcd_mgr);
++	DBC_REQUIRE(uuid_obj != NULL);
++	DBC_REQUIRE(pDepLibUuids != NULL);
++	DBC_REQUIRE(pPersistentDepLibs != NULL);
++
++	status =
++	    get_dep_lib_info(hdcd_mgr, uuid_obj, &numLibs, NULL, pDepLibUuids,
++			     pPersistentDepLibs, phase);
++
++	return status;
++}
++
++/*
++ *  ======== dcd_get_num_dep_libs ========
++ */
++int dcd_get_num_dep_libs(IN struct dcd_manager *hdcd_mgr,
++				IN struct dsp_uuid *uuid_obj,
++				OUT u16 *pNumLibs, OUT u16 *pNumPersLibs,
++				IN enum nldr_phase phase)
++{
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(hdcd_mgr);
++	DBC_REQUIRE(pNumLibs != NULL);
++	DBC_REQUIRE(pNumPersLibs != NULL);
++	DBC_REQUIRE(uuid_obj != NULL);
++
++	status = get_dep_lib_info(hdcd_mgr, uuid_obj, pNumLibs, pNumPersLibs,
++				  NULL, NULL, phase);
++
++	return status;
++}
++
++/*
++ *  ======== dcd_get_object_def ========
++ *  Purpose:
++ *      Retrieves the properties of a node or processor based on the UUID and
++ *      object type.
++ */
++int dcd_get_object_def(IN struct dcd_manager *hdcd_mgr,
++			      IN struct dsp_uuid *pObjUuid,
++			      IN enum dsp_dcdobjtype obj_type,
++			      OUT struct dcd_genericobj *pObjDef)
++{
++	struct dcd_manager *dcd_mgr_obj = hdcd_mgr;	/* ptr to DCD mgr */
++	struct cod_libraryobj *lib = NULL;
++	int status = 0;
++	u32 ul_addr = 0;	/* Used by cod_get_section */
++	u32 ul_len = 0;		/* Used by cod_get_section */
++	u32 dw_buf_size;	/* Used by REG functions */
++	char sz_reg_key[DCD_MAXPATHLENGTH];
++	char *sz_uuid;		/*[MAXUUIDLEN]; */
++	struct dcd_key_elem *dcd_key = NULL;
++	char sz_sect_name[MAXUUIDLEN + 2];	/* ".[UUID]\0" */
++	char *psz_coff_buf;
++	u32 dw_key_len;		/* Len of REG key. */
++	char sz_obj_type[MAX_INT2CHAR_LENGTH];	/* str. rep. of obj_type. */
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(pObjDef != NULL);
++	DBC_REQUIRE(pObjUuid != NULL);
++
++	sz_uuid = kzalloc(MAXUUIDLEN, GFP_KERNEL);
++	if (!sz_uuid) {
++		status = -ENOMEM;
 +		goto func_end;
 +	}
-+	if (!hndl->dm.dbthis) {	/* target-side dllview record exists */
-+		goto loop_end;
-+	}
-+	/* Retrieve memory context in which .dllview was allocated */
-+	dllview_info.context = hndl->dm.context;
-+	if (hndl->dm.hprev == hndl)
-+		goto exitunltgt;
 +
-+	/* target-side dllview record is in list */
-+	/* dequeue this record from our GPP-side mirror list */
-+	hndl->dm.hprev->dm.hnext = hndl->dm.hnext;
-+	if (hndl->dm.hnext)
-+		hndl->dm.hnext->dm.hprev = hndl->dm.hprev;
-+	/* Update next_module of previous entry in target list
-+	 * We are using mhdr here as a surrogate for either a
-+	 struct modules_header or a dll_module */
-+	if (hndl->dm.hnext) {
-+		mhdr.first_module = TADDR_TO_TDATA(hndl->dm.hnext->dm.dbthis);
-+		mhdr.first_module_size = hndl->dm.hnext->dm.dbsiz;
++	if (!hdcd_mgr) {
++		status = -EFAULT;
++		goto func_end;
++	}
++
++	/* Pre-determine final key length. It's length of DCD_REGKEY +
++	 *  "_\0" + length of sz_obj_type string + terminating NULL */
++	dw_key_len = strlen(DCD_REGKEY) + 1 + sizeof(sz_obj_type) + 1;
++	DBC_ASSERT(dw_key_len < DCD_MAXPATHLENGTH);
++
++	/* Create proper REG key; concatenate DCD_REGKEY with obj_type. */
++	strncpy(sz_reg_key, DCD_REGKEY, strlen(DCD_REGKEY) + 1);
++
++	if ((strlen(sz_reg_key) + strlen("_\0")) < DCD_MAXPATHLENGTH)
++		strncat(sz_reg_key, "_\0", 2);
++	else
++		status = -EPERM;
++
++	status = snprintf(sz_obj_type, MAX_INT2CHAR_LENGTH, "%d", obj_type);
++	if (status == -1) {
++		status = -EPERM;
 +	} else {
-+		mhdr.first_module = 0;
-+		mhdr.first_module_size = 0;
-+	}
-+	if (!init)
-+		goto exitunltgt;
-+
-+	if (!init->connect(init)) {
-+		dload_syms_error(syms, iconnect);
-+		errcount += 1;
-+		goto exitunltgt;
-+	}
-+	/* swap bytes in the module header, if needed */
-+	if (TARGET_ENDIANNESS_DIFFERS(hndl->secn_count & 0x1)) {
-+		swap_words(&mhdr, sizeof(struct modules_header) - sizeof(u16),
-+			   MODULES_HEADER_BITMAP);
-+	}
-+	if (!init->writemem(init, &mhdr, hndl->dm.hprev->dm.dbthis,
-+			    &dllview_info, sizeof(struct modules_header) -
-+			    sizeof(mhdr.update_flag))) {
-+		dload_syms_error(syms, dlvwrite);
-+		errcount += 1;
-+	}
-+	/* update change counter */
-+	root->changes += 1;
-+	if (!init->writemem(init, &(root->changes),
-+			    root->dbthis + HOST_TO_TADDR
-+			    (sizeof(mhdr.first_module) +
-+			     sizeof(mhdr.first_module_size)),
-+			    &dllview_info, sizeof(mhdr.update_flag))) {
-+		dload_syms_error(syms, dlvwrite);
-+		errcount += 1;
-+	}
-+	init->release(init);
-+exitunltgt:
-+	/* release target storage */
-+	dllview_info.size = TDATA_TO_TADDR(hndl->dm.dbsiz);
-+	dllview_info.load_addr = hndl->dm.dbthis;
-+	if (alloc)
-+		alloc->dload_deallocate(alloc, &dllview_info);
-+	root->refcount -= 1;
-+	/* target-side dllview record exists */
-+loop_end:
-+#ifndef DEBUG_HEADER_IN_LOADER
-+	if (root->refcount <= 0) {
-+		/* if all references gone, blow off the header */
-+		/* our root symbol may be gone due to the Purge above,
-+		   but if not, do not destroy the root */
-+		if (syms->find_matching_symbol
-+		    (syms, loader_dllview_root) == NULL)
-+			syms->dload_deallocate(syms, root);
-+	}
-+#endif
-+func_end:
-+	/* there is a debug list containing this module */
-+	syms->dload_deallocate(syms, mhandle);	/* release our storage */
-+	return errcount;
-+}				/* dynamic_unload_module */
-+
-+#if BITS_PER_AU > BITS_PER_BYTE
-+/*************************************************************************
-+ * Procedure unpack_name
-+ *
-+ * Parameters:
-+ *	soffset	Byte offset into the string table
-+ *
-+ * Effect:
-+ *	Returns a pointer to the string specified by the offset supplied, or
-+ * NULL for error.
-+ *
-+ *********************************************************************** */
-+static char *unpack_name(struct dload_state *dlthis, u32 soffset)
-+{
-+	u8 tmp, *src;
-+	char *dst;
-+
-+	if (soffset >= dlthis->dfile_hdr.df_strtab_size) {
-+		dload_error(dlthis, "Bad string table offset " FMT_UI32,
-+			    soffset);
-+		return NULL;
-+	}
-+	src = (uint_least8_t *) dlthis->str_head +
-+	    (soffset >> (LOG_BITS_PER_AU - LOG_BITS_PER_BYTE));
-+	dst = dlthis->str_temp;
-+	if (soffset & 1)
-+		*dst++ = *src++;	/* only 1 character in first word */
-+	do {
-+		tmp = *src++;
-+		*dst = (tmp >> BITS_PER_BYTE);
-+		if (!(*dst++))
-+			break;
-+	} while ((*dst++ = tmp & BYTE_MASK));
-+	dlthis->temp_len = dst - dlthis->str_temp;
-+	/* squirrel away length including terminating null */
-+	return dlthis->str_temp;
-+}				/* unpack_name */
-+#endif
-diff --git a/drivers/staging/tidspbridge/dynload/dload_internal.h b/drivers/staging/tidspbridge/dynload/dload_internal.h
-new file mode 100644
-index 0000000..8037561
---- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/dload_internal.h
-@@ -0,0 +1,351 @@
-+/*
-+ * dload_internal.h
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Copyright (C) 2005-2006 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+#ifndef _DLOAD_INTERNAL_
-+#define _DLOAD_INTERNAL_
-+
-+#include <linux/types.h>
-+
-+/*
-+ * Internal state definitions for the dynamic loader
-+ */
-+
-+#define TRUE 1
-+#define FALSE 0
-+
-+/* type used for relocation intermediate results */
-+typedef s32 rvalue;
-+
-+/* unsigned version of same; must have at least as many bits */
-+typedef u32 urvalue;
-+
-+/*
-+ * Dynamic loader configuration constants
-+ */
-+/* error issued if input has more sections than this limit */
-+#define REASONABLE_SECTION_LIMIT 100
-+
-+/* (Addressable unit) value used to clear BSS section */
-+#define DLOAD_FILL_BSS 0
-+
-+/*
-+ * Reorder maps explained (?)
-+ *
-+ * The doff file format defines a 32-bit pattern used to determine the
-+ * byte order of an image being read.  That value is
-+ * BYTE_RESHUFFLE_VALUE == 0x00010203
-+ * For purposes of the reorder routine, we would rather have the all-is-OK
-+ * for 32-bits pattern be 0x03020100.  This first macro makes the
-+ * translation from doff file header value to MAP value: */
-+#define REORDER_MAP(rawmap) ((rawmap) ^ 0x3030303)
-+/* This translation is made in dload_headers.  Thereafter, the all-is-OK
-+ * value for the maps stored in dlthis is REORDER_MAP(BYTE_RESHUFFLE_VALUE).
-+ * But sadly, not all bits of the doff file are 32-bit integers.
-+ * The notable exceptions are strings and image bits.
-+ * Strings obey host byte order: */
-+#if defined(_BIG_ENDIAN)
-+#define HOST_BYTE_ORDER(cookedmap) ((cookedmap) ^ 0x3030303)
-+#else
-+#define HOST_BYTE_ORDER(cookedmap) (cookedmap)
-+#endif
-+/* Target bits consist of target AUs (could be bytes, or 16-bits,
-+ * or 32-bits) stored as an array in host order.  A target order
-+ * map is defined by: */
-+#if !defined(_BIG_ENDIAN) || TARGET_AU_BITS > 16
-+#define TARGET_ORDER(cookedmap) (cookedmap)
-+#elif TARGET_AU_BITS > 8
-+#define TARGET_ORDER(cookedmap) ((cookedmap) ^ 0x2020202)
-+#else
-+#define TARGET_ORDER(cookedmap) ((cookedmap) ^ 0x3030303)
-+#endif
-+
-+/* forward declaration for handle returned by dynamic loader */
-+struct my_handle;
-+
-+/*
-+ * a list of module handles, which mirrors the debug list on the target
-+ */
-+struct dbg_mirror_root {
-+	/* must be same as dbg_mirror_list; __DLModules address on target */
-+	u32 dbthis;
-+	struct my_handle *hnext;	/* must be same as dbg_mirror_list */
-+	u16 changes;		/* change counter */
-+	u16 refcount;		/* number of modules referencing this root */
-+};
-+
-+struct dbg_mirror_list {
-+	u32 dbthis;
-+	struct my_handle *hnext, *hprev;
-+	struct dbg_mirror_root *hroot;
-+	u16 dbsiz;
-+	u32 context;	/* Save context for .dllview memory allocation */
-+};
-+
-+#define VARIABLE_SIZE 1
-+/*
-+ * the structure we actually return as an opaque module handle
-+ */
-+struct my_handle {
-+	struct dbg_mirror_list dm;	/* !!! must be first !!! */
-+	/* sections following << 1, LSB is set for big-endian target */
-+	u16 secn_count;
-+	struct ldr_section_info secns[VARIABLE_SIZE];
-+};
-+#define MY_HANDLE_SIZE (sizeof(struct my_handle) -\
-+			sizeof(struct ldr_section_info))
-+/* real size of my_handle */
-+
-+/*
-+ * reduced symbol structure used for symbols during relocation
-+ */
-+struct local_symbol {
-+	s32 value;		/* Relocated symbol value */
-+	s32 delta;		/* Original value in input file */
-+	s16 secnn;		/* section number */
-+	s16 sclass;		/* symbol class */
-+};
-+
-+/*
-+ * Trampoline data structures
-+ */
-+#define TRAMP_NO_GEN_AVAIL              65535
-+#define TRAMP_SYM_PREFIX                "__$dbTR__"
-+#define TRAMP_SECT_NAME                 ".dbTR"
-+/* MUST MATCH THE LENGTH ABOVE!! */
-+#define TRAMP_SYM_PREFIX_LEN            9
-+/* Includes NULL termination */
-+#define TRAMP_SYM_HEX_ASCII_LEN         9
-+
-+#define GET_CONTAINER(ptr, type, field) ((type *)((unsigned long)ptr -\
-+				(unsigned long)(&((type *)0)->field)))
-+#ifndef FIELD_OFFSET
-+#define FIELD_OFFSET(type, field)       ((unsigned long)(&((type *)0)->field))
-+#endif
-+
-+/*
-+    The trampoline code for the target is located in a table called
-+    "tramp_gen_info" with is indexed by looking up the index in the table
-+    "tramp_map".  The tramp_map index is acquired using the target
-+    HASH_FUNC on the relocation type that caused the trampoline.  Each
-+    trampoline code table entry MUST follow this format:
-+
-+    |----------------------------------------------|
-+    |  tramp_gen_code_hdr                          |
-+    |----------------------------------------------|
-+    |  Trampoline image code                       |
-+    |  (the raw instruction code for the target)   |
-+    |----------------------------------------------|
-+    |  Relocation entries for the image code       |
-+    |----------------------------------------------|
-+
-+    This is very similar to how image data is laid out in the DOFF file
-+    itself.
-+ */
-+struct tramp_gen_code_hdr {
-+	u32 tramp_code_size;	/*  in BYTES */
-+	u32 num_relos;
-+	u32 relo_offset;	/*  in BYTES */
-+};
-+
-+struct tramp_img_pkt {
-+	struct tramp_img_pkt *next;	/*  MUST BE FIRST */
-+	u32 base;
-+	struct tramp_gen_code_hdr hdr;
-+	u8 payload[VARIABLE_SIZE];
-+};
-+
-+struct tramp_img_dup_relo {
-+	struct tramp_img_dup_relo *next;
-+	struct reloc_record_t relo;
-+};
-+
-+struct tramp_img_dup_pkt {
-+	struct tramp_img_dup_pkt *next;	/*  MUST BE FIRST */
-+	s16 secnn;
-+	u32 offset;
-+	struct image_packet_t img_pkt;
-+	struct tramp_img_dup_relo *relo_chain;
-+
-+	/*  PAYLOAD OF IMG PKT FOLLOWS */
-+};
-+
-+struct tramp_sym {
-+	struct tramp_sym *next;	/*  MUST BE FIRST */
-+	u32 index;
-+	u32 str_index;
-+	struct local_symbol sym_info;
-+};
-+
-+struct tramp_string {
-+	struct tramp_string *next;	/*  MUST BE FIRST */
-+	u32 index;
-+	char str[VARIABLE_SIZE];	/*  NULL terminated */
-+};
-+
-+struct tramp_info {
-+	u32 tramp_sect_next_addr;
-+	struct ldr_section_info sect_info;
-+
-+	struct tramp_sym *symbol_head;
-+	struct tramp_sym *symbol_tail;
-+	u32 tramp_sym_next_index;
-+	struct local_symbol *final_sym_table;
-+
-+	struct tramp_string *string_head;
-+	struct tramp_string *string_tail;
-+	u32 tramp_string_next_index;
-+	u32 tramp_string_size;
-+	char *final_string_table;
-+
-+	struct tramp_img_pkt *tramp_pkts;
-+	struct tramp_img_dup_pkt *dup_pkts;
-+};
-+
-+/*
-+ * States of the .cinit state machine
-+ */
-+enum cinit_mode {
-+	CI_COUNT = 0,		/* expecting a count */
-+	CI_ADDRESS,		/* expecting an address */
-+#if CINIT_ALIGN < CINIT_ADDRESS	/* handle case of partial address field */
-+	CI_PARTADDRESS,		/* have only part of the address */
-+#endif
-+	CI_COPY,		/* in the middle of copying data */
-+	CI_DONE			/* end of .cinit table */
-+};
-+
-+/*
-+ * The internal state of the dynamic loader, which is passed around as
-+ * an object
-+ */
-+struct dload_state {
-+	struct dynamic_loader_stream *strm;	/* The module input stream */
-+	struct dynamic_loader_sym *mysym;	/* Symbols for this session */
-+	/* target memory allocator */
-+	struct dynamic_loader_allocate *myalloc;
-+	struct dynamic_loader_initialize *myio;	/* target memory initializer */
-+	unsigned myoptions;	/* Options parameter dynamic_load_module */
-+
-+	char *str_head;		/* Pointer to string table */
-+#if BITS_PER_AU > BITS_PER_BYTE
-+	char *str_temp;		/* Pointer to temporary buffer for strings */
-+	/* big enough to hold longest string */
-+	unsigned temp_len;	/* length of last temporary string */
-+	char *xstrings;		/* Pointer to buffer for expanded */
-+	/* strings for sec names */
-+#endif
-+	/* Total size of strings for DLLView section names */
-+	unsigned debug_string_size;
-+	/* Pointer to parallel section info for allocated sections only */
-+	struct doff_scnhdr_t *sect_hdrs;	/* Pointer to section table */
-+	struct ldr_section_info *ldr_sections;
-+#if TMS32060
-+	/* The address of the start of the .bss section */
-+	ldr_addr bss_run_base;
-+#endif
-+	struct local_symbol *local_symtab;	/* Relocation symbol table */
-+
-+	/* pointer to DL section info for the section being relocated */
-+	struct ldr_section_info *image_secn;
-+	/* change in run address for current section during relocation */
-+	ldr_addr delta_runaddr;
-+	ldr_addr image_offset;	/* offset of current packet in section */
-+	enum cinit_mode cinit_state;	/* current state of cload_cinit() */
-+	int cinit_count;	/* the current count */
-+	ldr_addr cinit_addr;	/* the current address */
-+	s16 cinit_page;		/* the current page */
-+	/* Handle to be returned by dynamic_load_module */
-+	struct my_handle *myhandle;
-+	unsigned dload_errcount;	/* Total # of errors reported so far */
-+	/* Number of target sections that require allocation and relocation */
-+	unsigned allocated_secn_count;
-+#ifndef TARGET_ENDIANNESS
-+	int big_e_target;	/* Target data in big-endian format */
-+#endif
-+	/* map for reordering bytes, 0 if not needed */
-+	u32 reorder_map;
-+	struct doff_filehdr_t dfile_hdr;	/* DOFF file header structure */
-+	struct doff_verify_rec_t verify;	/* Verify record */
-+
-+	struct tramp_info tramp;	/* Trampoline data, if needed */
-+
-+	int relstkidx;		/* index into relocation value stack */
-+	/* relocation value stack used in relexp.c */
-+	rvalue relstk[STATIC_EXPR_STK_SIZE];
-+
-+};
-+
-+#ifdef TARGET_ENDIANNESS
-+#define TARGET_BIG_ENDIAN TARGET_ENDIANNESS
-+#else
-+#define TARGET_BIG_ENDIAN (dlthis->big_e_target)
-+#endif
-+
-+/*
-+ * Exports from cload.c to rest of the world
-+ */
-+extern void dload_error(struct dload_state *dlthis, const char *errtxt, ...);
-+extern void dload_syms_error(struct dynamic_loader_sym *syms,
-+			     const char *errtxt, ...);
-+extern void dload_headers(struct dload_state *dlthis);
-+extern void dload_strings(struct dload_state *dlthis, bool sec_names_only);
-+extern void dload_sections(struct dload_state *dlthis);
-+extern void dload_reorder(void *data, int dsiz, u32 map);
-+extern u32 dload_checksum(void *data, unsigned siz);
-+
-+#if HOST_ENDIANNESS
-+extern uint32_t dload_reverse_checksum(void *data, unsigned siz);
-+#if (TARGET_AU_BITS > 8) && (TARGET_AU_BITS < 32)
-+extern uint32_t dload_reverse_checksum16(void *data, unsigned siz);
-+#endif
-+#endif
-+
-+#define IS_DATA_SCN(zzz) (DLOAD_SECTION_TYPE((zzz)->type) != DLOAD_TEXT)
-+#define IS_DATA_SCN_NUM(zzz) \
-+		(DLOAD_SECT_TYPE(&dlthis->sect_hdrs[(zzz)-1]) != DLOAD_TEXT)
-+
-+/*
-+ * exported by reloc.c
-+ */
-+extern void dload_relocate(struct dload_state *dlthis, tgt_au_t * data,
-+			   struct reloc_record_t *rp, bool * tramps_generated,
-+			   bool second_pass);
-+
-+extern rvalue dload_unpack(struct dload_state *dlthis, tgt_au_t * data,
-+			   int fieldsz, int offset, unsigned sgn);
-+
-+extern int dload_repack(struct dload_state *dlthis, rvalue val, tgt_au_t * data,
-+			int fieldsz, int offset, unsigned sgn);
-+
-+/*
-+ * exported by tramp.c
-+ */
-+extern bool dload_tramp_avail(struct dload_state *dlthis,
-+			      struct reloc_record_t *rp);
-+
-+int dload_tramp_generate(struct dload_state *dlthis, s16 secnn,
-+			 u32 image_offset, struct image_packet_t *ipacket,
-+			 struct reloc_record_t *rp);
-+
-+extern int dload_tramp_pkt_udpate(struct dload_state *dlthis,
-+				  s16 secnn, u32 image_offset,
-+				  struct image_packet_t *ipacket);
-+
-+extern int dload_tramp_finalize(struct dload_state *dlthis);
-+
-+extern void dload_tramp_cleanup(struct dload_state *dlthis);
-+
-+#endif /* _DLOAD_INTERNAL_ */
-diff --git a/drivers/staging/tidspbridge/dynload/doff.h b/drivers/staging/tidspbridge/dynload/doff.h
-new file mode 100644
-index 0000000..5bf9924
---- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/doff.h
-@@ -0,0 +1,344 @@
-+/*
-+ * doff.h
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Structures & definitions used for dynamically loaded modules file format.
-+ * This format is a reformatted version of COFF. It optimizes the layout for
-+ * the dynamic loader.
-+ *
-+ * .dof files, when viewed as a sequence of 32-bit integers, look the same
-+ * on big-endian and little-endian machines.
-+ *
-+ * Copyright (C) 2005-2006 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+#ifndef _DOFF_H
-+#define _DOFF_H
-+
-+#ifndef UINT32_C
-+#define UINT32_C(zzz) ((u32)zzz)
-+#endif
-+
-+#define BYTE_RESHUFFLE_VALUE UINT32_C(0x00010203)
-+
-+/* DOFF file header containing fields categorizing the remainder of the file */
-+struct doff_filehdr_t {
-+
-+	/* string table size, including filename, in bytes */
-+	u32 df_strtab_size;
-+
-+	/* entry point if one exists */
-+	u32 df_entrypt;
-+
-+	/* identifies byte ordering of file;
-+	 * always set to BYTE_RESHUFFLE_VALUE */
-+	u32 df_byte_reshuffle;
-+
-+	/* Size of the string table up to and including the last section name */
-+	/* Size includes the name of the COFF file also */
-+	u32 df_scn_name_size;
-+
-+#ifndef _BIG_ENDIAN
-+	/* number of symbols */
-+	u16 df_no_syms;
-+
-+	/* length in bytes of the longest string, including terminating NULL */
-+	/* excludes the name of the file */
-+	u16 df_max_str_len;
-+
-+	/* total number of sections including no-load ones */
-+	u16 df_no_scns;
-+
-+	/* number of sections containing target code allocated or downloaded */
-+	u16 df_target_scns;
-+
-+	/* unique id for dll file format & version */
-+	u16 df_doff_version;
-+
-+	/* identifies ISA */
-+	u16 df_target_id;
-+
-+	/* useful file flags */
-+	u16 df_flags;
-+
-+	/* section reference for entry point, N_UNDEF for none, */
-+	/* N_ABS for absolute address */
-+	s16 df_entry_secn;
-+#else
-+	/* length of the longest string, including terminating NULL */
-+	u16 df_max_str_len;
-+
-+	/* number of symbols */
-+	u16 df_no_syms;
-+
-+	/* number of sections containing target code allocated or downloaded */
-+	u16 df_target_scns;
-+
-+	/* total number of sections including no-load ones */
-+	u16 df_no_scns;
-+
-+	/* identifies ISA */
-+	u16 df_target_id;
-+
-+	/* unique id for dll file format & version */
-+	u16 df_doff_version;
-+
-+	/* section reference for entry point, N_UNDEF for none, */
-+	/* N_ABS for absolute address */
-+	s16 df_entry_secn;
-+
-+	/* useful file flags */
-+	u16 df_flags;
-+#endif
-+	/* checksum for file header record */
-+	u32 df_checksum;
-+
-+};
-+
-+/* flags in the df_flags field */
-+#define  DF_LITTLE   0x100
-+#define  DF_BIG      0x200
-+#define  DF_BYTE_ORDER (DF_LITTLE | DF_BIG)
-+
-+/* Supported processors */
-+#define TMS470_ID   0x97
-+#define LEAD_ID     0x98
-+#define TMS32060_ID 0x99
-+#define LEAD3_ID    0x9c
-+
-+/* Primary processor for loading */
-+#if TMS32060
-+#define TARGET_ID   TMS32060_ID
-+#endif
-+
-+/* Verification record containing values used to test integrity of the bits */
-+struct doff_verify_rec_t {
-+
-+	/* time and date stamp */
-+	u32 dv_timdat;
-+
-+	/* checksum for all section records */
-+	u32 dv_scn_rec_checksum;
-+
-+	/* checksum for string table */
-+	u32 dv_str_tab_checksum;
-+
-+	/* checksum for symbol table */
-+	u32 dv_sym_tab_checksum;
-+
-+	/* checksum for verification record */
-+	u32 dv_verify_rec_checksum;
-+
-+};
-+
-+/* String table is an array of null-terminated strings.  The first entry is
-+ * the filename, which is added by DLLcreate.  No new structure definitions
-+ * are required.
-+ */
-+
-+/* Section Records including information on the corresponding image packets */
-+/*
-+ *      !!WARNING!!
-+ *
-+ * This structure is expected to match in form ldr_section_info in
-+ * dynamic_loader.h
-+ */
-+
-+struct doff_scnhdr_t {
-+
-+	s32 ds_offset;		/* offset into string table of name */
-+	s32 ds_paddr;		/* RUN address, in target AU */
-+	s32 ds_vaddr;		/* LOAD address, in target AU */
-+	s32 ds_size;		/* section size, in target AU */
-+#ifndef _BIG_ENDIAN
-+	u16 ds_page;		/* memory page id */
-+	u16 ds_flags;		/* section flags */
-+#else
-+	u16 ds_flags;		/* section flags */
-+	u16 ds_page;		/* memory page id */
-+#endif
-+	u32 ds_first_pkt_offset;
-+	/* Absolute byte offset into the file */
-+	/* where the first image record resides */
-+
-+	s32 ds_nipacks;		/* number of image packets */
-+
-+};
-+
-+/* Symbol table entry */
-+struct doff_syment_t {
-+
-+	s32 dn_offset;		/* offset into string table of name */
-+	s32 dn_value;		/* value of symbol */
-+#ifndef _BIG_ENDIAN
-+	s16 dn_scnum;		/* section number */
-+	s16 dn_sclass;		/* storage class */
-+#else
-+	s16 dn_sclass;		/* storage class */
-+	s16 dn_scnum;		/* section number, 1-based */
-+#endif
-+
-+};
-+
-+/* special values for dn_scnum */
-+#define  DN_UNDEF  0		/* undefined symbol */
-+#define  DN_ABS    (-1)		/* value of symbol is absolute */
-+/* special values for dn_sclass */
-+#define DN_EXT     2
-+#define DN_STATLAB 20
-+#define DN_EXTLAB  21
-+
-+/* Default value of image bits in packet */
-+/* Configurable by user on the command line */
-+#define IMAGE_PACKET_SIZE 1024
-+
-+/* An image packet contains a chunk of data from a section along with */
-+/* information necessary for its processing. */
-+struct image_packet_t {
-+
-+	s32 num_relocs;		/* number of relocations for */
-+	/* this packet */
-+
-+	s32 packet_size;	/* number of bytes in array */
-+	/* "bits" occupied  by */
-+	/* valid data.  Could be */
-+	/* < IMAGE_PACKET_SIZE to */
-+	/* prevent splitting a */
-+	/* relocation across packets. */
-+	/* Last packet of a section */
-+	/* will most likely contain */
-+	/* < IMAGE_PACKET_SIZE bytes */
-+	/* of valid data */
-+
-+	s32 img_chksum;		/* Checksum for image packet */
-+	/* and the corresponding */
-+	/* relocation records */
-+
-+	u8 *img_data;		/* Actual data in section */
-+
-+};
-+
-+/* The relocation structure definition matches the COFF version.  Offsets */
-+/* however are relative to the image packet base not the section base. */
-+struct reloc_record_t {
-+
-+	s32 vaddr;
-+
-+	/* expressed in target AUs */
-+
-+	union {
-+		struct {
-+#ifndef _BIG_ENDIAN
-+			u8 _offset;	/* bit offset of rel fld */
-+			u8 _fieldsz;	/* size of rel fld */
-+			u8 _wordsz;	/* # bytes containing rel fld */
-+			u8 _dum1;
-+			u16 _dum2;
-+			u16 _type;
-+#else
-+			unsigned _dum1:8;
-+			unsigned _wordsz:8;	/* # bytes containing rel fld */
-+			unsigned _fieldsz:8;	/* size of rel fld */
-+			unsigned _offset:8;	/* bit offset of rel fld */
-+			u16 _type;
-+			u16 _dum2;
-+#endif
-+		} _r_field;
-+
-+		struct {
-+			u32 _spc;	/* image packet relative PC */
-+#ifndef _BIG_ENDIAN
-+			u16 _dum;
-+			u16 _type;	/* relocation type */
-+#else
-+			u16 _type;	/* relocation type */
-+			u16 _dum;
-+#endif
-+		} _r_spc;
-+
-+		struct {
-+			u32 _uval;	/* constant value */
-+#ifndef _BIG_ENDIAN
-+			u16 _dum;
-+			u16 _type;	/* relocation type */
-+#else
-+			u16 _type;	/* relocation type */
-+			u16 _dum;
-+#endif
-+		} _r_uval;
-+
-+		struct {
-+			s32 _symndx;	/* 32-bit sym tbl index */
-+#ifndef _BIG_ENDIAN
-+			u16 _disp;	/* extra addr encode data */
-+			u16 _type;	/* relocation type */
-+#else
-+			u16 _type;	/* relocation type */
-+			u16 _disp;	/* extra addr encode data */
-+#endif
-+		} _r_sym;
-+	} _u_reloc;
-+
-+};
-+
-+/* abbreviations for convenience */
-+#ifndef TYPE
-+#define TYPE      _u_reloc._r_sym._type
-+#define UVAL      _u_reloc._r_uval._uval
-+#define SYMNDX    _u_reloc._r_sym._symndx
-+#define OFFSET    _u_reloc._r_field._offset
-+#define FIELDSZ   _u_reloc._r_field._fieldsz
-+#define WORDSZ    _u_reloc._r_field._wordsz
-+#define R_DISP      _u_reloc._r_sym._disp
-+#endif
-+
-+/**************************************************************************** */
-+/* */
-+/* Important DOFF macros used for file processing */
-+/* */
-+/**************************************************************************** */
-+
-+/* DOFF Versions */
-+#define         DOFF0                       0
-+
-+/* Return the address/size >= to addr that is at a 32-bit boundary */
-+/* This assumes that a byte is 8 bits */
-+#define         DOFF_ALIGN(addr)            (((addr) + 3) & ~UINT32_C(3))
-+
-+/**************************************************************************** */
-+/* */
-+/* The DOFF section header flags field is laid out as follows: */
-+/* */
-+/*  Bits 0-3 : Section Type */
-+/*  Bit    4 : Set when section requires target memory to be allocated by DL */
-+/*  Bit    5 : Set when section requires downloading */
-+/*  Bits 8-11: Alignment, same as COFF */
-+/* */
-+/**************************************************************************** */
-+
-+/* Enum for DOFF section types (bits 0-3 of flag): See dynamic_loader.h */
-+
-+/* Macros to help processing of sections */
-+#define DLOAD_SECT_TYPE(s_hdr)      ((s_hdr)->ds_flags & 0xF)
-+
-+/* DS_ALLOCATE indicates whether a section needs space on the target */
-+#define DS_ALLOCATE_MASK            0x10
-+#define DS_NEEDS_ALLOCATION(s_hdr)  ((s_hdr)->ds_flags & DS_ALLOCATE_MASK)
-+
-+/* DS_DOWNLOAD indicates that the loader needs to copy bits */
-+#define DS_DOWNLOAD_MASK            0x20
-+#define DS_NEEDS_DOWNLOAD(s_hdr)    ((s_hdr)->ds_flags & DS_DOWNLOAD_MASK)
-+
-+/* Section alignment requirement in AUs */
-+#define DS_ALIGNMENT(ds_flags) (1 << (((ds_flags) >> 8) & 0xF))
-+
-+#endif /* _DOFF_H */
-diff --git a/drivers/staging/tidspbridge/dynload/getsection.c b/drivers/staging/tidspbridge/dynload/getsection.c
-new file mode 100644
-index 0000000..029898f
---- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/getsection.c
-@@ -0,0 +1,416 @@
-+/*
-+ * getsection.c
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Copyright (C) 2005-2006 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+#include <dspbridge/getsection.h>
-+#include "header.h"
-+
-+/*
-+ * Error strings
-+ */
-+static const char readstrm[] = { "Error reading %s from input stream" };
-+static const char seek[] = { "Set file position to %d failed" };
-+static const char isiz[] = { "Bad image packet size %d" };
-+static const char err_checksum[] = { "Checksum failed on %s" };
-+
-+static const char err_reloc[] = { "dload_get_section unable to read"
-+	    "sections containing relocation entries"
-+};
-+
-+#if BITS_PER_AU > BITS_PER_BYTE
-+static const char err_alloc[] = { "Syms->dload_allocate( %d ) failed" };
-+static const char stbl[] = { "Bad string table offset " FMT_UI32 };
-+#endif
-+
-+/*
-+ * we use the fact that DOFF section records are shaped just like
-+ * ldr_section_info to reduce our section storage usage.  These macros
-+ * marks the places where that assumption is made
-+ */
-+#define DOFFSEC_IS_LDRSEC(pdoffsec) ((struct ldr_section_info *)(pdoffsec))
-+#define LDRSEC_IS_DOFFSEC(ldrsec) ((struct doff_scnhdr_t *)(ldrsec))
-+
-+/************************************************************** */
-+/********************* SUPPORT FUNCTIONS ********************** */
-+/************************************************************** */
-+
-+#if BITS_PER_AU > BITS_PER_BYTE
-+/**************************************************************************
-+ * Procedure unpack_sec_name
-+ *
-+ * Parameters:
-+ *  dlthis		Handle from dload_module_open for this module
-+ *	soffset	    Byte offset into the string table
-+ *  dst         Place to store the expanded string
-+ *
-+ * Effect:
-+ *	Stores a string from the string table into the destination, expanding
-+ * it in the process.  Returns a pointer just past the end of the stored
-+ * string on success, or NULL on failure.
-+ *
-+ ************************************************************************ */
-+static char *unpack_sec_name(struct dload_state *dlthis, u32 soffset, char *dst)
-+{
-+	u8 tmp, *src;
-+
-+	if (soffset >= dlthis->dfile_hdr.df_scn_name_size) {
-+		dload_error(dlthis, stbl, soffset);
-+		return NULL;
-+	}
-+	src = (u8 *) dlthis->str_head +
-+	    (soffset >> (LOG_BITS_PER_AU - LOG_BITS_PER_BYTE));
-+	if (soffset & 1)
-+		*dst++ = *src++;	/* only 1 character in first word */
-+	do {
-+		tmp = *src++;
-+		*dst = (tmp >> BITS_PER_BYTE)
-+		    if (!(*dst++))
-+			break;
-+	} while ((*dst++ = tmp & BYTE_MASK));
-+
-+	return dst;
-+}
-+
-+/**************************************************************************
-+ * Procedure expand_sec_names
-+ *
-+ * Parameters:
-+ *  dlthis		Handle from dload_module_open for this module
-+ *
-+ * Effect:
-+ *    Allocates a buffer, unpacks and copies strings from string table into it.
-+ * Stores a pointer to the buffer into a state variable.
-+ ************************************************************************* */
-+static void expand_sec_names(struct dload_state *dlthis)
-+{
-+	char *xstrings, *curr, *next;
-+	u32 xsize;
-+	u16 sec;
-+	struct ldr_section_info *shp;
-+	/* assume worst-case size requirement */
-+	xsize = dlthis->dfile_hdr.df_max_str_len * dlthis->dfile_hdr.df_no_scns;
-+	xstrings = (char *)dlthis->mysym->dload_allocate(dlthis->mysym, xsize);
-+	if (xstrings == NULL) {
-+		dload_error(dlthis, err_alloc, xsize);
-+		return;
-+	}
-+	dlthis->xstrings = xstrings;
-+	/* For each sec, copy and expand its name */
-+	curr = xstrings;
-+	for (sec = 0; sec < dlthis->dfile_hdr.df_no_scns; sec++) {
-+		shp = DOFFSEC_IS_LDRSEC(&dlthis->sect_hdrs[sec]);
-+		next = unpack_sec_name(dlthis, *(u32 *) &shp->name, curr);
-+		if (next == NULL)
-+			break;	/* error */
-+		shp->name = curr;
-+		curr = next;
-+	}
-+}
-+
-+#endif
-+
-+/************************************************************** */
-+/********************* EXPORTED FUNCTIONS ********************* */
-+/************************************************************** */
-+
-+/**************************************************************************
-+ * Procedure dload_module_open
-+ *
-+ * Parameters:
-+ *	module	The input stream that supplies the module image
-+ *	syms	Host-side malloc/free and error reporting functions.
-+ *			Other methods are unused.
-+ *
-+ * Effect:
-+ *	Reads header information from a dynamic loader module using the
-+    specified
-+ * stream object, and returns a handle for the module information.  This
-+ * handle may be used in subsequent query calls to obtain information
-+ * contained in the module.
-+ *
-+ * Returns:
-+ *	NULL if an error is encountered, otherwise a module handle for use
-+ * in subsequent operations.
-+ ************************************************************************* */
-+void *dload_module_open(struct dynamic_loader_stream *module,
-+				    struct dynamic_loader_sym *syms)
-+{
-+	struct dload_state *dlthis;	/* internal state for this call */
-+	unsigned *dp, sz;
-+	u32 sec_start;
-+#if BITS_PER_AU <= BITS_PER_BYTE
-+	u16 sec;
-+#endif
-+
-+	/* Check that mandatory arguments are present */
-+	if (!module || !syms) {
-+		if (syms != NULL)
-+			dload_syms_error(syms, "Required parameter is NULL");
-+
-+		return NULL;
-+	}
-+
-+	dlthis = (struct dload_state *)
-+	    syms->dload_allocate(syms, sizeof(struct dload_state));
-+	if (!dlthis) {
-+		/* not enough storage */
-+		dload_syms_error(syms, "Can't allocate module info");
-+		return NULL;
-+	}
-+
-+	/* clear our internal state */
-+	dp = (unsigned *)dlthis;
-+	for (sz = sizeof(struct dload_state) / sizeof(unsigned);
-+	     sz > 0; sz -= 1)
-+		*dp++ = 0;
-+
-+	dlthis->strm = module;
-+	dlthis->mysym = syms;
-+
-+	/* read in the doff image and store in our state variable */
-+	dload_headers(dlthis);
-+
-+	if (!dlthis->dload_errcount)
-+		dload_strings(dlthis, true);
-+
-+	/* skip ahead past the unread portion of the string table */
-+	sec_start = sizeof(struct doff_filehdr_t) +
-+	    sizeof(struct doff_verify_rec_t) +
-+	    BYTE_TO_HOST(DOFF_ALIGN(dlthis->dfile_hdr.df_strtab_size));
-+
-+	if (dlthis->strm->set_file_posn(dlthis->strm, sec_start) != 0) {
-+		dload_error(dlthis, seek, sec_start);
-+		return NULL;
-+	}
-+
-+	if (!dlthis->dload_errcount)
-+		dload_sections(dlthis);
-+
-+	if (dlthis->dload_errcount) {
-+		dload_module_close(dlthis);	/* errors, blow off our state */
-+		dlthis = NULL;
-+		return NULL;
-+	}
-+#if BITS_PER_AU > BITS_PER_BYTE
-+	/* Expand all section names from the string table into the */
-+	/* state variable, and convert section names from a relative */
-+	/* string table offset to a pointers to the expanded string. */
-+	expand_sec_names(dlthis);
-+#else
-+	/* Convert section names from a relative string table offset */
-+	/* to a pointer into the string table. */
-+	for (sec = 0; sec < dlthis->dfile_hdr.df_no_scns; sec++) {
-+		struct ldr_section_info *shp =
-+		    DOFFSEC_IS_LDRSEC(&dlthis->sect_hdrs[sec]);
-+		shp->name = dlthis->str_head + *(u32 *) &shp->name;
-+	}
-+#endif
-+
-+	return dlthis;
-+}
-+
-+/***************************************************************************
-+ * Procedure dload_get_section_info
-+ *
-+ * Parameters:
-+ *  minfo		Handle from dload_module_open for this module
-+ *	sectionName	Pointer to the string name of the section desired
-+ *	sectionInfo	Address of a section info structure pointer to be
-+ *			initialized
-+ *
-+ * Effect:
-+ *	Finds the specified section in the module information, and initializes
-+ * the provided struct ldr_section_info pointer.
-+ *
-+ * Returns:
-+ *	true for success, false for section not found
-+ ************************************************************************* */
-+int dload_get_section_info(void *minfo, const char *sectionName,
-+			   const struct ldr_section_info **const sectionInfo)
-+{
-+	struct dload_state *dlthis;
-+	struct ldr_section_info *shp;
-+	u16 sec;
-+
-+	dlthis = (struct dload_state *)minfo;
-+	if (!dlthis)
-+		return false;
-+
-+	for (sec = 0; sec < dlthis->dfile_hdr.df_no_scns; sec++) {
-+		shp = DOFFSEC_IS_LDRSEC(&dlthis->sect_hdrs[sec]);
-+		if (strcmp(sectionName, shp->name) == 0) {
-+			*sectionInfo = shp;
-+			return true;
++		status = 0;
++
++		if ((strlen(sz_reg_key) + strlen(sz_obj_type)) <
++		    DCD_MAXPATHLENGTH) {
++			strncat(sz_reg_key, sz_obj_type,
++				strlen(sz_obj_type) + 1);
++		} else {
++			status = -EPERM;
 +		}
++
++		/* Create UUID value to set in registry. */
++		uuid_uuid_to_string(pObjUuid, sz_uuid, MAXUUIDLEN);
++
++		if ((strlen(sz_reg_key) + MAXUUIDLEN) < DCD_MAXPATHLENGTH)
++			strncat(sz_reg_key, sz_uuid, MAXUUIDLEN);
++		else
++			status = -EPERM;
++
++		/* Retrieve paths from the registry based on struct dsp_uuid */
++		dw_buf_size = DCD_MAXPATHLENGTH;
++	}
++	if (DSP_SUCCEEDED(status)) {
++		spin_lock(&dbdcd_lock);
++		list_for_each_entry(dcd_key, &reg_key_list, link) {
++			if (!strncmp(dcd_key->name, sz_reg_key,
++						strlen(sz_reg_key) + 1))
++				break;
++		}
++		spin_unlock(&dbdcd_lock);
++		if (&dcd_key->link == &reg_key_list) {
++			status = -ENOKEY;
++			goto func_end;
++		}
++	}
++
++
++	/* Open COFF file. */
++	status = cod_open(dcd_mgr_obj->cod_mgr, dcd_key->path,
++							COD_NOLOAD, &lib);
++	if (DSP_FAILED(status)) {
++		status = -EACCES;
++		goto func_end;
++	}
++
++	/* Ensure sz_uuid + 1 is not greater than sizeof sz_sect_name. */
++	DBC_ASSERT((strlen(sz_uuid) + 1) < sizeof(sz_sect_name));
++
++	/* Create section name based on node UUID. A period is
++	 * pre-pended to the UUID string to form the section name.
++	 * I.e. ".24BC8D90_BB45_11d4_B756_006008BDB66F" */
++	strncpy(sz_sect_name, ".", 2);
++	strncat(sz_sect_name, sz_uuid, strlen(sz_uuid));
++
++	/* Get section information. */
++	status = cod_get_section(lib, sz_sect_name, &ul_addr, &ul_len);
++	if (DSP_FAILED(status)) {
++		status = -EACCES;
++		goto func_end;
++	}
++
++	/* Allocate zeroed buffer. */
++	psz_coff_buf = kzalloc(ul_len + 4, GFP_KERNEL);
++#ifdef _DB_TIOMAP
++	if (strstr(dcd_key->path, "iva") == NULL) {
++		/* Locate section by objectID and read its content. */
++		status =
++		    cod_read_section(lib, sz_sect_name, psz_coff_buf, ul_len);
++	} else {
++		status =
++		    cod_read_section(lib, sz_sect_name, psz_coff_buf, ul_len);
++		dev_dbg(bridge, "%s: Skipped Byte swap for IVA!!\n", __func__);
++	}
++#else
++	status = cod_read_section(lib, sz_sect_name, psz_coff_buf, ul_len);
++#endif
++	if (DSP_SUCCEEDED(status)) {
++		/* Compres DSP buffer to conform to PC format. */
++		if (strstr(dcd_key->path, "iva") == NULL) {
++			compress_buf(psz_coff_buf, ul_len, DSPWORDSIZE);
++		} else {
++			compress_buf(psz_coff_buf, ul_len, 1);
++			dev_dbg(bridge, "%s: Compressing IVA COFF buffer by 1 "
++				"for IVA!!\n", __func__);
++		}
++
++		/* Parse the content of the COFF buffer. */
++		status =
++		    get_attrs_from_buf(psz_coff_buf, ul_len, obj_type, pObjDef);
++		if (DSP_FAILED(status))
++			status = -EACCES;
++	} else {
++		status = -EACCES;
++	}
++
++	/* Free the previously allocated dynamic buffer. */
++	kfree(psz_coff_buf);
++func_end:
++	if (lib)
++		cod_close(lib);
++
++	kfree(sz_uuid);
++
++	return status;
++}
++
++/*
++ *  ======== dcd_get_objects ========
++ */
++int dcd_get_objects(IN struct dcd_manager *hdcd_mgr,
++			   IN char *pszCoffPath, dcd_registerfxn registerFxn,
++			   void *handle)
++{
++	struct dcd_manager *dcd_mgr_obj = hdcd_mgr;
++	int status = 0;
++	char *psz_coff_buf;
++	char *psz_cur;
++	struct cod_libraryobj *lib = NULL;
++	u32 ul_addr = 0;	/* Used by cod_get_section */
++	u32 ul_len = 0;		/* Used by cod_get_section */
++	char seps[] = ":, ";
++	char *token = NULL;
++	struct dsp_uuid dsp_uuid_obj;
++	s32 object_type;
++
++	DBC_REQUIRE(refs > 0);
++	if (!hdcd_mgr) {
++		status = -EFAULT;
++		goto func_end;
++	}
++
++	/* Open DSP coff file, don't load symbols. */
++	status = cod_open(dcd_mgr_obj->cod_mgr, pszCoffPath, COD_NOLOAD, &lib);
++	if (DSP_FAILED(status)) {
++		status = -EACCES;
++		goto func_cont;
++	}
++
++	/* Get DCD_RESIGER_SECTION section information. */
++	status = cod_get_section(lib, DCD_REGISTER_SECTION, &ul_addr, &ul_len);
++	if (DSP_FAILED(status) || !(ul_len > 0)) {
++		status = -EACCES;
++		goto func_cont;
++	}
++
++	/* Allocate zeroed buffer. */
++	psz_coff_buf = kzalloc(ul_len + 4, GFP_KERNEL);
++#ifdef _DB_TIOMAP
++	if (strstr(pszCoffPath, "iva") == NULL) {
++		/* Locate section by objectID and read its content. */
++		status = cod_read_section(lib, DCD_REGISTER_SECTION,
++					  psz_coff_buf, ul_len);
++	} else {
++		dev_dbg(bridge, "%s: Skipped Byte swap for IVA!!\n", __func__);
++		status = cod_read_section(lib, DCD_REGISTER_SECTION,
++					  psz_coff_buf, ul_len);
++	}
++#else
++	status =
++	    cod_read_section(lib, DCD_REGISTER_SECTION, psz_coff_buf, ul_len);
++#endif
++	if (DSP_SUCCEEDED(status)) {
++		/* Compress DSP buffer to conform to PC format. */
++		if (strstr(pszCoffPath, "iva") == NULL) {
++			compress_buf(psz_coff_buf, ul_len, DSPWORDSIZE);
++		} else {
++			compress_buf(psz_coff_buf, ul_len, 1);
++			dev_dbg(bridge, "%s: Compress COFF buffer with 1 word "
++				"for IVA!!\n", __func__);
++		}
++
++		/* Read from buffer and register object in buffer. */
++		psz_cur = psz_coff_buf;
++		while ((token = strsep(&psz_cur, seps)) && *token != '\0') {
++			/*  Retrieve UUID string. */
++			uuid_uuid_from_string(token, &dsp_uuid_obj);
++
++			/*  Retrieve object type */
++			token = strsep(&psz_cur, seps);
++
++			/*  Retrieve object type */
++			object_type = atoi(token);
++
++			/*
++			 *  Apply registerFxn to the found DCD object.
++			 *  Possible actions include:
++			 *
++			 *  1) Register found DCD object.
++			 *  2) Unregister found DCD object (when handle == NULL)
++			 *  3) Add overlay node.
++			 */
++			status =
++			    registerFxn(&dsp_uuid_obj, object_type, handle);
++			if (DSP_FAILED(status)) {
++				/* if error occurs, break from while loop. */
++				break;
++			}
++		}
++	} else {
++		status = -EACCES;
++	}
++
++	/* Free the previously allocated dynamic buffer. */
++	kfree(psz_coff_buf);
++func_cont:
++	if (lib)
++		cod_close(lib);
++
++func_end:
++	return status;
++}
++
++/*
++ *  ======== dcd_get_library_name ========
++ *  Purpose:
++ *      Retrieves the library name for the given UUID.
++ *
++ */
++int dcd_get_library_name(IN struct dcd_manager *hdcd_mgr,
++				IN struct dsp_uuid *uuid_obj,
++				IN OUT char *pstrLibName, IN OUT u32 * pdwSize,
++				enum nldr_phase phase, OUT bool *phase_split)
++{
++	char sz_reg_key[DCD_MAXPATHLENGTH];
++	char sz_uuid[MAXUUIDLEN];
++	u32 dw_key_len;		/* Len of REG key. */
++	char sz_obj_type[MAX_INT2CHAR_LENGTH];	/* str. rep. of obj_type. */
++	int status = 0;
++	struct dcd_key_elem *dcd_key = NULL;
++
++	DBC_REQUIRE(uuid_obj != NULL);
++	DBC_REQUIRE(pstrLibName != NULL);
++	DBC_REQUIRE(pdwSize != NULL);
++	DBC_REQUIRE(hdcd_mgr);
++
++	dev_dbg(bridge, "%s: hdcd_mgr %p, uuid_obj %p, pstrLibName %p, pdwSize "
++		"%p\n", __func__, hdcd_mgr, uuid_obj, pstrLibName, pdwSize);
++
++	/*
++	 *  Pre-determine final key length. It's length of DCD_REGKEY +
++	 *  "_\0" + length of sz_obj_type string + terminating NULL.
++	 */
++	dw_key_len = strlen(DCD_REGKEY) + 1 + sizeof(sz_obj_type) + 1;
++	DBC_ASSERT(dw_key_len < DCD_MAXPATHLENGTH);
++
++	/* Create proper REG key; concatenate DCD_REGKEY with obj_type. */
++	strncpy(sz_reg_key, DCD_REGKEY, strlen(DCD_REGKEY) + 1);
++	if ((strlen(sz_reg_key) + strlen("_\0")) < DCD_MAXPATHLENGTH)
++		strncat(sz_reg_key, "_\0", 2);
++	else
++		status = -EPERM;
++
++	switch (phase) {
++	case NLDR_CREATE:
++		/* create phase type */
++		sprintf(sz_obj_type, "%d", DSP_DCDCREATELIBTYPE);
++		break;
++	case NLDR_EXECUTE:
++		/* execute phase type */
++		sprintf(sz_obj_type, "%d", DSP_DCDEXECUTELIBTYPE);
++		break;
++	case NLDR_DELETE:
++		/* delete phase type */
++		sprintf(sz_obj_type, "%d", DSP_DCDDELETELIBTYPE);
++		break;
++	case NLDR_NOPHASE:
++		/* known to be a dependent library */
++		sprintf(sz_obj_type, "%d", DSP_DCDLIBRARYTYPE);
++		break;
++	default:
++		status = -EINVAL;
++		DBC_ASSERT(false);
++	}
++	if (DSP_SUCCEEDED(status)) {
++		if ((strlen(sz_reg_key) + strlen(sz_obj_type)) <
++		    DCD_MAXPATHLENGTH) {
++			strncat(sz_reg_key, sz_obj_type,
++				strlen(sz_obj_type) + 1);
++		} else {
++			status = -EPERM;
++		}
++		/* Create UUID value to find match in registry. */
++		uuid_uuid_to_string(uuid_obj, sz_uuid, MAXUUIDLEN);
++		if ((strlen(sz_reg_key) + MAXUUIDLEN) < DCD_MAXPATHLENGTH)
++			strncat(sz_reg_key, sz_uuid, MAXUUIDLEN);
++		else
++			status = -EPERM;
++	}
++	if (DSP_SUCCEEDED(status)) {
++		spin_lock(&dbdcd_lock);
++		list_for_each_entry(dcd_key, &reg_key_list, link) {
++			/*  See if the name matches. */
++			if (!strncmp(dcd_key->name, sz_reg_key,
++						strlen(sz_reg_key) + 1))
++				break;
++		}
++		spin_unlock(&dbdcd_lock);
++	}
++
++	if (&dcd_key->link == &reg_key_list)
++		status = -ENOKEY;
++
++	/* If can't find, phases might be registered as generic LIBRARYTYPE */
++	if (DSP_FAILED(status) && phase != NLDR_NOPHASE) {
++		if (phase_split)
++			*phase_split = false;
++
++		strncpy(sz_reg_key, DCD_REGKEY, strlen(DCD_REGKEY) + 1);
++		if ((strlen(sz_reg_key) + strlen("_\0")) <
++		    DCD_MAXPATHLENGTH) {
++			strncat(sz_reg_key, "_\0", 2);
++		} else {
++			status = -EPERM;
++		}
++		sprintf(sz_obj_type, "%d", DSP_DCDLIBRARYTYPE);
++		if ((strlen(sz_reg_key) + strlen(sz_obj_type))
++		    < DCD_MAXPATHLENGTH) {
++			strncat(sz_reg_key, sz_obj_type,
++				strlen(sz_obj_type) + 1);
++		} else {
++			status = -EPERM;
++		}
++		uuid_uuid_to_string(uuid_obj, sz_uuid, MAXUUIDLEN);
++		if ((strlen(sz_reg_key) + MAXUUIDLEN) < DCD_MAXPATHLENGTH)
++			strncat(sz_reg_key, sz_uuid, MAXUUIDLEN);
++		else
++			status = -EPERM;
++
++		spin_lock(&dbdcd_lock);
++		list_for_each_entry(dcd_key, &reg_key_list, link) {
++			/*  See if the name matches. */
++			if (!strncmp(dcd_key->name, sz_reg_key,
++						strlen(sz_reg_key) + 1))
++				break;
++		}
++		spin_unlock(&dbdcd_lock);
++
++		status = (&dcd_key->link != &reg_key_list) ?
++						0 : -ENOKEY;
++	}
++
++	if (DSP_SUCCEEDED(status))
++		memcpy(pstrLibName, dcd_key->path, strlen(dcd_key->path) + 1);
++	return status;
++}
++
++/*
++ *  ======== dcd_init ========
++ *  Purpose:
++ *      Initialize the DCD module.
++ */
++bool dcd_init(void)
++{
++	bool init_cod;
++	bool ret = true;
++
++	DBC_REQUIRE(refs >= 0);
++
++	if (refs == 0) {
++		/* Initialize required modules. */
++		init_cod = cod_init();
++
++		if (!init_cod) {
++			ret = false;
++			/* Exit initialized modules. */
++			if (init_cod)
++				cod_exit();
++		}
++
++		INIT_LIST_HEAD(&reg_key_list);
++	}
++
++	if (ret)
++		refs++;
++
++	DBC_ENSURE((ret && (refs > 0)) || (!ret && (refs == 0)));
++
++	return ret;
++}
++
++/*
++ *  ======== dcd_register_object ========
++ *  Purpose:
++ *      Registers a node or a processor with the DCD.
++ *      If psz_path_name == NULL, unregister the specified DCD object.
++ */
++int dcd_register_object(IN struct dsp_uuid *uuid_obj,
++			       IN enum dsp_dcdobjtype obj_type,
++			       IN char *psz_path_name)
++{
++	int status = 0;
++	char sz_reg_key[DCD_MAXPATHLENGTH];
++	char sz_uuid[MAXUUIDLEN + 1];
++	u32 dw_path_size = 0;
++	u32 dw_key_len;		/* Len of REG key. */
++	char sz_obj_type[MAX_INT2CHAR_LENGTH];	/* str. rep. of obj_type. */
++	struct dcd_key_elem *dcd_key = NULL;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(uuid_obj != NULL);
++	DBC_REQUIRE((obj_type == DSP_DCDNODETYPE) ||
++		    (obj_type == DSP_DCDPROCESSORTYPE) ||
++		    (obj_type == DSP_DCDLIBRARYTYPE) ||
++		    (obj_type == DSP_DCDCREATELIBTYPE) ||
++		    (obj_type == DSP_DCDEXECUTELIBTYPE) ||
++		    (obj_type == DSP_DCDDELETELIBTYPE));
++
++	dev_dbg(bridge, "%s: object UUID %p, obj_type %d, szPathName %s\n",
++		__func__, uuid_obj, obj_type, psz_path_name);
++
++	/*
++	 * Pre-determine final key length. It's length of DCD_REGKEY +
++	 *  "_\0" + length of sz_obj_type string + terminating NULL.
++	 */
++	dw_key_len = strlen(DCD_REGKEY) + 1 + sizeof(sz_obj_type) + 1;
++	DBC_ASSERT(dw_key_len < DCD_MAXPATHLENGTH);
++
++	/* Create proper REG key; concatenate DCD_REGKEY with obj_type. */
++	strncpy(sz_reg_key, DCD_REGKEY, strlen(DCD_REGKEY) + 1);
++	if ((strlen(sz_reg_key) + strlen("_\0")) < DCD_MAXPATHLENGTH)
++		strncat(sz_reg_key, "_\0", 2);
++	else {
++		status = -EPERM;
++		goto func_end;
++	}
++
++	status = snprintf(sz_obj_type, MAX_INT2CHAR_LENGTH, "%d", obj_type);
++	if (status == -1) {
++		status = -EPERM;
++	} else {
++		status = 0;
++		if ((strlen(sz_reg_key) + strlen(sz_obj_type)) <
++		    DCD_MAXPATHLENGTH) {
++			strncat(sz_reg_key, sz_obj_type,
++				strlen(sz_obj_type) + 1);
++		} else
++			status = -EPERM;
++
++		/* Create UUID value to set in registry. */
++		uuid_uuid_to_string(uuid_obj, sz_uuid, MAXUUIDLEN);
++		if ((strlen(sz_reg_key) + MAXUUIDLEN) < DCD_MAXPATHLENGTH)
++			strncat(sz_reg_key, sz_uuid, MAXUUIDLEN);
++		else
++			status = -EPERM;
++	}
++
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/*
++	 * If psz_path_name != NULL, perform registration, otherwise,
++	 * perform unregistration.
++	 */
++
++	if (psz_path_name) {
++		dw_path_size = strlen(psz_path_name) + 1;
++		spin_lock(&dbdcd_lock);
++		list_for_each_entry(dcd_key, &reg_key_list, link) {
++			/*  See if the name matches. */
++			if (!strncmp(dcd_key->name, sz_reg_key,
++						strlen(sz_reg_key) + 1))
++				break;
++		}
++		spin_unlock(&dbdcd_lock);
++		if (&dcd_key->link == &reg_key_list) {
++			/*
++			 * Add new reg value (UUID+obj_type)
++			 * with COFF path info
++			 */
++
++			dcd_key = kmalloc(sizeof(struct dcd_key_elem),
++								GFP_KERNEL);
++			if (!dcd_key) {
++				status = -ENOMEM;
++				goto func_end;
++			}
++
++			dcd_key->path = kmalloc(strlen(sz_reg_key) + 1,
++								GFP_KERNEL);
++
++			if (!dcd_key->path) {
++				kfree(dcd_key);
++				status = -ENOMEM;
++				goto func_end;
++			}
++
++			strncpy(dcd_key->name, sz_reg_key,
++						strlen(sz_reg_key) + 1);
++			strncpy(dcd_key->path, psz_path_name ,
++						dw_path_size);
++			spin_lock(&dbdcd_lock);
++			list_add_tail(&dcd_key->link, &reg_key_list);
++			spin_unlock(&dbdcd_lock);
++		} else {
++			/*  Make sure the new data is the same. */
++			if (strncmp(dcd_key->path, psz_path_name,
++							dw_path_size)) {
++				/*  The caller needs a different data size! */
++				kfree(dcd_key->path);
++				dcd_key->path = kmalloc(dw_path_size,
++								GFP_KERNEL);
++				if (dcd_key->path == NULL) {
++					status = -ENOMEM;
++					goto func_end;
++				}
++			}
++
++			/*  We have a match!  Copy out the data. */
++			memcpy(dcd_key->path, psz_path_name, dw_path_size);
++		}
++		dev_dbg(bridge, "%s: psz_path_name=%s, dw_path_size=%d\n",
++			__func__, psz_path_name, dw_path_size);
++	} else {
++		/* Deregister an existing object */
++		spin_lock(&dbdcd_lock);
++		list_for_each_entry(dcd_key, &reg_key_list, link) {
++			if (!strncmp(dcd_key->name, sz_reg_key,
++						strlen(sz_reg_key) + 1)) {
++				list_del(&dcd_key->link);
++				kfree(dcd_key->path);
++				kfree(dcd_key);
++				break;
++			}
++		}
++		spin_unlock(&dbdcd_lock);
++		if (&dcd_key->link == &reg_key_list)
++			status = -EPERM;
++	}
++
++	if (DSP_SUCCEEDED(status)) {
++		/*
++		 *  Because the node database has been updated through a
++		 *  successful object registration/de-registration operation,
++		 *  we need to reset the object enumeration counter to allow
++		 *  current enumerations to reflect this update in the node
++		 *  database.
++		 */
++		enum_refs = 0;
++	}
++func_end:
++	return status;
++}
++
++/*
++ *  ======== dcd_unregister_object ========
++ *  Call DCD_Register object with psz_path_name set to NULL to
++ *  perform actual object de-registration.
++ */
++int dcd_unregister_object(IN struct dsp_uuid *uuid_obj,
++				 IN enum dsp_dcdobjtype obj_type)
++{
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(uuid_obj != NULL);
++	DBC_REQUIRE((obj_type == DSP_DCDNODETYPE) ||
++		    (obj_type == DSP_DCDPROCESSORTYPE) ||
++		    (obj_type == DSP_DCDLIBRARYTYPE) ||
++		    (obj_type == DSP_DCDCREATELIBTYPE) ||
++		    (obj_type == DSP_DCDEXECUTELIBTYPE) ||
++		    (obj_type == DSP_DCDDELETELIBTYPE));
++
++	/*
++	 *  When dcd_register_object is called with NULL as pathname,
++	 *  it indicates an unregister object operation.
++	 */
++	status = dcd_register_object(uuid_obj, obj_type, NULL);
++
++	return status;
++}
++
++/*
++ **********************************************************************
++ * DCD Helper Functions
++ **********************************************************************
++ */
++
++/*
++ *  ======== atoi ========
++ *  Purpose:
++ *      This function converts strings in decimal or hex format to integers.
++ */
++static s32 atoi(char *psz_buf)
++{
++	char *pch = psz_buf;
++	s32 base = 0;
++
++	while (isspace(*pch))
++		pch++;
++
++	if (*pch == '-' || *pch == '+') {
++		base = 10;
++		pch++;
++	} else if (*pch && tolower(pch[strlen(pch) - 1]) == 'h') {
++		base = 16;
++	}
++
++	return simple_strtoul(pch, NULL, base);
++}
++
++/*
++ *  ======== get_attrs_from_buf ========
++ *  Purpose:
++ *      Parse the content of a buffer filled with DSP-side data and
++ *      retrieve an object's attributes from it. IMPORTANT: Assume the
++ *      buffer has been converted from DSP format to GPP format.
++ */
++static int get_attrs_from_buf(char *psz_buf, u32 ul_buf_size,
++				     enum dsp_dcdobjtype obj_type,
++				     struct dcd_genericobj *pGenObj)
++{
++	int status = 0;
++	char seps[] = ", ";
++	char *psz_cur;
++	char *token;
++	s32 token_len = 0;
++	u32 i = 0;
++#ifdef _DB_TIOMAP
++	s32 entry_id;
++#endif
++
++	DBC_REQUIRE(psz_buf != NULL);
++	DBC_REQUIRE(ul_buf_size != 0);
++	DBC_REQUIRE((obj_type == DSP_DCDNODETYPE)
++		    || (obj_type == DSP_DCDPROCESSORTYPE));
++	DBC_REQUIRE(pGenObj != NULL);
++
++	switch (obj_type) {
++	case DSP_DCDNODETYPE:
++		/*
++		 * Parse COFF sect buffer to retrieve individual tokens used
++		 * to fill in object attrs.
++		 */
++		psz_cur = psz_buf;
++		token = strsep(&psz_cur, seps);
++
++		/* u32 cb_struct */
++		pGenObj->obj_data.node_obj.ndb_props.cb_struct =
++		    (u32) atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* dsp_uuid ui_node_id */
++		uuid_uuid_from_string(token,
++				      &pGenObj->obj_data.node_obj.ndb_props.
++				      ui_node_id);
++		token = strsep(&psz_cur, seps);
++
++		/* ac_name */
++		DBC_REQUIRE(token);
++		token_len = strlen(token);
++		if (token_len > DSP_MAXNAMELEN - 1)
++			token_len = DSP_MAXNAMELEN - 1;
++
++		strncpy(pGenObj->obj_data.node_obj.ndb_props.ac_name,
++			token, token_len);
++		pGenObj->obj_data.node_obj.ndb_props.ac_name[token_len] = '\0';
++		token = strsep(&psz_cur, seps);
++		/* u32 ntype */
++		pGenObj->obj_data.node_obj.ndb_props.ntype = atoi(token);
++		token = strsep(&psz_cur, seps);
++		/* u32 cache_on_gpp */
++		pGenObj->obj_data.node_obj.ndb_props.cache_on_gpp = atoi(token);
++		token = strsep(&psz_cur, seps);
++		/* dsp_resourcereqmts dsp_resource_reqmts */
++		pGenObj->obj_data.node_obj.ndb_props.dsp_resource_reqmts.
++		    cb_struct = (u32) atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.node_obj.ndb_props.
++		    dsp_resource_reqmts.static_data_size = atoi(token);
++		token = strsep(&psz_cur, seps);
++		pGenObj->obj_data.node_obj.ndb_props.
++		    dsp_resource_reqmts.global_data_size = atoi(token);
++		token = strsep(&psz_cur, seps);
++		pGenObj->obj_data.node_obj.ndb_props.
++		    dsp_resource_reqmts.program_mem_size = atoi(token);
++		token = strsep(&psz_cur, seps);
++		pGenObj->obj_data.node_obj.ndb_props.
++		    dsp_resource_reqmts.uwc_execution_time = atoi(token);
++		token = strsep(&psz_cur, seps);
++		pGenObj->obj_data.node_obj.ndb_props.
++		    dsp_resource_reqmts.uwc_period = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.node_obj.ndb_props.
++		    dsp_resource_reqmts.uwc_deadline = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.node_obj.ndb_props.
++		    dsp_resource_reqmts.avg_exection_time = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.node_obj.ndb_props.
++		    dsp_resource_reqmts.minimum_period = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* s32 prio */
++		pGenObj->obj_data.node_obj.ndb_props.prio = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* u32 stack_size */
++		pGenObj->obj_data.node_obj.ndb_props.stack_size = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* u32 sys_stack_size */
++		pGenObj->obj_data.node_obj.ndb_props.sys_stack_size =
++		    atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* u32 stack_seg */
++		pGenObj->obj_data.node_obj.ndb_props.stack_seg = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* u32 message_depth */
++		pGenObj->obj_data.node_obj.ndb_props.message_depth =
++		    atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* u32 num_input_streams */
++		pGenObj->obj_data.node_obj.ndb_props.num_input_streams =
++		    atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* u32 num_output_streams */
++		pGenObj->obj_data.node_obj.ndb_props.num_output_streams =
++		    atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* u32 utimeout */
++		pGenObj->obj_data.node_obj.ndb_props.utimeout = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* char *pstr_create_phase_fxn */
++		DBC_REQUIRE(token);
++		token_len = strlen(token);
++		pGenObj->obj_data.node_obj.pstr_create_phase_fxn =
++					kzalloc(token_len + 1, GFP_KERNEL);
++		strncpy(pGenObj->obj_data.node_obj.pstr_create_phase_fxn,
++			token, token_len);
++		pGenObj->obj_data.node_obj.pstr_create_phase_fxn[token_len] =
++		    '\0';
++		token = strsep(&psz_cur, seps);
++
++		/* char *pstr_execute_phase_fxn */
++		DBC_REQUIRE(token);
++		token_len = strlen(token);
++		pGenObj->obj_data.node_obj.pstr_execute_phase_fxn =
++					kzalloc(token_len + 1, GFP_KERNEL);
++		strncpy(pGenObj->obj_data.node_obj.pstr_execute_phase_fxn,
++			token, token_len);
++		pGenObj->obj_data.node_obj.pstr_execute_phase_fxn[token_len] =
++		    '\0';
++		token = strsep(&psz_cur, seps);
++
++		/* char *pstr_delete_phase_fxn */
++		DBC_REQUIRE(token);
++		token_len = strlen(token);
++		pGenObj->obj_data.node_obj.pstr_delete_phase_fxn =
++					kzalloc(token_len + 1, GFP_KERNEL);
++		strncpy(pGenObj->obj_data.node_obj.pstr_delete_phase_fxn,
++			token, token_len);
++		pGenObj->obj_data.node_obj.pstr_delete_phase_fxn[token_len] =
++		    '\0';
++		token = strsep(&psz_cur, seps);
++
++		/* Segment id for message buffers */
++		pGenObj->obj_data.node_obj.msg_segid = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* Message notification type */
++		pGenObj->obj_data.node_obj.msg_notify_type = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		/* char *pstr_i_alg_name */
++		if (token) {
++			token_len = strlen(token);
++			pGenObj->obj_data.node_obj.pstr_i_alg_name =
++					kzalloc(token_len + 1, GFP_KERNEL);
++			strncpy(pGenObj->obj_data.node_obj.pstr_i_alg_name,
++				token, token_len);
++			pGenObj->obj_data.node_obj.pstr_i_alg_name[token_len] =
++			    '\0';
++			token = strsep(&psz_cur, seps);
++		}
++
++		/* Load type (static, dynamic, or overlay) */
++		if (token) {
++			pGenObj->obj_data.node_obj.us_load_type = atoi(token);
++			token = strsep(&psz_cur, seps);
++		}
++
++		/* Dynamic load data requirements */
++		if (token) {
++			pGenObj->obj_data.node_obj.ul_data_mem_seg_mask =
++			    atoi(token);
++			token = strsep(&psz_cur, seps);
++		}
++
++		/* Dynamic load code requirements */
++		if (token) {
++			pGenObj->obj_data.node_obj.ul_code_mem_seg_mask =
++			    atoi(token);
++			token = strsep(&psz_cur, seps);
++		}
++
++		/* Extract node profiles into node properties */
++		if (token) {
++
++			pGenObj->obj_data.node_obj.ndb_props.count_profiles =
++			    atoi(token);
++			for (i = 0;
++			     i <
++			     pGenObj->obj_data.node_obj.
++			     ndb_props.count_profiles; i++) {
++				token = strsep(&psz_cur, seps);
++				if (token) {
++					/* Heap Size for the node */
++					pGenObj->obj_data.node_obj.
++					    ndb_props.node_profiles[i].
++					    ul_heap_size = atoi(token);
++				}
++			}
++		}
++		token = strsep(&psz_cur, seps);
++		if (token) {
++			pGenObj->obj_data.node_obj.ndb_props.stack_seg_name =
++			    (u32) (token);
++		}
++
++		break;
++
++	case DSP_DCDPROCESSORTYPE:
++		/*
++		 * Parse COFF sect buffer to retrieve individual tokens used
++		 * to fill in object attrs.
++		 */
++		psz_cur = psz_buf;
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.proc_info.cb_struct = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.proc_info.processor_family = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.proc_info.processor_type = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.proc_info.clock_rate = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.proc_info.ul_internal_mem_size = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.proc_info.ul_external_mem_size = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.proc_info.processor_id = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.proc_info.ty_running_rtos = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.proc_info.node_min_priority = atoi(token);
++		token = strsep(&psz_cur, seps);
++
++		pGenObj->obj_data.proc_info.node_max_priority = atoi(token);
++
++#ifdef _DB_TIOMAP
++		/* Proc object may contain additional(extended) attributes. */
++		/* attr must match proc.hxx */
++		for (entry_id = 0; entry_id < 7; entry_id++) {
++			token = strsep(&psz_cur, seps);
++			pGenObj->obj_data.ext_proc_obj.ty_tlb[entry_id].
++			    ul_gpp_phys = atoi(token);
++
++			token = strsep(&psz_cur, seps);
++			pGenObj->obj_data.ext_proc_obj.ty_tlb[entry_id].
++			    ul_dsp_virt = atoi(token);
++		}
++#endif
++
++		break;
++
++	default:
++		status = -EPERM;
++		break;
++	}
++
++	return status;
++}
++
++/*
++ *  ======== CompressBuffer ========
++ *  Purpose:
++ *      Compress the DSP buffer, if necessary, to conform to PC format.
++ */
++static void compress_buf(char *psz_buf, u32 ul_buf_size, s32 cCharSize)
++{
++	char *p;
++	char ch;
++	char *q;
++
++	p = psz_buf;
++	if (p == NULL)
++		return;
++
++	for (q = psz_buf; q < (psz_buf + ul_buf_size);) {
++		ch = dsp_char2_gpp_char(q, cCharSize);
++		if (ch == '\\') {
++			q += cCharSize;
++			ch = dsp_char2_gpp_char(q, cCharSize);
++			switch (ch) {
++			case 't':
++				*p = '\t';
++				break;
++
++			case 'n':
++				*p = '\n';
++				break;
++
++			case 'r':
++				*p = '\r';
++				break;
++
++			case '0':
++				*p = '\0';
++				break;
++
++			default:
++				*p = ch;
++				break;
++			}
++		} else {
++			*p = ch;
++		}
++		p++;
++		q += cCharSize;
++	}
++
++	/* NULL out remainder of buffer. */
++	while (p < q)
++		*p++ = '\0';
++}
++
++/*
++ *  ======== dsp_char2_gpp_char ========
++ *  Purpose:
++ *      Convert DSP char to host GPP char in a portable manner
++ */
++static char dsp_char2_gpp_char(char *pWord, s32 cDspCharSize)
++{
++	char ch = '\0';
++	char *ch_src;
++	s32 i;
++
++	for (ch_src = pWord, i = cDspCharSize; i > 0; i--)
++		ch |= *ch_src++;
++
++	return ch;
++}
++
++/*
++ *  ======== get_dep_lib_info ========
++ */
++static int get_dep_lib_info(IN struct dcd_manager *hdcd_mgr,
++				   IN struct dsp_uuid *uuid_obj,
++				   IN OUT u16 *pNumLibs,
++				   OPTIONAL OUT u16 *pNumPersLibs,
++				   OPTIONAL OUT struct dsp_uuid *pDepLibUuids,
++				   OPTIONAL OUT bool *pPersistentDepLibs,
++				   enum nldr_phase phase)
++{
++	struct dcd_manager *dcd_mgr_obj = hdcd_mgr;
++	char *psz_coff_buf = NULL;
++	char *psz_cur;
++	char *psz_file_name = NULL;
++	struct cod_libraryobj *lib = NULL;
++	u32 ul_addr = 0;	/* Used by cod_get_section */
++	u32 ul_len = 0;		/* Used by cod_get_section */
++	u32 dw_data_size = COD_MAXPATHLENGTH;
++	char seps[] = ", ";
++	char *token = NULL;
++	bool get_uuids = (pDepLibUuids != NULL);
++	u16 dep_libs = 0;
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++
++	DBC_REQUIRE(hdcd_mgr);
++	DBC_REQUIRE(pNumLibs != NULL);
++	DBC_REQUIRE(uuid_obj != NULL);
++
++	/*  Initialize to 0 dependent libraries, if only counting number of
++	 *  dependent libraries */
++	if (!get_uuids) {
++		*pNumLibs = 0;
++		*pNumPersLibs = 0;
++	}
++
++	/* Allocate a buffer for file name */
++	psz_file_name = kzalloc(dw_data_size, GFP_KERNEL);
++	if (psz_file_name == NULL) {
++		status = -ENOMEM;
++	} else {
++		/* Get the name of the library */
++		status = dcd_get_library_name(hdcd_mgr, uuid_obj, psz_file_name,
++					      &dw_data_size, phase, NULL);
++	}
++
++	/* Open the library */
++	if (DSP_SUCCEEDED(status)) {
++		status = cod_open(dcd_mgr_obj->cod_mgr, psz_file_name,
++				  COD_NOLOAD, &lib);
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Get dependent library section information. */
++		status = cod_get_section(lib, DEPLIBSECT, &ul_addr, &ul_len);
++
++		if (DSP_FAILED(status)) {
++			/* Ok, no dependent libraries */
++			ul_len = 0;
++			status = 0;
++		}
++	}
++
++	if (DSP_FAILED(status) || !(ul_len > 0))
++		goto func_cont;
++
++	/* Allocate zeroed buffer. */
++	psz_coff_buf = kzalloc(ul_len + 4, GFP_KERNEL);
++	if (psz_coff_buf == NULL)
++		status = -ENOMEM;
++
++	/* Read section contents. */
++	status = cod_read_section(lib, DEPLIBSECT, psz_coff_buf, ul_len);
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	/* Compress and format DSP buffer to conform to PC format. */
++	compress_buf(psz_coff_buf, ul_len, DSPWORDSIZE);
++
++	/* Read from buffer */
++	psz_cur = psz_coff_buf;
++	while ((token = strsep(&psz_cur, seps)) && *token != '\0') {
++		if (get_uuids) {
++			if (dep_libs >= *pNumLibs) {
++				/* Gone beyond the limit */
++				break;
++			} else {
++				/* Retrieve UUID string. */
++				uuid_uuid_from_string(token,
++						      &(pDepLibUuids
++							[dep_libs]));
++				/* Is this library persistent? */
++				token = strsep(&psz_cur, seps);
++				pPersistentDepLibs[dep_libs] = atoi(token);
++				dep_libs++;
++			}
++		} else {
++			/* Advanc to next token */
++			token = strsep(&psz_cur, seps);
++			if (atoi(token))
++				(*pNumPersLibs)++;
++
++			/* Just counting number of dependent libraries */
++			(*pNumLibs)++;
++		}
++	}
++func_cont:
++	if (lib)
++		cod_close(lib);
++
++	/* Free previously allocated dynamic buffers. */
++	kfree(psz_file_name);
++
++	kfree(psz_coff_buf);
++
++	return status;
++}
+diff --git a/drivers/staging/tidspbridge/rmgr/disp.c b/drivers/staging/tidspbridge/rmgr/disp.c
+new file mode 100644
+index 0000000..7195415
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/disp.c
+@@ -0,0 +1,754 @@
++/*
++ * disp.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * Node Dispatcher interface. Communicates with Resource Manager Server
++ * (RMS) on DSP. Access to RMS is synchronized in NODE.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software;  you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++/*  ----------------------------------- Host OS */
++#include <dspbridge/host_os.h>
++
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
++
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
++
++/*  ----------------------------------- OS Adaptation Layer */
++#include <dspbridge/sync.h>
++
++/*  ----------------------------------- Link Driver */
++#include <dspbridge/dspdefs.h>
++
++/*  ----------------------------------- Platform Manager */
++#include <dspbridge/dev.h>
++#include <dspbridge/chnldefs.h>
++
++/*  ----------------------------------- Resource Manager */
++#include <dspbridge/nodedefs.h>
++#include <dspbridge/nodepriv.h>
++#include <dspbridge/rms_sh.h>
++
++/*  ----------------------------------- This */
++#include <dspbridge/disp.h>
++
++/* Size of a reply from RMS */
++#define REPLYSIZE (3 * sizeof(rms_word))
++
++/* Reserved channel offsets for communication with RMS */
++#define CHNLTORMSOFFSET       0
++#define CHNLFROMRMSOFFSET     1
++
++#define CHNLIOREQS      1
++
++#define SWAP_WORD(x)     (((u32)(x) >> 16) | ((u32)(x) << 16))
++
++/*
++ *  ======== disp_object ========
++ */
++struct disp_object {
++	struct dev_object *hdev_obj;	/* Device for this processor */
++	/* Function interface to Bridge driver */
++	struct bridge_drv_interface *intf_fxns;
++	struct chnl_mgr *hchnl_mgr;	/* Channel manager */
++	struct chnl_object *chnl_to_dsp;	/* Chnl for commands to RMS */
++	struct chnl_object *chnl_from_dsp;	/* Chnl for replies from RMS */
++	u8 *pbuf;		/* Buffer for commands, replies */
++	u32 ul_bufsize;		/* pbuf size in bytes */
++	u32 ul_bufsize_rms;	/* pbuf size in RMS words */
++	u32 char_size;		/* Size of DSP character */
++	u32 word_size;		/* Size of DSP word */
++	u32 data_mau_size;	/* Size of DSP Data MAU */
++};
++
++static u32 refs;
++
++static void delete_disp(struct disp_object *disp_obj);
++static int fill_stream_def(rms_word *pdw_buf, u32 *ptotal, u32 offset,
++				  struct node_strmdef strm_def, u32 max,
++				  u32 chars_in_rms_word);
++static int send_message(struct disp_object *disp_obj, u32 dwTimeout,
++			       u32 ul_bytes, OUT u32 *pdw_arg);
++
++/*
++ *  ======== disp_create ========
++ *  Create a NODE Dispatcher object.
++ */
++int disp_create(OUT struct disp_object **phDispObject,
++		       struct dev_object *hdev_obj,
++		       IN CONST struct disp_attr *pDispAttrs)
++{
++	struct disp_object *disp_obj;
++	struct bridge_drv_interface *intf_fxns;
++	u32 ul_chnl_id;
++	struct chnl_attr chnl_attr_obj;
++	int status = 0;
++	u8 dev_type;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(phDispObject != NULL);
++	DBC_REQUIRE(pDispAttrs != NULL);
++	DBC_REQUIRE(hdev_obj != NULL);
++
++	*phDispObject = NULL;
++
++	/* Allocate Node Dispatcher object */
++	disp_obj = kzalloc(sizeof(struct disp_object), GFP_KERNEL);
++	if (disp_obj == NULL)
++		status = -ENOMEM;
++	else
++		disp_obj->hdev_obj = hdev_obj;
++
++	/* Get Channel manager and Bridge function interface */
++	if (DSP_SUCCEEDED(status)) {
++		status = dev_get_chnl_mgr(hdev_obj, &(disp_obj->hchnl_mgr));
++		if (DSP_SUCCEEDED(status)) {
++			(void)dev_get_intf_fxns(hdev_obj, &intf_fxns);
++			disp_obj->intf_fxns = intf_fxns;
++		}
++	}
++
++	/* check device type and decide if streams or messag'ing is used for
++	 * RMS/EDS */
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	status = dev_get_dev_type(hdev_obj, &dev_type);
++
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	if (dev_type != DSP_UNIT) {
++		status = -EPERM;
++		goto func_cont;
++	}
++
++	disp_obj->char_size = DSPWORDSIZE;
++	disp_obj->word_size = DSPWORDSIZE;
++	disp_obj->data_mau_size = DSPWORDSIZE;
++	/* Open channels for communicating with the RMS */
++	chnl_attr_obj.uio_reqs = CHNLIOREQS;
++	chnl_attr_obj.event_obj = NULL;
++	ul_chnl_id = pDispAttrs->ul_chnl_offset + CHNLTORMSOFFSET;
++	status = (*intf_fxns->pfn_chnl_open) (&(disp_obj->chnl_to_dsp),
++					      disp_obj->hchnl_mgr,
++					      CHNL_MODETODSP, ul_chnl_id,
++					      &chnl_attr_obj);
++
++	if (DSP_SUCCEEDED(status)) {
++		ul_chnl_id = pDispAttrs->ul_chnl_offset + CHNLFROMRMSOFFSET;
++		status =
++		    (*intf_fxns->pfn_chnl_open) (&(disp_obj->chnl_from_dsp),
++						 disp_obj->hchnl_mgr,
++						 CHNL_MODEFROMDSP, ul_chnl_id,
++						 &chnl_attr_obj);
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Allocate buffer for commands, replies */
++		disp_obj->ul_bufsize = pDispAttrs->ul_chnl_buf_size;
++		disp_obj->ul_bufsize_rms = RMS_COMMANDBUFSIZE;
++		disp_obj->pbuf = kzalloc(disp_obj->ul_bufsize, GFP_KERNEL);
++		if (disp_obj->pbuf == NULL)
++			status = -ENOMEM;
++	}
++func_cont:
++	if (DSP_SUCCEEDED(status))
++		*phDispObject = disp_obj;
++	else
++		delete_disp(disp_obj);
++
++	DBC_ENSURE(((DSP_FAILED(status)) && ((*phDispObject == NULL))) ||
++				((DSP_SUCCEEDED(status)) && *phDispObject));
++	return status;
++}
++
++/*
++ *  ======== disp_delete ========
++ *  Delete the NODE Dispatcher.
++ */
++void disp_delete(struct disp_object *disp_obj)
++{
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(disp_obj);
++
++	delete_disp(disp_obj);
++}
++
++/*
++ *  ======== disp_exit ========
++ *  Discontinue usage of DISP module.
++ */
++void disp_exit(void)
++{
++	DBC_REQUIRE(refs > 0);
++
++	refs--;
++
++	DBC_ENSURE(refs >= 0);
++}
++
++/*
++ *  ======== disp_init ========
++ *  Initialize the DISP module.
++ */
++bool disp_init(void)
++{
++	bool ret = true;
++
++	DBC_REQUIRE(refs >= 0);
++
++	if (ret)
++		refs++;
++
++	DBC_ENSURE((ret && (refs > 0)) || (!ret && (refs >= 0)));
++	return ret;
++}
++
++/*
++ *  ======== disp_node_change_priority ========
++ *  Change the priority of a node currently running on the target.
++ */
++int disp_node_change_priority(struct disp_object *disp_obj,
++				     struct node_object *hnode,
++				     u32 ulRMSFxn, nodeenv node_env, s32 prio)
++{
++	u32 dw_arg;
++	struct rms_command *rms_cmd;
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(disp_obj);
++	DBC_REQUIRE(hnode != NULL);
++
++	/* Send message to RMS to change priority */
++	rms_cmd = (struct rms_command *)(disp_obj->pbuf);
++	rms_cmd->fxn = (rms_word) (ulRMSFxn);
++	rms_cmd->arg1 = (rms_word) node_env;
++	rms_cmd->arg2 = prio;
++	status = send_message(disp_obj, node_get_timeout(hnode),
++			      sizeof(struct rms_command), &dw_arg);
++
++	return status;
++}
++
++/*
++ *  ======== disp_node_create ========
++ *  Create a node on the DSP by remotely calling the node's create function.
++ */
++int disp_node_create(struct disp_object *disp_obj,
++			    struct node_object *hnode, u32 ulRMSFxn,
++			    u32 ul_create_fxn,
++			    IN CONST struct node_createargs *pargs,
++			    OUT nodeenv *pNodeEnv)
++{
++	struct node_msgargs node_msg_args;
++	struct node_taskargs task_arg_obj;
++	struct rms_command *rms_cmd;
++	struct rms_msg_args *pmsg_args;
++	struct rms_more_task_args *more_task_args;
++	enum node_type node_type;
++	u32 dw_length;
++	rms_word *pdw_buf = NULL;
++	u32 ul_bytes;
++	u32 i;
++	u32 total;
++	u32 chars_in_rms_word;
++	s32 task_args_offset;
++	s32 sio_in_def_offset;
++	s32 sio_out_def_offset;
++	s32 sio_defs_offset;
++	s32 args_offset = -1;
++	s32 offset;
++	struct node_strmdef strm_def;
++	u32 max;
++	int status = 0;
++	struct dsp_nodeinfo node_info;
++	u8 dev_type;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(disp_obj);
++	DBC_REQUIRE(hnode != NULL);
++	DBC_REQUIRE(node_get_type(hnode) != NODE_DEVICE);
++	DBC_REQUIRE(pNodeEnv != NULL);
++
++	status = dev_get_dev_type(disp_obj->hdev_obj, &dev_type);
++
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	if (dev_type != DSP_UNIT) {
++		dev_dbg(bridge, "%s: unknown device type = 0x%x\n",
++			__func__, dev_type);
++		goto func_end;
++	}
++	DBC_REQUIRE(pargs != NULL);
++	node_type = node_get_type(hnode);
++	node_msg_args = pargs->asa.node_msg_args;
++	max = disp_obj->ul_bufsize_rms;	/*Max # of RMS words that can be sent */
++	DBC_ASSERT(max == RMS_COMMANDBUFSIZE);
++	chars_in_rms_word = sizeof(rms_word) / disp_obj->char_size;
++	/* Number of RMS words needed to hold arg data */
++	dw_length =
++	    (node_msg_args.arg_length + chars_in_rms_word -
++	     1) / chars_in_rms_word;
++	/* Make sure msg args and command fit in buffer */
++	total = sizeof(struct rms_command) / sizeof(rms_word) +
++	    sizeof(struct rms_msg_args)
++	    / sizeof(rms_word) - 1 + dw_length;
++	if (total >= max) {
++		status = -EPERM;
++		dev_dbg(bridge, "%s: Message args too large for buffer! size "
++			"= %d, max = %d\n", __func__, total, max);
++	}
++	/*
++	 *  Fill in buffer to send to RMS.
++	 *  The buffer will have the following  format:
++	 *
++	 *  RMS command:
++	 *      Address of RMS_CreateNode()
++	 *      Address of node's create function
++	 *      dummy argument
++	 *      node type
++	 *
++	 *  Message Args:
++	 *      max number of messages
++	 *      segid for message buffer allocation
++	 *      notification type to use when message is received
++	 *      length of message arg data
++	 *      message args data
++	 *
++	 *  Task Args (if task or socket node):
++	 *      priority
++	 *      stack size
++	 *      system stack size
++	 *      stack segment
++	 *      misc
++	 *      number of input streams
++	 *      pSTRMInDef[] - offsets of STRM definitions for input streams
++	 *      number of output streams
++	 *      pSTRMOutDef[] - offsets of STRM definitions for output
++	 *      streams
++	 *      STRMInDef[] - array of STRM definitions for input streams
++	 *      STRMOutDef[] - array of STRM definitions for output streams
++	 *
++	 *  Socket Args (if DAIS socket node):
++	 *
++	 */
++	if (DSP_SUCCEEDED(status)) {
++		total = 0;	/* Total number of words in buffer so far */
++		pdw_buf = (rms_word *) disp_obj->pbuf;
++		rms_cmd = (struct rms_command *)pdw_buf;
++		rms_cmd->fxn = (rms_word) (ulRMSFxn);
++		rms_cmd->arg1 = (rms_word) (ul_create_fxn);
++		if (node_get_load_type(hnode) == NLDR_DYNAMICLOAD) {
++			/* Flush ICACHE on Load */
++			rms_cmd->arg2 = 1;	/* dummy argument */
++		} else {
++			/* Do not flush ICACHE */
++			rms_cmd->arg2 = 0;	/* dummy argument */
++		}
++		rms_cmd->data = node_get_type(hnode);
++		/*
++		 *  args_offset is the offset of the data field in struct
++		 *  rms_command structure. We need this to calculate stream
++		 *  definition offsets.
++		 */
++		args_offset = 3;
++		total += sizeof(struct rms_command) / sizeof(rms_word);
++		/* Message args */
++		pmsg_args = (struct rms_msg_args *)(pdw_buf + total);
++		pmsg_args->max_msgs = node_msg_args.max_msgs;
++		pmsg_args->segid = node_msg_args.seg_id;
++		pmsg_args->notify_type = node_msg_args.notify_type;
++		pmsg_args->arg_length = node_msg_args.arg_length;
++		total += sizeof(struct rms_msg_args) / sizeof(rms_word) - 1;
++		memcpy(pdw_buf + total, node_msg_args.pdata,
++		       node_msg_args.arg_length);
++		total += dw_length;
++	}
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/* If node is a task node, copy task create arguments into  buffer */
++	if (node_type == NODE_TASK || node_type == NODE_DAISSOCKET) {
++		task_arg_obj = pargs->asa.task_arg_obj;
++		task_args_offset = total;
++		total += sizeof(struct rms_more_task_args) / sizeof(rms_word) +
++		    1 + task_arg_obj.num_inputs + task_arg_obj.num_outputs;
++		/* Copy task arguments */
++		if (total < max) {
++			total = task_args_offset;
++			more_task_args = (struct rms_more_task_args *)(pdw_buf +
++								       total);
++			/*
++			 * Get some important info about the node. Note that we
++			 * don't just reach into the hnode struct because
++			 * that would break the node object's abstraction.
++			 */
++			get_node_info(hnode, &node_info);
++			more_task_args->priority = node_info.execution_priority;
++			more_task_args->stack_size = task_arg_obj.stack_size;
++			more_task_args->sysstack_size =
++			    task_arg_obj.sys_stack_size;
++			more_task_args->stack_seg = task_arg_obj.stack_seg;
++			more_task_args->heap_addr = task_arg_obj.udsp_heap_addr;
++			more_task_args->heap_size = task_arg_obj.heap_size;
++			more_task_args->misc = task_arg_obj.ul_dais_arg;
++			more_task_args->num_input_streams =
++			    task_arg_obj.num_inputs;
++			total +=
++			    sizeof(struct rms_more_task_args) /
++			    sizeof(rms_word);
++			dev_dbg(bridge, "%s: udsp_heap_addr %x, heap_size %x\n",
++				__func__, task_arg_obj.udsp_heap_addr,
++				task_arg_obj.heap_size);
++			/* Keep track of pSIOInDef[] and pSIOOutDef[]
++			 * positions in the buffer, since this needs to be
++			 * filled in later. */
++			sio_in_def_offset = total;
++			total += task_arg_obj.num_inputs;
++			pdw_buf[total++] = task_arg_obj.num_outputs;
++			sio_out_def_offset = total;
++			total += task_arg_obj.num_outputs;
++			sio_defs_offset = total;
++			/* Fill SIO defs and offsets */
++			offset = sio_defs_offset;
++			for (i = 0; i < task_arg_obj.num_inputs; i++) {
++				if (DSP_FAILED(status))
++					break;
++
++				pdw_buf[sio_in_def_offset + i] =
++				    (offset - args_offset)
++				    * (sizeof(rms_word) / DSPWORDSIZE);
++				strm_def = task_arg_obj.strm_in_def[i];
++				status =
++				    fill_stream_def(pdw_buf, &total, offset,
++						    strm_def, max,
++						    chars_in_rms_word);
++				offset = total;
++			}
++			for (i = 0; (i < task_arg_obj.num_outputs) &&
++			     (DSP_SUCCEEDED(status)); i++) {
++				pdw_buf[sio_out_def_offset + i] =
++				    (offset - args_offset)
++				    * (sizeof(rms_word) / DSPWORDSIZE);
++				strm_def = task_arg_obj.strm_out_def[i];
++				status =
++				    fill_stream_def(pdw_buf, &total, offset,
++						    strm_def, max,
++						    chars_in_rms_word);
++				offset = total;
++			}
++		} else {
++			/* Args won't fit */
++			status = -EPERM;
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		ul_bytes = total * sizeof(rms_word);
++		DBC_ASSERT(ul_bytes < (RMS_COMMANDBUFSIZE * sizeof(rms_word)));
++		status = send_message(disp_obj, node_get_timeout(hnode),
++				      ul_bytes, pNodeEnv);
++		if (DSP_SUCCEEDED(status)) {
++			/*
++			 * Message successfully received from RMS.
++			 * Return the status of the Node's create function
++			 * on the DSP-side
++			 */
++			status = (((rms_word *) (disp_obj->pbuf))[0]);
++			if (DSP_FAILED(status))
++				dev_dbg(bridge, "%s: DSP-side failed: 0x%x\n",
++					__func__, status);
++		}
++	}
++func_end:
++	return status;
++}
++
++/*
++ *  ======== disp_node_delete ========
++ *  purpose:
++ *      Delete a node on the DSP by remotely calling the node's delete function.
++ *
++ */
++int disp_node_delete(struct disp_object *disp_obj,
++			    struct node_object *hnode, u32 ulRMSFxn,
++			    u32 ul_delete_fxn, nodeenv node_env)
++{
++	u32 dw_arg;
++	struct rms_command *rms_cmd;
++	int status = 0;
++	u8 dev_type;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(disp_obj);
++	DBC_REQUIRE(hnode != NULL);
++
++	status = dev_get_dev_type(disp_obj->hdev_obj, &dev_type);
++
++	if (DSP_SUCCEEDED(status)) {
++
++		if (dev_type == DSP_UNIT) {
++
++			/*
++			 *  Fill in buffer to send to RMS
++			 */
++			rms_cmd = (struct rms_command *)disp_obj->pbuf;
++			rms_cmd->fxn = (rms_word) (ulRMSFxn);
++			rms_cmd->arg1 = (rms_word) node_env;
++			rms_cmd->arg2 = (rms_word) (ul_delete_fxn);
++			rms_cmd->data = node_get_type(hnode);
++
++			status = send_message(disp_obj, node_get_timeout(hnode),
++					      sizeof(struct rms_command),
++					      &dw_arg);
++			if (DSP_SUCCEEDED(status)) {
++				/*
++				 * Message successfully received from RMS.
++				 * Return the status of the Node's delete
++				 * function on the DSP-side
++				 */
++				status = (((rms_word *) (disp_obj->pbuf))[0]);
++				if (DSP_FAILED(status))
++					dev_dbg(bridge, "%s: DSP-side failed: "
++						"0x%x\n", __func__, status);
++			}
++
++		}
++	}
++	return status;
++}
++
++/*
++ *  ======== disp_node_run ========
++ *  purpose:
++ *      Start execution of a node's execute phase, or resume execution of a node
++ *      that has been suspended (via DISP_NodePause()) on the DSP.
++ */
++int disp_node_run(struct disp_object *disp_obj,
++			 struct node_object *hnode, u32 ulRMSFxn,
++			 u32 ul_execute_fxn, nodeenv node_env)
++{
++	u32 dw_arg;
++	struct rms_command *rms_cmd;
++	int status = 0;
++	u8 dev_type;
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(disp_obj);
++	DBC_REQUIRE(hnode != NULL);
++
++	status = dev_get_dev_type(disp_obj->hdev_obj, &dev_type);
++
++	if (DSP_SUCCEEDED(status)) {
++
++		if (dev_type == DSP_UNIT) {
++
++			/*
++			 *  Fill in buffer to send to RMS.
++			 */
++			rms_cmd = (struct rms_command *)disp_obj->pbuf;
++			rms_cmd->fxn = (rms_word) (ulRMSFxn);
++			rms_cmd->arg1 = (rms_word) node_env;
++			rms_cmd->arg2 = (rms_word) (ul_execute_fxn);
++			rms_cmd->data = node_get_type(hnode);
++
++			status = send_message(disp_obj, node_get_timeout(hnode),
++					      sizeof(struct rms_command),
++					      &dw_arg);
++			if (DSP_SUCCEEDED(status)) {
++				/*
++				 * Message successfully received from RMS.
++				 * Return the status of the Node's execute
++				 * function on the DSP-side
++				 */
++				status = (((rms_word *) (disp_obj->pbuf))[0]);
++				if (DSP_FAILED(status))
++					dev_dbg(bridge, "%s: DSP-side failed: "
++						"0x%x\n", __func__, status);
++			}
++
++		}
++	}
++
++	return status;
++}
++
++/*
++ *  ======== delete_disp ========
++ *  purpose:
++ *      Frees the resources allocated for the dispatcher.
++ */
++static void delete_disp(struct disp_object *disp_obj)
++{
++	int status = 0;
++	struct bridge_drv_interface *intf_fxns;
++
++	if (disp_obj) {
++		intf_fxns = disp_obj->intf_fxns;
++
++		/* Free Node Dispatcher resources */
++		if (disp_obj->chnl_from_dsp) {
++			/* Channel close can fail only if the channel handle
++			 * is invalid. */
++			status = (*intf_fxns->pfn_chnl_close)
++			    (disp_obj->chnl_from_dsp);
++			if (DSP_FAILED(status)) {
++				dev_dbg(bridge, "%s: Failed to close channel "
++					"from RMS: 0x%x\n", __func__, status);
++			}
++		}
++		if (disp_obj->chnl_to_dsp) {
++			status =
++			    (*intf_fxns->pfn_chnl_close) (disp_obj->
++							  chnl_to_dsp);
++			if (DSP_FAILED(status)) {
++				dev_dbg(bridge, "%s: Failed to close channel to"
++					" RMS: 0x%x\n", __func__, status);
++			}
++		}
++		kfree(disp_obj->pbuf);
++
++		kfree(disp_obj);
++	}
++}
++
++/*
++ *  ======== fill_stream_def ========
++ *  purpose:
++ *      Fills stream definitions.
++ */
++static int fill_stream_def(rms_word *pdw_buf, u32 *ptotal, u32 offset,
++				  struct node_strmdef strm_def, u32 max,
++				  u32 chars_in_rms_word)
++{
++	struct rms_strm_def *strm_def_obj;
++	u32 total = *ptotal;
++	u32 name_len;
++	u32 dw_length;
++	int status = 0;
++
++	if (total + sizeof(struct rms_strm_def) / sizeof(rms_word) >= max) {
++		status = -EPERM;
++	} else {
++		strm_def_obj = (struct rms_strm_def *)(pdw_buf + total);
++		strm_def_obj->bufsize = strm_def.buf_size;
++		strm_def_obj->nbufs = strm_def.num_bufs;
++		strm_def_obj->segid = strm_def.seg_id;
++		strm_def_obj->align = strm_def.buf_alignment;
++		strm_def_obj->timeout = strm_def.utimeout;
++	}
++
++	if (DSP_SUCCEEDED(status)) {
++		/*
++		 *  Since we haven't added the device name yet, subtract
++		 *  1 from total.
++		 */
++		total += sizeof(struct rms_strm_def) / sizeof(rms_word) - 1;
++		DBC_REQUIRE(strm_def.sz_device);
++		dw_length = strlen(strm_def.sz_device) + 1;
++
++		/* Number of RMS_WORDS needed to hold device name */
++		name_len =
++		    (dw_length + chars_in_rms_word - 1) / chars_in_rms_word;
++
++		if (total + name_len >= max) {
++			status = -EPERM;
++		} else {
++			/*
++			 *  Zero out last word, since the device name may not
++			 *  extend to completely fill this word.
++			 */
++			pdw_buf[total + name_len - 1] = 0;
++			/** TODO USE SERVICES * */
++			memcpy(pdw_buf + total, strm_def.sz_device, dw_length);
++			total += name_len;
++			*ptotal = total;
++		}
++	}
++
++	return status;
++}
++
++/*
++ *  ======== send_message ======
++ *  Send command message to RMS, get reply from RMS.
++ */
++static int send_message(struct disp_object *disp_obj, u32 dwTimeout,
++			       u32 ul_bytes, u32 *pdw_arg)
++{
++	struct bridge_drv_interface *intf_fxns;
++	struct chnl_object *chnl_obj;
++	u32 dw_arg = 0;
++	u8 *pbuf;
++	struct chnl_ioc chnl_ioc_obj;
++	int status = 0;
++
++	DBC_REQUIRE(pdw_arg != NULL);
++
++	*pdw_arg = (u32) NULL;
++	intf_fxns = disp_obj->intf_fxns;
++	chnl_obj = disp_obj->chnl_to_dsp;
++	pbuf = disp_obj->pbuf;
++
++	/* Send the command */
++	status = (*intf_fxns->pfn_chnl_add_io_req) (chnl_obj, pbuf, ul_bytes, 0,
++						    0L, dw_arg);
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	status =
++	    (*intf_fxns->pfn_chnl_get_ioc) (chnl_obj, dwTimeout, &chnl_ioc_obj);
++	if (DSP_SUCCEEDED(status)) {
++		if (!CHNL_IS_IO_COMPLETE(chnl_ioc_obj)) {
++			if (CHNL_IS_TIMED_OUT(chnl_ioc_obj))
++				status = -ETIME;
++			else
++				status = -EPERM;
++		}
++	}
++	/* Get the reply */
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	chnl_obj = disp_obj->chnl_from_dsp;
++	ul_bytes = REPLYSIZE;
++	status = (*intf_fxns->pfn_chnl_add_io_req) (chnl_obj, pbuf, ul_bytes,
++						    0, 0L, dw_arg);
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	status =
++	    (*intf_fxns->pfn_chnl_get_ioc) (chnl_obj, dwTimeout, &chnl_ioc_obj);
++	if (DSP_SUCCEEDED(status)) {
++		if (CHNL_IS_TIMED_OUT(chnl_ioc_obj)) {
++			status = -ETIME;
++		} else if (chnl_ioc_obj.byte_size < ul_bytes) {
++			/* Did not get all of the reply from the RMS */
++			status = -EPERM;
++		} else {
++			if (CHNL_IS_IO_COMPLETE(chnl_ioc_obj)) {
++				DBC_ASSERT(chnl_ioc_obj.pbuf == pbuf);
++				status = (*((rms_word *) chnl_ioc_obj.pbuf));
++				*pdw_arg =
++				    (((rms_word *) (chnl_ioc_obj.pbuf))[1]);
++			} else {
++				status = -EPERM;
++			}
++		}
++	}
++func_end:
++	return status;
++}
+diff --git a/drivers/staging/tidspbridge/rmgr/drv.c b/drivers/staging/tidspbridge/rmgr/drv.c
+new file mode 100644
+index 0000000..c6e38e5
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/drv.c
+@@ -0,0 +1,1047 @@
++/*
++ * drv.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * DSP/BIOS Bridge resource allocation module.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++/*  ----------------------------------- Host OS */
++#include <dspbridge/host_os.h>
++
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
++
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
++
++/*  ----------------------------------- OS Adaptation Layer */
++#include <dspbridge/cfg.h>
++#include <dspbridge/list.h>
++
++/*  ----------------------------------- This */
++#include <dspbridge/drv.h>
++#include <dspbridge/dev.h>
++
++#include <dspbridge/node.h>
++#include <dspbridge/proc.h>
++#include <dspbridge/strm.h>
++#include <dspbridge/nodepriv.h>
++#include <dspbridge/dspchnl.h>
++#include <dspbridge/resourcecleanup.h>
++
++/*  ----------------------------------- Defines, Data Structures, Typedefs */
++struct drv_object {
++	struct lst_list *dev_list;
++	struct lst_list *dev_node_string;
++};
++
++/*
++ *  This is the Device Extension. Named with the Prefix
++ *  DRV_ since it is living in this module
++ */
++struct drv_ext {
++	struct list_head link;
++	char sz_string[MAXREGPATHLENGTH];
++};
++
++/*  ----------------------------------- Globals */
++static s32 refs;
++static bool ext_phys_mem_pool_enabled;
++struct ext_phys_mem_pool {
++	u32 phys_mem_base;
++	u32 phys_mem_size;
++	u32 virt_mem_base;
++	u32 next_phys_alloc_ptr;
++};
++static struct ext_phys_mem_pool ext_mem_pool;
++
++/*  ----------------------------------- Function Prototypes */
++static int request_bridge_resources(struct cfg_hostres *res);
++
++
++/* GPP PROCESS CLEANUP CODE */
++
++static int drv_proc_free_node_res(void *hPCtxt);
++
++/* Allocate and add a node resource element
++* This function is called from .Node_Allocate. */
++int drv_insert_node_res_element(void *hnode, void *hNodeRes,
++				       void *hPCtxt)
++{
++	struct node_res_object **node_res_obj =
++	    (struct node_res_object **)hNodeRes;
++	struct process_context *ctxt = (struct process_context *)hPCtxt;
++	int status = 0;
++	struct node_res_object *temp_node_res = NULL;
++
++	*node_res_obj = kzalloc(sizeof(struct node_res_object), GFP_KERNEL);
++	if (*node_res_obj == NULL)
++		status = -EFAULT;
++
++	if (DSP_SUCCEEDED(status)) {
++		if (mutex_lock_interruptible(&ctxt->node_mutex)) {
++			kfree(*node_res_obj);
++			return -EPERM;
++		}
++		(*node_res_obj)->hnode = hnode;
++		if (ctxt->node_list != NULL) {
++			temp_node_res = ctxt->node_list;
++			while (temp_node_res->next != NULL)
++				temp_node_res = temp_node_res->next;
++
++			temp_node_res->next = *node_res_obj;
++		} else {
++			ctxt->node_list = *node_res_obj;
++		}
++		mutex_unlock(&ctxt->node_mutex);
++	}
++
++	return status;
++}
++
++/* Release all Node resources and its context
++* This is called from .Node_Delete. */
++int drv_remove_node_res_element(void *hNodeRes, void *hPCtxt)
++{
++	struct node_res_object *node_res_obj =
++	    (struct node_res_object *)hNodeRes;
++	struct process_context *ctxt = (struct process_context *)hPCtxt;
++	struct node_res_object *temp_node;
++	int status = 0;
++
++	if (mutex_lock_interruptible(&ctxt->node_mutex))
++		return -EPERM;
++	temp_node = ctxt->node_list;
++	if (temp_node == node_res_obj) {
++		ctxt->node_list = node_res_obj->next;
++	} else {
++		while (temp_node && temp_node->next != node_res_obj)
++			temp_node = temp_node->next;
++		if (!temp_node)
++			status = -ENOENT;
++		else
++			temp_node->next = node_res_obj->next;
++	}
++	mutex_unlock(&ctxt->node_mutex);
++	kfree(node_res_obj);
++	return status;
++}
++
++/* Actual Node De-Allocation */
++static int drv_proc_free_node_res(void *hPCtxt)
++{
++	struct process_context *ctxt = (struct process_context *)hPCtxt;
++	int status = 0;
++	struct node_res_object *node_list = NULL;
++	struct node_res_object *node_res_obj = NULL;
++	u32 node_state;
++
++	node_list = ctxt->node_list;
++	while (node_list != NULL) {
++		node_res_obj = node_list;
++		node_list = node_list->next;
++		if (node_res_obj->node_allocated) {
++			node_state = node_get_state(node_res_obj->hnode);
++			if (node_state <= NODE_DELETING) {
++				if ((node_state == NODE_RUNNING) ||
++				    (node_state == NODE_PAUSED) ||
++				    (node_state == NODE_TERMINATING))
++					status = node_terminate
++					    (node_res_obj->hnode, &status);
++
++				status = node_delete(node_res_obj->hnode, ctxt);
++			}
++		}
++	}
++	return status;
++}
++
++/* Release all Mapped and Reserved DMM resources */
++int drv_remove_all_dmm_res_elements(void *hPCtxt)
++{
++	struct process_context *ctxt = (struct process_context *)hPCtxt;
++	int status = 0;
++	struct dmm_map_object *temp_map, *map_obj;
++	struct dmm_rsv_object *temp_rsv, *rsv_obj;
++
++	/* Free DMM mapped memory resources */
++	list_for_each_entry_safe(map_obj, temp_map, &ctxt->dmm_map_list, link) {
++		status = proc_un_map(ctxt->hprocessor,
++				     (void *)map_obj->dsp_addr, ctxt);
++		if (DSP_FAILED(status))
++			pr_err("%s: proc_un_map failed!"
++			       " status = 0x%xn", __func__, status);
++	}
++
++	/* Free DMM reserved memory resources */
++	list_for_each_entry_safe(rsv_obj, temp_rsv, &ctxt->dmm_rsv_list, link) {
++		status = proc_un_reserve_memory(ctxt->hprocessor, (void *)
++						rsv_obj->dsp_reserved_addr,
++						ctxt);
++		if (DSP_FAILED(status))
++			pr_err("%s: proc_un_reserve_memory failed!"
++			       " status = 0x%xn", __func__, status);
++	}
++	return status;
++}
++
++/* Update Node allocation status */
++void drv_proc_node_update_status(void *hNodeRes, s32 status)
++{
++	struct node_res_object *node_res_obj =
++	    (struct node_res_object *)hNodeRes;
++	DBC_ASSERT(hNodeRes != NULL);
++	node_res_obj->node_allocated = status;
++}
++
++/* Update Node Heap status */
++void drv_proc_node_update_heap_status(void *hNodeRes, s32 status)
++{
++	struct node_res_object *node_res_obj =
++	    (struct node_res_object *)hNodeRes;
++	DBC_ASSERT(hNodeRes != NULL);
++	node_res_obj->heap_allocated = status;
++}
++
++/* Release all Node resources and its context
++* This is called from .bridge_release.
++ */
++int drv_remove_all_node_res_elements(void *hPCtxt)
++{
++	struct process_context *ctxt = (struct process_context *)hPCtxt;
++	int status = 0;
++	struct node_res_object *temp_node2 = NULL;
++	struct node_res_object *temp_node = NULL;
++
++	drv_proc_free_node_res(ctxt);
++	temp_node = ctxt->node_list;
++	while (temp_node != NULL) {
++		temp_node2 = temp_node;
++		temp_node = temp_node->next;
++		kfree(temp_node2);
++	}
++	ctxt->node_list = NULL;
++	return status;
++}
++
++/* Getting the node resource element */
++int drv_get_node_res_element(void *hnode, void *hNodeRes,
++				    void *hPCtxt)
++{
++	struct node_res_object **node_res = (struct node_res_object **)hNodeRes;
++	struct process_context *ctxt = (struct process_context *)hPCtxt;
++	int status = 0;
++	struct node_res_object *temp_node2 = NULL;
++	struct node_res_object *temp_node = NULL;
++
++	if (mutex_lock_interruptible(&ctxt->node_mutex))
++		return -EPERM;
++
++	temp_node = ctxt->node_list;
++	while ((temp_node != NULL) && (temp_node->hnode != hnode)) {
++		temp_node2 = temp_node;
++		temp_node = temp_node->next;
++	}
++
++	mutex_unlock(&ctxt->node_mutex);
++
++	if (temp_node != NULL)
++		*node_res = temp_node;
++	else
++		status = -ENOENT;
++
++	return status;
++}
++
++/* Allocate the STRM resource element
++* This is called after the actual resource is allocated
++ */
++int drv_proc_insert_strm_res_element(void *hStreamHandle,
++					    void *hstrm_res, void *hPCtxt)
++{
++	struct strm_res_object **pstrm_res =
++	    (struct strm_res_object **)hstrm_res;
++	struct process_context *ctxt = (struct process_context *)hPCtxt;
++	int status = 0;
++	struct strm_res_object *temp_strm_res = NULL;
++
++	*pstrm_res = kzalloc(sizeof(struct strm_res_object), GFP_KERNEL);
++	if (*pstrm_res == NULL)
++		status = -EFAULT;
++
++	if (DSP_SUCCEEDED(status)) {
++		if (mutex_lock_interruptible(&ctxt->strm_mutex)) {
++			kfree(*pstrm_res);
++			return -EPERM;
++		}
++		(*pstrm_res)->hstream = hStreamHandle;
++		if (ctxt->pstrm_list != NULL) {
++			temp_strm_res = ctxt->pstrm_list;
++			while (temp_strm_res->next != NULL)
++				temp_strm_res = temp_strm_res->next;
++
++			temp_strm_res->next = *pstrm_res;
++		} else {
++			ctxt->pstrm_list = *pstrm_res;
++		}
++		mutex_unlock(&ctxt->strm_mutex);
++	}
++	return status;
++}
++
++/* Release Stream resource element context
++* This function called after the actual resource is freed
++ */
++int drv_proc_remove_strm_res_element(void *hstrm_res, void *hPCtxt)
++{
++	struct strm_res_object *pstrm_res = (struct strm_res_object *)hstrm_res;
++	struct process_context *ctxt = (struct process_context *)hPCtxt;
++	struct strm_res_object *temp_strm_res;
++	int status = 0;
++
++	if (mutex_lock_interruptible(&ctxt->strm_mutex))
++		return -EPERM;
++	temp_strm_res = ctxt->pstrm_list;
++
++	if (ctxt->pstrm_list == pstrm_res) {
++		ctxt->pstrm_list = pstrm_res->next;
++	} else {
++		while (temp_strm_res && temp_strm_res->next != pstrm_res)
++			temp_strm_res = temp_strm_res->next;
++		if (temp_strm_res == NULL)
++			status = -ENOENT;
++		else
++			temp_strm_res->next = pstrm_res->next;
++	}
++	mutex_unlock(&ctxt->strm_mutex);
++	kfree(pstrm_res);
++	return status;
++}
++
++/* Release all Stream resources and its context
++* This is called from .bridge_release.
++ */
++int drv_remove_all_strm_res_elements(void *hPCtxt)
++{
++	struct process_context *ctxt = (struct process_context *)hPCtxt;
++	int status = 0;
++	struct strm_res_object *strm_res = NULL;
++	struct strm_res_object *strm_tmp = NULL;
++	struct stream_info strm_info;
++	struct dsp_streaminfo user;
++	u8 **ap_buffer = NULL;
++	u8 *buf_ptr;
++	u32 ul_bytes;
++	u32 dw_arg;
++	s32 ul_buf_size;
++
++	strm_tmp = ctxt->pstrm_list;
++	while (strm_tmp) {
++		strm_res = strm_tmp;
++		strm_tmp = strm_tmp->next;
++		if (strm_res->num_bufs) {
++			ap_buffer = kmalloc((strm_res->num_bufs *
++					sizeof(u8 *)), GFP_KERNEL);
++			if (ap_buffer) {
++				status = strm_free_buffer(strm_res->hstream,
++							  ap_buffer,
++							  strm_res->num_bufs,
++							  ctxt);
++				kfree(ap_buffer);
++			}
++		}
++		strm_info.user_strm = &user;
++		user.number_bufs_in_stream = 0;
++		strm_get_info(strm_res->hstream, &strm_info, sizeof(strm_info));
++		while (user.number_bufs_in_stream--)
++			strm_reclaim(strm_res->hstream, &buf_ptr, &ul_bytes,
++				     (u32 *) &ul_buf_size, &dw_arg);
++		status = strm_close(strm_res->hstream, ctxt);
++	}
++	return status;
++}
++
++/* Getting the stream resource element */
++int drv_get_strm_res_element(void *hStrm, void *hstrm_res,
++				    void *hPCtxt)
++{
++	struct strm_res_object **strm_res =
++	    (struct strm_res_object **)hstrm_res;
++	struct process_context *ctxt = (struct process_context *)hPCtxt;
++	int status = 0;
++	struct strm_res_object *temp_strm2 = NULL;
++	struct strm_res_object *temp_strm;
++
++	if (mutex_lock_interruptible(&ctxt->strm_mutex))
++		return -EPERM;
++
++	temp_strm = ctxt->pstrm_list;
++	while ((temp_strm != NULL) && (temp_strm->hstream != hStrm)) {
++		temp_strm2 = temp_strm;
++		temp_strm = temp_strm->next;
++	}
++
++	mutex_unlock(&ctxt->strm_mutex);
++
++	if (temp_strm != NULL)
++		*strm_res = temp_strm;
++	else
++		status = -ENOENT;
++
++	return status;
++}
++
++/* Updating the stream resource element */
++int drv_proc_update_strm_res(u32 num_bufs, void *hstrm_res)
++{
++	int status = 0;
++	struct strm_res_object **strm_res =
++	    (struct strm_res_object **)hstrm_res;
++
++	(*strm_res)->num_bufs = num_bufs;
++	return status;
++}
++
++/* GPP PROCESS CLEANUP CODE END */
++
++/*
++ *  ======== = drv_create ======== =
++ *  Purpose:
++ *      DRV Object gets created only once during Driver Loading.
++ */
++int drv_create(OUT struct drv_object **phDRVObject)
++{
++	int status = 0;
++	struct drv_object *pdrv_object = NULL;
++
++	DBC_REQUIRE(phDRVObject != NULL);
++	DBC_REQUIRE(refs > 0);
++
++	pdrv_object = kzalloc(sizeof(struct drv_object), GFP_KERNEL);
++	if (pdrv_object) {
++		/* Create and Initialize List of device objects */
++		pdrv_object->dev_list = kzalloc(sizeof(struct lst_list),
++							GFP_KERNEL);
++		if (pdrv_object->dev_list) {
++			/* Create and Initialize List of device Extension */
++			pdrv_object->dev_node_string =
++				kzalloc(sizeof(struct lst_list), GFP_KERNEL);
++			if (!(pdrv_object->dev_node_string)) {
++				status = -EPERM;
++			} else {
++				INIT_LIST_HEAD(&pdrv_object->
++					       dev_node_string->head);
++				INIT_LIST_HEAD(&pdrv_object->dev_list->head);
++			}
++		} else {
++			status = -ENOMEM;
++		}
++	} else {
++		status = -ENOMEM;
++	}
++	/* Store the DRV Object in the Registry */
++	if (DSP_SUCCEEDED(status))
++		status = cfg_set_object((u32) pdrv_object, REG_DRV_OBJECT);
++	if (DSP_SUCCEEDED(status)) {
++		*phDRVObject = pdrv_object;
++	} else {
++		kfree(pdrv_object->dev_list);
++		kfree(pdrv_object->dev_node_string);
++		/* Free the DRV Object */
++		kfree(pdrv_object);
++	}
++
++	DBC_ENSURE(DSP_FAILED(status) || pdrv_object);
++	return status;
++}
++
++/*
++ *  ======== drv_exit ========
++ *  Purpose:
++ *      Discontinue usage of the DRV module.
++ */
++void drv_exit(void)
++{
++	DBC_REQUIRE(refs > 0);
++
++	refs--;
++
++	DBC_ENSURE(refs >= 0);
++}
++
++/*
++ *  ======== = drv_destroy ======== =
++ *  purpose:
++ *      Invoked during bridge de-initialization
++ */
++int drv_destroy(struct drv_object *hDRVObject)
++{
++	int status = 0;
++	struct drv_object *pdrv_object = (struct drv_object *)hDRVObject;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(pdrv_object);
++
++	/*
++	 *  Delete the List if it exists.Should not come here
++	 *  as the drv_remove_dev_object and the Last drv_request_resources
++	 *  removes the list if the lists are empty.
++	 */
++	kfree(pdrv_object->dev_list);
++	kfree(pdrv_object->dev_node_string);
++	kfree(pdrv_object);
++	/* Update the DRV Object in Registry to be 0 */
++	(void)cfg_set_object(0, REG_DRV_OBJECT);
++
++	return status;
++}
++
++/*
++ *  ======== drv_get_dev_object ========
++ *  Purpose:
++ *      Given a index, returns a handle to DevObject from the list.
++ */
++int drv_get_dev_object(u32 index, struct drv_object *hdrv_obj,
++			      struct dev_object **phDevObject)
++{
++	int status = 0;
++#ifdef CONFIG_BRIDGE_DEBUG
++	/* used only for Assertions and debug messages */
++	struct drv_object *pdrv_obj = (struct drv_object *)hdrv_obj;
++#endif
++	struct dev_object *dev_obj;
++	u32 i;
++	DBC_REQUIRE(pdrv_obj);
++	DBC_REQUIRE(phDevObject != NULL);
++	DBC_REQUIRE(index >= 0);
++	DBC_REQUIRE(refs > 0);
++	DBC_ASSERT(!(LST_IS_EMPTY(pdrv_obj->dev_list)));
++
++	dev_obj = (struct dev_object *)drv_get_first_dev_object();
++	for (i = 0; i < index; i++) {
++		dev_obj =
++		    (struct dev_object *)drv_get_next_dev_object((u32) dev_obj);
++	}
++	if (dev_obj) {
++		*phDevObject = (struct dev_object *)dev_obj;
++	} else {
++		*phDevObject = NULL;
++		status = -EPERM;
++	}
++
++	return status;
++}
++
++/*
++ *  ======== drv_get_first_dev_object ========
++ *  Purpose:
++ *      Retrieve the first Device Object handle from an internal linked list of
++ *      of DEV_OBJECTs maintained by DRV.
++ */
++u32 drv_get_first_dev_object(void)
++{
++	u32 dw_dev_object = 0;
++	struct drv_object *pdrv_obj;
++
++	if (DSP_SUCCEEDED(cfg_get_object((u32 *) &pdrv_obj, REG_DRV_OBJECT))) {
++		if ((pdrv_obj->dev_list != NULL) &&
++		    !LST_IS_EMPTY(pdrv_obj->dev_list))
++			dw_dev_object = (u32) lst_first(pdrv_obj->dev_list);
++	}
++
++	return dw_dev_object;
++}
++
++/*
++ *  ======== DRV_GetFirstDevNodeString ========
++ *  Purpose:
++ *      Retrieve the first Device Extension from an internal linked list of
++ *      of Pointer to dev_node Strings maintained by DRV.
++ */
++u32 drv_get_first_dev_extension(void)
++{
++	u32 dw_dev_extension = 0;
++	struct drv_object *pdrv_obj;
++
++	if (DSP_SUCCEEDED(cfg_get_object((u32 *) &pdrv_obj, REG_DRV_OBJECT))) {
++
++		if ((pdrv_obj->dev_node_string != NULL) &&
++		    !LST_IS_EMPTY(pdrv_obj->dev_node_string)) {
++			dw_dev_extension =
++			    (u32) lst_first(pdrv_obj->dev_node_string);
++		}
++	}
++
++	return dw_dev_extension;
++}
++
++/*
++ *  ======== drv_get_next_dev_object ========
++ *  Purpose:
++ *      Retrieve the next Device Object handle from an internal linked list of
++ *      of DEV_OBJECTs maintained by DRV, after having previously called
++ *      drv_get_first_dev_object() and zero or more DRV_GetNext.
++ */
++u32 drv_get_next_dev_object(u32 hdev_obj)
++{
++	u32 dw_next_dev_object = 0;
++	struct drv_object *pdrv_obj;
++
++	DBC_REQUIRE(hdev_obj != 0);
++
++	if (DSP_SUCCEEDED(cfg_get_object((u32 *) &pdrv_obj, REG_DRV_OBJECT))) {
++
++		if ((pdrv_obj->dev_list != NULL) &&
++		    !LST_IS_EMPTY(pdrv_obj->dev_list)) {
++			dw_next_dev_object = (u32) lst_next(pdrv_obj->dev_list,
++							    (struct list_head *)
++							    hdev_obj);
++		}
++	}
++	return dw_next_dev_object;
++}
++
++/*
++ *  ======== drv_get_next_dev_extension ========
++ *  Purpose:
++ *      Retrieve the next Device Extension from an internal linked list of
++ *      of pointer to DevNodeString maintained by DRV, after having previously
++ *      called drv_get_first_dev_extension() and zero or more
++ *      drv_get_next_dev_extension().
++ */
++u32 drv_get_next_dev_extension(u32 hDevExtension)
++{
++	u32 dw_dev_extension = 0;
++	struct drv_object *pdrv_obj;
++
++	DBC_REQUIRE(hDevExtension != 0);
++
++	if (DSP_SUCCEEDED(cfg_get_object((u32 *) &pdrv_obj, REG_DRV_OBJECT))) {
++		if ((pdrv_obj->dev_node_string != NULL) &&
++		    !LST_IS_EMPTY(pdrv_obj->dev_node_string)) {
++			dw_dev_extension =
++			    (u32) lst_next(pdrv_obj->dev_node_string,
++					   (struct list_head *)hDevExtension);
++		}
++	}
++
++	return dw_dev_extension;
++}
++
++/*
++ *  ======== drv_init ========
++ *  Purpose:
++ *      Initialize DRV module private state.
++ */
++int drv_init(void)
++{
++	s32 ret = 1;		/* function return value */
++
++	DBC_REQUIRE(refs >= 0);
++
++	if (ret)
++		refs++;
++
++	DBC_ENSURE((ret && (refs > 0)) || (!ret && (refs >= 0)));
++
++	return ret;
++}
++
++/*
++ *  ======== drv_insert_dev_object ========
++ *  Purpose:
++ *      Insert a DevObject into the list of Manager object.
++ */
++int drv_insert_dev_object(struct drv_object *hDRVObject,
++				 struct dev_object *hdev_obj)
++{
++	int status = 0;
++	struct drv_object *pdrv_object = (struct drv_object *)hDRVObject;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(hdev_obj != NULL);
++	DBC_REQUIRE(pdrv_object);
++	DBC_ASSERT(pdrv_object->dev_list);
++
++	lst_put_tail(pdrv_object->dev_list, (struct list_head *)hdev_obj);
++
++	DBC_ENSURE(DSP_SUCCEEDED(status)
++		   && !LST_IS_EMPTY(pdrv_object->dev_list));
++
++	return status;
++}
++
++/*
++ *  ======== drv_remove_dev_object ========
++ *  Purpose:
++ *      Search for and remove a DeviceObject from the given list of DRV
++ *      objects.
++ */
++int drv_remove_dev_object(struct drv_object *hDRVObject,
++				 struct dev_object *hdev_obj)
++{
++	int status = -EPERM;
++	struct drv_object *pdrv_object = (struct drv_object *)hDRVObject;
++	struct list_head *cur_elem;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(pdrv_object);
++	DBC_REQUIRE(hdev_obj != NULL);
++
++	DBC_REQUIRE(pdrv_object->dev_list != NULL);
++	DBC_REQUIRE(!LST_IS_EMPTY(pdrv_object->dev_list));
++
++	/* Search list for p_proc_object: */
++	for (cur_elem = lst_first(pdrv_object->dev_list); cur_elem != NULL;
++	     cur_elem = lst_next(pdrv_object->dev_list, cur_elem)) {
++		/* If found, remove it. */
++		if ((struct dev_object *)cur_elem == hdev_obj) {
++			lst_remove_elem(pdrv_object->dev_list, cur_elem);
++			status = 0;
++			break;
++		}
++	}
++	/* Remove list if empty. */
++	if (LST_IS_EMPTY(pdrv_object->dev_list)) {
++		kfree(pdrv_object->dev_list);
++		pdrv_object->dev_list = NULL;
++	}
++	DBC_ENSURE((pdrv_object->dev_list == NULL) ||
++		   !LST_IS_EMPTY(pdrv_object->dev_list));
++
++	return status;
++}
++
++/*
++ *  ======== drv_request_resources ========
++ *  Purpose:
++ *      Requests  resources from the OS.
++ */
++int drv_request_resources(u32 dw_context, u32 *pDevNodeString)
++{
++	int status = 0;
++	struct drv_object *pdrv_object;
++	struct drv_ext *pszdev_node;
++
++	DBC_REQUIRE(dw_context != 0);
++	DBC_REQUIRE(pDevNodeString != NULL);
++
++	/*
++	 *  Allocate memory to hold the string. This will live untill
++	 *  it is freed in the Release resources. Update the driver object
++	 *  list.
++	 */
++
++	status = cfg_get_object((u32 *) &pdrv_object, REG_DRV_OBJECT);
++	if (DSP_SUCCEEDED(status)) {
++		pszdev_node = kzalloc(sizeof(struct drv_ext), GFP_KERNEL);
++		if (pszdev_node) {
++			lst_init_elem(&pszdev_node->link);
++			strncpy(pszdev_node->sz_string,
++				(char *)dw_context, MAXREGPATHLENGTH - 1);
++			pszdev_node->sz_string[MAXREGPATHLENGTH - 1] = '\0';
++			/* Update the Driver Object List */
++			*pDevNodeString = (u32) pszdev_node->sz_string;
++			lst_put_tail(pdrv_object->dev_node_string,
++				     (struct list_head *)pszdev_node);
++		} else {
++			status = -ENOMEM;
++			*pDevNodeString = 0;
++		}
++	} else {
++		dev_dbg(bridge, "%s: Failed to get Driver Object from Registry",
++			__func__);
++		*pDevNodeString = 0;
++	}
++
++	DBC_ENSURE((DSP_SUCCEEDED(status) && pDevNodeString != NULL &&
++		    !LST_IS_EMPTY(pdrv_object->dev_node_string)) ||
++		   (DSP_FAILED(status) && *pDevNodeString == 0));
++
++	return status;
++}
++
++/*
++ *  ======== drv_release_resources ========
++ *  Purpose:
++ *      Releases  resources from the OS.
++ */
++int drv_release_resources(u32 dw_context, struct drv_object *hdrv_obj)
++{
++	int status = 0;
++	struct drv_object *pdrv_object = (struct drv_object *)hdrv_obj;
++	struct drv_ext *pszdev_node;
++
++	/*
++	 *  Irrespective of the status go ahead and clean it
++	 *  The following will over write the status.
++	 */
++	for (pszdev_node = (struct drv_ext *)drv_get_first_dev_extension();
++	     pszdev_node != NULL; pszdev_node = (struct drv_ext *)
++	     drv_get_next_dev_extension((u32) pszdev_node)) {
++		if (!pdrv_object->dev_node_string) {
++			/* When this could happen? */
++			continue;
++		}
++		if ((u32) pszdev_node == dw_context) {
++			/* Found it */
++			/* Delete from the Driver object list */
++			lst_remove_elem(pdrv_object->dev_node_string,
++					(struct list_head *)pszdev_node);
++			kfree((void *)pszdev_node);
++			break;
++		}
++		/* Delete the List if it is empty */
++		if (LST_IS_EMPTY(pdrv_object->dev_node_string)) {
++			kfree(pdrv_object->dev_node_string);
++			pdrv_object->dev_node_string = NULL;
++		}
++	}
++	return status;
++}
++
++/*
++ *  ======== request_bridge_resources ========
++ *  Purpose:
++ *      Reserves shared memory for bridge.
++ */
++static int request_bridge_resources(struct cfg_hostres *res)
++{
++	int status = 0;
++	struct cfg_hostres *host_res = res;
++
++	/* num_mem_windows must not be more than CFG_MAXMEMREGISTERS */
++	host_res->num_mem_windows = 2;
++
++	/* First window is for DSP internal memory */
++	host_res->dw_sys_ctrl_base = ioremap(OMAP_SYSC_BASE, OMAP_SYSC_SIZE);
++	dev_dbg(bridge, "dw_mem_base[0] 0x%x\n", host_res->dw_mem_base[0]);
++	dev_dbg(bridge, "dw_mem_base[3] 0x%x\n", host_res->dw_mem_base[3]);
++	dev_dbg(bridge, "dw_dmmu_base %p\n", host_res->dw_dmmu_base);
++
++	/* for 24xx base port is not mapping the mamory for DSP
++	 * internal memory TODO Do a ioremap here */
++	/* Second window is for DSP external memory shared with MPU */
++
++	/* These are hard-coded values */
++	host_res->birq_registers = 0;
++	host_res->birq_attrib = 0;
++	host_res->dw_offset_for_monitor = 0;
++	host_res->dw_chnl_offset = 0;
++	/* CHNL_MAXCHANNELS */
++	host_res->dw_num_chnls = CHNL_MAXCHANNELS;
++	host_res->dw_chnl_buf_size = 0x400;
++
++	return status;
++}
++
++/*
++ *  ======== drv_request_bridge_res_dsp ========
++ *  Purpose:
++ *      Reserves shared memory for bridge.
++ */
++int drv_request_bridge_res_dsp(void **phost_resources)
++{
++	int status = 0;
++	struct cfg_hostres *host_res;
++	u32 dw_buff_size;
++	u32 dma_addr;
++	u32 shm_size;
++	struct drv_data *drv_datap = dev_get_drvdata(bridge);
++
++	dw_buff_size = sizeof(struct cfg_hostres);
++
++	host_res = kzalloc(dw_buff_size, GFP_KERNEL);
++
++	if (host_res != NULL) {
++		request_bridge_resources(host_res);
++		/* num_mem_windows must not be more than CFG_MAXMEMREGISTERS */
++		host_res->num_mem_windows = 4;
++
++		host_res->dw_mem_base[0] = 0;
++		host_res->dw_mem_base[2] = (u32) ioremap(OMAP_DSP_MEM1_BASE,
++							 OMAP_DSP_MEM1_SIZE);
++		host_res->dw_mem_base[3] = (u32) ioremap(OMAP_DSP_MEM2_BASE,
++							 OMAP_DSP_MEM2_SIZE);
++		host_res->dw_mem_base[4] = (u32) ioremap(OMAP_DSP_MEM3_BASE,
++							 OMAP_DSP_MEM3_SIZE);
++		host_res->dw_per_base = ioremap(OMAP_PER_CM_BASE,
++						OMAP_PER_CM_SIZE);
++		host_res->dw_per_pm_base = (u32) ioremap(OMAP_PER_PRM_BASE,
++							 OMAP_PER_PRM_SIZE);
++		host_res->dw_core_pm_base = (u32) ioremap(OMAP_CORE_PRM_BASE,
++							  OMAP_CORE_PRM_SIZE);
++		host_res->dw_dmmu_base = ioremap(OMAP_DMMU_BASE,
++						 OMAP_DMMU_SIZE);
++
++		dev_dbg(bridge, "dw_mem_base[0] 0x%x\n",
++			host_res->dw_mem_base[0]);
++		dev_dbg(bridge, "dw_mem_base[1] 0x%x\n",
++			host_res->dw_mem_base[1]);
++		dev_dbg(bridge, "dw_mem_base[2] 0x%x\n",
++			host_res->dw_mem_base[2]);
++		dev_dbg(bridge, "dw_mem_base[3] 0x%x\n",
++			host_res->dw_mem_base[3]);
++		dev_dbg(bridge, "dw_mem_base[4] 0x%x\n",
++			host_res->dw_mem_base[4]);
++		dev_dbg(bridge, "dw_dmmu_base %p\n", host_res->dw_dmmu_base);
++
++		shm_size = drv_datap->shm_size;
++		if (shm_size >= 0x10000) {
++			/* Allocate Physically contiguous,
++			 * non-cacheable  memory */
++			host_res->dw_mem_base[1] =
++			    (u32) mem_alloc_phys_mem(shm_size, 0x100000,
++						     &dma_addr);
++			if (host_res->dw_mem_base[1] == 0) {
++				status = -ENOMEM;
++				pr_err("shm reservation Failed\n");
++			} else {
++				host_res->dw_mem_length[1] = shm_size;
++				host_res->dw_mem_phys[1] = dma_addr;
++
++				dev_dbg(bridge, "%s: Bridge shm address 0x%x "
++					"dma_addr %x size %x\n", __func__,
++					host_res->dw_mem_base[1],
++					dma_addr, shm_size);
++			}
++		}
++		if (DSP_SUCCEEDED(status)) {
++			/* These are hard-coded values */
++			host_res->birq_registers = 0;
++			host_res->birq_attrib = 0;
++			host_res->dw_offset_for_monitor = 0;
++			host_res->dw_chnl_offset = 0;
++			/* CHNL_MAXCHANNELS */
++			host_res->dw_num_chnls = CHNL_MAXCHANNELS;
++			host_res->dw_chnl_buf_size = 0x400;
++			dw_buff_size = sizeof(struct cfg_hostres);
++		}
++		*phost_resources = host_res;
++	}
++	/* End Mem alloc */
++	return status;
++}
++
++void mem_ext_phys_pool_init(u32 poolPhysBase, u32 poolSize)
++{
++	u32 pool_virt_base;
++
++	/* get the virtual address for the physical memory pool passed */
++	pool_virt_base = (u32) ioremap(poolPhysBase, poolSize);
++
++	if ((void **)pool_virt_base == NULL) {
++		pr_err("%s: external physical memory map failed\n", __func__);
++		ext_phys_mem_pool_enabled = false;
++	} else {
++		ext_mem_pool.phys_mem_base = poolPhysBase;
++		ext_mem_pool.phys_mem_size = poolSize;
++		ext_mem_pool.virt_mem_base = pool_virt_base;
++		ext_mem_pool.next_phys_alloc_ptr = poolPhysBase;
++		ext_phys_mem_pool_enabled = true;
++	}
++}
++
++void mem_ext_phys_pool_release(void)
++{
++	if (ext_phys_mem_pool_enabled) {
++		iounmap((void *)(ext_mem_pool.virt_mem_base));
++		ext_phys_mem_pool_enabled = false;
++	}
++}
++
++/*
++ *  ======== mem_ext_phys_mem_alloc ========
++ *  Purpose:
++ *     Allocate physically contiguous, uncached memory from external memory pool
++ */
++
++static void *mem_ext_phys_mem_alloc(u32 bytes, u32 align, OUT u32 * pPhysAddr)
++{
++	u32 new_alloc_ptr;
++	u32 offset;
++	u32 virt_addr;
++
++	if (align == 0)
++		align = 1;
++
++	if (bytes > ((ext_mem_pool.phys_mem_base + ext_mem_pool.phys_mem_size)
++		     - ext_mem_pool.next_phys_alloc_ptr)) {
++		pPhysAddr = NULL;
++		return NULL;
++	} else {
++		offset = (ext_mem_pool.next_phys_alloc_ptr & (align - 1));
++		if (offset == 0)
++			new_alloc_ptr = ext_mem_pool.next_phys_alloc_ptr;
++		else
++			new_alloc_ptr = (ext_mem_pool.next_phys_alloc_ptr) +
++			    (align - offset);
++		if ((new_alloc_ptr + bytes) <=
++		    (ext_mem_pool.phys_mem_base + ext_mem_pool.phys_mem_size)) {
++			/* we can allocate */
++			*pPhysAddr = new_alloc_ptr;
++			ext_mem_pool.next_phys_alloc_ptr =
++			    new_alloc_ptr + bytes;
++			virt_addr =
++			    ext_mem_pool.virt_mem_base + (new_alloc_ptr -
++							  ext_mem_pool.
++							  phys_mem_base);
++			return (void *)virt_addr;
++		} else {
++			*pPhysAddr = 0;
++			return NULL;
++		}
++	}
++}
++
++/*
++ *  ======== mem_alloc_phys_mem ========
++ *  Purpose:
++ *      Allocate physically contiguous, uncached memory
++ */
++void *mem_alloc_phys_mem(u32 byte_size, u32 ulAlign, OUT u32 * pPhysicalAddress)
++{
++	void *va_mem = NULL;
++	dma_addr_t pa_mem;
++
++	if (byte_size > 0) {
++		if (ext_phys_mem_pool_enabled) {
++			va_mem = mem_ext_phys_mem_alloc(byte_size, ulAlign,
++							(u32 *) &pa_mem);
++		} else
++			va_mem = dma_alloc_coherent(NULL, byte_size, &pa_mem,
++								GFP_KERNEL);
++		if (va_mem == NULL)
++			*pPhysicalAddress = 0;
++		else
++			*pPhysicalAddress = pa_mem;
++	}
++	return va_mem;
++}
++
++/*
++ *  ======== mem_free_phys_mem ========
++ *  Purpose:
++ *      Free the given block of physically contiguous memory.
++ */
++void mem_free_phys_mem(void *pVirtualAddress, u32 pPhysicalAddress,
++		       u32 byte_size)
++{
++	DBC_REQUIRE(pVirtualAddress != NULL);
++
++	if (!ext_phys_mem_pool_enabled)
++		dma_free_coherent(NULL, byte_size, pVirtualAddress,
++				  pPhysicalAddress);
++}
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+new file mode 100644
+index 0000000..f0f089b
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+@@ -0,0 +1,644 @@
++/*
++ * drv_interface.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * DSP/BIOS Bridge driver interface.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++/*  ----------------------------------- Host OS */
++
++#include <dspbridge/host_os.h>
++#include <linux/platform_device.h>
++#include <linux/pm.h>
++
++#ifdef MODULE
++#include <linux/module.h>
++#endif
++
++#include <linux/device.h>
++#include <linux/init.h>
++#include <linux/moduleparam.h>
++#include <linux/cdev.h>
++
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
++
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
++
++/*  ----------------------------------- OS Adaptation Layer */
++#include <dspbridge/services.h>
++#include <dspbridge/clk.h>
++#include <dspbridge/sync.h>
++
++/*  ----------------------------------- Platform Manager */
++#include <dspbridge/dspapi-ioctl.h>
++#include <dspbridge/dspapi.h>
++#include <dspbridge/dspdrv.h>
++
++/*  ----------------------------------- Resource Manager */
++#include <dspbridge/pwr.h>
++
++/*  ----------------------------------- This */
++#include <drv_interface.h>
++
++#include <dspbridge/cfg.h>
++#include <dspbridge/resourcecleanup.h>
++#include <dspbridge/chnl.h>
++#include <dspbridge/proc.h>
++#include <dspbridge/dev.h>
++#include <dspbridge/drvdefs.h>
++#include <dspbridge/drv.h>
++
++#ifdef CONFIG_BRIDGE_DVFS
++#include <mach-omap2/omap3-opp.h>
++#endif
++
++#define BRIDGE_NAME "C6410"
++/*  ----------------------------------- Globals */
++#define DRIVER_NAME  "DspBridge"
++#define DSPBRIDGE_VERSION	"0.3"
++s32 dsp_debug;
++
++struct platform_device *omap_dspbridge_dev;
++struct device *bridge;
++
++/* This is a test variable used by Bridge to test different sleep states */
++s32 dsp_test_sleepstate;
++
++static struct cdev bridge_cdev;
++
++static struct class *bridge_class;
++
++static u32 driver_context;
++static s32 driver_major;
++static char *base_img;
++char *iva_img;
++static s32 shm_size = 0x500000;	/* 5 MB */
++static int tc_wordswapon;	/* Default value is always false */
++#ifdef CONFIG_BRIDGE_RECOVERY
++#define REC_TIMEOUT 5000	/*recovery timeout in msecs */
++static atomic_t bridge_cref;	/* number of bridge open handles */
++static struct workqueue_struct *bridge_rec_queue;
++static struct work_struct bridge_recovery_work;
++static DECLARE_COMPLETION(bridge_comp);
++static DECLARE_COMPLETION(bridge_open_comp);
++static bool recover;
++#endif
++
++#ifdef CONFIG_PM
++struct omap34_xx_bridge_suspend_data {
++	int suspended;
++	wait_queue_head_t suspend_wq;
++};
++
++static struct omap34_xx_bridge_suspend_data bridge_suspend_data;
++
++static int omap34_xxbridge_suspend_lockout(struct omap34_xx_bridge_suspend_data
++					   *s, struct file *f)
++{
++	if ((s)->suspended) {
++		if ((f)->f_flags & O_NONBLOCK)
++			return -EPERM;
++		wait_event_interruptible((s)->suspend_wq, (s)->suspended == 0);
++	}
++	return 0;
++}
++#endif
++
++module_param(dsp_debug, int, 0);
++MODULE_PARM_DESC(dsp_debug, "Wait after loading DSP image. default = false");
++
++module_param(dsp_test_sleepstate, int, 0);
++MODULE_PARM_DESC(dsp_test_sleepstate, "DSP Sleep state = 0");
++
++module_param(base_img, charp, 0);
++MODULE_PARM_DESC(base_img, "DSP base image, default = NULL");
++
++module_param(shm_size, int, 0);
++MODULE_PARM_DESC(shm_size, "shm size, default = 4 MB, minimum = 64 KB");
++
++module_param(tc_wordswapon, int, 0);
++MODULE_PARM_DESC(tc_wordswapon, "TC Word Swap Option. default = 0");
++
++MODULE_AUTHOR("Texas Instruments");
++MODULE_LICENSE("GPL");
++MODULE_VERSION(DSPBRIDGE_VERSION);
++
++static char *driver_name = DRIVER_NAME;
++
++static const struct file_operations bridge_fops = {
++	.open = bridge_open,
++	.release = bridge_release,
++	.unlocked_ioctl = bridge_ioctl,
++	.mmap = bridge_mmap,
++};
++
++#ifdef CONFIG_PM
++static u32 time_out = 1000;
++#ifdef CONFIG_BRIDGE_DVFS
++s32 dsp_max_opps = VDD1_OPP5;
++#endif
++
++/* Maximum Opps that can be requested by IVA */
++/*vdd1 rate table */
++#ifdef CONFIG_BRIDGE_DVFS
++const struct omap_opp vdd1_rate_table_bridge[] = {
++	{0, 0, 0},
++	/*OPP1 */
++	{S125M, VDD1_OPP1, 0},
++	/*OPP2 */
++	{S250M, VDD1_OPP2, 0},
++	/*OPP3 */
++	{S500M, VDD1_OPP3, 0},
++	/*OPP4 */
++	{S550M, VDD1_OPP4, 0},
++	/*OPP5 */
++	{S600M, VDD1_OPP5, 0},
++};
++#endif
++#endif
++
++struct dspbridge_platform_data *omap_dspbridge_pdata;
++
++u32 vdd1_dsp_freq[6][4] = {
++	{0, 0, 0, 0},
++	/*OPP1 */
++	{0, 90000, 0, 86000},
++	/*OPP2 */
++	{0, 180000, 80000, 170000},
++	/*OPP3 */
++	{0, 360000, 160000, 340000},
++	/*OPP4 */
++	{0, 396000, 325000, 376000},
++	/*OPP5 */
++	{0, 430000, 355000, 430000},
++};
++
++#ifdef CONFIG_BRIDGE_RECOVERY
++static void bridge_recover(struct work_struct *work)
++{
++	struct dev_object *dev;
++	struct cfg_devnode *dev_node;
++	if (atomic_read(&bridge_cref)) {
++		INIT_COMPLETION(bridge_comp);
++		while (!wait_for_completion_timeout(&bridge_comp,
++						msecs_to_jiffies(REC_TIMEOUT)))
++			pr_info("%s:%d handle(s) still opened\n",
++					__func__, atomic_read(&bridge_cref));
++	}
++	dev = dev_get_first();
++	dev_get_dev_node(dev, &dev_node);
++	if (!dev_node || DSP_FAILED(proc_auto_start(dev_node, dev)))
++		pr_err("DSP could not be restarted\n");
++	recover = false;
++	complete_all(&bridge_open_comp);
++}
++
++void bridge_recover_schedule(void)
++{
++	INIT_COMPLETION(bridge_open_comp);
++	recover = true;
++	queue_work(bridge_rec_queue, &bridge_recovery_work);
++}
++#endif
++#ifdef CONFIG_BRIDGE_DVFS
++static int dspbridge_scale_notification(struct notifier_block *op,
++		unsigned long val, void *ptr)
++{
++	struct dspbridge_platform_data *pdata =
++					omap_dspbridge_dev->dev.platform_data;
++
++	if (CPUFREQ_POSTCHANGE == val && pdata->dsp_get_opp)
++		pwr_pm_post_scale(PRCM_VDD1, pdata->dsp_get_opp());
++
++	return 0;
++}
++
++static struct notifier_block iva_clk_notifier = {
++	.notifier_call = dspbridge_scale_notification,
++	NULL,
++};
++#endif
++
++/**
++ * omap3_bridge_startup() - perform low lever initializations
++ * @pdev:      pointer to platform device
++ *
++ * Initializes recovery, PM and DVFS required data, before calling
++ * clk and memory init routines.
++ */
++static int omap3_bridge_startup(struct platform_device *pdev)
++{
++	struct dspbridge_platform_data *pdata = pdev->dev.platform_data;
++	struct drv_data *drv_datap = NULL;
++	u32 phys_membase, phys_memsize;
++	int err;
++
++#ifdef CONFIG_BRIDGE_RECOVERY
++	bridge_rec_queue = create_workqueue("bridge_rec_queue");
++	INIT_WORK(&bridge_recovery_work, bridge_recover);
++	INIT_COMPLETION(bridge_comp);
++#endif
++
++#ifdef CONFIG_PM
++	/* Initialize the wait queue */
++	bridge_suspend_data.suspended = 0;
++	init_waitqueue_head(&bridge_suspend_data.suspend_wq);
++
++#ifdef CONFIG_BRIDGE_DVFS
++	for (i = 0; i < 6; i++)
++		pdata->mpu_speed[i] = vdd1_rate_table_bridge[i].rate;
++
++	err = cpufreq_register_notifier(&iva_clk_notifier,
++					CPUFREQ_TRANSITION_NOTIFIER);
++	if (err)
++		pr_err("%s: clk_notifier_register failed for iva2_ck\n",
++								__func__);
++#endif
++#endif
++
++	dsp_clk_init();
++	services_init();
++
++	drv_datap = kzalloc(sizeof(struct drv_data), GFP_KERNEL);
++	if (!drv_datap) {
++		err = -ENOMEM;
++		goto err1;
++	}
++
++	drv_datap->shm_size = shm_size;
++	drv_datap->tc_wordswapon = tc_wordswapon;
++
++	if (base_img) {
++		drv_datap->base_img = kmalloc(strlen(base_img) + 1, GFP_KERNEL);
++		if (!drv_datap->base_img) {
++			err = -ENOMEM;
++			goto err2;
++		}
++		strncpy(drv_datap->base_img, base_img, strlen(base_img) + 1);
++	}
++
++	dev_set_drvdata(bridge, drv_datap);
++
++	if (shm_size < 0x10000) {	/* 64 KB */
++		err = -EINVAL;
++		pr_err("%s: shm size must be at least 64 KB\n", __func__);
++		goto err3;
++	}
++	dev_dbg(bridge, "%s: requested shm_size = 0x%x\n", __func__, shm_size);
++
++	phys_membase = pdata->phys_mempool_base;
++	phys_memsize = pdata->phys_mempool_size;
++	if (phys_membase > 0 && phys_memsize > 0)
++		mem_ext_phys_pool_init(phys_membase, phys_memsize);
++
++	if (tc_wordswapon)
++		dev_dbg(bridge, "%s: TC Word Swap is enabled\n", __func__);
++
++	driver_context = dsp_init(&err);
++	if (err) {
++		pr_err("DSP Bridge driver initialization failed\n");
++		goto err4;
++	}
++
++	return 0;
++
++err4:
++	mem_ext_phys_pool_release();
++err3:
++	kfree(drv_datap->base_img);
++err2:
++	kfree(drv_datap);
++err1:
++#ifdef CONFIG_BRIDGE_DVFS
++	cpufreq_unregister_notifier(&iva_clk_notifier,
++					CPUFREQ_TRANSITION_NOTIFIER);
++#endif
++	dsp_clk_exit();
++	services_exit();
++
++	return err;
++}
++
++static int __devinit omap34_xx_bridge_probe(struct platform_device *pdev)
++{
++	int err;
++	dev_t dev = 0;
++#ifdef CONFIG_BRIDGE_DVFS
++	int i = 0;
++#endif
++
++	omap_dspbridge_dev = pdev;
++
++	/* Global bridge device */
++	bridge = &omap_dspbridge_dev->dev;
++
++	/* Bridge low level initializations */
++	err = omap3_bridge_startup(pdev);
++	if (err)
++		goto err1;
++
++	/* use 2.6 device model */
++	err = alloc_chrdev_region(&dev, 0, 1, driver_name);
++	if (err) {
++		pr_err("%s: Can't get major %d\n", __func__, driver_major);
++		goto err1;
++	}
++
++	cdev_init(&bridge_cdev, &bridge_fops);
++	bridge_cdev.owner = THIS_MODULE;
++
++	err = cdev_add(&bridge_cdev, dev, 1);
++	if (err) {
++		pr_err("%s: Failed to add bridge device\n", __func__);
++		goto err2;
++	}
++
++	/* udev support */
++	bridge_class = class_create(THIS_MODULE, "ti_bridge");
++	if (IS_ERR(bridge_class)) {
++		pr_err("%s: Error creating bridge class\n", __func__);
++		goto err3;
++	}
++
++	driver_major = MAJOR(dev);
++	device_create(bridge_class, NULL, MKDEV(driver_major, 0),
++		      NULL, "DspBridge");
++	pr_info("DSP Bridge driver loaded\n");
++
++	return 0;
++
++err3:
++	cdev_del(&bridge_cdev);
++err2:
++	unregister_chrdev_region(dev, 1);
++err1:
++	return err;
++}
++
++static int __devexit omap34_xx_bridge_remove(struct platform_device *pdev)
++{
++	dev_t devno;
++	bool ret;
++	int status = 0;
++	void *hdrv_obj = NULL;
++
++	status = cfg_get_object((u32 *) &hdrv_obj, REG_DRV_OBJECT);
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++#ifdef CONFIG_BRIDGE_DVFS
++	if (cpufreq_unregister_notifier(&iva_clk_notifier,
++						CPUFREQ_TRANSITION_NOTIFIER))
++		pr_err("%s: cpufreq_unregister_notifier failed for iva2_ck\n",
++		       __func__);
++#endif /* #ifdef CONFIG_BRIDGE_DVFS */
++
++	if (driver_context) {
++		/* Put the DSP in reset state */
++		ret = dsp_deinit(driver_context);
++		driver_context = 0;
++		DBC_ASSERT(ret == true);
++	}
++
++func_cont:
++	mem_ext_phys_pool_release();
++
++	dsp_clk_exit();
++	services_exit();
++
++	devno = MKDEV(driver_major, 0);
++	cdev_del(&bridge_cdev);
++	unregister_chrdev_region(devno, 1);
++	if (bridge_class) {
++		/* remove the device from sysfs */
++		device_destroy(bridge_class, MKDEV(driver_major, 0));
++		class_destroy(bridge_class);
++
++	}
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int BRIDGE_SUSPEND(struct platform_device *pdev, pm_message_t state)
++{
++	u32 status;
++	u32 command = PWR_EMERGENCYDEEPSLEEP;
++
++	status = pwr_sleep_dsp(command, time_out);
++	if (DSP_FAILED(status))
++		return -1;
++
++	bridge_suspend_data.suspended = 1;
++	return 0;
++}
++
++static int BRIDGE_RESUME(struct platform_device *pdev)
++{
++	u32 status;
++
++	status = pwr_wake_dsp(time_out);
++	if (DSP_FAILED(status))
++		return -1;
++
++	bridge_suspend_data.suspended = 0;
++	wake_up(&bridge_suspend_data.suspend_wq);
++	return 0;
++}
++#else
++#define BRIDGE_SUSPEND NULL
++#define BRIDGE_RESUME NULL
++#endif
++
++static struct platform_driver bridge_driver = {
++	.driver = {
++		   .name = BRIDGE_NAME,
++		   },
++	.probe = omap34_xx_bridge_probe,
++	.remove = __devexit_p(omap34_xx_bridge_remove),
++	.suspend = BRIDGE_SUSPEND,
++	.resume = BRIDGE_RESUME,
++};
++
++static int __init bridge_init(void)
++{
++	return platform_driver_register(&bridge_driver);
++}
++
++static void __exit bridge_exit(void)
++{
++	platform_driver_unregister(&bridge_driver);
++}
++
++/*
++ * This function is called when an application opens handle to the
++ * bridge driver.
++ */
++static int bridge_open(struct inode *ip, struct file *filp)
++{
++	int status = 0;
++	struct process_context *pr_ctxt = NULL;
++
++	/*
++	 * Allocate a new process context and insert it into global
++	 * process context list.
++	 */
++
++#ifdef CONFIG_BRIDGE_RECOVERY
++	if (recover) {
++		if (filp->f_flags & O_NONBLOCK ||
++			wait_for_completion_interruptible(&bridge_open_comp))
++			return -EBUSY;
++	}
++#endif
++	pr_ctxt = kzalloc(sizeof(struct process_context), GFP_KERNEL);
++	if (pr_ctxt) {
++		pr_ctxt->res_state = PROC_RES_ALLOCATED;
++		spin_lock_init(&pr_ctxt->dmm_map_lock);
++		INIT_LIST_HEAD(&pr_ctxt->dmm_map_list);
++		spin_lock_init(&pr_ctxt->dmm_rsv_lock);
++		INIT_LIST_HEAD(&pr_ctxt->dmm_rsv_list);
++		mutex_init(&pr_ctxt->node_mutex);
++		mutex_init(&pr_ctxt->strm_mutex);
++	} else {
++		status = -ENOMEM;
++	}
++
++	filp->private_data = pr_ctxt;
++#ifdef CONFIG_BRIDGE_RECOVERY
++	if (!status)
++		atomic_inc(&bridge_cref);
++#endif
++	return status;
++}
++
++/*
++ * This function is called when an application closes handle to the bridge
++ * driver.
++ */
++static int bridge_release(struct inode *ip, struct file *filp)
++{
++	int status = 0;
++	struct process_context *pr_ctxt;
++
++	if (!filp->private_data) {
++		status = -EIO;
++		goto err;
++	}
++
++	pr_ctxt = filp->private_data;
++	flush_signals(current);
++	drv_remove_all_resources(pr_ctxt);
++	proc_detach(pr_ctxt);
++	kfree(pr_ctxt);
++
++	filp->private_data = NULL;
++
++err:
++#ifdef CONFIG_BRIDGE_RECOVERY
++	if (!atomic_dec_return(&bridge_cref))
++		complete(&bridge_comp);
++#endif
++	return status;
++}
++
++/* This function provides IO interface to the bridge driver. */
++static long bridge_ioctl(struct file *filp, unsigned int code,
++			 unsigned long args)
++{
++	int status;
++	u32 retval = 0;
++	union Trapped_Args buf_in;
++
++	DBC_REQUIRE(filp != NULL);
++#ifdef CONFIG_BRIDGE_RECOVERY
++	if (recover) {
++		status = -EIO;
++		goto err;
++	}
++#endif
++#ifdef CONFIG_PM
++	status = omap34_xxbridge_suspend_lockout(&bridge_suspend_data, filp);
++	if (status != 0)
++		return status;
++#endif
++
++	if (!filp->private_data) {
++		status = -EIO;
++		goto err;
++	}
++
++	status = copy_from_user(&buf_in, (union Trapped_Args *)args,
++				sizeof(union Trapped_Args));
++
++	if (!status) {
++		status = api_call_dev_ioctl(code, &buf_in, &retval,
++					     filp->private_data);
++
++		if (DSP_SUCCEEDED(status)) {
++			status = retval;
++		} else {
++			dev_dbg(bridge, "%s: IOCTL Failed, code: 0x%x "
++				"status 0x%x\n", __func__, code, status);
++			status = -1;
++		}
++
++	}
++
++err:
++	return status;
++}
++
++/* This function maps kernel space memory to user space memory. */
++static int bridge_mmap(struct file *filp, struct vm_area_struct *vma)
++{
++	u32 offset = vma->vm_pgoff << PAGE_SHIFT;
++	u32 status;
++
++	DBC_ASSERT(vma->vm_start < vma->vm_end);
++
++	vma->vm_flags |= VM_RESERVED | VM_IO;
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++
++	dev_dbg(bridge, "%s: vm filp %p offset %x start %lx end %lx page_prot "
++		"%lx flags %lx\n", __func__, filp, offset,
++		vma->vm_start, vma->vm_end, vma->vm_page_prot, vma->vm_flags);
++
++	status = remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
++				 vma->vm_end - vma->vm_start,
++				 vma->vm_page_prot);
++	if (status != 0)
++		status = -EAGAIN;
++
++	return status;
++}
++
++/* To remove all process resources before removing the process from the
++ * process context list */
++int drv_remove_all_resources(void *hPCtxt)
++{
++	int status = 0;
++	struct process_context *ctxt = (struct process_context *)hPCtxt;
++	drv_remove_all_strm_res_elements(ctxt);
++	drv_remove_all_node_res_elements(ctxt);
++	drv_remove_all_dmm_res_elements(ctxt);
++	ctxt->res_state = PROC_RES_FREED;
++	return status;
++}
++
++/* Bridge driver initialization and de-initialization functions */
++module_init(bridge_init);
++module_exit(bridge_exit);
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.h b/drivers/staging/tidspbridge/rmgr/drv_interface.h
+new file mode 100644
+index 0000000..fd6f489
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.h
+@@ -0,0 +1,27 @@
++/*
++ * drv_interface.h
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++#ifndef	_DRV_INTERFACE_H_
++#define _DRV_INTERFACE_H_
++
++/* Prototypes for all functions in this bridge */
++static int __init bridge_init(void);	/* Initialize bridge */
++static void __exit bridge_exit(void);	/* Opposite of initialize */
++static int bridge_open(struct inode *, struct file *);	/* Open */
++static int bridge_release(struct inode *, struct file *);	/* Release */
++static long bridge_ioctl(struct file *, unsigned int, unsigned long);
++static int bridge_mmap(struct file *filp, struct vm_area_struct *vma);
++#endif /* ifndef _DRV_INTERFACE_H_ */
+diff --git a/drivers/staging/tidspbridge/rmgr/dspdrv.c b/drivers/staging/tidspbridge/rmgr/dspdrv.c
+new file mode 100644
+index 0000000..ec9ba4f
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/dspdrv.c
+@@ -0,0 +1,142 @@
++/*
++ * dspdrv.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * Interface to allocate and free bridge resources.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++/*  ----------------------------------- Host OS */
++#include <dspbridge/host_os.h>
++
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
++
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
++
++/*  ----------------------------------- OS Adaptation Layer */
++#include <dspbridge/cfg.h>
++
++/*  ----------------------------------- Platform Manager */
++#include <dspbridge/drv.h>
++#include <dspbridge/dev.h>
++#include <dspbridge/dspapi.h>
++
++/*  ----------------------------------- Resource Manager */
++#include <dspbridge/mgr.h>
++
++/*  ----------------------------------- This */
++#include <dspbridge/dspdrv.h>
++
++/*
++ *  ======== dsp_init ========
++ *  	Allocates bridge resources. Loads a base image onto DSP, if specified.
++ */
++u32 dsp_init(OUT u32 *init_status)
++{
++	char dev_node[MAXREGPATHLENGTH] = "TIOMAP1510";
++	int status = -EPERM;
++	struct drv_object *drv_obj = NULL;
++	u32 device_node;
++	u32 device_node_string;
++
++	if (!api_init())
++		goto func_cont;
++
++	status = drv_create(&drv_obj);
++	if (DSP_FAILED(status)) {
++		api_exit();
++		goto func_cont;
++	}
++
++	/* End drv_create */
++	/* Request Resources */
++	status = drv_request_resources((u32) &dev_node, &device_node_string);
++	if (DSP_SUCCEEDED(status)) {
++		/* Attempt to Start the Device */
++		status = dev_start_device((struct cfg_devnode *)
++					  device_node_string);
++		if (DSP_FAILED(status))
++			(void)drv_release_resources
++			    ((u32) device_node_string, drv_obj);
++	} else {
++		dev_dbg(bridge, "%s: drv_request_resources Failed\n", __func__);
++		status = -EPERM;
++	}
++
++	/* Unwind whatever was loaded */
++	if (DSP_FAILED(status)) {
++		/* irrespective of the status of dev_remove_device we conitinue
++		 * unloading. Get the Driver Object iterate through and remove.
++		 * Reset the status to E_FAIL to avoid going through
++		 * api_init_complete2. */
++		for (device_node = drv_get_first_dev_extension();
++		     device_node != 0;
++		     device_node = drv_get_next_dev_extension(device_node)) {
++			(void)dev_remove_device((struct cfg_devnode *)
++						device_node);
++			(void)drv_release_resources((u32) device_node, drv_obj);
++		}
++		/* Remove the Driver Object */
++		(void)drv_destroy(drv_obj);
++		drv_obj = NULL;
++		api_exit();
++		dev_dbg(bridge, "%s: Logical device failed init\n", __func__);
++	}			/* Unwinding the loaded drivers */
++func_cont:
++	/* Attempt to Start the Board */
++	if (DSP_SUCCEEDED(status)) {
++		/* BRD_AutoStart could fail if the dsp execuetable is not the
++		 * correct one. We should not propagate that error
++		 * into the device loader. */
++		(void)api_init_complete2();
++	} else {
++		dev_dbg(bridge, "%s: Failed\n", __func__);
++	}			/* End api_init_complete2 */
++	DBC_ENSURE((DSP_SUCCEEDED(status) && drv_obj != NULL) ||
++		   (DSP_FAILED(status) && drv_obj == NULL));
++	*init_status = status;
++	/* Return the Driver Object */
++	return (u32) drv_obj;
++}
++
++/*
++ *  ======== dsp_deinit ========
++ *  	Frees the resources allocated for bridge.
++ */
++bool dsp_deinit(u32 deviceContext)
++{
++	bool ret = true;
++	u32 device_node;
++	struct mgr_object *mgr_obj = NULL;
++
++	while ((device_node = drv_get_first_dev_extension()) != 0) {
++		(void)dev_remove_device((struct cfg_devnode *)device_node);
++
++		(void)drv_release_resources((u32) device_node,
++					    (struct drv_object *)deviceContext);
++	}
++
++	(void)drv_destroy((struct drv_object *)deviceContext);
++
++	/* Get the Manager Object from Registry
++	 * MGR Destroy will unload the DCD dll */
++	if (DSP_SUCCEEDED(cfg_get_object((u32 *) &mgr_obj, REG_MGR_OBJECT)))
++		(void)mgr_destroy(mgr_obj);
++
++	api_exit();
++
++	return ret;
++}
+diff --git a/drivers/staging/tidspbridge/rmgr/mgr.c b/drivers/staging/tidspbridge/rmgr/mgr.c
+new file mode 100644
+index 0000000..b1a68ac
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/mgr.c
+@@ -0,0 +1,374 @@
++/*
++ * mgr.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * Implementation of Manager interface to the device object at the
++ * driver level. This queries the NDB data base and retrieves the
++ * data about Node and Processor.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
++
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
++
++/*  ----------------------------------- OS Adaptation Layer */
++#include <dspbridge/cfg.h>
++#include <dspbridge/sync.h>
++
++/*  ----------------------------------- Others */
++#include <dspbridge/dbdcd.h>
++#include <dspbridge/drv.h>
++#include <dspbridge/dev.h>
++
++/*  ----------------------------------- This */
++#include <dspbridge/mgr.h>
++
++/*  ----------------------------------- Defines, Data Structures, Typedefs */
++#define ZLDLLNAME               ""
++
++struct mgr_object {
++	struct dcd_manager *hdcd_mgr;	/* Proc/Node data manager */
++};
++
++/*  ----------------------------------- Globals */
++static u32 refs;
++
++/*
++ *  ========= mgr_create =========
++ *  Purpose:
++ *      MGR Object gets created only once during driver Loading.
++ */
++int mgr_create(OUT struct mgr_object **phMgrObject,
++		      struct cfg_devnode *dev_node_obj)
++{
++	int status = 0;
++	struct mgr_object *pmgr_obj = NULL;
++
++	DBC_REQUIRE(phMgrObject != NULL);
++	DBC_REQUIRE(refs > 0);
++
++	pmgr_obj = kzalloc(sizeof(struct mgr_object), GFP_KERNEL);
++	if (pmgr_obj) {
++		status = dcd_create_manager(ZLDLLNAME, &pmgr_obj->hdcd_mgr);
++		if (DSP_SUCCEEDED(status)) {
++			/* If succeeded store the handle in the MGR Object */
++			status = cfg_set_object((u32) pmgr_obj, REG_MGR_OBJECT);
++			if (DSP_SUCCEEDED(status)) {
++				*phMgrObject = pmgr_obj;
++			} else {
++				dcd_destroy_manager(pmgr_obj->hdcd_mgr);
++				kfree(pmgr_obj);
++			}
++		} else {
++			/* failed to Create DCD Manager */
++			kfree(pmgr_obj);
++		}
++	} else {
++		status = -ENOMEM;
++	}
++
++	DBC_ENSURE(DSP_FAILED(status) || pmgr_obj);
++	return status;
++}
++
++/*
++ *  ========= mgr_destroy =========
++ *     This function is invoked during bridge driver unloading.Frees MGR object.
++ */
++int mgr_destroy(struct mgr_object *hmgr_obj)
++{
++	int status = 0;
++	struct mgr_object *pmgr_obj = (struct mgr_object *)hmgr_obj;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(hmgr_obj);
++
++	/* Free resources */
++	if (hmgr_obj->hdcd_mgr)
++		dcd_destroy_manager(hmgr_obj->hdcd_mgr);
++
++	kfree(pmgr_obj);
++	/* Update the Registry with NULL for MGR Object */
++	(void)cfg_set_object(0, REG_MGR_OBJECT);
++
++	return status;
++}
++
++/*
++ *  ======== mgr_enum_node_info ========
++ *      Enumerate and get configuration information about nodes configured
++ *      in the node database.
++ */
++int mgr_enum_node_info(u32 node_id, OUT struct dsp_ndbprops *pndb_props,
++			      u32 undb_props_size, OUT u32 *pu_num_nodes)
++{
++	int status = 0;
++	struct dsp_uuid node_uuid, temp_uuid;
++	u32 temp_index = 0;
++	u32 node_index = 0;
++	struct dcd_genericobj gen_obj;
++	struct mgr_object *pmgr_obj = NULL;
++
++	DBC_REQUIRE(pndb_props != NULL);
++	DBC_REQUIRE(pu_num_nodes != NULL);
++	DBC_REQUIRE(undb_props_size >= sizeof(struct dsp_ndbprops));
++	DBC_REQUIRE(refs > 0);
++
++	*pu_num_nodes = 0;
++	/* Get The Manager Object from the Registry */
++	status = cfg_get_object((u32 *) &pmgr_obj, REG_MGR_OBJECT);
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	DBC_ASSERT(pmgr_obj);
++	/* Forever loop till we hit failed or no more items in the
++	 * Enumeration. We will exit the loop other than 0; */
++	while (status == 0) {
++		status = dcd_enumerate_object(temp_index++, DSP_DCDNODETYPE,
++					      &temp_uuid);
++		if (status == 0) {
++			node_index++;
++			if (node_id == (node_index - 1))
++				node_uuid = temp_uuid;
++
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		if (node_id > (node_index - 1)) {
++			status = -EINVAL;
++		} else {
++			status = dcd_get_object_def(pmgr_obj->hdcd_mgr,
++						    (struct dsp_uuid *)
++						    &node_uuid, DSP_DCDNODETYPE,
++						    &gen_obj);
++			if (DSP_SUCCEEDED(status)) {
++				/* Get the Obj def */
++				*pndb_props =
++				    gen_obj.obj_data.node_obj.ndb_props;
++				*pu_num_nodes = node_index;
++			}
++		}
++	}
++
++func_cont:
++	DBC_ENSURE((DSP_SUCCEEDED(status) && *pu_num_nodes > 0) ||
++		   (DSP_FAILED(status) && *pu_num_nodes == 0));
++
++	return status;
++}
++
++/*
++ *  ======== mgr_enum_processor_info ========
++ *      Enumerate and get configuration information about available
++ *      DSP processors.
++ */
++int mgr_enum_processor_info(u32 processor_id,
++				   OUT struct dsp_processorinfo *
++				   processor_info, u32 processor_info_size,
++				   OUT u8 *pu_num_procs)
++{
++	int status = 0;
++	int status1 = 0;
++	int status2 = 0;
++	struct dsp_uuid temp_uuid;
++	u32 temp_index = 0;
++	u32 proc_index = 0;
++	struct dcd_genericobj gen_obj;
++	struct mgr_object *pmgr_obj = NULL;
++	struct mgr_processorextinfo *ext_info;
++	struct dev_object *hdev_obj;
++	struct drv_object *hdrv_obj;
++	u8 dev_type;
++	struct cfg_devnode *dev_node;
++	bool proc_detect = false;
++
++	DBC_REQUIRE(processor_info != NULL);
++	DBC_REQUIRE(pu_num_procs != NULL);
++	DBC_REQUIRE(processor_info_size >= sizeof(struct dsp_processorinfo));
++	DBC_REQUIRE(refs > 0);
++
++	*pu_num_procs = 0;
++	status = cfg_get_object((u32 *) &hdrv_obj, REG_DRV_OBJECT);
++	if (DSP_SUCCEEDED(status)) {
++		status = drv_get_dev_object(processor_id, hdrv_obj, &hdev_obj);
++		if (DSP_SUCCEEDED(status)) {
++			status = dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
++			status = dev_get_dev_node(hdev_obj, &dev_node);
++			if (dev_type != DSP_UNIT)
++				status = -EPERM;
++
++			if (DSP_SUCCEEDED(status))
++				processor_info->processor_type = DSPTYPE64;
++		}
++	}
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/* Get The Manager Object from the Registry */
++	if (DSP_FAILED(cfg_get_object((u32 *) &pmgr_obj, REG_MGR_OBJECT))) {
++		dev_dbg(bridge, "%s: Failed to get MGR Object\n", __func__);
++		goto func_end;
++	}
++	DBC_ASSERT(pmgr_obj);
++	/* Forever loop till we hit no more items in the
++	 * Enumeration. We will exit the loop other than 0; */
++	while (status1 == 0) {
++		status1 = dcd_enumerate_object(temp_index++,
++					       DSP_DCDPROCESSORTYPE,
++					       &temp_uuid);
++		if (status1 != 0)
++			break;
++
++		proc_index++;
++		/* Get the Object properties to find the Device/Processor
++		 * Type */
++		if (proc_detect != false)
++			continue;
++
++		status2 = dcd_get_object_def(pmgr_obj->hdcd_mgr,
++					     (struct dsp_uuid *)&temp_uuid,
++					     DSP_DCDPROCESSORTYPE, &gen_obj);
++		if (DSP_SUCCEEDED(status2)) {
++			/* Get the Obj def */
++			if (processor_info_size <
++			    sizeof(struct mgr_processorextinfo)) {
++				*processor_info = gen_obj.obj_data.proc_info;
++			} else {
++				/* extended info */
++				ext_info = (struct mgr_processorextinfo *)
++				    processor_info;
++				*ext_info = gen_obj.obj_data.ext_proc_obj;
++			}
++			dev_dbg(bridge, "%s: Got proctype  from DCD %x\n",
++				__func__, processor_info->processor_type);
++			/* See if we got the needed processor */
++			if (dev_type == DSP_UNIT) {
++				if (processor_info->processor_type ==
++				    DSPPROCTYPE_C64)
++					proc_detect = true;
++			} else if (dev_type == IVA_UNIT) {
++				if (processor_info->processor_type ==
++				    IVAPROCTYPE_ARM7)
++					proc_detect = true;
++			}
++			/* User applciatiuons aonly check for chip type, so
++			 * this clumsy overwrite */
++			processor_info->processor_type = DSPTYPE64;
++		} else {
++			dev_dbg(bridge, "%s: Failed to get DCD processor info "
++				"%x\n", __func__, status2);
++			status = -EPERM;
++		}
++	}
++	*pu_num_procs = proc_index;
++	if (proc_detect == false) {
++		dev_dbg(bridge, "%s: Failed to get proc info from DCD, so use "
++			"CFG registry\n", __func__);
++		processor_info->processor_type = DSPTYPE64;
++	}
++func_end:
++	return status;
++}
++
++/*
++ *  ======== mgr_exit ========
++ *      Decrement reference count, and free resources when reference count is
++ *      0.
++ */
++void mgr_exit(void)
++{
++	DBC_REQUIRE(refs > 0);
++	refs--;
++	if (refs == 0)
++		dcd_exit();
++
++	DBC_ENSURE(refs >= 0);
++}
++
++/*
++ *  ======== mgr_get_dcd_handle ========
++ *      Retrieves the MGR handle. Accessor Function.
++ */
++int mgr_get_dcd_handle(struct mgr_object *hMGRHandle,
++			      OUT u32 *phDCDHandle)
++{
++	int status = -EPERM;
++	struct mgr_object *pmgr_obj = (struct mgr_object *)hMGRHandle;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(phDCDHandle != NULL);
++
++	*phDCDHandle = (u32) NULL;
++	if (pmgr_obj) {
++		*phDCDHandle = (u32) pmgr_obj->hdcd_mgr;
++		status = 0;
++	}
++	DBC_ENSURE((DSP_SUCCEEDED(status) && *phDCDHandle != (u32) NULL) ||
++		   (DSP_FAILED(status) && *phDCDHandle == (u32) NULL));
++
++	return status;
++}
++
++/*
++ *  ======== mgr_init ========
++ *      Initialize MGR's private state, keeping a reference count on each call.
++ */
++bool mgr_init(void)
++{
++	bool ret = true;
++	bool init_dcd = false;
++
++	DBC_REQUIRE(refs >= 0);
++
++	if (refs == 0) {
++		init_dcd = dcd_init();	/*  DCD Module */
++
++		if (!init_dcd)
++			ret = false;
++	}
++
++	if (ret)
++		refs++;
++
++	DBC_ENSURE((ret && (refs > 0)) || (!ret && (refs >= 0)));
++
++	return ret;
++}
++
++/*
++ *  ======== mgr_wait_for_bridge_events ========
++ *      Block on any Bridge event(s)
++ */
++int mgr_wait_for_bridge_events(struct dsp_notification **anotifications,
++				      u32 count, OUT u32 *pu_index,
++				      u32 utimeout)
++{
++	int status;
++	struct sync_object *sync_events[MAX_EVENTS];
++	u32 i;
++
++	DBC_REQUIRE(count < MAX_EVENTS);
++
++	for (i = 0; i < count; i++)
++		sync_events[i] = anotifications[i]->handle;
++
++	status = sync_wait_on_multiple_events(sync_events, count, utimeout,
++					      pu_index);
++
++	return status;
++
++}
+diff --git a/drivers/staging/tidspbridge/rmgr/nldr.c b/drivers/staging/tidspbridge/rmgr/nldr.c
+new file mode 100644
+index 0000000..d0138af
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/nldr.c
+@@ -0,0 +1,1999 @@
++/*
++ * nldr.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * DSP/BIOS Bridge dynamic + overlay Node loader.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++#include <dspbridge/host_os.h>
++
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
++
++#include <dspbridge/dbc.h>
++
++/* Platform manager */
++#include <dspbridge/cod.h>
++#include <dspbridge/dev.h>
++
++/* Resource manager */
++#include <dspbridge/dbll.h>
++#include <dspbridge/dbdcd.h>
++#include <dspbridge/rmm.h>
++#include <dspbridge/uuidutil.h>
++
++#include <dspbridge/nldr.h>
++
++/* Name of section containing dynamic load mem */
++#define DYNMEMSECT  ".dspbridge_mem"
++
++/* Name of section containing dependent library information */
++#define DEPLIBSECT  ".dspbridge_deplibs"
++
++/* Max depth of recursion for loading node's dependent libraries */
++#define MAXDEPTH	    5
++
++/* Max number of persistent libraries kept by a node */
++#define MAXLIBS	 5
++
++/*
++ *  Defines for extracting packed dynamic load memory requirements from two
++ *  masks.
++ *  These defines must match node.cdb and dynm.cdb
++ *  Format of data/code mask is:
++ *   uuuuuuuu|fueeeeee|fudddddd|fucccccc|
++ *  where
++ *      u = unused
++ *      cccccc = prefered/required dynamic mem segid for create phase data/code
++ *      dddddd = prefered/required dynamic mem segid for delete phase data/code
++ *      eeeeee = prefered/req. dynamic mem segid for execute phase data/code
++ *      f = flag indicating if memory is preferred or required:
++ *	  f = 1 if required, f = 0 if preferred.
++ *
++ *  The 6 bits of the segid are interpreted as follows:
++ *
++ *  If the 6th bit (bit 5) is not set, then this specifies a memory segment
++ *  between 0 and 31 (a maximum of 32 dynamic loading memory segments).
++ *  If the 6th bit (bit 5) is set, segid has the following interpretation:
++ *      segid = 32 - Any internal memory segment can be used.
++ *      segid = 33 - Any external memory segment can be used.
++ *      segid = 63 - Any memory segment can be used (in this case the
++ *		   required/preferred flag is irrelevant).
++ *
++ */
++/* Maximum allowed dynamic loading memory segments */
++#define MAXMEMSEGS      32
++
++#define MAXSEGID	3	/* Largest possible (real) segid */
++#define MEMINTERNALID   32	/* Segid meaning use internal mem */
++#define MEMEXTERNALID   33	/* Segid meaning use external mem */
++#define NULLID	  63		/* Segid meaning no memory req/pref */
++#define FLAGBIT	 7		/* 7th bit is pref./req. flag */
++#define SEGMASK	 0x3f		/* Bits 0 - 5 */
++
++#define CREATEBIT	0	/* Create segid starts at bit 0 */
++#define DELETEBIT	8	/* Delete segid starts at bit 8 */
++#define EXECUTEBIT      16	/* Execute segid starts at bit 16 */
++
++/*
++ *  Masks that define memory type.  Must match defines in dynm.cdb.
++ */
++#define DYNM_CODE	0x2
++#define DYNM_DATA	0x4
++#define DYNM_CODEDATA   (DYNM_CODE | DYNM_DATA)
++#define DYNM_INTERNAL   0x8
++#define DYNM_EXTERNAL   0x10
++
++/*
++ *  Defines for packing memory requirement/preference flags for code and
++ *  data of each of the node's phases into one mask.
++ *  The bit is set if the segid is required for loading code/data of the
++ *  given phase. The bit is not set, if the segid is preferred only.
++ *
++ *  These defines are also used as indeces into a segid array for the node.
++ *  eg node's segid[CREATEDATAFLAGBIT] is the memory segment id that the
++ *  create phase data is required or preferred to be loaded into.
++ */
++#define CREATEDATAFLAGBIT   0
++#define CREATECODEFLAGBIT   1
++#define EXECUTEDATAFLAGBIT  2
++#define EXECUTECODEFLAGBIT  3
++#define DELETEDATAFLAGBIT   4
++#define DELETECODEFLAGBIT   5
++#define MAXFLAGS	    6
++
++#define IS_INTERNAL(nldr_obj, segid) (((segid) <= MAXSEGID && \
++	    nldr_obj->seg_table[(segid)] & DYNM_INTERNAL) || \
++	    (segid) == MEMINTERNALID)
++
++#define IS_EXTERNAL(nldr_obj, segid) (((segid) <= MAXSEGID && \
++	    nldr_obj->seg_table[(segid)] & DYNM_EXTERNAL) || \
++	    (segid) == MEMEXTERNALID)
++
++#define SWAPLONG(x) ((((x) << 24) & 0xFF000000) | (((x) << 8) & 0xFF0000L) | \
++	(((x) >> 8) & 0xFF00L) | (((x) >> 24) & 0xFF))
++
++#define SWAPWORD(x) ((((x) << 8) & 0xFF00) | (((x) >> 8) & 0xFF))
++
++    /*
++     *  These names may be embedded in overlay sections to identify which
++     *  node phase the section should be overlayed.
++ */
++#define PCREATE	 "create"
++#define PDELETE	 "delete"
++#define PEXECUTE	"execute"
++
++#define IS_EQUAL_UUID(uuid1, uuid2) (\
++	((uuid1).ul_data1 == (uuid2).ul_data1) && \
++	((uuid1).us_data2 == (uuid2).us_data2) && \
++	((uuid1).us_data3 == (uuid2).us_data3) && \
++	((uuid1).uc_data4 == (uuid2).uc_data4) && \
++	((uuid1).uc_data5 == (uuid2).uc_data5) && \
++	(strncmp((void *)(uuid1).uc_data6, (void *)(uuid2).uc_data6, 6)) == 0)
++
++    /*
++     *  ======== mem_seg_info ========
++     *  Format of dynamic loading memory segment info in coff file.
++     *  Must match dynm.h55.
++ */
++struct mem_seg_info {
++	u32 segid;		/* Dynamic loading memory segment number */
++	u32 base;
++	u32 len;
++	u32 type;		/* Mask of DYNM_CODE, DYNM_INTERNAL, etc. */
++};
++
++/*
++ *  ======== lib_node ========
++ *  For maintaining a tree of library dependencies.
++ */
++struct lib_node {
++	struct dbll_library_obj *lib;	/* The library */
++	u16 dep_libs;		/* Number of dependent libraries */
++	struct lib_node *dep_libs_tree;	/* Dependent libraries of lib */
++};
++
++/*
++ *  ======== ovly_sect ========
++ *  Information needed to overlay a section.
++ */
++struct ovly_sect {
++	struct ovly_sect *next_sect;
++	u32 sect_load_addr;	/* Load address of section */
++	u32 sect_run_addr;	/* Run address of section */
++	u32 size;		/* Size of section */
++	u16 page;		/* DBL_CODE, DBL_DATA */
++};
++
++/*
++ *  ======== ovly_node ========
++ *  For maintaining a list of overlay nodes, with sections that need to be
++ *  overlayed for each of the nodes phases.
++ */
++struct ovly_node {
++	struct dsp_uuid uuid;
++	char *node_name;
++	struct ovly_sect *create_sects_list;
++	struct ovly_sect *delete_sects_list;
++	struct ovly_sect *execute_sects_list;
++	struct ovly_sect *other_sects_list;
++	u16 create_sects;
++	u16 delete_sects;
++	u16 execute_sects;
++	u16 other_sects;
++	u16 create_ref;
++	u16 delete_ref;
++	u16 execute_ref;
++	u16 other_ref;
++};
++
++/*
++ *  ======== nldr_object ========
++ *  Overlay loader object.
++ */
++struct nldr_object {
++	struct dev_object *hdev_obj;	/* Device object */
++	struct dcd_manager *hdcd_mgr;	/* Proc/Node data manager */
++	struct dbll_tar_obj *dbll;	/* The DBL loader */
++	struct dbll_library_obj *base_lib;	/* Base image library */
++	struct rmm_target_obj *rmm;	/* Remote memory manager for DSP */
++	struct dbll_fxns ldr_fxns;	/* Loader function table */
++	struct dbll_attrs ldr_attrs;	/* attrs to pass to loader functions */
++	nldr_ovlyfxn ovly_fxn;	/* "write" for overlay nodes */
++	nldr_writefxn write_fxn;	/* "write" for dynamic nodes */
++	struct ovly_node *ovly_table;	/* Table of overlay nodes */
++	u16 ovly_nodes;		/* Number of overlay nodes in base */
++	u16 ovly_nid;		/* Index for tracking overlay nodes */
++	u16 dload_segs;		/* Number of dynamic load mem segs */
++	u32 *seg_table;		/* memtypes of dynamic memory segs
++				 * indexed by segid
++				 */
++	u16 us_dsp_mau_size;	/* Size of DSP MAU */
++	u16 us_dsp_word_size;	/* Size of DSP word */
++};
++
++/*
++ *  ======== nldr_nodeobject ========
++ *  Dynamic node object. This object is created when a node is allocated.
++ */
++struct nldr_nodeobject {
++	struct nldr_object *nldr_obj;	/* Dynamic loader handle */
++	void *priv_ref;		/* Handle to pass to dbl_write_fxn */
++	struct dsp_uuid uuid;	/* Node's UUID */
++	bool dynamic;		/* Dynamically loaded node? */
++	bool overlay;		/* Overlay node? */
++	bool *pf_phase_split;	/* Multiple phase libraries? */
++	struct lib_node root;	/* Library containing node phase */
++	struct lib_node create_lib;	/* Library with create phase lib */
++	struct lib_node execute_lib;	/* Library with execute phase lib */
++	struct lib_node delete_lib;	/* Library with delete phase lib */
++	/* libs remain loaded until Delete */
++	struct lib_node pers_lib_table[MAXLIBS];
++	s32 pers_libs;		/* Number of persistent libraries */
++	/* Path in lib dependency tree */
++	struct dbll_library_obj *lib_path[MAXDEPTH + 1];
++	enum nldr_phase phase;	/* Node phase currently being loaded */
++
++	/*
++	 *  Dynamic loading memory segments for data and code of each phase.
++	 */
++	u16 seg_id[MAXFLAGS];
++
++	/*
++	 *  Mask indicating whether each mem segment specified in seg_id[]
++	 *  is preferred or required.
++	 *  For example
++	 *  	if (code_data_flag_mask & (1 << EXECUTEDATAFLAGBIT)) != 0,
++	 *  then it is required to load execute phase data into the memory
++	 *  specified by seg_id[EXECUTEDATAFLAGBIT].
++	 */
++	u32 code_data_flag_mask;
++};
++
++/* Dynamic loader function table */
++static struct dbll_fxns ldr_fxns = {
++	(dbll_close_fxn) dbll_close,
++	(dbll_create_fxn) dbll_create,
++	(dbll_delete_fxn) dbll_delete,
++	(dbll_exit_fxn) dbll_exit,
++	(dbll_get_attrs_fxn) dbll_get_attrs,
++	(dbll_get_addr_fxn) dbll_get_addr,
++	(dbll_get_c_addr_fxn) dbll_get_c_addr,
++	(dbll_get_sect_fxn) dbll_get_sect,
++	(dbll_init_fxn) dbll_init,
++	(dbll_load_fxn) dbll_load,
++	(dbll_load_sect_fxn) dbll_load_sect,
++	(dbll_open_fxn) dbll_open,
++	(dbll_read_sect_fxn) dbll_read_sect,
++	(dbll_set_attrs_fxn) dbll_set_attrs,
++	(dbll_unload_fxn) dbll_unload,
++	(dbll_unload_sect_fxn) dbll_unload_sect,
++};
++
++static u32 refs;		/* module reference count */
++
++static int add_ovly_info(void *handle, struct dbll_sect_info *sect_info,
++				u32 addr, u32 bytes);
++static int add_ovly_node(struct dsp_uuid *uuid_obj,
++				enum dsp_dcdobjtype obj_type, IN void *handle);
++static int add_ovly_sect(struct nldr_object *nldr_obj,
++				struct ovly_sect **pList,
++				struct dbll_sect_info *pSectInfo,
++				bool *pExists, u32 addr, u32 bytes);
++static s32 fake_ovly_write(void *handle, u32 dspAddr, void *buf, u32 bytes,
++			   s32 mtype);
++static void free_sects(struct nldr_object *nldr_obj,
++		       struct ovly_sect *phase_sects, u16 alloc_num);
++static bool get_symbol_value(void *handle, void *parg, void *rmm_handle,
++			     char *symName, struct dbll_sym_val **sym);
++static int load_lib(struct nldr_nodeobject *nldr_node_obj,
++			   struct lib_node *root, struct dsp_uuid uuid,
++			   bool rootPersistent,
++			   struct dbll_library_obj **lib_path,
++			   enum nldr_phase phase, u16 depth);
++static int load_ovly(struct nldr_nodeobject *nldr_node_obj,
++			    enum nldr_phase phase);
++static int remote_alloc(void **pRef, u16 mem_sect_type, u32 size,
++			       u32 align, u32 *dspAddr, OPTIONAL s32 segmentId,
++			       OPTIONAL s32 req, bool reserve);
++static int remote_free(void **pRef, u16 space, u32 dspAddr, u32 size,
++			      bool reserve);
++
++static void unload_lib(struct nldr_nodeobject *nldr_node_obj,
++		       struct lib_node *root);
++static void unload_ovly(struct nldr_nodeobject *nldr_node_obj,
++			enum nldr_phase phase);
++static bool find_in_persistent_lib_array(struct nldr_nodeobject *nldr_node_obj,
++					 struct dbll_library_obj *lib);
++static u32 find_lcm(u32 a, u32 b);
++static u32 find_gcf(u32 a, u32 b);
++
++/*
++ *  ======== nldr_allocate ========
++ */
++int nldr_allocate(struct nldr_object *nldr_obj, void *priv_ref,
++			 IN CONST struct dcd_nodeprops *node_props,
++			 OUT struct nldr_nodeobject **phNldrNode,
++			 IN bool *pf_phase_split)
++{
++	struct nldr_nodeobject *nldr_node_obj = NULL;
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(node_props != NULL);
++	DBC_REQUIRE(phNldrNode != NULL);
++	DBC_REQUIRE(nldr_obj);
++
++	/* Initialize handle in case of failure */
++	*phNldrNode = NULL;
++	/* Allocate node object */
++	nldr_node_obj = kzalloc(sizeof(struct nldr_nodeobject), GFP_KERNEL);
++
++	if (nldr_node_obj == NULL) {
++		status = -ENOMEM;
++	} else {
++		nldr_node_obj->pf_phase_split = pf_phase_split;
++		nldr_node_obj->pers_libs = 0;
++		nldr_node_obj->nldr_obj = nldr_obj;
++		nldr_node_obj->priv_ref = priv_ref;
++		/* Save node's UUID. */
++		nldr_node_obj->uuid = node_props->ndb_props.ui_node_id;
++		/*
++		 *  Determine if node is a dynamically loaded node from
++		 *  ndb_props.
++		 */
++		if (node_props->us_load_type == NLDR_DYNAMICLOAD) {
++			/* Dynamic node */
++			nldr_node_obj->dynamic = true;
++			/*
++			 *  Extract memory requirements from ndb_props masks
++			 */
++			/* Create phase */
++			nldr_node_obj->seg_id[CREATEDATAFLAGBIT] = (u16)
++			    (node_props->ul_data_mem_seg_mask >> CREATEBIT) &
++			    SEGMASK;
++			nldr_node_obj->code_data_flag_mask |=
++			    ((node_props->ul_data_mem_seg_mask >>
++			      (CREATEBIT + FLAGBIT)) & 1) << CREATEDATAFLAGBIT;
++			nldr_node_obj->seg_id[CREATECODEFLAGBIT] = (u16)
++			    (node_props->ul_code_mem_seg_mask >>
++			     CREATEBIT) & SEGMASK;
++			nldr_node_obj->code_data_flag_mask |=
++			    ((node_props->ul_code_mem_seg_mask >>
++			      (CREATEBIT + FLAGBIT)) & 1) << CREATECODEFLAGBIT;
++			/* Execute phase */
++			nldr_node_obj->seg_id[EXECUTEDATAFLAGBIT] = (u16)
++			    (node_props->ul_data_mem_seg_mask >>
++			     EXECUTEBIT) & SEGMASK;
++			nldr_node_obj->code_data_flag_mask |=
++			    ((node_props->ul_data_mem_seg_mask >>
++			      (EXECUTEBIT + FLAGBIT)) & 1) <<
++			    EXECUTEDATAFLAGBIT;
++			nldr_node_obj->seg_id[EXECUTECODEFLAGBIT] = (u16)
++			    (node_props->ul_code_mem_seg_mask >>
++			     EXECUTEBIT) & SEGMASK;
++			nldr_node_obj->code_data_flag_mask |=
++			    ((node_props->ul_code_mem_seg_mask >>
++			      (EXECUTEBIT + FLAGBIT)) & 1) <<
++			    EXECUTECODEFLAGBIT;
++			/* Delete phase */
++			nldr_node_obj->seg_id[DELETEDATAFLAGBIT] = (u16)
++			    (node_props->ul_data_mem_seg_mask >> DELETEBIT) &
++			    SEGMASK;
++			nldr_node_obj->code_data_flag_mask |=
++			    ((node_props->ul_data_mem_seg_mask >>
++			      (DELETEBIT + FLAGBIT)) & 1) << DELETEDATAFLAGBIT;
++			nldr_node_obj->seg_id[DELETECODEFLAGBIT] = (u16)
++			    (node_props->ul_code_mem_seg_mask >>
++			     DELETEBIT) & SEGMASK;
++			nldr_node_obj->code_data_flag_mask |=
++			    ((node_props->ul_code_mem_seg_mask >>
++			      (DELETEBIT + FLAGBIT)) & 1) << DELETECODEFLAGBIT;
++		} else {
++			/* Non-dynamically loaded nodes are part of the
++			 * base image */
++			nldr_node_obj->root.lib = nldr_obj->base_lib;
++			/* Check for overlay node */
++			if (node_props->us_load_type == NLDR_OVLYLOAD)
++				nldr_node_obj->overlay = true;
++
++		}
++		*phNldrNode = (struct nldr_nodeobject *)nldr_node_obj;
++	}
++	/* Cleanup on failure */
++	if (DSP_FAILED(status) && nldr_node_obj)
++		kfree(nldr_node_obj);
++
++	DBC_ENSURE((DSP_SUCCEEDED(status) && *phNldrNode)
++		   || (DSP_FAILED(status) && *phNldrNode == NULL));
++	return status;
++}
++
++/*
++ *  ======== nldr_create ========
++ */
++int nldr_create(OUT struct nldr_object **phNldr,
++		       struct dev_object *hdev_obj,
++		       IN CONST struct nldr_attrs *pattrs)
++{
++	struct cod_manager *cod_mgr;	/* COD manager */
++	char *psz_coff_buf = NULL;
++	char sz_zl_file[COD_MAXPATHLENGTH];
++	struct nldr_object *nldr_obj = NULL;
++	struct dbll_attrs save_attrs;
++	struct dbll_attrs new_attrs;
++	dbll_flags flags;
++	u32 ul_entry;
++	u16 dload_segs = 0;
++	struct mem_seg_info *mem_info_obj;
++	u32 ul_len = 0;
++	u32 ul_addr;
++	struct rmm_segment *rmm_segs = NULL;
++	u16 i;
++	int status = 0;
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(phNldr != NULL);
++	DBC_REQUIRE(hdev_obj != NULL);
++	DBC_REQUIRE(pattrs != NULL);
++	DBC_REQUIRE(pattrs->pfn_ovly != NULL);
++	DBC_REQUIRE(pattrs->pfn_write != NULL);
++
++	/* Allocate dynamic loader object */
++	nldr_obj = kzalloc(sizeof(struct nldr_object), GFP_KERNEL);
++	if (nldr_obj) {
++		nldr_obj->hdev_obj = hdev_obj;
++		/* warning, lazy status checking alert! */
++		dev_get_cod_mgr(hdev_obj, &cod_mgr);
++		if (cod_mgr) {
++			status = cod_get_loader(cod_mgr, &nldr_obj->dbll);
++			DBC_ASSERT(DSP_SUCCEEDED(status));
++			status = cod_get_base_lib(cod_mgr, &nldr_obj->base_lib);
++			DBC_ASSERT(DSP_SUCCEEDED(status));
++			status =
++			    cod_get_base_name(cod_mgr, sz_zl_file,
++							COD_MAXPATHLENGTH);
++			DBC_ASSERT(DSP_SUCCEEDED(status));
++		}
++		status = 0;
++		/* end lazy status checking */
++		nldr_obj->us_dsp_mau_size = pattrs->us_dsp_mau_size;
++		nldr_obj->us_dsp_word_size = pattrs->us_dsp_word_size;
++		nldr_obj->ldr_fxns = ldr_fxns;
++		if (!(nldr_obj->ldr_fxns.init_fxn()))
++			status = -ENOMEM;
++
++	} else {
++		status = -ENOMEM;
++	}
++	/* Create the DCD Manager */
++	if (DSP_SUCCEEDED(status))
++		status = dcd_create_manager(NULL, &nldr_obj->hdcd_mgr);
++
++	/* Get dynamic loading memory sections from base lib */
++	if (DSP_SUCCEEDED(status)) {
++		status =
++		    nldr_obj->ldr_fxns.get_sect_fxn(nldr_obj->base_lib,
++						    DYNMEMSECT, &ul_addr,
++						    &ul_len);
++		if (DSP_SUCCEEDED(status)) {
++			psz_coff_buf =
++				kzalloc(ul_len * nldr_obj->us_dsp_mau_size,
++								GFP_KERNEL);
++			if (!psz_coff_buf)
++				status = -ENOMEM;
++		} else {
++			/* Ok to not have dynamic loading memory */
++			status = 0;
++			ul_len = 0;
++			dev_dbg(bridge, "%s: failed - no dynamic loading mem "
++				"segments: 0x%x\n", __func__, status);
++		}
++	}
++	if (DSP_SUCCEEDED(status) && ul_len > 0) {
++		/* Read section containing dynamic load mem segments */
++		status =
++		    nldr_obj->ldr_fxns.read_sect_fxn(nldr_obj->base_lib,
++						     DYNMEMSECT, psz_coff_buf,
++						     ul_len);
++	}
++	if (DSP_SUCCEEDED(status) && ul_len > 0) {
++		/* Parse memory segment data */
++		dload_segs = (u16) (*((u32 *) psz_coff_buf));
++		if (dload_segs > MAXMEMSEGS)
++			status = -EBADF;
++	}
++	/* Parse dynamic load memory segments */
++	if (DSP_SUCCEEDED(status) && dload_segs > 0) {
++		rmm_segs = kzalloc(sizeof(struct rmm_segment) * dload_segs,
++								GFP_KERNEL);
++		nldr_obj->seg_table =
++				kzalloc(sizeof(u32) * dload_segs, GFP_KERNEL);
++		if (rmm_segs == NULL || nldr_obj->seg_table == NULL) {
++			status = -ENOMEM;
++		} else {
++			nldr_obj->dload_segs = dload_segs;
++			mem_info_obj = (struct mem_seg_info *)(psz_coff_buf +
++							       sizeof(u32));
++			for (i = 0; i < dload_segs; i++) {
++				rmm_segs[i].base = (mem_info_obj + i)->base;
++				rmm_segs[i].length = (mem_info_obj + i)->len;
++				rmm_segs[i].space = 0;
++				nldr_obj->seg_table[i] =
++				    (mem_info_obj + i)->type;
++				dev_dbg(bridge,
++					"(proc) DLL MEMSEGMENT: %d, "
++					"Base: 0x%x, Length: 0x%x\n", i,
++					rmm_segs[i].base, rmm_segs[i].length);
++			}
++		}
++	}
++	/* Create Remote memory manager */
++	if (DSP_SUCCEEDED(status))
++		status = rmm_create(&nldr_obj->rmm, rmm_segs, dload_segs);
++
++	if (DSP_SUCCEEDED(status)) {
++		/* set the alloc, free, write functions for loader */
++		nldr_obj->ldr_fxns.get_attrs_fxn(nldr_obj->dbll, &save_attrs);
++		new_attrs = save_attrs;
++		new_attrs.alloc = (dbll_alloc_fxn) remote_alloc;
++		new_attrs.free = (dbll_free_fxn) remote_free;
++		new_attrs.sym_lookup = (dbll_sym_lookup) get_symbol_value;
++		new_attrs.sym_handle = nldr_obj;
++		new_attrs.write = (dbll_write_fxn) pattrs->pfn_write;
++		nldr_obj->ovly_fxn = pattrs->pfn_ovly;
++		nldr_obj->write_fxn = pattrs->pfn_write;
++		nldr_obj->ldr_attrs = new_attrs;
++	}
++	kfree(rmm_segs);
++
++	kfree(psz_coff_buf);
++
++	/* Get overlay nodes */
++	if (DSP_SUCCEEDED(status)) {
++		status =
++		    cod_get_base_name(cod_mgr, sz_zl_file, COD_MAXPATHLENGTH);
++		/* lazy check */
++		DBC_ASSERT(DSP_SUCCEEDED(status));
++		/* First count number of overlay nodes */
++		status =
++		    dcd_get_objects(nldr_obj->hdcd_mgr, sz_zl_file,
++				    add_ovly_node, (void *)nldr_obj);
++		/* Now build table of overlay nodes */
++		if (DSP_SUCCEEDED(status) && nldr_obj->ovly_nodes > 0) {
++			/* Allocate table for overlay nodes */
++			nldr_obj->ovly_table =
++					kzalloc(sizeof(struct ovly_node) *
++					nldr_obj->ovly_nodes, GFP_KERNEL);
++			/* Put overlay nodes in the table */
++			nldr_obj->ovly_nid = 0;
++			status = dcd_get_objects(nldr_obj->hdcd_mgr, sz_zl_file,
++						 add_ovly_node,
++						 (void *)nldr_obj);
++		}
++	}
++	/* Do a fake reload of the base image to get overlay section info */
++	if (DSP_SUCCEEDED(status) && nldr_obj->ovly_nodes > 0) {
++		save_attrs.write = fake_ovly_write;
++		save_attrs.log_write = add_ovly_info;
++		save_attrs.log_write_handle = nldr_obj;
++		flags = DBLL_CODE | DBLL_DATA | DBLL_SYMB;
++		status = nldr_obj->ldr_fxns.load_fxn(nldr_obj->base_lib, flags,
++						     &save_attrs, &ul_entry);
++	}
++	if (DSP_SUCCEEDED(status)) {
++		*phNldr = (struct nldr_object *)nldr_obj;
++	} else {
++		if (nldr_obj)
++			nldr_delete((struct nldr_object *)nldr_obj);
++
++		*phNldr = NULL;
++	}
++	/* FIXME:Temp. Fix. Must be removed */
++	DBC_ENSURE((DSP_SUCCEEDED(status) && *phNldr)
++		   || (DSP_FAILED(status) && (*phNldr == NULL)));
++	return status;
++}
++
++/*
++ *  ======== nldr_delete ========
++ */
++void nldr_delete(struct nldr_object *nldr_obj)
++{
++	struct ovly_sect *ovly_section;
++	struct ovly_sect *next;
++	u16 i;
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(nldr_obj);
++
++	nldr_obj->ldr_fxns.exit_fxn();
++	if (nldr_obj->rmm)
++		rmm_delete(nldr_obj->rmm);
++
++	kfree(nldr_obj->seg_table);
++
++	if (nldr_obj->hdcd_mgr)
++		dcd_destroy_manager(nldr_obj->hdcd_mgr);
++
++	/* Free overlay node information */
++	if (nldr_obj->ovly_table) {
++		for (i = 0; i < nldr_obj->ovly_nodes; i++) {
++			ovly_section =
++			    nldr_obj->ovly_table[i].create_sects_list;
++			while (ovly_section) {
++				next = ovly_section->next_sect;
++				kfree(ovly_section);
++				ovly_section = next;
++			}
++			ovly_section =
++			    nldr_obj->ovly_table[i].delete_sects_list;
++			while (ovly_section) {
++				next = ovly_section->next_sect;
++				kfree(ovly_section);
++				ovly_section = next;
++			}
++			ovly_section =
++			    nldr_obj->ovly_table[i].execute_sects_list;
++			while (ovly_section) {
++				next = ovly_section->next_sect;
++				kfree(ovly_section);
++				ovly_section = next;
++			}
++			ovly_section = nldr_obj->ovly_table[i].other_sects_list;
++			while (ovly_section) {
++				next = ovly_section->next_sect;
++				kfree(ovly_section);
++				ovly_section = next;
++			}
++		}
++		kfree(nldr_obj->ovly_table);
++	}
++	kfree(nldr_obj);
++}
++
++/*
++ *  ======== nldr_exit ========
++ *  Discontinue usage of NLDR module.
++ */
++void nldr_exit(void)
++{
++	DBC_REQUIRE(refs > 0);
++
++	refs--;
++
++	if (refs == 0)
++		rmm_exit();
++
++	DBC_ENSURE(refs >= 0);
++}
++
++/*
++ *  ======== nldr_get_fxn_addr ========
++ */
++int nldr_get_fxn_addr(struct nldr_nodeobject *nldr_node_obj,
++			     char *pstrFxn, u32 * pulAddr)
++{
++	struct dbll_sym_val *dbll_sym;
++	struct nldr_object *nldr_obj;
++	int status = 0;
++	bool status1 = false;
++	s32 i = 0;
++	struct lib_node root = { NULL, 0, NULL };
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(nldr_node_obj);
++	DBC_REQUIRE(pulAddr != NULL);
++	DBC_REQUIRE(pstrFxn != NULL);
++
++	nldr_obj = nldr_node_obj->nldr_obj;
++	/* Called from node_create(), node_delete(), or node_run(). */
++	if (nldr_node_obj->dynamic && *nldr_node_obj->pf_phase_split) {
++		switch (nldr_node_obj->phase) {
++		case NLDR_CREATE:
++			root = nldr_node_obj->create_lib;
++			break;
++		case NLDR_EXECUTE:
++			root = nldr_node_obj->execute_lib;
++			break;
++		case NLDR_DELETE:
++			root = nldr_node_obj->delete_lib;
++			break;
++		default:
++			DBC_ASSERT(false);
++			break;
++		}
++	} else {
++		/* for Overlay nodes or non-split Dynamic nodes */
++		root = nldr_node_obj->root;
++	}
++	status1 =
++	    nldr_obj->ldr_fxns.get_c_addr_fxn(root.lib, pstrFxn, &dbll_sym);
++	if (!status1)
++		status1 =
++		    nldr_obj->ldr_fxns.get_addr_fxn(root.lib, pstrFxn,
++						    &dbll_sym);
++
++	/* If symbol not found, check dependent libraries */
++	if (!status1) {
++		for (i = 0; i < root.dep_libs; i++) {
++			status1 =
++			    nldr_obj->ldr_fxns.get_addr_fxn(root.dep_libs_tree
++							    [i].lib, pstrFxn,
++							    &dbll_sym);
++			if (!status1) {
++				status1 =
++				    nldr_obj->ldr_fxns.
++				    get_c_addr_fxn(root.dep_libs_tree[i].lib,
++						   pstrFxn, &dbll_sym);
++			}
++			if (status1) {
++				/* Symbol found */
++				break;
++			}
++		}
++	}
++	/* Check persistent libraries */
++	if (!status1) {
++		for (i = 0; i < nldr_node_obj->pers_libs; i++) {
++			status1 =
++			    nldr_obj->ldr_fxns.
++			    get_addr_fxn(nldr_node_obj->pers_lib_table[i].lib,
++					 pstrFxn, &dbll_sym);
++			if (!status1) {
++				status1 =
++				    nldr_obj->ldr_fxns.
++				    get_c_addr_fxn(nldr_node_obj->pers_lib_table
++						   [i].lib, pstrFxn, &dbll_sym);
++			}
++			if (status1) {
++				/* Symbol found */
++				break;
++			}
++		}
++	}
++
++	if (status1)
++		*pulAddr = dbll_sym->value;
++	else
++		status = -ESPIPE;
++
++	return status;
++}
++
++/*
++ *  ======== nldr_get_rmm_manager ========
++ *  Given a NLDR object, retrieve RMM Manager Handle
++ */
++int nldr_get_rmm_manager(struct nldr_object *hNldrObject,
++				OUT struct rmm_target_obj **phRmmMgr)
++{
++	int status = 0;
++	struct nldr_object *nldr_obj = hNldrObject;
++	DBC_REQUIRE(phRmmMgr != NULL);
++
++	if (hNldrObject) {
++		*phRmmMgr = nldr_obj->rmm;
++	} else {
++		*phRmmMgr = NULL;
++		status = -EFAULT;
++	}
++
++	DBC_ENSURE(DSP_SUCCEEDED(status) || ((phRmmMgr != NULL) &&
++					     (*phRmmMgr == NULL)));
++
++	return status;
++}
++
++/*
++ *  ======== nldr_init ========
++ *  Initialize the NLDR module.
++ */
++bool nldr_init(void)
++{
++	DBC_REQUIRE(refs >= 0);
++
++	if (refs == 0)
++		rmm_init();
++
++	refs++;
++
++	DBC_ENSURE(refs > 0);
++	return true;
++}
++
++/*
++ *  ======== nldr_load ========
++ */
++int nldr_load(struct nldr_nodeobject *nldr_node_obj,
++		     enum nldr_phase phase)
++{
++	struct nldr_object *nldr_obj;
++	struct dsp_uuid lib_uuid;
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(nldr_node_obj);
++
++	nldr_obj = nldr_node_obj->nldr_obj;
++
++	if (nldr_node_obj->dynamic) {
++		nldr_node_obj->phase = phase;
++
++		lib_uuid = nldr_node_obj->uuid;
++
++		/* At this point, we may not know if node is split into
++		 * different libraries. So we'll go ahead and load the
++		 * library, and then save the pointer to the appropriate
++		 * location after we know. */
++
++		status =
++		    load_lib(nldr_node_obj, &nldr_node_obj->root, lib_uuid,
++			     false, nldr_node_obj->lib_path, phase, 0);
++
++		if (DSP_SUCCEEDED(status)) {
++			if (*nldr_node_obj->pf_phase_split) {
++				switch (phase) {
++				case NLDR_CREATE:
++					nldr_node_obj->create_lib =
++					    nldr_node_obj->root;
++					break;
++
++				case NLDR_EXECUTE:
++					nldr_node_obj->execute_lib =
++					    nldr_node_obj->root;
++					break;
++
++				case NLDR_DELETE:
++					nldr_node_obj->delete_lib =
++					    nldr_node_obj->root;
++					break;
++
++				default:
++					DBC_ASSERT(false);
++					break;
++				}
++			}
++		}
++	} else {
++		if (nldr_node_obj->overlay)
++			status = load_ovly(nldr_node_obj, phase);
++
++	}
++
++	return status;
++}
++
++/*
++ *  ======== nldr_unload ========
++ */
++int nldr_unload(struct nldr_nodeobject *nldr_node_obj,
++		       enum nldr_phase phase)
++{
++	int status = 0;
++	struct lib_node *root_lib = NULL;
++	s32 i = 0;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(nldr_node_obj);
++
++	if (nldr_node_obj != NULL) {
++		if (nldr_node_obj->dynamic) {
++			if (*nldr_node_obj->pf_phase_split) {
++				switch (phase) {
++				case NLDR_CREATE:
++					root_lib = &nldr_node_obj->create_lib;
++					break;
++				case NLDR_EXECUTE:
++					root_lib = &nldr_node_obj->execute_lib;
++					break;
++				case NLDR_DELETE:
++					root_lib = &nldr_node_obj->delete_lib;
++					/* Unload persistent libraries */
++					for (i = 0;
++					     i < nldr_node_obj->pers_libs;
++					     i++) {
++						unload_lib(nldr_node_obj,
++							   &nldr_node_obj->
++							   pers_lib_table[i]);
++					}
++					nldr_node_obj->pers_libs = 0;
++					break;
++				default:
++					DBC_ASSERT(false);
++					break;
++				}
++			} else {
++				/* Unload main library */
++				root_lib = &nldr_node_obj->root;
++			}
++			if (root_lib)
++				unload_lib(nldr_node_obj, root_lib);
++		} else {
++			if (nldr_node_obj->overlay)
++				unload_ovly(nldr_node_obj, phase);
++
++		}
++	}
++	return status;
++}
++
++/*
++ *  ======== add_ovly_info ========
++ */
++static int add_ovly_info(void *handle, struct dbll_sect_info *sect_info,
++				u32 addr, u32 bytes)
++{
++	char *node_name;
++	char *sect_name = (char *)sect_info->name;
++	bool sect_exists = false;
++	char seps = ':';
++	char *pch;
++	u16 i;
++	struct nldr_object *nldr_obj = (struct nldr_object *)handle;
++	int status = 0;
++
++	/* Is this an overlay section (load address != run address)? */
++	if (sect_info->sect_load_addr == sect_info->sect_run_addr)
++		goto func_end;
++
++	/* Find the node it belongs to */
++	for (i = 0; i < nldr_obj->ovly_nodes; i++) {
++		node_name = nldr_obj->ovly_table[i].node_name;
++		DBC_REQUIRE(node_name);
++		if (strncmp(node_name, sect_name + 1, strlen(node_name)) == 0) {
++			/* Found the node */
++			break;
++		}
++	}
++	if (!(i < nldr_obj->ovly_nodes))
++		goto func_end;
++
++	/* Determine which phase this section belongs to */
++	for (pch = sect_name + 1; *pch && *pch != seps; pch++)
++		;;
++
++	if (*pch) {
++		pch++;		/* Skip over the ':' */
++		if (strncmp(pch, PCREATE, strlen(PCREATE)) == 0) {
++			status =
++			    add_ovly_sect(nldr_obj,
++					  &nldr_obj->
++					  ovly_table[i].create_sects_list,
++					  sect_info, &sect_exists, addr, bytes);
++			if (DSP_SUCCEEDED(status) && !sect_exists)
++				nldr_obj->ovly_table[i].create_sects++;
++
++		} else if (strncmp(pch, PDELETE, strlen(PDELETE)) == 0) {
++			status =
++			    add_ovly_sect(nldr_obj,
++					  &nldr_obj->
++					  ovly_table[i].delete_sects_list,
++					  sect_info, &sect_exists, addr, bytes);
++			if (DSP_SUCCEEDED(status) && !sect_exists)
++				nldr_obj->ovly_table[i].delete_sects++;
++
++		} else if (strncmp(pch, PEXECUTE, strlen(PEXECUTE)) == 0) {
++			status =
++			    add_ovly_sect(nldr_obj,
++					  &nldr_obj->
++					  ovly_table[i].execute_sects_list,
++					  sect_info, &sect_exists, addr, bytes);
++			if (DSP_SUCCEEDED(status) && !sect_exists)
++				nldr_obj->ovly_table[i].execute_sects++;
++
++		} else {
++			/* Put in "other" sectins */
++			status =
++			    add_ovly_sect(nldr_obj,
++					  &nldr_obj->
++					  ovly_table[i].other_sects_list,
++					  sect_info, &sect_exists, addr, bytes);
++			if (DSP_SUCCEEDED(status) && !sect_exists)
++				nldr_obj->ovly_table[i].other_sects++;
++
++		}
++	}
++func_end:
++	return status;
++}
++
++/*
++ *  ======== add_ovly_node =========
++ *  Callback function passed to dcd_get_objects.
++ */
++static int add_ovly_node(struct dsp_uuid *uuid_obj,
++				enum dsp_dcdobjtype obj_type, IN void *handle)
++{
++	struct nldr_object *nldr_obj = (struct nldr_object *)handle;
++	char *node_name = NULL;
++	char *pbuf = NULL;
++	u32 len;
++	struct dcd_genericobj obj_def;
++	int status = 0;
++
++	if (obj_type != DSP_DCDNODETYPE)
++		goto func_end;
++
++	status =
++	    dcd_get_object_def(nldr_obj->hdcd_mgr, uuid_obj, obj_type,
++			       &obj_def);
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/* If overlay node, add to the list */
++	if (obj_def.obj_data.node_obj.us_load_type == NLDR_OVLYLOAD) {
++		if (nldr_obj->ovly_table == NULL) {
++			nldr_obj->ovly_nodes++;
++		} else {
++			/* Add node to table */
++			nldr_obj->ovly_table[nldr_obj->ovly_nid].uuid =
++			    *uuid_obj;
++			DBC_REQUIRE(obj_def.obj_data.node_obj.ndb_props.
++				    ac_name);
++			len =
++			    strlen(obj_def.obj_data.node_obj.ndb_props.ac_name);
++			node_name = obj_def.obj_data.node_obj.ndb_props.ac_name;
++			pbuf = kzalloc(len + 1, GFP_KERNEL);
++			if (pbuf == NULL) {
++				status = -ENOMEM;
++			} else {
++				strncpy(pbuf, node_name, len);
++				nldr_obj->ovly_table[nldr_obj->ovly_nid].
++				    node_name = pbuf;
++				nldr_obj->ovly_nid++;
++			}
++		}
++	}
++	/* These were allocated in dcd_get_object_def */
++	kfree(obj_def.obj_data.node_obj.pstr_create_phase_fxn);
++
++	kfree(obj_def.obj_data.node_obj.pstr_execute_phase_fxn);
++
++	kfree(obj_def.obj_data.node_obj.pstr_delete_phase_fxn);
++
++	kfree(obj_def.obj_data.node_obj.pstr_i_alg_name);
++
++func_end:
++	return status;
++}
++
++/*
++ *  ======== add_ovly_sect ========
++ */
++static int add_ovly_sect(struct nldr_object *nldr_obj,
++				struct ovly_sect **pList,
++				struct dbll_sect_info *pSectInfo,
++				bool *pExists, u32 addr, u32 bytes)
++{
++	struct ovly_sect *new_sect = NULL;
++	struct ovly_sect *last_sect;
++	struct ovly_sect *ovly_section;
++	int status = 0;
++
++	ovly_section = last_sect = *pList;
++	*pExists = false;
++	while (ovly_section) {
++		/*
++		 *  Make sure section has not already been added. Multiple
++		 *  'write' calls may be made to load the section.
++		 */
++		if (ovly_section->sect_load_addr == addr) {
++			/* Already added */
++			*pExists = true;
++			break;
++		}
++		last_sect = ovly_section;
++		ovly_section = ovly_section->next_sect;
++	}
++
++	if (!ovly_section) {
++		/* New section */
++		new_sect = kzalloc(sizeof(struct ovly_sect), GFP_KERNEL);
++		if (new_sect == NULL) {
++			status = -ENOMEM;
++		} else {
++			new_sect->sect_load_addr = addr;
++			new_sect->sect_run_addr = pSectInfo->sect_run_addr +
++			    (addr - pSectInfo->sect_load_addr);
++			new_sect->size = bytes;
++			new_sect->page = pSectInfo->type;
++		}
++
++		/* Add to the list */
++		if (DSP_SUCCEEDED(status)) {
++			if (*pList == NULL) {
++				/* First in the list */
++				*pList = new_sect;
++			} else {
++				last_sect->next_sect = new_sect;
++			}
++		}
++	}
++
++	return status;
++}
++
++/*
++ *  ======== fake_ovly_write ========
++ */
++static s32 fake_ovly_write(void *handle, u32 dspAddr, void *buf, u32 bytes,
++			   s32 mtype)
++{
++	return (s32) bytes;
++}
++
++/*
++ *  ======== free_sects ========
++ */
++static void free_sects(struct nldr_object *nldr_obj,
++		       struct ovly_sect *phase_sects, u16 alloc_num)
++{
++	struct ovly_sect *ovly_section = phase_sects;
++	u16 i = 0;
++	bool ret;
++
++	while (ovly_section && i < alloc_num) {
++		/* 'Deallocate' */
++		/* segid - page not supported yet */
++		/* Reserved memory */
++		ret =
++		    rmm_free(nldr_obj->rmm, 0, ovly_section->sect_run_addr,
++			     ovly_section->size, true);
++		DBC_ASSERT(ret);
++		ovly_section = ovly_section->next_sect;
++		i++;
++	}
++}
++
++/*
++ *  ======== get_symbol_value ========
++ *  Find symbol in library's base image.  If not there, check dependent
++ *  libraries.
++ */
++static bool get_symbol_value(void *handle, void *parg, void *rmm_handle,
++			     char *name, struct dbll_sym_val **sym)
++{
++	struct nldr_object *nldr_obj = (struct nldr_object *)handle;
++	struct nldr_nodeobject *nldr_node_obj =
++	    (struct nldr_nodeobject *)rmm_handle;
++	struct lib_node *root = (struct lib_node *)parg;
++	u16 i;
++	bool status = false;
++
++	/* check the base image */
++	status = nldr_obj->ldr_fxns.get_addr_fxn(nldr_obj->base_lib, name, sym);
++	if (!status)
++		status =
++		    nldr_obj->ldr_fxns.get_c_addr_fxn(nldr_obj->base_lib, name,
++						      sym);
++
++	/*
++	 *  Check in root lib itself. If the library consists of
++	 *  multiple object files linked together, some symbols in the
++	 *  library may need to be resolved.
++	 */
++	if (!status) {
++		status = nldr_obj->ldr_fxns.get_addr_fxn(root->lib, name, sym);
++		if (!status) {
++			status =
++			    nldr_obj->ldr_fxns.get_c_addr_fxn(root->lib, name,
++							      sym);
++		}
++	}
++
++	/*
++	 *  Check in root lib's dependent libraries, but not dependent
++	 *  libraries' dependents.
++	 */
++	if (!status) {
++		for (i = 0; i < root->dep_libs; i++) {
++			status =
++			    nldr_obj->ldr_fxns.get_addr_fxn(root->dep_libs_tree
++							    [i].lib, name, sym);
++			if (!status) {
++				status =
++				    nldr_obj->ldr_fxns.
++				    get_c_addr_fxn(root->dep_libs_tree[i].lib,
++						   name, sym);
++			}
++			if (status) {
++				/* Symbol found */
++				break;
++			}
++		}
++	}
++	/*
++	 * Check in persistent libraries
++	 */
++	if (!status) {
++		for (i = 0; i < nldr_node_obj->pers_libs; i++) {
++			status =
++			    nldr_obj->ldr_fxns.
++			    get_addr_fxn(nldr_node_obj->pers_lib_table[i].lib,
++					 name, sym);
++			if (!status) {
++				status = nldr_obj->ldr_fxns.get_c_addr_fxn
++				    (nldr_node_obj->pers_lib_table[i].lib, name,
++				     sym);
++			}
++			if (status) {
++				/* Symbol found */
++				break;
++			}
++		}
++	}
++
++	return status;
++}
++
++/*
++ *  ======== load_lib ========
++ *  Recursively load library and all its dependent libraries. The library
++ *  we're loading is specified by a uuid.
++ */
++static int load_lib(struct nldr_nodeobject *nldr_node_obj,
++			   struct lib_node *root, struct dsp_uuid uuid,
++			   bool rootPersistent,
++			   struct dbll_library_obj **lib_path,
++			   enum nldr_phase phase, u16 depth)
++{
++	struct nldr_object *nldr_obj = nldr_node_obj->nldr_obj;
++	u16 nd_libs = 0;	/* Number of dependent libraries */
++	u16 np_libs = 0;	/* Number of persistent libraries */
++	u16 nd_libs_loaded = 0;	/* Number of dep. libraries loaded */
++	u16 i;
++	u32 entry;
++	u32 dw_buf_size = NLDR_MAXPATHLENGTH;
++	dbll_flags flags = DBLL_SYMB | DBLL_CODE | DBLL_DATA | DBLL_DYNAMIC;
++	struct dbll_attrs new_attrs;
++	char *psz_file_name = NULL;
++	struct dsp_uuid *dep_lib_uui_ds = NULL;
++	bool *persistent_dep_libs = NULL;
++	int status = 0;
++	bool lib_status = false;
++	struct lib_node *dep_lib;
++
++	if (depth > MAXDEPTH) {
++		/* Error */
++		DBC_ASSERT(false);
++	}
++	root->lib = NULL;
++	/* Allocate a buffer for library file name of size DBL_MAXPATHLENGTH */
++	psz_file_name = kzalloc(DBLL_MAXPATHLENGTH, GFP_KERNEL);
++	if (psz_file_name == NULL)
++		status = -ENOMEM;
++
++	if (DSP_SUCCEEDED(status)) {
++		/* Get the name of the library */
++		if (depth == 0) {
++			status =
++			    dcd_get_library_name(nldr_node_obj->nldr_obj->
++						 hdcd_mgr, &uuid, psz_file_name,
++						 &dw_buf_size, phase,
++						 nldr_node_obj->pf_phase_split);
++		} else {
++			/* Dependent libraries are registered with a phase */
++			status =
++			    dcd_get_library_name(nldr_node_obj->nldr_obj->
++						 hdcd_mgr, &uuid, psz_file_name,
++						 &dw_buf_size, NLDR_NOPHASE,
++						 NULL);
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Open the library, don't load symbols */
++		status =
++		    nldr_obj->ldr_fxns.open_fxn(nldr_obj->dbll, psz_file_name,
++						DBLL_NOLOAD, &root->lib);
++	}
++	/* Done with file name */
++	kfree(psz_file_name);
++
++	/* Check to see if library not already loaded */
++	if (DSP_SUCCEEDED(status) && rootPersistent) {
++		lib_status =
++		    find_in_persistent_lib_array(nldr_node_obj, root->lib);
++		/* Close library */
++		if (lib_status) {
++			nldr_obj->ldr_fxns.close_fxn(root->lib);
++			return 0;
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Check for circular dependencies. */
++		for (i = 0; i < depth; i++) {
++			if (root->lib == lib_path[i]) {
++				/* This condition could be checked by a
++				 * tool at build time. */
++				status = -EILSEQ;
++			}
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Add library to current path in dependency tree */
++		lib_path[depth] = root->lib;
++		depth++;
++		/* Get number of dependent libraries */
++		status =
++		    dcd_get_num_dep_libs(nldr_node_obj->nldr_obj->hdcd_mgr,
++					 &uuid, &nd_libs, &np_libs, phase);
++	}
++	DBC_ASSERT(nd_libs >= np_libs);
++	if (DSP_SUCCEEDED(status)) {
++		if (!(*nldr_node_obj->pf_phase_split))
++			np_libs = 0;
++
++		/* nd_libs = #of dependent libraries */
++		root->dep_libs = nd_libs - np_libs;
++		if (nd_libs > 0) {
++			dep_lib_uui_ds = kzalloc(sizeof(struct dsp_uuid) *
++							nd_libs, GFP_KERNEL);
++			persistent_dep_libs =
++				kzalloc(sizeof(bool) * nd_libs, GFP_KERNEL);
++			if (!dep_lib_uui_ds || !persistent_dep_libs)
++				status = -ENOMEM;
++
++			if (root->dep_libs > 0) {
++				/* Allocate arrays for dependent lib UUIDs,
++				 * lib nodes */
++				root->dep_libs_tree = kzalloc
++						(sizeof(struct lib_node) *
++						(root->dep_libs), GFP_KERNEL);
++				if (!(root->dep_libs_tree))
++					status = -ENOMEM;
++
++			}
++
++			if (DSP_SUCCEEDED(status)) {
++				/* Get the dependent library UUIDs */
++				status =
++				    dcd_get_dep_libs(nldr_node_obj->
++						     nldr_obj->hdcd_mgr, &uuid,
++						     nd_libs, dep_lib_uui_ds,
++						     persistent_dep_libs,
++						     phase);
++			}
++		}
++	}
++
++	/*
++	 *  Recursively load dependent libraries.
++	 */
++	if (DSP_SUCCEEDED(status)) {
++		for (i = 0; i < nd_libs; i++) {
++			/* If root library is NOT persistent, and dep library
++			 * is, then record it.  If root library IS persistent,
++			 * the deplib is already included */
++			if (!rootPersistent && persistent_dep_libs[i] &&
++			    *nldr_node_obj->pf_phase_split) {
++				if ((nldr_node_obj->pers_libs) >= MAXLIBS) {
++					status = -EILSEQ;
++					break;
++				}
++
++				/* Allocate library outside of phase */
++				dep_lib =
++				    &nldr_node_obj->pers_lib_table
++				    [nldr_node_obj->pers_libs];
++			} else {
++				if (rootPersistent)
++					persistent_dep_libs[i] = true;
++
++				/* Allocate library within phase */
++				dep_lib = &root->dep_libs_tree[nd_libs_loaded];
++			}
++
++			status = load_lib(nldr_node_obj, dep_lib,
++					  dep_lib_uui_ds[i],
++					  persistent_dep_libs[i], lib_path,
++					  phase, depth);
++
++			if (DSP_SUCCEEDED(status)) {
++				if ((status != 0) &&
++				    !rootPersistent && persistent_dep_libs[i] &&
++				    *nldr_node_obj->pf_phase_split) {
++					(nldr_node_obj->pers_libs)++;
++				} else {
++					if (!persistent_dep_libs[i] ||
++					    !(*nldr_node_obj->pf_phase_split)) {
++						nd_libs_loaded++;
++					}
++				}
++			} else {
++				break;
++			}
++		}
++	}
++
++	/* Now we can load the root library */
++	if (DSP_SUCCEEDED(status)) {
++		new_attrs = nldr_obj->ldr_attrs;
++		new_attrs.sym_arg = root;
++		new_attrs.rmm_handle = nldr_node_obj;
++		new_attrs.input_params = nldr_node_obj->priv_ref;
++		new_attrs.base_image = false;
++
++		status =
++		    nldr_obj->ldr_fxns.load_fxn(root->lib, flags, &new_attrs,
++						&entry);
++	}
++
++	/*
++	 *  In case of failure, unload any dependent libraries that
++	 *  were loaded, and close the root library.
++	 *  (Persistent libraries are unloaded from the very top)
++	 */
++	if (DSP_FAILED(status)) {
++		if (phase != NLDR_EXECUTE) {
++			for (i = 0; i < nldr_node_obj->pers_libs; i++)
++				unload_lib(nldr_node_obj,
++					   &nldr_node_obj->pers_lib_table[i]);
++
++			nldr_node_obj->pers_libs = 0;
++		}
++		for (i = 0; i < nd_libs_loaded; i++)
++			unload_lib(nldr_node_obj, &root->dep_libs_tree[i]);
++
++		if (root->lib)
++			nldr_obj->ldr_fxns.close_fxn(root->lib);
++
++	}
++
++	/* Going up one node in the dependency tree */
++	depth--;
++
++	kfree(dep_lib_uui_ds);
++	dep_lib_uui_ds = NULL;
++
++	kfree(persistent_dep_libs);
++	persistent_dep_libs = NULL;
++
++	return status;
++}
++
++/*
++ *  ======== load_ovly ========
++ */
++static int load_ovly(struct nldr_nodeobject *nldr_node_obj,
++			    enum nldr_phase phase)
++{
++	struct nldr_object *nldr_obj = nldr_node_obj->nldr_obj;
++	struct ovly_node *po_node = NULL;
++	struct ovly_sect *phase_sects = NULL;
++	struct ovly_sect *other_sects_list = NULL;
++	u16 i;
++	u16 alloc_num = 0;
++	u16 other_alloc = 0;
++	u16 *ref_count = NULL;
++	u16 *other_ref = NULL;
++	u32 bytes;
++	struct ovly_sect *ovly_section;
++	int status = 0;
++
++	/* Find the node in the table */
++	for (i = 0; i < nldr_obj->ovly_nodes; i++) {
++		if (IS_EQUAL_UUID
++		    (nldr_node_obj->uuid, nldr_obj->ovly_table[i].uuid)) {
++			/* Found it */
++			po_node = &(nldr_obj->ovly_table[i]);
++			break;
++		}
++	}
++
++	DBC_ASSERT(i < nldr_obj->ovly_nodes);
++
++	if (!po_node) {
++		status = -ENOENT;
++		goto func_end;
++	}
++
++	switch (phase) {
++	case NLDR_CREATE:
++		ref_count = &(po_node->create_ref);
++		other_ref = &(po_node->other_ref);
++		phase_sects = po_node->create_sects_list;
++		other_sects_list = po_node->other_sects_list;
++		break;
++
++	case NLDR_EXECUTE:
++		ref_count = &(po_node->execute_ref);
++		phase_sects = po_node->execute_sects_list;
++		break;
++
++	case NLDR_DELETE:
++		ref_count = &(po_node->delete_ref);
++		phase_sects = po_node->delete_sects_list;
++		break;
++
++	default:
++		DBC_ASSERT(false);
++		break;
++	}
++
++	if (ref_count == NULL)
++		goto func_end;
++
++	if (*ref_count != 0)
++		goto func_end;
++
++	/* 'Allocate' memory for overlay sections of this phase */
++	ovly_section = phase_sects;
++	while (ovly_section) {
++		/* allocate *//* page not supported yet */
++		/* reserve *//* align */
++		status = rmm_alloc(nldr_obj->rmm, 0, ovly_section->size, 0,
++				   &(ovly_section->sect_run_addr), true);
++		if (DSP_SUCCEEDED(status)) {
++			ovly_section = ovly_section->next_sect;
++			alloc_num++;
++		} else {
++			break;
++		}
++	}
++	if (other_ref && *other_ref == 0) {
++		/* 'Allocate' memory for other overlay sections
++		 * (create phase) */
++		if (DSP_SUCCEEDED(status)) {
++			ovly_section = other_sects_list;
++			while (ovly_section) {
++				/* page not supported *//* align */
++				/* reserve */
++				status =
++				    rmm_alloc(nldr_obj->rmm, 0,
++					      ovly_section->size, 0,
++					      &(ovly_section->sect_run_addr),
++					      true);
++				if (DSP_SUCCEEDED(status)) {
++					ovly_section = ovly_section->next_sect;
++					other_alloc++;
++				} else {
++					break;
++				}
++			}
++		}
++	}
++	if (*ref_count == 0) {
++		if (DSP_SUCCEEDED(status)) {
++			/* Load sections for this phase */
++			ovly_section = phase_sects;
++			while (ovly_section && DSP_SUCCEEDED(status)) {
++				bytes =
++				    (*nldr_obj->ovly_fxn) (nldr_node_obj->
++							   priv_ref,
++							   ovly_section->
++							   sect_run_addr,
++							   ovly_section->
++							   sect_load_addr,
++							   ovly_section->size,
++							   ovly_section->page);
++				if (bytes != ovly_section->size)
++					status = -EPERM;
++
++				ovly_section = ovly_section->next_sect;
++			}
++		}
++	}
++	if (other_ref && *other_ref == 0) {
++		if (DSP_SUCCEEDED(status)) {
++			/* Load other sections (create phase) */
++			ovly_section = other_sects_list;
++			while (ovly_section && DSP_SUCCEEDED(status)) {
++				bytes =
++				    (*nldr_obj->ovly_fxn) (nldr_node_obj->
++							   priv_ref,
++							   ovly_section->
++							   sect_run_addr,
++							   ovly_section->
++							   sect_load_addr,
++							   ovly_section->size,
++							   ovly_section->page);
++				if (bytes != ovly_section->size)
++					status = -EPERM;
++
++				ovly_section = ovly_section->next_sect;
++			}
++		}
++	}
++	if (DSP_FAILED(status)) {
++		/* 'Deallocate' memory */
++		free_sects(nldr_obj, phase_sects, alloc_num);
++		free_sects(nldr_obj, other_sects_list, other_alloc);
++	}
++func_end:
++	if (DSP_SUCCEEDED(status) && (ref_count != NULL)) {
++		*ref_count += 1;
++		if (other_ref)
++			*other_ref += 1;
++
++	}
++
++	return status;
++}
++
++/*
++ *  ======== remote_alloc ========
++ */
++static int remote_alloc(void **pRef, u16 space, u32 size,
++			       u32 align, u32 *dspAddr,
++			       OPTIONAL s32 segmentId, OPTIONAL s32 req,
++			       bool reserve)
++{
++	struct nldr_nodeobject *hnode = (struct nldr_nodeobject *)pRef;
++	struct nldr_object *nldr_obj;
++	struct rmm_target_obj *rmm;
++	u16 mem_phase_bit = MAXFLAGS;
++	u16 segid = 0;
++	u16 i;
++	u16 mem_sect_type;
++	u32 word_size;
++	struct rmm_addr *rmm_addr_obj = (struct rmm_addr *)dspAddr;
++	bool mem_load_req = false;
++	int status = -ENOMEM;	/* Set to fail */
++	DBC_REQUIRE(hnode);
++	DBC_REQUIRE(space == DBLL_CODE || space == DBLL_DATA ||
++		    space == DBLL_BSS);
++	nldr_obj = hnode->nldr_obj;
++	rmm = nldr_obj->rmm;
++	/* Convert size to DSP words */
++	word_size =
++	    (size + nldr_obj->us_dsp_word_size -
++	     1) / nldr_obj->us_dsp_word_size;
++	/* Modify memory 'align' to account for DSP cache line size */
++	align = find_lcm(GEM_CACHE_LINE_SIZE, align);
++	dev_dbg(bridge, "%s: memory align to 0x%x\n", __func__, align);
++	if (segmentId != -1) {
++		rmm_addr_obj->segid = segmentId;
++		segid = segmentId;
++		mem_load_req = req;
++	} else {
++		switch (hnode->phase) {
++		case NLDR_CREATE:
++			mem_phase_bit = CREATEDATAFLAGBIT;
++			break;
++		case NLDR_DELETE:
++			mem_phase_bit = DELETEDATAFLAGBIT;
++			break;
++		case NLDR_EXECUTE:
++			mem_phase_bit = EXECUTEDATAFLAGBIT;
++			break;
++		default:
++			DBC_ASSERT(false);
++			break;
++		}
++		if (space == DBLL_CODE)
++			mem_phase_bit++;
++
++		if (mem_phase_bit < MAXFLAGS)
++			segid = hnode->seg_id[mem_phase_bit];
++
++		/* Determine if there is a memory loading requirement */
++		if ((hnode->code_data_flag_mask >> mem_phase_bit) & 0x1)
++			mem_load_req = true;
++
++	}
++	mem_sect_type = (space == DBLL_CODE) ? DYNM_CODE : DYNM_DATA;
++
++	/* Find an appropriate segment based on space */
++	if (segid == NULLID) {
++		/* No memory requirements of preferences */
++		DBC_ASSERT(!mem_load_req);
++		goto func_cont;
++	}
++	if (segid <= MAXSEGID) {
++		DBC_ASSERT(segid < nldr_obj->dload_segs);
++		/* Attempt to allocate from segid first. */
++		rmm_addr_obj->segid = segid;
++		status =
++		    rmm_alloc(rmm, segid, word_size, align, dspAddr, false);
++		if (DSP_FAILED(status)) {
++			dev_dbg(bridge, "%s: Unable allocate from segment %d\n",
++				__func__, segid);
++		}
++	} else {
++		/* segid > MAXSEGID ==> Internal or external memory */
++		DBC_ASSERT(segid == MEMINTERNALID || segid == MEMEXTERNALID);
++		/*  Check for any internal or external memory segment,
++		 *  depending on segid. */
++		mem_sect_type |= segid == MEMINTERNALID ?
++		    DYNM_INTERNAL : DYNM_EXTERNAL;
++		for (i = 0; i < nldr_obj->dload_segs; i++) {
++			if ((nldr_obj->seg_table[i] & mem_sect_type) !=
++			    mem_sect_type)
++				continue;
++
++			status = rmm_alloc(rmm, i, word_size, align, dspAddr,
++					   false);
++			if (DSP_SUCCEEDED(status)) {
++				/* Save segid for freeing later */
++				rmm_addr_obj->segid = i;
++				break;
++			}
++		}
++	}
++func_cont:
++	/* Haven't found memory yet, attempt to find any segment that works */
++	if (status == -ENOMEM && !mem_load_req) {
++		dev_dbg(bridge, "%s: Preferred segment unavailable, trying "
++			"another\n", __func__);
++		for (i = 0; i < nldr_obj->dload_segs; i++) {
++			/* All bits of mem_sect_type must be set */
++			if ((nldr_obj->seg_table[i] & mem_sect_type) !=
++			    mem_sect_type)
++				continue;
++
++			status = rmm_alloc(rmm, i, word_size, align, dspAddr,
++					   false);
++			if (DSP_SUCCEEDED(status)) {
++				/* Save segid */
++				rmm_addr_obj->segid = i;
++				break;
++			}
++		}
++	}
++
++	return status;
++}
++
++static int remote_free(void **pRef, u16 space, u32 dspAddr,
++			      u32 size, bool reserve)
++{
++	struct nldr_object *nldr_obj = (struct nldr_object *)pRef;
++	struct rmm_target_obj *rmm;
++	u32 word_size;
++	int status = -ENOMEM;	/* Set to fail */
++
++	DBC_REQUIRE(nldr_obj);
++
++	rmm = nldr_obj->rmm;
++
++	/* Convert size to DSP words */
++	word_size =
++	    (size + nldr_obj->us_dsp_word_size -
++	     1) / nldr_obj->us_dsp_word_size;
++
++	if (rmm_free(rmm, space, dspAddr, word_size, reserve))
++		status = 0;
++
++	return status;
++}
++
++/*
++ *  ======== unload_lib ========
++ */
++static void unload_lib(struct nldr_nodeobject *nldr_node_obj,
++		       struct lib_node *root)
++{
++	struct dbll_attrs new_attrs;
++	struct nldr_object *nldr_obj = nldr_node_obj->nldr_obj;
++	u16 i;
++
++	DBC_ASSERT(root != NULL);
++
++	/* Unload dependent libraries */
++	for (i = 0; i < root->dep_libs; i++)
++		unload_lib(nldr_node_obj, &root->dep_libs_tree[i]);
++
++	root->dep_libs = 0;
++
++	new_attrs = nldr_obj->ldr_attrs;
++	new_attrs.rmm_handle = nldr_obj->rmm;
++	new_attrs.input_params = nldr_node_obj->priv_ref;
++	new_attrs.base_image = false;
++	new_attrs.sym_arg = root;
++
++	if (root->lib) {
++		/* Unload the root library */
++		nldr_obj->ldr_fxns.unload_fxn(root->lib, &new_attrs);
++		nldr_obj->ldr_fxns.close_fxn(root->lib);
++	}
++
++	/* Free dependent library list */
++	kfree(root->dep_libs_tree);
++	root->dep_libs_tree = NULL;
++}
++
++/*
++ *  ======== unload_ovly ========
++ */
++static void unload_ovly(struct nldr_nodeobject *nldr_node_obj,
++			enum nldr_phase phase)
++{
++	struct nldr_object *nldr_obj = nldr_node_obj->nldr_obj;
++	struct ovly_node *po_node = NULL;
++	struct ovly_sect *phase_sects = NULL;
++	struct ovly_sect *other_sects_list = NULL;
++	u16 i;
++	u16 alloc_num = 0;
++	u16 other_alloc = 0;
++	u16 *ref_count = NULL;
++	u16 *other_ref = NULL;
++
++	/* Find the node in the table */
++	for (i = 0; i < nldr_obj->ovly_nodes; i++) {
++		if (IS_EQUAL_UUID
++		    (nldr_node_obj->uuid, nldr_obj->ovly_table[i].uuid)) {
++			/* Found it */
++			po_node = &(nldr_obj->ovly_table[i]);
++			break;
++		}
++	}
++
++	DBC_ASSERT(i < nldr_obj->ovly_nodes);
++
++	if (!po_node)
++		/* TODO: Should we print warning here? */
++		return;
++
++	switch (phase) {
++	case NLDR_CREATE:
++		ref_count = &(po_node->create_ref);
++		phase_sects = po_node->create_sects_list;
++		alloc_num = po_node->create_sects;
++		break;
++	case NLDR_EXECUTE:
++		ref_count = &(po_node->execute_ref);
++		phase_sects = po_node->execute_sects_list;
++		alloc_num = po_node->execute_sects;
++		break;
++	case NLDR_DELETE:
++		ref_count = &(po_node->delete_ref);
++		other_ref = &(po_node->other_ref);
++		phase_sects = po_node->delete_sects_list;
++		/* 'Other' overlay sections are unloaded in the delete phase */
++		other_sects_list = po_node->other_sects_list;
++		alloc_num = po_node->delete_sects;
++		other_alloc = po_node->other_sects;
++		break;
++	default:
++		DBC_ASSERT(false);
++		break;
++	}
++	DBC_ASSERT(ref_count && (*ref_count > 0));
++	if (ref_count && (*ref_count > 0)) {
++		*ref_count -= 1;
++		if (other_ref) {
++			DBC_ASSERT(*other_ref > 0);
++			*other_ref -= 1;
++		}
++	}
++
++	if (ref_count && *ref_count == 0) {
++		/* 'Deallocate' memory */
++		free_sects(nldr_obj, phase_sects, alloc_num);
++	}
++	if (other_ref && *other_ref == 0)
++		free_sects(nldr_obj, other_sects_list, other_alloc);
++}
++
++/*
++ *  ======== find_in_persistent_lib_array ========
++ */
++static bool find_in_persistent_lib_array(struct nldr_nodeobject *nldr_node_obj,
++					 struct dbll_library_obj *lib)
++{
++	s32 i = 0;
++
++	for (i = 0; i < nldr_node_obj->pers_libs; i++) {
++		if (lib == nldr_node_obj->pers_lib_table[i].lib)
++			return true;
++
 +	}
 +
 +	return false;
 +}
 +
-+#define IPH_SIZE (sizeof(struct image_packet_t) - sizeof(u32))
-+#define REVERSE_REORDER_MAP(rawmap) ((rawmap) ^ 0x3030303)
-+
-+/**************************************************************************
-+ * Procedure dload_get_section
-+ *
-+ * Parameters:
-+ *  minfo		Handle from dload_module_open for this module
-+ *	sectionInfo	Pointer to a section info structure for the desired
-+ *			section
-+ *	sectionData	Buffer to contain the section initialized data
-+ *
-+ * Effect:
-+ *	Copies the initialized data for the specified section into the
-+ * supplied buffer.
-+ *
-+ * Returns:
-+ *	true for success, false for section not found
-+ ************************************************************************* */
-+int dload_get_section(void *minfo,
-+		      const struct ldr_section_info *sectionInfo,
-+		      void *sectionData)
++/*
++ * ================ Find LCM (Least Common Multiplier ===
++ */
++static u32 find_lcm(u32 a, u32 b)
 +{
-+	struct dload_state *dlthis;
-+	u32 pos;
-+	struct doff_scnhdr_t *sptr = NULL;
-+	s32 nip;
-+	struct image_packet_t ipacket;
-+	s32 ipsize;
-+	u32 checks;
-+	s8 *dest = (s8 *) sectionData;
++	u32 ret;
 +
-+	dlthis = (struct dload_state *)minfo;
-+	if (!dlthis)
-+		return false;
-+	sptr = LDRSEC_IS_DOFFSEC(sectionInfo);
-+	if (sptr == NULL)
-+		return false;
++	ret = a * b / find_gcf(a, b);
 +
-+	/* skip ahead to the start of the first packet */
-+	pos = BYTE_TO_HOST(DOFF_ALIGN((u32) sptr->ds_first_pkt_offset));
-+	if (dlthis->strm->set_file_posn(dlthis->strm, pos) != 0) {
-+		dload_error(dlthis, seek, pos);
-+		return false;
++	return ret;
++}
++
++/*
++ * ================ Find GCF (Greatest Common Factor ) ===
++ */
++static u32 find_gcf(u32 a, u32 b)
++{
++	u32 c;
++
++	/* Get the GCF (Greatest common factor between the numbers,
++	 * using Euclidian Algo */
++	while ((c = (a % b))) {
++		a = b;
++		b = c;
++	}
++	return b;
++}
++
++/**
++ * nldr_find_addr() - Find the closest symbol to the given address based on
++ *		dynamic node object.
++ *
++ * @nldr_node:		Dynamic node object
++ * @sym_addr:		Given address to find the dsp symbol
++ * @offset_range:		offset range to look for dsp symbol
++ * @offset_output:		Symbol Output address
++ * @sym_name:		String with the dsp symbol
++ *
++ * 	This function finds the node library for a given address and
++ *	retrieves the dsp symbol by calling dbll_find_dsp_symbol.
++ */
++int nldr_find_addr(struct nldr_nodeobject *nldr_node, u32 sym_addr,
++			u32 offset_range, void *offset_output, char *sym_name)
++{
++	int status = 0;
++	bool status1 = false;
++	s32 i = 0;
++	struct lib_node root = { NULL, 0, NULL };
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(offset_output != NULL);
++	DBC_REQUIRE(sym_name != NULL);
++	pr_debug("%s(0x%x, 0x%x, 0x%x, 0x%x,  %s)\n", __func__, (u32) nldr_node,
++			sym_addr, offset_range, (u32) offset_output, sym_name);
++
++	if (nldr_node->dynamic && *nldr_node->pf_phase_split) {
++		switch (nldr_node->phase) {
++		case NLDR_CREATE:
++			root = nldr_node->create_lib;
++			break;
++		case NLDR_EXECUTE:
++			root = nldr_node->execute_lib;
++			break;
++		case NLDR_DELETE:
++			root = nldr_node->delete_lib;
++			break;
++		default:
++			DBC_ASSERT(false);
++			break;
++		}
++	} else {
++		/* for Overlay nodes or non-split Dynamic nodes */
++		root = nldr_node->root;
 +	}
 +
-+	nip = sptr->ds_nipacks;
-+	while ((nip -= 1) >= 0) {	/* for each packet */
-+		/* get the fixed header bits */
-+		if (dlthis->strm->read_buffer(dlthis->strm, &ipacket,
-+					      IPH_SIZE) != IPH_SIZE) {
-+			dload_error(dlthis, readstrm, "image packet");
-+			return false;
-+		}
-+		/* reorder the header if need be */
-+		if (dlthis->reorder_map)
-+			dload_reorder(&ipacket, IPH_SIZE, dlthis->reorder_map);
++	status1 = dbll_find_dsp_symbol(root.lib, sym_addr,
++			offset_range, offset_output, sym_name);
 +
-+		/* Now read the packet image bits. Note: round the size up to
-+		 * the next multiple of 4 bytes; this is what checksum
-+		 * routines want. */
-+		ipsize = BYTE_TO_HOST(DOFF_ALIGN(ipacket.packet_size));
-+		if (ipsize > BYTE_TO_HOST(IMAGE_PACKET_SIZE)) {
-+			dload_error(dlthis, isiz, ipsize);
-+			return false;
++	/* If symbol not found, check dependent libraries */
++	if (!status1)
++		for (i = 0; i < root.dep_libs; i++) {
++			status1 = dbll_find_dsp_symbol(
++				root.dep_libs_tree[i].lib, sym_addr,
++				offset_range, offset_output, sym_name);
++			if (status1)
++				/* Symbol found */
++				break;
 +		}
-+		if (dlthis->strm->read_buffer
-+		    (dlthis->strm, dest, ipsize) != ipsize) {
-+			dload_error(dlthis, readstrm, "image packet");
-+			return false;
-+		}
-+		/* reorder the bytes if need be */
-+#if !defined(_BIG_ENDIAN) || (TARGET_AU_BITS > 16)
-+		if (dlthis->reorder_map)
-+			dload_reorder(dest, ipsize, dlthis->reorder_map);
-+
-+		checks = dload_checksum(dest, ipsize);
-+#else
-+		if (dlthis->dfile_hdr.df_byte_reshuffle !=
-+		    TARGET_ORDER(REORDER_MAP(BYTE_RESHUFFLE_VALUE))) {
-+			/* put image bytes in big-endian order, not PC order */
-+			dload_reorder(dest, ipsize,
-+				      TARGET_ORDER(dlthis->
-+						dfile_hdr.df_byte_reshuffle));
-+		}
-+#if TARGET_AU_BITS > 8
-+		checks = dload_reverse_checksum16(dest, ipsize);
-+#else
-+		checks = dload_reverse_checksum(dest, ipsize);
-+#endif
-+#endif
-+		checks += dload_checksum(&ipacket, IPH_SIZE);
-+
-+		/* NYI: unable to handle relocation entries here.  Reloc
-+		 * entries referring to fields that span the packet boundaries
-+		 * may result in packets of sizes that are not multiple of
-+		 * 4 bytes. Our checksum implementation works on 32-bit words
-+		 * only. */
-+		if (ipacket.num_relocs != 0) {
-+			dload_error(dlthis, err_reloc, ipsize);
-+			return false;
++	/* Check persistent libraries */
++	if (!status1)
++		for (i = 0; i < nldr_node->pers_libs; i++) {
++			status1 = dbll_find_dsp_symbol(
++				nldr_node->pers_lib_table[i].lib, sym_addr,
++				offset_range, offset_output, sym_name);
++			if (status1)
++				/* Symbol found */
++				break;
 +		}
 +
-+		if (~checks) {
-+			dload_error(dlthis, err_checksum, "image packet");
-+			return false;
-+		}
-+
-+		/*Advance destination ptr by the size of the just-read packet */
-+		dest += ipsize;
++	if (!status1) {
++		pr_debug("%s: Address 0x%x not found in range %d.\n",
++					__func__, sym_addr, offset_range);
++		status = -ESPIPE;
 +	}
++
++	return status;
++}
+diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
+new file mode 100644
+index 0000000..3d2cf96
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/node.c
+@@ -0,0 +1,3231 @@
++/*
++ * node.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * DSP/BIOS Bridge Node Manager.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++/*  ----------------------------------- Host OS */
++#include <dspbridge/host_os.h>
++
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
++
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
++
++/*  ----------------------------------- OS Adaptation Layer */
++#include <dspbridge/cfg.h>
++#include <dspbridge/list.h>
++#include <dspbridge/memdefs.h>
++#include <dspbridge/proc.h>
++#include <dspbridge/strm.h>
++#include <dspbridge/sync.h>
++#include <dspbridge/ntfy.h>
++
++/*  ----------------------------------- Platform Manager */
++#include <dspbridge/cmm.h>
++#include <dspbridge/cod.h>
++#include <dspbridge/dev.h>
++#include <dspbridge/msg.h>
++
++/*  ----------------------------------- Resource Manager */
++#include <dspbridge/dbdcd.h>
++#include <dspbridge/disp.h>
++#include <dspbridge/rms_sh.h>
++
++/*  ----------------------------------- Link Driver */
++#include <dspbridge/dspdefs.h>
++#include <dspbridge/dspioctl.h>
++
++/*  ----------------------------------- Others */
++#include <dspbridge/gb.h>
++#include <dspbridge/uuidutil.h>
++
++/*  ----------------------------------- This */
++#include <dspbridge/nodepriv.h>
++#include <dspbridge/node.h>
++#include <dspbridge/dmm.h>
++
++/* Static/Dynamic Loader includes */
++#include <dspbridge/dbll.h>
++#include <dspbridge/nldr.h>
++
++#include <dspbridge/drv.h>
++#include <dspbridge/drvdefs.h>
++#include <dspbridge/resourcecleanup.h>
++#include <_tiomap.h>
++
++#define HOSTPREFIX	  "/host"
++#define PIPEPREFIX	  "/dbpipe"
++
++#define MAX_INPUTS(h)  \
++		((h)->dcd_props.obj_data.node_obj.ndb_props.num_input_streams)
++#define MAX_OUTPUTS(h) \
++		((h)->dcd_props.obj_data.node_obj.ndb_props.num_output_streams)
++
++#define NODE_GET_PRIORITY(h) ((h)->prio)
++#define NODE_SET_PRIORITY(hnode, prio) ((hnode)->prio = prio)
++#define NODE_SET_STATE(hnode, state) ((hnode)->node_state = state)
++
++#define MAXPIPES	100	/* Max # of /pipe connections (CSL limit) */
++#define MAXDEVSUFFIXLEN 2	/* Max(Log base 10 of MAXPIPES, MAXSTREAMS) */
++
++#define PIPENAMELEN     (sizeof(PIPEPREFIX) + MAXDEVSUFFIXLEN)
++#define HOSTNAMELEN     (sizeof(HOSTPREFIX) + MAXDEVSUFFIXLEN)
++
++#define MAXDEVNAMELEN	32	/* dsp_ndbprops.ac_name size */
++#define CREATEPHASE	1
++#define EXECUTEPHASE	2
++#define DELETEPHASE	3
++
++/* Define default STRM parameters */
++/*
++ *  TBD: Put in header file, make global DSP_STRMATTRS with defaults,
++ *  or make defaults configurable.
++ */
++#define DEFAULTBUFSIZE		32
++#define DEFAULTNBUFS		2
++#define DEFAULTSEGID		0
++#define DEFAULTALIGNMENT	0
++#define DEFAULTTIMEOUT		10000
++
++#define RMSQUERYSERVER		0
++#define RMSCONFIGURESERVER	1
++#define RMSCREATENODE		2
++#define RMSEXECUTENODE		3
++#define RMSDELETENODE		4
++#define RMSCHANGENODEPRIORITY	5
++#define RMSREADMEMORY		6
++#define RMSWRITEMEMORY		7
++#define RMSCOPY			8
++#define MAXTIMEOUT		2000
++
++#define NUMRMSFXNS		9
++
++#define PWR_TIMEOUT		500	/* default PWR timeout in msec */
++
++#define STACKSEGLABEL "L1DSRAM_HEAP"	/* Label for DSP Stack Segment Addr */
++
++/*
++ *  ======== node_mgr ========
++ */
++struct node_mgr {
++	struct dev_object *hdev_obj;	/* Device object */
++	/* Function interface to Bridge driver */
++	struct bridge_drv_interface *intf_fxns;
++	struct dcd_manager *hdcd_mgr;	/* Proc/Node data manager */
++	struct disp_object *disp_obj;	/* Node dispatcher */
++	struct lst_list *node_list;	/* List of all allocated nodes */
++	u32 num_nodes;		/* Number of nodes in node_list */
++	u32 num_created;	/* Number of nodes *created* on DSP */
++	struct gb_t_map *pipe_map;	/* Pipe connection bit map */
++	struct gb_t_map *pipe_done_map;	/* Pipes that are half free */
++	struct gb_t_map *chnl_map;	/* Channel allocation bit map */
++	struct gb_t_map *dma_chnl_map;	/* DMA Channel allocation bit map */
++	struct gb_t_map *zc_chnl_map;	/* Zero-Copy Channel alloc bit map */
++	struct ntfy_object *ntfy_obj;	/* Manages registered notifications */
++	struct mutex node_mgr_lock;	/* For critical sections */
++	u32 ul_fxn_addrs[NUMRMSFXNS];	/* RMS function addresses */
++	struct msg_mgr *msg_mgr_obj;
++
++	/* Processor properties needed by Node Dispatcher */
++	u32 ul_num_chnls;	/* Total number of channels */
++	u32 ul_chnl_offset;	/* Offset of chnl ids rsvd for RMS */
++	u32 ul_chnl_buf_size;	/* Buffer size for data to RMS */
++	int proc_family;	/* eg, 5000 */
++	int proc_type;		/* eg, 5510 */
++	u32 udsp_word_size;	/* Size of DSP word on host bytes */
++	u32 udsp_data_mau_size;	/* Size of DSP data MAU */
++	u32 udsp_mau_size;	/* Size of MAU */
++	s32 min_pri;		/* Minimum runtime priority for node */
++	s32 max_pri;		/* Maximum runtime priority for node */
++
++	struct strm_mgr *strm_mgr_obj;	/* STRM manager */
++
++	/* Loader properties */
++	struct nldr_object *nldr_obj;	/* Handle to loader */
++	struct node_ldr_fxns nldr_fxns;	/* Handle to loader functions */
++	bool loader_init;	/* Loader Init function succeeded? */
++};
++
++/*
++ *  ======== connecttype ========
++ */
++enum connecttype {
++	NOTCONNECTED = 0,
++	NODECONNECT,
++	HOSTCONNECT,
++	DEVICECONNECT,
++};
++
++/*
++ *  ======== stream_chnl ========
++ */
++struct stream_chnl {
++	enum connecttype type;	/* Type of stream connection */
++	u32 dev_id;		/* pipe or channel id */
++};
++
++/*
++ *  ======== node_object ========
++ */
++struct node_object {
++	struct list_head list_elem;
++	struct node_mgr *hnode_mgr;	/* The manager of this node */
++	struct proc_object *hprocessor;	/* Back pointer to processor */
++	struct dsp_uuid node_uuid;	/* Node's ID */
++	s32 prio;		/* Node's current priority */
++	u32 utimeout;		/* Timeout for blocking NODE calls */
++	u32 heap_size;		/* Heap Size */
++	u32 udsp_heap_virt_addr;	/* Heap Size */
++	u32 ugpp_heap_virt_addr;	/* Heap Size */
++	enum node_type ntype;	/* Type of node: message, task, etc */
++	enum node_state node_state;	/* NODE_ALLOCATED, NODE_CREATED, ... */
++	u32 num_inputs;		/* Current number of inputs */
++	u32 num_outputs;	/* Current number of outputs */
++	u32 max_input_index;	/* Current max input stream index */
++	u32 max_output_index;	/* Current max output stream index */
++	struct stream_chnl *inputs;	/* Node's input streams */
++	struct stream_chnl *outputs;	/* Node's output streams */
++	struct node_createargs create_args;	/* Args for node create func */
++	nodeenv node_env;	/* Environment returned by RMS */
++	struct dcd_genericobj dcd_props;	/* Node properties from DCD */
++	struct dsp_cbdata *pargs;	/* Optional args to pass to node */
++	struct ntfy_object *ntfy_obj;	/* Manages registered notifications */
++	char *pstr_dev_name;	/* device name, if device node */
++	struct sync_object *sync_done;	/* Synchronize node_terminate */
++	s32 exit_status;	/* execute function return status */
++
++	/* Information needed for node_get_attr() */
++	void *device_owner;	/* If dev node, task that owns it */
++	u32 num_gpp_inputs;	/* Current # of from GPP streams */
++	u32 num_gpp_outputs;	/* Current # of to GPP streams */
++	/* Current stream connections */
++	struct dsp_streamconnect *stream_connect;
++
++	/* Message queue */
++	struct msg_queue *msg_queue_obj;
++
++	/* These fields used for SM messaging */
++	struct cmm_xlatorobject *xlator;	/* Node's SM addr translator */
++
++	/* Handle to pass to dynamic loader */
++	struct nldr_nodeobject *nldr_node_obj;
++	bool loaded;		/* Code is (dynamically) loaded */
++	bool phase_split;	/* Phases split in many libs or ovly */
++
++};
++
++/* Default buffer attributes */
++static struct dsp_bufferattr node_dfltbufattrs = {
++	0,			/* cb_struct */
++	1,			/* segment_id */
++	0,			/* buf_alignment */
++};
++
++static void delete_node(struct node_object *hnode,
++			struct process_context *pr_ctxt);
++static void delete_node_mgr(struct node_mgr *hnode_mgr);
++static void fill_stream_connect(struct node_object *hNode1,
++				struct node_object *hNode2, u32 uStream1,
++				u32 uStream2);
++static void fill_stream_def(struct node_object *hnode,
++			    struct node_strmdef *pstrm_def,
++			    struct dsp_strmattr *pattrs);
++static void free_stream(struct node_mgr *hnode_mgr, struct stream_chnl stream);
++static int get_fxn_address(struct node_object *hnode, u32 * pulFxnAddr,
++				  u32 uPhase);
++static int get_node_props(struct dcd_manager *hdcd_mgr,
++				 struct node_object *hnode,
++				 CONST struct dsp_uuid *pNodeId,
++				 struct dcd_genericobj *pdcdProps);
++static int get_proc_props(struct node_mgr *hnode_mgr,
++				 struct dev_object *hdev_obj);
++static int get_rms_fxns(struct node_mgr *hnode_mgr);
++static u32 ovly(void *priv_ref, u32 ulDspRunAddr, u32 ulDspLoadAddr,
++		u32 ul_num_bytes, u32 nMemSpace);
++static u32 mem_write(void *priv_ref, u32 ulDspAddr, void *pbuf,
++		     u32 ul_num_bytes, u32 nMemSpace);
++
++static u32 refs;		/* module reference count */
++
++/* Dynamic loader functions. */
++static struct node_ldr_fxns nldr_fxns = {
++	nldr_allocate,
++	nldr_create,
++	nldr_delete,
++	nldr_exit,
++	nldr_get_fxn_addr,
++	nldr_init,
++	nldr_load,
++	nldr_unload,
++};
++
++enum node_state node_get_state(void *hnode)
++{
++	struct node_object *pnode = (struct node_object *)hnode;
++	if (!pnode)
++		return -1;
++	else
++		return pnode->node_state;
++}
++
++/*
++ *  ======== node_allocate ========
++ *  Purpose:
++ *      Allocate GPP resources to manage a node on the DSP.
++ */
++int node_allocate(struct proc_object *hprocessor,
++			 IN CONST struct dsp_uuid *pNodeId,
++			 OPTIONAL IN CONST struct dsp_cbdata *pargs,
++			 OPTIONAL IN CONST struct dsp_nodeattrin *attr_in,
++			 OUT struct node_object **ph_node,
++			 struct process_context *pr_ctxt)
++{
++	struct node_mgr *hnode_mgr;
++	struct dev_object *hdev_obj;
++	struct node_object *pnode = NULL;
++	enum node_type node_type = NODE_TASK;
++	struct node_msgargs *pmsg_args;
++	struct node_taskargs *ptask_args;
++	u32 num_streams;
++	struct bridge_drv_interface *intf_fxns;
++	int status = 0;
++	struct cmm_object *hcmm_mgr = NULL;	/* Shared memory manager hndl */
++	u32 proc_id;
++	u32 pul_value;
++	u32 dynext_base;
++	u32 off_set = 0;
++	u32 ul_stack_seg_addr, ul_stack_seg_val;
++	u32 ul_gpp_mem_base;
++	struct cfg_hostres *host_res;
++	struct bridge_dev_context *pbridge_context;
++	u32 mapped_addr = 0;
++	u32 map_attrs = 0x0;
++	struct dsp_processorstate proc_state;
++#ifdef DSP_DMM_DEBUG
++	struct dmm_object *dmm_mgr;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++#endif
++
++	void *node_res;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(hprocessor != NULL);
++	DBC_REQUIRE(ph_node != NULL);
++	DBC_REQUIRE(pNodeId != NULL);
++
++	*ph_node = NULL;
++
++	status = proc_get_processor_id(hprocessor, &proc_id);
++
++	if (proc_id != DSP_UNIT)
++		goto func_end;
++
++	status = proc_get_dev_object(hprocessor, &hdev_obj);
++	if (DSP_SUCCEEDED(status)) {
++		status = dev_get_node_manager(hdev_obj, &hnode_mgr);
++		if (hnode_mgr == NULL)
++			status = -EPERM;
++
++	}
++
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	status = dev_get_bridge_context(hdev_obj, &pbridge_context);
++	if (!pbridge_context) {
++		status = -EFAULT;
++		goto func_end;
++	}
++
++	status = proc_get_state(hprocessor, &proc_state,
++				sizeof(struct dsp_processorstate));
++	if (DSP_FAILED(status))
++		goto func_end;
++	/* If processor is in error state then don't attempt
++	   to send the message */
++	if (proc_state.proc_state == PROC_ERROR) {
++		status = -EPERM;
++		goto func_end;
++	}
++
++	/* Assuming that 0 is not a valid function address */
++	if (hnode_mgr->ul_fxn_addrs[0] == 0) {
++		/* No RMS on target - we currently can't handle this */
++		pr_err("%s: Failed, no RMS in base image\n", __func__);
++		status = -EPERM;
++	} else {
++		/* Validate attr_in fields, if non-NULL */
++		if (attr_in) {
++			/* Check if attr_in->prio is within range */
++			if (attr_in->prio < hnode_mgr->min_pri ||
++			    attr_in->prio > hnode_mgr->max_pri)
++				status = -EDOM;
++		}
++	}
++	/* Allocate node object and fill in */
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	pnode = kzalloc(sizeof(struct node_object), GFP_KERNEL);
++	if (pnode == NULL) {
++		status = -ENOMEM;
++		goto func_end;
++	}
++	pnode->hnode_mgr = hnode_mgr;
++	/* This critical section protects get_node_props */
++	mutex_lock(&hnode_mgr->node_mgr_lock);
++
++	/* Get dsp_ndbprops from node database */
++	status = get_node_props(hnode_mgr->hdcd_mgr, pnode, pNodeId,
++				&(pnode->dcd_props));
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	pnode->node_uuid = *pNodeId;
++	pnode->hprocessor = hprocessor;
++	pnode->ntype = pnode->dcd_props.obj_data.node_obj.ndb_props.ntype;
++	pnode->utimeout = pnode->dcd_props.obj_data.node_obj.ndb_props.utimeout;
++	pnode->prio = pnode->dcd_props.obj_data.node_obj.ndb_props.prio;
++
++	/* Currently only C64 DSP builds support Node Dynamic * heaps */
++	/* Allocate memory for node heap */
++	pnode->create_args.asa.task_arg_obj.heap_size = 0;
++	pnode->create_args.asa.task_arg_obj.udsp_heap_addr = 0;
++	pnode->create_args.asa.task_arg_obj.udsp_heap_res_addr = 0;
++	pnode->create_args.asa.task_arg_obj.ugpp_heap_addr = 0;
++	if (!attr_in)
++		goto func_cont;
++
++	/* Check if we have a user allocated node heap */
++	if (!(attr_in->pgpp_virt_addr))
++		goto func_cont;
++
++	/* check for page aligned Heap size */
++	if (((attr_in->heap_size) & (PG_SIZE4K - 1))) {
++		pr_err("%s: node heap size not aligned to 4K, size = 0x%x \n",
++		       __func__, attr_in->heap_size);
++		status = -EINVAL;
++	} else {
++		pnode->create_args.asa.task_arg_obj.heap_size =
++		    attr_in->heap_size;
++		pnode->create_args.asa.task_arg_obj.ugpp_heap_addr =
++		    (u32) attr_in->pgpp_virt_addr;
++	}
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	status = proc_reserve_memory(hprocessor,
++				     pnode->create_args.asa.task_arg_obj.
++				     heap_size + PAGE_SIZE,
++				     (void **)&(pnode->create_args.asa.
++					task_arg_obj.udsp_heap_res_addr),
++				     pr_ctxt);
++	if (DSP_FAILED(status)) {
++		pr_err("%s: Failed to reserve memory for heap: 0x%x\n",
++		       __func__, status);
++		goto func_cont;
++	}
++#ifdef DSP_DMM_DEBUG
++	status = dmm_get_handle(p_proc_object, &dmm_mgr);
++	if (!dmm_mgr) {
++		status = DSP_EHANDLE;
++		goto func_cont;
++	}
++
++	dmm_mem_map_dump(dmm_mgr);
++#endif
++
++	map_attrs |= DSP_MAPLITTLEENDIAN;
++	map_attrs |= DSP_MAPELEMSIZE32;
++	map_attrs |= DSP_MAPVIRTUALADDR;
++	status = proc_map(hprocessor, (void *)attr_in->pgpp_virt_addr,
++			  pnode->create_args.asa.task_arg_obj.heap_size,
++			  (void *)pnode->create_args.asa.task_arg_obj.
++			  udsp_heap_res_addr, (void **)&mapped_addr, map_attrs,
++			  pr_ctxt);
++	if (DSP_FAILED(status))
++		pr_err("%s: Failed to map memory for Heap: 0x%x\n",
++		       __func__, status);
++	else
++		pnode->create_args.asa.task_arg_obj.udsp_heap_addr =
++		    (u32) mapped_addr;
++
++func_cont:
++	mutex_unlock(&hnode_mgr->node_mgr_lock);
++	if (attr_in != NULL) {
++		/* Overrides of NBD properties */
++		pnode->utimeout = attr_in->utimeout;
++		pnode->prio = attr_in->prio;
++	}
++	/* Create object to manage notifications */
++	if (DSP_SUCCEEDED(status)) {
++		pnode->ntfy_obj = kmalloc(sizeof(struct ntfy_object),
++							GFP_KERNEL);
++		if (pnode->ntfy_obj)
++			ntfy_init(pnode->ntfy_obj);
++		else
++			status = -ENOMEM;
++	}
++
++	if (DSP_SUCCEEDED(status)) {
++		node_type = node_get_type(pnode);
++		/*  Allocate dsp_streamconnect array for device, task, and
++		 *  dais socket nodes. */
++		if (node_type != NODE_MESSAGE) {
++			num_streams = MAX_INPUTS(pnode) + MAX_OUTPUTS(pnode);
++			pnode->stream_connect = kzalloc(num_streams *
++					sizeof(struct dsp_streamconnect),
++					GFP_KERNEL);
++			if (num_streams > 0 && pnode->stream_connect == NULL)
++				status = -ENOMEM;
++
++		}
++		if (DSP_SUCCEEDED(status) && (node_type == NODE_TASK ||
++					      node_type == NODE_DAISSOCKET)) {
++			/* Allocate arrays for maintainig stream connections */
++			pnode->inputs = kzalloc(MAX_INPUTS(pnode) *
++					sizeof(struct stream_chnl), GFP_KERNEL);
++			pnode->outputs = kzalloc(MAX_OUTPUTS(pnode) *
++					sizeof(struct stream_chnl), GFP_KERNEL);
++			ptask_args = &(pnode->create_args.asa.task_arg_obj);
++			ptask_args->strm_in_def = kzalloc(MAX_INPUTS(pnode) *
++						sizeof(struct node_strmdef),
++						GFP_KERNEL);
++			ptask_args->strm_out_def = kzalloc(MAX_OUTPUTS(pnode) *
++						sizeof(struct node_strmdef),
++						GFP_KERNEL);
++			if ((MAX_INPUTS(pnode) > 0 && (pnode->inputs == NULL ||
++						       ptask_args->strm_in_def
++						       == NULL))
++			    || (MAX_OUTPUTS(pnode) > 0
++				&& (pnode->outputs == NULL
++				    || ptask_args->strm_out_def == NULL)))
++				status = -ENOMEM;
++		}
++	}
++	if (DSP_SUCCEEDED(status) && (node_type != NODE_DEVICE)) {
++		/* Create an event that will be posted when RMS_EXIT is
++		 * received. */
++		pnode->sync_done = kzalloc(sizeof(struct sync_object),
++								GFP_KERNEL);
++		if (pnode->sync_done)
++			sync_init_event(pnode->sync_done);
++		else
++			status = -ENOMEM;
++
++		if (DSP_SUCCEEDED(status)) {
++			/*Get the shared mem mgr for this nodes dev object */
++			status = cmm_get_handle(hprocessor, &hcmm_mgr);
++			if (DSP_SUCCEEDED(status)) {
++				/* Allocate a SM addr translator for this node
++				 * w/ deflt attr */
++				status = cmm_xlator_create(&pnode->xlator,
++							   hcmm_mgr, NULL);
++			}
++		}
++		if (DSP_SUCCEEDED(status)) {
++			/* Fill in message args */
++			if ((pargs != NULL) && (pargs->cb_data > 0)) {
++				pmsg_args =
++				    &(pnode->create_args.asa.node_msg_args);
++				pmsg_args->pdata = kzalloc(pargs->cb_data,
++								GFP_KERNEL);
++				if (pmsg_args->pdata == NULL) {
++					status = -ENOMEM;
++				} else {
++					pmsg_args->arg_length = pargs->cb_data;
++					memcpy(pmsg_args->pdata,
++					       pargs->node_data,
++					       pargs->cb_data);
++				}
++			}
++		}
++	}
++
++	if (DSP_SUCCEEDED(status) && node_type != NODE_DEVICE) {
++		/* Create a message queue for this node */
++		intf_fxns = hnode_mgr->intf_fxns;
++		status =
++		    (*intf_fxns->pfn_msg_create_queue) (hnode_mgr->msg_mgr_obj,
++							&pnode->msg_queue_obj,
++							0,
++							pnode->create_args.asa.
++							node_msg_args.max_msgs,
++							pnode);
++	}
++
++	if (DSP_SUCCEEDED(status)) {
++		/* Create object for dynamic loading */
++
++		status = hnode_mgr->nldr_fxns.pfn_allocate(hnode_mgr->nldr_obj,
++							   (void *)pnode,
++							   &pnode->dcd_props.
++							   obj_data.node_obj,
++							   &pnode->
++							   nldr_node_obj,
++							   &pnode->phase_split);
++	}
++
++	/* Compare value read from Node Properties and check if it is same as
++	 * STACKSEGLABEL, if yes read the Address of STACKSEGLABEL, calculate
++	 * GPP Address, Read the value in that address and override the
++	 * stack_seg value in task args */
++	if (DSP_SUCCEEDED(status) &&
++	    (char *)pnode->dcd_props.obj_data.node_obj.ndb_props.
++	    stack_seg_name != NULL) {
++		if (strcmp((char *)
++			   pnode->dcd_props.obj_data.node_obj.ndb_props.
++			   stack_seg_name, STACKSEGLABEL) == 0) {
++			status =
++			    hnode_mgr->nldr_fxns.
++			    pfn_get_fxn_addr(pnode->nldr_node_obj, "DYNEXT_BEG",
++					     &dynext_base);
++			if (DSP_FAILED(status))
++				pr_err("%s: Failed to get addr for DYNEXT_BEG"
++				       " status = 0x%x\n", __func__, status);
++
++			status =
++			    hnode_mgr->nldr_fxns.
++			    pfn_get_fxn_addr(pnode->nldr_node_obj,
++					     "L1DSRAM_HEAP", &pul_value);
++
++			if (DSP_FAILED(status))
++				pr_err("%s: Failed to get addr for L1DSRAM_HEAP"
++				       " status = 0x%x\n", __func__, status);
++
++			host_res = pbridge_context->resources;
++			if (!host_res)
++				status = -EPERM;
++
++			if (DSP_FAILED(status)) {
++				pr_err("%s: Failed to get host resource, status"
++				       " = 0x%x\n", __func__, status);
++				goto func_end;
++			}
++
++			ul_gpp_mem_base = (u32) host_res->dw_mem_base[1];
++			off_set = pul_value - dynext_base;
++			ul_stack_seg_addr = ul_gpp_mem_base + off_set;
++			ul_stack_seg_val = (u32) *((reg_uword32 *)
++						    ((u32)
++						     (ul_stack_seg_addr)));
++
++			dev_dbg(bridge, "%s: StackSegVal = 0x%x, StackSegAddr ="
++				" 0x%x\n", __func__, ul_stack_seg_val,
++				ul_stack_seg_addr);
++
++			pnode->create_args.asa.task_arg_obj.stack_seg =
++			    ul_stack_seg_val;
++
++		}
++	}
++
++	if (DSP_SUCCEEDED(status)) {
++		/* Add the node to the node manager's list of allocated
++		 * nodes. */
++		lst_init_elem((struct list_head *)pnode);
++		NODE_SET_STATE(pnode, NODE_ALLOCATED);
++
++		mutex_lock(&hnode_mgr->node_mgr_lock);
++
++		lst_put_tail(hnode_mgr->node_list, (struct list_head *) pnode);
++			++(hnode_mgr->num_nodes);
++
++		/* Exit critical section */
++		mutex_unlock(&hnode_mgr->node_mgr_lock);
++
++		/* Preset this to assume phases are split
++		 * (for overlay and dll) */
++		pnode->phase_split = true;
++
++		if (DSP_SUCCEEDED(status))
++			*ph_node = pnode;
++
++		/* Notify all clients registered for DSP_NODESTATECHANGE. */
++		proc_notify_all_clients(hprocessor, DSP_NODESTATECHANGE);
++	} else {
++		/* Cleanup */
++		if (pnode)
++			delete_node(pnode, pr_ctxt);
++
++	}
++
++	if (DSP_SUCCEEDED(status)) {
++		drv_insert_node_res_element(*ph_node, &node_res, pr_ctxt);
++		drv_proc_node_update_heap_status(node_res, true);
++		drv_proc_node_update_status(node_res, true);
++	}
++	DBC_ENSURE((DSP_FAILED(status) && (*ph_node == NULL)) ||
++			(DSP_SUCCEEDED(status) && *ph_node));
++func_end:
++	dev_dbg(bridge, "%s: hprocessor: %p pNodeId: %p pargs: %p attr_in: %p "
++		"ph_node: %p status: 0x%x\n", __func__, hprocessor,
++		pNodeId, pargs, attr_in, ph_node, status);
++	return status;
++}
++
++/*
++ *  ======== node_alloc_msg_buf ========
++ *  Purpose:
++ *      Allocates buffer for zero copy messaging.
++ */
++DBAPI node_alloc_msg_buf(struct node_object *hnode, u32 usize,
++			 OPTIONAL IN OUT struct dsp_bufferattr *pattr,
++			 OUT u8 **pbuffer)
++{
++	struct node_object *pnode = (struct node_object *)hnode;
++	int status = 0;
++	bool va_flag = false;
++	bool set_info;
++	u32 proc_id;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(pbuffer != NULL);
++
++	DBC_REQUIRE(usize > 0);
++
++	if (!pnode)
++		status = -EFAULT;
++	else if (node_get_type(pnode) == NODE_DEVICE)
++		status = -EPERM;
++
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	if (pattr == NULL)
++		pattr = &node_dfltbufattrs;	/* set defaults */
++
++	status = proc_get_processor_id(pnode->hprocessor, &proc_id);
++	if (proc_id != DSP_UNIT) {
++		DBC_ASSERT(NULL);
++		goto func_end;
++	}
++	/*  If segment ID includes MEM_SETVIRTUALSEGID then pbuffer is a
++	 *  virt  address, so set this info in this node's translator
++	 *  object for  future ref. If MEM_GETVIRTUALSEGID then retrieve
++	 *  virtual address  from node's translator. */
++	if ((pattr->segment_id & MEM_SETVIRTUALSEGID) ||
++	    (pattr->segment_id & MEM_GETVIRTUALSEGID)) {
++		va_flag = true;
++		set_info = (pattr->segment_id & MEM_SETVIRTUALSEGID) ?
++		    true : false;
++		/* Clear mask bits */
++		pattr->segment_id &= ~MEM_MASKVIRTUALSEGID;
++		/* Set/get this node's translators virtual address base/size */
++		status = cmm_xlator_info(pnode->xlator, pbuffer, usize,
++					 pattr->segment_id, set_info);
++	}
++	if (DSP_SUCCEEDED(status) && (!va_flag)) {
++		if (pattr->segment_id != 1) {
++			/* Node supports single SM segment only. */
++			status = -EBADR;
++		}
++		/*  Arbitrary SM buffer alignment not supported for host side
++		 *  allocs, but guaranteed for the following alignment
++		 *  values. */
++		switch (pattr->buf_alignment) {
++		case 0:
++		case 1:
++		case 2:
++		case 4:
++			break;
++		default:
++			/* alignment value not suportted */
++			status = -EPERM;
++			break;
++		}
++		if (DSP_SUCCEEDED(status)) {
++			/* allocate physical buffer from seg_id in node's
++			 * translator */
++			(void)cmm_xlator_alloc_buf(pnode->xlator, pbuffer,
++						   usize);
++			if (*pbuffer == NULL) {
++				pr_err("%s: error - Out of shared memory\n",
++				       __func__);
++				status = -ENOMEM;
++			}
++		}
++	}
++func_end:
++	return status;
++}
++
++/*
++ *  ======== node_change_priority ========
++ *  Purpose:
++ *      Change the priority of a node in the allocated state, or that is
++ *      currently running or paused on the target.
++ */
++int node_change_priority(struct node_object *hnode, s32 prio)
++{
++	struct node_object *pnode = (struct node_object *)hnode;
++	struct node_mgr *hnode_mgr = NULL;
++	enum node_type node_type;
++	enum node_state state;
++	int status = 0;
++	u32 proc_id;
++
++	DBC_REQUIRE(refs > 0);
++
++	if (!hnode || !hnode->hnode_mgr) {
++		status = -EFAULT;
++	} else {
++		hnode_mgr = hnode->hnode_mgr;
++		node_type = node_get_type(hnode);
++		if (node_type != NODE_TASK && node_type != NODE_DAISSOCKET)
++			status = -EPERM;
++		else if (prio < hnode_mgr->min_pri || prio > hnode_mgr->max_pri)
++			status = -EDOM;
++	}
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/* Enter critical section */
++	mutex_lock(&hnode_mgr->node_mgr_lock);
++
++	state = node_get_state(hnode);
++	if (state == NODE_ALLOCATED || state == NODE_PAUSED) {
++		NODE_SET_PRIORITY(hnode, prio);
++	} else {
++		if (state != NODE_RUNNING) {
++			status = -EBADR;
++			goto func_cont;
++		}
++		status = proc_get_processor_id(pnode->hprocessor, &proc_id);
++		if (proc_id == DSP_UNIT) {
++			status =
++			    disp_node_change_priority(hnode_mgr->disp_obj,
++						      hnode,
++						      hnode_mgr->ul_fxn_addrs
++						      [RMSCHANGENODEPRIORITY],
++						      hnode->node_env, prio);
++		}
++		if (DSP_SUCCEEDED(status))
++			NODE_SET_PRIORITY(hnode, prio);
++
++	}
++func_cont:
++	/* Leave critical section */
++	mutex_unlock(&hnode_mgr->node_mgr_lock);
++func_end:
++	return status;
++}
++
++/*
++ *  ======== node_connect ========
++ *  Purpose:
++ *      Connect two nodes on the DSP, or a node on the DSP to the GPP.
++ */
++int node_connect(struct node_object *hNode1, u32 uStream1,
++			struct node_object *hNode2,
++			u32 uStream2, OPTIONAL IN struct dsp_strmattr *pattrs,
++			OPTIONAL IN struct dsp_cbdata *conn_param)
++{
++	struct node_mgr *hnode_mgr;
++	char *pstr_dev_name = NULL;
++	enum node_type node1_type = NODE_TASK;
++	enum node_type node2_type = NODE_TASK;
++	struct node_strmdef *pstrm_def;
++	struct node_strmdef *input = NULL;
++	struct node_strmdef *output = NULL;
++	struct node_object *dev_node_obj;
++	struct node_object *hnode;
++	struct stream_chnl *pstream;
++	u32 pipe_id = GB_NOBITS;
++	u32 chnl_id = GB_NOBITS;
++	s8 chnl_mode;
++	u32 dw_length;
++	int status = 0;
++	DBC_REQUIRE(refs > 0);
++
++	if ((hNode1 != (struct node_object *)DSP_HGPPNODE && !hNode1) ||
++	    (hNode2 != (struct node_object *)DSP_HGPPNODE && !hNode2))
++		status = -EFAULT;
++
++	if (DSP_SUCCEEDED(status)) {
++		/* The two nodes must be on the same processor */
++		if (hNode1 != (struct node_object *)DSP_HGPPNODE &&
++		    hNode2 != (struct node_object *)DSP_HGPPNODE &&
++		    hNode1->hnode_mgr != hNode2->hnode_mgr)
++			status = -EPERM;
++		/* Cannot connect a node to itself */
++		if (hNode1 == hNode2)
++			status = -EPERM;
++
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* node_get_type() will return NODE_GPP if hnode =
++		 * DSP_HGPPNODE. */
++		node1_type = node_get_type(hNode1);
++		node2_type = node_get_type(hNode2);
++		/* Check stream indices ranges */
++		if ((node1_type != NODE_GPP && node1_type != NODE_DEVICE &&
++		     uStream1 >= MAX_OUTPUTS(hNode1)) || (node2_type != NODE_GPP
++							  && node2_type !=
++							  NODE_DEVICE
++							  && uStream2 >=
++							  MAX_INPUTS(hNode2)))
++			status = -EINVAL;
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/*
++		 *  Only the following types of connections are allowed:
++		 *      task/dais socket < == > task/dais socket
++		 *      task/dais socket < == > device
++		 *      task/dais socket < == > GPP
++		 *
++		 *  ie, no message nodes, and at least one task or dais
++		 *  socket node.
++		 */
++		if (node1_type == NODE_MESSAGE || node2_type == NODE_MESSAGE ||
++		    (node1_type != NODE_TASK && node1_type != NODE_DAISSOCKET &&
++		     node2_type != NODE_TASK && node2_type != NODE_DAISSOCKET))
++			status = -EPERM;
++	}
++	/*
++	 * Check stream mode. Default is STRMMODE_PROCCOPY.
++	 */
++	if (DSP_SUCCEEDED(status) && pattrs) {
++		if (pattrs->strm_mode != STRMMODE_PROCCOPY)
++			status = -EPERM;	/* illegal stream mode */
++
++	}
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	if (node1_type != NODE_GPP) {
++		hnode_mgr = hNode1->hnode_mgr;
++	} else {
++		DBC_ASSERT(hNode2 != (struct node_object *)DSP_HGPPNODE);
++		hnode_mgr = hNode2->hnode_mgr;
++	}
++	/* Enter critical section */
++	mutex_lock(&hnode_mgr->node_mgr_lock);
++
++	/* Nodes must be in the allocated state */
++	if (node1_type != NODE_GPP && node_get_state(hNode1) != NODE_ALLOCATED)
++		status = -EBADR;
++
++	if (node2_type != NODE_GPP && node_get_state(hNode2) != NODE_ALLOCATED)
++		status = -EBADR;
++
++	if (DSP_SUCCEEDED(status)) {
++		/*  Check that stream indices for task and dais socket nodes
++		 *  are not already be used. (Device nodes checked later) */
++		if (node1_type == NODE_TASK || node1_type == NODE_DAISSOCKET) {
++			output =
++			    &(hNode1->create_args.asa.
++			      task_arg_obj.strm_out_def[uStream1]);
++			if (output->sz_device != NULL)
++				status = -EISCONN;
++
++		}
++		if (node2_type == NODE_TASK || node2_type == NODE_DAISSOCKET) {
++			input =
++			    &(hNode2->create_args.asa.
++			      task_arg_obj.strm_in_def[uStream2]);
++			if (input->sz_device != NULL)
++				status = -EISCONN;
++
++		}
++	}
++	/* Connecting two task nodes? */
++	if (DSP_SUCCEEDED(status) && ((node1_type == NODE_TASK ||
++				       node1_type == NODE_DAISSOCKET)
++				      && (node2_type == NODE_TASK
++					  || node2_type == NODE_DAISSOCKET))) {
++		/* Find available pipe */
++		pipe_id = gb_findandset(hnode_mgr->pipe_map);
++		if (pipe_id == GB_NOBITS) {
++			status = -ECONNREFUSED;
++		} else {
++			hNode1->outputs[uStream1].type = NODECONNECT;
++			hNode2->inputs[uStream2].type = NODECONNECT;
++			hNode1->outputs[uStream1].dev_id = pipe_id;
++			hNode2->inputs[uStream2].dev_id = pipe_id;
++			output->sz_device = kzalloc(PIPENAMELEN + 1,
++							GFP_KERNEL);
++			input->sz_device = kzalloc(PIPENAMELEN + 1, GFP_KERNEL);
++			if (output->sz_device == NULL ||
++			    input->sz_device == NULL) {
++				/* Undo the connection */
++				kfree(output->sz_device);
++
++				kfree(input->sz_device);
++
++				output->sz_device = NULL;
++				input->sz_device = NULL;
++				gb_clear(hnode_mgr->pipe_map, pipe_id);
++				status = -ENOMEM;
++			} else {
++				/* Copy "/dbpipe<pipId>" name to device names */
++				sprintf(output->sz_device, "%s%d",
++					PIPEPREFIX, pipe_id);
++				strcpy(input->sz_device, output->sz_device);
++			}
++		}
++	}
++	/* Connecting task node to host? */
++	if (DSP_SUCCEEDED(status) && (node1_type == NODE_GPP ||
++				      node2_type == NODE_GPP)) {
++		if (node1_type == NODE_GPP) {
++			chnl_mode = CHNL_MODETODSP;
++		} else {
++			DBC_ASSERT(node2_type == NODE_GPP);
++			chnl_mode = CHNL_MODEFROMDSP;
++		}
++		/*  Reserve a channel id. We need to put the name "/host<id>"
++		 *  in the node's create_args, but the host
++		 *  side channel will not be opened until DSPStream_Open is
++		 *  called for this node. */
++		if (pattrs) {
++			if (pattrs->strm_mode == STRMMODE_RDMA) {
++				chnl_id =
++				    gb_findandset(hnode_mgr->dma_chnl_map);
++				/* dma chans are 2nd transport chnl set
++				 * ids(e.g. 16-31) */
++				(chnl_id != GB_NOBITS) ?
++				    (chnl_id =
++				     chnl_id +
++				     hnode_mgr->ul_num_chnls) : chnl_id;
++			} else if (pattrs->strm_mode == STRMMODE_ZEROCOPY) {
++				chnl_id = gb_findandset(hnode_mgr->zc_chnl_map);
++				/* zero-copy chans are 3nd transport set
++				 * (e.g. 32-47) */
++				(chnl_id != GB_NOBITS) ? (chnl_id = chnl_id +
++							  (2 *
++							   hnode_mgr->
++							   ul_num_chnls))
++				    : chnl_id;
++			} else {	/* must be PROCCOPY */
++				DBC_ASSERT(pattrs->strm_mode ==
++					   STRMMODE_PROCCOPY);
++				chnl_id = gb_findandset(hnode_mgr->chnl_map);
++				/* e.g. 0-15 */
++			}
++		} else {
++			/* default to PROCCOPY */
++			chnl_id = gb_findandset(hnode_mgr->chnl_map);
++		}
++		if (chnl_id == GB_NOBITS) {
++			status = -ECONNREFUSED;
++			goto func_cont2;
++		}
++		pstr_dev_name = kzalloc(HOSTNAMELEN + 1, GFP_KERNEL);
++		if (pstr_dev_name != NULL)
++			goto func_cont2;
++
++		if (pattrs) {
++			if (pattrs->strm_mode == STRMMODE_RDMA) {
++				gb_clear(hnode_mgr->dma_chnl_map, chnl_id -
++					 hnode_mgr->ul_num_chnls);
++			} else if (pattrs->strm_mode == STRMMODE_ZEROCOPY) {
++				gb_clear(hnode_mgr->zc_chnl_map, chnl_id -
++					 (2 * hnode_mgr->ul_num_chnls));
++			} else {
++				DBC_ASSERT(pattrs->strm_mode ==
++					   STRMMODE_PROCCOPY);
++				gb_clear(hnode_mgr->chnl_map, chnl_id);
++			}
++		} else {
++			gb_clear(hnode_mgr->chnl_map, chnl_id);
++		}
++		status = -ENOMEM;
++func_cont2:
++		if (DSP_SUCCEEDED(status)) {
++			if (hNode1 == (struct node_object *)DSP_HGPPNODE) {
++				hNode2->inputs[uStream2].type = HOSTCONNECT;
++				hNode2->inputs[uStream2].dev_id = chnl_id;
++				input->sz_device = pstr_dev_name;
++			} else {
++				hNode1->outputs[uStream1].type = HOSTCONNECT;
++				hNode1->outputs[uStream1].dev_id = chnl_id;
++				output->sz_device = pstr_dev_name;
++			}
++			sprintf(pstr_dev_name, "%s%d", HOSTPREFIX, chnl_id);
++		}
++	}
++	/* Connecting task node to device node? */
++	if (DSP_SUCCEEDED(status) && ((node1_type == NODE_DEVICE) ||
++				      (node2_type == NODE_DEVICE))) {
++		if (node2_type == NODE_DEVICE) {
++			/* node1 == > device */
++			dev_node_obj = hNode2;
++			hnode = hNode1;
++			pstream = &(hNode1->outputs[uStream1]);
++			pstrm_def = output;
++		} else {
++			/* device == > node2 */
++			dev_node_obj = hNode1;
++			hnode = hNode2;
++			pstream = &(hNode2->inputs[uStream2]);
++			pstrm_def = input;
++		}
++		/* Set up create args */
++		pstream->type = DEVICECONNECT;
++		dw_length = strlen(dev_node_obj->pstr_dev_name);
++		if (conn_param != NULL) {
++			pstrm_def->sz_device = kzalloc(dw_length + 1 +
++							conn_param->cb_data,
++							GFP_KERNEL);
++		} else {
++			pstrm_def->sz_device = kzalloc(dw_length + 1,
++							GFP_KERNEL);
++		}
++		if (pstrm_def->sz_device == NULL) {
++			status = -ENOMEM;
++		} else {
++			/* Copy device name */
++			strncpy(pstrm_def->sz_device,
++				dev_node_obj->pstr_dev_name, dw_length);
++			if (conn_param != NULL) {
++				strncat(pstrm_def->sz_device,
++					(char *)conn_param->node_data,
++					(u32) conn_param->cb_data);
++			}
++			dev_node_obj->device_owner = hnode;
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Fill in create args */
++		if (node1_type == NODE_TASK || node1_type == NODE_DAISSOCKET) {
++			hNode1->create_args.asa.task_arg_obj.num_outputs++;
++			fill_stream_def(hNode1, output, pattrs);
++		}
++		if (node2_type == NODE_TASK || node2_type == NODE_DAISSOCKET) {
++			hNode2->create_args.asa.task_arg_obj.num_inputs++;
++			fill_stream_def(hNode2, input, pattrs);
++		}
++		/* Update hNode1 and hNode2 stream_connect */
++		if (node1_type != NODE_GPP && node1_type != NODE_DEVICE) {
++			hNode1->num_outputs++;
++			if (uStream1 > hNode1->max_output_index)
++				hNode1->max_output_index = uStream1;
++
++		}
++		if (node2_type != NODE_GPP && node2_type != NODE_DEVICE) {
++			hNode2->num_inputs++;
++			if (uStream2 > hNode2->max_input_index)
++				hNode2->max_input_index = uStream2;
++
++		}
++		fill_stream_connect(hNode1, hNode2, uStream1, uStream2);
++	}
++	/* end of sync_enter_cs */
++	/* Exit critical section */
++	mutex_unlock(&hnode_mgr->node_mgr_lock);
++func_end:
++	dev_dbg(bridge, "%s: hNode1: %p uStream1: %d hNode2: %p uStream2: %d"
++		"pattrs: %p status: 0x%x\n", __func__, hNode1,
++		uStream1, hNode2, uStream2, pattrs, status);
++	return status;
++}
++
++/*
++ *  ======== node_create ========
++ *  Purpose:
++ *      Create a node on the DSP by remotely calling the node's create function.
++ */
++int node_create(struct node_object *hnode)
++{
++	struct node_object *pnode = (struct node_object *)hnode;
++	struct node_mgr *hnode_mgr;
++	struct bridge_drv_interface *intf_fxns;
++	u32 ul_create_fxn;
++	enum node_type node_type;
++	int status = 0;
++	int status1 = 0;
++	struct dsp_cbdata cb_data;
++	u32 proc_id = 255;
++	struct dsp_processorstate proc_state;
++	struct proc_object *hprocessor;
++#if defined(CONFIG_BRIDGE_DVFS) && !defined(CONFIG_CPU_FREQ)
++	struct dspbridge_platform_data *pdata =
++	    omap_dspbridge_dev->dev.platform_data;
++#endif
++
++	DBC_REQUIRE(refs > 0);
++	if (!pnode) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	hprocessor = hnode->hprocessor;
++	status = proc_get_state(hprocessor, &proc_state,
++				sizeof(struct dsp_processorstate));
++	if (DSP_FAILED(status))
++		goto func_end;
++	/* If processor is in error state then don't attempt to create
++	   new node */
++	if (proc_state.proc_state == PROC_ERROR) {
++		status = -EPERM;
++		goto func_end;
++	}
++	/* create struct dsp_cbdata struct for PWR calls */
++	cb_data.cb_data = PWR_TIMEOUT;
++	node_type = node_get_type(hnode);
++	hnode_mgr = hnode->hnode_mgr;
++	intf_fxns = hnode_mgr->intf_fxns;
++	/* Get access to node dispatcher */
++	mutex_lock(&hnode_mgr->node_mgr_lock);
++
++	/* Check node state */
++	if (node_get_state(hnode) != NODE_ALLOCATED)
++		status = -EBADR;
++
++	if (DSP_SUCCEEDED(status))
++		status = proc_get_processor_id(pnode->hprocessor, &proc_id);
++
++	if (DSP_FAILED(status))
++		goto func_cont2;
++
++	if (proc_id != DSP_UNIT)
++		goto func_cont2;
++
++	/* Make sure streams are properly connected */
++	if ((hnode->num_inputs && hnode->max_input_index >
++	     hnode->num_inputs - 1) ||
++	    (hnode->num_outputs && hnode->max_output_index >
++	     hnode->num_outputs - 1))
++		status = -ENOTCONN;
++
++	if (DSP_SUCCEEDED(status)) {
++		/* If node's create function is not loaded, load it */
++		/* Boost the OPP level to max level that DSP can be requested */
++#if defined(CONFIG_BRIDGE_DVFS) && !defined(CONFIG_CPU_FREQ)
++		if (pdata->cpu_set_freq)
++			(*pdata->cpu_set_freq) (pdata->mpu_speed[VDD1_OPP3]);
++#endif
++		status = hnode_mgr->nldr_fxns.pfn_load(hnode->nldr_node_obj,
++						       NLDR_CREATE);
++		/* Get address of node's create function */
++		if (DSP_SUCCEEDED(status)) {
++			hnode->loaded = true;
++			if (node_type != NODE_DEVICE) {
++				status = get_fxn_address(hnode, &ul_create_fxn,
++							 CREATEPHASE);
++			}
++		} else {
++			pr_err("%s: failed to load create code: 0x%x\n",
++			       __func__, status);
++		}
++		/* Request the lowest OPP level */
++#if defined(CONFIG_BRIDGE_DVFS) && !defined(CONFIG_CPU_FREQ)
++		if (pdata->cpu_set_freq)
++			(*pdata->cpu_set_freq) (pdata->mpu_speed[VDD1_OPP1]);
++#endif
++		/* Get address of iAlg functions, if socket node */
++		if (DSP_SUCCEEDED(status)) {
++			if (node_type == NODE_DAISSOCKET) {
++				status = hnode_mgr->nldr_fxns.pfn_get_fxn_addr
++				    (hnode->nldr_node_obj,
++				     hnode->dcd_props.obj_data.node_obj.
++				     pstr_i_alg_name,
++				     &hnode->create_args.asa.
++				     task_arg_obj.ul_dais_arg);
++			}
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		if (node_type != NODE_DEVICE) {
++			status = disp_node_create(hnode_mgr->disp_obj, hnode,
++						  hnode_mgr->ul_fxn_addrs
++						  [RMSCREATENODE],
++						  ul_create_fxn,
++						  &(hnode->create_args),
++						  &(hnode->node_env));
++			if (DSP_SUCCEEDED(status)) {
++				/* Set the message queue id to the node env
++				 * pointer */
++				intf_fxns = hnode_mgr->intf_fxns;
++				(*intf_fxns->pfn_msg_set_queue_id) (hnode->
++							msg_queue_obj,
++							hnode->node_env);
++			}
++		}
++	}
++	/*  Phase II/Overlays: Create, execute, delete phases  possibly in
++	 *  different files/sections. */
++	if (hnode->loaded && hnode->phase_split) {
++		/* If create code was dynamically loaded, we can now unload
++		 * it. */
++		status1 = hnode_mgr->nldr_fxns.pfn_unload(hnode->nldr_node_obj,
++							  NLDR_CREATE);
++		hnode->loaded = false;
++	}
++	if (DSP_FAILED(status1))
++		pr_err("%s: Failed to unload create code: 0x%x\n",
++		       __func__, status1);
++func_cont2:
++	/* Update node state and node manager state */
++	if (DSP_SUCCEEDED(status)) {
++		NODE_SET_STATE(hnode, NODE_CREATED);
++		hnode_mgr->num_created++;
++		goto func_cont;
++	}
++	if (status != -EBADR) {
++		/* Put back in NODE_ALLOCATED state if error occurred */
++		NODE_SET_STATE(hnode, NODE_ALLOCATED);
++	}
++func_cont:
++	/* Free access to node dispatcher */
++	mutex_unlock(&hnode_mgr->node_mgr_lock);
++func_end:
++	if (DSP_SUCCEEDED(status)) {
++		proc_notify_clients(hnode->hprocessor, DSP_NODESTATECHANGE);
++		ntfy_notify(hnode->ntfy_obj, DSP_NODESTATECHANGE);
++	}
++
++	dev_dbg(bridge, "%s: hnode: %p status: 0x%x\n", __func__,
++		hnode, status);
++	return status;
++}
++
++/*
++ *  ======== node_create_mgr ========
++ *  Purpose:
++ *      Create a NODE Manager object.
++ */
++int node_create_mgr(OUT struct node_mgr **phNodeMgr,
++			   struct dev_object *hdev_obj)
++{
++	u32 i;
++	struct node_mgr *node_mgr_obj = NULL;
++	struct disp_attr disp_attr_obj;
++	char *sz_zl_file = "";
++	struct nldr_attrs nldr_attrs_obj;
++	int status = 0;
++	u8 dev_type;
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(phNodeMgr != NULL);
++	DBC_REQUIRE(hdev_obj != NULL);
++
++	*phNodeMgr = NULL;
++	/* Allocate Node manager object */
++	node_mgr_obj = kzalloc(sizeof(struct node_mgr), GFP_KERNEL);
++	if (node_mgr_obj) {
++		node_mgr_obj->hdev_obj = hdev_obj;
++		node_mgr_obj->node_list = kzalloc(sizeof(struct lst_list),
++							GFP_KERNEL);
++		node_mgr_obj->pipe_map = gb_create(MAXPIPES);
++		node_mgr_obj->pipe_done_map = gb_create(MAXPIPES);
++		if (node_mgr_obj->node_list == NULL
++		    || node_mgr_obj->pipe_map == NULL
++		    || node_mgr_obj->pipe_done_map == NULL) {
++			status = -ENOMEM;
++		} else {
++			INIT_LIST_HEAD(&node_mgr_obj->node_list->head);
++			node_mgr_obj->ntfy_obj = kmalloc(
++				sizeof(struct ntfy_object), GFP_KERNEL);
++			if (node_mgr_obj->ntfy_obj)
++				ntfy_init(node_mgr_obj->ntfy_obj);
++			else
++				status = -ENOMEM;
++		}
++		node_mgr_obj->num_created = 0;
++	} else {
++		status = -ENOMEM;
++	}
++	/* get devNodeType */
++	if (DSP_SUCCEEDED(status))
++		status = dev_get_dev_type(hdev_obj, &dev_type);
++
++	/* Create the DCD Manager */
++	if (DSP_SUCCEEDED(status)) {
++		status =
++		    dcd_create_manager(sz_zl_file, &node_mgr_obj->hdcd_mgr);
++		if (DSP_SUCCEEDED(status))
++			status = get_proc_props(node_mgr_obj, hdev_obj);
++
++	}
++	/* Create NODE Dispatcher */
++	if (DSP_SUCCEEDED(status)) {
++		disp_attr_obj.ul_chnl_offset = node_mgr_obj->ul_chnl_offset;
++		disp_attr_obj.ul_chnl_buf_size = node_mgr_obj->ul_chnl_buf_size;
++		disp_attr_obj.proc_family = node_mgr_obj->proc_family;
++		disp_attr_obj.proc_type = node_mgr_obj->proc_type;
++		status =
++		    disp_create(&node_mgr_obj->disp_obj, hdev_obj,
++				&disp_attr_obj);
++	}
++	/* Create a STRM Manager */
++	if (DSP_SUCCEEDED(status))
++		status = strm_create(&node_mgr_obj->strm_mgr_obj, hdev_obj);
++
++	if (DSP_SUCCEEDED(status)) {
++		dev_get_intf_fxns(hdev_obj, &node_mgr_obj->intf_fxns);
++		/* Get msg_ctrl queue manager */
++		dev_get_msg_mgr(hdev_obj, &node_mgr_obj->msg_mgr_obj);
++		mutex_init(&node_mgr_obj->node_mgr_lock);
++		node_mgr_obj->chnl_map = gb_create(node_mgr_obj->ul_num_chnls);
++		/* dma chnl map. ul_num_chnls is # per transport */
++		node_mgr_obj->dma_chnl_map =
++		    gb_create(node_mgr_obj->ul_num_chnls);
++		node_mgr_obj->zc_chnl_map =
++		    gb_create(node_mgr_obj->ul_num_chnls);
++		if ((node_mgr_obj->chnl_map == NULL)
++		    || (node_mgr_obj->dma_chnl_map == NULL)
++		    || (node_mgr_obj->zc_chnl_map == NULL)) {
++			status = -ENOMEM;
++		} else {
++			/* Block out reserved channels */
++			for (i = 0; i < node_mgr_obj->ul_chnl_offset; i++)
++				gb_set(node_mgr_obj->chnl_map, i);
++
++			/* Block out channels reserved for RMS */
++			gb_set(node_mgr_obj->chnl_map,
++			       node_mgr_obj->ul_chnl_offset);
++			gb_set(node_mgr_obj->chnl_map,
++			       node_mgr_obj->ul_chnl_offset + 1);
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* NO RM Server on the IVA */
++		if (dev_type != IVA_UNIT) {
++			/* Get addresses of any RMS functions loaded */
++			status = get_rms_fxns(node_mgr_obj);
++		}
++	}
++
++	/* Get loader functions and create loader */
++	if (DSP_SUCCEEDED(status))
++		node_mgr_obj->nldr_fxns = nldr_fxns;	/* Dyn loader funcs */
++
++	if (DSP_SUCCEEDED(status)) {
++		nldr_attrs_obj.pfn_ovly = ovly;
++		nldr_attrs_obj.pfn_write = mem_write;
++		nldr_attrs_obj.us_dsp_word_size = node_mgr_obj->udsp_word_size;
++		nldr_attrs_obj.us_dsp_mau_size = node_mgr_obj->udsp_mau_size;
++		node_mgr_obj->loader_init = node_mgr_obj->nldr_fxns.pfn_init();
++		status =
++		    node_mgr_obj->nldr_fxns.pfn_create(&node_mgr_obj->nldr_obj,
++						       hdev_obj,
++						       &nldr_attrs_obj);
++	}
++	if (DSP_SUCCEEDED(status))
++		*phNodeMgr = node_mgr_obj;
++	else
++		delete_node_mgr(node_mgr_obj);
++
++	DBC_ENSURE((DSP_FAILED(status) && (*phNodeMgr == NULL)) ||
++			(DSP_SUCCEEDED(status) && *phNodeMgr));
++
++	return status;
++}
++
++/*
++ *  ======== node_delete ========
++ *  Purpose:
++ *      Delete a node on the DSP by remotely calling the node's delete function.
++ *      Loads the node's delete function if necessary. Free GPP side resources
++ *      after node's delete function returns.
++ */
++int node_delete(struct node_object *hnode,
++		       struct process_context *pr_ctxt)
++{
++	struct node_object *pnode = (struct node_object *)hnode;
++	struct node_mgr *hnode_mgr;
++	struct proc_object *hprocessor;
++	struct disp_object *disp_obj;
++	u32 ul_delete_fxn;
++	enum node_type node_type;
++	enum node_state state;
++	int status = 0;
++	int status1 = 0;
++	struct dsp_cbdata cb_data;
++	u32 proc_id;
++	struct bridge_drv_interface *intf_fxns;
++
++	void *node_res;
++
++	struct dsp_processorstate proc_state;
++	DBC_REQUIRE(refs > 0);
++
++	if (!hnode) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	/* create struct dsp_cbdata struct for PWR call */
++	cb_data.cb_data = PWR_TIMEOUT;
++	hnode_mgr = hnode->hnode_mgr;
++	hprocessor = hnode->hprocessor;
++	disp_obj = hnode_mgr->disp_obj;
++	node_type = node_get_type(hnode);
++	intf_fxns = hnode_mgr->intf_fxns;
++	/* Enter critical section */
++	mutex_lock(&hnode_mgr->node_mgr_lock);
++
++	state = node_get_state(hnode);
++	/*  Execute delete phase code for non-device node in all cases
++	 *  except when the node was only allocated. Delete phase must be
++	 *  executed even if create phase was executed, but failed.
++	 *  If the node environment pointer is non-NULL, the delete phase
++	 *  code must be  executed. */
++	if (!(state == NODE_ALLOCATED && hnode->node_env == (u32) NULL) &&
++	    node_type != NODE_DEVICE) {
++		status = proc_get_processor_id(pnode->hprocessor, &proc_id);
++		if (DSP_FAILED(status))
++			goto func_cont1;
++
++		if (proc_id == DSP_UNIT || proc_id == IVA_UNIT) {
++			/*  If node has terminated, execute phase code will
++			 *  have already been unloaded in node_on_exit(). If the
++			 *  node is PAUSED, the execute phase is loaded, and it
++			 *  is now ok to unload it. If the node is running, we
++			 *  will unload the execute phase only after deleting
++			 *  the node. */
++			if (state == NODE_PAUSED && hnode->loaded &&
++			    hnode->phase_split) {
++				/* Ok to unload execute code as long as node
++				 * is not * running */
++				status1 =
++				    hnode_mgr->nldr_fxns.
++				    pfn_unload(hnode->nldr_node_obj,
++					       NLDR_EXECUTE);
++				hnode->loaded = false;
++				NODE_SET_STATE(hnode, NODE_DONE);
++			}
++			/* Load delete phase code if not loaded or if haven't
++			 * * unloaded EXECUTE phase */
++			if ((!(hnode->loaded) || (state == NODE_RUNNING)) &&
++			    hnode->phase_split) {
++				status =
++				    hnode_mgr->nldr_fxns.
++				    pfn_load(hnode->nldr_node_obj, NLDR_DELETE);
++				if (DSP_SUCCEEDED(status))
++					hnode->loaded = true;
++				else
++					pr_err("%s: fail - load delete code:"
++					       " 0x%x\n", __func__, status);
++			}
++		}
++func_cont1:
++		if (DSP_SUCCEEDED(status)) {
++			/* Unblock a thread trying to terminate the node */
++			(void)sync_set_event(hnode->sync_done);
++			if (proc_id == DSP_UNIT) {
++				/* ul_delete_fxn = address of node's delete
++				 * function */
++				status = get_fxn_address(hnode, &ul_delete_fxn,
++							 DELETEPHASE);
++			} else if (proc_id == IVA_UNIT)
++				ul_delete_fxn = (u32) hnode->node_env;
++			if (DSP_SUCCEEDED(status)) {
++				status = proc_get_state(hprocessor,
++						&proc_state,
++						sizeof(struct
++						       dsp_processorstate));
++				if (proc_state.proc_state != PROC_ERROR) {
++					status =
++					    disp_node_delete(disp_obj, hnode,
++							     hnode_mgr->
++							     ul_fxn_addrs
++							     [RMSDELETENODE],
++							     ul_delete_fxn,
++							     hnode->node_env);
++				} else
++					NODE_SET_STATE(hnode, NODE_DONE);
++
++				/* Unload execute, if not unloaded, and delete
++				 * function */
++				if (state == NODE_RUNNING &&
++				    hnode->phase_split) {
++					status1 =
++					    hnode_mgr->nldr_fxns.
++					    pfn_unload(hnode->nldr_node_obj,
++						       NLDR_EXECUTE);
++				}
++				if (DSP_FAILED(status1))
++					pr_err("%s: fail - unload execute code:"
++					       " 0x%x\n", __func__, status1);
++
++				status1 =
++				    hnode_mgr->nldr_fxns.pfn_unload(hnode->
++							    nldr_node_obj,
++							    NLDR_DELETE);
++				hnode->loaded = false;
++				if (DSP_FAILED(status1))
++					pr_err("%s: fail - unload delete code: "
++					       "0x%x\n", __func__, status1);
++			}
++		}
++	}
++	/* Free host side resources even if a failure occurred */
++	/* Remove node from hnode_mgr->node_list */
++	lst_remove_elem(hnode_mgr->node_list, (struct list_head *)hnode);
++	hnode_mgr->num_nodes--;
++	/* Decrement count of nodes created on DSP */
++	if ((state != NODE_ALLOCATED) || ((state == NODE_ALLOCATED) &&
++					  (hnode->node_env != (u32) NULL)))
++		hnode_mgr->num_created--;
++	/*  Free host-side resources allocated by node_create()
++	 *  delete_node() fails if SM buffers not freed by client! */
++	if (drv_get_node_res_element(hnode, &node_res, pr_ctxt) !=
++	    -ENOENT)
++		drv_proc_node_update_status(node_res, false);
++	delete_node(hnode, pr_ctxt);
++
++	drv_remove_node_res_element(node_res, pr_ctxt);
++	/* Exit critical section */
++	mutex_unlock(&hnode_mgr->node_mgr_lock);
++	proc_notify_clients(hprocessor, DSP_NODESTATECHANGE);
++func_end:
++	dev_dbg(bridge, "%s: hnode: %p status 0x%x\n", __func__, hnode, status);
++	return status;
++}
++
++/*
++ *  ======== node_delete_mgr ========
++ *  Purpose:
++ *      Delete the NODE Manager.
++ */
++int node_delete_mgr(struct node_mgr *hnode_mgr)
++{
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++
++	if (hnode_mgr)
++		delete_node_mgr(hnode_mgr);
++	else
++		status = -EFAULT;
++
++	return status;
++}
++
++/*
++ *  ======== node_enum_nodes ========
++ *  Purpose:
++ *      Enumerate currently allocated nodes.
++ */
++int node_enum_nodes(struct node_mgr *hnode_mgr, void **node_tab,
++			   u32 node_tab_size, OUT u32 *pu_num_nodes,
++			   OUT u32 *pu_allocated)
++{
++	struct node_object *hnode;
++	u32 i;
++	int status = 0;
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(node_tab != NULL || node_tab_size == 0);
++	DBC_REQUIRE(pu_num_nodes != NULL);
++	DBC_REQUIRE(pu_allocated != NULL);
++
++	if (!hnode_mgr) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	/* Enter critical section */
++	mutex_lock(&hnode_mgr->node_mgr_lock);
++
++	if (hnode_mgr->num_nodes > node_tab_size) {
++		*pu_allocated = hnode_mgr->num_nodes;
++		*pu_num_nodes = 0;
++		status = -EINVAL;
++	} else {
++		hnode = (struct node_object *)lst_first(hnode_mgr->
++			node_list);
++		for (i = 0; i < hnode_mgr->num_nodes; i++) {
++			DBC_ASSERT(hnode);
++			node_tab[i] = hnode;
++			hnode = (struct node_object *)lst_next
++				(hnode_mgr->node_list,
++				(struct list_head *)hnode);
++		}
++		*pu_allocated = *pu_num_nodes = hnode_mgr->num_nodes;
++	}
++	/* end of sync_enter_cs */
++	/* Exit critical section */
++	mutex_unlock(&hnode_mgr->node_mgr_lock);
++func_end:
++	return status;
++}
++
++/*
++ *  ======== node_exit ========
++ *  Purpose:
++ *      Discontinue usage of NODE module.
++ */
++void node_exit(void)
++{
++	DBC_REQUIRE(refs > 0);
++
++	refs--;
++
++	DBC_ENSURE(refs >= 0);
++}
++
++/*
++ *  ======== node_free_msg_buf ========
++ *  Purpose:
++ *      Frees the message buffer.
++ */
++int node_free_msg_buf(struct node_object *hnode, IN u8 * pbuffer,
++			     OPTIONAL struct dsp_bufferattr *pattr)
++{
++	struct node_object *pnode = (struct node_object *)hnode;
++	int status = 0;
++	u32 proc_id;
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(pbuffer != NULL);
++	DBC_REQUIRE(pnode != NULL);
++	DBC_REQUIRE(pnode->xlator != NULL);
++
++	if (!hnode) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	status = proc_get_processor_id(pnode->hprocessor, &proc_id);
++	if (proc_id == DSP_UNIT) {
++		if (DSP_SUCCEEDED(status)) {
++			if (pattr == NULL) {
++				/* set defaults */
++				pattr = &node_dfltbufattrs;
++			}
++			/* Node supports single SM segment only */
++			if (pattr->segment_id != 1)
++				status = -EBADR;
++
++			/* pbuffer is clients Va. */
++			status = cmm_xlator_free_buf(pnode->xlator, pbuffer);
++		}
++	} else {
++		DBC_ASSERT(NULL);	/* BUG */
++	}
++func_end:
++	return status;
++}
++
++/*
++ *  ======== node_get_attr ========
++ *  Purpose:
++ *      Copy the current attributes of the specified node into a dsp_nodeattr
++ *      structure.
++ */
++int node_get_attr(struct node_object *hnode,
++			 OUT struct dsp_nodeattr *pattr, u32 attr_size)
++{
++	struct node_mgr *hnode_mgr;
++	int status = 0;
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(pattr != NULL);
++	DBC_REQUIRE(attr_size >= sizeof(struct dsp_nodeattr));
++
++	if (!hnode) {
++		status = -EFAULT;
++	} else {
++		hnode_mgr = hnode->hnode_mgr;
++		/* Enter hnode_mgr critical section (since we're accessing
++		 * data that could be changed by node_change_priority() and
++		 * node_connect(). */
++		mutex_lock(&hnode_mgr->node_mgr_lock);
++		pattr->cb_struct = sizeof(struct dsp_nodeattr);
++		/* dsp_nodeattrin */
++		pattr->in_node_attr_in.cb_struct =
++				 sizeof(struct dsp_nodeattrin);
++		pattr->in_node_attr_in.prio = hnode->prio;
++		pattr->in_node_attr_in.utimeout = hnode->utimeout;
++		pattr->in_node_attr_in.heap_size =
++			hnode->create_args.asa.task_arg_obj.heap_size;
++		pattr->in_node_attr_in.pgpp_virt_addr = (void *)
++			hnode->create_args.asa.task_arg_obj.ugpp_heap_addr;
++		pattr->node_attr_inputs = hnode->num_gpp_inputs;
++		pattr->node_attr_outputs = hnode->num_gpp_outputs;
++		/* dsp_nodeinfo */
++		get_node_info(hnode, &(pattr->node_info));
++		/* end of sync_enter_cs */
++		/* Exit critical section */
++		mutex_unlock(&hnode_mgr->node_mgr_lock);
++	}
++	return status;
++}
++
++/*
++ *  ======== node_get_channel_id ========
++ *  Purpose:
++ *      Get the channel index reserved for a stream connection between the
++ *      host and a node.
++ */
++int node_get_channel_id(struct node_object *hnode, u32 dir, u32 index,
++			       OUT u32 *pulId)
++{
++	enum node_type node_type;
++	int status = -EINVAL;
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(dir == DSP_TONODE || dir == DSP_FROMNODE);
++	DBC_REQUIRE(pulId != NULL);
++
++	if (!hnode) {
++		status = -EFAULT;
++		return status;
++	}
++	node_type = node_get_type(hnode);
++	if (node_type != NODE_TASK && node_type != NODE_DAISSOCKET) {
++		status = -EPERM;
++		return status;
++	}
++	if (dir == DSP_TONODE) {
++		if (index < MAX_INPUTS(hnode)) {
++			if (hnode->inputs[index].type == HOSTCONNECT) {
++				*pulId = hnode->inputs[index].dev_id;
++				status = 0;
++			}
++		}
++	} else {
++		DBC_ASSERT(dir == DSP_FROMNODE);
++		if (index < MAX_OUTPUTS(hnode)) {
++			if (hnode->outputs[index].type == HOSTCONNECT) {
++				*pulId = hnode->outputs[index].dev_id;
++				status = 0;
++			}
++		}
++	}
++	return status;
++}
++
++/*
++ *  ======== node_get_message ========
++ *  Purpose:
++ *      Retrieve a message from a node on the DSP.
++ */
++int node_get_message(struct node_object *hnode,
++			    OUT struct dsp_msg *pmsg, u32 utimeout)
++{
++	struct node_mgr *hnode_mgr;
++	enum node_type node_type;
++	struct bridge_drv_interface *intf_fxns;
++	int status = 0;
++	void *tmp_buf;
++	struct dsp_processorstate proc_state;
++	struct proc_object *hprocessor;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(pmsg != NULL);
++
++	if (!hnode) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	hprocessor = hnode->hprocessor;
++	status = proc_get_state(hprocessor, &proc_state,
++				sizeof(struct dsp_processorstate));
++	if (DSP_FAILED(status))
++		goto func_end;
++	/* If processor is in error state then don't attempt to get the
++	   message */
++	if (proc_state.proc_state == PROC_ERROR) {
++		status = -EPERM;
++		goto func_end;
++	}
++	hnode_mgr = hnode->hnode_mgr;
++	node_type = node_get_type(hnode);
++	if (node_type != NODE_MESSAGE && node_type != NODE_TASK &&
++	    node_type != NODE_DAISSOCKET) {
++		status = -EPERM;
++		goto func_end;
++	}
++	/*  This function will block unless a message is available. Since
++	 *  DSPNode_RegisterNotify() allows notification when a message
++	 *  is available, the system can be designed so that
++	 *  DSPNode_GetMessage() is only called when a message is
++	 *  available. */
++	intf_fxns = hnode_mgr->intf_fxns;
++	status =
++	    (*intf_fxns->pfn_msg_get) (hnode->msg_queue_obj, pmsg, utimeout);
++	/* Check if message contains SM descriptor */
++	if (DSP_FAILED(status) || !(pmsg->dw_cmd & DSP_RMSBUFDESC))
++		goto func_end;
++
++	/* Translate DSP byte addr to GPP Va. */
++	tmp_buf = cmm_xlator_translate(hnode->xlator,
++				       (void *)(pmsg->dw_arg1 *
++						hnode->hnode_mgr->
++						udsp_word_size), CMM_DSPPA2PA);
++	if (tmp_buf != NULL) {
++		/* now convert this GPP Pa to Va */
++		tmp_buf = cmm_xlator_translate(hnode->xlator, tmp_buf,
++					       CMM_PA2VA);
++		if (tmp_buf != NULL) {
++			/* Adjust SM size in msg */
++			pmsg->dw_arg1 = (u32) tmp_buf;
++			pmsg->dw_arg2 *= hnode->hnode_mgr->udsp_word_size;
++		} else {
++			status = -ESRCH;
++		}
++	} else {
++		status = -ESRCH;
++	}
++func_end:
++	dev_dbg(bridge, "%s: hnode: %p pmsg: %p utimeout: 0x%x\n", __func__,
++		hnode, pmsg, utimeout);
++	return status;
++}
++
++/*
++ *   ======== node_get_nldr_obj ========
++ */
++int node_get_nldr_obj(struct node_mgr *hnode_mgr,
++			     struct nldr_object **phNldrObj)
++{
++	int status = 0;
++	struct node_mgr *node_mgr_obj = hnode_mgr;
++	DBC_REQUIRE(phNldrObj != NULL);
++
++	if (!hnode_mgr)
++		status = -EFAULT;
++	else
++		*phNldrObj = node_mgr_obj->nldr_obj;
++
++	DBC_ENSURE(DSP_SUCCEEDED(status) || ((phNldrObj != NULL) &&
++					     (*phNldrObj == NULL)));
++	return status;
++}
++
++/*
++ *  ======== node_get_strm_mgr ========
++ *  Purpose:
++ *      Returns the Stream manager.
++ */
++int node_get_strm_mgr(struct node_object *hnode,
++			     struct strm_mgr **phStrmMgr)
++{
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++
++	if (!hnode)
++		status = -EFAULT;
++	else
++		*phStrmMgr = hnode->hnode_mgr->strm_mgr_obj;
++
++	return status;
++}
++
++/*
++ *  ======== node_get_load_type ========
++ */
++enum nldr_loadtype node_get_load_type(struct node_object *hnode)
++{
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(hnode);
++	if (!hnode) {
++		dev_dbg(bridge, "%s: Failed. hnode: %p\n", __func__, hnode);
++		return -1;
++	} else {
++		return hnode->dcd_props.obj_data.node_obj.us_load_type;
++	}
++}
++
++/*
++ *  ======== node_get_timeout ========
++ *  Purpose:
++ *      Returns the timeout value for this node.
++ */
++u32 node_get_timeout(struct node_object *hnode)
++{
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(hnode);
++	if (!hnode) {
++		dev_dbg(bridge, "%s: failed. hnode: %p\n", __func__, hnode);
++		return 0;
++	} else {
++		return hnode->utimeout;
++	}
++}
++
++/*
++ *  ======== node_get_type ========
++ *  Purpose:
++ *      Returns the node type.
++ */
++enum node_type node_get_type(struct node_object *hnode)
++{
++	enum node_type node_type;
++
++	if (hnode == (struct node_object *)DSP_HGPPNODE)
++		node_type = NODE_GPP;
++	else {
++		if (!hnode)
++			node_type = -1;
++		else
++			node_type = hnode->ntype;
++	}
++	return node_type;
++}
++
++/*
++ *  ======== node_init ========
++ *  Purpose:
++ *      Initialize the NODE module.
++ */
++bool node_init(void)
++{
++	DBC_REQUIRE(refs >= 0);
++
++	refs++;
 +
 +	return true;
 +}
 +
-+/***************************************************************************
-+ * Procedure dload_module_close
-+ *
-+ * Parameters:
-+ *  minfo		Handle from dload_module_open for this module
-+ *
-+ * Effect:
-+ *	Releases any storage associated with the module handle.  On return,
-+ * the module handle is invalid.
-+ *
-+ * Returns:
-+ *	Zero for success. On error, the number of errors detected is returned.
-+ * Individual errors are reported using syms->error_report(), where syms was
-+ * an argument to dload_module_open
-+ ************************************************************************* */
-+void dload_module_close(void *minfo)
++/*
++ *  ======== node_on_exit ========
++ *  Purpose:
++ *      Gets called when RMS_EXIT is received for a node.
++ */
++void node_on_exit(struct node_object *hnode, s32 nStatus)
 +{
-+	struct dload_state *dlthis;
-+
-+	dlthis = (struct dload_state *)minfo;
-+	if (!dlthis)
++	if (!hnode)
 +		return;
 +
-+	if (dlthis->str_head)
-+		dlthis->mysym->dload_deallocate(dlthis->mysym,
-+						dlthis->str_head);
-+
-+	if (dlthis->sect_hdrs)
-+		dlthis->mysym->dload_deallocate(dlthis->mysym,
-+						dlthis->sect_hdrs);
-+
-+#if BITS_PER_AU > BITS_PER_BYTE
-+	if (dlthis->xstrings)
-+		dlthis->mysym->dload_deallocate(dlthis->mysym,
-+						dlthis->xstrings);
-+
-+#endif
-+
-+	dlthis->mysym->dload_deallocate(dlthis->mysym, dlthis);
++	/* Set node state to done */
++	NODE_SET_STATE(hnode, NODE_DONE);
++	hnode->exit_status = nStatus;
++	if (hnode->loaded && hnode->phase_split) {
++		(void)hnode->hnode_mgr->nldr_fxns.pfn_unload(hnode->
++							     nldr_node_obj,
++							     NLDR_EXECUTE);
++		hnode->loaded = false;
++	}
++	/* Unblock call to node_terminate */
++	(void)sync_set_event(hnode->sync_done);
++	/* Notify clients */
++	proc_notify_clients(hnode->hprocessor, DSP_NODESTATECHANGE);
++	ntfy_notify(hnode->ntfy_obj, DSP_NODESTATECHANGE);
 +}
-diff --git a/drivers/staging/tidspbridge/dynload/header.h b/drivers/staging/tidspbridge/dynload/header.h
-new file mode 100644
-index 0000000..5cef360
---- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/header.h
-@@ -0,0 +1,55 @@
-+/*
-+ * header.h
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Copyright (C) 2005-2006 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
 +
-+#define TRUE 1
-+#define FALSE 0
-+#ifndef NULL
-+#define NULL 0
++/*
++ *  ======== node_pause ========
++ *  Purpose:
++ *      Suspend execution of a node currently running on the DSP.
++ */
++int node_pause(struct node_object *hnode)
++{
++	struct node_object *pnode = (struct node_object *)hnode;
++	enum node_type node_type;
++	enum node_state state;
++	struct node_mgr *hnode_mgr;
++	int status = 0;
++	u32 proc_id;
++	struct dsp_processorstate proc_state;
++	struct proc_object *hprocessor;
++
++	DBC_REQUIRE(refs > 0);
++
++	if (!hnode) {
++		status = -EFAULT;
++	} else {
++		node_type = node_get_type(hnode);
++		if (node_type != NODE_TASK && node_type != NODE_DAISSOCKET)
++			status = -EPERM;
++	}
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	status = proc_get_processor_id(pnode->hprocessor, &proc_id);
++
++	if (proc_id == IVA_UNIT)
++		status = -ENOSYS;
++
++	if (DSP_SUCCEEDED(status)) {
++		hnode_mgr = hnode->hnode_mgr;
++
++		/* Enter critical section */
++		mutex_lock(&hnode_mgr->node_mgr_lock);
++		state = node_get_state(hnode);
++		/* Check node state */
++		if (state != NODE_RUNNING)
++			status = -EBADR;
++
++		if (DSP_FAILED(status))
++			goto func_cont;
++		hprocessor = hnode->hprocessor;
++		status = proc_get_state(hprocessor, &proc_state,
++				sizeof(struct dsp_processorstate));
++		if (DSP_FAILED(status))
++			goto func_cont;
++		/* If processor is in error state then don't attempt
++		   to send the message */
++		if (proc_state.proc_state == PROC_ERROR) {
++			status = -EPERM;
++			goto func_cont;
++		}
++
++		status = disp_node_change_priority(hnode_mgr->disp_obj, hnode,
++			hnode_mgr->ul_fxn_addrs[RMSCHANGENODEPRIORITY],
++			hnode->node_env, NODE_SUSPENDEDPRI);
++
++		/* Update state */
++		if (DSP_SUCCEEDED(status))
++			NODE_SET_STATE(hnode, NODE_PAUSED);
++
++func_cont:
++		/* End of sync_enter_cs */
++		/* Leave critical section */
++		mutex_unlock(&hnode_mgr->node_mgr_lock);
++		if (DSP_SUCCEEDED(status)) {
++			proc_notify_clients(hnode->hprocessor,
++					    DSP_NODESTATECHANGE);
++			ntfy_notify(hnode->ntfy_obj, DSP_NODESTATECHANGE);
++		}
++	}
++func_end:
++	dev_dbg(bridge, "%s: hnode: %p status 0x%x\n", __func__, hnode, status);
++	return status;
++}
++
++/*
++ *  ======== node_put_message ========
++ *  Purpose:
++ *      Send a message to a message node, task node, or XDAIS socket node. This
++ *      function will block until the message stream can accommodate the
++ *      message, or a timeout occurs.
++ */
++int node_put_message(struct node_object *hnode,
++			    IN CONST struct dsp_msg *pmsg, u32 utimeout)
++{
++	struct node_mgr *hnode_mgr = NULL;
++	enum node_type node_type;
++	struct bridge_drv_interface *intf_fxns;
++	enum node_state state;
++	int status = 0;
++	void *tmp_buf;
++	struct dsp_msg new_msg;
++	struct dsp_processorstate proc_state;
++	struct proc_object *hprocessor;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(pmsg != NULL);
++
++	if (!hnode) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	hprocessor = hnode->hprocessor;
++	status = proc_get_state(hprocessor, &proc_state,
++				sizeof(struct dsp_processorstate));
++	if (DSP_FAILED(status))
++		goto func_end;
++	/* If processor is in bad state then don't attempt sending the
++	   message */
++	if (proc_state.proc_state == PROC_ERROR) {
++		status = -EPERM;
++		goto func_end;
++	}
++	hnode_mgr = hnode->hnode_mgr;
++	node_type = node_get_type(hnode);
++	if (node_type != NODE_MESSAGE && node_type != NODE_TASK &&
++	    node_type != NODE_DAISSOCKET)
++		status = -EPERM;
++
++	if (DSP_SUCCEEDED(status)) {
++		/*  Check node state. Can't send messages to a node after
++		 *  we've sent the RMS_EXIT command. There is still the
++		 *  possibility that node_terminate can be called after we've
++		 *  checked the state. Could add another SYNC object to
++		 *  prevent this (can't use node_mgr_lock, since we don't
++		 *  want to block other NODE functions). However, the node may
++		 *  still exit on its own, before this message is sent. */
++		mutex_lock(&hnode_mgr->node_mgr_lock);
++		state = node_get_state(hnode);
++		if (state == NODE_TERMINATING || state == NODE_DONE)
++			status = -EBADR;
++
++		/* end of sync_enter_cs */
++		mutex_unlock(&hnode_mgr->node_mgr_lock);
++	}
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/* assign pmsg values to new msg */
++	new_msg = *pmsg;
++	/* Now, check if message contains a SM buffer descriptor */
++	if (pmsg->dw_cmd & DSP_RMSBUFDESC) {
++		/* Translate GPP Va to DSP physical buf Ptr. */
++		tmp_buf = cmm_xlator_translate(hnode->xlator,
++					       (void *)new_msg.dw_arg1,
++					       CMM_VA2DSPPA);
++		if (tmp_buf != NULL) {
++			/* got translation, convert to MAUs in msg */
++			if (hnode->hnode_mgr->udsp_word_size != 0) {
++				new_msg.dw_arg1 =
++				    (u32) tmp_buf /
++				    hnode->hnode_mgr->udsp_word_size;
++				/* MAUs */
++				new_msg.dw_arg2 /= hnode->hnode_mgr->
++				    udsp_word_size;
++			} else {
++				pr_err("%s: udsp_word_size is zero!\n",
++				       __func__);
++				status = -EPERM;	/* bad DSPWordSize */
++			}
++		} else {	/* failed to translate buffer address */
++			status = -ESRCH;
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		intf_fxns = hnode_mgr->intf_fxns;
++		status = (*intf_fxns->pfn_msg_put) (hnode->msg_queue_obj,
++						    &new_msg, utimeout);
++	}
++func_end:
++	dev_dbg(bridge, "%s: hnode: %p pmsg: %p utimeout: 0x%x, "
++		"status 0x%x\n", __func__, hnode, pmsg, utimeout, status);
++	return status;
++}
++
++/*
++ *  ======== node_register_notify ========
++ *  Purpose:
++ *      Register to be notified on specific events for this node.
++ */
++int node_register_notify(struct node_object *hnode, u32 event_mask,
++				u32 notify_type,
++				struct dsp_notification *hnotification)
++{
++	struct bridge_drv_interface *intf_fxns;
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(hnotification != NULL);
++
++	if (!hnode) {
++		status = -EFAULT;
++	} else {
++		/* Check if event mask is a valid node related event */
++		if (event_mask & ~(DSP_NODESTATECHANGE | DSP_NODEMESSAGEREADY))
++			status = -EINVAL;
++
++		/* Check if notify type is valid */
++		if (notify_type != DSP_SIGNALEVENT)
++			status = -EINVAL;
++
++		/* Only one Notification can be registered at a
++		 * time - Limitation */
++		if (event_mask == (DSP_NODESTATECHANGE | DSP_NODEMESSAGEREADY))
++			status = -EINVAL;
++	}
++	if (DSP_SUCCEEDED(status)) {
++		if (event_mask == DSP_NODESTATECHANGE) {
++			status = ntfy_register(hnode->ntfy_obj, hnotification,
++					       event_mask & DSP_NODESTATECHANGE,
++					       notify_type);
++		} else {
++			/* Send Message part of event mask to msg_ctrl */
++			intf_fxns = hnode->hnode_mgr->intf_fxns;
++			status = (*intf_fxns->pfn_msg_register_notify)
++			    (hnode->msg_queue_obj,
++			     event_mask & DSP_NODEMESSAGEREADY, notify_type,
++			     hnotification);
++		}
++
++	}
++	dev_dbg(bridge, "%s: hnode: %p event_mask: 0x%x notify_type: 0x%x "
++		"hnotification: %p status 0x%x\n", __func__, hnode,
++		event_mask, notify_type, hnotification, status);
++	return status;
++}
++
++/*
++ *  ======== node_run ========
++ *  Purpose:
++ *      Start execution of a node's execute phase, or resume execution of a node
++ *      that has been suspended (via NODE_NodePause()) on the DSP. Load the
++ *      node's execute function if necessary.
++ */
++int node_run(struct node_object *hnode)
++{
++	struct node_object *pnode = (struct node_object *)hnode;
++	struct node_mgr *hnode_mgr;
++	enum node_type node_type;
++	enum node_state state;
++	u32 ul_execute_fxn;
++	u32 ul_fxn_addr;
++	int status = 0;
++	u32 proc_id;
++	struct bridge_drv_interface *intf_fxns;
++	struct dsp_processorstate proc_state;
++	struct proc_object *hprocessor;
++
++	DBC_REQUIRE(refs > 0);
++
++	if (!hnode) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	hprocessor = hnode->hprocessor;
++	status = proc_get_state(hprocessor, &proc_state,
++				sizeof(struct dsp_processorstate));
++	if (DSP_FAILED(status))
++		goto func_end;
++	/* If processor is in error state then don't attempt to run the node */
++	if (proc_state.proc_state == PROC_ERROR) {
++		status = -EPERM;
++		goto func_end;
++	}
++	node_type = node_get_type(hnode);
++	if (node_type == NODE_DEVICE)
++		status = -EPERM;
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	hnode_mgr = hnode->hnode_mgr;
++	if (!hnode_mgr) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	intf_fxns = hnode_mgr->intf_fxns;
++	/* Enter critical section */
++	mutex_lock(&hnode_mgr->node_mgr_lock);
++
++	state = node_get_state(hnode);
++	if (state != NODE_CREATED && state != NODE_PAUSED)
++		status = -EBADR;
++
++	if (DSP_SUCCEEDED(status))
++		status = proc_get_processor_id(pnode->hprocessor, &proc_id);
++
++	if (DSP_FAILED(status))
++		goto func_cont1;
++
++	if ((proc_id != DSP_UNIT) && (proc_id != IVA_UNIT))
++		goto func_cont1;
++
++	if (state == NODE_CREATED) {
++		/* If node's execute function is not loaded, load it */
++		if (!(hnode->loaded) && hnode->phase_split) {
++			status =
++			    hnode_mgr->nldr_fxns.pfn_load(hnode->nldr_node_obj,
++							  NLDR_EXECUTE);
++			if (DSP_SUCCEEDED(status)) {
++				hnode->loaded = true;
++			} else {
++				pr_err("%s: fail - load execute code: 0x%x\n",
++				       __func__, status);
++			}
++		}
++		if (DSP_SUCCEEDED(status)) {
++			/* Get address of node's execute function */
++			if (proc_id == IVA_UNIT)
++				ul_execute_fxn = (u32) hnode->node_env;
++			else {
++				status = get_fxn_address(hnode, &ul_execute_fxn,
++							 EXECUTEPHASE);
++			}
++		}
++		if (DSP_SUCCEEDED(status)) {
++			ul_fxn_addr = hnode_mgr->ul_fxn_addrs[RMSEXECUTENODE];
++			status =
++			    disp_node_run(hnode_mgr->disp_obj, hnode,
++					  ul_fxn_addr, ul_execute_fxn,
++					  hnode->node_env);
++		}
++	} else if (state == NODE_PAUSED) {
++		ul_fxn_addr = hnode_mgr->ul_fxn_addrs[RMSCHANGENODEPRIORITY];
++		status = disp_node_change_priority(hnode_mgr->disp_obj, hnode,
++						   ul_fxn_addr, hnode->node_env,
++						   NODE_GET_PRIORITY(hnode));
++	} else {
++		/* We should never get here */
++		DBC_ASSERT(false);
++	}
++func_cont1:
++	/* Update node state. */
++	if (DSP_SUCCEEDED(status))
++		NODE_SET_STATE(hnode, NODE_RUNNING);
++	else			/* Set state back to previous value */
++		NODE_SET_STATE(hnode, state);
++	/*End of sync_enter_cs */
++	/* Exit critical section */
++	mutex_unlock(&hnode_mgr->node_mgr_lock);
++	if (DSP_SUCCEEDED(status)) {
++		proc_notify_clients(hnode->hprocessor, DSP_NODESTATECHANGE);
++		ntfy_notify(hnode->ntfy_obj, DSP_NODESTATECHANGE);
++	}
++func_end:
++	dev_dbg(bridge, "%s: hnode: %p status 0x%x\n", __func__, hnode, status);
++	return status;
++}
++
++/*
++ *  ======== node_terminate ========
++ *  Purpose:
++ *      Signal a node running on the DSP that it should exit its execute phase
++ *      function.
++ */
++int node_terminate(struct node_object *hnode, OUT int *pstatus)
++{
++	struct node_object *pnode = (struct node_object *)hnode;
++	struct node_mgr *hnode_mgr = NULL;
++	enum node_type node_type;
++	struct bridge_drv_interface *intf_fxns;
++	enum node_state state;
++	struct dsp_msg msg, killmsg;
++	int status = 0;
++	u32 proc_id, kill_time_out;
++	struct deh_mgr *hdeh_mgr;
++	struct dsp_processorstate proc_state;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(pstatus != NULL);
++
++	if (!hnode || !hnode->hnode_mgr) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	if (pnode->hprocessor == NULL) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	status = proc_get_processor_id(pnode->hprocessor, &proc_id);
++
++	if (DSP_SUCCEEDED(status)) {
++		hnode_mgr = hnode->hnode_mgr;
++		node_type = node_get_type(hnode);
++		if (node_type != NODE_TASK && node_type != NODE_DAISSOCKET)
++			status = -EPERM;
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Check node state */
++		mutex_lock(&hnode_mgr->node_mgr_lock);
++		state = node_get_state(hnode);
++		if (state != NODE_RUNNING) {
++			status = -EBADR;
++			/* Set the exit status if node terminated on
++			 * its own. */
++			if (state == NODE_DONE)
++				*pstatus = hnode->exit_status;
++
++		} else {
++			NODE_SET_STATE(hnode, NODE_TERMINATING);
++		}
++		/* end of sync_enter_cs */
++		mutex_unlock(&hnode_mgr->node_mgr_lock);
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/*
++		 *  Send exit message. Do not change state to NODE_DONE
++		 *  here. That will be done in callback.
++		 */
++		status = proc_get_state(pnode->hprocessor, &proc_state,
++					sizeof(struct dsp_processorstate));
++		if (DSP_FAILED(status))
++			goto func_cont;
++		/* If processor is in error state then don't attempt to send
++		 * A kill task command */
++		if (proc_state.proc_state == PROC_ERROR) {
++			status = -EPERM;
++			goto func_cont;
++		}
++
++		msg.dw_cmd = RMS_EXIT;
++		msg.dw_arg1 = hnode->node_env;
++		killmsg.dw_cmd = RMS_KILLTASK;
++		killmsg.dw_arg1 = hnode->node_env;
++		intf_fxns = hnode_mgr->intf_fxns;
++
++		if (hnode->utimeout > MAXTIMEOUT)
++			kill_time_out = MAXTIMEOUT;
++		else
++			kill_time_out = (hnode->utimeout) * 2;
++
++		status = (*intf_fxns->pfn_msg_put) (hnode->msg_queue_obj, &msg,
++						    hnode->utimeout);
++		if (DSP_FAILED(status))
++			goto func_cont;
++
++		/*
++		 * Wait on synchronization object that will be
++		 * posted in the callback on receiving RMS_EXIT
++		 * message, or by node_delete. Check for valid hnode,
++		 * in case posted by node_delete().
++		 */
++		status = sync_wait_on_event(hnode->sync_done,
++					    kill_time_out / 2);
++		if (status != ETIME)
++			goto func_cont;
++
++		status = (*intf_fxns->pfn_msg_put)(hnode->msg_queue_obj,
++						&killmsg, hnode->utimeout);
++		if (DSP_FAILED(status))
++			goto func_cont;
++		status = sync_wait_on_event(hnode->sync_done,
++					     kill_time_out / 2);
++		if (DSP_FAILED(status)) {
++			/*
++			 * Here it goes the part of the simulation of
++			 * the DSP exception.
++			 */
++			dev_get_deh_mgr(hnode_mgr->hdev_obj, &hdeh_mgr);
++			if (!hdeh_mgr)
++				goto func_cont;
++
++			(*intf_fxns->pfn_deh_notify)(hdeh_mgr, DSP_SYSERROR,
++							DSP_EXCEPTIONABORT);
++		}
++	}
++func_cont:
++	if (DSP_SUCCEEDED(status)) {
++		/* Enter CS before getting exit status, in case node was
++		 * deleted. */
++		mutex_lock(&hnode_mgr->node_mgr_lock);
++		/* Make sure node wasn't deleted while we blocked */
++		if (!hnode) {
++			status = -EPERM;
++		} else {
++			*pstatus = hnode->exit_status;
++			dev_dbg(bridge, "%s: hnode: %p env 0x%x status 0x%x\n",
++				__func__, hnode, hnode->node_env, status);
++		}
++		mutex_unlock(&hnode_mgr->node_mgr_lock);
++	}			/*End of sync_enter_cs */
++func_end:
++	return status;
++}
++
++/*
++ *  ======== delete_node ========
++ *  Purpose:
++ *      Free GPP resources allocated in node_allocate() or node_connect().
++ */
++static void delete_node(struct node_object *hnode,
++			struct process_context *pr_ctxt)
++{
++	struct node_mgr *hnode_mgr;
++	struct cmm_xlatorobject *xlator;
++	struct bridge_drv_interface *intf_fxns;
++	u32 i;
++	enum node_type node_type;
++	struct stream_chnl stream;
++	struct node_msgargs node_msg_args;
++	struct node_taskargs task_arg_obj;
++#ifdef DSP_DMM_DEBUG
++	struct dmm_object *dmm_mgr;
++	struct proc_object *p_proc_object =
++	    (struct proc_object *)hnode->hprocessor;
 +#endif
++	int status;
++	if (!hnode)
++		goto func_end;
++	hnode_mgr = hnode->hnode_mgr;
++	if (!hnode_mgr)
++		goto func_end;
++	xlator = hnode->xlator;
++	node_type = node_get_type(hnode);
++	if (node_type != NODE_DEVICE) {
++		node_msg_args = hnode->create_args.asa.node_msg_args;
++		kfree(node_msg_args.pdata);
 +
-+#include <linux/string.h>
-+#define DL_STRCMP  strcmp
++		/* Free msg_ctrl queue */
++		if (hnode->msg_queue_obj) {
++			intf_fxns = hnode_mgr->intf_fxns;
++			(*intf_fxns->pfn_msg_delete_queue) (hnode->
++							    msg_queue_obj);
++			hnode->msg_queue_obj = NULL;
++		}
 +
-+/* maximum parenthesis nesting in relocation stack expressions */
-+#define STATIC_EXPR_STK_SIZE 10
++		kfree(hnode->sync_done);
 +
-+#include <linux/types.h>
++		/* Free all stream info */
++		if (hnode->inputs) {
++			for (i = 0; i < MAX_INPUTS(hnode); i++) {
++				stream = hnode->inputs[i];
++				free_stream(hnode_mgr, stream);
++			}
++			kfree(hnode->inputs);
++			hnode->inputs = NULL;
++		}
++		if (hnode->outputs) {
++			for (i = 0; i < MAX_OUTPUTS(hnode); i++) {
++				stream = hnode->outputs[i];
++				free_stream(hnode_mgr, stream);
++			}
++			kfree(hnode->outputs);
++			hnode->outputs = NULL;
++		}
++		task_arg_obj = hnode->create_args.asa.task_arg_obj;
++		if (task_arg_obj.strm_in_def) {
++			for (i = 0; i < MAX_INPUTS(hnode); i++) {
++				kfree(task_arg_obj.strm_in_def[i].sz_device);
++				task_arg_obj.strm_in_def[i].sz_device = NULL;
++			}
++			kfree(task_arg_obj.strm_in_def);
++			task_arg_obj.strm_in_def = NULL;
++		}
++		if (task_arg_obj.strm_out_def) {
++			for (i = 0; i < MAX_OUTPUTS(hnode); i++) {
++				kfree(task_arg_obj.strm_out_def[i].sz_device);
++				task_arg_obj.strm_out_def[i].sz_device = NULL;
++			}
++			kfree(task_arg_obj.strm_out_def);
++			task_arg_obj.strm_out_def = NULL;
++		}
++		if (task_arg_obj.udsp_heap_res_addr) {
++			status = proc_un_map(hnode->hprocessor, (void *)
++					     task_arg_obj.udsp_heap_addr,
++					     pr_ctxt);
 +
-+#include "doff.h"
-+#include <dspbridge/dynamic_loader.h>
-+#include "params.h"
-+#include "dload_internal.h"
-+#include "reloc_table.h"
++			status = proc_un_reserve_memory(hnode->hprocessor,
++							(void *)
++							task_arg_obj.
++							udsp_heap_res_addr,
++							pr_ctxt);
++#ifdef DSP_DMM_DEBUG
++			status = dmm_get_handle(p_proc_object, &dmm_mgr);
++			if (dmm_mgr)
++				dmm_mem_map_dump(dmm_mgr);
++			else
++				status = DSP_EHANDLE;
++#endif
++		}
++	}
++	if (node_type != NODE_MESSAGE) {
++		kfree(hnode->stream_connect);
++		hnode->stream_connect = NULL;
++	}
++	kfree(hnode->pstr_dev_name);
++	hnode->pstr_dev_name = NULL;
++
++	if (hnode->ntfy_obj) {
++		ntfy_delete(hnode->ntfy_obj);
++		kfree(hnode->ntfy_obj);
++		hnode->ntfy_obj = NULL;
++	}
++
++	/* These were allocated in dcd_get_object_def (via node_allocate) */
++	kfree(hnode->dcd_props.obj_data.node_obj.pstr_create_phase_fxn);
++	hnode->dcd_props.obj_data.node_obj.pstr_create_phase_fxn = NULL;
++
++	kfree(hnode->dcd_props.obj_data.node_obj.pstr_execute_phase_fxn);
++	hnode->dcd_props.obj_data.node_obj.pstr_execute_phase_fxn = NULL;
++
++	kfree(hnode->dcd_props.obj_data.node_obj.pstr_delete_phase_fxn);
++	hnode->dcd_props.obj_data.node_obj.pstr_delete_phase_fxn = NULL;
++
++	kfree(hnode->dcd_props.obj_data.node_obj.pstr_i_alg_name);
++	hnode->dcd_props.obj_data.node_obj.pstr_i_alg_name = NULL;
++
++	/* Free all SM address translator resources */
++	if (xlator) {
++		(void)cmm_xlator_delete(xlator, TRUE);	/* force free */
++		xlator = NULL;
++	}
++
++	kfree(hnode->nldr_node_obj);
++	hnode->nldr_node_obj = NULL;
++	hnode->hnode_mgr = NULL;
++	kfree(hnode);
++	hnode = NULL;
++func_end:
++	return;
++}
 +
 +/*
-+ * Plausibility limits
-+ *
-+ * These limits are imposed upon the input DOFF file as a check for validity.
-+ * They are hard limits, in that the load will fail if they are exceeded.
-+ * The numbers selected are arbitrary, in that the loader implementation does
-+ * not require these limits.
++ *  ======== delete_node_mgr ========
++ *  Purpose:
++ *      Frees the node manager.
 + */
++static void delete_node_mgr(struct node_mgr *hnode_mgr)
++{
++	struct node_object *hnode;
 +
-+/* maximum number of bytes in string table */
-+#define MAX_REASONABLE_STRINGTAB (0x100000)
-+/* maximum number of code,data,etc. sections */
-+#define MAX_REASONABLE_SECTIONS (200)
-+/* maximum number of linker symbols */
-+#define MAX_REASONABLE_SYMBOLS (100000)
++	if (hnode_mgr) {
++		/* Free resources */
++		if (hnode_mgr->hdcd_mgr)
++			dcd_destroy_manager(hnode_mgr->hdcd_mgr);
 +
-+/* shift count to align F_BIG with DLOAD_LITTLE */
-+#define ALIGN_COFF_ENDIANNESS 7
-+#define ENDIANNESS_MASK (DF_BYTE_ORDER >> ALIGN_COFF_ENDIANNESS)
-diff --git a/drivers/staging/tidspbridge/dynload/module_list.h b/drivers/staging/tidspbridge/dynload/module_list.h
-new file mode 100644
-index 0000000..a216bb1
---- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/module_list.h
-@@ -0,0 +1,159 @@
++		/* Remove any elements remaining in lists */
++		if (hnode_mgr->node_list) {
++			while ((hnode = (struct node_object *)
++				lst_get_head(hnode_mgr->node_list)))
++				delete_node(hnode, NULL);
++
++			DBC_ASSERT(LST_IS_EMPTY(hnode_mgr->node_list));
++			kfree(hnode_mgr->node_list);
++		}
++		mutex_destroy(&hnode_mgr->node_mgr_lock);
++		if (hnode_mgr->ntfy_obj) {
++			ntfy_delete(hnode_mgr->ntfy_obj);
++			kfree(hnode_mgr->ntfy_obj);
++		}
++
++		if (hnode_mgr->pipe_map)
++			gb_delete(hnode_mgr->pipe_map);
++
++		if (hnode_mgr->pipe_done_map)
++			gb_delete(hnode_mgr->pipe_done_map);
++
++		if (hnode_mgr->chnl_map)
++			gb_delete(hnode_mgr->chnl_map);
++
++		if (hnode_mgr->dma_chnl_map)
++			gb_delete(hnode_mgr->dma_chnl_map);
++
++		if (hnode_mgr->zc_chnl_map)
++			gb_delete(hnode_mgr->zc_chnl_map);
++
++		if (hnode_mgr->disp_obj)
++			disp_delete(hnode_mgr->disp_obj);
++
++		if (hnode_mgr->strm_mgr_obj)
++			strm_delete(hnode_mgr->strm_mgr_obj);
++
++		/* Delete the loader */
++		if (hnode_mgr->nldr_obj)
++			hnode_mgr->nldr_fxns.pfn_delete(hnode_mgr->nldr_obj);
++
++		if (hnode_mgr->loader_init)
++			hnode_mgr->nldr_fxns.pfn_exit();
++
++		kfree(hnode_mgr);
++	}
++}
++
 +/*
-+ * dspbridge/mpu_driver/src/dynload/module_list.h
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Copyright (C) 2008 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ *  ======== fill_stream_connect ========
++ *  Purpose:
++ *      Fills stream information.
 + */
++static void fill_stream_connect(struct node_object *hNode1,
++				struct node_object *hNode2,
++				u32 uStream1, u32 uStream2)
++{
++	u32 strm_index;
++	struct dsp_streamconnect *strm1 = NULL;
++	struct dsp_streamconnect *strm2 = NULL;
++	enum node_type node1_type = NODE_TASK;
++	enum node_type node2_type = NODE_TASK;
++
++	node1_type = node_get_type(hNode1);
++	node2_type = node_get_type(hNode2);
++	if (hNode1 != (struct node_object *)DSP_HGPPNODE) {
++
++		if (node1_type != NODE_DEVICE) {
++			strm_index = hNode1->num_inputs +
++			    hNode1->num_outputs - 1;
++			strm1 = &(hNode1->stream_connect[strm_index]);
++			strm1->cb_struct = sizeof(struct dsp_streamconnect);
++			strm1->this_node_stream_index = uStream1;
++		}
++
++		if (hNode2 != (struct node_object *)DSP_HGPPNODE) {
++			/* NODE == > NODE */
++			if (node1_type != NODE_DEVICE) {
++				strm1->connected_node = hNode2;
++				strm1->ui_connected_node_id = hNode2->node_uuid;
++				strm1->connected_node_stream_index = uStream2;
++				strm1->connect_type = CONNECTTYPE_NODEOUTPUT;
++			}
++			if (node2_type != NODE_DEVICE) {
++				strm_index = hNode2->num_inputs +
++				    hNode2->num_outputs - 1;
++				strm2 = &(hNode2->stream_connect[strm_index]);
++				strm2->cb_struct =
++				    sizeof(struct dsp_streamconnect);
++				strm2->this_node_stream_index = uStream2;
++				strm2->connected_node = hNode1;
++				strm2->ui_connected_node_id = hNode1->node_uuid;
++				strm2->connected_node_stream_index = uStream1;
++				strm2->connect_type = CONNECTTYPE_NODEINPUT;
++			}
++		} else if (node1_type != NODE_DEVICE)
++			strm1->connect_type = CONNECTTYPE_GPPOUTPUT;
++	} else {
++		/* GPP == > NODE */
++		DBC_ASSERT(hNode2 != (struct node_object *)DSP_HGPPNODE);
++		strm_index = hNode2->num_inputs + hNode2->num_outputs - 1;
++		strm2 = &(hNode2->stream_connect[strm_index]);
++		strm2->cb_struct = sizeof(struct dsp_streamconnect);
++		strm2->this_node_stream_index = uStream2;
++		strm2->connect_type = CONNECTTYPE_GPPINPUT;
++	}
++}
 +
 +/*
-+ * This C header file gives the layout of the data structure created by the
-+ * dynamic loader to describe the set of modules loaded into the DSP.
-+ *
-+ * Linked List Structure:
-+ * ----------------------
-+ * The data structure defined here is a singly-linked list.  The list
-+ * represents the set of modules which are currently loaded in the DSP memory.
-+ * The first entry in the list is a header record which contains a flag
-+ * representing the state of the list.  The rest of the entries in the list
-+ * are module records.
-+ *
-+ * Global symbol  _DLModules designates the first record in the list (i.e. the
-+ * header record).  This symbol must be defined in any program that wishes to
-+ * use DLLview plug-in.
-+ *
-+ * String Representation:
-+ * ----------------------
-+ * The string names of the module and its sections are stored in a block of
-+ * memory which follows the module record itself.  The strings are ordered:
-+ * module name first, followed by section names in order from the first
-+ * section to the last.  String names are tightly packed arrays of 8-bit
-+ * characters (two characters per 16-bit word on the C55x).  Strings are
-+ * zero-byte-terminated.
-+ *
-+ * Creating and updating the list:
-+ * -------------------------------
-+ * Upon loading a new module into the DSP memory the dynamic loader inserts a
-+ * new module record as the first module record in the list.  The fields of
-+ * this module record are initialized to reflect the properties of the module.
-+ * The dynamic loader does NOT increment the flag/counter in the list's header
-+ * record.
-+ *
-+ * Upon unloading a module from the DSP memory the dynamic loader removes the
-+ * module's record from this list.  The dynamic loader also increments the
-+ * flag/counter in the list's header record to indicate that the list has been
-+ * changed.
++ *  ======== fill_stream_def ========
++ *  Purpose:
++ *      Fills Stream attributes.
 + */
++static void fill_stream_def(struct node_object *hnode,
++			    struct node_strmdef *pstrm_def,
++			    struct dsp_strmattr *pattrs)
++{
++	struct node_mgr *hnode_mgr = hnode->hnode_mgr;
 +
-+#ifndef _MODULE_LIST_H_
-+#define _MODULE_LIST_H_
++	if (pattrs != NULL) {
++		pstrm_def->num_bufs = pattrs->num_bufs;
++		pstrm_def->buf_size =
++		    pattrs->buf_size / hnode_mgr->udsp_data_mau_size;
++		pstrm_def->seg_id = pattrs->seg_id;
++		pstrm_def->buf_alignment = pattrs->buf_alignment;
++		pstrm_def->utimeout = pattrs->utimeout;
++	} else {
++		pstrm_def->num_bufs = DEFAULTNBUFS;
++		pstrm_def->buf_size =
++		    DEFAULTBUFSIZE / hnode_mgr->udsp_data_mau_size;
++		pstrm_def->seg_id = DEFAULTSEGID;
++		pstrm_def->buf_alignment = DEFAULTALIGNMENT;
++		pstrm_def->utimeout = DEFAULTTIMEOUT;
++	}
++}
 +
-+#include <linux/types.h>
++/*
++ *  ======== free_stream ========
++ *  Purpose:
++ *      Updates the channel mask and frees the pipe id.
++ */
++static void free_stream(struct node_mgr *hnode_mgr, struct stream_chnl stream)
++{
++	/* Free up the pipe id unless other node has not yet been deleted. */
++	if (stream.type == NODECONNECT) {
++		if (gb_test(hnode_mgr->pipe_done_map, stream.dev_id)) {
++			/* The other node has already been deleted */
++			gb_clear(hnode_mgr->pipe_done_map, stream.dev_id);
++			gb_clear(hnode_mgr->pipe_map, stream.dev_id);
++		} else {
++			/* The other node has not been deleted yet */
++			gb_set(hnode_mgr->pipe_done_map, stream.dev_id);
++		}
++	} else if (stream.type == HOSTCONNECT) {
++		if (stream.dev_id < hnode_mgr->ul_num_chnls) {
++			gb_clear(hnode_mgr->chnl_map, stream.dev_id);
++		} else if (stream.dev_id < (2 * hnode_mgr->ul_num_chnls)) {
++			/* dsp-dma */
++			gb_clear(hnode_mgr->dma_chnl_map, stream.dev_id -
++				 (1 * hnode_mgr->ul_num_chnls));
++		} else if (stream.dev_id < (3 * hnode_mgr->ul_num_chnls)) {
++			/* zero-copy */
++			gb_clear(hnode_mgr->zc_chnl_map, stream.dev_id -
++				 (2 * hnode_mgr->ul_num_chnls));
++		}
++	}
++}
 +
-+/* Global pointer to the modules_header structure */
-+#define MODULES_HEADER "_DLModules"
-+#define MODULES_HEADER_NO_UNDERSCORE "DLModules"
++/*
++ *  ======== get_fxn_address ========
++ *  Purpose:
++ *      Retrieves the address for create, execute or delete phase for a node.
++ */
++static int get_fxn_address(struct node_object *hnode, u32 * pulFxnAddr,
++				  u32 uPhase)
++{
++	char *pstr_fxn_name = NULL;
++	struct node_mgr *hnode_mgr = hnode->hnode_mgr;
++	int status = 0;
++	DBC_REQUIRE(node_get_type(hnode) == NODE_TASK ||
++		    node_get_type(hnode) == NODE_DAISSOCKET ||
++		    node_get_type(hnode) == NODE_MESSAGE);
 +
-+/* Initial version number */
-+#define INIT_VERSION 1
++	switch (uPhase) {
++	case CREATEPHASE:
++		pstr_fxn_name =
++		    hnode->dcd_props.obj_data.node_obj.pstr_create_phase_fxn;
++		break;
++	case EXECUTEPHASE:
++		pstr_fxn_name =
++		    hnode->dcd_props.obj_data.node_obj.pstr_execute_phase_fxn;
++		break;
++	case DELETEPHASE:
++		pstr_fxn_name =
++		    hnode->dcd_props.obj_data.node_obj.pstr_delete_phase_fxn;
++		break;
++	default:
++		/* Should never get here */
++		DBC_ASSERT(false);
++		break;
++	}
 +
-+/* Verification number -- to be recorded in each module record */
-+#define VERIFICATION 0x79
++	status =
++	    hnode_mgr->nldr_fxns.pfn_get_fxn_addr(hnode->nldr_node_obj,
++						  pstr_fxn_name, pulFxnAddr);
 +
-+/* forward declarations */
-+struct dll_module;
-+struct dll_sect;
++	return status;
++}
 +
-+/* the first entry in the list is the modules_header record;
-+ * its address is contained in the global _DLModules pointer */
-+struct modules_header {
++/*
++ *  ======== get_node_info ========
++ *  Purpose:
++ *      Retrieves the node information.
++ */
++void get_node_info(struct node_object *hnode, struct dsp_nodeinfo *pNodeInfo)
++{
++	u32 i;
++
++	DBC_REQUIRE(hnode);
++	DBC_REQUIRE(pNodeInfo != NULL);
++
++	pNodeInfo->cb_struct = sizeof(struct dsp_nodeinfo);
++	pNodeInfo->nb_node_database_props =
++	    hnode->dcd_props.obj_data.node_obj.ndb_props;
++	pNodeInfo->execution_priority = hnode->prio;
++	pNodeInfo->device_owner = hnode->device_owner;
++	pNodeInfo->number_streams = hnode->num_inputs + hnode->num_outputs;
++	pNodeInfo->node_env = hnode->node_env;
++
++	pNodeInfo->ns_execution_state = node_get_state(hnode);
++
++	/* Copy stream connect data */
++	for (i = 0; i < hnode->num_inputs + hnode->num_outputs; i++)
++		pNodeInfo->sc_stream_connection[i] = hnode->stream_connect[i];
++
++}
++
++/*
++ *  ======== get_node_props ========
++ *  Purpose:
++ *      Retrieve node properties.
++ */
++static int get_node_props(struct dcd_manager *hdcd_mgr,
++				 struct node_object *hnode,
++				 CONST struct dsp_uuid *pNodeId,
++				 struct dcd_genericobj *pdcdProps)
++{
++	u32 len;
++	struct node_msgargs *pmsg_args;
++	struct node_taskargs *task_arg_obj;
++	enum node_type node_type = NODE_TASK;
++	struct dsp_ndbprops *pndb_props =
++	    &(pdcdProps->obj_data.node_obj.ndb_props);
++	int status = 0;
++	char sz_uuid[MAXUUIDLEN];
++
++	status = dcd_get_object_def(hdcd_mgr, (struct dsp_uuid *)pNodeId,
++				    DSP_DCDNODETYPE, pdcdProps);
++
++	if (DSP_SUCCEEDED(status)) {
++		hnode->ntype = node_type = pndb_props->ntype;
++
++		/* Create UUID value to set in registry. */
++		uuid_uuid_to_string((struct dsp_uuid *)pNodeId, sz_uuid,
++				    MAXUUIDLEN);
++		dev_dbg(bridge, "(node) UUID: %s\n", sz_uuid);
++
++		/* Fill in message args that come from NDB */
++		if (node_type != NODE_DEVICE) {
++			pmsg_args = &(hnode->create_args.asa.node_msg_args);
++			pmsg_args->seg_id =
++			    pdcdProps->obj_data.node_obj.msg_segid;
++			pmsg_args->notify_type =
++			    pdcdProps->obj_data.node_obj.msg_notify_type;
++			pmsg_args->max_msgs = pndb_props->message_depth;
++			dev_dbg(bridge, "(node) Max Number of Messages: 0x%x\n",
++				pmsg_args->max_msgs);
++		} else {
++			/* Copy device name */
++			DBC_REQUIRE(pndb_props->ac_name);
++			len = strlen(pndb_props->ac_name);
++			DBC_ASSERT(len < MAXDEVNAMELEN);
++			hnode->pstr_dev_name = kzalloc(len + 1, GFP_KERNEL);
++			if (hnode->pstr_dev_name == NULL) {
++				status = -ENOMEM;
++			} else {
++				strncpy(hnode->pstr_dev_name,
++					pndb_props->ac_name, len);
++			}
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Fill in create args that come from NDB */
++		if (node_type == NODE_TASK || node_type == NODE_DAISSOCKET) {
++			task_arg_obj = &(hnode->create_args.asa.task_arg_obj);
++			task_arg_obj->prio = pndb_props->prio;
++			task_arg_obj->stack_size = pndb_props->stack_size;
++			task_arg_obj->sys_stack_size =
++			    pndb_props->sys_stack_size;
++			task_arg_obj->stack_seg = pndb_props->stack_seg;
++			dev_dbg(bridge, "(node) Priority: 0x%x Stack Size: "
++				"0x%x words System Stack Size: 0x%x words "
++				"Stack Segment: 0x%x profile count : 0x%x\n",
++				task_arg_obj->prio, task_arg_obj->stack_size,
++				task_arg_obj->sys_stack_size,
++				task_arg_obj->stack_seg,
++				pndb_props->count_profiles);
++		}
++	}
++
++	return status;
++}
++
++/*
++ *  ======== get_proc_props ========
++ *  Purpose:
++ *      Retrieve the processor properties.
++ */
++static int get_proc_props(struct node_mgr *hnode_mgr,
++				 struct dev_object *hdev_obj)
++{
++	struct cfg_hostres *host_res;
++	struct bridge_dev_context *pbridge_context;
++	int status = 0;
++
++	status = dev_get_bridge_context(hdev_obj, &pbridge_context);
++	if (!pbridge_context)
++		status = -EFAULT;
++
++	if (DSP_SUCCEEDED(status)) {
++		host_res = pbridge_context->resources;
++		if (!host_res)
++			return -EPERM;
++		hnode_mgr->ul_chnl_offset = host_res->dw_chnl_offset;
++		hnode_mgr->ul_chnl_buf_size = host_res->dw_chnl_buf_size;
++		hnode_mgr->ul_num_chnls = host_res->dw_num_chnls;
++
++		/*
++		 *  PROC will add an API to get dsp_processorinfo.
++		 *  Fill in default values for now.
++		 */
++		/* TODO -- Instead of hard coding, take from registry */
++		hnode_mgr->proc_family = 6000;
++		hnode_mgr->proc_type = 6410;
++		hnode_mgr->min_pri = DSP_NODE_MIN_PRIORITY;
++		hnode_mgr->max_pri = DSP_NODE_MAX_PRIORITY;
++		hnode_mgr->udsp_word_size = DSPWORDSIZE;
++		hnode_mgr->udsp_data_mau_size = DSPWORDSIZE;
++		hnode_mgr->udsp_mau_size = 1;
++
++	}
++	return status;
++}
++
++/*
++ *  ======== node_get_uuid_props ========
++ *  Purpose:
++ *      Fetch Node UUID properties from DCD/DOF file.
++ */
++int node_get_uuid_props(void *hprocessor,
++			       IN CONST struct dsp_uuid *pNodeId,
++			       OUT struct dsp_ndbprops *node_props)
++{
++	struct node_mgr *hnode_mgr = NULL;
++	struct dev_object *hdev_obj;
++	int status = 0;
++	struct dcd_nodeprops dcd_node_props;
++	struct dsp_processorstate proc_state;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(hprocessor != NULL);
++	DBC_REQUIRE(pNodeId != NULL);
++
++	if (hprocessor == NULL || pNodeId == NULL) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	status = proc_get_state(hprocessor, &proc_state,
++				sizeof(struct dsp_processorstate));
++	if (DSP_FAILED(status))
++		goto func_end;
++	/* If processor is in error state then don't attempt
++	   to send the message */
++	if (proc_state.proc_state == PROC_ERROR) {
++		status = -EPERM;
++		goto func_end;
++	}
++
++	status = proc_get_dev_object(hprocessor, &hdev_obj);
++	if (hdev_obj) {
++		status = dev_get_node_manager(hdev_obj, &hnode_mgr);
++		if (hnode_mgr == NULL) {
++			status = -EFAULT;
++			goto func_end;
++		}
++	}
 +
 +	/*
-+	 * Address of the first dll_module record in the list or NULL.
-+	 * Note: for C55x this is a word address (C55x data is
-+	 * word-addressable)
++	 * Enter the critical section. This is needed because
++	 * dcd_get_object_def will ultimately end up calling dbll_open/close,
++	 * which needs to be protected in order to not corrupt the zlib manager
++	 * (COD).
 +	 */
-+	u32 first_module;
++	mutex_lock(&hnode_mgr->node_mgr_lock);
 +
-+	/* Combined storage size (in target addressable units) of the
-+	 * dll_module record which follows this header record, or zero
-+	 * if the list is empty.  This size includes the module's string table.
-+	 * Note: for C55x the unit is a 16-bit word */
-+	u16 first_module_size;
++	dcd_node_props.pstr_create_phase_fxn = NULL;
++	dcd_node_props.pstr_execute_phase_fxn = NULL;
++	dcd_node_props.pstr_delete_phase_fxn = NULL;
++	dcd_node_props.pstr_i_alg_name = NULL;
 +
-+	/* Counter is incremented whenever a module record is removed from
-+	 * the list */
-+	u16 update_flag;
++	status = dcd_get_object_def(hnode_mgr->hdcd_mgr,
++		(struct dsp_uuid *)pNodeId, DSP_DCDNODETYPE,
++		(struct dcd_genericobj *)&dcd_node_props);
 +
-+};
++	if (DSP_SUCCEEDED(status)) {
++		*node_props = dcd_node_props.ndb_props;
++		kfree(dcd_node_props.pstr_create_phase_fxn);
 +
-+/* for each 32-bits in above structure, a bitmap, LSB first, whose bits are:
-+ * 0 => a 32-bit value, 1 => 2 16-bit values */
-+/* swapping bitmap for type modules_header */
-+#define MODULES_HEADER_BITMAP 0x2
++		kfree(dcd_node_props.pstr_execute_phase_fxn);
 +
-+/* information recorded about each section in a module */
-+struct dll_sect {
++		kfree(dcd_node_props.pstr_delete_phase_fxn);
 +
-+	/* Load-time address of the section.
-+	 * Note: for C55x this is a byte address for program sections, and
-+	 * a word address for data sections.  C55x program memory is
-+	 * byte-addressable, while data memory is word-addressable. */
-+	u32 sect_load_adr;
++		kfree(dcd_node_props.pstr_i_alg_name);
++	}
++	/*  Leave the critical section, we're done. */
++	mutex_unlock(&hnode_mgr->node_mgr_lock);
++func_end:
++	return status;
++}
 +
-+	/* Run-time address of the section.
-+	 * Note 1: for C55x this is a byte address for program sections, and
-+	 * a word address for data sections.
-+	 * Note 2: for C55x two most significant bits of this field indicate
-+	 * the section type: '00' for a code section, '11' for a data section
-+	 * (C55 addresses are really only 24-bits wide). */
-+	u32 sect_run_adr;
-+
-+};
-+
-+/* the rest of the entries in the list are module records */
-+struct dll_module {
-+
-+	/* Address of the next dll_module record in the list, or 0 if this is
-+	 * the last record in the list.
-+	 * Note: for C55x this is a word address (C55x data is
-+	 * word-addressable) */
-+	u32 next_module;
-+
-+	/* Combined storage size (in target addressable units) of the
-+	 * dll_module record which follows this one, or zero if this is the
-+	 * last record in the list.  This size includes the module's string
-+	 * table.
-+	 * Note: for C55x the unit is a 16-bit word. */
-+	u16 next_module_size;
-+
-+	/* version number of the tooling; set to INIT_VERSION for Phase 1 */
-+	u16 version;
-+
-+	/* the verification word; set to VERIFICATION */
-+	u16 verification;
-+
-+	/* Number of sections in the sects array */
-+	u16 num_sects;
-+
-+	/* Module's "unique" id; copy of the timestamp from the host
-+	 * COFF file */
-+	u32 timestamp;
-+
-+	/* Array of num_sects elements of the module's section records */
-+	struct dll_sect sects[1];
-+};
-+
-+/* for each 32 bits in above structure, a bitmap, LSB first, whose bits are:
-+ * 0 => a 32-bit value, 1 => 2 16-bit values */
-+#define DLL_MODULE_BITMAP 0x6	/* swapping bitmap for type dll_module */
-+
-+#endif /* _MODULE_LIST_H_ */
-diff --git a/drivers/staging/tidspbridge/dynload/params.h b/drivers/staging/tidspbridge/dynload/params.h
-new file mode 100644
-index 0000000..d797fcd
---- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/params.h
-@@ -0,0 +1,226 @@
 +/*
-+ * params.h
++ *  ======== get_rms_fxns ========
++ *  Purpose:
++ *      Retrieve the RMS functions.
++ */
++static int get_rms_fxns(struct node_mgr *hnode_mgr)
++{
++	s32 i;
++	struct dev_object *dev_obj = hnode_mgr->hdev_obj;
++	int status = 0;
++
++	static char *psz_fxns[NUMRMSFXNS] = {
++		"RMS_queryServer",	/* RMSQUERYSERVER */
++		"RMS_configureServer",	/* RMSCONFIGURESERVER */
++		"RMS_createNode",	/* RMSCREATENODE */
++		"RMS_executeNode",	/* RMSEXECUTENODE */
++		"RMS_deleteNode",	/* RMSDELETENODE */
++		"RMS_changeNodePriority",	/* RMSCHANGENODEPRIORITY */
++		"RMS_readMemory",	/* RMSREADMEMORY */
++		"RMS_writeMemory",	/* RMSWRITEMEMORY */
++		"RMS_copy",	/* RMSCOPY */
++	};
++
++	for (i = 0; i < NUMRMSFXNS; i++) {
++		status = dev_get_symbol(dev_obj, psz_fxns[i],
++					&(hnode_mgr->ul_fxn_addrs[i]));
++		if (DSP_FAILED(status)) {
++			if (status == -ESPIPE) {
++				/*
++				 *  May be loaded dynamically (in the future),
++				 *  but return an error for now.
++				 */
++				dev_dbg(bridge, "%s: RMS function: %s currently"
++					" not loaded\n", __func__, psz_fxns[i]);
++			} else {
++				dev_dbg(bridge, "%s: Symbol not found: %s "
++					"status = 0x%x\n", __func__,
++					psz_fxns[i], status);
++				break;
++			}
++		}
++	}
++
++	return status;
++}
++
++/*
++ *  ======== ovly ========
++ *  Purpose:
++ *      Called during overlay.Sends command to RMS to copy a block of data.
++ */
++static u32 ovly(void *priv_ref, u32 ulDspRunAddr, u32 ulDspLoadAddr,
++		u32 ul_num_bytes, u32 nMemSpace)
++{
++	struct node_object *hnode = (struct node_object *)priv_ref;
++	struct node_mgr *hnode_mgr;
++	u32 ul_bytes = 0;
++	u32 ul_size;
++	u32 ul_timeout;
++	int status = 0;
++	struct bridge_dev_context *hbridge_context;
++	/* Function interface to Bridge driver*/
++	struct bridge_drv_interface *intf_fxns;
++
++	DBC_REQUIRE(hnode);
++
++	hnode_mgr = hnode->hnode_mgr;
++
++	ul_size = ul_num_bytes / hnode_mgr->udsp_word_size;
++	ul_timeout = hnode->utimeout;
++
++	/* Call new MemCopy function */
++	intf_fxns = hnode_mgr->intf_fxns;
++	status = dev_get_bridge_context(hnode_mgr->hdev_obj, &hbridge_context);
++	if (DSP_SUCCEEDED(status)) {
++		status =
++		    (*intf_fxns->pfn_brd_mem_copy) (hbridge_context,
++						ulDspRunAddr, ulDspLoadAddr,
++						ul_num_bytes, (u32) nMemSpace);
++		if (DSP_SUCCEEDED(status))
++			ul_bytes = ul_num_bytes;
++		else
++			pr_debug("%s: failed to copy brd memory, status 0x%x\n",
++				 __func__, status);
++	} else {
++		pr_debug("%s: failed to get Bridge context, status 0x%x\n",
++			 __func__, status);
++	}
++
++	return ul_bytes;
++}
++
++/*
++ *  ======== mem_write ========
++ */
++static u32 mem_write(void *priv_ref, u32 ulDspAddr, void *pbuf,
++		     u32 ul_num_bytes, u32 nMemSpace)
++{
++	struct node_object *hnode = (struct node_object *)priv_ref;
++	struct node_mgr *hnode_mgr;
++	u16 mem_sect_type;
++	u32 ul_timeout;
++	int status = 0;
++	struct bridge_dev_context *hbridge_context;
++	/* Function interface to Bridge driver */
++	struct bridge_drv_interface *intf_fxns;
++
++	DBC_REQUIRE(hnode);
++	DBC_REQUIRE(nMemSpace & DBLL_CODE || nMemSpace & DBLL_DATA);
++
++	hnode_mgr = hnode->hnode_mgr;
++
++	ul_timeout = hnode->utimeout;
++	mem_sect_type = (nMemSpace & DBLL_CODE) ? RMS_CODE : RMS_DATA;
++
++	/* Call new MemWrite function */
++	intf_fxns = hnode_mgr->intf_fxns;
++	status = dev_get_bridge_context(hnode_mgr->hdev_obj, &hbridge_context);
++	status = (*intf_fxns->pfn_brd_mem_write) (hbridge_context, pbuf,
++					ulDspAddr, ul_num_bytes, mem_sect_type);
++
++	return ul_num_bytes;
++}
++
++/*
++ *  ======== node_find_addr ========
++ */
++int node_find_addr(struct node_mgr *node_mgr, u32 sym_addr,
++		u32 offset_range, void *sym_addr_output, char *sym_name)
++{
++	struct node_object *node_obj;
++	int status = -ENOENT;
++	u32 n;
++
++	pr_debug("%s(0x%x, 0x%x, 0x%x, 0x%x,  %s)\n", __func__,
++			(unsigned int) node_mgr,
++			sym_addr, offset_range,
++			(unsigned int) sym_addr_output, sym_name);
++
++	node_obj = (struct node_object *)(node_mgr->node_list->head.next);
++
++	for (n = 0; n < node_mgr->num_nodes; n++) {
++		status = nldr_find_addr(node_obj->nldr_node_obj, sym_addr,
++			offset_range, sym_addr_output, sym_name);
++
++		if (DSP_SUCCEEDED(status))
++			break;
++
++		node_obj = (struct node_object *) (node_obj->list_elem.next);
++	}
++
++	return status;
++}
++
+diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
+new file mode 100644
+index 0000000..c5a8b6b
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/proc.c
+@@ -0,0 +1,1948 @@
++/*
++ * proc.c
 + *
 + * DSP-BIOS Bridge driver support functions for TI OMAP processors.
 + *
-+ * This file defines host and target properties for all machines
-+ * supported by the dynamic loader.  To be tedious...
-+ *
-+ * host: the machine on which the dynamic loader runs
-+ * target: the machine that the dynamic loader is loading
-+ *
-+ * Host and target may or may not be the same, depending upon the particular
-+ * use.
++ * Processor interface at the driver level.
 + *
 + * Copyright (C) 2005-2006 Texas Instruments, Inc.
 + *
@@ -3436,2225 +9888,2132 @@ index 0000000..d797fcd
 + * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 + */
 +
-+/******************************************************************************
-+ *
-+ *							Host Properties
-+ *
-+ **************************************************************************** */
++/* ------------------------------------ Host OS */
++#include <linux/dma-mapping.h>
++#include <linux/scatterlist.h>
++#include <dspbridge/host_os.h>
 +
-+#define BITS_PER_BYTE 8		/* bits in the standard PC/SUN byte */
-+#define LOG_BITS_PER_BYTE 3	/* log base 2 of same */
-+#define BYTE_MASK ((1U<<BITS_PER_BYTE)-1)
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
 +
-+#if defined(__TMS320C55X__) || defined(_TMS320C5XX)
-+#define BITS_PER_AU 16
-+#define LOG_BITS_PER_AU 4
-+ /* use this print string in error messages for uint32_t */
-+#define FMT_UI32 "0x%lx"
-+#define FMT8_UI32 "%08lx"	/* same but no 0x, fixed width field */
-+#else
-+/* bits in the smallest addressable data storage unit */
-+#define BITS_PER_AU 8
-+/* log base 2 of the same; useful for shift counts */
-+#define LOG_BITS_PER_AU 3
-+#define FMT_UI32 "0x%x"
-+#define FMT8_UI32 "%08x"
-+#endif
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
 +
-+/* generic fastest method for swapping bytes and shorts */
-+#define SWAP32BY16(zz) (((zz) << 16) | ((zz) >> 16))
-+#define SWAP16BY8(zz) (((zz) << 8) | ((zz) >> 8))
++/*  ----------------------------------- OS Adaptation Layer */
++#include <dspbridge/cfg.h>
++#include <dspbridge/list.h>
++#include <dspbridge/ntfy.h>
++#include <dspbridge/sync.h>
++/*  ----------------------------------- Bridge Driver */
++#include <dspbridge/dspdefs.h>
++#include <dspbridge/dspdeh.h>
++/*  ----------------------------------- Platform Manager */
++#include <dspbridge/cod.h>
++#include <dspbridge/dev.h>
++#include <dspbridge/procpriv.h>
++#include <dspbridge/dmm.h>
 +
-+/* !! don't be tempted to insert type definitions here; use <stdint.h> !! */
++/*  ----------------------------------- Resource Manager */
++#include <dspbridge/mgr.h>
++#include <dspbridge/node.h>
++#include <dspbridge/nldr.h>
++#include <dspbridge/rmm.h>
 +
-+/******************************************************************************
-+ *
-+ *							Target Properties
-+ *
-+ **************************************************************************** */
++/*  ----------------------------------- Others */
++#include <dspbridge/dbdcd.h>
++#include <dspbridge/msg.h>
++#include <dspbridge/dspioctl.h>
++#include <dspbridge/drv.h>
 +
-+/*-------------------------------------------------------------------------- */
-+/* TMS320C6x Target Specific Parameters (byte-addressable) */
-+/*-------------------------------------------------------------------------- */
-+#if TMS32060
-+#define MEMORG          0x0L	/* Size of configured memory */
-+#define MEMSIZE         0x0L	/* (full address space) */
++/*  ----------------------------------- This */
++#include <dspbridge/proc.h>
++#include <dspbridge/pwr.h>
 +
-+#define CINIT_ALIGN     8	/* alignment of cinit record in TDATA AUs */
-+#define CINIT_COUNT	4	/* width of count field in TDATA AUs */
-+#define CINIT_ADDRESS	4	/* width of address field in TDATA AUs */
-+#define CINIT_PAGE_BITS	0	/* Number of LSBs of address that
-+				 * are page number */
++#include <dspbridge/resourcecleanup.h>
++/*  ----------------------------------- Defines, Data Structures, Typedefs */
++#define MAXCMDLINELEN       255
++#define PROC_ENVPROCID      "PROC_ID=%d"
++#define MAXPROCIDLEN	(8 + 5)
++#define PROC_DFLT_TIMEOUT   10000	/* Time out in milliseconds */
++#define PWR_TIMEOUT	 500	/* Sleep/wake timout in msec */
++#define EXTEND	      "_EXT_END"	/* Extmem end addr in DSP binary */
 +
-+#define LENIENT_SIGNED_RELEXPS 0	/* DOES SIGNED ALLOW MAX UNSIGNED */
++#define DSP_CACHE_LINE 128
 +
-+#undef TARGET_ENDIANNESS	/* may be big or little endian */
++#define BUFMODE_MASK	(3 << 14)
 +
-+/* align a target address to a word boundary */
-+#define TARGET_WORD_ALIGN(zz) (((zz) + 0x3) & -0x4)
-+#endif
++/* Buffer modes from DSP perspective */
++#define RBUF		0x4000		/* Input buffer */
++#define WBUF		0x8000		/* Output Buffer */
 +
-+/*--------------------------------------------------------------------------
-+ *
-+ *			DEFAULT SETTINGS and DERIVED PROPERTIES
-+ *
-+ * This section establishes defaults for values not specified above
-+ *-------------------------------------------------------------------------- */
-+#ifndef TARGET_AU_BITS
-+#define TARGET_AU_BITS 8	/* width of the target addressable unit */
-+#define LOG_TARGET_AU_BITS 3	/* log2 of same */
-+#endif
++extern struct device *bridge;
 +
-+#ifndef CINIT_DEFAULT_PAGE
-+#define CINIT_DEFAULT_PAGE 0	/* default .cinit page number */
-+#endif
++/*  ----------------------------------- Globals */
 +
-+#ifndef DATA_RUN2LOAD
-+#define DATA_RUN2LOAD(zz) (zz)	/* translate data run address to load address */
-+#endif
++/* The proc_object structure. */
++struct proc_object {
++	struct list_head link;	/* Link to next proc_object */
++	struct dev_object *hdev_obj;	/* Device this PROC represents */
++	u32 process;		/* Process owning this Processor */
++	struct mgr_object *hmgr_obj;	/* Manager Object Handle */
++	u32 attach_count;	/* Processor attach count */
++	u32 processor_id;	/* Processor number */
++	u32 utimeout;		/* Time out count */
++	enum dsp_procstate proc_state;	/* Processor state */
++	u32 ul_unit;		/* DDSP unit number */
++	bool is_already_attached;	/*
++					 * True if the Device below has
++					 * GPP Client attached
++					 */
++	struct ntfy_object *ntfy_obj;	/* Manages  notifications */
++	/* Bridge Context Handle */
++	struct bridge_dev_context *hbridge_context;
++	/* Function interface to Bridge driver */
++	struct bridge_drv_interface *intf_fxns;
++	char *psz_last_coff;
++	struct list_head proc_list;
++};
 +
-+#ifndef DBG_LIST_PAGE
-+#define DBG_LIST_PAGE 0		/* page number for .dllview section */
-+#endif
++static u32 refs;
 +
-+#ifndef TARGET_WORD_ALIGN
-+/* align a target address to a word boundary */
-+#define TARGET_WORD_ALIGN(zz) (zz)
-+#endif
++DEFINE_MUTEX(proc_lock);	/* For critical sections */
 +
-+#ifndef TDATA_TO_TADDR
-+#define TDATA_TO_TADDR(zz) (zz)	/* target data address to target AU address */
-+#define TADDR_TO_TDATA(zz) (zz)	/* target AU address to target data address */
-+#define TDATA_AU_BITS	TARGET_AU_BITS	/* bits per data AU */
-+#define LOG_TDATA_AU_BITS	LOG_TARGET_AU_BITS
-+#endif
++/*  ----------------------------------- Function Prototypes */
++static int proc_monitor(struct proc_object *hprocessor);
++static s32 get_envp_count(char **envp);
++static char **prepend_envp(char **new_envp, char **envp, s32 envp_elems,
++			   s32 cnew_envp, char *szVar);
 +
-+/*
-+ *
-+ * Useful properties and conversions derived from the above
-+ *
-+ */
-+
-+/*
-+ * Conversions between host and target addresses
-+ */
-+#if LOG_BITS_PER_AU == LOG_TARGET_AU_BITS
-+/* translate target addressable unit to host address */
-+#define TADDR_TO_HOST(x) (x)
-+/* translate host address to target addressable unit */
-+#define HOST_TO_TADDR(x) (x)
-+#elif LOG_BITS_PER_AU > LOG_TARGET_AU_BITS
-+#define TADDR_TO_HOST(x) ((x) >> (LOG_BITS_PER_AU-LOG_TARGET_AU_BITS))
-+#define HOST_TO_TADDR(x) ((x) << (LOG_BITS_PER_AU-LOG_TARGET_AU_BITS))
-+#else
-+#define TADDR_TO_HOST(x) ((x) << (LOG_TARGET_AU_BITS-LOG_BITS_PER_AU))
-+#define HOST_TO_TADDR(x) ((x) >> (LOG_TARGET_AU_BITS-LOG_BITS_PER_AU))
-+#endif
-+
-+#if LOG_BITS_PER_AU == LOG_TDATA_AU_BITS
-+/* translate target addressable unit to host address */
-+#define TDATA_TO_HOST(x) (x)
-+/* translate host address to target addressable unit */
-+#define HOST_TO_TDATA(x) (x)
-+/* translate host address to target addressable unit, round up */
-+#define HOST_TO_TDATA_ROUND(x) (x)
-+/* byte offset to host offset, rounded up for TDATA size */
-+#define BYTE_TO_HOST_TDATA_ROUND(x) BYTE_TO_HOST_ROUND(x)
-+#elif LOG_BITS_PER_AU > LOG_TDATA_AU_BITS
-+#define TDATA_TO_HOST(x) ((x) >> (LOG_BITS_PER_AU-LOG_TDATA_AU_BITS))
-+#define HOST_TO_TDATA(x) ((x) << (LOG_BITS_PER_AU-LOG_TDATA_AU_BITS))
-+#define HOST_TO_TDATA_ROUND(x) ((x) << (LOG_BITS_PER_AU-LOG_TDATA_AU_BITS))
-+#define BYTE_TO_HOST_TDATA_ROUND(x) BYTE_TO_HOST_ROUND(x)
-+#else
-+#define TDATA_TO_HOST(x) ((x) << (LOG_TDATA_AU_BITS-LOG_BITS_PER_AU))
-+#define HOST_TO_TDATA(x) ((x) >> (LOG_TDATA_AU_BITS-LOG_BITS_PER_AU))
-+#define HOST_TO_TDATA_ROUND(x) (((x) +\
-+				(1<<(LOG_TDATA_AU_BITS-LOG_BITS_PER_AU))-1) >>\
-+				(LOG_TDATA_AU_BITS-LOG_BITS_PER_AU))
-+#define BYTE_TO_HOST_TDATA_ROUND(x) (BYTE_TO_HOST((x) +\
-+	(1<<(LOG_TDATA_AU_BITS-LOG_BITS_PER_BYTE))-1) &\
-+	-(TDATA_AU_BITS/BITS_PER_AU))
-+#endif
-+
-+/*
-+ * Input in DOFF format is always expresed in bytes, regardless of loading host
-+ * so we wind up converting from bytes to target and host units even when the
-+ * host is not a byte machine.
-+ */
-+#if LOG_BITS_PER_AU == LOG_BITS_PER_BYTE
-+#define BYTE_TO_HOST(x) (x)
-+#define BYTE_TO_HOST_ROUND(x) (x)
-+#define HOST_TO_BYTE(x) (x)
-+#elif LOG_BITS_PER_AU >= LOG_BITS_PER_BYTE
-+#define BYTE_TO_HOST(x) ((x) >> (LOG_BITS_PER_AU - LOG_BITS_PER_BYTE))
-+#define BYTE_TO_HOST_ROUND(x) ((x + (BITS_PER_AU/BITS_PER_BYTE-1)) >>\
-+			      (LOG_BITS_PER_AU - LOG_BITS_PER_BYTE))
-+#define HOST_TO_BYTE(x) ((x) << (LOG_BITS_PER_AU - LOG_BITS_PER_BYTE))
-+#else
-+/* lets not try to deal with sub-8-bit byte machines */
-+#endif
-+
-+#if LOG_TARGET_AU_BITS == LOG_BITS_PER_BYTE
-+/* translate target addressable unit to byte address */
-+#define TADDR_TO_BYTE(x) (x)
-+/* translate byte address to target addressable unit */
-+#define BYTE_TO_TADDR(x) (x)
-+#elif LOG_TARGET_AU_BITS > LOG_BITS_PER_BYTE
-+#define TADDR_TO_BYTE(x) ((x) << (LOG_TARGET_AU_BITS-LOG_BITS_PER_BYTE))
-+#define BYTE_TO_TADDR(x) ((x) >> (LOG_TARGET_AU_BITS-LOG_BITS_PER_BYTE))
-+#else
-+/* lets not try to deal with sub-8-bit byte machines */
-+#endif
-+
-+#ifdef _BIG_ENDIAN
-+#define HOST_ENDIANNESS 1
-+#else
-+#define HOST_ENDIANNESS 0
-+#endif
-+
-+#ifdef TARGET_ENDIANNESS
-+#define TARGET_ENDIANNESS_DIFFERS(rtend) (HOST_ENDIANNESS^TARGET_ENDIANNESS)
-+#elif HOST_ENDIANNESS
-+#define TARGET_ENDIANNESS_DIFFERS(rtend) (!(rtend))
-+#else
-+#define TARGET_ENDIANNESS_DIFFERS(rtend) (rtend)
-+#endif
-+
-+/* the unit in which we process target image data */
-+#if TARGET_AU_BITS <= 8
-+typedef u8 tgt_au_t;
-+#elif TARGET_AU_BITS <= 16
-+typedef u16 tgt_au_t;
-+#else
-+typedef u32 tgt_au_t;
-+#endif
-+
-+/* size of that unit */
-+#if TARGET_AU_BITS < BITS_PER_AU
-+#define TGTAU_BITS BITS_PER_AU
-+#define LOG_TGTAU_BITS LOG_BITS_PER_AU
-+#else
-+#define TGTAU_BITS TARGET_AU_BITS
-+#define LOG_TGTAU_BITS LOG_TARGET_AU_BITS
-+#endif
-diff --git a/drivers/staging/tidspbridge/dynload/reloc.c b/drivers/staging/tidspbridge/dynload/reloc.c
-new file mode 100644
-index 0000000..316a38c
---- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/reloc.c
-@@ -0,0 +1,484 @@
-+/*
-+ * reloc.c
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Copyright (C) 2005-2006 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+#include "header.h"
-+
-+#if TMS32060
-+/* the magic symbol for the start of BSS */
-+static const char bsssymbol[] = { ".bss" };
-+#endif
-+
-+#if TMS32060
-+#include "reloc_table_c6000.c"
-+#endif
-+
-+#if TMS32060
-+/* From coff.h - ignore these relocation operations */
-+#define R_C60ALIGN     0x76	/* C60: Alignment info for compressor */
-+#define R_C60FPHEAD    0x77	/* C60: Explicit assembly directive */
-+#define R_C60NOCMP    0x100	/* C60: Don't compress this code scn */
-+#endif
-+
-+/**************************************************************************
-+ * Procedure dload_unpack
-+ *
-+ * Parameters:
-+ *	data	pointer to storage unit containing lowest host address of
-+ *		image data
-+ *	fieldsz	Size of bit field, 0 < fieldsz <= sizeof(rvalue)*BITS_PER_AU
-+ *	offset	Offset from LSB, 0 <= offset < BITS_PER_AU
-+ *	sgn	Signedness of the field (ROP_SGN, ROP_UNS, ROP_MAX, ROP_ANY)
-+ *
-+ * Effect:
-+ *	Extracts the specified field and returns it.
-+ ************************************************************************* */
-+rvalue dload_unpack(struct dload_state *dlthis, tgt_au_t * data, int fieldsz,
-+		    int offset, unsigned sgn)
++/* remember mapping information */
++static struct dmm_map_object *add_mapping_info(struct process_context *pr_ctxt,
++				u32 mpu_addr, u32 dsp_addr, u32 size)
 +{
-+	register rvalue objval;
-+	register int shift, direction;
-+	register tgt_au_t *dp = data;
++	struct dmm_map_object *map_obj;
 +
-+	fieldsz -= 1;	/* avoid nastiness with 32-bit shift of 32-bit value */
-+	/* * collect up enough bits to contain the desired field */
-+	if (TARGET_BIG_ENDIAN) {
-+		dp += (fieldsz + offset) >> LOG_TGTAU_BITS;
-+		direction = -1;
-+	} else
-+		direction = 1;
-+	objval = *dp >> offset;
-+	shift = TGTAU_BITS - offset;
-+	while (shift <= fieldsz) {
-+		dp += direction;
-+		objval += (rvalue) *dp << shift;
-+		shift += TGTAU_BITS;
++	u32 num_usr_pgs = size / PG_SIZE4K;
++
++	pr_debug("%s: adding map info: mpu_addr 0x%x virt 0x%x size 0x%x\n",
++						__func__, mpu_addr,
++						dsp_addr, size);
++
++	map_obj = kzalloc(sizeof(struct dmm_map_object), GFP_KERNEL);
++	if (!map_obj) {
++		pr_err("%s: kzalloc failed\n", __func__);
++		return NULL;
++	}
++	INIT_LIST_HEAD(&map_obj->link);
++
++	map_obj->pages = kcalloc(num_usr_pgs, sizeof(struct page *),
++							GFP_KERNEL);
++	if (!map_obj->pages) {
++		pr_err("%s: kzalloc failed\n", __func__);
++		kfree(map_obj);
++		return NULL;
 +	}
 +
-+	/* * sign or zero extend the value appropriately */
-+	if (sgn == ROP_UNS)
-+		objval &= (2 << fieldsz) - 1;
-+	else {
-+		shift = sizeof(rvalue) * BITS_PER_AU - 1 - fieldsz;
-+		objval = (objval << shift) >> shift;
-+	}
++	map_obj->mpu_addr = mpu_addr;
++	map_obj->dsp_addr = dsp_addr;
++	map_obj->size = size;
++	map_obj->num_usr_pgs = num_usr_pgs;
 +
-+	return objval;
++	spin_lock(&pr_ctxt->dmm_map_lock);
++	list_add(&map_obj->link, &pr_ctxt->dmm_map_list);
++	spin_unlock(&pr_ctxt->dmm_map_lock);
 +
-+}				/* dload_unpack */
++	return map_obj;
++}
 +
-+/**************************************************************************
-+ * Procedure dload_repack
-+ *
-+ * Parameters:
-+ *	val		Value to insert
-+ *	data	Pointer to storage unit containing lowest host address of
-+ * 		image data
-+ *	fieldsz	Size of bit field, 0 < fieldsz <= sizeof(rvalue)*BITS_PER_AU
-+ *	offset	Offset from LSB, 0 <= offset < BITS_PER_AU
-+ *	sgn	Signedness of the field (ROP_SGN, ROP_UNS, ROP_MAX, ROP_ANY)
-+ *
-+ * Effect:
-+ *	Stuffs the specified value in the specified field.  Returns 0 for
-+ *	success
-+ * or 1 if the value will not fit in the specified field according to the
-+ * specified signedness rule.
-+ ************************************************************************* */
-+static const unsigned char ovf_limit[] = { 1, 2, 2 };
-+
-+int dload_repack(struct dload_state *dlthis, rvalue val, tgt_au_t * data,
-+		 int fieldsz, int offset, unsigned sgn)
++static int match_exact_map_obj(struct dmm_map_object *map_obj,
++					u32 dsp_addr, u32 size)
 +{
-+	register urvalue objval, mask;
-+	register int shift, direction;
-+	register tgt_au_t *dp = data;
++	if (map_obj->dsp_addr == dsp_addr && map_obj->size != size)
++		pr_err("%s: addr match (0x%x), size don't (0x%x != 0x%x)\n",
++				__func__, dsp_addr, map_obj->size, size);
 +
-+	fieldsz -= 1;	/* avoid nastiness with 32-bit shift of 32-bit value */
-+	/* clip the bits */
-+	mask = ((UINT32_C(2) << fieldsz) - 1);
-+	objval = (val & mask);
-+	/* * store the bits through the specified mask */
-+	if (TARGET_BIG_ENDIAN) {
-+		dp += (fieldsz + offset) >> LOG_TGTAU_BITS;
-+		direction = -1;
++	return map_obj->dsp_addr == dsp_addr &&
++		map_obj->size == size;
++}
++
++static void remove_mapping_information(struct process_context *pr_ctxt,
++						u32 dsp_addr, u32 size)
++{
++	struct dmm_map_object *map_obj;
++
++	pr_debug("%s: looking for virt 0x%x size 0x%x\n", __func__,
++							dsp_addr, size);
++
++	spin_lock(&pr_ctxt->dmm_map_lock);
++	list_for_each_entry(map_obj, &pr_ctxt->dmm_map_list, link) {
++		pr_debug("%s: candidate: mpu_addr 0x%x virt 0x%x size 0x%x\n",
++							__func__,
++							map_obj->mpu_addr,
++							map_obj->dsp_addr,
++							map_obj->size);
++
++		if (match_exact_map_obj(map_obj, dsp_addr, size)) {
++			pr_debug("%s: match, deleting map info\n", __func__);
++			list_del(&map_obj->link);
++			kfree(map_obj->dma_info.sg);
++			kfree(map_obj->pages);
++			kfree(map_obj);
++			goto out;
++		}
++		pr_debug("%s: candidate didn't match\n", __func__);
++	}
++
++	pr_err("%s: failed to find given map info\n", __func__);
++out:
++	spin_unlock(&pr_ctxt->dmm_map_lock);
++}
++
++static int match_containing_map_obj(struct dmm_map_object *map_obj,
++					u32 mpu_addr, u32 size)
++{
++	u32 map_obj_end = map_obj->mpu_addr + map_obj->size;
++
++	return mpu_addr >= map_obj->mpu_addr &&
++		mpu_addr + size <= map_obj_end;
++}
++
++static struct dmm_map_object *find_containing_mapping(
++				struct process_context *pr_ctxt,
++				u32 mpu_addr, u32 size)
++{
++	struct dmm_map_object *map_obj;
++	pr_debug("%s: looking for mpu_addr 0x%x size 0x%x\n", __func__,
++						mpu_addr, size);
++
++	spin_lock(&pr_ctxt->dmm_map_lock);
++	list_for_each_entry(map_obj, &pr_ctxt->dmm_map_list, link) {
++		pr_debug("%s: candidate: mpu_addr 0x%x virt 0x%x size 0x%x\n",
++						__func__,
++						map_obj->mpu_addr,
++						map_obj->dsp_addr,
++						map_obj->size);
++		if (match_containing_map_obj(map_obj, mpu_addr, size)) {
++			pr_debug("%s: match!\n", __func__);
++			goto out;
++		}
++
++		pr_debug("%s: no match!\n", __func__);
++	}
++
++	map_obj = NULL;
++out:
++	spin_unlock(&pr_ctxt->dmm_map_lock);
++	return map_obj;
++}
++
++static int find_first_page_in_cache(struct dmm_map_object *map_obj,
++					unsigned long mpu_addr)
++{
++	u32 mapped_base_page = map_obj->mpu_addr >> PAGE_SHIFT;
++	u32 requested_base_page = mpu_addr >> PAGE_SHIFT;
++	int pg_index = requested_base_page - mapped_base_page;
++
++	if (pg_index < 0 || pg_index >= map_obj->num_usr_pgs) {
++		pr_err("%s: failed (got %d)\n", __func__, pg_index);
++		return -1;
++	}
++
++	pr_debug("%s: first page is %d\n", __func__, pg_index);
++	return pg_index;
++}
++
++static inline struct page *get_mapping_page(struct dmm_map_object *map_obj,
++								int pg_i)
++{
++	pr_debug("%s: looking for pg_i %d, num_usr_pgs: %d\n", __func__,
++					pg_i, map_obj->num_usr_pgs);
++
++	if (pg_i < 0 || pg_i >= map_obj->num_usr_pgs) {
++		pr_err("%s: requested pg_i %d is out of mapped range\n",
++				__func__, pg_i);
++		return NULL;
++	}
++
++	return map_obj->pages[pg_i];
++}
++
++/*
++ *  ======== proc_attach ========
++ *  Purpose:
++ *      Prepare for communication with a particular DSP processor, and return
++ *      a handle to the processor object.
++ */
++int
++proc_attach(u32 processor_id,
++	    OPTIONAL CONST struct dsp_processorattrin *attr_in,
++	    void **ph_processor, struct process_context *pr_ctxt)
++{
++	int status = 0;
++	struct dev_object *hdev_obj;
++	struct proc_object *p_proc_object = NULL;
++	struct mgr_object *hmgr_obj = NULL;
++	struct drv_object *hdrv_obj = NULL;
++	u8 dev_type;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(ph_processor != NULL);
++
++	if (pr_ctxt->hprocessor) {
++		*ph_processor = pr_ctxt->hprocessor;
++		return status;
++	}
++
++	/* Get the Driver and Manager Object Handles */
++	status = cfg_get_object((u32 *) &hdrv_obj, REG_DRV_OBJECT);
++	if (DSP_SUCCEEDED(status))
++		status = cfg_get_object((u32 *) &hmgr_obj, REG_MGR_OBJECT);
++
++	if (DSP_SUCCEEDED(status)) {
++		/* Get the Device Object */
++		status = drv_get_dev_object(processor_id, hdrv_obj, &hdev_obj);
++	}
++	if (DSP_SUCCEEDED(status))
++		status = dev_get_dev_type(hdev_obj, &dev_type);
++
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/* If we made it this far, create the Proceesor object: */
++	p_proc_object = kzalloc(sizeof(struct proc_object), GFP_KERNEL);
++	/* Fill out the Processor Object: */
++	if (p_proc_object == NULL) {
++		status = -ENOMEM;
++		goto func_end;
++	}
++	p_proc_object->hdev_obj = hdev_obj;
++	p_proc_object->hmgr_obj = hmgr_obj;
++	p_proc_object->processor_id = dev_type;
++	/* Store TGID instead of process handle */
++	p_proc_object->process = current->tgid;
++
++	INIT_LIST_HEAD(&p_proc_object->proc_list);
++
++	if (attr_in)
++		p_proc_object->utimeout = attr_in->utimeout;
++	else
++		p_proc_object->utimeout = PROC_DFLT_TIMEOUT;
++
++	status = dev_get_intf_fxns(hdev_obj, &p_proc_object->intf_fxns);
++	if (DSP_SUCCEEDED(status)) {
++		status = dev_get_bridge_context(hdev_obj,
++					     &p_proc_object->hbridge_context);
++		if (DSP_FAILED(status))
++			kfree(p_proc_object);
 +	} else
-+		direction = 1;
++		kfree(p_proc_object);
 +
-+	/* insert LSBs */
-+	*dp = (*dp & ~(mask << offset)) + (objval << offset);
-+	shift = TGTAU_BITS - offset;
-+	/* align mask and objval with AU boundary */
-+	objval >>= shift;
-+	mask >>= shift;
++	if (DSP_FAILED(status))
++		goto func_end;
 +
-+	while (mask) {
-+		dp += direction;
-+		*dp = (*dp & ~mask) + objval;
-+		objval >>= TGTAU_BITS;
-+		mask >>= TGTAU_BITS;
++	/* Create the Notification Object */
++	/* This is created with no event mask, no notify mask
++	 * and no valid handle to the notification. They all get
++	 * filled up when proc_register_notify is called */
++	p_proc_object->ntfy_obj = kmalloc(sizeof(struct ntfy_object),
++							GFP_KERNEL);
++	if (p_proc_object->ntfy_obj)
++		ntfy_init(p_proc_object->ntfy_obj);
++	else
++		status = -ENOMEM;
++
++	if (DSP_SUCCEEDED(status)) {
++		/* Insert the Processor Object into the DEV List.
++		 * Return handle to this Processor Object:
++		 * Find out if the Device is already attached to a
++		 * Processor. If so, return AlreadyAttached status */
++		lst_init_elem(&p_proc_object->link);
++		status = dev_insert_proc_object(p_proc_object->hdev_obj,
++						(u32) p_proc_object,
++						&p_proc_object->
++						is_already_attached);
++		if (DSP_SUCCEEDED(status)) {
++			if (p_proc_object->is_already_attached)
++				status = 0;
++		} else {
++			if (p_proc_object->ntfy_obj) {
++				ntfy_delete(p_proc_object->ntfy_obj);
++				kfree(p_proc_object->ntfy_obj);
++			}
++
++			kfree(p_proc_object);
++		}
++		if (DSP_SUCCEEDED(status)) {
++			*ph_processor = (void *)p_proc_object;
++			pr_ctxt->hprocessor = *ph_processor;
++			(void)proc_notify_clients(p_proc_object,
++						  DSP_PROCESSORATTACH);
++		}
++	} else {
++		/* Don't leak memory if DSP_FAILED */
++		kfree(p_proc_object);
++	}
++func_end:
++	DBC_ENSURE((status == -EPERM && *ph_processor == NULL) ||
++		   (DSP_SUCCEEDED(status) && p_proc_object) ||
++		   (status == 0 && p_proc_object));
++
++	return status;
++}
++
++static int get_exec_file(struct cfg_devnode *dev_node_obj,
++				struct dev_object *hdev_obj,
++				u32 size, char *execFile)
++{
++	u8 dev_type;
++	s32 len;
++
++	dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
++	if (dev_type == DSP_UNIT) {
++		return cfg_get_exec_file(dev_node_obj, size, execFile);
++	} else if (dev_type == IVA_UNIT) {
++		if (iva_img) {
++			len = strlen(iva_img);
++			strncpy(execFile, iva_img, len + 1);
++			return 0;
++		}
++	}
++	return -ENOENT;
++}
++
++/*
++ *  ======== proc_auto_start ======== =
++ *  Purpose:
++ *      A Particular device gets loaded with the default image
++ *      if the AutoStart flag is set.
++ *  Parameters:
++ *      hdev_obj:     Handle to the Device
++ *  Returns:
++ *      0:   On Successful Loading
++ *      -EPERM  General Failure
++ *  Requires:
++ *      hdev_obj != NULL
++ *  Ensures:
++ */
++int proc_auto_start(struct cfg_devnode *dev_node_obj,
++			   struct dev_object *hdev_obj)
++{
++	int status = -EPERM;
++	struct proc_object *p_proc_object;
++	char sz_exec_file[MAXCMDLINELEN];
++	char *argv[2];
++	struct mgr_object *hmgr_obj = NULL;
++	u8 dev_type;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(dev_node_obj != NULL);
++	DBC_REQUIRE(hdev_obj != NULL);
++
++	/* Create a Dummy PROC Object */
++	status = cfg_get_object((u32 *) &hmgr_obj, REG_MGR_OBJECT);
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	p_proc_object = kzalloc(sizeof(struct proc_object), GFP_KERNEL);
++	if (p_proc_object == NULL) {
++		status = -ENOMEM;
++		goto func_end;
++	}
++	p_proc_object->hdev_obj = hdev_obj;
++	p_proc_object->hmgr_obj = hmgr_obj;
++	status = dev_get_intf_fxns(hdev_obj, &p_proc_object->intf_fxns);
++	if (DSP_SUCCEEDED(status))
++		status = dev_get_bridge_context(hdev_obj,
++					     &p_proc_object->hbridge_context);
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	/* Stop the Device, put it into standby mode */
++	status = proc_stop(p_proc_object);
++
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	/* Get the default executable for this board... */
++	dev_get_dev_type(hdev_obj, (u8 *) &dev_type);
++	p_proc_object->processor_id = dev_type;
++	status = get_exec_file(dev_node_obj, hdev_obj, sizeof(sz_exec_file),
++			       sz_exec_file);
++	if (DSP_SUCCEEDED(status)) {
++		argv[0] = sz_exec_file;
++		argv[1] = NULL;
++		/* ...and try to load it: */
++		status = proc_load(p_proc_object, 1, (CONST char **)argv, NULL);
++		if (DSP_SUCCEEDED(status))
++			status = proc_start(p_proc_object);
++	}
++	kfree(p_proc_object->psz_last_coff);
++	p_proc_object->psz_last_coff = NULL;
++func_cont:
++	kfree(p_proc_object);
++func_end:
++	return status;
++}
++
++/*
++ *  ======== proc_ctrl ========
++ *  Purpose:
++ *      Pass control information to the GPP device driver managing the
++ *      DSP processor.
++ *
++ *      This will be an OEM-only function, and not part of the DSP/BIOS Bridge
++ *      application developer's API.
++ *      Call the bridge_dev_ctrl fxn with the Argument. This is a Synchronous
++ *      Operation. arg can be null.
++ */
++int proc_ctrl(void *hprocessor, u32 dw_cmd, IN struct dsp_cbdata * arg)
++{
++	int status = 0;
++	struct proc_object *p_proc_object = hprocessor;
++	u32 timeout = 0;
++
++	DBC_REQUIRE(refs > 0);
++
++	if (p_proc_object) {
++		/* intercept PWR deep sleep command */
++		if (dw_cmd == BRDIOCTL_DEEPSLEEP) {
++			timeout = arg->cb_data;
++			status = pwr_sleep_dsp(PWR_DEEPSLEEP, timeout);
++		}
++		/* intercept PWR emergency sleep command */
++		else if (dw_cmd == BRDIOCTL_EMERGENCYSLEEP) {
++			timeout = arg->cb_data;
++			status = pwr_sleep_dsp(PWR_EMERGENCYDEEPSLEEP, timeout);
++		} else if (dw_cmd == PWR_DEEPSLEEP) {
++			/* timeout = arg->cb_data; */
++			status = pwr_sleep_dsp(PWR_DEEPSLEEP, timeout);
++		}
++		/* intercept PWR wake commands */
++		else if (dw_cmd == BRDIOCTL_WAKEUP) {
++			timeout = arg->cb_data;
++			status = pwr_wake_dsp(timeout);
++		} else if (dw_cmd == PWR_WAKEUP) {
++			/* timeout = arg->cb_data; */
++			status = pwr_wake_dsp(timeout);
++		} else
++		    if (DSP_SUCCEEDED((*p_proc_object->intf_fxns->pfn_dev_cntrl)
++				      (p_proc_object->hbridge_context, dw_cmd,
++				       arg))) {
++			status = 0;
++		} else {
++			status = -EPERM;
++		}
++	} else {
++		status = -EFAULT;
 +	}
 +
-+	/*
-+	 * check for overflow
-+	 */
-+	if (sgn) {
-+		unsigned tmp = (val >> fieldsz) + (sgn & 0x1);
-+		if (tmp > ovf_limit[sgn - 1])
-+			return 1;
++	return status;
++}
++
++/*
++ *  ======== proc_detach ========
++ *  Purpose:
++ *      Destroys the  Processor Object. Removes the notification from the Dev
++ *      List.
++ */
++int proc_detach(struct process_context *pr_ctxt)
++{
++	int status = 0;
++	struct proc_object *p_proc_object = NULL;
++
++	DBC_REQUIRE(refs > 0);
++
++	p_proc_object = (struct proc_object *)pr_ctxt->hprocessor;
++
++	if (p_proc_object) {
++		/* Notify the Client */
++		ntfy_notify(p_proc_object->ntfy_obj, DSP_PROCESSORDETACH);
++		/* Remove the notification memory */
++		if (p_proc_object->ntfy_obj) {
++			ntfy_delete(p_proc_object->ntfy_obj);
++			kfree(p_proc_object->ntfy_obj);
++		}
++
++		kfree(p_proc_object->psz_last_coff);
++		p_proc_object->psz_last_coff = NULL;
++		/* Remove the Proc from the DEV List */
++		(void)dev_remove_proc_object(p_proc_object->hdev_obj,
++					     (u32) p_proc_object);
++		/* Free the Processor Object */
++		kfree(p_proc_object);
++		pr_ctxt->hprocessor = NULL;
++	} else {
++		status = -EFAULT;
 +	}
++
++	return status;
++}
++
++/*
++ *  ======== proc_enum_nodes ========
++ *  Purpose:
++ *      Enumerate and get configuration information about nodes allocated
++ *      on a DSP processor.
++ */
++int proc_enum_nodes(void *hprocessor, void **node_tab,
++			   IN u32 node_tab_size, OUT u32 *pu_num_nodes,
++			   OUT u32 *pu_allocated)
++{
++	int status = -EPERM;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++	struct node_mgr *hnode_mgr = NULL;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(node_tab != NULL || node_tab_size == 0);
++	DBC_REQUIRE(pu_num_nodes != NULL);
++	DBC_REQUIRE(pu_allocated != NULL);
++
++	if (p_proc_object) {
++		if (DSP_SUCCEEDED(dev_get_node_manager(p_proc_object->hdev_obj,
++						       &hnode_mgr))) {
++			if (hnode_mgr) {
++				status = node_enum_nodes(hnode_mgr, node_tab,
++							 node_tab_size,
++							 pu_num_nodes,
++							 pu_allocated);
++			}
++		}
++	} else {
++		status = -EFAULT;
++	}
++
++	return status;
++}
++
++/* Cache operation against kernel address instead of users */
++static int build_dma_sg(struct dmm_map_object *map_obj, unsigned long start,
++						ssize_t len, int pg_i)
++{
++	struct page *page;
++	unsigned long offset;
++	ssize_t rest;
++	int ret = 0, i = 0;
++	struct scatterlist *sg = map_obj->dma_info.sg;
++
++	while (len) {
++		page = get_mapping_page(map_obj, pg_i);
++		if (!page) {
++			pr_err("%s: no page for %08lx\n", __func__, start);
++			ret = -EINVAL;
++			goto out;
++		} else if (IS_ERR(page)) {
++			pr_err("%s: err page for %08lx(%lu)\n", __func__, start,
++			       PTR_ERR(page));
++			ret = PTR_ERR(page);
++			goto out;
++		}
++
++		offset = start & ~PAGE_MASK;
++		rest = min_t(ssize_t, PAGE_SIZE - offset, len);
++
++		sg_set_page(&sg[i], page, rest, offset);
++
++		len -= rest;
++		start += rest;
++		pg_i++, i++;
++	}
++
++	if (i != map_obj->dma_info.num_pages) {
++		pr_err("%s: bad number of sg iterations\n", __func__);
++		ret = -EFAULT;
++		goto out;
++	}
++
++out:
++	return ret;
++}
++
++static int memory_regain_ownership(struct dmm_map_object *map_obj,
++		unsigned long start, ssize_t len, enum dma_data_direction dir)
++{
++	int ret = 0;
++	unsigned long first_data_page = start >> PAGE_SHIFT;
++	unsigned long last_data_page = ((u32)(start + len - 1) >> PAGE_SHIFT);
++	/* calculating the number of pages this area spans */
++	unsigned long num_pages = last_data_page - first_data_page + 1;
++	struct bridge_dma_map_info *dma_info = &map_obj->dma_info;
++
++	if (!dma_info->sg)
++		goto out;
++
++	if (dma_info->dir != dir || dma_info->num_pages != num_pages) {
++		pr_err("%s: dma info doesn't match given params\n", __func__);
++		return -EINVAL;
++	}
++
++	dma_unmap_sg(bridge, dma_info->sg, num_pages, dma_info->dir);
++
++	pr_debug("%s: dma_map_sg unmapped\n", __func__);
++
++	kfree(dma_info->sg);
++
++	map_obj->dma_info.sg = NULL;
++
++out:
++	return ret;
++}
++
++/* Cache operation against kernel address instead of users */
++static int memory_give_ownership(struct dmm_map_object *map_obj,
++		unsigned long start, ssize_t len, enum dma_data_direction dir)
++{
++	int pg_i, ret, sg_num;
++	struct scatterlist *sg;
++	unsigned long first_data_page = start >> PAGE_SHIFT;
++	unsigned long last_data_page = ((u32)(start + len - 1) >> PAGE_SHIFT);
++	/* calculating the number of pages this area spans */
++	unsigned long num_pages = last_data_page - first_data_page + 1;
++
++	pg_i = find_first_page_in_cache(map_obj, start);
++	if (pg_i < 0) {
++		pr_err("%s: failed to find first page in cache\n", __func__);
++		ret = -EINVAL;
++		goto out;
++	}
++
++	sg = kcalloc(num_pages, sizeof(*sg), GFP_KERNEL);
++	if (!sg) {
++		pr_err("%s: kcalloc failed\n", __func__);
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	sg_init_table(sg, num_pages);
++
++	/* cleanup a previous sg allocation */
++	/* this may happen if application doesn't signal for e/o DMA */
++	kfree(map_obj->dma_info.sg);
++
++	map_obj->dma_info.sg = sg;
++	map_obj->dma_info.dir = dir;
++	map_obj->dma_info.num_pages = num_pages;
++
++	ret = build_dma_sg(map_obj, start, len, pg_i);
++	if (ret)
++		goto kfree_sg;
++
++	sg_num = dma_map_sg(bridge, sg, num_pages, dir);
++	if (sg_num < 1) {
++		pr_err("%s: dma_map_sg failed: %d\n", __func__, sg_num);
++		ret = -EFAULT;
++		goto kfree_sg;
++	}
++
++	pr_debug("%s: dma_map_sg mapped %d elements\n", __func__, sg_num);
++	map_obj->dma_info.sg_num = sg_num;
++
 +	return 0;
 +
-+}				/* dload_repack */
++kfree_sg:
++	kfree(sg);
++	map_obj->dma_info.sg = NULL;
++out:
++	return ret;
++}
 +
-+/* lookup table for the scaling amount in a C6x instruction */
-+#if TMS32060
-+#define SCALE_BITS 4		/* there are 4 bits in the scale field */
-+#define SCALE_MASK 0x7		/* we really only use the bottom 3 bits */
-+static const u8 c60_scale[SCALE_MASK + 1] = {
-+	1, 0, 0, 0, 1, 1, 2, 2
-+};
-+#endif
-+
-+/**************************************************************************
-+ * Procedure dload_relocate
-+ *
-+ * Parameters:
-+ *	data	Pointer to base of image data
-+ *	rp		Pointer to relocation operation
-+ *
-+ * Effect:
-+ *	Performs the specified relocation operation
-+ ************************************************************************* */
-+void dload_relocate(struct dload_state *dlthis, tgt_au_t * data,
-+		    struct reloc_record_t *rp, bool * tramps_genereted,
-+		    bool second_pass)
++int proc_begin_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
++				enum dma_data_direction dir)
 +{
-+	rvalue val, reloc_amt, orig_val = 0;
-+	unsigned int fieldsz = 0;
-+	unsigned int offset = 0;
-+	unsigned int reloc_info = 0;
-+	unsigned int reloc_action = 0;
-+	register int rx = 0;
-+	rvalue *stackp = NULL;
-+	int top;
-+	struct local_symbol *svp = NULL;
-+#ifdef RFV_SCALE
-+	unsigned int scale = 0;
-+#endif
-+	struct image_packet_t *img_pkt = NULL;
++	/* Keep STATUS here for future additions to this function */
++	int status = 0;
++	struct process_context *pr_ctxt = (struct process_context *) hprocessor;
++	struct dmm_map_object *map_obj;
 +
-+	/* The image packet data struct is only used during first pass
-+	 * relocation in the event that a trampoline is needed.  2nd pass
-+	 * relocation doesn't guarantee that data is coming from an
-+	 * image_packet_t structure. See cload.c, dload_data for how img_data is
-+	 * set. If that changes this needs to be updated!!! */
-+	if (second_pass == false)
-+		img_pkt = (struct image_packet_t *)((u8 *) data -
-+						    sizeof(struct
-+							   image_packet_t));
++	DBC_REQUIRE(refs > 0);
 +
-+	rx = HASH_FUNC(rp->TYPE);
-+	while (rop_map1[rx] != rp->TYPE) {
-+		rx = HASH_L(rop_map2[rx]);
-+		if (rx < 0) {
-+#if TMS32060
-+			switch (rp->TYPE) {
-+			case R_C60ALIGN:
-+			case R_C60NOCMP:
-+			case R_C60FPHEAD:
-+				/* Ignore these reloc types and return */
++	if (!pr_ctxt) {
++		status = -EFAULT;
++		goto err_out;
++	}
++
++	pr_debug("%s: addr 0x%x, size 0x%x, type %d\n", __func__,
++							(u32)pmpu_addr,
++							ul_size, dir);
++
++	/* find requested memory are in cached mapping information */
++	map_obj = find_containing_mapping(pr_ctxt, (u32) pmpu_addr, ul_size);
++	if (!map_obj) {
++		pr_err("%s: find_containing_mapping failed\n", __func__);
++		status = -EFAULT;
++		goto err_out;
++	}
++
++	if (memory_give_ownership(map_obj, (u32) pmpu_addr, ul_size, dir)) {
++		pr_err("%s: InValid address parameters %p %x\n",
++			       __func__, pmpu_addr, ul_size);
++		status = -EFAULT;
++	}
++
++err_out:
++
++	return status;
++}
++
++int proc_end_dma(void *hprocessor, void *pmpu_addr, u32 ul_size,
++			enum dma_data_direction dir)
++{
++	/* Keep STATUS here for future additions to this function */
++	int status = 0;
++	struct process_context *pr_ctxt = (struct process_context *) hprocessor;
++	struct dmm_map_object *map_obj;
++
++	DBC_REQUIRE(refs > 0);
++
++	if (!pr_ctxt) {
++		status = -EFAULT;
++		goto err_out;
++	}
++
++	pr_debug("%s: addr 0x%x, size 0x%x, type %d\n", __func__,
++							(u32)pmpu_addr,
++							ul_size, dir);
++
++	/* find requested memory are in cached mapping information */
++	map_obj = find_containing_mapping(pr_ctxt, (u32) pmpu_addr, ul_size);
++	if (!map_obj) {
++		pr_err("%s: find_containing_mapping failed\n", __func__);
++		status = -EFAULT;
++		goto err_out;
++	}
++
++	if (memory_regain_ownership(map_obj, (u32) pmpu_addr, ul_size, dir)) {
++		pr_err("%s: InValid address parameters %p %x\n",
++		       __func__, pmpu_addr, ul_size);
++		status = -EFAULT;
++		goto err_out;
++	}
++
++err_out:
++	return status;
++}
++
++/*
++ *  ======== proc_flush_memory ========
++ *  Purpose:
++ *     Flush cache
++ */
++int proc_flush_memory(void *hprocessor, void *pmpu_addr,
++			     u32 ul_size, u32 ul_flags)
++{
++	enum dma_data_direction dir = DMA_BIDIRECTIONAL;
++
++	return proc_begin_dma(hprocessor, pmpu_addr, ul_size, dir);
++}
++
++/*
++ *  ======== proc_invalidate_memory ========
++ *  Purpose:
++ *     Invalidates the memory specified
++ */
++int proc_invalidate_memory(void *hprocessor, void *pmpu_addr, u32 size)
++{
++	enum dma_data_direction dir = DMA_FROM_DEVICE;
++
++	return proc_begin_dma(hprocessor, pmpu_addr, size, dir);
++}
++
++/*
++ *  ======== proc_get_resource_info ========
++ *  Purpose:
++ *      Enumerate the resources currently available on a processor.
++ */
++int proc_get_resource_info(void *hprocessor, u32 resource_type,
++				  OUT struct dsp_resourceinfo *resource_info,
++				  u32 resource_info_size)
++{
++	int status = -EPERM;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++	struct node_mgr *hnode_mgr = NULL;
++	struct nldr_object *nldr_obj = NULL;
++	struct rmm_target_obj *rmm = NULL;
++	struct io_mgr *hio_mgr = NULL;	/* IO manager handle */
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(resource_info != NULL);
++	DBC_REQUIRE(resource_info_size >= sizeof(struct dsp_resourceinfo));
++
++	if (!p_proc_object) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	switch (resource_type) {
++	case DSP_RESOURCE_DYNDARAM:
++	case DSP_RESOURCE_DYNSARAM:
++	case DSP_RESOURCE_DYNEXTERNAL:
++	case DSP_RESOURCE_DYNSRAM:
++		status = dev_get_node_manager(p_proc_object->hdev_obj,
++					      &hnode_mgr);
++		if (!hnode_mgr) {
++			status = -EFAULT;
++			goto func_end;
++		}
++
++		status = node_get_nldr_obj(hnode_mgr, &nldr_obj);
++		if (DSP_SUCCEEDED(status)) {
++			status = nldr_get_rmm_manager(nldr_obj, &rmm);
++			if (rmm) {
++				if (!rmm_stat(rmm,
++					      (enum dsp_memtype)resource_type,
++					      (struct dsp_memstat *)
++					      &(resource_info->result.
++						mem_stat)))
++					status = -EINVAL;
++			} else {
++				status = -EFAULT;
++			}
++		}
++		break;
++	case DSP_RESOURCE_PROCLOAD:
++		status = dev_get_io_mgr(p_proc_object->hdev_obj, &hio_mgr);
++		if (hio_mgr)
++			status =
++			    p_proc_object->intf_fxns->
++			    pfn_io_get_proc_load(hio_mgr,
++						 (struct dsp_procloadstat *)
++						 &(resource_info->result.
++						   proc_load_stat));
++		else
++			status = -EFAULT;
++		break;
++	default:
++		status = -EPERM;
++		break;
++	}
++func_end:
++	return status;
++}
++
++/*
++ *  ======== proc_exit ========
++ *  Purpose:
++ *      Decrement reference count, and free resources when reference count is
++ *      0.
++ */
++void proc_exit(void)
++{
++	DBC_REQUIRE(refs > 0);
++
++	refs--;
++
++	DBC_ENSURE(refs >= 0);
++}
++
++/*
++ *  ======== proc_get_dev_object ========
++ *  Purpose:
++ *      Return the Dev Object handle for a given Processor.
++ *
++ */
++int proc_get_dev_object(void *hprocessor,
++			       struct dev_object **phDevObject)
++{
++	int status = -EPERM;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(phDevObject != NULL);
++
++	if (p_proc_object) {
++		*phDevObject = p_proc_object->hdev_obj;
++		status = 0;
++	} else {
++		*phDevObject = NULL;
++		status = -EFAULT;
++	}
++
++	DBC_ENSURE((DSP_SUCCEEDED(status) && *phDevObject != NULL) ||
++		   (DSP_FAILED(status) && *phDevObject == NULL));
++
++	return status;
++}
++
++/*
++ *  ======== proc_get_state ========
++ *  Purpose:
++ *      Report the state of the specified DSP processor.
++ */
++int proc_get_state(void *hprocessor,
++			  OUT struct dsp_processorstate *proc_state_obj,
++			  u32 state_info_size)
++{
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++	int brd_status;
++	struct deh_mgr *hdeh_mgr;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(proc_state_obj != NULL);
++	DBC_REQUIRE(state_info_size >= sizeof(struct dsp_processorstate));
++
++	if (p_proc_object) {
++		/* First, retrieve BRD state information */
++		status = (*p_proc_object->intf_fxns->pfn_brd_status)
++		    (p_proc_object->hbridge_context, &brd_status);
++		if (DSP_SUCCEEDED(status)) {
++			switch (brd_status) {
++			case BRD_STOPPED:
++				proc_state_obj->proc_state = PROC_STOPPED;
++				break;
++			case BRD_SLEEP_TRANSITION:
++			case BRD_DSP_HIBERNATION:
++				/* Fall through */
++			case BRD_RUNNING:
++				proc_state_obj->proc_state = PROC_RUNNING;
++				break;
++			case BRD_LOADED:
++				proc_state_obj->proc_state = PROC_LOADED;
++				break;
++			case BRD_ERROR:
++				proc_state_obj->proc_state = PROC_ERROR;
 +				break;
 +			default:
-+				/* Unknown reloc type, print error and return */
-+				dload_error(dlthis, "Bad coff operator 0x%x",
-+					    rp->TYPE);
++				proc_state_obj->proc_state = 0xFF;
++				status = -EPERM;
++				break;
 +			}
-+#else
-+			dload_error(dlthis, "Bad coff operator 0x%x", rp->TYPE);
-+#endif
-+			return;
 +		}
-+	}
-+	rx = HASH_I(rop_map2[rx]);
-+	if ((rx < (sizeof(rop_action) / sizeof(u16)))
-+	    && (rx < (sizeof(rop_info) / sizeof(u16))) && (rx > 0)) {
-+		reloc_action = rop_action[rx];
-+		reloc_info = rop_info[rx];
++		/* Next, retrieve error information, if any */
++		status = dev_get_deh_mgr(p_proc_object->hdev_obj, &hdeh_mgr);
++		if (DSP_SUCCEEDED(status) && hdeh_mgr)
++			status = (*p_proc_object->intf_fxns->pfn_deh_get_info)
++			    (hdeh_mgr, &(proc_state_obj->err_info));
 +	} else {
-+		dload_error(dlthis, "Buffer Overflow - Array Index Out "
-+			    "of Bounds");
++		status = -EFAULT;
 +	}
++	dev_dbg(bridge, "%s, results: status: 0x%x proc_state_obj: 0x%x\n",
++		__func__, status, proc_state_obj->proc_state);
++	return status;
++}
 +
-+	/* Compute the relocation amount for the referenced symbol, if any */
-+	reloc_amt = rp->UVAL;
-+	if (RFV_SYM(reloc_info)) {	/* relocation uses a symbol reference */
-+		/* If this is first pass, use the module local symbol table,
-+		 * else use the trampoline symbol table. */
-+		if (second_pass == false) {
-+			if ((u32) rp->SYMNDX < dlthis->dfile_hdr.df_no_syms) {
-+				/* real symbol reference */
-+				svp = &dlthis->local_symtab[rp->SYMNDX];
-+				reloc_amt = (RFV_SYM(reloc_info) == ROP_SYMD) ?
-+				    svp->delta : svp->value;
-+			}
-+			/* reloc references current section */
-+			else if (rp->SYMNDX == -1) {
-+				reloc_amt = (RFV_SYM(reloc_info) == ROP_SYMD) ?
-+				    dlthis->delta_runaddr :
-+				    dlthis->image_secn->run_addr;
-+			}
-+		}
++/*
++ *  ======== proc_get_trace ========
++ *  Purpose:
++ *      Retrieve the current contents of the trace buffer, located on the
++ *      Processor.  Predefined symbols for the trace buffer must have been
++ *      configured into the DSP executable.
++ *  Details:
++ *      We support using the symbols SYS_PUTCBEG and SYS_PUTCEND to define a
++ *      trace buffer, only.  Treat it as an undocumented feature.
++ *      This call is destructive, meaning the processor is placed in the monitor
++ *      state as a result of this function.
++ */
++int proc_get_trace(void *hprocessor, u8 * pbuf, u32 max_size)
++{
++	int status;
++	status = -ENOSYS;
++	return status;
++}
++
++/*
++ *  ======== proc_init ========
++ *  Purpose:
++ *      Initialize PROC's private state, keeping a reference count on each call
++ */
++bool proc_init(void)
++{
++	bool ret = true;
++
++	DBC_REQUIRE(refs >= 0);
++
++	if (ret)
++		refs++;
++
++	DBC_ENSURE((ret && (refs > 0)) || (!ret && (refs >= 0)));
++
++	return ret;
++}
++
++/*
++ *  ======== proc_load ========
++ *  Purpose:
++ *      Reset a processor and load a new base program image.
++ *      This will be an OEM-only function, and not part of the DSP/BIOS Bridge
++ *      application developer's API.
++ */
++int proc_load(void *hprocessor, IN CONST s32 argc_index,
++		     IN CONST char **user_args, IN CONST char **user_envp)
++{
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++	struct io_mgr *hio_mgr;	/* IO manager handle */
++	struct msg_mgr *hmsg_mgr;
++	struct cod_manager *cod_mgr;	/* Code manager handle */
++	char *pargv0;		/* temp argv[0] ptr */
++	char **new_envp;	/* Updated envp[] array. */
++	char sz_proc_id[MAXPROCIDLEN];	/* Size of "PROC_ID=<n>" */
++	s32 envp_elems;		/* Num elements in envp[]. */
++	s32 cnew_envp;		/* "  " in new_envp[] */
++	s32 nproc_id = 0;	/* Anticipate MP version. */
++	struct dcd_manager *hdcd_handle;
++	struct dmm_object *dmm_mgr;
++	u32 dw_ext_end;
++	u32 proc_id;
++	int brd_state;
++	struct drv_data *drv_datap = dev_get_drvdata(bridge);
++
++#ifdef OPT_LOAD_TIME_INSTRUMENTATION
++	struct timeval tv1;
++	struct timeval tv2;
++#endif
++
++#if defined(CONFIG_BRIDGE_DVFS) && !defined(CONFIG_CPU_FREQ)
++	struct dspbridge_platform_data *pdata =
++	    omap_dspbridge_dev->dev.platform_data;
++#endif
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(argc_index > 0);
++	DBC_REQUIRE(user_args != NULL);
++
++#ifdef OPT_LOAD_TIME_INSTRUMENTATION
++	do_gettimeofday(&tv1);
++#endif
++	if (!p_proc_object) {
++		status = -EFAULT;
++		goto func_end;
 +	}
-+	/* relocation uses a symbol reference */
-+	/* Handle stack adjustment */
-+	val = 0;
-+	top = RFV_STK(reloc_info);
-+	if (top) {
-+		top += dlthis->relstkidx - RSTK_UOP;
-+		if (top >= STATIC_EXPR_STK_SIZE) {
-+			dload_error(dlthis,
-+				    "Expression stack overflow in %s at offset "
-+				    FMT_UI32, dlthis->image_secn->name,
-+				    rp->vaddr + dlthis->image_offset);
-+			return;
-+		}
-+		val = dlthis->relstk[dlthis->relstkidx];
-+		dlthis->relstkidx = top;
-+		stackp = &dlthis->relstk[top];
++	dev_get_cod_mgr(p_proc_object->hdev_obj, &cod_mgr);
++	if (!cod_mgr) {
++		status = -EPERM;
++		goto func_end;
 +	}
-+	/* Derive field position and size, if we need them */
-+	if (reloc_info & ROP_RW) {	/* read or write action in our future */
-+		fieldsz = RFV_WIDTH(reloc_action);
-+		if (fieldsz) {	/* field info from table */
-+			offset = RFV_POSN(reloc_action);
-+			if (TARGET_BIG_ENDIAN)
-+				/* make sure vaddr is the lowest target
-+				 * address containing bits */
-+				rp->vaddr += RFV_BIGOFF(reloc_info);
-+		} else {	/* field info from relocation op */
-+			fieldsz = rp->FIELDSZ;
-+			offset = rp->OFFSET;
-+			if (TARGET_BIG_ENDIAN)
-+				/* make sure vaddr is the lowest target
-+				   address containing bits */
-+				rp->vaddr += (rp->WORDSZ - offset - fieldsz)
-+				    >> LOG_TARGET_AU_BITS;
-+		}
-+		data = (tgt_au_t *) ((char *)data + TADDR_TO_HOST(rp->vaddr));
-+		/* compute lowest host location of referenced data */
-+#if BITS_PER_AU > TARGET_AU_BITS
-+		/* conversion from target address to host address may lose
-+		   address bits; add loss to offset */
-+		if (TARGET_BIG_ENDIAN) {
-+			offset += -((rp->vaddr << LOG_TARGET_AU_BITS) +
-+				    offset + fieldsz) &
-+			    (BITS_PER_AU - TARGET_AU_BITS);
++	status = proc_stop(hprocessor);
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/* Place the board in the monitor state. */
++	status = proc_monitor(hprocessor);
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/* Save ptr to  original argv[0]. */
++	pargv0 = (char *)user_args[0];
++	/*Prepend "PROC_ID=<nproc_id>"to envp array for target. */
++	envp_elems = get_envp_count((char **)user_envp);
++	cnew_envp = (envp_elems ? (envp_elems + 1) : (envp_elems + 2));
++	new_envp = kzalloc(cnew_envp * sizeof(char **), GFP_KERNEL);
++	if (new_envp) {
++		status = snprintf(sz_proc_id, MAXPROCIDLEN, PROC_ENVPROCID,
++				  nproc_id);
++		if (status == -1) {
++			dev_dbg(bridge, "%s: Proc ID string overflow\n",
++				__func__);
++			status = -EPERM;
 +		} else {
-+			offset += (rp->vaddr << LOG_TARGET_AU_BITS) &
-+			    (BITS_PER_AU - 1);
-+		}
-+#endif
-+#ifdef RFV_SCALE
-+		scale = RFV_SCALE(reloc_info);
-+#endif
-+	}
-+	/* read the object value from the current image, if so ordered */
-+	if (reloc_info & ROP_R) {
-+		/* relocation reads current image value */
-+		val = dload_unpack(dlthis, data, fieldsz, offset,
-+				   RFV_SIGN(reloc_info));
-+		/* Save off the original value in case the relo overflows and
-+		 * we can trampoline it. */
-+		orig_val = val;
-+
-+#ifdef RFV_SCALE
-+		val <<= scale;
-+#endif
-+	}
-+	/* perform the necessary arithmetic */
-+	switch (RFV_ACTION(reloc_action)) {	/* relocation actions */
-+	case RACT_VAL:
-+		break;
-+	case RACT_ASGN:
-+		val = reloc_amt;
-+		break;
-+	case RACT_ADD:
-+		val += reloc_amt;
-+		break;
-+	case RACT_PCR:
-+		/*-----------------------------------------------------------
-+		 * Handle special cases of jumping from absolute sections
-+		 * (special reloc type) or to absolute destination
-+		 * (symndx == -1).  In either case, set the appropriate
-+		 * relocation amount to 0.
-+		 *----------------------------------------------------------- */
-+		if (rp->SYMNDX == -1)
-+			reloc_amt = 0;
-+		val += reloc_amt - dlthis->delta_runaddr;
-+		break;
-+	case RACT_ADDISP:
-+		val += rp->R_DISP + reloc_amt;
-+		break;
-+	case RACT_ASGPC:
-+		val = dlthis->image_secn->run_addr + reloc_amt;
-+		break;
-+	case RACT_PLUS:
-+		if (stackp != NULL)
-+			val += *stackp;
-+		break;
-+	case RACT_SUB:
-+		if (stackp != NULL)
-+			val = *stackp - val;
-+		break;
-+	case RACT_NEG:
-+		val = -val;
-+		break;
-+	case RACT_MPY:
-+		if (stackp != NULL)
-+			val *= *stackp;
-+		break;
-+	case RACT_DIV:
-+		if (stackp != NULL)
-+			val = *stackp / val;
-+		break;
-+	case RACT_MOD:
-+		if (stackp != NULL)
-+			val = *stackp % val;
-+		break;
-+	case RACT_SR:
-+		if (val >= sizeof(rvalue) * BITS_PER_AU)
-+			val = 0;
-+		else if (stackp != NULL)
-+			val = (urvalue) *stackp >> val;
-+		break;
-+	case RACT_ASR:
-+		if (val >= sizeof(rvalue) * BITS_PER_AU)
-+			val = sizeof(rvalue) * BITS_PER_AU - 1;
-+		else if (stackp != NULL)
-+			val = *stackp >> val;
-+		break;
-+	case RACT_SL:
-+		if (val >= sizeof(rvalue) * BITS_PER_AU)
-+			val = 0;
-+		else if (stackp != NULL)
-+			val = *stackp << val;
-+		break;
-+	case RACT_AND:
-+		if (stackp != NULL)
-+			val &= *stackp;
-+		break;
-+	case RACT_OR:
-+		if (stackp != NULL)
-+			val |= *stackp;
-+		break;
-+	case RACT_XOR:
-+		if (stackp != NULL)
-+			val ^= *stackp;
-+		break;
-+	case RACT_NOT:
-+		val = ~val;
-+		break;
-+#if TMS32060
-+	case RACT_C6SECT:
-+		/* actually needed address of secn containing symbol */
-+		if (svp != NULL) {
-+			if (rp->SYMNDX >= 0)
-+				if (svp->secnn > 0)
-+					reloc_amt = dlthis->ldr_sections
-+					    [svp->secnn - 1].run_addr;
-+		}
-+		/* !!! FALL THRU !!! */
-+	case RACT_C6BASE:
-+		if (dlthis->bss_run_base == 0) {
-+			struct dynload_symbol *symp;
-+			symp = dlthis->mysym->find_matching_symbol
-+			    (dlthis->mysym, bsssymbol);
-+			/* lookup value of global BSS base */
-+			if (symp)
-+				dlthis->bss_run_base = symp->value;
-+			else
-+				dload_error(dlthis,
-+					    "Global BSS base referenced in %s "
-+					    "offset" FMT_UI32 " but not "
-+					    "defined",
-+					    dlthis->image_secn->name,
-+					    rp->vaddr + dlthis->image_offset);
-+		}
-+		reloc_amt -= dlthis->bss_run_base;
-+		/* !!! FALL THRU !!! */
-+	case RACT_C6DSPL:
-+		/* scale factor determined by 3 LSBs of field */
-+		scale = c60_scale[val & SCALE_MASK];
-+		offset += SCALE_BITS;
-+		fieldsz -= SCALE_BITS;
-+		val >>= SCALE_BITS;	/* ignore the scale field hereafter */
-+		val <<= scale;
-+		val += reloc_amt;	/* do the usual relocation */
-+		if (((1 << scale) - 1) & val)
-+			dload_error(dlthis,
-+				    "Unaligned reference in %s offset "
-+				    FMT_UI32, dlthis->image_secn->name,
-+				    rp->vaddr + dlthis->image_offset);
-+		break;
-+#endif
-+	}			/* relocation actions */
-+	/* * Put back result as required */
-+	if (reloc_info & ROP_W) {	/* relocation writes image value */
-+#ifdef RFV_SCALE
-+		val >>= scale;
-+#endif
-+		if (dload_repack(dlthis, val, data, fieldsz, offset,
-+				 RFV_SIGN(reloc_info))) {
-+			/* Check to see if this relo can be trampolined,
-+			 * but only in first phase relocation.  2nd phase
-+			 * relocation cannot trampoline. */
-+			if ((second_pass == false) &&
-+			    (dload_tramp_avail(dlthis, rp) == true)) {
-+
-+				/* Before generating the trampoline, restore
-+				 * the value to its original so the 2nd pass
-+				 *  relo will work. */
-+				dload_repack(dlthis, orig_val, data, fieldsz,
-+					     offset, RFV_SIGN(reloc_info));
-+				if (!dload_tramp_generate(dlthis,
-+							(dlthis->image_secn -
-+							 dlthis->ldr_sections),
-+							 dlthis->image_offset,
-+							 img_pkt, rp)) {
-+					dload_error(dlthis,
-+						    "Failed to "
-+						    "generate trampoline for "
-+						    "bit overflow");
-+					dload_error(dlthis,
-+						    "Relocation val " FMT_UI32
-+						    " overflows %d bits in %s "
-+						    "offset " FMT_UI32, val,
-+						    fieldsz,
-+						    dlthis->image_secn->name,
-+						    dlthis->image_offset +
-+						    rp->vaddr);
-+				} else
-+					*tramps_genereted = true;
-+			} else {
-+				dload_error(dlthis, "Relocation value "
-+					    FMT_UI32 " overflows %d bits in %s"
-+					    " offset " FMT_UI32, val, fieldsz,
-+					    dlthis->image_secn->name,
-+					    dlthis->image_offset + rp->vaddr);
++			new_envp =
++			    prepend_envp(new_envp, (char **)user_envp,
++					 envp_elems, cnew_envp, sz_proc_id);
++			/* Get the DCD Handle */
++			status = mgr_get_dcd_handle(p_proc_object->hmgr_obj,
++						    (u32 *) &hdcd_handle);
++			if (DSP_SUCCEEDED(status)) {
++				/*  Before proceeding with new load,
++				 *  check if a previously registered COFF
++				 *  exists.
++				 *  If yes, unregister nodes in previously
++				 *  registered COFF.  If any error occurred,
++				 *  set previously registered COFF to NULL. */
++				if (p_proc_object->psz_last_coff != NULL) {
++					status =
++					    dcd_auto_unregister(hdcd_handle,
++								p_proc_object->
++								psz_last_coff);
++					/* Regardless of auto unregister status,
++					 *  free previously allocated
++					 *  memory. */
++					kfree(p_proc_object->psz_last_coff);
++					p_proc_object->psz_last_coff = NULL;
++				}
 +			}
++			/* On success, do cod_open_base() */
++			status = cod_open_base(cod_mgr, (char *)user_args[0],
++					       COD_SYMB);
 +		}
-+	} else if (top)
-+		*stackp = val;
-+}				/* reloc_value */
-diff --git a/drivers/staging/tidspbridge/dynload/reloc_table.h b/drivers/staging/tidspbridge/dynload/reloc_table.h
-new file mode 100644
-index 0000000..6aab03d
---- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/reloc_table.h
-@@ -0,0 +1,102 @@
-+/*
-+ * reloc_table.h
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Copyright (C) 2005-2006 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+#ifndef _RELOC_TABLE_H_
-+#define _RELOC_TABLE_H_
-+/*
-+ * Table of relocation operator properties
-+ */
-+#include <linux/types.h>
-+
-+/* How does this relocation operation access the program image? */
-+#define ROP_N	0		/* does not access image */
-+#define ROP_R	1		/* read from image */
-+#define ROP_W	2		/* write to image */
-+#define ROP_RW	3		/* read from and write to image */
-+
-+/* For program image access, what are the overflow rules for the bit field? */
-+/* Beware! Procedure repack depends on this encoding */
-+#define ROP_ANY	0		/* no overflow ever, just truncate the value */
-+#define ROP_SGN	1		/* signed field */
-+#define ROP_UNS	2		/* unsigned field */
-+#define ROP_MAX 3	/* allow maximum range of either signed or unsigned */
-+
-+/* How does the relocation operation use the symbol reference */
-+#define ROP_IGN	0		/* no symbol is referenced */
-+#define ROP_LIT 0		/* use rp->UVAL literal field */
-+#define ROP_SYM	1		/* symbol value is used in relocation */
-+#define ROP_SYMD 2		/* delta value vs last link is used */
-+
-+/* How does the reloc op use the stack? */
-+#define RSTK_N 0		/* Does not use */
-+#define RSTK_POP 1		/* Does a POP */
-+#define RSTK_UOP 2		/* Unary op, stack position unaffected */
-+#define RSTK_PSH 3		/* Does a push */
-+
-+/*
-+ * Computational actions performed by the dynamic loader
-+ */
-+enum dload_actions {
-+	/* don't alter the current val (from stack or mem fetch) */
-+	RACT_VAL,
-+	/* set value to reference amount (from symbol reference) */
-+	RACT_ASGN,
-+	RACT_ADD,		/* add reference to value */
-+	RACT_PCR,		/* add reference minus PC delta to value */
-+	RACT_ADDISP,		/* add reference plus R_DISP */
-+	RACT_ASGPC,		/* set value to section addr plus reference */
-+
-+	RACT_PLUS,		/* stack + */
-+	RACT_SUB,		/* stack - */
-+	RACT_NEG,		/* stack unary - */
-+
-+	RACT_MPY,		/* stack * */
-+	RACT_DIV,		/* stack / */
-+	RACT_MOD,		/* stack % */
-+
-+	RACT_SR,		/* stack unsigned >> */
-+	RACT_ASR,		/* stack signed >> */
-+	RACT_SL,		/* stack << */
-+	RACT_AND,		/* stack & */
-+	RACT_OR,		/* stack | */
-+	RACT_XOR,		/* stack ^ */
-+	RACT_NOT,		/* stack ~ */
-+	RACT_C6SECT,		/* for C60 R_SECT op */
-+	RACT_C6BASE,		/* for C60 R_BASE op */
-+	RACT_C6DSPL,		/* for C60 scaled 15-bit displacement */
-+	RACT_PCR23T		/* for ARM Thumb long branch */
-+};
-+
-+/*
-+ * macros used to extract values
-+ */
-+#define RFV_POSN(aaa) ((aaa) & 0xF)
-+#define RFV_WIDTH(aaa) (((aaa) >> 4) & 0x3F)
-+#define RFV_ACTION(aaa) ((aaa) >> 10)
-+
-+#define RFV_SIGN(iii) (((iii) >> 2) & 0x3)
-+#define RFV_SYM(iii) (((iii) >> 4) & 0x3)
-+#define RFV_STK(iii) (((iii) >> 6) & 0x3)
-+#define RFV_ACCS(iii) ((iii) & 0x3)
-+
-+#if (TMS32060)
-+#define RFV_SCALE(iii) ((iii) >> 11)
-+#define RFV_BIGOFF(iii) (((iii) >> 8) & 0x7)
-+#else
-+#define RFV_BIGOFF(iii) ((iii) >> 8)
-+#endif
-+
-+#endif /* _RELOC_TABLE_H_ */
-diff --git a/drivers/staging/tidspbridge/dynload/reloc_table_c6000.c b/drivers/staging/tidspbridge/dynload/reloc_table_c6000.c
-new file mode 100644
-index 0000000..8ae3b38
---- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/reloc_table_c6000.c
-@@ -0,0 +1,257 @@
-+/*
-+ * reloc_table_c6000.c
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Copyright (C) 2005-2006 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+/* Tables generated for c6000 */
-+
-+#define HASH_FUNC(zz) (((((zz) + 1) * UINT32_C(1845)) >> 11) & 63)
-+#define HASH_L(zz) ((zz) >> 8)
-+#define HASH_I(zz) ((zz) & 0xFF)
-+
-+static const u16 rop_map1[] = {
-+	0,
-+	1,
-+	2,
-+	20,
-+	4,
-+	5,
-+	6,
-+	15,
-+	80,
-+	81,
-+	82,
-+	83,
-+	84,
-+	85,
-+	86,
-+	87,
-+	17,
-+	18,
-+	19,
-+	21,
-+	16,
-+	16394,
-+	16404,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	32,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	40,
-+	112,
-+	113,
-+	65535,
-+	16384,
-+	16385,
-+	16386,
-+	16387,
-+	16388,
-+	16389,
-+	16390,
-+	16391,
-+	16392,
-+	16393,
-+	16395,
-+	16396,
-+	16397,
-+	16398,
-+	16399,
-+	16400,
-+	16401,
-+	16402,
-+	16403,
-+	16405,
-+	16406,
-+	65535,
-+	65535,
-+	65535
-+};
-+
-+static const s16 rop_map2[] = {
-+	-256,
-+	-255,
-+	-254,
-+	-245,
-+	-253,
-+	-252,
-+	-251,
-+	-250,
-+	-241,
-+	-240,
-+	-239,
-+	-238,
-+	-237,
-+	-236,
-+	1813,
-+	5142,
-+	-248,
-+	-247,
-+	778,
-+	-244,
-+	-249,
-+	-221,
-+	-211,
-+	-1,
-+	-1,
-+	-1,
-+	-1,
-+	-1,
-+	-1,
-+	-243,
-+	-1,
-+	-1,
-+	-1,
-+	-1,
-+	-1,
-+	-1,
-+	-242,
-+	-233,
-+	-232,
-+	-1,
-+	-231,
-+	-230,
-+	-229,
-+	-228,
-+	-227,
-+	-226,
-+	-225,
-+	-224,
-+	-223,
-+	5410,
-+	-220,
-+	-219,
-+	-218,
-+	-217,
-+	-216,
-+	-215,
-+	-214,
-+	-213,
-+	5676,
-+	-210,
-+	-209,
-+	-1,
-+	-1,
-+	-1
-+};
-+
-+static const u16 rop_action[] = {
-+	2560,
-+	2304,
-+	2304,
-+	2432,
-+	2432,
-+	2560,
-+	2176,
-+	2304,
-+	2560,
-+	3200,
-+	3328,
-+	3584,
-+	3456,
-+	2304,
-+	4208,
-+	20788,
-+	21812,
-+	3415,
-+	3245,
-+	2311,
-+	4359,
-+	19764,
-+	2311,
-+	3191,
-+	3280,
-+	6656,
-+	7680,
-+	8704,
-+	9728,
-+	10752,
-+	11776,
-+	12800,
-+	13824,
-+	14848,
-+	15872,
-+	16896,
-+	17920,
-+	18944,
-+	0,
-+	0,
-+	0,
-+	0,
-+	1536,
-+	1536,
-+	1536,
-+	5632,
-+	512,
-+	0
-+};
-+
-+static const u16 rop_info[] = {
-+	0,
-+	35,
-+	35,
-+	35,
-+	35,
-+	35,
-+	35,
-+	35,
-+	35,
-+	39,
-+	39,
-+	39,
-+	39,
-+	35,
-+	34,
-+	283,
-+	299,
-+	4135,
-+	4391,
-+	291,
-+	33059,
-+	283,
-+	295,
-+	4647,
-+	4135,
-+	64,
-+	64,
-+	128,
-+	64,
-+	64,
-+	64,
-+	64,
-+	64,
-+	64,
-+	64,
-+	64,
-+	64,
-+	128,
-+	201,
-+	197,
-+	74,
-+	70,
-+	208,
-+	196,
-+	200,
-+	192,
-+	192,
-+	66
-+};
-diff --git a/drivers/staging/tidspbridge/dynload/tramp.c b/drivers/staging/tidspbridge/dynload/tramp.c
-new file mode 100644
-index 0000000..7b593fc
---- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/tramp.c
-@@ -0,0 +1,1143 @@
-+/*
-+ * tramp.c
-+ *
-+ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-+ *
-+ * Copyright (C) 2009 Texas Instruments, Inc.
-+ *
-+ * This package is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-+ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-+ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-+ */
-+
-+#include "header.h"
-+
-+#if TMS32060
-+#include "tramp_table_c6000.c"
-+#endif
-+
-+#define MAX_RELOS_PER_PASS	4
-+
-+/*
-+ * Function:	priv_tramp_sect_tgt_alloc
-+ * Description: Allocate target memory for the trampoline section.  The
-+ *	  target mem size is easily obtained as the next available address.
-+ */
-+static int priv_tramp_sect_tgt_alloc(struct dload_state *dlthis)
-+{
-+	int ret_val = 0;
-+	struct ldr_section_info *sect_info;
-+
-+	/*  Populate the trampoline loader section and allocate it on the
-+	 * target.  The section name is ALWAYS the first string in the final
-+	 * string table for trampolines.  The trampoline section is always
-+	 * 1 beyond the total number of allocated sections. */
-+	sect_info = &dlthis->ldr_sections[dlthis->allocated_secn_count];
-+
-+	sect_info->name = dlthis->tramp.final_string_table;
-+	sect_info->size = dlthis->tramp.tramp_sect_next_addr;
-+	sect_info->context = 0;
-+	sect_info->type =
-+	    (4 << 8) | DLOAD_TEXT | DS_ALLOCATE_MASK | DS_DOWNLOAD_MASK;
-+	sect_info->page = 0;
-+	sect_info->run_addr = 0;
-+	sect_info->load_addr = 0;
-+	ret_val = dlthis->myalloc->dload_allocate(dlthis->myalloc,
-+						  sect_info,
-+						  DS_ALIGNMENT
-+						  (sect_info->type));
-+
-+	if (ret_val == 0)
-+		dload_error(dlthis, "Failed to allocate target memory for"
-+			    " trampoline");
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	priv_h2a
-+ * Description: Helper function to convert a hex value to its ASCII
-+ *	  representation.  Used for trampoline symbol name generation.
-+ */
-+static u8 priv_h2a(u8 value)
-+{
-+	if (value > 0xF)
-+		return 0xFF;
-+
-+	if (value <= 9)
-+		value += 0x30;
-+	else
-+		value += 0x37;
-+
-+	return value;
-+}
-+
-+/*
-+ * Function:	priv_tramp_sym_gen_name
-+ * Description: Generate a trampoline symbol name (ASCII) using the value
-+ *	  of the symbol.  This places the new name into the user buffer.
-+ *	  The name is fixed in length and of the form: __$dbTR__xxxxxxxx
-+ *	  (where "xxxxxxxx" is the hex value.
-+ */
-+static void priv_tramp_sym_gen_name(u32 value, char *dst)
-+{
-+	u32 i;
-+	volatile char *prefix = TRAMP_SYM_PREFIX;
-+	volatile char *dst_local = dst;
-+	u8 tmp;
-+
-+	/*  Clear out the destination, including the ending NULL */
-+	for (i = 0; i < (TRAMP_SYM_PREFIX_LEN + TRAMP_SYM_HEX_ASCII_LEN); i++)
-+		*(dst_local + i) = 0;
-+
-+	/*  Copy the prefix to start */
-+	for (i = 0; i < strlen(TRAMP_SYM_PREFIX); i++) {
-+		*dst_local = *(prefix + i);
-+		dst_local++;
-+	}
-+
-+	/*  Now convert the value passed in to a string equiv of the hex */
-+	for (i = 0; i < sizeof(value); i++) {
-+#ifndef _BIG_ENDIAN
-+		tmp = *(((u8 *) &value) + (sizeof(value) - 1) - i);
-+		*dst_local = priv_h2a((tmp & 0xF0) >> 4);
-+		dst_local++;
-+		*dst_local = priv_h2a(tmp & 0x0F);
-+		dst_local++;
-+#else
-+		tmp = *(((u8 *) &value) + i);
-+		*dst_local = priv_h2a((tmp & 0xF0) >> 4);
-+		dst_local++;
-+		*dst_local = priv_h2a(tmp & 0x0F);
-+		dst_local++;
-+#endif
-+	}
-+
-+	/*  NULL terminate */
-+	*dst_local = 0;
-+}
-+
-+/*
-+ * Function:	priv_tramp_string_create
-+ * Description: Create a new string specific to the trampoline loading and add
-+ *	  it to the trampoline string list.  This list contains the
-+ *	  trampoline section name and trampoline point symbols.
-+ */
-+static struct tramp_string *priv_tramp_string_create(struct dload_state *dlthis,
-+						     u32 str_len, char *str)
-+{
-+	struct tramp_string *new_string = NULL;
-+	u32 i;
-+
-+	/*  Create a new string object with the specified size. */
-+	new_string =
-+	    (struct tramp_string *)dlthis->mysym->dload_allocate(dlthis->mysym,
-+								 (sizeof
-+								  (struct
-+								   tramp_string)
-+								  + str_len +
-+								  1));
-+	if (new_string != NULL) {
-+		/*  Clear the string first.  This ensures the ending NULL is
-+		 * present and the optimizer won't touch it. */
-+		for (i = 0; i < (sizeof(struct tramp_string) + str_len + 1);
-+		     i++)
-+			*((u8 *) new_string + i) = 0;
-+
-+		/*  Add this string to our virtual table by assigning it the
-+		 * next index and pushing it to the tail of the list. */
-+		new_string->index = dlthis->tramp.tramp_string_next_index;
-+		dlthis->tramp.tramp_string_next_index++;
-+		dlthis->tramp.tramp_string_size += str_len + 1;
-+
-+		new_string->next = NULL;
-+		if (dlthis->tramp.string_head == NULL)
-+			dlthis->tramp.string_head = new_string;
-+		else
-+			dlthis->tramp.string_tail->next = new_string;
-+
-+		dlthis->tramp.string_tail = new_string;
-+
-+		/*  Copy the string over to the new object */
-+		for (i = 0; i < str_len; i++)
-+			new_string->str[i] = str[i];
-+	}
-+
-+	return new_string;
-+}
-+
-+/*
-+ * Function:	priv_tramp_string_find
-+ * Description: Walk the trampoline string list and find a match for the
-+ *	  provided string.  If not match is found, NULL is returned.
-+ */
-+static struct tramp_string *priv_tramp_string_find(struct dload_state *dlthis,
-+						   char *str)
-+{
-+	struct tramp_string *cur_str = NULL;
-+	struct tramp_string *ret_val = NULL;
-+	u32 i;
-+	u32 str_len = strlen(str);
-+
-+	for (cur_str = dlthis->tramp.string_head;
-+	     (ret_val == NULL) && (cur_str != NULL); cur_str = cur_str->next) {
-+		/*  If the string lengths aren't equal, don't bother
-+		 * comparing */
-+		if (str_len != strlen(cur_str->str))
-+			continue;
-+
-+		/*  Walk the strings until one of them ends */
-+		for (i = 0; i < str_len; i++) {
-+			/*  If they don't match in the current position then
-+			 * break out now, no sense in continuing to look at
-+			 * this string. */
-+			if (str[i] != cur_str->str[i])
-+				break;
-+		}
-+
-+		if (i == str_len)
-+			ret_val = cur_str;
-+	}
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	priv_string_tbl_finalize
-+ * Description: Flatten the trampoline string list into a table of NULL
-+ *	  terminated strings.  This is the same format of string table
-+ *	  as used by the COFF/DOFF file.
-+ */
-+static int priv_string_tbl_finalize(struct dload_state *dlthis)
-+{
-+	int ret_val = 0;
-+	struct tramp_string *cur_string;
-+	char *cur_loc;
-+	char *tmp;
-+
-+	/*  Allocate enough space for all strings that have been created.  The
-+	 * table is simply all strings concatenated together will NULL
-+	 * endings. */
-+	dlthis->tramp.final_string_table =
-+	    (char *)dlthis->mysym->dload_allocate(dlthis->mysym,
-+						  dlthis->tramp.
-+						  tramp_string_size);
-+	if (dlthis->tramp.final_string_table != NULL) {
-+		/*  We got our buffer, walk the list and release the nodes as*
-+		 * we go */
-+		cur_loc = dlthis->tramp.final_string_table;
-+		cur_string = dlthis->tramp.string_head;
-+		while (cur_string != NULL) {
-+			/*  Move the head/tail pointers */
-+			dlthis->tramp.string_head = cur_string->next;
-+			if (dlthis->tramp.string_tail == cur_string)
-+				dlthis->tramp.string_tail = NULL;
-+
-+			/*  Copy the string contents */
-+			for (tmp = cur_string->str;
-+			     *tmp != '\0'; tmp++, cur_loc++)
-+				*cur_loc = *tmp;
-+
-+			/*  Pick up the NULL termination since it was missed by
-+			 * breaking using it to end the above loop. */
-+			*cur_loc = '\0';
-+			cur_loc++;
-+
-+			/*  Free the string node, we don't need it any more. */
-+			dlthis->mysym->dload_deallocate(dlthis->mysym,
-+							cur_string);
-+
-+			/*  Move our pointer to the next one */
-+			cur_string = dlthis->tramp.string_head;
-+		}
-+
-+		/*  Update our return value to success */
-+		ret_val = 1;
-+	} else
-+		dload_error(dlthis, "Failed to allocate trampoline "
-+			    "string table");
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	priv_tramp_sect_alloc
-+ * Description: Virtually allocate space from the trampoline section.  This
-+ *	  function returns the next offset within the trampoline section
-+ *	  that is available and moved the next available offset by the
-+ *	  requested size.  NO TARGET ALLOCATION IS DONE AT THIS TIME.
-+ */
-+static u32 priv_tramp_sect_alloc(struct dload_state *dlthis, u32 tramp_size)
-+{
-+	u32 ret_val;
-+
-+	/*  If the next available address is 0, this is our first allocation.
-+	 * Create a section name string to go into the string table . */
-+	if (dlthis->tramp.tramp_sect_next_addr == 0) {
-+		dload_syms_error(dlthis->mysym, "*** WARNING ***  created "
-+				 "dynamic TRAMPOLINE section for module %s",
-+				 dlthis->str_head);
-+	}
-+
-+	/*  Reserve space for the new trampoline */
-+	ret_val = dlthis->tramp.tramp_sect_next_addr;
-+	dlthis->tramp.tramp_sect_next_addr += tramp_size;
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	priv_tramp_sym_create
-+ * Description: Allocate and create a new trampoline specific symbol and add
-+ *	  it to the trampoline symbol list.  These symbols will include
-+ *	  trampoline points as well as the external symbols they
-+ *	  reference.
-+ */
-+static struct tramp_sym *priv_tramp_sym_create(struct dload_state *dlthis,
-+					       u32 str_index,
-+					       struct local_symbol *tmp_sym)
-+{
-+	struct tramp_sym *new_sym = NULL;
-+	u32 i;
-+
-+	/*  Allocate new space for the symbol in the symbol table. */
-+	new_sym =
-+	    (struct tramp_sym *)dlthis->mysym->dload_allocate(dlthis->mysym,
-+					      sizeof(struct tramp_sym));
-+	if (new_sym != NULL) {
-+		for (i = 0; i != sizeof(struct tramp_sym); i++)
-+			*((char *)new_sym + i) = 0;
-+
-+		/*  Assign this symbol the next symbol index for easier
-+		 * reference later during relocation. */
-+		new_sym->index = dlthis->tramp.tramp_sym_next_index;
-+		dlthis->tramp.tramp_sym_next_index++;
-+
-+		/*  Populate the symbol information.  At this point any
-+		 * trampoline symbols will be the offset location, not the
-+		 * final.  Copy over the symbol info to start, then be sure to
-+		 * get the string index from the trampoline string table. */
-+		new_sym->sym_info = *tmp_sym;
-+		new_sym->str_index = str_index;
-+
-+		/*  Push the new symbol to the tail of the symbol table list */
-+		new_sym->next = NULL;
-+		if (dlthis->tramp.symbol_head == NULL)
-+			dlthis->tramp.symbol_head = new_sym;
-+		else
-+			dlthis->tramp.symbol_tail->next = new_sym;
-+
-+		dlthis->tramp.symbol_tail = new_sym;
-+	}
-+
-+	return new_sym;
-+}
-+
-+/*
-+ * Function:	priv_tramp_sym_get
-+ * Description: Search for the symbol with the matching string index (from
-+ *	  the trampoline string table) and return the trampoline
-+ *	  symbol object, if found.  Otherwise return NULL.
-+ */
-+static struct tramp_sym *priv_tramp_sym_get(struct dload_state *dlthis,
-+					    u32 string_index)
-+{
-+	struct tramp_sym *sym_found = NULL;
-+
-+	/*  Walk the symbol table list and search vs. the string index */
-+	for (sym_found = dlthis->tramp.symbol_head;
-+	     sym_found != NULL; sym_found = sym_found->next) {
-+		if (sym_found->str_index == string_index)
-+			break;
-+	}
-+
-+	return sym_found;
-+}
-+
-+/*
-+ * Function:	priv_tramp_sym_find
-+ * Description: Search for a trampoline symbol based on the string name of
-+ *	  the symbol.  Return the symbol object, if found, otherwise
-+ *	  return NULL.
-+ */
-+static struct tramp_sym *priv_tramp_sym_find(struct dload_state *dlthis,
-+					     char *string)
-+{
-+	struct tramp_sym *sym_found = NULL;
-+	struct tramp_string *str_found = NULL;
-+
-+	/*  First, search for the string, then search for the sym based on the
-+	   string index. */
-+	str_found = priv_tramp_string_find(dlthis, string);
-+	if (str_found != NULL)
-+		sym_found = priv_tramp_sym_get(dlthis, str_found->index);
-+
-+	return sym_found;
-+}
-+
-+/*
-+ * Function:	priv_tramp_sym_finalize
-+ * Description: Allocate a flat symbol table for the trampoline section,
-+ *	  put each trampoline symbol into the table, adjust the
-+ *	  symbol value based on the section address on the target and
-+ *	  free the trampoline symbol list nodes.
-+ */
-+static int priv_tramp_sym_finalize(struct dload_state *dlthis)
-+{
-+	int ret_val = 0;
-+	struct tramp_sym *cur_sym;
-+	struct ldr_section_info *tramp_sect =
-+	    &dlthis->ldr_sections[dlthis->allocated_secn_count];
-+	struct local_symbol *new_sym;
-+
-+	/*  Allocate a table to hold a flattened version of all symbols
-+	 * created. */
-+	dlthis->tramp.final_sym_table =
-+	    (struct local_symbol *)dlthis->mysym->dload_allocate(dlthis->mysym,
-+				 (sizeof(struct local_symbol) * dlthis->tramp.
-+						  tramp_sym_next_index));
-+	if (dlthis->tramp.final_sym_table != NULL) {
-+		/*  Walk the list of all symbols, copy it over to the flattened
-+		 * table. After it has been copied, the node can be freed as
-+		 * it is no longer needed. */
-+		new_sym = dlthis->tramp.final_sym_table;
-+		cur_sym = dlthis->tramp.symbol_head;
-+		while (cur_sym != NULL) {
-+			/*  Pop it off the list */
-+			dlthis->tramp.symbol_head = cur_sym->next;
-+			if (cur_sym == dlthis->tramp.symbol_tail)
-+				dlthis->tramp.symbol_tail = NULL;
-+
-+			/*  Copy the symbol contents into the flat table */
-+			*new_sym = cur_sym->sym_info;
-+
-+			/*  Now finaize the symbol.  If it is in the tramp
-+			 * section, we need to adjust for the section start.
-+			 * If it is external then we don't need to adjust at
-+			 * all.
-+			 * NOTE: THIS CODE ASSUMES THAT THE TRAMPOLINE IS
-+			 * REFERENCED LIKE A CALL TO AN EXTERNAL SO VALUE AND
-+			 * DELTA ARE THE SAME.  SEE THE FUNCTION dload_symbols
-+			 * WHERE DN_UNDEF IS HANDLED FOR MORE REFERENCE. */
-+			if (new_sym->secnn < 0) {
-+				new_sym->value += tramp_sect->load_addr;
-+				new_sym->delta = new_sym->value;
-+			}
-+
-+			/*  Let go of the symbol node */
-+			dlthis->mysym->dload_deallocate(dlthis->mysym, cur_sym);
-+
-+			/*  Move to the next node */
-+			cur_sym = dlthis->tramp.symbol_head;
-+			new_sym++;
-+		}
-+
-+		ret_val = 1;
-+	} else
-+		dload_error(dlthis, "Failed to alloc trampoline sym table");
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	priv_tgt_img_gen
-+ * Description: Allocate storage for and copy the target specific image data
-+ *	and fix up its relocations for the new external symbol.  If
-+ *	a trampoline image packet was successfully created it is added
-+ *	to the trampoline list.
-+ */
-+static int priv_tgt_img_gen(struct dload_state *dlthis, u32 base,
-+			    u32 gen_index, struct tramp_sym *new_ext_sym)
-+{
-+	struct tramp_img_pkt *new_img_pkt = NULL;
-+	u32 i;
-+	u32 pkt_size = tramp_img_pkt_size_get();
-+	u8 *gen_tbl_entry;
-+	u8 *pkt_data;
-+	struct reloc_record_t *cur_relo;
-+	int ret_val = 0;
-+
-+	/*  Allocate a new image packet and set it up. */
-+	new_img_pkt =
-+	    (struct tramp_img_pkt *)dlthis->mysym->dload_allocate(dlthis->mysym,
-+								  pkt_size);
-+	if (new_img_pkt != NULL) {
-+		/*  Save the base, this is where it goes in the section */
-+		new_img_pkt->base = base;
-+
-+		/*  Copy over the image data and relos from the target table */
-+		pkt_data = (u8 *) &new_img_pkt->hdr;
-+		gen_tbl_entry = (u8 *) &tramp_gen_info[gen_index];
-+		for (i = 0; i < pkt_size; i++) {
-+			*pkt_data = *gen_tbl_entry;
-+			pkt_data++;
-+			gen_tbl_entry++;
-+		}
-+
-+		/*  Update the relocations to point to the external symbol */
-+		cur_relo =
-+		    (struct reloc_record_t *)((u8 *) &new_img_pkt->hdr +
-+					      new_img_pkt->hdr.relo_offset);
-+		for (i = 0; i < new_img_pkt->hdr.num_relos; i++)
-+			cur_relo[i].SYMNDX = new_ext_sym->index;
-+
-+		/*  Add it to the trampoline list. */
-+		new_img_pkt->next = dlthis->tramp.tramp_pkts;
-+		dlthis->tramp.tramp_pkts = new_img_pkt;
-+
-+		ret_val = 1;
-+	}
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	priv_pkt_relo
-+ * Description: Take the provided image data and the collection of relocations
-+ *	  for it and perform the relocations.  Note that all relocations
-+ *	  at this stage are considered SECOND PASS since the original
-+ *	  image has already been processed in the first pass.  This means
-+ *	  TRAMPOLINES ARE TREATED AS 2ND PASS even though this is really
-+ *	  the first (and only) relocation that will be performed on them.
-+ */
-+static int priv_pkt_relo(struct dload_state *dlthis, tgt_au_t * data,
-+			 struct reloc_record_t *rp[], u32 relo_count)
-+{
-+	int ret_val = 1;
-+	u32 i;
-+	bool tmp;
-+
-+	/*  Walk through all of the relos and process them.  This function is
-+	 * the equivalent of relocate_packet() from cload.c, but specialized
-+	 * for trampolines and 2nd phase relocations. */
-+	for (i = 0; i < relo_count; i++)
-+		dload_relocate(dlthis, data, rp[i], &tmp, true);
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	priv_tramp_pkt_finalize
-+ * Description: Walk the list of all trampoline packets and finalize them.
-+ *	  Each trampoline image packet will be relocated now that the
-+ *	  trampoline section has been allocated on the target.  Once
-+ *	  all of the relocations are done the trampoline image data
-+ *	  is written into target memory and the trampoline packet
-+ *	  is freed: it is no longer needed after this point.
-+ */
-+static int priv_tramp_pkt_finalize(struct dload_state *dlthis)
-+{
-+	int ret_val = 1;
-+	struct tramp_img_pkt *cur_pkt = NULL;
-+	struct reloc_record_t *relos[MAX_RELOS_PER_PASS];
-+	u32 relos_done;
-+	u32 i;
-+	struct reloc_record_t *cur_relo;
-+	struct ldr_section_info *sect_info =
-+	    &dlthis->ldr_sections[dlthis->allocated_secn_count];
-+
-+	/*  Walk the list of trampoline packets and relocate each packet.  This
-+	 * function is the trampoline equivalent of dload_data() from
-+	 * cload.c. */
-+	cur_pkt = dlthis->tramp.tramp_pkts;
-+	while ((ret_val != 0) && (cur_pkt != NULL)) {
-+		/*  Remove the pkt from the list */
-+		dlthis->tramp.tramp_pkts = cur_pkt->next;
-+
-+		/*  Setup section and image offset information for the relo */
-+		dlthis->image_secn = sect_info;
-+		dlthis->image_offset = cur_pkt->base;
-+		dlthis->delta_runaddr = sect_info->run_addr;
-+
-+		/*  Walk through all relos for the packet */
-+		relos_done = 0;
-+		cur_relo = (struct reloc_record_t *)((u8 *) &cur_pkt->hdr +
-+						     cur_pkt->hdr.relo_offset);
-+		while (relos_done < cur_pkt->hdr.num_relos) {
-+#ifdef ENABLE_TRAMP_DEBUG
-+			dload_syms_error(dlthis->mysym,
-+					 "===> Trampoline %x branches to %x",
-+					 sect_info->run_addr +
-+					 dlthis->image_offset,
-+					 dlthis->
-+					 tramp.final_sym_table[cur_relo->
-+							       SYMNDX].value);
-+#endif
-+
-+			for (i = 0;
-+			     ((i < MAX_RELOS_PER_PASS) &&
-+			      ((i + relos_done) < cur_pkt->hdr.num_relos)); i++)
-+				relos[i] = cur_relo + i;
-+
-+			/*  Do the actual relo */
-+			ret_val = priv_pkt_relo(dlthis,
-+						(tgt_au_t *) &cur_pkt->payload,
-+						relos, i);
-+			if (ret_val == 0) {
-+				dload_error(dlthis,
-+					    "Relocation of trampoline pkt at %x"
-+					    " failed", cur_pkt->base +
-+					    sect_info->run_addr);
-+				break;
-+			}
-+
-+			relos_done += i;
-+			cur_relo += i;
-+		}
-+
-+		/*  Make sure we didn't hit a problem */
-+		if (ret_val != 0) {
-+			/*  Relos are done for the packet, write it to the
-+			 * target */
-+			ret_val = dlthis->myio->writemem(dlthis->myio,
-+							 &cur_pkt->payload,
-+							 sect_info->load_addr +
-+							 cur_pkt->base,
-+							 sect_info,
-+							 BYTE_TO_HOST
-+							 (cur_pkt->hdr.
-+							  tramp_code_size));
-+			if (ret_val == 0) {
-+				dload_error(dlthis,
-+					    "Write to " FMT_UI32 " failed",
-+					    sect_info->load_addr +
-+					    cur_pkt->base);
-+			}
-+
-+			/*  Done with the pkt, let it go */
-+			dlthis->mysym->dload_deallocate(dlthis->mysym, cur_pkt);
-+
-+			/*  Get the next packet to process */
-+			cur_pkt = dlthis->tramp.tramp_pkts;
-+		}
-+	}
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	priv_dup_pkt_finalize
-+ * Description: Walk the list of duplicate image packets and finalize them.
-+ *	  Each duplicate packet will be relocated again for the
-+ *	  relocations that previously failed and have been adjusted
-+ *	  to point at a trampoline.  Once all relocations for a packet
-+ *	  have been done, write the packet into target memory.  The
-+ *	  duplicate packet and its relocation chain are all freed
-+ *	  after use here as they are no longer needed after this.
-+ */
-+static int priv_dup_pkt_finalize(struct dload_state *dlthis)
-+{
-+	int ret_val = 1;
-+	struct tramp_img_dup_pkt *cur_pkt;
-+	struct tramp_img_dup_relo *cur_relo;
-+	struct reloc_record_t *relos[MAX_RELOS_PER_PASS];
-+	struct doff_scnhdr_t *sect_hdr = NULL;
-+	s32 i;
-+
-+	/* Similar to the trampoline pkt finalize, this function walks each dup
-+	 * pkt that was generated and performs all relocations that were
-+	 * deferred to a 2nd pass.  This is the equivalent of dload_data() from
-+	 * cload.c, but does not need the additional reorder and checksum
-+	 * processing as it has already been done. */
-+	cur_pkt = dlthis->tramp.dup_pkts;
-+	while ((ret_val != 0) && (cur_pkt != NULL)) {
-+		/*  Remove the node from the list, we'll be freeing it
-+		 * shortly */
-+		dlthis->tramp.dup_pkts = cur_pkt->next;
-+
-+		/*  Setup the section and image offset for relocation */
-+		dlthis->image_secn = &dlthis->ldr_sections[cur_pkt->secnn];
-+		dlthis->image_offset = cur_pkt->offset;
-+
-+		/*  In order to get the delta run address, we need to reference
-+		 * the original section header.  It's a bit ugly, but needed
-+		 * for relo. */
-+		i = (s32) (dlthis->image_secn - dlthis->ldr_sections);
-+		sect_hdr = dlthis->sect_hdrs + i;
-+		dlthis->delta_runaddr = sect_hdr->ds_paddr;
-+
-+		/*  Walk all relos in the chain and process each. */
-+		cur_relo = cur_pkt->relo_chain;
-+		while (cur_relo != NULL) {
-+			/*  Process them a chunk at a time to be efficient */
-+			for (i = 0; (i < MAX_RELOS_PER_PASS)
-+			     && (cur_relo != NULL);
-+			     i++, cur_relo = cur_relo->next) {
-+				relos[i] = &cur_relo->relo;
-+				cur_pkt->relo_chain = cur_relo->next;
-+			}
-+
-+			/*  Do the actual relo */
-+			ret_val = priv_pkt_relo(dlthis,
-+						cur_pkt->img_pkt.img_data,
-+						relos, i);
-+			if (ret_val == 0) {
-+				dload_error(dlthis,
-+					    "Relocation of dup pkt at %x"
-+					    " failed", cur_pkt->offset +
-+					    dlthis->image_secn->run_addr);
-+				break;
-+			}
-+
-+			/*  Release all of these relos, we're done with them */
-+			while (i > 0) {
-+				dlthis->mysym->dload_deallocate(dlthis->mysym,
-+						GET_CONTAINER
-+						(relos[i - 1],
-+						 struct tramp_img_dup_relo,
-+						 relo));
-+				i--;
-+			}
-+
-+			/*  DO NOT ADVANCE cur_relo, IT IS ALREADY READY TO
-+			 * GO! */
-+		}
-+
-+		/* Done with all relos.  Make sure we didn't have a problem and
-+		 * write it out to the target */
-+		if (ret_val != 0) {
-+			ret_val = dlthis->myio->writemem(dlthis->myio,
-+							 cur_pkt->img_pkt.
-+							 img_data,
-+							 dlthis->image_secn->
-+							 load_addr +
-+							 cur_pkt->offset,
-+							 dlthis->image_secn,
-+							 BYTE_TO_HOST
-+							 (cur_pkt->img_pkt.
-+							  packet_size));
-+			if (ret_val == 0) {
-+				dload_error(dlthis,
-+					    "Write to " FMT_UI32 " failed",
-+					    dlthis->image_secn->load_addr +
-+					    cur_pkt->offset);
-+			}
-+
-+			dlthis->mysym->dload_deallocate(dlthis->mysym, cur_pkt);
-+
-+			/*  Advance to the next packet */
-+			cur_pkt = dlthis->tramp.dup_pkts;
-+		}
-+	}
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	priv_dup_find
-+ * Description: Walk the list of existing duplicate packets and find a
-+ *	  match based on the section number and image offset.  Return
-+ *	  the duplicate packet if found, otherwise NULL.
-+ */
-+static struct tramp_img_dup_pkt *priv_dup_find(struct dload_state *dlthis,
-+					       s16 secnn, u32 image_offset)
-+{
-+	struct tramp_img_dup_pkt *cur_pkt = NULL;
-+
-+	for (cur_pkt = dlthis->tramp.dup_pkts;
-+	     cur_pkt != NULL; cur_pkt = cur_pkt->next) {
-+		if ((cur_pkt->secnn == secnn) &&
-+		    (cur_pkt->offset == image_offset)) {
-+			/*  Found a match, break out */
-+			break;
-+		}
-+	}
-+
-+	return cur_pkt;
-+}
-+
-+/*
-+ * Function:	priv_img_pkt_dup
-+ * Description: Duplicate the original image packet.  If this is the first
-+ *	  time this image packet has been seen (based on section number
-+ *	  and image offset), create a new duplicate packet and add it
-+ *	  to the dup packet list.  If not, just get the existing one and
-+ *	  update it with the current packet contents (since relocation
-+ *	  on the packet is still ongoing in first pass.)  Create a
-+ *	  duplicate of the provided relocation, but update it to point
-+ *	  to the new trampoline symbol.  Add the new relocation dup to
-+ *	  the dup packet's relo chain for 2nd pass relocation later.
-+ */
-+static int priv_img_pkt_dup(struct dload_state *dlthis,
-+			    s16 secnn, u32 image_offset,
-+			    struct image_packet_t *ipacket,
-+			    struct reloc_record_t *rp,
-+			    struct tramp_sym *new_tramp_sym)
-+{
-+	struct tramp_img_dup_pkt *dup_pkt = NULL;
-+	u32 new_dup_size;
-+	s32 i;
-+	int ret_val = 0;
-+	struct tramp_img_dup_relo *dup_relo = NULL;
-+
-+	/*  Determinne if this image packet is already being tracked in the
-+	   dup list for other trampolines. */
-+	dup_pkt = priv_dup_find(dlthis, secnn, image_offset);
-+
-+	if (dup_pkt == NULL) {
-+		/*  This image packet does not exist in our tracking, so create
-+		 * a new one and add it to the head of the list. */
-+		new_dup_size = sizeof(struct tramp_img_dup_pkt) +
-+		    ipacket->packet_size;
-+
-+		dup_pkt = (struct tramp_img_dup_pkt *)
-+		    dlthis->mysym->dload_allocate(dlthis->mysym, new_dup_size);
-+		if (dup_pkt != NULL) {
-+			/*  Save off the section and offset information */
-+			dup_pkt->secnn = secnn;
-+			dup_pkt->offset = image_offset;
-+			dup_pkt->relo_chain = NULL;
-+
-+			/*  Copy the original packet content */
-+			dup_pkt->img_pkt = *ipacket;
-+			dup_pkt->img_pkt.img_data = (u8 *) (dup_pkt + 1);
-+			for (i = 0; i < ipacket->packet_size; i++)
-+				*(dup_pkt->img_pkt.img_data + i) =
-+				    *(ipacket->img_data + i);
-+
-+			/*  Add the packet to the dup list */
-+			dup_pkt->next = dlthis->tramp.dup_pkts;
-+			dlthis->tramp.dup_pkts = dup_pkt;
-+		} else
-+			dload_error(dlthis, "Failed to create dup packet!");
 +	} else {
-+		/*  The image packet contents could have changed since
-+		 * trampoline detection happens during relocation of the image
-+		 * packets.  So, we need to update the image packet contents
-+		 * before adding relo information. */
-+		for (i = 0; i < dup_pkt->img_pkt.packet_size; i++)
-+			*(dup_pkt->img_pkt.img_data + i) =
-+			    *(ipacket->img_data + i);
++		status = -ENOMEM;
 +	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Auto-register data base */
++		/* Get the DCD Handle */
++		status = mgr_get_dcd_handle(p_proc_object->hmgr_obj,
++					    (u32 *) &hdcd_handle);
++		if (DSP_SUCCEEDED(status)) {
++			/*  Auto register nodes in specified COFF
++			 *  file.  If registration did not fail,
++			 *  (status = 0 or -EACCES)
++			 *  save the name of the COFF file for
++			 *  de-registration in the future. */
++			status =
++			    dcd_auto_register(hdcd_handle,
++					      (char *)user_args[0]);
++			if (status == -EACCES)
++				status = 0;
 +
-+	/*  Since the previous code may have allocated a new dup packet for us,
-+	   double check that we actually have one. */
-+	if (dup_pkt != NULL) {
-+		/*  Allocate a new node for the relo chain.  Each image packet
-+		 * can potentially have multiple relocations that cause a
-+		 * trampoline to be generated.  So, we keep them in a chain,
-+		 * order is not important. */
-+		dup_relo = dlthis->mysym->dload_allocate(dlthis->mysym,
-+					 sizeof(struct tramp_img_dup_relo));
-+		if (dup_relo != NULL) {
-+			/*  Copy the relo contents, adjust for the new
-+			 * trampoline and add it to the list. */
-+			dup_relo->relo = *rp;
-+			dup_relo->relo.SYMNDX = new_tramp_sym->index;
-+
-+			dup_relo->next = dup_pkt->relo_chain;
-+			dup_pkt->relo_chain = dup_relo;
-+
-+			/*  That's it, we're done.  Make sure we update our
-+			 * return value to be success since everything finished
-+			 * ok */
-+			ret_val = 1;
-+		} else
-+			dload_error(dlthis, "Unable to alloc dup relo");
-+	}
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	dload_tramp_avail
-+ * Description: Check to see if the target supports a trampoline for this type
-+ *	  of relocation.  Return true if it does, otherwise false.
-+ */
-+bool dload_tramp_avail(struct dload_state *dlthis, struct reloc_record_t *rp)
-+{
-+	bool ret_val = false;
-+	u16 map_index;
-+	u16 gen_index;
-+
-+	/*  Check type hash vs. target tramp table */
-+	map_index = HASH_FUNC(rp->TYPE);
-+	gen_index = tramp_map[map_index];
-+	if (gen_index != TRAMP_NO_GEN_AVAIL)
-+		ret_val = true;
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	dload_tramp_generate
-+ * Description: Create a new trampoline for the provided image packet and
-+ *	  relocation causing problems.  This will create the trampoline
-+ *	  as well as duplicate/update the image packet and relocation
-+ *	  causing the problem, which will be relo'd again during
-+ *	  finalization.
-+ */
-+int dload_tramp_generate(struct dload_state *dlthis, s16 secnn,
-+			 u32 image_offset, struct image_packet_t *ipacket,
-+			 struct reloc_record_t *rp)
-+{
-+	u16 map_index;
-+	u16 gen_index;
-+	int ret_val = 1;
-+	char tramp_sym_str[TRAMP_SYM_PREFIX_LEN + TRAMP_SYM_HEX_ASCII_LEN];
-+	struct local_symbol *ref_sym;
-+	struct tramp_sym *new_tramp_sym;
-+	struct tramp_sym *new_ext_sym;
-+	struct tramp_string *new_tramp_str;
-+	u32 new_tramp_base;
-+	struct local_symbol tmp_sym;
-+	struct local_symbol ext_tmp_sym;
-+
-+	/*  Hash the relo type to get our generator information */
-+	map_index = HASH_FUNC(rp->TYPE);
-+	gen_index = tramp_map[map_index];
-+	if (gen_index != TRAMP_NO_GEN_AVAIL) {
-+		/*  If this is the first trampoline, create the section name in
-+		 * our string table for debug help later. */
-+		if (dlthis->tramp.string_head == NULL) {
-+			priv_tramp_string_create(dlthis,
-+						 strlen(TRAMP_SECT_NAME),
-+						 TRAMP_SECT_NAME);
-+		}
-+#ifdef ENABLE_TRAMP_DEBUG
-+		dload_syms_error(dlthis->mysym,
-+				 "Trampoline at img loc %x, references %x",
-+				 dlthis->ldr_sections[secnn].run_addr +
-+				 image_offset + rp->vaddr,
-+				 dlthis->local_symtab[rp->SYMNDX].value);
-+#endif
-+
-+		/*  Generate the trampoline string, check if already defined.
-+		 * If the relo symbol index is -1, it means we need the section
-+		 * info for relo later.  To do this we'll dummy up a symbol
-+		 * with the section delta and run addresses. */
-+		if (rp->SYMNDX == -1) {
-+			ext_tmp_sym.value =
-+			    dlthis->ldr_sections[secnn].run_addr;
-+			ext_tmp_sym.delta = dlthis->sect_hdrs[secnn].ds_paddr;
-+			ref_sym = &ext_tmp_sym;
-+		} else
-+			ref_sym = &(dlthis->local_symtab[rp->SYMNDX]);
-+
-+		priv_tramp_sym_gen_name(ref_sym->value, tramp_sym_str);
-+		new_tramp_sym = priv_tramp_sym_find(dlthis, tramp_sym_str);
-+		if (new_tramp_sym == NULL) {
-+			/*  If tramp string not defined, create it and a new
-+			 * string, and symbol for it as well as the original
-+			 * symbol which caused the trampoline. */
-+			new_tramp_str = priv_tramp_string_create(dlthis,
-+								strlen
-+								(tramp_sym_str),
-+								 tramp_sym_str);
-+			if (new_tramp_str == NULL) {
-+				dload_error(dlthis, "Failed to create new "
-+					    "trampoline string\n");
-+				ret_val = 0;
++			if (DSP_FAILED(status)) {
++				status = -EPERM;
 +			} else {
-+				/*  Allocate tramp section space for the new
-+				 * tramp from the target */
-+				new_tramp_base = priv_tramp_sect_alloc(dlthis,
-+						       tramp_size_get());
-+
-+				/*  We have a string, create the new symbol and
-+				 * duplicate the external. */
-+				tmp_sym.value = new_tramp_base;
-+				tmp_sym.delta = 0;
-+				tmp_sym.secnn = -1;
-+				tmp_sym.sclass = 0;
-+				new_tramp_sym = priv_tramp_sym_create(dlthis,
-+							      new_tramp_str->
-+							      index,
-+							      &tmp_sym);
-+
-+				new_ext_sym = priv_tramp_sym_create(dlthis, -1,
-+								    ref_sym);
-+
-+				if ((new_tramp_sym != NULL) &&
-+				    (new_ext_sym != NULL)) {
-+					/*  Call the image generator to get the
-+					 * new image data and fix up its
-+					 * relocations for the external
-+					 * symbol. */
-+					ret_val = priv_tgt_img_gen(dlthis,
-+								 new_tramp_base,
-+								 gen_index,
-+								 new_ext_sym);
-+
-+					/*  Add generated image data to tramp
-+					 * image list */
-+					if (ret_val != 1) {
-+						dload_error(dlthis, "Failed to "
-+							    "create img pkt for"
-+							    " trampoline\n");
-+					}
-+				} else {
-+					dload_error(dlthis, "Failed to create "
-+						    "new tramp syms "
-+						    "(%8.8X, %8.8X)\n",
-+						    new_tramp_sym, new_ext_sym);
-+					ret_val = 0;
++				DBC_ASSERT(p_proc_object->psz_last_coff ==
++					   NULL);
++				/* Allocate memory for pszLastCoff */
++				p_proc_object->psz_last_coff =
++						kzalloc((strlen(user_args[0]) +
++						1), GFP_KERNEL);
++				/* If memory allocated, save COFF file name */
++				if (p_proc_object->psz_last_coff) {
++					strncpy(p_proc_object->psz_last_coff,
++						(char *)user_args[0],
++						(strlen((char *)user_args[0]) +
++						 1));
 +				}
 +			}
 +		}
++	}
++	/* Update shared memory address and size */
++	if (DSP_SUCCEEDED(status)) {
++		/*  Create the message manager. This must be done
++		 *  before calling the IOOnLoaded function. */
++		dev_get_msg_mgr(p_proc_object->hdev_obj, &hmsg_mgr);
++		if (!hmsg_mgr) {
++			status = msg_create(&hmsg_mgr, p_proc_object->hdev_obj,
++					    (msg_onexit) node_on_exit);
++			DBC_ASSERT(DSP_SUCCEEDED(status));
++			dev_set_msg_mgr(p_proc_object->hdev_obj, hmsg_mgr);
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Set the Device object's message manager */
++		status = dev_get_io_mgr(p_proc_object->hdev_obj, &hio_mgr);
++		if (hio_mgr)
++			status = (*p_proc_object->intf_fxns->pfn_io_on_loaded)
++								(hio_mgr);
++		else
++			status = -EFAULT;
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Now, attempt to load an exec: */
 +
-+		/*  Duplicate the image data and relo record that caused the
-+		 * tramp, including update the relo data to point to the tramp
-+		 * symbol. */
-+		if (ret_val == 1) {
-+			ret_val = priv_img_pkt_dup(dlthis, secnn, image_offset,
-+						   ipacket, rp, new_tramp_sym);
-+			if (ret_val != 1) {
-+				dload_error(dlthis, "Failed to create dup of "
-+					    "original img pkt\n");
++		/* Boost the OPP level to Maximum level supported by baseport */
++#if defined(CONFIG_BRIDGE_DVFS) && !defined(CONFIG_CPU_FREQ)
++		if (pdata->cpu_set_freq)
++			(*pdata->cpu_set_freq) (pdata->mpu_speed[VDD1_OPP5]);
++#endif
++		status = cod_load_base(cod_mgr, argc_index, (char **)user_args,
++				       dev_brd_write_fxn,
++				       p_proc_object->hdev_obj, NULL);
++		if (DSP_FAILED(status)) {
++			if (status == -EBADF) {
++				dev_dbg(bridge, "%s: Failure to Load the EXE\n",
++					__func__);
++			}
++			if (status == -ESPIPE) {
++				pr_err("%s: Couldn't parse the file\n",
++				       __func__);
++			}
++		}
++		/* Requesting the lowest opp supported */
++#if defined(CONFIG_BRIDGE_DVFS) && !defined(CONFIG_CPU_FREQ)
++		if (pdata->cpu_set_freq)
++			(*pdata->cpu_set_freq) (pdata->mpu_speed[VDD1_OPP1]);
++#endif
++
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Update the Processor status to loaded */
++		status = (*p_proc_object->intf_fxns->pfn_brd_set_state)
++		    (p_proc_object->hbridge_context, BRD_LOADED);
++		if (DSP_SUCCEEDED(status)) {
++			p_proc_object->proc_state = PROC_LOADED;
++			if (p_proc_object->ntfy_obj)
++				proc_notify_clients(p_proc_object,
++						    DSP_PROCESSORSTATECHANGE);
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		status = proc_get_processor_id(hprocessor, &proc_id);
++		if (proc_id == DSP_UNIT) {
++			/* Use all available DSP address space after EXTMEM
++			 * for DMM */
++			if (DSP_SUCCEEDED(status))
++				status = cod_get_sym_value(cod_mgr, EXTEND,
++							   &dw_ext_end);
++
++			/* Reset DMM structs and add an initial free chunk */
++			if (DSP_SUCCEEDED(status)) {
++				status =
++				    dev_get_dmm_mgr(p_proc_object->hdev_obj,
++						    &dmm_mgr);
++				if (dmm_mgr) {
++					/* Set dw_ext_end to DMM START u8
++					 * address */
++					dw_ext_end =
++					    (dw_ext_end + 1) * DSPWORDSIZE;
++					/* DMM memory is from EXT_END */
++					status = dmm_create_tables(dmm_mgr,
++								   dw_ext_end,
++								   DMMPOOLSIZE);
++				} else {
++					status = -EFAULT;
++				}
 +			}
 +		}
 +	}
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	dload_tramp_pkt_update
-+ * Description: Update the duplicate copy of this image packet, which the
-+ *	  trampoline layer is already tracking.  This is call is critical
-+ *	  to make if trampolines were generated anywhere within the
-+ *	  packet and first pass relo continued on the remainder.  The
-+ *	  trampoline layer needs the updates image data so when 2nd
-+ *	  pass relo is done during finalize the image packet can be
-+ *	  written to the target since all relo is done.
-+ */
-+int dload_tramp_pkt_udpate(struct dload_state *dlthis, s16 secnn,
-+			   u32 image_offset, struct image_packet_t *ipacket)
-+{
-+	struct tramp_img_dup_pkt *dup_pkt = NULL;
-+	s32 i;
-+	int ret_val = 0;
-+
-+	/*  Find the image packet in question, the caller needs us to update it
-+	   since a trampoline was previously generated. */
-+	dup_pkt = priv_dup_find(dlthis, secnn, image_offset);
-+	if (dup_pkt != NULL) {
-+		for (i = 0; i < dup_pkt->img_pkt.packet_size; i++)
-+			*(dup_pkt->img_pkt.img_data + i) =
-+			    *(ipacket->img_data + i);
-+
-+		ret_val = 1;
-+	} else {
-+		dload_error(dlthis,
-+			    "Unable to find existing DUP pkt for %x, offset %x",
-+			    secnn, image_offset);
-+
-+	}
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	dload_tramp_finalize
-+ * Description: If any trampolines were created, finalize everything on the
-+ *	  target by allocating the trampoline section on the target,
-+ *	  finalizing the trampoline symbols, finalizing the trampoline
-+ *	  packets (write the new section to target memory) and finalize
-+ *	  the duplicate packets by doing 2nd pass relo over them.
-+ */
-+int dload_tramp_finalize(struct dload_state *dlthis)
-+{
-+	int ret_val = 1;
-+
-+	if (dlthis->tramp.tramp_sect_next_addr != 0) {
-+		/*  Finalize strings into a flat table.  This is needed so it
-+		 * can be added to the debug string table later. */
-+		ret_val = priv_string_tbl_finalize(dlthis);
-+
-+		/*  Do target allocation for section BEFORE finalizing
-+		 * symbols. */
-+		if (ret_val != 0)
-+			ret_val = priv_tramp_sect_tgt_alloc(dlthis);
-+
-+		/*  Finalize symbols with their correct target information and
-+		 * flatten */
-+		if (ret_val != 0)
-+			ret_val = priv_tramp_sym_finalize(dlthis);
-+
-+		/*  Finalize all trampoline packets.  This performs the
-+		 * relocation on the packets as well as writing them to target
-+		 * memory. */
-+		if (ret_val != 0)
-+			ret_val = priv_tramp_pkt_finalize(dlthis);
-+
-+		/*  Perform a 2nd pass relocation on the dup list. */
-+		if (ret_val != 0)
-+			ret_val = priv_dup_pkt_finalize(dlthis);
-+	}
-+
-+	return ret_val;
-+}
-+
-+/*
-+ * Function:	dload_tramp_cleanup
-+ * Description: Release all temporary resources used in the trampoline layer.
-+ *	  Note that the target memory which may have been allocated and
-+ *	  written to store the trampolines is NOT RELEASED HERE since it
-+ *	  is potentially still in use.  It is automatically released
-+ *	  when the module is unloaded.
-+ */
-+void dload_tramp_cleanup(struct dload_state *dlthis)
-+{
-+	struct tramp_info *tramp = &dlthis->tramp;
-+	struct tramp_sym *cur_sym;
-+	struct tramp_string *cur_string;
-+	struct tramp_img_pkt *cur_tramp_pkt;
-+	struct tramp_img_dup_pkt *cur_dup_pkt;
-+	struct tramp_img_dup_relo *cur_dup_relo;
-+
-+	/*  If there were no tramps generated, just return */
-+	if (tramp->tramp_sect_next_addr == 0)
-+		return;
-+
-+	/*  Destroy all tramp information */
-+	for (cur_sym = tramp->symbol_head;
-+	     cur_sym != NULL; cur_sym = tramp->symbol_head) {
-+		tramp->symbol_head = cur_sym->next;
-+		if (tramp->symbol_tail == cur_sym)
-+			tramp->symbol_tail = NULL;
-+
-+		dlthis->mysym->dload_deallocate(dlthis->mysym, cur_sym);
-+	}
-+
-+	if (tramp->final_sym_table != NULL)
-+		dlthis->mysym->dload_deallocate(dlthis->mysym,
-+						tramp->final_sym_table);
-+
-+	for (cur_string = tramp->string_head;
-+	     cur_string != NULL; cur_string = tramp->string_head) {
-+		tramp->string_head = cur_string->next;
-+		if (tramp->string_tail == cur_string)
-+			tramp->string_tail = NULL;
-+
-+		dlthis->mysym->dload_deallocate(dlthis->mysym, cur_string);
-+	}
-+
-+	if (tramp->final_string_table != NULL)
-+		dlthis->mysym->dload_deallocate(dlthis->mysym,
-+						tramp->final_string_table);
-+
-+	for (cur_tramp_pkt = tramp->tramp_pkts;
-+	     cur_tramp_pkt != NULL; cur_tramp_pkt = tramp->tramp_pkts) {
-+		tramp->tramp_pkts = cur_tramp_pkt->next;
-+		dlthis->mysym->dload_deallocate(dlthis->mysym, cur_tramp_pkt);
-+	}
-+
-+	for (cur_dup_pkt = tramp->dup_pkts;
-+	     cur_dup_pkt != NULL; cur_dup_pkt = tramp->dup_pkts) {
-+		tramp->dup_pkts = cur_dup_pkt->next;
-+
-+		for (cur_dup_relo = cur_dup_pkt->relo_chain;
-+		     cur_dup_relo != NULL;
-+		     cur_dup_relo = cur_dup_pkt->relo_chain) {
-+			cur_dup_pkt->relo_chain = cur_dup_relo->next;
-+			dlthis->mysym->dload_deallocate(dlthis->mysym,
-+							cur_dup_relo);
++	/* Restore the original argv[0] */
++	kfree(new_envp);
++	user_args[0] = pargv0;
++	if (DSP_SUCCEEDED(status)) {
++		if (DSP_SUCCEEDED((*p_proc_object->intf_fxns->pfn_brd_status)
++				(p_proc_object->hbridge_context, &brd_state))) {
++			pr_info("%s: Processor Loaded %s\n", __func__, pargv0);
++			kfree(drv_datap->base_img);
++			drv_datap->base_img = kmalloc(strlen(pargv0) + 1,
++								GFP_KERNEL);
++			if (drv_datap->base_img)
++				strncpy(drv_datap->base_img, pargv0,
++							strlen(pargv0) + 1);
++			else
++				status = -ENOMEM;
++			DBC_ASSERT(brd_state == BRD_LOADED);
 +		}
-+
-+		dlthis->mysym->dload_deallocate(dlthis->mysym, cur_dup_pkt);
 +	}
++
++func_end:
++	if (DSP_FAILED(status))
++		pr_err("%s: Processor failed to load\n", __func__);
++
++	DBC_ENSURE((DSP_SUCCEEDED(status)
++		    && p_proc_object->proc_state == PROC_LOADED)
++		   || DSP_FAILED(status));
++#ifdef OPT_LOAD_TIME_INSTRUMENTATION
++	do_gettimeofday(&tv2);
++	if (tv2.tv_usec < tv1.tv_usec) {
++		tv2.tv_usec += 1000000;
++		tv2.tv_sec--;
++	}
++	dev_dbg(bridge, "%s: time to load %d sec and %d usec\n", __func__,
++		tv2.tv_sec - tv1.tv_sec, tv2.tv_usec - tv1.tv_usec);
++#endif
++	return status;
 +}
-diff --git a/drivers/staging/tidspbridge/dynload/tramp_table_c6000.c b/drivers/staging/tidspbridge/dynload/tramp_table_c6000.c
-new file mode 100644
-index 0000000..e38d631
---- /dev/null
-+++ b/drivers/staging/tidspbridge/dynload/tramp_table_c6000.c
-@@ -0,0 +1,164 @@
++
 +/*
-+ * tramp_table_c6000.c
++ *  ======== proc_map ========
++ *  Purpose:
++ *      Maps a MPU buffer to DSP address space.
++ */
++int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
++		    void *req_addr, void **pp_map_addr, u32 ul_map_attr,
++		    struct process_context *pr_ctxt)
++{
++	u32 va_align;
++	u32 pa_align;
++	struct dmm_object *dmm_mgr;
++	u32 size_align;
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++	struct dmm_map_object *map_obj;
++	u32 tmp_addr = 0;
++
++#ifdef CONFIG_BRIDGE_CACHE_LINE_CHECK
++	if ((ul_map_attr & BUFMODE_MASK) != RBUF) {
++		if (!IS_ALIGNED((u32)pmpu_addr, DSP_CACHE_LINE) ||
++		    !IS_ALIGNED(ul_size, DSP_CACHE_LINE)) {
++			pr_err("%s: not aligned: 0x%x (%d)\n", __func__,
++						(u32)pmpu_addr, ul_size);
++			return -EFAULT;
++		}
++	}
++#endif
++
++	/* Calculate the page-aligned PA, VA and size */
++	va_align = PG_ALIGN_LOW((u32) req_addr, PG_SIZE4K);
++	pa_align = PG_ALIGN_LOW((u32) pmpu_addr, PG_SIZE4K);
++	size_align = PG_ALIGN_HIGH(ul_size + (u32) pmpu_addr - pa_align,
++				   PG_SIZE4K);
++
++	if (!p_proc_object) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	/* Critical section */
++	mutex_lock(&proc_lock);
++	dmm_get_handle(p_proc_object, &dmm_mgr);
++	if (dmm_mgr)
++		status = dmm_map_memory(dmm_mgr, va_align, size_align);
++	else
++		status = -EFAULT;
++
++	/* Add mapping to the page tables. */
++	if (DSP_SUCCEEDED(status)) {
++
++		/* Mapped address = MSB of VA | LSB of PA */
++		tmp_addr = (va_align | ((u32) pmpu_addr & (PG_SIZE4K - 1)));
++		/* mapped memory resource tracking */
++		map_obj = add_mapping_info(pr_ctxt, pa_align, tmp_addr,
++						size_align);
++		if (!map_obj)
++			status = -ENOMEM;
++		else
++			status = (*p_proc_object->intf_fxns->pfn_brd_mem_map)
++			    (p_proc_object->hbridge_context, pa_align, va_align,
++			     size_align, ul_map_attr, map_obj->pages);
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* Mapped address = MSB of VA | LSB of PA */
++		*pp_map_addr = (void *) tmp_addr;
++	} else {
++		remove_mapping_information(pr_ctxt, tmp_addr, size_align);
++		dmm_un_map_memory(dmm_mgr, va_align, &size_align);
++	}
++	mutex_unlock(&proc_lock);
++
++	if (DSP_FAILED(status))
++		goto func_end;
++
++func_end:
++	dev_dbg(bridge, "%s: hprocessor %p, pmpu_addr %p, ul_size %x, "
++		"req_addr %p, ul_map_attr %x, pp_map_addr %p, va_align %x, "
++		"pa_align %x, size_align %x status 0x%x\n", __func__,
++		hprocessor, pmpu_addr, ul_size, req_addr, ul_map_attr,
++		pp_map_addr, va_align, pa_align, size_align, status);
++
++	return status;
++}
++
++/*
++ *  ======== proc_register_notify ========
++ *  Purpose:
++ *      Register to be notified of specific processor events.
++ */
++int proc_register_notify(void *hprocessor, u32 event_mask,
++				u32 notify_type, struct dsp_notification
++				* hnotification)
++{
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++	struct deh_mgr *hdeh_mgr;
++
++	DBC_REQUIRE(hnotification != NULL);
++	DBC_REQUIRE(refs > 0);
++
++	/* Check processor handle */
++	if (!p_proc_object) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	/* Check if event mask is a valid processor related event */
++	if (event_mask & ~(DSP_PROCESSORSTATECHANGE | DSP_PROCESSORATTACH |
++			DSP_PROCESSORDETACH | DSP_PROCESSORRESTART |
++			DSP_MMUFAULT | DSP_SYSERROR | DSP_PWRERROR |
++			DSP_WDTOVERFLOW))
++		status = -EINVAL;
++
++	/* Check if notify type is valid */
++	if (notify_type != DSP_SIGNALEVENT)
++		status = -EINVAL;
++
++	if (DSP_SUCCEEDED(status)) {
++		/* If event mask is not DSP_SYSERROR, DSP_MMUFAULT,
++		 * or DSP_PWRERROR then register event immediately. */
++		if (event_mask &
++		    ~(DSP_SYSERROR | DSP_MMUFAULT | DSP_PWRERROR |
++				DSP_WDTOVERFLOW)) {
++			status = ntfy_register(p_proc_object->ntfy_obj,
++					       hnotification, event_mask,
++					       notify_type);
++			/* Special case alert, special case alert!
++			 * If we're trying to *deregister* (i.e. event_mask
++			 * is 0), a DSP_SYSERROR or DSP_MMUFAULT notification,
++			 * we have to deregister with the DEH manager.
++			 * There's no way to know, based on event_mask which
++			 * manager the notification event was registered with,
++			 * so if we're trying to deregister and ntfy_register
++			 * failed, we'll give the deh manager a shot.
++			 */
++			if ((event_mask == 0) && DSP_FAILED(status)) {
++				status =
++				    dev_get_deh_mgr(p_proc_object->hdev_obj,
++						    &hdeh_mgr);
++				DBC_ASSERT(p_proc_object->
++					   intf_fxns->pfn_deh_register_notify);
++				status =
++				    (*p_proc_object->
++				     intf_fxns->pfn_deh_register_notify)
++				    (hdeh_mgr, event_mask, notify_type,
++				     hnotification);
++			}
++		} else {
++			status = dev_get_deh_mgr(p_proc_object->hdev_obj,
++						 &hdeh_mgr);
++			DBC_ASSERT(p_proc_object->
++				   intf_fxns->pfn_deh_register_notify);
++			status =
++			    (*p_proc_object->intf_fxns->pfn_deh_register_notify)
++			    (hdeh_mgr, event_mask, notify_type, hnotification);
++
++		}
++	}
++func_end:
++	return status;
++}
++
++/*
++ *  ======== proc_reserve_memory ========
++ *  Purpose:
++ *      Reserve a virtually contiguous region of DSP address space.
++ */
++int proc_reserve_memory(void *hprocessor, u32 ul_size,
++			       void **pp_rsv_addr,
++			       struct process_context *pr_ctxt)
++{
++	struct dmm_object *dmm_mgr;
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++	struct dmm_rsv_object *rsv_obj;
++
++	if (!p_proc_object) {
++		status = -EFAULT;
++		goto func_end;
++	}
++
++	status = dmm_get_handle(p_proc_object, &dmm_mgr);
++	if (!dmm_mgr) {
++		status = -EFAULT;
++		goto func_end;
++	}
++
++	status = dmm_reserve_memory(dmm_mgr, ul_size, (u32 *) pp_rsv_addr);
++	if (status != 0)
++		goto func_end;
++
++	/*
++	 * A successful reserve should be followed by insertion of rsv_obj
++	 * into dmm_rsv_list, so that reserved memory resource tracking
++	 * remains uptodate
++	 */
++	rsv_obj = kmalloc(sizeof(struct dmm_rsv_object), GFP_KERNEL);
++	if (rsv_obj) {
++		rsv_obj->dsp_reserved_addr = (u32) *pp_rsv_addr;
++		spin_lock(&pr_ctxt->dmm_rsv_lock);
++		list_add(&rsv_obj->link, &pr_ctxt->dmm_rsv_list);
++		spin_unlock(&pr_ctxt->dmm_rsv_lock);
++	}
++
++func_end:
++	dev_dbg(bridge, "%s: hprocessor: 0x%p ul_size: 0x%x pp_rsv_addr: 0x%p "
++		"status 0x%x\n", __func__, hprocessor,
++		ul_size, pp_rsv_addr, status);
++	return status;
++}
++
++/*
++ *  ======== proc_start ========
++ *  Purpose:
++ *      Start a processor running.
++ */
++int proc_start(void *hprocessor)
++{
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++	struct cod_manager *cod_mgr;	/* Code manager handle */
++	u32 dw_dsp_addr;	/* Loaded code's entry point. */
++	int brd_state;
++
++	DBC_REQUIRE(refs > 0);
++	if (!p_proc_object) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	/* Call the bridge_brd_start */
++	if (p_proc_object->proc_state != PROC_LOADED) {
++		status = -EBADR;
++		goto func_end;
++	}
++	status = dev_get_cod_mgr(p_proc_object->hdev_obj, &cod_mgr);
++	if (!cod_mgr) {
++		status = -EFAULT;
++		goto func_cont;
++	}
++
++	status = cod_get_entry(cod_mgr, &dw_dsp_addr);
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	status = (*p_proc_object->intf_fxns->pfn_brd_start)
++	    (p_proc_object->hbridge_context, dw_dsp_addr);
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	/* Call dev_create2 */
++	status = dev_create2(p_proc_object->hdev_obj);
++	if (DSP_SUCCEEDED(status)) {
++		p_proc_object->proc_state = PROC_RUNNING;
++		/* Deep sleep switces off the peripheral clocks.
++		 * we just put the DSP CPU in idle in the idle loop.
++		 * so there is no need to send a command to DSP */
++
++		if (p_proc_object->ntfy_obj) {
++			proc_notify_clients(p_proc_object,
++					    DSP_PROCESSORSTATECHANGE);
++		}
++	} else {
++		/* Failed to Create Node Manager and DISP Object
++		 * Stop the Processor from running. Put it in STOPPED State */
++		(void)(*p_proc_object->intf_fxns->
++		       pfn_brd_stop) (p_proc_object->hbridge_context);
++		p_proc_object->proc_state = PROC_STOPPED;
++	}
++func_cont:
++	if (DSP_SUCCEEDED(status)) {
++		if (DSP_SUCCEEDED((*p_proc_object->intf_fxns->pfn_brd_status)
++				(p_proc_object->hbridge_context, &brd_state))) {
++			pr_info("%s: dsp in running state\n", __func__);
++			DBC_ASSERT(brd_state != BRD_HIBERNATION);
++		}
++	} else {
++		pr_err("%s: Failed to start the dsp\n", __func__);
++	}
++
++func_end:
++	DBC_ENSURE((DSP_SUCCEEDED(status) && p_proc_object->proc_state ==
++		    PROC_RUNNING) || DSP_FAILED(status));
++	return status;
++}
++
++/*
++ *  ======== proc_stop ========
++ *  Purpose:
++ *      Stop a processor running.
++ */
++int proc_stop(void *hprocessor)
++{
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++	struct msg_mgr *hmsg_mgr;
++	struct node_mgr *hnode_mgr;
++	void *hnode;
++	u32 node_tab_size = 1;
++	u32 num_nodes = 0;
++	u32 nodes_allocated = 0;
++	int brd_state;
++
++	DBC_REQUIRE(refs > 0);
++	if (!p_proc_object) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	if (DSP_SUCCEEDED((*p_proc_object->intf_fxns->pfn_brd_status)
++			  (p_proc_object->hbridge_context, &brd_state))) {
++		if (brd_state == BRD_ERROR)
++			bridge_deh_release_dummy_mem();
++	}
++	/* check if there are any running nodes */
++	status = dev_get_node_manager(p_proc_object->hdev_obj, &hnode_mgr);
++	if (DSP_SUCCEEDED(status) && hnode_mgr) {
++		status = node_enum_nodes(hnode_mgr, &hnode, node_tab_size,
++					 &num_nodes, &nodes_allocated);
++		if ((status == -EINVAL) || (nodes_allocated > 0)) {
++			pr_err("%s: Can't stop device, active nodes = %d \n",
++			       __func__, nodes_allocated);
++			return -EBADR;
++		}
++	}
++	/* Call the bridge_brd_stop */
++	/* It is OK to stop a device that does n't have nodes OR not started */
++	status =
++	    (*p_proc_object->intf_fxns->
++	     pfn_brd_stop) (p_proc_object->hbridge_context);
++	if (DSP_SUCCEEDED(status)) {
++		dev_dbg(bridge, "%s: processor in standby mode\n", __func__);
++		p_proc_object->proc_state = PROC_STOPPED;
++		/* Destory the Node Manager, msg_ctrl Manager */
++		if (DSP_SUCCEEDED(dev_destroy2(p_proc_object->hdev_obj))) {
++			/* Destroy the msg_ctrl by calling msg_delete */
++			dev_get_msg_mgr(p_proc_object->hdev_obj, &hmsg_mgr);
++			if (hmsg_mgr) {
++				msg_delete(hmsg_mgr);
++				dev_set_msg_mgr(p_proc_object->hdev_obj, NULL);
++			}
++			if (DSP_SUCCEEDED
++			    ((*p_proc_object->
++			      intf_fxns->pfn_brd_status) (p_proc_object->
++							  hbridge_context,
++							  &brd_state)))
++				DBC_ASSERT(brd_state == BRD_STOPPED);
++		}
++	} else {
++		pr_err("%s: Failed to stop the processor\n", __func__);
++	}
++func_end:
++
++	return status;
++}
++
++/*
++ *  ======== proc_un_map ========
++ *  Purpose:
++ *      Removes a MPU buffer mapping from the DSP address space.
++ */
++int proc_un_map(void *hprocessor, void *map_addr,
++		       struct process_context *pr_ctxt)
++{
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++	struct dmm_object *dmm_mgr;
++	u32 va_align;
++	u32 size_align;
++
++	va_align = PG_ALIGN_LOW((u32) map_addr, PG_SIZE4K);
++	if (!p_proc_object) {
++		status = -EFAULT;
++		goto func_end;
++	}
++
++	status = dmm_get_handle(hprocessor, &dmm_mgr);
++	if (!dmm_mgr) {
++		status = -EFAULT;
++		goto func_end;
++	}
++
++	/* Critical section */
++	mutex_lock(&proc_lock);
++	/*
++	 * Update DMM structures. Get the size to unmap.
++	 * This function returns error if the VA is not mapped
++	 */
++	status = dmm_un_map_memory(dmm_mgr, (u32) va_align, &size_align);
++	/* Remove mapping from the page tables. */
++	if (DSP_SUCCEEDED(status)) {
++		status = (*p_proc_object->intf_fxns->pfn_brd_mem_un_map)
++		    (p_proc_object->hbridge_context, va_align, size_align);
++	}
++
++	mutex_unlock(&proc_lock);
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/*
++	 * A successful unmap should be followed by removal of map_obj
++	 * from dmm_map_list, so that mapped memory resource tracking
++	 * remains uptodate
++	 */
++	remove_mapping_information(pr_ctxt, (u32) map_addr, size_align);
++
++func_end:
++	dev_dbg(bridge, "%s: hprocessor: 0x%p map_addr: 0x%p status: 0x%x\n",
++		__func__, hprocessor, map_addr, status);
++	return status;
++}
++
++/*
++ *  ======== proc_un_reserve_memory ========
++ *  Purpose:
++ *      Frees a previously reserved region of DSP address space.
++ */
++int proc_un_reserve_memory(void *hprocessor, void *prsv_addr,
++				  struct process_context *pr_ctxt)
++{
++	struct dmm_object *dmm_mgr;
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
++	struct dmm_rsv_object *rsv_obj;
++
++	if (!p_proc_object) {
++		status = -EFAULT;
++		goto func_end;
++	}
++
++	status = dmm_get_handle(p_proc_object, &dmm_mgr);
++	if (!dmm_mgr) {
++		status = -EFAULT;
++		goto func_end;
++	}
++
++	status = dmm_un_reserve_memory(dmm_mgr, (u32) prsv_addr);
++	if (status != 0)
++		goto func_end;
++
++	/*
++	 * A successful unreserve should be followed by removal of rsv_obj
++	 * from dmm_rsv_list, so that reserved memory resource tracking
++	 * remains uptodate
++	 */
++	spin_lock(&pr_ctxt->dmm_rsv_lock);
++	list_for_each_entry(rsv_obj, &pr_ctxt->dmm_rsv_list, link) {
++		if (rsv_obj->dsp_reserved_addr == (u32) prsv_addr) {
++			list_del(&rsv_obj->link);
++			kfree(rsv_obj);
++			break;
++		}
++	}
++	spin_unlock(&pr_ctxt->dmm_rsv_lock);
++
++func_end:
++	dev_dbg(bridge, "%s: hprocessor: 0x%p prsv_addr: 0x%p status: 0x%x\n",
++		__func__, hprocessor, prsv_addr, status);
++	return status;
++}
++
++/*
++ *  ======== = proc_monitor ======== ==
++ *  Purpose:
++ *      Place the Processor in Monitor State. This is an internal
++ *      function and a requirement before Processor is loaded.
++ *      This does a bridge_brd_stop, dev_destroy2 and bridge_brd_monitor.
++ *      In dev_destroy2 we delete the node manager.
++ *  Parameters:
++ *      p_proc_object:    Pointer to Processor Object
++ *  Returns:
++ *      0:	Processor placed in monitor mode.
++ *      !0:       Failed to place processor in monitor mode.
++ *  Requires:
++ *      Valid Processor Handle
++ *  Ensures:
++ *      Success:	ProcObject state is PROC_IDLE
++ */
++static int proc_monitor(struct proc_object *p_proc_object)
++{
++	int status = -EPERM;
++	struct msg_mgr *hmsg_mgr;
++	int brd_state;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(p_proc_object);
++
++	/* This is needed only when Device is loaded when it is
++	 * already 'ACTIVE' */
++	/* Destory the Node Manager, msg_ctrl Manager */
++	if (DSP_SUCCEEDED(dev_destroy2(p_proc_object->hdev_obj))) {
++		/* Destroy the msg_ctrl by calling msg_delete */
++		dev_get_msg_mgr(p_proc_object->hdev_obj, &hmsg_mgr);
++		if (hmsg_mgr) {
++			msg_delete(hmsg_mgr);
++			dev_set_msg_mgr(p_proc_object->hdev_obj, NULL);
++		}
++	}
++	/* Place the Board in the Monitor State */
++	if (DSP_SUCCEEDED((*p_proc_object->intf_fxns->pfn_brd_monitor)
++			  (p_proc_object->hbridge_context))) {
++		status = 0;
++		if (DSP_SUCCEEDED((*p_proc_object->intf_fxns->pfn_brd_status)
++				  (p_proc_object->hbridge_context, &brd_state)))
++			DBC_ASSERT(brd_state == BRD_IDLE);
++	}
++
++	DBC_ENSURE((DSP_SUCCEEDED(status) && brd_state == BRD_IDLE) ||
++		   DSP_FAILED(status));
++	return status;
++}
++
++/*
++ *  ======== get_envp_count ========
++ *  Purpose:
++ *      Return the number of elements in the envp array, including the
++ *      terminating NULL element.
++ */
++static s32 get_envp_count(char **envp)
++{
++	s32 ret = 0;
++	if (envp) {
++		while (*envp++)
++			ret++;
++
++		ret += 1;	/* Include the terminating NULL in the count. */
++	}
++
++	return ret;
++}
++
++/*
++ *  ======== prepend_envp ========
++ *  Purpose:
++ *      Prepend an environment variable=value pair to the new envp array, and
++ *      copy in the existing var=value pairs in the old envp array.
++ */
++static char **prepend_envp(char **new_envp, char **envp, s32 envp_elems,
++			   s32 cnew_envp, char *szVar)
++{
++	char **pp_envp = new_envp;
++
++	DBC_REQUIRE(new_envp);
++
++	/* Prepend new environ var=value string */
++	*new_envp++ = szVar;
++
++	/* Copy user's environment into our own. */
++	while (envp_elems--)
++		*new_envp++ = *envp++;
++
++	/* Ensure NULL terminates the new environment strings array. */
++	if (envp_elems == 0)
++		*new_envp = NULL;
++
++	return pp_envp;
++}
++
++/*
++ *  ======== proc_notify_clients ========
++ *  Purpose:
++ *      Notify the processor the events.
++ */
++int proc_notify_clients(void *hProc, u32 uEvents)
++{
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hProc;
++
++	DBC_REQUIRE(p_proc_object);
++	DBC_REQUIRE(IS_VALID_PROC_EVENT(uEvents));
++	DBC_REQUIRE(refs > 0);
++	if (!p_proc_object) {
++		status = -EFAULT;
++		goto func_end;
++	}
++
++	ntfy_notify(p_proc_object->ntfy_obj, uEvents);
++func_end:
++	return status;
++}
++
++/*
++ *  ======== proc_notify_all_clients ========
++ *  Purpose:
++ *      Notify the processor the events. This includes notifying all clients
++ *      attached to a particulat DSP.
++ */
++int proc_notify_all_clients(void *hProc, u32 uEvents)
++{
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hProc;
++
++	DBC_REQUIRE(IS_VALID_PROC_EVENT(uEvents));
++	DBC_REQUIRE(refs > 0);
++
++	if (!p_proc_object) {
++		status = -EFAULT;
++		goto func_end;
++	}
++
++	dev_notify_clients(p_proc_object->hdev_obj, uEvents);
++
++func_end:
++	return status;
++}
++
++/*
++ *  ======== proc_get_processor_id ========
++ *  Purpose:
++ *      Retrieves the processor ID.
++ */
++int proc_get_processor_id(void *hProc, u32 * procID)
++{
++	int status = 0;
++	struct proc_object *p_proc_object = (struct proc_object *)hProc;
++
++	if (p_proc_object)
++		*procID = p_proc_object->processor_id;
++	else
++		status = -EFAULT;
++
++	return status;
++}
+diff --git a/drivers/staging/tidspbridge/rmgr/pwr.c b/drivers/staging/tidspbridge/rmgr/pwr.c
+new file mode 100644
+index 0000000..ec6d181
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/pwr.c
+@@ -0,0 +1,182 @@
++/*
++ * pwr.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * PWR API for controlling DSP power states.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++/*  ----------------------------------- Host OS */
++#include <dspbridge/host_os.h>
++
++/*  ----------------------------------- This */
++#include <dspbridge/pwr.h>
++
++/*  ----------------------------------- Resource Manager */
++#include <dspbridge/devdefs.h>
++#include <dspbridge/drv.h>
++
++/*  ----------------------------------- Platform Manager */
++#include <dspbridge/dev.h>
++
++/*  ----------------------------------- Link Driver */
++#include <dspbridge/dspioctl.h>
++
++/*
++ *  ======== pwr_sleep_dsp ========
++ *    Send command to DSP to enter sleep state.
++ */
++int pwr_sleep_dsp(IN CONST u32 sleepCode, IN CONST u32 timeout)
++{
++	struct bridge_drv_interface *intf_fxns;
++	struct bridge_dev_context *dw_context;
++	int status = -EPERM;
++	struct dev_object *hdev_obj = NULL;
++	u32 ioctlcode = 0;
++	u32 arg = timeout;
++
++	for (hdev_obj = (struct dev_object *)drv_get_first_dev_object();
++	     hdev_obj != NULL;
++	     hdev_obj =
++	     (struct dev_object *)drv_get_next_dev_object((u32) hdev_obj)) {
++		if (DSP_FAILED(dev_get_bridge_context(hdev_obj,
++						(struct bridge_dev_context **)
++						   &dw_context))) {
++			continue;
++		}
++		if (DSP_FAILED(dev_get_intf_fxns(hdev_obj,
++						(struct bridge_drv_interface **)
++						&intf_fxns))) {
++			continue;
++		}
++		if (sleepCode == PWR_DEEPSLEEP)
++			ioctlcode = BRDIOCTL_DEEPSLEEP;
++		else if (sleepCode == PWR_EMERGENCYDEEPSLEEP)
++			ioctlcode = BRDIOCTL_EMERGENCYSLEEP;
++		else
++			status = -EINVAL;
++
++		if (status != -EINVAL) {
++			status = (*intf_fxns->pfn_dev_cntrl) (dw_context,
++							      ioctlcode,
++							      (void *)&arg);
++		}
++	}
++	return status;
++}
++
++/*
++ *  ======== pwr_wake_dsp ========
++ *    Send command to DSP to wake it from sleep.
++ */
++int pwr_wake_dsp(IN CONST u32 timeout)
++{
++	struct bridge_drv_interface *intf_fxns;
++	struct bridge_dev_context *dw_context;
++	int status = -EPERM;
++	struct dev_object *hdev_obj = NULL;
++	u32 arg = timeout;
++
++	for (hdev_obj = (struct dev_object *)drv_get_first_dev_object();
++	     hdev_obj != NULL;
++	     hdev_obj = (struct dev_object *)drv_get_next_dev_object
++	     ((u32) hdev_obj)) {
++		if (DSP_SUCCEEDED(dev_get_bridge_context(hdev_obj,
++						      (struct bridge_dev_context
++						       **)&dw_context))) {
++			if (DSP_SUCCEEDED
++			    (dev_get_intf_fxns
++			     (hdev_obj,
++			      (struct bridge_drv_interface **)&intf_fxns))) {
++				status =
++				    (*intf_fxns->pfn_dev_cntrl) (dw_context,
++							BRDIOCTL_WAKEUP,
++							(void *)&arg);
++			}
++		}
++	}
++	return status;
++}
++
++/*
++ *  ======== pwr_pm_pre_scale========
++ *    Sends pre-notification message to DSP.
++ */
++int pwr_pm_pre_scale(IN u16 voltage_domain, u32 level)
++{
++	struct bridge_drv_interface *intf_fxns;
++	struct bridge_dev_context *dw_context;
++	int status = -EPERM;
++	struct dev_object *hdev_obj = NULL;
++	u32 arg[2];
++
++	arg[0] = voltage_domain;
++	arg[1] = level;
++
++	for (hdev_obj = (struct dev_object *)drv_get_first_dev_object();
++	     hdev_obj != NULL;
++	     hdev_obj = (struct dev_object *)drv_get_next_dev_object
++	     ((u32) hdev_obj)) {
++		if (DSP_SUCCEEDED(dev_get_bridge_context(hdev_obj,
++						      (struct bridge_dev_context
++						       **)&dw_context))) {
++			if (DSP_SUCCEEDED
++			    (dev_get_intf_fxns
++			     (hdev_obj,
++			      (struct bridge_drv_interface **)&intf_fxns))) {
++				status =
++				    (*intf_fxns->pfn_dev_cntrl) (dw_context,
++						BRDIOCTL_PRESCALE_NOTIFY,
++						(void *)&arg);
++			}
++		}
++	}
++	return status;
++}
++
++/*
++ *  ======== pwr_pm_post_scale========
++ *    Sends post-notification message to DSP.
++ */
++int pwr_pm_post_scale(IN u16 voltage_domain, u32 level)
++{
++	struct bridge_drv_interface *intf_fxns;
++	struct bridge_dev_context *dw_context;
++	int status = -EPERM;
++	struct dev_object *hdev_obj = NULL;
++	u32 arg[2];
++
++	arg[0] = voltage_domain;
++	arg[1] = level;
++
++	for (hdev_obj = (struct dev_object *)drv_get_first_dev_object();
++	     hdev_obj != NULL;
++	     hdev_obj = (struct dev_object *)drv_get_next_dev_object
++	     ((u32) hdev_obj)) {
++		if (DSP_SUCCEEDED(dev_get_bridge_context(hdev_obj,
++						      (struct bridge_dev_context
++						       **)&dw_context))) {
++			if (DSP_SUCCEEDED
++			    (dev_get_intf_fxns
++			     (hdev_obj,
++			      (struct bridge_drv_interface **)&intf_fxns))) {
++				status =
++				    (*intf_fxns->pfn_dev_cntrl) (dw_context,
++						BRDIOCTL_POSTSCALE_NOTIFY,
++						(void *)&arg);
++			}
++		}
++	}
++	return status;
++
++}
+diff --git a/drivers/staging/tidspbridge/rmgr/rmm.c b/drivers/staging/tidspbridge/rmgr/rmm.c
+new file mode 100644
+index 0000000..ff33080
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/rmm.c
+@@ -0,0 +1,535 @@
++/*
++ * rmm.c
 + *
 + * DSP-BIOS Bridge driver support functions for TI OMAP processors.
 + *
@@ -5669,153 +12028,1391 @@ index 0000000..e38d631
 + * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 + */
 +
-+#include "dload_internal.h"
++/*
++ *  This memory manager provides general heap management and arbitrary
++ *  alignment for any number of memory segments.
++ *
++ *  Notes:
++ *
++ *  Memory blocks are allocated from the end of the first free memory
++ *  block large enough to satisfy the request.  Alignment requirements
++ *  are satisfied by "sliding" the block forward until its base satisfies
++ *  the alignment specification; if this is not possible then the next
++ *  free block large enough to hold the request is tried.
++ *
++ *  Since alignment can cause the creation of a new free block - the
++ *  unused memory formed between the start of the original free block
++ *  and the start of the allocated block - the memory manager must free
++ *  this memory to prevent a memory leak.
++ *
++ *  Overlay memory is managed by reserving through rmm_alloc, and freeing
++ *  it through rmm_free. The memory manager prevents DSP code/data that is
++ *  overlayed from being overwritten as long as the memory it runs at has
++ *  been allocated, and not yet freed.
++ */
 +
-+/*  These are defined in coff.h, but may not be available on all platforms
-+	so we'll go ahead and define them here. */
-+#ifndef R_C60LO16
-+#define R_C60LO16	  0x54	/* C60: MVK Low Half Register */
-+#define R_C60HI16	  0x55	/* C60: MVKH/MVKLH High Half Register */
-+#endif
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
 +
-+#define C6X_TRAMP_WORD_COUNT			8
-+#define C6X_TRAMP_MAX_RELOS			 8
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
 +
-+/*  THIS HASH FUNCTION MUST MATCH THE ONE IN reloc_table_c6000.c */
-+#define HASH_FUNC(zz) (((((zz) + 1) * UINT32_C(1845)) >> 11) & 63)
++/*  ----------------------------------- OS Adaptation Layer */
++#include <dspbridge/list.h>
 +
-+/*  THIS MUST MATCH reloc_record_t FOR A SYMBOL BASED RELO */
-+struct c6000_relo_record {
-+	s32 vaddr;
-+	s32 symndx;
-+#ifndef _BIG_ENDIAN
-+	u16 disp;
-+	u16 type;
-+#else
-+	u16 type;
-+	u16 disp;
-+#endif
++/*  ----------------------------------- This */
++#include <dspbridge/rmm.h>
++
++/*
++ *  ======== rmm_header ========
++ *  This header is used to maintain a list of free memory blocks.
++ */
++struct rmm_header {
++	struct rmm_header *next;	/* form a free memory link list */
++	u32 size;		/* size of the free memory */
++	u32 addr;		/* DSP address of memory block */
 +};
 +
-+struct c6000_gen_code {
-+	struct tramp_gen_code_hdr hdr;
-+	u32 tramp_instrs[C6X_TRAMP_WORD_COUNT];
-+	struct c6000_relo_record relos[C6X_TRAMP_MAX_RELOS];
++/*
++ *  ======== rmm_ovly_sect ========
++ *  Keeps track of memory occupied by overlay section.
++ */
++struct rmm_ovly_sect {
++	struct list_head list_elem;
++	u32 addr;		/* Start of memory section */
++	u32 size;		/* Length (target MAUs) of section */
++	s32 page;		/* Memory page */
 +};
 +
-+/*  Hash mapping for relos that can cause trampolines. */
-+static const u16 tramp_map[] = {
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	0,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535,
-+	65535
++/*
++ *  ======== rmm_target_obj ========
++ */
++struct rmm_target_obj {
++	struct rmm_segment *seg_tab;
++	struct rmm_header **free_list;
++	u32 num_segs;
++	struct lst_list *ovly_list;	/* List of overlay memory in use */
 +};
 +
-+static const struct c6000_gen_code tramp_gen_info[] = {
-+	/*  Tramp caused by R_C60PCR21 */
-+	{
-+	 /*  Header - 8 instructions, 2 relos */
-+	 {
-+	  sizeof(u32) * C6X_TRAMP_WORD_COUNT,
-+	  2,
-+	  FIELD_OFFSET(struct c6000_gen_code, relos)
-+	  },
++static u32 refs;		/* module reference count */
 +
-+	 /*  Trampoline instructions */
-+	 {
-+	  0x053C54F7,		/*       STW.D2T2  B10, *sp--[2] */
-+	  0x0500002A,		/*  || MVK.S2   <blank>, B10 */
-+	  0x0500006A,		/*       MVKH.S2   <blank>, B10 */
-+	  0x00280362,		/*       B.S2     B10 */
-+	  0x053C52E6,		/*       LDW.D2T2  *++sp[2], B10 */
-+	  0x00006000,		/*       NOP       4 */
-+	  0x00000000,		/*       NOP */
-+	  0x00000000		/*       NOP */
-+	  },
++static bool alloc_block(struct rmm_target_obj *target, u32 segid, u32 size,
++			u32 align, u32 *dspAddr);
++static bool free_block(struct rmm_target_obj *target, u32 segid, u32 addr,
++		       u32 size);
 +
-+	 /*  Relocations */
-+	 {
-+	  {4, 0, 0, R_C60LO16},
-+	  {8, 0, 0, R_C60HI16},
-+	  {0, 0, 0, 0x0000},
-+	  {0, 0, 0, 0x0000},
-+	  {0, 0, 0, 0x0000},
-+	  {0, 0, 0, 0x0000},
-+	  {0, 0, 0, 0x0000},
-+	  {0, 0, 0, 0x0000}
-+	  }
-+	 }
-+};
-+
-+/*  TARGET SPECIFIC FUNCTIONS THAT MUST BE DEFINED */
-+static u32 tramp_size_get(void)
++/*
++ *  ======== rmm_alloc ========
++ */
++int rmm_alloc(struct rmm_target_obj *target, u32 segid, u32 size,
++		     u32 align, u32 *dspAddr, bool reserve)
 +{
-+	return sizeof(u32) * C6X_TRAMP_WORD_COUNT;
++	struct rmm_ovly_sect *sect;
++	struct rmm_ovly_sect *prev_sect = NULL;
++	struct rmm_ovly_sect *new_sect;
++	u32 addr;
++	int status = 0;
++
++	DBC_REQUIRE(target);
++	DBC_REQUIRE(dspAddr != NULL);
++	DBC_REQUIRE(size > 0);
++	DBC_REQUIRE(reserve || (target->num_segs > 0));
++	DBC_REQUIRE(refs > 0);
++
++	if (!reserve) {
++		if (!alloc_block(target, segid, size, align, dspAddr)) {
++			status = -ENOMEM;
++		} else {
++			/* Increment the number of allocated blocks in this
++			 * segment */
++			target->seg_tab[segid].number++;
++		}
++		goto func_end;
++	}
++	/* An overlay section - See if block is already in use. If not,
++	 * insert into the list in ascending address size. */
++	addr = *dspAddr;
++	sect = (struct rmm_ovly_sect *)lst_first(target->ovly_list);
++	/*  Find place to insert new list element. List is sorted from
++	 *  smallest to largest address. */
++	while (sect != NULL) {
++		if (addr <= sect->addr) {
++			/* Check for overlap with sect */
++			if ((addr + size > sect->addr) || (prev_sect &&
++							   (prev_sect->addr +
++							    prev_sect->size >
++							    addr))) {
++				status = -ENXIO;
++			}
++			break;
++		}
++		prev_sect = sect;
++		sect = (struct rmm_ovly_sect *)lst_next(target->ovly_list,
++							(struct list_head *)
++							sect);
++	}
++	if (DSP_SUCCEEDED(status)) {
++		/* No overlap - allocate list element for new section. */
++		new_sect = kzalloc(sizeof(struct rmm_ovly_sect), GFP_KERNEL);
++		if (new_sect == NULL) {
++			status = -ENOMEM;
++		} else {
++			lst_init_elem((struct list_head *)new_sect);
++			new_sect->addr = addr;
++			new_sect->size = size;
++			new_sect->page = segid;
++			if (sect == NULL) {
++				/* Put new section at the end of the list */
++				lst_put_tail(target->ovly_list,
++					     (struct list_head *)new_sect);
++			} else {
++				/* Put new section just before sect */
++				lst_insert_before(target->ovly_list,
++						  (struct list_head *)new_sect,
++						  (struct list_head *)sect);
++			}
++		}
++	}
++func_end:
++	return status;
 +}
 +
-+static u32 tramp_img_pkt_size_get(void)
++/*
++ *  ======== rmm_create ========
++ */
++int rmm_create(struct rmm_target_obj **target_obj,
++		      struct rmm_segment seg_tab[], u32 num_segs)
 +{
-+	return sizeof(struct c6000_gen_code);
++	struct rmm_header *hptr;
++	struct rmm_segment *sptr, *tmp;
++	struct rmm_target_obj *target;
++	s32 i;
++	int status = 0;
++
++	DBC_REQUIRE(target_obj != NULL);
++	DBC_REQUIRE(num_segs == 0 || seg_tab != NULL);
++
++	/* Allocate DBL target object */
++	target = kzalloc(sizeof(struct rmm_target_obj), GFP_KERNEL);
++
++	if (target == NULL)
++		status = -ENOMEM;
++
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	target->num_segs = num_segs;
++	if (!(num_segs > 0))
++		goto func_cont;
++
++	/* Allocate the memory for freelist from host's memory */
++	target->free_list = kzalloc(num_segs * sizeof(struct rmm_header *),
++							GFP_KERNEL);
++	if (target->free_list == NULL) {
++		status = -ENOMEM;
++	} else {
++		/* Allocate headers for each element on the free list */
++		for (i = 0; i < (s32) num_segs; i++) {
++			target->free_list[i] =
++				kzalloc(sizeof(struct rmm_header), GFP_KERNEL);
++			if (target->free_list[i] == NULL) {
++				status = -ENOMEM;
++				break;
++			}
++		}
++		/* Allocate memory for initial segment table */
++		target->seg_tab = kzalloc(num_segs * sizeof(struct rmm_segment),
++								GFP_KERNEL);
++		if (target->seg_tab == NULL) {
++			status = -ENOMEM;
++		} else {
++			/* Initialize segment table and free list */
++			sptr = target->seg_tab;
++			for (i = 0, tmp = seg_tab; num_segs > 0;
++			     num_segs--, i++) {
++				*sptr = *tmp;
++				hptr = target->free_list[i];
++				hptr->addr = tmp->base;
++				hptr->size = tmp->length;
++				hptr->next = NULL;
++				tmp++;
++				sptr++;
++			}
++		}
++	}
++func_cont:
++	/* Initialize overlay memory list */
++	if (DSP_SUCCEEDED(status)) {
++		target->ovly_list = kzalloc(sizeof(struct lst_list),
++							GFP_KERNEL);
++		if (target->ovly_list == NULL)
++			status = -ENOMEM;
++		else
++			INIT_LIST_HEAD(&target->ovly_list->head);
++	}
++
++	if (DSP_SUCCEEDED(status)) {
++		*target_obj = target;
++	} else {
++		*target_obj = NULL;
++		if (target)
++			rmm_delete(target);
++
++	}
++
++	DBC_ENSURE((DSP_SUCCEEDED(status) && *target_obj)
++		   || (DSP_FAILED(status) && *target_obj == NULL));
++
++	return status;
++}
++
++/*
++ *  ======== rmm_delete ========
++ */
++void rmm_delete(struct rmm_target_obj *target)
++{
++	struct rmm_ovly_sect *ovly_section;
++	struct rmm_header *hptr;
++	struct rmm_header *next;
++	u32 i;
++
++	DBC_REQUIRE(target);
++
++	kfree(target->seg_tab);
++
++	if (target->ovly_list) {
++		while ((ovly_section = (struct rmm_ovly_sect *)lst_get_head
++			(target->ovly_list))) {
++			kfree(ovly_section);
++		}
++		DBC_ASSERT(LST_IS_EMPTY(target->ovly_list));
++		kfree(target->ovly_list);
++	}
++
++	if (target->free_list != NULL) {
++		/* Free elements on freelist */
++		for (i = 0; i < target->num_segs; i++) {
++			hptr = next = target->free_list[i];
++			while (next) {
++				hptr = next;
++				next = hptr->next;
++				kfree(hptr);
++			}
++		}
++		kfree(target->free_list);
++	}
++
++	kfree(target);
++}
++
++/*
++ *  ======== rmm_exit ========
++ */
++void rmm_exit(void)
++{
++	DBC_REQUIRE(refs > 0);
++
++	refs--;
++
++	DBC_ENSURE(refs >= 0);
++}
++
++/*
++ *  ======== rmm_free ========
++ */
++bool rmm_free(struct rmm_target_obj *target, u32 segid, u32 addr, u32 size,
++	      bool reserved)
++{
++	struct rmm_ovly_sect *sect;
++	bool ret = true;
++
++	DBC_REQUIRE(target);
++
++	DBC_REQUIRE(reserved || segid < target->num_segs);
++	DBC_REQUIRE(reserved || (addr >= target->seg_tab[segid].base &&
++				 (addr + size) <= (target->seg_tab[segid].base +
++						   target->seg_tab[segid].
++						   length)));
++
++	/*
++	 *  Free or unreserve memory.
++	 */
++	if (!reserved) {
++		ret = free_block(target, segid, addr, size);
++		if (ret)
++			target->seg_tab[segid].number--;
++
++	} else {
++		/* Unreserve memory */
++		sect = (struct rmm_ovly_sect *)lst_first(target->ovly_list);
++		while (sect != NULL) {
++			if (addr == sect->addr) {
++				DBC_ASSERT(size == sect->size);
++				/* Remove from list */
++				lst_remove_elem(target->ovly_list,
++						(struct list_head *)sect);
++				kfree(sect);
++				break;
++			}
++			sect =
++			    (struct rmm_ovly_sect *)lst_next(target->ovly_list,
++							     (struct list_head
++							      *)sect);
++		}
++		if (sect == NULL)
++			ret = false;
++
++	}
++	return ret;
++}
++
++/*
++ *  ======== rmm_init ========
++ */
++bool rmm_init(void)
++{
++	DBC_REQUIRE(refs >= 0);
++
++	refs++;
++
++	return true;
++}
++
++/*
++ *  ======== rmm_stat ========
++ */
++bool rmm_stat(struct rmm_target_obj *target, enum dsp_memtype segid,
++	      struct dsp_memstat *pMemStatBuf)
++{
++	struct rmm_header *head;
++	bool ret = false;
++	u32 max_free_size = 0;
++	u32 total_free_size = 0;
++	u32 free_blocks = 0;
++
++	DBC_REQUIRE(pMemStatBuf != NULL);
++	DBC_ASSERT(target != NULL);
++
++	if ((u32) segid < target->num_segs) {
++		head = target->free_list[segid];
++
++		/* Collect data from free_list */
++		while (head != NULL) {
++			max_free_size = max(max_free_size, head->size);
++			total_free_size += head->size;
++			free_blocks++;
++			head = head->next;
++		}
++
++		/* ul_size */
++		pMemStatBuf->ul_size = target->seg_tab[segid].length;
++
++		/* ul_num_free_blocks */
++		pMemStatBuf->ul_num_free_blocks = free_blocks;
++
++		/* ul_total_free_size */
++		pMemStatBuf->ul_total_free_size = total_free_size;
++
++		/* ul_len_max_free_block */
++		pMemStatBuf->ul_len_max_free_block = max_free_size;
++
++		/* ul_num_alloc_blocks */
++		pMemStatBuf->ul_num_alloc_blocks =
++		    target->seg_tab[segid].number;
++
++		ret = true;
++	}
++
++	return ret;
++}
++
++/*
++ *  ======== balloc ========
++ *  This allocation function allocates memory from the lowest addresses
++ *  first.
++ */
++static bool alloc_block(struct rmm_target_obj *target, u32 segid, u32 size,
++			u32 align, u32 *dspAddr)
++{
++	struct rmm_header *head;
++	struct rmm_header *prevhead = NULL;
++	struct rmm_header *next;
++	u32 tmpalign;
++	u32 alignbytes;
++	u32 hsize;
++	u32 allocsize;
++	u32 addr;
++
++	alignbytes = (align == 0) ? 1 : align;
++	prevhead = NULL;
++	head = target->free_list[segid];
++
++	do {
++		hsize = head->size;
++		next = head->next;
++
++		addr = head->addr;	/* alloc from the bottom */
++
++		/* align allocation */
++		(tmpalign = (u32) addr % alignbytes);
++		if (tmpalign != 0)
++			tmpalign = alignbytes - tmpalign;
++
++		allocsize = size + tmpalign;
++
++		if (hsize >= allocsize) {	/* big enough */
++			if (hsize == allocsize && prevhead != NULL) {
++				prevhead->next = next;
++				kfree(head);
++			} else {
++				head->size = hsize - allocsize;
++				head->addr += allocsize;
++			}
++
++			/* free up any hole created by alignment */
++			if (tmpalign)
++				free_block(target, segid, addr, tmpalign);
++
++			*dspAddr = addr + tmpalign;
++			return true;
++		}
++
++		prevhead = head;
++		head = next;
++
++	} while (head != NULL);
++
++	return false;
++}
++
++/*
++ *  ======== free_block ========
++ *  TO DO: free_block() allocates memory, which could result in failure.
++ *  Could allocate an rmm_header in rmm_alloc(), to be kept in a pool.
++ *  free_block() could use an rmm_header from the pool, freeing as blocks
++ *  are coalesced.
++ */
++static bool free_block(struct rmm_target_obj *target, u32 segid, u32 addr,
++		       u32 size)
++{
++	struct rmm_header *head;
++	struct rmm_header *thead;
++	struct rmm_header *rhead;
++	bool ret = true;
++
++	/* Create a memory header to hold the newly free'd block. */
++	rhead = kzalloc(sizeof(struct rmm_header), GFP_KERNEL);
++	if (rhead == NULL) {
++		ret = false;
++	} else {
++		/* search down the free list to find the right place for addr */
++		head = target->free_list[segid];
++
++		if (addr >= head->addr) {
++			while (head->next != NULL && addr > head->next->addr)
++				head = head->next;
++
++			thead = head->next;
++
++			head->next = rhead;
++			rhead->next = thead;
++			rhead->addr = addr;
++			rhead->size = size;
++		} else {
++			*rhead = *head;
++			head->next = rhead;
++			head->addr = addr;
++			head->size = size;
++			thead = rhead->next;
++		}
++
++		/* join with upper block, if possible */
++		if (thead != NULL && (rhead->addr + rhead->size) ==
++		    thead->addr) {
++			head->next = rhead->next;
++			thead->size = size + thead->size;
++			thead->addr = addr;
++			kfree(rhead);
++			rhead = thead;
++		}
++
++		/* join with the lower block, if possible */
++		if ((head->addr + head->size) == rhead->addr) {
++			head->next = rhead->next;
++			head->size = head->size + rhead->size;
++			kfree(rhead);
++		}
++	}
++
++	return ret;
++}
+diff --git a/drivers/staging/tidspbridge/rmgr/strm.c b/drivers/staging/tidspbridge/rmgr/strm.c
+new file mode 100644
+index 0000000..e537ee8
+--- /dev/null
++++ b/drivers/staging/tidspbridge/rmgr/strm.c
+@@ -0,0 +1,861 @@
++/*
++ * strm.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * DSP/BIOS Bridge Stream Manager.
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++/*  ----------------------------------- Host OS */
++#include <dspbridge/host_os.h>
++
++/*  ----------------------------------- DSP/BIOS Bridge */
++#include <dspbridge/std.h>
++#include <dspbridge/dbdefs.h>
++
++/*  ----------------------------------- Trace & Debug */
++#include <dspbridge/dbc.h>
++
++/*  ----------------------------------- OS Adaptation Layer */
++#include <dspbridge/sync.h>
++
++/*  ----------------------------------- Bridge Driver */
++#include <dspbridge/dspdefs.h>
++
++/*  ----------------------------------- Resource Manager */
++#include <dspbridge/nodepriv.h>
++
++/*  ----------------------------------- Others */
++#include <dspbridge/cmm.h>
++
++/*  ----------------------------------- This */
++#include <dspbridge/strm.h>
++
++#include <dspbridge/cfg.h>
++#include <dspbridge/resourcecleanup.h>
++
++/*  ----------------------------------- Defines, Data Structures, Typedefs */
++#define DEFAULTTIMEOUT      10000
++#define DEFAULTNUMBUFS      2
++
++/*
++ *  ======== strm_mgr ========
++ *  The strm_mgr contains device information needed to open the underlying
++ *  channels of a stream.
++ */
++struct strm_mgr {
++	struct dev_object *dev_obj;	/* Device for this processor */
++	struct chnl_mgr *hchnl_mgr;	/* Channel manager */
++	/* Function interface to Bridge driver */
++	struct bridge_drv_interface *intf_fxns;
++};
++
++/*
++ *  ======== strm_object ========
++ *  This object is allocated in strm_open().
++ */
++struct strm_object {
++	struct strm_mgr *strm_mgr_obj;
++	struct chnl_object *chnl_obj;
++	u32 dir;		/* DSP_TONODE or DSP_FROMNODE */
++	u32 utimeout;
++	u32 num_bufs;		/* Max # of bufs allowed in stream */
++	u32 un_bufs_in_strm;	/* Current # of bufs in stream */
++	u32 ul_n_bytes;		/* bytes transferred since idled */
++	/* STREAM_IDLE, STREAM_READY, ... */
++	enum dsp_streamstate strm_state;
++	void *user_event;	/* Saved for strm_get_info() */
++	enum dsp_strmmode strm_mode;	/* STRMMODE_[PROCCOPY][ZEROCOPY]... */
++	u32 udma_chnl_id;	/* DMA chnl id */
++	u32 udma_priority;	/* DMA priority:DMAPRI_[LOW][HIGH] */
++	u32 segment_id;		/* >0 is SM segment.=0 is local heap */
++	u32 buf_alignment;	/* Alignment for stream bufs */
++	/* Stream's SM address translator */
++	struct cmm_xlatorobject *xlator;
++};
++
++/*  ----------------------------------- Globals */
++static u32 refs;		/* module reference count */
++
++/*  ----------------------------------- Function Prototypes */
++static int delete_strm(struct strm_object *hStrm);
++static void delete_strm_mgr(struct strm_mgr *strm_mgr_obj);
++
++/*
++ *  ======== strm_allocate_buffer ========
++ *  Purpose:
++ *      Allocates buffers for a stream.
++ */
++int strm_allocate_buffer(struct strm_object *hStrm, u32 usize,
++				OUT u8 **ap_buffer, u32 num_bufs,
++				struct process_context *pr_ctxt)
++{
++	int status = 0;
++	u32 alloc_cnt = 0;
++	u32 i;
++
++	void *hstrm_res;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(ap_buffer != NULL);
++
++	if (hStrm) {
++		/*
++		 * Allocate from segment specified at time of stream open.
++		 */
++		if (usize == 0)
++			status = -EINVAL;
++
++	} else {
++		status = -EFAULT;
++	}
++
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	for (i = 0; i < num_bufs; i++) {
++		DBC_ASSERT(hStrm->xlator != NULL);
++		(void)cmm_xlator_alloc_buf(hStrm->xlator, &ap_buffer[i], usize);
++		if (ap_buffer[i] == NULL) {
++			status = -ENOMEM;
++			alloc_cnt = i;
++			break;
++		}
++	}
++	if (DSP_FAILED(status))
++		strm_free_buffer(hStrm, ap_buffer, alloc_cnt, pr_ctxt);
++
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	if (drv_get_strm_res_element(hStrm, &hstrm_res, pr_ctxt) !=
++	    -ENOENT)
++		drv_proc_update_strm_res(num_bufs, hstrm_res);
++
++func_end:
++	return status;
++}
++
++/*
++ *  ======== strm_close ========
++ *  Purpose:
++ *      Close a stream opened with strm_open().
++ */
++int strm_close(struct strm_object *hStrm,
++		      struct process_context *pr_ctxt)
++{
++	struct bridge_drv_interface *intf_fxns;
++	struct chnl_info chnl_info_obj;
++	int status = 0;
++
++	void *hstrm_res;
++
++	DBC_REQUIRE(refs > 0);
++
++	if (!hStrm) {
++		status = -EFAULT;
++	} else {
++		/* Have all buffers been reclaimed? If not, return
++		 * -EPIPE */
++		intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
++		status =
++		    (*intf_fxns->pfn_chnl_get_info) (hStrm->chnl_obj,
++						     &chnl_info_obj);
++		DBC_ASSERT(DSP_SUCCEEDED(status));
++
++		if (chnl_info_obj.cio_cs > 0 || chnl_info_obj.cio_reqs > 0)
++			status = -EPIPE;
++		else
++			status = delete_strm(hStrm);
++	}
++
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	if (drv_get_strm_res_element(hStrm, &hstrm_res, pr_ctxt) !=
++	    -ENOENT)
++		drv_proc_remove_strm_res_element(hstrm_res, pr_ctxt);
++func_end:
++	DBC_ENSURE(status == 0 || status == -EFAULT ||
++		   status == -EPIPE || status == -EPERM);
++
++	dev_dbg(bridge, "%s: hStrm: %p, status 0x%x\n", __func__,
++		hStrm, status);
++	return status;
++}
++
++/*
++ *  ======== strm_create ========
++ *  Purpose:
++ *      Create a STRM manager object.
++ */
++int strm_create(OUT struct strm_mgr **phStrmMgr,
++		       struct dev_object *dev_obj)
++{
++	struct strm_mgr *strm_mgr_obj;
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(phStrmMgr != NULL);
++	DBC_REQUIRE(dev_obj != NULL);
++
++	*phStrmMgr = NULL;
++	/* Allocate STRM manager object */
++	strm_mgr_obj = kzalloc(sizeof(struct strm_mgr), GFP_KERNEL);
++	if (strm_mgr_obj == NULL)
++		status = -ENOMEM;
++	else
++		strm_mgr_obj->dev_obj = dev_obj;
++
++	/* Get Channel manager and Bridge function interface */
++	if (DSP_SUCCEEDED(status)) {
++		status = dev_get_chnl_mgr(dev_obj, &(strm_mgr_obj->hchnl_mgr));
++		if (DSP_SUCCEEDED(status)) {
++			(void)dev_get_intf_fxns(dev_obj,
++						&(strm_mgr_obj->intf_fxns));
++			DBC_ASSERT(strm_mgr_obj->intf_fxns != NULL);
++		}
++	}
++
++	if (DSP_SUCCEEDED(status))
++		*phStrmMgr = strm_mgr_obj;
++	else
++		delete_strm_mgr(strm_mgr_obj);
++
++	DBC_ENSURE((DSP_SUCCEEDED(status) && *phStrmMgr) ||
++				(DSP_FAILED(status) && *phStrmMgr == NULL));
++
++	return status;
++}
++
++/*
++ *  ======== strm_delete ========
++ *  Purpose:
++ *      Delete the STRM Manager Object.
++ */
++void strm_delete(struct strm_mgr *strm_mgr_obj)
++{
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(strm_mgr_obj);
++
++	delete_strm_mgr(strm_mgr_obj);
++}
++
++/*
++ *  ======== strm_exit ========
++ *  Purpose:
++ *      Discontinue usage of STRM module.
++ */
++void strm_exit(void)
++{
++	DBC_REQUIRE(refs > 0);
++
++	refs--;
++
++	DBC_ENSURE(refs >= 0);
++}
++
++/*
++ *  ======== strm_free_buffer ========
++ *  Purpose:
++ *      Frees the buffers allocated for a stream.
++ */
++int strm_free_buffer(struct strm_object *hStrm, u8 ** ap_buffer,
++			    u32 num_bufs, struct process_context *pr_ctxt)
++{
++	int status = 0;
++	u32 i = 0;
++
++	void *hstrm_res = NULL;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(ap_buffer != NULL);
++
++	if (!hStrm)
++		status = -EFAULT;
++
++	if (DSP_SUCCEEDED(status)) {
++		for (i = 0; i < num_bufs; i++) {
++			DBC_ASSERT(hStrm->xlator != NULL);
++			status =
++			    cmm_xlator_free_buf(hStrm->xlator, ap_buffer[i]);
++			if (DSP_FAILED(status))
++				break;
++			ap_buffer[i] = NULL;
++		}
++	}
++	if (drv_get_strm_res_element(hStrm, hstrm_res, pr_ctxt) !=
++	    -ENOENT)
++		drv_proc_update_strm_res(num_bufs - i, hstrm_res);
++
++	return status;
++}
++
++/*
++ *  ======== strm_get_info ========
++ *  Purpose:
++ *      Retrieves information about a stream.
++ */
++int strm_get_info(struct strm_object *hStrm,
++			 OUT struct stream_info *stream_info,
++			 u32 stream_info_size)
++{
++	struct bridge_drv_interface *intf_fxns;
++	struct chnl_info chnl_info_obj;
++	int status = 0;
++	void *virt_base = NULL;	/* NULL if no SM used */
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(stream_info != NULL);
++	DBC_REQUIRE(stream_info_size >= sizeof(struct stream_info));
++
++	if (!hStrm) {
++		status = -EFAULT;
++	} else {
++		if (stream_info_size < sizeof(struct stream_info)) {
++			/* size of users info */
++			status = -EINVAL;
++		}
++	}
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
++	status =
++	    (*intf_fxns->pfn_chnl_get_info) (hStrm->chnl_obj, &chnl_info_obj);
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	if (hStrm->xlator) {
++		/* We have a translator */
++		DBC_ASSERT(hStrm->segment_id > 0);
++		cmm_xlator_info(hStrm->xlator, (u8 **) &virt_base, 0,
++				hStrm->segment_id, false);
++	}
++	stream_info->segment_id = hStrm->segment_id;
++	stream_info->strm_mode = hStrm->strm_mode;
++	stream_info->virt_base = virt_base;
++	stream_info->user_strm->number_bufs_allowed = hStrm->num_bufs;
++	stream_info->user_strm->number_bufs_in_stream = chnl_info_obj.cio_cs +
++	    chnl_info_obj.cio_reqs;
++	/* # of bytes transferred since last call to DSPStream_Idle() */
++	stream_info->user_strm->ul_number_bytes = chnl_info_obj.bytes_tx;
++	stream_info->user_strm->sync_object_handle = chnl_info_obj.event_obj;
++	/* Determine stream state based on channel state and info */
++	if (chnl_info_obj.dw_state & CHNL_STATEEOS) {
++		stream_info->user_strm->ss_stream_state = STREAM_DONE;
++	} else {
++		if (chnl_info_obj.cio_cs > 0)
++			stream_info->user_strm->ss_stream_state = STREAM_READY;
++		else if (chnl_info_obj.cio_reqs > 0)
++			stream_info->user_strm->ss_stream_state =
++			    STREAM_PENDING;
++		else
++			stream_info->user_strm->ss_stream_state = STREAM_IDLE;
++
++	}
++func_end:
++	return status;
++}
++
++/*
++ *  ======== strm_idle ========
++ *  Purpose:
++ *      Idles a particular stream.
++ */
++int strm_idle(struct strm_object *hStrm, bool fFlush)
++{
++	struct bridge_drv_interface *intf_fxns;
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++
++	if (!hStrm) {
++		status = -EFAULT;
++	} else {
++		intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
++
++		status = (*intf_fxns->pfn_chnl_idle) (hStrm->chnl_obj,
++						      hStrm->utimeout, fFlush);
++	}
++
++	dev_dbg(bridge, "%s: hStrm: %p fFlush: 0x%x status: 0x%x\n",
++		__func__, hStrm, fFlush, status);
++	return status;
++}
++
++/*
++ *  ======== strm_init ========
++ *  Purpose:
++ *      Initialize the STRM module.
++ */
++bool strm_init(void)
++{
++	bool ret = true;
++
++	DBC_REQUIRE(refs >= 0);
++
++	if (ret)
++		refs++;
++
++	DBC_ENSURE((ret && (refs > 0)) || (!ret && (refs >= 0)));
++
++	return ret;
++}
++
++/*
++ *  ======== strm_issue ========
++ *  Purpose:
++ *      Issues a buffer on a stream
++ */
++int strm_issue(struct strm_object *hStrm, IN u8 *pbuf, u32 ul_bytes,
++		      u32 ul_buf_size, u32 dw_arg)
++{
++	struct bridge_drv_interface *intf_fxns;
++	int status = 0;
++	void *tmp_buf = NULL;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(pbuf != NULL);
++
++	if (!hStrm) {
++		status = -EFAULT;
++	} else {
++		intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
++
++		if (hStrm->segment_id != 0) {
++			tmp_buf = cmm_xlator_translate(hStrm->xlator,
++						       (void *)pbuf,
++						       CMM_VA2DSPPA);
++			if (tmp_buf == NULL)
++				status = -ESRCH;
++
++		}
++		if (DSP_SUCCEEDED(status)) {
++			status = (*intf_fxns->pfn_chnl_add_io_req)
++			    (hStrm->chnl_obj, pbuf, ul_bytes, ul_buf_size,
++			     (u32) tmp_buf, dw_arg);
++		}
++		if (status == -EIO)
++			status = -ENOSR;
++	}
++
++	dev_dbg(bridge, "%s: hStrm: %p pbuf: %p ul_bytes: 0x%x dw_arg: 0x%x "
++		"status: 0x%x\n", __func__, hStrm, pbuf,
++		ul_bytes, dw_arg, status);
++	return status;
++}
++
++/*
++ *  ======== strm_open ========
++ *  Purpose:
++ *      Open a stream for sending/receiving data buffers to/from a task or
++ *      XDAIS socket node on the DSP.
++ */
++int strm_open(struct node_object *hnode, u32 dir, u32 index,
++		     IN struct strm_attr *pattr,
++		     OUT struct strm_object **phStrm,
++		     struct process_context *pr_ctxt)
++{
++	struct strm_mgr *strm_mgr_obj;
++	struct bridge_drv_interface *intf_fxns;
++	u32 ul_chnl_id;
++	struct strm_object *strm_obj = NULL;
++	s8 chnl_mode;
++	struct chnl_attr chnl_attr_obj;
++	int status = 0;
++	struct cmm_object *hcmm_mgr = NULL;	/* Shared memory manager hndl */
++
++	void *hstrm_res;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(phStrm != NULL);
++	DBC_REQUIRE(pattr != NULL);
++	*phStrm = NULL;
++	if (dir != DSP_TONODE && dir != DSP_FROMNODE) {
++		status = -EPERM;
++	} else {
++		/* Get the channel id from the node (set in node_connect()) */
++		status = node_get_channel_id(hnode, dir, index, &ul_chnl_id);
++	}
++	if (DSP_SUCCEEDED(status))
++		status = node_get_strm_mgr(hnode, &strm_mgr_obj);
++
++	if (DSP_SUCCEEDED(status)) {
++		strm_obj = kzalloc(sizeof(struct strm_object), GFP_KERNEL);
++		if (strm_obj == NULL) {
++			status = -ENOMEM;
++		} else {
++			strm_obj->strm_mgr_obj = strm_mgr_obj;
++			strm_obj->dir = dir;
++			strm_obj->strm_state = STREAM_IDLE;
++			strm_obj->user_event = pattr->user_event;
++			if (pattr->stream_attr_in != NULL) {
++				strm_obj->utimeout =
++				    pattr->stream_attr_in->utimeout;
++				strm_obj->num_bufs =
++				    pattr->stream_attr_in->num_bufs;
++				strm_obj->strm_mode =
++				    pattr->stream_attr_in->strm_mode;
++				strm_obj->segment_id =
++				    pattr->stream_attr_in->segment_id;
++				strm_obj->buf_alignment =
++				    pattr->stream_attr_in->buf_alignment;
++				strm_obj->udma_chnl_id =
++				    pattr->stream_attr_in->udma_chnl_id;
++				strm_obj->udma_priority =
++				    pattr->stream_attr_in->udma_priority;
++				chnl_attr_obj.uio_reqs =
++				    pattr->stream_attr_in->num_bufs;
++			} else {
++				strm_obj->utimeout = DEFAULTTIMEOUT;
++				strm_obj->num_bufs = DEFAULTNUMBUFS;
++				strm_obj->strm_mode = STRMMODE_PROCCOPY;
++				strm_obj->segment_id = 0;	/* local mem */
++				strm_obj->buf_alignment = 0;
++				strm_obj->udma_chnl_id = 0;
++				strm_obj->udma_priority = 0;
++				chnl_attr_obj.uio_reqs = DEFAULTNUMBUFS;
++			}
++			chnl_attr_obj.reserved1 = NULL;
++			/* DMA chnl flush timeout */
++			chnl_attr_obj.reserved2 = strm_obj->utimeout;
++			chnl_attr_obj.event_obj = NULL;
++			if (pattr->user_event != NULL)
++				chnl_attr_obj.event_obj = pattr->user_event;
++
++		}
++	}
++	if (DSP_FAILED(status))
++		goto func_cont;
++
++	if ((pattr->virt_base == NULL) || !(pattr->ul_virt_size > 0))
++		goto func_cont;
++
++	/* No System DMA */
++	DBC_ASSERT(strm_obj->strm_mode != STRMMODE_LDMA);
++	/* Get the shared mem mgr for this streams dev object */
++	status = dev_get_cmm_mgr(strm_mgr_obj->dev_obj, &hcmm_mgr);
++	if (DSP_SUCCEEDED(status)) {
++		/*Allocate a SM addr translator for this strm. */
++		status = cmm_xlator_create(&strm_obj->xlator, hcmm_mgr, NULL);
++		if (DSP_SUCCEEDED(status)) {
++			DBC_ASSERT(strm_obj->segment_id > 0);
++			/*  Set translators Virt Addr attributes */
++			status = cmm_xlator_info(strm_obj->xlator,
++						 (u8 **) &pattr->virt_base,
++						 pattr->ul_virt_size,
++						 strm_obj->segment_id, true);
++		}
++	}
++func_cont:
++	if (DSP_SUCCEEDED(status)) {
++		/* Open channel */
++		chnl_mode = (dir == DSP_TONODE) ?
++		    CHNL_MODETODSP : CHNL_MODEFROMDSP;
++		intf_fxns = strm_mgr_obj->intf_fxns;
++		status = (*intf_fxns->pfn_chnl_open) (&(strm_obj->chnl_obj),
++						      strm_mgr_obj->hchnl_mgr,
++						      chnl_mode, ul_chnl_id,
++						      &chnl_attr_obj);
++		if (DSP_FAILED(status)) {
++			/*
++			 * over-ride non-returnable status codes so we return
++			 * something documented
++			 */
++			if (status != -ENOMEM && status !=
++			    -EINVAL && status != -EPERM) {
++				/*
++				 * We got a status that's not return-able.
++				 * Assert that we got something we were
++				 * expecting (-EFAULT isn't acceptable,
++				 * strm_mgr_obj->hchnl_mgr better be valid or we
++				 * assert here), and then return -EPERM.
++				 */
++				DBC_ASSERT(status == -ENOSR ||
++					   status == -ECHRNG ||
++					   status == -EALREADY ||
++					   status == -EIO);
++				status = -EPERM;
++			}
++		}
++	}
++	if (DSP_SUCCEEDED(status)) {
++		*phStrm = strm_obj;
++		drv_proc_insert_strm_res_element(*phStrm, &hstrm_res, pr_ctxt);
++	} else {
++		(void)delete_strm(strm_obj);
++	}
++
++	/* ensure we return a documented error code */
++	DBC_ENSURE((DSP_SUCCEEDED(status) && *phStrm) ||
++		   (*phStrm == NULL && (status == -EFAULT ||
++					status == -EPERM
++					|| status == -EINVAL)));
++
++	dev_dbg(bridge, "%s: hnode: %p dir: 0x%x index: 0x%x pattr: %p "
++		"phStrm: %p status: 0x%x\n", __func__,
++		hnode, dir, index, pattr, phStrm, status);
++	return status;
++}
++
++/*
++ *  ======== strm_reclaim ========
++ *  Purpose:
++ *      Relcaims a buffer from a stream.
++ */
++int strm_reclaim(struct strm_object *hStrm, OUT u8 ** buf_ptr,
++			u32 *pulBytes, u32 *pulBufSize, u32 *pdw_arg)
++{
++	struct bridge_drv_interface *intf_fxns;
++	struct chnl_ioc chnl_ioc_obj;
++	int status = 0;
++	void *tmp_buf = NULL;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(buf_ptr != NULL);
++	DBC_REQUIRE(pulBytes != NULL);
++	DBC_REQUIRE(pdw_arg != NULL);
++
++	if (!hStrm) {
++		status = -EFAULT;
++		goto func_end;
++	}
++	intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
++
++	status =
++	    (*intf_fxns->pfn_chnl_get_ioc) (hStrm->chnl_obj, hStrm->utimeout,
++					    &chnl_ioc_obj);
++	if (DSP_SUCCEEDED(status)) {
++		*pulBytes = chnl_ioc_obj.byte_size;
++		if (pulBufSize)
++			*pulBufSize = chnl_ioc_obj.buf_size;
++
++		*pdw_arg = chnl_ioc_obj.dw_arg;
++		if (!CHNL_IS_IO_COMPLETE(chnl_ioc_obj)) {
++			if (CHNL_IS_TIMED_OUT(chnl_ioc_obj)) {
++				status = -ETIME;
++			} else {
++				/* Allow reclaims after idle to succeed */
++				if (!CHNL_IS_IO_CANCELLED(chnl_ioc_obj))
++					status = -EPERM;
++
++			}
++		}
++		/* Translate zerocopy buffer if channel not canceled. */
++		if (DSP_SUCCEEDED(status)
++		    && (!CHNL_IS_IO_CANCELLED(chnl_ioc_obj))
++		    && (hStrm->strm_mode == STRMMODE_ZEROCOPY)) {
++			/*
++			 *  This is a zero-copy channel so chnl_ioc_obj.pbuf
++			 *  contains the DSP address of SM. We need to
++			 *  translate it to a virtual address for the user
++			 *  thread to access.
++			 *  Note: Could add CMM_DSPPA2VA to CMM in the future.
++			 */
++			tmp_buf = cmm_xlator_translate(hStrm->xlator,
++						       chnl_ioc_obj.pbuf,
++						       CMM_DSPPA2PA);
++			if (tmp_buf != NULL) {
++				/* now convert this GPP Pa to Va */
++				tmp_buf = cmm_xlator_translate(hStrm->xlator,
++							       tmp_buf,
++							       CMM_PA2VA);
++			}
++			if (tmp_buf == NULL)
++				status = -ESRCH;
++
++			chnl_ioc_obj.pbuf = tmp_buf;
++		}
++		*buf_ptr = chnl_ioc_obj.pbuf;
++	}
++func_end:
++	/* ensure we return a documented return code */
++	DBC_ENSURE(DSP_SUCCEEDED(status) || status == -EFAULT ||
++		   status == -ETIME || status == -ESRCH ||
++		   status == -EPERM);
++
++	dev_dbg(bridge, "%s: hStrm: %p buf_ptr: %p pulBytes: %p pdw_arg: %p "
++		"status 0x%x\n", __func__, hStrm,
++		buf_ptr, pulBytes, pdw_arg, status);
++	return status;
++}
++
++/*
++ *  ======== strm_register_notify ========
++ *  Purpose:
++ *      Register to be notified on specific events for this stream.
++ */
++int strm_register_notify(struct strm_object *hStrm, u32 event_mask,
++				u32 notify_type, struct dsp_notification
++				* hnotification)
++{
++	struct bridge_drv_interface *intf_fxns;
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(hnotification != NULL);
++
++	if (!hStrm) {
++		status = -EFAULT;
++	} else if ((event_mask & ~((DSP_STREAMIOCOMPLETION) |
++				   DSP_STREAMDONE)) != 0) {
++		status = -EINVAL;
++	} else {
++		if (notify_type != DSP_SIGNALEVENT)
++			status = -ENOSYS;
++
++	}
++	if (DSP_SUCCEEDED(status)) {
++		intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
++
++		status =
++		    (*intf_fxns->pfn_chnl_register_notify) (hStrm->chnl_obj,
++							    event_mask,
++							    notify_type,
++							    hnotification);
++	}
++	/* ensure we return a documented return code */
++	DBC_ENSURE(DSP_SUCCEEDED(status) || status == -EFAULT ||
++		   status == -ETIME || status == -ESRCH ||
++		   status == -ENOSYS || status == -EPERM);
++	return status;
++}
++
++/*
++ *  ======== strm_select ========
++ *  Purpose:
++ *      Selects a ready stream.
++ */
++int strm_select(IN struct strm_object **strm_tab, u32 nStrms,
++		       OUT u32 *pmask, u32 utimeout)
++{
++	u32 index;
++	struct chnl_info chnl_info_obj;
++	struct bridge_drv_interface *intf_fxns;
++	struct sync_object **sync_events = NULL;
++	u32 i;
++	int status = 0;
++
++	DBC_REQUIRE(refs > 0);
++	DBC_REQUIRE(strm_tab != NULL);
++	DBC_REQUIRE(pmask != NULL);
++	DBC_REQUIRE(nStrms > 0);
++
++	*pmask = 0;
++	for (i = 0; i < nStrms; i++) {
++		if (!strm_tab[i]) {
++			status = -EFAULT;
++			break;
++		}
++	}
++	if (DSP_FAILED(status))
++		goto func_end;
++
++	/* Determine which channels have IO ready */
++	for (i = 0; i < nStrms; i++) {
++		intf_fxns = strm_tab[i]->strm_mgr_obj->intf_fxns;
++		status = (*intf_fxns->pfn_chnl_get_info) (strm_tab[i]->chnl_obj,
++							  &chnl_info_obj);
++		if (DSP_FAILED(status)) {
++			break;
++		} else {
++			if (chnl_info_obj.cio_cs > 0)
++				*pmask |= (1 << i);
++
++		}
++	}
++	if (DSP_SUCCEEDED(status) && utimeout > 0 && *pmask == 0) {
++		/* Non-zero timeout */
++		sync_events = kmalloc(nStrms * sizeof(struct sync_object *),
++								GFP_KERNEL);
++
++		if (sync_events == NULL) {
++			status = -ENOMEM;
++		} else {
++			for (i = 0; i < nStrms; i++) {
++				intf_fxns =
++				    strm_tab[i]->strm_mgr_obj->intf_fxns;
++				status = (*intf_fxns->pfn_chnl_get_info)
++				    (strm_tab[i]->chnl_obj, &chnl_info_obj);
++				if (DSP_FAILED(status))
++					break;
++				else
++					sync_events[i] =
++					    chnl_info_obj.sync_event;
++
++			}
++		}
++		if (DSP_SUCCEEDED(status)) {
++			status =
++			    sync_wait_on_multiple_events(sync_events, nStrms,
++							 utimeout, &index);
++			if (DSP_SUCCEEDED(status)) {
++				/* Since we waited on the event, we have to
++				 * reset it */
++				sync_set_event(sync_events[index]);
++				*pmask = 1 << index;
++			}
++		}
++	}
++func_end:
++	kfree(sync_events);
++
++	DBC_ENSURE((DSP_SUCCEEDED(status) && (*pmask != 0 || utimeout == 0)) ||
++		   (DSP_FAILED(status) && *pmask == 0));
++
++	return status;
++}
++
++/*
++ *  ======== delete_strm ========
++ *  Purpose:
++ *      Frees the resources allocated for a stream.
++ */
++static int delete_strm(struct strm_object *hStrm)
++{
++	struct bridge_drv_interface *intf_fxns;
++	int status = 0;
++
++	if (hStrm) {
++		if (hStrm->chnl_obj) {
++			intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
++			/* Channel close can fail only if the channel handle
++			 * is invalid. */
++			status = (*intf_fxns->pfn_chnl_close) (hStrm->chnl_obj);
++			/* Free all SM address translator resources */
++			if (DSP_SUCCEEDED(status)) {
++				if (hStrm->xlator) {
++					/* force free */
++					(void)cmm_xlator_delete(hStrm->xlator,
++								true);
++				}
++			}
++		}
++		kfree(hStrm);
++	} else {
++		status = -EFAULT;
++	}
++	return status;
++}
++
++/*
++ *  ======== delete_strm_mgr ========
++ *  Purpose:
++ *      Frees stream manager.
++ */
++static void delete_strm_mgr(struct strm_mgr *strm_mgr_obj)
++{
++	if (strm_mgr_obj)
++		kfree(strm_mgr_obj);
 +}
 -- 
 1.7.0.4
