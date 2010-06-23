@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423Ab0FWJX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 05:23:59 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:36589 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059Ab0FWJX5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 05:23:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eWcf0/dYuux3shUDZ52neOdiQRNxtd7MAYmbn5VccOc60nrnArqzS6I9jo5PLbDNBt
-         pErGsneS4xowzF+YYcpJH5ToUW3Lmugm76/rJCsXNJfZS73MB5TUyhYP8sXPJMY8nhfd
-         V0zQsewDdApUYnKxian1ZGIIbBm0JUn0pRr0I=
-MIME-Version: 1.0
-In-Reply-To: <80vd9ab0d2.fsf@merkur.tec.linutronix.de>
-References: <804oh0b7gx.fsf@merkur.tec.linutronix.de>
-	<20100618205401.GA12115@pengutronix.de>
-	<80sk4ivkga.fsf@merkur.tec.linutronix.de>
-	<AANLkTimA7Rbm_nHpVYpEPqaPCjrOse9s8YyiInWlhfEK@mail.gmail.com>
-	<80tyoyhxey.fsf_-_@merkur.tec.linutronix.de>
-	<AANLkTikRj_dMkKLyFhW78yld9jIYAIFncfPaPAF8WqUY@mail.gmail.com>
-	<80iq5bqd07.fsf_-_@merkur.tec.linutronix.de>
-	<AANLkTimJKNEwOoKldq4a4_ufxNY6IY7r6tAfAM055hlW@mail.gmail.com>
-	<80vd9ab0d2.fsf@merkur.tec.linutronix.de>
-Date: Wed, 23 Jun 2010 11:23:55 +0200
-Message-ID: <AANLkTinVaXjCneg-XpxB7YNlmGOwQFTnm5RUcetPdToI@mail.gmail.com>
-Subject: Re: [PATCHv3 4/5] mtd: mxc_nand fixups
-From: Ivo Clarysse <ivo.clarysse@gmail.com>
-To: John Ogness <john.ogness@linutronix.de>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-       Sascha Hauer <kernel@pengutronix.de>,
-       linux-arm-kernel@lists.infradead.org,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751532Ab0FWJ0X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 05:26:23 -0400
+Received: from verein.lst.de ([213.95.11.210]:40247 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075Ab0FWJ0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 05:26:22 -0400
+Date: Wed, 23 Jun 2010 11:26:06 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@lst.de>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: trying to understand READ_META, READ_SYNC, WRITE_SYNC & co
+Message-ID: <20100623092606.GA8278@lst.de>
+References: <20100621094828.GA30748@lst.de> <4C1F3916.4070608@kernel.dk> <x49mxuo6ww6.fsf@segfault.boston.devel.redhat.com> <4C1FB66B.1030203@kernel.dk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C1FB66B.1030203@kernel.dk>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0.001 () BAYES_50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23, 2010 at 10:48 AM, John Ogness <john.ogness@linutronix.de> wrote:
-[...]
->
-> OK. Now I understand the problem. Here is a new patch that introduces a
-> flag that is set by the interrupt handler. This way we do not rely on
-> the i.MX21 being able to read NFC_INT when the interrupt is masked.
+On Mon, Jun 21, 2010 at 08:58:51PM +0200, Jens Axboe wrote:
+> It's definitely a win in some cases, as you showed there as well.
+> My initial testing a long time ago had some nice benefits too. So
+> perhaps the above wasn't worded very well, I always worry that we
+> have regressions doing boosts for things like that. But given that
+> meta data is something that needs to be done before we get to the
+> real data, bumping priority generally seems like a good thing to do.
 
-Yes, this works on i.MX21 (tested on an MX21ADS board).
+Even if the REQ_META special casing helps with performance it creates
+a big issue if we want to follow your other guide line, that is marking
+all actual metadata requests REQ_META for blocktrace.  What about
+only applying the metadata preference only to _synchronous_ (read or
+REQ_SYNC) I/Os that also have REQ_META set?
 
-[...]
-> @@ -117,6 +118,7 @@ struct mxc_nand_host {
->        int                     clk_act;
->        int                     irq;
->
-> +       int                     nfc_int;
-
-But is it OK to use a regular (non-volatile) variable to communicate
-between interrupt context and the non-interrupt context ?
-
-My original patch for i.MX21 used completions instead:
-
-http://lists.infradead.org/pipermail/linux-arm-kernel/2010-April/012694.html
+Right now we never use REQ_META on a non-synchronous request (XFS appears
+to, but the code is not actually reachable anymore), so it's not
+actually a change in behaviour.  After that we could do an easy sweep
+through the tree and mark all metadata requests as REQ_META.  Btw, what
+do we consider metadata for this purpose?  The interesting question
+here is about indirect blocks / bmap btree blocks.  In the traditional
+sense they are metadata, but for I/O purposes they are mostly part of
+the I/O stream.
