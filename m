@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341Ab0FWNcq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 09:32:46 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:34642 "EHLO imr3.ericy.com"
+	id S1752537Ab0FWNj1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 09:39:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60514 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751190Ab0FWNco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 09:32:44 -0400
-Date: Wed, 23 Jun 2010 06:31:47 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [lm-sensors] Adding critical/fault limits to hwmon sysfs API
-Message-ID: <20100623133147.GA19143@ericsson.com>
-References: <20100620163759.GA7077@ericsson.com>
- <20100623144346.10acd898@hyperion.delvare>
+	id S1751721Ab0FWNj0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 09:39:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,467,1272870000"; 
+   d="scan'208";a="632882922"
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: "Williams, Dan J" <dan.j.williams@intel.com>,
+       Alan Cox <alan@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Jun 2010 19:09:12 +0530
+Subject: RE: [PATCH] intel_mid: Add Mrst & Mfld DMA Drivers
+Thread-Topic: [PATCH] intel_mid: Add Mrst & Mfld DMA Drivers
+Thread-Index: AcsSbL0+DjH/Yh8wQ76zE0X7kDeAHQAbA6CA
+Message-ID: <438BB0150E931F4B9CE701519A446301049B1BBE16@bgsmsx502.gar.corp.intel.com>
+References: <20100618155149.1356.84206.stgit@localhost.localdomain>
+ <AANLkTilvD6KKEY3GE2Q0q3z4gu6K6RwkMWbRaRPl9_pU@mail.gmail.com>
+In-Reply-To: <AANLkTilvD6KKEY3GE2Q0q3z4gu6K6RwkMWbRaRPl9_pU@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100623144346.10acd898@hyperion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 23, 2010 at 08:43:46AM -0400, Jean Delvare wrote:
-> Hi Guenter,
+> [..]
+> > ++ *    midc_do_start           begin a transaction
+> > ++ *    @midc: channel
+> > ++ *    @first: first descriptor of series
+> > ++ *
+> > ++ *    Load a transaction into the engine. This must be called with dwc->lock
+> > ++ *    held and bh disabled.
+> > ++ */
+> > +static void midc_dostart(struct intel_mid_dma_chan *midc, struct
+> intel_mid_dma_desc
 > 
-> On Sun, 20 Jun 2010 09:37:59 -0700, Guenter Roeck wrote:
-> > the current hwmon sysfs API does not specify critical or fault limits for voltage
-> > and current readings.
-> > 
-> > Many recent power controller/monitoring chips have support for such limits in addition
-> > to alarm limits. Typical action, when a the critical or fault limit is reached,
-> > may be a board reset or power shutdown, or to report the fault condition.
-> > 
-> > Examples for chips supporting critical/fault limits are SMM665 and variants as well
-> > as many PMBus devices, such as MAX8688, MAX16064, LTC2978, and others.
-> > 
-> > I think it would make sense to add critical/fault limits to the hwmon sysfs API,
-> > to be able to report those limits if supported by a chip.
-> > 
-> > Any thoughts on this ?
-> 
-> I agree it would be good to have standard names (and libsensors
-> support) if these features are popular. It might be a little difficult
-> to come up with the right attribute names though.
-> 
-> For temperatures, we have temp[1-*]_crit, for the critical limit on the
-> high end. We don't have a name for the critical limit on the low end,
-> because no chip ever implemented that. The name we chose doesn't offer
-> much possibilities for a nice name while staying consistent. Maybe
-> "lcrit" would be acceptable for the low end critical limit, and we keep
-> "crit" for the high end critical limit?
-> 
-How about {curr|in|temp}[1-*]_[min_]crit ?
+> (nit) The function name does not match the kernel doc, and I don't
+> know if those extra "+" characters will throw off the kernel-doc
+> scripts.  They also show up on midc_put_desc, but not
+> midc_scan_descriptors.
+Okay, will remove extra "+" char
 
-In other words, keep _crit for the upper limit and introduce min_crit for the lower limit.
-This would be a bit better aligned with the existing _min while maintaining _crit for the 
-upper limit.
+> > +       /*tx is complete*/
+> > +       list_for_each_entry_safe(desc, _desc, &midc->active_list, desc_node) {
+> > +               if (desc == NULL)
+> > +                       continue;
+> 
+> How do we ever get desc == NULL at this point?
+Yes we won't, will remove
 
-Guenter
+> [..]
+> > +#define _dma_printk(level, format, arg...)  \
+> > +       printk(level "LNW_DMA: %s %d " format, __func__, __LINE__, ## arg)
+> > +
+> > +#ifdef CONFIG_LNW_DMA_DEBUG
+> > +#define dma_dbg(format, arg...) _dma_printk(KERN_DEBUG, "DBG " format , ## arg)
+> > +#else
+> > +#define dma_dbg(format, arg...) do {} while (0);
+> > +#endif
+> 
+> This makes us lose compile coverage of the debug statements so they
+> bitrot until someone needs to debug a problem.
+This was just for debug purposes, will be removed
+
+
+ 
+> Any advantage to having a default callback in the slave configuration?
+>  Why not let the client specify the callback on each operation, is it
+> a callback that the client does not know about?
+txd callback is enough, no need to keep here, will be removed
+
+Thanks
+Vinod
