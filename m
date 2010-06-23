@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab0FWSio (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 14:38:44 -0400
-Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:51967 "EHLO
-	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753207Ab0FWSin (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 14:38:43 -0400
-Subject: Re: [PATCH v3 06/11] rlimits: do security check under task_lock
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, akpm@linux-foundation.org,
-       adobriyan@gmail.com, nhorman@tuxdriver.com,
-       linux-kernel@vger.kernel.org, James Morris <jmorris@namei.org>,
-       Eric Paris <eparis@parisplace.org>
-In-Reply-To: <4C224804.7030809@gmail.com>
-References: <20100513155621.51ca77a4.akpm@linux-foundation.org>
-	 <1275855783-27316-1-git-send-email-jslaby@suse.cz>
-	 <20100607180855.GA6689@redhat.com> <4C222644.4040601@gmail.com>
-	 <20100623161254.GA10098@redhat.com>  <4C224804.7030809@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Wed, 23 Jun 2010 14:37:43 -0400
-Message-ID: <1277318263.1362.334.camel@moss-pluto.epoch.ncsc.mil>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1753055Ab0FWTIR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 15:08:17 -0400
+Received: from bar.sig21.net ([80.81.252.164]:54280 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751708Ab0FWTIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Jun 2010 15:08:16 -0400
+Date: Wed, 23 Jun 2010 21:07:43 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       David Quan <David.Quan@atheros.com>, Bob Copeland <me@bobcopeland.com>,
+       "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+       ath5k-devel@venema.h4ckr.net, linux-wireless@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Jonathan May <jonathan.may@atheros.com>,
+       Tim Gardner <tim.gardner@canonical.com>
+Subject: Re: [ath5k-devel] [PATCH v2] ath5k: disable ASPM
+Message-ID: <20100623190743.GA22855@sig21.net>
+References: <20100622172545.GA22680@srcf.ucam.org>
+ <AANLkTilEHJ5qRD8ov0gIK0Zc4o-gJUPYkvHdyD1uZUon@mail.gmail.com>
+ <20100622175058.GA23499@srcf.ucam.org>
+ <AANLkTinE0BiOa5cpcIerbias7K-aDzj3x4qaeDpzy2CQ@mail.gmail.com>
+ <20100622184426.GA24546@srcf.ucam.org>
+ <20100622193143.GA17803@sig21.net>
+ <AANLkTin1fAAgYTYegqaadkYIYP2NXRNRzCR48e-uIgYV@mail.gmail.com>
+ <AANLkTimsEkff4sMiMB_VyWqkZOjy9PIuJ4AiC95PASOZ@mail.gmail.com>
+ <20100623143940.GA5424@sig21.net>
+ <AANLkTilyQB-q8Xf9Mu3F5SnKbRqbBuLjbdx8EcyCt_0v@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTilyQB-q8Xf9Mu3F5SnKbRqbBuLjbdx8EcyCt_0v@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.6 (---)
+X-Spam-21-Report: No, score=-3.6 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.764,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-23 at 19:44 +0200, Jiri Slaby wrote:
-> On 06/23/2010 06:12 PM, Oleg Nesterov wrote:
-> > On 06/23, Jiri Slaby wrote:
-> >>
-> >> On 06/07/2010 08:08 PM, Oleg Nesterov wrote:
-> >>> On 06/06, Jiri Slaby wrote:
-> >>>> @@ -1339,13 +1364,19 @@ int do_prlimit(struct task_struct *tsk, unsigned int resource,
-> >>>>
-> >>>>  	rlim = tsk->signal->rlim + resource;
-> >>>>  	task_lock(tsk->group_leader);
-> >>>> +again:
-> >>>> +	retval = 0;
-> >>>>  	if (new_rlim) {
-> >>>>  		if ((new_rlim->rlim_max > rlim->rlim_max) &&
-> >>>>  					!capable(CAP_SYS_RESOURCE))
-> >>
-> >> BTW this capable() has the exactly same problem with being called with
-> >> task_lock held. Is it OK to move it completely out of critical section?
-> >> I'm asking because it sets a current->flags SU bit used for accounting.
-> >> If I move it out of the section, it will set the bit always.
-> > 
-> > Well, with all these delays I do not know what "exactly same problem"
-> > means ;) Please explain?
+On Wed, Jun 23, 2010 at 09:28:57AM -0700, Luis R. Rodriguez wrote:
+> On Wed, Jun 23, 2010 at 7:39 AM, Johannes Stezenbach <js@sig21.net> wrote:
+> >
+> > If enabling ASPM comes with a performance penalty (which is not unexpected,
+> > there is usually a tradeoff between performance and power consumption),
+> > do you think a boot time option (pcie_aspm=) or compile time option
+> > (CONFIG_PCIEASPM) is the right user interface?
+> >
+> >
+> > But meanwhile I found that CONFIG_PCIEASPM has a runtime
+> > interface, /sys/module/pcie_aspm/parameters/policy.
+> > http://lwn.net/Articles/266585/
 > 
-> As I wrote: that the capable() is called with task_lock held. With
-> security enabled, capable() goes through all the avc_has_perm_noaudit,
-> avc_audit and similar (in selinux), the same as security_task_setrlimit
-> which we were writing about -- Andrew complaining about doing very long
-> security checks while holding spinlocks.
-> 
-> I mean we should do either none of capable and selinux_task_setrlimit
-> under task_lock or both :).
+> Same thing, its to be used by developers not users, damn it we should
+> just remove this crap.
 
-IMO, just do them both under task_lock.  All of the core SELinux
-permission checking code should be safe under task lock and the audit
-path is the exceptional case (only upon denial).
+Hopefully I got at least the message across that there is
+a good reason to have an interface where the user can
+select the ASPM policy?
 
-> >>> Finally. selinux_task_setrlimit(p) uses __task_cred(p) for the check.
-> >>> This looks a bit strange, different threads can have different creds
-> >>> but obviously rlimits are per-process.
-> >>
-> >> Sorry I can't see it. Could you point out in which function this is done?
-> > 
-> > selinux_task_setrlimit()->current_has_perm()->current_sid()->current_cred()
-> 
-> I still see no way how this is wrong. We want to check whether current
-> thread has capabilities to change (someone else's) rlimits. Maybe I'm
-> missing something?
-> 
-> thanks,
+If your answer is "reboot and change the BIOS setting" then
+you didn't get what I was talking about _at all_.
 
--- 
-Stephen Smalley
-National Security Agency
+Also, having now briefly looked at pcie/aspm.c, I do not share your
+opinion that it is crap, except maybe for the force enable.
+If I read it correctly it will by default keep the BIOS settings,
+but offers a per-device sysfs attribute to change the ASPM link
+state, and it seems to do sanity checking, and takes care that
+both ends of the link agree.
 
+(disclaimer: I haven't tested any of it, only briefly looked at the code)
+
+
+Johannes
