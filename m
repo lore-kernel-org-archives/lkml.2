@@ -1,182 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751214Ab0FWFCW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 01:02:22 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:16461 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750979Ab0FWFCV (ORCPT
+	id S1751142Ab0FWFEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 01:04:21 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52168 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750809Ab0FWFEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 01:02:21 -0400
-Message-ID: <4C21955D.1020502@bluewatersys.com>
-Date: Wed, 23 Jun 2010 17:02:21 +1200
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: David Brownell <david-b@pacbell.net>
-CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-       David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
-       linux kernel <linux-kernel@vger.kernel.org>,
-       ext-jani.1.nikula@nokia.com, Andrew Morton <akpm@linux-foundation.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH] Rework gpio cansleep (was Re: gpiolib and sleeping
- gpios)
-References: <191168.5104.qm@web180308.mail.gq1.yahoo.com>
-In-Reply-To: <191168.5104.qm@web180308.mail.gq1.yahoo.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 23 Jun 2010 01:04:20 -0400
+Date: Tue, 22 Jun 2010 22:04:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: axboe@kernel.dk, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
+       linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/3] block: Implement a blk_yield function to
+ voluntarily give up the I/O scheduler.
+Message-Id: <20100622220406.690bb0c8.akpm@linux-foundation.org>
+In-Reply-To: <1277242502-9047-2-git-send-email-jmoyer@redhat.com>
+References: <1277242502-9047-1-git-send-email-jmoyer@redhat.com>
+	<1277242502-9047-2-git-send-email-jmoyer@redhat.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2010 04:37 PM, David Brownell wrote:
-> 
-> 
-> --- On Tue, 6/22/10, Ryan Mallon <ryan@bluewatersys.com> wrote:
-> 
-> 
->> gpiolib
-> 
-> 
-> Again, you're talking about "gpiolib" when
-> you seem to mean the GPIO framework itself
-> (for which gpiolib is only an implementation
-> option)...
+On Tue, 22 Jun 2010 17:35:00 -0400 Jeff Moyer <jmoyer@redhat.com> wrote:
 
-Fine, its just semantics. I think everyone knows what I mean when I
-refer to gpiolib.
-
->> framework could be simplified for cansleep gpios.
->>
->> 'Can sleep' for a gpio has two different meanings depending
->> on context
+> This patch implements a blk_yield to allow a process to voluntarily
+> give up its I/O scheduler time slice.  This is desirable for those processes
+> which know that they will be blocked on I/O from another process, such as
+> the file system journal thread.  Following patches will put calls to blk_yield
+> into jbd and jbd2.
 > 
-> NO; for the GPIO itself it's only ever had one
-> meaning, regardless of context.
-> 
-> You're trying to conflate the GPIO and one
-> of the contexts in which it's used.  That's
-> the problem you seem to be struggling with.
-> 
-> Please stop conflating/confusing
-> those two disparate concepts...
 
-I'm not. Some gpios, such as those on io expanders, may sleep in their
-implementations of the gpio_(set/get) functions.
+I'm looking through this patch series trying to find the
+analysis/description of the cause for this (bad) performance problem. 
+But all I'm seeing is implementation stuff :(  It's hard to review code
+with your eyes shut.
 
-Drivers, which use a gpio, may call gpio_(set/get) functions for a given
-gpio from a context where it is not safe to sleep. In this case, a gpio
-which may sleep (ie one on an i2c io-expander) cannot be used with this
-driver. The gpio_request will succeed, but any call to
-gpio_(set/get)_value will produce a warning.
 
->> example, if a driver calls gpio_get_value(gpio) from an
->> interupt handler
->> then the gpio must not be a sleeping gpio.
-> 
-> In a threaded IRQ handler it's OK to use
-> the get_value_cansleep() option..
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -324,6 +324,18 @@ void blk_unplug(struct request_queue *q)
+>  }
+>  EXPORT_SYMBOL(blk_unplug);
+>  
+> +void generic_yield_iosched(struct request_queue *q, struct task_struct *tsk)
+> +{
+> +	elv_yield(q, tsk);
+> +}
 
-Ugh, you are really twisting my words. replace 'interrupt handler' with
-'non sleep safe context'.
+static?
 
->>
->> This patch introduces a new flag, FLAG_CANSLEEP, internal
->> to gpiolib
-> 
-> NAK; Superfluous; the gpio_chip already has
-> that information recorded.
-
-It has a different meaning, but I think you are still correct here. The
-might_sleep_if in gpio_(set/get)_value is only necessary if
-chip->cansleep is set.
-
-> 
->> new request function, gpio_request_cansleep, requests a
->> gpio which may
->> only be used from sleep possible contexts
-> 
-> Also superfluous.
-
-Not so. In my opinion, it is better to have the gpio_request fail
-immediately if it is being used incorrectly. For example, say you have
-two gpios:
-
-  soc_gpio:    An SoC gpio which does not sleep on set/get
-  sleepy_gpio: An i2c io-expander gpio which may sleep on get/set
-
-and some driver code which does this:
-
-  gpio_request(gpio, "some_gpio");
-  ...
-  // Non-sleep safe context
-  gpio_set_value(gpio, 0);
-
-If you pass sleepy_gpio as the gpio to this driver the gpio_request will
-succeed, but you will get a warning on the gpio_set_value because its
-usage is incorrect.
-
-In my proposed change, the gpio_request would fail because sleepy_gpio
-might sleep, and therefore cannot be used by drivers which use gpios in
-non sleep safe context. Basically I am moving the cansleep part of the
-api from the usage of gpios to the registration time. In my opinion this
-is better because it means there is only one set of gpio_(set/get)_value
-calls and incorrect usage of sleeping gpios will be caught when the gpio
-is registered, not when it is used.
-
-> 
->  The existing
->> gpio_request
->> function requests a gpio, but does not allow it to be used
->> from a
->> context where sleep is not possible.
-> 
-> Changing semantics of existing calls is a big
-> mess, and should be avoided even if it seems
-> appropriate.
-> 
-> Since the request is just reserving a resource
-> that's already been identified (and which has
-> known characteristics, like whether the GPIO
-> value must be accessed only from sleeping
-> contexts), this call would also be superfluous.
 >
-> If you want to ensure the GPIO is a cansleep()
-> one, just check that before reserving it.  There
-> is no need for new calls to support that model;
-> it works today.
+> ...
+>
+> +void blk_queue_yield(struct request_queue *q, yield_fn *yield)
+> +{
+> +	q->yield_fn = yield;
+> +}
+> +EXPORT_SYMBOL_GPL(blk_queue_yield);
 
-Except that drivers do not do this.
+There's a tradition in the block layer of using truly awful identifiers
+for functions-which-set-things.  But there's no good reason for
+retaining that tradition.  blk_queue_yield_set(), perhaps.
 
-> (NAK...)
-> 
-> 
-> 
->> The benefits I see to this approach are:
->>  ...
->>  - The API is simplified by combining gpio_(set/get)_value
->> and
->> gpio_(set/get)_value_cansleep
-> 
-> 
-> You have a strange definition of "simplified"...
-> 
-> Recognize that you're also proposing to remove
-> an API characteristic which much simplifies
-> code review:  you can look at calls and see
-> that because they're the cansleep() version,
-> they are unsafe in IRQ context ...
+(what name would you give an accessor which _reads_ q->yield_fn?  yup,
+"blk_queue_yield()".  doh).
 
-Hmm, fair point.
+>  /**
+>   * blk_queue_bounce_limit - set bounce buffer limit for queue
+>   * @q: the request queue for the device
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index dab836e..a9922b9 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -87,9 +87,12 @@ struct cfq_rb_root {
+>  	unsigned total_weight;
+>  	u64 min_vdisktime;
+>  	struct rb_node *active;
+> +	unsigned long last_expiry;
+> +	pid_t last_pid;
 
-~Ryan
+These fields are pretty fundamental to understanding the
+implementation.  Some nice descriptions would be nice.
 
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+>  };
+>  #define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
+> -			.count = 0, .min_vdisktime = 0, }
+> +			.count = 0, .min_vdisktime = 0, .last_expiry = 0UL, \
+> +			.last_pid = (pid_t)-1, }
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+May as well leave the 0 and NULL fields unmentioned (ie: don't do
+crappy stuff because the old code did crappy stuff!)
+
+>  /*
+>   * Per process-grouping structure
+> @@ -147,6 +150,7 @@ struct cfq_queue {
+>  	struct cfq_queue *new_cfqq;
+>  	struct cfq_group *cfqg;
+>  	struct cfq_group *orig_cfqg;
+> +	struct cfq_io_context *yield_to;
+>  };
+>  
+>  /*
+>
+> ...
+>
+> +static int cfq_should_yield_now(struct cfq_queue *cfqq,
+> +				struct cfq_queue **yield_to)
+
+The bool-returning function could return a bool type.
+
+> +{
+> +	struct cfq_queue *new_cfqq;
+> +
+> +	new_cfqq = cic_to_cfqq(cfqq->yield_to, 1);
+> +
+> +	/*
+> +	 * If the queue we're yielding to is in a different cgroup,
+> +	 * just expire our own time slice.
+> +	 */
+> +	if (new_cfqq->cfqg != cfqq->cfqg) {
+> +		*yield_to = NULL;
+> +		return 1;
+> +	}
+> +
+> +	/*
+> +	 * If the new queue has pending I/O, then switch to it
+> +	 * immediately.  Otherwise, see if we can idle until it is
+> +	 * ready to preempt us.
+> +	 */
+> +	if (!RB_EMPTY_ROOT(&new_cfqq->sort_list)) {
+> +		*yield_to = new_cfqq;
+> +		return 1;
+> +	}
+> +
+> +	*yield_to = NULL;
+> +	return 0;
+> +}
+> +
+>  /*
+>   * Select a queue for service. If we have a current active queue,
+>   * check whether to continue servicing it, or retrieve and set a new one.
+>
+> ...
+>
+> +static inline int expiry_data_valid(struct cfq_rb_root *service_tree)
+> +{
+> +	return (service_tree->last_pid != (pid_t)-1 &&
+> +		service_tree->last_expiry != 0UL);
+> +}
+
+The compiler will inline this.
+
+> +static void cfq_yield(struct request_queue *q, struct task_struct *tsk)
+
+-ENODESCRIPTION
+
+> +{
+> +	struct cfq_data *cfqd = q->elevator->elevator_data;
+> +	struct cfq_io_context *cic, *new_cic;
+> +	struct cfq_queue *cfqq;
+> +
+> +	cic = cfq_cic_lookup(cfqd, current->io_context);
+> +	if (!cic)
+> +		return;
+> +
+> +	task_lock(tsk);
+> +	new_cic = cfq_cic_lookup(cfqd, tsk->io_context);
+> +	atomic_long_inc(&tsk->io_context->refcount);
+
+How do we know tsk has an io_context?  Use get_io_context() and check
+its result?
+
+> +	task_unlock(tsk);
+> +	if (!new_cic)
+> +		goto out_dec;
+> +
+> +	spin_lock_irq(q->queue_lock);
+> +
+> +	cfqq = cic_to_cfqq(cic, 1);
+> +	if (!cfqq)
+> +		goto out_unlock;
+> +
+> +	/*
+> +	 * If we are currently servicing the SYNC_NOIDLE_WORKLOAD, and we
+> +	 * are idling on the last queue in that workload, *and* there are no
+> +	 * potential dependent readers running currently, then go ahead and
+> +	 * yield the queue.
+> +	 */
+
+Comment explains the code, but doesn't explain the *reason* for the code.
+
+> +	if (cfqd->active_queue == cfqq &&
+> +	    cfqd->serving_type == SYNC_NOIDLE_WORKLOAD) {
+> +		/*
+> +		 * If there's been no I/O from another process in the idle
+> +		 * slice time, then there is by definition no dependent
+> +		 * read going on for this service tree.
+> +		 */
+> +		if (expiry_data_valid(cfqq->service_tree) &&
+> +		    time_before(cfqq->service_tree->last_expiry +
+> +				cfq_slice_idle, jiffies) &&
+> +		    cfqq->service_tree->last_pid != cfqq->pid)
+> +			goto out_unlock;
+> +	}
+> +
+> +	cfq_log_cfqq(cfqd, cfqq, "yielding queue to %d", tsk->pid);
+> +	cfqq->yield_to = new_cic;
+> +	cfq_mark_cfqq_yield(cfqq);
+> +
+> +out_unlock:
+> +	spin_unlock_irq(q->queue_lock);
+> +out_dec:
+> +	put_io_context(tsk->io_context);
+> +}
+> +
+>  static int __cfq_forced_dispatch_cfqq(struct cfq_queue *cfqq)
+>  {
+>  	int dispatched = 0;
+>
+> ...
+>
+> --- a/block/elevator.c
+> +++ b/block/elevator.c
+> @@ -866,6 +866,14 @@ void elv_completed_request(struct request_queue *q, struct request *rq)
+>  	}
+>  }
+>  
+> +void elv_yield(struct request_queue *q, struct task_struct *tsk)
+> +{
+> +	struct elevator_queue *e = q->elevator;
+> +
+> +	if (e && e->ops->elevator_yield_fn)
+> +		e->ops->elevator_yield_fn(q, tsk);
+> +}
+
+Again, no documentation.  How are other programmers to know when, why
+and how they should use this?
+
+>
+> ...
+>
+
