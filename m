@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab0FWCxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Jun 2010 22:53:53 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57233 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab0FWCxw (ORCPT
+	id S1751508Ab0FWDBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Jun 2010 23:01:05 -0400
+Received: from amavis-smtp.knology.net ([75.76.199.6]:38972 "EHLO
+	amavis-smtp.knology.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab0FWDBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Jun 2010 22:53:52 -0400
-MIME-Version: 1.0
-Date: Wed, 23 Jun 2010 12:53:49 +1000
-Message-ID: <AANLkTilzxC6OdOCGiVfa6a7FMZXWRLNnPZ5lhTNnWCV4@mail.gmail.com>
-Subject: help identify wwan card
-From: Alexander Samad <alex@samad.com.au>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Jun 2010 23:01:01 -0400
+Subject: Re: PROBLEM: SIS7019 stops recording after 42 min
+From: David Dillow <dave@thedillows.org>
+To: linux@schou.dk
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+In-Reply-To: <AANLkTikPW9j4H15gq7nl0Tb213R15uIQAnSDi_cTOJre@mail.gmail.com>
+References: <AANLkTimO5PXmJiIPDw82MTA53mLSl-OC0e1SOEh7v8pH@mail.gmail.com>
+	 <1276972298.22889.16.camel@obelisk.thedillows.org>
+	 <AANLkTimwZFNLBNJWODyzKXwx9CbIorg3OCA53XZchkeN@mail.gmail.com>
+	 <1277043970.22889.45.camel@obelisk.thedillows.org>
+	 <AANLkTikBTMq3d-Ov65wYLJ_Vw-7Jde4AOwfXcEPB0wLr@mail.gmail.com>
+	 <1277129180.22889.64.camel@obelisk.thedillows.org>
+	 <AANLkTikW71h7ABVXY21pLL9AeOlmRTfVaSTjJ_6Ma0_R@mail.gmail.com>
+	 <AANLkTikCGzUKe9Fy1d0xhberqGFe71lvrQbg5gkQzgf1@mail.gmail.com>
+	 <AANLkTikPW9j4H15gq7nl0Tb213R15uIQAnSDi_cTOJre@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 22 Jun 2010 23:00:47 -0400
+Message-ID: <1277262047.10818.9.camel@obelisk.thedillows.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-8.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Mon, 2010-06-21 at 22:10 +0200, Hans Schou wrote:
+> 2010/6/21 Hans Schou <linux@schou.dk>:
+> 
+> > I have just started:
+> >  arecord -B 1000000 -F 500000 -c 1 -r 44100 -f S16 -M -D hw:0,0 -v arec.wav
+> 
+> It gave a file size of 258822944 bytes. Almost 50 min:
+>   echo "258822944/(2*60*44100)" | bc -ql
+> 48.90
+> 
+> This is the longest recording I have made on this hardware.
+> 
+> I have this running now:
+> + arecord -B 200000 -F 100000 -c 1 -r 44100 -f S16 -M -D hw:0,0 -v arec.wav
 
-I have got a new laptop HP 2540p, it has a qualcom 3g card, I had one
-in my hp mini and was able to get it to work with the qcserial module.
+Ok, it seems something is definately funky with the driver in general,
+and gets worse when we're using more than 2 periods per buffer.
 
-now I can't find it on my new laptop.
+If I use:
 
-lspci
+strace -tt -T -o record.log arecord -f S16 -r 44100 -c 1 -d 3600 \
+	--buffer-size=32768 --period-size=16384 -v -t raw - > /dev/null
 
-00:00.0 Host bridge: Intel Corporation Core Processor DRAM Controller (rev 12)
-00:02.0 VGA compatible controller: Intel Corporation Core Processor
-Integrated Graphics Controller (rev 12)
-00:16.0 Communication controller: Intel Corporation 5 Series/3400
-Series Chipset HECI Controller (rev 06)
-00:16.3 Serial controller: Intel Corporation 5 Series/3400 Series
-Chipset KT Controller (rev 06)
-00:19.0 Ethernet controller: Intel Corporation 82577LM Gigabit Network
-Connection (rev 06)
-00:1a.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
-USB2 Enhanced Host Controller (rev 06)
-00:1b.0 Audio device: Intel Corporation 5 Series/3400 Series Chipset
-High Definition Audio (rev 06)
-00:1c.0 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
-Express Root Port 1 (rev 06)
-00:1c.1 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
-Express Root Port 2 (rev 06)
-00:1c.3 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
-Express Root Port 4 (rev 06)
-00:1d.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
-USB2 Enhanced Host Controller (rev 06)
-00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev a6)
-00:1f.0 ISA bridge: Intel Corporation Mobile 5 Series Chipset LPC
-Interface Controller (rev 06)
-00:1f.2 SATA controller: Intel Corporation 5 Series/3400 Series
-Chipset 6 port SATA AHCI Controller (rev 06)
-00:1f.6 Signal processing controller: Intel Corporation 5 Series/3400
-Series Chipset Thermal Subsystem (rev 06)
-43:00.0 Network controller: Intel Corporation Centrino Advanced-N 6200 (rev 35)
-44:06.0 FireWire (IEEE 1394): Ricoh Co Ltd R5C832 IEEE 1394 Controller (rev 06)
-44:06.1 SD Host controller: Ricoh Co Ltd R5C822 SD/SDIO/MMC/MS/MSPro
-Host Adapter (rev 25)
-44:06.2 CardBus bridge: Ricoh Co Ltd RL5c476 II (rev bb)
-ff:00.0 Host bridge: Intel Corporation Core Processor QuickPath
-Architecture Generic Non-core Registers (rev 02)
-ff:00.1 Host bridge: Intel Corporation Core Processor QuickPath
-Architecture System Address Decoder (rev 02)
-ff:02.0 Host bridge: Intel Corporation Core Processor QPI Link 0 (rev 02)
-ff:02.1 Host bridge: Intel Corporation Core Processor QPI Physical 0 (rev 02)
-ff:02.2 Host bridge: Intel Corporation Core Processor Reserved (rev 02)
-ff:02.3 Host bridge: Intel Corporation Core Processor Reserved (rev 02)
+I don't have any overruns, nor does it go into the 10-second pause mode.
+I do see an odd alternating pattern of one period taking 1.4ms to
+capture, and the next taking 732ms. The period should be about 371ms, so
+the lumpyness of the timing is likely making it easier to hit overruns.
 
+Then, using:
 
-can't tell and from there can't tell which module to load.
+strace -tt -T -o record.log arecord -f S16 -r 44100 -c 1 -d 3600 \
+	--buffer-size=32768 --period-size=8192 -v -t raw - > /dev/null
 
-any one got any ideas ?
+I was able to push it into the 10-second pause failure mode, without
+hitting any overruns. Initially it has a similar alternating pattern of
+0.6ms then 363ms capture times until it drops into a 10 second pause
+just after 42 minutes.
 
-Thanks
-Alex
-PS can you cc me as I am not subscribed to the list
+Now that I finally got my hardware going and can reproduce this, I'll
+dig into it over the next few evenings.
+
+Thanks for the report and help narrowing down the focus area,
+Dave
+
