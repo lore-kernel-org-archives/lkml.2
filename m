@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab0FWKER (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Jun 2010 06:04:17 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:37667 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab0FWKEK (ORCPT
+	id S1753553Ab0FWKNG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Jun 2010 06:13:06 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:51532 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab0FWKEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Jun 2010 06:04:10 -0400
+	Wed, 23 Jun 2010 06:04:13 -0400
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
 Cc: Jason Baron <jbaron@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
@@ -14,14 +14,14 @@ Cc: Jason Baron <jbaron@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Paul Mackerras <paulus@samba.org>,
        Michael Ellerman <michael@ellerman.id.au>,
-       Ian Munsie <imunsie@au1.ibm.com>, Randy Dunlap <rdunlap@xenotime.net>,
-       Mike Frysinger <vapier@gentoo.org>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>,
-       "David S. Miller" <davem@davemloft.net>, Jiri Olsa <jolsa@redhat.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>, linux-doc@vger.kernel.org
-Subject: [PATCH 03/40] ftrace syscalls: Allow arch specific syscall symbol matching
-Date: Wed, 23 Jun 2010 20:02:44 +1000
-Message-Id: <1277287401-28571-4-git-send-email-imunsie@au1.ibm.com>
+       Ian Munsie <imunsie@au1.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Paul Mundt <lethal@linux-sh.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH 06/40] x86: add arch_compat_syscall_addr()
+Date: Wed, 23 Jun 2010 20:02:47 +1000
+Message-Id: <1277287401-28571-7-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
 References: <1277287401-28571-1-git-send-email-imunsie@au1.ibm.com>
@@ -29,86 +29,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
+From: Jason Baron <jbaron@redhat.com>
 
-Some architectures have unusual symbol names and the generic code to
-match the symbol name with the function name for the syscall metadata
-will fail. For example, symbols on PPC64 start with a period and the
-generic code will fail to match them.
+Add arch_compat_syscall_addr(int nr) for x86_64. This is in preparation for adding
+compat syscall support to the event tracer.
 
-This patch splits out the match logic into a standalone weak function
-that can be overridden on archs with unusual symbol names.
-
+Signed-off-by: Jason Baron <jbaron@redhat.com>
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 ---
- Documentation/trace/ftrace-design.txt |    3 +++
- include/linux/ftrace.h                |    1 +
- kernel/trace/trace_syscalls.c         |   19 ++++++++++++-------
- 3 files changed, 16 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/syscall.h |    5 +++++
+ arch/x86/kernel/ftrace.c       |    8 ++++++++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/trace/ftrace-design.txt b/Documentation/trace/ftrace-design.txt
-index 8369a1c..3936d5f 100644
---- a/Documentation/trace/ftrace-design.txt
-+++ b/Documentation/trace/ftrace-design.txt
-@@ -247,6 +247,9 @@ You need very few things to get the syscalls tracing in an arch.
- - If the system call table on this arch is more complicated than a simple array
-   of addresses of the system calls, implement an arch_syscall_addr to return
-   the address of a given system call.
-+- If the symbol names of the system calls do not match the function names on
-+  this arch, implement an arch_syscall_match_sym_name with the appropriate
-+  logic to return true if the function name corresponds with the symbol name.
- - Tag this arch as HAVE_SYSCALL_TRACEPOINTS.
+diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
+index c4a348f..4e462cc 100644
+--- a/arch/x86/include/asm/syscall.h
++++ b/arch/x86/include/asm/syscall.h
+@@ -16,7 +16,12 @@
+ #include <linux/sched.h>
+ #include <linux/err.h>
  
- 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 41e4633..bb4914d 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -522,6 +522,7 @@ extern enum ftrace_dump_mode ftrace_dump_on_oops;
- #ifdef CONFIG_FTRACE_SYSCALLS
- 
- unsigned long arch_syscall_addr(int nr);
-+bool arch_syscall_match_sym_name(const char *sym, const char *name);
- 
- #endif /* CONFIG_FTRACE_SYSCALLS */
- 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index e2b657e..18f27bb 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -80,13 +80,7 @@ static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
- 	kallsyms_lookup(syscall, NULL, NULL, NULL, str);
- 
- 	for ( ; start < stop; start++) {
--		/*
--		 * Only compare after the "sys" prefix. Archs that use
--		 * syscall wrappers may have syscalls symbols aliases prefixed
--		 * with "SyS" instead of "sys", leading to an unwanted
--		 * mismatch.
--		 */
--		if (start->name && !strcmp(start->name + 3, str + 3))
-+		if (start->name && arch_syscall_match_sym_name(str, start->name))
- 			return start;
- 	}
- 	return NULL;
-@@ -458,6 +452,17 @@ unsigned long __init __weak arch_syscall_addr(int nr)
- 	return (unsigned long)sys_call_table[nr];
- }
- 
-+bool __weak arch_syscall_match_sym_name(const char *sym, const char *name)
-+{
-+	/*
-+	 * Only compare after the "sys" prefix. Archs that use
-+	 * syscall wrappers may have syscalls symbols aliases prefixed
-+	 * with "SyS" instead of "sys", leading to an unwanted
-+	 * mismatch.
-+	 */
-+	return (!strcmp(sym + 3, name + 3));
-+}
++#if defined(CONFIG_COMPAT) && defined(CONFIG_FTRACE_SYSCALLS)
++ #define __HAVE_ARCH_FTRACE_COMPAT_SYSCALLS
++#endif
 +
- int __init init_ftrace_syscalls(void)
- {
- 	struct syscall_metadata *meta;
+ extern const unsigned long sys_call_table[];
++extern const unsigned long *ia32_sys_call_table;
+ 
+ /*
+  * Only the low 32 bits of orig_ax are meaningful, so we return int.
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index cd37469..4b36a0b 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -26,6 +26,7 @@
+ #include <asm/ftrace.h>
+ #include <asm/nops.h>
+ #include <asm/nmi.h>
++#include <asm/syscall.h>
+ 
+ 
+ #ifdef CONFIG_DYNAMIC_FTRACE
+@@ -510,3 +511,10 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
+ 	}
+ }
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
++
++#ifdef __HAVE_ARCH_FTRACE_COMPAT_SYSCALLS
++unsigned long __init arch_compat_syscall_addr(int nr)
++{
++	return (unsigned long)(&ia32_sys_call_table)[nr];
++}
++#endif
 -- 
 1.7.1
 
